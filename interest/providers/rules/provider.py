@@ -33,7 +33,7 @@ MAX_HOSTS_PER_RULE = 500
 
 
 def rule_query(rule: InterestRule) -> str:
-    """A keyword list is a query the user never has to see."""
+    """A keyword list compiles to a query."""
     if rule.mode != RuleMode.KEYWORD.value:
         return rule.query.strip()
     words = [w.strip() for w in (rule.keywords or []) if str(w).strip()]

@@ -45,8 +45,7 @@ export const FINDING_TITLE: Record<string, string> = {
 };
 
 export const FINDING_SUMMARY: Record<string, string> = {
-	[ORIGIN_EXPOSED]:
-		'The same application answers on an address the CDN does not front. Requests sent to the address are not filtered by the CDN.',
+	[ORIGIN_EXPOSED]: 'The same application answers on an address the CDN does not front.',
 	[DEFAULT_VHOST]: 'The address returns different content when requested without a hostname.'
 };
 

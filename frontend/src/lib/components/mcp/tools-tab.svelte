@@ -87,9 +87,9 @@
 
 	{#if off.length && capability === ALL && !search}
 		<p class="border-b px-5 py-2 text-xs text-muted-foreground">
-			{off.length} tools are off for this instance because {offCapabilities
+			{off.length} tools are off for this instance. Ceiling excludes {offCapabilities
 				.map((c) => MCP_CAPABILITY_LABELS[c as (typeof MCP_CAPABILITIES)[number]] ?? c)
-				.join(' and ')} is below the ceiling.
+				.join(' and ')}.
 			{#if canAdmin}
 				<button
 					type="button"
@@ -154,12 +154,7 @@
 		</div>
 	{:else}
 		<div class="p-5">
-			<EmptyState
-				compact
-				icon={SearchX}
-				title="No tools match"
-				description="Widen the search or pick another capability."
-			/>
+			<EmptyState compact icon={SearchX} title="No tools match" />
 		</div>
 	{/each}
 </Card.Root>

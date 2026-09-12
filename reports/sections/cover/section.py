@@ -6,9 +6,7 @@ from shared.definitions.reports import SectionGroup, SectionRole
 
 
 class CoverConfig(SectionConfig):
-    show_logo: bool = flag(
-        True, title="Show logo", description="Print the uploaded logo on the cover."
-    )
+    show_logo: bool = flag(True, title="Show logo")
     show_meta: bool = flag(
         True,
         title="Show detail block",
@@ -18,7 +16,7 @@ class CoverConfig(SectionConfig):
     show_grade: bool = flag(
         True,
         title="Show the posture grade",
-        description="The letter grade and score on the cover, when vulnerabilities were assessed.",
+        description="Letter grade and score. Shown when vulnerabilities were assessed.",
     )
     kicker: str = text(
         "Attack surface report",
@@ -50,7 +48,7 @@ def _grade(ctx: RenderContext) -> dict | None:
 class CoverSection(Section):
     name = "cover"
     title = "Cover"
-    description = "The title page. Layout and artwork come from the theme."
+    description = "Title page."
     group = SectionGroup.FRONT_MATTER.value
     order = 10
     role = SectionRole.FURNITURE.value

@@ -51,8 +51,8 @@ FEEDS: tuple[FeedSpec, ...] = (
         label="EPSS",
         tagline="Probability of exploitation",
         description=(
-            "For every published CVE, the modelled probability that it will be "
-            "exploited in the wild within the next 30 days. Recomputed daily."
+            "Modelled probability that a CVE is exploited in the wild within 30 days. "
+            "Recomputed daily."
         ),
         url="https://epss.empiricalsecurity.com/epss_scores-current.csv.gz",
         source="FIRST.org",
@@ -66,8 +66,8 @@ FEEDS: tuple[FeedSpec, ...] = (
         label="CISA KEV",
         tagline="Confirmed exploited in the wild",
         description=(
-            "The Known Exploited Vulnerabilities catalog: CVEs with observed, "
-            "confirmed exploitation, each with a remediation deadline."
+            "CVEs with confirmed exploitation in the wild, each with a remediation "
+            "deadline."
         ),
         url="https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
         source="CISA",
@@ -81,9 +81,8 @@ FEEDS: tuple[FeedSpec, ...] = (
         label="NVD",
         tagline="Which versions a CVE affects",
         description=(
-            "Every published CVE with the software versions NVD states it applies to. "
-            "Matching an asset's own version against it names known CVEs without "
-            "sending a request."
+            "Every published CVE with the software versions it applies to. Matched "
+            "against reported versions without sending a request."
         ),
         url=f"{NVD_RELEASE}/CVE-<year>.json.xz",
         source="NIST NVD, mirrored by fkie-cad",
@@ -109,12 +108,10 @@ class ExploitBand:
 
 
 EXPLOIT_BANDS: tuple[ExploitBand, ...] = (
-    ExploitBand(
-        "very_likely", "Very likely", 0.5, "More likely than not to be exploited."
-    ),
-    ExploitBand("likely", "Likely", 0.088, "Above the threshold most teams act on."),
-    ExploitBand("possible", "Possible", 0.01, "Uncommon, but not negligible."),
-    ExploitBand("unlikely", "Unlikely", 0.0, "In the long tail of unexploited CVEs."),
+    ExploitBand("very_likely", "Very likely", 0.5, "EPSS 50% or above."),
+    ExploitBand("likely", "Likely", 0.088, "EPSS 8.8% or above."),
+    ExploitBand("possible", "Possible", 0.01, "EPSS 1% or above."),
+    ExploitBand("unlikely", "Unlikely", 0.0, "EPSS below 1%."),
 )
 
 BANDS_BY_KEY: dict[str, ExploitBand] = {band.key: band for band in EXPLOIT_BANDS}
@@ -173,7 +170,7 @@ SIGNALS: tuple[SignalSpec, ...] = (
     SignalSpec(
         ExploitSignal.RANSOM_PATH.value,
         "Ransomware path",
-        "Used in ransomware campaigns, and this host also exposes a service ransomware crews reach for.",
+        "Used in ransomware campaigns, and the host exposes a remote access or database service.",
         35,
         TONE_CRITICAL,
     ),
@@ -186,8 +183,8 @@ SIGNALS: tuple[SignalSpec, ...] = (
     ),
     SignalSpec(
         ExploitSignal.FRESH_EXPLOIT.value,
-        "Exploit published since your last scan",
-        "A public exploit appeared after the scan that found this. Nothing changed on your side.",
+        "Exploit published since the last scan",
+        "A public exploit was published after the scan that recorded this finding.",
         25,
         TONE_CRITICAL,
     ),
@@ -208,7 +205,7 @@ SIGNALS: tuple[SignalSpec, ...] = (
     SignalSpec(
         ExploitSignal.LIKELY.value,
         "Likely to be exploited",
-        "EPSS puts this above the threshold most teams act on.",
+        "EPSS 8.8% or above.",
         15,
         TONE_WARNING,
     ),
@@ -222,22 +219,21 @@ SIGNALS: tuple[SignalSpec, ...] = (
     SignalSpec(
         ExploitSignal.BYPASSED.value,
         "Confirmed through a WAF",
-        "A WAF or CDN sits in front of this host and the check still succeeded, "
-        "so the protection did not stop it.",
+        "A WAF or CDN sits in front of the host and the check succeeded.",
         15,
         TONE_WARNING,
     ),
     SignalSpec(
         ExploitSignal.CROWD.value,
         "Mass-scanned software",
-        "Hundreds of thousands of hosts run this, so it is swept continuously.",
+        "Run by more than 100,000 hosts on the internet.",
         5,
         TONE_INFO,
     ),
     SignalSpec(
         ExploitSignal.UNTESTABLE.value,
         "No check exists",
-        "No scanner template covers this CVE, so no scan can confirm or clear it.",
+        "No scanner template covers this CVE.",
         0,
         TONE_INFO,
     ),

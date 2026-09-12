@@ -83,7 +83,7 @@
 					>
 						<span class="flex items-center gap-1.5 text-muted-foreground">
 							<TriangleAlertIcon class="size-3.5" />
-							Off for this instance. No token can call it while its capability is below the ceiling.
+							Off for this instance.
 						</span>
 						{#if canAdmin}
 							<Button variant="outline" size="sm" class="h-6 text-xs" onclick={onCeiling}>
@@ -146,7 +146,7 @@
 								{/each}
 							</div>
 						{:else}
-							<p class="text-sm text-muted-foreground">This tool takes no arguments.</p>
+							<p class="text-sm text-muted-foreground">No arguments.</p>
 						{/if}
 					</section>
 
@@ -191,7 +191,7 @@
 								</p>
 							{/if}
 						{:else}
-							<p class="text-sm text-muted-foreground">No calls in the recent trail.</p>
+							<p class="text-sm text-muted-foreground">No recent calls.</p>
 						{/if}
 					</section>
 				</div>

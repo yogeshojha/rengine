@@ -121,7 +121,7 @@
 		<ScrollArea class="min-h-0">
 			<div class="flex flex-col gap-6 px-6 py-5">
 				{#if !activity}
-					<p class="text-sm text-muted-foreground">This stage has not run.</p>
+					<p class="text-sm text-muted-foreground">Stage has not run.</p>
 				{:else}
 					{#if numbers.length}
 						<section>
@@ -157,7 +157,7 @@
 					<section>
 						<h3 class="mb-2 text-xs font-medium text-muted-foreground">Commands</h3>
 						{#if !commands.length}
-							<p class="text-sm text-muted-foreground">No commands were recorded for this stage.</p>
+							<p class="text-sm text-muted-foreground">No commands recorded.</p>
 						{:else}
 							<div class="flex flex-col gap-1.5">
 								{#each commands as c (c.id)}
@@ -205,9 +205,9 @@
 												aria-label="{c.tool} output"
 											>
 												{#if loadingId === c.id}
-													<p class="p-3 text-xs text-muted-foreground">Loading output…</p>
+													<p class="p-3 text-xs text-muted-foreground">Loading output</p>
 												{:else if outputs[c.id] === null}
-													<p class="p-3 text-xs text-destructive">Output could not be loaded.</p>
+													<p class="p-3 text-xs text-destructive">Output not loaded.</p>
 												{:else if outputs[c.id]}
 													{@const out = outputs[c.id] ?? ''}
 													<CodeBlock

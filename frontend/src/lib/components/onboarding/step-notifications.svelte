@@ -89,7 +89,7 @@
 
 	async function handleTest(p: NotifProvider) {
 		if (!isConfigured(p)) {
-			toast.error('Fill in the channel details first');
+			toast.error('Fill in the channel fields');
 			return;
 		}
 		const d = drafts[p];
@@ -128,7 +128,7 @@
 			}
 			next();
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Notification channels could not be saved');
+			toast.error(e instanceof Error ? e.message : 'Notification channels not saved');
 		} finally {
 			busy = false;
 		}
@@ -205,10 +205,7 @@
 
 		<p class="flex items-start gap-2 pt-1 text-xs text-muted-foreground">
 			<InfoIcon class="mt-px size-3.5 shrink-0" />
-			<span
-				>Email, Microsoft Teams and custom Apprise URLs can be added in Settings, under
-				Notifications.</span
-			>
+			<span>Email, Microsoft Teams and Apprise URLs can be added in Settings.</span>
 		</p>
 	</div>
 
@@ -251,7 +248,7 @@
 						</Select.Content>
 					</Select.Root>
 					<p class="text-xs text-muted-foreground">
-						Applies to every channel connected here. Adjust per channel in Settings.
+						Applies to every channel above. Adjustable per channel in Settings.
 					</p>
 				</div>
 			</Card.Content>

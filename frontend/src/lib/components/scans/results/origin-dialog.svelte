@@ -170,7 +170,7 @@
 					target="_blank"
 					rel="noopener noreferrer"
 				>
-					<ExternalLink class="size-4" /> Open the address
+					<ExternalLink class="size-4" /> Open address
 				</Button>
 				<CopyButton value={f.exposed.ip ?? ''} class="size-8" />
 				{#if total > 1 && onStep}

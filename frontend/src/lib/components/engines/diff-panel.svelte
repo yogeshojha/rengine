@@ -64,11 +64,6 @@
 	</div>
 	<ScrollArea class="min-h-0 flex-1">
 		<div class="body">
-			{#if !changes.length}
-				<p class="empty">
-					Every setting in this engine matches its stage default. Anything changed is listed here.
-				</p>
-			{/if}
 			{#each byStage as [stage, items] (stage)}
 				<p class="stage">{items[0].title}</p>
 				{#each items as change (change.field)}
@@ -100,11 +95,6 @@
 	}
 	.body {
 		padding: 10px 14px 16px;
-	}
-	.empty {
-		font-size: 12px;
-		color: var(--muted-foreground);
-		line-height: 1.5;
 	}
 	.stage {
 		font-size: 10px;

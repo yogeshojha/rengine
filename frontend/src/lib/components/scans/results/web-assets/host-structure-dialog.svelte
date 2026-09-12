@@ -22,13 +22,13 @@
 
 	const n = (value: number) => value.toLocaleString();
 	let line = $derived.by(() => {
-		if (!summary || !summary.total) return 'Every path discovered on this host.';
+		if (!summary || !summary.total) return 'Endpoint structure';
 		const parts = [
 			`${n(summary.total)} ${summary.total === 1 ? 'endpoint' : 'endpoints'}`,
 			`${n(summary.probed)} verified`
 		];
 		if (summary.with_params) parts.push(`${n(summary.with_params)} take input`);
-		if (summary.interesting) parts.push(`${n(summary.interesting)} worth testing`);
+		if (summary.interesting) parts.push(`${n(summary.interesting)} of interest`);
 		return parts.join(' · ');
 	});
 </script>

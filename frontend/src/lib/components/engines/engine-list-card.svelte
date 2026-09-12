@@ -64,7 +64,7 @@
 		const scans = engine.usage?.scans ?? 0;
 		if (scans) parts.push(`${scans} scan${scans === 1 ? '' : 's'}`);
 		if (engine.last_used_at) parts.push(`used ${relativeTimeLong(engine.last_used_at)}`);
-		return parts.length ? parts.join(' · ') : 'Never used';
+		return parts.length ? parts.join(' · ') : 'Unused';
 	});
 </script>
 

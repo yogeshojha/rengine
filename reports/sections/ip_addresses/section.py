@@ -9,14 +9,14 @@ from shared.definitions.surface import SurfaceDimension
 class IpAddressesConfig(SectionConfig):
     max_rows: int = limit(60, title="Rows shown", minimum=5, maximum=2000)
     show_ptr: bool = flag(False, title="Show reverse DNS")
-    show_hosts: bool = flag(True, title="Show the hostnames on each address")
+    show_hosts: bool = flag(True, title="Show hostnames")
     only_open: bool = flag(False, title="Only addresses with an open port")
 
 
 class IpAddressesSection(Section):
     name = "ip_addresses"
     title = "Addresses"
-    description = "The address inventory with network, country and exposure."
+    description = "Addresses with network, country and open ports."
     group = SectionGroup.SURFACE.value
     order = 40
     requires = frozenset({SurfaceDimension.IPS.value})

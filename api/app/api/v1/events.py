@@ -48,7 +48,7 @@ async def event_stream(
     token: Annotated[str, Depends(get_token_from_request)],
     channels: str = Query(
         ...,
-        description="Comma-separated list of channels to subscribe to",
+        description="Comma-separated channels",
         examples=["broadcast,project:proj-uuid"],
     ),
 ):

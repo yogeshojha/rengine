@@ -88,7 +88,7 @@
 
 	async function setEnabled(value: boolean) {
 		const ok = await ai.save({ enabled: value });
-		if (ok) toast.success(value ? 'AI is on for this instance.' : 'AI is off.');
+		if (ok) toast.success(value ? 'AI enabled' : 'AI disabled');
 	}
 
 	async function setFeature(key: string, value: boolean) {
@@ -134,9 +134,8 @@
 			<ShieldAlertIcon />
 			<Alert.Title>Scan data is sent to the configured provider</Alert.Title>
 			<Alert.Description>
-				Report narration sends a computed summary of the scan: counts, severity totals, check names
-				and detected conditions. Request and response bodies, credentials and scan context headers
-				are never sent. Disable on air-gapped or restricted deployments.
+				A computed summary of each scan is sent: counts, severity totals, check names and detected
+				conditions. Request and response bodies, credentials and scan context headers are not sent.
 			</Alert.Description>
 		</Alert.Root>
 
@@ -169,7 +168,7 @@
 									id="ai-key"
 									type={showKey ? 'text' : 'password'}
 									bind:value={apiKey}
-									placeholder={status.key_masked ?? providerSpec?.key_hint ?? 'Paste the API key'}
+									placeholder={status.key_masked ?? providerSpec?.key_hint ?? 'API key'}
 									autocomplete="off"
 									disabled={!isAdmin}
 									class="h-9 pr-9 font-mono text-xs"
@@ -185,7 +184,7 @@
 							</div>
 							{#if status.configured}
 								<p class="text-xs text-muted-foreground">
-									A key is stored. Leave this empty to keep it.
+									A key is stored. Leave empty to keep it.
 								</p>
 							{/if}
 						</div>
@@ -196,12 +195,11 @@
 								<Input
 									id="ai-workspace"
 									bind:value={workspaceId}
-									placeholder="Only for keys not scoped to a workspace"
 									disabled={!isAdmin}
 									class="h-9 font-mono text-xs"
 								/>
 								<p class="text-xs text-muted-foreground">
-									Leave empty unless the provider asks for it.
+									Required for keys not scoped to a workspace.
 								</p>
 							</div>
 						{/if}
@@ -243,16 +241,14 @@
 									{/each}
 								</Select.Content>
 							</Select.Root>
-							<p class="text-xs text-muted-foreground">
-								Written once per check and cached. A lower-cost model is sufficient.
-							</p>
+							<p class="text-xs text-muted-foreground">Written once per check and cached.</p>
 						</div>
 					</div>
 
 					{#if result}
 						<Alert.Root variant={result.success ? 'default' : 'destructive'}>
 							{#if result.success}<CheckIcon />{:else}<CircleXIcon />{/if}
-							<Alert.Title>{result.success ? 'Connected' : 'That did not work'}</Alert.Title>
+							<Alert.Title>{result.success ? 'Connected' : 'Connection failed'}</Alert.Title>
 							<Alert.Description class="wrap-anywhere">{result.message}</Alert.Description>
 						</Alert.Root>
 					{/if}
@@ -267,15 +263,13 @@
 						</LoadingButton>
 					</div>
 					{#if !isAdmin}
-						<p class="text-xs text-muted-foreground">
-							Only an administrator can change these settings.
-						</p>
+						<p class="text-xs text-muted-foreground">Editable by administrators only.</p>
 					{/if}
 				</div>
 
 				<Separator />
 
-				<PanelHead title="Features" description="Each is opt in per report" />
+				<PanelHead title="Features" description="Opt in per report" />
 				<div class="space-y-4 px-5 py-5">
 					{#each catalog?.features ?? [] as feature (feature.key)}
 						<div class="flex items-start justify-between gap-4">
@@ -295,7 +289,7 @@
 
 			<div class="space-y-5">
 				<Card.Root class="gap-0 py-0">
-					<PanelHead title="Usage" description="Across every report on this instance" />
+					<PanelHead title="Usage" description="All reports on this instance" />
 					<div class="divide-y">
 						<div class="flex items-baseline justify-between px-5 py-3">
 							<span class="text-sm text-muted-foreground">Reports written</span>
@@ -328,17 +322,14 @@
 				</Card.Root>
 
 				<Card.Root class="gap-0 py-0">
-					<PanelHead
-						title="Cached narratives"
-						description="Keyed by the input they were written from"
-					/>
+					<PanelHead title="Cached narratives" />
 					<div class="space-y-3 px-5 py-4">
 						<div class="flex items-baseline justify-between">
 							<span class="text-sm text-muted-foreground">Cached</span>
 							<Badge variant="secondary">{status.cached_narratives.toLocaleString()}</Badge>
 						</div>
 						<p class="text-xs text-muted-foreground">
-							Clearing the cache means the next report is charged for its narrative again.
+							Cleared narratives are rewritten and billed on the next report.
 						</p>
 						<Button
 							variant="outline"
@@ -347,7 +338,7 @@
 							disabled={!isAdmin || !status.cached_narratives}
 							onclick={clearCache}
 						>
-							Clear the cache
+							Clear cache
 						</Button>
 					</div>
 				</Card.Root>

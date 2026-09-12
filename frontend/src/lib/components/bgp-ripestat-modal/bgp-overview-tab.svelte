@@ -132,7 +132,7 @@
 				{:else if isIp}
 					<Badge variant="outline" class="text-xs">IP</Badge>
 				{:else if isIpRange}
-					<Badge variant="outline" class="text-xs">IP Range</Badge>
+					<Badge variant="outline" class="text-xs">IP range</Badge>
 				{/if}
 				{#if announcedStatus != null}
 					{#if announcedStatus}
@@ -296,7 +296,7 @@
 						class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
 					>
 						<ArrowUpRight class="h-3 w-3" />
-						BGP Peers
+						BGP peers
 					</div>
 					<p class="text-sm font-medium">{bgpSummary.peer_count.toLocaleString()}</p>
 				</div>
@@ -311,7 +311,7 @@
 				class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider mb-2"
 			>
 				<Shield class="h-3 w-3" />
-				Abuse Contact{abuseEmails.length > 1 ? 's' : ''}
+				Abuse contact{abuseEmails.length > 1 ? 's' : ''}
 			</div>
 			<div class="flex flex-wrap gap-1.5">
 				{#each abuseEmails as email (email)}

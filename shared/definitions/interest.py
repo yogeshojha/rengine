@@ -118,7 +118,7 @@ KINDS: tuple[KindSpec, ...] = (
     KindSpec(
         InterestKind.LEGACY.value,
         "Legacy",
-        "Named as old, retired or superseded, and still answering.",
+        "Named as old, retired or superseded and answering.",
         22,
         TONE_INFO,
     ),
@@ -139,7 +139,7 @@ KINDS: tuple[KindSpec, ...] = (
     KindSpec(
         InterestKind.EXPOSED_CONTENT.value,
         "Exposed content",
-        "Serves a directory listing, an archive or a file that should not be public.",
+        "Serves a directory listing, an archive or a sensitive file.",
         30,
         TONE_WARNING,
     ),
@@ -153,9 +153,8 @@ KINDS: tuple[KindSpec, ...] = (
     KindSpec(
         InterestKind.EXPLOITED_SOFTWARE.value,
         "Known exploited software",
-        "This host runs a product CISA lists as exploited in the wild. The scan "
-        "identified the product, not the version, so it did not confirm this host "
-        "is affected.",
+        "Runs a product on the CISA Known Exploited Vulnerabilities list. "
+        "The version was not identified.",
         28,
         TONE_WARNING,
     ),
@@ -169,14 +168,14 @@ KINDS: tuple[KindSpec, ...] = (
     KindSpec(
         InterestKind.CERTIFICATE_ANOMALY.value,
         "Certificate anomaly",
-        "The certificate is expired, self-signed or names something unexpected.",
+        "The certificate is expired, self-signed or names an unexpected subject.",
         14,
         TONE_INFO,
     ),
     KindSpec(
         InterestKind.TAKEOVER_RISK.value,
         "Takeover risk",
-        "An alias points somewhere that no longer answers.",
+        "A CNAME points at a name that does not answer.",
         30,
         TONE_WARNING,
     ),

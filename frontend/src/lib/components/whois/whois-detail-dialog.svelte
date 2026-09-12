@@ -129,7 +129,7 @@
 		try {
 			correlations = await whoisApi.getTargetCorrelations(targetId);
 		} catch (e) {
-			correlationsError = e instanceof Error ? e.message : 'Correlations could not be loaded';
+			correlationsError = e instanceof Error ? e.message : 'Correlations not loaded';
 		} finally {
 			isLoadingCorrelations = false;
 		}
@@ -142,7 +142,7 @@
 			try {
 				internalRecord = await whoisApi.getRecord(recordId);
 			} catch (e) {
-				recordError = e instanceof Error ? e.message : 'WHOIS record could not be loaded';
+				recordError = e instanceof Error ? e.message : 'WHOIS record not loaded';
 			} finally {
 				isLoadingRecord = false;
 			}
@@ -162,7 +162,7 @@
 			await loadCorrelations();
 			toast.success('WHOIS record refreshed');
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'WHOIS record could not be refreshed');
+			toast.error(e instanceof Error ? e.message : 'WHOIS record not refreshed');
 		} finally {
 			isRefreshing = false;
 		}
@@ -192,13 +192,13 @@
 							{#if displayRecord}
 								{displayRecord.name || displayRecord.query_value}
 							{:else if isLoadingRecord}
-								Loading…
+								Loading
 							{:else}
-								WHOIS Record
+								WHOIS record
 							{/if}
 						</Dialog.Title>
 						<Dialog.Description class="text-sm text-muted-foreground">
-							WHOIS / RDAP record details
+							WHOIS / RDAP record
 						</Dialog.Description>
 					</div>
 					{#if displayRecord}
@@ -218,7 +218,7 @@
 								{/snippet}
 							</Tooltip.Trigger>
 							<Tooltip.Content>
-								<p>Refresh WHOIS data</p>
+								<p>Refresh WHOIS record</p>
 							</Tooltip.Content>
 						</Tooltip.Root>
 					{/if}
@@ -232,7 +232,7 @@
 					<Empty.Media variant="icon">
 						<Spinner />
 					</Empty.Media>
-					<Empty.Title>Loading WHOIS record…</Empty.Title>
+					<Empty.Title>Loading WHOIS record</Empty.Title>
 				</Empty.Header>
 			</Empty.Root>
 		{:else if recordError}
@@ -241,7 +241,7 @@
 					<Empty.Media variant="icon">
 						<TriangleAlert />
 					</Empty.Media>
-					<Empty.Title>Record could not be loaded</Empty.Title>
+					<Empty.Title>WHOIS record not loaded</Empty.Title>
 					<Empty.Description>{recordError}</Empty.Description>
 				</Empty.Header>
 			</Empty.Root>

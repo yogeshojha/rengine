@@ -10,7 +10,7 @@ export const VERSION_SOURCE_LABELS: Record<string, string> = {
 
 export const VERSION_SOURCE_HELP: Record<string, string> = {
 	[VersionSource.BANNER]: 'The server stated this version in its own response headers.',
-	[VersionSource.FINGERPRINT]: 'Read from the page, not stated by the server.'
+	[VersionSource.FINGERPRINT]: 'Read from the page.'
 };
 
 export enum Caveat {
@@ -29,12 +29,11 @@ export const CAVEAT_LABELS: Record<string, string> = {
 
 export const CAVEAT_HELP: Record<string, string> = {
 	[Caveat.BACKPORT]:
-		'The banner names a distribution that patches without changing the version number, so the version alone does not settle it.',
-	[Caveat.CONDITIONAL]:
-		'NVD records this CVE against a further component, such as an operating system, that this scan did not identify.',
-	[Caveat.FINGERPRINT]: 'The version was read from the page rather than stated by the server.',
+		'The banner names a distribution that patches without changing the version number.',
+	[Caveat.CONDITIONAL]: 'NVD ties this CVE to a component this scan did not identify.',
+	[Caveat.FINGERPRINT]: 'The version was read from the page.',
 	[Caveat.COARSE]:
-		'Only a major version was reported, so the match covers every release in that series.'
+		'Only a major version was reported. The match covers every release in that series.'
 };
 
 export const CAVEAT_ORDER: string[] = [
@@ -58,8 +57,8 @@ export const CONFIDENCE_LABELS: Record<string, string> = {
 
 export const CONFIDENCE_HELP: Record<string, string> = {
 	[Confidence.HIGH]: 'The server stated the version and NVD names no further condition.',
-	[Confidence.MEDIUM]: 'One thing about this match is unverified.',
-	[Confidence.LOW]: 'More than one thing about this match is unverified.'
+	[Confidence.MEDIUM]: 'One caveat applies.',
+	[Confidence.LOW]: 'More than one caveat applies.'
 };
 
 export const CONFIDENCE_ORDER: string[] = [Confidence.HIGH, Confidence.MEDIUM, Confidence.LOW];

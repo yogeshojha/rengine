@@ -43,7 +43,7 @@ PRESETS: tuple[Preset, ...] = (
     Preset(
         slug="vapt",
         name="Penetration test report",
-        description="The full deliverable: scope, methodology, findings with evidence, remediation and appendices.",
+        description="Scope, methodology, findings with evidence, remediation and appendices.",
         scope=ReportScope.SCAN.value,
         theme="consulting",
         title="Security Assessment Report",
@@ -70,7 +70,7 @@ PRESETS: tuple[Preset, ...] = (
     Preset(
         slug="executive",
         name="Executive brief",
-        description="Four pages for a decision maker: posture, attack paths and remediation priority.",
+        description="Posture, attack paths and remediation priority.",
         scope=ReportScope.SCAN.value,
         theme="editorial",
         title="Security Posture Brief",
@@ -90,7 +90,7 @@ PRESETS: tuple[Preset, ...] = (
     Preset(
         slug="attack_surface",
         name="Attack surface report",
-        description="The discovered surface and how it is hosted. For a recon run with no vulnerability scanning.",
+        description="The discovered surface and its hosting. No findings sections.",
         scope=ReportScope.SCAN.value,
         theme="midnight",
         title="External Attack Surface Report",
@@ -134,7 +134,7 @@ PRESETS: tuple[Preset, ...] = (
     Preset(
         slug="technical",
         name="Full technical report",
-        description="Everything the run produced, including full inventories and per-finding evidence.",
+        description="Full inventories and per-finding evidence.",
         scope=ReportScope.SCAN.value,
         theme="terminal",
         title="Technical Assessment Report",
@@ -182,7 +182,7 @@ PRESETS: tuple[Preset, ...] = (
     Preset(
         slug="compliance",
         name="Compliance evidence pack",
-        description="Findings mapped to OWASP, PCI DSS, ISO 27001 and NIST CSF for an audit file.",
+        description="Findings mapped to OWASP, PCI DSS, ISO 27001 and NIST CSF.",
         scope=ReportScope.SCAN.value,
         theme="consulting",
         title="Control Evidence Report",
@@ -217,7 +217,7 @@ PRESETS: tuple[Preset, ...] = (
     Preset(
         slug="inventory",
         name="Asset inventory",
-        description="The tables only. Every host, address, service and endpoint the run holds.",
+        description="Every web asset, address, service and endpoint. Tables only.",
         scope=ReportScope.TARGET.value,
         theme="blueprint",
         title="Asset Inventory",

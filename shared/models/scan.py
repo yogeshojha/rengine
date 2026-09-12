@@ -31,7 +31,7 @@ class SeedAsset(BaseModel):
             msg = f"Unknown seed kind '{self.kind}'."
             raise ValueError(msg)
         if not self.value.strip():
-            msg = "Seed asset value cannot be empty."
+            msg = "Seed asset value is required."
             raise ValueError(msg)
         return self
 
@@ -196,7 +196,7 @@ class RescanCreate(BaseModel):
 
     @model_validator(mode="after")
     def _one_selection(self):
-        """`parent_scan_id` + `assets` is the legacy form; both normalize to `selection`."""
+        """Legacy parent_scan_id plus assets normalizes to selection."""
         legacy = self.parent_scan_id is not None or bool(self.assets)
         if legacy == (self.selection is not None):
             msg = "Provide either a selection, or a parent scan and its assets."

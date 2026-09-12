@@ -152,7 +152,7 @@
 			if (res.started) toast.success('Library sync started', { description: res.message });
 			else toast.error(res.message);
 		} catch {
-			toast.error('Library sync could not be started');
+			toast.error('Library sync not started');
 		} finally {
 			syncing = false;
 		}
@@ -171,7 +171,7 @@
 			const accepted = res.accepted.length;
 			if (accepted) {
 				toast.success(
-					`${accepted} ${accepted === 1 ? 'check' : 'checks'} added to the library`,
+					`${accepted} ${accepted === 1 ? 'check' : 'checks'} added`,
 					res.replaced
 						? { description: `${res.replaced} replaced an existing template.` }
 						: undefined
@@ -194,7 +194,7 @@
 			const updated = await vulnTemplatesApi.update(template.id, enabled);
 			items = items.map((t) => (t.id === updated.id ? updated : t));
 		} catch {
-			toast.error('Check could not be updated');
+			toast.error('Check not updated');
 		}
 	}
 
@@ -203,11 +203,11 @@
 		if (!target) return;
 		try {
 			await vulnTemplatesApi.remove(target.id);
-			toast.success(`Removed ${target.name}`);
+			toast.success(`${target.name} removed`);
 			removing = null;
 			await Promise.all([loadStats(), loadList()]);
 		} catch {
-			toast.error('Check could not be removed');
+			toast.error('Check not removed');
 		}
 	}
 
@@ -220,10 +220,7 @@
 	<Card.Root>
 		<Card.Header>
 			<Card.Title>Check library</Card.Title>
-			<Card.Description>
-				Checks available to a vulnerability scan. Project templates come from the nuclei-templates
-				repository. Uploaded templates run alongside them.
-			</Card.Description>
+			<Card.Description>Nuclei project templates and uploaded checks.</Card.Description>
 			<Card.Action class="flex items-center gap-2">
 				<Button variant="outline" size="sm" class="gap-2" onclick={() => (creating = true)}>
 					<FilePlus class="size-4" /> New check
@@ -241,7 +238,7 @@
 					size="sm"
 					class="gap-2"
 					loading={uploading}
-					loadingLabel="Uploading…"
+					loadingLabel="Uploading"
 					onclick={() => fileInput?.click()}
 				>
 					<Upload class="size-4" /> Upload templates
@@ -250,7 +247,7 @@
 					size="sm"
 					class="gap-2"
 					loading={syncing}
-					loadingLabel="Starting…"
+					loadingLabel="Starting"
 					onclick={sync}
 				>
 					<Download class="size-4" /> Sync library
@@ -266,11 +263,8 @@
 				>
 					<TriangleAlert class="mt-0.5 size-4 shrink-0 text-warning" />
 					<div class="space-y-1">
-						<p class="text-sm font-medium">The library is empty</p>
-						<p class="text-sm text-muted-foreground">
-							A vulnerability scan cannot run until the project templates are downloaded and
-							indexed.
-						</p>
+						<p class="text-sm font-medium">No checks</p>
+						<p class="text-sm text-muted-foreground">Sync the library.</p>
 					</div>
 				</div>
 			{:else}
@@ -373,7 +367,7 @@
 				<div class="flex flex-wrap items-center gap-2 border-b p-3">
 					<Input
 						bind:value={search}
-						placeholder="Search checks by name or identifier…"
+						placeholder="Search checks by name or identifier"
 						class="h-9 max-w-xs"
 					/>
 					<Select.Root type="single" bind:value={severity}>
@@ -478,7 +472,7 @@
 												<Badge variant="info" class="text-2xs font-normal">Custom</Badge>
 											{/if}
 											{#if template.findings > 0}
-												<Hint text="Findings this check has produced across every scan">
+												<Hint text="Findings from this check across every scan">
 													{#snippet child(props)}
 														<span {...props} class="flex h-5 items-center">
 															<Badge
@@ -530,8 +524,8 @@
 										</Hint>
 										<Hint
 											text={template.enabled
-												? 'Runs when a vulnerability plan selects it'
-												: 'Excluded from every scan regardless of the plan'}
+												? 'Runs when a scan selects it'
+												: 'Excluded from every scan'}
 										>
 											{#snippet child(props)}
 												<span {...props} class="inline-flex">
@@ -596,8 +590,7 @@
 			<p class="text-xs text-muted-foreground">
 				An uploaded template must be a nuclei document with an <code class="font-mono">id</code> and
 				an <code class="font-mono">info.name</code>. Templates using the
-				<code class="font-mono">code</code> protocol are rejected. That protocol executes commands on
-				the scanner host.
+				<code class="font-mono">code</code> protocol are rejected.
 			</p>
 		</Card.Content>
 	</Card.Root>
@@ -623,8 +616,8 @@
 	onOpenChange={(value) => {
 		if (!value) removing = null;
 	}}
-	title="Remove this check?"
-	description="The check is removed from the library and deleted from disk. Scan engines that selected it run their remaining checks."
+	title="Remove check"
+	description={`Check ${removing?.name ?? ''} and its file are removed.`}
 	confirmLabel="Remove"
 	onConfirm={remove}
 />

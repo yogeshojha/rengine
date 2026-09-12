@@ -42,43 +42,43 @@ class SubdomainConfig(StageConfig):
     zone_transfer: bool = Field(
         default=True,
         title="Attempt zone transfer",
-        description="Ask each of the zone's own nameservers for the whole zone. Almost always refused; when it is not, it hands over every name at once.",
+        description="Request the whole zone from each of its nameservers.",
     )
     bruteforce: bool = Field(
         default=True,
         title="Bruteforce names",
-        description="Ask the target's nameservers for common names the public sources never listed.",
+        description="Resolve wordlist names against the target's nameservers.",
     )
     wordlist: str = wordlist(
         WordlistKind.SUBDOMAIN.value,
         title="Wordlist",
-        description="Which list to guess from. Custom lists are uploaded in the Tools Arsenal.",
+        description="List to guess from. Custom lists are uploaded in the Arsenal.",
     )
     wordlist_limit: int = Field(
         default=1000,
         ge=100,
         le=1_000_000,
         title="Words to try",
-        description="Names tried per apex, from the top of the list. This is a time budget: the resolver clears about 9 a second.",
+        description="Names tried per apex, from the top of the list.",
     )
     permutations: bool = Field(
         default=False,
         title="Permute discovered names",
-        description="Build variants of the names already found (api → api-dev, api2, api-staging) and resolve those too.",
+        description="Resolve variants of discovered names, such as api-dev and api2.",
     )
     permutation_seeds: int = Field(
         default=250,
         ge=1,
         le=10_000,
         title="Names to permute",
-        description="Number of discovered names to build variants from. Variants grow with the square of this.",
+        description="Discovered names to build variants from.",
     )
     permutation_limit: int = Field(
         default=20_000,
         ge=100,
         le=500_000,
         title="Variants to resolve",
-        description="Cap on generated variants. Each one is a DNS query, on top of the word budget.",
+        description="Cap on generated variants.",
     )
     dns_threads: int = threads(30, title="Resolver threads")
     dns_batch_size: int = Field(
@@ -93,20 +93,12 @@ class SubdomainConfig(StageConfig):
         ge=1,
         le=8,
         title="Resolver batches in parallel",
-        description=(
-            "Resolver invocations in flight at once. Leave at 1 unless the scan uses "
-            "dedicated resolvers. Public resolvers drop answers under parallel load, "
-            "and every batch degrades equally, so the loss is not detectable."
-        ),
+        description="Resolver invocations in flight at once. Above 1 only with dedicated resolvers.",
     )
     dns_idle_timeout: int = timeout(
         90,
         title="Resolver stall timeout",
-        description=(
-            "Abandon a resolver batch after this many seconds with no answer. "
-            "Resolution is not capped by total runtime. A resolver that keeps "
-            "answering keeps running, however many names there are."
-        ),
+        description="Abandon a resolver batch after this many seconds with no answer.",
     )
 
     @property

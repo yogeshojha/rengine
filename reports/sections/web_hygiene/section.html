@@ -1,4 +1,4 @@
-<p class="block muted small">{{ evaluated|num }} web hosts were checked. {{ warning|num }} fail a warning-level check and {{ info|num }} an informational one; {{ clean|num }} pass every check that applies to them.{% if pending %} {{ pending|num }} web hosts have not been evaluated.{% endif %}</p>
+<p class="block muted small">{{ evaluated|num }} web assets were evaluated. {{ warning|num }} fail a warning-level check, {{ info|num }} fail an informational check and {{ clean|num }} pass every applicable check.{% if pending %} {{ pending|num }} web assets are not yet evaluated.{% endif %}</p>
 <table class="table table--fixed">
   <thead><tr><th>Check</th><th style="width:24mm">Group</th><th class="num" style="width:18mm">Failing</th><th class="num" style="width:20mm">Applicable</th><th style="width:30mm">Share</th></tr></thead>
   <tbody>
@@ -16,7 +16,7 @@
 
 {% if hosts %}
 <div class="sub">
-  <div class="label block">Hosts failing warning-level checks</div>
+  <div class="label block">Web assets failing warning-level checks</div>
   <table class="table table--fixed">
     <thead><tr><th>Host</th><th style="width:96mm">Checks</th></tr></thead>
     <tbody>
@@ -28,6 +28,6 @@
       {% endfor %}
     </tbody>
   </table>
-  {% if hidden %}<p class="micro faint" style="margin-top:1.4mm">{{ hidden|num }} further hosts are not listed.</p>{% endif %}
+  {% if hidden %}<p class="micro faint" style="margin-top:1.4mm">{{ hidden|num }} further web assets are not listed.</p>{% endif %}
 </div>
 {% endif %}

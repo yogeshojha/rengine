@@ -25,11 +25,7 @@
 
 	{#if rows.length === 0}
 		<div class="px-4 py-10">
-			<EmptyState
-				icon={HistoryIcon}
-				title="No sessions"
-				description="A session opens when the connector receives traffic."
-			/>
+			<EmptyState icon={HistoryIcon} title="No sessions" />
 		</div>
 	{:else}
 		<div class="divide-y">

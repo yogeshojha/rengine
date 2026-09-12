@@ -73,7 +73,7 @@ class CLIToolRunner:
         if not path:
             msg = (
                 f"Binary '{self.binary}' not found in PATH. "
-                f"Ensure it is installed in the worker container."
+                "Install it in the worker image."
             )
             raise ToolNotFoundError(msg)
         self._binary_path = path
@@ -431,7 +431,7 @@ class CLIToolRunner:
             with os.fdopen(fd, "w") as f:
                 f.write(content)
         except Exception:
-            # os.fdopen owns fd — the with block already closed it
+            # the with block closed fd
             filepath.unlink(missing_ok=True)
             raise
         return filepath

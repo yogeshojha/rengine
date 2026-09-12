@@ -36,7 +36,7 @@ class ToolContext:
     def require(self, capability: str | Capability) -> None:
         value = str(capability)
         if not self.token.allows(value):
-            msg = f"This token may not {value}. Issue a token with the {value} capability."
+            msg = f"This token lacks the {value} capability."
             raise CapabilityError(msg)
 
     def scoped_projects(self) -> list[uuid.UUID] | None:
@@ -45,6 +45,6 @@ class ToolContext:
 
     def check_project(self, project_id: uuid.UUID) -> uuid.UUID:
         if self.token.project_id is not None and project_id != self.token.project_id:
-            msg = "That project is outside this token's scope."
+            msg = "The project is outside this token's scope."
             raise ScopeError(msg)
         return project_id

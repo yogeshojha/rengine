@@ -138,7 +138,7 @@
 		{#if expanded}
 			<div class="mt-1 border-l border-border pl-2.5">
 				{#if run.steps.length === 0}
-					<p class="px-1 py-[3px] text-2xs text-muted-foreground">No stage events yet.</p>
+					<p class="px-1 py-[3px] text-2xs text-muted-foreground">No stage events</p>
 				{/if}
 				{#each run.steps as step (step.id)}
 					{@const StepIcon = stepIcon(step)}

@@ -53,10 +53,7 @@
 		!ran ? 'text-muted-foreground' : failed || capped ? 'text-warning' : 'text-muted-foreground'
 	);
 	let line = $derived.by(() => {
-		if (!ran)
-			return projectWide
-				? 'No scan has discovered endpoints yet.'
-				: 'No URL discovery ran on this scan.';
+		if (!ran) return projectWide ? 'No endpoints discovered' : 'Not scanned';
 		const parts: string[] = [];
 		if (summary) {
 			parts.push(
@@ -136,9 +133,7 @@
 			<Popover.Content class="w-[26rem] p-0" align="start">
 				<div class="border-b px-3 py-2">
 					<p class="text-sm font-medium">Source coverage</p>
-					<p class="text-xs text-muted-foreground">
-						Each source's own account. A blank count means it was not reported, not zero.
-					</p>
+					<p class="text-xs text-muted-foreground">Blank counts were not reported.</p>
 				</div>
 				<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-80">
 					<div class="divide-y">

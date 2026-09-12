@@ -295,12 +295,11 @@
 							{#if sensitivePorts.length}
 								<p class="flex items-center gap-1.5 text-xs text-warning">
 									<TriangleAlert class="size-3.5" />
-									{sensitivePorts.map((p) => p.number).join(', ')}
-									{sensitivePorts.length === 1 ? 'is' : 'are'} commonly abused when exposed.
+									Sensitive: {sensitivePorts.map((p) => p.number).join(', ')}
 								</p>
 							{/if}
 						{:else}
-							<p class="text-xs text-muted-foreground">No open ports recorded for this address.</p>
+							<p class="text-xs text-muted-foreground">No open ports.</p>
 						{/if}
 					</section>
 
@@ -342,8 +341,7 @@
 							</Item.Group>
 							{#if group.host_count > group.hosts.length}
 								<p class="px-3 text-xs text-muted-foreground">
-									Showing {group.hosts.length} of {group.host_count}. Open Web assets for the full
-									list.
+									{group.hosts.length} of {group.host_count} shown.
 								</p>
 							{/if}
 						{:else}

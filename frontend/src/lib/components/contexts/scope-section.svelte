@@ -16,7 +16,7 @@
 
 	function validatePattern(v: string): string | null {
 		if (v.includes('.') && !PATTERN_METACHARS.test(v)) {
-			return 'Use a keyword, wildcard (*admin*) or regex, not a domain name';
+			return 'Domain names are not patterns. Enter a keyword, wildcard or regex';
 		}
 		return null;
 	}
@@ -49,10 +49,9 @@
 	<div class="space-y-1.5">
 		<Label class="text-xs">Excluded subdomain patterns</Label>
 		<p class="text-xs text-muted-foreground">
-			Keyword, wildcard (<code class="text-2xs">*admin*</code>) or regex matched against every
-			discovered subdomain. Use patterns rather than full domain names so the context works across
-			targets. Matching subdomains are recorded, flagged as
-			<span class="text-warning">excluded</span> and skipped by all later stages.
+			Keyword, wildcard or regex matched against every discovered subdomain. Matches are recorded as <span
+				class="text-warning">excluded</span
+			> and skipped by later stages.
 		</p>
 		<StringListField
 			items={context.excluded_subdomains}
@@ -65,9 +64,7 @@
 	<div class="space-y-1.5">
 		<Label class="text-xs">Excluded paths</Label>
 		<p class="text-xs text-muted-foreground">
-			Path prefixes or regular expressions excluded from crawling and fuzzing, for example
-			<code class="text-2xs">/admin</code>, <code class="text-2xs">/static/(?:css|js)/</code>,
-			<code class="text-2xs">/images/.*\.jpg</code>
+			Path prefixes or regular expressions excluded from crawling and fuzzing.
 		</p>
 		<StringListField
 			items={context.excluded_paths}

@@ -37,9 +37,7 @@ async def ip_history(
     domain: str,
     _current_user: CurrentUser,
     service: Annotated[ViewDNSService, Depends(get_viewdns_service)],
-    cached_only: bool = Query(
-        False, description="If true, return only cached data without making an API call"
-    ),
+    cached_only: bool = Query(False, description="Return cached data only"),
 ):
     if not cached_only:
         await _throttle_lookup(_current_user, "ip_history")
@@ -62,9 +60,7 @@ async def reverse_ip(
     host: str,
     _current_user: CurrentUser,
     service: Annotated[ViewDNSService, Depends(get_viewdns_service)],
-    cached_only: bool = Query(
-        False, description="If true, return only cached data without making an API call"
-    ),
+    cached_only: bool = Query(False, description="Return cached data only"),
 ):
     if not cached_only:
         await _throttle_lookup(_current_user, "reverse_ip")
@@ -87,9 +83,7 @@ async def reverse_ns(
     nameserver: str,
     _current_user: CurrentUser,
     service: Annotated[ViewDNSService, Depends(get_viewdns_service)],
-    cached_only: bool = Query(
-        False, description="If true, return only cached data without making an API call"
-    ),
+    cached_only: bool = Query(False, description="Return cached data only"),
 ):
     if not cached_only:
         await _throttle_lookup(_current_user, "reverse_ns")
@@ -111,12 +105,8 @@ async def reverse_ns(
 async def reverse_whois(
     _current_user: CurrentUser,
     service: Annotated[ViewDNSService, Depends(get_viewdns_service)],
-    q: str = Query(
-        ..., min_length=1, description="Email, domain, name, or company to search"
-    ),
-    cached_only: bool = Query(
-        False, description="If true, return only cached data without making an API call"
-    ),
+    q: str = Query(..., min_length=1, description="Email, domain, name or company"),
+    cached_only: bool = Query(False, description="Return cached data only"),
 ):
     if not cached_only:
         await _throttle_lookup(_current_user, "reverse_whois")

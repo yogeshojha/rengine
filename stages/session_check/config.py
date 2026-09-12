@@ -9,6 +9,6 @@ class SessionCheckConfig(StageConfig):
     enabled: bool = Field(
         default=True,
         title="Check the session before scanning",
-        description="Ask the target once with the scan context's credentials and once without. Runs only when the context carries credentials.",
+        description="Request the target once with the scan context's credentials and once without. Runs only when the context carries credentials.",
     )
     timeout: int = timeout(15, title="Timeout (s)")

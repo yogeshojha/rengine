@@ -64,7 +64,7 @@
 			code = '';
 			phase = 'enroll';
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Two-factor setup could not be started');
+			toast.error(e instanceof Error ? e.message : 'Two-factor setup not started');
 		} finally {
 			setupLoading = false;
 		}
@@ -72,7 +72,7 @@
 
 	async function verify() {
 		if (code.length !== 6) {
-			errorMsg = 'Enter the 6-digit code from your authenticator app.';
+			errorMsg = 'Enter the 6-digit code from the authenticator app.';
 			return;
 		}
 		verifying = true;
@@ -86,8 +86,7 @@
 			toast.success('Two-factor authentication enabled');
 		} catch (e) {
 			failCount += 1;
-			errorMsg =
-				e instanceof Error ? e.message : 'That code was not accepted. Enter the current code.';
+			errorMsg = e instanceof Error ? e.message : 'Code not accepted. Enter the current code.';
 			code = '';
 		} finally {
 			verifying = false;
@@ -154,8 +153,7 @@
 			<div class="flex-1 space-y-1">
 				<h3 class="text-sm font-medium">Authenticator app</h3>
 				<p class="text-sm text-muted-foreground">
-					Works with Google Authenticator, 1Password, Authy and similar apps. Scan a QR code, then
-					confirm with a 6-digit code.
+					Google Authenticator, 1Password, Authy or any TOTP app.
 				</p>
 			</div>
 		</div>
@@ -172,27 +170,26 @@
 					class="flex size-56 flex-col items-center justify-center gap-1.5 rounded-xl border bg-muted p-4 text-center"
 				>
 					<p class="text-sm font-medium">QR code unavailable</p>
-					<p class="text-xs text-muted-foreground">Use the manual key instead.</p>
+					<p class="text-xs text-muted-foreground">Use the manual key.</p>
 				</div>
 			{:else}
 				<div class="rounded-xl border bg-white p-4 shadow-sm">
 					<img
 						src={qr}
-						alt="QR code for enrolling this account in an authenticator app"
+						alt="Two-factor enrollment QR code"
 						class="size-56"
 						onerror={() => (qrFailed = true)}
 					/>
 				</div>
 			{/if}
 			<p class="max-w-[12rem] text-center text-xs text-muted-foreground">
-				Scan with your authenticator app.
+				Scan with an authenticator app.
 			</p>
 		</div>
 
 		<div class="space-y-4">
 			<div class="space-y-1">
 				<Label class="text-sm font-medium">Enter the 6-digit code</Label>
-				<p class="text-xs text-muted-foreground">Type the code your authenticator app shows.</p>
 			</div>
 			<OtpInput value={code} onValueChange={onCodeChange} disabled={verifying} />
 
@@ -202,10 +199,7 @@
 			{#if showClockHint}
 				<p class="flex items-start gap-1.5 text-xs text-warning">
 					<TriangleAlertIcon class="mt-px size-3.5 shrink-0" />
-					<span
-						>If codes are repeatedly rejected, check that the device clock is set to update
-						automatically.</span
-					>
+					<span>Check that the device clock is set automatically.</span>
 				</p>
 			{/if}
 
@@ -239,9 +233,7 @@
 		<Alert.Root>
 			<ShieldCheckIcon class="size-4" />
 			<Alert.Title>Two-factor authentication is on</Alert.Title>
-			<Alert.Description>
-				A code from the authenticator app is required at the next sign-in.
-			</Alert.Description>
+			<Alert.Description>A code is required at each sign-in.</Alert.Description>
 		</Alert.Root>
 
 		{#if backupCodes.length}
@@ -273,8 +265,7 @@
 					</div>
 				</div>
 				<p class="mt-1 text-xs text-muted-foreground">
-					Store these securely. Each code can be used once if the authenticator is unavailable. They
-					are shown only now.
+					Each code signs in once when the authenticator is unavailable. Shown once.
 				</p>
 				<div class="mt-4 grid grid-cols-2 gap-2.5">
 					{#each backupCodes as bc (bc)}

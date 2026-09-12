@@ -94,7 +94,7 @@ export const SOURCE_LABELS: Record<string, string> = {
 };
 
 export const SOURCE_NOTES: Record<string, string> = {
-	api: 'Read from the platform with your credentials — includes private programs.',
+	api: 'Read from the platform API. Includes private programs.',
 	feed: 'Public programs republished by arkadiyt/bounty-targets-data. Public scope only.'
 };
 

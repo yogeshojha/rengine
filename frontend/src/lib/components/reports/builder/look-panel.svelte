@@ -29,7 +29,7 @@
 		const file = (event.target as HTMLInputElement).files?.[0];
 		if (!file) return;
 		if (file.size > MAX_COVER) {
-			toast.error('Choose a cover image under 500 KB.');
+			toast.error('Cover image exceeds 500 KB. Choose a smaller file.');
 			return;
 		}
 		style.cover_image = await new Promise<string>((resolve, reject) => {
@@ -260,7 +260,7 @@
 						style.severity_colors = {};
 					}}
 				>
-					Back to the theme
+					Reset to theme
 				</Button>
 			{/if}
 		</div>
@@ -280,9 +280,7 @@
 					{/snippet}
 				</Popover.Trigger>
 				<Popover.Content class="w-72">
-					<p class="mb-2 text-xs text-muted-foreground">
-						Any text. These tokens are replaced when the document is laid out.
-					</p>
+					<p class="mb-2 text-xs text-muted-foreground">Replaced when the document is laid out.</p>
 					<div class="grid grid-cols-2 gap-1 text-xs">
 						{#each catalog?.slot_tokens ?? [] as token (token.token)}
 							<code class="font-mono">{token.token}</code>
@@ -329,7 +327,7 @@
 	<Separator />
 
 	<div class="space-y-3">
-		{#each [['section_numbering', 'Number the sections', 'Prints 1., 2., 3. before each heading.'], ['chapter_breaks', 'Start each chapter on a new page', 'Off runs the chapters on, separated by a rule. Fewer pages, less white space.'], ['justify', 'Justify body text', 'Flush on both edges. Reads best with hyphenation on.'], ['hyphenate', 'Hyphenate body text', 'Tighter paragraphs, at the cost of more broken words.'], ['table_zebra', 'Shade alternate table rows', ''], ['mono_safe', 'Ink saving', 'Greys every fill so the document prints cleanly in black and white.']] as [key, name, help] (key)}
+		{#each [['section_numbering', 'Number the sections', 'Prints 1., 2., 3. before each heading.'], ['chapter_breaks', 'Start each chapter on a new page', 'Off separates chapters with a rule.'], ['justify', 'Justify body text', 'Flush on both edges.'], ['hyphenate', 'Hyphenate body text', ''], ['table_zebra', 'Shade alternate table rows', ''], ['mono_safe', 'Ink saving', 'Greys every fill.']] as [key, name, help] (key)}
 			<div class="flex items-start justify-between gap-4">
 				<div class="space-y-0.5">
 					<span class="text-sm">{name}</span>
@@ -373,9 +371,7 @@
 				onchange={pickCover}
 			/>
 		</div>
-		<p class="text-xs text-muted-foreground">
-			Fills the cover behind the title. Uploaded and embedded, never fetched. Under 500 KB.
-		</p>
+		<p class="text-xs text-muted-foreground">Fills the cover behind the title. Under 500 KB.</p>
 	</div>
 
 	<Separator />

@@ -204,7 +204,7 @@
 	{refreshing}
 	{loading}
 	empty={!hasData}
-	emptyText="No routing data. The resource is not visible in the global routing table, or the lookup has not run."
+	emptyText="No routing data."
 	{onRefresh}
 >
 	{#snippet bar()}

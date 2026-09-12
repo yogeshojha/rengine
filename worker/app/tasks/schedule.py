@@ -27,8 +27,7 @@ def _format_errors(errors: list[str]) -> str | None:
     if len(joined) <= _MAX_LAST_ERROR:
         return joined
     return (
-        joined[:_MAX_LAST_ERROR].rsplit(";", 1)[0]
-        + f" …(+{len(errors)} targets failed)"
+        joined[:_MAX_LAST_ERROR].rsplit(";", 1)[0] + f". {len(errors)} targets failed."
     )
 
 

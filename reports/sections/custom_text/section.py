@@ -10,7 +10,7 @@ class CustomTextConfig(SectionConfig):
     body: str = paragraph(
         "",
         title="Body",
-        description="Markdown. Headings, lists, tables and code all render.",
+        description="Markdown.",
     )
     style: str = choice(
         "plain",
@@ -28,7 +28,7 @@ class CustomTextConfig(SectionConfig):
 class CustomTextSection(Section):
     name = "custom_text"
     title = "Custom text"
-    description = "Free text in Markdown. Repeatable."
+    description = "Free text in Markdown."
     group = SectionGroup.SUMMARY.value
     order = 60
     repeatable = True

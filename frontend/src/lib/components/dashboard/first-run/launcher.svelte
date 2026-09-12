@@ -80,15 +80,15 @@
 				target_values: [check.target_value || raw]
 			});
 			if (!scans?.length) {
-				problem = scansStore.error ?? 'The scan could not be started.';
+				problem = scansStore.error ?? 'Scan not started.';
 				return;
 			}
 			value = '';
-			toast.success(`Scan queued against ${scans[0].execution_config.target_value}.`);
+			toast.success(`Scan started for ${scans[0].execution_config.target_value}`);
 			dashboardStore.refresh();
 			onStarted?.();
 		} catch (e) {
-			problem = e instanceof Error ? e.message : 'The scan could not be started.';
+			problem = e instanceof Error ? e.message : 'Scan not started.';
 		} finally {
 			starting = false;
 		}

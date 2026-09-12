@@ -75,9 +75,7 @@ class NetblockSweepStage(Stage):
         if not ranges_ready(self.session):
             return StageResult(
                 counts={"hosts": 0},
-                warnings=[
-                    "IP-to-ASN ranges are not loaded, so no network could be attributed."
-                ],
+                warnings=["IP-to-ASN ranges are not loaded. No network attributed."],
                 partial=True,
             )
 
@@ -88,10 +86,10 @@ class NetblockSweepStage(Stage):
         owned, rejected = self._owned_networks(ips, cfg)
         if not owned:
             note = (
-                f"No network could be attributed to the organisation. "
-                f"{rejected} candidate networks were too large or too thinly used."
+                f"No network attributed. {rejected} candidate networks were too "
+                "large or held too few addresses."
                 if rejected
-                else "The scan's addresses could not be attributed to any network."
+                else "No network attributed."
             )
             return StageResult(counts={"hosts": 0}, warnings=[note])
 
@@ -110,14 +108,18 @@ class NetblockSweepStage(Stage):
         if truncated:
             announced = sum(n.addresses for n in owned)
             warnings.append(
-                f"{announced:,} addresses are announced but the budget allowed "
-                f"{len(addresses):,}. Some of the range was not swept."
+                f"{announced:,} addresses announced, {len(addresses):,} swept "
+                "within the budget."
             )
         if foreign:
             warnings.append(
-                f"{len(foreign)} hostname(s) in these ranges sit outside the target "
+                f"{len(foreign)} hostname(s) in these ranges are outside the target "
                 f"and were not stored: {', '.join(sorted(foreign)[:_NAMED_FOREIGN])}"
-                + (" …" if len(foreign) > _NAMED_FOREIGN else "")
+                + (
+                    f" and {len(foreign) - _NAMED_FOREIGN} more"
+                    if len(foreign) > _NAMED_FOREIGN
+                    else ""
+                )
             )
 
         self.emit_progress(
@@ -132,7 +134,7 @@ class NetblockSweepStage(Stage):
     def _owned_networks(
         self, ips: list[str], cfg: NetblockSweepConfig
     ) -> tuple[list[Network], int]:
-        """ASNs holding enough of the estate and small enough to be an organisation, not a provider."""
+        """ASNs meeting the share and size thresholds."""
         rows = self.session.execute(_ASN_SQL, {"ips": ips}).all()
         client = RIPEStatClient()
         owned: list[Network] = []
@@ -223,7 +225,7 @@ class NetblockSweepStage(Stage):
     def _forward_confirm(
         self, names: list[str], swept: set[str], cfg: NetblockSweepConfig
     ) -> set[str]:
-        """Keep names whose forward record points back into the range we swept."""
+        """Names whose forward record points back into the swept range."""
         client = self._client(cfg, len(names))
         if client is None:
             return set(names)

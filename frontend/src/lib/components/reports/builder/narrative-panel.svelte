@@ -62,10 +62,7 @@
 			<SparklesIcon />
 			<Alert.Title>AI is not connected</Alert.Title>
 			<Alert.Description>
-				Every section carries the same computed findings without a model. Connect a provider on the <a
-					href={ROUTES.ai()}
-					class="underline">AI page</a
-				> to have the narrative drafted.
+				Connect a provider on the <a href={ROUTES.ai()} class="underline">AI page</a> to draft the narrative.
 			</Alert.Description>
 		</Alert.Root>
 	{/if}
@@ -74,8 +71,7 @@
 		<div class="space-y-0.5">
 			<Label class="text-sm font-medium">Draft the narrative with AI</Label>
 			<p class="text-xs text-muted-foreground">
-				The model receives a summary of the computed findings. It never sees raw rows, evidence or
-				credentials.
+				The model receives a summary of the computed findings.
 			</p>
 		</div>
 		<Switch
@@ -90,9 +86,7 @@
 			<div class="flex items-start justify-between gap-4">
 				<div class="space-y-0.5">
 					<span class="text-sm">Explain each finding</span>
-					<p class="text-xs text-muted-foreground">
-						Written once per check and cached. Later reports reuse the same passage.
-					</p>
+					<p class="text-xs text-muted-foreground">Written once per check and cached.</p>
 				</div>
 				<Switch
 					checked={narrative.explain_findings}
@@ -101,7 +95,7 @@
 			</div>
 			{#if narrative.explain_findings}
 				<div class="space-y-1.5">
-					<Label class="text-xs">Explain at most</Label>
+					<Label class="text-xs">Findings explained, at most</Label>
 					<Input
 						type="number"
 						min="1"
@@ -113,7 +107,7 @@
 			{/if}
 			<div class="flex items-start justify-between gap-4">
 				<div class="space-y-0.5">
-					<span class="text-sm">Say when a model wrote a section</span>
+					<span class="text-sm">Disclose sections written by a model</span>
 					<p class="text-xs text-muted-foreground">Prints one line under the drafted text.</p>
 				</div>
 				<Switch
@@ -127,11 +121,9 @@
 					bind:value={narrative.house_style}
 					rows={3}
 					class="text-sm"
-					placeholder="Refer to the client as the Bank. Use British spelling. Never name a tool."
+					placeholder="Refer to the client as the Bank. Use British spelling."
 				/>
-				<p class="text-xs text-muted-foreground">
-					Passed to the model with every section. Leave it empty for the default voice.
-				</p>
+				<p class="text-xs text-muted-foreground">Passed to the model with every section.</p>
 			</div>
 		</div>
 	{/if}

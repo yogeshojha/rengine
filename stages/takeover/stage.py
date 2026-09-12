@@ -39,17 +39,14 @@ def _finding(name: str, cname: str, provider: str) -> Finding:
         extractor_name=None,
         extracted_results=[cname],
         description=(
-            f"{name} is a CNAME to {cname}, which is {provider}, and the name resolves "
-            "to no address. If the resource behind it has been released, whoever "
-            "registers it next serves content on this hostname."
+            f"{name} is a CNAME to {cname} on {provider} and resolves to no address. "
+            "A released resource can be registered by anyone."
         ),
         impact=(
-            "An attacker who claims the released resource controls what this hostname "
-            "serves, including cookies and certificates issued for it."
+            "Whoever claims the resource controls what this hostname serves, "
+            "including cookies and certificates issued for it."
         ),
-        remediation=(
-            f"Remove the CNAME, or re-claim the resource on {provider} so it is yours."
-        ),
+        remediation=f"Remove the CNAME or re-claim the resource on {provider}.",
         references=[],
         tags=["takeover", "dns"],
         authors=["rengine"],

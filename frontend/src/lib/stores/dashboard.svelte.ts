@@ -67,7 +67,7 @@ function createDashboardStore() {
 			hasFetched = true;
 		} catch (e) {
 			if (mySeq !== seq) return;
-			error = e instanceof Error ? e.message : 'Dashboard could not be loaded';
+			error = e instanceof Error ? e.message : 'Dashboard not loaded';
 		} finally {
 			if (mySeq === seq) loading = false;
 		}

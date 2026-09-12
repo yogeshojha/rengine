@@ -26,7 +26,7 @@ _RULES = {
     "takeover": ("Subdomain takeover candidates", 9.0, 18.0),
     "origin": ("Origins reachable outside the CDN", 7.0, 14.0),
     "sensitive": ("Sensitive services exposed", 2.0, 12.0),
-    "expired": ("Expired certificates on live web assets", 3.0, 9.0),
+    "expired": ("Expired certificates", 3.0, 9.0),
     "medium": ("Medium findings", 1.2, 10.0),
     "default_login": ("Default credentials", 10.0, 20.0),
 }
@@ -58,7 +58,7 @@ def posture(observations: dict[str, int]) -> Posture:
 
 
 def issue_risk(issue: Issue) -> tuple[float, list[str]]:
-    """Why one weakness outranks another of the same severity."""
+    """Risk score and ranking signals for one issue."""
     score = _SEVERITY_WEIGHT.get(issue.severity, 1.0)
     signals: list[str] = []
 
@@ -75,7 +75,7 @@ def issue_risk(issue: Issue) -> tuple[float, list[str]]:
     hosts = max(1, len(issue.hosts))
     score *= 1 + math.log10(hosts)
     if hosts > 1:
-        signals.append(f"Affects {hosts} hosts")
+        signals.append(f"On {hosts} assets")
 
     new = issue.new_count
     if new:
@@ -87,7 +87,7 @@ def issue_risk(issue: Issue) -> tuple[float, list[str]]:
     rank = cwe_top_25_rank(issue.cwe_ids)
     if rank:
         score *= 1.1
-        signals.append(f"CWE Top 25 (#{rank})")
+        signals.append(f"CWE Top 25 rank {rank}")
     if issue.cve_ids:
         signals.append(
             issue.cve_ids[0]

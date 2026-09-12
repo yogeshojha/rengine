@@ -58,9 +58,7 @@
 				{/each}
 			</Select.Content>
 		</Select.Root>
-		<p class="text-xs text-muted-foreground">
-			All scan HTTP traffic for this context is routed through the selected proxy.
-		</p>
+		<p class="text-xs text-muted-foreground">Applies to HTTP traffic.</p>
 	</div>
 
 	{#if proxiesStore.isLoading && !proxiesStore.hasFetched}
@@ -86,9 +84,7 @@
 			{/if}
 		</div>
 	{:else if context.proxy_id}
-		<p class="text-xs text-destructive">
-			The selected proxy is no longer active or has been removed.
-		</p>
+		<p class="text-xs text-destructive">The selected proxy is inactive or removed.</p>
 	{/if}
 
 	<a

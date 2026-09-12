@@ -23,7 +23,7 @@ function indentOf(text: string): number {
 	return text.length - text.trimStart().length;
 }
 
-/** Keys enclosing the cursor's line, outermost first — e.g. ['stages', 'port_scan']. */
+/** Keys enclosing the cursor's line, outermost first, such as ['stages', 'port_scan']. */
 function pathAt(state: EditorState, line: Line): string[] {
 	const path: string[] = [];
 	let indent = indentOf(line.text);

@@ -40,7 +40,7 @@
 			{
 				key: 'exposures',
 				spec: WEB,
-				label: 'Exposed hosts',
+				label: 'Exposed web assets',
 				total: feed.exposures.total,
 				href: ROUTES.exposures()
 			},
@@ -170,7 +170,7 @@
 				feed.vulns.total + feed.exposures.total + feed.services.total + feed.endpoints.total,
 				'new item',
 				'new items'
-			)} compared with the previous run of each target
+			)} since the previous run of each target
 		{/if}
 	{/snippet}
 </Widget>

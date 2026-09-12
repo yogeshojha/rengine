@@ -97,10 +97,7 @@
 			<Empty.Media variant="icon">
 				<Spinner />
 			</Empty.Media>
-			<Empty.Title>Correlating infrastructure…</Empty.Title>
-			<Empty.Description>
-				Matching this record against every target in the project.
-			</Empty.Description>
+			<Empty.Title>Loading related targets</Empty.Title>
 		</Empty.Header>
 	</Empty.Root>
 {:else if error}
@@ -109,7 +106,7 @@
 			<Empty.Media variant="icon">
 				<SearchX />
 			</Empty.Media>
-			<Empty.Title>Correlation lookup failed</Empty.Title>
+			<Empty.Title>Related targets not loaded</Empty.Title>
 			<Empty.Description>{error}</Empty.Description>
 		</Empty.Header>
 	</Empty.Root>
@@ -119,11 +116,7 @@
 			<Empty.Media variant="icon">
 				<GitBranch />
 			</Empty.Media>
-			<Empty.Title>No related targets found</Empty.Title>
-			<Empty.Description>
-				Shared registrants, nameservers, networks and registrars are matched across every target in
-				this project.
-			</Empty.Description>
+			<Empty.Title>No related targets</Empty.Title>
 		</Empty.Header>
 	</Empty.Root>
 {:else}
@@ -206,7 +199,7 @@
 										{/snippet}
 									</Tooltip.Trigger>
 									<Tooltip.Content>
-										<p>Find all targets sharing this {reasonLabel(type)?.match ?? type}</p>
+										<p>Targets sharing this {reasonLabel(type)?.match ?? type}</p>
 									</Tooltip.Content>
 								</Tooltip.Root>
 							{/each}

@@ -80,7 +80,7 @@
 				await instanceSettingsApi.update({ ai_enabled: false });
 				next();
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'AI settings could not be saved');
+				toast.error(e instanceof Error ? e.message : 'AI settings not saved');
 			} finally {
 				busy = false;
 			}
@@ -88,7 +88,7 @@
 		}
 
 		if (!apiKey.trim()) {
-			toast.error('An API key is required to enable AI analysis');
+			toast.error('API key is required');
 			return;
 		}
 
@@ -103,7 +103,7 @@
 			});
 			next();
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'AI settings could not be saved');
+			toast.error(e instanceof Error ? e.message : 'AI settings not saved');
 		} finally {
 			busy = false;
 		}
@@ -122,11 +122,8 @@
 	{#if enabled}
 		<Alert.Root variant="destructive">
 			<TriangleAlertIcon />
-			<Alert.Title>Scan data is sent to the configured provider</Alert.Title>
-			<Alert.Description>
-				A computed summary of the scan is sent to the selected provider: targets, findings and
-				context. Disable on air-gapped or restricted deployments.
-			</Alert.Description>
+			<Alert.Title>Scan data is sent to the provider</Alert.Title>
+			<Alert.Description>Includes targets, findings and scan context.</Alert.Description>
 		</Alert.Root>
 
 		<div class="space-y-2">

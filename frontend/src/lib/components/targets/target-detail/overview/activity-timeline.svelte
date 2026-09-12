@@ -82,7 +82,7 @@
 		if (s.status === 'failed') return s.error ? s.error : 'failed';
 		const parts: string[] = [];
 		if (took) parts.push(took);
-		if (s.is_first_scan) parts.push('baseline, later runs compare against it');
+		if (s.is_first_scan) parts.push('baseline');
 		else if (s.new_subdomains === 0 && s.gone_subdomains === 0) parts.push('no change');
 		return parts.join(' · ');
 	}

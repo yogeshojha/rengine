@@ -134,7 +134,7 @@
 			formats
 		});
 		saving = false;
-		if (ok) toast.success('Saved.');
+		if (ok) toast.success('Template saved');
 	}
 
 	async function saveAsCopy() {
@@ -153,7 +153,7 @@
 			formats
 		});
 		if (created) {
-			toast.success(`${created.name} is ready to edit.`);
+			toast.success(`Template ${created.name} created`);
 			void goto(ROUTES.reportTemplate(created.id));
 		}
 	}
@@ -191,7 +191,7 @@
 					Generate
 				</Button>
 				{#if template.is_builtin}
-					<Button onclick={saveAsCopy}>Duplicate to edit</Button>
+					<Button onclick={saveAsCopy}>Duplicate</Button>
 				{:else}
 					<LoadingButton loading={saving} disabled={!dirty} onclick={save}>Save</LoadingButton>
 				{/if}
@@ -201,7 +201,7 @@
 		{#if template.is_builtin}
 			<Card.Root class="border-dashed py-3">
 				<div class="px-4 text-sm text-muted-foreground">
-					This is a shipped template. Duplicate it to change anything.
+					Shipped templates are read-only. Duplicate to edit.
 				</div>
 			</Card.Root>
 		{/if}

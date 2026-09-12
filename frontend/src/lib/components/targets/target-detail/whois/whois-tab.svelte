@@ -230,7 +230,7 @@
 	{refreshing}
 	{loading}
 	empty={!record}
-	emptyText="No registration record is stored for {targetValue}."
+	emptyText="No registration record for {targetValue}."
 	{onRefresh}
 >
 	{#snippet bar()}

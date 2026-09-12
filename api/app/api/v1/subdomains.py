@@ -162,7 +162,7 @@ async def subdomain_correlation_graph(
     project_id: Annotated[UUID, Query(description="Project ID")],
     scan_id: Annotated[UUID, Query(description="Scan ID")],
 ):
-    """Every identity two hosts of the scan share, as hubs the hosts hang off."""
+    """Identities shared by two or more web assets, as hubs."""
     return await CorrelationGraphService(session).build(project_id, scan_id)
 
 

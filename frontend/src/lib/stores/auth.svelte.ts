@@ -79,7 +79,7 @@ function createAuthStore() {
 				return { success: false, mfaRequired: true, mfaToken: res.mfa_token };
 			}
 			await checkAuth();
-			toast.success('Welcome back, ' + state.user?.username + '!');
+			toast.success('Signed in');
 			return { success: true };
 		} catch (error) {
 			const message = error instanceof Error ? error.message : 'Login failed';

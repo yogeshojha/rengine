@@ -67,7 +67,7 @@
 			confirmPassword = '';
 			passwordDirty = { current: false, next: false, confirm: false };
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Password could not be changed');
+			toast.error(error instanceof Error ? error.message : 'Password not changed');
 		} finally {
 			isChangingPassword = false;
 		}
@@ -82,7 +82,6 @@
 			</div>
 			<div>
 				<Card.Title>Change password</Card.Title>
-				<Card.Description>Update your password</Card.Description>
 			</div>
 		</div>
 	</Card.Header>
@@ -100,7 +99,7 @@
 						id="current-password"
 						type={showCurrentPassword ? 'text' : 'password'}
 						bind:value={currentPassword}
-						placeholder="Enter current password"
+						placeholder="Current password"
 						disabled={isChangingPassword}
 						class="pr-10"
 					/>
@@ -128,7 +127,7 @@
 						id="new-password"
 						type={showNewPassword ? 'text' : 'password'}
 						bind:value={newPassword}
-						placeholder="Enter new password"
+						placeholder="New password"
 						disabled={isChangingPassword}
 						class="pr-10"
 						aria-invalid={!!newPasswordError}
@@ -150,7 +149,7 @@
 				{#if newPasswordError}
 					<p class="text-xs text-destructive">{newPasswordError}</p>
 				{:else}
-					<p class="text-xs text-muted-foreground">8+ characters</p>
+					<p class="text-xs text-muted-foreground">At least 8 characters</p>
 				{/if}
 			</div>
 
@@ -188,7 +187,7 @@
 			{#if passwordSavedAt}
 				<p class="flex items-center gap-1.5 text-xs text-muted-foreground">
 					<CheckIcon class="size-3.5 text-foreground" />
-					Password updated · {formatDate(passwordSavedAt.toISOString())}
+					Password changed · {formatDate(passwordSavedAt.toISOString())}
 				</p>
 			{/if}
 		</Card.Content>
@@ -197,10 +196,10 @@
 				class="w-full"
 				type="submit"
 				loading={isChangingPassword}
-				loadingLabel="Updating…"
+				loadingLabel="Changing"
 				disabled={!passwordValid}
 			>
-				Update password
+				Change password
 			</LoadingButton>
 		</Card.Footer>
 	</form>

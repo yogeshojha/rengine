@@ -166,7 +166,7 @@
 								<Empty.Media variant="icon">
 									<Spinner />
 								</Empty.Media>
-								<Empty.Title>Searching targets…</Empty.Title>
+								<Empty.Title>Searching targets</Empty.Title>
 							</Empty.Header>
 						</Empty.Root>
 					{:else if error}
@@ -185,10 +185,7 @@
 								<Empty.Media variant="icon">
 									<SearchX />
 								</Empty.Media>
-								<Empty.Title>No targets found</Empty.Title>
-								<Empty.Description>
-									No other targets share this {meta.label.toLowerCase()}.
-								</Empty.Description>
+								<Empty.Title>No other targets share this {meta.label.toLowerCase()}</Empty.Title>
 							</Empty.Header>
 						</Empty.Root>
 					{:else}

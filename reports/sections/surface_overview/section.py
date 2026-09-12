@@ -19,7 +19,7 @@ class SurfaceOverviewConfig(SectionConfig):
 class SurfaceOverviewSection(Section):
     name = "surface_overview"
     title = "Attack surface"
-    description = "Results in each dimension, and the dimensions not covered."
+    description = "Counts per dimension, change and trend."
     group = SectionGroup.SUMMARY.value
     order = 40
     config_model = SurfaceOverviewConfig

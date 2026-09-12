@@ -76,17 +76,17 @@ SOURCE_LABELS: dict[str, str] = {
 
 SOURCE_HELP: dict[str, str] = {
     EndpointSource.SEED.value: "The web asset itself, as the HTTP probe recorded it.",
-    EndpointSource.RESPONSE_MINING.value: "Extracted from a response body this scan already stored. No extra request was sent.",
+    EndpointSource.RESPONSE_MINING.value: "Extracted from a stored response body. No request was sent.",
     EndpointSource.CRAWL.value: "Reached by following links from a page on this host.",
-    EndpointSource.ROBOTS.value: "Listed in the site's own robots.txt.",
-    EndpointSource.SITEMAP.value: "Listed in the site's own sitemap.",
-    EndpointSource.ARCHIVE.value: "Recorded by a public archive. It may no longer exist.",
-    EndpointSource.DEEP_ARCHIVE.value: "Recorded by a deep archive sweep. It may no longer exist.",
+    EndpointSource.ROBOTS.value: "Listed in robots.txt.",
+    EndpointSource.SITEMAP.value: "Listed in the sitemap.",
+    EndpointSource.ARCHIVE.value: "Recorded by a public archive.",
+    EndpointSource.DEEP_ARCHIVE.value: "Recorded by a deep archive sweep.",
     EndpointSource.JS.value: "Extracted from a JavaScript bundle or its source map.",
     EndpointSource.FUZZ.value: "Guessed from a wordlist and answered.",
     EndpointSource.PARAM_MINING.value: "A parameter the endpoint accepts but did not advertise.",
     EndpointSource.VULN_SCAN.value: "A location a vulnerability scanner reported.",
-    EndpointSource.PROXY.value: "Observed in a connected proxy while a person was testing.",
+    EndpointSource.PROXY.value: "Observed by a connected proxy.",
     EndpointSource.IMPORT.value: "Supplied by a user.",
     EndpointSource.OTHER.value: "Source not recorded.",
 }
@@ -192,7 +192,7 @@ CLASS_HELP: dict[str, str] = {
     EndpointClass.API.value: "An API route, by path shape or by content type.",
     EndpointClass.SCRIPT.value: "JavaScript, including bundles and source maps.",
     EndpointClass.STYLE.value: "Stylesheets.",
-    EndpointClass.DOCUMENT.value: "Documents that often carry metadata or internal detail.",
+    EndpointClass.DOCUMENT.value: "Documents.",
     EndpointClass.IMAGE.value: "Images.",
     EndpointClass.MEDIA.value: "Audio and video.",
     EndpointClass.DATA.value: "Structured data served as a file.",
@@ -354,12 +354,12 @@ PARAM_INTEREST_LABELS: dict[str, str] = {
 }
 
 PARAM_INTEREST_HELP: dict[str, str] = {
-    ParamInterest.IDOR.value: "Names an object directly. Worth testing for access control.",
+    ParamInterest.IDOR.value: "Names an object directly.",
     ParamInterest.OPEN_REDIRECT.value: "Carries a destination the application redirects to.",
     ParamInterest.SSRF.value: "Carries a location the server fetches server-side.",
     ParamInterest.TRAVERSAL.value: "Carries a file or path the server reads.",
-    ParamInterest.SQLI.value: "Commonly reaches a query directly.",
-    ParamInterest.XSS.value: "Commonly reflected into the page.",
+    ParamInterest.SQLI.value: "Reaches a database query.",
+    ParamInterest.XSS.value: "Reflected into the page.",
     ParamInterest.RCE.value: "Names a command or process the server runs.",
     ParamInterest.SSTI.value: "Names a template the server renders.",
     ParamInterest.UPLOAD.value: "Carries a file name or upload target.",
@@ -601,12 +601,12 @@ PATH_INTEREST_LABELS: dict[str, str] = {
 }
 
 PATH_INTEREST_HELP: dict[str, str] = {
-    PathInterest.VCS.value: "A version control directory served over HTTP exposes source and history.",
+    PathInterest.VCS.value: "A version control directory served over HTTP.",
     PathInterest.SECRETS.value: "A file that conventionally holds credentials or keys.",
-    PathInterest.BACKUP.value: "An editor or backup artefact left in the web root.",
+    PathInterest.BACKUP.value: "A backup or editor file in the web root.",
     PathInterest.ADMIN.value: "An administrative interface reachable from the internet.",
     PathInterest.API_DOC.value: "A machine-readable description of the API surface.",
-    PathInterest.DEBUG_ENDPOINT.value: "A diagnostic route that usually should not be public.",
+    PathInterest.DEBUG_ENDPOINT.value: "A diagnostic route.",
     PathInterest.AUTH.value: "An authentication boundary.",
     PathInterest.INFRA.value: "A management or infrastructure service mounted on the web root.",
 }
@@ -867,7 +867,7 @@ def parse_url(raw: str, *, default_scheme: str = "https") -> ParsedUrl | None:
 def signature_for(
     scheme: str, host: str, port: int, path: str, params: tuple[str, ...] | list[str]
 ) -> str:
-    """Structural identity: values vary run to run, the shape does not."""
+    """Structural identity of an endpoint."""
     key = f"{scheme}://{host}:{port}|{path}|{','.join(sorted(params))}"
     return hashlib.sha256(key.encode("utf-8", "replace")).hexdigest()
 

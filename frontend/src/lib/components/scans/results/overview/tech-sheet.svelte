@@ -77,8 +77,7 @@
 				Technology stack
 			</Sheet.Title>
 			<Sheet.Description>
-				{total.toLocaleString()} technologies across {hosts.toLocaleString()} web assets. Select one to
-				list the web assets that run it.
+				{total.toLocaleString()} technologies across {hosts.toLocaleString()} web assets.
 			</Sheet.Description>
 		</Sheet.Header>
 		<div class="border-b px-6 py-4">
@@ -100,15 +99,11 @@
 						{/each}
 					</div>
 				{:else if errored}
-					<EmptyState compact title="Technologies could not be loaded">
+					<EmptyState compact title="Technologies not loaded">
 						<Button variant="outline" size="sm" onclick={() => fetchList(query)}>Retry</Button>
 					</EmptyState>
 				{:else if !items.length}
-					<EmptyState
-						compact
-						title="No technologies match"
-						description="Try a shorter search term."
-					/>
+					<EmptyState compact title="No technologies match" />
 				{:else}
 					<RankedList {rows} base={hosts} onSelect={pick}>
 						{#snippet icon(r)}
@@ -117,7 +112,7 @@
 					</RankedList>
 					{#if items.length >= LIST_LIMIT}
 						<p class="pt-3 text-xs text-muted-foreground">
-							Showing the first {LIST_LIMIT}. Refine the search to see more.
+							First {LIST_LIMIT} shown.
 						</p>
 					{/if}
 				{/if}

@@ -126,7 +126,7 @@ LIMIT :cap
 
 
 def _unescape_cpe(value: str) -> str:
-    """A CPE product is machine-shaped: punctuation is escaped and words are joined."""
+    """Strip CPE escaping and underscores."""
     return value.replace("\\", "").replace("_", " ")
 
 
@@ -139,8 +139,8 @@ class CorrelationProvider(InterestProvider):
     source = InterestSource.CORRELATION.value
     title = "Correlation"
     description = (
-        "Hosts that stand out from the rest of the estate: a lone network, "
-        "rare software, an asset outside the edge."
+        "Web assets that stand out from the estate: a lone network, rare software, "
+        "an asset outside the edge."
     )
     order = 20
 
@@ -180,7 +180,7 @@ class CorrelationProvider(InterestProvider):
         )
 
     def _exploited(self, ctx: InterestContext) -> Iterable[RawSignal]:
-        """A product on CISA's exploited catalogue, matched from what httpx fingerprinted."""
+        """A product on the CISA KEV catalogue, matched from the httpx CPE."""
         rows = self._rows(ctx, _EXPLOITED_SQL, cap=CAP)
         for row in rows:
             product = _unescape_cpe(row.shown)
@@ -190,7 +190,7 @@ class CorrelationProvider(InterestProvider):
             yield self._signal(
                 row,
                 InterestKind.EXPLOITED_SOFTWARE.value,
-                f"Runs {product}, which CISA lists with {cves}.{ransom} "
+                f"Runs {product}. CISA lists {cves}.{ransom} "
                 "The scan did not confirm the version.",
                 f"{product}:{row.example}",
             )
@@ -206,8 +206,8 @@ class CorrelationProvider(InterestProvider):
         for row in rows:
             org = row.asn_org or f"AS{row.asn}"
             reason = (
-                f"On {org}, a network carrying {_plural(row.matches, 'host')} "
-                f"of the {row.estate} that resolve here."
+                f"On {org}, a network with {_plural(row.matches, 'web asset')} "
+                f"of the {row.estate} resolved."
             )
             yield self._signal(
                 row, InterestKind.NETWORK_OUTLIER.value, reason, f"asn:{row.asn}"
@@ -223,8 +223,8 @@ class CorrelationProvider(InterestProvider):
         )
         for row in rows:
             reason = (
-                f"Runs {row.tech}, found on {_plural(row.matches, 'host')} "
-                f"of the {row.estate} that answered."
+                f"Runs {row.tech}, found on {_plural(row.matches, 'web asset')} "
+                f"of the {row.estate} responding."
             )
             yield self._signal(
                 row, InterestKind.RARE_TECHNOLOGY.value, reason, f"tech:{row.tech}"
@@ -241,8 +241,8 @@ class CorrelationProvider(InterestProvider):
         for row in rows:
             share = round(100 * row.behind / row.estate) if row.estate else 0
             reason = (
-                f"Answers directly while {share}% of the {row.estate} responding hosts "
-                "here sit behind a CDN."
+                f"Answers directly. {share}% of the {row.estate} responding web assets "
+                "are behind a CDN."
             )
             yield self._signal(
                 row, InterestKind.UNPROTECTED_EDGE.value, reason, "not is:cdn"
@@ -258,8 +258,8 @@ class CorrelationProvider(InterestProvider):
         )
         for row in rows:
             reason = (
-                f"Serves an icon shared by {_plural(row.matches, 'host')} of {row.estate}, "
-                "distinct from the estate's standard application."
+                f"Serves a favicon shared by {_plural(row.matches, 'web asset')} "
+                f"of {row.estate}."
             )
             yield self._signal(
                 row,

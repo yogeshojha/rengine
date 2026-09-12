@@ -202,11 +202,11 @@
 	let emptyReason = $derived.by(() => {
 		switch (scan.status) {
 			case 'failed':
-				return `The scan failed before it found anything for ${scan.execution_config.target_value}.`;
+				return 'The scan failed.';
 			case 'cancelled':
-				return `The scan was stopped before it found anything for ${scan.execution_config.target_value}.`;
+				return 'The scan was cancelled.';
 			default:
-				return `This scan found no ${nounPlural} for ${scan.execution_config.target_value}.`;
+				return undefined;
 		}
 	});
 </script>
@@ -251,7 +251,7 @@
 		/>
 
 		{#if insightsFailed}
-			<EmptyState compact icon={TriangleAlert} title="Scan insights could not be loaded">
+			<EmptyState compact icon={TriangleAlert} title="Scan insights not loaded">
 				<Button variant="outline" size="sm" onclick={loadInsights}>Retry</Button>
 			</EmptyState>
 		{:else}

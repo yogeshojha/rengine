@@ -60,7 +60,7 @@
 </script>
 
 {#if !spec}
-	<EmptyState title="Unknown surface" description="That result dimension does not exist.">
+	<EmptyState title="Unknown dimension">
 		<a href={ROUTES.surface('web-assets')} class="text-sm underline">Web assets</a>
 	</EmptyState>
 {:else}
@@ -69,7 +69,7 @@
 			<div>
 				<h1 class="text-2xl font-semibold tracking-tight">{spec.label}</h1>
 				<p class="mt-1 text-sm text-muted-foreground">
-					Every {spec.noun} across this project, as the last scan of each target saw it.
+					Every {spec.noun} in this project from the latest scan of each target
 				</p>
 			</div>
 		</div>

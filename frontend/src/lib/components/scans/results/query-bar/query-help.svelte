@@ -85,7 +85,7 @@
 		<Sheet.Header class="gap-1 border-b p-5 pb-4">
 			<Sheet.Title>Search syntax</Sheet.Title>
 			<Sheet.Description>
-				Type words to search everything, or narrow with a field. Terms combine with and, or and not.
+				Free text or field:value terms, combined with and, or and not.
 			</Sheet.Description>
 			<div class="mt-3 flex flex-wrap items-center gap-2">
 				<InputGroup.Root class="min-w-56 flex-1">
@@ -176,7 +176,7 @@
 					<EmptyState
 						icon={SearchX}
 						title="No fields match"
-						description="Try a shorter search term."
+						description="Shorten the filter."
 						class="border-0 bg-transparent"
 					/>
 				{/if}
@@ -185,7 +185,7 @@
 					<section id="query-help-fields" class="flex scroll-mt-5 flex-col gap-1">
 						<div class="flex items-baseline justify-between">
 							{@render label('Fields')}
-							<span class="text-2xs text-muted-foreground">Click one to add it to the query</span>
+							<span class="text-2xs text-muted-foreground">Select to insert</span>
 						</div>
 						{#each groups as group (group.name)}
 							<div class="relative">
@@ -241,7 +241,7 @@
 						<div class="flex items-baseline justify-between">
 							{@render label('Flags')}
 							<span class="text-2xs text-muted-foreground"
-								>Properties of {noun === 'host' ? 'a host' : 'an address'}, used as
+								>Used as
 								<span class="font-mono">is:{schema.flags[0]?.value ?? 'live'}</span></span
 							>
 						</div>
@@ -266,7 +266,7 @@
 			class="flex items-center gap-3 border-t bg-muted/30 px-5 py-2 text-2xs text-muted-foreground"
 		>
 			<span class="flex items-center gap-1"><Kbd>/</Kbd> focus search</span>
-			<span class="flex items-center gap-1"><Kbd>?</Kbd> open this guide</span>
+			<span class="flex items-center gap-1"><Kbd>?</Kbd> syntax guide</span>
 			<span class="flex items-center gap-1"><Kbd>Tab</Kbd> accept a suggestion</span>
 		</div>
 	</Sheet.Content>

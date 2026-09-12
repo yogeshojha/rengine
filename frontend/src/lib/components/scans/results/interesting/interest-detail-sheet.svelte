@@ -91,7 +91,7 @@
 								{#if isAi}
 									<p class="flex items-center gap-1.5 text-2xs text-muted-foreground">
 										<Sparkle class="size-3 text-info" />
-										Written by {signal.model ?? 'a model'}. A judgement, not an observation.
+										Written by {signal.model ?? 'a model'}.
 									</p>
 								{:else if signal.evidence}
 									<p
@@ -136,7 +136,7 @@
 					}}
 				>
 					<X class="size-3.5" />
-					Not an exposure
+					Dismiss
 				</Button>
 			</Sheet.Footer>
 		{/if}

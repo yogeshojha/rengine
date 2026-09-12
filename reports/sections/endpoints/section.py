@@ -13,7 +13,7 @@ class EndpointsConfig(SectionConfig):
     notable_only: bool = flag(
         True,
         title="Only notable paths",
-        description="Administrative, authentication, API and debug paths rather than the whole crawl.",
+        description="Administrative, authentication, API and debug paths.",
     )
     hide_static: bool = flag(True, title="Hide static files")
     only_answering: bool = flag(True, title="Only paths that answered")
@@ -24,7 +24,7 @@ class EndpointsConfig(SectionConfig):
 class EndpointsSection(Section):
     name = "endpoints"
     title = "Endpoints"
-    description = "Administrative, authentication, API and debug paths, rather than every URL the crawl produced."
+    description = "Administrative, authentication, API and debug paths."
     group = SectionGroup.SURFACE.value
     order = 30
     launch_fields = frozenset({"max_rows"})

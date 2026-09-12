@@ -76,7 +76,7 @@ function createToolboxStore() {
 			try {
 				catalog = await toolboxApi.catalog();
 			} catch (e) {
-				catalogError = e instanceof Error ? e.message : 'The toolbox could not be loaded';
+				catalogError = e instanceof Error ? e.message : 'Toolbox not loaded';
 			} finally {
 				loadingCatalog = false;
 			}

@@ -98,7 +98,7 @@
 				{#if searchQuery.trim().length >= 2}
 					{#if searching}
 						<div class="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
-							<Spinner class="size-4" /> Searching…
+							<Spinner class="size-4" /> Searching
 						</div>
 					{:else}
 						{#if scanCandidate}
@@ -120,7 +120,7 @@
 						{/if}
 						{#if searchResults.length === 0}
 							{#if !scanCandidate}
-								<div class="py-6 text-center text-sm text-muted-foreground">No targets found.</div>
+								<div class="py-6 text-center text-sm text-muted-foreground">No targets match</div>
 							{/if}
 						{:else}
 							<Command.Group heading="Targets">
@@ -140,7 +140,7 @@
 						{/if}
 					{/if}
 				{:else}
-					<Command.Group heading="Quick actions">
+					<Command.Group heading="Actions">
 						<Command.Item
 							onSelect={() => {
 								commandOpen = false;

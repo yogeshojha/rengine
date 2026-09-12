@@ -155,7 +155,7 @@
 					>
 						<Copy class="size-3" /> Copy
 					</Button>
-					<Hint text="Copy a curl command for this endpoint">
+					<Hint text="Copy curl command">
 						{#snippet child(props)}
 							<Button
 								{...props}
@@ -237,7 +237,7 @@
 
 					{#if sensitive.length || testable.length}
 						<section class="space-y-2">
-							<h3 class="text-xs font-medium text-muted-foreground uppercase">Worth testing</h3>
+							<h3 class="text-xs font-medium text-muted-foreground uppercase">Interest</h3>
 							<div class="flex flex-wrap gap-1.5">
 								{#each sensitive as key (key)}
 									<Badge variant="destructive" class="gap-1">
@@ -254,9 +254,6 @@
 
 					<section class="space-y-2">
 						<h3 class="text-xs font-medium text-muted-foreground uppercase">Evidence</h3>
-						<p class="text-xs text-muted-foreground">
-							Every source that reported this endpoint, and what it saw.
-						</p>
 						<div class="space-y-2">
 							{#each endpoint.evidence as e (e.source)}
 								{@const Icon = SOURCE_ICONS[e.source] ?? SOURCE_ICONS[EndpointSource.OTHER]}
@@ -274,7 +271,7 @@
 										<div class="flex items-baseline gap-2">
 											<span class="text-sm font-medium">{e.label}</span>
 											{#if e.kind !== 'active'}
-												<Hint text="This source sent no request to the target.">
+												<Hint text="Passive source">
 													{#snippet child(props)}
 														<span {...props} class="text-2xs text-muted-foreground">
 															no request sent
@@ -318,8 +315,7 @@
 							</div>
 							<p class="text-xs text-muted-foreground">
 								Seen with {endpoint.variants}{endpoint.more_variants ? ' or more' : ''}
-								{endpoint.variants === 1 ? 'value set' : 'value sets'}. Values are samples; the
-								endpoint is identified by its parameter names.
+								{endpoint.variants === 1 ? 'value set' : 'value sets'}.
 							</p>
 							{#if loading && !row}
 								<Skeleton class="h-16 w-full" />
@@ -340,9 +336,7 @@
 					<section class="space-y-2">
 						<h3 class="text-xs font-medium text-muted-foreground uppercase">Response</h3>
 						{#if !endpoint.is_probed}
-							<p class="text-xs text-muted-foreground">
-								This scan did not request this endpoint, so nothing below was observed.
-							</p>
+							<p class="text-xs text-muted-foreground">Not requested in this scan.</p>
 						{:else}
 							<dl class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
 								{#each [['Status', endpoint.status_code], ['Content type', endpoint.content_type], ['Size', size(endpoint.content_length)], ['Words', endpoint.words], ['Lines', endpoint.lines], ['Response time', endpoint.response_time ? `${Math.round(endpoint.response_time * 1000)} ms` : null]] as [label, value] (label)}

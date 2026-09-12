@@ -12,19 +12,15 @@ QUIET = frozenset({Severity.INFO.value, Severity.UNKNOWN.value})
 class RiskSummaryConfig(SectionConfig):
     top: int = limit(10, title="Ranked risks shown", minimum=3, maximum=40)
     show_donut: bool = flag(True, title="Show severity ring")
-    show_concentration: bool = flag(True, title="Show where risk concentrates")
+    show_concentration: bool = flag(True, title="Show concentration")
     show_narrative: bool = flag(True, title="Show narrative")
-    show_signals: bool = flag(
-        True,
-        title="Show ranking signals",
-        description="The signals that rank one finding above another of the same severity.",
-    )
+    show_signals: bool = flag(True, title="Show ranking signals")
 
 
 class RiskSummarySection(Section):
     name = "risk_summary"
     title = "Risk summary"
-    description = "Severity distribution, the ranked weaknesses and where they cluster."
+    description = "Severity distribution, ranked weaknesses and concentration."
     group = SectionGroup.SUMMARY.value
     order = 20
     requires = frozenset({SurfaceDimension.VULNERABILITIES.value})

@@ -113,7 +113,7 @@
 				<Badge variant="info" class="h-4 px-1 text-2xs">New</Badge>
 			{/if}
 			{#if endpoint.sources.includes(EndpointSource.ROBOTS)}
-				<Hint text="Listed in robots.txt. Paths the site asks crawlers to skip.">
+				<Hint text="Listed in robots.txt.">
 					{#snippet child(props)}
 						<span {...props} class="inline-flex">
 							<Badge variant="outline" class="h-4 px-1.5 text-2xs font-normal">robots.txt</Badge>
@@ -250,9 +250,9 @@
 					</div>
 					{#if endpoint.variants > 1}
 						<Hint
-							text="This endpoint was seen with {endpoint.variants}{endpoint.more_variants
+							text="Seen with {endpoint.variants}{endpoint.more_variants
 								? ' or more'
-								: ''} different parameter values."
+								: ''} distinct parameter values."
 						>
 							{#snippet child(props)}
 								<span {...props} class="mt-0.5 block text-2xs text-muted-foreground">

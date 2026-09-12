@@ -78,7 +78,7 @@
 		<ScrollArea class={(hosts?.length ?? 0) > 8 ? 'h-64' : ''}>
 			<div class="p-1">
 				{#if errored}
-					<p class="px-2 py-3 text-xs text-muted-foreground">Hosts could not be loaded.</p>
+					<p class="px-2 py-3 text-xs text-muted-foreground">Hosts not loaded.</p>
 				{:else if hosts === null}
 					<div class="flex flex-col gap-1 p-1">
 						<Skeleton class="h-6 w-full" />
@@ -102,7 +102,7 @@
 					</ul>
 					{#if hosts.length < count}
 						<p class="px-2 pt-2 pb-1 text-2xs text-muted-foreground">
-							Showing {hosts.length} of {count}. Use Filter for the full list.
+							{hosts.length} of {count} shown.
 						</p>
 					{/if}
 				{/if}

@@ -1,5 +1,5 @@
 {% import 'macros.html' as m with context %}
-<p class="block muted small">{{ total|num }} of {{ all_hosts|num }} web assets{% if only_live %} answered an HTTP request and{% endif %} are listed here.</p>
+<p class="block muted small">{{ total|num }} of {{ all_hosts|num }} web assets{% if only_live %} answered HTTP and{% endif %} are listed.</p>
 <table class="table table--fixed">
   <thead>
     <tr>
@@ -27,4 +27,4 @@
     {% endfor %}
   </tbody>
 </table>
-{% if hidden %}<p class="micro faint" style="margin-top:1.4mm">{{ hidden|num }} further assets are not listed. Raise the row limit for this section to include them.</p>{% endif %}
+{% if hidden %}<p class="micro faint" style="margin-top:1.4mm">{{ hidden|num }} further web assets are not listed.</p>{% endif %}

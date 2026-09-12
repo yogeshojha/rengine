@@ -80,7 +80,7 @@ export const FONT_ROLE_STACKS: Record<string, string> = {
 	mono: 'ui-monospace, SFMono-Regular, Menlo, monospace'
 };
 
-/** A browser stack that stands in for a report face, so a preview shows its character. */
+/** Browser fallback stack for a report face. */
 export function fontStack(slug: string, fonts: { slug: string; name: string; role: string }[]) {
 	const font = fonts.find((f) => f.slug === slug);
 	const fallback = FONT_ROLE_STACKS[font?.role ?? 'sans'] ?? FONT_ROLE_STACKS.sans;

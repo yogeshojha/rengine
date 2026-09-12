@@ -141,7 +141,7 @@ class ScanScheduleService:
 
         if stype == ScheduleType.ONE_OFF.value:
             if data.run_at is None:
-                msg = "A run date/time is required for a one-off schedule."
+                msg = "A one-off schedule needs a run time."
                 raise _bad(msg)
             run_at = self._to_utc(data.run_at, tz)
             if run_at <= utc_now():
@@ -153,7 +153,7 @@ class ScanScheduleService:
                 msg = "Interval must be a positive number."
                 raise _bad(msg)
             if data.interval_every > MAX_INTERVAL:
-                msg = "Interval is too large."
+                msg = f"Interval may not exceed {MAX_INTERVAL}."
                 raise _bad(msg)
             if data.interval_unit not in INTERVAL_UNITS:
                 msg = f"Invalid unit. One of {', '.join(INTERVAL_UNITS)}."
@@ -162,7 +162,7 @@ class ScanScheduleService:
             sched.interval_unit = data.interval_unit
         elif stype == ScheduleType.DAILY_AT.value:
             if not data.daily_at_time or not TIME_RE.match(data.daily_at_time):
-                msg = "Time must be in HH:MM (24-hour) format."
+                msg = "Time must be HH:MM, 24-hour."
                 raise _bad(msg)
             sched.daily_at_time = data.daily_at_time
         elif stype == ScheduleType.CRON.value:

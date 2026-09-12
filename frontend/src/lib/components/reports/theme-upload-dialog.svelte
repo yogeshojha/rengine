@@ -56,18 +56,18 @@ css: |
 
 	async function upload() {
 		if (!content.trim()) {
-			toast.error('Paste a theme file or choose one from disk.');
+			toast.error('Theme file is empty. Paste one or choose a file.');
 			return;
 		}
 		busy = true;
 		try {
 			const theme = await reportsApi.uploadTheme(content);
-			toast.success(`${theme.name} is available to every report`);
+			toast.success(`${theme.name} uploaded`);
 			await reportCatalog.fetch(true);
 			open = false;
 			content = '';
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'That theme could not be read');
+			toast.error(e instanceof Error ? e.message : 'Theme not uploaded');
 		} finally {
 			busy = false;
 		}
@@ -79,7 +79,7 @@ css: |
 		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>Upload a theme</Dialog.Title>
 			<Dialog.Description>
-				A theme is a YAML file of design tokens. Any token left out keeps its default.
+				A YAML file of design tokens. Omitted tokens keep their defaults.
 			</Dialog.Description>
 		</Dialog.Header>
 		<ScrollArea
@@ -91,9 +91,7 @@ css: |
 						<UploadIcon class="mr-1.5 size-3.5" />
 						Choose a file
 					</Button>
-					<Button variant="ghost" size="sm" onclick={() => (content = SAMPLE)}>
-						Start from an example
-					</Button>
+					<Button variant="ghost" size="sm" onclick={() => (content = SAMPLE)}>Load example</Button>
 					<input
 						bind:this={fileInput}
 						type="file"

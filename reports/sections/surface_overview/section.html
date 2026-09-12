@@ -22,13 +22,13 @@
 
 {% if status %}
 <div class="sub">
-  <div class="label block">How hosts answered</div>
+  <div class="label block">HTTP status</div>
   {% set items = [] %}
   {% for row in status %}{% set _ = items.append(Slice(row.name, row.count, ctx.hue(loop.index0))) %}{% endfor %}
   {{ stack_bar(items)|safe }}
   <div class="chips" style="margin-top:1.6mm">
     {% for row in status %}<span class="chip"><span style="display:inline-block;width:6px;height:6px;border-radius:2px;background:{{ ctx.hue(loop.index0) }}"></span>&nbsp;{{ row.name }} {{ row.count|num }}</span>{% endfor %}
   </div>
-  {% if no_response %}<p class="micro faint" style="margin-top:1.4mm">{{ no_response|num }} hosts did not answer an HTTP request and are not shown above.</p>{% endif %}
+  {% if no_response %}<p class="micro faint" style="margin-top:1.4mm">{{ no_response|num }} web assets did not answer HTTP.</p>{% endif %}
 </div>
 {% endif %}

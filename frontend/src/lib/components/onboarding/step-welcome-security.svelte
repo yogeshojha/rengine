@@ -97,7 +97,7 @@
 			data.instanceName = instanceName.trim();
 			next();
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Settings could not be saved');
+			toast.error(e instanceof Error ? e.message : 'Settings not saved');
 		} finally {
 			busy = false;
 		}
@@ -152,8 +152,7 @@
 		</Collapsible.Trigger>
 		<Collapsible.Content class="space-y-4 pt-4">
 			<p class="text-xs text-muted-foreground">
-				reNgine ships with a default administrator password. Change it before this instance is
-				reachable.
+				The administrator password is the shipped default.
 			</p>
 			<div class="space-y-1.5">
 				<Label for="current-pw" class="text-xs">Current password</Label>
@@ -209,7 +208,7 @@
 						<p class="text-xs text-destructive">Use at least {MIN_PW_LENGTH} characters.</p>
 					{:else}
 						<p class="text-xs text-muted-foreground">
-							At least {MIN_PW_LENGTH} characters; mix upper/lowercase, numbers, and symbols.
+							At least {MIN_PW_LENGTH} characters.
 						</p>
 					{/if}
 				</div>

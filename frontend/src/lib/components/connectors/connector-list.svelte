@@ -92,8 +92,8 @@
 
 <DeleteConfirmationDialog
 	open={pending !== null}
-	title="Delete {pending?.name ?? 'this connector'}?"
-	description="Removes the connector, its token and the requests it has recorded. Scans already launched from its queue are unaffected. This action cannot be undone."
+	title="Delete {pending?.name ?? 'connector'}"
+	description="Removes the connector, its token and its captured request shapes."
 	isDeleting={deleting}
 	onOpenChange={(value) => {
 		if (!value) pending = null;

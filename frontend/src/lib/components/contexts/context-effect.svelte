@@ -143,7 +143,7 @@
 				group: 'Requests',
 				label: 'Follow redirects',
 				from: before.follow_redirects == null ? 'engine default' : String(before.follow_redirects),
-				to: after.follow_redirects ? 'always' : 'never'
+				to: after.follow_redirects ? 'follow' : 'do not follow'
 			});
 		}
 
@@ -172,7 +172,7 @@
 		if (after.included_subdomains.length) {
 			out.push({
 				group: 'Scope',
-				label: 'Only these hosts',
+				label: 'Included subdomains',
 				from: null,
 				to: list(after.included_subdomains)
 			});
@@ -180,16 +180,21 @@
 		if (after.excluded_subdomains.length) {
 			out.push({
 				group: 'Scope',
-				label: 'Skip subdomains matching',
+				label: 'Excluded subdomain patterns',
 				from: null,
 				to: list(after.excluded_subdomains)
 			});
 		}
 		if (after.excluded_paths.length) {
-			out.push({ group: 'Scope', label: 'Skip paths', from: null, to: list(after.excluded_paths) });
+			out.push({
+				group: 'Scope',
+				label: 'Excluded paths',
+				from: null,
+				to: list(after.excluded_paths)
+			});
 		}
 		if (after.excluded_ips.length) {
-			out.push({ group: 'Scope', label: 'Skip IPs', from: null, to: list(after.excluded_ips) });
+			out.push({ group: 'Scope', label: 'Excluded IPs', from: null, to: list(after.excluded_ips) });
 		}
 		return out;
 	});
@@ -209,7 +214,7 @@
 				class="h-6 w-auto max-w-[180px] gap-1 border-0 bg-muted px-2 text-xs font-medium shadow-none"
 				aria-label="Engine to preview against"
 			>
-				<span class="truncate">{engine?.name ?? 'Pick an engine'}</span>
+				<span class="truncate">{engine?.name ?? 'Select an engine'}</span>
 			</Select.Trigger>
 			<Select.Content>
 				{#each engines as e (e.id)}
@@ -240,7 +245,7 @@
 			{#if error}
 				<p class="err">{error}</p>
 			{:else if !engines.length && scanEnginesStore.hasFetched}
-				<p class="empty">Create a scan engine to preview how this context changes it.</p>
+				<p class="empty">No scan engines.</p>
 				<Button
 					variant="outline"
 					size="sm"
@@ -253,10 +258,6 @@
 				<div class="center"><Spinner size={14} class="text-muted-foreground" /></div>
 			{:else if !changes.length}
 				<p class="count">No overrides</p>
-				<p class="empty">
-					<strong>{engine?.name}</strong> runs with its own settings. Credentials, rate limits, scope
-					rules and runtime overrides from this context appear here.
-				</p>
 			{:else}
 				<p class="count">
 					<strong>{changes.length}</strong>

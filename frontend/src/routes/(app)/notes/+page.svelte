@@ -94,9 +94,7 @@
 <div class="space-y-6">
 	<div>
 		<h1 class="text-2xl font-semibold tracking-tight">Notes</h1>
-		<p class="mt-1 text-sm text-muted-foreground">
-			Everything written down against an asset in this project.
-		</p>
+		<p class="mt-1 text-sm text-muted-foreground">Notes attached to assets in this project</p>
 	</div>
 
 	<Card.Root class="gap-0 overflow-hidden py-0">
@@ -169,10 +167,8 @@
 		{:else if items.length === 0}
 			<EmptyState
 				icon={StickyNote}
-				title={filtered ? 'No notes match' : 'No notes yet'}
-				description={filtered
-					? 'Change the filters to widen the search.'
-					: 'Notes are written from an asset in a scan result.'}
+				title={filtered ? 'No notes match' : 'No notes'}
+				description={filtered ? 'Clear a filter.' : 'Add a note from an asset in a scan result.'}
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
 		{:else}

@@ -343,7 +343,7 @@
 											class="size-7"
 											disabled={position <= 1}
 											onclick={() => onStep?.(-1)}
-											aria-label="Previous host"
+											aria-label="Previous web asset"
 										>
 											<ChevronUp />
 										</Button>
@@ -363,7 +363,7 @@
 											class="size-7"
 											disabled={position >= total}
 											onclick={() => onStep?.(1)}
-											aria-label="Next host"
+											aria-label="Next web asset"
 										>
 											<ChevronDown />
 										</Button>
@@ -440,7 +440,7 @@
 								class="flex aspect-[16/6] w-full flex-col items-center justify-center gap-1 rounded-md border border-dashed border-border text-muted-foreground"
 							>
 								<ImageOff class="size-5" />
-								<span class="text-xs">No screenshot captured</span>
+								<span class="text-xs">No screenshot</span>
 							</div>
 						{/if}
 
@@ -503,7 +503,7 @@
 														{/snippet}
 													</Tooltip.Trigger>
 													<Tooltip.Content>
-														{PROVIDER_KIND_LABELS[prov.kind]} · filter hosts on {prov.label}
+														{PROVIDER_KIND_LABELS[prov.kind]} · Filter by provider
 													</Tooltip.Content>
 												</Tooltip.Root>
 											{/if}
@@ -551,7 +551,7 @@
 												sub.favicon_hash,
 												`favicon:${sub.favicon_hash}`,
 												true,
-												'Filter hosts sharing this favicon'
+												'Filter by favicon'
 											)}
 											{#if (sub.favicon_count ?? 0) > 1}
 												<span class="ml-1 text-xs text-muted-foreground">
@@ -623,8 +623,8 @@
 									<p class="font-medium text-foreground">No HTTP service</p>
 									<p class="mt-0.5">
 										{sub.resolved_ips?.length
-											? 'The host resolves, but nothing answered on the probed web ports.'
-											: 'The name did not resolve, so it was not probed.'}
+											? 'Resolves. No answer on the probed web ports.'
+											: 'Did not resolve. Not probed.'}
 									</p>
 								</div>
 							</div>
@@ -821,7 +821,7 @@
 
 					<Tabs.Content value="http" class="m-0 p-5">
 						{#if !hasHttp}
-							{@render emptyNote('No HTTP capture', 'This host has no live web service.')}
+							{@render emptyNote('No HTTP capture', 'No web service answered.')}
 						{:else if corrLoading || (detailLoading && !detail)}
 							<div class="flex flex-col gap-2">
 								<Skeleton class="h-8 w-48" />
@@ -940,7 +940,7 @@
 								{/if}
 							</div>
 						{:else}
-							{@render emptyNote('HTTP capture could not be loaded', null)}
+							{@render emptyNote('HTTP capture not loaded', null)}
 						{/if}
 					</Tabs.Content>
 
@@ -1037,10 +1037,7 @@
 								</section>
 							{/if}
 							{#if !hostAssets.length && !ports.length && !ipMetas.length}
-								{@render emptyNote(
-									'No services correlated',
-									'No web services, open ports or network data for this host.'
-								)}
+								{@render emptyNote('No services', 'No web services, open ports or network data.')}
 							{/if}
 						{/if}
 					</Tabs.Content>
@@ -1107,7 +1104,7 @@
 						{:else}
 							{@render emptyNote(
 								'No correlated assets',
-								'This host shares no IP, certificate, favicon or CNAME with other hosts in the scan.'
+								'No shared IP, certificate, favicon or CNAME.'
 							)}
 						{/if}
 					</Tabs.Content>
@@ -1192,7 +1189,7 @@
 	{:else}
 		<div class="flex flex-col items-center gap-2 py-10 text-xs text-muted-foreground">
 			<TriangleAlert class="size-5 text-destructive" />
-			Correlation could not be loaded.
+			Correlation not loaded.
 			<Button variant="outline" size="sm" onclick={() => sub && loadCorrelation(sub.name)}>
 				Retry
 			</Button>

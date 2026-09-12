@@ -55,10 +55,7 @@ stages:
 	<Dialog.Content class="sm:max-w-2xl">
 		<Dialog.Header>
 			<Dialog.Title>Import engine</Dialog.Title>
-			<Dialog.Description>
-				Paste or drop an engine YAML document. Review the resolved configuration before the engine
-				is created.
-			</Dialog.Description>
+			<Dialog.Description>Paste or drop an engine YAML document.</Dialog.Description>
 		</Dialog.Header>
 
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -91,7 +88,7 @@ stages:
 			<Alert.Root variant="destructive">
 				<AlertTriangle />
 				<Alert.Title>
-					{errors.length} problem{errors.length === 1 ? '' : 's'}. Nothing is imported.
+					{errors.length} problem{errors.length === 1 ? '' : 's'}
 				</Alert.Title>
 				<Alert.Description>
 					<ul class="list-inside list-disc space-y-0.5 text-xs">
@@ -116,7 +113,7 @@ stages:
 					/>
 				{/if}
 				<div class="preview-line">
-					<span>{summary.activeStages} of {summary.totalStages} stages will run</span>
+					<span>{summary.activeStages} of {summary.totalStages} stages run</span>
 					<FootprintMeter
 						footprint={summary.footprint}
 						requestsPerSecond={summary.requestsPerSecond}

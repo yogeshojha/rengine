@@ -159,7 +159,7 @@
 			}
 		} catch (e) {
 			comparison = null;
-			error = e instanceof Error ? e.message : 'Could not load the comparison.';
+			error = e instanceof Error ? e.message : 'Comparison not loaded.';
 		} finally {
 			loading = false;
 		}
@@ -226,7 +226,7 @@
 		} catch (e) {
 			rows = [];
 			rowTotal = 0;
-			toast.error(e instanceof Error ? e.message : 'Could not load changes.');
+			toast.error(e instanceof Error ? e.message : 'Changes not loaded.');
 		} finally {
 			rowsLoading = false;
 		}

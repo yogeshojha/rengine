@@ -42,7 +42,7 @@ def permitted(url: str) -> bool:
 
 
 def build_fetcher():
-    """A WeasyPrint fetcher that cannot reach the network, whatever the document asks for."""
+    """A WeasyPrint fetcher limited to data URIs and the allowed roots."""
     from weasyprint.urls import URLFetcher  # noqa: PLC0415
 
     class SafeFetcher(URLFetcher):
@@ -50,8 +50,8 @@ def build_fetcher():
             if not permitted(url):
                 logger.warning("report blocked a resource", url=url[:200])
                 msg = (
-                    "A report may only load embedded data and files shipped with the "
-                    f"instance. Refused: {url[:120]}"
+                    "Only embedded data and files shipped with the instance are "
+                    f"loaded. Refused: {url[:120]}"
                 )
                 raise BlockedResourceError(msg)
             return super().fetch(url, headers)

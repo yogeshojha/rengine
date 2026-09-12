@@ -7,17 +7,13 @@ from shared.definitions.reports import SectionGroup, SectionRole
 
 class ContentsConfig(SectionConfig):
     heading: str = text("Contents", title="Heading")
-    show_subsections: bool = flag(
-        False,
-        title="List findings in the contents",
-        description="Off by default. The findings chapter already indexes them.",
-    )
+    show_subsections: bool = flag(False, title="List findings in the contents")
 
 
 class ContentsSection(Section):
     name = "contents"
     title = "Contents"
-    description = "A table of contents with real page numbers."
+    description = "Table of contents."
     group = SectionGroup.FRONT_MATTER.value
     order = 30
     role = SectionRole.FURNITURE.value

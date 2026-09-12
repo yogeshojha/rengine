@@ -533,7 +533,7 @@ class ScanService:
             return
         for scan in failed:
             scan.status = ScanStatus.FAILED.value
-            scan.error = "Could not be queued for execution."
+            scan.error = "Not queued. Check that the worker is running."
             scan.completed_at = utc_now()
         await self.session.commit()
 
@@ -732,7 +732,7 @@ class ScanService:
     async def new_subdomain_counts(
         self, scan_ids: list[UUID], target_ids: list[UUID]
     ) -> dict[UUID, int]:
-        """Per scan, how many subdomain names it was the FIRST to discover for its target."""
+        """Per scan, the names it was the first to report for its target."""
         if not scan_ids or not target_ids:
             return {}
         rows = (
@@ -774,7 +774,7 @@ class ScanService:
         return {sid: p for sid, p in rows if p is not None}
 
     async def first_scan_ids(self, target_ids: list[UUID]) -> set[UUID]:
-        """The earliest scan id for each target (baseline run — no prior to diff against)."""
+        """The earliest scan id for each target."""
         if not target_ids:
             return set()
         ordering = func.coalesce(Scan.started_at, Scan.created_at)
@@ -836,7 +836,7 @@ class ScanService:
     async def target_trends(
         self, target_ids: list[UUID], limit: int = 12
     ) -> dict[UUID, list[int]]:
-        """Per target, subdomains_found across its completed runs (oldest→newest, last `limit`)."""
+        """Per target, subdomains_found across completed runs, oldest first, last `limit`."""
         if not target_ids:
             return {}
         ordering = func.coalesce(Scan.started_at, Scan.created_at)

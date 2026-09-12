@@ -63,7 +63,7 @@ FONT_EXTENSIONS: tuple[str, ...] = tuple(f.extension for f in FONT_FORMATS)
 
 
 def detect_format(data: bytes) -> FontFormat | None:
-    """The format a file actually is, read from its own bytes."""
+    """Format detected from the file bytes."""
     for spec in FONT_FORMATS:
         if any(data.startswith(magic) for magic in spec.magic):
             return spec
@@ -77,7 +77,7 @@ _CONTROL = 32
 def clean_family_name(value: str) -> str:
     name = " ".join((value or "").split())
     if not name:
-        msg = "Give the typeface a name."
+        msg = "Typeface name is required."
         raise ValueError(msg)
     if any(ch in _UNSAFE_NAME or ord(ch) < _CONTROL for ch in name):
         msg = "A typeface name may not contain quotes, brackets, semicolons or control characters."

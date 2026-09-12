@@ -160,7 +160,7 @@
 			const res = await targetsApi.list({ project_slug: projectSlug, size: 100 });
 			targets = res.items;
 		} catch (e) {
-			targetsError = e instanceof Error ? e.message : 'Targets could not be loaded';
+			targetsError = e instanceof Error ? e.message : 'Targets not loaded';
 		} finally {
 			targetsLoading = false;
 		}
@@ -196,7 +196,7 @@
 				toast.success(isEdit ? 'Schedule updated' : 'Schedule created');
 				handleOpenChange(false);
 			} else {
-				toast.error(scanSchedulesStore.error ?? 'Schedule could not be saved');
+				toast.error(scanSchedulesStore.error ?? 'Schedule not saved');
 			}
 		} finally {
 			saving = false;
@@ -213,10 +213,7 @@
 	<Dialog.Content class="flex max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[560px]">
 		<Dialog.Header class="p-6 pb-4">
 			<Dialog.Title>{isEdit ? 'Edit scheduled scan' : 'New scheduled scan'}</Dialog.Title>
-			<Dialog.Description>
-				Each selected target is re-scanned on this schedule. New assets and findings are reported
-				through the configured notification channels.
-			</Dialog.Description>
+			<Dialog.Description>Each target runs as its own scan on this schedule.</Dialog.Description>
 		</Dialog.Header>
 
 		<Separator />
@@ -247,12 +244,9 @@
 								(targetIds = targetIds.includes(item.id) ? targetIds : [...targetIds, item.id])}
 							onRemove={(item) => (targetIds = targetIds.filter((id) => id !== item.id))}
 							allowCreate={false}
-							placeholder="Search targets…"
-							emptyText="No targets in this project."
+							placeholder="Search targets"
+							emptyText="No targets in this project"
 						/>
-						<p class="text-2xs text-muted-foreground">
-							Each selected target runs as its own scan on every fire.
-						</p>
 					{/if}
 				</div>
 

@@ -38,7 +38,7 @@ def require_public(value: str) -> list[str]:
     try:
         addresses = {info[4][0] for info in socket.getaddrinfo(host, None)}
     except OSError as exc:
-        msg = f"{host} does not resolve ({exc.strerror or exc})."
+        msg = f"{host} does not resolve: {exc.strerror or exc}."
         raise ToolError(msg) from exc
     for address in addresses:
         if _blocked(ipaddress.ip_address(address)):

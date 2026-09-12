@@ -13,10 +13,8 @@ from shared.logging import get_logger
 
 logger = get_logger(__name__)
 
-DISABLED_MESSAGE = (
-    "The reNgine MCP server is stopped. An operator can start it on the MCP page."
-)
-RATE_MESSAGE = "Too many calls. Slow down and retry in a minute."
+DISABLED_MESSAGE = "The MCP server is stopped. Start it on the MCP page."
+RATE_MESSAGE = "Rate limit exceeded. Retry in a minute."
 
 
 async def handle_request(

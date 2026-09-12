@@ -18,12 +18,7 @@
 	import { formatShortDate } from '$lib/utilities/dates';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { SELECT_NONE } from '$lib/constants';
-	import {
-		MCP_EXPIRY_CHOICES,
-		TOUCHES_TARGETS,
-		type McpCapability,
-		type McpTokenCreated
-	} from '$lib/types/mcp';
+	import { MCP_EXPIRY_CHOICES, TOUCHES_TARGETS, type McpTokenCreated } from '$lib/types/mcp';
 
 	interface Props {
 		open: boolean;
@@ -44,9 +39,6 @@
 	const capabilities = $derived(status?.capabilities ?? []);
 	const ceiling = $derived(status?.ceiling ?? {});
 	const projectList = $derived(projectsStore.projects ?? []);
-	const willTouchTargets = $derived(
-		[...granted].some((c) => TOUCHES_TARGETS.includes(c as McpCapability))
-	);
 
 	const projectLabel = $derived(
 		projectId === SELECT_NONE
@@ -104,9 +96,7 @@
 		{#if created}
 			<Dialog.Header class="px-6 pt-6 pb-0">
 				<Dialog.Title>Token created</Dialog.Title>
-				<Dialog.Description>
-					Copy it now. reNgine stores only a hash and cannot show it again.
-				</Dialog.Description>
+				<Dialog.Description>Shown once. Only a hash is stored.</Dialog.Description>
 			</Dialog.Header>
 
 			<ScrollArea
@@ -149,7 +139,6 @@
 						{:else}
 							It does not expire.
 						{/if}
-						It can be revoked at any time.
 					</div>
 
 					<div class="flex min-w-0 flex-col gap-1.5">
@@ -165,9 +154,6 @@
 		{:else}
 			<Dialog.Header class="px-6 pt-6 pb-0">
 				<Dialog.Title>New service token</Dialog.Title>
-				<Dialog.Description>
-					Grant the smallest capability set the agent requires.
-				</Dialog.Description>
 			</Dialog.Header>
 
 			<ScrollArea
@@ -236,12 +222,7 @@
 						</div>
 					</div>
 
-					<FormField
-						label="Expires"
-						description={willTouchTargets
-							? 'A token that can launch scans should be short-lived.'
-							: 'A token stops working after this.'}
-					>
+					<FormField label="Expires">
 						{#snippet children({ id })}
 							<Select.Root type="single" bind:value={expiry}>
 								<Select.Trigger {id} class="w-full">{expiryLabel}</Select.Trigger>
@@ -261,7 +242,7 @@
 				<Button variant="ghost" onclick={() => close(false)}>Cancel</Button>
 				<LoadingButton
 					loading={creating}
-					loadingLabel="Creating…"
+					loadingLabel="Creating"
 					disabled={!name.trim()}
 					onclick={create}
 				>

@@ -77,10 +77,7 @@
 			<Empty.Media variant="icon">
 				<UserRound />
 			</Empty.Media>
-			<Empty.Title>No entity data available</Empty.Title>
-			<Empty.Description>
-				WHOIS privacy protection may be hiding contact details for this record.
-			</Empty.Description>
+			<Empty.Title>No entities</Empty.Title>
 		</Empty.Header>
 	</Empty.Root>
 {:else}

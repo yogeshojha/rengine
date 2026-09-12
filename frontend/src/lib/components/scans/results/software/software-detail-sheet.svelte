@@ -63,8 +63,7 @@
 						<div class="flex items-start gap-2">
 							<Info class="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
 							<p class="text-muted-foreground">
-								Matched from the version this asset reports against the NVD corpus. No request was
-								sent to confirm it.
+								Inferred from the reported version against the NVD corpus. No request was sent.
 							</p>
 						</div>
 					</div>
@@ -155,7 +154,7 @@
 
 					{#if row.description}
 						<section class="flex flex-col gap-2">
-							<SectionHead title="What NVD says" />
+							<SectionHead title="NVD description" />
 							<p class="text-sm leading-relaxed text-muted-foreground">{row.description}</p>
 						</section>
 					{/if}

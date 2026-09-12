@@ -130,7 +130,7 @@
 			await targetsStore.refresh();
 			toast.success(`Organization "${name}" created`);
 		} catch {
-			toast.error('Organization could not be created');
+			toast.error('Organization not created');
 		}
 	}
 
@@ -152,7 +152,7 @@
 			await targetsStore.refresh();
 			toast.success(`Tag "${name}" created`);
 		} catch {
-			toast.error('Tag could not be created');
+			toast.error('Tag not created');
 		}
 	}
 
@@ -178,7 +178,7 @@
 			});
 
 			if (!result) {
-				toast.error(targetsStore.error || 'Target could not be added');
+				toast.error(targetsStore.error || 'Target not added');
 				return;
 			}
 
@@ -203,17 +203,17 @@
 
 			if (scans && scans.length > 0) {
 				if (plan) rememberQuickScanChoice(plan, context === SELECT_NONE ? null : context, presets);
-				toast.success(`Target added. Scan queued against ${result.target_value}.`);
+				toast.success('Target added. Scan queued.');
 				goto(ROUTES.scan(scans[0].id));
 			} else {
 				toast.error(
 					scansStore.error
-						? `Target added, but the scan could not be queued. ${scansStore.error}`
-						: 'Target added, but the scan could not be queued.'
+						? `Target added. Scan not queued. ${scansStore.error}`
+						: 'Target added. Scan not queued.'
 				);
 			}
 		} catch {
-			toast.error('Target could not be added');
+			toast.error('Target not added');
 		} finally {
 			isSubmitting = false;
 		}
@@ -312,7 +312,7 @@
 								id="target-value"
 								type="text"
 								bind:ref={targetInput}
-								placeholder="e.g. example.com, 192.168.1.0/24, AS12345"
+								placeholder="example.com, 192.168.1.0/24, AS12345"
 								value={targetValue}
 								oninput={handleTargetInput}
 								class="pr-10"
@@ -345,41 +345,33 @@
 					</div>
 
 					<div class="space-y-2">
-						<Label for="display-name">Display Name (Optional)</Label>
-						<Input
-							id="display-name"
-							type="text"
-							placeholder="Optional friendly name"
-							bind:value={displayName}
-						/>
-						<p class="text-xs text-muted-foreground">Optional label for this target</p>
+						<Label for="display-name">Display name</Label>
+						<Input id="display-name" type="text" placeholder="Optional" bind:value={displayName} />
 					</div>
 
 					<div class="space-y-2">
-						<Label>Organizations (Optional)</Label>
+						<Label>Organizations</Label>
 						<MultiSelectCombobox
 							items={organizationItems}
 							selected={selectedOrganizations}
 							onSelect={handleSelectOrganization}
 							onRemove={handleRemoveOrganization}
 							onCreate={handleCreateOrganization}
-							placeholder="Search or create organizations…"
-							emptyText="No organizations found."
+							placeholder="Search or create organizations"
+							emptyText="No organizations"
 						/>
-						<p class="text-xs text-muted-foreground">Group targets by organization</p>
 					</div>
 
 					<div class="space-y-2">
-						<Label>Tags (Optional)</Label>
+						<Label>Tags</Label>
 						<TagMultiSelect
 							items={tagItems}
 							selected={selectedTags}
 							onSelect={handleSelectTag}
 							onRemove={handleRemoveTag}
 							onCreate={handleCreateTag}
-							placeholder="Search or create tags…"
+							placeholder="Search or create tags"
 						/>
-						<p class="text-xs text-muted-foreground">Tags group and filter targets</p>
 					</div>
 				</div>
 			</ScrollArea>
@@ -389,8 +381,8 @@
 			<QuickScanFields
 				id="add-target-scan"
 				title="Scan after adding"
-				description="Queues a scan as soon as the target is created."
-				fallbackNote="The target will be added without a scan."
+				description="Queues a scan after the target is added."
+				fallbackNote="The target is added without a scan."
 				storageKey={STORAGE_KEYS.addTargetScanAfter}
 				bind:enabled={scanAfterAdd}
 				bind:selection
@@ -409,7 +401,7 @@
 				<Button type="submit" disabled={!canSubmit}>
 					{#if isSubmitting}
 						<Spinner class="h-4 w-4 mr-2" />
-						{scanArmed ? 'Queuing…' : 'Adding…'}
+						{scanArmed ? 'Queuing' : 'Adding'}
 					{:else if scanArmed}
 						<Rocket class="h-4 w-4 mr-2" />
 						Add & scan
@@ -424,8 +416,8 @@
 
 <UnsavedChangesDialog
 	bind:open={showDiscardConfirm}
-	title="Discard changes?"
-	description="This target has unsaved input. Closing now discards it."
+	title="Discard changes"
+	description="Unsaved changes are discarded."
 	onOpenChange={(o) => (showDiscardConfirm = o)}
 	onConfirm={confirmDiscard}
 />

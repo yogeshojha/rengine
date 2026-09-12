@@ -37,7 +37,7 @@
 				theme = value.theme;
 				snapshot = JSON.stringify({ branding, theme });
 			})
-			.catch((e) => toast.error(e instanceof Error ? e.message : 'Defaults could not be loaded'))
+			.catch((e) => toast.error(e instanceof Error ? e.message : 'Defaults not loaded'))
 			.finally(() => (loading = false));
 	});
 
@@ -52,9 +52,9 @@
 			});
 			defaults = saved;
 			snapshot = JSON.stringify({ branding, theme });
-			toast.success('Defaults saved. New reports start from them.');
+			toast.success('Defaults saved');
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Defaults could not be saved');
+			toast.error(e instanceof Error ? e.message : 'Defaults not saved');
 		} finally {
 			saving = false;
 		}
@@ -67,11 +67,7 @@
 	<div class="space-y-5">
 		<Alert.Root>
 			<InfoIcon />
-			<Alert.Title>Defaults fill what a template leaves blank</Alert.Title>
-			<Alert.Description>
-				The logo, company and classification set here apply to every template. A template that sets
-				its own value takes precedence.
-			</Alert.Description>
+			<Alert.Title>Defaults fill what a template leaves empty</Alert.Title>
 		</Alert.Root>
 
 		<Card.Root class="gap-0 py-0">

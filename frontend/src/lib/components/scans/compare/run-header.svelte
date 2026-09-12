@@ -94,7 +94,7 @@
 		class="pointer-events-none absolute inset-0 hidden items-center justify-center sm:flex"
 		aria-hidden="true"
 	>
-		<Hint text="Swap the two runs">
+		<Hint text="Swap runs">
 			{#snippet child(props)}
 				<Button
 					{...props}
@@ -102,7 +102,7 @@
 					size="icon-sm"
 					onclick={() => onSwap()}
 					aria-hidden="false"
-					aria-label="Swap the two runs"
+					aria-label="Swap runs"
 					class="pointer-events-auto size-7 rounded-full bg-background shadow-sm"
 				>
 					<ArrowLeftRight class="size-3.5" />

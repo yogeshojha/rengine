@@ -118,7 +118,7 @@
 				class="rounded-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 				onclick={onShowRootOnly}
 			>
-				Show {page.root_only === 1 ? 'it' : 'them'}
+				Show
 			</button>
 		{/if}
 		{#if page.total > page.size}

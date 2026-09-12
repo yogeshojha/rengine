@@ -1,4 +1,4 @@
-"""Software inference: the products we can name, and what a match against NVD is worth."""
+"""Software inference: named products and NVD match confidence."""
 
 from __future__ import annotations
 
@@ -22,8 +22,8 @@ VERSION_SOURCE_LABELS: dict[str, str] = {
 }
 
 VERSION_SOURCE_HELP: dict[str, str] = {
-    VersionSource.BANNER.value: "The server stated this version in its own response headers.",
-    VersionSource.FINGERPRINT.value: "Read from the page, not stated by the server.",
+    VersionSource.BANNER.value: "Version stated in a server response header.",
+    VersionSource.FINGERPRINT.value: "Version read from the page body.",
 }
 
 
@@ -43,18 +43,14 @@ CAVEAT_LABELS: dict[str, str] = {
 
 CAVEAT_HELP: dict[str, str] = {
     Caveat.BACKPORT.value: (
-        "The banner names a distribution that patches without changing the version number, "
-        "so the version alone does not settle it."
+        "The banner names a distribution build. Fixes may land without a version change."
     ),
     Caveat.CONDITIONAL.value: (
-        "NVD records this CVE against a further component, such as an operating system, "
-        "that this scan did not identify."
+        "NVD ties this CVE to a further component this scan did not identify."
     ),
-    Caveat.FINGERPRINT.value: (
-        "The version was read from the page rather than stated by the server."
-    ),
+    Caveat.FINGERPRINT.value: ("The version was read from the page body."),
     Caveat.COARSE.value: (
-        "Only a major version was reported, so the match covers every release in that series."
+        "Only a major version was reported. The match covers every release in that series."
     ),
 }
 
@@ -75,8 +71,8 @@ CONFIDENCE_LABELS: dict[str, str] = {
 
 CONFIDENCE_HELP: dict[str, str] = {
     Confidence.HIGH.value: "The server stated the version and NVD names no further condition.",
-    Confidence.MEDIUM.value: "One thing about this match is unverified.",
-    Confidence.LOW.value: "More than one thing about this match is unverified.",
+    Confidence.MEDIUM.value: "One part of the match is unverified.",
+    Confidence.LOW.value: "Two or more parts of the match are unverified.",
 }
 
 CONFIDENCE_ORDER: tuple[str, ...] = tuple(c.value for c in Confidence)
@@ -201,7 +197,7 @@ _PLUGINS: tuple[SoftwareProduct, ...] = (
     SoftwareProduct("layerslider", "layerslider", "kreaturamedia"),
 )
 
-# ---------- front-end libraries NVD actually files ----------
+# ---------- front-end libraries ----------
 
 _LIBRARIES: tuple[SoftwareProduct, ...] = (
     SoftwareProduct("jquery", "jquery", "jquery"),

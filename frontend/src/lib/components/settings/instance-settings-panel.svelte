@@ -109,7 +109,7 @@
 
 	async function handleSave() {
 		if (!instanceSettingsStore.settings) {
-			toast.error('Settings did not load. Retry before saving.');
+			toast.error('Settings not loaded. Retry before saving.');
 			return;
 		}
 		if (!instanceName.trim()) {
@@ -196,11 +196,7 @@
 				<Empty.Media class="size-14 rounded-2xl bg-destructive/10">
 					<CircleAlertIcon class="size-7 text-destructive" />
 				</Empty.Media>
-				<Empty.Title>Settings could not be loaded</Empty.Title>
-				<Empty.Description class="max-w-md">
-					Instance settings failed to load. The form stays hidden until the load succeeds, because
-					editing now could overwrite the stored configuration with defaults.
-				</Empty.Description>
+				<Empty.Title>Settings not loaded</Empty.Title>
 			</Empty.Header>
 			<Empty.Content>
 				<Button onclick={load} class="gap-2">
@@ -213,9 +209,7 @@
 		<Card.Root>
 			<Card.Header>
 				<Card.Title class="text-base">Instance</Card.Title>
-				<Card.Description
-					>Identify this deployment and set its default time zone and posture.</Card.Description
-				>
+				<Card.Description>Name, time zone and mode.</Card.Description>
 			</Card.Header>
 			<Card.Content class="space-y-5">
 				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -262,10 +256,7 @@
 		<Card.Root>
 			<Card.Header>
 				<Card.Title class="text-base">Data retention</Card.Title>
-				<Card.Description
-					>How long runs are kept, and how long the bulky evidence inside them is kept. Both are
-					enforced daily; 0 keeps everything.</Card.Description
-				>
+				<Card.Description>Runs and their evidence are pruned daily.</Card.Description>
 			</Card.Header>
 			<Card.Content>
 				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -304,9 +295,7 @@
 			<Card.Header>
 				<Card.Title class="text-base">Between scans</Card.Title>
 				<Card.Description
-					>A certificate expires and renews without a scan. Turning this on lets reNgine open one
-					TLS connection to each host every few hours to keep its expiry current. It reaches your
-					targets outside a scan, so it is off until you ask for it.</Card.Description
+					>Opens one TLS connection to each web asset every few hours to refresh certificate expiry.</Card.Description
 				>
 			</Card.Header>
 			<Card.Content>
@@ -323,14 +312,12 @@
 					<SparklesIcon class="size-4 text-foreground" />
 					<Card.Title class="text-base">AI</Card.Title>
 				</div>
-				<Card.Description>
-					Model connection, feature opt-ins and cost are configured on the AI page.
-				</Card.Description>
+				<Card.Description>Model connection, feature opt-ins and cost.</Card.Description>
 			</Card.Header>
 			<Card.Content>
 				<Button variant="outline" size="sm" href={ROUTES.ai()}>
 					<SparklesIcon class="mr-1.5 size-3.5" />
-					Open the AI page
+					Open AI page
 				</Button>
 			</Card.Content>
 		</Card.Root>
@@ -342,7 +329,7 @@
 			<Button onclick={handleSave} disabled={saving || !isDirty}>
 				{#if saving}
 					<Spinner class="mr-2" />
-					Saving…
+					Saving
 				{:else}
 					Save changes
 				{/if}

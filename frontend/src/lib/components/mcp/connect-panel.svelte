@@ -64,10 +64,9 @@
 	<p class="text-sm text-muted-foreground">
 		{#if transport === 'http'}
 			Add this block to the agent's MCP configuration and replace the placeholder with a service
-			token. A reverse proxy owns TLS and any access from outside the host.
+			token.
 		{:else}
-			The agent starts this process itself, so Start and Stop do not apply. Revoking the token cuts
-			access.
+			Start and Stop do not apply to stdio. Revoke the token to cut access.
 		{/if}
 	</p>
 	<CodeBlock

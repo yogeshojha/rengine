@@ -46,7 +46,7 @@ def test_the_finding_says_what_it_did_and_did_not_establish():
     assert found.scanner == Scanner.RENGINE.value
     assert found.severity == Severity.MEDIUM.value
     assert "AWS S3" in found.remediation
-    assert "If the resource behind it has been released" in found.description, (
+    assert "A released resource can be registered by anyone" in found.description, (
         "an unclaimed name is a condition, not a confirmed takeover"
     )
 

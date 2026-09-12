@@ -30,7 +30,7 @@
 		onSelect,
 		onRemove,
 		onCreate,
-		placeholder = 'Search tags…'
+		placeholder = 'Search tags'
 	}: Props = $props();
 
 	let open = $state(false);
@@ -148,12 +148,12 @@
 					bind:this={colorPickerEl}
 					class="p-3 space-y-3"
 					role="group"
-					aria-label="Pick a color for {searchValue}"
+					aria-label="Color for {searchValue}"
 					tabindex="-1"
 					onkeydown={handleColorKeydown}
 				>
 					<div class="flex items-center justify-between">
-						<span class="text-sm font-medium">Pick a color for "{searchValue}"</span>
+						<span class="text-sm font-medium">Color for "{searchValue}"</span>
 					</div>
 					<div class="flex flex-wrap gap-2">
 						{#each presetColors as color (color)}
@@ -187,7 +187,7 @@
 					<Command.List class="max-h-none overflow-visible">
 						<Command.Empty>
 							{#if !showCreateOption}
-								No tags found.
+								No tags
 							{/if}
 						</Command.Empty>
 						<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">

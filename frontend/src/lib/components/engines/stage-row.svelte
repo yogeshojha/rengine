@@ -152,10 +152,10 @@
 			{/if}
 
 			{#if alwaysOn}
-				<Hint text="{stage.title} always runs and cannot be disabled.">
+				<Hint text="Always on">
 					{#snippet child(props)}
 						<span {...props} class="inline-flex">
-							<Switch checked disabled aria-label="{stage.title} always runs" />
+							<Switch checked disabled aria-label="{stage.title} is always on" />
 						</span>
 					{/snippet}
 				</Hint>
@@ -191,10 +191,8 @@
 					/>
 				{/each}
 			</div>
-		{:else if alwaysOn}
-			<p class="desc">This stage always runs and has no configurable settings.</p>
 		{:else}
-			<p class="desc">This stage has no configurable settings.</p>
+			<p class="desc">No settings.</p>
 		{/if}
 
 		{#if changed.length}

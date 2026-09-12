@@ -83,7 +83,7 @@ class NoteCreate(BaseModel):
     def _anchored_and_tagged(self):
         self.dimension, self.asset_key = _clean_anchor(self.dimension, self.asset_key)
         if not self.body.strip():
-            msg = "Write something in the note."
+            msg = "Note body is required."
             raise ValueError(msg)
         self.body = self.body.strip()
         self.tag_ids = list(dict.fromkeys(self.tag_ids))
@@ -108,7 +108,7 @@ class NoteUpdate(BaseModel):
         if self.body is not None:
             self.body = self.body.strip()
             if not self.body:
-                msg = "Write something in the note."
+                msg = "Note body is required."
                 raise ValueError(msg)
         return self
 

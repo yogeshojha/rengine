@@ -46,13 +46,9 @@
 		togglingAuto = true;
 		try {
 			status = await threatIntelApi.setAutoSync(enabled, fetchedProjectId ?? undefined);
-			toast.success(enabled ? 'Nightly download on' : 'Nightly download off', {
-				description: enabled
-					? 'Feeds refresh once a day and re-rank every finding.'
-					: 'Nothing is downloaded until you press Refresh now.'
-			});
+			toast.success(enabled ? 'Nightly download on' : 'Nightly download off');
 		} catch {
-			toast.error('Could not change the download setting');
+			toast.error('Download setting not saved');
 		} finally {
 			togglingAuto = false;
 		}
@@ -63,15 +59,13 @@
 		try {
 			const res = await threatIntelApi.sync();
 			if (res.queued) {
-				toast.success('Refreshing exploitation intelligence', {
-					description: 'Every finding is re-scored when the download lands.'
-				});
+				toast.success('Refresh started');
 				setTimeout(() => load(fetchedProjectId), 2500);
 			} else {
-				toast.error(res.detail ?? 'The refresh could not be queued');
+				toast.error(res.detail ?? 'Refresh not started');
 			}
 		} catch {
-			toast.error('The refresh could not be queued');
+			toast.error('Refresh not started');
 		} finally {
 			syncing = false;
 		}
@@ -98,8 +92,8 @@
 {:else if !status}
 	<EmptyState
 		icon={Flame}
-		title="Exploitation intelligence is unavailable"
-		description="The API did not answer. Check that the api service is running."
+		title="Exploitation intelligence unavailable"
+		description="The API did not respond. Check that the api service is running."
 	/>
 {:else}
 	<div class="flex flex-col gap-6">
@@ -108,16 +102,16 @@
 			<PanelHead
 				title="Exploitation feeds"
 				description={status.auto_sync
-					? 'Downloaded nightly. No account, no API key, and they keep working offline.'
-					: 'Automatic download is off. Nothing leaves this instance until you press Refresh now.'}
+					? 'Downloaded nightly. No API key required.'
+					: 'Automatic download is off.'}
 			>
 				{#if status.last_applied_at}
 					<span>Last applied {relativeTime(status.last_applied_at)}</span>
 				{/if}
 				<Hint
 					text={status.auto_sync
-						? 'reNgine downloads EPSS and the KEV catalog once a day'
-						: 'No outbound request is made on a schedule'}
+						? 'EPSS and the KEV catalog are downloaded once a day'
+						: 'No scheduled download'}
 				>
 					{#snippet child(props)}
 						<label {...props} class="flex cursor-pointer items-center gap-2">
@@ -155,22 +149,15 @@
 		<Card.Root class="gap-0 py-0">
 			<PanelHead
 				title="vulnx"
-				description="ProjectDiscovery's vulnerability index. Optional, cached, and rate-limit aware."
+				description="ProjectDiscovery vulnerability index. Fetched per CVE and cached."
 			>
 				<span class="tabular-nums">{status.provider_cached} CVEs cached</span>
 			</PanelHead>
 			<div class="px-5 py-4 text-xs leading-relaxed text-muted-foreground">
 				<p>
-					The feeds above give every CVE a score. vulnx adds the story behind it: published exploits
-					and their links, whether a scanner template exists at all, how many hosts on the internet
-					run the affected software, and HackerOne activity.
-				</p>
-				<p class="mt-2">
-					It is fetched on demand, once per CVE, and cached. Keyless works at 10 requests a minute;
-					a free key raises that. Add one under
-					<a class="underline hover:text-foreground" href={ROUTES.settings('api-keys')}>
-						Settings → API keys
-					</a>.
+					Adds exploit references, template availability, exposed host counts and HackerOne reports.
+					Without an API key: 10 requests per minute.
+					<a class="underline hover:text-foreground" href={ROUTES.settings('api-keys')}>API keys</a>
 				</p>
 			</div>
 		</Card.Root>

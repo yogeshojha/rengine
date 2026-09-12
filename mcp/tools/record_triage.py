@@ -1,4 +1,4 @@
-"""An agent's judgement, made durable."""
+"""Record a triage decision."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ class Input(ToolInput):
     )
     state: str = Field(description=f"The review decision. One of: {', '.join(STATES)}.")
     note: str | None = Field(
-        default=None, max_length=2000, description="Why. Stored with the decision."
+        default=None, max_length=2000, description="Note stored with the decision."
     )
 
 
@@ -35,10 +35,9 @@ class RecordTriage(Tool):
     capability = Capability.WRITE.value
     group = ToolGroup.ACT.value
     description = (
-        "Record a review decision against a finding: confirmed, false positive, or "
-        "accepted risk. The decision is keyed to the finding's fingerprint, so it "
-        "carries into every later scan of that target and a suppressed finding stays "
-        "suppressed. Always include a note saying why."
+        "Record a review decision against a finding: confirmed, false positive or "
+        "accepted risk. The decision is keyed to the fingerprint and applies to "
+        "every later scan of the target. Include a note."
     )
     Input = Input
     examples = (
@@ -54,7 +53,7 @@ class RecordTriage(Tool):
             msg = f"Unknown state {args.state!r}. Use one of: {', '.join(STATES)}."
             raise ToolError(msg)
         if ctx.token.issued_by is None:
-            msg = "This token has no issuing operator, so a decision cannot be attributed."
+            msg = "This token has no issuing operator to attribute the decision to."
             raise ToolError(msg)
 
         dim = dimension(SurfaceDimension.VULNERABILITIES.value)

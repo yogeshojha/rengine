@@ -116,7 +116,7 @@
 	async function handleCreate(name: string, preset: EnginePreset) {
 		const project = projectsStore.activeProject;
 		if (!project) {
-			toast.error('No active project selected');
+			toast.error('No active project');
 			return;
 		}
 		isCreating = true;
@@ -128,10 +128,10 @@
 			});
 			if (created) {
 				showNewDialog = false;
-				toast.success(`Created "${created.name}"`);
+				toast.success('Engine created');
 				goto(ROUTES.engine(created.id));
 			} else {
-				toast.error(scanEnginesStore.error ?? 'Engine could not be created');
+				toast.error(scanEnginesStore.error ?? 'Engine not created');
 			}
 		} finally {
 			isCreating = false;
@@ -141,7 +141,7 @@
 	async function handleImport(yaml: string) {
 		const project = projectsStore.activeProject;
 		if (!project) {
-			toast.error('No active project selected');
+			toast.error('No active project');
 			return;
 		}
 		isImporting = true;
@@ -149,10 +149,10 @@
 			const imported = await scanEnginesStore.importYaml(project.id, yaml);
 			if (imported) {
 				showImportDialog = false;
-				toast.success(`Imported "${imported.name}"`);
+				toast.success('Engine imported');
 				goto(ROUTES.engine(imported.id));
 			} else {
-				toast.error(scanEnginesStore.error ?? 'Engine could not be imported');
+				toast.error(scanEnginesStore.error ?? 'Engine not imported');
 			}
 		} finally {
 			isImporting = false;
@@ -163,8 +163,8 @@
 		const project = projectsStore.activeProject;
 		if (!project) return;
 		const copy = await scanEnginesStore.duplicateEngine(engine.id, project.id);
-		if (copy) toast.success(`Duplicated "${engine.name}"`);
-		else toast.error(scanEnginesStore.error ?? 'Engine could not be duplicated');
+		if (copy) toast.success('Engine duplicated');
+		else toast.error(scanEnginesStore.error ?? 'Engine not duplicated');
 	}
 
 	async function handleExport(engine: ScanEngine) {
@@ -175,7 +175,7 @@
 			downloadBlob(`${engine.name}.yaml`, yaml, 'text/yaml');
 			toast.success('YAML exported');
 		} else {
-			toast.error(scanEnginesStore.error ?? 'Engine could not be exported');
+			toast.error(scanEnginesStore.error ?? 'Engine not exported');
 		}
 	}
 
@@ -207,12 +207,12 @@
 				if (!engineToDelete) return;
 				const ok = await scanEnginesStore.deleteEngine(engineToDelete.id);
 				if (ok) {
-					toast.success(`Deleted "${engineToDelete.name}"`);
+					toast.success('Engine deleted');
 					selectedIds.delete(engineToDelete.id);
 					showDeleteDialog = false;
 					engineToDelete = null;
 				} else {
-					toast.error(scanEnginesStore.error ?? 'Engine could not be deleted');
+					toast.error(scanEnginesStore.error ?? 'Engine not deleted');
 				}
 				return;
 			}
@@ -232,7 +232,7 @@
 			if (deleted) toast.success(`${deleted} engine${deleted !== 1 ? 's' : ''} deleted`);
 			if (failed) {
 				toast.error(
-					`${failed} engine${failed !== 1 ? 's' : ''} kept${lastError ? `. ${lastError}` : ''}`
+					`${failed} engine${failed !== 1 ? 's' : ''} not deleted${lastError ? `. ${lastError}` : ''}`
 				);
 			}
 			showDeleteDialog = false;
@@ -243,13 +243,13 @@
 
 	const deleteTitle = $derived(
 		deleteMode === 'single'
-			? 'Delete this engine?'
-			: `Delete ${selectedIds.size} engine${selectedIds.size !== 1 ? 's' : ''}?`
+			? 'Delete engine'
+			: `Delete ${selectedIds.size} engine${selectedIds.size !== 1 ? 's' : ''}`
 	);
 	const deleteDescription = $derived(
 		deleteMode === 'single'
-			? 'Removes this engine from the project. Completed scans and their results are unaffected.'
-			: 'Removes the selected engines from the project. Engines referenced by a schedule or a running scan are skipped. Completed scans and their results are unaffected.'
+			? `Engine ${engineToDelete?.name ?? ''} is removed.`
+			: 'The selected engines are removed. Engines used by a schedule or a running scan are skipped.'
 	);
 
 	async function handleRefresh() {
@@ -277,8 +277,8 @@
 		<div class="max-w-2xl">
 			<h1 class="text-2xl font-semibold tracking-tight">Scan engines</h1>
 			<p class="mt-1 text-sm text-muted-foreground">
-				An engine defines which stages run against a target and how each is tuned. {#if stageCount}{stageCount}
-					stages are available on this instance.{/if}
+				Stage selection and settings for a scan{#if stageCount}
+					· {stageCount} stages available{/if}
 			</p>
 		</div>
 		<div class="flex items-center gap-2">
@@ -306,7 +306,7 @@
 	{#if scanEnginesStore.error && !scanEnginesStore.isLoading}
 		<Alert.Root variant="destructive">
 			<AlertCircle />
-			<Alert.Title>Scan engines could not be loaded</Alert.Title>
+			<Alert.Title>Scan engines not loaded</Alert.Title>
 			<Alert.Description class="flex flex-wrap items-center justify-between gap-3">
 				<span>{scanEnginesStore.error}</span>
 				<Button
@@ -339,10 +339,7 @@
 		<section class="rounded-xl border border-border bg-muted/20 p-6 sm:p-8">
 			<div class="max-w-xl">
 				<h2 class="text-lg font-semibold tracking-tight">No scan engines</h2>
-				<p class="mt-1 text-sm text-muted-foreground">
-					An engine defines which stages run against a target and how each is tuned. Start from a
-					preset, or configure one field by field.
-				</p>
+				<p class="mt-1 text-sm text-muted-foreground">Start from a preset or use New engine.</p>
 			</div>
 			{#if engineCatalogStore.presets.length}
 				<div class="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -377,7 +374,6 @@
 				</div>
 			{/if}
 			<p class="mt-5 text-xs text-muted-foreground">
-				Already have one?
 				<button
 					type="button"
 					class="font-medium text-foreground underline-offset-4 hover:underline"
@@ -420,12 +416,7 @@
 		</div>
 
 		{#if visibleEngines.length === 0}
-			<EmptyState
-				icon={SearchX}
-				title="No engines match"
-				description="Widen the search or remove a filter."
-				compact
-			>
+			<EmptyState icon={SearchX} title="No engines match" compact>
 				<Button variant="outline" size="sm" onclick={() => (query = '')}>Clear search</Button>
 			</EmptyState>
 		{:else}

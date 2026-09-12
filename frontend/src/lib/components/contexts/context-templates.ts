@@ -24,21 +24,21 @@ export const CONTEXT_TEMPLATES: readonly ContextTemplate[] = [
 	{
 		key: 'scoped',
 		title: 'Program scope',
-		description: 'Excludes out-of-scope hosts, paths and IP ranges from every scan.',
+		description: 'Excludes out-of-scope subdomains, paths and IP ranges.',
 		focus: 'scope',
 		patch: {}
 	},
 	{
 		key: 'gentle',
 		title: 'Low impact',
-		description: 'Caps the request rate and reduces concurrency for sensitive targets.',
+		description: 'Caps the request rate at 20/s, halves threads and doubles timeouts.',
 		focus: 'rate',
 		patch: { global_rate_limit_override: 20, thread_multiplier: 0.5, timeout_multiplier: 2.0 }
 	},
 	{
 		key: 'blank',
 		title: 'No overrides',
-		description: 'No credentials or overrides. Engine settings apply unchanged.',
+		description: 'No credentials or overrides.',
 		focus: 'auth',
 		patch: {}
 	}

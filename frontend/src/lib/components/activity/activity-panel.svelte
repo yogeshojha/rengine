@@ -171,7 +171,7 @@
 		cancelling = false;
 		cancelTarget = null;
 		if (ok) toast.success(`Cancelling scan of ${scan.execution_config.target_value}`);
-		else toast.error('Scan could not be cancelled');
+		else toast.error('Scan not cancelled');
 	}
 </script>
 
@@ -248,7 +248,7 @@
 						{/snippet}
 					</Tooltip.Trigger>
 					<Tooltip.Content side="bottom">
-						{activityFeed.pinned ? 'Unpin' : 'Pin open beside the page'}
+						{activityFeed.pinned ? 'Unpin' : 'Pin'}
 					</Tooltip.Content>
 				</Tooltip.Root>
 			{/if}
@@ -318,7 +318,7 @@
 			<Input
 				value={activityFeed.search}
 				oninput={(e) => activityFeed.setSearch(e.currentTarget.value)}
-				placeholder="Search activity…"
+				placeholder="Search activity"
 				class="h-7 border-border bg-muted/30 pr-7 pl-7 text-2xs transition-colors focus:border-primary/40 focus:bg-background"
 			/>
 			{#if activityFeed.search}
@@ -451,13 +451,13 @@
 
 <ConfirmDialog
 	open={!!cancelTarget}
-	title="Cancel this scan?"
-	description="The scan will stop queuing further work and be marked cancelled."
+	title="Cancel scan"
+	description="The scan stops and is marked cancelled."
 	confirmLabel="Cancel scan"
 	cancelLabel="Keep running"
 	destructive
 	loading={cancelling}
-	loadingLabel="Cancelling…"
+	loadingLabel="Cancelling"
 	onOpenChange={(o) => {
 		if (!o) cancelTarget = null;
 	}}

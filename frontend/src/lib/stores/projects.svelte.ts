@@ -58,7 +58,7 @@ function createProjectsStore() {
 					activeProject = projects[0];
 				}
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Projects could not be loaded';
+				error = e instanceof Error ? e.message : 'Projects not loaded';
 			} finally {
 				isLoading = false;
 			}
@@ -89,7 +89,7 @@ function createProjectsStore() {
 				projects = [newProject, ...projects];
 				return newProject;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Project could not be created';
+				error = e instanceof Error ? e.message : 'Project not created';
 				return null;
 			}
 		},
@@ -110,7 +110,7 @@ function createProjectsStore() {
 				}
 				return true;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Project could not be deleted';
+				error = e instanceof Error ? e.message : 'Project not deleted';
 				return false;
 			}
 		},

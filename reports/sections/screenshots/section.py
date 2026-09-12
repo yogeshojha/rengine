@@ -16,15 +16,15 @@ class ScreenshotsConfig(SectionConfig):
     order: str = choice(
         "findings",
         title="Order",
-        options={"findings": "Hosts with findings first", "name": "Name"},
+        options={"findings": "Findings first", "name": "Name"},
     )
-    show_title: bool = flag(True, title="Show the page title")
+    show_title: bool = flag(True, title="Show page title")
 
 
 class ScreenshotsSection(Section):
     name = "screenshots"
     title = "Screenshots"
-    description = "Screenshots of the assets. Images are embedded in the document."
+    description = "Screenshots of web assets."
     group = SectionGroup.SURFACE.value
     order = 70
     launch_fields = frozenset({"max_images"})

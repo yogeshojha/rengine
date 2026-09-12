@@ -81,9 +81,7 @@
 						<Skeleton class="m-1 h-11" />
 					{/each}
 				{:else if !usable.length && !blocked.length}
-					<p class="px-3 py-4 text-sm text-muted-foreground">
-						This target has no other finished run.
-					</p>
+					<p class="px-3 py-4 text-sm text-muted-foreground">No other finished runs.</p>
 				{/if}
 
 				{#each usable as run (run.scan_id)}

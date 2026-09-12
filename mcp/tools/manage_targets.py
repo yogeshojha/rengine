@@ -1,4 +1,4 @@
-"""Target lifecycle: what an agent needs before there is anything to scan or query."""
+"""Target lifecycle: add, update, delete."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ class AddInput(ToolInput):
     targets: list[str] = Field(
         min_length=1,
         max_length=MAX_VALUES,
-        description=f"The values to add, each {KINDS}. Already-present values are reused, not duplicated.",
+        description=f"The values to add, each {KINDS}. Existing values are reused.",
     )
     project_id: str | None = Field(
         default=None,
@@ -50,11 +50,8 @@ class AddTarget(Tool):
     capability = Capability.WRITE.value
     group = ToolGroup.ACT.value
     description = (
-        "Add one or more targets to a project so they can be scanned and queried. "
-        "This only records the target and queues WHOIS, DNS and routing enrichment — "
-        "it sends no traffic and runs no scan; use start_scan for that. A value "
-        "already in the project is reused rather than duplicated, so this is safe to "
-        "repeat."
+        "Add targets to a project. Records each target and queues WHOIS, DNS and "
+        "routing enrichment. Runs no scan. An existing value is reused."
     )
     Input = AddInput
     examples = (
@@ -84,7 +81,7 @@ class AddTarget(Tool):
                 wanted.append(value)
 
         if not wanted:
-            msg = f"Not a target reNgine can add: {', '.join(rejected)}. Give {KINDS}."
+            msg = f"Not a valid target: {', '.join(rejected)}. Give {KINDS}."
             raise ToolError(msg)
 
         present = set(
@@ -137,12 +134,12 @@ class UpdateInput(ToolInput):
     tags: list[str] | None = Field(
         default=None,
         max_length=MAX_LABELS,
-        description="Replaces the target's tags outright. Pass [] to clear them.",
+        description="Replaces the target's tags. Pass [] to clear them.",
     )
     organizations: list[str] | None = Field(
         default=None,
         max_length=MAX_LABELS,
-        description="Replaces the target's organizations outright.",
+        description="Replaces the target's organizations.",
     )
 
 
@@ -152,10 +149,8 @@ class UpdateTarget(Tool):
     capability = Capability.WRITE.value
     group = ToolGroup.ACT.value
     description = (
-        "Change how a target is labelled: its display name, its tags, its "
-        "organizations. Tags and organizations are replaced by what you pass, not "
-        "merged, so read the target first if you mean to add one. The target value "
-        "itself cannot be changed — add a new target and delete the old one."
+        "Change a target's display name, tags or organizations. Tags and "
+        "organizations are replaced, not merged. The target value cannot be changed."
     )
     Input = UpdateInput
     examples = ("update_target target=example.com tags=['client-a','production']",)
@@ -201,7 +196,7 @@ class DeleteInput(ToolInput):
     target: str = Field(description="The target to delete, by value or id.")
     confirm: bool = Field(
         default=False,
-        description="Must be true. Call once without it to see what would be destroyed.",
+        description="Must be true. A call without it returns what would be deleted.",
     )
 
 
@@ -212,11 +207,10 @@ class DeleteTarget(Tool):
     group = ToolGroup.ACT.value
     destructive = True
     description = (
-        "Delete a target and everything recorded against it: every scan, every web "
-        "asset, service, endpoint and finding, and every triage decision. This cannot "
-        "be undone and there is no export first. Call it without `confirm` to be told "
-        "what would be lost, show that to the user, and only then call again with "
-        "confirm=true."
+        "Delete a target and everything recorded against it: scans, web assets, "
+        "services, endpoints, findings and triage decisions. A call without "
+        "`confirm` returns what would be deleted. Call with confirm=true after the "
+        "user agrees."
     )
     Input = DeleteInput
     examples = ("delete_target target=old.example.com confirm=true",)
@@ -237,8 +231,8 @@ class DeleteTarget(Tool):
         if not args.confirm:
             msg = (
                 f"Not deleted. {_holdings_line(value, scans, holdings)} "
-                f"Deleting is permanent. Show this to the user, and call "
-                f"delete_target target={value!r} confirm=true only if they agree."
+                f"Call delete_target target={value!r} confirm=true after the user "
+                f"agrees."
             )
             raise ToolError(msg)
 
@@ -249,16 +243,13 @@ class DeleteTarget(Tool):
             summary=f"Deleted {value} and everything recorded against it",
             data={"value": value, "scans_deleted": scans, "results_deleted": holdings},
             pivot=f"{ctx.ui_base_url.rstrip('/')}/targets",
-            caveats=[
-                "This cannot be undone.",
-                f"Deleted by agent token '{ctx.token.name}' via MCP.",
-            ],
+            caveats=[f"Deleted by agent token '{ctx.token.name}' via MCP."],
         )
 
 
 def _operator(ctx: ToolContext) -> uuid.UUID:
     if ctx.token.issued_by is None:
-        msg = "This token has no issuing operator, so the change cannot be attributed."
+        msg = "This token has no issuing operator to attribute the change to."
         raise ToolError(msg)
     return ctx.token.issued_by
 
@@ -304,7 +295,7 @@ def _added_line(
         head = f"Added {len(created)} targets{where}"
     tail = []
     if reused:
-        tail.append(f"{reused} already present")
+        tail.append(f"{reused} existing")
     if rejected:
         tail.append(f"{len(rejected)} rejected")
     return f"{head} ({', '.join(tail)})" if tail else head
@@ -313,14 +304,10 @@ def _added_line(
 def _added_caveats(created: list[Target], rejected: list[str]) -> list[str]:
     notes = []
     if created:
-        notes.append(
-            "WHOIS, DNS and routing enrichment is queued and takes a few seconds."
-        )
-        notes.append(
-            "Nothing has been scanned yet — every dimension reads as never scanned until start_scan runs."
-        )
+        notes.append("WHOIS, DNS and routing enrichment is queued.")
+        notes.append("No dimension is scanned until start_scan runs.")
     if rejected:
-        notes.append(f"Not a value reNgine can target: {', '.join(rejected)}.")
+        notes.append(f"Not a valid target: {', '.join(rejected)}.")
     return notes
 
 
@@ -329,6 +316,4 @@ def _holdings_line(value: str, scans: int, holdings: dict[str, int | None]) -> s
         return f"{value} has no scans recorded."
     kept = ", ".join(f"{count} {label.lower()}" for label, count in holdings.items())
     runs = f"{scans} scan{'s' if scans != 1 else ''}"
-    return f"Deleting {value} would destroy {runs}" + (
-        f" holding {kept}." if kept else "."
-    )
+    return f"Deleting {value} removes {runs}" + (f" holding {kept}." if kept else ".")

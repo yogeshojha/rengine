@@ -7,15 +7,15 @@ from shared.definitions.surface import SURFACE_LABELS, SURFACE_ORDER
 
 
 class CoverageConfig(SectionConfig):
-    show_scanner_runs: bool = flag(True, title="Show the scanner's own account")
-    show_not_scanned: bool = flag(True, title="State what was not assessed")
+    show_scanner_runs: bool = flag(True, title="Show scanner runs")
+    show_not_scanned: bool = flag(True, title="List dimensions not scanned")
     show_suppressed: bool = flag(True, title="Note suppressed findings")
 
 
 class CoverageSection(Section):
     name = "coverage"
     title = "Coverage and limitations"
-    description = "The stages and scanners that ran, and what they did not cover."
+    description = "Dimensions scanned, scanner runs and limitations."
     group = SectionGroup.APPENDIX.value
     order = 20
     role = SectionRole.FURNITURE.value

@@ -75,7 +75,7 @@
 			await twoFactorApi.loginVerify(mfaToken, code);
 			await auth.checkAuth();
 		} catch (err) {
-			mfaError = err instanceof Error ? err.message : 'Invalid code, try again';
+			mfaError = err instanceof Error ? err.message : 'Invalid code';
 			code = '';
 			verifying = false;
 		}
@@ -103,7 +103,7 @@
 					<ShieldCheckIcon class="size-5 text-foreground" />
 				</div>
 				<Card.Title class="text-xl">Two-factor authentication</Card.Title>
-				<Card.Description>Enter the 6-digit code from your authenticator app</Card.Description>
+				<Card.Description>Enter the 6-digit code from the authenticator app</Card.Description>
 			</Card.Header>
 			<Card.Content>
 				<div class="flex flex-col items-center gap-5">
@@ -115,7 +115,7 @@
 						<p class="text-sm text-destructive">{mfaError}</p>
 					{/if}
 					<Button class="w-full" onclick={verifyMfa} disabled={verifying || code.length !== 6}>
-						{#if verifying}<Spinner class="mr-2" />Verifying…{:else}Verify{/if}
+						{#if verifying}<Spinner class="mr-2" />Verifying{:else}Verify{/if}
 					</Button>
 					<Button
 						variant="ghost"
@@ -131,8 +131,7 @@
 			</Card.Content>
 		{:else}
 			<Card.Header class="text-center">
-				<Card.Title class="text-xl">Welcome back</Card.Title>
-				<Card.Description>Sign in to your reNgine account</Card.Description>
+				<Card.Title class="text-xl">Log in</Card.Title>
 			</Card.Header>
 			<Card.Content>
 				<form onsubmit={handleSubmit}>
@@ -180,7 +179,7 @@
 						<p class="text-sm text-destructive">{error}</p>
 					{/if}
 					<Button type="submit" class="w-full mt-4" disabled={isLoading}>
-						{#if isLoading}<Spinner class="mr-2" />Logging in…{:else}Log in{/if}
+						{#if isLoading}<Spinner class="mr-2" />Logging in{:else}Log in{/if}
 					</Button>
 				</form>
 			</Card.Content>

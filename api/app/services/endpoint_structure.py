@@ -1,4 +1,4 @@
-"""What the shape of the discovered surface says, as findings rather than counts."""
+"""Findings read from the shape of the discovered surface."""
 
 from __future__ import annotations
 
@@ -119,8 +119,8 @@ class EndpointStructureService:
                 kind="auth_boundary",
                 label=f"{row.dir_path} on {row.host}",
                 detail=(
-                    f"{row.walled} {_plural('endpoint', row.walled)} in this folder "
-                    f"{'requires' if row.walled == 1 else 'require'} authentication, but "
+                    f"{row.walled} {_plural('endpoint', row.walled)} "
+                    f"{'requires' if row.walled == 1 else 'require'} authentication. "
                     f"{row.opened} {'answers' if row.opened == 1 else 'answer'} without it."
                 ),
                 count=int(row.opened),
@@ -160,7 +160,7 @@ class EndpointStructureService:
                 label=INTEREST_LABELS.get(row.interest, row.interest),
                 detail=(
                     f"{row.n} {_plural('path', row.n)} across {row.hosts} "
-                    f"{_plural('host', row.hosts)} match this pattern."
+                    f"{_plural('host', row.hosts)}."
                 ),
                 count=int(row.n),
                 query=_token("interest", row.interest),
@@ -181,10 +181,10 @@ class EndpointStructureService:
         return [
             StructureFinding(
                 kind="archive_only",
-                label="Known only to an archive",
+                label="Archive only",
                 detail=(
-                    f"{count} {_plural('endpoint', count)} were recorded by a public archive "
-                    "and this scan could not reach them."
+                    f"{count} {_plural('endpoint', count)} from a public archive "
+                    "did not answer."
                 ),
                 count=count,
                 query="is:archive-only",
@@ -304,8 +304,8 @@ def _headline(out: ScanStructure) -> str:
         n = len(auth)
         one = n == 1
         return (
-            f"{n} {_plural('folder', n)} {'is' if one else 'are'} walled off but still "
-            f"{'answers' if one else 'answer'} from inside"
+            f"{n} {_plural('folder', n)} behind authentication "
+            f"{'answers' if one else 'answer'} on some paths"
         )
     exposed = [f for f in out.findings if f.kind == "exposed_file"]
     if exposed:

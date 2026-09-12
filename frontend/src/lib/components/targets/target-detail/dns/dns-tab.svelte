@@ -142,7 +142,7 @@
 	{refreshing}
 	{loading}
 	empty={records.length === 0}
-	emptyText="The lookup returned no records for {host}."
+	emptyText="No records for {host}."
 	{onRefresh}
 >
 	{#snippet bar()}

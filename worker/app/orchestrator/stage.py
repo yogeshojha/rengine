@@ -171,7 +171,7 @@ def run_stage(
             activity_svc.finish(
                 activity,
                 status=ScanActivityStatus.SKIPPED,
-                result={"reason": "not applicable for target type"},
+                result={"reason": "not applicable to this target type"},
             )
             _emit_stage_done(events, spec, activity, ScanActivityStatus.SKIPPED.value)
             return
@@ -195,7 +195,7 @@ def run_stage(
             activity_svc.finish(
                 activity,
                 status=ScanActivityStatus.SKIPPED,
-                result={"reason": "not applicable for this target/config"},
+                result={"reason": "not applicable to this target or configuration"},
             )
             _emit_stage_done(events, spec, activity, ScanActivityStatus.SKIPPED.value)
             return

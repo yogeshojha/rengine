@@ -127,7 +127,7 @@ class ThreatFeedRead(BaseModel):
 
 
 class IntelCoverage(BaseModel):
-    """How much of the finding set this intelligence actually reaches."""
+    """Findings reached by the intelligence."""
 
     findings: int = 0
     with_cve: int = 0
@@ -231,7 +231,7 @@ class ExposureProduct(BaseModel):
 
 
 class CveIntelRead(BaseModel):
-    """Everything we know about one CVE: local feeds first, provider detail when cached."""
+    """One CVE: local feeds and cached provider detail."""
 
     cve: str
     epss_score: float | None = None

@@ -174,9 +174,7 @@
 		</div>
 		{#if secretHint(field)}
 			<div class="flex items-center gap-2">
-				<p class="text-xs text-muted-foreground">
-					A value is stored. Leave blank to keep it, or enter a new value to replace it.
-				</p>
+				<p class="text-xs text-muted-foreground">A value is stored.</p>
 				<Button
 					variant="ghost"
 					size="sm"
@@ -263,10 +261,7 @@
 	<div class="space-y-2">
 		<div>
 			<Label class="text-xs">Additional headers</Label>
-			<p class="mt-0.5 text-xs text-muted-foreground">
-				Added to every request. If a name conflicts with the authentication header, this value is
-				used.
-			</p>
+			<p class="mt-0.5 text-xs text-muted-foreground">Added to every request.</p>
 		</div>
 		{#each headerRows as row, i (i)}
 			<div class="flex items-center gap-2">
@@ -294,6 +289,5 @@
 				</Button>
 			</div>
 		{/each}
-		<p class="text-xs text-muted-foreground">Fill in the empty row to add another header.</p>
 	</div>
 </div>

@@ -205,7 +205,7 @@
 				<StatusBar mix={verifiedMix} total={verified} />
 			</div>
 		{:else}
-			<Hint text="No host was asked for this path in this scan.">
+			<Hint text="Not requested in this scan.">
 				{#snippet child(props)}
 					<span
 						{...props}

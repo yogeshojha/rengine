@@ -140,7 +140,7 @@ _BUILDERS = {
 def compile_software_compare(cmp: Compare, ctx: SoftwareQueryContext):
     builder = _BUILDERS.get(cmp.name)
     if builder is None:
-        msg = f"Field {cmp.name!r} cannot be searched yet."
+        msg = f"Field {cmp.name!r} cannot be searched."
         raise QuerySyntaxError(msg, cmp.start, cmp.end)
     return builder(cmp, ctx)
 

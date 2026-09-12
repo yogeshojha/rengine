@@ -122,7 +122,7 @@
 		try {
 			localStorage.setItem(key, JSON.stringify(value));
 		} catch {
-			// storage is a convenience
+			// ignore
 		}
 	}
 
@@ -481,7 +481,7 @@
 			const qs = sp.toString();
 			replaceState(qs ? `?${qs}` : location.pathname, appPage.state);
 		} catch {
-			// URL state is best-effort
+			// ignore
 		}
 	}
 	$effect(() => {
@@ -603,14 +603,11 @@
 			);
 			applyState(new Set([v.fingerprint]), result.state, result.note);
 			toast.success(`Marked ${VULN_STATE_LABELS[state].toLowerCase()}`, {
-				description:
-					result.updated > 1
-						? `Applies to ${result.updated} recorded observations of this finding.`
-						: 'Carried forward to later scans of this target.'
+				description: result.updated > 1 ? `${result.updated} observations updated.` : undefined
 			});
 			afterTriage();
 		} catch {
-			toast.error(`This finding could not be marked ${VULN_STATE_LABELS[state].toLowerCase()}`);
+			toast.error(`Finding not marked ${VULN_STATE_LABELS[state].toLowerCase()}`);
 			applyState(new Set([v.fingerprint]), previous, v.note);
 		}
 	}
@@ -626,13 +623,13 @@
 			toast.success(`Marked ${what} ${VULN_STATE_LABELS[state].toLowerCase()}`, {
 				description: `${result.fingerprints.toLocaleString()} ${
 					result.fingerprints === 1 ? 'finding' : 'findings'
-				} decided. Carried forward to later scans of this target.`
+				} updated.`
 			});
 			if (body.fingerprints) applyState(new Set(body.fingerprints), state, null);
 			checkedIds.clear();
 			afterTriage();
 		} catch {
-			toast.error(`${what} could not be marked ${VULN_STATE_LABELS[state].toLowerCase()}`);
+			toast.error(`${what} not marked ${VULN_STATE_LABELS[state].toLowerCase()}`);
 		} finally {
 			bulkBusy = false;
 		}
@@ -910,9 +907,6 @@
 					{/each}
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>
-			<span class="text-xs text-muted-foreground">
-				A decision covers every observation and carries forward to later scans.
-			</span>
 			<Button
 				variant="ghost"
 				size="sm"
@@ -934,7 +928,6 @@
 			maxAssets={rechecks.schema?.max_assets ?? 0}
 			queryActive={Boolean(query.search.trim()) || chips.length > 0}
 			busy={rescanBusy}
-			reason="re-runs the exact checks that found them"
 			onRescan={rescanSelection}
 			onOptions={openRescanOptions}
 			onRescanAll={rescanAllMatching}
@@ -957,7 +950,7 @@
 	{:else if errored}
 		<EmptyState
 			icon={TriangleAlert}
-			title="Findings could not be loaded"
+			title="Findings not loaded"
 			class="rounded-none border-0 bg-transparent py-16"
 		>
 			<Button variant="outline" class="gap-2" onclick={() => refresh()}>
@@ -977,7 +970,7 @@
 		{#if queryError}
 			<EmptyState
 				icon={SearchX}
-				title="That query could not run"
+				title="Query did not run"
 				description={queryError.message}
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
@@ -1001,14 +994,13 @@
 			<EmptyState
 				icon={ShieldCheck}
 				title="No findings"
-				description="No check matched anything on this scan. Coverage is reported above."
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
 		{:else}
 			<EmptyState
 				icon={ShieldCheck}
 				title="No vulnerability scan ran"
-				description="Enable it on the scan engine, or add it at launch."
+				description="Enable it on the scan engine or add it at launch."
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
 		{/if}

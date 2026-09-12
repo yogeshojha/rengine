@@ -69,9 +69,8 @@
 				</p>
 				<p class="mt-0.5 font-mono text-xs break-all">{hub.value}</p>
 				<p class="mt-1 text-xs text-muted-foreground">
-					{plural(hub.count, 'host', 'hosts')} · {Math.round(hub.share * 100)}% of the scan{hub.common
-						? ' · common'
-						: ''}
+					{plural(hub.count, 'web asset', 'web assets')} · {Math.round(hub.share * 100)}% of the
+					scan{hub.common ? ' · common' : ''}
 				</p>
 			</div>
 			<Button
@@ -136,7 +135,7 @@
 			<div class="min-w-0 flex-1">
 				<p class="font-mono text-xs font-medium break-all">{host.name}</p>
 				<p class="mt-0.5 truncate text-xs text-muted-foreground">
-					{host.status !== null ? `HTTP ${host.status}` : 'Did not answer'}{host.title
+					{host.status !== null ? `HTTP ${host.status}` : 'No HTTP response'}{host.title
 						? ` · ${host.title}`
 						: ''}
 				</p>

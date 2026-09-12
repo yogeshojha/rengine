@@ -193,9 +193,7 @@
 							<TrendingDown class="h-3 w-3" />
 							{scan.subdomains_found} of {prev}
 						</Tooltip.Trigger>
-						<Tooltip.Content>
-							Found far fewer than the previous scan ({prev}). The run may be incomplete.
-						</Tooltip.Content>
+						<Tooltip.Content>Previous scan found {prev}.</Tooltip.Content>
 					</Tooltip.Root>
 				{:else if noResults && !isFirst}
 					<span class="inline-flex shrink-0 items-center gap-0.5 rounded border border-border px-1">
@@ -259,7 +257,7 @@
 					</div>
 				{/if}
 				<span class="truncate text-xs text-muted-foreground">
-					{scan.status === 'pending' ? 'Waiting to start' : progress.label}{#if run?.tool}
+					{scan.status === 'pending' ? 'Queued' : progress.label}{#if run?.tool}
 						<span class="font-mono"> · {run.tool}</span>{/if}
 				</span>
 			</div>

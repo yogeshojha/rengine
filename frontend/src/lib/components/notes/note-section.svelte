@@ -61,7 +61,6 @@
 					showAnchor={false}
 					bind:composerOpen
 					emptyTitle="No notes"
-					emptyDescription="Notes written on this asset appear here."
 					onCount={(n) => (total = n)}
 				/>
 			</div>

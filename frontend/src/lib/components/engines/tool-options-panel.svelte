@@ -36,7 +36,7 @@
 				<Terminal size={16} class="text-muted-foreground" />
 				Tool arguments
 			</Sheet.Title>
-			<Sheet.Description>Extra CLI flags appended to each tool when a scan runs.</Sheet.Description>
+			<Sheet.Description>Extra CLI flags appended to each tool command.</Sheet.Description>
 		</Sheet.Header>
 
 		<ScrollArea class="min-h-0 flex-1">
@@ -45,9 +45,7 @@
 					<AlertTriangle class="size-4" />
 					<AlertTitle>Advanced</AlertTitle>
 					<AlertDescription class="text-warning/90">
-						Flags are appended to each tool command exactly as written and are not validated.
-						Invalid or conflicting flags can cause the tool, and its stage, to fail. Arguments are
-						passed directly to the tool and are never interpreted by a shell.
+						Flags are not validated. An invalid flag fails the tool and its stage.
 					</AlertDescription>
 				</Alert>
 

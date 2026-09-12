@@ -53,9 +53,6 @@
 	<Dialog.Content class="sm:max-w-xl">
 		<Dialog.Header>
 			<Dialog.Title>New scan engine</Dialog.Title>
-			<Dialog.Description>
-				Choose a preset to start from. Every stage and setting can be changed later.
-			</Dialog.Description>
 		</Dialog.Header>
 
 		<div class="space-y-4 py-1">
@@ -64,7 +61,7 @@
 				<Input
 					id="engine-name"
 					bind:value={name}
-					placeholder={preset ? `e.g. ${preset.title}` : 'e.g. Deep Recon'}
+					placeholder="Engine name"
 					autocomplete="off"
 					onkeydown={(e) => e.key === 'Enter' && submit()}
 				/>

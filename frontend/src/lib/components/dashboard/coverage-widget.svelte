@@ -101,7 +101,7 @@
 			out.push({
 				key: 'never',
 				icon: Radar,
-				label: 'Never scanned',
+				label: 'Not scanned',
 				count: neverIds.length,
 				tone: 'text-destructive',
 				action: { label: 'Scan', run: () => onScan(neverIds) }
@@ -143,7 +143,7 @@
 			<div class="flex items-baseline justify-between text-xs">
 				<span class="text-muted-foreground">
 					{plural(scanned, 'target', 'targets')} scanned
-					{#if buckets.never}<span> · {buckets.never} never scanned</span>{/if}
+					{#if buckets.never}<span> · {buckets.never} not scanned</span>{/if}
 				</span>
 				<span class="font-medium tabular-nums">
 					{overview.targets_monitored} of {overview.targets_total} monitored

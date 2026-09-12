@@ -27,10 +27,10 @@
 				query: suggestion.query,
 				kind: suggestion.kind
 			});
-			toast.success(`${suggestion.name} added. It runs on every scan.`);
+			toast.success(`Rule ${suggestion.name} added`);
 			onDone(suggestion);
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Could not add the rule');
+			toast.error(e instanceof Error ? e.message : 'Rule not added');
 		} finally {
 			adding = false;
 		}
@@ -54,7 +54,7 @@
 		<span class="font-mono text-2xs break-all text-muted-foreground">{suggestion.query}</span>
 		<span class="text-2xs text-muted-foreground">
 			Matches {suggestion.matches.toLocaleString()}
-			{suggestion.matches === 1 ? 'asset' : 'assets'} on this scan. Once added it runs with no model.
+			{suggestion.matches === 1 ? 'asset' : 'assets'} on this scan.
 		</span>
 	</div>
 	<div class="flex shrink-0 items-center gap-2">
@@ -63,7 +63,7 @@
 		>
 		<Button variant="ghost" size="sm" onclick={() => onDone(suggestion)}>
 			<X class="size-3.5" />
-			Not useful
+			Dismiss
 		</Button>
 	</div>
 </div>

@@ -349,7 +349,7 @@ class VulnTemplateService:
         headless_only = [k for k in selection.template_sets if k in HEADLESS_SETS]
         if headless_only and not selection.headless:
             warnings.append(
-                "Browser checks are selected but the browser is off, so they will not run."
+                "Browser checks are selected and the browser is off. They will not run."
             )
         return SelectionPreview(
             ready=True,
@@ -451,12 +451,12 @@ class VulnTemplateService:
         if row is None:
             return None
         if row.origin != TemplateOrigin.CUSTOM.value:
-            msg = "Project templates are read-only. Sync replaces them, so an edit would not survive."
+            msg = "Project templates are read-only. Copy the source into a custom template to edit it."
             raise TemplateError(msg)
         parsed = parse_template(content)
         destination = _resolve(custom_root(), row.path)
         if destination is None:
-            msg = "This check is no longer at a writable path in the library."
+            msg = "The check is not at a writable path in the library."
             raise TemplateError(msg)
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_text(content, encoding="utf-8")
@@ -496,9 +496,9 @@ class VulnTemplateService:
         ok = dispatch_template_sync()
         return TemplateSyncResult(
             started=ok,
-            message="Downloading and indexing the check library. This takes a few minutes."
+            message="Downloading and indexing the check library."
             if ok
-            else "The scanner queue is unavailable. The sync was not started.",
+            else "The scanner queue is unavailable. Sync not started.",
         )
 
 

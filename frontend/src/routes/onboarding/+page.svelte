@@ -30,16 +30,15 @@
 	const STEPS = [
 		{
 			key: 'welcome-security',
-			title: 'Welcome to reNgine',
-			description: 'Configure this instance. Every setting here can be changed later in Settings.',
+			title: 'Instance setup',
+			description: 'Instance name, timezone and administrator password.',
 			icon: ServerCogIcon,
 			component: StepWelcomeSecurity
 		},
 		{
 			key: 'two-factor',
-			title: 'Secure this account',
-			description:
-				'Add a second factor with an authenticator app. This can also be set up later from the profile page.',
+			title: 'Two-factor authentication',
+			description: 'Add a second factor with an authenticator app.',
 			icon: ShieldCheckIcon,
 			component: StepTwoFactor
 		},
@@ -47,23 +46,21 @@
 			key: 'mode',
 			title: 'Operating mode',
 			description:
-				'One mode is active at a time. Corporate hides bug bounty tooling; bug bounty adds the HackerOne integration. The mode can be changed in Settings.',
+				'One mode is active at a time. Corporate hides bug bounty tooling. Bug bounty adds the HackerOne integration.',
 			icon: CompassIcon,
 			component: StepMode
 		},
 		{
 			key: 'integrations',
-			title: 'Connect data sources',
-			description:
-				'Optional API keys that expand passive recon. These can also be added in Settings, under API keys.',
+			title: 'API keys',
+			description: 'Optional API keys for passive recon sources.',
 			icon: PlugIcon,
 			component: StepIntegrations
 		},
 		{
 			key: 'proxy',
-			title: 'Route scans through a proxy',
-			description:
-				'Keeps the source IP off WAF blocklists and distributes load across exit addresses. Optional, and recommended for sustained scanning.',
+			title: 'Proxy',
+			description: 'Optional. Scan traffic exits through the proxy.',
 			icon: ShieldIcon,
 			component: StepProxy
 		},
@@ -71,23 +68,21 @@
 			key: 'ai',
 			title: 'AI analysis',
 			description:
-				'Use a language model to summarize findings and draft remediation. A computed summary of each scan is sent to the selected provider.',
+				'A language model summarizes findings and drafts remediation. A computed summary of each scan is sent to the selected provider.',
 			icon: SparklesIcon,
 			component: StepAi
 		},
 		{
 			key: 'notifications',
-			title: 'Connect notifications',
-			description:
-				'Route scan and recon events to Slack, Discord, Telegram or a webhook. Email, Teams and other destinations can be added in Settings.',
+			title: 'Notifications',
+			description: 'Route scan events to Slack, Discord, Telegram or a webhook.',
 			icon: BellIcon,
 			component: StepNotifications
 		},
 		{
 			key: 'finish',
 			title: 'Create a project',
-			description:
-				'A project keeps targets, scans and findings separate. Set data retention and name the first one.',
+			description: 'Name the first project and set data retention.',
 			icon: FolderPlusIcon,
 			component: StepFinish
 		},
@@ -147,7 +142,7 @@
 		const resumeAt = Math.max(0, Math.min(status.current_step ?? 0, lastStep));
 		if (resumeAt > 0) {
 			currentIndex = resumeAt;
-			toast.info('Restoring saved progress');
+			toast.info('Saved progress restored');
 		}
 		ready = true;
 	}
@@ -180,7 +175,7 @@
 {#if !ready}
 	<div class="flex min-h-svh items-center justify-center gap-3 bg-background">
 		<Spinner />
-		<p class="text-sm text-muted-foreground">Preparing setup…</p>
+		<p class="text-sm text-muted-foreground">Loading setup</p>
 	</div>
 {:else}
 	<WizardShell

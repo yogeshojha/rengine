@@ -250,7 +250,7 @@ class ReportSource:
                 scan_id=str(scan_id) if scan_id else "",
             )
             if not covered:
-                entry.note = "No run has produced this."
+                entry.note = "Not scanned"
             out[dimension] = entry
         self._attach_previous(out)
         return out

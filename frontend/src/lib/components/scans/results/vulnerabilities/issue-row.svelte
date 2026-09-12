@@ -169,7 +169,7 @@
 					<HighlightText text={it.template_name} {term} />
 				</span>
 				{#if it.is_kev}
-					<Hint text="Listed as exploited in the wild">
+					<Hint text="On the CISA Known Exploited Vulnerabilities list">
 						{#snippet child(props)}
 							<button
 								{...props}
@@ -395,7 +395,7 @@
 						{expanded ? 'Collapse' : `Show ${plural(it.findings, 'finding', 'findings')}`}
 					</DropdownMenu.Item>
 					<DropdownMenu.Item onclick={() => onFindings(exactToken('template', it.template_id))}>
-						<Filter class="mr-2 size-3.5" /> Open as a findings list
+						<Filter class="mr-2 size-3.5" /> Open as findings list
 					</DropdownMenu.Item>
 					{#if it.sample_hosts.length}
 						<DropdownMenu.Item onclick={() => onHosts(hostFilter)}>
@@ -410,7 +410,7 @@
 						<DropdownMenu.Item>
 							{#snippet child({ props })}
 								<a {...props} href={it.template_url} target="_blank" rel="noopener noreferrer">
-									<ExternalLink class="mr-2 size-3.5" /> View the check
+									<ExternalLink class="mr-2 size-3.5" /> View check
 								</a>
 							{/snippet}
 						</DropdownMenu.Item>

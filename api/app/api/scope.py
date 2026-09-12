@@ -1,4 +1,4 @@
-"""One scan, or every target's latest covering scan — the two scopes a result view has."""
+"""Result view scope: one scan, or every target's latest covering scan."""
 
 from collections.abc import Callable
 from typing import Annotated

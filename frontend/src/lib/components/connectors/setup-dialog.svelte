@@ -15,18 +15,14 @@
 	<Dialog.Content class="sm:max-w-2xl">
 		<Dialog.Header>
 			<Dialog.Title>Connection details</Dialog.Title>
-			<Dialog.Description>The token is shown once and cannot be retrieved later.</Dialog.Description
-			>
+			<Dialog.Description>Shown once. Only a hash is stored.</Dialog.Description>
 		</Dialog.Header>
 
 		{#if created}
 			<div class="space-y-4">
 				<div class="border-warning/25 bg-warning/10 flex gap-2 rounded-lg border p-3">
 					<TriangleAlertIcon class="text-warning mt-0.5 size-4 shrink-0" />
-					<p class="text-muted-foreground text-xs">
-						Only a hash of the token is stored. If it is lost, rotate the connector to issue a new
-						one.
-					</p>
+					<p class="text-muted-foreground text-xs">Rotate the connector to issue a new token.</p>
 				</div>
 
 				<div class="flex items-center gap-2">

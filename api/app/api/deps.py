@@ -96,7 +96,7 @@ def ensure_active(user: User) -> User:
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="This account is inactive",
+            detail="Account is inactive",
         )
     return user
 

@@ -55,20 +55,13 @@
 				<Sparkles class="size-4 text-primary" />
 				Findings
 			</Dialog.Title>
-			<Dialog.Description>
-				Prebuilt queries that returned results for this scan. Select one to apply it.
-			</Dialog.Description>
+			<Dialog.Description>Prebuilt queries with matches in this scan.</Dialog.Description>
 		</Dialog.Header>
 
 		<ScrollArea class="min-h-0">
 			<div class="flex flex-col gap-5 p-5">
 				{#if sections.length === 0}
-					<EmptyState
-						icon={SearchX}
-						title="No queries matched"
-						description="Widen the filters, or show queries with no matches."
-						class="border-0 bg-transparent"
-					/>
+					<EmptyState icon={SearchX} title="No queries matched" class="border-0 bg-transparent" />
 				{/if}
 				{#each sections as section (section.name)}
 					<section class="flex flex-col gap-2">

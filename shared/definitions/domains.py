@@ -353,7 +353,7 @@ TAKEOVER_FINGERPRINTS: tuple[tuple[str, str], ...] = (
 
 
 def takeover_provider(cname: str) -> str | None:
-    """The provider a CNAME points at, when it is one a dangling name can be claimed on."""
+    """The takeover provider a CNAME points at, or None."""
     host = cname.strip().lower().rstrip(".")
     for suffix, provider in TAKEOVER_FINGERPRINTS:
         if host == suffix or host.startswith(f"{suffix}.") or f".{suffix}" in host:

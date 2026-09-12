@@ -1,4 +1,4 @@
-"""Turn a value the database refuses into a 400 rather than an unhandled 500."""
+"""Map a Postgres data exception to a 400."""
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -14,9 +14,9 @@ _DATA_EXCEPTION = "22"
 _MESSAGES = {
     "22001": "A value in the request is longer than the field allows.",
     "22003": "A number in the request is outside the range the field allows.",
-    "22021": "A value in the request contains a NUL byte, which cannot be stored.",
+    "22021": "A value in the request contains a NUL byte.",
 }
-_FALLBACK = "A value in the request is not valid for the field it was sent to."
+_FALLBACK = "A value in the request is not valid for its field."
 
 
 def _sqlstate(exc: DBAPIError) -> str | None:

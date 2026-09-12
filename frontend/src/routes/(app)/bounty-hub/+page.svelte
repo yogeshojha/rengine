@@ -46,7 +46,7 @@
 		try {
 			status = await bountyProgramsApi.status();
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Could not read the Bounty Hub status');
+			toast.error(error instanceof Error ? error.message : 'Bounty Hub status not loaded');
 		}
 	}
 
@@ -62,7 +62,7 @@
 			programs = result.items;
 			total = result.total;
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Could not load programs');
+			toast.error(error instanceof Error ? error.message : 'Programs not loaded');
 			programs = [];
 			total = 0;
 		} finally {
@@ -140,9 +140,9 @@
 				status?.configured ? bountyProgramsApi.sync() : Promise.resolve(),
 				bountyProgramsApi.syncFeed()
 			]);
-			toast.success('Refreshing every platform. This runs in the background.');
+			toast.success('Refresh started');
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Could not start the refresh');
+			toast.error(error instanceof Error ? error.message : 'Refresh not started');
 		} finally {
 			syncing = false;
 		}
@@ -171,8 +171,7 @@
 						{SYNC_INTERVAL_LABELS[status.sync_interval] ?? status.sync_interval}
 					</a>
 				{:else}
-					Browse the bug bounty programs your HackerOne account can see, and add their scope as
-					targets.
+					Bug bounty programs and their scope
 				{/if}
 			</p>
 		</div>
@@ -189,16 +188,13 @@
 				<div class="flex min-w-0 items-start gap-3">
 					<KeyRoundIcon class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
 					<div class="flex min-w-0 flex-col gap-0.5">
-						<span class="text-sm font-medium">Connect HackerOne for private programs</span>
+						<span class="text-sm font-medium">HackerOne is not connected</span>
 						<span class="text-xs text-muted-foreground">
-							Public programs from Bugcrowd, Intigriti and YesWeHack are already here. A HackerOne
-							API token adds its programs, including the private ones you are invited to.
+							A HackerOne API token adds its public and private programs.
 						</span>
 					</div>
 				</div>
-				<Button href={ROUTES.settings('api-keys')} size="sm" variant="outline">
-					Add credentials
-				</Button>
+				<Button href={ROUTES.settings('api-keys')} size="sm" variant="outline">Add API key</Button>
 			</div>
 		</Card.Root>
 	{/if}
@@ -229,11 +225,11 @@
 					<EmptyState
 						icon={TargetIcon}
 						title={total === 0 && status?.programs === 0
-							? 'No programs yet'
+							? 'No programs'
 							: 'No programs match these filters'}
 						description={total === 0 && status?.programs === 0
-							? 'Refresh from HackerOne to pull the programs your account can see.'
-							: 'Try clearing a filter.'}
+							? 'Refresh all platforms to load programs.'
+							: 'Clear a filter.'}
 						class="p-12"
 					/>
 				{:else}

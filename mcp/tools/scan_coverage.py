@@ -33,10 +33,9 @@ class ScanCoverage(Tool):
     title = "Scan coverage"
     group = ToolGroup.EXPLAIN.value
     description = (
-        "The scanner's own account of a run: checks selected against checks actually "
-        "loaded, hosts scanned, requests sent, errors, and hosts it gave up on. "
-        "Call this before reporting that something found nothing — a null count means "
-        "the scanner did not report that number, never that it was zero."
+        "The scanner's account of a run: checks selected and loaded, hosts scanned, "
+        "requests sent, errors and hosts abandoned. A null count means the scanner "
+        "did not report that number."
     )
     Input = Input
     examples = ("scan_coverage target=example.com",)
@@ -61,12 +60,10 @@ class ScanCoverage(Tool):
 
         summary_line = f"{len(runs)} run(s) recorded for {dim.label}"
         if partial:
-            summary_line += f", {len(partial)} did not complete cleanly"
+            summary_line += f", {len(partial)} incomplete"
 
         caveats = list(scope.caveat(dim))
-        caveats.append(
-            "A count reported as null means the scanner did not say, not zero."
-        )
+        caveats.append("A null count means the scanner did not report it.")
         shortfall = sum(
             max(0, (r.get("templates_selected") or 0) - r["templates_loaded"])
             for r in runs
@@ -74,13 +71,10 @@ class ScanCoverage(Tool):
         )
         if shortfall:
             caveats.append(
-                f"{shortfall} selected check(s) were not loaded and did not run. "
-                "Report what ran, not what was selected."
+                f"{shortfall} selected check(s) were not loaded and did not run."
             )
         if not runs:
-            caveats.append(
-                "No coverage rows exist, so nothing can be said about what ran."
-            )
+            caveats.append("No coverage rows exist.")
 
         return ToolResult(
             summary=summary_line,

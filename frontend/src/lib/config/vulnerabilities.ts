@@ -48,9 +48,9 @@ export const SEVERITY_LABELS: Record<string, string> = {
 };
 
 export const SEVERITY_HELP: Record<string, string> = {
-	[Severity.CRITICAL]: 'Exploitable now, with system or data compromise as the outcome.',
-	[Severity.HIGH]: 'Direct path to compromise, usually needing one more condition.',
-	[Severity.MEDIUM]: 'Meaningful weakness that raises the cost of the next finding.',
+	[Severity.CRITICAL]: 'Exploitable now. Leads to system or data compromise.',
+	[Severity.HIGH]: 'Direct path to compromise given one more condition.',
+	[Severity.MEDIUM]: 'Exploitable under specific conditions.',
 	[Severity.LOW]: 'Hygiene defect with limited standalone impact.',
 	[Severity.INFO]: 'An observation about the asset, not a weakness.',
 	[Severity.UNKNOWN]: 'The check did not state a severity.'

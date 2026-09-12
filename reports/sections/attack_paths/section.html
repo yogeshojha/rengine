@@ -1,5 +1,4 @@
 {% import 'macros.html' as m with context %}
-<p class="block muted small">Each entry below is a condition that leads somewhere, rather than a single observation. They are ordered by what they lead to.</p>
 {% for item in paths %}
 {% set path = item.path %}
 <div class="finding finding--{{ ctx.theme.layout.finding }} sev-{{ path.severity }}">

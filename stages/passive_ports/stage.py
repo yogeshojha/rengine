@@ -22,9 +22,7 @@ logger = get_logger(__name__)
 class PassivePortsStage(Stage):
     name = "passive_ports"
     title = "Passive Port Discovery"
-    description = (
-        "Read ports already indexed for each address by internet-wide scanners."
-    )
+    description = "Read ports indexed for each address by internet-wide scanners."
     phase = Phase.EXPANSION.value
     depends_on = frozenset({"host_discovery", "seed_resolution", "subdomain_discovery"})
     group = StageGroup.SERVICES.value
@@ -84,9 +82,7 @@ class PassivePortsStage(Stage):
                 for item in found
             ],
         )
-        self.emit_progress(
-            f"{count} ports already indexed across {len(addresses)} addresses"
-        )
+        self.emit_progress(f"{count} ports indexed across {len(addresses)} addresses")
         return StageResult(counts={"known_ports": count, "addresses": len(addresses)})
 
     def _candidates(self, budget: int) -> list[str]:

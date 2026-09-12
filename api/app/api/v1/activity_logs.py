@@ -79,7 +79,7 @@ async def delete_activity_logs(
     if not project_id and not target_id and not level and not event_type:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="At least one filter (project_id, target_id, level, or event_type) is required",
+            detail="A filter is required: project_id, target_id, level or event_type",
         )
 
     stmt = delete(ActivityLog)

@@ -179,8 +179,8 @@ class CveLookup(Tool):
         caveats = []
         if intel is not None:
             caveats.append(
-                "Severity, exploits and exposure counts are ProjectDiscovery derived "
-                "data, not reNgine observations."
+                "Severity, exploits and exposure counts are ProjectDiscovery data, "
+                "not scan observations."
             )
 
         return ToolOutcome(
@@ -208,7 +208,7 @@ NEAR_ONE = 0.999
 
 
 def _pct(value: float) -> str:
-    """Never round a 99.999% likelihood up to a certainty."""
+    """A likelihood above 99.9% is not rounded to 100%."""
     return "over 99.9%" if value >= NEAR_ONE else f"{value:.1%}"
 
 

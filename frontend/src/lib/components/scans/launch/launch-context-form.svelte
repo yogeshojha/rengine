@@ -78,7 +78,7 @@
 				buildContextPayload(draft, touched)
 			);
 			if (created) onCreated(created.id, created.name);
-			else toast.error(scanContextsStore.error ?? 'Context could not be created');
+			else toast.error(scanContextsStore.error ?? 'Context not created');
 		} finally {
 			saving = false;
 		}
@@ -96,8 +96,7 @@
 	</Button>
 	<Dialog.Title>New context</Dialog.Title>
 	<Dialog.Description>
-		Scope, authentication and rate limits{targetValue ? ` for ${targetValue}` : ''}. Saved as a
-		reusable scan context.
+		Scope, authentication and rate limits{targetValue ? ` for ${targetValue}` : ''}.
 	</Dialog.Description>
 </Dialog.Header>
 
@@ -112,7 +111,7 @@
 				bind:ref={nameEl}
 				value={draft.name}
 				oninput={(e) => patch({ name: e.currentTarget.value })}
-				placeholder="e.g. staging excluded"
+				placeholder="Context name"
 				class="h-9"
 			/>
 		</div>

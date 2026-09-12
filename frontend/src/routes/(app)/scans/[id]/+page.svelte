@@ -149,7 +149,6 @@
 		for (const spec of SURFACE_ORDER) {
 			if (!spec.countColumns.some((c) => before[c] !== ((after[c] as number) ?? 0))) continue;
 			resultTicks[spec.key] = (resultTicks[spec.key] ?? 0) + 1;
-			// over SSE — carry it on the poll fallback too
 			if (spec.key === SurfaceDimension.WEB_ASSETS)
 				resultTicks[INTEREST_TAB] = (resultTicks[INTEREST_TAB] ?? 0) + 1;
 		}
@@ -169,7 +168,7 @@
 			sp.set('tab', v);
 			replaceState(`?${sp.toString()}`, page.state);
 		} catch {
-			// ignore — URL state is best-effort
+			// ignore
 		}
 	}
 
@@ -313,9 +312,7 @@
 	let visibleTabs = $derived(
 		TAB_DEFS.filter((t) => {
 			if (t.key === 'overview' || t.key === NOTES_TAB) return true;
-			// two hosts are the least that can share anything
 			if (t.key === CORRELATION_TAB) return (scan?.subdomains_found ?? 0) >= 2;
-			// software has no rollup column, so it stays until its own count answers
 			if (t.key === SurfaceDimension.SOFTWARE) return softwareTotal === null || softwareTotal > 0;
 			if ((tabCounts[t.key] ?? 0) > 0) return true;
 			if (t.key === INTEREST_TAB) return false;
@@ -384,7 +381,7 @@
 			});
 			history = res.items;
 		} catch {
-			// history is supplementary
+			// ignore
 		} finally {
 			historyLoaded = true;
 		}
@@ -408,7 +405,7 @@
 				statusChanged || !historyLoaded ? loadHistory(project.id, scan.target_id) : null
 			]);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Scan could not be loaded';
+			error = e instanceof Error ? e.message : 'Scan not loaded';
 		} finally {
 			if (!silent) loading = false;
 		}
@@ -431,7 +428,7 @@
 		if (ok) {
 			toast.success('Scan cancelled');
 			load(true);
-		} else toast.error('Scan could not be cancelled');
+		} else toast.error('Scan not cancelled');
 	}
 
 	$effect(() => {
@@ -488,7 +485,7 @@
 		class="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
 	>
 		<ArrowLeft class="size-3.5" />
-		{focused && scan?.parent_scan_id ? 'The run this was seeded from' : 'Scans'}
+		{focused && scan?.parent_scan_id ? 'Parent run' : 'Scans'}
 	</a>
 
 	{#if loading && !scan}
@@ -498,7 +495,7 @@
 	{:else if error}
 		<Empty.Root class="rounded-lg border border-dashed py-20">
 			<Empty.Header>
-				<Empty.Title class="text-sm">Scan could not be loaded</Empty.Title>
+				<Empty.Title class="text-sm">Scan not loaded</Empty.Title>
 				<Empty.Description>{error}</Empty.Description>
 			</Empty.Header>
 			<Empty.Content>
@@ -621,10 +618,10 @@
 
 		{#if focused}
 			<p class="rounded-md border border-info/30 bg-info/5 p-3 text-sm">
-				<span class="font-medium">A focused scan.</span>
+				<span class="font-medium">Focused scan.</span>
 				<span class="text-muted-foreground">
-					Its counts describe the {seedNoun} it was given, not this target's surface. The target summary
-					and dashboard read from full runs.
+					Counts cover the {seedNoun} it was seeded with. The target summary and dashboard read full runs
+					only.
 				</span>
 			</p>
 		{/if}
@@ -640,7 +637,7 @@
 		{#snippet tabFailed(err: unknown, reset: () => void)}
 			<Empty.Root class="rounded-lg border border-dashed py-20">
 				<Empty.Header>
-					<Empty.Title class="text-sm">This tab could not be rendered</Empty.Title>
+					<Empty.Title class="text-sm">Tab not rendered</Empty.Title>
 					<Empty.Description>{err instanceof Error ? err.message : String(err)}</Empty.Description>
 				</Empty.Header>
 				<Empty.Content>
@@ -838,7 +835,7 @@
 								anchor={{ targetId: scan.target_id, scanId: scan.id }}
 								filter={{ scan_id: scan.id }}
 								emptyTitle="No notes on this run"
-								emptyDescription="Notes written on this run's assets appear here."
+								emptyDescription="Add a note from one of its assets."
 								onCount={(n) => (notesTotal = n)}
 							/>
 						</div>
@@ -894,8 +891,8 @@
 	/>
 	<ConfirmDialog
 		bind:open={cancelOpen}
-		title="Cancel this scan?"
-		description="The scan will stop queuing further work and be marked cancelled."
+		title="Cancel scan"
+		description="The scan is marked cancelled. Finished stages keep their results."
 		confirmLabel="Cancel scan"
 		destructive
 		loading={cancelling}

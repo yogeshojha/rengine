@@ -158,7 +158,7 @@
 				<HighlightText text={v.template_name} {term} />
 			</span>
 			{#if v.is_kev}
-				<Hint text="Listed as exploited in the wild">
+				<Hint text="On the CISA Known Exploited Vulnerabilities list">
 					{#snippet child(props)}
 						<button
 							{...props}
@@ -194,7 +194,7 @@
 							{...props}
 							type="button"
 							class="flex h-5 shrink-0 items-center"
-							aria-label="{bounty} HackerOne reports, filter to this CVE"
+							aria-label="Filter to this CVE"
 							onclick={(e) => pivot(e, exactToken('cve', v.cve_ids[0] ?? ''))}
 						>
 							<Badge variant="outline" class="gap-1 px-1.5 text-2xs font-normal">
@@ -422,7 +422,7 @@
 				</div>
 			{:else if col.key === 'reach'}
 				{#if v.host_count > 1}
-					<Hint text="This check fired on {v.host_count} hosts in this scan">
+					<Hint text="Fired on {v.host_count} hosts in this scan">
 						{#snippet child(props)}
 							<button
 								{...props}
@@ -447,7 +447,7 @@
 					{PROTOCOL_LABELS[v.protocol] ?? v.protocol}
 				</button>
 			{:else if col.key === 'scanner'}
-				<Hint text="Filter to findings from this scanner">
+				<Hint text="Filter to this scanner">
 					{#snippet child(props)}
 						<button
 							{...props}
@@ -524,11 +524,11 @@
 					{/if}
 					<DropdownMenu.Separator />
 					<DropdownMenu.Item onclick={() => onFilter(exactToken('template', v.template_id))}>
-						<Filter class="mr-2 size-3.5" /> Everywhere this check fired
+						<Filter class="mr-2 size-3.5" /> All findings from this check
 					</DropdownMenu.Item>
 					{#if v.host}
 						<DropdownMenu.Item onclick={() => onHost(exactToken('host', v.host ?? ''))}>
-							<Globe class="mr-2 size-3.5" /> Open host in Web assets
+							<Globe class="mr-2 size-3.5" /> Open in Web assets
 						</DropdownMenu.Item>
 					{/if}
 					<DropdownMenu.Separator />

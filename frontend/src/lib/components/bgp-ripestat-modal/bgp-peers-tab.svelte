@@ -85,7 +85,7 @@
 			<Empty.Media variant="icon">
 				<Spinner />
 			</Empty.Media>
-			<Empty.Title>Loading BGP peers…</Empty.Title>
+			<Empty.Title>Loading BGP peers</Empty.Title>
 		</Empty.Header>
 	</Empty.Root>
 {:else if error}
@@ -94,7 +94,7 @@
 			<Empty.Media variant="icon">
 				<SearchX />
 			</Empty.Media>
-			<Empty.Title>Peers could not be loaded</Empty.Title>
+			<Empty.Title>Peers not loaded</Empty.Title>
 			<Empty.Description>{error}</Empty.Description>
 		</Empty.Header>
 	</Empty.Root>
@@ -104,10 +104,7 @@
 			<Empty.Media variant="icon">
 				<Waypoints />
 			</Empty.Media>
-			<Empty.Title>No BGP peers found</Empty.Title>
-			<Empty.Description>
-				No neighbour ASNs were found for this autonomous system.
-			</Empty.Description>
+			<Empty.Title>No BGP peers</Empty.Title>
 		</Empty.Header>
 	</Empty.Root>
 {:else}

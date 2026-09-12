@@ -183,7 +183,7 @@
 							<span class="block">{s.description}</span>
 							{#if s.registered}
 								<span class="block text-muted-foreground">
-									IANA registration for port {s.port}, not confirmed by this scan
+									IANA registration for port {s.port}. Not confirmed by this scan.
 								</span>
 							{/if}
 						{:else}

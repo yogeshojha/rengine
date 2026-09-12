@@ -179,7 +179,7 @@
 		}
 		if (degradedStages.length > 0)
 			parts.push(
-				`${degradedStages.length} ${degradedStages.length === 1 ? 'stage' : 'stages'} finished with less than the full result`
+				`${degradedStages.length} ${degradedStages.length === 1 ? 'stage' : 'stages'} returned a partial result`
 			);
 		if (skipped.length > 0)
 			parts.push(

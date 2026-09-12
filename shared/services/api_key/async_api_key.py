@@ -86,10 +86,7 @@ class APIKeyService:
         if not provider_allowed(mode, data.provider.value):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=(
-                    f"The {data.provider.value} integration is only available in "
-                    "Bug bounty mode."
-                ),
+                detail=f"{data.provider.value} requires Bug bounty mode.",
             )
 
         if API_PROVIDER_META.get(data.provider, {}).get("requires_username"):
@@ -97,7 +94,7 @@ class APIKeyService:
             if not username or not str(username).strip():
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"The {data.provider.value} integration requires a username",
+                    detail=f"{data.provider.value} requires a username.",
                 )
 
         existing = await self.session.execute(
@@ -108,7 +105,7 @@ class APIKeyService:
         if existing.scalar_one_or_none():
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"API key for {data.provider.value} already exists in this project",
+                detail=f"An API key for {data.provider.value} exists.",
             )
 
         api_key = APIKey(
@@ -123,7 +120,7 @@ class APIKeyService:
             await self.session.rollback()
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"API key for {data.provider.value} already exists in this project",
+                detail=f"An API key for {data.provider.value} exists.",
             ) from e
         await self.session.refresh(api_key)
         return self._to_read(api_key)

@@ -42,7 +42,7 @@ from stages.registry import stage_by_name
 
 
 def _seed_kind(value: str, default: str) -> str:
-    """An address is an address whichever dimension it was picked from."""
+    """An IP value is an address seed in every dimension."""
     try:
         ipaddress.ip_address(value)
     except ValueError:
@@ -75,7 +75,7 @@ def rescan_schema() -> RescanSchema:
 
 
 def focused_overrides(picked: list[str]) -> dict:
-    """The seed is the only source of assets: nothing may enumerate the target again."""
+    """Disable every stage that enumerates the target."""
     known = stage_by_name()
     overrides = {
         name: {"enabled": False}
@@ -188,7 +188,7 @@ class RescanService:
 
     @staticmethod
     def _anchor(parent: Scan) -> UUID:
-        """A focused run anchors to the census scan; one level only."""
+        """Anchor to the census scan, one level up at most."""
         if parent.scope == ScanScope.FOCUSED.value and parent.parent_scan_id:
             return parent.parent_scan_id
         return parent.id
@@ -273,7 +273,7 @@ class RescanService:
         if scan.status in SCAN_LIVE_STATUSES:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="This run has not finished. Wait for it to complete before rescanning its assets.",
+                detail="The run has not finished. Wait for it to complete before rescanning.",
             )
         return scan
 
@@ -305,7 +305,7 @@ class RescanService:
         return overrides
 
     async def _only_templates(self, template_ids: list[str]) -> dict:
-        """Re-verify exactly the checks that produced the selected findings."""
+        """Restrict the vulnerability scan to the selected checks."""
         rows = (
             (
                 await self.session.execute(

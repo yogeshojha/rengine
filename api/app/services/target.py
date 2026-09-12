@@ -385,7 +385,7 @@ class TargetService:
             await self.session.rollback()
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Target already exists in this project",
+                detail="Target exists in this project",
             ) from e
         await self.session.refresh(target)
 
@@ -626,7 +626,7 @@ class TargetService:
         if not file.filename or not file.filename.lower().endswith(".csv"):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="File must be a CSV file",
+                detail="File must be CSV",
             )
 
         try:
@@ -643,13 +643,13 @@ class TargetService:
         if not targets_data:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No valid targets found in CSV file",
+                detail="No valid targets in the CSV file",
             )
 
         if len(targets_data) > MAX_TARGETS_IMPORT:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Too many targets in CSV file. Maximum is {MAX_TARGETS_IMPORT}, found {len(targets_data)}",
+                detail=f"The CSV holds {len(targets_data)} targets. The limit is {MAX_TARGETS_IMPORT}.",
             )
 
         import_request = TargetImportRequest(
@@ -707,7 +707,7 @@ class TargetService:
         await self._activity.log_async(
             event=ActivityEvent.TARGET_BULK_IMPORTED,
             title=f"Imported {imported_count} targets from CSV",
-            description=f"{imported_count}/{total} imported successfully"
+            description=f"{imported_count}/{total} imported"
             + (f", {failed_count} failed" if failed_count else "")
             + (f", {skipped_duplicates} skipped" if skipped_duplicates else ""),
             level=ActivityLevel.SUCCESS
@@ -808,8 +808,8 @@ class TargetService:
         if target.target_type not in DNS_ELIGIBLE_TYPES:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"DNS lookup is not applicable for target type '{target.target_type.value}'. "
-                f"Only domain and URL targets support DNS enrichment.",
+                detail=f"DNS lookup does not apply to {target.target_type.value} targets. "
+                "Domain and URL targets only.",
             )
 
         target.dns_status = TaskStatus.PENDING
@@ -819,7 +819,7 @@ class TargetService:
 
         await self._activity.log_async(
             event=ActivityEvent.TARGET_ENRICHMENT_STARTED,
-            title=f"DNS re-enrichment queued for {target.target_value}",
+            title=f"DNS lookup queued for {target.target_value}",
             target_id=target.id,
             project_id=target.project_id,
         )
@@ -844,7 +844,7 @@ class TargetService:
 
         await self._activity.log_async(
             event=ActivityEvent.TARGET_ENRICHMENT_STARTED,
-            title=f"WHOIS re-enrichment queued for {target.target_value}",
+            title=f"WHOIS lookup queued for {target.target_value}",
             target_id=target.id,
             project_id=target.project_id,
         )
@@ -865,8 +865,8 @@ class TargetService:
         if target.target_type not in BGP_ELIGIBLE_TYPES:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"BGP enrichment is not applicable for target type '{target.target_type.value}'. "
-                f"Only IP, IP range, and ASN targets support BGP enrichment.",
+                detail=f"BGP enrichment does not apply to {target.target_type.value} targets. "
+                "IP, IP range and ASN targets only.",
             )
 
         target.bgp_status = TaskStatus.PENDING
@@ -877,7 +877,7 @@ class TargetService:
 
         await self._activity.log_async(
             event=ActivityEvent.TARGET_ENRICHMENT_STARTED,
-            title=f"BGP re-enrichment queued for {target.target_value}",
+            title=f"BGP enrichment queued for {target.target_value}",
             target_id=target.id,
             project_id=target.project_id,
         )
@@ -896,7 +896,7 @@ class TargetService:
         except ValueError as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="That is not a valid target ID.",
+                detail="Invalid target ID.",
             ) from e
         result = await self.session.execute(
             select(Target).where(Target.id == target_id)
@@ -930,7 +930,7 @@ class TargetService:
         if existing_target.scalar_one_or_none():
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Target already exists in this project",
+                detail="Target exists in this project",
             )
 
     async def _get_or_create_organizations(
@@ -988,7 +988,7 @@ class TargetService:
                 import_result=TargetImportResult(
                     target_value=_target_value,
                     success=False,
-                    error="Target already exists in project",
+                    error="Target exists in this project",
                 )
             )
 
@@ -1059,7 +1059,7 @@ class TargetService:
                 import_result=TargetImportResult(
                     target_value=target_value,
                     success=False,
-                    error="Target already exists in project",
+                    error="Target exists in this project",
                 )
             )
 

@@ -21,7 +21,7 @@
 
 	let done = $derived.by(() => {
 		const status = onboardingStore.status;
-		const items: string[] = ['Instance secured'];
+		const items: string[] = ['Instance settings saved'];
 		if (status?.mode) {
 			items.push(`Mode set to ${MODE_LABELS[coerceInstanceMode(status.mode)]}`);
 		}
@@ -36,7 +36,7 @@
 		if (s && s.channels > 0) {
 			items.push(`${s.channels} notification channel${s.channels === 1 ? '' : 's'}`);
 		}
-		items.push('First project created');
+		items.push('Project created');
 		return items;
 	});
 
@@ -58,7 +58,7 @@
 			try {
 				await onboardingApi.complete();
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Setup could not be completed');
+				toast.error(e instanceof Error ? e.message : 'Setup not completed');
 			}
 			await Promise.allSettled([projectsStore.refresh(), onboardingStore.refresh()]);
 			finishing = false;
@@ -72,11 +72,7 @@
 
 <div class="space-y-6 text-center">
 	<div class="flex flex-col items-center">
-		<StepHeader
-			icon={CircleCheckIcon}
-			title="Setup complete"
-			description="This instance is configured."
-		/>
+		<StepHeader icon={CircleCheckIcon} title="Setup complete" />
 	</div>
 
 	<ul class="mx-auto max-w-sm space-y-2.5 text-left">
@@ -94,7 +90,7 @@
 
 	{#if optional.length}
 		<div class="mx-auto max-w-sm space-y-2.5 text-left">
-			<p class="text-xs text-muted-foreground">Optional. These can be configured in Settings.</p>
+			<p class="text-xs text-muted-foreground">Optional. Set up in Settings.</p>
 			<ul class="space-y-2.5">
 				{#each optional as item (item.label)}
 					<li>

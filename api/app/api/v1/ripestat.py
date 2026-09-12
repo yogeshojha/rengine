@@ -11,7 +11,7 @@ from tools.ripestat.service import RIPEStatLookupError, RIPEStatService
 
 AsnParam = Annotated[
     str,
-    Path(pattern=r"^[Aa][Ss]?\d{1,10}$|^\d{1,10}$", description="ASN, e.g. AS13335"),
+    Path(pattern=r"^[Aa][Ss]?\d{1,10}$|^\d{1,10}$", description="ASN such as AS13335"),
 ]
 
 
@@ -93,7 +93,7 @@ async def network_info(
 async def abuse_contact(
     _current_user: CurrentUser,
     service: Annotated[RIPEStatService, Depends(get_ripestat_service)],
-    resource: str = Query(..., min_length=1, description="ASN, IP, or prefix"),
+    resource: str = Query(..., min_length=1, description="ASN, IP or prefix"),
     cached_only: bool = Query(False),
 ):
     try:
@@ -107,7 +107,7 @@ async def prefix_overview(
     _current_user: CurrentUser,
     service: Annotated[RIPEStatService, Depends(get_ripestat_service)],
     prefix: str = Query(
-        ..., min_length=1, description="CIDR prefix, e.g. 49.244.0.0/18"
+        ..., min_length=1, description="CIDR prefix such as 49.244.0.0/18"
     ),
     cached_only: bool = Query(False),
 ):

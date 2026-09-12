@@ -63,7 +63,7 @@
 					icon: ShieldAlert,
 					count: critical.toLocaleString(),
 					label: critical === 1 ? 'Critical finding' : 'Critical findings',
-					detail: high ? `${high.toLocaleString()} high beside them` : undefined,
+					detail: high ? `${high.toLocaleString()} high` : undefined,
 					href: vuln('severity:critical')
 				});
 			else if (high)

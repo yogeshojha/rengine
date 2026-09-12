@@ -108,8 +108,8 @@
 		bulkDeleting = false;
 		bulkDeleteOpen = false;
 		selectedIds.clear();
-		if (ok > 0) toast.success(`Deleted ${ok} report${ok !== 1 ? 's' : ''}`);
-		if (failed > 0) toast.error(`${failed} report${failed !== 1 ? 's' : ''} could not be deleted`);
+		if (ok > 0) toast.success(`${ok} report${ok !== 1 ? 's' : ''} deleted`);
+		if (failed > 0) toast.error(`${failed} report${failed !== 1 ? 's' : ''} not deleted`);
 	}
 
 	$effect(() => {
@@ -145,17 +145,17 @@
 			formats: template.formats,
 			clone_of: template.id
 		});
-		if (created) toast.success(`${created.name} is ready to edit`);
+		if (created) toast.success(`Template ${created.name} created`);
 	}
 
 	const deleteDescription = $derived(
 		pendingDelete?.kind === 'template'
-			? `${pendingDelete.name} is removed. Reports already generated from it are unaffected.`
+			? `Template ${pendingDelete.name} is removed.`
 			: pendingDelete?.kind === 'theme'
-				? `${pendingDelete.name} is removed. Reports already generated with it are unaffected.`
+				? `Theme ${pendingDelete.name} is removed.`
 				: pendingDelete?.kind === 'typeface'
-					? `${pendingDelete.name} and its font files are removed. A theme that names it falls back to a system face.`
-					: `${pendingDelete?.name ?? 'This report'} and its downloaded files are removed.`
+					? `Typeface ${pendingDelete.name} and its font files are removed. A theme that names it falls back to a system face.`
+					: `Report ${pendingDelete?.name ?? ''} and its downloaded files are removed.`
 	);
 
 	async function confirmDelete() {
@@ -169,7 +169,9 @@
 				else await reportsApi.deleteFont(id);
 				await reportCatalog.fetch(true);
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : `That ${kind} could not be deleted`);
+				toast.error(
+					e instanceof Error ? e.message : `${kind === 'theme' ? 'Theme' : 'Typeface'} not deleted`
+				);
 			}
 		}
 		pendingDelete = null;
@@ -225,11 +227,11 @@
 				<div class="flex gap-2">
 					<Button variant="outline" size="sm" onclick={() => (fontUploadOpen = true)}>
 						<UploadIcon class="mr-1.5 size-3.5" />
-						Upload a typeface
+						Upload typeface
 					</Button>
 					<Button variant="outline" size="sm" onclick={() => (uploadOpen = true)}>
 						<UploadIcon class="mr-1.5 size-3.5" />
-						Upload a theme
+						Upload theme
 					</Button>
 				</div>
 			{/if}
@@ -243,8 +245,8 @@
 			{:else if !visibleReports.length}
 				<EmptyState
 					icon={FileTextIcon}
-					title="No reports yet"
-					description="Generate a report from a finished scan. Generation runs in the background."
+					title="No reports"
+					description="Generate a report from a finished scan."
 				/>
 			{:else}
 				<Card.Root class="gap-0 py-0">
@@ -306,8 +308,7 @@
 					<div>
 						<h2 class="text-base font-semibold">Typefaces</h2>
 						<p class="text-xs text-muted-foreground">
-							Typefaces a theme can name for its headings, body and code. Files are stored on this
-							instance. A report never fetches a font.
+							Typefaces a theme can name for headings, body and code.
 						</p>
 					</div>
 					<Card.Root class="gap-0 py-0">
@@ -346,7 +347,7 @@
 <DeleteConfirmationDialog
 	open={bulkDeleteOpen}
 	onOpenChange={(v) => (bulkDeleteOpen = v)}
-	title="Delete {selectedCount} report{selectedCount !== 1 ? 's' : ''}?"
+	title="Delete {selectedCount} report{selectedCount !== 1 ? 's' : ''}"
 	description="The selected reports and their downloaded files are removed."
 	confirmLabel="Delete {selectedCount}"
 	isDeleting={bulkDeleting}
@@ -361,7 +362,7 @@
 	onOpenChange={(v) => {
 		if (!v) pendingDelete = null;
 	}}
-	title={`Delete this ${pendingDelete?.kind ?? 'report'}?`}
+	title={`Delete ${pendingDelete?.kind ?? 'report'}`}
 	description={deleteDescription}
 	onConfirm={confirmDelete}
 />

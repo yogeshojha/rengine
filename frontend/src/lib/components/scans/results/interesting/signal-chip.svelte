@@ -49,7 +49,7 @@
 		{/if}
 		{#if isAi && signal.model}
 			<p class="mt-2 text-2xs text-muted-foreground">
-				Written by {signal.model}. A judgement, not an observation.
+				Written by {signal.model}.
 			</p>
 		{:else if signal.evidence}
 			<p

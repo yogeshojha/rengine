@@ -69,7 +69,7 @@
 			await targetsApi.update(targetId, { organization_names: newOrgNames });
 		} catch {
 			applyPatch({ organizations: currentOrgs });
-			toast.error('Organizations could not be updated');
+			toast.error('Organizations not updated');
 		}
 	}
 
@@ -96,9 +96,9 @@
 			]);
 
 			searchValue = '';
-			toast.success('Organization created and applied');
+			toast.success('Organization created');
 		} catch {
-			toast.error('Organization could not be created');
+			toast.error('Organization not created');
 		} finally {
 			isUpdating = false;
 		}
@@ -176,7 +176,7 @@
 						{#if !showCreateOption}
 							<div class="flex flex-col items-center gap-1 py-2">
 								<Building2 class="h-4 w-4 text-muted-foreground" />
-								<span class="text-sm text-muted-foreground">No organizations found</span>
+								<span class="text-sm text-muted-foreground">No organizations</span>
 							</div>
 						{/if}
 					</Command.Empty>

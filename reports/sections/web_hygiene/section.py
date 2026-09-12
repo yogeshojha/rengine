@@ -10,14 +10,14 @@ from shared.definitions.surface import SurfaceDimension
 
 class WebHygieneConfig(SectionConfig):
     warnings_only: bool = flag(False, title="Only warning-level checks")
-    show_hosts: bool = flag(True, title="List the hosts failing warning-level checks")
-    max_hosts: int = limit(40, title="Hosts listed", minimum=5, maximum=500)
+    show_hosts: bool = flag(True, title="List failing web assets")
+    max_hosts: int = limit(40, title="Web assets listed", minimum=5, maximum=500)
 
 
 class WebHygieneSection(Section):
     name = "web_hygiene"
     title = "Web hygiene"
-    description = "Hardening checks read from the response headers of every web host."
+    description = "Header checks on every web asset."
     group = SectionGroup.SURFACE.value
     order = 55
     requires = frozenset({SurfaceDimension.WEB_ASSETS.value})

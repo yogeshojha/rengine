@@ -14,7 +14,7 @@ class WhoisConfig(SectionConfig):
 class WhoisSection(Section):
     name = "whois"
     title = "Registration"
-    description = "The registration record for the subject."
+    description = "Registration record for the subject."
     group = SectionGroup.INTELLIGENCE.value
     order = 10
     default_enabled = False

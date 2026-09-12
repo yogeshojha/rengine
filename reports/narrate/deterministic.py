@@ -47,7 +47,7 @@ class PlainNarrator(Narrator):
         observed = (
             brief.observed_at.strftime("%d %B %Y")
             if brief.observed_at
-            else "an earlier date"
+            else "an unrecorded date"
         )
         covered = [
             SURFACE_NOUN[c["dimension"]][1]
@@ -69,14 +69,8 @@ class PlainNarrator(Narrator):
                 if c["dimension"] == _DIM.VULNERABILITIES.value
             )
             if not covered:
-                return (
-                    "No vulnerability checks were run, so this report makes no statement "
-                    "about weaknesses. It describes the surface that exists."
-                )
-            return (
-                "No findings were recorded by the checks that ran. That is a statement "
-                "about the checks selected. It is not a guarantee about the estate."
-            )
+                return "No vulnerability checks were run. This report describes the surface only."
+            return "The checks that ran recorded no findings."
         ordered = [
             f"{severity[key]:,} {SEVERITY_LABELS[key].lower()}"
             for key in ("critical", "high", "medium", "low", "info")
@@ -94,8 +88,8 @@ class PlainNarrator(Narrator):
         kev = brief.kev_count
         if kev:
             detail += (
-                f" {_count(kev, 'weakness', 'weaknesses')} appear on the CISA Known Exploited "
-                "Vulnerabilities catalog, which means exploitation has been observed in the wild."
+                f" {_count(kev, 'weakness', 'weaknesses')} are on the CISA Known Exploited "
+                "Vulnerabilities catalogue."
             )
         return lead + detail
 
@@ -107,10 +101,7 @@ class PlainNarrator(Narrator):
 
     def _change(self, brief: ReportBrief) -> str:
         if brief.first_run:
-            return (
-                "This is the first run recorded for this target, so nothing is reported "
-                "as new. The next run will compare against this one."
-            )
+            return "This is the first recorded run for this target. Nothing is reported as new."
         if not brief.changes:
             return "Nothing was added or retired since the previous run."
         pieces = []
@@ -135,22 +126,19 @@ class PlainNarrator(Narrator):
         first = brief.actions[0]
         rest = len(brief.actions) - 1
         tail = (
-            f" A further {_count(rest, 'action')} follow in the remediation plan."
+            f" {_count(rest, 'further action')} {'follows' if rest == 1 else 'follow'} in the remediation plan."
             if rest > 0
             else ""
         )
         return (
             f"The first action addresses {first.title}. It clears "
-            f"{_count(first.clears, 'observation')} across {_count(first.assets, 'asset')} "
-            f"and is rated {first.effort.lower()} effort.{tail}"
+            f"{_count(first.clears, 'observation')} across {_count(first.assets, 'asset')}.{tail}"
         )
 
     def _caveat(self, brief: ReportBrief) -> str:
         if not brief.caveats:
             return ""
-        return "**Scope of this statement.** " + " ".join(
-            c.text for c in brief.caveats[:3]
-        )
+        return "**Limitations.** " + " ".join(c.text for c in brief.caveats[:3])
 
     def risk_narrative(self, brief: ReportBrief) -> str:
         if not brief.risks:
@@ -158,36 +146,30 @@ class PlainNarrator(Narrator):
         top = brief.risks[:3]
         lines = [
             (
-                f"{item.name} ranks first because "
-                + _join(
-                    [s.lower() for s in item.signals]
-                    or ["it is the most severe check that fired"]
-                )
-                + f". It was observed {_count(item.count, 'time')} across {_count(item.hosts, 'host')}."
+                f"{item.name} ranks first. It was observed {_count(item.count, 'time')} "
+                f"across {_count(item.hosts, 'asset')}. Ranking signals: "
+                + _join([s.lower() for s in item.signals] or ["severity"])
+                + "."
             )
             if index == 0
             else (
-                f"{item.name} follows, {_count(item.count, 'observation')} across "
-                f"{_count(item.hosts, 'host')}."
+                f"{item.name} follows with {_count(item.count, 'observation')} across "
+                f"{_count(item.hosts, 'asset')}."
             )
             for index, item in enumerate(top)
         ]
         if brief.concentration:
             worst = brief.concentration[0]
             lines.append(
-                f"Risk is concentrated on {worst.label}, which carries "
-                f"{_count(worst.count, 'finding')} with {worst.worst.lower()} as the worst."
+                f"Risk is concentrated on {worst.label}, with "
+                f"{_count(worst.count, 'finding')} and a worst severity of {worst.worst.lower()}."
             )
         return " ".join(lines)
 
     def remediation_plan(self, brief: ReportBrief) -> str:
         if not brief.actions:
             return "No remediation is required from the findings in this report."
-        return (
-            "Actions are ordered by the risk they remove, not by severity alone. "
-            "An action that clears many observations on many assets outranks a single "
-            "finding of the same severity."
-        )
+        return "Actions are ordered by the risk they remove."
 
     def surface_narrative(self, brief: ReportBrief) -> str:
         hosting = brief.hosting
@@ -215,13 +197,7 @@ class PlainNarrator(Narrator):
                 f"{exposure['web']:,} of them answering HTTP."
             )
             if exposure.get("sensitive"):
-                where = (
-                    "should answer only to named administrators"
-                    if exposure.get("internal")
-                    else "normally belongs on a private network"
-                )
                 parts.append(
-                    f"{_count(exposure['sensitive'], 'service')} are of a kind that "
-                    f"{where}."
+                    f"{_count(exposure['sensitive'], 'service')} {'is' if exposure['sensitive'] == 1 else 'are'} administrative or data."
                 )
         return " ".join(parts)

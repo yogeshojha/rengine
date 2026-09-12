@@ -295,7 +295,7 @@ class NoteService:
         if len(tags) != len(set(tag_ids)):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="One of those tags is not in this project.",
+                detail="Tag not in this project.",
             )
         return tags
 

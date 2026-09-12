@@ -72,7 +72,7 @@ class PortScanStage(Stage):
         edge = [ip for ip, d in plan.items() if d.policy == ScanPolicy.WEB.value]
         skipped = len(plan) - len(full) - len(edge)
         if not full and not edge:
-            self.emit_progress(f"no address in scope to scan ({skipped} excluded)")
+            self.emit_progress(f"no address in scope to scan, {skipped} excluded")
             return StageResult(
                 counts={"open_ports": 0, "scanned": 0, "skipped": skipped}
             )
@@ -198,7 +198,7 @@ class PortScanStage(Stage):
         )
 
     def _named_private_seed(self) -> bool:
-        """The address or netblock the user typed is scope, however it is registered."""
+        """The target names a private address or netblock."""
         return self.ctx.target_type in _NAMED_SEED_TYPES and not is_registry_routable(
             self.ctx.target_value
         )

@@ -116,7 +116,7 @@ async def login(
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="This account is inactive",
+            detail="Account is inactive",
         )
 
     await clear_failures(rl_key)
@@ -203,7 +203,7 @@ async def refresh_access_token(
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="This account is inactive",
+            detail="Account is inactive",
         )
 
     new_access_token = create_access_token(str(user.id))
@@ -228,7 +228,7 @@ async def logout(request: Request, response: Response):
             ttl = int(payload["exp"] - utc_now().timestamp())
             await revoke_token(payload["jti"], ttl)
     clear_auth_cookies(response)
-    return {"message": "Successfully logged out"}
+    return {"message": "Logged out"}
 
 
 @router.get("/me", response_model=UserRead)
@@ -257,7 +257,7 @@ async def register_user(
     if result.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this email already exists",
+            detail="A user with this email exists",
         )
 
     result = await session.execute(
@@ -266,7 +266,7 @@ async def register_user(
     if result.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this username already exists",
+            detail="A user with this username exists",
         )
 
     user = User(
@@ -303,7 +303,7 @@ async def change_password(
     if target_user_id != current_user.id and not current_user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only change your own password",
+            detail="Administrator access is required to change another user's password",
         )
 
     if target_user_id == current_user.id:
@@ -331,7 +331,7 @@ async def change_password(
     await session.commit()
 
     return {
-        "message": "Password changed successfully",
+        "message": "Password changed",
         "user_id": str(target_user_id),
     }
 
@@ -358,7 +358,7 @@ async def change_username(
     if target_user_id != current_user.id and not current_user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only change your own username",
+            detail="Administrator access is required to change another user's username",
         )
 
     result = await session.execute(
@@ -369,7 +369,7 @@ async def change_username(
     if existing_user and existing_user.id != target_user_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already taken",
+            detail="Username is taken",
         )
 
     target_user.username = username_data.new_username
@@ -379,7 +379,7 @@ async def change_username(
     await session.commit()
 
     return {
-        "message": "Username changed successfully",
+        "message": "Username changed",
         "user_id": str(target_user_id),
         "new_username": username_data.new_username,
     }

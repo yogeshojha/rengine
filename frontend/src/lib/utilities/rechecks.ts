@@ -73,7 +73,7 @@ export async function startRescan(
 		toast.success(runStarted(run, noun, nounPlural), { description: runDescription(run) });
 		return true;
 	} catch (e) {
-		toast.error(e instanceof Error ? e.message : 'Rescan could not start');
+		toast.error(e instanceof Error ? e.message : 'Rescan not started');
 		return false;
 	}
 }

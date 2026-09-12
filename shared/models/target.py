@@ -24,7 +24,7 @@ MAX_ORG_LEN = 100
 
 
 def _clean_labels(values: list[str] | None, max_len: int) -> list[str] | None:
-    """Drop the blanks a pasted list carries, and bound what the column can hold."""
+    """Drop blank entries and cap each label's length."""
     if values is None:
         return None
     return [clean_name(v, max_len=max_len) for v in values if (v or "").strip()]
@@ -131,7 +131,7 @@ class TargetBulkCreate(BaseModel):
         ...,
         min_length=1,
         max_length=1000,
-        description="List of target values to import (max 1000)",
+        description="Target values to import. At most 1000.",
     )
     organization_names: list[str] = Field(default_factory=list)
     tag_names: list[str] = Field(default_factory=list)
@@ -225,5 +225,5 @@ class TargetImportRequest(BaseModel):
         ...,
         min_length=1,
         max_length=500,
-        description="List of targets to import (max 500)",
+        description="Targets to import. At most 500.",
     )

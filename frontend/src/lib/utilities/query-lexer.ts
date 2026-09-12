@@ -129,8 +129,7 @@ export function lex(source: string, known: FieldLookup): LexResult {
 			problems.push({
 				start: i,
 				end,
-				message:
-					unterminated === 'quote' ? 'This quote is never closed' : 'This list is never closed',
+				message: unterminated === 'quote' ? 'Unclosed quote' : 'Unclosed list',
 				level: 'error'
 			});
 			push('invalid', i, end);
@@ -196,7 +195,7 @@ export function lex(source: string, known: FieldLookup): LexResult {
 		problems.push({
 			start: open,
 			end: open + 1,
-			message: 'This group is never closed',
+			message: 'Unclosed group',
 			level: 'error'
 		});
 	}

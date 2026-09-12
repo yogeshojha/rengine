@@ -36,19 +36,19 @@ class PortScanConfig(StageConfig):
         default="",
         max_length=2000,
         title="Exclude ports",
-        description="Ports never to probe, as a list or range.",
+        description="Ports excluded from every scan, as a list or range.",
     )
     scan_type: str = Field(
         default="connect",
         title="Scan type",
-        description="Connect completes the TCP handshake. SYN is faster but needs raw sockets.",
+        description="Connect completes the TCP handshake. SYN needs raw sockets.",
         json_schema_extra={"options": list(_SCAN_TYPES), "option_labels": _SCAN_TYPES},
     )
     rate: int = rate(1000, tool="naabu", title="Packet rate (pps)")
     threads: int = threads(
         100,
         title="Concurrency",
-        description="Sockets in flight. The packet rate governs load on the target.",
+        description="Sockets in flight.",
     )
     timeout: int = timeout(3, title="Timeout (s)")
     retries: int = Field(
@@ -56,30 +56,30 @@ class PortScanConfig(StageConfig):
         ge=0,
         le=5,
         title="Retries",
-        description="Extra attempts per port. Every retry costs a full timeout on a filtered port.",
+        description="Extra attempts per port.",
     )
     cdn_policy: ScanPolicy = Field(
         default=ScanPolicy.WEB,
         title="CDN-fronted addresses",
-        description="A CDN edge answers for many names. A full scan there profiles the CDN rather than the target.",
+        description="Port set for addresses attributed to a CDN or WAF.",
         json_schema_extra={"option_labels": SCAN_POLICY_LABELS},
     )
     scan_cloud: bool = Field(
         default=True,
         title="Scan cloud addresses in full",
-        description="Cloud ranges host customer machines, unlike a CDN edge. Scan them like any other address.",
+        description="Scan addresses attributed to a cloud provider with the full port set.",
     )
     skip_private: bool = Field(
         default=True,
         title="Skip private addresses",
-        description="Never probe loopback, link-local or RFC1918 addresses a scan came across. An address or netblock named as the target is always scanned.",
+        description="Skip loopback, link-local and RFC1918 addresses. An address or netblock named as the target is scanned.",
     )
     port_threshold: int = Field(
         default=500,
         ge=0,
         le=65535,
         title="Open-port threshold",
-        description="Discard a host reporting more open ports than this. Above the threshold the host is answering on every port. 0 disables.",
+        description="Discard a host reporting more open ports than this. 0 disables.",
     )
     max_addresses: int = Field(
         default=8192,

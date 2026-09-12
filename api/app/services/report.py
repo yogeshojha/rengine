@@ -262,7 +262,8 @@ class ReportService:
     ) -> ReportThemeRead:
         if len(content.encode("utf-8", errors="ignore")) > MAX_THEME_BYTES:
             raise HTTPException(
-                status.HTTP_400_BAD_REQUEST, "That theme file is too large."
+                status.HTTP_400_BAD_REQUEST,
+                f"Theme file exceeds {MAX_THEME_BYTES} bytes.",
             )
         try:
             tokens = parse_theme(content, slug=slug)
@@ -320,7 +321,7 @@ class ReportService:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Theme not found")
         if row.origin == ThemeOrigin.BUILTIN.value:
             raise HTTPException(
-                status.HTTP_400_BAD_REQUEST, "A shipped theme cannot be deleted."
+                status.HTTP_400_BAD_REQUEST, "Shipped themes are read-only."
             )
         await self.session.delete(row)
         await self.session.commit()
@@ -382,7 +383,7 @@ class ReportService:
         if existing is None and count >= MAX_FAMILIES:
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST,
-                f"This instance already holds {MAX_FAMILIES} typefaces. Delete one first.",
+                f"The typeface limit is {MAX_FAMILIES}. Delete one first.",
             )
         if slug in {f.slug for f in vendored()}:
             raise HTTPException(
@@ -591,7 +592,7 @@ class ReportService:
         if row.is_builtin:
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST,
-                "A shipped template cannot be edited. Duplicate it and edit the copy.",
+                "Shipped templates are read-only. Duplicate it and edit the copy.",
             )
         payload = data.model_dump(exclude_unset=True)
         if data.sections is not None:
@@ -620,7 +621,7 @@ class ReportService:
         row = await self.template(template_id, project_id)
         if row.is_builtin:
             raise HTTPException(
-                status.HTTP_400_BAD_REQUEST, "A shipped template cannot be deleted."
+                status.HTTP_400_BAD_REQUEST, "Shipped templates are read-only."
             )
         await self.session.delete(row)
         await self.session.commit()
@@ -660,7 +661,7 @@ class ReportService:
         return scan, target
 
     async def _require_known_theme(self, slug: str | None) -> None:
-        """A theme that does not exist would render as the default without saying so."""
+        """Reject an unknown theme slug."""
         if not slug:
             return
         known = set(builtin_themes())
@@ -774,7 +775,7 @@ class ReportService:
     async def _volumes(
         self, scan: Scan | None, severities: list[str] | None = None
     ) -> tuple[int, int, int, dict[str, int]]:
-        """What the document will draw on, counted the way the sections filter it."""
+        """Finding, issue and asset counts, filtered the way the sections filter."""
         if scan is None:
             return (0, 0, 0, {})
         from shared.models.subdomain import Subdomain  # noqa: PLC0415
@@ -863,14 +864,12 @@ class ReportService:
             estimate.ai_cost_usd = round(cost, 4) if cost else 0.0
             if cost is None:
                 estimate.warnings.append(
-                    "This provider does not publish per-token pricing here, so no cost is shown."
+                    "No per-token pricing for this provider. Cost not estimated."
                 )
         for entry in enabled:
             spec_row = lookup_section(entry.section)
             if spec_row is None:
-                estimate.warnings.append(
-                    f"'{entry.section}' is not a known section and will be skipped."
-                )
+                estimate.warnings.append(f"Unknown section '{entry.section}'. Skipped.")
         return estimate
 
     async def list(
@@ -933,7 +932,7 @@ class ReportService:
                 if path.is_file():
                     return path, str(entry.get("filename"))
         raise HTTPException(
-            status.HTTP_404_NOT_FOUND, "That format was not generated for this report."
+            status.HTTP_404_NOT_FOUND, "Format not generated for this report."
         )
 
     @staticmethod
@@ -1000,7 +999,7 @@ def _pages(
     by_severity: dict[str, int] | None = None,
     chapter_breaks: bool = True,
 ) -> int:
-    """Estimated length, read from each section's own limits rather than the raw totals."""
+    """Estimated page count from each section's limits."""
     total = 0.0
     for entry in sections:
         spec = lookup_section(entry.section)

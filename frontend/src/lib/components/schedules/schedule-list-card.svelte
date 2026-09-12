@@ -101,9 +101,7 @@
 		<span class="text-muted-foreground/40">·</span>
 		<span class="shrink-0">{schedule.timezone}</span>
 		{#if schedule.timezone_stale}
-			<Hint
-				text="The instance timezone changed after this schedule was created. It still fires in {schedule.timezone}."
-			>
+			<Hint text="The instance timezone changed. This schedule fires in {schedule.timezone}.">
 				{#snippet child(props)}
 					<span
 						{...props}
@@ -144,7 +142,7 @@
 
 	{#if schedule.last_error}
 		<p class="mb-2 truncate text-2xs text-destructive" title={schedule.last_error}>
-			Last run had errors: {schedule.last_error}
+			Last run error: {schedule.last_error}
 		</p>
 	{/if}
 

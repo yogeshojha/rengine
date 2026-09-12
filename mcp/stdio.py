@@ -34,7 +34,7 @@ async def _serve() -> None:
         try:
             payload = json.loads(line)
         except json.JSONDecodeError:
-            _emit(parse_failure("That is not valid JSON."))
+            _emit(parse_failure("Not valid JSON."))
             continue
 
         async with async_db_session() as session:

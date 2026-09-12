@@ -116,7 +116,6 @@
 				</HoverCard.Trigger>
 				<HoverCard.Content class="w-96 max-w-[90vw] p-3" side="top" align="start">
 					{@render detail(match)}
-					<p class="mt-1.5 text-2xs text-muted-foreground">Click to open the evidence.</p>
 				</HoverCard.Content>
 			</HoverCard.Root>
 		{/each}

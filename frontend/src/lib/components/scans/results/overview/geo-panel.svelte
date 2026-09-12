@@ -101,7 +101,7 @@
 				</div>
 			{:else}
 				<p class="text-xs text-muted-foreground">
-					All {total.toLocaleString()} addresses are in a single country.
+					All {total.toLocaleString()} addresses in one country.
 				</p>
 			{/if}
 
@@ -118,7 +118,7 @@
 			<Skeleton class="h-4 w-2/3" />
 		{:else}
 			<p class="text-center text-xs text-muted-foreground">
-				{live ? 'Locations resolve after IP enrichment.' : 'No location data for this scan.'}
+				{live ? 'Locations pending IP enrichment' : 'No location data'}
 			</p>
 		{/if}
 	</div>

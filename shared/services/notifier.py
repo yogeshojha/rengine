@@ -99,7 +99,7 @@ def send_one(
             return (True, "Sent.") if ok else (False, "Delivery failed.")
         if provider in DIRECT_POST_PROVIDERS:
             return _send_direct(provider, config, title, body, severity)
-        return False, f"That does not look like a {provider} webhook URL."
+        return False, f"Not a {provider} webhook URL."
     except Exception as exc:
         logger.warning("notifier send error (%s): %s", provider, exc)
         return False, str(exc)

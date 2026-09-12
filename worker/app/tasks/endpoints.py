@@ -97,7 +97,7 @@ def verify_branch(
                 None,
                 CoverageStatus.SKIPPED.value,
                 str(e)[:2000],
-                f"On-demand verification of {where}",
+                f"On-demand verification of {where}.",
             )
             logger.warning("httpx unavailable, branch stays unverified")
             return {"verified": 0, "answered": 0, "error": str(e)[:200]}
@@ -132,10 +132,8 @@ def verify_branch(
         status = (
             CoverageStatus.PARTIAL.value if skipped else CoverageStatus.COMPLETED.value
         )
-        reason = f"On-demand verification of {where}" + (
-            f"; {skipped} more were left unverified by the limit of {cap}."
-            if skipped
-            else ""
+        reason = f"On-demand verification of {where}." + (
+            f" {skipped} above the limit of {cap} left unverified." if skipped else ""
         )
         _store(
             session,

@@ -161,7 +161,7 @@ _IP_BUILDERS = {
 def compile_ip_compare(cmp: Compare, ctx: IpQueryContext):
     builder = _IP_BUILDERS.get(cmp.name)
     if builder is None:
-        msg = f"Field {cmp.name!r} cannot be searched yet."
+        msg = f"Field {cmp.name!r} cannot be searched."
         raise QuerySyntaxError(msg, cmp.start, cmp.end)
     return builder(cmp, ctx)
 

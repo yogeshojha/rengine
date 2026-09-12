@@ -14,7 +14,7 @@ class FindingsDetailConfig(SectionConfig):
     group_by_issue: bool = flag(
         True,
         title="Group by weakness",
-        description="One entry per check with every affected asset, instead of one entry per observation.",
+        description="One entry per check with every affected asset.",
     )
     severities: list[str] = multi(
         [s for s in SEVERITY_ORDER if s != Severity.UNKNOWN.value],
@@ -24,15 +24,13 @@ class FindingsDetailConfig(SectionConfig):
     detail_from: str = choice(
         Severity.MEDIUM.value,
         title="Full detail down to",
-        description="Weaknesses at or above this severity get evidence and impact. "
-        "Below it they are written short, and informational observations roll up into one table.",
+        description="Evidence and impact are shown at or above this severity.",
         options={s: s.title() for s in SEVERITY_ORDER if s != Severity.UNKNOWN.value},
     )
     roll_up_info: bool = flag(
         True,
         title="Roll informational observations into a table",
-        description="One row per check instead of an entry each. A long tail of observations "
-        "should not outweigh the weaknesses above it.",
+        description="One row per informational check.",
     )
     max_assets: int = limit(
         25, title="Affected assets listed per weakness", minimum=1, maximum=500
@@ -44,7 +42,7 @@ class FindingsDetailConfig(SectionConfig):
     show_references: bool = flag(True, title="Show references")
     show_evidence: bool = flag(True, title="Show request and response")
     show_curl: bool = flag(True, title="Show reproduction command")
-    show_screenshot: bool = flag(False, title="Show a screenshot of the affected asset")
+    show_screenshot: bool = flag(False, title="Show screenshot")
     show_controls: bool = flag(True, title="Show control mapping")
     show_classification: bool = flag(True, title="Show CVE, CWE, CVSS and EPSS")
     evidence_chars: int = limit(

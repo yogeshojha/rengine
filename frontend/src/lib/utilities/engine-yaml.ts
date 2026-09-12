@@ -154,12 +154,12 @@ export function validate(
 				from: 0,
 				to: 1,
 				severity: 'error',
-				message: 'Engine must be a plain YAML mapping (aliases and cycles are not supported).'
+				message: 'Engine must be a plain YAML mapping. Aliases and cycles are not supported.'
 			}
 		];
 	}
 
-	if (!String(raw.name ?? '').trim()) push(['name'], 'error', 'An engine needs a name.');
+	if (!String(raw.name ?? '').trim()) push(['name'], 'error', 'name is required.');
 
 	const intensities = ['passive', 'normal', 'aggressive'];
 	if (raw.intensity !== undefined && !intensities.includes(String(raw.intensity))) {
@@ -169,7 +169,7 @@ export function validate(
 	for (const key of Object.keys(raw)) {
 		if (!(TOP_LEVEL as readonly string[]).includes(key)) {
 			const hint = near(key, [...TOP_LEVEL]);
-			push([key], 'warning', `Unknown key '${key}'.${hint ? ` Did you mean '${hint}'?` : ''}`);
+			push([key], 'warning', `Unknown key '${key}'.${hint ? ` Closest match: '${hint}'.` : ''}`);
 		}
 	}
 
@@ -188,7 +188,7 @@ export function validate(
 			push(
 				['stages', stageName],
 				'error',
-				`Unknown stage '${stageName}'.${hint ? ` Did you mean '${hint}'?` : ''}`
+				`Unknown stage '${stageName}'.${hint ? ` Closest match: '${hint}'.` : ''}`
 			);
 			continue;
 		}
@@ -213,7 +213,7 @@ export function validate(
 				push(
 					['stages', stageName, key],
 					'error',
-					`'${stageName}' has no setting '${key}'.${hint ? ` Did you mean '${hint}'?` : ''}`
+					`'${stageName}' has no setting '${key}'.${hint ? ` Closest match: '${hint}'.` : ''}`
 				);
 				continue;
 			}

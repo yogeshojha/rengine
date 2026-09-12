@@ -158,7 +158,7 @@
 					<FolderOpen class="size-5 text-muted-foreground" strokeWidth={1.5} />
 				</Empty.Media>
 				<Empty.Title class="text-sm">No project selected</Empty.Title>
-				<Empty.Description>Select or create a project to view its dashboard.</Empty.Description>
+				<Empty.Description>Select or create a project.</Empty.Description>
 			</Empty.Header>
 		</Empty.Root>
 	{:else if dashboardStore.error && !overview}
@@ -167,7 +167,7 @@
 				<Empty.Media class="rounded-full bg-destructive/10 p-3">
 					<TriangleAlert class="size-5 text-destructive" strokeWidth={1.5} />
 				</Empty.Media>
-				<Empty.Title class="text-sm">Dashboard could not be loaded</Empty.Title>
+				<Empty.Title class="text-sm">Dashboard not loaded</Empty.Title>
 				<Empty.Description>{dashboardStore.error}</Empty.Description>
 			</Empty.Header>
 			<Empty.Content>
@@ -186,10 +186,7 @@
 	{:else if emptyProject}
 		<Card.Root class="gap-0 overflow-hidden py-0">
 			<div class="px-5 py-5">
-				<Launcher
-					heading="No targets in this project"
-					sub="Scanning a target adds it to this project."
-				/>
+				<Launcher heading="No targets in this project" sub="Add a target or start a scan." />
 			</div>
 		</Card.Root>
 	{:else}

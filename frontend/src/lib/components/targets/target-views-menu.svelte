@@ -124,9 +124,9 @@
 
 <ConfirmDialog
 	open={!!pendingDelete}
-	title="Delete this view?"
-	description={`Delete the saved view "${pendingDelete?.name ?? ''}"? This removes the saved filter only. Targets are not affected.`}
-	confirmLabel="Delete view"
+	title="Delete view"
+	description={`Saved view "${pendingDelete?.name ?? ''}" is removed.`}
+	confirmLabel="Delete"
 	destructive
 	onOpenChange={(o) => {
 		if (!o) pendingDelete = null;
@@ -138,12 +138,11 @@
 	<Dialog.Content class="w-[calc(100%-2rem)] sm:max-w-md">
 		<Dialog.Header>
 			<Dialog.Title>Save view</Dialog.Title>
-			<Dialog.Description>Saved views are listed in this menu.</Dialog.Description>
 		</Dialog.Header>
 		<form onsubmit={confirmSave} class="space-y-4">
 			<div class="space-y-2">
 				<Label for="view-name">View name</Label>
-				<Input id="view-name" bind:value={newName} placeholder="e.g. Live web assets" autofocus />
+				<Input id="view-name" bind:value={newName} placeholder="Responding web assets" autofocus />
 			</div>
 			<Dialog.Footer>
 				<Button type="button" variant="outline" onclick={() => (saveOpen = false)}>Cancel</Button>

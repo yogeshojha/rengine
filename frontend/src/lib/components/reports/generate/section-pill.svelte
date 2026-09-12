@@ -14,7 +14,7 @@
 
 	let { section, on, unavailable = false, onToggle, children }: Props = $props();
 
-	const UNAVAILABLE = 'This scan produced nothing for this section, so it would be skipped.';
+	const UNAVAILABLE = 'No data for this section in this scan. Skipped.';
 	let hint = $derived(unavailable ? UNAVAILABLE : section.description);
 </script>
 

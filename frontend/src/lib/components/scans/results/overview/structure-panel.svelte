@@ -57,7 +57,7 @@
 			key: p.path,
 			label: p.path,
 			mono: true,
-			sub: `on ${plural(p.hosts, 'host', 'hosts')}`,
+			sub: `on ${plural(p.hosts, 'web asset', 'web assets')}`,
 			count: p.hosts,
 			filter: p.query
 		}))
@@ -67,7 +67,7 @@
 		(structure?.interest ?? []).slice(0, TOP).map((i) => ({
 			key: i.key,
 			label: i.label,
-			sub: i.hosts ? `on ${plural(i.hosts, 'host', 'hosts')}` : undefined,
+			sub: i.hosts ? `on ${plural(i.hosts, 'web asset', 'web assets')}` : undefined,
 			count: i.count,
 			filter: i.query
 		}))
@@ -134,7 +134,7 @@
 		<div class="-mt-px -ml-px grid grid-cols-1 md:grid-cols-[repeat(auto-fit,minmax(18rem,1fr))]">
 			{#if findings.length}
 				<div class="flex flex-col gap-3 border-t border-l p-5">
-					<h3 class="text-xs font-medium text-muted-foreground uppercase">Worth testing</h3>
+					<h3 class="text-xs font-medium text-muted-foreground uppercase">Interest</h3>
 					<ul class="space-y-2.5">
 						{#each findings as f (f.kind + f.label)}
 							{@const Icon = FINDING_ICON[f.kind as keyof typeof FINDING_ICON] ?? ShieldAlert}
@@ -169,10 +169,9 @@
 
 			{#if shared.length}
 				<div class="flex flex-col gap-3 border-t border-l p-5">
-					<h3 class="text-xs font-medium text-muted-foreground uppercase">Shared across hosts</h3>
-					<p class="text-xs text-muted-foreground">
-						A route present on many hosts is one application. A single fix resolves every instance.
-					</p>
+					<h3 class="text-xs font-medium text-muted-foreground uppercase">
+						Shared across web assets
+					</h3>
 					<RankedList rows={shared} base={sharedBase} onSelect={pick} />
 				</div>
 			{/if}

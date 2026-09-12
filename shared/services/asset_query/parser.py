@@ -138,10 +138,10 @@ class _Scanner:
                 break
             self.i += 1
         if quoted:
-            msg = "This quote is never closed."
+            msg = "Unclosed quote."
             raise QuerySyntaxError(msg, start, self.n, "Close it with a quote.")
         if depth:
-            msg = "This list is never closed."
+            msg = "Unclosed list."
             raise QuerySyntaxError(msg, start, self.n, "Close it with ].")
         return self.s[start : self.i], start, self.i
 
@@ -247,10 +247,10 @@ def _compare(
     if op not in OPS_BY_TYPE[spec.type]:
         allowed = " ".join(o.value for o in OPS_BY_TYPE[spec.type])
         msg = f"{canonical} does not support {op.value}."
-        raise QuerySyntaxError(msg, start, end, f"It accepts: {allowed}")
+        raise QuerySyntaxError(msg, start, end, f"Accepts: {allowed}")
     if op in (Op.RE, Op.NRE):
         if any(len(v) > _MAX_REGEX for v in values):
-            msg = "That regular expression is too long."
+            msg = "The regular expression is too long."
             raise QuerySyntaxError(msg, start, end)
         for value in values:
             try:
@@ -285,7 +285,7 @@ class _Parser:
     def count(self) -> None:
         self.nodes += 1
         if self.nodes > MAX_QUERY_NODES:
-            msg = "That query has too many parts."
+            msg = "The query has too many parts."
             raise QuerySyntaxError(msg, 0, len(self.source))
 
     def parse(self) -> Node | None:
@@ -336,7 +336,7 @@ class _Parser:
             self.i += 1
             node = self.or_expr()
             if not self.at("RPAREN"):
-                msg = "This group is never closed."
+                msg = "Unclosed group."
                 hint = "Close it with )."
                 raise QuerySyntaxError(msg, open_token.start, len(self.source), hint)
             self.i += 1
@@ -349,7 +349,7 @@ class _Parser:
         if token.kind == "TERM":
             self.terms += 1
             if self.terms > MAX_FREE_TERMS:
-                msg = "That is too many words to search at once."
+                msg = "Too many free-text words."
                 hint = f"Use at most {MAX_FREE_TERMS}, or narrow with a field."
                 raise QuerySyntaxError(msg, token.start, token.end, hint)
             return Term(token.text, token.quoted, token.start, token.end)
@@ -364,7 +364,7 @@ class _Parser:
                 end=token.end,
                 raw_name=token.text,
             )
-        msg = f"{token.text or token.kind.lower()!r} needs something to act on."
+        msg = f"{token.text or token.kind.lower()!r} has no operand."
         raise QuerySyntaxError(msg, token.start, token.end)
 
 
@@ -374,6 +374,6 @@ def parse_query(
     if not source or not source.strip():
         return None
     if len(source) > MAX_QUERY_LENGTH:
-        msg = "That query is too long."
+        msg = "The query is too long."
         raise QuerySyntaxError(msg, 0, len(source))
     return _Parser(tokenize(source, registry), source).parse()

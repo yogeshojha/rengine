@@ -23,7 +23,7 @@ CAPABILITY_LABELS: dict[str, str] = {
 
 CAPABILITY_HELP: dict[str, str] = {
     Capability.READ.value: "Query assets, services, endpoints, findings and coverage.",
-    Capability.PLAN.value: "Resolve a scan plan without running it. Touches no target.",
+    Capability.PLAN.value: "Resolve a scan plan without running it.",
     Capability.WRITE.value: "Record triage decisions on findings.",
     Capability.LAUNCH.value: "Start scans and focused rescans against targets.",
 }
@@ -41,7 +41,7 @@ DEFAULT_CEILING: dict[str, bool] = {
 
 
 def normalize(values: list[str] | tuple[str, ...] | None) -> list[str]:
-    """Drop unknown names, always include read, and keep the declared order."""
+    """Drop unknown names, include read, keep the declared order."""
     given = {v for v in (values or []) if v in CAPABILITY_ORDER}
     given.update(ALWAYS_GRANTED)
     return [c for c in CAPABILITY_ORDER if c in given]

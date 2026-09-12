@@ -146,7 +146,7 @@ class DnsLookup(Tool):
         summary = (
             f"{len(rows)} records · {addresses} address{'es' if addresses != 1 else ''}"
             if rows
-            else f"No records returned ({status or 'no answer'})"
+            else f"No records returned: {status or 'no answer'}"
         )
         return ToolOutcome(
             summary=summary,

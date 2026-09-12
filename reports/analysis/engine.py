@@ -23,7 +23,6 @@ from shared.definitions.compliance import (
 from shared.definitions.ports import ServiceClass
 from shared.definitions.surface import (
     SURFACE_LABELS,
-    SURFACE_NOUN,
     SURFACE_ORDER,
     SurfaceDimension,
 )
@@ -179,10 +178,7 @@ def _caveats(source: ReportSource) -> list[Caveat]:
             out.append(
                 Caveat(
                     kind="not_scanned",
-                    text=(
-                        f"{SURFACE_LABELS[dimension]} were not assessed. "
-                        "No conclusion about them can be drawn from this report."
-                    ),
+                    text=(f"{SURFACE_LABELS[dimension]} were not scanned."),
                 )
             )
     for row in source.coverage_rows:
@@ -191,8 +187,8 @@ def _caveats(source: ReportSource) -> list[Caveat]:
                 Caveat(
                     kind="partial",
                     text=(
-                        f"The {row.group} scanner run finished partially. "
-                        f"{row.hosts_scanned or 0} of {row.hosts_total} hosts were covered."
+                        f"The {row.group} scan covered "
+                        f"{row.hosts_scanned or 0} of {row.hosts_total} hosts."
                     ),
                 )
             )
@@ -200,28 +196,28 @@ def _caveats(source: ReportSource) -> list[Caveat]:
             out.append(
                 Caveat(
                     kind="failed",
-                    text=f"The {row.group} scanner run failed: {row.error or 'no reason recorded'}.",
+                    text=f"The {row.group} scan failed: {row.error or 'no error recorded'}.",
                 )
             )
         if row.hosts_dropped:
             out.append(
                 Caveat(
                     kind="dropped",
-                    text=f"{len(row.hosts_dropped)} hosts were dropped by the scanner budget and were not checked.",
+                    text=f"{len(row.hosts_dropped)} hosts exceeded the scanner budget and were not checked.",
                 )
             )
     if source.scan is not None and source.scan.status == "cancelled":
         out.append(
             Caveat(
                 kind="cancelled",
-                text="This run was cancelled. It reports what had been written when it stopped, and is not a complete pass.",
+                text="The run was cancelled. Results are those written before it stopped.",
             )
         )
     if source.suppressed_count:
         out.append(
             Caveat(
                 kind="suppressed",
-                text=f"{source.suppressed_count} findings are hidden because a reviewer marked them as accepted or false positive.",
+                text=f"{source.suppressed_count} findings marked accepted or false positive are excluded.",
             )
         )
     excluded = source.excluded()
@@ -255,14 +251,13 @@ def _highlights(source: ReportSource, brief: ReportBrief) -> list[Highlight]:
     out: list[Highlight] = []
     for dimension in SURFACE_ORDER:
         entry = source.coverage[dimension]
-        noun = SURFACE_NOUN[dimension][1]
         if not entry.covered:
             out.append(
                 Highlight(
                     key=dimension,
                     label=SURFACE_LABELS[dimension],
                     value="Not scanned",
-                    detail=f"No run has produced {noun} for this target.",
+                    detail="",
                     tone="absent",
                 )
             )
@@ -293,12 +288,12 @@ def _headline(brief: ReportBrief) -> str:
     severity = brief.severity
     if brief.kev_count:
         return (
-            f"{brief.kev_count} weakness{'es' if brief.kev_count != 1 else ''} with "
-            "confirmed exploitation in the wild are present on this surface."
+            f"{brief.kev_count} known exploited weakness"
+            f"{'es' if brief.kev_count != 1 else ''} are present."
         )
     if severity.get(Severity.CRITICAL.value):
         count = severity[Severity.CRITICAL.value]
-        return f"{count} critical finding{'s' if count != 1 else ''} require immediate attention."
+        return f"{count} critical finding{'s' if count != 1 else ''} were identified."
     if severity.get(Severity.HIGH.value):
         count = severity[Severity.HIGH.value]
         return (
@@ -312,7 +307,7 @@ def _headline(brief: ReportBrief) -> str:
         c["dimension"] for c in brief.coverage if c["covered"]
     }:
         return "No actionable weaknesses were identified in the checks that ran."
-    return f"{brief.counts.get(_DIM.WEB_ASSETS.value, 0):,} assets were catalogued on this surface."
+    return f"{brief.counts.get(_DIM.WEB_ASSETS.value, 0):,} web assets were catalogued."
 
 
 def build_brief(source: ReportSource) -> ReportBrief:

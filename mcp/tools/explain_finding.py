@@ -1,4 +1,4 @@
-"""One finding, with the evidence and the remediation, minus the noise."""
+"""One finding with evidence and remediation."""
 
 from __future__ import annotations
 
@@ -25,9 +25,8 @@ class Input(ToolInput):
     target: str = Field(description="The target the finding was reported on.")
     finding: str = Field(
         description=(
-            "A template id, a check name, a CVE, or a finding fingerprint. "
-            "Anything query_assets returned in template_id, template_name, "
-            "cve_ids or fingerprint works."
+            "A template id, check name, CVE or finding fingerprint, as returned by "
+            "query_assets in template_id, template_name, cve_ids or fingerprint."
         )
     )
 
@@ -37,10 +36,9 @@ class ExplainFinding(Tool):
     title = "Explain finding"
     group = ToolGroup.EXPLAIN.value
     description = (
-        "Everything reNgine knows about one finding: what the check tests for, why it "
-        "matters, how to fix it, its CVE/CWE/CVSS/EPSS/KEV signals, every place it "
-        "fires on this target, and the current triage decision. "
-        "Use it after query_assets to turn a row into an explanation."
+        "One finding in full: what the check tests for, impact, remediation, CVE, "
+        "CWE, CVSS, EPSS and KEV signals, every location on the target, and the "
+        "triage decision."
     )
     Input = Input
     examples = (
@@ -63,14 +61,14 @@ class ExplainFinding(Tool):
         if getattr(page, "error", None) or not page.items:
             msg = (
                 f"No finding on {scope.target.target_value} matches {needle!r}. "
-                "Use query_assets with dimension=vulnerabilities to list what is there."
+                "query_assets with dimension=vulnerabilities lists the findings."
             )
             raise ToolError(msg)
 
         service = VulnerabilityService(ctx.session)
         detail = await service.get(scan_id, page.items[0].id)
         if detail is None:
-            msg = "That finding could not be loaded."
+            msg = "The finding could not be loaded."
             raise ToolError(msg)
 
         locations = [
@@ -87,7 +85,7 @@ class ExplainFinding(Tool):
 
         return ToolResult(
             summary=(
-                f"{detail.severity.upper()} — {detail.template_name} on "
+                f"{detail.severity.upper()}: {detail.template_name} on "
                 f"{scope.target.target_value}, {page.total} occurrence(s)"
             ),
             data={

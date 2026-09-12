@@ -69,7 +69,7 @@ def run_scan(self, scan_id: str) -> dict:
         except Exception as exc:
             logger.exception("scan %s canvas dispatch failed", scan_id)
             scan.status = ScanStatus.FAILED.value
-            scan.error = f"The scan could not be queued: {exc}"[:2000]
+            scan.error = f"Scan not queued: {exc}"[:2000]
             scan.completed_at = utc_now()
             session.commit()
             return {"error": "dispatch failed"}

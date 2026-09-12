@@ -64,7 +64,7 @@ class WafDetectStage(Stage):
         if scan.unfinished:
             warnings.append(
                 f"wafw00f did not finish {scan.unfinished:,} of "
-                f"{scan.scanned + scan.unfinished:,} services, so those are unchecked"
+                f"{scan.scanned + scan.unfinished:,} services. Those are unchecked"
             )
         if skipped:
             warnings.append(

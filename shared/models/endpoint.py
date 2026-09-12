@@ -338,7 +338,7 @@ class TreeNode(BaseModel):
 
 
 class HostPage(BaseModel):
-    """One page of hosts with their rollups, ranked by what there is to attack."""
+    """One page of hosts with their rollups, ranked by attack surface."""
 
     items: list[TreeNode] = PydanticField(default_factory=list)
     total: int = 0
@@ -461,7 +461,7 @@ class GonePage(EndpointPage):
 
 
 class StructureFinding(BaseModel):
-    """Something about the shape of the surface that is worth acting on."""
+    """A structural fact about the surface."""
 
     kind: str
     label: str

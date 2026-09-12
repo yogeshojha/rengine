@@ -34,7 +34,7 @@
 	let tags = $state<string[]>([]);
 	let draft = $state('');
 
-	// each opening starts from the program's own defaults
+	// reset on open
 	$effect(() => {
 		if (!open) return;
 		groupByProgram = true;
@@ -73,8 +73,7 @@
 			<Dialog.Description>
 				From {program.name} on {program.platform_label}.
 				{#if outOfScopeCount > 0}
-					{outOfScopeCount} of them {outOfScopeCount === 1 ? 'is' : 'are'} marked out of scope by the
-					program.
+					{outOfScopeCount} out of scope.
 				{/if}
 			</Dialog.Description>
 		</Dialog.Header>
@@ -122,7 +121,7 @@
 					onkeydown={onKeydown}
 					onblur={addTag}
 					disabled={atTagLimit}
-					placeholder={atTagLimit ? `${MAX_IMPORT_TAGS} tags maximum` : 'Add a tag and press Enter'}
+					placeholder={atTagLimit ? `${MAX_IMPORT_TAGS} tags maximum` : 'Add a tag'}
 				/>
 			</div>
 		</div>

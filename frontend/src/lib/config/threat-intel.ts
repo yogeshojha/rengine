@@ -73,7 +73,7 @@ export const SIGNAL_LABELS: Record<string, string> = {
 	[ExploitSignal.KEV]: 'Known exploited',
 	[ExploitSignal.RANSOM_PATH]: 'Ransomware path',
 	[ExploitSignal.RANSOMWARE]: 'Used by ransomware',
-	[ExploitSignal.FRESH_EXPLOIT]: 'Exploit published since your last scan',
+	[ExploitSignal.FRESH_EXPLOIT]: 'Exploit published since the last scan',
 	[ExploitSignal.OVERDUE]: 'Past the CISA deadline',
 	[ExploitSignal.WEAPONISED]: 'Public exploit available',
 	[ExploitSignal.LIKELY]: 'Likely to be exploited',
@@ -86,21 +86,17 @@ export const SIGNAL_LABELS: Record<string, string> = {
 export const SIGNAL_HELP: Record<string, string> = {
 	[ExploitSignal.KEV]: 'CISA lists these CVEs as exploited in the wild.',
 	[ExploitSignal.RANSOM_PATH]:
-		'Used in ransomware campaigns, and the same host exposes a service ransomware crews reach for.',
+		'Used in ransomware campaigns. The same host exposes a sensitive service.',
 	[ExploitSignal.RANSOMWARE]: 'CISA records these CVEs in known ransomware campaigns.',
-	[ExploitSignal.FRESH_EXPLOIT]:
-		'A public exploit appeared after the scan that found these. Nothing changed on your side.',
+	[ExploitSignal.FRESH_EXPLOIT]: 'A public exploit was published after the scan that found these.',
 	[ExploitSignal.OVERDUE]: 'The federal remediation deadline for these CVEs has passed.',
 	[ExploitSignal.WEAPONISED]: 'Working exploit code is published for these.',
-	[ExploitSignal.LIKELY]: 'EPSS puts these above the threshold most teams act on.',
+	[ExploitSignal.LIKELY]: 'EPSS 8.8% or above.',
 	[ExploitSignal.REACHABLE]:
 		'The host answers from the internet with no CDN or WAF in front of it.',
-	[ExploitSignal.BYPASSED]:
-		'A WAF or CDN sits in front of the host and the check still succeeded, so the protection did not stop it.',
-	[ExploitSignal.CROWD]:
-		'Hundreds of thousands of hosts run this software, so it is swept continuously.',
-	[ExploitSignal.UNTESTABLE]:
-		'No scanner template covers these, so no scan can confirm or clear them.'
+	[ExploitSignal.BYPASSED]: 'A WAF or CDN sits in front of the host and the check succeeded.',
+	[ExploitSignal.CROWD]: 'Hundreds of thousands of hosts run this software.',
+	[ExploitSignal.UNTESTABLE]: 'No scanner template covers these.'
 };
 
 export const SIGNAL_ICONS: Record<string, IconComponent> = {
@@ -167,10 +163,10 @@ export const BAND_LABELS: Record<string, string> = {
 };
 
 export const BAND_HELP: Record<string, string> = {
-	[ExploitBand.VERY_LIKELY]: 'More likely than not to be exploited in the next 30 days.',
-	[ExploitBand.LIKELY]: 'Above the threshold most teams act on.',
-	[ExploitBand.POSSIBLE]: 'Uncommon, but not negligible.',
-	[ExploitBand.UNLIKELY]: 'In the long tail of unexploited CVEs.'
+	[ExploitBand.VERY_LIKELY]: 'EPSS 50% or above.',
+	[ExploitBand.LIKELY]: 'EPSS 8.8% or above.',
+	[ExploitBand.POSSIBLE]: 'EPSS 1% or above.',
+	[ExploitBand.UNLIKELY]: 'EPSS below 1%.'
 };
 
 export const BAND_FILL: Record<string, string> = {
@@ -190,7 +186,7 @@ export function bandFor(score: number | null | undefined): string | null {
 	return ExploitBand.UNLIKELY;
 }
 
-/** EPSS reads as a percentage, but below 1% the digits matter more than the unit. */
+/** EPSS as a percentage. */
 export function epssLabel(score: number | null | undefined): string {
 	if (score === null || score === undefined) return '—';
 	const pct = score * 100;

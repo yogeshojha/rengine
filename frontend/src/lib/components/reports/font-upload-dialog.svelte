@@ -77,7 +77,7 @@
 
 	async function upload() {
 		if (!name.trim()) {
-			toast.error('Give the typeface a name.');
+			toast.error('Family name is required.');
 			return;
 		}
 		if (!faces.length) {
@@ -97,14 +97,14 @@
 					italic
 				}))
 			});
-			toast.success(`${family.name} is available to every theme`);
+			toast.success(`${family.name} uploaded`);
 			await reportCatalog.fetch(true);
 			open = false;
 			name = '';
 			note = '';
 			faces = [];
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'That typeface could not be stored');
+			toast.error(e instanceof Error ? e.message : 'Typeface not uploaded');
 		} finally {
 			busy = false;
 		}
@@ -115,10 +115,7 @@
 	<Dialog.Content class="flex max-h-[92vh] flex-col gap-0 p-0 sm:max-w-2xl">
 		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>Upload a typeface</Dialog.Title>
-			<Dialog.Description>
-				Files are read from disk and stored on this instance. A report never fetches a font from the
-				internet.
-			</Dialog.Description>
+			<Dialog.Description>Stored on this instance.</Dialog.Description>
 		</Dialog.Header>
 
 		<ScrollArea
@@ -129,10 +126,9 @@
 					<div class="space-y-1.5">
 						<Label class="text-xs" for="font-name">Family name</Label>
 						<Input id="font-name" bind:value={name} placeholder="Acme Grotesk" class="h-9" />
-						<p class="text-xs text-muted-foreground">This is the name a theme refers to.</p>
 					</div>
 					<div class="space-y-1.5">
-						<Label class="text-xs">Offer it for</Label>
+						<Label class="text-xs">Role</Label>
 						<Select.Root type="single" bind:value={role}>
 							<Select.Trigger class="h-9 w-full">
 								{ROLES.find((r) => r.key === role)?.label}
@@ -213,14 +209,13 @@
 							{/each}
 						</div>
 						<p class="text-xs text-muted-foreground">
-							The weight and italic flag are read from each filename. Correct them here if they are
-							wrong.
+							Weight and italic are read from the filename.
 						</p>
 					{:else}
 						<p
 							class="rounded-md border border-dashed px-3 py-6 text-center text-xs text-muted-foreground"
 						>
-							WOFF2, WOFF, TrueType or OpenType. Add one file per weight.
+							WOFF2, WOFF, TrueType or OpenType, one file per weight.
 						</p>
 					{/if}
 				</div>

@@ -61,10 +61,7 @@
 	<Dialog.Content class="sm:max-w-md" onkeydown={(e) => e.key === 'Enter' && e.stopPropagation()}>
 		<Dialog.Header>
 			<Dialog.Title>Save as scan engine</Dialog.Title>
-			<Dialog.Description>
-				Saves the selected stages and their settings as a scan engine that can be reused and
-				scheduled.
-			</Dialog.Description>
+			<Dialog.Description>Saves the selected stages and their settings.</Dialog.Description>
 		</Dialog.Header>
 		<div class="flex flex-col gap-4 py-1">
 			<div class="flex flex-col gap-1.5">

@@ -28,9 +28,7 @@ class EndpointProbeStage(Stage):
 
     name = "endpoint_probe"
     title = "Endpoint Verification"
-    description = (
-        "Request the discovered URLs so every status is observed rather than inferred."
-    )
+    description = "Request the discovered URLs and record each status."
     phase = Phase.DEPTH.value
     depends_on = frozenset({"url_discovery"})
     group = StageGroup.ENDPOINTS.value
@@ -49,7 +47,7 @@ class EndpointProbeStage(Stage):
         pending = self._pending(budget)
         if not pending:
             self._store(started, 0, 0, 0, CoverageStatus.COMPLETED.value, None, None)
-            self.emit_progress("every endpoint already carries an observed status")
+            self.emit_progress("every endpoint carries an observed status")
             return StageResult(counts={"endpoints_probed": 0})
 
         selected = pending
@@ -118,7 +116,7 @@ class EndpointProbeStage(Stage):
             CoverageStatus.PARTIAL.value if skipped else CoverageStatus.COMPLETED.value
         )
         reason = (
-            f"{skipped} endpoints were not requested because the budget of {budget} was reached."
+            f"{skipped} endpoints not requested. Budget of {budget} reached."
             if skipped
             else None
         )

@@ -61,7 +61,7 @@ def get_asset_service(
 
 
 async def _validated(raw: str, service: TargetService) -> TargetValidationResponse:
-    """Report the value as it would be stored."""
+    """Validate one target value."""
     value = normalize_target_value(raw)
     target_type = await service.validate_target_value(value)
     return TargetValidationResponse(
@@ -90,7 +90,7 @@ async def validate_bulk_target(
     if len(request) > MAX_TARGET_IMPORT:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Maximum {MAX_TARGET_IMPORT} targets allowed per request",
+            detail=f"At most {MAX_TARGET_IMPORT} targets per request",
         )
 
     seen: set[str] = set()
@@ -127,7 +127,9 @@ async def get_target_stats(
     _current_user: CurrentUser,
     service: Annotated[TargetService, Depends(get_target_service)],
     project_slug: Annotated[str, Query(description="Filter by project slug")],
-    search: Annotated[str | None, Query(description="Search target value/name")] = None,
+    search: Annotated[
+        str | None, Query(description="Search by target value or display name")
+    ] = None,
     organization_ids: Annotated[
         list[UUID] | None, Query(description="Filter by organization IDs")
     ] = None,
@@ -226,9 +228,9 @@ async def search_targets_by_value(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[TargetService, Depends(get_target_service)],
-    target_value: Annotated[str, Query(description="Target value to search for")],
+    target_value: Annotated[str, Query(description="Target value")],
     project_slug: Annotated[
-        str | None, Query(description="Optional: Filter by specific project")
+        str | None, Query(description="Filter by project slug")
     ] = None,
 ):
     query = await service.search_targets_by_value(
@@ -329,9 +331,7 @@ async def import_targets_json(
     status_code=status.HTTP_201_CREATED,
 )
 async def import_targets_csv(
-    project_slug: Annotated[
-        str, Query(description="Project slug to import targets into")
-    ],
+    project_slug: Annotated[str, Query(description="Project slug")],
     file: Annotated[UploadFile, File(...)],
     current_user: CurrentUser,
     service: Annotated[TargetService, Depends(get_target_service)],

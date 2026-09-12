@@ -56,7 +56,7 @@
 			open = false;
 			name = '';
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'The connector could not be created.';
+			error = e instanceof Error ? e.message : 'Connector not created.';
 		} finally {
 			saving = false;
 		}

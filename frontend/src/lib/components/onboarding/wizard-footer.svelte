@@ -40,7 +40,7 @@
 
 	{#if canSkip && onSkip}
 		<Button variant="ghost" class="text-muted-foreground" onclick={onSkip} disabled={nextLoading}>
-			Skip for now
+			Skip
 		</Button>
 	{/if}
 

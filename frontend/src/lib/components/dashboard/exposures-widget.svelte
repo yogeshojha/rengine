@@ -32,7 +32,7 @@
 
 <Widget
 	title="Exposures"
-	description="Hosts flagged by exposure rules, highest score first"
+	description="Web assets matched by exposure rules, highest score first"
 	href={ROUTES.exposures()}
 	hrefLabel="All exposures"
 	class={className}

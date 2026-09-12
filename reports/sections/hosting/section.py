@@ -7,19 +7,17 @@ from shared.definitions.surface import SurfaceDimension
 
 
 class HostingConfig(SectionConfig):
-    show_fronting: bool = flag(True, title="Show the CDN, cloud and origin split")
+    show_fronting: bool = flag(True, title="Show fronting split")
     show_networks: bool = flag(True, title="Show hosting networks")
-    show_countries: bool = flag(True, title="Show where addresses resolve")
-    show_tech: bool = flag(True, title="Show the technology stack")
+    show_countries: bool = flag(True, title="Show countries")
+    show_tech: bool = flag(True, title="Show technologies")
     top: int = limit(10, title="Rows per list", minimum=3, maximum=30)
 
 
 class HostingSection(Section):
     name = "hosting"
     title = "Hosting and infrastructure"
-    description = (
-        "The fronting, the networks carrying the surface and where it resolves."
-    )
+    description = "Fronting, hosting networks, countries and technologies."
     group = SectionGroup.SURFACE.value
     order = 60
     requires = frozenset({SurfaceDimension.WEB_ASSETS.value})

@@ -73,7 +73,7 @@ async def create_organization(
     if existing_org.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Organization with this name already exists in this project",
+            detail="An organization with this name exists in this project",
         )
 
     organization = Organization(
@@ -91,7 +91,7 @@ async def create_organization(
         await session.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Organization with this name already exists in this project",
+            detail="An organization with this name exists in this project",
         ) from e
     await session.refresh(organization)
     return organization
@@ -177,7 +177,7 @@ async def update_organization(
         if duplicate.scalar_one_or_none():
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Organization with this name already exists in this project",
+                detail="An organization with this name exists in this project",
             )
 
         organization.slug = await unique_slug(
@@ -194,7 +194,7 @@ async def update_organization(
         await session.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Organization with this name already exists in this project",
+            detail="An organization with this name exists in this project",
         ) from e
     await session.refresh(organization)
     return organization

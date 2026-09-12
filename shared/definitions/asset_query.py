@@ -103,7 +103,7 @@ OP_HELP: dict[str, str] = {
 }
 
 CONNECTORS: dict[str, str] = {
-    "and": "Both sides must match. Two terms side by side already mean and.",
+    "and": "Both sides must match. Two terms side by side mean and.",
     "or": "Either side may match.",
     "not": "Excludes what follows. A leading - or ! does the same.",
     "( )": "Groups part of a query, as in is:live and (status:403 or status:401).",
@@ -487,7 +487,7 @@ FIELDS: tuple[QueryField, ...] = (
         name="content_hash",
         type=FieldType.STRING,
         group="Response",
-        description="Hash of the response body. Identical hashes mean identical content.",
+        description="Hash of the response body.",
         example="content_hash:8f4e2a",
         aliases=("body_hash",),
     ),
@@ -502,7 +502,7 @@ FIELDS: tuple[QueryField, ...] = (
         name="cert.fingerprint",
         type=FieldType.STRING,
         group="Certificates",
-        description="Hash of the certificate itself. Identical hashes mean the same certificate.",
+        description="Hash of the certificate.",
         example="cert.fingerprint:9f2b1c",
         aliases=("cert.hash",),
     ),
@@ -510,7 +510,7 @@ FIELDS: tuple[QueryField, ...] = (
         name="header_hash",
         type=FieldType.STRING,
         group="Response",
-        description="Hash of the response header set. Identical hashes mean the same stack answering.",
+        description="Hash of the response header set.",
         example="header_hash:3ab91c",
     ),
     QueryField(
@@ -837,7 +837,7 @@ EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="cert:expired and is:live",
-        description="Live hosts serving an expired certificate",
+        description="Reachable hosts serving an expired certificate",
         group="Certificates",
     ),
     QueryExample(
@@ -915,7 +915,7 @@ EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="hygiene:no_https_redirect",
-        description="Plaintext http that never redirects to https",
+        description="Plaintext http with no redirect to https",
         group="Hygiene",
     ),
     QueryExample(
@@ -925,7 +925,7 @@ EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="hygiene:none and is:live",
-        description="Live hosts passing every hardening check",
+        description="Reachable hosts passing every hardening check",
         group="Hygiene",
     ),
     QueryExample(
@@ -993,12 +993,12 @@ EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="flagged:ai",
-        description="Flagged by AI judgement rather than a rule",
+        description="Flagged by AI judgement",
         group="Exposures",
     ),
     QueryExample(
         query="exposure_band:critical",
-        description="The strongest signals on this surface",
+        description="Exposures in the critical band",
         group="Exposures",
     ),
     QueryExample(
@@ -1784,8 +1784,8 @@ VULN_FLAGS: dict[str, str] = {
     "extracted": "The check pulled a value out of the response",
     "web": "Found on an HTTP asset",
     "cdn": "On an asset served through a CDN",
-    "triaged": "Reviewed by someone",
-    "open": "Not yet reviewed",
+    "triaged": "Reviewed",
+    "open": "Not reviewed",
     "suppressed": "Reviewed and set aside as a false positive or accepted risk",
 }
 
@@ -2088,7 +2088,7 @@ VULN_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
 )
 
 VULN_EXAMPLE_GROUPS: tuple[str, ...] = (
-    "Act on this first",
+    "Priority",
     "Change",
     "Access control",
     "Data exposure",
@@ -2100,40 +2100,40 @@ VULN_EXAMPLES: tuple[QueryExample, ...] = (
     QueryExample(
         query="is:kev",
         description="Weaknesses with confirmed exploitation in the wild",
-        group="Act on this first",
+        group="Priority",
         generic=True,
     ),
     QueryExample(
         query="severity:critical",
         description="Findings rated critical",
-        group="Act on this first",
+        group="Priority",
         generic=True,
     ),
     QueryExample(
         query="is:corroborated",
         description="Findings a second check confirms at the same location",
-        group="Act on this first",
+        group="Priority",
         generic=True,
     ),
     QueryExample(
         query="is:corroborated and severity:[critical,high]",
         description="Severe findings that more than one check agrees on",
-        group="Act on this first",
+        group="Priority",
     ),
     QueryExample(
         query="is:exploitable and not is:suppressed",
-        description="Exploited or likely to be, and still open",
-        group="Act on this first",
+        description="Exploited or likely to be, and not suppressed",
+        group="Priority",
     ),
     QueryExample(
         query="severity:[critical,high] and not is:cdn",
         description="Severe findings on origin infrastructure",
-        group="Act on this first",
+        group="Priority",
     ),
     QueryExample(
         query="cvss>=9",
         description="Findings scored 9.0 or above",
-        group="Act on this first",
+        group="Priority",
     ),
     QueryExample(
         query="is:new",
@@ -2153,7 +2153,7 @@ VULN_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="tag:default-login",
-        description="Accounts still on the credentials they shipped with",
+        description="Default credentials accepted",
         group="Access control",
         generic=True,
     ),
@@ -2169,7 +2169,7 @@ VULN_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="tag:[exposure,disclosure]",
-        description="Files and data served that were not meant to be public",
+        description="Files and data disclosed over HTTP",
         group="Data exposure",
         generic=True,
     ),
@@ -2185,7 +2185,7 @@ VULN_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="tag:takeover",
-        description="Names pointing at infrastructure someone else can claim",
+        description="Hostnames pointing at claimable third-party infrastructure",
         group="Infrastructure",
         generic=True,
     ),
@@ -2201,12 +2201,12 @@ VULN_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="tag:misconfig",
-        description="Services left in a state their operator did not intend",
+        description="Misconfigured services",
         group="Infrastructure",
     ),
     QueryExample(
         query="is:open and severity:[critical,high]",
-        description="Severe findings nobody has reviewed yet",
+        description="Severe findings not reviewed",
         group="Review",
         generic=True,
     ),
@@ -2217,7 +2217,7 @@ VULN_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="is:triaged",
-        description="Findings someone has already decided on",
+        description="Findings with a review decision",
         group="Review",
     ),
 )
@@ -2248,20 +2248,20 @@ ENDPOINT_GROUPS: tuple[str, ...] = (
 ENDPOINT_FLAGS: dict[str, str] = {
     "new": "Absent from the previous scan of this target",
     "param": "Accepts at least one query parameter",
-    "probed": "This scan requested it",
+    "probed": "Requested by this scan",
     "live": "Answered with 2xx or 3xx",
     "redirect": "Answered with a redirect",
     "auth": "Answered 401 or 403",
     "missing": "Answered 404 or 410",
     "api": "An API route, by path shape or content type",
     "js": "JavaScript, including bundles and source maps",
-    "static": "Content that carries no attack surface",
-    "interesting": "Matched a path or parameter worth testing",
+    "static": "Static content",
+    "interesting": "Matched an interest pattern in the path or a parameter",
     "sensitive": "A credential, backup or version control path",
-    "orphan": "Nothing on the live site links to it",
-    "archive-only": "An archive recorded it and this scan could not reach it",
+    "orphan": "Not linked from any crawled page",
+    "archive-only": "Recorded by an archive and unreachable in this scan",
     "linked": "Reached from a page on the live site",
-    "crawled": "The crawler walked to it",
+    "crawled": "Reached by the crawler",
     "root": "The site root",
     "titled": "Has a page title",
     "vulnerable": "A vulnerability scan reported a finding on it",
@@ -2384,7 +2384,7 @@ ENDPOINT_FIELDS: tuple[QueryField, ...] = (
         name="interest",
         type=FieldType.ENUM,
         group="Parameters",
-        description="The reason the endpoint is worth testing, by path or parameter shape.",
+        description="Interest pattern matched by path or parameter shape.",
         example="interest:open_redirect",
         values=INTEREST_KEYS,
         facet="interest",
@@ -2393,7 +2393,7 @@ ENDPOINT_FIELDS: tuple[QueryField, ...] = (
         name="status",
         type=FieldType.NUMBER,
         group="Response",
-        description="HTTP status the endpoint answered with. Empty until it is verified.",
+        description="HTTP status the endpoint answered with. Empty until probed.",
         example="status:200..299",
         facet="status",
     ),
@@ -2488,7 +2488,7 @@ ENDPOINT_FIELDS: tuple[QueryField, ...] = (
         name="is",
         type=FieldType.FLAG,
         group="Flags",
-        description="A property the endpoint either has or does not.",
+        description="Property of the endpoint.",
         example="is:orphan",
         values=tuple(ENDPOINT_FLAGS),
     ),
@@ -2513,7 +2513,7 @@ ENDPOINT_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
     GroupDimension(
         key="class",
         label="Kind",
-        description="Endpoints serving the same kind of thing",
+        description="Endpoints of the same kind",
     ),
     GroupDimension(
         key="ext",
@@ -2537,7 +2537,7 @@ ENDPOINT_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
     ),
     GroupDimension(
         key="interest",
-        label="Worth testing",
+        label="Interest",
         description="Endpoints flagged for the same reason",
     ),
     GroupDimension(
@@ -2565,7 +2565,7 @@ ENDPOINT_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="interest:open_redirect or interest:ssrf",
-        description="Parameters that carry a destination the server follows",
+        description="Parameters carrying a destination URL",
         group="Attack surface",
     ),
     QueryExample(
@@ -2581,7 +2581,7 @@ ENDPOINT_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="ext:[bak,old,sql,zip,tar,gz]",
-        description="Archives and editor leftovers in the web root",
+        description="Archive and backup files in the web root",
         group="Attack surface",
     ),
     QueryExample(
@@ -2591,18 +2591,18 @@ ENDPOINT_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="is:orphan",
-        description="Endpoints nothing on the live site links to",
+        description="Endpoints not linked from any crawled page",
         group="Hidden surface",
         generic=True,
     ),
     QueryExample(
         query="is:archive-only",
-        description="Recorded by an archive, unreachable now",
+        description="Recorded by an archive and unreachable in this scan",
         group="Hidden surface",
     ),
     QueryExample(
         query="source:archive and is:live",
-        description="Forgotten endpoints an archive remembered and that still answer",
+        description="Archived endpoints that respond",
         group="Hidden surface",
     ),
     QueryExample(
@@ -2612,7 +2612,7 @@ ENDPOINT_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="is:new",
-        description="Endpoints this scan is the first to see",
+        description="Endpoints absent from the previous scan",
         group="Change",
         generic=True,
     ),
@@ -2639,18 +2639,18 @@ ENDPOINT_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="not is:probed",
-        description="Endpoints this scan did not have the budget to verify",
+        description="Endpoints not requested by this scan",
         group="Evidence",
         generic=True,
     ),
     QueryExample(
         query="source:response_mining",
-        description="Found by reading responses this scan already stored",
+        description="Found in stored responses",
         group="Evidence",
     ),
     QueryExample(
         query="source:robots or source:sitemap",
-        description="Paths the site declares itself",
+        description="Paths declared in robots.txt or a sitemap",
         group="Evidence",
     ),
     QueryExample(
@@ -2671,7 +2671,7 @@ ENDPOINT_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="is:redirect and not is:live",
-        description="Redirects that lead nowhere useful",
+        description="Redirects ending in an error",
         group="Hygiene",
     ),
     QueryExample(
@@ -2711,12 +2711,12 @@ SOFTWARE_FLAGS: dict[str, str] = {
     "kev": "Listed as exploited in the wild",
     "ransomware": "Recorded in known ransomware campaigns",
     "overdue": "Past the CISA remediation deadline",
-    "likely": "Above the EPSS threshold most teams act on",
-    "firm": "Nothing about the match is unverified",
+    "likely": "EPSS score of 0.088 or above",
+    "firm": "Every part of the match is verified",
     "conditional": "NVD names a further component this scan did not identify",
-    "backport": "A distribution build, where fixes land without a version change",
-    "fingerprinted": "The version was read from the page, not stated by the server",
-    "stated": "The server stated the version in its own headers",
+    "backport": "A distribution build. Fixes may land without a version change",
+    "fingerprinted": "Version read from the page body",
+    "stated": "Version stated in a server header",
     "web": "Inferred from a web asset",
     "service": "Inferred from a service banner",
 }
@@ -2899,7 +2899,7 @@ SOFTWARE_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
 )
 
 SOFTWARE_EXAMPLE_GROUPS: tuple[str, ...] = (
-    "Act on this first",
+    "Priority",
     "Change",
     "Software",
     "Confidence",
@@ -2909,24 +2909,24 @@ SOFTWARE_EXAMPLES: tuple[QueryExample, ...] = (
     QueryExample(
         query="is:kev",
         description="Software carrying a CVE with confirmed exploitation",
-        group="Act on this first",
+        group="Priority",
         generic=True,
     ),
     QueryExample(
         query="is:kev and is:firm",
-        description="Confirmed exploited, with nothing about the match unverified",
-        group="Act on this first",
+        description="Confirmed exploited and fully verified",
+        group="Priority",
     ),
     QueryExample(
         query="severity:critical and is:stated",
         description="Critical CVEs where the server stated its own version",
-        group="Act on this first",
+        group="Priority",
         generic=True,
     ),
     QueryExample(
         query="epss>=0.5",
-        description="More likely than not to be exploited in the next 30 days",
-        group="Act on this first",
+        description="EPSS probability of 0.5 or above",
+        group="Priority",
     ),
     QueryExample(
         query="is:new",
@@ -2952,7 +2952,7 @@ SOFTWARE_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="software:wordpress and is:new",
-        description="WordPress releases that newly fell behind",
+        description="WordPress matches absent from the previous scan",
         group="Software",
     ),
     QueryExample(
@@ -2963,7 +2963,7 @@ SOFTWARE_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="caveat:backport",
-        description="Distribution builds, where the version number may not tell the whole story",
+        description="Distribution builds that may patch without a version change",
         group="Confidence",
     ),
     QueryExample(

@@ -236,7 +236,7 @@
 						<span>Queried {bgp.queried_at ? formatShortDate(bgp.queried_at) : 'Unknown'}</span>
 					</div>
 					<span class="flex items-center gap-1 text-2xs text-primary/70">
-						Click for details
+						See details
 						<ExternalLink class="h-2.5 w-2.5" />
 					</span>
 				</div>

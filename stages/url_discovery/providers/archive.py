@@ -68,8 +68,8 @@ class ArchiveProvider(UrlProvider):
         if dropped > 0 and not result.cap_reason:
             result.capped = True
             result.cap_reason = (
-                f"{dropped} more registrable domains were not queried, at the "
-                f"{cfg.max_archive_domains} domain limit."
+                f"{dropped} registrable domains not queried. Limit is "
+                f"{cfg.max_archive_domains} domains."
             )
         result.urls_found = found
         result.hosts_scanned = scanned

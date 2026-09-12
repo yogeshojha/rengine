@@ -129,7 +129,7 @@
 						>
 							{moreCount > 0
 								? `Show ${moreCount.toLocaleString()} more ${moreCount === 1 ? 'finding' : 'findings'}`
-								: 'Browse all findings'}
+								: 'Show all findings'}
 							<ArrowRight class="size-3.5" />
 						</button>
 					{/if}

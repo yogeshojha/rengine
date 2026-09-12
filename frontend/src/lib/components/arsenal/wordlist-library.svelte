@@ -71,11 +71,11 @@
 				const words = result.stored.reduce((sum, w) => sum + w.words, 0);
 				toast.success(
 					`${result.stored.length} ${result.stored.length === 1 ? 'wordlist' : 'wordlists'} added`,
-					{ description: `${words.toLocaleString()} words are now selectable in a scan engine.` }
+					{ description: `${words.toLocaleString()} words` }
 				);
 			}
 			for (const rejection of result.rejected) {
-				toast.error(`${rejection.filename} was not added`, { description: rejection.reason });
+				toast.error(`${rejection.filename} not added`, { description: rejection.reason });
 			}
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Upload failed');
@@ -96,10 +96,7 @@
 	<Card.Root class="gap-0 py-0">
 		<Card.Header class="border-b py-5">
 			<Card.Title>Wordlists</Card.Title>
-			<Card.Description>
-				Wordlists available to a scan. Shipped lists come with reNgine. Uploaded lists are selected
-				by name in a scan engine.
-			</Card.Description>
+			<Card.Description>Shipped and uploaded wordlists.</Card.Description>
 			<Card.Action class="flex items-center gap-2">
 				<Select.Root type="single" bind:value={uploadKind}>
 					<Select.Trigger class="w-[190px]" aria-label="Wordlist kind">
@@ -123,7 +120,7 @@
 					size="sm"
 					class="gap-2"
 					loading={uploading}
-					loadingLabel="Uploading…"
+					loadingLabel="Uploading"
 					onclick={() => fileInput?.click()}
 				>
 					<Upload class="size-4" /> Upload wordlist
@@ -141,7 +138,7 @@
 					value={kindFilter}
 					onValueChange={(v) => (kindFilter = v || ALL)}
 					class="flex-wrap justify-start"
-					aria-label="Filter by what the words are"
+					aria-label="Filter by kind"
 				>
 					<ToggleGroup.Item value={ALL}>All {store.wordlists.length}</ToggleGroup.Item>
 					{#each WORDLIST_KINDS as kind (kind)}
@@ -162,8 +159,8 @@
 				<div class="p-6">
 					<EmptyState
 						icon={Upload}
-						title="No wordlists yet"
-						description="A text file with one word per line. Uploaded lists are selectable in every scan engine."
+						title="No wordlists"
+						description="Upload a text file with one word per line."
 					/>
 				</div>
 			{:else}
@@ -180,7 +177,7 @@
 							{#if item.description}
 								<p class="text-sm text-muted-foreground">{item.description}</p>
 							{/if}
-							<Hint text="The name a scan engine refers to this list by">
+							<Hint text="Name used in a scan engine">
 								{#snippet child(props)}
 									<code
 										{...props}
@@ -198,7 +195,7 @@
 						</div>
 
 						<div class="flex shrink-0 items-center gap-1">
-							<Hint text="Preview the first words">
+							<Hint text="Preview">
 								{#snippet child(props)}
 									<Button
 										{...props}
@@ -211,7 +208,7 @@
 									</Button>
 								{/snippet}
 							</Hint>
-							<Hint text={item.origin === 'builtin' ? 'Shipped lists cannot be removed' : 'Remove'}>
+							<Hint text={item.origin === 'builtin' ? 'Shipped list is read-only' : 'Remove'}>
 								{#snippet child(props)}
 									<span class="inline-flex">
 										<Button
@@ -247,8 +244,8 @@
 	onOpenChange={(value) => {
 		if (!value) removing = null;
 	}}
-	title="Remove this wordlist?"
-	description="The list is removed from the library and its file deleted. A scan engine still referencing it reports the list as missing. This action cannot be undone."
+	title="Remove wordlist"
+	description={`Wordlist ${removing?.name ?? ''} and its file are removed.`}
 	confirmLabel="Remove"
 	onConfirm={remove}
 />

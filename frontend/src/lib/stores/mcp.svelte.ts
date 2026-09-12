@@ -29,7 +29,7 @@ function createMcpStore() {
 		try {
 			status = await mcpApi.status();
 		} catch (e) {
-			if (!silent) toast.error(message(e, 'MCP server status could not be loaded'));
+			if (!silent) toast.error(message(e, 'MCP server status not loaded'));
 		}
 	}
 
@@ -71,7 +71,7 @@ function createMcpStore() {
 				tools = t;
 				hasFetched = true;
 			} catch (e) {
-				toast.error(message(e, 'MCP page could not be loaded'));
+				toast.error(message(e, 'MCP settings not loaded'));
 			} finally {
 				isLoading = false;
 			}
@@ -83,7 +83,7 @@ function createMcpStore() {
 			try {
 				tokens = await mcpApi.tokens();
 			} catch (e) {
-				toast.error(message(e, 'Service tokens could not be loaded'));
+				toast.error(message(e, 'Service tokens not loaded'));
 			}
 		},
 
@@ -92,7 +92,7 @@ function createMcpStore() {
 				calls = await mcpApi.calls(TRAIL_CAP);
 				callsLoadedAt = Date.now();
 			} catch (e) {
-				if (!silent) toast.error(message(e, 'Recent calls could not be loaded'));
+				if (!silent) toast.error(message(e, 'Recent calls not loaded'));
 			}
 		},
 
@@ -100,10 +100,10 @@ function createMcpStore() {
 			isSaving = true;
 			try {
 				status = await mcpApi.update({ enabled: value });
-				toast.success(value ? 'MCP server started.' : 'MCP server stopped.');
+				toast.success(value ? 'MCP server started' : 'MCP server stopped');
 				return true;
 			} catch (e) {
-				toast.error(message(e, 'Server state could not be changed'));
+				toast.error(message(e, 'MCP server state not changed'));
 				return false;
 			} finally {
 				isSaving = false;
@@ -116,7 +116,7 @@ function createMcpStore() {
 				status = await mcpApi.update(body);
 				return true;
 			} catch (e) {
-				toast.error(message(e, 'MCP settings could not be saved'));
+				toast.error(message(e, 'MCP settings not saved'));
 				return false;
 			} finally {
 				isSaving = false;
@@ -130,7 +130,7 @@ function createMcpStore() {
 				await refreshStatus();
 				return created;
 			} catch (e) {
-				toast.error(message(e, 'Token could not be created'));
+				toast.error(message(e, 'Token not created'));
 				return null;
 			}
 		},
@@ -143,7 +143,7 @@ function createMcpStore() {
 				toast.success('Token revoked');
 				return true;
 			} catch (e) {
-				toast.error(message(e, 'Token could not be revoked'));
+				toast.error(message(e, 'Token not revoked'));
 				return false;
 			}
 		},
@@ -156,7 +156,7 @@ function createMcpStore() {
 				toast.success('Token deleted');
 				return true;
 			} catch (e) {
-				toast.error(message(e, 'Token could not be deleted'));
+				toast.error(message(e, 'Token not deleted'));
 				return false;
 			}
 		},
@@ -167,7 +167,7 @@ function createMcpStore() {
 				await refreshStatus();
 				return true;
 			} catch (e) {
-				toast.error(message(e, 'Agent could not be disconnected'));
+				toast.error(message(e, 'Agent not disconnected'));
 				return false;
 			}
 		},

@@ -63,7 +63,7 @@ def _stage_status(
 
     if not values.get("enabled", True):
         reason = (
-            "Skipped at passive intensity. This stage sends traffic to the target."
+            "Skipped at passive intensity."
             if resolved.intensity == Intensity.PASSIVE.value and spec.touches_target
             else "Disabled in engine."
         )
@@ -75,7 +75,7 @@ def _stage_status(
         )
     if spec.consumes and not (spec.consumes & available):
         kinds = " or ".join(ASSET_KIND_LABELS[k] for k in sorted(spec.consumes))
-        reason = f"No earlier stage produces the {kinds} this stage reads."
+        reason = f"No earlier stage produces {kinds}."
         warnings.append(f"{spec.title}: {reason}")
         return _skip(PreviewToolStatus.SKIPPED_NO_INPUT, reason)
 

@@ -36,11 +36,11 @@ _DOMAIN_TYPES = (TargetType.DOMAIN, TargetType.URL)
 
 def _spf_reason(spf: str | None) -> str | None:
     if spf is None:
-        return "No SPF record (mail configured)"
+        return "No SPF record"
     if "+all" in spf:
-        return "Permissive SPF (+all)"
+        return "SPF +all"
     if "?all" in spf:
-        return "Neutral SPF (?all)"
+        return "SPF ?all"
     return None
 
 

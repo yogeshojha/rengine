@@ -31,7 +31,7 @@
 		refreshing = false,
 		loading = false,
 		empty = false,
-		emptyText = 'No data was returned.',
+		emptyText = 'No data.',
 		onRefresh,
 		bar,
 		children

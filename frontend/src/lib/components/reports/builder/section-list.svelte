@@ -64,7 +64,7 @@
 <div class="space-y-3">
 	<div class="flex items-center justify-between">
 		<p class="text-sm text-muted-foreground">
-			{sections.filter((s) => s.enabled).length} of {sections.length} sections print, in this order.
+			{sections.filter((s) => s.enabled).length} of {sections.length} sections enabled.
 		</p>
 		<DropdownMenu.Root>
 			<DropdownMenu.Trigger>
@@ -179,7 +179,7 @@
 				<Collapsible.Content>
 					<div class="divide-y divide-border border-t bg-muted/30 px-4">
 						<div class="space-y-2 py-3">
-							<span class="text-sm">Heading in the document</span>
+							<span class="text-sm">Heading</span>
 							<Input
 								value={entry.title}
 								placeholder={spec?.title ?? ''}
@@ -195,9 +195,7 @@
 							/>
 						{/each}
 						{#if !spec?.fields.length}
-							<p class="py-3 text-xs text-muted-foreground">
-								This section has nothing to configure.
-							</p>
+							<p class="py-3 text-xs text-muted-foreground">No settings.</p>
 						{/if}
 					</div>
 				</Collapsible.Content>

@@ -82,7 +82,7 @@
 			return true;
 		} catch (e) {
 			if (isAlreadyExists(e)) return true;
-			toast.error(e instanceof Error ? e.message : `${provider} key could not be saved`);
+			toast.error(e instanceof Error ? e.message : `${provider} key not saved`);
 			return false;
 		}
 	}
@@ -199,7 +199,7 @@
 									<Label class="text-xs">API username</Label>
 									<Input
 										bind:value={h1Username}
-										placeholder="your-h1-username"
+										placeholder="username"
 										disabled={busy}
 										class="h-9 text-xs"
 										autocomplete="off"

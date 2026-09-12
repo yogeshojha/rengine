@@ -94,7 +94,7 @@
 			<Command.Root>
 				<Command.Input placeholder="Search organizations…" />
 				<Command.List class="max-h-none overflow-visible">
-					<Command.Empty>No organizations found.</Command.Empty>
+					<Command.Empty>No organizations</Command.Empty>
 					<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
 						<Command.Group>
 							{#each organizations as org (org.id)}
@@ -136,7 +136,7 @@
 			<Command.Root>
 				<Command.Input placeholder="Search tags…" />
 				<Command.List class="max-h-none overflow-visible">
-					<Command.Empty>No tags found.</Command.Empty>
+					<Command.Empty>No tags</Command.Empty>
 					<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
 						<Command.Group>
 							{#each tags as tag (tag.id)}

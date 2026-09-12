@@ -23,7 +23,7 @@ async def _test_viewdns(key_value: str, _key_meta: dict | None) -> dict:
 async def _test_hackerone(key_value: str, key_meta: dict | None) -> dict:
     username = (key_meta or {}).get("username")
     if not username:
-        msg = "Add your HackerOne API username alongside the token."
+        msg = "HackerOne API username is missing. Add it with the token."
         raise ValueError(msg)
     result = await anyio.to_thread.run_sync(
         verify_hackerone, (str(username), key_value)

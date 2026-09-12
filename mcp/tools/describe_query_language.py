@@ -17,7 +17,7 @@ class Input(ToolInput):
     )
     fields_only: bool = Field(
         default=False,
-        description="Return just the field names, for a quick check.",
+        description="Return field names only.",
     )
 
 
@@ -26,10 +26,8 @@ class DescribeQueryLanguage(Tool):
     title = "Describe query language"
     group = ToolGroup.ORIENT.value
     description = (
-        "The exact query grammar for one dimension: every field with its type and "
-        "operators, every is:/has: flag, the group keys, and worked examples. "
-        "Fetch this before writing a query you are unsure about — a rejected query "
-        "costs a round trip, and the fields differ per dimension."
+        "The query grammar for one dimension: fields with types and operators, "
+        "is:/has: flags, group keys and examples. Fields differ per dimension."
     )
     Input = Input
     examples = ("describe_query_language dimension=services",)

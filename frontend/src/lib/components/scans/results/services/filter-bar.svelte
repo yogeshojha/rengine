@@ -139,7 +139,7 @@
 			value={quick}
 			onValueChange={setQuick}
 			variant="outline"
-			aria-label="Quick filters"
+			aria-label="Filters"
 		>
 			{#each QUICK as q (q.value)}
 				<ToggleGroup.Item value={q.value} class="h-9 px-3 text-sm font-normal">

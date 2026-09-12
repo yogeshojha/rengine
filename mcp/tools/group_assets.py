@@ -23,8 +23,8 @@ class Input(ToolInput):
     )
     group_by: str = Field(
         description=(
-            "The grouping key. describe_query_language lists the keys each "
-            "dimension supports, for example tech, status, asn, country, severity."
+            "The grouping key, for example tech, status, asn, country or severity. "
+            "describe_query_language lists the keys per dimension."
         )
     )
     query: str | None = Field(
@@ -37,9 +37,8 @@ class GroupAssets(Tool):
     title = "Group assets"
     group = ToolGroup.INTERROGATE.value
     description = (
-        "Count a target's surface by a dimension — technology, status, ASN, country, "
-        "severity, service class and so on. Every group comes back with the query "
-        "that isolates it, so you can drill straight in and the count will match."
+        "Count a target's surface by a group key: technology, status, ASN, country, "
+        "severity, service class. Each group carries the query that isolates it."
     )
     Input = Input
     examples = (
@@ -56,7 +55,7 @@ class GroupAssets(Tool):
         if args.group_by not in keys:
             msg = (
                 f"{dim.label} cannot be grouped by {args.group_by!r}. "
-                f"Try one of: {', '.join(keys)}."
+                f"Use one of: {', '.join(keys)}."
             )
             raise ToolError(msg)
 
@@ -77,7 +76,7 @@ class GroupAssets(Tool):
         caveats = list(scope.caveat(dim))
         if result.truncated:
             caveats.append(
-                f"{result.total_groups} groups exist; the largest {len(groups)} are shown."
+                f"{result.total_groups} groups. The largest {len(groups)} are shown."
             )
         if result.covered < result.rows:
             caveats.append(

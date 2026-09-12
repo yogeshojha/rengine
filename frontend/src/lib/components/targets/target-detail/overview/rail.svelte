@@ -129,7 +129,7 @@
 		{:else}
 			<div class="flex items-center gap-2 text-sm">
 				<span class="size-2 shrink-0 rounded-full {DOT.pending}" aria-hidden="true"></span>
-				<span class="text-muted-foreground">Not scanned yet</span>
+				<span class="text-muted-foreground">Not scanned</span>
 			</div>
 		{/if}
 		{#if summary}

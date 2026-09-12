@@ -64,9 +64,7 @@
 				<div
 					class="flex flex-wrap items-center justify-between gap-3 rounded-md border border-dashed px-4 py-3"
 				>
-					<span class="text-sm text-muted-foreground">
-						The server is stopped. Agents cannot connect and every call is refused.
-					</span>
+					<span class="text-sm text-muted-foreground"> The server is stopped. </span>
 					{#if canAdmin}
 						<Button size="sm" onclick={onStart}>Start server</Button>
 					{/if}
@@ -128,9 +126,7 @@
 					{/each}
 				</div>
 			{:else}
-				<p class="text-sm text-muted-foreground">
-					No agent is connected. A session is listed for five minutes after its last call.
-				</p>
+				<p class="text-sm text-muted-foreground">No agents connected.</p>
 			{/if}
 		</section>
 

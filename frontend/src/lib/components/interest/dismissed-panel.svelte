@@ -35,7 +35,7 @@
 			rows = await interestApi.dismissals(id);
 			error = null;
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Could not load dismissals';
+			error = e instanceof Error ? e.message : 'Dismissals not loaded';
 		} finally {
 			loading = false;
 		}
@@ -45,18 +45,15 @@
 		try {
 			await interestApi.restore(row.id);
 			rows = rows.filter((r) => r.id !== row.id);
-			toast.success(`${row.host} can be flagged again from the next scan`);
+			toast.success(`${row.host} restored`);
 		} catch {
-			toast.error('Could not restore');
+			toast.error('Dismissal not restored');
 		}
 	}
 </script>
 
 <Card.Root class="gap-0 overflow-hidden py-0">
-	<PanelHead
-		title="Dismissed"
-		description="Dismissed assets. Excluded from the list on every later scan"
-	>
+	<PanelHead title="Dismissed" description="Assets excluded from the Exposures list">
 		<span class="tabular-nums">{rows.length}</span>
 	</PanelHead>
 
@@ -67,14 +64,9 @@
 			{/each}
 		</div>
 	{:else if error}
-		<EmptyState icon={EyeOff} title="Could not load dismissals" description={error} class="py-12" />
+		<EmptyState icon={EyeOff} title="Dismissals not loaded" description={error} class="py-12" />
 	{:else if !rows.length}
-		<EmptyState
-			icon={EyeOff}
-			title="Nothing dismissed"
-			description="Assets dismissed from the Exposures list appear here."
-			class="py-12"
-		/>
+		<EmptyState icon={EyeOff} title="No dismissed assets" class="py-12" />
 	{:else}
 		<div class="divide-y">
 			{#each rows as row (row.id)}

@@ -50,7 +50,7 @@
 			freshNoun: overview.runs_in_window === 1 ? 'run' : 'runs',
 			note:
 				overview.targets_never_scanned > 0
-					? `${overview.targets_never_scanned} never scanned`
+					? `${overview.targets_never_scanned} not scanned`
 					: `${plural(overview.targets_scanned, 'target', 'targets')} scanned`,
 			spark: recent.map((d) => d.runs),
 			sparkLabel: 'Runs'

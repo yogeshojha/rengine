@@ -44,7 +44,7 @@
 			<Empty.Media variant="icon">
 				<Spinner />
 			</Empty.Media>
-			<Empty.Title>Loading announced prefixes…</Empty.Title>
+			<Empty.Title>Loading announced prefixes</Empty.Title>
 		</Empty.Header>
 	</Empty.Root>
 {:else if error}
@@ -53,7 +53,7 @@
 			<Empty.Media variant="icon">
 				<SearchX />
 			</Empty.Media>
-			<Empty.Title>Prefixes could not be loaded</Empty.Title>
+			<Empty.Title>Prefixes not loaded</Empty.Title>
 			<Empty.Description>{error}</Empty.Description>
 		</Empty.Header>
 	</Empty.Root>
@@ -64,7 +64,6 @@
 				<Network />
 			</Empty.Media>
 			<Empty.Title>No announced prefixes</Empty.Title>
-			<Empty.Description>This ASN has no visible BGP prefix announcements.</Empty.Description>
 		</Empty.Header>
 	</Empty.Root>
 {:else}

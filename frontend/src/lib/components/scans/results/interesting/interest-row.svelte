@@ -118,7 +118,7 @@
 	</div>
 
 	<span class="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100">
-		<Hint text="Not an exposure. Stays out on later scans of this target.">
+		<Hint text="Dismiss from this and later scans of this target">
 			{#snippet child(props)}
 				<Button
 					{...props}

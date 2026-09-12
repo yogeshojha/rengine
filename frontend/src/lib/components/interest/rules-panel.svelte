@@ -62,7 +62,7 @@
 			rules = await interestApi.rules(id);
 			error = null;
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Could not load the rules';
+			error = e instanceof Error ? e.message : 'Rules not loaded';
 		} finally {
 			loading = false;
 		}
@@ -73,7 +73,7 @@
 			const updated = await interestApi.updateRule(projectId, rule.id, body);
 			rules = rules.map((r) => (r.id === updated.id ? updated : r));
 		} catch {
-			toast.error(`Could not update ${rule.name}`);
+			toast.error(`${rule.name} not updated`);
 		}
 	}
 
@@ -84,7 +84,7 @@
 			rules = rules.filter((r) => r.id !== removing!.id);
 			toast.success(`${removing.name} deleted`);
 		} catch {
-			toast.error('Could not delete the rule');
+			toast.error('Rule not deleted');
 		} finally {
 			removing = null;
 		}
@@ -104,7 +104,7 @@
 		<Card.Root class="gap-0 overflow-hidden py-0">
 			<PanelHead title="Keywords" description="Terms that flag a matching asset">
 				{#if kr.matches != null}
-					<span class="tabular-nums">{kr.matches.toLocaleString()} flagged so far</span>
+					<span class="tabular-nums">{kr.matches.toLocaleString()} flagged</span>
 				{/if}
 			</PanelHead>
 			<div class="flex flex-col gap-3 px-5 py-4">
@@ -144,9 +144,7 @@
 						Notify
 					</label>
 				</div>
-				<p class="text-xs text-muted-foreground">
-					Matched against the hostname and the page title. An edit re-labels every past scan.
-				</p>
+				<p class="text-xs text-muted-foreground">An edit re-labels every past scan.</p>
 			</div>
 		</Card.Root>
 	{/if}
@@ -177,14 +175,9 @@
 				{/each}
 			</div>
 		{:else if error}
-			<EmptyState icon={Eye} title="Could not load the rules" description={error} class="py-12" />
+			<EmptyState icon={Eye} title="Rules not loaded" description={error} class="py-12" />
 		{:else if !queryRules.length}
-			<EmptyState
-				icon={Eye}
-				title={q ? 'No rule matches' : 'No rules yet'}
-				description={q ? 'Try a different filter.' : 'Add a rule to start flagging assets.'}
-				class="py-12"
-			/>
+			<EmptyState icon={Eye} title={q ? 'No rule matches the filter' : 'No rules'} class="py-12" />
 		{:else}
 			<div class="divide-y">
 				{#each queryRules as rule (rule.id)}
@@ -266,7 +259,7 @@
 	onOpenChange={(v) => {
 		if (!v) removing = null;
 	}}
-	title="Delete {removing?.name ?? 'this rule'}?"
-	description="The rule is removed and assets it flagged are no longer labelled by it. This action cannot be undone."
+	title="Delete {removing?.name ?? 'rule'}"
+	description="The rule and its labels on flagged assets are removed."
 	onConfirm={remove}
 />

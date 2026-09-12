@@ -8,7 +8,7 @@
 	import ScanTrendSparkline from '$lib/components/scans/scan-trend-sparkline.svelte';
 	import SectionHead from '$lib/components/section-head.svelte';
 	import { ROUTES } from '$lib/config/routes';
-	import { SURFACE, SurfaceDimension, surfaceSpec } from '$lib/config/surface';
+	import { SurfaceDimension, surfaceSpec } from '$lib/config/surface';
 	import { formatShortDate, relativeTime } from '$lib/utilities/dates';
 	import { durationText, isLiveStatus } from '$lib/utilities/scan-status';
 	import type { ScanRead, ScanStatus } from '$lib/types/scan';
@@ -23,7 +23,6 @@
 
 	let { summary, loading, history, onScan }: Props = $props();
 
-	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 	const TREND_RUNS = 6;
 	const TREND_COLUMN: Record<string, keyof ScanRead> = {
 		[SurfaceDimension.WEB_ASSETS]: 'subdomains_found',
@@ -69,7 +68,7 @@
 		if (latest.status === 'cancelled')
 			return {
 				live: false,
-				text: `Latest run was cancelled${took ? ` after ${took}` : ''}, figures are partial`
+				text: `Latest run cancelled${took ? ` after ${took}` : ''}. Figures are partial.`
 			};
 		if (latest.status === 'failed')
 			return {
@@ -77,7 +76,7 @@
 				text: `Latest run failed ${when}${latest.error ? ` · ${latest.error}` : ''}`
 			};
 		if (latest.is_first_scan || latest.prev_subdomains_found == null)
-			return { live: false, text: 'Baseline run, later runs are compared against it' };
+			return { live: false, text: 'Baseline run' };
 		return { live: false, text: `Compared with the previous run · ${latest.engine_name} ${when}` };
 	});
 
@@ -142,7 +141,7 @@
 				<Hint
 					text={m.covered
 						? `Open ${spec?.label ?? m.label} in the scan that observed it`
-						: `No scan of this target has run ${spec?.label ?? m.label} yet`}
+						: `${spec?.label ?? m.label} not scanned`}
 				>
 					{#snippet child(props)}
 						<svelte:element
@@ -190,10 +189,7 @@
 		<div
 			class="flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-dashed px-4 py-3"
 		>
-			<p class="text-sm text-muted-foreground">
-				No scans yet. {WEB.label}, endpoints, services, addresses and findings appear here after the
-				first run.
-			</p>
+			<p class="text-sm text-muted-foreground">No scans.</p>
 			<Button size="sm" class="gap-1.5" onclick={onScan}>
 				<Play class="size-3.5" /> Start scan
 			</Button>

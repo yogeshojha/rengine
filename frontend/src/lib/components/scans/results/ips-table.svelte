@@ -105,7 +105,7 @@
 		try {
 			localStorage.setItem(key, JSON.stringify(value));
 		} catch {
-			// storage is a convenience
+			// ignore
 		}
 	}
 
@@ -380,7 +380,7 @@
 			const qs = sp.toString();
 			replaceState(qs ? `?${qs}` : location.pathname, appPage.state);
 		} catch {
-			// URL state is best-effort
+			// ignore
 		}
 	}
 	$effect(() => {
@@ -412,7 +412,7 @@
 			if (exact) open(exact);
 			else toast.error('Address not found in this scan');
 		} catch {
-			toast.error('Address could not be loaded');
+			toast.error('Address not loaded');
 		}
 	}
 	function step(dir: -1 | 1) {
@@ -675,7 +675,7 @@
 	{:else if errored}
 		<EmptyState
 			icon={TriangleAlert}
-			title="Addresses could not be loaded"
+			title="Addresses not loaded"
 			class="rounded-none border-0 bg-transparent py-16"
 		>
 			<Button variant="outline" class="gap-2" onclick={() => refresh()}>
@@ -695,7 +695,7 @@
 		{#if queryError}
 			<EmptyState
 				icon={SearchX}
-				title="That query could not run"
+				title="Query did not run"
 				description={queryError.message}
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
@@ -713,8 +713,7 @@
 		{:else}
 			<EmptyState
 				icon={Network}
-				title="No addresses yet"
-				description="Addresses appear once hostnames resolve or ports are discovered."
+				title="No addresses in this scan"
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
 		{/if}

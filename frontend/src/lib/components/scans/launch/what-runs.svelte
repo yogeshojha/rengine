@@ -11,7 +11,7 @@
 
 {#if stages.length === 0}
 	<p class="rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
-		No stage runs with this plan.
+		No stages selected.
 	</p>
 {:else}
 	<div class="flex flex-wrap items-center gap-y-2 rounded-md border bg-card px-3 py-2.5">

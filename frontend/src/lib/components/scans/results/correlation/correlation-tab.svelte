@@ -158,17 +158,16 @@
 			{#if graph}
 				<p class="text-sm">
 					<b class="font-semibold tabular-nums">{sharing.toLocaleString()}</b> of
-					{plural(graph.total_hosts, 'host', 'hosts')} share an identity
+					{plural(graph.total_hosts, 'web asset', 'web assets')} share an identity
 					<span class="text-muted-foreground"
 						>· {plural(hubs.length, 'shared identity', 'shared identities')}{commonHidden
 							? ` · ${commonHidden} common hidden`
 							: ''}</span
 					>
 				</p>
-				<p class="text-xs text-muted-foreground">
-					A hub is a value shared by two or more hosts. Double-click a node to open it in Web
-					assets.{graph.truncated ? ' Limited to the first 3,000 hosts.' : ''}
-				</p>
+				{#if graph.truncated}
+					<p class="text-xs text-muted-foreground">Limited to the first 3,000 web assets.</p>
+				{/if}
 			{:else}
 				<Skeleton class="h-5 w-72" />
 				<Skeleton class="h-4 w-96" />
@@ -180,9 +179,9 @@
 			/>
 			<Input
 				bind:value={search}
-				placeholder="Find host"
+				placeholder="Find web asset"
 				class="h-8 pl-8 font-mono text-xs"
-				aria-label="Find host"
+				aria-label="Find web asset"
 				onkeydown={(e) => e.key === 'Enter' && findHost()}
 			/>
 		</div>
@@ -200,7 +199,7 @@
 				aria-label="Identity types"
 			>
 				{#each kinds as k (k.key)}
-					<Hint text="{k.help}. Present on {plural(k.hosts, 'host', 'hosts')}.">
+					<Hint text="{k.help}. On {plural(k.hosts, 'web asset', 'web assets')}.">
 						{#snippet child(props)}
 							<span {...props} class="inline-flex">
 								<ToggleGroup.Item value={k.key} class="h-7 gap-1.5 px-2 text-xs font-normal">
@@ -216,7 +215,7 @@
 					</Hint>
 				{/each}
 			</ToggleGroup.Root>
-			<Hint text="Identities present on half or more of the hosts are hidden">
+			<Hint text="Hides identities present on half or more of the web assets">
 				{#snippet child(props)}
 					<span {...props} class="ml-auto inline-flex">
 						<ToggleGroup.Root
@@ -240,7 +239,7 @@
 	{#if errored && !graph}
 		<EmptyState
 			icon={TriangleAlert}
-			title="The graph could not be loaded"
+			title="Graph not loaded"
 			class="rounded-none border-0 bg-transparent py-16"
 		>
 			<Button variant="outline" class="gap-2" onclick={load}
@@ -255,14 +254,12 @@
 		<EmptyState
 			icon={Share2}
 			title="No shared identities"
-			description="No two hosts in this scan share an address, CNAME target, page title or fingerprint"
 			class="rounded-none border-0 bg-transparent py-16"
 		/>
 	{:else if graph && hubs.length === 0}
 		<EmptyState
 			icon={Share2}
 			title="No identity types selected"
-			description="All identity types are disabled or hidden as common"
 			class="rounded-none border-0 bg-transparent py-16"
 		/>
 	{:else if graph}
@@ -294,13 +291,11 @@
 		<div
 			class="flex flex-wrap items-center gap-x-4 gap-y-1 border-t px-4 py-2 text-xs text-muted-foreground"
 		>
-			<span>Filled dots are hosts with a 2xx response. Hollow dots are hosts without one.</span>
-			<span
-				>Hub size reflects the number of hosts. A dashed ring marks a TLS or certificate identity.</span
-			>
+			<span>Filled dot: 2xx response. Hollow dot: no 2xx response.</span>
+			<span>Hub size: number of web assets. Dashed ring: TLS or certificate identity.</span>
 			{#if graph.total_hosts - sharing > 0}
 				<span class="ml-auto tabular-nums">
-					{plural(graph.total_hosts - sharing, 'host', 'hosts')} with no shared identity shown
+					{plural(graph.total_hosts - sharing, 'web asset', 'web assets')} without a shared identity hidden
 				</span>
 			{/if}
 		</div>

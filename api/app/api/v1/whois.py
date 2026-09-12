@@ -41,25 +41,25 @@ class WhoisLookupRequest(BaseModel):
         ...,
         min_length=1,
         max_length=500,
-        description="Target to look up: domain, IP, CIDR, ASN (e.g. AS13335), or URL",
+        description="Domain, IP, CIDR, ASN or URL",
         examples=["example.com", "8.8.8.8", "192.168.0.0/16", "AS13335"],
     )
     store_in_db: bool = Field(
         default=True,
-        description="Cache the result in DB for correlation (default: true)",
+        description="Store the result for correlation",
     )
 
 
 class WhoisLookupResponse(BaseModel):
     record: WhoisRecordRead | None = Field(
         default=None,
-        description="Stored DB record (null if store_in_db=false)",
+        description="Stored record. Null when store_in_db is false.",
     )
     data: dict = Field(
         description="Full parsed WHOIS/RDAP response",
     )
     cached: bool = Field(
-        description="Whether this result came from cache",
+        description="Served from cache",
     )
 
 
@@ -81,8 +81,8 @@ class WhoisStatsResponse(BaseModel):
     "/lookup",
     response_model=WhoisLookupResponse,
     status_code=status.HTTP_200_OK,
-    summary="WHOIS Lookup",
-    description="Perform a WHOIS/RDAP lookup. Results are cached in DB by default.",
+    summary="WHOIS lookup",
+    description="WHOIS/RDAP lookup. Results are cached.",
 )
 async def whois_lookup(
     request: WhoisLookupRequest,
@@ -140,8 +140,8 @@ async def whois_lookup(
 @router.get(
     "/records",
     response_model=Page[WhoisRecordSummary],
-    summary="List WHOIS Records",
-    description="Browse all cached WHOIS records with optional filters.",
+    summary="List WHOIS records",
+    description="Cached WHOIS records.",
 )
 async def list_whois_records(
     _current_user: CurrentUser,
@@ -152,15 +152,15 @@ async def list_whois_records(
     ] = None,
     registrant_name: Annotated[
         str | None,
-        Query(description="Filter by registrant name (exact match)"),
+        Query(description="Exact registrant name"),
     ] = None,
     registrar_name: Annotated[
         str | None,
-        Query(description="Filter by registrar name (exact match)"),
+        Query(description="Exact registrar name"),
     ] = None,
     country: Annotated[
         str | None,
-        Query(description="Filter by country code (e.g. US, DE)"),
+        Query(description="Two-letter country code"),
     ] = None,
 ):
     query = select(WhoisRecord)
@@ -182,8 +182,8 @@ async def list_whois_records(
 @router.get(
     "/records/stats",
     response_model=WhoisStatsResponse,
-    summary="WHOIS Records Stats",
-    description="Aggregate statistics for all cached WHOIS records.",
+    summary="WHOIS record stats",
+    description="Counts across cached WHOIS records.",
 )
 async def whois_records_stats(
     _current_user: CurrentUser,
@@ -232,8 +232,8 @@ async def whois_records_stats(
 @router.get(
     "/records/{record_id}",
     response_model=WhoisRecordRead,
-    summary="Get WHOIS Record",
-    description="Get a single cached WHOIS record by ID with full parsed data.",
+    summary="Get WHOIS record",
+    description="One cached WHOIS record with parsed data.",
 )
 async def get_whois_record(
     record_id: str,
@@ -257,8 +257,8 @@ async def get_whois_record(
 @router.post(
     "/records/{record_id}/refresh",
     response_model=WhoisRefreshResponse,
-    summary="Refresh WHOIS Record",
-    description="Force re-query RDAP for an existing record, ignoring cache TTL.",
+    summary="Refresh WHOIS record",
+    description="Re-query RDAP for the record.",
 )
 async def refresh_whois_record(
     record_id: str,
@@ -308,8 +308,8 @@ async def refresh_whois_record(
 @router.get(
     "/records/by-target/{target_id}",
     response_model=WhoisRecordRead | None,
-    summary="Get WHOIS Record by Target",
-    description="Get the cached WHOIS record linked to a specific target.",
+    summary="WHOIS record by target",
+    description="The cached WHOIS record linked to a target.",
 )
 async def get_whois_record_by_target(
     target_id: str,
@@ -336,8 +336,8 @@ async def get_whois_record_by_target(
 @router.delete(
     "/records/{record_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete WHOIS Record",
-    description="Delete a cached WHOIS record.",
+    summary="Delete WHOIS record",
+    description="Remove a cached WHOIS record.",
 )
 async def delete_whois_record(
     record_id: str,
@@ -423,7 +423,7 @@ async def _target_correlations(
 @router.get(
     "/correlations/targets",
     response_model=dict[str, list[WhoisCorrelationResult]],
-    summary="Get Correlations For Several Targets",
+    summary="Correlations for several targets",
 )
 async def get_targets_correlations(
     _current_user: CurrentUser,
@@ -449,12 +449,8 @@ async def get_targets_correlations(
 @router.get(
     "/correlations/target/{target_id}",
     response_model=list[WhoisCorrelationResult],
-    summary="Get Target Correlations",
-    description=(
-        "Find all targets related to the given target through shared WHOIS data. "
-        "Returns groups by correlation type: registrant, registrar, nameserver, "
-        "network block, and country."
-    ),
+    summary="Target correlations",
+    description="Targets sharing WHOIS data, grouped by registrant, registrar, nameserver, network block and country.",
 )
 async def get_target_correlations(
     target_id: str,
@@ -467,7 +463,7 @@ async def get_target_correlations(
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="That is not a valid target ID.",
+            detail="Invalid target ID",
         ) from e
 
     target_result = await session.execute(select(Target).where(Target.id == tid))
@@ -497,14 +493,14 @@ def _correlation_results(
 @router.get(
     "/correlations/registrant",
     response_model=list[WhoisCorrelationResult],
-    summary="Find by Registrant",
-    description="Find all WHOIS records sharing the same registrant name.",
+    summary="Find by registrant",
+    description="WHOIS records with the same registrant name.",
 )
 async def correlate_by_registrant(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[WhoisService, Depends(get_whois_service)],
-    name: Annotated[str, Query(description="Registrant name to search for")],
+    name: Annotated[str, Query(description="Registrant name")],
 ):
     records = await service.find_by_registrant(session, name)
     return _correlation_results("registrant_name", name, records)
@@ -513,14 +509,14 @@ async def correlate_by_registrant(
 @router.get(
     "/correlations/registrar",
     response_model=list[WhoisCorrelationResult],
-    summary="Find by Registrar",
-    description="Find all WHOIS records sharing the same registrar.",
+    summary="Find by registrar",
+    description="WHOIS records with the same registrar.",
 )
 async def correlate_by_registrar(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[WhoisService, Depends(get_whois_service)],
-    name: Annotated[str, Query(description="Registrar name to search for")],
+    name: Annotated[str, Query(description="Registrar name")],
 ):
     records = await service.find_by_registrar(session, name)
     return _correlation_results("registrar_name", name, records)
@@ -529,16 +525,14 @@ async def correlate_by_registrar(
 @router.get(
     "/correlations/network",
     response_model=list[WhoisCorrelationResult],
-    summary="Find by Network",
-    description="Find all WHOIS records in the same network CIDR block.",
+    summary="Find by network",
+    description="WHOIS records in one network block.",
 )
 async def correlate_by_network(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[WhoisService, Depends(get_whois_service)],
-    cidr: Annotated[
-        str, Query(description="Network CIDR to search for (e.g. 8.8.8.0/24)")
-    ],
+    cidr: Annotated[str, Query(description="Network CIDR such as 8.8.8.0/24")],
 ):
     records = await service.find_by_network(session, cidr)
     return _correlation_results("network_cidr", cidr, records)
@@ -547,14 +541,14 @@ async def correlate_by_network(
 @router.get(
     "/correlations/country",
     response_model=list[WhoisCorrelationResult],
-    summary="Find by Country",
-    description="Find all WHOIS records registered in a specific country.",
+    summary="Find by country",
+    description="WHOIS records registered in one country.",
 )
 async def correlate_by_country(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[WhoisService, Depends(get_whois_service)],
-    code: Annotated[str, Query(description="Country code (e.g. US, DE, JP)")],
+    code: Annotated[str, Query(description="Two-letter country code")],
 ):
     records = await service.find_by_country(session, code)
     return _correlation_results("country", code.upper(), records)
@@ -563,14 +557,16 @@ async def correlate_by_country(
 @router.get(
     "/correlations/nameserver",
     response_model=list[WhoisCorrelationResult],
-    summary="Find by Nameserver",
-    description="Find all domain records sharing a specific nameserver.",
+    summary="Find by nameserver",
+    description="Domain records with the same nameserver.",
 )
 async def correlate_by_nameserver(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[WhoisService, Depends(get_whois_service)],
-    ns: Annotated[str, Query(description="Nameserver hostname (e.g. ns1.google.com)")],
+    ns: Annotated[
+        str, Query(description="Nameserver host name such as ns1.google.com")
+    ],
 ):
     records = await service.find_by_nameserver(session, ns)
     return _correlation_results("nameserver", ns, records)

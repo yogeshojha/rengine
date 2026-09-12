@@ -60,21 +60,9 @@
 		compact
 	/>
 {:else if !anyVerbOn}
-	<EmptyState
-		icon={ListFilter}
-		title="No change kinds selected"
-		description="Every change kind is switched off."
-		class="m-4 sm:m-5"
-		compact
-	/>
+	<EmptyState icon={ListFilter} title="No change kinds selected" class="m-4 sm:m-5" compact />
 {:else if !rows.length}
-	<EmptyState
-		icon={CheckCheck}
-		title="Nothing changed"
-		description="Every {noun} matched on identity and on every watched field."
-		class="m-4 sm:m-5"
-		compact
-	/>
+	<EmptyState icon={CheckCheck} title="Nothing changed" class="m-4 sm:m-5" compact />
 {:else}
 	<div class="flex flex-col">
 		{#each rows as row (row.dimension + row.key)}

@@ -83,11 +83,11 @@ class KatanaProvider(UrlProvider):
         result.errors = errors
         note = f"crawled {len(targets)} sites, {state.collected} urls"
         if state.out_of_scope:
-            note += f" ({state.out_of_scope} off-site links not in scope)"
+            note += f", {state.out_of_scope} off-site links out of scope"
         self.progress(note)
 
     def _ingest(self, records, state: _Crawl, result: ProviderResult, cap: int) -> None:
-        """Read the crawl, handing what it finds to the stage as it goes."""
+        """Read the crawl and hand batches to the stage."""
         for record in records:
             parsed = parse_katana_record(record)
             if parsed is None:
@@ -113,7 +113,7 @@ class KatanaProvider(UrlProvider):
 
 @dataclass
 class _Crawl:
-    """What the crawl has seen so far, including the batches already handed over."""
+    """Crawl state, handed-over batches included."""
 
     found: int = 0
     out_of_scope: int = 0

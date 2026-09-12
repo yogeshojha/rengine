@@ -80,7 +80,7 @@ function createConnectorsStore() {
 					catalog = c;
 				})
 				.catch((e) => {
-					error = message(e, 'Connector catalog could not be loaded');
+					error = message(e, 'Connector catalog not loaded');
 				})
 				.finally(() => {
 					catalogPending = null;
@@ -98,7 +98,7 @@ function createConnectorsStore() {
 				fetchedProjectId = projectId;
 				if (!items.some((c) => c.id === selectedId)) selectedId = items[0]?.id ?? null;
 			} catch (e) {
-				error = message(e, 'Connectors could not be loaded');
+				error = message(e, 'Connectors not loaded');
 			} finally {
 				isLoading = false;
 			}
@@ -119,7 +119,7 @@ function createConnectorsStore() {
 			try {
 				queue = await connectorsApi.candidates(id, projectId, params);
 			} catch (e) {
-				error = message(e, 'The queue could not be loaded');
+				error = message(e, 'Queue not loaded');
 			} finally {
 				queueLoading = false;
 			}
@@ -129,7 +129,7 @@ function createConnectorsStore() {
 			try {
 				discovered = await connectorsApi.discovered(id, projectId);
 			} catch (e) {
-				error = message(e, 'Discovered domains could not be loaded');
+				error = message(e, 'Discovered domains not loaded');
 			}
 		},
 
@@ -137,7 +137,7 @@ function createConnectorsStore() {
 			try {
 				coverage = await connectorsApi.coverage(id, projectId);
 			} catch (e) {
-				error = message(e, 'Coverage could not be loaded');
+				error = message(e, 'Coverage not loaded');
 			}
 		},
 
@@ -145,7 +145,7 @@ function createConnectorsStore() {
 			try {
 				sessions = await connectorsApi.sessions(id, projectId);
 			} catch (e) {
-				error = message(e, 'Sessions could not be loaded');
+				error = message(e, 'Sessions not loaded');
 			}
 		},
 

@@ -123,7 +123,7 @@
 	let subline = $derived.by(() => {
 		switch (scan.status) {
 			case 'pending':
-				return 'Waiting for an available worker.';
+				return 'Waiting for a worker.';
 			case 'running': {
 				const parts = [run?.stage ? run.stage.title : progress.label];
 				parts.push(`${progress.done} of ${progress.total} stages`);
@@ -132,12 +132,11 @@
 				return parts.join(' · ');
 			}
 			case 'failed':
-				return scan.error ?? 'A stage failed. Select a stage below for details.';
+				return scan.error ?? 'A stage failed. Select the stage for details.';
 			case 'cancelled':
-				return `Stopped after ${doneCount} of ${planned.length} stages. Results are partial.`;
+				return `Stopped after ${doneCount} of ${planned.length} stages.`;
 			default:
-				if (baseline)
-					return `First scan of ${scan.execution_config.target_value}. Later scans are compared against it.`;
+				if (baseline) return `First scan of ${scan.execution_config.target_value}.`;
 				if (!historyLoaded) return '';
 				if (!previous) return 'Compared with the previous completed scan.';
 				return `Compared with the ${previous.engine_name} scan on ${fmtRun(previous.started_at ?? previous.created_at)}.`;
@@ -274,7 +273,6 @@
 				tab: 'endpoints',
 				trend: trendOf('endpoints_found')
 			});
-		// still in flight that may yet produce one
 		return live ? list : list.filter((k) => k.value !== 0);
 	});
 
@@ -343,7 +341,7 @@
 							</button>
 						{/if}
 						{#if compared && gone > 0}
-							<Hint text="Present in the previous scan, absent in this one">
+							<Hint text="In the previous scan, not in this one">
 								{#snippet child(props)}
 									<span
 										{...props}

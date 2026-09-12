@@ -20,7 +20,7 @@
 		const file = (event.target as HTMLInputElement).files?.[0];
 		if (!file) return;
 		if (file.size > MAX_LOGO) {
-			toast.error('Choose a logo under 500 KB.');
+			toast.error('Logo exceeds 500 KB. Choose a smaller file.');
 			return;
 		}
 		branding.company_logo = await new Promise<string>((resolve, reject) => {
@@ -163,7 +163,7 @@
 			<Label class="text-xs">Revision history</Label>
 			<Button variant="ghost" size="sm" class="h-7 text-xs" onclick={addRevision}>
 				<PlusIcon class="mr-1 size-3" />
-				Add a row
+				Add revision
 			</Button>
 		</div>
 		{#each branding.revisions as revision, index (index)}

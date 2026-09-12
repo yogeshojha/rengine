@@ -480,7 +480,7 @@ export function endpointQueryChips(q: EndpointQuery): EndpointFilterChip[] {
 	if (q.untested)
 		chips.push({
 			id: 'untested',
-			label: 'Not tested by me',
+			label: 'No proxy traffic',
 			remove: (x) => ({ ...x, untested: false })
 		});
 	return chips;

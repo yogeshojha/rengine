@@ -161,9 +161,8 @@ def _validate_paths(paths: list) -> None:
         _reject_ctrl("Excluded path", p)
         if backtracks_badly(p):
             msg = (
-                f"'{p}' repeats a group that already repeats, which can take "
-                "unbounded time to match. Simplify it — a prefix (/admin) or a "
-                "wildcard (/admin/*) is enough."
+                f"'{p}' nests a repeated group. "
+                "Use a prefix such as /admin or a wildcard such as /admin/*."
             )
             raise _bad(msg)
 
@@ -196,16 +195,14 @@ def _validate_exclusion_patterns(name: str, patterns: list) -> None:
         _reject_ctrl(name, p)
         if backtracks_badly(p):
             msg = (
-                f"'{p}' repeats a group that already repeats, which can take "
-                "unbounded time to match. Simplify it — a keyword (admin) or a "
-                "wildcard (*admin*) is enough for an exclusion."
+                f"'{p}' nests a repeated group. "
+                "Use a keyword such as admin or a wildcard such as *admin*."
             )
             raise _bad(msg)
         if looks_like_domain(p):
             msg = (
-                f"'{p}' looks like a domain name. Use a keyword (admin), "
-                "wildcard (*admin*) or regex. Exclusion patterns match any "
-                "subdomain, so the context stays reusable across scans."
+                f"'{p}' is a domain name. "
+                "Use a keyword such as admin, a wildcard such as *admin* or a regex."
             )
             raise _bad(msg)
 
@@ -290,7 +287,7 @@ class ScanContextService:
         if proxy_id is None:
             return
         if await self.session.get(Proxy, proxy_id) is None:
-            msg = "Selected proxy does not exist."
+            msg = "Proxy not found."
             raise _bad(msg)
 
     async def create(
@@ -443,7 +440,7 @@ class ScanContextService:
                 status_code=status.HTTP_409_CONFLICT,
                 detail=(
                     f"'{ctx.name}' is used by {usage.schedules} scheduled "
-                    f"scan{'s' if usage.schedules != 1 else ''} and they would fail without it. "
+                    f"scan{'s' if usage.schedules != 1 else ''}. "
                     "Detach or delete those schedules first."
                 ),
             )

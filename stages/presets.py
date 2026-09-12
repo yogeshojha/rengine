@@ -32,12 +32,12 @@ PRESETS: tuple[PresetSpec, ...] = (
     PresetSpec(
         Preset.FULL.value,
         "Full Sweep",
-        "Every stage enabled. Highest coverage and highest footprint.",
+        "Every stage enabled.",
     ),
     PresetSpec(
         Preset.BLANK.value,
         "Blank",
-        "No stages enabled. Build the engine from scratch.",
+        "No stages enabled.",
     ),
 )
 

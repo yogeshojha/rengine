@@ -68,7 +68,7 @@ async def _authenticate(
 
 
 def _base(request: Request) -> str:
-    """The URL the proxy must reach."""
+    """API base URL for the proxy."""
     return str(request.base_url).rstrip("/")
 
 
@@ -83,7 +83,7 @@ async def ingest(
     request: Request,
     authorization: Annotated[str | None, Header()] = None,
 ):
-    """The endpoint a proxy posts to. Authenticated by connector token, never a user session."""
+    """Proxy ingest endpoint. Authenticated by connector token."""
     row = await _authenticate(service, request, authorization)
     return await service.ingest(row, payload)
 
@@ -94,7 +94,7 @@ async def collect_actions(
     request: Request,
     authorization: Annotated[str | None, Header()] = None,
 ):
-    """Collected by the proxy, not pushed to it. Authenticated by connector token."""
+    """Pending actions for the proxy. Authenticated by connector token."""
     row = await _authenticate(service, request, authorization)
     return await service.take_actions(row)
 
@@ -126,7 +126,7 @@ async def send_endpoints_to_proxy(
     scope: EndpointScope,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    """Discovered endpoints, chosen by id or by filter, into the proxy's Repeater."""
+    """Send endpoints, by id or by filter, to the proxy."""
     if body.endpoint_ids:
         rows = list(
             (
@@ -162,7 +162,7 @@ async def picker_targets(
     request: Request,
     authorization: Annotated[str | None, Header()] = None,
 ):
-    """The targets the proxy offers while testing. Authenticated by connector token."""
+    """Target picker options for the proxy. Authenticated by connector token."""
     row = await _authenticate(service, request, authorization)
     return await service.target_options(row)
 
@@ -173,7 +173,7 @@ async def collect_notices(
     request: Request,
     authorization: Annotated[str | None, Header()] = None,
 ):
-    """What reNgine wants said while the tester is still testing. Delivered once."""
+    """Pending notices for the proxy. Delivered once."""
     row = await _authenticate(service, request, authorization)
     return await service.take_notices(row)
 
@@ -185,7 +185,7 @@ async def report_finding(
     request: Request,
     authorization: Annotated[str | None, Header()] = None,
 ):
-    """A finding a person confirmed by hand, reported from the proxy."""
+    """Record a finding reported from the proxy."""
     row = await _authenticate(service, request, authorization)
     try:
         return await service.record_finding(row, body, row.created_by)
@@ -206,7 +206,7 @@ async def target_scope(
     if (target_id is None) == (program_id is None):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Give either a target or a program.",
+            detail="Pass exactly one of target_id or program_id.",
         )
     try:
         if program_id is not None:
@@ -223,7 +223,7 @@ async def host_facts(
     host: str,
     authorization: Annotated[str | None, Header()] = None,
 ):
-    """What reNgine already knows about the host being tested."""
+    """Stored facts about a host."""
     row = await _authenticate(service, request, authorization)
     try:
         return await service.host_facts(row, host)

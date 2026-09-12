@@ -1,4 +1,4 @@
-"""The keystone tool: a name becomes the scans that can answer for it."""
+"""Resolve a target to the scans that answer for it."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from mcp.tools.base import Tool, ToolGroup, ToolInput
 
 class Input(ToolInput):
     target: str = Field(
-        description="A domain, IP address, CIDR range, URL or ASN already added to reNgine."
+        description="A domain, IP address, CIDR range, URL or ASN added as a target."
     )
 
 
@@ -23,11 +23,9 @@ class ResolveTarget(Tool):
     title = "Resolve target"
     group = ToolGroup.ORIENT.value
     description = (
-        "Turn a target name into what reNgine knows about it: for each of the five "
-        "result dimensions, whether it was ever scanned, what the most recent covering "
-        "scan found, when, and the scan id every other tool needs. "
-        "Call this first. A dimension reported as covered=false was never scanned, "
-        "which is different from finding nothing."
+        "For each of a target's five result dimensions: whether it was scanned, what "
+        "the most recent covering scan found, when, and the scan id other tools take. "
+        "Call this first. covered=false means not scanned, not zero."
     )
     Input = Input
     examples = ("resolve_target target=example.com",)
@@ -61,7 +59,7 @@ class ResolveTarget(Tool):
         risk = summary.risk
         covered = [s for s in surface if s["covered"]]
         headline = (
-            f"{scope.target.target_value} — "
+            f"{scope.target.target_value}: "
             f"{len(covered)} of {len(surface)} dimensions scanned"
         )
         if risk.total:
@@ -70,8 +68,8 @@ class ResolveTarget(Tool):
         caveats = []
         if uncovered:
             caveats.append(
-                "Never scanned: " + ", ".join(uncovered) + ". "
-                "Report these as not scanned, never as zero."
+                "Not scanned: " + ", ".join(uncovered) + ". "
+                "Report these as not scanned, not as zero."
             )
         if summary.scans_running:
             caveats.append(f"{summary.scans_running} scan(s) running now.")

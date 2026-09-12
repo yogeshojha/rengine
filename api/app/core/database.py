@@ -60,7 +60,7 @@ def pool_demand() -> int:
 
 
 async def check_capacity() -> None:
-    """Say out loud when the pools can outgrow the server."""
+    """Warn when pool demand exceeds max_connections."""
     demand = pool_demand()
     try:
         async with engine.connect() as conn:

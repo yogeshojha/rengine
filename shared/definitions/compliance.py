@@ -46,8 +46,8 @@ OWASP = FrameworkSpec(
     description="The ten most critical web application security risks.",
     url="https://owasp.org/Top10/",
     scope_note=(
-        "Mapped from the weakness class each check declares. An unauthenticated external "
-        "scan cannot observe every category, so an empty category is not evidence of absence."
+        "Mapped from the weakness class each check declares. "
+        "An empty category is not evidence of absence."
     ),
     controls=(
         Control(
@@ -55,11 +55,11 @@ OWASP = FrameworkSpec(
         ),
         Control("A02", "Cryptographic Failures", "Data exposed in transit or at rest."),
         Control("A03", "Injection", "Untrusted input reaching an interpreter."),
-        Control("A04", "Insecure Design", "A control the design never provided."),
+        Control("A04", "Insecure Design", "A control absent from the design."),
         Control(
             "A05",
             "Security Misconfiguration",
-            "A service left in a state its operator did not intend.",
+            "A misconfigured service.",
         ),
         Control(
             "A06",
@@ -84,7 +84,7 @@ OWASP = FrameworkSpec(
         Control(
             "A10",
             "Server-Side Request Forgery",
-            "The server fetches a location an attacker chooses.",
+            "The server fetches a caller-supplied location.",
         ),
     ),
 )
@@ -96,8 +96,8 @@ PCI = FrameworkSpec(
     description="Payment Card Industry Data Security Standard.",
     url="https://www.pcisecuritystandards.org/",
     scope_note=(
-        "Covers only the requirements an external scan can produce evidence for. "
-        "This is not an ASV scan and does not satisfy requirement 11.3.2."
+        "Covers the requirements an external scan produces evidence for. "
+        "Not an ASV scan and does not satisfy requirement 11.3.2."
     ),
     controls=(
         Control(
@@ -135,9 +135,7 @@ ISO = FrameworkSpec(
     version="2022",
     description="Information security controls.",
     url="https://www.iso.org/standard/27001",
-    scope_note=(
-        "Technical controls only. Organisational, people and physical controls are out of scope for a scanner."
-    ),
+    scope_note=("Technical controls only."),
     controls=(
         Control("A.5.15", "Access control", "Rules for physical and logical access."),
         Control(

@@ -37,14 +37,18 @@ export function validateDraft(
 ): { message: string; section: ContextFormSection } | null {
 	if (!draft.name.trim()) return { message: 'Name is required', section: 'identity' };
 	const badPaths = draft.excluded_paths.filter((p) => !isPathValid(p)).length;
-	if (badPaths > 0) return { message: `Fix ${badPaths} invalid path in Scope`, section: 'scope' };
+	if (badPaths > 0)
+		return {
+			message: `${badPaths} invalid path${badPaths === 1 ? '' : 's'} in Scope`,
+			section: 'scope'
+		};
 	const badIps = draft.excluded_ips.filter((ip) => !isIpValid(ip)).length;
-	if (badIps > 0) return { message: `Fix ${badIps} invalid IP in Scope`, section: 'scope' };
+	if (badIps > 0)
+		return { message: `${badIps} invalid IP${badIps === 1 ? '' : 's'} in Scope`, section: 'scope' };
 	const badHeader = draft.extra_headers.some((h) => !h.name.trim() && h.value.trim());
-	if (badHeader)
-		return { message: 'A header has a value but no name in Authentication', section: 'auth' };
+	if (badHeader) return { message: 'A header in Authentication has no name', section: 'auth' };
 	if (draft.auth_type === 'api_key' && !draft.auth?.api_key_name?.trim())
-		return { message: 'API key auth needs a key name in Authentication', section: 'auth' };
+		return { message: 'API key authentication requires a key name', section: 'auth' };
 	return null;
 }
 

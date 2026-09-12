@@ -47,10 +47,7 @@
 					<Empty.Media variant="icon">
 						<Clock class="h-4 w-4 text-muted-foreground" />
 					</Empty.Media>
-					<Empty.Title>No scans yet</Empty.Title>
-					<Empty.Description>
-						{target.target_value} has not been scanned yet.
-					</Empty.Description>
+					<Empty.Title>No scans</Empty.Title>
 				</Empty.Header>
 			</Empty.Root>
 		{/if}

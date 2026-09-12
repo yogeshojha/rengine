@@ -22,21 +22,21 @@
         </tr>
         {% endfor %}
         {% if quiet %}
-        <tr class="faint"><td>{{ m.sev('info', 'Info') }}</td><td class="num">{{ quiet|num }}</td><td class="micro">Observations about the asset. Not drawn, not counted as actionable.</td></tr>
+        <tr class="faint"><td>{{ m.sev('info', 'Info') }}</td><td class="num">{{ quiet|num }}</td><td class="micro">Not counted as actionable.</td></tr>
         {% endif %}
       </tbody>
     </table>
   </div>
 </div>
 {% endif %}
-{% if kev %}<p class="small block">{{ kev|num }} of the actionable findings are listed as exploited in the wild.</p>{% endif %}
+{% if kev %}<p class="small block">{{ kev|num }} of the actionable findings are on the Known Exploited Vulnerabilities catalogue.</p>{% endif %}
 
 {% if risks %}
 <div class="sub">
   <div class="label block">Ranked weaknesses</div>
-  <p class="micro faint block">Ordered by severity weighted for exploitation, reach and how new the observation is. A weakness on many hosts outranks the same weakness on one.</p>
+  <p class="micro faint block">Ordered by severity, weighted for exploitation, reach and novelty.</p>
   <table class="table table--fixed">
-    <thead><tr><th style="width:8mm"></th><th>Weakness</th><th class="num" style="width:16mm">Seen</th><th class="num" style="width:16mm">Hosts</th>{% if show_signals %}<th style="width:52mm">Why it ranks</th>{% endif %}</tr></thead>
+    <thead><tr><th style="width:8mm"></th><th>Weakness</th><th class="num" style="width:16mm">Seen</th><th class="num" style="width:16mm">Hosts</th>{% if show_signals %}<th style="width:52mm">Signals</th>{% endif %}</tr></thead>
     <tbody>
       {% for risk in risks %}
       <tr>
@@ -54,7 +54,7 @@
 
 {% if concentration %}
 <div class="sub">
-  <div class="label block">Where risk concentrates</div>
+  <div class="label block">Concentration</div>
   <table class="table">
     <thead><tr><th>Asset</th><th class="num">Findings</th><th>Worst</th></tr></thead>
     <tbody>

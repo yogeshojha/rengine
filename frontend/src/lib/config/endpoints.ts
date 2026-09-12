@@ -239,7 +239,7 @@ export const INTEREST_LABELS: Record<string, string> = {
 
 // mirrors ParamInterest + PathInterest help
 export const INTEREST_HELP: Record<string, string> = {
-	idor: 'Names an object directly. Worth testing for access control.',
+	idor: 'Names an object directly.',
 	open_redirect: 'Carries a destination the application redirects to.',
 	ssrf: 'Carries a location the server fetches server-side.',
 	traversal: 'Carries a file or path the server reads.',
@@ -249,12 +249,12 @@ export const INTEREST_HELP: Record<string, string> = {
 	ssti: 'Names a template the server renders.',
 	upload: 'Carries a file name or upload target.',
 	debug: 'Switches on diagnostic behaviour.',
-	vcs: 'A version control directory served over HTTP exposes source and history.',
+	vcs: 'A version control directory served over HTTP.',
 	secrets: 'A file that conventionally holds credentials or keys.',
 	backup: 'An editor or backup artefact left in the web root.',
 	admin: 'An administrative interface reachable from the internet.',
 	api_doc: 'A machine-readable description of the API surface.',
-	debug_endpoint: 'A diagnostic route that usually should not be public.',
+	debug_endpoint: 'A diagnostic route.',
 	auth: 'An authentication boundary.',
 	infra: 'A management or infrastructure service mounted on the web root.'
 };

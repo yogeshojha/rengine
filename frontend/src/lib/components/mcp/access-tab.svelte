@@ -181,7 +181,7 @@
 										</div>
 									{/if}
 								{:else}
-									<span class="text-muted-foreground">Never used</span>
+									<span class="text-muted-foreground">Unused</span>
 								{/if}
 							</td>
 							<td
@@ -233,12 +233,7 @@
 		</div>
 	{:else}
 		<div class="p-5">
-			<EmptyState
-				compact
-				icon={KeyRoundIcon}
-				title="No service tokens"
-				description="An agent needs a service token to reach this instance."
-			>
+			<EmptyState compact icon={KeyRoundIcon} title="No service tokens">
 				{#if canAdmin}
 					<Button size="sm" onclick={onIssueToken}>New token</Button>
 				{/if}
@@ -249,9 +244,11 @@
 
 <ConfirmDialog
 	open={pending !== null}
-	title={pending?.action === 'revoke' ? 'Revoke this token?' : 'Delete this token?'}
+	title={pending?.action === 'revoke' ? 'Revoke token' : 'Delete token'}
 	description={pending
-		? `${pending.token.name} stops working on its next call and any connected agent loses access. Scans it started keep running. This action cannot be undone.`
+		? pending.action === 'revoke'
+			? `Token ${pending.token.name} stops working on its next call.`
+			: `Token ${pending.token.name} and its sessions are removed.`
 		: ''}
 	confirmLabel={pending?.action === 'revoke' ? 'Revoke' : 'Delete'}
 	destructive

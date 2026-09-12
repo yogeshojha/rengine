@@ -55,7 +55,7 @@ def _bad(detail: str) -> HTTPException:
 
 def _reject_ctrl(label: str, value) -> None:
     if isinstance(value, str) and _CTRL_CHARS.search(value):
-        msg = f"{label} must not contain control characters (CR/LF/NUL)."
+        msg = f"{label} must not contain control characters."
         raise _bad(msg)
 
 
@@ -95,7 +95,7 @@ def secret_runs(text: str | None) -> list[str]:
 
 
 def redact_command(command: str) -> str:
-    """Strip NUL/control bytes + proxy creds + sensitive header/flag values for safe storage."""
+    """Mask proxy credentials and credential flag and header values."""
     safe = _UNSAFE_CTRL.sub("", command or "")
     safe = PROXY_CREDS_RE.sub(rf"\1{MASK}@", safe)
     safe = _HEADER_VALUE.sub(rf"\1{MASK}", safe)
@@ -112,7 +112,7 @@ def seal_headers(headers: dict[str, str] | None) -> dict[str, str]:
 
 
 def unseal_headers(headers: dict[str, str] | None) -> dict[str, str]:
-    """Read them back, tolerating rows written before they were sealed."""
+    """Decrypt sealed header values."""
     from shared.utils.crypto import try_decrypt  # noqa: PLC0415
 
     out: dict[str, str] = {}
@@ -126,7 +126,7 @@ MIN_SECRET_LENGTH = 8
 
 
 def redact_secrets(text: str | None, secrets: Iterable[str]) -> str | None:
-    """Mask credential values the scan itself injected, wherever a tool echoed them back."""
+    """Mask the scan's own credential values."""
     if not text:
         return text
     for secret in secrets:

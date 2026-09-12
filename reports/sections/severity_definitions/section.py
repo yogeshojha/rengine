@@ -14,19 +14,19 @@ from shared.definitions.vulnerabilities import (
 _GLOSSARY = (
     (
         "CVSS",
-        "A score from 0 to 10 describing how severe a weakness is in the abstract. It says nothing about whether this weakness is being exploited.",
+        "A severity score from 0 to 10. It does not measure exploitation.",
     ),
     (
         "EPSS",
-        f"The modelled probability that a weakness will be exploited in the next 30 days. Above {int(EPSS_HIGH * 100)}% is treated as likely here.",
+        f"The modelled probability of exploitation in the next 30 days. Above {int(EPSS_HIGH * 100)}% is treated as likely.",
     ),
     (
         "KEV",
-        "The Known Exploited Vulnerabilities catalogue. Membership means exploitation has been confirmed in the wild.",
+        "The CISA Known Exploited Vulnerabilities catalogue. Listed weaknesses have confirmed exploitation.",
     ),
     (
         "CWE",
-        "The weakness class, which is what the control mapping in this report is derived from.",
+        "The weakness class. Control mapping is derived from it.",
     ),
     (
         "New",
@@ -34,19 +34,19 @@ _GLOSSARY = (
     ),
     (
         "Suppressed",
-        "Reviewed and marked as a false positive or an accepted risk. Suppressed findings stay hidden on later runs.",
+        "Marked as a false positive or an accepted risk. Excluded from this and later runs.",
     ),
 )
 
 
 class SeverityDefinitionsConfig(SectionConfig):
-    show_glossary: bool = flag(True, title="Show the glossary")
-    show_scoring: bool = flag(True, title="Explain how findings are ranked")
+    show_glossary: bool = flag(True, title="Show glossary")
+    show_scoring: bool = flag(True, title="Show ranking method")
 
 
 class SeverityDefinitionsSection(Section):
     name = "severity_definitions"
-    title = "Reading this report"
+    title = "Definitions"
     description = "Severity definitions and the ranking method."
     page_break = "flow"
     group = SectionGroup.APPENDIX.value

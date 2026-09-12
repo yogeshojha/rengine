@@ -20,8 +20,8 @@
 
 	const REDIRECT_OPTS = [
 		{ value: 'null', label: 'Engine default' },
-		{ value: 'true', label: 'Always follow' },
-		{ value: 'false', label: 'Never follow' }
+		{ value: 'true', label: 'Follow' },
+		{ value: 'false', label: 'Do not follow' }
 	];
 
 	let redirectValue = $derived(

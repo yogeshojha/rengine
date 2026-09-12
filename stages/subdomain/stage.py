@@ -218,7 +218,7 @@ class SubdomainStage(Stage):
         wildcard_ips: set[str],
         activity: ActivityLogService,
     ) -> list[ProviderResult]:
-        """Names no public source listed: asked of the zone, guessed, then built from what was found."""
+        """Zone transfer, bruteforce and permutation results."""
         passive = self.ctx.resolved.intensity == Intensity.PASSIVE.value
         out: list[ProviderResult] = []
         if cfg.zone_transfer:
@@ -364,7 +364,7 @@ class SubdomainStage(Stage):
             source=source,
             subdomains=found,
             raw_count=len(found),
-            note="; ".join(notes) or None,
+            note=", ".join(notes) or None,
             duration_seconds=round(time.monotonic() - start, 2),
         )
 
@@ -423,7 +423,7 @@ class SubdomainStage(Stage):
             source=source,
             subdomains=found,
             raw_count=len(found),
-            note="; ".join(notes),
+            note=", ".join(notes),
             duration_seconds=round(time.monotonic() - start, 2),
         )
 
@@ -435,10 +435,7 @@ class SubdomainStage(Stage):
     @staticmethod
     def _resolution_warnings(state: _Resolution) -> list[str]:
         if state.unavailable:
-            return [
-                f"dnsx unavailable. {state.submitted:,} names stored unresolved, "
-                "so no host reached the rest of the scan."
-            ]
+            return [f"dnsx unavailable. {state.submitted:,} names stored unresolved."]
         notes: list[str] = []
         if state.stalled:
             notes.append(
@@ -447,8 +444,8 @@ class SubdomainStage(Stage):
             )
         if state.degraded:
             notes.append(
-                f"{state.degraded} of {state.batches} resolver batches answered far "
-                "below the others after a retry. Some live hosts are likely missing."
+                f"{state.degraded} of {state.batches} resolver batches answered "
+                "below the others after a retry. Some hosts are likely missing."
             )
         return notes
 
@@ -551,7 +548,7 @@ class SubdomainStage(Stage):
     def _run_batch(
         self, client: DnsxClient, names: list[str], cfg: SubdomainConfig
     ) -> tuple[dict[str, dict], bool]:
-        """Resolve one batch, keeping every record that landed even if the run is killed."""
+        """Resolve one batch."""
         out: dict[str, dict] = {}
         with client.stream_query(
             names,
@@ -600,14 +597,14 @@ class SubdomainStage(Stage):
                 self._write_resolution(records, wildcard_ips)
                 wrote = time.monotonic() - started
             note = (
-                f"resolved {state.answered:,}/{len(names):,} names "
-                f"(batch {done}/{len(batches)}, {batch.seconds:.0f}s dns"
+                f"resolved {state.answered:,}/{len(names):,} names, "
+                f"batch {done}/{len(batches)}, {batch.seconds:.0f}s dns"
             )
             if wrote >= _SLOW_WRITE_SECONDS:
                 note += f", {wrote:.0f}s write"
             if stalled:
-                note += ", killed on silence"
-            self.emit_progress(note + ")")
+                note += ", stopped on silence"
+            self.emit_progress(note)
 
         self._retry_degraded(client, batches, state, cfg)
         return state
@@ -642,7 +639,7 @@ class SubdomainStage(Stage):
         state: _Resolution,
         cfg: SubdomainConfig,
     ) -> None:
-        """A batch far below its peers was throttled, not answered — resolve it again."""
+        """Resolve again any batch far below its peers."""
         healthy = [b.rate for b in batches if not b.stalled]
         floor = (
             statistics.median(healthy) * _DEGRADED_RATIO
@@ -783,7 +780,7 @@ class SubdomainStage(Stage):
         wildcard_ips: set[str],
         excluded: set[str],
     ) -> tuple[int, set[str]]:
-        """The reconciling write: whatever the incremental ones missed lands here."""
+        """The reconciling write."""
         self._write_names(merged)
         self._write_resolution(
             {n: info for n, info in resolution.items() if n not in excluded},

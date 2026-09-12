@@ -133,7 +133,7 @@ class UrlDiscoveryStage(Stage):
         return StageResult(counts={"endpoints": total, "endpoints_new": created})
 
     def _write(self, source: str, observations: list, index, tallies: dict) -> int:
-        """The one write path: scope, upsert, and keep this source's running tally."""
+        """Scope, upsert and tally one source's observations."""
         kept = self._in_scope(observations)
         if not kept:
             return 0
@@ -169,7 +169,7 @@ class UrlDiscoveryStage(Stage):
                 coverage.append(
                     _unavailable(
                         source,
-                        "This source sends requests to the target, which a passive scan does not allow.",
+                        "This source sends requests to the target. A passive scan does not run it.",
                     )
                 )
                 continue

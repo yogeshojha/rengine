@@ -111,7 +111,7 @@
 		<div class="min-w-0">
 			<h1 class="text-xl font-semibold">{routeLabels.connectors}</h1>
 			<p class="text-muted-foreground text-sm">
-				Burp Suite connections, and the requests they record
+				Burp Suite connections and the requests they record
 			</p>
 		</div>
 		<Button size="sm" onclick={() => (newOpen = true)}>
@@ -125,11 +125,7 @@
 	{:else if connectors.items.length === 0}
 		<Card.Root class="gap-0 overflow-hidden py-0">
 			<div class="px-4 py-14">
-				<EmptyState
-					icon={PlugZapIcon}
-					title="No connectors"
-					description="Burp Suite records proxied requests into this project."
-				>
+				<EmptyState icon={PlugZapIcon} title="No connectors">
 					<Button size="sm" onclick={() => (newOpen = true)}>
 						<PlusIcon class="size-4" />
 						New connector

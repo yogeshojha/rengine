@@ -72,7 +72,7 @@ SYNC_TRIGGER_LABELS: dict[str, str] = {
 
 SYNC_TRIGGER_HELP: dict[str, str] = {
     SyncTrigger.MANUAL.value: "The queue is scanned only on request.",
-    SyncTrigger.QUIET.value: "Scans a host's queue once the quiet period elapses with no further traffic to that host.",
+    SyncTrigger.QUIET.value: "Scans a host's queue after the quiet period passes with no further traffic.",
     SyncTrigger.WALKED_AWAY.value: "Scans a host's queue once traffic moves to a different host.",
     SyncTrigger.SESSION_END.value: "Scans the queue when the connector disconnects.",
 }
@@ -85,7 +85,7 @@ MANUAL_RUN_LABEL = "Manual testing"
 
 
 class ActionKind(StrEnum):
-    """Work reNgine hands back to the proxy."""
+    """Work handed back to the proxy."""
 
     REPEATER = "repeater"
 
@@ -115,7 +115,7 @@ CANDIDATE_STATE_LABELS: dict[str, str] = {
 
 
 class NoticeKind(StrEnum):
-    """Why a shape was flagged, derived without sending a request."""
+    """Why a shape was flagged."""
 
     SENSITIVE = "sensitive"
     ADMIN = "admin"
@@ -140,7 +140,7 @@ NOTICE_HELP: dict[str, str] = {
     NoticeKind.UNSEEN_BY_SCANS.value: "No scan of this target has recorded this request shape.",
     NoticeKind.SERVER_ERROR.value: "The server returned a 5xx response.",
     NoticeKind.NON_STANDARD_METHOD.value: "The method is not GET, POST, HEAD or OPTIONS.",
-    NoticeKind.OUT_OF_SCOPE.value: "A bug bounty program lists this host as out of scope. Testing it is not authorised.",
+    NoticeKind.OUT_OF_SCOPE.value: "A bug bounty program lists this host as out of scope.",
 }
 
 # a notice in this set surfaces the row on its own

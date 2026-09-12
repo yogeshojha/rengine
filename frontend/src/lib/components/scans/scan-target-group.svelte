@@ -115,9 +115,7 @@
 					{/each}
 				</div>
 			{:else if scans.length === 0}
-				<div class="px-4 py-4 text-xs text-muted-foreground">
-					No scans match the current filters.
-				</div>
+				<div class="px-4 py-4 text-xs text-muted-foreground">No scans match the filters.</div>
 			{:else}
 				<div class="divide-y divide-border/50">
 					{#each scans as scan (scan.id)}

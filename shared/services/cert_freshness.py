@@ -79,7 +79,7 @@ def due(session: Session, *, limit: int = MAX_PER_RUN) -> list[Subdomain]:
 
 def refresh(session: Session, *, limit: int = MAX_PER_RUN) -> Freshness:
     if not enabled(session):
-        return Freshness(skipped="certificate re-checking is off for this instance")
+        return Freshness(skipped="Certificate re-checking is off.")
 
     rows = due(session, limit=limit)
     if not rows:

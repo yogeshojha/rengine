@@ -39,7 +39,7 @@
 				if (live) text = body;
 			})
 			.catch((e) => {
-				if (live) error = e instanceof Error ? e.message : 'Could not load the diff.';
+				if (live) error = e instanceof Error ? e.message : 'Diff not loaded.';
 			})
 			.finally(() => {
 				if (live) loading = false;
@@ -55,15 +55,9 @@
 {#if loading}
 	<div class="p-4 sm:p-5"><Skeleton class="h-72" /></div>
 {:else if error}
-	<EmptyState title="Could not load the diff" description={error} class="m-4 sm:m-5" compact />
+	<EmptyState title="Diff not loaded" description={error} class="m-4 sm:m-5" compact />
 {:else if empty}
-	<EmptyState
-		icon={CheckCheck}
-		title="Nothing changed"
-		description="No line to show."
-		class="m-4 sm:m-5"
-		compact
-	/>
+	<EmptyState icon={CheckCheck} title="Nothing changed" class="m-4 sm:m-5" compact />
 {:else}
 	<div class="p-4 sm:p-5">
 		<CodeBlock

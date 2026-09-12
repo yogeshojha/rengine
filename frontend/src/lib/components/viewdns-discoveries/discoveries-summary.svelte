@@ -201,7 +201,7 @@
 
 			sourceResults = results;
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Discoveries could not be loaded';
+			error = e instanceof Error ? e.message : 'Discoveries not loaded';
 		} finally {
 			isLoading = false;
 		}
@@ -282,7 +282,7 @@
 				toast.success(`Added ${domain} as target`);
 			}
 		} catch {
-			toast.error(`${domain} could not be added`);
+			toast.error(`${domain} not added`);
 		} finally {
 			const next = new SvelteSet(addingDomains);
 			next.delete(domain);
@@ -333,11 +333,9 @@
 		if (added === total) {
 			toast.success(`Added ${added} target${added !== 1 ? 's' : ''}`);
 		} else if (added > 0) {
-			toast.warning(`Added ${added} of ${total}; ${failed} failed`);
+			toast.warning(`Added ${added} of ${total}. ${failed} not added`);
 		} else {
-			toast.error(
-				'Domains could not be added. They may already exist, or the ViewDNS quota is exhausted.'
-			);
+			toast.error('No domains added. Check the ViewDNS quota.');
 		}
 	}
 
@@ -353,8 +351,7 @@
 			<Empty.Media variant="icon">
 				<Spinner />
 			</Empty.Media>
-			<Empty.Title>Loading discoveries…</Empty.Title>
-			<Empty.Description>Checking cached ViewDNS intelligence.</Empty.Description>
+			<Empty.Title>Loading discoveries</Empty.Title>
 		</Empty.Header>
 	</Empty.Root>
 {:else if error}
@@ -363,7 +360,7 @@
 			<Empty.Media variant="icon">
 				<SearchX />
 			</Empty.Media>
-			<Empty.Title>Discoveries could not be loaded</Empty.Title>
+			<Empty.Title>Discoveries not loaded</Empty.Title>
 			<Empty.Description>{error}</Empty.Description>
 		</Empty.Header>
 	</Empty.Root>
@@ -373,13 +370,12 @@
 			<Empty.Media variant="icon">
 				<Telescope />
 			</Empty.Media>
-			<Empty.Title>Discoveries not available</Empty.Title>
+			<Empty.Title>No discoveries</Empty.Title>
 			<Empty.Description>
 				{#if targetType === TargetType.DOMAIN && !whoisRecord}
-					WHOIS data is needed to find related domains. Discoveries will appear once WHOIS resolves
-					with registrant and nameserver data.
+					Discoveries need a WHOIS record with a registrant or nameserver.
 				{:else}
-					Discoveries are available for domain and IP targets.
+					Available for domain and IP targets.
 				{/if}
 			</Empty.Description>
 		</Empty.Header>
@@ -546,19 +542,12 @@
 					<p class="text-xs font-medium text-foreground group-hover:text-primary transition-colors">
 						View all in Target Summary
 					</p>
-					<p class="text-2xs text-muted-foreground mt-0.5">
-						Search, filter, and bulk-add from {totalDiscovered > 0
-							? totalDiscovered.toLocaleString() + '+'
-							: 'all'} discovered domains with full pagination.
-					</p>
 				</div>
 			</div>
 		</button>
 
 		{#if sourceResults.some((s) => s.cache)}
-			<p class="text-2xs text-muted-foreground/60 text-center">
-				Powered by ViewDNS.info · Showing cached data
-			</p>
+			<p class="text-2xs text-muted-foreground/60 text-center">ViewDNS.info · cached data</p>
 		{/if}
 	</div>
 {/if}

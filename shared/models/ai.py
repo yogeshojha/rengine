@@ -42,7 +42,7 @@ class AiUsageRead(BaseModel):
 
 
 class AiStatus(BaseModel):
-    """What the AI tab shows about the connection without leaking the key."""
+    """AI connection status with the key masked."""
 
     enabled: bool = False
     configured: bool = False

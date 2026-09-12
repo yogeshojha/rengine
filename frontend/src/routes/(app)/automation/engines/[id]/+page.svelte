@@ -335,7 +335,7 @@
 				yamlSource = fresh.yaml_source ?? engineToYaml(fresh, engineCatalogStore.catalog);
 			}
 		} catch (e) {
-			loadError = e instanceof Error ? e.message : 'Engine could not be loaded';
+			loadError = e instanceof Error ? e.message : 'Engine not loaded';
 		} finally {
 			isLoading = false;
 		}
@@ -376,7 +376,7 @@
 				pendingToolOptions = null;
 				toast.success('Engine saved');
 			} else {
-				saveError = scanEnginesStore.error ?? 'Engine could not be saved';
+				saveError = scanEnginesStore.error ?? 'Engine not saved';
 				toast.error(saveError);
 			}
 		} finally {
@@ -405,12 +405,12 @@
 	async function handleCopyYaml() {
 		const ok = await writeClipboard(yamlSource);
 		if (ok) toast.success('YAML copied');
-		else toast.error('Copy failed');
+		else toast.error('YAML not copied');
 	}
 
 	function handleFormatYaml() {
 		const next = formatYaml(yamlSource);
-		if (next === yamlSource) toast.message('Already formatted');
+		if (next === yamlSource) toast.message('No formatting changes');
 		else yamlSource = next;
 	}
 
@@ -419,11 +419,11 @@
 		if (!project || !draft) return;
 		const copy = await scanEnginesStore.duplicateEngine(draft.id, project.id);
 		if (copy?.id) {
-			toast.success(`Duplicated as "${copy.name}"`);
+			toast.success('Engine duplicated');
 			allowNavigation = true;
 			goto(ROUTES.engine(copy.id));
 		} else {
-			toast.error(scanEnginesStore.error ?? 'Duplicate failed');
+			toast.error(scanEnginesStore.error ?? 'Engine not duplicated');
 		}
 	}
 
@@ -438,7 +438,7 @@
 				allowNavigation = true;
 				goto(ROUTES.engines);
 			} else {
-				toast.error(scanEnginesStore.error ?? 'Delete failed');
+				toast.error(scanEnginesStore.error ?? 'Engine not deleted');
 			}
 		} finally {
 			isDeleting = false;
@@ -558,10 +558,7 @@
 		<ScrollArea class="min-h-0 flex-1">
 			<div class="stages">
 				{#if !parsed}
-					<p class="none">
-						The YAML document has a syntax error. Fix it in the editor to restore the stage
-						controls.
-					</p>
+					<p class="none">The YAML has a syntax error. Fix it in the editor.</p>
 				{:else if visibleGroups.length === 0}
 					<p class="none">No stages match.</p>
 				{/if}
@@ -755,7 +752,7 @@
 				<Empty.Media class="size-[52px] rounded-xl bg-destructive/10">
 					<AlertTriangle size={22} class="text-destructive" />
 				</Empty.Media>
-				<Empty.Title>Engine could not be loaded</Empty.Title>
+				<Empty.Title>Engine not loaded</Empty.Title>
 				<Empty.Description>{loadError}</Empty.Description>
 			</Empty.Header>
 			<Empty.Content>
@@ -865,10 +862,10 @@
 
 <DeleteConfirmationDialog
 	bind:open={showDeleteDialog}
-	title="Delete this engine?"
+	title="Delete engine"
 	description={engine?.usage?.schedules
-		? `'${draft?.name ?? 'This engine'}' is used by ${engine.usage.schedules} scheduled scan${engine.usage.schedules === 1 ? '' : 's'}. Those schedules will fail to launch without it. Completed scans and their results are unaffected.`
-		: `Removes '${draft?.name ?? 'this engine'}' from the project. Completed scans and their results are unaffected.`}
+		? `Engine ${draft?.name ?? ''} is removed. ${engine.usage.schedules} schedule${engine.usage.schedules === 1 ? '' : 's'} that use it stop launching.`
+		: `Engine ${draft?.name ?? ''} is removed.`}
 	{isDeleting}
 	onOpenChange={(open) => (showDeleteDialog = open)}
 	onConfirm={confirmDelete}
@@ -876,8 +873,8 @@
 
 <UnsavedChangesDialog
 	bind:open={showLeaveDialog}
-	title="Discard changes?"
-	description="Edits to this engine have not been saved. Leaving now discards them."
+	title="Discard changes"
+	description="Unsaved changes are discarded."
 	confirmLabel="Discard"
 	cancelLabel="Keep editing"
 	onOpenChange={(o) => {

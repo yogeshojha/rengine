@@ -46,10 +46,7 @@
 	</div>
 
 	<div class="overflow-hidden rounded-lg border">
-		<PanelHead
-			title="Runs of this target"
-			description="Pick one to compare with the run you opened"
-		/>
+		<PanelHead title="Runs of this target" />
 		<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-[26rem]">
 			<div class="flex flex-col">
 				{#if loading}
@@ -57,9 +54,7 @@
 						<Skeleton class="m-2 h-12" />
 					{/each}
 				{:else if !usable.length && !blocked.length}
-					<p class="px-5 py-6 text-sm text-muted-foreground">
-						This target has no other finished run.
-					</p>
+					<p class="px-5 py-6 text-sm text-muted-foreground">No other finished runs.</p>
 				{/if}
 
 				{#each usable as run (run.scan_id)}
@@ -100,7 +95,7 @@
 
 	<div class="flex flex-wrap gap-2">
 		<Button variant="outline" size="sm" href={ROUTES.scan(currentId)} class="gap-1.5">
-			Open the run <ArrowUpRight class="size-3.5" />
+			Open run <ArrowUpRight class="size-3.5" />
 		</Button>
 		<Button variant="ghost" size="sm" href={ROUTES.scans}>All scans</Button>
 	</div>

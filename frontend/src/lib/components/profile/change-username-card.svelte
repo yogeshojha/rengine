@@ -49,7 +49,7 @@
 			newUsername = '';
 			usernameDirty = false;
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Username could not be changed');
+			toast.error(error instanceof Error ? error.message : 'Username not changed');
 		} finally {
 			isChangingUsername = false;
 		}
@@ -64,7 +64,6 @@
 			</div>
 			<div>
 				<Card.Title>Change username</Card.Title>
-				<Card.Description>Update your username</Card.Description>
 			</div>
 		</div>
 	</Card.Header>
@@ -92,7 +91,7 @@
 					id="new-username"
 					type="text"
 					bind:value={newUsername}
-					placeholder="Enter new username"
+					placeholder="New username"
 					disabled={isChangingUsername}
 					aria-invalid={!!usernameError}
 					onblur={() => (usernameDirty = true)}
@@ -100,14 +99,14 @@
 				{#if usernameError}
 					<p class="text-xs text-destructive">{usernameError}</p>
 				{:else}
-					<p class="text-xs text-muted-foreground">3+ characters</p>
+					<p class="text-xs text-muted-foreground">At least 3 characters</p>
 				{/if}
 			</div>
 
 			{#if usernameSavedAt}
 				<p class="flex items-center gap-1.5 text-xs text-muted-foreground">
 					<CheckIcon class="size-3.5 text-foreground" />
-					Username updated · {formatDate(usernameSavedAt.toISOString())}
+					Username changed · {formatDate(usernameSavedAt.toISOString())}
 				</p>
 			{/if}
 		</Card.Content>
@@ -116,10 +115,10 @@
 				class="w-full"
 				type="submit"
 				loading={isChangingUsername}
-				loadingLabel="Updating…"
+				loadingLabel="Changing"
 				disabled={!usernameValid}
 			>
-				Update username
+				Change username
 			</LoadingButton>
 		</Card.Footer>
 	</form>

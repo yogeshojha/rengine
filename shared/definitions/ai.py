@@ -102,7 +102,7 @@ MODELS: tuple[ModelSpec, ...] = (
         1_000_000,
         True,
         True,
-        "Best writing. The default.",
+        "Default model.",
     ),
     ModelSpec(
         "claude-sonnet-5",
@@ -113,7 +113,7 @@ MODELS: tuple[ModelSpec, ...] = (
         1_000_000,
         True,
         True,
-        "Cheaper, still strong.",
+        "Lower cost.",
     ),
     ModelSpec(
         "claude-haiku-4-5",
@@ -124,7 +124,7 @@ MODELS: tuple[ModelSpec, ...] = (
         200_000,
         False,
         False,
-        "Fastest and cheapest.",
+        "Lowest cost and latency.",
     ),
     ModelSpec(
         "claude-opus-4-8",
@@ -185,26 +185,26 @@ AI_FEATURES: tuple[AIFeature, ...] = (
     AIFeature(
         "report_narrative",
         "Report narrative",
-        "Writes the executive summary, risk narrative and remediation plan from the computed brief.",
+        "Writes the executive summary, risk narrative and remediation plan.",
         True,
     ),
     AIFeature(
         "report_findings",
         "Finding explanations",
-        "Explains what a check means for this estate. Cached per check, so it is written once.",
+        "Explains what a check means for this estate. Cached per check.",
         False,
     ),
     AIFeature(
         "asset_judgement",
         "Asset judgement",
-        "Reads hostnames and page titles after a scan and says which assets are exposures, "
-        "and why. Never sees response bodies.",
+        "Reads hostnames and page titles after a scan and flags exposures with a reason. "
+        "Response bodies are not sent.",
         False,
     ),
     AIFeature(
         "rule_suggestions",
         "Rule suggestions",
-        "Proposes an exposure rule that would have caught what judgement found, for review.",
+        "Proposes exposure rules from judgement results. Each is held for review.",
         False,
     ),
     AIFeature(

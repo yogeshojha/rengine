@@ -141,7 +141,7 @@
 								Drop a file here, or <span class="text-primary">browse</span>
 							</p>
 							<p class="text-xs text-muted-foreground">
-								Supports {accept.replace(/\./g, '').replace(/,/g, ', ').toUpperCase()} files
+								{accept.replace(/\./g, '').replace(/,/g, ', ').toUpperCase()}
 							</p>
 						</div>
 					</div>
@@ -209,7 +209,7 @@
 					Drop a file here, or <span class="text-primary">browse</span>
 				</p>
 				<p class="text-xs text-muted-foreground">
-					Supports {accept.replace(/\./g, '').replace(/,/g, ', ').toUpperCase()} files
+					{accept.replace(/\./g, '').replace(/,/g, ', ').toUpperCase()}
 				</p>
 			</div>
 		</div>

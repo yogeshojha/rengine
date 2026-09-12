@@ -225,7 +225,7 @@ def _summary(status: int | None, server: str | None, tech: int) -> str:
 
 
 def _capture(target: str) -> str | None:
-    """Render the page and return the media URL, or None when the browser gave nothing."""
+    """Render the page and return the media URL, or None."""
     run_dir = MEDIA_ROOT / SHOT_DIR / uuid.uuid4().hex
     try:
         client = HttpxClient(timeout=PROBE_TIMEOUT, threads=1, store_dir=str(run_dir))

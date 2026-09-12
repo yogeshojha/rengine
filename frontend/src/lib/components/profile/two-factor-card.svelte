@@ -90,7 +90,7 @@
 			const res = await twoFactorApi.status();
 			twoFactorEnabled = res.enabled;
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Two-factor status could not be loaded');
+			toast.error(error instanceof Error ? error.message : 'Two-factor status not loaded');
 		} finally {
 			twoFactorLoading = false;
 		}
@@ -107,7 +107,7 @@
 			backupCodesSaved = false;
 			setupOpen = true;
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Two-factor setup could not be started');
+			toast.error(error instanceof Error ? error.message : 'Two-factor setup not started');
 		} finally {
 			isSettingUp = false;
 		}
@@ -202,7 +202,7 @@
 			</div>
 			<div class="flex-1">
 				<div class="flex items-center gap-2">
-					<Card.Title>Two-Factor Authentication</Card.Title>
+					<Card.Title>Two-factor authentication</Card.Title>
 					{#if !twoFactorLoading}
 						{#if twoFactorEnabled}
 							<Badge variant="secondary" class="h-5 text-xs px-2 border-0">Enabled</Badge>
@@ -224,7 +224,7 @@
 		{:else if twoFactorEnabled && !setupOpen}
 			<div class="flex items-center gap-2 text-sm text-muted-foreground">
 				<ShieldCheckIcon class="w-4 h-4 text-foreground shrink-0" />
-				This account is protected by an authenticator app.
+				An authenticator app is registered.
 			</div>
 
 			{#if disableOpen}
@@ -232,15 +232,12 @@
 				<div class="space-y-3">
 					<Alert.Root variant="destructive">
 						<TriangleAlertIcon class="size-4" />
-						<Alert.Title>Disable two-factor authentication?</Alert.Title>
+						<Alert.Title>Disable two-factor authentication</Alert.Title>
 						<Alert.Description>
-							This removes the second factor and invalidates all backup codes. The password alone
-							will grant access.
+							Removes the second factor and invalidates every backup code.
 						</Alert.Description>
 					</Alert.Root>
-					<p class="text-xs text-muted-foreground">
-						Enter a code from your authenticator app or a backup code to confirm.
-					</p>
+					<p class="text-xs text-muted-foreground">Enter an authenticator code or a backup code.</p>
 					<div bind:this={disableOtpWrap}>
 						<OtpInput
 							value={disableCode}
@@ -253,7 +250,7 @@
 							variant="destructive"
 							onclick={handleDisable}
 							loading={isDisabling}
-							loadingLabel="Disabling…"
+							loadingLabel="Disabling"
 							disabled={disableCode.length !== 6}
 						>
 							Disable 2FA
@@ -286,11 +283,8 @@
 			{#if backupCodes}
 				<Alert.Root>
 					<TriangleAlertIcon class="size-4" />
-					<Alert.Title>Save your backup codes</Alert.Title>
-					<Alert.Description>
-						Shown only once. Store them securely. Each code can be used once if the authenticator is
-						unavailable.
-					</Alert.Description>
+					<Alert.Title>Backup codes</Alert.Title>
+					<Alert.Description>Shown once. Each code is valid for one sign-in.</Alert.Description>
 				</Alert.Root>
 				<div class="rounded-md border-l-2 border-warning bg-muted p-3">
 					<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 font-mono text-sm">
@@ -313,7 +307,7 @@
 						<DownloadIcon class="size-4 mr-2" />
 						Download codes
 					</Button>
-					<Button onclick={handleDone}>I've saved my codes</Button>
+					<Button onclick={handleDone}>Done</Button>
 				</div>
 			{:else}
 				<div class="grid gap-6 sm:grid-cols-[auto_1fr] sm:items-start">
@@ -326,12 +320,11 @@
 						<div class="space-y-1">
 							<p class="text-sm font-medium">Scan the QR code</p>
 							<p class="text-xs text-muted-foreground">
-								Scan the code with an authenticator app such as 1Password, Authy or Google
-								Authenticator, or enter the secret manually.
+								Scan the code with an authenticator app or enter the setup key manually.
 							</p>
 						</div>
 						<div class="space-y-1.5">
-							<Label class="text-xs">Manual setup key</Label>
+							<Label class="text-xs">Setup key</Label>
 							<div class="flex items-center gap-1.5">
 								<code
 									class="block flex-1 text-xs font-mono bg-muted px-3 py-2 rounded-md break-all select-all"
@@ -355,7 +348,7 @@
 							<LoadingButton
 								onclick={handleVerify}
 								loading={isVerifying}
-								loadingLabel="Verifying…"
+								loadingLabel="Verifying"
 								disabled={setupCode.length !== 6}
 							>
 								Verify &amp; enable
@@ -368,9 +361,9 @@
 		{:else}
 			<div class="flex items-center gap-2 text-sm text-muted-foreground">
 				<TriangleAlertIcon class="w-4 h-4 text-muted-foreground shrink-0" />
-				Two-factor authentication is not enabled on this account.
+				Not enabled.
 			</div>
-			<LoadingButton onclick={handleStartSetup} loading={isSettingUp} loadingLabel="Preparing…">
+			<LoadingButton onclick={handleStartSetup} loading={isSettingUp} loadingLabel="Preparing">
 				Enable 2FA
 			</LoadingButton>
 		{/if}
@@ -381,23 +374,21 @@
 	<AlertDialog.Content>
 		<AlertDialog.Header>
 			<AlertDialog.Title>Backup codes not saved</AlertDialog.Title>
-			<AlertDialog.Description>
-				These codes are shown only once and cannot be retrieved later. Continue without saving them?
-			</AlertDialog.Description>
+			<AlertDialog.Description>The codes are shown once.</AlertDialog.Description>
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
-			<AlertDialog.Cancel>Go back</AlertDialog.Cancel>
-			<AlertDialog.Action onclick={closeSetup}>Continue without saving</AlertDialog.Action>
+			<AlertDialog.Cancel>Back</AlertDialog.Cancel>
+			<AlertDialog.Action onclick={closeSetup}>Close without saving</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
 </AlertDialog.Root>
 
 <UnsavedChangesDialog
 	bind:open={showLeaveDialog}
-	title="Discard two-factor setup?"
-	description="Two-factor enrollment is unfinished. Leaving now discards it and two-factor stays off."
+	title="Discard two-factor setup"
+	description="Enrollment is discarded. Two-factor remains off."
 	confirmLabel="Discard setup"
-	cancelLabel="Keep setting up"
+	cancelLabel="Continue setup"
 	onOpenChange={(o) => {
 		showLeaveDialog = o;
 		if (!o) pendingNav = null;

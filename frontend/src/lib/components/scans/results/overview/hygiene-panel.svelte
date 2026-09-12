@@ -95,7 +95,7 @@
 			</div>
 		{:else if evaluated === 0}
 			<p class="p-5 text-sm text-muted-foreground">
-				{plural(pending, 'web asset', 'web assets')} not yet evaluated.
+				{plural(pending, 'web asset', 'web assets')} pending evaluation.
 			</p>
 		{:else}
 			<div class="grid grid-cols-1 md:grid-cols-2">
@@ -112,18 +112,18 @@
 						class="h-auto gap-1 px-0 text-xs"
 						onclick={() => onFilter(hygieneQuery(HYGIENE_NONE))}
 					>
-						{plural(summary.clean, 'web asset passes', 'web assets pass')} every check that applies
+						{plural(summary.clean, 'web asset passes', 'web assets pass')} every applicable check
 						<ChevronRight class="size-3.5" />
 					</Button>
 				{/if}
 				{#if pending > 0}
 					<span class="tabular-nums"
-						>{plural(pending, 'web asset', 'web assets')} not yet evaluated</span
+						>{plural(pending, 'web asset', 'web assets')} pending evaluation</span
 					>
 				{/if}
 				{#if passing.length}
 					<span class="flex flex-wrap items-center gap-1.5">
-						<span>Passing on every web asset it applies to</span>
+						<span>Passing on every applicable web asset</span>
 						{#each passing as spec (spec.key)}
 							<Hint text={spec.help}>
 								{#snippet child(props)}
@@ -170,7 +170,7 @@
 										{/snippet}
 									</Hint>
 									<span class="truncate text-xs leading-4 text-muted-foreground">
-										of {plural(r.count.applicable, 'web asset', 'web assets')} where it applies
+										of {plural(r.count.applicable, 'applicable web asset', 'applicable web assets')}
 									</span>
 								</span>
 								<span class="text-sm font-medium tabular-nums"

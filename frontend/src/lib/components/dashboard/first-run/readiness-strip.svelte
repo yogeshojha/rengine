@@ -33,7 +33,7 @@
 			if (result.started) toast.success('Library sync started', { description: result.message });
 			else toast.error(result.message);
 		} catch {
-			toast.error('Library sync could not be started');
+			toast.error('Library sync not started');
 		} finally {
 			syncing = false;
 		}
@@ -70,9 +70,9 @@
 					Vulnerability checks
 				</span>
 				{#if downloading}
-					<span class="text-sm font-medium">Sync in progress</span>
+					<span class="text-sm font-medium">Syncing</span>
 					<span class="text-xs text-muted-foreground">
-						Scans started before it completes run without these checks.
+						Scans started now run without these checks.
 					</span>
 				{:else}
 					<span class="text-sm font-medium text-warning">Not indexed</span>

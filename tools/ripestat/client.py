@@ -1,4 +1,4 @@
-"""RIPEstat HTTP client — GET /data/{endpoint}/data.json?resource=X&sourceapp=rengine."""
+"""RIPEstat HTTP client for GET /data/{endpoint}/data.json."""
 
 import os
 from typing import Any
@@ -47,7 +47,7 @@ class RIPEStatClient:
             msg = f"RIPEstat rate limit on {endpoint}"
             raise RIPEStatRateLimitError(msg)
         if 400 <= resp.status_code < 500:  # noqa: PLR2004
-            msg = f"RIPEstat does not accept that resource for {endpoint}"
+            msg = f"RIPEstat rejected the resource for {endpoint}"
             raise RIPEStatInvalidResourceError(msg)
         if resp.status_code >= 500:  # noqa: PLR2004
             msg = f"RIPEstat returned {resp.status_code} for {endpoint}"

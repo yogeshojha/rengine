@@ -31,11 +31,10 @@ class WhatChanged(Tool):
     title = "What changed"
     group = ToolGroup.INTERROGATE.value
     description = (
-        "What is new across every target in a project over a window: new web assets, "
-        "services, endpoints, addresses and findings, per target, plus targets that "
-        "have never been scanned or have gone stale. "
-        "Counts only items a scan was the first to report, and only where an earlier "
-        "scan gives a baseline, so a target's first scan never reports everything as new."
+        "New web assets, services, endpoints, addresses and findings per target over "
+        "a window, plus targets not scanned or stale. Counts items first reported in "
+        "the window against an earlier baseline. A target's first scan reports "
+        "nothing as new."
     )
     Input = Input
     examples = ("what_changed window=7d",)
@@ -81,9 +80,7 @@ class WhatChanged(Tool):
 
         caveats = []
         if overview.targets_never_scanned:
-            caveats.append(
-                f"{overview.targets_never_scanned} target(s) have never been scanned."
-            )
+            caveats.append(f"{overview.targets_never_scanned} target(s) not scanned.")
         if overview.targets_stale:
             caveats.append(f"{overview.targets_stale} target(s) have a stale last run.")
         if overview.failed_in_window:

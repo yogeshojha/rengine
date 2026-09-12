@@ -144,7 +144,7 @@
 				}, STALE_RETRY_MS);
 			}
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Could not load exposures';
+			error = e instanceof Error ? e.message : 'Exposures not loaded';
 		} finally {
 			if (!quiet) loading = false;
 		}
@@ -164,9 +164,9 @@
 		judging = true;
 		try {
 			await interestApi.judge(scanId);
-			toast.success('Judging this scan. Refresh to see the result.');
+			toast.success('Judging started');
 		} catch {
-			toast.error('Could not start judging');
+			toast.error('Judging not started');
 		} finally {
 			judging = false;
 		}
@@ -175,10 +175,10 @@
 	async function dismiss(row: InterestRow): Promise<void> {
 		try {
 			await interestApi.dismiss({ host: row.host, target_id: row.target_id || targetId });
-			toast.success(`${row.host} will stay out of this list`);
+			toast.success(`${row.host} dismissed`);
 			await run();
 		} catch {
-			toast.error(`Could not dismiss ${row.host}`);
+			toast.error(`${row.host} not dismissed`);
 		}
 	}
 
@@ -203,18 +203,16 @@
 				{#if !projectWide}
 					<h2 class="text-base leading-6 font-semibold">Exposures</h2>
 				{/if}
-				<p class="text-xs text-muted-foreground">
-					{#if summary && summary.total > 0}
+				{#if summary && summary.total > 0}
+					<p class="text-xs text-muted-foreground">
 						{summary.total.toLocaleString()}
 						{summary.total === 1 ? 'asset' : 'assets'} flagged
 						{#each activeSources as s, i (s.key)}{i === 0 ? ' · ' : ' · '}{(
 								summary.sources[s.key] ?? 0
 							).toLocaleString()}
 							{s.key === 'ai' ? 'judged by AI' : `from ${s.label.toLowerCase()}`}{/each}
-					{:else}
-						Rules, correlations and AI judgement, in one ranked list
-					{/if}
-				</p>
+					</p>
+				{/if}
 			</div>
 			<div class="flex shrink-0 items-center gap-2">
 				{#if !projectWide && summary?.ai_enabled}
@@ -229,11 +227,11 @@
 						{summary.judged_at ? 'Judge again' : 'Judge with AI'}
 					</LoadingButton>
 				{:else if !projectWide && summary?.ai_available}
-					<Hint text="Enable Asset judgement on the AI page to include AI signals">
+					<Hint text="Asset judgement is off. Enable it on the AI page.">
 						{#snippet child(props)}
 							<Button {...props} variant="outline" size="sm" href={ROUTES.ai('features')}>
 								<Sparkle class="size-3.5" />
-								Add AI judgement
+								Enable AI judgement
 							</Button>
 						{/snippet}
 					</Hint>
@@ -391,7 +389,7 @@
 
 		{#if summary?.stale}
 			<p class="border-b bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
-				A rule changed since this scan was labelled. Refreshing in the background.
+				A rule changed after this scan was evaluated. Refreshing.
 			</p>
 		{/if}
 
@@ -402,16 +400,13 @@
 				{/each}
 			</div>
 		{:else if error}
-			<EmptyState icon={Eye} title="Could not load this list" description={error} class="py-12">
-				<Button variant="outline" size="sm" onclick={() => run()}>Try again</Button>
+			<EmptyState icon={Eye} title="Exposures not loaded" description={error} class="py-12">
+				<Button variant="outline" size="sm" onclick={() => run()}>Retry</Button>
 			</EmptyState>
 		{:else if !data?.rows.length}
 			<EmptyState
 				icon={Eye}
-				title={filtered || band !== ALL ? 'Nothing matches these filters' : 'Nothing stands out'}
-				description={filtered || band !== ALL
-					? 'Widen the filters to see the rest of the list.'
-					: 'No rule, correlation or judgement flagged an asset on this scan.'}
+				title={filtered || band !== ALL ? 'No exposures match' : 'No exposures'}
 				class="py-14"
 			/>
 		{:else}

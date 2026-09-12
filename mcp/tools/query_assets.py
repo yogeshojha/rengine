@@ -1,4 +1,4 @@
-"""One search tool over all five dimensions, in reNgine's own query language."""
+"""One search tool over the five dimensions."""
 
 from __future__ import annotations
 
@@ -22,9 +22,9 @@ class Input(ToolInput):
     query: str | None = Field(
         default=None,
         description=(
-            "A reNgine query, for example `is:live and not is:cdn`, "
+            "A query, for example `is:live and not is:cdn`, "
             "`severity:critical or is:kev`, `port:22 and is:sensitive`. "
-            "Call describe_query_language for the fields this dimension accepts. "
+            "describe_query_language lists the fields per dimension. "
             "Omit to return everything in scope."
         ),
     )
@@ -39,11 +39,9 @@ class QueryAssets(Tool):
     title = "Query assets"
     group = ToolGroup.INTERROGATE.value
     description = (
-        "Search one dimension of a target's attack surface with reNgine's query "
-        "language, and get back matching rows plus an exact total. "
-        "The total is a promise: it equals the number of rows the returned link "
-        "opens in the UI. Rows are trimmed to the useful columns — follow the link "
-        "for everything else."
+        "Search one dimension of a target's attack surface with the query language. "
+        "Returns matching rows and a total equal to the rows the returned link opens. "
+        "Rows carry a subset of columns."
     )
     Input = Input
     examples = (
@@ -76,7 +74,7 @@ class QueryAssets(Tool):
         caveats = list(scope.caveat(dim))
         if capped:
             caveats.append(
-                f"The total is capped — there are at least {total}. "
+                f"The total is capped. At least {total} match. "
                 "Narrow the query for an exact figure."
             )
 
@@ -98,10 +96,10 @@ class QueryAssets(Tool):
 
 
 def _explain(error, query: str) -> str:
-    message = getattr(error, "message", None) or "That query could not be parsed."
+    message = getattr(error, "message", None) or "The query could not be parsed."
     hint = getattr(error, "hint", None)
-    parts = [f"{message} (query: {query!r})"]
+    parts = [f"{message} Query: {query!r}."]
     if hint:
         parts.append(str(hint))
-    parts.append("Call describe_query_language for the fields this dimension accepts.")
+    parts.append("describe_query_language lists the fields this dimension accepts.")
     return " ".join(parts)

@@ -75,7 +75,7 @@
 			configuredKeys.clear();
 			for (const k of keyList) configuredKeys.set(k.provider, k);
 		} catch (e) {
-			loadError = e instanceof Error ? e.message : 'API keys could not be loaded';
+			loadError = e instanceof Error ? e.message : 'API keys not loaded';
 			toast.error(loadError);
 		} finally {
 			isLoading = false;
@@ -115,7 +115,7 @@
 			await refreshProviders();
 			addDialogOpen = false;
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'API key could not be added');
+			toast.error(e instanceof Error ? e.message : 'API key not added');
 		} finally {
 			addDialogSaving = false;
 		}
@@ -147,7 +147,7 @@
 			toast.success('API key updated');
 			return true;
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'API key could not be updated');
+			toast.error(e instanceof Error ? e.message : 'API key not updated');
 			return false;
 		}
 	}
@@ -162,7 +162,7 @@
 			await refreshProviders();
 			toast.success(`${key.meta.name} ${enabled ? 'enabled' : 'disabled'}`);
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'API key could not be updated');
+			toast.error(e instanceof Error ? e.message : 'API key not updated');
 		}
 	}
 
@@ -185,7 +185,7 @@
 			toast.success('API key removed');
 			deleteDialogOpen = false;
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'API key could not be removed');
+			toast.error(e instanceof Error ? e.message : 'API key not removed');
 		} finally {
 			isDeleting = false;
 		}
@@ -238,8 +238,7 @@
 		<div>
 			<h2 class="text-lg font-semibold tracking-tight">API keys</h2>
 			<p class="text-sm text-muted-foreground">
-				Configure API keys for external intelligence providers. Keys are used instance-wide across
-				all projects.
+				Keys for external intelligence providers. Shared by every project.
 			</p>
 		</div>
 		<Badge variant="outline" class="text-xs">
@@ -272,9 +271,7 @@
 				<Empty.Media class="mb-3">
 					<TriangleAlertIcon class="size-6 text-muted-foreground" />
 				</Empty.Media>
-				<Empty.Title class="text-sm font-medium text-foreground"
-					>API keys could not be loaded</Empty.Title
-				>
+				<Empty.Title class="text-sm font-medium text-foreground">API keys not loaded</Empty.Title>
 				<Empty.Description class="mt-1 text-xs text-muted-foreground">{loadError}</Empty.Description
 				>
 			</Empty.Header>
@@ -312,14 +309,13 @@
 				{#if addDialogProvider}
 					{@const meta = providers.find((p) => p.provider === addDialogProvider)}
 					{#if meta}
-						Configure the {meta.name} API key.
 						<a
 							href={meta.docs_url}
 							target="_blank"
 							rel="noopener noreferrer"
-							class="inline-flex items-center gap-1 text-primary hover:underline ml-1"
+							class="inline-flex items-center gap-1 text-primary hover:underline"
 						>
-							Get a key <ExternalLinkIcon class="size-3" />
+							Get a {meta.name} key <ExternalLinkIcon class="size-3" />
 						</a>
 					{/if}
 				{/if}
@@ -347,7 +343,7 @@
 						{/snippet}
 					</FormField>
 				{/if}
-				<FormField label="API Key">
+				<FormField label="API key">
 					{#snippet children({ id })}
 						<div class="relative">
 							<Input
@@ -355,7 +351,7 @@
 								type={addShowKey ? 'text' : 'password'}
 								bind:ref={addKeyInput}
 								bind:value={addDialogKeyValue}
-								placeholder="Paste the API key"
+								placeholder="API key"
 								disabled={addDialogSaving}
 								class="pr-10"
 							/>
@@ -385,7 +381,7 @@
 				<LoadingButton
 					type="submit"
 					loading={addDialogSaving}
-					loadingLabel="Saving…"
+					loadingLabel="Saving"
 					disabled={!addCanSave}
 				>
 					Add key
@@ -397,11 +393,11 @@
 
 <DeleteConfirmationDialog
 	bind:open={deleteDialogOpen}
-	title="Remove this API key?"
+	title="Remove API key"
 	description={deletingProvider
-		? `Anything using ${providers.find((p) => p.provider === deletingProvider)?.name ?? 'this provider'} will stop working.`
+		? `The ${providers.find((p) => p.provider === deletingProvider)?.name ?? 'provider'} key is removed.`
 		: ''}
-	confirmLabel="Remove key"
+	confirmLabel="Remove"
 	{isDeleting}
 	onOpenChange={(open) => (deleteDialogOpen = open)}
 	onConfirm={handleDelete}
@@ -412,7 +408,7 @@
 		<Dialog.Header>
 			<Dialog.Title>Test API key</Dialog.Title>
 			<Dialog.Description>
-				Verification makes one live API call and consumes one call from the
+				One call is made against the
 				{providers.find((p) => p.provider === testDialogProvider)?.name ?? 'provider'} quota.
 			</Dialog.Description>
 		</Dialog.Header>
@@ -426,7 +422,7 @@
 			</Button>
 			<LoadingButton
 				loading={testingKeyId !== null}
-				loadingLabel="Testing…"
+				loadingLabel="Testing"
 				onclick={async () => {
 					if (testDialogKeyId) {
 						testDialogOpen = false;

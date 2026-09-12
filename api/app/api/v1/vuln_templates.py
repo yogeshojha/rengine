@@ -44,7 +44,7 @@ def get_service(
 
 @router.get("/vocabulary")
 async def template_vocabulary(_current_user: CurrentUser) -> dict:
-    """The shared vocabulary the vulnerability UI renders from."""
+    """Vulnerability vocabulary."""
     return {
         "severities": [
             {
@@ -98,7 +98,7 @@ async def preview_selection(
     service: Annotated[VulnTemplateService, Depends(get_service)],
     body: TemplateSelection,
 ):
-    """Count what a vulnerability plan would run, before it runs."""
+    """Count the checks a selection runs."""
     return await service.preview(body)
 
 
@@ -158,7 +158,7 @@ async def read_source(
     service: Annotated[VulnTemplateService, Depends(get_service)],
     template_id: Annotated[UUID, Path(description="Template ID")],
 ):
-    """The check exactly as the scanner will read it."""
+    """Template source."""
     found = await service.source(template_id)
     if found is None:
         raise HTTPException(

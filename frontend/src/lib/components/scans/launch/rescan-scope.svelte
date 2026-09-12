@@ -73,7 +73,7 @@
 	<Label>
 		Assets
 		<span class="ml-1 font-normal text-muted-foreground">
-			{byQuery ? 'matched by search' : 'from the run that found them'}
+			{byQuery ? 'matched by search' : 'selected'}
 		</span>
 	</Label>
 

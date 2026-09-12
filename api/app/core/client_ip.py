@@ -34,7 +34,7 @@ def _is_trusted(host: str) -> bool:
 
 
 def client_id(request: Request) -> str:
-    """The furthest-out address we are willing to believe, walking X-Forwarded-For right to left."""
+    """Outermost untrusted hop of X-Forwarded-For, or the peer."""
     peer = request.client.host if request.client else UNKNOWN
     if not _is_trusted(peer):
         return peer

@@ -39,8 +39,8 @@ def whois_enrichment_incomplete(
         "severity": NotificationSeverity.WARNING,
         "title": "WHOIS lookup failed",
         "message": (
-            f"WHOIS could not be resolved for {_subject(names, failed, total)}"
-            f"{f'; {success} succeeded' if success else ''}."
+            f"WHOIS lookup failed for {_subject(names, failed, total)}."
+            f"{f' {success} succeeded.' if success else ''}"
         ),
     }
 
@@ -64,9 +64,9 @@ def ripestat_enrichment_incomplete(
         "severity": NotificationSeverity.WARNING,
         "title": "BGP enrichment failed",
         "message": (
-            f"BGP data could not be resolved for {_subject(names, failed, total)}"
-            f"{f'; {success} succeeded' if success else ''}"
-            f"{f', {skipped} had nothing to look up' if skipped else ''}."
+            f"BGP lookup failed for {_subject(names, failed, total)}."
+            f"{f' {success} succeeded.' if success else ''}"
+            f"{f' {skipped} had nothing to look up.' if skipped else ''}"
         ),
     }
 
@@ -210,7 +210,7 @@ def _digest_title(target: str, deltas: ScanDeltas) -> str:
 
 def _digest_body(counts: dict, deltas: ScanDeltas) -> str:
     if not deltas.baseline:
-        body = f"No earlier run to compare against. This run found {scan_count_summary(counts)}."
+        body = f"No earlier run. This run found {scan_count_summary(counts)}."
     else:
         detail = _severity_phrase(deltas.vulnerability_counts)
         parts = [
@@ -247,7 +247,7 @@ def _digest_body(counts: dict, deltas: ScanDeltas) -> str:
     if deltas.dropped_hosts:
         body += (
             f" Testing stopped on {_count(deltas.dropped_hosts, 'host', 'hosts')} "
-            f"after repeated errors, so coverage there is partial."
+            f"after repeated errors. Coverage there is partial."
         )
     return body
 
@@ -311,7 +311,7 @@ def _lead_line(lead: InterestLead) -> str:
 def scan_interesting(
     scan_id: str, target: str, leads: list[InterestLead], shown: int = 5
 ) -> dict | None:
-    """Only hosts this target has never flagged before."""
+    """Hosts not flagged by an earlier scan of this target."""
     if not leads:
         return None
     critical = [x for x in leads if x.band == InterestBand.CRITICAL.value]
@@ -342,7 +342,7 @@ class IntelShift:
 
 
 def _shift_line(shift: IntelShift) -> str:
-    return f"• {shift.cve} · {shift.target} — {shift.finding}"
+    return f"• {shift.cve} · {shift.target} · {shift.finding}"
 
 
 def intel_changed(shifts: list["IntelShift"], shown: int = 5) -> dict | None:
@@ -357,7 +357,7 @@ def intel_changed(shifts: list["IntelShift"], shown: int = 5) -> dict | None:
     body = "\n".join(_shift_line(s) for s in shifts[:shown])
     if len(shifts) > shown:
         body += f"\n… and {len(shifts) - shown} more"
-    body += "\nNothing was rescanned. The exploitation feeds changed."
+    body += "\nThe exploitation feeds changed. No scan ran."
     return {
         "type": NotificationType.SCAN,
         "severity": severity,
@@ -376,7 +376,7 @@ class BountyChange:
 
 
 def _bounty_line(change: "BountyChange") -> str:
-    what = f" — {change.asset}" if change.asset else ""
+    what = f" · {change.asset}" if change.asset else ""
     return f"• {event_spec(change.kind).label} · {change.program}{what}"
 
 
@@ -394,7 +394,7 @@ def bounty_changes(changes: list["BountyChange"], shown: int = 6) -> dict | None
     if stop:
         title = _count(len(stop), "asset", "assets") + " went out of scope"
     elif fresh:
-        title = _count(len(fresh), "change", "changes") + " worth looking at"
+        title = _count(len(fresh), "scope change", "scope changes")
     else:
         title = _count(len(changes), "program change", "program changes")
     body = "\n".join(_bounty_line(c) for c in changes[:shown])

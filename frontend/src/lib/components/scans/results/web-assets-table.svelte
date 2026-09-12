@@ -113,7 +113,7 @@
 		try {
 			localStorage.setItem(key, JSON.stringify(value));
 		} catch {
-			// storage is a convenience
+			// ignore
 		}
 	}
 
@@ -408,7 +408,7 @@
 			const qs = sp.toString();
 			replaceState(qs ? `?${qs}` : location.pathname, appPage.state);
 		} catch {
-			// URL state is best-effort
+			// ignore
 		}
 	}
 	$effect(() => {
@@ -452,9 +452,9 @@
 			);
 			const exact = res.items.find((s) => s.name === name);
 			if (exact) open(exact);
-			else toast.error('Host not found in this scan');
+			else toast.error('Web asset not found in this scan');
 		} catch {
-			toast.error('Host could not be loaded');
+			toast.error('Web asset not loaded');
 		}
 	}
 	function step(dir: -1 | 1) {
@@ -567,11 +567,11 @@
 		try {
 			const run = await rechecks.rescan(projectId, { selection: sel, dimension: '' });
 			selection.clear();
-			toast.success(runStarted(run, 'host', 'hosts'), {
+			toast.success(runStarted(run, 'web asset', 'web assets'), {
 				description: runDescription(run)
 			});
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Rescan could not start');
+			toast.error(e instanceof Error ? e.message : 'Rescan not started');
 		} finally {
 			rescanBusy = false;
 		}
@@ -755,7 +755,7 @@
 	{:else if errored}
 		<EmptyState
 			icon={TriangleAlert}
-			title="Web assets could not be loaded"
+			title="Web assets not loaded"
 			class="rounded-none border-0 bg-transparent py-16"
 		>
 			<Button variant="outline" class="gap-2" onclick={() => refresh()}>
@@ -775,14 +775,14 @@
 		{#if queryError}
 			<EmptyState
 				icon={SearchX}
-				title="That query could not run"
+				title="Query did not run"
 				description={queryError.message}
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
 		{:else if filtered || (view === 'gallery' && onlyShots)}
 			<EmptyState
 				icon={SearchX}
-				title="No hosts match"
+				title="No web assets match"
 				description="Widen the search or remove a filter."
 				class="rounded-none border-0 bg-transparent py-16"
 			>
@@ -793,8 +793,7 @@
 		{:else}
 			<EmptyState
 				icon={Globe}
-				title="No web assets yet"
-				description="Hosts appear here as subdomain discovery and HTTP probing complete."
+				title="No web assets in this scan"
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
 		{/if}
@@ -811,7 +810,7 @@
 				lead={WEB_ASSET_LEAD_COLUMNS}
 				columns={shownColumns}
 				{selectAllChecked}
-				selectAllLabel="Select all hosts on this page"
+				selectAllLabel="Select all web assets on this page"
 				onSelectAll={toggleSelectAll}
 				sortKey={sort.key}
 				sortDir={sort.dir}

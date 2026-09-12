@@ -42,7 +42,7 @@ function createScanContextsStore() {
 				hasFetched = true;
 				fetchedProjectId = projectId;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Scan contexts could not be loaded';
+				error = e instanceof Error ? e.message : 'Scan contexts not loaded';
 			} finally {
 				isLoading = false;
 			}
@@ -58,7 +58,7 @@ function createScanContextsStore() {
 				contexts = [...contexts, created];
 				return created;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Scan context could not be created';
+				error = e instanceof Error ? e.message : 'Scan context not created';
 				return null;
 			}
 		},
@@ -77,7 +77,7 @@ function createScanContextsStore() {
 				}
 				return updated;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Scan context could not be updated';
+				error = e instanceof Error ? e.message : 'Scan context not saved';
 				return null;
 			}
 		},
@@ -93,7 +93,7 @@ function createScanContextsStore() {
 				}
 				return true;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Scan context could not be deleted';
+				error = e instanceof Error ? e.message : 'Scan context not deleted';
 				return false;
 			}
 		},
@@ -105,7 +105,7 @@ function createScanContextsStore() {
 				contexts = [...contexts, duplicate];
 				return duplicate;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Scan context could not be duplicated';
+				error = e instanceof Error ? e.message : 'Scan context not duplicated';
 				return null;
 			}
 		},

@@ -11,11 +11,11 @@ class ExecutiveSummaryConfig(SectionConfig):
     show_score: bool = flag(
         True,
         title="Show posture score",
-        description="The dial and what deducted from it.",
+        description="The dial and its deductions.",
     )
     show_kpis: bool = flag(True, title="Show surface figures")
     show_severity: bool = flag(True, title="Show severity distribution")
-    show_deductions: bool = flag(True, title="Explain the score")
+    show_deductions: bool = flag(True, title="Show deductions")
     preamble: str = paragraph(
         "", title="Opening note", description="Markdown printed before the narrative."
     )
@@ -24,7 +24,7 @@ class ExecutiveSummaryConfig(SectionConfig):
 class ExecutiveSummarySection(Section):
     name = "executive_summary"
     title = "Executive summary"
-    description = "The narrative, the posture score and the figures behind both."
+    description = "Narrative, posture score and surface figures."
     group = SectionGroup.SUMMARY.value
     order = 10
     config_model = ExecutiveSummaryConfig
@@ -88,7 +88,7 @@ def _arc(ctx: RenderContext, score: int) -> str:
 def _note(ctx: RenderContext, dimension: str) -> str:
     entry = ctx.data.coverage[dimension]
     if not entry.covered:
-        return "no run produced this"
+        return ""
     if entry.previous is None:
         return ""
     delta = entry.count - entry.previous

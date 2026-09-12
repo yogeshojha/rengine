@@ -116,7 +116,7 @@
 					<span class="flex items-center gap-1.5 text-sm leading-5 font-medium">
 						{capability.label}
 						{#if capability.always}
-							<span class="text-2xs font-normal text-muted-foreground">always on</span>
+							<span class="text-2xs font-normal text-muted-foreground">required</span>
 						{:else if touches && on}
 							<Hint text="Tokens with this capability can send traffic to targets.">
 								{#snippet child(props)}

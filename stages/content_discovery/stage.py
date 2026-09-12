@@ -38,7 +38,7 @@ class ContentDiscoveryStage(Stage):
 
     name = "content_discovery"
     title = "Content Discovery"
-    description = "Guess common paths and files against every live site and keep the ones that answer."
+    description = "Guess common paths and files on every live site."
     phase = Phase.DEPTH.value
     depends_on = frozenset({"http_probe"})
     group = StageGroup.ENDPOINTS.value
@@ -248,7 +248,7 @@ class _Run:
         text = f"{written:,} paths answered out of {tried:,} guessed on {hosts} sites"
         if self.uncalibrated:
             text += (
-                f"; {self.uncalibrated} site(s) answered to everything and were dropped"
+                f", {self.uncalibrated} site(s) answered to everything and were dropped"
             )
         return text
 
@@ -259,15 +259,14 @@ class _Run:
             extra = len(self.dropped) - _NAMED
             more = f" and {extra} more" if extra > 0 else ""
             out.append(
-                f"{self.uncalibrated} site(s) answered to at least "
-                f"{int(MAX_HIT_SHARE * 100)}% of {tried:,} guessed paths, which is a "
-                f"catch-all response rather than content: {shown}{more}. Nothing from "
-                "them was stored."
+                f"{self.uncalibrated} site(s) answered at least "
+                f"{int(MAX_HIT_SHARE * 100)}% of {tried:,} guessed paths and were "
+                f"dropped as catch-all: {shown}{more}."
             )
         if self.cut_short:
             out.append(
-                f"{self.cut_short} site(s) hit the {cfg.max_minutes}-minute budget "
-                "before the whole wordlist was tried."
+                f"{self.cut_short} site(s) reached the {cfg.max_minutes}-minute "
+                "budget with wordlist remaining."
             )
         if self.failed:
             out.append(f"{self.failed} site(s) could not be guessed against.")

@@ -34,7 +34,7 @@
 				aria-label={`Select ${scope.asset_identifier}`}
 			/>
 		{:else if scope.already_target}
-			<Hint text="Already a target in this project">
+			<Hint text="Existing target in this project">
 				{#snippet child(props)}
 					<span {...props} class="flex h-5 items-center">
 						<CheckIcon class="size-3.5 text-success" />
@@ -71,7 +71,7 @@
 			{#if scope.importable && scope.target_value !== scope.asset_identifier}
 				<span>Adds as <span class="font-mono">{scope.target_value}</span></span>
 			{:else if !scope.importable}
-				<span class="text-muted-foreground/70">reNgine cannot scan this</span>
+				<span class="text-muted-foreground/70">Not scannable</span>
 			{/if}
 		</span>
 	</span>

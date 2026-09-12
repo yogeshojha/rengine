@@ -79,9 +79,7 @@ async def wordlist_kinds(_current_user: CurrentUser):
 async def list_wordlists(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
-    kind: Annotated[
-        str | None, Query(description="Filter by what the words are")
-    ] = None,
+    kind: Annotated[str | None, Query(description="Filter by kind")] = None,
 ):
     await _index_builtin(session)
     query = select(Wordlist).order_by(Wordlist.origin, Wordlist.name)
@@ -132,7 +130,7 @@ async def upload_wordlists(
             result.rejected.append(
                 WordlistRejection(
                     filename=item.filename,
-                    reason=f"The name {slug!r} is already used by another wordlist.",
+                    reason=f"The name {slug!r} is used by another wordlist.",
                 )
             )
             continue
@@ -210,7 +208,7 @@ async def update_wordlist(
     if row.origin == WordlistOrigin.BUILTIN.value:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A shipped wordlist cannot be edited.",
+            detail="Shipped wordlists are read-only.",
         )
     for key, value in data.model_dump(exclude_unset=True).items():
         if value is not None:

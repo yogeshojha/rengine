@@ -41,7 +41,7 @@ class VhostStage(Stage):
             logger.warning("vhost wordlist not in the library: %s", cfg.wordlist)
             return StageResult(
                 counts={"subdomains": 0},
-                warnings=[f"No wordlist named {cfg.wordlist!r} is in the library"],
+                warnings=[f"No wordlist named {cfg.wordlist} in the library"],
                 partial=True,
             )
         try:
@@ -53,7 +53,7 @@ class VhostStage(Stage):
         if not wordlist.is_file():
             return StageResult(
                 counts={"subdomains": 0},
-                warnings=[f"{row.name} is in the library but its file is missing"],
+                warnings=[f"The file for wordlist {row.name} is missing"],
                 partial=True,
             )
 

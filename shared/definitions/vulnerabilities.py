@@ -37,11 +37,11 @@ SEVERITY_LABELS: dict[str, str] = {
 }
 
 SEVERITY_HELP: dict[str, str] = {
-    Severity.CRITICAL.value: "Exploitable now, with system or data compromise as the outcome.",
-    Severity.HIGH.value: "Direct path to compromise, usually needing one more condition.",
-    Severity.MEDIUM.value: "Meaningful weakness that raises the cost of the next finding.",
-    Severity.LOW.value: "Hygiene defect with limited standalone impact.",
-    Severity.INFO.value: "An observation about the asset, not a weakness.",
+    Severity.CRITICAL.value: "Exploitable now. System or data compromise.",
+    Severity.HIGH.value: "Direct path to compromise with one further condition.",
+    Severity.MEDIUM.value: "Weakness with limited direct impact.",
+    Severity.LOW.value: "Hygiene defect.",
+    Severity.INFO.value: "An observation, not a weakness.",
     Severity.UNKNOWN.value: "The check did not state a severity.",
 }
 
@@ -89,10 +89,10 @@ VULN_STATE_LABELS: dict[str, str] = {
 }
 
 VULN_STATE_HELP: dict[str, str] = {
-    VulnState.OPEN.value: "Not yet reviewed.",
+    VulnState.OPEN.value: "Not reviewed.",
     VulnState.CONFIRMED.value: "Reviewed and reproduced.",
     VulnState.FALSE_POSITIVE.value: "Reviewed and rejected. Suppressed on later scans of this target.",
-    VulnState.ACCEPTED.value: "Reviewed and accepted. Kept out of the alerting path.",
+    VulnState.ACCEPTED.value: "Reviewed and accepted. Not alerted.",
 }
 
 SUPPRESSED_STATES: tuple[str, ...] = (
@@ -229,7 +229,7 @@ TEMPLATE_SETS: tuple[TemplateSet, ...] = (
     TemplateSet(
         key="panel",
         label="Exposed panels",
-        description="Administrative and management interfaces reachable without a gateway.",
+        description="Administrative and management interfaces.",
         tags=("panel", "login"),
         default=True,
     ),
@@ -244,21 +244,21 @@ TEMPLATE_SETS: tuple[TemplateSet, ...] = (
     TemplateSet(
         key="misconfiguration",
         label="Misconfiguration",
-        description="Services left in a state their operator did not intend.",
+        description="Misconfigured services.",
         tags=("misconfig", "unauth", "auth-bypass"),
         default=True,
     ),
     TemplateSet(
         key="default-login",
         label="Default credentials",
-        description="Accounts still on the credentials they shipped with.",
+        description="Default credentials accepted.",
         tags=("default-login",),
         default=True,
     ),
     TemplateSet(
         key="takeover",
         label="Subdomain takeover",
-        description="Names pointing at infrastructure that can be claimed by someone else.",
+        description="Hostnames pointing at claimable third-party infrastructure.",
         tags=("takeover",),
         default=True,
     ),
@@ -306,14 +306,14 @@ TEMPLATE_SETS: tuple[TemplateSet, ...] = (
     TemplateSet(
         key="headless",
         label="Browser checks",
-        description="Checks that need a rendered page. Slower, and only run with a browser enabled.",
+        description="Checks that need a rendered page. Runs only with a browser enabled.",
         dirs=("headless",),
         headless=True,
     ),
     TemplateSet(
         key="technology",
         label="Technology detection",
-        description="Identifies software rather than reporting a weakness. High volume, all informational.",
+        description="Identifies software. High volume, all informational.",
         tags=("tech", "detect", "fingerprint"),
     ),
 )
@@ -325,7 +325,7 @@ HEADLESS_SETS: frozenset[str] = frozenset(s.key for s in TEMPLATE_SETS if s.head
 
 
 def reject_unknown(values: list[str], known, axis: str) -> list[str]:
-    """A plan's count is a promise."""
+    """Reject values outside the known set."""
     unknown = [v for v in values if v not in known]
     if unknown:
         msg = f"Unknown {axis}: {', '.join(sorted(unknown))}. Choose from: {', '.join(known)}."

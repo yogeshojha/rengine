@@ -124,7 +124,7 @@
 		try {
 			await notificationStore.deleteNotification(id);
 		} catch {
-			toast.error('Notification could not be deleted');
+			toast.error('Notification not deleted');
 		}
 	};
 
@@ -132,7 +132,7 @@
 		try {
 			await notificationStore.markAllAsRead();
 		} catch {
-			toast.error('Notifications could not be marked read');
+			toast.error('Notifications not marked read');
 		}
 	};
 
@@ -142,7 +142,7 @@
 			await notificationStore.clearAll();
 			clearAllOpen = false;
 		} catch {
-			toast.error('Notifications could not be cleared');
+			toast.error('Notifications not cleared');
 		} finally {
 			clearing = false;
 		}
@@ -279,7 +279,7 @@
 						<Empty.Media variant="icon">
 							<TriangleAlert class="text-destructive" />
 						</Empty.Media>
-						<Empty.Title class="text-sm">Notifications could not be loaded</Empty.Title>
+						<Empty.Title class="text-sm">Notifications did not load</Empty.Title>
 					</Empty.Header>
 					<Empty.Content>
 						<Button variant="outline" size="sm" onclick={retryLoad}>Retry</Button>
@@ -296,13 +296,8 @@
 							{/if}
 						</Empty.Media>
 						<Empty.Title class="text-sm">
-							{tab === 'unread' ? 'Nothing unread' : 'No notifications yet'}
+							{tab === 'unread' ? 'No unread notifications' : 'No notifications'}
 						</Empty.Title>
-						<Empty.Description class="text-xs">
-							{tab === 'unread'
-								? 'Every notification has been read.'
-								: 'Scan results, findings and system events appear here.'}
-						</Empty.Description>
 					</Empty.Header>
 				</Empty.Root>
 			{:else}
@@ -437,8 +432,7 @@
 							<Empty.Media variant="icon">
 								<TriangleAlert class="text-destructive" />
 							</Empty.Media>
-							<Empty.Title>Notifications could not be loaded</Empty.Title>
-							<Empty.Description>The request did not complete. Retry below.</Empty.Description>
+							<Empty.Title>Notifications did not load</Empty.Title>
 						</Empty.Header>
 						<Empty.Content>
 							<Button
@@ -482,8 +476,8 @@
 
 <DeleteConfirmationDialog
 	bind:open={clearAllOpen}
-	title="Clear all notifications?"
-	description={`All ${notificationStore.totalCount} notifications in this project are deleted, including unread ones.`}
+	title="Clear all notifications"
+	description={`${notificationStore.totalCount} notifications in this project are removed.`}
 	confirmLabel="Clear all"
 	isDeleting={clearing}
 	onOpenChange={(o) => (clearAllOpen = o)}

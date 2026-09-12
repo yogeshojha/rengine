@@ -51,12 +51,11 @@ def _kev_live(source: ReportSource, issues: list[Issue]) -> AttackPath | None:
     total = sum(i.count for i in hits)
     return AttackPath(
         key="kev_live",
-        title="Weaknesses with confirmed exploitation are reachable",
+        title="Known exploited weaknesses are reachable",
         detail=(
             f"{total} observation{'s' if total != 1 else ''} across "
-            f"{len(_assets(hits, 200))} hosts match checks on the Known Exploited "
-            "Vulnerabilities catalogue. These are being used against real targets now, "
-            "so exposure time is the whole risk."
+            f"{len(_assets(hits, 200))} assets match checks on the CISA Known Exploited "
+            "Vulnerabilities catalogue."
         ),
         severity=Severity.CRITICAL.value,
         evidence=[i.name for i in hits[:5]],
@@ -74,10 +73,10 @@ def _default_credentials(
     total = sum(i.count for i in hits)
     return AttackPath(
         key="default_credentials",
-        title="Services still answer to the credentials they shipped with",
+        title="Services accept default credentials",
         detail=(
             f"{total} service{'s' if total != 1 else ''} accepted a documented default "
-            "account. No exploitation is required: the credentials are public."
+            "account."
         ),
         severity=Severity.CRITICAL.value,
         evidence=[i.name for i in hits[:5]],
@@ -93,11 +92,11 @@ def _takeover(_source: ReportSource, issues: list[Issue]) -> AttackPath | None:
     total = sum(i.count for i in hits)
     return AttackPath(
         key="takeover",
-        title="Hostnames point at infrastructure someone else can claim",
+        title="Hostnames point at unclaimed provider resources",
         detail=(
             f"{total} name{'s' if total != 1 else ''} resolve to a provider where the "
-            "backing resource no longer exists. Anyone who registers it serves content "
-            "on the subject's domain, which defeats cookie scoping and certificate trust."
+            "backing resource no longer exists. Registering the resource serves content "
+            "under the subject's domain."
         ),
         severity=Severity.HIGH.value,
         evidence=[i.name for i in hits[:5]],
@@ -113,11 +112,10 @@ def _exposed_data(_source: ReportSource, issues: list[Issue]) -> AttackPath | No
     total = sum(i.count for i in hits)
     return AttackPath(
         key="exposed_data",
-        title="Source, configuration or backups are served to the internet",
+        title="Source, configuration or backup files are served",
         detail=(
-            f"{total} location{'s' if total != 1 else ''} return content that was not "
-            "meant to be public. Files of this kind usually carry credentials or internal "
-            "hostnames, which turns a single request into a foothold."
+            f"{total} location{'s' if total != 1 else ''} return source, configuration "
+            "or backup content."
         ),
         severity=Severity.HIGH.value,
         evidence=[i.name for i in hits[:5]],
@@ -138,8 +136,8 @@ def _injection(_source: ReportSource, issues: list[Issue]) -> AttackPath | None:
         key="injection",
         title="Untrusted input reaches an interpreter",
         detail=(
-            f"{total} observation{'s' if total != 1 else ''} indicate input crossing into "
-            f"a query, template or the filesystem. {worst.name} is the strongest of them."
+            f"{total} observation{'s' if total != 1 else ''} of input reaching a query, "
+            f"template or the filesystem. The most severe is {worst.name}."
         ),
         severity=worst.severity,
         evidence=[i.name for i in hits[:5]],
@@ -169,8 +167,7 @@ def _admin_open(source: ReportSource, issues: list[Issue]) -> AttackPath | None:
         ),
         detail=(
             f"{total} administrative interface{'s' if total != 1 else ''} responded "
-            "without a gateway in front. Each one is a credential-stuffing target and a "
-            "published-exploit target at the same time."
+            "with no gateway in front."
         ),
         severity=Severity.MEDIUM.value if not panels else Severity.HIGH.value,
         evidence=[i.name for i in panels[:4]] + [e.path for e in endpoints[:3]],
@@ -185,11 +182,11 @@ def _origin_exposed(source: ReportSource, _issues: list[Issue]) -> AttackPath | 
         return None
     return AttackPath(
         key="origin_exposed",
-        title="Origin servers answer directly, outside the CDN",
+        title="Origin servers answer outside the CDN",
         detail=(
             f"{len(candidates)} address{'es' if len(candidates) != 1 else ''} serve the "
-            "same content as a hostname that sits behind a CDN or WAF. Requesting the "
-            "address directly bypasses every rule the edge enforces."
+            "same content as a hostname behind a CDN or WAF. Requests to the address "
+            "bypass the edge."
         ),
         severity=Severity.HIGH.value,
         evidence=[
@@ -211,18 +208,12 @@ def _sensitive_services(
     names = sorted({s.service_name or str(s.port) for s in exposed})
     internal = source.internal_estate
     where = "on the internal network" if internal else "from the internet"
-    kind = (
-        "that should answer only to named administrators"
-        if internal
-        else "of a kind that normally sits on a private network"
-    )
     return AttackPath(
         key="sensitive_services",
         title=f"Administrative and data services are reachable {where}",
         detail=(
-            f"{len(exposed)} service{'s' if len(exposed) != 1 else ''} {kind} "
-            f"answered a connection: {', '.join(names[:6])}. Each is an authentication "
-            "surface with no web application firewall in front of it."
+            f"{len(exposed)} administrative or data service{'s' if len(exposed) != 1 else ''} "
+            f"answered a connection {where}: {', '.join(names[:6])}."
         ),
         severity=Severity.HIGH.value,
         evidence=[
@@ -249,9 +240,7 @@ def _database_exposed(source: ReportSource, _issues: list[Issue]) -> AttackPath 
         ),
         detail=(
             f"{len(rows)} database service{'s' if len(rows) != 1 else ''} accepted a "
-            f"connection {'from anything on the same network' if internal else 'from the internet'}. "
-            "A database should not be addressable outside its own subnet even when "
-            "authentication is enabled."
+            f"connection {'from the internal network' if internal else 'from the internet'}."
         ),
         severity=Severity.HIGH.value,
         evidence=[f"{s.ip}:{s.port} {s.service_name or ''}".strip() for s in rows[:5]],
@@ -271,11 +260,10 @@ def _expired_certificates(
         return None
     return AttackPath(
         key="expired_certificates",
-        title="Live web assets serve an expired certificate",
+        title="Web assets serve an expired certificate",
         detail=(
-            f"{len(expired)} host{'s' if len(expired) != 1 else ''} answered over TLS "
-            "with a certificate past its validity date. Users are trained through the "
-            "resulting warning, which is the same warning an interception attack produces."
+            f"{len(expired)} web asset{'s' if len(expired) != 1 else ''} answered over TLS "
+            "with an expired certificate."
         ),
         severity=Severity.MEDIUM.value,
         evidence=[

@@ -29,7 +29,7 @@
 
 	const MULTIPLIER_LABELS: { value: string; label: string }[] = MULTIPLIERS.map((m) => ({
 		value: String(m),
-		label: m === 1.0 ? '1× (default)' : `${m}×`
+		label: `${m}×`
 	}));
 
 	const RATE_MIN = 1;
@@ -147,9 +147,7 @@
 		{#if globalError}
 			<p class="text-xs text-destructive">{RATE_ERR}</p>
 		{:else}
-			<p class="text-xs text-muted-foreground">
-				Maximum requests per second across the whole scan. Leave blank to use the engine limit.
-			</p>
+			<p class="text-xs text-muted-foreground">Maximum requests per second across the scan.</p>
 		{/if}
 	</div>
 

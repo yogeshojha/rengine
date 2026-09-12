@@ -1,4 +1,4 @@
-"""Shared resolution: a name an agent typed becomes the scans that answer for it."""
+"""Resolve a typed name to the scans that answer for it."""
 
 from __future__ import annotations
 
@@ -55,9 +55,9 @@ class Scope:
         found = self.coverage(dim.key)
         if not found.usable:
             msg = (
-                f"No scan of {self.target.target_value} has covered {dim.label}. "
-                f"This is not the same as finding nothing — that dimension was "
-                f"never scanned. Run a scan that produces {dim.noun_plural} first."
+                f"{dim.label} of {self.target.target_value} has not been scanned. "
+                f"Report it as not scanned, not as zero. "
+                f"Run a scan that produces {dim.noun_plural}."
             )
             raise ToolError(msg)
         return found.scan_id  # type: ignore[return-value]
@@ -69,8 +69,8 @@ class Scope:
             notes.append(f"Observed {found.observed_at} by scan {found.scan_id}.")
         if not found.current:
             notes.append(
-                "A newer scan exists but did not cover this dimension, so these "
-                "are the most recent figures available."
+                "A newer scan exists that did not cover this dimension. "
+                "These figures are from the most recent covering scan."
             )
         return notes
 
@@ -100,7 +100,7 @@ async def find_target(ctx: ToolContext, value: str) -> Target:
 
     rows = (await ctx.session.execute(statement)).scalars().all()
     if not rows:
-        msg = "This token's scope holds no targets yet."
+        msg = "No targets in this token's scope."
         raise ToolError(msg)
 
     match = _pick(rows, needle)
@@ -137,8 +137,8 @@ async def project_for(ctx: ToolContext, project_id: uuid.UUID | None) -> uuid.UU
     if len(rows) == 1:
         return rows[0].id
     if not rows:
-        msg = "This instance has no projects."
+        msg = "No projects exist."
         raise ScopeError(msg)
     names = ", ".join(f"{r.name} ({r.id})" for r in rows[:8])
-    msg = f"Name a project — this token can see several: {names}."
+    msg = f"Pass project_id. This token can see several projects: {names}."
     raise ToolError(msg)

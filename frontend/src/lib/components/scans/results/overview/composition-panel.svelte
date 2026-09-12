@@ -90,7 +90,7 @@
 				note:
 					insights.single_source > 0
 						? `${insights.single_source.toLocaleString()} ${nounPlural} found by one source only`
-						: `All ${nounPlural} were found by two or more sources`
+						: `All ${nounPlural} found by two or more sources`
 			});
 
 		if (insights.top_tech.length)

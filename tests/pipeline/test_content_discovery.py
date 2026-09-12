@@ -211,7 +211,7 @@ def test_the_run_says_which_sites_it_threw_away():
 
     warning = " ".join(run.warnings(SimpleNamespace(max_minutes=20), 300))
     assert "soft404.example.com" in warning
-    assert "Nothing from them was stored" in warning
+    assert "dropped as catch-all" in warning
     assert "real.example.com" not in warning
 
 

@@ -31,6 +31,6 @@ export const SOFTWARE_SORTS = [
 	{ key: 'epss', label: 'EPSS' },
 	{ key: 'cve', label: 'CVE' },
 	{ key: 'software', label: 'Software' },
-	{ key: 'host', label: 'Host' },
+	{ key: 'host', label: 'Asset' },
 	{ key: 'seen', label: 'Seen' }
 ];

@@ -13,7 +13,7 @@ class DnsRecordsConfig(SectionConfig):
 class DnsRecordsSection(Section):
     name = "dns_records"
     title = "DNS records"
-    description = "The zone as it answered at enrichment time."
+    description = "DNS records at enrichment time."
     group = SectionGroup.INTELLIGENCE.value
     order = 20
     default_enabled = False

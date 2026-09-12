@@ -1,4 +1,4 @@
-"""Report a rejected request body without echoing the body back."""
+"""Validation errors without the echoed input."""
 
 from fastapi import Request
 from fastapi.exceptions import RequestValidationError

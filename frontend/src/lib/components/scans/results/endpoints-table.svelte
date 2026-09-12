@@ -136,7 +136,7 @@
 		try {
 			localStorage.setItem(key, JSON.stringify(value));
 		} catch {
-			// storage is a convenience
+			// ignore
 		}
 	}
 	function normalizeView(raw: string | null | undefined): EndpointView {
@@ -686,7 +686,7 @@
 			const qs = sp.toString();
 			replaceState(qs ? `?${qs}` : location.pathname, appPage.state);
 		} catch {
-			// URL state is best-effort
+			// ignore
 		}
 	}
 	$effect(() => {
@@ -725,10 +725,10 @@
 				return;
 			}
 			toast.success(
-				`Verifying ${res.queued.toLocaleString()} ${res.queued === 1 ? 'endpoint' : 'endpoints'} under ${where}. Refresh to see the results.`
+				`Verification queued for ${res.queued.toLocaleString()} ${res.queued === 1 ? 'endpoint' : 'endpoints'} under ${where}.`
 			);
 		} catch {
-			toast.error('Verification could not be queued.');
+			toast.error('Verification not queued.');
 		}
 	}
 	function proxyName(connectorId: string): string {
@@ -748,10 +748,10 @@
 				limit: SEND_CAP
 			});
 			toast.success(
-				`${res.queued.toLocaleString()} ${res.queued === 1 ? 'request' : 'requests'} sent to ${proxyName(connectorId)}. It collects them within a few seconds.`
+				`${res.queued.toLocaleString()} ${res.queued === 1 ? 'request' : 'requests'} sent to ${proxyName(connectorId)}.`
 			);
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'The proxy queue did not accept them.');
+			toast.error(e instanceof Error ? e.message : 'Requests not sent.');
 		}
 	}
 	async function sendEndpoint(e: Endpoint, connectorId: string) {
@@ -759,9 +759,9 @@
 			await connectorsApi.sendEndpoints(connectorId, projectId, scanId, {
 				endpoint_ids: [e.id]
 			});
-			toast.success(`Sent to ${proxyName(connectorId)}. It collects it within a few seconds.`);
+			toast.success(`Sent to ${proxyName(connectorId)}.`);
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : 'The proxy queue did not accept it.');
+			toast.error(err instanceof Error ? err.message : 'Request not sent.');
 		}
 	}
 	let branchScope = $derived({ projectId, scanId, filter: treeFilter, merged: isMerged });
@@ -1048,7 +1048,7 @@
 	{#if queryError}
 		<EmptyState
 			icon={SearchX}
-			title="That query could not run"
+			title="Query did not run"
 			description={queryError.message}
 			class="rounded-none border-0 bg-transparent py-16"
 		/>
@@ -1057,7 +1057,7 @@
 			icon={SearchX}
 			title={atEstate ? 'No host matches' : 'No endpoints match'}
 			description={hideStatic && !filtered
-				? 'Every endpoint here is a static file. Show static files to see them.'
+				? 'All matching endpoints are static files.'
 				: 'Widen the search or remove a filter.'}
 			class="rounded-none border-0 bg-transparent py-16"
 		>
@@ -1079,8 +1079,8 @@
 	{:else if atEstate && hideRootOnly && (hosts?.root_only ?? 0) > 0}
 		<EmptyState
 			icon={Waypoints}
-			title="Nothing beyond root pages"
-			description="Every host here holds only its root page. Show them to see the list."
+			title="Root pages only"
+			description="Every host has only its root page."
 			class="rounded-none border-0 bg-transparent py-16"
 		>
 			<Button size="sm" variant="outline" onclick={() => (hideRootOnly = false)}>
@@ -1090,8 +1090,7 @@
 	{:else}
 		<EmptyState
 			icon={Waypoints}
-			title="No endpoints yet"
-			description="Endpoints appear once URL discovery has run on this scan."
+			title="No endpoints in this scan"
 			class="rounded-none border-0 bg-transparent py-16"
 		/>
 	{/if}
@@ -1100,7 +1099,7 @@
 {#snippet retryState()}
 	<EmptyState
 		icon={TriangleAlert}
-		title="Endpoints could not be loaded"
+		title="Endpoints not loaded"
 		class="rounded-none border-0 bg-transparent py-16"
 	>
 		<Button variant="outline" class="gap-2" onclick={() => refresh()}>
@@ -1247,11 +1246,10 @@
 					{gonePage.previous_scan_at
 						? formatShortDate(gonePage.previous_scan_at)
 						: 'the previous run'}
-					{gonePage.total === 1 ? 'was' : 'were'} not found in this scan. Filters and the query apply
-					to them too.
+					not found in this scan.
 				</span>
 			{:else}
-				<span>Comparing with the previous scan of this target…</span>
+				<span>Loading the previous scan</span>
 			{/if}
 			<button
 				type="button"
@@ -1273,8 +1271,7 @@
 		{:else if gonePage && gonePage.items.length === 0}
 			<EmptyState
 				icon={History}
-				title="Nothing retired"
-				description="Every endpoint the previous scan recorded is still present under the current filters."
+				title="No retired endpoints"
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
 		{:else if gonePage}
@@ -1319,7 +1316,7 @@
 		{#if hosts?.error}
 			<EmptyState
 				icon={SearchX}
-				title="That query could not run"
+				title="Query did not run"
 				description={hosts.error.message}
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
@@ -1356,7 +1353,7 @@
 		{#if tree?.error}
 			<EmptyState
 				icon={SearchX}
-				title="That query could not run"
+				title="Query did not run"
 				description={tree.error.message}
 				class="rounded-none border-0 bg-transparent py-16"
 			/>

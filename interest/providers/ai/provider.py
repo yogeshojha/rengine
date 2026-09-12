@@ -78,8 +78,8 @@ class AIProvider(InterestProvider):
     source = InterestSource.AI.value
     title = "AI"
     description = (
-        "Reads the hostname, status, page title and technology of every responding host "
-        "and identifies the ones that merit review. A judgement, not an observation."
+        "Reads the hostname, status, page title and technology of each responding "
+        "web asset and flags the ones to review. A judgement, not an observation."
     )
     requires_ai = True
     order = 30

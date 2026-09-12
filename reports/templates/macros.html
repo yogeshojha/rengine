@@ -54,7 +54,7 @@
     {% for row in actionable %}{% if row.count %}
     <span class="chip chip--quiet"><span class="dot" style="background:{{ ctx.sev(row.severity) }}"></span>{{ row.label }} {{ row.count|num }}</span>
     {% endif %}{% endfor %}
-    {% if quiet %}<span class="chip chip--quiet faint">+ {{ quiet|num }} informational, not drawn</span>{% endif %}
+    {% if quiet %}<span class="chip chip--quiet faint">{{ quiet|num }} informational, not drawn</span>{% endif %}
   </div>
 </div>
 {% endif %}

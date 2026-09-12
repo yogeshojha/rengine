@@ -27,7 +27,7 @@
 		cancelLabel = 'Cancel',
 		destructive = false,
 		loading = false,
-		loadingLabel = 'Working…',
+		loadingLabel = 'Working',
 		icon,
 		onOpenChange,
 		onConfirm

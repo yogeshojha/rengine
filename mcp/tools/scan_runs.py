@@ -1,4 +1,4 @@
-"""A run an agent started, and the brake for it."""
+"""Scan status and cancellation."""
 
 from __future__ import annotations
 
@@ -56,11 +56,9 @@ class ScanStatus(Tool):
     title = "Scan status"
     group = ToolGroup.ORIENT.value
     description = (
-        "Where a scan has got to: its status, which stages have finished, which are "
-        "running, which failed, and what it has found so far. Call it with the id "
-        "start_scan returned to follow that run, with a target for its most recent "
-        "run, or with neither to see everything currently running. Poll this rather "
-        "than waiting — a scan takes minutes to hours."
+        "Status of a scan: stages finished, running and failed, and counts found so "
+        "far. Pass a scan id, a target for its most recent run, or neither for every "
+        "running scan."
     )
     Input = StatusInput
     examples = (
@@ -97,10 +95,8 @@ class CancelScan(Tool):
     capability = Capability.LAUNCH.value
     group = ToolGroup.ACT.value
     description = (
-        "Stop a running scan. Traffic to the target stops, the stages still in flight "
-        "are aborted, and everything the run had already found is kept and stays "
-        "queryable. Use it as soon as a scan is pointed somewhere it should not be — "
-        "it takes effect immediately and needs no confirmation."
+        "Stop a running scan. Stages in flight are aborted. Results written so far "
+        "are kept. Takes effect immediately."
     )
     Input = CancelInput
     examples = ("cancel_scan target=example.com", "cancel_scan scan=<id>")
@@ -114,10 +110,7 @@ class CancelScan(Tool):
 
         row = await _one_run(ctx, args.scan, args.target, live_only=bool(args.target))
         if row.status not in SCAN_LIVE_STATUSES:
-            msg = (
-                f"That scan is already {row.status}, so there is nothing to stop. "
-                f"Its results stay queryable."
-            )
+            msg = f"The scan is {row.status}. Nothing to stop."
             raise ToolError(msg)
 
         result = await ScanService(ctx.session).cancel(row.id, row.project_id)
@@ -132,8 +125,8 @@ class CancelScan(Tool):
             },
             pivot=links.scan(ctx.ui_base_url, result.id),
             caveats=[
-                "What the run found before stopping is kept and stays queryable.",
-                "The dimensions its remaining stages would have covered were never scanned — that is not the same as finding nothing.",
+                "Results written before the stop are kept.",
+                "Dimensions the remaining stages would have covered are not scanned.",
                 f"Stopped by agent token '{ctx.token.name}' via MCP.",
             ],
         )
@@ -216,9 +209,7 @@ async def _running(ctx: ToolContext, limit: int) -> ToolResult:
             for row in rows
         ],
         pivot=f"{ctx.ui_base_url.rstrip('/')}/scans",
-        caveats=[]
-        if live
-        else ["Start one with start_scan, or query what earlier runs found."],
+        caveats=[] if live else ["Start one with start_scan."],
     )
 
 
@@ -281,20 +272,19 @@ def _status_line(row: Scan, stages: dict[str, list[str]], live: bool) -> str:
     )
     if live:
         now = ", ".join(stages["running"][:3]) or "starting"
-        return f"{row.status} — {done} of {total} stages done, now: {now}"
+        return f"{row.status}: {done} of {total} stages done, running {now}"
     failed = f", {len(stages['failed'])} stage(s) failed" if stages["failed"] else ""
-    return f"{row.status} — {done} stage(s) completed{failed}"
+    return f"{row.status}: {done} stage(s) completed{failed}"
 
 
 def _status_caveats(row: Scan, live: bool) -> list[str]:
     notes = []
     if live:
-        notes.append(
-            "Counts are partial and rise as stages finish. Poll again rather than waiting."
-        )
+        notes.append("Counts are partial while the scan runs.")
     else:
         notes.append(
-            "These are the run's own rollup. For a target's current surface use resolve_target."
+            "Counts are the run's own rollup. resolve_target gives the target's "
+            "current surface."
         )
     if row.error:
         notes.append(f"The run recorded an error: {row.error}")

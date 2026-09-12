@@ -1,9 +1,9 @@
 {% import 'macros.html' as m with context %}
-<p class="block muted small">{{ ctx.data.service_rows|length|num }} services answered on {{ addresses|num }} addresses. {{ web|num }} of them answer HTTP.{% if sensitive %} {{ sensitive|num }} are of a kind that {{ 'should answer only to named administrators' if internal else 'normally belongs on a private network' }}.{% endif %}</p>
+<p class="block muted small">{{ ctx.data.service_rows|length|num }} services answered on {{ addresses|num }} addresses. {{ web|num }} of them answer HTTP.{% if sensitive %} {{ sensitive|num }} {{ 'is' if sensitive == 1 else 'are' }} administrative or data.{% endif %}</p>
 
 {% if classes %}
 <div class="sub">
-  <div class="label block">What is listening</div>
+  <div class="label block">Composition</div>
   {% set items = [] %}
   {% for row in classes %}{% set _ = items.append(Slice(row.label, row.count, ctx.hue(loop.index0))) %}{% endfor %}
   {{ stack_bar(items)|safe }}
@@ -23,7 +23,6 @@
       {% endfor %}
     </tbody>
   </table>
-  {% if policies.get('web') %}<p class="micro faint" style="margin-top:1.4mm">A CDN edge address is scanned on web ports only, because the rest of its ports belong to the provider and not to this estate.</p>{% endif %}
 </div>
 {% endif %}
 

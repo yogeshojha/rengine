@@ -25,14 +25,14 @@
 			title: 'Bug bounty',
 			icon: TargetIcon,
 			desc: 'Researching public and private bug bounty programs.',
-			adds: 'Adds the HackerOne integration, program import and breadth-first recon presets.'
+			adds: 'HackerOne integration, program import and breadth-first recon presets.'
 		},
 		{
 			value: InstanceMode.Corporate,
 			title: 'Corporate',
 			icon: Building2Icon,
-			desc: "Continuously managing an organization's own attack surface.",
-			adds: 'Asset inventory, scope governance and internal monitoring workflows. Bug bounty tooling such as HackerOne is hidden.'
+			desc: "Managing an organization's own attack surface.",
+			adds: 'Asset inventory, scope governance and internal monitoring. The HackerOne integration is hidden.'
 		}
 	];
 
@@ -52,7 +52,7 @@
 			toast.success(`Mode set to ${MODES.find((m) => m.value === selected)?.title ?? selected}`);
 			next();
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Mode could not be saved');
+			toast.error(e instanceof Error ? e.message : 'Mode not saved');
 		} finally {
 			busy = false;
 		}
@@ -87,10 +87,6 @@
 
 	<p class="flex items-start gap-2 text-xs text-muted-foreground">
 		<InfoIcon class="mt-px size-4 shrink-0" />
-		<span
-			>reNgine operates in a single mode at a time. Corporate mode presents the workspace for
-			internal attack surface management and hides bug bounty tooling such as the HackerOne
-			integration.</span
-		>
+		<span>One mode is active at a time. It can be changed in Settings.</span>
 	</p>
 </div>

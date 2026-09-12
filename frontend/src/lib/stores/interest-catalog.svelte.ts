@@ -39,7 +39,7 @@ class InterestCatalogStore {
 			this.fetched = true;
 			this.error = null;
 		} catch (e) {
-			this.error = e instanceof Error ? e.message : 'Could not load the interest catalog';
+			this.error = e instanceof Error ? e.message : 'Interest catalog not loaded';
 		} finally {
 			this.loading = false;
 		}

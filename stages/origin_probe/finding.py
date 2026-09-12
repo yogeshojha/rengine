@@ -20,7 +20,7 @@ _SEVERITY = {"high": Severity.MEDIUM.value, "medium": Severity.LOW.value}
 
 def _evidence(found: OriginFinding) -> str:
     return (
-        "; ".join(f"{item.label} matches" for item in found.evidence)
+        ", ".join(f"{item.label} matches" for item in found.evidence)
         or "no shared identity recorded"
     )
 
@@ -37,12 +37,12 @@ def origin_finding(found: OriginFinding) -> Finding:
 
     if kind == "origin":
         description = (
-            f"{address} answers directly and serves the same application as {behind}, "
-            f"which is fronted by a CDN. Shared: {_evidence(found)}."
+            f"{address} answers directly and serves the same application as {behind} "
+            f"behind its CDN. Shared: {_evidence(found)}."
         )
         impact = (
-            "Requests sent straight to the address bypass whatever the CDN or WAF in "
-            "front of the hostname is there to do."
+            "Requests sent to the address bypass the CDN or WAF in front of the "
+            "hostname."
         )
         remediation = (
             "Restrict the origin to the CDN's ranges, or move it behind an address "
@@ -50,12 +50,12 @@ def origin_finding(found: OriginFinding) -> Finding:
         )
     else:
         description = (
-            f"{address} serves a different site when asked without a hostname than "
-            f"{behind} serves. Shared: {_evidence(found)}."
+            f"{address} serves a different site without a hostname than {behind}. "
+            f"Shared: {_evidence(found)}."
         )
         impact = (
-            "The default virtual host on this address exposes an application nobody "
-            "browsing the hostname would reach."
+            "The default virtual host on this address exposes an application not "
+            "reachable through the hostname."
         )
         remediation = "Give the address a default virtual host that serves nothing."
 

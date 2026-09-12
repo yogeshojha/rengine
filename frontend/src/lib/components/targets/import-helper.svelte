@@ -8,7 +8,7 @@
 <p class="text-xs text-muted-foreground">
 	<span class="inline-flex flex-wrap items-center gap-1">
 		{#if type === 'text'}
-			Accepted targets: domain, IP, CIDR range, ASN (<code>AS123</code>), or URL.<a
+			Accepted targets: domain, IP address, CIDR range, ASN or URL.<a
 				href="https://rengine.wiki/import/targets"
 				target="_blank"
 				rel="noopener noreferrer"
@@ -18,8 +18,8 @@
 				<ExternalLink class="h-3 w-3" />
 			</a>
 		{:else if type === 'json'}
-			Each target supports <code>target_value</code>, <code>tags</code>,
-			<code>organizations</code>, and <code>display_name</code>.
+			Fields per target: <code>target_value</code>, <code>tags</code>,
+			<code>organizations</code>, <code>display_name</code>.
 			<a
 				href="https://rengine.wiki/import/json"
 				target="_blank"

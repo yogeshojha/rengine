@@ -26,7 +26,7 @@
 		filter,
 		showAnchor = true,
 		emptyTitle = 'No notes',
-		emptyDescription = 'Notes appear here once written.',
+		emptyDescription,
 		composerOpen = $bindable(false),
 		onCount
 	}: Props = $props();

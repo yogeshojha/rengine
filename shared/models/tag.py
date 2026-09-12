@@ -33,7 +33,7 @@ class TargetTag(SQLModel, table=True):
 class TagBase(SQLModel):
     name: str = Field(max_length=50)
     color: str = Field(
-        max_length=7, description="Hex color code, e.g., #FF5733", default="#6B7280"
+        max_length=7, description="Hex color code such as #FF5733", default="#6B7280"
     )
 
     @field_validator("color")
@@ -69,7 +69,7 @@ class TagCreate(TagBase):
 class TagUpdate(SQLModel):
     name: str | None = Field(default=None, max_length=50)
     color: str | None = Field(
-        default=None, max_length=7, description="Hex color code, e.g., #FF5733"
+        default=None, max_length=7, description="Hex color code such as #FF5733"
     )
 
     @field_validator("color")

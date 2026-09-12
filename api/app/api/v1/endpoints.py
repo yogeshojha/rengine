@@ -159,7 +159,7 @@ async def endpoint_summary(
     _current_user: CurrentUser,
     service: Annotated[EndpointService, Depends(get_service)],
     scope: EndpointScope,
-    host: Annotated[str | None, Query(description="Scope to one host")] = None,
+    host: Annotated[str | None, Query(description="Host name")] = None,
 ):
     return await lead_cache.cached(
         service.session,
@@ -177,9 +177,7 @@ async def endpoint_host_brief(
     service: Annotated[EndpointService, Depends(get_service)],
     scope: EndpointScope,
     host: Annotated[str, Query(description="Hostname", max_length=500)],
-    hide_static: Annotated[
-        bool, Query(description="Count without static files")
-    ] = True,
+    hide_static: Annotated[bool, Query(description="Exclude static files")] = True,
 ):
     return await service.host_brief(scope, host, hide_static)
 

@@ -75,7 +75,7 @@
 			if (!note) picked.clear();
 			onSaved?.(saved);
 		} catch (e) {
-			failed = e instanceof Error ? e.message : 'The note could not be saved';
+			failed = e instanceof Error ? e.message : 'Note not saved';
 		} finally {
 			saving = false;
 		}
@@ -120,25 +120,20 @@
 		bind:value={body}
 		onkeydown={onKey}
 		rows={3}
-		placeholder="Write what you found"
+		placeholder="Note"
 		class="resize-y text-sm"
 		disabled={saving}
 	/>
 
 	{#if body.trim()}
-		<Input
-			bind:value={title}
-			placeholder="Title (optional)"
-			class="h-8 text-sm"
-			disabled={saving}
-		/>
+		<Input bind:value={title} placeholder="Title" class="h-8 text-sm" disabled={saving} />
 	{/if}
 
 	<div class="flex flex-col gap-1.5">
 		<span class="text-xs text-muted-foreground">Tags</span>
 		{#if notes.tags.length === 0}
 			<span class="text-xs text-muted-foreground">
-				No tags in this project yet. Add one in Settings to save a note.
+				No tags in this project. Add one in Settings.
 			</span>
 		{:else if notes.tags.length > TAG_SCROLL_AT}
 			<ScrollArea class="h-[76px]">
@@ -159,7 +154,7 @@
 			class="h-7 px-3"
 			loading={saving}
 			disabled={!ready}
-			loadingLabel="Saving…"
+			loadingLabel="Saving"
 			onclick={save}
 		>
 			{note ? 'Save' : 'Add note'}

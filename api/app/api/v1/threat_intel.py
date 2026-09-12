@@ -38,7 +38,7 @@ def get_service(
 
 @router.get("/vocabulary")
 async def vocabulary(_current_user: CurrentUser) -> dict:
-    """The exploitation vocabulary the UI renders from."""
+    """Exploitation vocabulary."""
     return {
         "feeds": [
             {
@@ -103,14 +103,14 @@ async def set_auto_sync(
     body: AutoSyncUpdate,
     project_id: Annotated[UUID | None, Query()] = None,
 ) -> ThreatIntelStatus:
-    """Turn the nightly download on or off. Manual refresh keeps working either way."""
+    """Turn the nightly download on or off."""
     await service.set_auto_sync(body.enabled)
     return await service.status(project_id)
 
 
 @router.post("/sync", response_model=SyncResult)
 async def sync(_current_user: CurrentSuperuser) -> SyncResult:
-    """Download the feeds now and re-rank every finding, whatever the switch says."""
+    """Download the feeds and re-rank every finding."""
     queued = dispatch_threat_intel_refresh(force=True)
     return SyncResult(
         queued=queued,
@@ -126,7 +126,7 @@ async def enrich(
     _current_user: CurrentUser,
     scan_id: Annotated[UUID, Path()],
 ) -> SyncResult:
-    """Fill the provider cache for this scan's CVEs, then re-rank on the richer data."""
+    """Fetch provider intel for the scan's CVEs and re-rank."""
     dispatch_threat_intel(str(scan_id))
     return SyncResult(queued=True, feeds=["vulnx"])
 
@@ -157,5 +157,5 @@ async def signal_findings(
     project_id: Annotated[UUID | None, Query()] = None,
     limit: Annotated[int, Query(ge=1, le=500)] = 100,
 ) -> list[SignalFinding]:
-    """The findings behind one signal count, so the number opens its own rows."""
+    """Findings behind one signal count."""
     return await service.signal_findings(kind, project_id, limit=limit)

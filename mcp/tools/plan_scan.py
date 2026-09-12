@@ -16,9 +16,7 @@ from shared.models.scan_preview import PreviewToolStatus
 
 
 class Input(ToolInput):
-    target: str = Field(
-        description="A target value. It does not have to exist in reNgine yet."
-    )
+    target: str = Field(description="A target value. It does not have to exist yet.")
     engine_id: str | None = Field(
         default=None,
         description="A saved scan engine to plan with. Omit for an ad hoc plan.",
@@ -46,10 +44,9 @@ class PlanScan(Tool):
     capability = Capability.PLAN.value
     group = ToolGroup.ACT.value
     description = (
-        "Resolve what a scan would do — which stages run in which order, which are "
-        "skipped and why, the footprint and the estimated duration — without starting "
-        "anything and without contacting the target. "
-        "Use it to answer 'what would this cost' and to check a plan before launching."
+        "Resolve what a scan would do: stages and their order, skipped stages and the "
+        "reason, footprint and estimated duration. Nothing runs and the target is not "
+        "contacted."
     )
     Input = Input
     examples = (
@@ -68,7 +65,7 @@ class PlanScan(Tool):
         try:
             preview = await ScanService(ctx.session).preview(payload, project_id)
         except Exception as exc:
-            msg = f"That plan could not be resolved: {exc}"
+            msg = f"Plan not resolved: {exc}"
             raise ToolError(msg) from exc
 
         phases = [
@@ -109,7 +106,7 @@ class PlanScan(Tool):
                 "phases": phases,
                 "warnings": preview.warnings,
             },
-            caveats=["Nothing ran. This is a resolution of the plan only."],
+            caveats=["Nothing ran."],
         )
 
 
@@ -127,5 +124,5 @@ def _scan_create(args: Input, model):
     try:
         return model.model_validate(payload)
     except Exception as exc:
-        msg = f"That plan is not valid: {exc}"
+        msg = f"Plan not valid: {exc}"
         raise ToolError(msg) from exc

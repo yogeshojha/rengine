@@ -17,18 +17,14 @@ class ComplianceConfig(SectionConfig):
         title="Frameworks",
         options={k: FRAMEWORK_BY_KEY[k].name for k in FRAMEWORK_KEYS},
     )
-    show_empty: bool = flag(
-        True,
-        title="Show controls with no findings",
-        description="Controls with no matching finding are listed as well.",
-    )
-    show_scope_note: bool = flag(True, title="Show what the mapping does not cover")
+    show_empty: bool = flag(True, title="Show controls with no findings")
+    show_scope_note: bool = flag(True, title="Show scope note")
 
 
 class ComplianceSection(Section):
     name = "compliance"
     title = "Control mapping"
-    description = "Findings mapped to control frameworks as audit evidence, not a compliance verdict."
+    description = "Findings mapped to control frameworks."
     group = SectionGroup.FINDINGS.value
     order = 30
     requires = frozenset({SurfaceDimension.VULNERABILITIES.value})

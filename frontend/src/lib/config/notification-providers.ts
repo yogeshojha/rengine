@@ -113,7 +113,7 @@ export const NOTIFICATION_PROVIDERS: ProviderMeta[] = [
 			{
 				key: 'username',
 				label: 'Username',
-				placeholder: 'you@example.com',
+				placeholder: 'user@example.com',
 				kind: 'text',
 				required: true
 			},
@@ -168,7 +168,7 @@ export const NOTIFICATION_PROVIDERS: ProviderMeta[] = [
 			}
 		],
 		help: {
-			label: 'Apprise URL formats (100+ services)',
+			label: 'Apprise URL formats',
 			url: 'https://github.com/caronc/apprise/wiki'
 		}
 	}

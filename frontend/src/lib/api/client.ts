@@ -12,7 +12,7 @@ function extractErrorMessage(detail: unknown, status: number): string {
 			.filter(Boolean);
 		if (msgs.length) return msgs.join('; ');
 	}
-	return `Request failed (${status})`;
+	return `Request failed with status ${status}`;
 }
 
 class ApiClient {
@@ -45,7 +45,7 @@ class ApiClient {
 				throw new Error(
 					result === 'expired'
 						? 'Session expired. Sign in again.'
-						: 'Session could not be refreshed. Sign in again.'
+						: 'Session not refreshed. Sign in again.'
 				);
 			}
 
@@ -124,7 +124,7 @@ class ApiClient {
 			throw new Error(
 				result === 'expired'
 					? 'Session expired. Sign in again.'
-					: 'Session could not be refreshed. Sign in again.'
+					: 'Session not refreshed. Sign in again.'
 			);
 		}
 
@@ -142,7 +142,7 @@ class ApiClient {
 			throw new Error(
 				result === 'expired'
 					? 'Session expired. Sign in again.'
-					: 'Session could not be refreshed. Sign in again.'
+					: 'Session not refreshed. Sign in again.'
 			);
 		}
 

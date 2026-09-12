@@ -86,7 +86,7 @@
 			await targetsApi.update(targetId, { tag_names: newTagNames });
 		} catch {
 			applyPatch({ tags: currentTags });
-			toast.error('Tags could not be updated');
+			toast.error('Tags not updated');
 		}
 	}
 
@@ -126,9 +126,9 @@
 			searchValue = '';
 			showColorPicker = false;
 			selectedColor = '#6366f1';
-			toast.success('Tag created and applied');
+			toast.success('Tag created');
 		} catch {
-			toast.error('Tag could not be created');
+			toast.error('Tag not created');
 		} finally {
 			isUpdating = false;
 		}
@@ -213,7 +213,7 @@
 			{#if showColorPicker}
 				<div class="p-3 space-y-3">
 					<p class="text-sm font-medium truncate">
-						Pick a color for "<span class="text-primary">{searchValue}</span>"
+						Color for "<span class="text-primary">{searchValue}</span>"
 					</p>
 					<div class="flex flex-wrap gap-2">
 						{#each presetColors as color (color)}
@@ -251,7 +251,7 @@
 							{#if !showCreateOption}
 								<div class="flex flex-col items-center gap-1 py-2">
 									<Tag class="h-4 w-4 text-muted-foreground" />
-									<span class="text-sm text-muted-foreground">No tags found</span>
+									<span class="text-sm text-muted-foreground">No tags</span>
 								</div>
 							{/if}
 						</Command.Empty>

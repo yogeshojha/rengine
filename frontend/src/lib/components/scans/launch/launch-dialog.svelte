@@ -286,9 +286,7 @@
 					else unresolved += 1;
 				}
 				if (unresolved) {
-					toast.warning(
-						`${unresolved} ${unresolved === 1 ? 'target' : 'targets'} could not be loaded.`
-					);
+					toast.warning(`${unresolved} ${unresolved === 1 ? 'target' : 'targets'} not loaded.`);
 				}
 			}
 			for (const value of values) {
@@ -297,7 +295,7 @@
 				else toast.error(`${INVALID_TARGET_MESSAGE}: ${value}. ${TARGET_FORMATS}`);
 			}
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Targets could not be loaded');
+			toast.error(e instanceof Error ? e.message : 'Targets not loaded');
 		} finally {
 			targetsLoading = false;
 		}
@@ -314,7 +312,7 @@
 			}
 			const created = await scansStore.launchScans(p.id, launch.body());
 			if (!created) {
-				toast.error(scansStore.error ?? 'Scan could not be started');
+				toast.error(scansStore.error ?? 'Scan not started');
 				return;
 			}
 			const previous = readLastPlan();
@@ -327,8 +325,8 @@
 			});
 			toast.success(
 				created.length === 1
-					? `Scan queued for ${created[0].execution_config.target_value}`
-					: `${created.length} scans queued`
+					? `Scan started for ${created[0].execution_config.target_value}`
+					: `${created.length} scans started`
 			);
 			close();
 			goto(created.length === 1 ? ROUTES.scan(created[0].id) : ROUTES.scans);
@@ -345,7 +343,7 @@
 			toast.success(runStarted(run, 'asset', 'assets'), { description: runDescription(run) });
 			close();
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Rescan could not start');
+			toast.error(e instanceof Error ? e.message : 'Rescan not started');
 		}
 	}
 
@@ -380,8 +378,8 @@
 				<Dialog.Title>{launch.rescan ? 'Rescan' : 'New scan'}</Dialog.Title>
 				<Dialog.Description class="sr-only">
 					{launch.rescan
-						? 'Choose what to re-run against the selected assets.'
-						: 'Choose targets and a configuration, then start the scan.'}
+						? 'Stages to re-run against the selected assets.'
+						: 'Targets, configuration and context for a new scan.'}
 				</Dialog.Description>
 			</Dialog.Header>
 
@@ -456,7 +454,7 @@
 				<Button onclick={handleLaunch} disabled={!launch.canLaunch || busy} class="min-w-0 gap-2">
 					{#if launching}
 						<Spinner class="size-4" />
-						Queuing
+						Starting
 					{:else}
 						<Play class="size-4" />
 						<span>{launchLabel}</span>
@@ -475,7 +473,7 @@
 				onCreated={(id, name) => {
 					launch.contextId = id;
 					view = 'launch';
-					toast.success(`Context "${name}" created and applied to this scan`);
+					toast.success(`Context "${name}" created`);
 				}}
 			/>
 		{/if}

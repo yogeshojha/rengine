@@ -24,7 +24,7 @@
 		<div class="px-5 py-5">
 			<Launcher
 				heading="No targets in this project"
-				sub="A scan discovers web assets, endpoints, services, addresses and vulnerabilities for one target."
+				sub="Add a domain, IP address, IP range, URL or ASN."
 			/>
 		</div>
 		<ReadinessStrip {readiness} />

@@ -137,7 +137,7 @@
 		try {
 			localStorage.setItem(recentsKey, JSON.stringify(next));
 		} catch {
-			// recent searches are a convenience
+			// localStorage unavailable
 		}
 	}
 
@@ -261,7 +261,7 @@
 					<QueryHighlight source={value} tokens={lexed.tokens} {problems} />
 				{:else}
 					<span class="font-sans text-muted-foreground"
-						>Search everything, or filter with
+						>Search, or filter with
 						<span class="font-mono text-muted-foreground/80">{hint}</span></span
 					>
 				{/if}

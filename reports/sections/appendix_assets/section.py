@@ -7,17 +7,17 @@ from shared.definitions.surface import SurfaceDimension
 
 
 class AppendixAssetsConfig(SectionConfig):
-    include_hosts: bool = flag(True, title="Every hostname")
-    include_addresses: bool = flag(True, title="Every address")
-    include_services: bool = flag(False, title="Every service")
-    include_findings: bool = flag(False, title="Every finding location")
+    include_hosts: bool = flag(True, title="Hostnames")
+    include_addresses: bool = flag(True, title="Addresses")
+    include_services: bool = flag(False, title="Services")
+    include_findings: bool = flag(False, title="Finding locations")
     max_rows: int = limit(1500, title="Maximum rows per list", minimum=50, maximum=5000)
 
 
 class AppendixAssetsSection(Section):
     name = "appendix_assets"
     title = "Asset inventory"
-    description = "The full lists behind the figures."
+    description = "Full lists of hostnames, addresses, services and finding locations."
     group = SectionGroup.APPENDIX.value
     order = 40
     launch_fields = frozenset({"max_rows"})

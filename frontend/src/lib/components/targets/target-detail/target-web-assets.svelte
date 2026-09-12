@@ -97,7 +97,7 @@
 			});
 			error = null;
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Web assets could not be loaded';
+			error = e instanceof Error ? e.message : 'Web assets not loaded';
 		} finally {
 			loading = false;
 		}
@@ -202,7 +202,7 @@
 				<Empty.Media class="size-12 rounded-2xl bg-destructive/10">
 					<TriangleAlert class="size-6 text-destructive" />
 				</Empty.Media>
-				<Empty.Title>Web assets could not be loaded</Empty.Title>
+				<Empty.Title>Web assets not loaded</Empty.Title>
 				<Empty.Description class="max-w-md">{error}</Empty.Description>
 			</Empty.Header>
 		</Empty.Root>
@@ -210,7 +210,6 @@
 		<Empty.Root class="py-16">
 			<Empty.Header>
 				<Empty.Title>No web assets match this filter</Empty.Title>
-				<Empty.Description>Widen the search or remove a filter.</Empty.Description>
 			</Empty.Header>
 			<Empty.Content>
 				<Button size="sm" variant="outline" class="gap-2" onclick={reset}>
@@ -227,10 +226,7 @@
 				>
 					<Globe />
 				</Empty.Media>
-				<Empty.Title>No web assets yet</Empty.Title>
-				<Empty.Description class="max-w-sm">
-					Run a scan that discovers hosts to build this inventory.
-				</Empty.Description>
+				<Empty.Title>No web assets</Empty.Title>
 			</Empty.Header>
 			<Empty.Content>
 				<Button class="gap-2" onclick={onScan}>Start scan</Button>

@@ -28,7 +28,7 @@
 
 	const theme = $derived(reportCatalog.theme(template.theme));
 	const enabled = $derived(template.sections.filter((s) => s.enabled).length);
-	const scopeLabel = $derived(template.scope === 'target' ? 'A target' : 'One scan');
+	const scopeLabel = $derived(template.scope === 'target' ? 'Target' : 'Scan');
 </script>
 
 <Card.Root class="gap-0 py-0">
@@ -71,7 +71,7 @@
 			<DropdownMenu.Content align="end">
 				<DropdownMenu.Item onSelect={() => onGenerate(template)}>
 					<PlayIcon class="size-4" />
-					Generate from this
+					Generate report
 				</DropdownMenu.Item>
 				<DropdownMenu.Item>
 					{#snippet child({ props })}
@@ -105,7 +105,7 @@
 			{/each}
 		</span>
 		<span class="text-muted-foreground">
-			{template.used_count ? `used ${template.used_count}×` : 'never used'}
+			{template.used_count ? `used ${template.used_count}×` : 'unused'}
 		</span>
 	</div>
 </Card.Root>

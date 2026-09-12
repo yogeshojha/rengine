@@ -141,7 +141,7 @@
 			throw new Error('Invalid JSON format');
 		} catch {
 			throw new Error(
-				'Invalid JSON format. Expected array of targets or object with "targets" array.'
+				'Invalid JSON. Expected an array of targets or an object with a "targets" array.'
 			);
 		}
 	}
@@ -201,11 +201,11 @@
 
 					resolve(items.filter((item) => item.target_value));
 				} catch {
-					reject(new Error('CSV file could not be read'));
+					reject(new Error('CSV file not read'));
 				}
 			};
 
-			reader.onerror = () => reject(new Error('File could not be read'));
+			reader.onerror = () => reject(new Error('File not read'));
 			reader.readAsText(file);
 		});
 	}
@@ -214,7 +214,7 @@
 		return new Promise((resolve, reject) => {
 			const reader = new FileReader();
 			reader.onload = (e) => resolve(e.target?.result as string);
-			reader.onerror = () => reject(new Error('File could not be read'));
+			reader.onerror = () => reject(new Error('File not read'));
 			reader.readAsText(file);
 		});
 	}
@@ -257,12 +257,12 @@
 		}
 
 		if (items.length === 0) {
-			toast.error('No valid targets found');
+			toast.error('No valid targets');
 			return [];
 		}
 
 		if (items.length > 500) {
-			toast.error('Maximum 500 targets allowed per import');
+			toast.error('Maximum 500 targets per import');
 			return [];
 		}
 
@@ -308,7 +308,7 @@
 			previewItems = validated;
 			mode = 'preview';
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Input could not be processed');
+			toast.error(e instanceof Error ? e.message : 'Input not processed');
 		} finally {
 			isProcessing = false;
 			validateDone = 0;
@@ -380,13 +380,11 @@
 				toast.success(`Imported ${response.imported} target${response.imported !== 1 ? 's' : ''}`);
 				if (wantsScan) await launchImported();
 			} else if (wantsScan) {
-				toast.warning('No new targets were imported. No scan was queued.');
+				toast.warning('No new targets imported. No scan queued.');
 			}
 
 			if (response.failed > 0) {
-				toast.warning(
-					`${response.failed} target${response.failed !== 1 ? 's' : ''} failed to import`
-				);
+				toast.warning(`${response.failed} target${response.failed !== 1 ? 's' : ''} not imported`);
 			}
 		} finally {
 			isImporting = false;
@@ -433,8 +431,8 @@
 		} else {
 			toast.error(
 				scansStore.error
-					? `Targets imported, but the scans could not be queued. ${scansStore.error}`
-					: 'Targets imported, but the scans could not be queued.'
+					? `Targets imported. Scans not queued. ${scansStore.error}`
+					: 'Targets imported. Scans not queued.'
 			);
 		}
 	}
@@ -470,7 +468,7 @@
 			<Dialog.Title>Import targets</Dialog.Title>
 			<Dialog.Description>
 				{#if mode === 'input'}
-					Paste a list, upload a file, or pull from a connected source
+					Paste a list or upload a file
 				{:else if mode === 'preview'}
 					Review targets before importing
 				{:else}
@@ -524,7 +522,7 @@ https://app.example.com"
 
 						<Tabs.Content value="json" class="mt-0 space-y-4">
 							<div class="space-y-2">
-								<Label>JSON Data</Label>
+								<Label>JSON</Label>
 								<FileUpload
 									accept=".json"
 									bind:file={jsonFile}
@@ -541,7 +539,7 @@ https://app.example.com"
 
 						<Tabs.Content value="csv" class="mt-0 space-y-4">
 							<div class="space-y-2">
-								<Label>CSV File</Label>
+								<Label>CSV file</Label>
 								<FileUpload
 									accept=".csv"
 									bind:file={csvFile}
@@ -579,7 +577,7 @@ https://app.example.com"
 				id="import-targets-scan"
 				title="Scan after importing"
 				description="Queues one scan per imported target."
-				fallbackNote="Targets will be imported without a scan."
+				fallbackNote="Targets are imported without a scan."
 				storageKey={STORAGE_KEYS.importTargetsScanAfter}
 				bind:enabled={scanAfterImport}
 				bind:selection
@@ -606,7 +604,7 @@ https://app.example.com"
 					>
 						{#if isProcessing}
 							<Spinner />
-							Processing…
+							Processing
 						{:else}
 							<Eye class="h-4 w-4 mr-2" />
 							Preview
@@ -618,7 +616,7 @@ https://app.example.com"
 					>
 						{#if isImporting}
 							<Spinner />
-							{scanArmed ? 'Queuing…' : 'Importing…'}
+							{scanArmed ? 'Queuing' : 'Importing'}
 						{:else if scanArmed}
 							<Rocket class="h-4 w-4 mr-2" />
 							Import & scan
@@ -636,7 +634,7 @@ https://app.example.com"
 				>
 					{#if isImporting}
 						<Spinner />
-						{scanArmed ? 'Queuing…' : 'Importing…'}
+						{scanArmed ? 'Queuing' : 'Importing'}
 					{:else if scanArmed}
 						<Rocket class="h-4 w-4 mr-2" />
 						Import & scan {previewItems.filter((item) => !item.error).length}
@@ -652,7 +650,7 @@ https://app.example.com"
 					{#if isImporting}
 						<span class="flex items-center gap-2 text-xs text-muted-foreground">
 							<Spinner class="h-3.5 w-3.5" />
-							Queuing scans…
+							Queuing scans
 						</span>
 					{:else if queuedScans > 0}
 						<span class="text-xs text-muted-foreground">

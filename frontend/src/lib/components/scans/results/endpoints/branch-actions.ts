@@ -45,12 +45,12 @@ export async function copyBranch(scope: BranchScope, node: TreeNode) {
 		const { urls, capped } = await collectUrls(scope, node);
 		await writeClipboard(urls.join('\n'));
 		toast.success(
-			`Copied ${urls.length.toLocaleString()} ${urls.length === 1 ? 'URL' : 'URLs'}${
-				capped ? ' (first 5,000)' : ''
-			}`
+			capped
+				? `Copied the first ${urls.length.toLocaleString()} URLs`
+				: `Copied ${urls.length.toLocaleString()} ${urls.length === 1 ? 'URL' : 'URLs'}`
 		);
 	} catch {
-		toast.error('The URLs could not be copied.');
+		toast.error('URLs not copied.');
 	}
 }
 
@@ -65,15 +65,15 @@ export async function copyWordlist(scope: BranchScope, node: TreeNode) {
 				const rel = path.startsWith(prefix) ? path.slice(prefix.length) : path.replace(/^\//, '');
 				if (rel) words.add(rel);
 			} catch {
-				// an unparsable url has no path to offer
+				// unparsable url
 			}
 		}
 		await writeClipboard([...words].sort().join('\n'));
 		toast.success(
-			`Copied ${words.size.toLocaleString()} ${words.size === 1 ? 'path' : 'paths'}${capped ? ' (first 5,000 URLs)' : ''}`
+			`Copied ${words.size.toLocaleString()} ${words.size === 1 ? 'path' : 'paths'}${capped ? ` from the first ${COPY_CAP.toLocaleString()} URLs` : ''}`
 		);
 	} catch {
-		toast.error('The paths could not be copied.');
+		toast.error('Paths not copied.');
 	}
 }
 

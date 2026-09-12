@@ -124,7 +124,7 @@
 
 		<div class="flex flex-col gap-2 p-3 text-xs">
 			{#if errored}
-				<p class="text-muted-foreground">Service details could not be loaded.</p>
+				<p class="text-muted-foreground">Service details not loaded.</p>
 			{:else if rows === null}
 				<Skeleton class="h-3 w-full" />
 				<Skeleton class="h-3 w-4/5" />

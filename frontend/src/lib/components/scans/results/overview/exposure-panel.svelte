@@ -245,7 +245,7 @@
 							class="mt-auto h-auto gap-1 self-start px-0 text-xs"
 							onclick={() => pick(PASSIVE_FILTER)}
 						>
-							{plural(unconfirmed, 'port', 'ports')} reported by external scanners, not confirmed
+							{plural(unconfirmed, 'unconfirmed port', 'unconfirmed ports')} reported by external scanners
 							<ChevronRight class="size-3.5" />
 						</Button>
 					{/if}

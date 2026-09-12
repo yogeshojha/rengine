@@ -138,7 +138,7 @@ class SubdomainFinder(Tool):
                 ),
                 meter=meter(
                     len(known) / len(names) if names else 0.0,
-                    caption=f"{len(known)} of {len(names)} already known",
+                    caption=f"{len(known)} of {len(names)} in inventory",
                     tone=Tone.SUCCESS.value,
                 )
                 if names

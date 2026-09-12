@@ -50,7 +50,7 @@
 			events = result.items;
 			total = result.total;
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Could not load updates');
+			toast.error(error instanceof Error ? error.message : 'Updates not loaded');
 			events = [];
 			total = 0;
 		} finally {
@@ -62,7 +62,7 @@
 		void load(filter, pageIndex);
 	});
 
-	// reading the feed is what clears the badge
+	// mark seen on read
 	$effect(() => {
 		if (loading || events.length === 0) return;
 		void bountyProgramsApi.markEventsSeen().catch(() => {});
@@ -84,12 +84,7 @@
 				Loading updates
 			</div>
 		{:else if events.length === 0}
-			<EmptyState
-				icon={BellOffIcon}
-				title="Nothing has changed yet"
-				description="reNgine records a change the next time it syncs. The first sync of a program is a baseline, not a change."
-				class="p-12"
-			/>
+			<EmptyState icon={BellOffIcon} title="No changes" class="p-12" />
 		{:else}
 			{#each events as event (event.id)}
 				{@const Icon = assetIcon(event.icon)}
@@ -115,7 +110,7 @@
 							</button>
 							{#if event.actionable && event.tone !== 'muted'}
 								<Badge variant={event.tone === 'warning' ? 'warning' : 'info'}>
-									{event.tone === 'warning' ? 'Act now' : 'For review'}
+									{event.tone === 'warning' ? 'Action needed' : 'Review'}
 								</Badge>
 							{/if}
 						</div>

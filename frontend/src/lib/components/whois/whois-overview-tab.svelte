@@ -59,7 +59,7 @@
 	let alertMessage = $derived.by(() => {
 		switch (urgency) {
 			case 'expired':
-				return 'Expired. High risk of takeover.';
+				return `${expirationLabel}.`;
 			case 'critical':
 				return `Expires ${expirationLabel.toLowerCase()}.`;
 			case 'warning':
@@ -94,9 +94,9 @@
 				{#if urgency === 'expired'}
 					Domain expired
 				{:else if urgency === 'critical'}
-					Expiration Imminent
+					Expiration imminent
 				{:else}
-					Expiration Approaching
+					Expiration approaching
 				{/if}
 			</Alert.Title>
 			<Alert.Description>{alertMessage}</Alert.Description>
@@ -147,7 +147,7 @@
 						{/snippet}
 					</Tooltip.Trigger>
 					<Tooltip.Content>
-						<p>Find targets with same registrant</p>
+						<p>Targets sharing this registrant</p>
 					</Tooltip.Content>
 				</Tooltip.Root>
 				{#if record.registrant_email}
@@ -178,7 +178,7 @@
 						{/snippet}
 					</Tooltip.Trigger>
 					<Tooltip.Content>
-						<p>Find targets with same registrar</p>
+						<p>Targets sharing this registrar</p>
 					</Tooltip.Content>
 				</Tooltip.Root>
 				{#if record.abuse_email}
@@ -217,7 +217,7 @@
 						{/snippet}
 					</Tooltip.Trigger>
 					<Tooltip.Content>
-						<p>Find targets in same network</p>
+						<p>Targets in this network</p>
 					</Tooltip.Content>
 				</Tooltip.Root>
 				{#if record.ip_version}
@@ -299,7 +299,7 @@
 					class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
 				>
 					<MonitorCog class="h-3 w-3" />
-					WHOIS Server
+					WHOIS server
 				</div>
 				<p class="text-sm font-mono text-muted-foreground">{record.whois_server}</p>
 			</div>
@@ -323,7 +323,7 @@
 					class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
 				>
 					<Network class="h-3 w-3" />
-					ASN Range
+					ASN range
 				</div>
 				<p class="text-sm font-mono">{record.asn_range_start} – {record.asn_range_end}</p>
 			</div>
@@ -336,10 +336,10 @@
 		<div class="flex items-center gap-2">
 			{#if record.dnssec}
 				<ShieldCheck class="h-4 w-4 text-foreground" />
-				<span class="text-sm font-medium text-foreground">DNSSEC Enabled</span>
+				<span class="text-sm font-medium text-foreground">DNSSEC enabled</span>
 			{:else}
 				<ShieldX class="h-4 w-4 text-muted-foreground" />
-				<span class="text-sm text-muted-foreground">DNSSEC Not Enabled</span>
+				<span class="text-sm text-muted-foreground">DNSSEC not enabled</span>
 			{/if}
 		</div>
 	{/if}
@@ -388,7 +388,7 @@
 							{/snippet}
 						</Tooltip.Trigger>
 						<Tooltip.Content>
-							<p>Find targets on this nameserver</p>
+							<p>Targets on this nameserver</p>
 						</Tooltip.Content>
 					</Tooltip.Root>
 				{/each}

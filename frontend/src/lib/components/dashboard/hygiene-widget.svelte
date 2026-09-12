@@ -89,9 +89,9 @@
 		try {
 			await targetsApi.create({ target_value: domain, project_slug: slug });
 			added.add(domain);
-			toast.success(`${domain} added as a target`);
+			toast.success(`${domain} added`);
 		} catch {
-			toast.error(`${domain} could not be added`);
+			toast.error(`${domain} not added`);
 		} finally {
 			pending = null;
 		}
@@ -125,13 +125,13 @@
 				key: 'cert-expired',
 				icon: Lock,
 				tone: 'bad',
-				label: 'Expired certificates on live web assets',
+				label: 'Expired certificates',
 				count: certs.expired.count,
 				detail: `on ${plural(certs.expired.targets.length, 'target', 'targets')}`,
 				open: () =>
 					show({
 						title: 'Expired certificates',
-						description: 'Live web assets presenting an expired certificate',
+						description: 'Web assets presenting an expired certificate',
 						rows: certRows(certs.expired)
 					})
 			});
@@ -146,7 +146,7 @@
 				open: () =>
 					show({
 						title: 'Certificates expiring within 30 days',
-						description: 'Hosts with a certificate expiring within 30 days',
+						description: 'Web assets with a certificate expiring within 30 days',
 						rows: certRows(certs.expiring)
 					})
 			});
@@ -221,12 +221,12 @@
 				tone: 'lead',
 				label: 'Untracked domains',
 				count: leads,
-				detail: 'named on certificates, not yet targets',
+				detail: 'named on certificates, not targets',
 				open: () =>
 					show({
 						kind: 'discovery',
 						title: 'Untracked domains',
-						description: 'Registrable domains named on presented certificates that are not targets',
+						description: 'Registrable domains named on certificates that are not targets',
 						rows: []
 					})
 			});

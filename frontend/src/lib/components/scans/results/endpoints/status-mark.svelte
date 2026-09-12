@@ -12,7 +12,7 @@
 </script>
 
 {#if !probed}
-	<Hint text="This scan did not request this endpoint, so its status is unknown.">
+	<Hint text="Not requested in this scan.">
 		{#snippet child(props)}
 			<span {...props} class="flex h-5 shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
 				<span class="size-1.5 rounded-full border border-dashed border-muted-foreground/60"></span>

@@ -47,7 +47,7 @@
 			const slug = targetsStore.filters?.projectSlug;
 			if (slug) void targetsStore.fetchAll(slug, 1, true);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'The target could not be added.';
+			error = e instanceof Error ? e.message : 'Target not added.';
 		} finally {
 			working = null;
 		}
@@ -78,11 +78,7 @@
 
 	{#if rows.length === 0}
 		<div class="px-4 py-10">
-			<EmptyState
-				icon={CompassIcon}
-				title="No new domains"
-				description="Every domain reached is covered by a target or is a known third party. Vendor and analytics domains are excluded."
-			/>
+			<EmptyState icon={CompassIcon} title="No new domains" />
 		</div>
 	{:else}
 		<div class="divide-y">
@@ -156,22 +152,14 @@
 								<PlusIcon class="size-3.5" />
 								Add as target
 							</LoadingButton>
-							<Hint
-								text="Adds the target and starts a scan, so coverage and scope have something to compare against"
+							<LoadingButton
+								loading={working === row.domain}
+								size="sm"
+								onclick={() => add(row.domain, true)}
 							>
-								{#snippet child(props)}
-									<span {...props} class="inline-flex">
-										<LoadingButton
-											loading={working === row.domain}
-											size="sm"
-											onclick={() => add(row.domain, true)}
-										>
-											<RadarIcon class="size-3.5" />
-											Add and scan
-										</LoadingButton>
-									</span>
-								{/snippet}
-							</Hint>
+								<RadarIcon class="size-3.5" />
+								Add and scan
+							</LoadingButton>
 						{/if}
 					</div>
 				</div>

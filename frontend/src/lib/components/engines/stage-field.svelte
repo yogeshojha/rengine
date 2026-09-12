@@ -31,7 +31,7 @@
 		value !== undefined && JSON.stringify(value) !== JSON.stringify(field.default)
 	);
 	const defaultLabel = $derived(
-		Array.isArray(field.default) ? field.default.join(', ') || '(none)' : String(field.default)
+		Array.isArray(field.default) ? field.default.join(', ') || 'none' : String(field.default)
 	);
 
 	const optionLabel = (option: string) => field.option_labels?.[option] ?? option ?? 'Select…';
@@ -65,7 +65,7 @@
 							</Button>
 						{/snippet}
 					</Tooltip.Trigger>
-					<Tooltip.Content class="text-xs">Reset to default ({defaultLabel})</Tooltip.Content>
+					<Tooltip.Content class="text-xs">Reset to default: {defaultLabel}</Tooltip.Content>
 				</Tooltip.Root>
 			{/if}
 		</span>

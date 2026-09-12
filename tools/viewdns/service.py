@@ -1,4 +1,4 @@
-"""ViewDNS service — main interface for all ViewDNS.info lookups."""
+"""ViewDNS.info lookups with a cached response per query."""
 
 from datetime import timedelta
 
@@ -103,10 +103,7 @@ class ViewDNSService:
     async def _get_client(self) -> ViewDNSClient:
         key = await self._api_key_service.get_key_for_provider(APIProvider.VIEWDNS)
         if not key:
-            msg = (
-                "ViewDNS.info API key is not configured or is disabled. "
-                "Add one in Settings -> API Keys or via API."
-            )
+            msg = "No active ViewDNS.info API key. Add one in Settings under API keys."
             raise ViewDNSKeyNotConfiguredError(msg)
         return ViewDNSClient(key)
 
@@ -167,10 +164,7 @@ class ViewDNSService:
         api_key_service = SyncAPIKeyService(session)
         key = api_key_service.get_key_for_provider(APIProvider.VIEWDNS)
         if not key:
-            msg = (
-                "ViewDNS.info API key is not configured or is disabled. "
-                "Add one in Settings -> API Keys or via API."
-            )
+            msg = "No active ViewDNS.info API key. Add one in Settings under API keys."
             raise ViewDNSKeyNotConfiguredError(msg)
         return ViewDNSClient(key)
 

@@ -189,7 +189,7 @@
 	}
 
 	async function start() {
-		if (!hasSubject) return toast.error('Select a scan or a target to report on.');
+		if (!hasSubject) return toast.error('Select a scan or a target.');
 		if (!plan.enabledCount) return toast.error('Select at least one section.');
 		if (!formats.length) return toast.error('Select at least one output format.');
 		busy = true;
@@ -197,7 +197,7 @@
 		busy = false;
 		if (!report) return;
 		open = false;
-		toast.success('Report queued. It appears in Reports when generation completes.');
+		toast.success('Report queued');
 		void goto(ROUTES.reports());
 	}
 </script>
@@ -210,9 +210,7 @@
 				Generate report
 			</Dialog.Title>
 			<Dialog.Description>
-				{subject
-					? `Everything this run observed about ${subject}.`
-					: 'Select the subject, the contents and the output.'}
+				{subject ? `Report on ${subject}.` : 'Select the subject, the contents and the output.'}
 			</Dialog.Description>
 		</Dialog.Header>
 
@@ -230,8 +228,8 @@
 									value={subjectKind}
 									onValueChange={(v) => v && (subjectKind = v as 'scan' | 'target')}
 								>
-									<ToggleGroup.Item value="scan" class="px-3">One scan</ToggleGroup.Item>
-									<ToggleGroup.Item value="target" class="px-3">A target</ToggleGroup.Item>
+									<ToggleGroup.Item value="scan" class="px-3">Scan</ToggleGroup.Item>
+									<ToggleGroup.Item value="target" class="px-3">Target</ToggleGroup.Item>
 								</ToggleGroup.Root>
 								{#if subjectKind === 'scan'}
 									<Select.Root type="single" bind:value={pickedScan}>
@@ -300,10 +298,7 @@
 								{/each}
 							</Select.Content>
 						</Select.Root>
-						<p class="text-xs text-muted-foreground">
-							The template supplies the starting contents. Changes below apply to this report only
-							and do not modify the template.
-						</p>
+						<p class="text-xs text-muted-foreground">Changes below apply to this report only.</p>
 					</div>
 
 					<div class="space-y-1.5">
@@ -316,7 +311,7 @@
 							<span class="text-sm font-medium">Contents</span>
 							<span class="text-xs text-muted-foreground">
 								{plan.enabledCount} sections{#if plan.furniture.length}
-									&nbsp;· cover, contents and reference sections are included automatically{/if}
+									&nbsp;· cover, contents and reference sections included{/if}
 							</span>
 						</div>
 
@@ -434,15 +429,15 @@
 							<div class="space-y-0.5">
 								<Label class="flex items-center gap-1.5 text-sm font-medium">
 									<SparklesIcon class="size-3.5" />
-									Write the narrative with AI
+									Draft the narrative with AI
 								</Label>
 								<p class="text-xs text-muted-foreground">
 									{aiAvailable
-										? 'The model receives a summary of the findings, never the underlying rows.'
-										: 'Connect a provider on the AI page to enable this.'}
+										? 'The model receives a summary of the findings.'
+										: 'Connect a provider on the AI page.'}
 								</p>
 							</div>
-							<Hint text={aiAvailable ? '' : 'AI is not configured on this instance.'}>
+							<Hint text={aiAvailable ? '' : 'AI is not connected.'}>
 								{#snippet child(props)}
 									<span class="inline-flex" {...props}>
 										<Switch
@@ -460,7 +455,7 @@
 								<div class="space-y-0.5">
 									<Label class="text-sm">Explain each finding</Label>
 									<p class="text-xs text-muted-foreground">
-										One paragraph per weakness, written once per check and reused.
+										One paragraph per check, written once and cached.
 									</p>
 								</div>
 								<Switch checked={explainFindings} onCheckedChange={(v) => (explainFindings = v)} />
@@ -509,7 +504,7 @@
 						{:else if estimating}
 							{#each [1, 2, 3, 4] as n (n)}<Skeleton class="h-4 w-full" />{/each}
 						{:else}
-							<p class="text-muted-foreground">Select a subject to see what this will contain.</p>
+							<p class="text-muted-foreground">No subject. Select a scan or a target.</p>
 						{/if}
 					</div>
 

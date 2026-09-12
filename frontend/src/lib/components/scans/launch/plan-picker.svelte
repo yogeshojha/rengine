@@ -41,7 +41,7 @@
 		{
 			value: 'engine',
 			label: 'Scan engine',
-			caption: 'Runs a saved scan engine exactly as configured.'
+			caption: 'Runs a saved scan engine.'
 		},
 		{
 			value: 'quick',
@@ -56,7 +56,7 @@
 	let groups = $derived(launch.catalog?.groups ?? []);
 	let caption = $derived(
 		launch.rescan
-			? 'Runs against the chosen assets only. Dependent stages are included automatically.'
+			? 'Runs against the selected assets. Dependent stages are included automatically.'
 			: (MODES.find((m) => m.value === launch.mode)?.caption ?? '')
 	);
 	let allSelected = $derived(
@@ -99,7 +99,7 @@
 </script>
 
 <div class="flex flex-col gap-3">
-	<Label>{launch.rescan ? 'What to re-run' : 'Configuration'}</Label>
+	<Label>{launch.rescan ? 'Stages to re-run' : 'Configuration'}</Label>
 	{#if !launch.rescan}
 		<Tabs.Root value={launch.mode} onValueChange={setMode} class="gap-3">
 			<Tabs.List class="grid h-9 w-full grid-cols-2">

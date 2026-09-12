@@ -33,9 +33,7 @@ class SourceMapProvider(UrlProvider):
         bundles = self._bundles()
         result.hosts_total = len(bundles)
         if not bundles:
-            self.progress(
-                "no javascript bundle answered, so there is no map to ask for"
-            )
+            self.progress("no javascript bundle answered")
             return
 
         limit = self.ctx.cfg.max_source_maps
@@ -64,8 +62,8 @@ class SourceMapProvider(UrlProvider):
         if len(bundles) > len(selected):
             result.capped = True
             result.cap_reason = (
-                f"{len(bundles) - len(selected):,} more bundles were not asked for: "
-                f"the limit is {limit:,} per scan."
+                f"{len(bundles) - len(selected):,} bundles not requested. Limit is "
+                f"{limit:,} per scan."
             )
         self.progress(state.note(len(selected)))
 

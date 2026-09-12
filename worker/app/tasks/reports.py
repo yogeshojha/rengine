@@ -156,7 +156,7 @@ def _subject(session, report: Report) -> tuple[Scan | None, Target]:
     if target is None and scan is not None:
         target = session.get(Target, scan.target_id)
     if target is None:
-        msg = "The report has no target to describe."
+        msg = "The report has no target."
         raise ValueError(msg)
     return scan, target
 
@@ -200,9 +200,9 @@ def _finish(report: Report, output, files: list[dict], seconds: float) -> None:
 def _notify(session, report: Report, *, ok: bool) -> None:
     name = report.title or report.template_name or "Report"
     body = (
-        f"{name} for {report.subject} is ready to download."
+        f"{name} for {report.subject} is ready."
         if ok
-        else f"{name} for {report.subject} could not be generated: {report.error}"
+        else f"{name} for {report.subject} failed: {report.error}"
     )
     try:
         SyncNotificationPublisher(settings.celery_broker_url).publish(
@@ -237,9 +237,7 @@ def cleanup() -> dict:
                 root.rmdir()
             report.files = []
             report.status = ReportStatus.FAILED.value
-            report.error = (
-                "The generated files passed their retention date and were removed."
-            )
+            report.error = "Files removed after the retention period."
             session.add(report)
             removed += 1
         if removed:

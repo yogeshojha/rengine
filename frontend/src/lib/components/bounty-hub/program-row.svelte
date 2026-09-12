@@ -65,9 +65,9 @@
 
 		<span class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
 			{#if !scopeKnown}
-				<span class="text-muted-foreground/70">Scope not fetched yet</span>
+				<span class="text-muted-foreground/70">Scope not fetched</span>
 			{:else if scopeTotal === 0}
-				<span class="text-muted-foreground/70">No structured scope · see the policy</span>
+				<span class="text-muted-foreground/70">No structured scope</span>
 			{:else}
 				<span class="tabular-nums">
 					{program.in_scope_count} in scope
@@ -76,7 +76,7 @@
 					<span class="tabular-nums">{program.out_of_scope_count} out of scope</span>
 				{/if}
 				<span class="tabular-nums">
-					{program.importable_count} can be scanned
+					{program.importable_count} scannable
 				</span>
 			{/if}
 			<span class="text-muted-foreground/70">{program.platform_label}</span>

@@ -350,7 +350,6 @@ function buildDomain(target: Target, detail: TargetDetailRead | null): TargetInt
 						key: 'dnssec',
 						status: 'warn',
 						label: 'DNSSEC not enabled',
-						detail: 'Responses are not signed',
 						icon: ShieldOff,
 						tab: 'whois'
 					}
@@ -388,7 +387,6 @@ function buildDomain(target: Target, detail: TargetDetailRead | null): TargetInt
 				key: 'locks',
 				status: 'warn',
 				label: 'No registrar locks',
-				detail: 'Transfer and delete are not prohibited',
 				icon: LockOpen,
 				tab: 'whois'
 			});
@@ -442,7 +440,6 @@ function buildDomain(target: Target, detail: TargetDetailRead | null): TargetInt
 			key: 'spf',
 			status: weak ? 'warn' : 'pass',
 			label: `SPF ${policy}`,
-			detail: weak ? 'Sender policy permits spoofing' : undefined,
 			icon: Mail,
 			tab: 'dns'
 		});
@@ -452,7 +449,7 @@ function buildDomain(target: Target, detail: TargetDetailRead | null): TargetInt
 			key: 'spf',
 			status: 'warn',
 			label: 'No SPF record',
-			detail: `${plural(mx.length, 'MX record', 'MX records')}${provider ? ` at ${provider.name}` : ''}, no sender policy`,
+			detail: `${plural(mx.length, 'MX record', 'MX records')}${provider ? ` at ${provider.name}` : ''}`,
 			icon: Mail,
 			tab: 'dns'
 		});
@@ -475,7 +472,6 @@ function buildDomain(target: Target, detail: TargetDetailRead | null): TargetInt
 			key: 'ns',
 			status: 'warn',
 			label: 'Single nameserver',
-			detail: 'No DNS redundancy',
 			icon: Server,
 			tab: 'dns'
 		});
@@ -742,7 +738,6 @@ function buildNetwork(target: Target, detail: TargetDetailRead | null): TargetIn
 				key: 'announced',
 				status: 'warn',
 				label: t === TargetType.ASN ? 'AS is not announced' : 'Prefix is not announced',
-				detail: 'Not visible in the global routing table',
 				icon: Radio,
 				tab: 'bgp'
 			});

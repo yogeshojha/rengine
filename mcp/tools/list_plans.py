@@ -33,10 +33,7 @@ class ListEngines(Tool):
     group = ToolGroup.ORIENT.value
     description = (
         "The saved scan engines in a project, with the id start_scan and plan_scan "
-        "take. An engine is a stored configuration of stages — what a person set up "
-        "and named. Call this before starting a scan so you can run the operator's "
-        "own configuration instead of assembling stages yourself, and quote the "
-        "engine by name when you say what you are about to run."
+        "take. An engine is a named configuration of stages."
     )
     Input = EnginesInput
     examples = ("list_engines", "list_engines contains=passive")
@@ -76,7 +73,8 @@ class ListEngines(Tool):
             pivot=f"{ctx.ui_base_url.rstrip('/')}/engines",
             caveats=[
                 *_more(len(rows), len(shown), "engines"),
-                "`stages` is only what each engine's document names. A stage it omits still runs at that stage's own default, so an empty list does not mean an empty scan — use plan_scan to resolve what a run would actually do.",
+                "`stages` lists the stages the engine document names. An omitted stage "
+                "runs at its own default. plan_scan resolves what a run does.",
             ],
         )
 
@@ -95,10 +93,8 @@ class ListContexts(Tool):
     group = ToolGroup.ORIENT.value
     description = (
         "The saved scan contexts in a project, with the id start_scan takes. A context "
-        "carries how to reach a target: authentication, what is in and out of scope, "
-        "rate limits, proxy. Pass one when scanning something that needs a login or "
-        "must stay inside an agreed scope. Credentials are never returned — only a "
-        "description of what each context holds."
+        "carries authentication, scope, rate limits and proxy. Credentials are not "
+        "returned."
     )
     Input = ContextsInput
     examples = ("list_contexts",)
@@ -132,14 +128,14 @@ class ListContexts(Tool):
             pivot=f"{ctx.ui_base_url.rstrip('/')}/automation/contexts",
             caveats=[
                 *_more(len(rows), len(shown), "contexts"),
-                "Credentials are held encrypted and are never returned by this server.",
+                "Credentials are not returned.",
             ],
         )
 
 
 def _more(total: int, shown: int, noun: str) -> list[str]:
     return (
-        [f"{total - shown} more {noun} not shown; raise `limit`."]
+        [f"{total - shown} more {noun} not shown. Raise `limit`."]
         if total > shown
         else []
     )

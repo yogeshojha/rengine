@@ -86,13 +86,13 @@
 		{
 			value: 'hosts',
 			label: 'Hosts',
-			hint: 'Every host, ranked; open one to see its sitemap',
+			hint: 'Every host, ranked',
 			icon: Network
 		},
 		{
 			value: 'merged',
 			label: 'Across hosts',
-			hint: 'Paths merged across every host, so a shared route appears once',
+			hint: 'Paths merged across hosts',
 			icon: Layers
 		},
 		{ value: 'list', label: 'List', hint: 'One flat list', icon: Rows3 }
@@ -105,7 +105,7 @@
 		[
 			{ value: 'new', label: 'New' },
 			{ value: 'unverified', label: 'Not checked' },
-			hasProxy ? { value: 'untested', label: 'Not tested by me' } : null,
+			hasProxy ? { value: 'untested', label: 'No proxy traffic' } : null,
 			{ value: 'static', label: 'Hide static' },
 			hostsAtRest && onHideRootOnly ? { value: 'rootonly', label: 'Hide root-only' } : null
 		].filter((q): q is { value: string; label: string } => q !== null)
@@ -179,7 +179,7 @@
 							size="sm"
 							class="h-9 gap-2 {query.interest ? 'border-primary/50 bg-primary/5' : ''}"
 						>
-							Worth testing
+							Interest
 						</Button>
 					{/snippet}
 				</DropdownMenu.Trigger>
@@ -244,7 +244,7 @@
 		</ToggleGroup.Root>
 
 		{#if goneCount > 0 && onGoneLens}
-			<Hint text="Endpoints the previous scan of this target recorded and this scan did not">
+			<Hint text="Endpoints in the previous scan and not in this one">
 				{#snippet child(props)}
 					<span {...props} class="inline-flex">
 						<ToggleGroup.Root
@@ -290,7 +290,7 @@
 		</ToggleGroup.Root>
 
 		{#if view !== 'list' && expandedCount > 0 && onCollapseAll}
-			<Hint text="Collapse every open folder">
+			<Hint text="Collapse all folders">
 				{#snippet child(props)}
 					<Button
 						{...props}

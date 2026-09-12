@@ -72,7 +72,7 @@ def _wrap(
 def _build_one(
     ctx: RenderContext, spec: SectionSpec, entry, index: int, doc: RenderedDocument
 ):
-    """Returns (html, title, anchor) or None when the section has nothing to say."""
+    """Returns (payload, config, title, anchor) or None."""
     instance: Section = spec.instance()
     if not instance.available(ctx):
         doc.skipped.append(spec.name)
@@ -82,7 +82,7 @@ def _build_one(
         payload = instance.build(ctx, config)
     except Exception as exc:
         logger.warning("section failed", section=spec.name, error=str(exc)[:300])
-        doc.warnings.append(f"{spec.title} could not be built: {exc}")
+        doc.warnings.append(f"{spec.title} not rendered: {exc}")
         return None
     if payload is None:
         doc.skipped.append(spec.name)
@@ -130,7 +130,7 @@ def render_html(ctx: RenderContext) -> RenderedDocument:
             payload = instance.build(ctx, config)
         except Exception as exc:
             logger.warning("section failed", section=spec.name, error=str(exc)[:300])
-            doc.warnings.append(f"{spec.title} could not be built: {exc}")
+            doc.warnings.append(f"{spec.title} not rendered: {exc}")
             continue
 
         if payload is None:

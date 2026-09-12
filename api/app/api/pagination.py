@@ -1,4 +1,4 @@
-"""One page shape for every list endpoint, with a bound the database can honour."""
+"""Bounded page parameters for list endpoints."""
 
 from fastapi import Query
 from fastapi_pagination import Page as _Page

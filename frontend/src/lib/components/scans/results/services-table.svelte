@@ -104,7 +104,7 @@
 		try {
 			localStorage.setItem(key, JSON.stringify(value));
 		} catch {
-			// storage is a convenience
+			// ignore
 		}
 	}
 
@@ -366,7 +366,7 @@
 			const qs = sp.toString();
 			replaceState(qs ? `?${qs}` : location.pathname, appPage.state);
 		} catch {
-			// URL state is best-effort
+			// ignore
 		}
 	}
 	$effect(() => {
@@ -642,7 +642,7 @@
 	{:else if errored}
 		<EmptyState
 			icon={TriangleAlert}
-			title="Services could not be loaded"
+			title="Services not loaded"
 			class="rounded-none border-0 bg-transparent py-16"
 		>
 			<Button variant="outline" class="gap-2" onclick={() => refresh()}>
@@ -662,7 +662,7 @@
 		{#if queryError}
 			<EmptyState
 				icon={SearchX}
-				title="That query could not run"
+				title="Query did not run"
 				description={queryError.message}
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
@@ -685,8 +685,7 @@
 		{:else}
 			<EmptyState
 				icon={Plug}
-				title="No services yet"
-				description="Services appear once the port scan finds a listening port."
+				title="No services in this scan"
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
 		{/if}

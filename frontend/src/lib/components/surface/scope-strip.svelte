@@ -34,8 +34,8 @@
 	let tone = $derived(uncovered.length ? 'text-warning' : 'text-muted-foreground');
 
 	let summary = $derived.by(() => {
-		if (!coverage) return 'Working out what has been scanned…';
-		if (!covered.length) return `No scan has covered ${coverage.noun_plural} yet.`;
+		if (!coverage) return 'Loading coverage';
+		if (!covered.length) return 'Not scanned';
 		const parts = [
 			`Last reading from ${covered.length} of ${coverage.targets_total} ${
 				coverage.targets_total === 1 ? 'target' : 'targets'
@@ -67,9 +67,9 @@
 			</Popover.Trigger>
 			<Popover.Content class="w-96 p-0" align="start">
 				<div class="border-b px-3 py-2">
-					<p class="text-sm font-medium">What you are looking at</p>
+					<p class="text-sm font-medium">Coverage</p>
 					<p class="text-xs text-muted-foreground">
-						Every target's most recent scan that produced {coverage.noun_plural}.
+						The most recent scan per target that produced {coverage.noun_plural}.
 					</p>
 				</div>
 				<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-80">
@@ -107,11 +107,9 @@
 					{#if uncovered.length}
 						<div class="border-t bg-muted/20 px-3 py-2">
 							<p class="text-2xs font-medium text-warning">
-								Never scanned for {coverage.noun_plural} ({uncovered.length})
+								{uncovered.length} not scanned for {coverage.noun_plural}
 							</p>
-							<p class="mt-0.5 text-2xs text-muted-foreground">
-								These targets are absent from the numbers above, not empty.
-							</p>
+							<p class="mt-0.5 text-2xs text-muted-foreground">Absent from the counts above.</p>
 						</div>
 						<div class="divide-y">
 							{#each uncovered as row (row.target_id)}
@@ -135,7 +133,7 @@
 							onclick={() => onScanUncovered(uncovered.map((t) => t.target_id))}
 						>
 							<Radar class="size-3.5" />
-							Scan these {uncovered.length}
+							Scan {uncovered.length}
 							{uncovered.length === 1 ? 'target' : 'targets'}
 						</Button>
 					</div>

@@ -72,11 +72,11 @@
 			const started = await toolbox.run(name, payload(name), projectId);
 			shown = { ...shown, [name]: started.id };
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'The run could not be started');
+			toast.error(e instanceof Error ? e.message : 'Run not started');
 		}
 	}
 
-	/** A value in one result opens the tool that answers it, already filled in. */
+	/** Opens the tool that answers the value, prefilled. */
 	function chase(value: string, name: string | null) {
 		const target = name ?? selected;
 		const spec = target ? toolbox.tool(target) : undefined;

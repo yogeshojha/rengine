@@ -126,7 +126,7 @@
 		try {
 			sessionStorage.setItem(rememberKey, JSON.stringify([...expanded].slice(0, REMEMBER_CAP)));
 		} catch {
-			// session memory is a convenience
+			// sessionStorage unavailable
 		}
 	}
 
@@ -186,7 +186,7 @@
 		try {
 			onOpen(await endpointsApi.detail(projectId, scanId, id));
 		} catch {
-			toast.error('That endpoint could not be loaded.');
+			toast.error('Endpoint not loaded.');
 		}
 	}
 
@@ -391,7 +391,7 @@
 
 	{#if tree?.truncated}
 		<p class="border-b px-4 py-2 text-2xs text-muted-foreground">
-			The tree stops at {tree.total_nodes.toLocaleString()} folders. Narrow the search to see the rest.
+			Tree capped at {tree.total_nodes.toLocaleString()} folders. Narrow the search.
 		</p>
 	{/if}
 </div>

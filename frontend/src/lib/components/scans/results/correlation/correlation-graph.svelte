@@ -645,7 +645,7 @@
 				kind: n.hub.kind,
 				title: n.hub.value,
 				lines: [
-					`Shared by ${n.hub.count.toLocaleString()} hosts`,
+					`Shared by ${n.hub.count.toLocaleString()} web assets`,
 					n.hub.common ? 'Common in this scan' : ''
 				]
 			};
@@ -675,7 +675,7 @@
 		onpointerleave={onPointerLeave}
 		onwheel={onWheel}
 		ondblclick={onDoubleClick}
-		aria-label="Hosts grouped by shared identity"
+		aria-label="Web assets grouped by shared identity"
 	></canvas>
 
 	{#if tip}

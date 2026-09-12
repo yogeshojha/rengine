@@ -79,7 +79,7 @@ async def _running_scans_for(session: AsyncSession, engine_id: UUID) -> int:
 async def _usage_for(
     session: AsyncSession, engine_ids: list[UUID]
 ) -> dict[UUID, EngineUsage]:
-    """How many schedules and scans depend on each engine — edits and deletes are not free."""
+    """Schedules and scans per engine."""
     out = {eid: EngineUsage() for eid in engine_ids}
     if not engine_ids:
         return out
@@ -281,8 +281,7 @@ class ScanEngineService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=(
                     f"Unknown top-level key {', '.join(repr(u) for u in sorted(unknown))}. "
-                    f"Expected: {', '.join(sorted(_ENGINE_KEYS))}. "
-                    "A stage must be nested under 'stages:'."
+                    f"Valid keys: {', '.join(sorted(_ENGINE_KEYS))}, with stage settings under 'stages'."
                 ),
             )
 
@@ -303,7 +302,7 @@ class ScanEngineService:
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid scan engine config structure: {e}",
+                detail=f"Invalid engine config: {e}",
             ) from e
 
         return await self.create(project_id, created_by, create_data)

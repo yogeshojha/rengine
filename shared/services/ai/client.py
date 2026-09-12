@@ -111,7 +111,7 @@ def _estimate_tokens(text: str) -> int:
 
 
 def _anthropic_client(anthropic, cfg: AIConfig):
-    """A key that is not workspace scoped needs the workspace named on every request."""
+    """Anthropic client with the workspace header when one is configured."""
     headers = {"anthropic-workspace-id": cfg.workspace} if cfg.workspace else None
     return anthropic.Anthropic(
         api_key=cfg.api_key, timeout=cfg.timeout, default_headers=headers
@@ -149,7 +149,7 @@ def _anthropic(
         raise AIError(str(exc)) from exc
 
     if response.stop_reason == "refusal":
-        msg = "The model declined to answer this request."
+        msg = "The model declined the request."
         raise AIError(msg)
 
     text = "".join(
@@ -216,5 +216,5 @@ def _post(url: str, payload: dict, headers: dict, timeout: float) -> dict:
                 raise AIError(msg)
             return response.json()
     except httpx.HTTPError as exc:
-        msg = f"Could not reach the provider: {exc}"
+        msg = f"The provider did not respond: {exc}"
         raise AIError(msg) from exc

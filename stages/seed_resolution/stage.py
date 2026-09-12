@@ -61,7 +61,7 @@ class SeedResolutionStage(Stage):
         self._check_abort()
         count = self._persist(records)
         if not count:
-            reason = f"{value} expanded to no addresses, so this scan has nothing to examine."
+            reason = f"{value} expanded to no addresses."
             self.emit_progress(reason)
             return StageResult(counts={"ips": 0}, warnings=[reason], partial=True)
 
@@ -74,9 +74,8 @@ class SeedResolutionStage(Stage):
 
     def _sample_note(self, value: str, count: int, cfg: SeedResolutionConfig) -> str:
         note = (
-            f"{value} is larger than one scan can enumerate, so {count:,} addresses "
-            f"were sampled across it ({cfg.asn_scan_mode} mode). Results describe the "
-            "sample, not the whole range."
+            f"{count:,} addresses sampled from {value} in {cfg.asn_scan_mode} mode. "
+            "Results describe the sample."
         )
         if self._dropped:
             note += f" {self._dropped:,} announced prefixes were left out."
@@ -99,7 +98,7 @@ class SeedResolutionStage(Stage):
         ]
 
     def _from_url(self, value: str) -> list[dict]:
-        """A URL names a host, and that host has an address the rest of the scan needs."""
+        """Addresses of the host a URL names."""
         host = normalize_domain(value)
         if not host:
             return []

@@ -90,7 +90,8 @@
 	}
 	function chipHint(chip: FolderChip): string {
 		const parts = [FOLDER_GLYPH_LABELS[chip.glyph] ?? 'Folder'];
-		if (chip.archive_only) parts.push('Known only to an archive; nothing here answered.');
+		if (chip.archive_only)
+			parts.push('Known only to an archive. No endpoint here answered this scan.');
 		return parts.join(' · ');
 	}
 	function stop(e: Event) {

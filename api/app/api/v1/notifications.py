@@ -26,7 +26,7 @@ router = APIRouter(
 
 ProjectScope = Annotated[
     UUID | None,
-    Query(description="Only this project's notifications, plus global ones"),
+    Query(description="Project ID. Global notifications are included."),
 ]
 
 

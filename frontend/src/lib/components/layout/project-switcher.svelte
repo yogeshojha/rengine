@@ -53,7 +53,7 @@
 					<FolderIcon class="size-4 animate-pulse" />
 				</div>
 				<div class="grid flex-1 text-start text-sm leading-tight">
-					<span class="truncate font-medium">Loading…</span>
+					<span class="truncate font-medium">Loading projects</span>
 				</div>
 			</Sidebar.MenuButton>
 		{:else if !activeProject}
@@ -65,7 +65,7 @@
 				</div>
 				<div class="grid flex-1 text-start text-sm leading-tight">
 					<span class="truncate font-medium">Create project</span>
-					<span class="truncate text-xs text-muted-foreground">Get started</span>
+					<span class="truncate text-xs text-muted-foreground">No projects</span>
 				</div>
 			</Sidebar.MenuButton>
 		{:else}

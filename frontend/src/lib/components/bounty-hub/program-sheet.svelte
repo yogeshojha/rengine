@@ -61,7 +61,7 @@
 				}
 			}
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Could not load the program');
+			toast.error(error instanceof Error ? error.message : 'Program not loaded');
 			detail = null;
 		} finally {
 			loading = false;
@@ -142,13 +142,13 @@
 			toast.success(
 				created > 0
 					? `Added ${created} ${created === 1 ? 'target' : 'targets'}${grouped}`
-					: `Every selected asset is already a target${grouped}`
+					: `No targets added. Each selected asset is a target${grouped}`
 			);
 			importOpen = false;
 			await load(program.handle, program.platform);
 			onImported();
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Could not add the targets');
+			toast.error(error instanceof Error ? error.message : 'Targets not added');
 		} finally {
 			importing = false;
 		}
@@ -159,11 +159,9 @@
 		syncing = true;
 		try {
 			await bountyProgramsApi.syncProgram(program.handle, program.platform);
-			toast.success(
-				`Refreshing scope from ${program.platform_label}. Reopen the program in a moment.`
-			);
+			toast.success('Scope refresh started');
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Could not refresh the scope');
+			toast.error(error instanceof Error ? error.message : 'Scope not refreshed');
 		} finally {
 			syncing = false;
 		}
@@ -204,7 +202,7 @@
 						<ExternalLinkIcon class="size-3" />
 					</a>
 					{#if program.reports_for_user}
-						<span class="text-xs">{program.reports_for_user} of your reports</span>
+						<span class="text-xs">{program.reports_for_user} reports from this account</span>
 					{/if}
 					{#if detail?.scopes_synced_at}
 						<span class="text-xs">Scope read {formatShortDate(detail.scopes_synced_at)}</span>
@@ -241,8 +239,8 @@
 					</div>
 				{:else if scopes.length === 0 && detail?.scopes_synced_at}
 					<EmptyState
-						title="This program publishes no structured scope"
-						description={`${program.platform_label} returned no scope assets for it. The scope is described in the program policy instead, so there is nothing reNgine can add as a target from here.`}
+						title="No structured scope"
+						description="The scope is in the program policy."
 						class="p-10"
 					>
 						<Button
@@ -253,15 +251,11 @@
 							size="sm"
 						>
 							<ExternalLinkIcon class="mr-2 size-3.5" />
-							Read the policy on {program.platform_label}
+							Policy on {program.platform_label}
 						</Button>
 					</EmptyState>
 				{:else if scopes.length === 0}
-					<EmptyState
-						title="Scope not fetched yet"
-						description={`reNgine has not read this program's scope from ${program.platform_label}.`}
-						class="p-10"
-					>
+					<EmptyState title="Scope not fetched" class="p-10">
 						<LoadingButton loading={syncing} variant="outline" size="sm" onclick={refreshScope}>
 							<RefreshCwIcon class="mr-2 size-3.5" />
 							Fetch scope
@@ -271,7 +265,7 @@
 					{#if tab !== ScopeState.OutOfScope && unreachableTotal > 0}
 						<div class="border-b bg-muted/30 px-4 py-2.5 text-xs text-muted-foreground">
 							<span class="font-medium text-foreground">{unreachableTotal} assets</span> in this
-							program cannot be reached by a scan:
+							program are not scannable:
 							{unreachableEntries.map(([label, n]) => `${n} ${label}`).join(' · ')}
 						</div>
 					{/if}
@@ -297,8 +291,8 @@
 							<TriangleAlertIcon class="mt-0.5 size-3.5 shrink-0 text-warning" />
 							<span>
 								{selectedOutOfScope}
-								{selectedOutOfScope === 1 ? 'asset is' : 'assets are'} marked out of scope by the program.
-								Scanning them is not authorised by this policy.
+								{selectedOutOfScope === 1 ? 'asset is' : 'assets are'} out of scope. Scanning them is
+								not authorised by the program.
 							</span>
 						</div>
 					{/if}
@@ -306,7 +300,7 @@
 					{#if outOfScopeImportable > 0}
 						<label class="flex items-center gap-2 text-xs text-muted-foreground">
 							<Switch checked={showOutOfScope} onCheckedChange={setAllowOutOfScope} />
-							Allow selecting the {outOfScopeImportable} out-of-scope
+							Allow selecting {outOfScopeImportable} out-of-scope
 							{outOfScopeImportable === 1 ? 'asset' : 'assets'}
 						</label>
 					{/if}

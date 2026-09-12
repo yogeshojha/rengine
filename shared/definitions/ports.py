@@ -1,4 +1,4 @@
-"""Ports, services and exposure classes — the SSOT for the scan pipeline and the query layer."""
+"""Ports, services and exposure classes: the SSOT for the scan pipeline and the query layer."""
 
 from __future__ import annotations
 
@@ -120,7 +120,7 @@ WELL_KNOWN: dict[int, ServiceSpec] = {
         "rpcbind",
         "RPC portmapper",
         ServiceClass.INFRA,
-        "RPC portmapper, enumerates other services",
+        "RPC portmapper",
     ),
     135: _s("msrpc", "MSRPC", ServiceClass.INFRA, "Windows RPC endpoint mapper"),
     137: _s("netbios", "NetBIOS", ServiceClass.INFRA, "NetBIOS name service"),
@@ -135,7 +135,7 @@ WELL_KNOWN: dict[int, ServiceSpec] = {
         "snmp",
         "SNMP",
         ServiceClass.INFRA,
-        "SNMP management, often left on a default community string",
+        "SNMP management",
     ),
     389: _s("ldap", "LDAP", ServiceClass.INFRA, "Directory service, unencrypted"),
     427: _s("slp", "SLP", ServiceClass.INFRA, "Service Location Protocol"),
@@ -178,7 +178,7 @@ WELL_KNOWN: dict[int, ServiceSpec] = {
         "socks",
         "SOCKS proxy",
         ServiceClass.INFRA,
-        "SOCKS proxy. An open proxy relays traffic for any client.",
+        "SOCKS proxy",
     ),
     1433: _s(
         "mssql", "Microsoft SQL Server", ServiceClass.DATABASE, "Microsoft SQL Server"
@@ -190,13 +190,13 @@ WELL_KNOWN: dict[int, ServiceSpec] = {
         "zookeeper",
         "ZooKeeper",
         ServiceClass.INFRA,
-        "ZooKeeper coordination, usually unauthenticated",
+        "ZooKeeper coordination",
     ),
     2375: _s(
         "docker",
         "Docker API",
         ServiceClass.INFRA,
-        "Docker API without TLS, equivalent to root on the host",
+        "Docker API without TLS",
     ),
     2376: _s(
         "docker", "Docker API", ServiceClass.INFRA, "Docker API over TLS", tls=True
@@ -205,7 +205,7 @@ WELL_KNOWN: dict[int, ServiceSpec] = {
         "etcd",
         "etcd",
         ServiceClass.DATABASE,
-        "etcd key-value store, holds cluster secrets",
+        "etcd key-value store",
     ),
     3128: _s("http-proxy", "HTTP proxy", ServiceClass.WEB, "Forward web proxy"),
     3268: _s(
@@ -217,7 +217,7 @@ WELL_KNOWN: dict[int, ServiceSpec] = {
         "epmd",
         "Erlang port mapper",
         ServiceClass.INFRA,
-        "Erlang port mapper, enumerates node names",
+        "Erlang port mapper",
     ),
     4444: _s(
         "metasploit",
@@ -233,15 +233,13 @@ WELL_KNOWN: dict[int, ServiceSpec] = {
         "kibana", "Kibana", ServiceClass.WEB, "Kibana dashboards for Elasticsearch"
     ),
     5672: _s("amqp", "AMQP", ServiceClass.INFRA, "AMQP message broker"),
-    5900: _s(
-        "vnc", "VNC", ServiceClass.REMOTE, "VNC remote desktop, often password-only"
-    ),
+    5900: _s("vnc", "VNC", ServiceClass.REMOTE, "VNC remote desktop"),
     5901: _s("vnc", "VNC", ServiceClass.REMOTE, "VNC remote desktop, second display"),
     5984: _s(
         "couchdb",
         "CouchDB",
         ServiceClass.DATABASE,
-        "CouchDB, unauthenticated in older releases",
+        "CouchDB",
     ),
     6379: _s(
         "redis", "Redis", ServiceClass.DATABASE, "Redis, no authentication by default"
@@ -256,7 +254,7 @@ WELL_KNOWN: dict[int, ServiceSpec] = {
         "cassandra",
         "Cassandra JMX",
         ServiceClass.DATABASE,
-        "Cassandra JMX, remote code execution if exposed",
+        "Cassandra JMX",
     ),
     8086: _s(
         "influxdb", "InfluxDB", ServiceClass.DATABASE, "InfluxDB time-series database"
@@ -284,7 +282,7 @@ WELL_KNOWN: dict[int, ServiceSpec] = {
         "elasticsearch",
         "Elasticsearch",
         ServiceClass.DATABASE,
-        "Elasticsearch REST API, unauthenticated in older releases",
+        "Elasticsearch REST API",
     ),
     9300: _s(
         "elasticsearch",
@@ -297,7 +295,7 @@ WELL_KNOWN: dict[int, ServiceSpec] = {
         "memcached",
         "Memcached",
         ServiceClass.DATABASE,
-        "Memcached, no authentication and usable for amplification",
+        "Memcached, no authentication",
     ),
     15672: _s(
         "rabbitmq", "RabbitMQ", ServiceClass.WEB, "RabbitMQ management interface"
@@ -306,7 +304,7 @@ WELL_KNOWN: dict[int, ServiceSpec] = {
         "mongodb",
         "MongoDB",
         ServiceClass.DATABASE,
-        "MongoDB, unauthenticated before the 3.6 defaults",
+        "MongoDB",
     ),
     27018: _s(
         "mongodb", "MongoDB shard", ServiceClass.DATABASE, "MongoDB shard member"
@@ -358,7 +356,7 @@ PORT_PROFILES: tuple[PortProfileSpec, ...] = (
     PortProfileSpec(
         PortProfile.WEB.value,
         "Web ports",
-        "Ports that commonly serve HTTP. Fastest path to the web surface.",
+        "Ports that commonly serve HTTP.",
         len(WEB_PORTS),
     ),
     PortProfileSpec(
@@ -376,13 +374,13 @@ PORT_PROFILES: tuple[PortProfileSpec, ...] = (
     PortProfileSpec(
         PortProfile.TOP_1000.value,
         "Top 1000",
-        "The 1,000 most common ports. Slower, broad coverage.",
+        "The 1,000 most common ports.",
         1000,
     ),
     PortProfileSpec(
         PortProfile.FULL.value,
         "All ports",
-        "Every port from 1 to 65535. Slowest and loudest.",
+        "Every port from 1 to 65535.",
         MAX_PORT,
     ),
     PortProfileSpec(

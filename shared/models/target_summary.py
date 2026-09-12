@@ -8,7 +8,7 @@ from shared.models.vulnerability import SeverityCount
 
 
 class SurfaceMetric(BaseModel):
-    """What the most recent scan that actually ran this dimension found."""
+    """Figures from the most recent scan that ran this dimension."""
 
     key: str
     label: str

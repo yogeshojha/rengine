@@ -161,12 +161,8 @@ async def list_reports(
     _current_user: CurrentUser,
     session: Session,
     project_id: Annotated[UUID, Query(description="Project")],
-    scan_id: Annotated[
-        UUID | None, Query(description="Only reports for this scan")
-    ] = None,
-    target_id: Annotated[
-        UUID | None, Query(description="Only reports for this target")
-    ] = None,
+    scan_id: Annotated[UUID | None, Query(description="Filter by scan ID")] = None,
+    target_id: Annotated[UUID | None, Query(description="Filter by target ID")] = None,
 ):
     return await ReportService(session).list(
         project_id, scan_id=scan_id, target_id=target_id
@@ -215,7 +211,7 @@ async def download_report(
     report_id: Annotated[UUID, Path(description="Report")],
     project_id: Annotated[UUID, Query(description="Project")],
     format: Annotated[
-        str, Query(description="Which rendered format to download")
+        str, Query(description="Rendered format")
     ] = ReportFormat.PDF.value,
 ):
     service = ReportService(session)

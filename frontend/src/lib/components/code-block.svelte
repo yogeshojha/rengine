@@ -290,7 +290,7 @@
 				{/if}
 				<div class="flex shrink-0 items-center gap-0.5" class:ml-auto={!findable}>
 					{#if findable && !finding}
-						<Hint text="Find in this block">
+						<Hint text="Find">
 							{#snippet child(props)}
 								<Button
 									{...props}
@@ -306,7 +306,7 @@
 					{/if}
 					{@render actions?.()}
 					{#if formatted}
-						<Hint text={pretty ? 'Show it as it was received' : 'Format for reading'}>
+						<Hint text={pretty ? 'Show as received' : 'Format'}>
 							{#snippet child(props)}
 								<Button
 									{...props}

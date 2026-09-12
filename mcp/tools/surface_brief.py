@@ -1,4 +1,4 @@
-"""Dozens of expert queries, already counted for this scan."""
+"""The curated query library, counted for one scan."""
 
 from __future__ import annotations
 
@@ -31,11 +31,9 @@ class SurfaceBrief(Tool):
     title = "Surface brief"
     group = ToolGroup.ORIENT.value
     description = (
-        "The fastest way to learn what is interesting about a scan. Returns reNgine's "
-        "curated query library with a real count against each one for this target, "
-        "ranked so the queries that discriminate come first. "
-        "Use it before writing your own query — most questions are already here, and "
-        "each count is exact."
+        "The curated query library, each query counted against the target's most "
+        "recent covering scan and ranked by how well it discriminates. "
+        "Call it before writing a query."
     )
     Input = Input
     examples = (
@@ -68,8 +66,8 @@ class SurfaceBrief(Tool):
         total = leads.total
         hits = [r for r in rows if r["count"]]
         headline = (
-            f"{len(hits)} of {len(leads.leads)} standard checks match on "
-            f"{scope.target.target_value} — {total} {dim.noun_plural} in scope"
+            f"{len(hits)} of {len(leads.leads)} queries match on "
+            f"{scope.target.target_value}. {total} {dim.noun_plural} in scope."
         )
 
         return ToolResult(
@@ -84,7 +82,6 @@ class SurfaceBrief(Tool):
             pivot=links.scan_tab(ctx.ui_base_url, scan_id, dim.tab),
             caveats=[
                 *scope.caveat(dim),
-                "Each count was computed with the same filter the UI uses, so it "
-                "equals the row count you land on when you run the query.",
+                "Each count equals the rows the query opens in the UI.",
             ],
         )

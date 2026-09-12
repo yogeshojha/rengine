@@ -85,7 +85,7 @@ http:
 			draft = res.content;
 			original = res.content;
 		} catch {
-			error = 'This check could not be read from the library.';
+			error = 'Check not loaded.';
 		} finally {
 			loading = false;
 		}
@@ -104,16 +104,16 @@ http:
 					error = rejected.reason;
 					return;
 				}
-				toast.success(`${res.accepted[0]?.name ?? 'The check'} was added to the library`);
+				toast.success(`${res.accepted[0]?.name ?? 'Check'} added`);
 			} else if (template) {
 				const updated = await vulnTemplatesApi.saveSource(template.id, draft);
-				toast.success(`Saved ${updated.name}`);
+				toast.success(`${updated.name} saved`);
 			}
 			original = draft;
 			onSaved();
 			onOpenChange(false);
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'The check could not be saved.';
+			error = err instanceof Error ? err.message : 'Check not saved.';
 		} finally {
 			saving = false;
 		}
@@ -189,8 +189,7 @@ http:
 				<div class="flex items-start gap-2 rounded-md border bg-muted/40 px-3 py-2">
 					<Lock class="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
 					<p class="text-xs text-muted-foreground">
-						Project templates are read-only. A library sync replaces them, so changes made here are
-						lost. Copy the source into a custom template to modify it.
+						Project templates are read-only. Copy the source into a custom template to edit it.
 					</p>
 				</div>
 			{/if}
@@ -235,7 +234,7 @@ http:
 					<LoadingButton
 						size="sm"
 						loading={saving}
-						loadingLabel="Saving…"
+						loadingLabel="Saving"
 						disabled={!dirty && !creating}
 						onclick={save}
 					>

@@ -52,13 +52,12 @@ def _finding(zone: str, names: list[str]) -> Finding:
             f"came back, including {shown}."
         ),
         impact=(
-            "The zone lists every name its owner published, including the internal, "
-            "staging and administrative ones no public source indexes. An attacker gets "
-            "the whole map in one request, with no scanning and nothing to detect."
+            "The zone lists every published name, including internal, staging and "
+            "administrative ones."
         ),
         remediation=(
-            "Restrict AXFR on every nameserver for this zone to its own secondaries, by "
-            "address or TSIG key, and refuse it from everyone else."
+            "Restrict AXFR on every nameserver to the zone's secondaries, by address "
+            "or TSIG key."
         ),
         references=[],
         tags=["dns", "axfr", "disclosure"],

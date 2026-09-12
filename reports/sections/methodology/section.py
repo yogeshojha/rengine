@@ -5,7 +5,7 @@ from reports.config import SectionConfig, choice, flag, paragraph
 from shared.definitions.reports import SectionGroup, SectionRole
 
 _STANDARDS = {
-    "": "Do not cite a standard",
+    "": "None",
     "ptes": "Penetration Testing Execution Standard",
     "nist": "NIST SP 800-115",
     "osstmm": "OSSTMM 3",
@@ -14,9 +14,9 @@ _STANDARDS = {
 
 
 class MethodologyConfig(SectionConfig):
-    show_stages: bool = flag(True, title="List what ran")
-    show_tools: bool = flag(True, title="List the tools used")
-    show_timing: bool = flag(True, title="Show when it ran and for how long")
+    show_stages: bool = flag(True, title="List stages")
+    show_tools: bool = flag(True, title="List tools")
+    show_timing: bool = flag(True, title="Show timing")
     show_scope: bool = flag(True, title="Show scope and exclusions")
     standard: str = choice("ptes", title="Reference standard", options=_STANDARDS)
     note: str = paragraph(
@@ -27,7 +27,7 @@ class MethodologyConfig(SectionConfig):
 class MethodologySection(Section):
     name = "methodology"
     title = "Scope and methodology"
-    description = "Scope, the stages that ran against it and the tools they used."
+    description = "Scope, stages and tools."
     group = SectionGroup.APPENDIX.value
     order = 10
     role = SectionRole.FURNITURE.value

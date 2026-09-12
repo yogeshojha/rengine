@@ -37,10 +37,7 @@
 		!ran ? 'text-muted-foreground' : partial ? 'text-warning' : 'text-muted-foreground'
 	);
 	let summary = $derived.by(() => {
-		if (!ran)
-			return projectWide
-				? 'No scan has run vulnerability checks yet.'
-				: 'No vulnerability scan ran on this scan.';
+		if (!ran) return projectWide ? 'No vulnerability scan has run.' : 'No vulnerability scan ran.';
 		const parts = [
 			`${n(checks)} ${checks === 1 ? 'check' : 'checks'} against ${n(targets)} ${
 				targets === 1 ? 'asset' : 'assets'
@@ -78,8 +75,7 @@
 				<div class="border-b px-3 py-2">
 					<p class="text-sm font-medium">Scanner coverage</p>
 					<p class="text-xs text-muted-foreground">
-						Checks selected, loaded and sent by each scanner. A blank number means the scanner did
-						not report it.
+						Checks selected, loaded and sent by each scanner. A blank number was not reported.
 					</p>
 				</div>
 				<div class="divide-y">
@@ -127,8 +123,7 @@
 							</dl>
 							{#if row.templates_selected != null && row.templates_loaded != null && row.templates_loaded < row.templates_selected}
 								<p class="text-2xs text-warning">
-									{n(row.templates_selected - row.templates_loaded)} of the selected checks were not loaded
-									by the scanner.
+									{n(row.templates_selected - row.templates_loaded)} selected checks not loaded.
 								</p>
 							{/if}
 							{#if row.hosts_dropped_count && row.hosts_dropped.length}

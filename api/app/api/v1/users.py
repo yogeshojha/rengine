@@ -82,7 +82,7 @@ async def delete_user(
     if uuid_id == current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You cannot delete your own account",
+            detail="The signed-in account cannot be deleted",
         )
 
     result = await session.execute(select(User).where(User.id == uuid_id))
@@ -97,4 +97,4 @@ async def delete_user(
     await session.delete(user)
     await session.commit()
 
-    return {"message": f"User {user.username} deleted successfully"}
+    return {"message": f"User {user.username} deleted"}

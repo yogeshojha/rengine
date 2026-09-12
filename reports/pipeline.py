@@ -97,7 +97,7 @@ def generate(
         if progress:
             progress(percent, label)
 
-    step(10, "Reading the scan")
+    step(10, "Reading scan")
     ctx = build_context(
         session,
         spec,
@@ -107,7 +107,7 @@ def generate(
         preview=preview,
     )
 
-    step(35, "Writing the narrative")
+    step(35, "Writing narrative")
     document = render_html(ctx)
 
     out = RenderOutput(
@@ -139,7 +139,7 @@ def generate(
         out.files[ReportFormat.JSON.value] = to_json(ctx).encode("utf-8")
 
     if ReportFormat.PDF.value in formats:
-        step(70, "Laying out the pages")
+        step(70, "Rendering pages")
         from reports.render.pdf import to_pdf  # noqa: PLC0415
 
         result = to_pdf(document.html, base_url=str(_base_url()))

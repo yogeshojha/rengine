@@ -156,13 +156,13 @@ class McpService:
     ) -> McpTokenCreated:
         existing = (await self.session.execute(select(McpToken))).scalars().all()
         if len([t for t in existing if t.revoked_at is None]) >= MAX_TOKENS:
-            msg = f"This instance already has {MAX_TOKENS} tokens. Revoke one first."
+            msg = f"The instance has {MAX_TOKENS} tokens. Revoke one first."
             raise McpConfigError(msg)
 
         if data.project_id is not None and not await self._project_exists(
             data.project_id
         ):
-            msg = "That project does not exist."
+            msg = "The project does not exist."
             raise McpConfigError(msg)
 
         config = await self.config()
@@ -202,7 +202,7 @@ class McpService:
     async def revoke_token(self, token_id: uuid.UUID) -> None:
         row = await self.session.get(McpToken, token_id)
         if row is None:
-            msg = "That token does not exist."
+            msg = "The token does not exist."
             raise McpConfigError(msg)
         row.revoked_at = utc_now()
         self.session.add(row)
@@ -212,7 +212,7 @@ class McpService:
     async def delete_token(self, token_id: uuid.UUID) -> None:
         row = await self.session.get(McpToken, token_id)
         if row is None:
-            msg = "That token does not exist."
+            msg = "The token does not exist."
             raise McpConfigError(msg)
         await self.session.delete(row)
         await self.session.commit()
@@ -222,7 +222,7 @@ class McpService:
 
     async def authenticate(self, secret: str | None) -> tuple[TokenIdentity, McpToken]:
         if not secret or not auth.looks_like_token(secret):
-            msg = "Send a reNgine MCP token as `Authorization: Bearer <token>`."
+            msg = "Send an MCP token as `Authorization: Bearer <token>`."
             raise AuthError(msg)
 
         digest = auth.fingerprint(secret)
@@ -233,13 +233,13 @@ class McpService:
         ).scalar_one_or_none()
 
         if row is None:
-            msg = "That token is not valid."
+            msg = "The token is not valid."
             raise AuthError(msg)
         if row.revoked_at is not None:
-            msg = "That token was revoked."
+            msg = "The token was revoked."
             raise AuthError(msg)
         if row.expires_at is not None and row.expires_at <= utc_now():
-            msg = "That token expired."
+            msg = "The token expired."
             raise AuthError(msg)
 
         config = await self.config()
@@ -290,7 +290,7 @@ def capability_catalog() -> list[dict]:
 
 
 def client_config(secret: str, ui_base: str = "") -> str:
-    """A block the user pastes into their agent, with the token already in it."""
+    """Client config with the token embedded."""
     body = {
         "mcpServers": {
             server_settings.SERVER_NAME: {

@@ -27,7 +27,7 @@ class HttpProbeConfig(StageConfig):
     probe_all_ports: bool = Field(
         default=False,
         title="Include non-web ports",
-        description="Also probe ports whose service is known not to speak HTTP, such as SSH or MySQL.",
+        description="Also probe ports classed as non-HTTP services.",
     )
     max_ports_per_host: int = Field(
         default=25,

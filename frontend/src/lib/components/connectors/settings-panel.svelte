@@ -40,7 +40,7 @@
 		try {
 			connectors.upsert(await connectorsApi.update(connector.id, projectId, body));
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'The change could not be saved.';
+			error = e instanceof Error ? e.message : 'Change not saved.';
 		} finally {
 			saving = false;
 		}
@@ -87,12 +87,12 @@
 						>
 					{/each}
 				</div>
-				<p class="text-muted-foreground text-xs">Fuzzer and scanner traffic is never ingested.</p>
+				<p class="text-muted-foreground text-xs">Fuzzer and scanner traffic is excluded.</p>
 			</div>
 		</div>
 
 		<div class="divide-y border-t">
-			{#each [{ key: 'only_known_hosts', label: 'Only record hosts that belong to a target', help: 'Requests to any other host are discarded on receipt and cannot be recovered later.' }, { key: 'include_static', label: 'Include static content', help: 'Images, stylesheets and fonts are excluded by default.' }, { key: 'capture_bodies', label: 'Keep a request sample', help: 'Stores the first request recorded for each shape. Samples may contain credentials.' }, { key: 'capture_sessions', label: 'Session records', help: 'Groups traffic into sessions. Only in-scope hostnames are stored.' }] as row (row.key)}
+			{#each [{ key: 'only_known_hosts', label: 'Only record hosts that belong to a target', help: 'Requests to other hosts are discarded.' }, { key: 'include_static', label: 'Include static content', help: 'Images, stylesheets and fonts.' }, { key: 'capture_bodies', label: 'Keep a request sample', help: 'Stores the first request recorded for each shape. Samples may contain credentials.' }, { key: 'capture_sessions', label: 'Session records', help: 'Groups traffic into sessions.' }] as row (row.key)}
 				<div class="flex items-start justify-between gap-4 px-5 py-3.5">
 					<div class="min-w-0">
 						<p class="text-sm">{row.label}</p>
@@ -174,7 +174,7 @@
 
 	<Card.Root class="gap-0 overflow-hidden py-0">
 		<PanelHead title="Connection">
-			{#if saving}<span>Saving…</span>{/if}
+			{#if saving}<span>Saving</span>{/if}
 		</PanelHead>
 		<div class="flex flex-wrap items-center gap-3 px-5 py-4">
 			<code class="bg-muted rounded px-2 py-1 font-mono text-xs">{connector.token_prefix}…</code>
@@ -200,8 +200,8 @@
 
 <DeleteConfirmationDialog
 	bind:open={confirmDelete}
-	title="Delete {connector.name}?"
-	description="Removes the connector, its token and the request shapes it has captured. Scans already launched from its queue are unaffected. This action cannot be undone."
+	title="Delete {connector.name}"
+	description="Removes the connector, its token and its captured request shapes."
 	onOpenChange={(value) => (confirmDelete = value)}
 	onConfirm={remove}
 />

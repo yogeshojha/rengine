@@ -140,7 +140,7 @@
 		}
 		const endpoints = buildEndpoints();
 		if (!endpoints) {
-			toast.error('Add at least one valid endpoint (host and port)');
+			toast.error('Add at least one endpoint with a host and port');
 			return;
 		}
 
@@ -234,8 +234,7 @@
 		<div>
 			<h2 class="text-lg font-semibold tracking-tight">Proxies</h2>
 			<p class="text-sm text-muted-foreground">
-				Route scan traffic through proxies. The default applies to scan contexts that do not choose
-				one.
+				Proxies for scan traffic. The default applies to scan contexts that do not choose one.
 			</p>
 		</div>
 		<Button size="sm" onclick={openAdd}>
@@ -267,10 +266,7 @@
 			<Card.Content class="flex flex-col items-center justify-center gap-3 py-16 text-center">
 				<RouteIcon class="size-10 text-muted-foreground/40" />
 				<div class="space-y-1">
-					<p class="text-sm font-medium">No proxies configured</p>
-					<p class="text-xs text-muted-foreground">
-						Add a proxy to route recon traffic through it.
-					</p>
+					<p class="text-sm font-medium">No proxies</p>
 				</div>
 				<Button size="sm" variant="outline" onclick={openAdd}>
 					<PlusIcon class="mr-1.5 size-4" />
@@ -379,7 +375,7 @@
 										</Button>
 									{/snippet}
 								</Tooltip.Trigger>
-								<Tooltip.Content>Run a live reachability check</Tooltip.Content>
+								<Tooltip.Content>Test reachability</Tooltip.Content>
 							</Tooltip.Root>
 
 							{#if !proxy.is_default}
@@ -403,7 +399,7 @@
 											</Button>
 										{/snippet}
 									</Tooltip.Trigger>
-									<Tooltip.Content>Set as the default proxy</Tooltip.Content>
+									<Tooltip.Content>Set as default</Tooltip.Content>
 								</Tooltip.Root>
 							{/if}
 
@@ -438,7 +434,7 @@
 		<Dialog.Header class="px-6 pt-6 pb-2">
 			<Dialog.Title>{editingId ? 'Edit proxy' : 'Add proxy'}</Dialog.Title>
 			<Dialog.Description>
-				Define one or more endpoints. Passwords are stored encrypted and never shown again.
+				One or more endpoints. Passwords are not shown after saving.
 			</Dialog.Description>
 		</Dialog.Header>
 
@@ -553,11 +549,11 @@
 							<div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
 								<div class="space-y-1">
 									<Label class="text-2xs uppercase tracking-wide text-muted-foreground"
-										>Username <span class="normal-case">(optional)</span></Label
+										>Username</Label
 									>
 									<Input
 										value={row.username}
-										placeholder="username"
+										placeholder="Optional"
 										class="h-9 font-mono text-xs"
 										autocomplete="off"
 										oninput={(e) => setRow(i, 'username', e.currentTarget.value)}
@@ -565,12 +561,12 @@
 								</div>
 								<div class="space-y-1">
 									<Label class="text-2xs uppercase tracking-wide text-muted-foreground"
-										>Password <span class="normal-case">(optional)</span></Label
+										>Password</Label
 									>
 									<Input
 										type="password"
 										value={row.password}
-										placeholder={row.masked ? 'Leave blank to keep current' : 'password'}
+										placeholder={row.masked ? 'Leave blank to keep the current value' : 'Optional'}
 										class="h-9 font-mono text-xs"
 										autocomplete="off"
 										oninput={(e) => setRow(i, 'password', e.currentTarget.value)}
@@ -612,7 +608,7 @@
 			<Button variant="outline" onclick={() => (dialogOpen = false)} disabled={saving}
 				>Cancel</Button
 			>
-			<LoadingButton onclick={handleSave} loading={saving} loadingLabel="Saving…">
+			<LoadingButton onclick={handleSave} loading={saving} loadingLabel="Saving">
 				{editingId ? 'Save changes' : 'Add proxy'}
 			</LoadingButton>
 		</Dialog.Footer>
@@ -621,9 +617,9 @@
 
 <DeleteConfirmationDialog
 	bind:open={deleteOpen}
-	title="Remove this proxy?"
-	description={`Scan contexts using ${deletingProxy?.name ?? 'this proxy'} will fall back to direct traffic.`}
-	confirmLabel="Remove proxy"
+	title="Remove proxy"
+	description={`Proxy ${deletingProxy?.name ?? ''} is removed. Contexts using it send traffic directly.`}
+	confirmLabel="Remove"
 	{isDeleting}
 	onOpenChange={(o) => (deleteOpen = o)}
 	onConfirm={handleDelete}

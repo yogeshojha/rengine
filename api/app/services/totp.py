@@ -35,7 +35,7 @@ class TOTPService:
 
     async def start_setup(self, user: User) -> dict:
         if user.totp_enabled:
-            msg = "2FA is already enabled. Disable it first to re-enroll."
+            msg = "2FA is enabled. Disable it before enrolling again."
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
         secret = pyotp.random_base32()
         user.totp_secret_encrypted = encrypt_secret(secret)
@@ -53,7 +53,7 @@ class TOTPService:
 
     async def verify_and_enable(self, user: User, code: str) -> list[str]:
         if user.totp_enabled:
-            msg = "2FA is already enabled. Disable it first to re-enroll."
+            msg = "2FA is enabled. Disable it before enrolling again."
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
         secret = self._require_secret(user)
         if not pyotp.TOTP(secret).verify(code, valid_window=1):

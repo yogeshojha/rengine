@@ -82,7 +82,7 @@
 				outline = contents;
 				page = 1;
 			} catch (err) {
-				if (mine === session) error = err instanceof Error ? err.message : 'Preview failed.';
+				if (mine === session) error = err instanceof Error ? err.message : 'Preview not loaded.';
 			} finally {
 				if (mine === session) loading = false;
 			}
@@ -234,11 +234,11 @@
 							download
 						>
 							<DownloadIcon class="mr-1.5 size-3.5" />
-							Download instead
+							Download PDF
 						</Button>
 					{:else if loading}
 						<Spinner class="size-5" />
-						<p class="text-muted-foreground text-sm">Opening the report</p>
+						<p class="text-muted-foreground text-sm">Loading report</p>
 					{/if}
 				</div>
 			{/if}
@@ -295,7 +295,7 @@
 				<PlusIcon class="size-4" />
 			</Button>
 			<Separator orientation="vertical" class="mx-1 !h-5" />
-			<Hint text={fit === 'width' ? 'Fit the whole page' : 'Fit the page width'}>
+			<Hint text={fit === 'width' ? 'Fit page' : 'Fit width'}>
 				{#snippet child(props)}
 					<Button
 						{...props}
@@ -304,7 +304,7 @@
 						class="size-8"
 						disabled={!doc}
 						onclick={() => (fit = fit === 'width' ? 'page' : 'width')}
-						aria-label={fit === 'width' ? 'Fit the whole page' : 'Fit the page width'}
+						aria-label={fit === 'width' ? 'Fit page' : 'Fit width'}
 					>
 						{#if fit === 'width'}
 							<ScanIcon class="size-4" />

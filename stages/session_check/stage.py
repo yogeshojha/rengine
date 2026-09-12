@@ -27,9 +27,7 @@ class Verdict:
 class SessionCheckStage(Stage):
     name = "session_check"
     title = "Session Check"
-    description = (
-        "Prove the scan context's credentials still work before the scan spends hours."
-    )
+    description = "Check the scan context's credentials before the scan runs."
     phase = Phase.DISCOVERY.value
     depends_on = frozenset({"seed_resolution"})
     group = StageGroup.WEB.value
@@ -50,8 +48,8 @@ class SessionCheckStage(Stage):
         if not candidates:
             return self._result(
                 Verdict.UNANSWERED,
-                f"a {self.ctx.target_type} target has no url to ask, so the session "
-                "could not be checked",
+                f"A {self.ctx.target_type} target has no URL to request. The session "
+                "was not checked.",
             )
 
         client = self._client()
@@ -67,7 +65,7 @@ class SessionCheckStage(Stage):
 
         return self._result(
             Verdict.UNANSWERED,
-            f"nothing answered at {' or '.join(candidates)}, so the session could "
+            f"nothing answered at {' or '.join(candidates)}. The session could "
             "not be checked",
         )
 
@@ -101,20 +99,20 @@ class SessionCheckStage(Stage):
         if signed.status in _UNAUTHORISED:
             return (
                 Verdict.REFUSED,
-                f"{url} answered {signed.status} to the scan context's credentials: "
-                "they are wrong, expired or not accepted here",
+                f"{url} answered {signed.status} with the scan context's credentials. "
+                "They are wrong, expired or not accepted here",
             )
         if signed.status == bare.status and signed.digest == bare.digest:
             return (
                 Verdict.IGNORED,
                 f"{url} answered {signed.status} and the same {signed.length:,} bytes "
-                "with the credentials and without them, so nothing in this scan is "
+                "with and without the credentials, nothing in this scan is "
                 "authenticated",
             )
         changed = (
             f"status {bare.status} to {signed.status}"
             if signed.status != bare.status
-            else f"a different body ({bare.length:,} to {signed.length:,} bytes)"
+            else f"a different body, {bare.length:,} to {signed.length:,} bytes"
         )
         return (
             Verdict.LIVE,

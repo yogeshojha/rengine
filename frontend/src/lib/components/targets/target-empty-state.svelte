@@ -25,18 +25,14 @@
 				<CrosshairIcon />
 			{/if}
 		</Empty.Media>
-		<Empty.Title>{hasFilters ? 'No matching targets' : 'No targets yet'}</Empty.Title>
+		<Empty.Title>{hasFilters ? 'No matching targets' : 'No targets'}</Empty.Title>
 		<Empty.Description>
 			{#if hasFilters}
-				No targets match the current filters.
 				{#if filterSummary}
 					<p class="mt-1 text-xs">Filtered by: {filterSummary}</p>
 				{/if}
 			{:else}
-				<p>
-					Add a target to begin. A target is a domain, IP address, IP range, URL or ASN this project
-					monitors.
-				</p>
+				<p>Add a domain, IP address, IP range, URL or ASN.</p>
 			{/if}
 		</Empty.Description>
 	</Empty.Header>
@@ -60,6 +56,6 @@
 		class="text-muted-foreground"
 		size="sm"
 	>
-		Learn more <ArrowUpRightIcon class="inline" />
+		Documentation <ArrowUpRightIcon class="inline" />
 	</Button>
 </Empty.Root>

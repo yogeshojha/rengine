@@ -12,7 +12,7 @@ from shared.utils.datetime import utc_now
 API_PROVIDER_META: dict[str, dict] = {
     APIProvider.VIEWDNS: {
         "name": "ViewDNS.info",
-        "description": "Used for DNS intelligence, reverse lookups and DNS history",
+        "description": "DNS intelligence, reverse lookups and DNS history",
         "docs_url": "https://viewdns.info/api/?src=reNgine",
         "requires_username": False,
         "icon": "scan-search",
@@ -20,7 +20,7 @@ API_PROVIDER_META: dict[str, dict] = {
     },
     APIProvider.CHAOS: {
         "name": "Chaos",
-        "description": "ProjectDiscovery Chaos subdomain dataset for recon",
+        "description": "ProjectDiscovery Chaos subdomain dataset",
         "docs_url": "https://cloud.projectdiscovery.io",
         "requires_username": False,
         "icon": "radar",
@@ -44,7 +44,7 @@ API_PROVIDER_META: dict[str, dict] = {
     },
     APIProvider.HACKERONE: {
         "name": "HackerOne",
-        "description": "Pull program scope and reports from HackerOne",
+        "description": "Program scope and reports from HackerOne",
         "docs_url": "https://api.hackerone.com",
         "requires_username": True,
         "icon": "shield",
@@ -60,7 +60,7 @@ API_PROVIDER_META: dict[str, dict] = {
     },
     APIProvider.INTERACTSH: {
         "name": "Interactsh",
-        "description": "Auth token for your own out-of-band server, so blind callbacks reach you and nobody else",
+        "description": "Auth token for a self-hosted out-of-band callback server",
         "docs_url": "https://github.com/projectdiscovery/interactsh",
         "requires_username": False,
         "icon": "satellite-dish",

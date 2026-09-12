@@ -276,14 +276,14 @@
 				<Hint
 					text="{s.endpoint_count?.toLocaleString()} {s.endpoint_count === 1
 						? 'endpoint'
-						: 'endpoints'} discovered on this host. Open its structure."
+						: 'endpoints'}"
 				>
 					{#snippet child(props)}
 						<button
 							{...props}
 							type="button"
 							class="flex h-5 shrink-0 items-center gap-1 rounded border border-border px-1.5 text-2xs tabular-nums text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-							aria-label="Open the structure of {s.name}"
+							aria-label="Open structure of {s.name}"
 							onclick={(e) => {
 								e.stopPropagation();
 								onStructure(s);
@@ -297,11 +297,9 @@
 			{/if}
 			{#if worstSeverity}
 				<Hint
-					text="{s.vuln_count} {s.vuln_count === 1
-						? 'finding'
-						: 'findings'} on this host, worst is {severityLabel(
+					text="{s.vuln_count} {s.vuln_count === 1 ? 'finding' : 'findings'} · worst {severityLabel(
 						worstSeverity
-					).toLowerCase()}{s.vuln_kev ? ' and known exploited' : ''}"
+					).toLowerCase()}{s.vuln_kev ? ' · known exploited' : ''}"
 				>
 					{#snippet child(props)}
 						<button
@@ -388,11 +386,11 @@
 							{/snippet}
 						</Tooltip.Trigger>
 						<Tooltip.Content>
-							{PROVIDER_KIND_LABELS[provider.kind]} · filter hosts on {provider.label}
+							{PROVIDER_KIND_LABELS[provider.kind]} · Filter by provider
 						</Tooltip.Content>
 					</Tooltip.Root>
 				{/if}
-				<Hint text="Filter hosts pointing at {s.cname}">
+				<Hint text="Filter by CNAME">
 					{#snippet child(props)}
 						<button
 							{...props}
@@ -425,9 +423,7 @@
 				{#if cert === 'expired'}
 					{@render signal(
 						'Cert expired',
-						expiry
-							? `Expired ${expiry} · filter hosts with an expired cert`
-							: 'Filter hosts with an expired cert',
+						expiry ? `Expired ${expiry} · cert:expired` : 'Expired · cert:expired',
 						'cert:expired',
 						'border-destructive/30 text-destructive',
 						ShieldX
@@ -435,7 +431,7 @@
 				{:else if cert === 'expiring'}
 					{@render signal(
 						`Cert expires in ${daysUntilExpiry(s)}d`,
-						`Expires ${expiry} · filter hosts with an expiring cert`,
+						`Expires ${expiry} · cert:expiring`,
 						'cert:expiring',
 						'border-warning/30 text-warning',
 						CalendarClock
@@ -443,7 +439,7 @@
 				{:else if cert === 'self-signed'}
 					{@render signal(
 						'Self-signed cert',
-						'Filter hosts with a self-signed cert',
+						'Self-signed certificate · cert:self-signed',
 						'cert:self-signed',
 						'border-warning/30 text-warning',
 						ShieldAlert
@@ -452,7 +448,7 @@
 				{#if internalIp}
 					{@render signal(
 						'Internal IP',
-						`Resolves to private address ${internalIp} · filter hosts on it`,
+						`Resolves to private address ${internalIp}`,
 						filterToken('ip', internalIp),
 						'border-warning/30 text-warning',
 						Network
@@ -461,7 +457,7 @@
 				{#if s.waf}
 					{@render signal(
 						`WAF ${s.waf}`,
-						'Behind a web application firewall · filter hosts with a WAF',
+						'Web application firewall · is:waf',
 						'is:waf',
 						'border-border text-muted-foreground',
 						ShieldCheck
@@ -557,7 +553,7 @@
 				{#if ips.length}
 					<div class="flex flex-col items-start gap-0.5">
 						{#each ips.slice(0, MAX_IPS) as ip (ip)}
-							<Hint text="Filter hosts on {ip}">
+							<Hint text="Filter by address">
 								{#snippet child(props)}
 									<button
 										{...props}
@@ -773,7 +769,7 @@
 					<DropdownMenu.Group>
 						{#if onRescan}
 							<DropdownMenu.Item onclick={() => onRescan(s)} class="gap-2">
-								<RefreshCw class="h-4 w-4" /> Rescan this host
+								<RefreshCw class="h-4 w-4" /> Rescan
 							</DropdownMenu.Item>
 						{/if}
 						{#if onRescanOptions}

@@ -27,7 +27,7 @@
 	});
 
 	let crossScanner = $derived(peers.some((p) => p.scanner !== scanner));
-	let text = $derived(crossScanner ? `${hint}. Another scanner found it too` : hint);
+	let text = $derived(crossScanner ? `${hint}. Confirmed by a second scanner` : hint);
 </script>
 
 {#if peers.length}

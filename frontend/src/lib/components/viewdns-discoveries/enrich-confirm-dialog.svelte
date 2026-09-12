@@ -30,25 +30,19 @@
 		<AlertDialog.Header>
 			<AlertDialog.Title class="flex items-center gap-2">
 				<Zap class="h-5 w-5 text-muted-foreground" />
-				Enrich {sourceLabel}?
+				Enrich {sourceLabel}
 			</AlertDialog.Title>
 			<AlertDialog.Description>
-				<span class="block mb-2">
-					This will query ViewDNS.info for
-					<span class="font-mono text-foreground">{queryValue}</span>
-					and use <span class="font-semibold text-foreground">1 API credit</span>
-					from the ViewDNS quota.
-				</span>
-				<span class="block text-xs text-muted-foreground">
-					Results will be cached for 7 days. Subsequent views are free.
-				</span>
+				Queries ViewDNS.info for
+				<span class="font-mono text-foreground">{queryValue}</span>
+				and uses 1 API credit. Results are cached for 7 days.
 			</AlertDialog.Description>
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel disabled={isEnriching}>Cancel</AlertDialog.Cancel>
 			<AlertDialog.Action onclick={onConfirm} disabled={isEnriching}>
 				{#if isEnriching}
-					Enriching…
+					Enriching
 				{:else}
 					Enrich
 				{/if}

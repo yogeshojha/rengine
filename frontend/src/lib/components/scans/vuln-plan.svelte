@@ -221,7 +221,7 @@
 					checked={current?.enabled ?? false}
 					disabled={!ready && !current?.enabled}
 					onCheckedChange={(value) => patch({ enabled: value })}
-					aria-label="Run a vulnerability scan on this run"
+					aria-label="Vulnerability scan"
 				/>
 			</div>
 		</div>
@@ -233,15 +233,11 @@
 				class="flex items-start gap-2 rounded-md border border-warning/40 bg-warning/5 px-3 py-2 text-xs"
 			>
 				<TriangleAlert class="mt-0.5 size-3.5 shrink-0 text-warning" />
-				<p class="text-muted-foreground">
-					The check library is empty. Sync it in the Tools Arsenal before a vulnerability scan can
-					run.
-				</p>
+				<p class="text-muted-foreground">The check library is empty. Sync it in Arsenal.</p>
 			</div>
 		{:else if !current?.enabled}
 			<p class="text-2xs text-muted-foreground">
-				Off for this run. Enable it to test every asset this scan finds against {stats?.total.toLocaleString()}
-				checks.
+				Off for this run. {stats?.total.toLocaleString()} checks available.
 			</p>
 		{:else}
 			<div class="space-y-3 rounded-md border bg-muted/20 p-3">
@@ -252,9 +248,7 @@
 						<span class="text-lg leading-6 font-semibold tabular-nums">
 							{preview.total.toLocaleString()}
 						</span>
-						<span class="text-xs text-muted-foreground">
-							checks will run against every asset this scan finds
-						</span>
+						<span class="text-xs text-muted-foreground"> checks selected </span>
 					{/if}
 					{#if dirty}
 						<Hint text="Reset to the engine default">

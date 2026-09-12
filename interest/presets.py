@@ -1,4 +1,4 @@
-"""What a fresh install already knows."""
+"""Rules shipped with a fresh install."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from shared.definitions.interest import InterestKind, RuleMode
 
 
 def _hosts(*tokens: str) -> str:
-    """Anchored on label boundaries: `dr` must not match `drones`, the trap 2.x fell into."""
+    """Anchored on label boundaries."""
     body = "|".join(tokens)
     return f'host~"(^|[.-])({body})[0-9]{{0,2}}([.-]|$)"'
 
@@ -133,7 +133,7 @@ PRESETS: tuple[Preset, ...] = (
     Preset(
         name="Retired deployments",
         kind=InterestKind.LEGACY.value,
-        description="Named as old, retired or superseded, and still answering.",
+        description="A hostname named as old, retired or superseded that answers.",
         query=_hosts(
             "old", "legacy", "deprecated", "bak", "backup", "archive", "retired"
         )
@@ -149,7 +149,7 @@ PRESETS: tuple[Preset, ...] = (
     Preset(
         name="Directory listings",
         kind=InterestKind.EXPOSED_CONTENT.value,
-        description="A directory index served instead of a page.",
+        description="A directory listing in the response.",
         query='body:"index of" and status:200',
     ),
     Preset(
@@ -197,7 +197,7 @@ PRESETS: tuple[Preset, ...] = (
     Preset(
         name="Sensitive service open",
         kind=InterestKind.SENSITIVE_SERVICE.value,
-        description="An administrative or database port is reachable on this host.",
+        description="An administrative or database port reachable from the internet.",
         query="is:sensitive",
     ),
     Preset(

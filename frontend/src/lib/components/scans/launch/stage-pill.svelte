@@ -17,8 +17,8 @@
 
 	let { stage, state, disabled = false, onToggle, children }: Props = $props();
 
-	const BLOCKED_HINT = 'Skipped at passive intensity. This stage sends traffic to the target.';
-	const IMPLIED_HINT = 'Included automatically. A selected stage depends on its results.';
+	const BLOCKED_HINT = 'Skipped at passive intensity.';
+	const IMPLIED_HINT = 'Required by a selected stage.';
 
 	let hint = $derived(
 		state === 'blocked' ? BLOCKED_HINT : state === 'implied' ? IMPLIED_HINT : stage.description

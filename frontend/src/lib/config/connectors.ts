@@ -62,8 +62,7 @@ export const NOTICE_HELP: Record<string, string> = {
 	unseen_by_scans: 'No scan of this target has recorded this request shape.',
 	server_error: 'The server returned a 5xx response.',
 	non_standard_method: 'The method is not GET, POST, HEAD or OPTIONS.',
-	out_of_scope:
-		'A bug bounty program lists this host as out of scope. Testing it is not authorised.'
+	out_of_scope: 'A bug bounty program lists this host as out of scope.'
 };
 
 export const LOUD_NOTICES = new Set(['sensitive', 'admin', 'server_error', 'out_of_scope']);

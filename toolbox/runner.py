@@ -30,7 +30,7 @@ def _readable(exc: ValidationError) -> str:
         field = ".".join(str(p) for p in error.get("loc", ()) if p != "body")
         message = error.get("msg", "is invalid")
         parts.append(f"{field}: {message}" if field else message)
-    return "; ".join(parts) or "The input is not valid."
+    return ". ".join(parts) or "The input is not valid."
 
 
 def _elapsed(run: ToolRunRead) -> int:
@@ -62,7 +62,7 @@ def _age(stamp: str | None) -> float:
 
 
 def expire(run: ToolRunRead) -> ToolRunRead:
-    """A run past its deadline is recorded as failed rather than left pending."""
+    """A run past its deadline is recorded as failed."""
     if (
         run.status == RunStatus.QUEUED.value
         and _age(run.queued_at) > QUEUE_DEADLINE_SECONDS

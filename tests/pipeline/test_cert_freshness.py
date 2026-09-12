@@ -57,7 +57,7 @@ async def test_it_never_runs_unasked(estate, now):
     state = await estate.session.run_sync(cert_freshness.refresh)
 
     assert state.picked == 0
-    assert "off for this instance" in state.skipped
+    assert "re-checking is off" in state.skipped
 
 
 async def test_it_runs_when_the_instance_asked_for_it(estate, now):

@@ -17,7 +17,7 @@
 
 	function newScan() {
 		if (!projectsStore.activeProject) {
-			toast.error('No active project selected');
+			toast.error('No active project');
 			return;
 		}
 		launchTargetId = undefined;

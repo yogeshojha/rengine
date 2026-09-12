@@ -107,7 +107,7 @@
 	async function handleTestDraft() {
 		const config = buildConfig();
 		if (config === null) {
-			toast.error('Complete the connection fields first');
+			toast.error('Complete the connection fields');
 			return;
 		}
 		testingDraft = true;
@@ -308,8 +308,7 @@
 		<div>
 			<h2 class="text-lg font-semibold tracking-tight">Notifications</h2>
 			<p class="text-sm text-muted-foreground">
-				Route scan and recon events to Slack, Discord, Telegram, Teams, email or a webhook. Any
-				other Apprise-supported service can be added as a custom URL.
+				Scan events sent to Slack, Discord, Telegram, Teams, email, a webhook or an Apprise URL.
 			</p>
 		</div>
 		<Button size="sm" onclick={openAdd}>
@@ -343,7 +342,7 @@
 				<div class="space-y-1">
 					<p class="text-sm font-medium">No notification channels</p>
 					<p class="text-xs text-muted-foreground">
-						Connect Slack, Discord, Telegram, Teams, email or any Apprise destination.
+						Add Slack, Discord, Telegram, Teams, email or an Apprise URL.
 					</p>
 				</div>
 				<Button size="sm" variant="outline" onclick={openAdd}>
@@ -467,7 +466,7 @@
 	>
 		<Dialog.Header class="p-6 pb-4">
 			<Dialog.Title>{editingId ? 'Edit channel' : 'Add channel'}</Dialog.Title>
-			<Dialog.Description>Connect a provider and choose which events reach it.</Dialog.Description>
+			<Dialog.Description>Connection and events.</Dialog.Description>
 		</Dialog.Header>
 
 		<Separator />
@@ -521,7 +520,7 @@
 							</span>
 							<div class="min-w-0">
 								<p class="truncate text-sm font-medium">{formMeta.name}</p>
-								<p class="text-xs text-muted-foreground">Provider is fixed after creation.</p>
+								<p class="text-xs text-muted-foreground">Provider is read-only.</p>
 							</div>
 						</div>
 					{/if}
@@ -720,7 +719,7 @@
 				<span class="space-y-0.5">
 					<span class="block text-sm font-medium">Active</span>
 					<span class="hidden text-xs font-normal text-muted-foreground sm:block">
-						Disabled channels keep their settings but send nothing.
+						A disabled channel sends nothing.
 					</span>
 				</span>
 			</Label>
@@ -743,7 +742,7 @@
 				<Button variant="outline" onclick={() => (dialogOpen = false)} disabled={saving}>
 					Cancel
 				</Button>
-				<LoadingButton onclick={handleSave} loading={saving} loadingLabel="Saving…">
+				<LoadingButton onclick={handleSave} loading={saving} loadingLabel="Saving">
 					{editingId ? 'Save changes' : 'Add channel'}
 				</LoadingButton>
 			</div>
@@ -753,9 +752,9 @@
 
 <DeleteConfirmationDialog
 	bind:open={deleteOpen}
-	title="Remove this channel?"
-	description={`Notifications to ${deletingChannel?.name ?? 'this channel'} stop immediately.`}
-	confirmLabel="Remove channel"
+	title="Remove channel"
+	description={`Channel ${deletingChannel?.name ?? ''} is removed.`}
+	confirmLabel="Remove"
 	{isDeleting}
 	onOpenChange={(o) => (deleteOpen = o)}
 	onConfirm={handleDelete}

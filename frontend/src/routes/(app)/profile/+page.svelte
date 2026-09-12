@@ -67,7 +67,6 @@
 	<Card.Root>
 		<Card.Header>
 			<Card.Title>Account information</Card.Title>
-			<Card.Description>Account details and status</Card.Description>
 		</Card.Header>
 		<Card.Content>
 			<div class="grid gap-4 sm:grid-cols-2">

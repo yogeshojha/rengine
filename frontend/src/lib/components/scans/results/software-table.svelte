@@ -82,7 +82,7 @@
 		try {
 			localStorage.setItem(key, JSON.stringify(value));
 		} catch {
-			// storage is a convenience
+			// ignore
 		}
 	}
 
@@ -198,7 +198,7 @@
 			coverage = c;
 			onScanTotal?.(c.findings);
 		} catch {
-			// the table still stands without its side panels
+			// ignore
 		}
 	}
 
@@ -275,9 +275,7 @@
 		<div class="flex flex-wrap items-center justify-between gap-2">
 			<div class="flex items-center gap-2">
 				<Card.Title class="text-base">Software CVEs</Card.Title>
-				<Hint
-					text="CVEs matched from the versions your assets report, against the NVD corpus. Nothing was sent to confirm them."
-				>
+				<Hint text="Reported versions matched against the NVD corpus. Not confirmed by a request.">
 					{#snippet child(props)}
 						<Badge {...props} variant="outline" class="h-5 px-1.5 text-2xs">Inferred</Badge>
 					{/snippet}
@@ -308,14 +306,13 @@
 			>
 				<TriangleAlert class="mt-0.5 size-3.5 shrink-0 text-[var(--warning)]" />
 				<span class="text-muted-foreground">
-					The NVD corpus has not been downloaded. Turn on feed downloads in Settings to match
-					versions against published CVEs.
+					The NVD corpus has not been downloaded. Turn on feed downloads in Settings.
 				</span>
 			</div>
 		{:else if coverage && coverage.unmapped > 0}
 			<p class="text-xs text-muted-foreground">
 				{coverage.mapped.toLocaleString()} of {coverage.components.toLocaleString()} reported components
-				map to an NVD product. {coverage.unmapped.toLocaleString()} do not.
+				map to an NVD product.
 			</p>
 		{/if}
 	</Card.Header>
@@ -328,26 +325,15 @@
 				{/each}
 			</div>
 		{:else if errored}
-			<EmptyState
-				icon={TriangleAlert}
-				title="Software CVEs could not be loaded"
-				description="The request failed. Try again."
-			>
+			<EmptyState icon={TriangleAlert} title="Software CVEs not loaded">
 				<Button variant="outline" size="sm" onclick={() => void runSearch()}>Retry</Button>
 			</EmptyState>
 		{:else if coverage && coverage.components === 0}
-			<EmptyState
-				icon={Package}
-				title="No software versions reported"
-				description="No asset in this scope stated a version, so there is nothing to match."
-			/>
+			<EmptyState icon={Package} title="No software versions reported" />
 		{:else if items.length === 0}
 			<EmptyState
 				icon={filtered ? SearchX : Package}
 				title={filtered ? 'No software CVEs match' : 'No software CVEs'}
-				description={filtered
-					? 'No row matches this query.'
-					: 'Every version reported here is current, or the software is not filed in NVD.'}
 			>
 				{#if filtered}
 					<Button variant="outline" size="sm" onclick={() => onQuery('')}>Clear query</Button>

@@ -74,7 +74,7 @@ async def create_tag(
     if existing_tag.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Tag with this name already exists in this project",
+            detail="A tag with this name exists in this project",
         )
 
     tag = Tag(
@@ -90,7 +90,7 @@ async def create_tag(
         await session.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Tag with this name already exists in this project",
+            detail="A tag with this name exists in this project",
         ) from e
     await session.refresh(tag)
     return tag
@@ -98,9 +98,7 @@ async def create_tag(
 
 @router.post("/init-predefined", status_code=status.HTTP_201_CREATED)
 async def init_predefined_tags(
-    project_slug: Annotated[
-        str, Query(description="Slug of the project to initialize tags for")
-    ],
+    project_slug: Annotated[str, Query(description="Project slug")],
     current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):

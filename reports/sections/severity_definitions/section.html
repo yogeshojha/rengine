@@ -10,9 +10,9 @@
 
 {% if show_scoring %}
 <div class="sub">
-  <div class="label block">How findings are ranked</div>
-  <p class="small">Severity alone does not decide order. A finding is weighted upward when exploitation is confirmed, when the modelled probability of exploitation is high, when it appears on many hosts, and when it is new since the previous run. That is why two findings of the same severity can sit far apart in this report.</p>
-  <p class="small">The posture score starts at 100 and deducts for each observed condition up to a fixed ceiling per condition. It is a summary of the same evidence, not a separate judgement.</p>
+  <div class="label block">Ranking method</div>
+  <p class="small">Findings are ordered by severity, weighted for confirmed exploitation, exploitation probability, the number of affected assets and novelty since the previous run.</p>
+  <p class="small">The posture score starts at 100 and deducts per observed condition up to a fixed ceiling.</p>
 </div>
 {% endif %}
 

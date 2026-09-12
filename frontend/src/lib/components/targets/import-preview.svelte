@@ -126,7 +126,7 @@
 
 			{#if filteredItems.length === 0}
 				<div class="p-8 text-center text-sm text-muted-foreground">
-					No {filterTab} targets found
+					{filterTab === 'all' ? 'No targets' : `No ${filterTab} targets`}
 				</div>
 			{/if}
 		</div>

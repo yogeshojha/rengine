@@ -2,7 +2,8 @@
   <tbody>
     <tr><td style="width:34mm"><span class="label">Subject</span></td><td class="mono-break">{{ ctx.data.subject }} <span class="faint">({{ ctx.data.subject_type }})</span></td></tr>
     {% if scan %}
-    <tr><td><span class="label">Configuration</span></td><td>{{ scan.engine_name }}{% if context %} with the {{ context }} context{% endif %}</td></tr>
+    <tr><td><span class="label">Configuration</span></td><td>{{ scan.engine_name }}</td></tr>
+    {% if context %}<tr><td><span class="label">Context</span></td><td>{{ context }}</td></tr>{% endif %}
     {% if intensity %}<tr><td><span class="label">Intensity</span></td><td>{{ intensity }}</td></tr>{% endif %}
     {% if timing %}
     <tr><td><span class="label">Started</span></td><td>{{ scan.started_at|at }}</td></tr>
@@ -29,9 +30,9 @@
 
 {% if stages %}
 <div class="sub">
-  <div class="label block">What ran</div>
+  <div class="label block">Stages</div>
   <table class="table">
-    <thead><tr><th style="width:52mm">Capability</th><th>What it does</th></tr></thead>
+    <thead><tr><th style="width:52mm">Stage</th><th>Description</th></tr></thead>
     <tbody>
       {% for stage in stages %}
       <tr><td>{{ stage.title }}</td><td class="small muted wrap">{{ stage.description|clip(160) }}</td></tr>

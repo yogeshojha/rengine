@@ -1,4 +1,4 @@
-"""Reject request input the database cannot store before it reaches a query."""
+"""Reject NUL bytes in query parameters."""
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request

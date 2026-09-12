@@ -37,7 +37,7 @@
 		try {
 			words = await wordlistsApi.preview(id, PREVIEW);
 		} catch (e) {
-			failed = e instanceof Error ? e.message : 'This wordlist could not be read';
+			failed = e instanceof Error ? e.message : 'Wordlist not loaded';
 		} finally {
 			loading = false;
 		}
@@ -49,7 +49,7 @@
 		{#if wordlist}
 			<Sheet.Header class="space-y-2 border-b px-6 py-5">
 				<Sheet.Title>{wordlist.name}</Sheet.Title>
-				<Sheet.Description>{wordlist.description || 'No description.'}</Sheet.Description>
+				<Sheet.Description>{wordlist.description || 'No description'}</Sheet.Description>
 				<div class="flex flex-wrap items-center gap-2 pt-1">
 					<Badge variant={wordlist.origin === 'builtin' ? 'secondary' : 'info'}>
 						{wordlist.origin === 'builtin' ? 'Shipped' : 'Uploaded'}
@@ -67,7 +67,7 @@
 						variant="ghost"
 						size="icon"
 						class="size-7"
-						aria-label="Copy the name a scan engine uses"
+						aria-label="Copy name"
 						onclick={async () => {
 							if (await writeClipboard(wordlist.slug)) toast.success('Name copied');
 						}}
@@ -100,8 +100,7 @@
 						</ol>
 						{#if wordlist.words > words.length}
 							<p class="px-6 py-3 text-xs text-muted-foreground">
-								First {words.length} of {wordlist.words.toLocaleString()}. A scan reads from the
-								top. The word budget follows this order.
+								First {words.length} of {wordlist.words.toLocaleString()}.
 							</p>
 						{/if}
 					</ScrollArea>

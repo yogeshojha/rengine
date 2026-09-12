@@ -63,7 +63,7 @@ def custom_openapi():
             "type": "http",
             "scheme": "bearer",
             "bearerFormat": "JWT",
-            "description": "Enter your JWT token from /auth/login",
+            "description": "JWT from /auth/login",
         }
     }
 
@@ -97,7 +97,7 @@ app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 async def root():
     logger.debug("Root endpoint accessed")
     return {
-        "message": "Welcome to reNgine API",
+        "message": "reNgine API",
         "version": settings.APP_VERSION,
         "docs": "/docs",
     }

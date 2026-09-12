@@ -149,7 +149,7 @@
 		const { ok, failed } = await scansStore.removeMany(ids);
 		selectedScanIds.clear();
 		if (ok > 0) toast.success(`Deleted ${ok} scan${ok !== 1 ? 's' : ''}`);
-		if (failed > 0) toast.error(`${failed} scan${failed !== 1 ? 's' : ''} could not be deleted`);
+		if (failed > 0) toast.error(`${failed} scan${failed !== 1 ? 's' : ''} not deleted`);
 	}
 
 	async function confirmBulkCancel() {
@@ -158,7 +158,7 @@
 		if (ids.length === 0) return;
 		const { ok, failed } = await scansStore.cancelMany(ids);
 		if (ok > 0) toast.success(`Cancelled ${ok} scan${ok !== 1 ? 's' : ''}`);
-		if (failed > 0) toast.error(`${failed} scan${failed !== 1 ? 's' : ''} could not be cancelled`);
+		if (failed > 0) toast.error(`${failed} scan${failed !== 1 ? 's' : ''} not cancelled`);
 	}
 
 	let activeChips = $derived.by(() => {
@@ -198,25 +198,25 @@
 
 	async function handleExport(format: ExportFormat) {
 		if (pagination.totalItems === 0 || exporting) {
-			if (!exporting) toast.error('Nothing to export in the current view');
+			if (!exporting) toast.error('No scans to export');
 			return;
 		}
 		exporting = true;
 		try {
 			const rows = await scansStore.exportAll();
 			if (rows.length === 0) {
-				toast.error('Nothing to export in the current view');
+				toast.error('No scans to export');
 				return;
 			}
 			downloadScans(rows, format);
 			const capped = rows.length < pagination.totalItems;
 			toast.success(
 				capped
-					? `Exported the first ${rows.length} of ${pagination.totalItems} scans as ${format.toUpperCase()}`
+					? `Exported ${rows.length} of ${pagination.totalItems} scans as ${format.toUpperCase()}`
 					: `Exported ${rows.length} scan${rows.length !== 1 ? 's' : ''} as ${format.toUpperCase()}`
 			);
 		} catch {
-			toast.error('Scans could not be exported');
+			toast.error('Scans not exported');
 		} finally {
 			exporting = false;
 		}
@@ -226,14 +226,14 @@
 		const s = cancelTarget;
 		cancelTarget = null;
 		if (s && (await scansStore.cancel(s))) toast.success('Scan cancelled');
-		else if (s) toast.error(scansStore.error ?? 'Scan could not be cancelled');
+		else if (s) toast.error(scansStore.error ?? 'Scan not cancelled');
 	}
 
 	async function confirmDelete() {
 		const s = deleteTarget;
 		deleteTarget = null;
 		if (s && (await scansStore.remove(s))) toast.success('Scan deleted');
-		else if (s) toast.error(scansStore.error ?? 'Scan could not be deleted');
+		else if (s) toast.error(scansStore.error ?? 'Scan not deleted');
 	}
 </script>
 
@@ -311,7 +311,7 @@
 			/>
 		</div>
 		<div class="flex items-center gap-2">
-			<Hint text="Rescans of individual assets. Hidden by default. They are not full runs.">
+			<Hint text="Rescans of selected assets.">
 				{#snippet child(props)}
 					<label
 						{...props}
@@ -431,7 +431,7 @@
 				<Empty.Media class="size-12 rounded-2xl bg-destructive/10">
 					<TriangleAlert class="size-6 text-destructive" />
 				</Empty.Media>
-				<Empty.Title>Scans could not be loaded</Empty.Title>
+				<Empty.Title>Scans not loaded</Empty.Title>
 				<Empty.Description class="max-w-md">{scansStore.error}</Empty.Description>
 			</Empty.Header>
 			<Empty.Content>
@@ -443,8 +443,7 @@
 	{:else if rowCount === 0 && scansStore.hasActiveFilters}
 		<Empty.Root class="py-16">
 			<Empty.Header>
-				<Empty.Title>No scans match</Empty.Title>
-				<Empty.Description>Widen the search or remove a filter.</Empty.Description>
+				<Empty.Title>No scans match the filters</Empty.Title>
 			</Empty.Header>
 			<Empty.Content>
 				<Button size="sm" variant="outline" class="gap-2" onclick={() => scansStore.clearFilters()}>
@@ -461,10 +460,7 @@
 				>
 					<History />
 				</Empty.Media>
-				<Empty.Title>No scans yet</Empty.Title>
-				<Empty.Description class="max-w-sm">
-					Start a scan to build the run history.
-				</Empty.Description>
+				<Empty.Title>No scans</Empty.Title>
 			</Empty.Header>
 			{#if onLaunch}
 				<Empty.Content>
@@ -520,8 +516,8 @@
 
 <ConfirmDialog
 	open={!!cancelTarget}
-	title="Cancel this scan?"
-	description="The scan will stop queuing further work and be marked cancelled."
+	title="Cancel scan"
+	description="The scan stops and is marked cancelled."
 	confirmLabel="Cancel scan"
 	cancelLabel="Keep running"
 	onOpenChange={(o) => !o && (cancelTarget = null)}
@@ -530,8 +526,9 @@
 
 <ConfirmDialog
 	open={!!deleteTarget}
-	title="Delete this scan?"
-	description="The scan and all of its results are removed."
+	title="Delete scan"
+	description="Scan {deleteTarget?.execution_config.target_value ??
+		''} and its results are removed."
 	confirmLabel="Delete"
 	cancelLabel="Keep"
 	destructive
@@ -558,8 +555,8 @@
 
 <ConfirmDialog
 	open={bulkDeleteOpen}
-	title="Delete {selectedScans.length} scan{selectedScans.length !== 1 ? 's' : ''}?"
-	description="The selected scans and all of their results are removed."
+	title="Delete {selectedScans.length} scan{selectedScans.length !== 1 ? 's' : ''}"
+	description="The selected scans and their results are removed."
 	confirmLabel="Delete {selectedScans.length}"
 	cancelLabel="Keep"
 	destructive
@@ -569,8 +566,8 @@
 
 <ConfirmDialog
 	open={bulkCancelOpen}
-	title="Cancel {selectedLiveCount} running scan{selectedLiveCount !== 1 ? 's' : ''}?"
-	description="The selected running scans will stop queuing further work and be marked cancelled."
+	title="Cancel {selectedLiveCount} running scan{selectedLiveCount !== 1 ? 's' : ''}"
+	description="The selected scans stop and are marked cancelled."
 	confirmLabel="Cancel scans"
 	cancelLabel="Keep running"
 	onOpenChange={(o) => (bulkCancelOpen = o)}

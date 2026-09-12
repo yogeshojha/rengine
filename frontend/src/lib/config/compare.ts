@@ -133,10 +133,8 @@ export function signalSpec(key: string): SignalSpec {
 export const REFUSAL = {
 	DIFFERENT_TARGET: 'Both runs must cover the same target.',
 	UNFINISHED: 'This run has not finished.',
-	FOCUSED_AGAINST_FULL:
-		'A focused run covers only the assets it was seeded with. Open it to see its recheck against its parent run.',
-	FULL_AGAINST_FOCUSED:
-		'A focused run covers only the assets it was seeded with. Compare two full runs instead.',
+	FOCUSED_AGAINST_FULL: 'A focused run is compared with its parent run only. Open the focused run.',
+	FULL_AGAINST_FOCUSED: 'A full run cannot be compared with a focused run. Select two full runs.',
 	SAME_RUN: 'Pick two different runs.',
 	NO_EARLIER_RUN: 'No earlier run of this target to compare with.',
 	NEED_ONE_MORE: 'Select one more run of the same target.',

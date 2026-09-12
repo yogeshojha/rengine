@@ -275,7 +275,7 @@
 									{@render chip(
 										PORT_SOURCE_LABELS[s.source] ?? s.source,
 										exactToken('source', s.source),
-										'Filter by how the service was observed'
+										'Filter by source'
 									)}
 									<span class="text-xs text-muted-foreground">
 										{PORT_SOURCE_HELP[s.source] ?? ''}
@@ -430,7 +430,7 @@
 							</Item.Group>
 							{#if s.host_count > s.hosts.length}
 								<p class="px-3 text-xs text-muted-foreground">
-									Showing {s.hosts.length} of {s.host_count}. Open Web assets for the full list.
+									{s.hosts.length} of {s.host_count} shown.
 								</p>
 							{/if}
 						{:else}

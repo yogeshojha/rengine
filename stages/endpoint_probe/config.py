@@ -9,7 +9,7 @@ class EndpointProbeConfig(StageConfig):
     enabled: bool = Field(
         default=True,
         title="Verify endpoints",
-        description="Request the discovered URLs so every status is observed rather than inferred.",
+        description="Request the discovered URLs and record each status.",
     )
     threads: int = threads(40, title="Threads")
     timeout: int = timeout(10, title="Timeout (s)")
@@ -19,7 +19,7 @@ class EndpointProbeConfig(StageConfig):
         ge=0,
         le=100000,
         title="URLs to verify",
-        description="Cap the requests this stage sends. The endpoints it does not reach stay marked unverified.",
+        description="Endpoints requested. The rest stay unverified.",
     )
     skip_static: bool = Field(
         default=True,
@@ -29,5 +29,5 @@ class EndpointProbeConfig(StageConfig):
     follow_redirects: bool = Field(
         default=False,
         title="Follow redirects",
-        description="Follow 3xx. Off by default so the recorded status is the endpoint's own.",
+        description="Follow 3xx redirects.",
     )

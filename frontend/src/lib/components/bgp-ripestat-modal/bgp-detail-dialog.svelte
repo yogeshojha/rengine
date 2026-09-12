@@ -72,14 +72,14 @@
 	let DialogIcon = $derived(isAsn ? RadioTower : Radio);
 
 	let displayTitle = $derived.by(() => {
-		if (!targetValue) return 'BGP Details';
+		if (!targetValue) return 'BGP details';
 		return targetValue;
 	});
 
 	let displaySubtitle = $derived.by(() => {
 		if (overview?.holder) return overview.holder;
 		if (bgpSummary?.holder) return bgpSummary.holder;
-		return 'BGP / Network Intelligence';
+		return 'BGP record';
 	});
 
 	let showPrefixesTab = $derived(isAsn);
@@ -164,7 +164,7 @@
 			prefixOverview = (d.prefix_overview as PrefixOverviewRead[]) ?? null;
 			relatedPrefixes = (d.related_prefixes as RelatedPrefixRead[]) ?? null;
 		} catch (e) {
-			overviewError = e instanceof Error ? e.message : 'BGP data could not be loaded';
+			overviewError = e instanceof Error ? e.message : 'BGP data not loaded';
 		} finally {
 			isLoadingOverview = false;
 			isLoadingPrefixes = false;
@@ -203,7 +203,7 @@
 					<Empty.Media variant="icon">
 						<TriangleAlert />
 					</Empty.Media>
-					<Empty.Title>BGP data could not be loaded</Empty.Title>
+					<Empty.Title>BGP data not loaded</Empty.Title>
 					<Empty.Description>{overviewError}</Empty.Description>
 				</Empty.Header>
 			</Empty.Root>

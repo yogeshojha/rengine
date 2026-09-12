@@ -170,16 +170,11 @@
 		<div class="flex min-w-0 flex-col lg:border-r">
 			{#if calls.length === 0}
 				<div class="p-5">
-					<EmptyState
-						compact
-						icon={ActivityIcon}
-						title="No calls yet"
-						description="Tool calls appear here once an agent connects."
-					/>
+					<EmptyState compact icon={ActivityIcon} title="No calls" />
 				</div>
 			{:else if bursts.length === 0}
 				<div class="p-5">
-					<EmptyState compact icon={SearchX} title="No calls match" description="Remove a filter.">
+					<EmptyState compact icon={SearchX} title="No calls match">
 						<Button variant="outline" size="sm" onclick={clear}>Clear filters</Button>
 					</EmptyState>
 				</div>
@@ -319,9 +314,7 @@
 					{bursts.length}
 					{bursts.length === 1 ? 'session' : 'sessions'} from {filtered.length}
 					{#if narrowed}of {calls.length}{/if}
-					calls. Calls from one agent closer than five minutes apart form a session. The trail keeps the
-					last {TRAIL_CAP} calls for seven days{#if trailFull && oldest}; the oldest kept is from
-						{dayLabel(oldest).toLowerCase()} at {timeOfDay(oldest)}{/if}.
+					calls. The trail holds the last {TRAIL_CAP} calls for seven days.
 				</p>
 			{/if}
 		</div>

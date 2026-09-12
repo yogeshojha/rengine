@@ -14,7 +14,7 @@
 	let { onAddTarget }: { onAddTarget: () => void } = $props();
 </script>
 
-<Hint text="Quick actions">
+<Hint text="Create">
 	{#snippet child(hintProps)}
 		<span {...hintProps} class="inline-flex">
 			<DropdownMenu.Root>
@@ -22,7 +22,7 @@
 					{#snippet child({ props })}
 						<Button {...props} variant="ghost" size="icon">
 							<Plus class="h-4 w-4" />
-							<span class="sr-only">Quick actions</span>
+							<span class="sr-only">Create</span>
 						</Button>
 					{/snippet}
 				</DropdownMenu.Trigger>

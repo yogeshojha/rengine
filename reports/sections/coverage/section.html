@@ -1,12 +1,12 @@
-<p class="block muted small">A count of zero means the check ran and found nothing. A dimension marked as not assessed means no check ran, and nothing in this report should be read as a statement about it.</p>
+<p class="block muted small">A count of zero means the check ran and found nothing. Not scanned means no check ran.</p>
 
 <table class="table block">
-  <thead><tr><th>Dimension</th><th style="width:34mm">Assessed</th><th class="num" style="width:24mm">Observed</th></tr></thead>
+  <thead><tr><th>Dimension</th><th style="width:34mm">Scanned</th><th class="num" style="width:24mm">Observed</th></tr></thead>
   <tbody>
     {% for row in dimensions %}
     <tr>
       <td>{{ row.label }}</td>
-      <td>{% if row.covered %}Yes{% else %}<span class="faint">Not assessed</span>{% endif %}</td>
+      <td>{% if row.covered %}Yes{% else %}<span class="faint">Not scanned</span>{% endif %}</td>
       <td class="num">{% if row.covered %}{{ row.count|num }}{% else %}<span class="faint">—</span>{% endif %}</td>
     </tr>
     {% endfor %}
@@ -15,7 +15,7 @@
 
 {% if runs %}
 <div class="sub">
-  <div class="label block">Scanner account</div>
+  <div class="label block">Scanner runs</div>
   <table class="table">
     <thead><tr><th>Run</th><th>Outcome</th><th class="num">Checks</th><th class="num">Hosts</th><th class="num">Requests</th><th class="num">Errors</th></tr></thead>
     <tbody>
@@ -31,7 +31,7 @@
       {% endfor %}
     </tbody>
   </table>
-  <p class="micro faint" style="margin-top:1.4mm">A dash means the scanner did not report that figure. It never means zero.</p>
+  <p class="micro faint" style="margin-top:1.4mm">A dash means the scanner did not report the figure.</p>
 </div>
 {% endif %}
 

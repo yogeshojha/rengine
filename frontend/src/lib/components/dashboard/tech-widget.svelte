@@ -30,7 +30,7 @@
 
 <Widget
 	title="Technology"
-	description="Technologies fingerprinted on live web assets"
+	description="Technologies fingerprinted on web assets"
 	href={ROUTES.surface(SPEC.tab)}
 	hrefLabel="Web assets"
 	loading={loading && !tech}
@@ -53,7 +53,7 @@
 				{tech.length - TOP} more technologies in Web assets
 			</a>
 		{:else}
-			Counts are hosts with the technology
+			Counts are web assets with the technology
 		{/if}
 	{/snippet}
 </Widget>

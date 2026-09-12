@@ -24,7 +24,7 @@ class BurpConnector(ProxyConnector):
         return [
             SetupStep(
                 title="Build the extension",
-                detail="The extension is not published to the BApp Store yet. Build the jar from clients/burp in the reNgine repository. A JDK 17 or later is the only requirement.",
+                detail="Build the jar from clients/burp in the reNgine repository. Requires JDK 17 or later.",
                 code="cd clients/burp && ./build.sh",
                 lang="shell",
             ),

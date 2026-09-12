@@ -26,11 +26,7 @@ class ListTargets(Tool):
     name = "list_targets"
     title = "List targets"
     group = ToolGroup.ORIENT.value
-    description = (
-        "The targets this token can reach, with their project and type. "
-        "Use it when the user names something loosely, or to check what exists before "
-        "resolving a target."
-    )
+    description = "The targets this token can reach, with project and type."
     Input = Input
     examples = ("list_targets", "list_targets contains=acme")
 
@@ -74,7 +70,7 @@ class ListTargets(Tool):
             },
             pivot=f"{ctx.ui_base_url.rstrip('/')}/targets",
             caveats=(
-                [f"{len(rows) - len(shown)} more not shown; narrow with `contains`."]
+                [f"{len(rows) - len(shown)} more not shown. Narrow with `contains`."]
                 if len(rows) > len(shown)
                 else []
             ),

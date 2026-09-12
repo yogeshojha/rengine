@@ -305,12 +305,10 @@ REFUSAL_REASON: dict[str, str] = {
     Refusal.DIFFERENT_TARGET.value: "Both runs must cover the same target.",
     Refusal.UNFINISHED.value: "This run has not finished.",
     Refusal.FOCUSED_AGAINST_FULL.value: (
-        "A focused run covers only the assets it was seeded with. "
-        "Open it to see its recheck against its parent run."
+        "A focused run is compared with its parent run only. Open the focused run."
     ),
     Refusal.FULL_AGAINST_FOCUSED.value: (
-        "A focused run covers only the assets it was seeded with. "
-        "Compare two full runs instead."
+        "A full run cannot be compared with a focused run. Select two full runs."
     ),
     Refusal.SAME_RUN.value: "Pick two different runs.",
     Refusal.NO_EARLIER_RUN.value: "No earlier run of this target to compare with.",

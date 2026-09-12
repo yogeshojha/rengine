@@ -110,7 +110,7 @@ def _guard(exc: ConnectorError) -> HTTPException:
 
 
 def _as_url(host: str) -> str:
-    """A proxy's scope is expressed as URLs, not bare hostnames."""
+    """Scope entries are URLs."""
     value = host.strip()
     return value if value.startswith(("http://", "https://")) else f"https://{value}"
 
@@ -164,7 +164,7 @@ class ConnectorService:
             .where(Connector.project_id == data.project_id)
         )
         if (count or 0) >= MAX_CONNECTORS:
-            msg = f"This project already has {MAX_CONNECTORS} connectors."
+            msg = f"The connector limit is {MAX_CONNECTORS}."
             raise ConnectorError(msg)
         secret, token_hash, prefix = auth.mint()
         row = Connector(
@@ -374,7 +374,7 @@ class ConnectorService:
         }
 
     async def _upsert(self, rows: list[dict]) -> int:
-        """A shape already seen only moves forward."""
+        """Upsert by signature."""
         rows.sort(key=lambda r: r["signature"])
         before = await self.session.scalar(
             select(func.count())
@@ -540,15 +540,13 @@ class ConnectorService:
             raise ConnectorError(msg)
         program = self._forbidden(value, await self.forbidden_hosts(project_id))
         if program:
-            msg = (
-                f"{value} is out of scope for {program}. Testing it is not authorised."
-            )
+            msg = f"{value} is out of scope for {program}."
             raise ConnectorError(msg)
         targets = await TargetService(self.session).ensure_targets(
             [value], project_id, created_by
         )
         if not targets:
-            msg = "The target could not be created."
+            msg = "Target not created."
             raise ConnectorError(msg)
         target_id = targets[0].id
         await self.session.execute(
@@ -802,7 +800,7 @@ class ConnectorService:
             )
         )
         if (pending or 0) + len(ids) > MAX_PENDING_ACTIONS:
-            msg = f"{MAX_PENDING_ACTIONS} actions are already waiting to be collected."
+            msg = f"The action queue holds {MAX_PENDING_ACTIONS}. Wait for the proxy to collect them."
             raise ConnectorError(msg)
         picked = (
             (
@@ -817,7 +815,7 @@ class ConnectorService:
             .all()
         )
         if not picked:
-            msg = "Nothing was selected."
+            msg = "Nothing selected."
             raise ConnectorError(msg)
         self.session.add_all(
             [
@@ -841,14 +839,14 @@ class ConnectorService:
         endpoints: list[Endpoint],
         kind: str,
     ) -> int:
-        """Hand discovered endpoints to the proxy, the same queue the candidates use."""
+        """Queue discovered endpoints for the proxy."""
         row = await self.get(connector_id, project_id)
         if kind not in {k.value for k in ActionKind}:
             msg = f"Unknown action {kind!r}."
             raise ConnectorError(msg)
         rows = [e for e in endpoints if e.project_id == project_id]
         if not rows:
-            msg = "Nothing was selected."
+            msg = "Nothing selected."
             raise ConnectorError(msg)
         pending = await self.session.scalar(
             select(func.count())
@@ -859,7 +857,7 @@ class ConnectorService:
             )
         )
         if (pending or 0) + len(rows) > MAX_PENDING_ACTIONS:
-            msg = f"{MAX_PENDING_ACTIONS} actions are already waiting to be collected."
+            msg = f"The action queue holds {MAX_PENDING_ACTIONS}. Wait for the proxy to collect them."
             raise ConnectorError(msg)
         self.session.add_all(
             [
@@ -877,7 +875,7 @@ class ConnectorService:
         return len(rows)
 
     async def take_notices(self, row: Connector) -> list[NoticeRead]:
-        """What reNgine wants said while the tester is still testing."""
+        """Loud notices not yet delivered."""
         pending = (
             (
                 await self.session.execute(
@@ -922,10 +920,10 @@ class ConnectorService:
     async def record_finding(
         self, row: Connector, report: FindingReport, created_by: uuid.UUID | None
     ) -> FindingRecorded:
-        """A person confirmed something."""
+        """Record a manually confirmed finding."""
         parsed = parse_url(report.url)
         if parsed is None:
-            msg = "That URL could not be read."
+            msg = "The URL could not be parsed."
             raise ConnectorError(msg)
         if report.severity not in {s.value for s in Severity}:
             msg = f"Unknown severity {report.severity!r}."
@@ -1310,7 +1308,7 @@ class ConnectorService:
     async def program_scope(
         self, row: Connector, program_id: uuid.UUID
     ) -> ConnectorScope:
-        """A program's own scope, available the moment it is imported."""
+        """A program's scope rules."""
         rows = (
             await self.session.execute(
                 select(
@@ -1330,7 +1328,7 @@ class ConnectorService:
             )
         ).all()
         if not rows:
-            msg = "No scope is recorded for that program in this project."
+            msg = "No scope recorded for this program in this project."
             raise ConnectorError(msg)
         include: set[str] = set()
         exclude: set[str] = set()
@@ -1354,10 +1352,10 @@ class ConnectorService:
         )
 
     async def scope_for(self, row: Connector, target_id: uuid.UUID) -> ConnectorScope:
-        """Scope rules for the proxy: the hostnames reNgine found, and a program's exclusions."""
+        """Scope rules for the proxy: known hostnames plus program exclusions."""
         target = await self.session.get(Target, target_id)
         if target is None or target.project_id != row.project_id:
-            msg = "That target does not belong to this project."
+            msg = "The target does not belong to this project."
             raise ConnectorError(msg)
 
         hosts = [
@@ -1409,7 +1407,7 @@ class ConnectorService:
         )
 
     async def host_facts(self, row: Connector, host: str) -> HostFacts:
-        """What reNgine already knows about the host being tested."""
+        """Known facts about a host."""
         name = (host or "").strip().lower()
         if not name:
             msg = "No host given."
@@ -1505,7 +1503,7 @@ class ConnectorService:
         return await self.session.scalar(query) or 0
 
     def _setup(self, row: Connector, secret: str, base_url: str = "") -> dict:
-        """The proxy runs on someone's laptop."""
+        """Setup steps for the proxy."""
         spec = connector_for(row.kind)
         if spec is None:
             return {}

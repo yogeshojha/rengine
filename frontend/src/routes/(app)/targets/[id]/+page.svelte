@@ -225,7 +225,7 @@
 			target = await targetsApi.get(targetId);
 			breadcrumbStore.set(targetId, target.target_value);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Target could not be loaded';
+			error = e instanceof Error ? e.message : 'Target not loaded';
 		} finally {
 			isLoading = false;
 		}
@@ -237,7 +237,7 @@
 			detail = await targetsApi.getDetail(targetId);
 			detailError = null;
 		} catch (e) {
-			detailError = e instanceof Error ? e.message : 'Enrichment details could not be loaded';
+			detailError = e instanceof Error ? e.message : 'Enrichment not loaded';
 		} finally {
 			if (!silent) detailLoading = false;
 		}
@@ -469,7 +469,7 @@
 		if (ok) {
 			toast.success('Scan cancelled');
 			refreshAll();
-		} else toast.error('Scan could not be cancelled');
+		} else toast.error('Scan not cancelled');
 	}
 
 	async function handleRefreshEnrichment() {
@@ -479,8 +479,8 @@
 		if (showBgp) requests.push(targetsApi.refreshBgp(target.id));
 		const results = await Promise.allSettled(requests);
 		const failed = results.filter((r) => r.status === 'rejected').length;
-		if (failed === results.length) toast.error('Enrichment refresh failed');
-		else if (failed > 0) toast.error(`${failed} of ${results.length} lookups failed to start`);
+		if (failed === results.length) toast.error('Enrichment refresh not started');
+		else if (failed > 0) toast.error(`${failed} of ${results.length} lookups not started`);
 		else toast.success('Enrichment refresh started');
 		await fetchTarget();
 		startPolling();
@@ -500,7 +500,7 @@
 			await fetchTarget();
 			startPolling();
 		} catch {
-			toast.error(`${kind.toUpperCase()} refresh failed`);
+			toast.error(`${kind.toUpperCase()} refresh not started`);
 		} finally {
 			refreshing = { ...refreshing, [kind]: false };
 		}
@@ -520,7 +520,7 @@
 			JSON.stringify({ target, detail, summary, scans: history, correlations }, null, 2),
 			'application/json'
 		);
-		toast.success('Exported target as JSON');
+		toast.success('Target exported as JSON');
 	}
 
 	function handleExportCsv() {
@@ -551,7 +551,7 @@
 		const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
 		const csv = ['field,value', ...rows.map(([k, v]) => `${esc(k)},${esc(v)}`)].join('\n');
 		downloadBlob(fileName('csv'), csv, 'text/csv');
-		toast.success('Exported target as CSV');
+		toast.success('Target exported as CSV');
 	}
 
 	async function confirmDelete() {
@@ -563,7 +563,7 @@
 			showDeleteDialog = false;
 			goto(ROUTES.targets);
 		} catch {
-			toast.error('Target could not be deleted');
+			toast.error('Target not deleted');
 		} finally {
 			isDeleting = false;
 		}
@@ -624,7 +624,7 @@
 				class="flex items-center justify-between gap-3 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3"
 			>
 				<p class="text-sm text-destructive">
-					Enrichment details could not be loaded. {detailError}
+					Enrichment not loaded. {detailError}
 				</p>
 				<Button variant="outline" size="sm" onclick={() => fetchDetail()}>Retry</Button>
 			</div>
@@ -779,7 +779,7 @@
 						anchor={{ targetId: target.id }}
 						filter={{ target_id: target.id }}
 						emptyTitle="No notes on this target"
-						emptyDescription="Notes written on this target's assets appear here."
+						emptyDescription="Add a note from one of its assets."
 						onCount={(n) => (notesTotal = n)}
 					/>
 				</div>
@@ -809,8 +809,8 @@
 
 	<ConfirmDialog
 		bind:open={cancelOpen}
-		title="Cancel this scan?"
-		description="Stages that already finished keep their results. The scan is marked cancelled."
+		title="Cancel scan"
+		description="The scan is marked cancelled. Finished stages keep their results."
 		confirmLabel="Cancel scan"
 		loading={cancelling}
 		onOpenChange={(open) => (cancelOpen = open)}
@@ -819,8 +819,8 @@
 
 	<DeleteConfirmationDialog
 		bind:open={showDeleteDialog}
-		title="Delete this target?"
-		description="Every scan and finding for {target.target_value} is deleted with it."
+		title="Delete target"
+		description="Target {target.target_value} and its scans and findings are removed."
 		{isDeleting}
 		onOpenChange={(open) => (showDeleteDialog = open)}
 		onConfirm={confirmDelete}

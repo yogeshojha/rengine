@@ -91,15 +91,14 @@
 
 		{#if comparison.live}
 			<p class="text-xs text-muted-foreground">
-				The later run is still going. Missing rows are listed as unconfirmed.
+				The later run is in progress. Missing rows are listed as unconfirmed.
 			</p>
 		{/if}
 
 		{#if intelMoved > 0}
 			<p class="text-xs text-muted-foreground">
 				{intelMoved.toLocaleString()}
-				{intelMoved === 1 ? 'finding was' : 'findings were'} re-ranked by exploitation intelligence, not
-				by this scan.
+				{intelMoved === 1 ? 'finding' : 'findings'} re-ranked by exploitation intelligence.
 			</p>
 		{/if}
 

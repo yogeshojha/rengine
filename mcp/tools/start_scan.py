@@ -17,9 +17,7 @@ from shared.enums.scan import Intensity
 
 
 class Input(ToolInput):
-    target: str = Field(
-        description="The target to scan. Created in reNgine if it does not exist yet."
-    )
+    target: str = Field(description="The target to scan. Created if it does not exist.")
     engine_id: str | None = Field(
         default=None, description="A saved scan engine. Omit for an ad hoc plan."
     )
@@ -46,10 +44,9 @@ class StartScan(Tool):
     capability = Capability.LAUNCH.value
     group = ToolGroup.ACT.value
     description = (
-        "Start a scan against a target in this token's project. This sends traffic to "
-        "the target, so run plan_scan first and tell the user what will happen. "
-        "Returns immediately with a scan id and a link; scanning continues in the "
-        "background. Poll resolve_target for progress rather than waiting."
+        "Start a scan against a target in this token's project. Sends traffic to the "
+        "target. Returns a scan id and a link. The scan runs in the background. "
+        "Poll scan_status for progress."
     )
     Input = Input
     examples = ("start_scan target=example.com stages=['subdomain_discovery']",)
@@ -59,7 +56,7 @@ class StartScan(Tool):
         from shared.models.scan import ScanCreate  # noqa: PLC0415
 
         if ctx.token.issued_by is None:
-            msg = "This token has no issuing operator, so a scan cannot be attributed."
+            msg = "This token has no issuing operator to attribute the scan to."
             raise ToolError(msg)
 
         project_id = await project_for(
@@ -84,7 +81,7 @@ class StartScan(Tool):
                 data, project_id, ctx.token.issued_by
             )
         except Exception as exc:
-            msg = f"The scan could not be started: {exc}"
+            msg = f"Scan not started: {exc}"
             raise ToolError(msg) from exc
 
         target = args.target.strip()
@@ -101,7 +98,7 @@ class StartScan(Tool):
             pivot=links.scan(ctx.ui_base_url, scan.id),
             caveats=[
                 _traffic_note(scan),
-                "Follow the run with scan_status, and stop it with cancel_scan.",
+                "scan_status follows the run. cancel_scan stops it.",
                 f"Started by agent token '{ctx.token.name}' via MCP.",
             ],
         )
@@ -110,10 +107,9 @@ class StartScan(Tool):
 def _traffic_note(scan) -> str:
     passive = getattr(scan.execution_config, "intensity", "") == Intensity.PASSIVE.value
     return (
-        "Passive intensity: every stage that would touch the target is off, so no "
-        "traffic reaches it."
+        "Passive intensity. No traffic reaches the target."
         if passive
-        else "Traffic is now being sent to this target."
+        else "Traffic is being sent to the target."
     )
 
 

@@ -97,7 +97,8 @@ async def delete_rule(
 ) -> None:
     if not await InterestReadService(session).delete(rule_id):
         raise HTTPException(
-            status.HTTP_404_NOT_FOUND, "Rule not found, or it is a shipped rule"
+            status.HTTP_404_NOT_FOUND,
+            "Rule not found. Shipped rules cannot be deleted.",
         )
     dispatch_interest_refresh(str(project_id))
 
@@ -136,7 +137,7 @@ async def project_interest(
     project_id: Annotated[UUID, Query(description="Project ID")],
     body: InterestFilter,
 ) -> InterestPage:
-    """Every flagged asset in the project, from each target's latest covering scan."""
+    """Flagged assets across each target's latest covering scan."""
     scope = await SurfaceScopeService(session).scope(
         project_id, SurfaceDimension.WEB_ASSETS.value
     )
@@ -193,7 +194,7 @@ async def list_dismissals(
     project_id: Annotated[UUID | None, Query()] = None,
 ) -> list[dict]:
     if target_id is None and project_id is None:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Name a target or a project")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Pass target_id or project_id")
     rows = await InterestReadService(session).dismissals(
         target_id=target_id, project_id=project_id
     )
@@ -217,4 +218,4 @@ async def restore_dismissal(
     dismissal_id: Annotated[UUID, Path()],
 ) -> None:
     if not await InterestReadService(session).restore(dismissal_id):
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Dismissal not found")

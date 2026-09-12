@@ -46,7 +46,7 @@
 		{
 			value: 'none',
 			label: 'No proxy',
-			hint: 'Send recon traffic directly from this host.',
+			hint: 'Scan traffic is sent directly from this instance.',
 			icon: CircleSlashIcon
 		},
 		{
@@ -70,17 +70,17 @@
 	const PROVIDERS = [
 		{
 			name: 'Bright Data',
-			note: 'Large residential and datacenter pools with per-request rotation.',
+			note: 'Residential and datacenter pools, per-request rotation.',
 			url: 'https://brightdata.com'
 		},
 		{
 			name: 'Smartproxy',
-			note: 'Residential and ISP proxies with a simple rotating gateway.',
+			note: 'Residential and ISP proxies, rotating gateway.',
 			url: 'https://smartproxy.com'
 		},
 		{
 			name: 'Oxylabs',
-			note: 'Enterprise residential and datacenter proxy infrastructure.',
+			note: 'Residential and datacenter proxies.',
 			url: 'https://oxylabs.io'
 		}
 	];
@@ -163,7 +163,7 @@
 
 	async function handleTest() {
 		if (!configured) {
-			toast.error('Add a proxy endpoint before testing');
+			toast.error('Enter a proxy endpoint');
 			return;
 		}
 		busy = true;
@@ -173,7 +173,7 @@
 			testedId = id;
 			const result = await proxiesApi.test(id);
 			if (result.success) {
-				const ms = result.latency_ms != null ? ` (${result.latency_ms} ms)` : '';
+				const ms = result.latency_ms != null ? ` in ${result.latency_ms} ms` : '';
 				toast.success(`Proxy reachable${ms}`);
 			} else {
 				toast.error(result.message || 'Proxy test failed');
@@ -197,10 +197,10 @@
 			} else {
 				await persist(true);
 			}
-			toast.success('Proxy saved as the default');
+			toast.success('Proxy saved as default');
 			next();
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Proxy could not be saved');
+			toast.error(e instanceof Error ? e.message : 'Proxy not saved');
 		} finally {
 			busy = false;
 		}
@@ -285,8 +285,7 @@
 			</div>
 			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 				<div class="space-y-1.5">
-					<Label class="text-xs"
-						>Username <span class="text-muted-foreground">(optional)</span></Label
+					<Label class="text-xs">Username <span class="text-muted-foreground">Optional</span></Label
 					>
 					<Input
 						value={single.username ?? ''}
@@ -297,8 +296,7 @@
 					/>
 				</div>
 				<div class="space-y-1.5">
-					<Label class="text-xs"
-						>Password <span class="text-muted-foreground">(optional)</span></Label
+					<Label class="text-xs">Password <span class="text-muted-foreground">Optional</span></Label
 					>
 					<Input
 						type="password"
@@ -355,9 +353,7 @@
 				{/if}
 				Test connection
 			</Button>
-			<p class="mt-1.5 text-2xs text-muted-foreground">
-				Saves the proxy and runs a reachability check. It becomes the default only on continue.
-			</p>
+			<p class="mt-1.5 text-2xs text-muted-foreground">Saves the proxy and checks reachability.</p>
 		</div>
 	{/if}
 
@@ -366,10 +362,7 @@
 	<div class="space-y-3">
 		<div class="flex items-start gap-2">
 			<InfoIcon class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-			<p class="text-xs text-muted-foreground">
-				Commonly used providers. reNgine has no affiliation with them and receives nothing from
-				these links.
-			</p>
+			<p class="text-xs text-muted-foreground">Third-party providers. No affiliation.</p>
 		</div>
 		<div class="grid gap-2.5 sm:grid-cols-3">
 			{#each PROVIDERS as p (p.name)}
@@ -382,7 +375,7 @@
 						rel="noopener noreferrer"
 						class="mt-2.5 inline-flex items-center gap-1 text-xs text-primary hover:underline"
 					>
-						Learn more <ExternalLinkIcon class="size-4" />
+						Website <ExternalLinkIcon class="size-4" />
 					</a>
 				</div>
 			{/each}

@@ -49,10 +49,10 @@
 	}: Props = $props();
 
 	const META: Record<ContextFormSection, { title: string; subtitle: string }> = {
-		identity: { title: 'Description', subtitle: 'Notes on when to use this context' },
+		identity: { title: 'Description', subtitle: 'Notes' },
 		auth: { title: 'Authentication', subtitle: 'Credentials and headers sent with every request' },
 		rate: { title: 'Rate limiting', subtitle: 'Request rate caps and concurrency multipliers' },
-		scope: { title: 'Scope', subtitle: 'Assets to include in or exclude from scanning' },
+		scope: { title: 'Scope', subtitle: 'Included and excluded assets' },
 		runtime: { title: 'Runtime', subtitle: 'Protocol and redirect behavior' },
 		proxy: { title: 'Proxy', subtitle: 'Route scan traffic through a proxy' }
 	};
@@ -153,14 +153,14 @@
 	<p class="mb-1 font-medium text-foreground">Precedence</p>
 	<ul class="space-y-1 pl-3">
 		<li class="list-disc">Context rate overrides replace the engine rate limits.</li>
-		<li class="list-disc">The global limit is a ceiling. It lowers rates but never raises them.</li>
+		<li class="list-disc">The global limit is a ceiling.</li>
 	</ul>
 {/snippet}
 
 {#snippet identityBody()}
 	<Textarea
 		value={draft.description ?? ''}
-		placeholder="Describe when to use this context, such as the environment or program it applies to."
+		placeholder="Environment or program this context applies to"
 		class="min-h-20 text-sm"
 		oninput={(e) => onPatch({ description: e.currentTarget.value || null })}
 	/>

@@ -33,10 +33,10 @@
 				resetForm();
 				open = false;
 			} else {
-				error = projectsStore.error || 'Project could not be created';
+				error = projectsStore.error || 'Project not created';
 			}
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'An unexpected error occurred';
+			error = e instanceof Error ? e.message : 'Project not created';
 		} finally {
 			isSubmitting = false;
 		}
@@ -58,9 +58,6 @@
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
 			<Dialog.Title>Create project</Dialog.Title>
-			<Dialog.Description>
-				A project keeps its targets, scans and findings separate.
-			</Dialog.Description>
 		</Dialog.Header>
 
 		<form onsubmit={handleSubmit} class="space-y-4">
@@ -69,7 +66,7 @@
 				<Input
 					id="project-name"
 					bind:value={name}
-					placeholder="e.g. Example Corp Pentest"
+					placeholder="Example Corp"
 					disabled={isSubmitting}
 					class={isOverLimit ? 'border-destructive focus-visible:ring-destructive' : ''}
 				/>
@@ -78,11 +75,10 @@
 						<span class="text-destructive">{error}</span>
 					{:else if isOverLimit}
 						<span class="text-destructive">Name is too long</span>
-					{:else}
-						<span class="text-muted-foreground">A URL-friendly slug is generated from the name</span
-						>
 					{/if}
-					<span class={nameLength > MAX_LENGTH ? 'text-destructive' : 'text-muted-foreground'}>
+					<span
+						class="ml-auto {nameLength > MAX_LENGTH ? 'text-destructive' : 'text-muted-foreground'}"
+					>
 						{nameLength}/{MAX_LENGTH}
 					</span>
 				</div>
@@ -100,7 +96,7 @@
 				<Button type="submit" disabled={!isValid || isSubmitting}>
 					{#if isSubmitting}
 						<Spinner class="mr-2 size-4" />
-						Creating…
+						Creating
 					{:else}
 						Create project
 					{/if}

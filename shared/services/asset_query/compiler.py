@@ -349,7 +349,7 @@ def compile_compare(cmp: Compare, ctx: QueryContext) -> Compiled:
     builder = _ASSET_BUILDERS.get(cmp.name)
     if builder is not None:
         return Compiled(asset=builder(cmp, ctx))
-    msg = f"Field {cmp.name!r} cannot be searched yet."
+    msg = f"Field {cmp.name!r} cannot be searched."
     raise QuerySyntaxError(msg, cmp.start, cmp.end)
 
 

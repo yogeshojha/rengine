@@ -50,12 +50,12 @@ def check_css(css: str) -> None:
     if not css:
         return
     if _IMPORT_RE.search(css):
-        msg = "A theme may not use @import. Put the rules in the css block itself."
+        msg = "@import is not accepted. Put the rules in the css block."
         raise ThemeError(msg)
     for target in _URL_RE.findall(css):
         if not target.strip().lower().startswith("data:"):
             msg = (
-                "A theme may only reference embedded data in url(). "
+                "url() accepts data: URIs only. "
                 f"Refused: {target.strip()[:80] or '(empty)'}"
             )
             raise ThemeError(msg)
@@ -80,7 +80,7 @@ def parse(source: str, *, slug: str = "") -> ThemeTokens:
     if slug:
         tokens.key = slug
     if not tokens.key:
-        msg = "A theme needs a key."
+        msg = "The theme has no key."
         raise ThemeError(msg)
     if not tokens.name:
         tokens.name = tokens.key.replace("-", " ").title()

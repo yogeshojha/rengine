@@ -71,7 +71,7 @@
 				</div>
 			</ScrollArea>
 		{:else}
-			<p class="pt-3 text-xs text-muted-foreground">This section has nothing to configure.</p>
+			<p class="pt-3 text-xs text-muted-foreground">No settings.</p>
 		{/if}
 	</Popover.Content>
 </Popover.Root>

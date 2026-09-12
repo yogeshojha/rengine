@@ -205,7 +205,7 @@
 						<Popover.Content class="w-80" align="start">
 							<div class="space-y-3">
 								<div class="flex items-center justify-between">
-									<Label class="text-xs font-medium">Full API Key</Label>
+									<Label class="text-xs font-medium">API key</Label>
 									{#if revealedKeyValue}
 										<Button
 											variant="ghost"
@@ -233,7 +233,7 @@
 									</code>
 								{:else if revealError}
 									<div class="flex items-center justify-between gap-2">
-										<p class="text-xs text-muted-foreground">Key could not be loaded</p>
+										<p class="text-xs text-muted-foreground">Key not loaded</p>
 										<Button
 											variant="outline"
 											size="sm"
@@ -271,13 +271,13 @@
 								</span>
 							{/snippet}
 						</Tooltip.Trigger>
-						<Tooltip.Content>Total API calls made</Tooltip.Content>
+						<Tooltip.Content>API calls</Tooltip.Content>
 					</Tooltip.Root>
 
 					{#if apiKey.last_used_at}
 						<span>Last used {formatDate(apiKey.last_used_at)}</span>
 					{:else}
-						<span>Never used</span>
+						<span>Unused</span>
 					{/if}
 				</div>
 
@@ -306,10 +306,7 @@
 						<Popover.Content class="w-80" align="start">
 							<div class="space-y-3">
 								<div>
-									<h4 class="text-sm font-medium">Update API Key</h4>
-									<p class="text-xs text-muted-foreground mt-0.5">
-										Enter a new key for {provider.name}
-									</p>
+									<h4 class="text-sm font-medium">Update API key</h4>
 								</div>
 								{#if provider.requires_username}
 									<FormField label="Username">
@@ -325,14 +322,14 @@
 										{/snippet}
 									</FormField>
 								{/if}
-								<FormField label="New API Key">
+								<FormField label="New API key">
 									{#snippet children({ id })}
 										<div class="relative">
 											<Input
 												{id}
 												type={editShowKey ? 'text' : 'password'}
 												bind:value={editKeyValue}
-												placeholder="Paste the API key"
+												placeholder="API key"
 												disabled={editSaving}
 												class="h-8 text-xs pr-8"
 											/>
@@ -351,7 +348,7 @@
 									size="sm"
 									class="w-full h-8 text-xs"
 									loading={editSaving}
-									loadingLabel="Saving…"
+									loadingLabel="Saving"
 									disabled={!editKeyValue.trim() ||
 										(provider.requires_username && !editUsername.trim())}
 									onclick={saveEdit}
@@ -382,7 +379,7 @@
 								</Button>
 							{/snippet}
 						</Tooltip.Trigger>
-						<Tooltip.Content>Test API key validity</Tooltip.Content>
+						<Tooltip.Content>Test key</Tooltip.Content>
 					</Tooltip.Root>
 
 					<div class="flex-1"></div>

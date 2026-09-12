@@ -69,7 +69,7 @@ function createReportsStore() {
 				fetchedProjectId = projectId;
 				schedule(projectId);
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Reports could not be loaded');
+				toast.error(e instanceof Error ? e.message : 'Reports not loaded');
 			} finally {
 				isLoading = false;
 			}
@@ -82,7 +82,7 @@ function createReportsStore() {
 				templates = await reportsApi.templates(projectId);
 				templatesProjectId = projectId;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Report templates could not be loaded');
+				toast.error(e instanceof Error ? e.message : 'Report templates not loaded');
 			} finally {
 				templatesLoading = false;
 			}
@@ -95,7 +95,7 @@ function createReportsStore() {
 				schedule(projectId);
 				return report;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Report could not be started');
+				toast.error(e instanceof Error ? e.message : 'Report not started');
 				return null;
 			}
 		},
@@ -107,7 +107,7 @@ function createReportsStore() {
 				schedule(projectId);
 				return true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Report could not be restarted');
+				toast.error(e instanceof Error ? e.message : 'Report not restarted');
 				return false;
 			}
 		},
@@ -118,7 +118,7 @@ function createReportsStore() {
 				reports = reports.filter((r) => r.id !== id);
 				return true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Report could not be deleted');
+				toast.error(e instanceof Error ? e.message : 'Report not deleted');
 				return false;
 			}
 		},
@@ -136,7 +136,7 @@ function createReportsStore() {
 				templates = templates.map((t) => (t.id === id ? updated : t));
 				return true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Template could not be saved');
+				toast.error(e instanceof Error ? e.message : 'Template not saved');
 				return false;
 			}
 		},
@@ -147,7 +147,7 @@ function createReportsStore() {
 				templates = [...templates, created];
 				return created;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Template could not be created');
+				toast.error(e instanceof Error ? e.message : 'Template not created');
 				return null;
 			}
 		},
@@ -158,7 +158,7 @@ function createReportsStore() {
 				templates = templates.filter((t) => t.id !== id);
 				return true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Template could not be deleted');
+				toast.error(e instanceof Error ? e.message : 'Template not deleted');
 				return false;
 			}
 		},

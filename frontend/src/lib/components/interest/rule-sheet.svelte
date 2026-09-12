@@ -36,7 +36,7 @@
 	let isEdit = $derived(rule !== null);
 	let locked = $derived(rule?.builtin === true);
 	let kinds = $derived(interestCatalog.catalog?.kinds ?? []);
-	let kindLabel = $derived(kinds.find((k) => k.key === kind)?.label ?? 'Pick a reason');
+	let kindLabel = $derived(kinds.find((k) => k.key === kind)?.label ?? 'Select a reason');
 
 	$effect(() => {
 		if (!open) return;
@@ -63,11 +63,11 @@
 
 	async function save(): Promise<void> {
 		if (!name.trim()) {
-			toast.error('Give the rule a name.');
+			toast.error('Name is required');
 			return;
 		}
 		if (!locked && !query.trim()) {
-			toast.error('Add a query.');
+			toast.error('Query is required');
 			return;
 		}
 		saving = true;
@@ -87,7 +87,7 @@
 			toast.success(isEdit ? `${saved.name} saved` : `${saved.name} added`);
 			onSaved(saved);
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Could not save the rule');
+			toast.error(e instanceof Error ? e.message : 'Rule not saved');
 		} finally {
 			saving = false;
 		}
@@ -100,8 +100,8 @@
 			<Sheet.Title>{isEdit ? rule?.name : 'New rule'}</Sheet.Title>
 			<Sheet.Description>
 				{locked
-					? 'A shipped rule keeps its query. You can change whether it runs and whether it notifies.'
-					: 'A rule is a saved query. Anything it matches is flagged as an exposure.'}
+					? 'Shipped rule. The query is read-only.'
+					: 'A saved query. Matches are flagged as exposures.'}
 			</Sheet.Description>
 		</Sheet.Header>
 
@@ -143,12 +143,12 @@
 				{#if preview?.error}
 					<p class="text-xs text-destructive">{preview.error}</p>
 				{:else if checking}
-					<p class="text-xs text-muted-foreground">Checking…</p>
+					<p class="text-xs text-muted-foreground">Checking</p>
 				{:else if preview}
-					<p class="text-xs text-muted-foreground">The query is valid.</p>
+					<p class="text-xs text-muted-foreground">Query is valid.</p>
 				{/if}
 
-				<FormField label="Description" description="Shown as the reason on a flagged asset">
+				<FormField label="Description" description="Shown on a flagged asset">
 					{#snippet children(props)}
 						<Textarea {...props} bind:value={description} disabled={locked} rows={2} />
 					{/snippet}
@@ -156,9 +156,9 @@
 
 				<label class="flex items-center justify-between gap-4 text-sm">
 					<span class="flex flex-col gap-0.5">
-						Notify me
+						Notify
 						<span class="text-xs text-muted-foreground">
-							Sends a notification the first time this rule flags an asset.
+							Sends a notification the first time the rule flags an asset.
 						</span>
 					</span>
 					<Switch bind:checked={notify} />

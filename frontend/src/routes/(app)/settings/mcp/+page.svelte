@@ -153,9 +153,7 @@
 							Start server
 						</LoadingButton>
 					{/if}
-					<Hint
-						text={status.tokens_total >= 50 ? 'This instance holds the maximum of 50 tokens.' : ''}
-					>
+					<Hint text={status.tokens_total >= 50 ? 'Token limit of 50 reached.' : ''}>
 						{#snippet child(props)}
 							<span {...props} class="inline-flex">
 								<Button
@@ -215,7 +213,7 @@
 				<AccessTab {canAdmin} {now} onIssueToken={() => (tokenDialogOpen = true)} />
 			{:else}
 				<p class="text-sm text-muted-foreground">
-					Only an administrator can see and issue service tokens.
+					Service tokens are visible to administrators only.
 				</p>
 			{/if}
 		</Tabs.Content>
@@ -229,10 +227,10 @@
 
 <ConfirmDialog
 	bind:open={confirmStop}
-	title="Stop the MCP server?"
+	title="Stop MCP server"
 	description="{sessions.length} connected agent{sessions.length === 1
 		? ' is'
-		: 's are'} disconnected immediately and every call is refused until the server is started again. Scans an agent started keep running. Tokens stay valid."
+		: 's are'} disconnected. Calls are refused until the server is started again."
 	confirmLabel="Stop server"
 	destructive
 	loading={mcp.isSaving}

@@ -161,9 +161,9 @@
 			/>
 			<Input
 				bind:value={search}
-				placeholder="Find a path on this host"
+				placeholder="Search paths"
 				class="h-9 pl-8 font-mono text-xs"
-				aria-label="Find a path on this host"
+				aria-label="Search paths"
 			/>
 		</div>
 		<ToggleGroup.Root
@@ -191,8 +191,8 @@
 			description={search
 				? 'Widen the search.'
 				: hideStatic
-					? 'Every discovered path on this host is a static file.'
-					: 'URL discovery found nothing on this host.'}
+					? 'All paths are static files.'
+					: undefined}
 			class="rounded-none border-0 bg-transparent py-12"
 		>
 			{#if hideStatic && !search}

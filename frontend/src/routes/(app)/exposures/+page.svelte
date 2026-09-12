@@ -48,7 +48,7 @@
 	<div>
 		<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.exposures}</h1>
 		<p class="mt-1 text-sm text-muted-foreground">
-			Assets that warrant review for what they are, not for a known vulnerability
+			Assets matched by rules, correlation signals and AI judgement
 		</p>
 	</div>
 

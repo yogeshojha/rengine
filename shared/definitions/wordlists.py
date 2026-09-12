@@ -50,8 +50,8 @@ BUILTIN_WORDLISTS: tuple[BuiltinWordlist, ...] = (
         name="Common subdomains",
         kind=WordlistKind.SUBDOMAIN.value,
         description=(
-            "Names ranked by how often they appear in public DNS data, best first. "
-            "A smaller word budget reads from the top of this ranking."
+            "Names ranked by frequency in public DNS data. "
+            "A word budget reads from the top."
         ),
     ),
     BuiltinWordlist(
@@ -59,7 +59,7 @@ BUILTIN_WORDLISTS: tuple[BuiltinWordlist, ...] = (
         filename="vhosts.txt",
         name="Common virtual hosts",
         kind=WordlistKind.VHOST.value,
-        description="Short list of host names worth trying against an address directly.",
+        description="Short list of virtual host names.",
     ),
     BuiltinWordlist(
         slug="common-content",
@@ -67,8 +67,8 @@ BUILTIN_WORDLISTS: tuple[BuiltinWordlist, ...] = (
         name="Common paths and files",
         kind=WordlistKind.CONTENT.value,
         description=(
-            "Paths ranked by how often they were found on real sites, directories "
-            "before files. A smaller word budget reads from the top of this ranking."
+            "Paths ranked by frequency on real sites, directories first. "
+            "A word budget reads from the top."
         ),
     ),
 )

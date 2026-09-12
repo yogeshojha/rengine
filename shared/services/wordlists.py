@@ -26,7 +26,7 @@ logger = get_logger(__name__)
 
 
 class WordlistError(Exception):
-    """An upload that cannot be stored, with the reason a person needs."""
+    """An upload that cannot be stored."""
 
 
 def builtin_root() -> Path:
@@ -42,7 +42,7 @@ def _root_for(origin: str) -> Path:
 
 
 def resolve_path(row: Wordlist) -> Path:
-    """The file for a row, or a refusal — a stored filename never escapes its root."""
+    """The file for a row, inside its root."""
     root = _root_for(row.origin).resolve()
     target = (root / row.filename).resolve()
     if not target.is_relative_to(root):
@@ -52,7 +52,7 @@ def resolve_path(row: Wordlist) -> Path:
 
 
 def clean_words(raw: str) -> list[str]:
-    """One word per line, deduped, order kept — the order is the budget."""
+    """One word per line, deduped, order kept."""
     seen: set[str] = set()
     words: list[str] = []
     for line in raw.splitlines():
@@ -70,7 +70,7 @@ def store_custom(filename: str, raw: str) -> tuple[str, list[str]]:
     """Validate an upload and write it under the custom root."""
     words = clean_words(raw)
     if not words:
-        msg = "No usable words: every line was blank, a comment or over 63 characters."
+        msg = "No usable words. Every line is blank, a comment or over 63 characters."
         raise WordlistError(msg)
     stem = slugify(Path(filename).stem) or "wordlist"
     relative = f"{stem}.txt"
@@ -78,14 +78,14 @@ def store_custom(filename: str, raw: str) -> tuple[str, list[str]]:
     root.mkdir(parents=True, exist_ok=True)
     target = (root / relative).resolve()
     if not target.is_relative_to(root.resolve()):
-        msg = "Refusing to write outside the wordlist root."
+        msg = "The filename resolves outside the wordlist root."
         raise WordlistError(msg)
     target.write_text("\n".join(words) + "\n", encoding="utf-8")
     return relative, words
 
 
 def delete_custom(row: Wordlist) -> None:
-    """Only ever unlinks inside the custom root."""
+    """Unlink a custom list."""
     if row.origin != WordlistOrigin.CUSTOM.value:
         msg = "A shipped wordlist cannot be deleted."
         raise WordlistError(msg)
@@ -134,7 +134,7 @@ def _builtin_by_filename(value: str) -> str | None:
 
 
 def lookup(session: Session, reference: str) -> Wordlist | None:
-    """Find a list by slug, tolerating the absolute paths older engines stored."""
+    """Find a list by slug or by builtin filename."""
     value = (reference or "").strip()
     if not value:
         return None
@@ -156,7 +156,7 @@ def read_words(session: Session, reference: str, limit: int) -> tuple[list[str],
         raise WordlistError(msg)
     path = resolve_path(row)
     if not path.is_file():
-        msg = f"{row.name} is in the library but its file is missing."
+        msg = f"The file for {row.name} is missing."
         raise WordlistError(msg)
     words: list[str] = []
     with path.open(encoding="utf-8", errors="replace") as handle:

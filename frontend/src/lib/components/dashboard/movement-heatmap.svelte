@@ -109,7 +109,7 @@
 										{/snippet}
 									</Hint>
 								{:else if baseline}
-									<Hint text="Baseline run for {spec.nounPlural}. Nothing is counted as new.">
+									<Hint text="First run for {spec.nounPlural}. Nothing counted as new.">
 										{#snippet child(props)}
 											<span
 												{...props}
@@ -133,7 +133,6 @@
 		</table>
 	</div>
 	{#snippet footer()}
-		Shading is the share of new {SURFACE_ORDER[0].nounPlural}. Cells spanning several runs are not
-		linked.
+		Shading is the share of new {SURFACE_ORDER[0].nounPlural}.
 	{/snippet}
 </Widget>

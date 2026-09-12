@@ -27,8 +27,7 @@
 
 <div class="wrap">
 	<div class="head">
-		The final configuration for {targetTypePhrase(targetType)} target, with defaults applied, scan context
-		multipliers resolved and passive intensity enforced.
+		Resolved configuration for {targetTypePhrase(targetType)} target.
 	</div>
 
 	{#if warnings.length}

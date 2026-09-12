@@ -97,7 +97,7 @@
 					key: `private:${c.value}`,
 					tone: 'warning',
 					icon: Server,
-					text: `Hosts resolving to private address ${c.value}`,
+					text: `Web assets resolving to private address ${c.value}`,
 					count: c.count,
 					filter: filterToken('ip', c.value)
 				});
@@ -144,9 +144,9 @@
 		try {
 			await targetsApi.create({ target_value: domain.domain, project_slug: slug });
 			added.add(domain.domain);
-			toast.success(`${domain.domain} added as a target`);
+			toast.success(`Target ${domain.domain} added`);
 		} catch {
-			toast.error(`${domain.domain} could not be added`);
+			toast.error(`Target ${domain.domain} not added`);
 		} finally {
 			pending = null;
 		}

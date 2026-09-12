@@ -99,7 +99,7 @@
 	</div>
 	{#if empty}
 		<p class="flex flex-1 items-center justify-center px-5 py-10 text-sm text-muted-foreground">
-			No {spec.nounPlural} recorded in this window.
+			No {spec.nounPlural} in this window.
 		</p>
 	{:else}
 		{#key dim + window}

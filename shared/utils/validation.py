@@ -5,7 +5,7 @@ import validators
 
 from shared.enums.target import TargetType
 
-HEX_COLOR_LENGTH = 7  # e.g., #RRGGBB
+HEX_COLOR_LENGTH = 7  # #RRGGBB
 MAX_NAME_LEN = 120
 
 
@@ -59,7 +59,7 @@ def validate_url(value: str) -> bool:
 
 
 def normalize_target_value(value: str) -> str:
-    """What a user typed, reduced to the form reNgine validates and stores."""
+    """Normalized target value."""
     v = (value or "").strip()
     if not v or _SCHEME.match(v):
         return v
@@ -72,7 +72,7 @@ _MAX_ECHO = 120
 
 
 def unrecognised_target(value: str) -> str:
-    """The one wording for a target value reNgine cannot read."""
+    """Wording for an unrecognised target value."""
     shown = (value or "").strip()[:_MAX_ECHO]
     return f"Unrecognised target: {shown}. {TARGET_FORMAT_HINT}"
 
@@ -130,10 +130,10 @@ def validate_hex_color(color: str) -> str:
         msg = "Color must start with #"
         raise ValueError(msg)
     if len(color) != HEX_COLOR_LENGTH:
-        msg = f"Color must be in format #RRGGBB ({HEX_COLOR_LENGTH} characters)"
+        msg = f"Color must be {HEX_COLOR_LENGTH} characters in the form #RRGGBB"
         raise ValueError(msg)
     hex_pattern = r"^#[0-9A-Fa-f]{6}$"
     if not re.match(hex_pattern, color):
-        msg = "Color must contain valid hexadecimal characters (0-9, A-F)"
+        msg = "Color must use hexadecimal digits 0-9 and A-F"
         raise ValueError(msg)
     return color.upper()

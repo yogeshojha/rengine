@@ -626,7 +626,9 @@ class ScanCompareService:
         self, report: ScanComparison, wanted: list[DimensionDelta]
     ) -> list[str]:
         def side(run: RunSide) -> str:
-            when = run.started_at.strftime("%d %b %Y %H:%M") if run.started_at else "—"
+            when = (
+                run.started_at.strftime("%d %b %Y %H:%M") if run.started_at else "none"
+            )
             rows = sum(run.counts.values())
             return f"{run.engine_name}  {when}  {rows:,} rows"
 
@@ -642,7 +644,8 @@ class ScanCompareService:
             if row.material
         )
         if report.runs_between:
-            lines.append(f"# {report.runs_between} run(s) ran between these two")
+            runs = "run" if report.runs_between == 1 else "runs"
+            lines.append(f"# {report.runs_between} {runs} between these two")
         tally = " · ".join(
             f"{d.dimension} {d.total_baseline:,}→{d.total_current:,} "
             f"+{d.appeared:,}~{d.changed:,}-{d.disappeared + d.unconfirmed:,}"
@@ -946,8 +949,8 @@ class ScanCompareService:
             missing = noun if gone == 1 else noun_plural
             verdict.comparability = Comparability.QUALITY_DIFFERS.value
             verdict.note = (
-                f"The later run did not finish this dimension cleanly. "
-                f"{gone:,} missing {missing} cannot be confirmed."
+                f"The later run did not finish this dimension. "
+                f"{gone:,} missing {missing} not confirmed."
             )
             return verdict
 

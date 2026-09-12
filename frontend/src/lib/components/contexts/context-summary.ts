@@ -26,7 +26,7 @@ const HTTP_PROTOCOL_LABELS: Record<HttpProtocol, string> = {
 	https_only: 'HTTPS only'
 };
 
-export const PASS_THROUGH = 'No overrides: engine settings apply unchanged';
+export const PASS_THROUGH = 'No overrides';
 
 export function authBadgeLabel(ctx: CtxLike): string {
 	switch (ctx.auth_type) {
@@ -34,7 +34,7 @@ export function authBadgeLabel(ctx: CtxLike): string {
 			return 'Bearer';
 		case 'basic': {
 			const user = ctx.auth?.basic_username;
-			return user ? `Basic (${user})` : 'Basic';
+			return user ? `Basic · ${user}` : 'Basic';
 		}
 		case 'header':
 			return ctx.auth?.header_name || 'Header';
@@ -111,7 +111,7 @@ export function contextFacets(ctx: CtxLike, proxyName?: string | null): ContextF
 
 	const scope: string[] = [];
 	if (ctx.included_subdomains.length) {
-		scope.push(`only ${plural(ctx.included_subdomains.length, 'included host')}`);
+		scope.push(`only ${plural(ctx.included_subdomains.length, 'included subdomain')}`);
 	}
 	if (ctx.excluded_subdomains.length) {
 		scope.push(plural(ctx.excluded_subdomains.length, 'excluded pattern'));
@@ -125,9 +125,7 @@ export function contextFacets(ctx: CtxLike, proxyName?: string | null): ContextF
 	const proto = HTTP_PROTOCOL_LABELS[ctx.http_protocol];
 	if (proto) runtime.push(proto);
 	if (ctx.follow_redirects_override != null) {
-		runtime.push(
-			ctx.follow_redirects_override ? 'always follow redirects' : 'never follow redirects'
-		);
+		runtime.push(ctx.follow_redirects_override ? 'redirects followed' : 'redirects not followed');
 	}
 
 	const auth = ctx.auth_type !== 'none';

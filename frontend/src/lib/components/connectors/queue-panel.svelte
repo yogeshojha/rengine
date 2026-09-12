@@ -104,7 +104,7 @@
 			await reload();
 			void goto(ROUTES.scan(run.id));
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'The scan could not be started.';
+			error = e instanceof Error ? e.message : 'Scan not started.';
 		} finally {
 			scanning = false;
 		}
@@ -119,7 +119,7 @@
 			picked.clear();
 			await reload();
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'They could not be queued.';
+			error = e instanceof Error ? e.message : 'Requests not queued.';
 		} finally {
 			sending = false;
 		}
@@ -221,8 +221,7 @@
 
 	{#if connector.unassigned > 0 && connector.unassigned === connector.candidates}
 		<p class="text-muted-foreground border-b px-4 py-2 text-xs">
-			No target covers these yet. Open Discovered to add one; everything recorded here attaches to
-			it.
+			No target covers these requests. Add one from Discovered domains.
 		</p>
 	{/if}
 
@@ -244,11 +243,7 @@
 		</div>
 	{:else if rows.length === 0}
 		<div class="px-4 py-10">
-			<EmptyState
-				icon={RadarIcon}
-				title="No request shapes"
-				description="Request shapes appear as the connector receives proxied traffic."
-			/>
+			<EmptyState icon={RadarIcon} title="No request shapes" />
 		</div>
 	{:else}
 		<table class="w-full table-fixed text-sm">

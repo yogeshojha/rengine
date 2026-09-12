@@ -85,8 +85,8 @@ SCOPE_LABELS: dict[str, str] = {
 }
 
 SCOPE_HELP: dict[str, str] = {
-    ReportScope.SCAN.value: "Everything a single run observed, as it observed it.",
-    ReportScope.TARGET.value: "The target's current surface, taken from the most recent run that covered each dimension.",
+    ReportScope.SCAN.value: "Everything one run observed.",
+    ReportScope.TARGET.value: "The target's current surface, from the latest run covering each dimension.",
 }
 
 
@@ -112,7 +112,7 @@ SECTION_GROUP_LABELS: dict[str, str] = {
 
 
 class SectionRole(StrEnum):
-    """Content is what a reader asked for."""
+    """Section role."""
 
     CONTENT = "content"
     FURNITURE = "furniture"
@@ -299,10 +299,7 @@ def validate_embedded_image(value: str, field: str) -> str:
         return ""
     match = _DATA_IMAGE.match(text)
     if match is None:
-        msg = (
-            f"{field} must be an uploaded image. "
-            "A link is not accepted, because a report never fetches from the network."
-        )
+        msg = f"{field} must be an uploaded image. Links are not accepted."
         raise ValueError(msg)
     if match.group(1).lower() not in ALLOWED_IMAGE_TYPES:
         msg = f"{field} must be a PNG, JPEG, SVG, WebP or GIF."

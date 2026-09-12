@@ -13,8 +13,8 @@
 
 	let {
 		open = $bindable(),
-		title = 'Discard unsaved changes?',
-		description = 'Changes have not been saved. Leaving now discards them.',
+		title = 'Discard changes',
+		description = 'Unsaved changes are discarded.',
 		confirmLabel = 'Discard',
 		cancelLabel = 'Keep editing',
 		onOpenChange,

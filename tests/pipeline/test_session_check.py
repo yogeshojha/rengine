@@ -112,7 +112,7 @@ def test_a_target_with_no_url_says_so_rather_than_passing():
     ).run()
 
     assert result.partial is True
-    assert "no url to ask" in result.warnings[0]
+    assert "no URL to request" in result.warnings[0]
 
 
 def test_the_second_scheme_is_tried_before_giving_up():

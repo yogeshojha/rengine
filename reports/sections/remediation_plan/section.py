@@ -16,13 +16,13 @@ class RemediationPlanConfig(SectionConfig):
     )
     show_due: bool = flag(True, title="Add a target date column")
     owner_label: str = text("Owner", title="Owner column heading")
-    show_effort: bool = flag(True, title="Show the kind of change each action needs")
+    show_effort: bool = flag(True, title="Show change type")
 
 
 class RemediationPlanSection(Section):
     name = "remediation_plan"
     title = "Remediation plan"
-    description = "Actions ordered by the risk they remove, with the reach of each."
+    description = "Actions ordered by the risk they remove."
     group = SectionGroup.FINDINGS.value
     order = 20
     launch_fields = frozenset({"top"})

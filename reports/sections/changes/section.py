@@ -7,20 +7,18 @@ from shared.definitions.surface import SURFACE_LABELS, SURFACE_NOUN
 
 
 class ChangesConfig(SectionConfig):
-    list_added: bool = flag(True, title="List what appeared")
-    list_gone: bool = flag(True, title="List what went away")
+    list_added: bool = flag(True, title="List added")
+    list_gone: bool = flag(True, title="List removed")
     max_items: int = limit(
         20, title="Items listed per dimension", minimum=1, maximum=200
     )
-    show_new_findings: bool = flag(
-        True, title="Highlight findings this run reported first"
-    )
+    show_new_findings: bool = flag(True, title="List new findings")
 
 
 class ChangesSection(Section):
     name = "changes"
     title = "Changes"
-    description = "The difference against the previous run. Nothing is reported as new on a first run."
+    description = "The difference against the previous run."
     group = SectionGroup.SUMMARY.value
     order = 50
     config_model = ChangesConfig

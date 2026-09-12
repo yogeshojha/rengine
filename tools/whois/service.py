@@ -1,4 +1,4 @@
-"""WHOIS lookups — standalone, or persisted and linked to a target for correlation."""
+"""WHOIS lookups, standalone or persisted per target."""
 
 import asyncio
 import uuid
@@ -70,7 +70,7 @@ class WhoisLookupError(WhoisError):
 
 
 class WhoisNotApplicableError(WhoisError):
-    """Raised when no registry can hold a record for the query — not a failure."""
+    """Raised when no registry holds a record for the query."""
 
 
 class WhoisService:
@@ -104,7 +104,7 @@ class WhoisService:
 
     @staticmethod
     def lookup_key(query: str, target_type) -> str:
-        """The value a registry is asked for — also the cache and record key."""
+        """The value a registry is asked for, also the cache and record key."""
         normalized = normalize_query(query, target_type)
         if target_type in (TargetType.DOMAIN, TargetType.URL):
             return registrable_domain(normalized) or normalized
@@ -122,10 +122,7 @@ class WhoisService:
     def lookup_ip(self, ip: str) -> WhoisResponse:
         ip = ip.strip()
         if not is_registry_routable(ip):
-            msg = (
-                f"{ip} is private, reserved or otherwise outside publicly routable "
-                "address space, so no regional registry holds a record for it."
-            )
+            msg = f"{ip} is outside publicly routable address space."
             raise WhoisNotApplicableError(msg)
         try:
             raw = self._provider.lookup_ip(ip)

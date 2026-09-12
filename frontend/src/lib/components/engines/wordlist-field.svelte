@@ -46,7 +46,7 @@
 				{/each}
 			{:else}
 				<div class="px-2 py-3 text-sm text-muted-foreground">
-					No wordlist of this kind yet. Upload one in the Tools Arsenal.
+					No wordlists of this kind. Upload one in the Tools Arsenal.
 				</div>
 			{/if}
 		</Select.Content>

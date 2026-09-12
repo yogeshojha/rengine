@@ -31,7 +31,7 @@ class UrlDiscoveryConfig(StageConfig):
     providers: list[str] = Field(
         default_factory=lambda: list(DEFAULT_PROVIDERS),
         title="Sources",
-        description="Sources URLs are collected from. Response mining reads bodies this scan already stored and sends no request.",
+        description="Sources URLs are collected from. Response mining reads stored response bodies and sends no request.",
         json_schema_extra={"options": list(_PROVIDER_LABELS)},
     )
     threads: int = threads(50, title="Threads")
@@ -58,7 +58,7 @@ class UrlDiscoveryConfig(StageConfig):
     headless: bool = Field(
         default=False,
         title="Use a browser",
-        description="Render each page in a browser before reading links. Much slower.",
+        description="Render each page in a browser before reading links. Slower.",
     )
     max_crawl_minutes: int = Field(
         default=20,
@@ -86,14 +86,14 @@ class UrlDiscoveryConfig(StageConfig):
         ge=1,
         le=5_000,
         title="Bundles to ask for a map",
-        description="Javascript files this scan proved answer, asked for the .map beside them. Most refuse; the ones that do not carry the application's own source.",
+        description="JavaScript bundles asked for the .map beside them.",
     )
     max_archive_domains: int = Field(
         default=10,
         ge=1,
         le=200,
         title="Domains to query archives for",
-        description="Cap the registrable domains sent to public archives. One request set per domain.",
+        description="Registrable domains queried in public archives.",
     )
     max_hosts: int = Field(
         default=500,

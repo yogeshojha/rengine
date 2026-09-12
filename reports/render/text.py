@@ -1,4 +1,4 @@
-"""Markdown and JSON exports, written from the brief rather than scraped from the HTML."""
+"""Markdown and JSON exports written from the brief."""
 
 from __future__ import annotations
 
@@ -55,11 +55,11 @@ def to_markdown(ctx: RenderContext) -> str:
             "",
             "## Ranked weaknesses",
             "",
-            "| # | Weakness | Severity | Seen | Hosts | Why |",
+            "| # | Weakness | Severity | Seen | Assets | Signals |",
             "| ---: | --- | --- | ---: | ---: | --- |",
         ]
         for index, risk in enumerate(brief.risks, start=1):
-            why = "; ".join(risk.signals) or "—"
+            why = ", ".join(risk.signals) or "—"
             lines.append(
                 f"| {index} | {risk.name} | {SEVERITY_LABELS.get(risk.severity, risk.severity)} "
                 f"| {risk.count:,} | {risk.hosts:,} | {why} |"

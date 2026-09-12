@@ -1,4 +1,4 @@
-"""Bug bounty program vocabulary: platforms, scope asset types and what reNgine can scan."""
+"""Bug bounty program vocabulary: platforms, scope asset types and scannable targets."""
 
 from __future__ import annotations
 
@@ -83,7 +83,7 @@ PLATFORMS: tuple[PlatformSpec, ...] = (
         label="HackerOne",
         url="https://hackerone.com",
         supports_private=True,
-        note="Public and private programs your API token can see",
+        note="Public and private programs visible to the API token",
         tag="hackerone",
         tag_color="#0EA5E9",
         source=ProgramSource.API.value,
@@ -165,7 +165,7 @@ ASSET_TYPES: tuple[AssetTypeSpec, ...] = (
         AssetGroup.OTHER,
         None,
         "shapes",
-        "Free text; ASNs and hostnames are detected and can be added",
+        "Free text. Detected ASNs and hostnames can be added",
     ),
     AssetTypeSpec(
         "APPLE_STORE_APP_ID", "iOS App Store", AssetGroup.MOBILE, None, "smartphone"
@@ -219,7 +219,7 @@ EVENTS: tuple[EventSpec, ...] = (
     EventSpec(
         BountyEvent.PROGRAM_ADDED.value,
         "New program",
-        "A program appeared in your library",
+        "A program appeared in the library",
         "sparkles",
         "info",
         actionable=True,
@@ -243,7 +243,7 @@ EVENTS: tuple[EventSpec, ...] = (
     EventSpec(
         BountyEvent.WENT_OUT_OF_SCOPE.value,
         "Now out of scope",
-        "Stop testing this asset",
+        "The program moved this asset out of scope",
         "octagon-alert",
         "warning",
         actionable=True,
@@ -275,7 +275,7 @@ EVENTS: tuple[EventSpec, ...] = (
     EventSpec(
         BountyEvent.PROGRAM_WENT_PUBLIC.value,
         "Went public",
-        "A private program opened to everyone",
+        "A private program became public",
         "globe",
         "muted",
         actionable=False,
@@ -427,7 +427,7 @@ def normalize_identifier(asset_type: str | None, identifier: str) -> str | None:
 
 
 def _public_host(value: str) -> bool:
-    """A program's scope is internet-facing."""
+    """Whether the host is internet-facing."""
     authority = _SCHEME.sub("", value).split("/")[0].split("?")[0]
     bracketed = _IPV6_HOST.match(authority)
     host = bracketed.group(1) if bracketed else authority.rsplit(":", 1)[0]
@@ -438,7 +438,7 @@ def _public_host(value: str) -> bool:
 
 
 def _canonical(value: str, target_type: TargetType) -> str:
-    """The casing reNgine already stores for this target type."""
+    """Stored casing for this target type."""
     if target_type is TargetType.ASN:
         return value.upper()
     if target_type is TargetType.URL:
@@ -449,7 +449,7 @@ def _canonical(value: str, target_type: TargetType) -> str:
 def target_for_scope(
     asset_type: str | None, identifier: str
 ) -> tuple[str, TargetType] | None:
-    """Normalize a scope entry, then let validate_target decide whether it is a target."""
+    """Normalize a scope entry and validate it as a target."""
     value = normalize_identifier(asset_type, identifier)
     if not value:
         return None

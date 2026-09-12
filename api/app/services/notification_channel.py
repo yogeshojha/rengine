@@ -227,7 +227,7 @@ class NotificationChannelService:
             provider,
             config,
             "reNgine test notification",
-            "✅ This is a test notification from reNgine. Channel is working.",
+            "Test notification.",
             "info",
         )
         return NotificationChannelTestResult(success=ok, message=message)
@@ -240,7 +240,7 @@ class NotificationChannelService:
             channel.provider,
             config,
             "reNgine test notification",
-            "✅ This is a test notification from reNgine. Channel is working.",
+            "Test notification.",
             "info",
         )
         channel.last_test_at = utc_now()

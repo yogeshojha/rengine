@@ -6,15 +6,15 @@ from shared.definitions.reports import SectionGroup
 
 
 class AttackPathsConfig(SectionConfig):
-    top: int = limit(6, title="Chains shown", minimum=1, maximum=20)
-    show_assets: bool = flag(True, title="Name the affected assets")
-    show_evidence: bool = flag(True, title="Show the observations behind each chain")
+    top: int = limit(6, title="Paths shown", minimum=1, maximum=20)
+    show_assets: bool = flag(True, title="Show affected assets")
+    show_evidence: bool = flag(True, title="Show evidence")
 
 
 class AttackPathsSection(Section):
     name = "attack_paths"
     title = "Attack paths"
-    description = "Conditions that chain into a route an attacker can take."
+    description = "Conditions that combine into an attack route."
     group = SectionGroup.SUMMARY.value
     order = 30
     config_model = AttackPathsConfig

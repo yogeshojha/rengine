@@ -34,8 +34,8 @@
 		onSelect,
 		onRemove,
 		onCreate,
-		placeholder = 'Search…',
-		emptyText = 'No items found.',
+		placeholder = 'Search',
+		emptyText = 'No matches',
 		allowCreate = true,
 		showColors = false,
 		id

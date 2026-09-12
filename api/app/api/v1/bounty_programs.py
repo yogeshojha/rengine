@@ -54,18 +54,18 @@ PlatformPath = Annotated[str, Path(description="Bug bounty platform key")]
 
 
 async def _require_mode(session: AsyncSession) -> None:
-    """The library is a bug bounty capability."""
+    """Bug bounty mode gate."""
     settings = await InstanceSettingsService(session).get_or_create()
     if not has_capability(settings.mode, CAP_BOUNTY_PROGRAMS):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Bug bounty programs are available in bug bounty mode.",
+            detail="Bug bounty programs require bug bounty mode.",
         )
 
 
 @router.get("/vocabulary")
 async def vocabulary(_current_user: CurrentUser) -> dict:
-    """Platforms, asset types and states the library renders from."""
+    """Bounty program vocabulary."""
     return {
         "platforms": [
             {
@@ -118,7 +118,7 @@ async def list_events(
     kind: str | None = Query(None),
     handle: str | None = Query(None),
 ) -> Page[BountyEventRead]:
-    """What changed in the library, newest first."""
+    """Program library events, newest first."""
     await _require_mode(session)
     if platform:
         BountyProgramService.require_platform(platform)
@@ -134,7 +134,7 @@ async def mark_events_seen(
     service: ServiceDep,
     _current_user: CurrentUser,
 ) -> dict:
-    """Clear the unseen badge once the feed has been read."""
+    """Mark every event seen."""
     await _require_mode(session)
     await service.mark_events_seen()
     return {"ok": True}
@@ -147,7 +147,7 @@ async def read_settings(
     _current_user: CurrentUser,
     platform: str = Query(BountyPlatform.HACKERONE.value),
 ) -> BountySettingsRead:
-    """How often reNgine syncs, and which changes are worth an alert."""
+    """Sync interval and alert settings."""
     await _require_mode(session)
     BountyProgramService.require_platform(platform)
     return await service.read_settings()
@@ -183,7 +183,7 @@ async def sync(
     service: ServiceDep,
     _current_user: CurrentSuperuser,
     platform: str = Query(BountyPlatform.HACKERONE.value),
-    scopes: bool = Query(True, description="Also refresh every program's scope"),
+    scopes: bool = Query(True, description="Refresh every program's scope"),
 ) -> dict:
     """Queue a refresh of the program library."""
     await _require_mode(session)
@@ -192,7 +192,7 @@ async def sync(
     if not state.configured:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Add a HackerOne API username and token first.",
+            detail="HackerOne API username and token are not set. Add them under API keys.",
         )
     return {"queued": dispatch_bounty_sync(scopes=scopes)}
 
@@ -202,7 +202,7 @@ async def sync_feed(
     session: SessionDep,
     _current_user: CurrentSuperuser,
 ) -> dict:
-    """Queue a refresh of the public program feed. Needs no credentials."""
+    """Queue a refresh of the public program feed."""
     await _require_mode(session)
     return {"queued": dispatch_bounty_feed_sync()}
 
@@ -212,7 +212,7 @@ async def list_programs(
     session: SessionDep,
     service: ServiceDep,
     _current_user: CurrentUser,
-    platform: str | None = Query(None, description="a single platform key"),
+    platform: str | None = Query(None, description="Platform key"),
     platforms: Annotated[list[str] | None, Query()] = None,
     sources: Annotated[list[str] | None, Query()] = None,
     q: str | None = Query(None),
@@ -220,7 +220,7 @@ async def list_programs(
     submission: str | None = Query(None, description="open, paused or closed"),
     bounty: bool | None = Query(None),
     bookmarked: bool | None = Query(None),
-    joined: bool | None = Query(None, description="programs you are a member of"),
+    joined: bool | None = Query(None, description="Member programs only"),
     scope: str | None = Query(None, description="importable or none"),
     sort: str = Query("age"),
     project_id: Annotated[UUID | None, Query()] = None,

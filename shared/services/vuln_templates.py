@@ -134,7 +134,7 @@ def _request_count(document: dict, info: dict) -> int:
 
 
 def parse_template(raw: str) -> ParsedTemplate:
-    """Read one nuclei document into the library's row shape, or say why it cannot be used."""
+    """Read one nuclei document into the library's row shape."""
     if len(raw.encode("utf-8", "ignore")) > MAX_TEMPLATE_BYTES:
         msg = "Document is larger than the template size limit."
         raise TemplateError(msg)
@@ -152,7 +152,7 @@ def parse_template(raw: str) -> ParsedTemplate:
     forbidden = FORBIDDEN_TEMPLATE_KEYS & set(document)
     if forbidden:
         names = ", ".join(sorted(forbidden))
-        msg = f"Uses the {names} protocol, which executes commands on the scanner. Not accepted."
+        msg = f"The {names} protocol is not accepted."
         raise TemplateError(msg)
 
     template_id = _as_text(document.get("id"))
@@ -171,7 +171,7 @@ def parse_template(raw: str) -> ParsedTemplate:
 
     protocol = _protocol_of(document)
     if protocol == Protocol.OTHER.value and "workflows" not in document:
-        msg = "Declares no protocol block, so it would never run."
+        msg = "Declares no protocol block."
         raise TemplateError(msg)
 
     classification = info.get("classification")

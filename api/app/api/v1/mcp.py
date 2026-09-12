@@ -42,7 +42,7 @@ async def mcp_endpoint(
     authorization: Annotated[str | None, Header()] = None,
     user_agent: Annotated[str | None, Header()] = None,
 ):
-    """The protocol endpoint agents talk to. Authenticated by MCP service token."""
+    """MCP protocol endpoint. Authenticated by service token."""
     response = await handle_request(
         payload,
         session=session,

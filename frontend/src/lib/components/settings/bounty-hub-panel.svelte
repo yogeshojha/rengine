@@ -39,7 +39,7 @@
 				bountyProgramsApi.status()
 			]);
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Could not load Bounty Hub settings');
+			toast.error(error instanceof Error ? error.message : 'Bounty Hub settings not loaded');
 		} finally {
 			loading = false;
 		}
@@ -60,7 +60,7 @@
 		try {
 			settings = await bountyProgramsApi.saveSettings(patch);
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Could not save');
+			toast.error(error instanceof Error ? error.message : 'Settings not saved');
 			await load();
 		} finally {
 			saving = false;
@@ -77,7 +77,7 @@
 {#if loading}
 	<div class="flex items-center justify-center gap-2 p-12 text-sm text-muted-foreground">
 		<Spinner class="size-4" />
-		Loading
+		Loading settings
 	</div>
 {:else if settings}
 	<div class="flex flex-col gap-6">
@@ -87,10 +87,9 @@
 					<div class="flex min-w-0 items-start gap-3">
 						<KeyRoundIcon class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
 						<div class="flex min-w-0 flex-col gap-0.5">
-							<span class="text-sm font-medium">HackerOne is not connected</span>
+							<span class="text-sm font-medium">HackerOne not connected</span>
 							<span class="text-xs text-muted-foreground">
-								The public feed works without credentials. A HackerOne token adds its programs and
-								the private ones you are invited to.
+								A HackerOne token adds its public and private programs.
 							</span>
 						</div>
 					</div>
@@ -114,11 +113,7 @@
 
 			<div class="flex flex-wrap items-center justify-between gap-4 p-4">
 				<div class="flex min-w-0 flex-col gap-0.5">
-					<span class="text-sm font-medium">How often to ask HackerOne what changed</span>
-					<span class="text-xs text-muted-foreground">
-						A full sync is about 640 requests against a 600-per-minute limit, so daily is
-						comfortable. Refresh from HackerOne always runs whatever this says.
-					</span>
+					<span class="text-sm font-medium">HackerOne sync interval</span>
 				</div>
 				<Select.Root
 					type="single"
@@ -138,7 +133,7 @@
 
 			{#if settings.sync_interval === 'off'}
 				<div class="border-t px-4 py-2.5 text-xs text-muted-foreground">
-					Nothing leaves this instance on a timer. You will only see changes after a manual refresh.
+					Programs update on manual refresh only.
 				</div>
 			{/if}
 		</Card.Root>
@@ -157,11 +152,9 @@
 
 			<div class="flex flex-wrap items-center justify-between gap-4 p-4">
 				<div class="flex min-w-0 flex-col gap-0.5">
-					<span class="text-sm font-medium">
-						How often to refresh Bugcrowd, Intigriti and YesWeHack
-					</span>
+					<span class="text-sm font-medium"> Bugcrowd, Intigriti and YesWeHack sync interval </span>
 					<span class="text-xs text-muted-foreground">
-						Three small files from
+						From
 						<a
 							href={settings.feed_url}
 							target="_blank"
@@ -170,8 +163,7 @@
 						>
 							{settings.feed_source}
 						</a>
-						({settings.feed_license}), no credentials needed. Public programs only — private
-						programs come from a platform API.
+						under {settings.feed_license}. Public programs only.
 					</span>
 				</div>
 				<Select.Root
@@ -203,9 +195,9 @@
 
 			<div class="flex flex-wrap items-center justify-between gap-4 p-4">
 				<div class="flex min-w-0 flex-col gap-0.5">
-					<span class="text-sm font-medium">Tell me when a program changes</span>
+					<span class="text-sm font-medium">Notify on program changes</span>
 					<span class="text-xs text-muted-foreground">
-						Sends to the in-app inbox and every notification channel you have configured.
+						Sent to the inbox and every notification channel.
 					</span>
 				</div>
 				<Switch
@@ -244,7 +236,7 @@
 				</div>
 			{:else}
 				<div class="border-t px-4 py-2.5 text-xs text-muted-foreground">
-					Changes are still recorded and shown in the Bounty Hub Updates tab. Nothing is sent.
+					Changes are recorded in the Updates tab. Nothing is sent.
 				</div>
 			{/if}
 		</Card.Root>

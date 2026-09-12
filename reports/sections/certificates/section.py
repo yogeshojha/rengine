@@ -8,11 +8,11 @@ from shared.definitions.surface import SurfaceDimension
 
 class CertificatesConfig(SectionConfig):
     expiring_days: int = limit(
-        30, title="Treat as expiring within (days)", minimum=1, maximum=365
+        30, title="Expiring window in days", minimum=1, maximum=365
     )
-    problems_only: bool = flag(True, title="Only certificates that need attention")
+    problems_only: bool = flag(True, title="Problems only")
     max_rows: int = limit(50, title="Rows shown", minimum=5, maximum=1000)
-    show_issuers: bool = flag(True, title="Show the issuer breakdown")
+    show_issuers: bool = flag(True, title="Show issuers")
 
 
 class CertificatesSection(Section):

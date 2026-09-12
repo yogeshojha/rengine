@@ -154,7 +154,7 @@ async def list_scans(
         list[str] | None, Query(description="Filter by context name")
     ] = None,
     search: Annotated[
-        str | None, Query(description="Search target, engine, or context")
+        str | None, Query(description="Search target, engine or context")
     ] = None,
     time_range: Annotated[
         str | None, Query(description="Time window: 24h, 7d, 30d")
@@ -162,10 +162,10 @@ async def list_scans(
     sort_by: Annotated[ScanSortKey, Query(description="Sort field")] = "started",
     sort_dir: Annotated[ScanSortDir, Query(description="Sort direction")] = "desc",
     scheduled: Annotated[
-        bool | None, Query(description="True=scheduled only, False=manual only")
+        bool | None, Query(description="Scheduled only, or manual only")
     ] = None,
     include_focused: Annotated[
-        bool, Query(description="Include focused rescans in the ledger")
+        bool, Query(description="Include focused rescans")
     ] = False,
 ):
     query = service.build_list_query(
@@ -197,7 +197,7 @@ async def scan_stats(
     project_id: Annotated[UUID, Query(description="Project ID")],
     target_id: Annotated[UUID | None, Query(description="Filter by target ID")] = None,
     include_focused: Annotated[
-        bool, Query(description="Include focused rescans in the counts")
+        bool, Query(description="Include focused rescans")
     ] = False,
 ):
     return await service.stats(
@@ -297,9 +297,9 @@ async def compare_scans(
     _current_user: CurrentUser,
     service: Annotated[ScanCompareService, Depends(get_compare_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
-    current: Annotated[UUID, Query(description="The later run")],
+    current: Annotated[UUID, Query(description="Later run")],
     baseline: Annotated[
-        UUID | None, Query(description="The earlier run, or the previous one")
+        UUID | None, Query(description="Earlier run. Defaults to the previous run.")
     ] = None,
 ):
     return await service.comparison(
@@ -312,10 +312,10 @@ async def compare_scan_rows(
     _current_user: CurrentUser,
     service: Annotated[ScanCompareService, Depends(get_compare_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
-    current: Annotated[UUID, Query(description="The later run")],
+    current: Annotated[UUID, Query(description="Later run")],
     dimension: Annotated[str, Query(description="Result dimension")],
     baseline: Annotated[
-        UUID | None, Query(description="The earlier run, or the previous one")
+        UUID | None, Query(description="Earlier run. Defaults to the previous run.")
     ] = None,
     verb: Annotated[
         list[ChangeVerb] | None,
@@ -340,12 +340,12 @@ async def compare_scan_diff(
     _current_user: CurrentUser,
     service: Annotated[ScanCompareService, Depends(get_compare_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
-    current: Annotated[UUID, Query(description="The later run")],
+    current: Annotated[UUID, Query(description="Later run")],
     baseline: Annotated[
-        UUID | None, Query(description="The earlier run, or the previous one")
+        UUID | None, Query(description="Earlier run. Defaults to the previous run.")
     ] = None,
     dimension: Annotated[
-        str | None, Query(description="One dimension, or every one")
+        str | None, Query(description="Result dimension. Omit for every dimension.")
     ] = None,
     verb: Annotated[list[ChangeVerb] | None, Query()] = None,
 ):

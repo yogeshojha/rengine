@@ -44,15 +44,14 @@
 				title: 'No matches',
 				sub: `Nothing for “${activityFeed.search.trim()}”`
 			};
-		if (activityFeed.errorsOnly)
-			return { icon: ShieldX, title: 'No errors', sub: 'Nothing has failed in this view' };
+		if (activityFeed.errorsOnly) return { icon: ShieldX, title: 'No errors', sub: '' };
 		if (activityFeed.filter !== 'all')
 			return {
 				icon: Activity,
-				title: `No ${FILTER_LABELS[activityFeed.filter].toLowerCase()} yet`,
-				sub: 'Events appear here in real time'
+				title: `No ${FILTER_LABELS[activityFeed.filter].toLowerCase()}`,
+				sub: ''
 			};
-		return { icon: Activity, title: 'No activity yet', sub: 'Events appear here in real time' };
+		return { icon: Activity, title: 'No activity', sub: '' };
 	});
 </script>
 
@@ -76,9 +75,11 @@
 				<empty.icon class="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
 			</Empty.Media>
 			<Empty.Title class="text-xs font-medium text-muted-foreground">{empty.title}</Empty.Title>
-			<Empty.Description class="mt-0.5 text-2xs text-muted-foreground/70"
-				>{empty.sub}</Empty.Description
-			>
+			{#if empty.sub}
+				<Empty.Description class="mt-0.5 text-2xs text-muted-foreground/70"
+					>{empty.sub}</Empty.Description
+				>
+			{/if}
 		</Empty.Header>
 	</Empty.Root>
 {:else if grouping === 'target'}

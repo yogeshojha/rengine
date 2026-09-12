@@ -9,17 +9,14 @@ NO_JIT = "SET LOCAL jit = off"
 
 QUERY_SQLSTATES = {
     "2201B": (
-        "That regular expression is not valid here.",
-        "PostgreSQL regular expressions differ slightly from PCRE.",
+        "Invalid regular expression.",
+        "PostgreSQL regular expression syntax applies.",
     ),
-    "2201G": ("That regular expression is not valid here.", None),
-    "57014": (
-        "That search took too long to run.",
-        "Add a field filter to narrow it down.",
-    ),
-    "22003": ("A number in that query is out of range.", None),
-    "22P02": ("A value in that query has the wrong shape.", None),
-    "54000": ("That search term is too large to index.", None),
+    "2201G": ("Invalid regular expression.", None),
+    "57014": ("The search timed out.", "Add a field filter."),
+    "22003": ("A number is out of range.", None),
+    "22P02": ("A value has the wrong type.", None),
+    "54000": ("A search term is too long to index.", None),
 }
 
 

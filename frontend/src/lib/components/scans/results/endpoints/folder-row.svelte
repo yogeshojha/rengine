@@ -131,7 +131,7 @@
 			</button>
 			<Hint
 				text={node.archive_only
-					? 'Known only to an archive. Nothing in here answered this scan.'
+					? 'Known only to an archive. No endpoint here answered this scan.'
 					: (FOLDER_GLYPH_LABELS[glyph] ?? '')}
 			>
 				{#snippet child(props)}
@@ -195,9 +195,7 @@
 					<Hint
 						text="{node.gone_count.toLocaleString()} {node.gone_count === 1
 							? 'endpoint'
-							: 'endpoints'} from the previous scan {node.gone_count === 1
-							? 'was'
-							: 'were'} not found here"
+							: 'endpoints'} from the previous scan not found in this scan"
 					>
 						{#snippet child(props)}
 							<span {...props} class="font-medium text-muted-foreground"

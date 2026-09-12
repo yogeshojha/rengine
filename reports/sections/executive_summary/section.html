@@ -22,11 +22,11 @@
 {% endif %}
 
 <div class="prose md">{{ narrative|md|safe }}</div>
-{% if ai and disclose %}<p class="ai-note">This summary was drafted by a language model from the computed findings, then included without editing.</p>{% endif %}
+{% if ai and disclose %}<p class="ai-note">This summary was written by a language model from the computed findings.</p>{% endif %}
 
 {% if deductions %}
 <div class="sub">
-  <div class="label block">What the score reflects</div>
+  <div class="label block">Score deductions</div>
   <table class="table table--tight">
     <thead><tr><th>Condition</th><th class="num">Observed</th><th class="num">Points</th></tr></thead>
     <tbody>
@@ -35,6 +35,6 @@
       {% endfor %}
     </tbody>
   </table>
-  <p class="micro faint" style="margin-top:1.4mm">The score starts at 100. Each condition deducts up to a fixed ceiling, so no single class of finding can take the score to zero on its own.</p>
+  <p class="micro faint" style="margin-top:1.4mm">The score starts at 100. Each condition deducts up to a fixed ceiling.</p>
 </div>
 {% endif %}

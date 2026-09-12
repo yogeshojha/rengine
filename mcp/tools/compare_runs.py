@@ -35,7 +35,7 @@ class Input(ToolInput):
     )
     dimension: str | None = Field(
         default=None,
-        description="List the individual changes for one dimension rather than counts.",
+        description="List the individual changes for one dimension.",
     )
 
 
@@ -44,12 +44,10 @@ class CompareRuns(Tool):
     title = "Compare runs"
     group = ToolGroup.INTERROGATE.value
     description = (
-        "What changed between two runs of one target: what appeared, what changed "
-        "and what disappeared, per result dimension. "
-        "Read the comparability verdict before the numbers. Differences between "
-        "runs that used different settings, or did different amounts of work, "
-        "belong to the run rather than the target. A dimension one run did not "
-        "scan reports as not covered, never as everything removed."
+        "Rows that appeared, changed and disappeared between two runs of one target, "
+        "per result dimension. The comparability verdict states whether the runs "
+        "used the same settings and did the same work. A dimension one run did not "
+        "scan reports as not covered."
     )
     Input = Input
     examples = (
@@ -172,10 +170,7 @@ class CompareRuns(Tool):
             .all()
         )
         if len(rows) < NEEDED_RUNS:
-            msg = (
-                f"{target.target_value} has fewer than two finished full runs, "
-                "so there is nothing to compare."
-            )
+            msg = f"{target.target_value} has fewer than two finished full runs."
             raise ValueError(msg)
         return rows[0].id, rows[1].id, target.project_id
 
@@ -183,8 +178,7 @@ class CompareRuns(Tool):
         out: list[str] = []
         if report.comparability != Comparability.LIKE_FOR_LIKE.value:
             out.append(
-                "The two runs are not like for like. Read the per-dimension "
-                "comparability before attributing any difference to the target."
+                "The runs are not like for like. Read the per-dimension comparability."
             )
         material = [row for row in report.run_diff if row.material]
         if material:
@@ -195,27 +189,25 @@ class CompareRuns(Tool):
             out.append(f"The runs were set up differently: {named}.")
         if report.runs_between:
             out.append(
-                f"{report.runs_between} other run(s) of this target ran between these two. "
-                "This is not what the previous run changed."
+                f"{report.runs_between} other run(s) of this target ran between these two."
             )
         if report.suggestion is not None:
             out.append(
                 "A like-for-like run exists: "
-                f"{report.suggestion.engine_name} ({report.suggestion.scan_id}). "
-                "Compare against that one for a cleaner answer."
+                f"{report.suggestion.engine_name}, scan {report.suggestion.scan_id}."
             )
         for d in report.dimensions:
             if d.verdict.comparability == Comparability.NOT_COVERED.value:
                 out.append(f"{d.label}: {d.verdict.note}")
             elif d.unconfirmed:
                 out.append(
-                    f"{d.label}: {d.unconfirmed} missing row(s) are unconfirmed "
-                    "because the later run did not finish this dimension cleanly."
+                    f"{d.label}: {d.unconfirmed} missing row(s) are unconfirmed. "
+                    "The later run did not finish this dimension."
                 )
             elif d.verdict.settings:
                 out.append(f"{d.label}: {d.verdict.note}")
         if report.live:
             out.append(
-                "The later run is still going. Missing rows are reported as unconfirmed."
+                "The later run is live. Missing rows are reported as unconfirmed."
             )
         return out

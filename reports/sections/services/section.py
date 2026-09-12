@@ -10,22 +10,16 @@ from shared.definitions.surface import SurfaceDimension
 class ServicesConfig(SectionConfig):
     max_rows: int = limit(60, title="Rows shown", minimum=5, maximum=2000)
     sensitive_first: bool = flag(True, title="List sensitive services first")
-    hide_web: bool = flag(
-        False,
-        title="Hide services that answer HTTP",
-        description="Web services already appear under web assets.",
-    )
-    show_composition: bool = flag(True, title="Show the class composition")
-    show_banner: bool = flag(True, title="Show the software banner")
-    show_coverage: bool = flag(
-        True, title="Show what the port scan was allowed to touch"
-    )
+    hide_web: bool = flag(False, title="Hide services that answer HTTP")
+    show_composition: bool = flag(True, title="Show class composition")
+    show_banner: bool = flag(True, title="Show software")
+    show_coverage: bool = flag(True, title="Show scan coverage")
 
 
 class ServicesSection(Section):
     name = "services"
     title = "Network services"
-    description = "The services listening on each address, and which of them are web."
+    description = "Services listening on each address."
     group = SectionGroup.SURFACE.value
     order = 20
     launch_fields = frozenset({"max_rows"})

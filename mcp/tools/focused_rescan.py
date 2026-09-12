@@ -1,4 +1,4 @@
-"""Re-probe the assets the agent just argued about, as their own run."""
+"""Rescan named assets as their own run."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ class Input(ToolInput):
         min_length=1,
         max_length=MAX_ASSETS,
         description=(
-            "The exact assets to rescan — hostnames for web assets and endpoints, "
+            "The assets to rescan: hostnames for web assets and endpoints, "
             "IP addresses for services and addresses. Take them from query_assets."
         ),
     )
@@ -44,11 +44,9 @@ class FocusedRescan(Tool):
     capability = Capability.LAUNCH.value
     group = ToolGroup.ACT.value
     description = (
-        "Re-run a narrow set of stages against specific assets you have already found, "
-        "as its own scan. This is how you check a hypothesis: query, pick the "
-        "interesting rows, re-probe just those, then read the result. "
-        "It sends traffic to the target. The run is recorded separately and does not "
-        "disturb the parent scan's totals."
+        "Re-run a set of stages against named assets as a separate scan. Sends "
+        "traffic to the target. Results are recorded on the new run, not on the "
+        "parent scan."
     )
     Input = Input
     examples = (
@@ -61,9 +59,7 @@ class FocusedRescan(Tool):
         from shared.models.scan import RescanCreate  # noqa: PLC0415
 
         if ctx.token.issued_by is None:
-            msg = (
-                "This token has no issuing operator, so a rescan cannot be attributed."
-            )
+            msg = "This token has no issuing operator to attribute the rescan to."
             raise ToolError(msg)
 
         dim = dimension(args.dimension)
@@ -74,7 +70,7 @@ class FocusedRescan(Tool):
         spec = next((d for d in schema.dimensions if d.dimension == dim.key), None)
         if spec is None:
             allowed = ", ".join(d.dimension for d in schema.dimensions)
-            msg = f"{dim.label} cannot be rescanned. Try one of: {allowed}."
+            msg = f"{dim.label} cannot be rescanned. Use one of: {allowed}."
             raise ToolError(msg)
 
         unknown = [s for s in args.stages if s not in schema.rescannable_stages]
@@ -103,7 +99,7 @@ class FocusedRescan(Tool):
                 created_by=ctx.token.issued_by,
             )
         except Exception as exc:
-            msg = f"The rescan could not be started: {exc}"
+            msg = f"Rescan not started: {exc}"
             raise ToolError(msg) from exc
 
         stages = args.stages or list(spec.default_stages)
@@ -122,8 +118,8 @@ class FocusedRescan(Tool):
             },
             pivot=links.scan(ctx.ui_base_url, scan.id),
             caveats=[
-                "Traffic is now being sent to these assets.",
-                "Results land on this run, not on the parent scan's totals.",
+                "Traffic is being sent to these assets.",
+                "Results are recorded on this run, not on the parent scan.",
             ],
         )
 

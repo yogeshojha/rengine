@@ -834,7 +834,7 @@ class SubdomainService:
                 out.append(
                     SubdomainRelation(
                         kind="ip",
-                        reason=f"Resolve to a shared IP ({target.resolved_ips[0]})",
+                        reason=f"Same IP {target.resolved_ips[0]}",
                         value=target.resolved_ips[0],
                         hosts=h,
                         total=seen,
@@ -860,7 +860,7 @@ class SubdomainService:
                 out.append(
                     SubdomainRelation(
                         kind="cname",
-                        reason=f"Share CNAME {target.cname}",
+                        reason=f"Same CNAME {target.cname}",
                         value=target.cname,
                         hosts=h,
                         total=seen,
@@ -873,7 +873,7 @@ class SubdomainService:
                     SubdomainRelation(
                         kind="asn",
                         reason=f"Same network AS{target.asn}"
-                        + (f" ({target.asn_org})" if target.asn_org else ""),
+                        + (f" · {target.asn_org}" if target.asn_org else ""),
                         value=str(target.asn),
                         hosts=h,
                         total=seen,
@@ -1030,7 +1030,7 @@ class SubdomainService:
         )
 
         surface = [
-            SurfaceStat(key="subdomains", label="Subdomains", value=counts.total),
+            SurfaceStat(key="subdomains", label="Web assets", value=counts.total),
             SurfaceStat(
                 key="resolved",
                 label="Resolved",
@@ -1094,7 +1094,7 @@ class SubdomainService:
             ),
             (
                 "server",
-                "Hosts returning server errors",
+                "Web assets returning server errors",
                 counts.server_err,
                 "status:5xx",
                 "destructive",
@@ -1102,7 +1102,7 @@ class SubdomainService:
             ("auth", "Login or admin panels", counts.auth, "is:auth", "warning"),
             (
                 "sensitive",
-                "Hosts exposing a sensitive service",
+                "Web assets with a sensitive service",
                 int(sensitive or 0),
                 "is:sensitive",
                 "destructive",
@@ -1361,9 +1361,7 @@ class SubdomainService:
     def _aggregate(rows: list[Subdomain]) -> dict[str, TargetSubdomainRead]:
         agg: dict[str, TargetSubdomainRead] = {}
         scan_ids: dict[str, set] = {}
-        for (
-            row
-        ) in rows:  # ordered by discovered_at asc, so latest row wins on overwrite
+        for row in rows:  # newest row wins
             existing = agg.get(row.name)
             if existing is None:
                 scan_ids[row.name] = {row.scan_id}

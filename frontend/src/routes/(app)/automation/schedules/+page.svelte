@@ -40,7 +40,7 @@
 
 	function handleNew() {
 		if (!projectsStore.activeProject) {
-			toast.error('No active project selected');
+			toast.error('No active project');
 			return;
 		}
 		editing = null;
@@ -57,9 +57,9 @@
 		if (!project) return;
 		const count = await scanSchedulesStore.runNow(schedule.id, project.id);
 		if (count !== null) {
-			toast.success(`Launched ${count} scan${count === 1 ? '' : 's'}`);
+			toast.success(`${count} scan${count === 1 ? '' : 's'} started`);
 		} else {
-			toast.error(scanSchedulesStore.error ?? 'Schedule could not be started');
+			toast.error(scanSchedulesStore.error ?? 'Schedule not started');
 		}
 	}
 
@@ -71,7 +71,7 @@
 		if (updated) {
 			toast.success(paused ? 'Schedule paused' : 'Schedule resumed');
 		} else {
-			toast.error(scanSchedulesStore.error ?? 'Schedule could not be updated');
+			toast.error(scanSchedulesStore.error ?? 'Schedule not updated');
 		}
 	}
 
@@ -87,11 +87,11 @@
 		try {
 			const ok = await scanSchedulesStore.deleteSchedule(scheduleToDelete.id, project.id);
 			if (ok) {
-				toast.success(`Deleted "${scheduleToDelete.name}"`);
+				toast.success('Schedule deleted');
 				showDeleteDialog = false;
 				scheduleToDelete = null;
 			} else {
-				toast.error(scanSchedulesStore.error ?? 'Schedule could not be deleted');
+				toast.error(scanSchedulesStore.error ?? 'Schedule not deleted');
 			}
 		} finally {
 			isDeleting = false;
@@ -155,8 +155,8 @@
 	{:else if scanSchedulesStore.schedules.length === 0}
 		<EmptyState
 			icon={CalendarClock}
-			title="No scheduled scans yet"
-			description="Run a scan once at a set time, or repeat it hourly, daily or on a cron expression."
+			title="No schedules"
+			description="One-off, hourly, daily or cron."
 		>
 			<Button onclick={handleNew} class="gap-2">
 				<Plus size={15} />
@@ -189,8 +189,8 @@
 {#if scheduleToDelete}
 	<DeleteConfirmationDialog
 		bind:open={showDeleteDialog}
-		title="Delete this schedule?"
-		description="The schedule stops running. Scans it already launched are kept. This action cannot be undone."
+		title="Delete schedule"
+		description={`Schedule ${scheduleToDelete.name} is removed.`}
 		{isDeleting}
 		onOpenChange={(open) => {
 			showDeleteDialog = open;

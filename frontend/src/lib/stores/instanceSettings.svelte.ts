@@ -25,7 +25,7 @@ function createInstanceSettingsStore() {
 				settings = await instanceSettingsApi.get();
 				hasFetched = true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Instance settings could not be loaded');
+				toast.error(e instanceof Error ? e.message : 'Instance settings not loaded');
 			} finally {
 				isLoading = false;
 			}
@@ -36,7 +36,7 @@ function createInstanceSettingsStore() {
 				settings = await instanceSettingsApi.update(data);
 				return settings;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Instance settings could not be updated');
+				toast.error(e instanceof Error ? e.message : 'Instance settings not saved');
 				return null;
 			}
 		},

@@ -104,7 +104,7 @@
 	function handleNewContext(template?: string) {
 		const project = projectsStore.activeProject;
 		if (!project) {
-			toast.error('No active project selected');
+			toast.error('No active project');
 			return;
 		}
 		goto(ROUTES.newContext(project.id, template));
@@ -114,8 +114,8 @@
 		const project = projectsStore.activeProject;
 		if (!project || !context.id) return;
 		const dup = await scanContextsStore.duplicateContext(context.id, project.id);
-		if (dup) toast.success(`Duplicated "${context.name}"`);
-		else toast.error(scanContextsStore.error ?? 'Context could not be duplicated');
+		if (dup) toast.success('Context duplicated');
+		else toast.error(scanContextsStore.error ?? 'Context not duplicated');
 	}
 
 	function toggleSelect(id: string) {
@@ -149,12 +149,12 @@
 					contextToDelete.project_id
 				);
 				if (ok) {
-					toast.success(`Deleted "${contextToDelete.name}"`);
+					toast.success('Context deleted');
 					selectedIds.delete(contextToDelete.id);
 					showDeleteDialog = false;
 					contextToDelete = null;
 				} else {
-					toast.error(scanContextsStore.error ?? 'Context could not be deleted');
+					toast.error(scanContextsStore.error ?? 'Context not deleted');
 				}
 				return;
 			}
@@ -175,7 +175,7 @@
 			if (deleted) toast.success(`${deleted} context${deleted !== 1 ? 's' : ''} deleted`);
 			if (failed) {
 				toast.error(
-					`${failed} context${failed !== 1 ? 's' : ''} kept${lastError ? `. ${lastError}` : ''}`
+					`${failed} context${failed !== 1 ? 's' : ''} not deleted${lastError ? `. ${lastError}` : ''}`
 				);
 			}
 			showDeleteDialog = false;
@@ -186,13 +186,13 @@
 
 	const deleteTitle = $derived(
 		deleteMode === 'single'
-			? 'Delete this context?'
-			: `Delete ${selectedIds.size} context${selectedIds.size !== 1 ? 's' : ''}?`
+			? 'Delete context'
+			: `Delete ${selectedIds.size} context${selectedIds.size !== 1 ? 's' : ''}`
 	);
 	const deleteDescription = $derived(
 		deleteMode === 'single'
-			? 'Removes this context from the project. Completed scans and their results are unaffected.'
-			: 'Removes the selected contexts from the project. Contexts referenced by a schedule or a running scan are skipped. Completed scans and their results are unaffected.'
+			? `Context ${contextToDelete?.name ?? ''} is removed.`
+			: 'The selected contexts are removed. Contexts used by a schedule or a running scan are skipped.'
 	);
 
 	async function handleRefresh() {
@@ -216,7 +216,7 @@
 		<div class="max-w-2xl">
 			<h1 class="text-2xl font-semibold tracking-tight">Scan contexts</h1>
 			<p class="mt-1 text-sm text-muted-foreground">
-				Credentials, rate limits, scope rules and proxy settings applied when a scan runs
+				Credentials, rate limits, scope rules and proxy settings for a scan
 			</p>
 		</div>
 		<div class="flex items-center gap-2">
@@ -240,7 +240,7 @@
 	{#if scanContextsStore.error && !scanContextsStore.isLoading}
 		<Alert.Root variant="destructive">
 			<AlertCircle />
-			<Alert.Title>Scan contexts could not be loaded</Alert.Title>
+			<Alert.Title>Scan contexts not loaded</Alert.Title>
 			<Alert.Description class="flex flex-wrap items-center justify-between gap-3">
 				<span>{scanContextsStore.error}</span>
 				<Button
@@ -272,10 +272,7 @@
 		<section class="rounded-xl border border-border bg-muted/20 p-6 sm:p-8">
 			<div class="max-w-xl">
 				<h2 class="text-lg font-semibold tracking-tight">No scan contexts</h2>
-				<p class="mt-1 text-sm text-muted-foreground">
-					A context controls how a scan reaches its target: credentials, headers, rate limits, scope
-					and proxy. Start from a template, or configure one field by field.
-				</p>
+				<p class="mt-1 text-sm text-muted-foreground">Start from a template or use New context.</p>
 			</div>
 			<div class="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
 				{#each CONTEXT_TEMPLATES as template (template.key)}
@@ -333,12 +330,7 @@
 		</div>
 
 		{#if visibleContexts.length === 0}
-			<EmptyState
-				icon={SearchX}
-				title="No contexts match"
-				description="Widen the search or remove a filter."
-				compact
-			>
+			<EmptyState icon={SearchX} title="No contexts match" compact>
 				<Button variant="outline" size="sm" onclick={() => (query = '')}>Clear search</Button>
 			</EmptyState>
 		{:else}

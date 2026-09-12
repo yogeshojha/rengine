@@ -9,7 +9,7 @@ class PassivePortsConfig(StageConfig):
     enabled: bool = Field(
         default=True,
         title="Look up indexed ports",
-        description="Read ports already indexed for each address by internet-wide scanners.",
+        description="Read ports indexed for each address by internet-wide scanners.",
     )
     max_addresses: int = Field(
         default=1024,

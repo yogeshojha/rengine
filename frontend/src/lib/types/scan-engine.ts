@@ -12,7 +12,7 @@ export const INTENSITY_LABELS: Record<Intensity, string> = {
 export const INTENSITY_HELP: Record<Intensity, string> = {
 	passive: 'Passive sources only. No traffic is sent to the target.',
 	normal: 'Active scanning at standard rate limits.',
-	aggressive: 'Maximum coverage at higher request rates. More likely to be detected.'
+	aggressive: 'Active scanning at higher request rates. More likely to be detected.'
 };
 
 export type StageConfig = Record<string, unknown>;

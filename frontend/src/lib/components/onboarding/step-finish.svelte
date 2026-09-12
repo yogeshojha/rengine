@@ -75,8 +75,8 @@
 				} catch (e) {
 					toast.error(
 						e instanceof Error
-							? `Retention settings could not be saved. ${e.message}`
-							: 'Retention settings could not be saved.'
+							? `Retention settings not saved. ${e.message}`
+							: 'Retention settings not saved.'
 					);
 					return;
 				}
@@ -92,9 +92,7 @@
 				});
 			} catch (e) {
 				toast.error(
-					e instanceof Error
-						? `Project could not be created. ${e.message}`
-						: 'Project could not be created. Retention settings are saved.'
+					e instanceof Error ? `Project not created. ${e.message}` : 'Project not created.'
 				);
 				return;
 			}
@@ -140,7 +138,7 @@
 						{/each}
 					</Select.Content>
 				</Select.Root>
-				<p class="text-xs text-muted-foreground">Captured screenshots are pruned after this.</p>
+				<p class="text-xs text-muted-foreground">Retention period for screenshots.</p>
 			</div>
 		</div>
 	</section>
@@ -153,7 +151,7 @@
 			<Input
 				id="project-name"
 				bind:value={projectName}
-				placeholder="e.g. Acme Bug Bounty"
+				placeholder="Acme Bug Bounty"
 				disabled={busy}
 				aria-invalid={nameInvalid}
 				class="h-9 text-sm"

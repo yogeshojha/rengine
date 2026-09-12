@@ -19,11 +19,7 @@ _COLUMNS = {
 
 
 class WebAssetsConfig(SectionConfig):
-    only_live: bool = flag(
-        True,
-        title="Only hosts that answered",
-        description="Hosts with no HTTP response are excluded.",
-    )
+    only_live: bool = flag(True, title="Only web assets that answered")
     max_rows: int = limit(80, title="Rows shown", minimum=5, maximum=2000)
     fields: list[str] = columns(
         ["status", "title", "ip", "tech"], title="Columns", options=_COLUMNS
@@ -33,13 +29,13 @@ class WebAssetsConfig(SectionConfig):
         title="Order",
         options={"findings": "Findings first", "status": "Status", "name": "Name"},
     )
-    show_new: bool = flag(True, title="Mark hosts new since the previous run")
+    show_new: bool = flag(True, title="Mark new web assets")
 
 
 class WebAssetsSection(Section):
     name = "web_assets"
     title = "Web assets"
-    description = "The hostname inventory, with the selected columns."
+    description = "Web asset inventory."
     group = SectionGroup.SURFACE.value
     order = 10
     launch_fields = frozenset({"max_rows"})

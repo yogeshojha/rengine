@@ -46,7 +46,7 @@ async def toolbox_run(
     run = await store.get(current_user.id, run_id)
     if run is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="That run has expired."
+            status_code=status.HTTP_404_NOT_FOUND, detail="Run expired."
         )
     before = run.status
     expire(run)

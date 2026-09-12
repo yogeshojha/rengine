@@ -159,7 +159,7 @@ class TargetOption(BaseModel):
 
 
 class NoticeRead(BaseModel):
-    """Something reNgine wants the tester to know while they are still testing."""
+    """A notice shown to the tester."""
 
     kind: str
     label: str
@@ -191,7 +191,7 @@ class FindingRecorded(BaseModel):
 
 
 class ConnectorScope(BaseModel):
-    """Scope rules the proxy can apply, built from what reNgine knows."""
+    """Scope rules for the proxy."""
 
     target_value: str
     include: list[str] = PydanticField(default_factory=list)
@@ -203,7 +203,7 @@ class ConnectorScope(BaseModel):
 
 
 class HostFacts(BaseModel):
-    """What reNgine already knows about the host being tested."""
+    """Known facts about the host under test."""
 
     host: str
     target_value: str | None = None

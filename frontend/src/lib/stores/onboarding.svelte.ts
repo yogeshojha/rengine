@@ -31,7 +31,7 @@ function createOnboardingStore() {
 				status = await onboardingApi.getStatus();
 				hasFetched = true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Onboarding status could not be loaded');
+				toast.error(e instanceof Error ? e.message : 'Onboarding status not loaded');
 			} finally {
 				isLoading = false;
 			}
@@ -43,7 +43,7 @@ function createOnboardingStore() {
 				status = await onboardingApi.getStatus();
 				hasFetched = true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Onboarding status could not be loaded');
+				toast.error(e instanceof Error ? e.message : 'Onboarding status not loaded');
 			} finally {
 				isLoading = false;
 			}

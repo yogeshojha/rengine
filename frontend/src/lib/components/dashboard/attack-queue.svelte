@@ -185,13 +185,13 @@
 									<span class="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
 										<span class="truncate font-mono">{f.host ?? f.matched_at}</span>
 										{#if f.host_count > 1}
-											<span class="shrink-0">· on {f.host_count} hosts</span>
+											<span class="shrink-0">· on {f.host_count} web assets</span>
 										{/if}
 										<span class="shrink-0">· {f.target_value}</span>
 									</span>
 								</span>
 								{#if f.epss_score !== null}
-									<Hint text="EPSS score: probability of exploitation within 30 days">
+									<Hint text="EPSS: probability of exploitation within 30 days">
 										{#snippet child(props)}
 											<span {...props} class="shrink-0 text-xs tabular-nums text-muted-foreground">
 												{epssPercent(f.epss_score)}

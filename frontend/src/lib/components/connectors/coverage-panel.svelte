@@ -31,11 +31,7 @@
 
 	{#if rows.length === 0}
 		<div class="px-4 py-10">
-			<EmptyState
-				icon={CompassIcon}
-				title="No coverage"
-				description="Coverage compares scanned endpoints with the requests recorded here."
-			/>
+			<EmptyState icon={CompassIcon} title="No coverage" />
 		</div>
 	{:else}
 		<div class="divide-y">
@@ -47,7 +43,7 @@
 							{#if row.known_endpoints}
 								{row.visited} of {row.known_endpoints} reached
 							{:else}
-								Never scanned
+								Not scanned
 							{/if}
 						</span>
 					</div>
@@ -64,9 +60,6 @@
 						{/if}
 						{#if row.browsed_unknown > 0}
 							<span class="text-info">{row.browsed_unknown} not found by any scan</span>
-						{/if}
-						{#if row.known_endpoints === 0}
-							<span>No scan has covered this host.</span>
 						{/if}
 					</div>
 				</div>

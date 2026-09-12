@@ -235,7 +235,7 @@
 				seedKey++;
 			}
 		} catch (e) {
-			loadError = e instanceof Error ? e.message : 'Context could not be loaded';
+			loadError = e instanceof Error ? e.message : 'Context not loaded';
 		} finally {
 			isLoading = false;
 		}
@@ -283,7 +283,7 @@
 					bypassGuard = true;
 					goto(ROUTES.context(created.id), { replaceState: true });
 				} else {
-					toast.error(scanContextsStore.error ?? 'Context could not be created');
+					toast.error(scanContextsStore.error ?? 'Context not created');
 				}
 			} else {
 				const update: ScanContextUpdate = buildContextPayload(draft!, touchedSecrets);
@@ -296,7 +296,7 @@
 					seedKey++;
 					toast.success('Context saved');
 				} else {
-					toast.error(scanContextsStore.error ?? 'Context could not be saved');
+					toast.error(scanContextsStore.error ?? 'Context not saved');
 				}
 			}
 		} finally {
@@ -308,22 +308,20 @@
 		const project = projectsStore.activeProject;
 		if (!project || !contextId || isNew || isDuplicating) return;
 		if (hasUnsavedChanges) {
-			toast.warning(
-				'The duplicate is based on the last saved version. Unsaved changes are not included.'
-			);
+			toast.warning('Unsaved changes are not included in the duplicate.');
 		}
 		isDuplicating = true;
 		try {
 			const dup = await scanContextsStore.duplicateContext(contextId, project.id);
 			if (dup?.id) {
-				toast.success(`Duplicated as "${dup.name}"`);
+				toast.success('Context duplicated');
 				bypassGuard = true;
 				goto(ROUTES.context(dup.id));
 			} else {
-				toast.error(scanContextsStore.error ?? 'Duplicate failed');
+				toast.error(scanContextsStore.error ?? 'Context not duplicated');
 			}
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Duplicate failed');
+			toast.error(e instanceof Error ? e.message : 'Context not duplicated');
 		} finally {
 			isDuplicating = false;
 		}
@@ -341,10 +339,10 @@
 				bypassGuard = true;
 				goto(ROUTES.contexts);
 			} else {
-				toast.error(scanContextsStore.error ?? 'Delete failed');
+				toast.error(scanContextsStore.error ?? 'Context not deleted');
 			}
 		} catch {
-			toast.error('Delete failed');
+			toast.error('Context not deleted');
 		} finally {
 			isDeleting = false;
 		}
@@ -395,7 +393,7 @@
 				<Empty.Media class="size-[52px] rounded-xl bg-destructive/10">
 					<AlertTriangle size={22} class="text-destructive" />
 				</Empty.Media>
-				<Empty.Title>Context could not be loaded</Empty.Title>
+				<Empty.Title>Context not loaded</Empty.Title>
 				<Empty.Description>{loadError}</Empty.Description>
 			</Empty.Header>
 			<Empty.Content>
@@ -438,7 +436,7 @@
 							{/snippet}
 						</Tooltip.Trigger>
 						<Tooltip.Content class="text-xs">
-							{isNew ? 'Not saved yet' : 'Unsaved changes'}
+							{isNew ? 'Not saved' : 'Unsaved changes'}
 						</Tooltip.Content>
 					</Tooltip.Root>
 				{/if}
@@ -579,10 +577,10 @@
 {#if !isNew}
 	<DeleteConfirmationDialog
 		bind:open={showDeleteDialog}
-		title="Delete this context?"
+		title="Delete context"
 		description={loaded?.usage?.schedules
-			? `'${draft?.name ?? 'This context'}' is used by ${loaded.usage.schedules} scheduled scan${loaded.usage.schedules === 1 ? '' : 's'}. Those schedules will fail to launch without it. Completed scans and their results are unaffected.`
-			: `Removes '${draft?.name ?? 'this context'}' from the project. Completed scans and their results are unaffected.`}
+			? `Context ${draft?.name ?? ''} is removed. ${loaded.usage.schedules} schedule${loaded.usage.schedules === 1 ? '' : 's'} that use it stop launching.`
+			: `Context ${draft?.name ?? ''} is removed.`}
 		{isDeleting}
 		onOpenChange={(open) => (showDeleteDialog = open)}
 		onConfirm={handleDelete}
@@ -591,7 +589,7 @@
 
 <UnsavedChangesDialog
 	bind:open={showLeaveDialog}
-	description="Edits to this context have not been saved. Leaving now discards them."
+	description="Unsaved changes are discarded."
 	onOpenChange={(o) => {
 		if (!o) cancelLeave();
 	}}

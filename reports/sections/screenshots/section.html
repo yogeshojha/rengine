@@ -1,4 +1,4 @@
-<p class="block muted small">{{ total|num }} assets were captured. The {{ hosts|length }} shown here are embedded in this document.</p>
+<p class="block muted small">{{ hosts|length|num }} of {{ total|num }} captured web assets are shown.</p>
 <div class="grid grid--{{ columns }}" style="flex-wrap:wrap">
   {% for host in hosts %}
   {% set src = host.screenshot|shot %}

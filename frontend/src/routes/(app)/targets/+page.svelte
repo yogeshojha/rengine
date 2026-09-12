@@ -180,7 +180,7 @@
 	let deleteDialogTitle = $derived(
 		deleteMode === 'single'
 			? 'Delete target'
-			: `Delete ${selectedTargetIds.size} Target${selectedTargetIds.size !== 1 ? 's' : ''}`
+			: `Delete ${selectedTargetIds.size} target${selectedTargetIds.size !== 1 ? 's' : ''}`
 	);
 
 	let selectedTargetValues = $derived(
@@ -198,14 +198,14 @@
 
 	let bulkDeletePreview = $derived(
 		deletePreviewValues.length
-			? ` Including: ${deletePreviewValues.join(', ')}${deletePreviewRemainder > 0 ? `, and ${deletePreviewRemainder} more` : ''}.`
+			? ` Including ${deletePreviewValues.join(', ')}${deletePreviewRemainder > 0 ? ` and ${deletePreviewRemainder} more` : ''}.`
 			: ''
 	);
 
 	let deleteDialogDescription = $derived(
 		deleteMode === 'single'
-			? `This also deletes every scan and finding for ${targetToDelete?.target_value}.`
-			: `This also deletes every scan and finding for ${selectedTargetIds.size} target${selectedTargetIds.size !== 1 ? 's' : ''}.${bulkDeletePreview}`
+			? `Target ${targetToDelete?.target_value ?? ''} and its scans and findings are removed.`
+			: `${selectedTargetIds.size} target${selectedTargetIds.size !== 1 ? 's' : ''} and their scans and findings are removed.${bulkDeletePreview}`
 	);
 
 	let organizationSummaries = $derived(
@@ -330,9 +330,9 @@
 		if (ids.length === 0) return;
 		try {
 			const n = await targetsStore.bulkEnrich(ids, kind);
-			toast.success(`Queued ${kind.toUpperCase()} for ${n} target${n !== 1 ? 's' : ''}`);
+			toast.success(`${kind.toUpperCase()} queued for ${n} target${n !== 1 ? 's' : ''}`);
 		} catch {
-			toast.error(`${kind.toUpperCase()} enrichment could not be queued`);
+			toast.error(`${kind.toUpperCase()} not queued`);
 		}
 	}
 
@@ -351,9 +351,9 @@
 		if (ids.length === 0) return;
 		try {
 			const n = await targetsStore.bulkAddTags(ids, [name]);
-			toast.success(`Tagged ${n} target${n !== 1 ? 's' : ''} with "${name}"`);
+			toast.success(`Tag "${name}" added to ${n} target${n !== 1 ? 's' : ''}`);
 		} catch {
-			toast.error('Tag could not be added');
+			toast.error('Tag not added');
 		}
 	}
 
@@ -362,16 +362,16 @@
 		if (ids.length === 0) return;
 		try {
 			const n = await targetsStore.bulkAddOrganizations(ids, [name]);
-			toast.success(`Added ${n} target${n !== 1 ? 's' : ''} to "${name}"`);
+			toast.success(`${n} target${n !== 1 ? 's' : ''} added to "${name}"`);
 		} catch {
-			toast.error('Organization could not be added');
+			toast.error('Organization not added');
 		}
 	}
 
 	async function handleSelectAllMatching() {
 		const ids = await targetsStore.getMatchingIds();
 		setSelection(ids);
-		toast.success(`Selected all ${ids.length} matching target${ids.length !== 1 ? 's' : ''}`);
+		toast.success(`${ids.length} target${ids.length !== 1 ? 's' : ''} selected`);
 	}
 
 	function handleOpenScanHistory(target: Target) {
@@ -409,8 +409,8 @@
 
 	async function handleRename(target: Target, name: string) {
 		const updated = await targetsStore.updateTarget(target.id, { display_name: name });
-		if (updated) toast.success(`Renamed to "${name}"`);
-		else toast.error('Rename failed');
+		if (updated) toast.success('Target renamed');
+		else toast.error('Target not renamed');
 	}
 
 	async function handleReEnrich(target: Target, kind: EnrichmentKind) {
@@ -426,9 +426,9 @@
 						? { dns_status: TaskStatus.PENDING }
 						: { bgp_status: TaskStatus.PENDING };
 			targetsStore.optimisticUpdateTarget(target.id, patch);
-			toast.success(`Re-running ${kind.toUpperCase()} for ${target.target_value}`);
+			toast.success(`${kind.toUpperCase()} refresh started`);
 		} catch {
-			toast.error(`${kind.toUpperCase()} enrichment could not be queued`);
+			toast.error(`${kind.toUpperCase()} not queued`);
 		}
 	}
 
@@ -456,7 +456,7 @@
 				showDetailDialog = false;
 				targetToDelete = null;
 			} else {
-				toast.error('Target could not be deleted');
+				toast.error('Target not deleted');
 			}
 		} else {
 			const ids = Array.from(selectedTargetIds);
@@ -466,7 +466,7 @@
 			const ok = results.filter(Boolean).length;
 			const fail = ids.length - ok;
 			if (ok) toast.success(`${ok} target${ok !== 1 ? 's' : ''} deleted`);
-			if (fail) toast.error(`${fail} target${fail !== 1 ? 's' : ''} could not be deleted`);
+			if (fail) toast.error(`${fail} target${fail !== 1 ? 's' : ''} not deleted`);
 
 			showDeleteDialog = false;
 			setSelection();
@@ -477,8 +477,8 @@
 		isRefreshing = true;
 		await targetsStore.refresh();
 		isRefreshing = false;
-		if (targetsStore.error) toast.error(`Refresh failed. ${targetsStore.error}`);
-		else toast.success('Data refreshed');
+		if (targetsStore.error) toast.error(`Targets not refreshed. ${targetsStore.error}`);
+		else toast.success('Targets refreshed');
 	}
 
 	async function handleTabChange(tab: string) {
@@ -513,12 +513,12 @@
 	function handleExport(format: ExportFormat) {
 		const rows = targetsStore.filteredTargets;
 		if (rows.length === 0) {
-			toast.error('Nothing to export in the current view');
+			toast.error('No targets to export');
 			return;
 		}
 		downloadTargets(rows, format);
 		toast.success(
-			`Exported ${rows.length} target${rows.length !== 1 ? 's' : ''} as ${format.toUpperCase()}`
+			`${rows.length} target${rows.length !== 1 ? 's' : ''} exported as ${format.toUpperCase()}`
 		);
 	}
 
@@ -651,7 +651,7 @@
 					<Empty.Media class="size-12 rounded-2xl bg-destructive/10">
 						<TriangleAlert class="size-6 text-destructive" />
 					</Empty.Media>
-					<Empty.Title>Targets could not be loaded</Empty.Title>
+					<Empty.Title>Targets not loaded</Empty.Title>
 					<Empty.Description class="max-w-md">{targetsStore.error}</Empty.Description>
 				</Empty.Header>
 				<Empty.Content>
@@ -840,11 +840,11 @@
 	<AlertDialog.Content>
 		<AlertDialog.Header>
 			<AlertDialog.Title>
-				Re-run {enrichConfirmKind.toUpperCase()} for {selectedTargetIds.size} targets?
+				Re-run {enrichConfirmKind.toUpperCase()} for {selectedTargetIds.size} targets
 			</AlertDialog.Title>
 			<AlertDialog.Description>
-				This queues {enrichConfirmKind.toUpperCase()} enrichment across {selectedTargetIds.size} selected
-				targets and may take a while. Lookups are rate-limited.
+				{enrichConfirmKind.toUpperCase()} lookups are queued for {selectedTargetIds.size} targets. Lookups
+				are rate-limited.
 			</AlertDialog.Description>
 		</AlertDialog.Header>
 		<AlertDialog.Footer>

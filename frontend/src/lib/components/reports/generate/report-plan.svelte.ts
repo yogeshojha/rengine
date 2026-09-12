@@ -1,7 +1,7 @@
 import { SectionRole } from '$lib/config/reports';
 import type { ReportTemplate, SectionCatalogEntry, SectionEntry } from '$lib/types/report';
 
-/** What one report will contain, seeded from a template and changed for this report only. */
+/** The sections one report will contain. */
 export class ReportPlan {
 	catalog = $state<SectionCatalogEntry[]>([]);
 	entries = $state<SectionEntry[]>([]);
@@ -41,7 +41,7 @@ export class ReportPlan {
 		return { ...(this.spec(name)?.defaults ?? {}), ...(entry?.config ?? {}) };
 	}
 
-	/** Fields a section asks to surface at generate time rather than only in the builder. */
+	/** Fields shown at generate time. */
 	launchFields(name: string) {
 		return (this.spec(name)?.fields ?? []).filter((f) => f.launch);
 	}

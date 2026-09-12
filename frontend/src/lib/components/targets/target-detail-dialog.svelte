@@ -128,7 +128,7 @@
 							{/each}
 						</div>
 					{:else}
-						<p class="text-sm text-muted-foreground">No organizations assigned</p>
+						<p class="text-sm text-muted-foreground">No organizations</p>
 					{/if}
 				</div>
 
@@ -152,7 +152,7 @@
 							{/each}
 						</div>
 					{:else}
-						<p class="text-sm text-muted-foreground">No tags assigned</p>
+						<p class="text-sm text-muted-foreground">No tags</p>
 					{/if}
 				</div>
 

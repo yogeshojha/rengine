@@ -45,14 +45,14 @@ logger = get_logger(__name__)
 
 
 def _undispatched(activities: list[ScanActivity]) -> str | None:
-    """Report the stages the canvas never reached."""
+    """The stages the canvas did not reach."""
     expected = {spec.name for level in ordered_levels() for spec in level}
     covered = {a.name for a in activities if a.status in ACTIVITY_TERMINAL_STATUSES}
     if not expected - covered:
         return None
     return (
-        f"The scan stopped after {len(covered & expected)} of {len(expected)} stages. "
-        "The remaining stages were never dispatched."
+        f"Stopped after {len(covered & expected)} of {len(expected)} stages. "
+        "The remaining stages were not dispatched."
     )
 
 
