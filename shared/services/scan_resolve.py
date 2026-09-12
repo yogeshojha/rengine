@@ -224,8 +224,6 @@ class _NeutralContext:
     included_subdomains: ClassVar[list] = []
     follow_redirects_override = None
     http_protocol = "both"
-    compare_baseline_scan_id = None
-    scan_only_new_assets = False
 
 
 class ResolvedScanConfig(BaseModel):
@@ -279,16 +277,6 @@ class ResolvedScanConfig(BaseModel):
         )
 
     __str__ = __repr__
-
-
-def _check_baseline_deferred(compare_baseline_scan_id, scan_only_new_assets) -> None:
-    if compare_baseline_scan_id is not None or scan_only_new_assets:
-        from fastapi import HTTPException, status  # noqa: PLC0415
-
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Baseline comparison is not available yet.",
-        )
 
 
 def _ctx_get(ctx, key, default=None):
@@ -407,11 +395,6 @@ def merge_engine_context(
     passive = run_intensity == Intensity.PASSIVE.value
 
     ctx = context if context is not None else _NeutralContext()
-
-    _check_baseline_deferred(
-        _ctx_get(ctx, "compare_baseline_scan_id"),
-        _ctx_get(ctx, "scan_only_new_assets"),
-    )
 
     thread_mult = float(_ctx_get(ctx, "thread_multiplier", 1.0))
     timeout_mult = float(_ctx_get(ctx, "timeout_multiplier", 1.0))

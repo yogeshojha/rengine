@@ -57,7 +57,6 @@ from shared.services.scan_resolve import (
     MASK,
     ResolvedScanConfig,
     _auth_summary,
-    _check_baseline_deferred,
     mask_proxy_url,
     merge_engine_context,
     redact_command,
@@ -221,9 +220,6 @@ class ScanService:
         context = None
         if context_id is not None:
             context = await self._get_context(context_id, project_id)
-            _check_baseline_deferred(
-                context.compare_baseline_scan_id, context.scan_only_new_assets
-            )
 
         proxy_url = None
         if context is not None and context.proxy_id is not None:

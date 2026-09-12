@@ -211,9 +211,7 @@
 			included_subdomains: [...ctx.included_subdomains],
 			follow_redirects_override: ctx.follow_redirects_override,
 			http_protocol: ctx.http_protocol,
-			proxy_id: ctx.proxy_id,
-			compare_baseline_scan_id: ctx.compare_baseline_scan_id,
-			scan_only_new_assets: ctx.scan_only_new_assets
+			proxy_id: ctx.proxy_id
 		};
 	}
 
@@ -289,8 +287,6 @@
 				}
 			} else {
 				const update: ScanContextUpdate = buildContextPayload(draft!, touchedSecrets);
-				delete update.compare_baseline_scan_id;
-				delete update.scan_only_new_assets;
 				const updated = await scanContextsStore.updateContext(contextId!, project.id, update);
 				if (updated) {
 					loaded = updated;

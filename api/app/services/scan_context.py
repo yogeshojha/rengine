@@ -85,8 +85,6 @@ def _to_read(ctx: ScanContext, usage: ContextUsage | None = None) -> ScanContext
         follow_redirects_override=ctx.follow_redirects_override,
         http_protocol=ctx.http_protocol,
         proxy_id=ctx.proxy_id,
-        compare_baseline_scan_id=ctx.compare_baseline_scan_id,
-        scan_only_new_assets=ctx.scan_only_new_assets,
         created_at=ctx.created_at,
         updated_at=ctx.updated_at,
         last_used_at=ctx.last_used_at,
@@ -243,14 +241,6 @@ def _prune_auth(auth: dict, auth_type: str) -> dict:
     return pruned
 
 
-def _check_baseline_deferred(compare_baseline_scan_id, scan_only_new_assets) -> None:
-    if compare_baseline_scan_id is not None or scan_only_new_assets:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Baseline comparison is not available yet.",
-        )
-
-
 def _apply_auth_update(ctx: ScanContext, data: ScanContextUpdate) -> None:
     new_auth_type = ctx.auth_type
     if data.auth_type is not None:
@@ -309,10 +299,6 @@ class ScanContextService:
         created_by: UUID,
         data: ScanContextCreate,
     ) -> ScanContextRead:
-        _check_baseline_deferred(
-            data.compare_baseline_scan_id, data.scan_only_new_assets
-        )
-
         auth = data.auth or AuthConfig()
         auth_type = data.auth_type or auth.auth_type or "none"
 
@@ -355,8 +341,6 @@ class ScanContextService:
             follow_redirects_override=data.follow_redirects_override,
             http_protocol=data.http_protocol,
             proxy_id=data.proxy_id,
-            compare_baseline_scan_id=data.compare_baseline_scan_id,
-            scan_only_new_assets=data.scan_only_new_assets,
         )
         self.session.add(ctx)
         await self.session.commit()
@@ -385,11 +369,6 @@ class ScanContextService:
         data: ScanContextUpdate,
     ) -> ScanContextRead:
         ctx = await self._get_or_404(id, project_id)
-
-        if data.compare_baseline_scan_id is not None or data.scan_only_new_assets:
-            _check_baseline_deferred(
-                data.compare_baseline_scan_id, data.scan_only_new_assets
-            )
 
         if data.name is not None:
             ctx.name = data.name
@@ -496,8 +475,6 @@ class ScanContextService:
             follow_redirects_override=original.follow_redirects_override,
             http_protocol=original.http_protocol,
             proxy_id=original.proxy_id,
-            compare_baseline_scan_id=original.compare_baseline_scan_id,
-            scan_only_new_assets=original.scan_only_new_assets,
         )
         self.session.add(ctx)
         await self.session.commit()

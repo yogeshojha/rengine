@@ -77,8 +77,6 @@ class ScanContext(SQLModel, table=True):
     follow_redirects_override: bool | None = Field(default=None)
     http_protocol: str = Field(default="both")
     proxy_id: uuid.UUID | None = Field(default=None, index=True)
-    compare_baseline_scan_id: uuid.UUID | None = Field(default=None)
-    scan_only_new_assets: bool = Field(default=False)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
     last_used_at: datetime | None = Field(default=None)
@@ -102,8 +100,6 @@ class ScanContextCreate(BaseModel):
     follow_redirects_override: bool | None = None
     http_protocol: str = "both"
     proxy_id: uuid.UUID | None = None
-    compare_baseline_scan_id: uuid.UUID | None = None
-    scan_only_new_assets: bool = False
 
     _validate_name = field_validator("name")(partial(clean_name, max_len=200))
 
@@ -125,8 +121,6 @@ class ScanContextUpdate(BaseModel):
     follow_redirects_override: bool | None = None
     http_protocol: str | None = None
     proxy_id: uuid.UUID | None = None
-    compare_baseline_scan_id: uuid.UUID | None = None
-    scan_only_new_assets: bool | None = None
 
     _validate_name = field_validator("name")(partial(clean_optional_name, max_len=200))
 
@@ -157,8 +151,6 @@ class ScanContextRead(BaseModel):
     follow_redirects_override: bool | None
     http_protocol: str
     proxy_id: uuid.UUID | None
-    compare_baseline_scan_id: uuid.UUID | None
-    scan_only_new_assets: bool
     created_at: datetime
     updated_at: datetime
     last_used_at: datetime | None

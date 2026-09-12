@@ -53,8 +53,6 @@ export interface ScanContextRead {
 	follow_redirects_override: boolean | null;
 	http_protocol: HttpProtocol;
 	proxy_id: string | null;
-	compare_baseline_scan_id: string | null;
-	scan_only_new_assets: boolean;
 	created_at: string;
 	updated_at: string;
 	last_used_at: string | null;
@@ -109,8 +107,6 @@ export function DEFAULT_SCAN_CONTEXT(): ScanContextCreate {
 		included_subdomains: [],
 		follow_redirects_override: null,
 		http_protocol: 'both',
-		proxy_id: null,
-		compare_baseline_scan_id: null,
-		scan_only_new_assets: false
+		proxy_id: null
 	};
 }

@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { Label } from '$lib/components/ui/label';
-	import { Separator } from '$lib/components/ui/separator';
 	import StringListField from './string-list-field.svelte';
 	import type { ScanContextRead, ScanContextCreate } from '$lib/types/scan-context';
 
@@ -97,10 +96,4 @@
 			onChange={(items) => onChange({ included_subdomains: items })}
 		/>
 	</div>
-
-	<Separator />
-
-	<p class="text-xs text-muted-foreground">
-		Baseline comparison and new-asset-only scanning are chosen when a scan is launched.
-	</p>
 </div>

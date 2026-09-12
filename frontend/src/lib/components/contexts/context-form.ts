@@ -95,8 +95,6 @@ export function buildContextPayload(
 		included_subdomains: draft.included_subdomains,
 		follow_redirects_override: draft.follow_redirects_override,
 		http_protocol: draft.http_protocol,
-		proxy_id: draft.proxy_id,
-		compare_baseline_scan_id: null,
-		scan_only_new_assets: false
+		proxy_id: draft.proxy_id
 	};
 }

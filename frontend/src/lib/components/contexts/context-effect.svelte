@@ -65,9 +65,7 @@
 		return {
 			...d,
 			auth,
-			extra_headers: d.extra_headers.filter((h) => h.name.trim()),
-			compare_baseline_scan_id: null,
-			scan_only_new_assets: false
+			extra_headers: d.extra_headers.filter((h) => h.name.trim())
 		};
 	}
 
