@@ -18,7 +18,10 @@ from shared.models.whois import WhoisNameserver, WhoisRecord
 from shared.utils.datetime import normalize_datetime, utc_now
 from shared.utils.infra import is_shared_nameserver
 from shared.utils.net import is_registry_routable
-from shared.utils.privacy import is_redacted_name
+from shared.utils.privacy import (
+    registrant_key,
+    registrant_key_sql,
+)
 from shared.utils.validation import (
     extract_asn_number,
     normalize_domain,
@@ -47,6 +50,8 @@ DEFAULT_CACHE_TTL_DAYS = 7
 
 # cap rows per correlation group
 MAX_CORRELATION_RECORDS = 500
+
+_REGISTRANT_KEY_SQL = registrant_key_sql(WhoisRecord.registrant_name)
 
 
 @dataclass(slots=True)
@@ -376,12 +381,14 @@ class WhoisService:
         registrant_name: str,
         limit: int = MAX_CORRELATION_RECORDS,
     ) -> list[WhoisRecord]:
-        if is_redacted_name(registrant_name):
+        """Punctuation, case and the company suffix are not part of the name."""
+        key = registrant_key(registrant_name)
+        if not key:
             return []
         result = await session.execute(
             select(WhoisRecord)
-            .where(WhoisRecord.registrant_name == registrant_name)
             .where(WhoisRecord.registrant_name != "")
+            .where(_REGISTRANT_KEY_SQL.in_([key]))
             .limit(limit)
         )
         return list(result.scalars().all())
@@ -446,7 +453,7 @@ class WhoisService:
     async def get_correlations_for_target(
         self, session: AsyncSession, whois_record_id: uuid.UUID
     ) -> dict[str, list[WhoisRecord]]:
-        """Correlation groups for a record (excludes country and redacted/shared keys)."""
+        """Correlation groups for a record. A registrar is not one: it registers for anyone."""
         result = await session.execute(
             select(WhoisRecord).where(WhoisRecord.id == whois_record_id)
         )
@@ -456,18 +463,10 @@ class WhoisService:
 
         correlations: dict[str, list[WhoisRecord]] = {}
 
-        # skip redacted registrant placeholders
-        if record.registrant_name and not is_redacted_name(record.registrant_name):
-            related = await self.find_by_registrant(session, record.registrant_name)
-            others = [r for r in related if r.id != record.id]
-            if others:
-                correlations["registrant_name"] = others
-
-        if record.registrar_name:
-            related = await self.find_by_registrar(session, record.registrar_name)
-            others = [r for r in related if r.id != record.id]
-            if others:
-                correlations["registrar_name"] = others
+        related = await self.find_by_registrant(session, record.registrant_name)
+        others = [r for r in related if r.id != record.id]
+        if others:
+            correlations["registrant_name"] = others
 
         if record.network_cidr:
             related = await self.find_by_network(session, record.network_cidr)

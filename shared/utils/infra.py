@@ -18,6 +18,19 @@ _SHARED_NS_TOKENS = frozenset(
         "squarespacedns",
         "dnsimple",
         "nsone",
+        "foundationdns",
+        "googlehosted",
+        "incapdns",
+        "sucuridns",
+        "constellix",
+        "dnspod",
+        "hichina",
+        "alidns",
+        "markmonitor",
+        "stabletransit",
+        "gcorelabs",
+        "cdnetworks",
+        "dnsowl",
     }
 )
 
