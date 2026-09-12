@@ -2,7 +2,8 @@ import uuid
 from datetime import datetime
 
 from pydantic import BaseModel
-from sqlalchemy import Column, Text
+from sqlalchemy import Column, Text, text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
@@ -21,7 +22,12 @@ class BountyProgram(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     platform: str = Field(max_length=32, index=True)
     source: str = Field(default="api", max_length=16, index=True)
+    sources: list[str] = Field(
+        default_factory=list,
+        sa_column=Column(JSONB, nullable=False, server_default=text("'[]'::jsonb")),
+    )
     handle: str = Field(max_length=200, index=True)
+    external_id: str | None = Field(default=None, max_length=100, index=True)
     name: str = Field(max_length=300)
     url: str | None = Field(default=None, max_length=500)
     profile_picture: str | None = Field(
@@ -46,6 +52,7 @@ class BountyProgram(SQLModel, table=True):
     safe_harbor: str | None = Field(default=None, max_length=32)
     requires_2fa: bool | None = Field(default=None)
     scopes_synced_at: datetime | None = Field(default=None)
+    scope_access: str | None = Field(default=None, max_length=16)
     synced_at: datetime = Field(default_factory=utc_now, index=True)
 
 
@@ -66,6 +73,7 @@ class BountyScope(SQLModel, table=True):
     scope_state: str = Field(max_length=16, index=True)
     eligible_for_bounty: bool | None = Field(default=None)
     max_severity: str | None = Field(default=None, max_length=16)
+    tier: str | None = Field(default=None, max_length=32)
     instruction: str | None = Field(default=None, sa_column=Column(Text))
     reference: str | None = Field(default=None, max_length=500)
     target_value: str | None = Field(default=None, max_length=500, index=True)
@@ -118,6 +126,7 @@ class BountyScopeRead(BaseModel):
     scope_state: str
     eligible_for_bounty: bool | None
     max_severity: str | None
+    tier: str | None
     instruction: str | None
     target_value: str | None
     target_type: str | None
@@ -131,6 +140,9 @@ class BountyProgramRead(BaseModel):
     platform_label: str = ""
     source: str = "api"
     source_label: str = ""
+    sources: list[str] = []
+    source_labels: list[str] = []
+    follow_label: str = ""
     handle: str
     name: str
     url: str | None
@@ -155,6 +167,7 @@ class BountyProgramRead(BaseModel):
     safe_harbor: str | None = None
     requires_2fa: bool | None = None
     scopes_synced_at: datetime | None
+    scope_access: str | None = None
     synced_at: datetime
     in_scope_count: int = 0
     out_of_scope_count: int = 0
@@ -208,6 +221,14 @@ class PlatformCount(BaseModel):
     label: str
     source: str
     programs: int
+    private_programs: int = 0
+    feed_programs: int = 0
+    has_feed: bool = False
+    api_provider: str | None = None
+    supports_private: bool = False
+    credential: str = ""
+    note: str = ""
+    configured: bool = False
 
 
 class BountyStatus(BaseModel):
@@ -221,12 +242,14 @@ class BountyStatus(BaseModel):
     next_sync_at: datetime | None = None
     unseen_events: int = 0
     platforms: list[PlatformCount] = []
+    source_counts: dict[str, int] = {}
     feed_interval: str = ""
     feed_synced_at: datetime | None = None
     error: str | None = None
 
 
 class BountySettingsRead(BaseModel):
+    platforms: list[PlatformCount] = []
     sync_interval: str
     feed_interval: str
     feed_synced_at: datetime | None

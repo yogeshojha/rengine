@@ -10,6 +10,7 @@ from enum import Enum
 
 import validators
 
+from shared.enums.api_key import APIProvider
 from shared.enums.target import TargetType
 from shared.utils.text import strip_control
 from shared.utils.validation import normalize_target_value, validate_target
@@ -46,6 +47,12 @@ class ScopeState(Enum):
     OUT_OF_SCOPE = "out_of_scope"
 
 
+class ScopeAccess(Enum):
+    """Why a program's scope is absent."""
+
+    DENIED = "denied"
+
+
 class BountyEvent(Enum):
     PROGRAM_ADDED = "program_added"
     PROGRAM_WENT_PUBLIC = "program_went_public"
@@ -75,6 +82,9 @@ class PlatformSpec:
     tag: str
     tag_color: str
     source: str
+    api_provider: str | None = None
+    credential: str = ""
+    follow_label: str = ""
 
 
 PLATFORMS: tuple[PlatformSpec, ...] = (
@@ -87,6 +97,9 @@ PLATFORMS: tuple[PlatformSpec, ...] = (
         tag="hackerone",
         tag_color="#0EA5E9",
         source=ProgramSource.API.value,
+        api_provider=APIProvider.HACKERONE.value,
+        credential="API username and token",
+        follow_label="Bookmarked on HackerOne",
     ),
     PlatformSpec(
         key=BountyPlatform.BUGCROWD.value,
@@ -102,11 +115,14 @@ PLATFORMS: tuple[PlatformSpec, ...] = (
         key=BountyPlatform.INTIGRITI.value,
         label="Intigriti",
         url="https://app.intigriti.com",
-        supports_private=False,
-        note="Public programs from the Bounty Targets feed",
+        supports_private=True,
+        note="Public and invite-only programs visible to the access token",
         tag="intigriti",
         tag_color="#8B5CF6",
-        source=ProgramSource.FEED.value,
+        source=ProgramSource.API.value,
+        api_provider=APIProvider.INTIGRITI.value,
+        credential="personal access token",
+        follow_label="Followed on Intigriti",
     ),
     PlatformSpec(
         key=BountyPlatform.YESWEHACK.value,
@@ -126,6 +142,8 @@ SOURCE_LABELS: dict[str, str] = {
 }
 
 PLATFORMS_BY_KEY: dict[str, PlatformSpec] = {p.key: p for p in PLATFORMS}
+
+API_PLATFORMS: tuple[PlatformSpec, ...] = tuple(p for p in PLATFORMS if p.api_provider)
 
 
 @dataclass(frozen=True)
@@ -350,6 +368,18 @@ def notify_enabled(settings: dict | None) -> bool:
 MAX_TAGS_PER_IMPORT = 10
 MAX_EVENT_DETAIL = 500
 MAX_TARGET_VALUE = 500
+MAX_TIER = 32
+
+_NO_TIER = frozenset({"out of scope", "outofscope", "none", "n/a"})
+
+
+def scope_tier(raw: str | None) -> str | None:
+    """The payout band a program puts an asset in."""
+    value = strip_control(str(raw or "")).strip()
+    if not value or value.lower() in _NO_TIER:
+        return None
+    return value[:MAX_TIER]
+
 
 MAX_SEVERITIES: tuple[str, ...] = ("critical", "high", "medium", "low", "none")
 

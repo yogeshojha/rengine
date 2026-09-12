@@ -9,7 +9,7 @@ from app.core.database import get_session
 from shared.enums.api_key import APIProvider
 from shared.models.api_key import APIKeyCreate, APIKeyRead, APIKeyUpdate, ProviderInfo
 from shared.services.api_key.async_api_key import APIKeyService
-from shared.services.bounty_programs import verify as verify_hackerone
+from shared.services.bounty_providers import HackerOneProvider, IntigritiProvider
 from shared.utils.crypto import try_decrypt
 from tools.viewdns.client import ViewDNSClient
 
@@ -20,22 +20,34 @@ async def _test_viewdns(key_value: str, _key_meta: dict | None) -> dict:
     return {"message": "API Key is valid."}
 
 
+def _programs_seen(result: dict) -> str:
+    count = result.get("programs_visible") or 0
+    sample = result.get("sample_handle")
+    if sample:
+        return f" {count} programs visible, starting at @{sample}."
+    return f" {count} programs visible."
+
+
 async def _test_hackerone(key_value: str, key_meta: dict | None) -> dict:
     username = (key_meta or {}).get("username")
     if not username:
         msg = "HackerOne API username is missing. Add it with the token."
         raise ValueError(msg)
-    result = await anyio.to_thread.run_sync(
-        verify_hackerone, (str(username), key_value)
-    )
-    sample = result.get("sample_handle")
-    detail = f" First program visible: @{sample}." if sample else ""
-    return {"message": f"Signed in to HackerOne as {username}.{detail}"}
+    provider = HackerOneProvider(str(username), key_value)
+    result = await anyio.to_thread.run_sync(provider.verify)
+    return {"message": f"Signed in to HackerOne as {username}.{_programs_seen(result)}"}
+
+
+async def _test_intigriti(key_value: str, _key_meta: dict | None) -> dict:
+    provider = IntigritiProvider(key_value)
+    result = await anyio.to_thread.run_sync(provider.verify)
+    return {"message": f"Signed in to Intigriti.{_programs_seen(result)}"}
 
 
 API_KEY_TESTERS = {
     APIProvider.VIEWDNS: _test_viewdns,
     APIProvider.HACKERONE: _test_hackerone,
+    APIProvider.INTIGRITI: _test_intigriti,
 }
 
 

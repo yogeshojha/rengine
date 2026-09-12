@@ -10,11 +10,13 @@ from sqlmodel import col
 
 from app.services.target import TargetService
 from shared.definitions.bounty_feed import (
+    FEEDS_BY_PLATFORM,
     SOURCE_LICENSE,
     SOURCE_NAME,
     SOURCE_URL,
 )
 from shared.definitions.bounty_programs import (
+    API_PLATFORMS,
     DEFAULT_FEED_INTERVAL,
     DEFAULT_SYNC_INTERVAL,
     MAX_TAGS_PER_IMPORT,
@@ -79,6 +81,8 @@ def _without_counts(program) -> dict:
     data = program.model_dump()
     for key in (
         *EMPTY_COUNTS,
+        "source_labels",
+        "follow_label",
         "imported_count",
         "watched",
         "watch_id",
@@ -90,7 +94,11 @@ def _without_counts(program) -> dict:
     data["raw_state_label"] = raw_state_label(data.get("raw_state"))
     spec = PLATFORMS_BY_KEY.get(data.get("platform") or "")
     data["platform_label"] = spec.label if spec else (data.get("platform") or "")
+    data["follow_label"] = spec.follow_label if spec else ""
     data["source_label"] = SOURCE_LABELS.get(data.get("source") or "", "")
+    sources = data.get("sources") or ([data["source"]] if data.get("source") else [])
+    data["sources"] = sources
+    data["source_labels"] = [SOURCE_LABELS.get(s, s) for s in sources]
     return data
 
 
@@ -107,14 +115,25 @@ class BountyProgramService:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def _credentials_username(self) -> str | None:
-        row = await self.session.execute(
-            select(APIKey).where(APIKey.provider == APIProvider.HACKERONE)
+    async def _connected(self) -> dict[str, dict]:
+        """Every platform credential this instance holds, keyed by provider."""
+        wanted = [APIProvider(p.api_provider) for p in API_PLATFORMS if p.api_provider]
+        rows = await self.session.execute(
+            select(APIKey).where(
+                col(APIKey.provider).in_(wanted),
+                APIKey.is_enabled == True,  # noqa: E712
+            )
         )
-        key = row.scalar_one_or_none()
-        if not key or not key.is_enabled:
+        return {k.provider.value: (k.key_meta or {}) for k in rows.scalars()}
+
+    async def _credentials_username(self, platform: str) -> str | None:
+        spec = PLATFORMS_BY_KEY.get(platform)
+        if not spec or not spec.api_provider:
             return None
-        return (key.key_meta or {}).get("username")
+        meta = (await self._connected()).get(spec.api_provider)
+        if meta is None:
+            return None
+        return meta.get("username") or spec.label
 
     async def _settings(self) -> InstanceSettings | None:
         rows = await self.session.execute(select(InstanceSettings).limit(1))
@@ -178,6 +197,7 @@ class BountyProgramService:
             )
         )
         return BountySettingsRead(
+            platforms=await self.platform_counts(),
             sync_interval=interval,
             feed_interval=feed_interval,
             feed_synced_at=feed_synced,
@@ -245,23 +265,54 @@ class BountyProgramService:
 
     async def platform_counts(self) -> list[PlatformCount]:
         rows = await self.session.execute(
-            select(BountyProgram.platform, func.count(BountyProgram.id)).group_by(
-                BountyProgram.platform
-            )
+            select(
+                BountyProgram.platform,
+                func.count(BountyProgram.id),
+                func.count(BountyProgram.id).filter(
+                    BountyProgram.program_state == ProgramState.PRIVATE.value
+                ),
+                func.count(BountyProgram.id).filter(
+                    BountyProgram.source == ProgramSource.FEED.value
+                ),
+            ).group_by(BountyProgram.platform)
         )
-        counts = dict(rows.all())
+        counts = {r[0]: r[1:] for r in rows.all()}
+        empty = (0, 0, 0)
+        connected = await self._connected()
         return [
             PlatformCount(
                 platform=spec.key,
                 label=spec.label,
                 source=spec.source,
-                programs=counts.get(spec.key, 0),
+                programs=counts.get(spec.key, empty)[0],
+                private_programs=counts.get(spec.key, empty)[1],
+                feed_programs=counts.get(spec.key, empty)[2],
+                has_feed=spec.key in FEEDS_BY_PLATFORM,
+                api_provider=spec.api_provider,
+                supports_private=spec.supports_private,
+                credential=spec.credential,
+                note=spec.note,
+                configured=bool(spec.api_provider and spec.api_provider in connected),
             )
             for spec in PLATFORMS
         ]
 
+    async def source_counts(self) -> dict[str, int]:
+        """Programs each source has seen, counting a program under every source."""
+        rows = await self.session.execute(
+            select(
+                *[
+                    func.count(BountyProgram.id).filter(
+                        col(BountyProgram.sources).contains([source.value])
+                    )
+                    for source in ProgramSource
+                ]
+            )
+        )
+        return dict(zip([s.value for s in ProgramSource], rows.one(), strict=True))
+
     async def status(self, platform: str) -> BountyStatus:
-        username = await self._credentials_username()
+        username = await self._credentials_username(platform)
         settings = await self._settings()
         interval = (settings.bounty_sync_interval if settings else None) or (
             DEFAULT_SYNC_INTERVAL
@@ -278,6 +329,7 @@ class BountyProgramService:
             )
         )
         platforms = await self.platform_counts()
+        source_counts = await self.source_counts()
         totals = await self.session.execute(
             select(
                 func.count(BountyProgram.id),
@@ -299,6 +351,7 @@ class BountyProgramService:
             next_sync_at=next_sync,
             unseen_events=unseen.scalar_one() or 0,
             platforms=platforms,
+            source_counts=source_counts,
             feed_interval=(settings.bounty_feed_interval if settings else None)
             or DEFAULT_FEED_INTERVAL,
             feed_synced_at=settings.bounty_feed_synced_at if settings else None,
@@ -324,7 +377,9 @@ class BountyProgramService:
         if platforms:
             query = query.where(col(BountyProgram.platform).in_(platforms))
         if sources:
-            query = query.where(col(BountyProgram.source).in_(sources))
+            query = query.where(
+                or_(*[col(BountyProgram.sources).contains([s]) for s in sources])
+            )
         if q:
             term = f"%{q.strip().lower()}%"
             query = query.where(
@@ -525,6 +580,7 @@ class BountyProgramService:
             scope_state=scope.scope_state,
             eligible_for_bounty=scope.eligible_for_bounty,
             max_severity=scope.max_severity,
+            tier=scope.tier,
             instruction=scope.instruction,
             target_value=scope.target_value,
             target_type=scope.target_type.value if scope.target_type else None,

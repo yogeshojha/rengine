@@ -18,18 +18,22 @@
 
 	let { data, next, setFooter }: StepProps = $props();
 
-	const SIMPLE: {
+	interface ProviderCard {
 		provider: APIProvider;
 		name: string;
 		desc: string;
 		docs: string;
+		docsLabel: string;
 		icon: Component;
-	}[] = [
+	}
+
+	const SIMPLE: ProviderCard[] = [
 		{
 			provider: APIProvider.CHAOS,
 			name: 'Chaos',
 			desc: 'The ProjectDiscovery passive subdomain dataset.',
 			docs: 'https://cloud.projectdiscovery.io',
+			docsLabel: 'Get API key',
 			icon: RadarIcon
 		},
 		{
@@ -37,6 +41,7 @@
 			name: 'Netlas',
 			desc: 'Internet-wide host and certificate intelligence.',
 			docs: 'https://netlas.io',
+			docsLabel: 'Get API key',
 			icon: GlobeIcon
 		},
 		{
@@ -44,16 +49,30 @@
 			name: 'SecurityTrails',
 			desc: 'Historical DNS and domain registration records.',
 			docs: 'https://securitytrails.com',
+			docsLabel: 'Get API key',
 			icon: RouteIcon
 		}
 	];
 
-	const showHackerOne = $derived(modeHas(data.mode, Capability.HACKERONE));
+	const BOUNTY: ProviderCard[] = [
+		{
+			provider: APIProvider.INTIGRITI,
+			name: 'Intigriti',
+			desc: 'Import programs and their scope from Intigriti, including invite-only programs.',
+			docs: 'https://app.intigriti.com/researcher/personal-access-tokens',
+			docsLabel: 'Create a token',
+			icon: ShieldIcon
+		}
+	];
+
+	const showBountyPlatforms = $derived(modeHas(data.mode, Capability.BOUNTY_PLATFORMS));
+	const cards = $derived(showBountyPlatforms ? [...SIMPLE, ...BOUNTY] : SIMPLE);
 
 	let keys = $state<Record<string, string>>({
 		[APIProvider.CHAOS]: '',
 		[APIProvider.NETLAS]: '',
-		[APIProvider.SECURITYTRAILS]: ''
+		[APIProvider.SECURITYTRAILS]: '',
+		[APIProvider.INTIGRITI]: ''
 	});
 	let reveal = $state<Record<string, boolean>>({});
 
@@ -93,14 +112,14 @@
 			let saved = 0;
 			let ok = true;
 
-			for (const p of SIMPLE) {
-				const v = keys[p.provider].trim();
+			for (const p of cards) {
+				const v = (keys[p.provider] ?? '').trim();
 				if (!v) continue;
 				if (await createKey(p.provider, v)) saved++;
 				else ok = false;
 			}
 
-			if (showHackerOne && h1Token.trim()) {
+			if (showBountyPlatforms && h1Token.trim()) {
 				const meta = h1Username.trim() ? { username: h1Username.trim() } : undefined;
 				if (await createKey(APIProvider.HACKERONE, h1Token.trim(), meta)) saved++;
 				else ok = false;
@@ -117,7 +136,7 @@
 
 <div class="space-y-6">
 	<div class="space-y-3">
-		{#each SIMPLE as p (p.provider)}
+		{#each cards as p (p.provider)}
 			{@const Icon = p.icon}
 			<Card.Root>
 				<Card.Content class="p-4">
@@ -137,7 +156,8 @@
 										rel="noopener noreferrer"
 										class="inline-flex items-center gap-1 text-xs text-primary hover:underline"
 									>
-										Get API key <ExternalLinkIcon class="size-4" />
+										{p.docsLabel}
+										<ExternalLinkIcon class="size-4" />
 									</a>
 								</div>
 								<p class="text-xs text-muted-foreground">{p.desc}</p>
@@ -168,7 +188,7 @@
 			</Card.Root>
 		{/each}
 
-		{#if showHackerOne}
+		{#if showBountyPlatforms}
 			<Card.Root>
 				<Card.Content class="p-4">
 					<div class="flex items-start gap-3">

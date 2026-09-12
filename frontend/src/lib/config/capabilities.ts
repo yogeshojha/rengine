@@ -22,7 +22,7 @@ export function coerceInstanceMode(value: string | null | undefined): InstanceMo
 }
 
 export const Capability = {
-	HACKERONE: 'hackerone',
+	BOUNTY_PLATFORMS: 'bounty_platforms',
 	BOUNTY_PROGRAMS: 'bounty_programs',
 	BB_RECON_PRESETS: 'bb_recon_presets',
 	PROGRAM_WATCHES: 'program_watches'
@@ -31,7 +31,7 @@ export type CapabilityKey = (typeof Capability)[keyof typeof Capability];
 
 const MODE_CAPABILITIES: Record<InstanceMode, CapabilityKey[]> = {
 	[InstanceMode.BugBounty]: [
-		Capability.HACKERONE,
+		Capability.BOUNTY_PLATFORMS,
 		Capability.BOUNTY_PROGRAMS,
 		Capability.BB_RECON_PRESETS,
 		Capability.PROGRAM_WATCHES
@@ -39,7 +39,10 @@ const MODE_CAPABILITIES: Record<InstanceMode, CapabilityKey[]> = {
 	[InstanceMode.Corporate]: []
 };
 
-export const BUG_BOUNTY_ONLY_PROVIDERS: APIProvider[] = [APIProvider.HACKERONE];
+export const BUG_BOUNTY_ONLY_PROVIDERS: APIProvider[] = [
+	APIProvider.HACKERONE,
+	APIProvider.INTIGRITI
+];
 
 export function capabilitiesForMode(mode: string | null | undefined): CapabilityKey[] {
 	return MODE_CAPABILITIES[coerceInstanceMode(mode)];
@@ -51,7 +54,7 @@ export function modeHas(mode: string | null | undefined, capability: CapabilityK
 
 export function providerAllowed(mode: string | null | undefined, provider: APIProvider): boolean {
 	if (BUG_BOUNTY_ONLY_PROVIDERS.includes(provider)) {
-		return modeHas(mode, Capability.HACKERONE);
+		return modeHas(mode, Capability.BOUNTY_PLATFORMS);
 	}
 	return true;
 }

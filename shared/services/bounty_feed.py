@@ -28,11 +28,12 @@ from shared.definitions.bounty_programs import (
     ProgramState,
     SubmissionState,
     scope_state,
+    scope_tier,
     target_for_scope,
 )
 from shared.logging import get_logger
 from shared.models.bounty_program import BountyProgram, BountyScope
-from shared.services.bounty_programs import _event, _scope_changes
+from shared.services.bounty_programs import event_row, scope_changes
 from shared.utils.datetime import utc_now
 from shared.utils.text import strip_control
 
@@ -95,6 +96,7 @@ def _program_row(spec: FeedSpec, entry: dict, handle: str) -> dict:
     return {
         "platform": spec.platform,
         "source": ProgramSource.FEED.value,
+        "external_id": (str(entry["id"])[:100] if entry.get("id") else None),
         "handle": handle,
         "name": strip_control(str(entry.get("name") or handle))[:300],
         "url": (str(entry.get("url"))[:500] if entry.get("url") else None),
@@ -126,6 +128,7 @@ def _scope_rows(spec: FeedSpec, entry: dict, program_id) -> dict:
             kind = asset_type(spec, asset.get("type"))
             resolved = target_for_scope(kind, identifier)
             note = asset.get("description") or asset.get("name")
+            tier = scope_tier(asset.get("impact"))
             rows[(kind, identifier[:1000])] = {
                 "program_id": program_id,
                 "asset_type": kind,
@@ -133,6 +136,7 @@ def _scope_rows(spec: FeedSpec, entry: dict, program_id) -> dict:
                 "scope_state": scope_state(state == SCOPE_KEYS["in_scope"]).value,
                 "eligible_for_bounty": None,
                 "max_severity": None,
+                "tier": tier,
                 "instruction": (
                     strip_control(str(note))[:MAX_INSTRUCTION] if note else None
                 ),
@@ -164,17 +168,20 @@ def sync_platform(session: Session, spec: FeedSpec) -> dict:
         row = _program_row(spec, entry, handle)
         program = existing.get(handle)
         if program is None:
-            program = BountyProgram(**row)
+            program = BountyProgram(**row, sources=[ProgramSource.FEED.value])
             session.add(program)
             session.flush()
             created += 1
             if baseline:
-                session.add(_event(program, BountyEvent.PROGRAM_ADDED.value))
+                session.add(event_row(program, BountyEvent.PROGRAM_ADDED.value))
         else:
             if program.source == ProgramSource.API.value:
+                program.sources = sorted({*program.sources, ProgramSource.FEED.value})
+                session.commit()
                 continue
             for key, value in row.items():
                 setattr(program, key, value)
+            program.sources = sorted({*program.sources, ProgramSource.FEED.value})
             updated += 1
 
         wanted = _scope_rows(spec, entry, program.id)
@@ -186,7 +193,7 @@ def sync_platform(session: Session, spec: FeedSpec) -> dict:
                     select(BountyScope).where(BountyScope.program_id == program.id)
                 ).scalars()
             }
-            session.add_all(_scope_changes(program, before, wanted))
+            session.add_all(scope_changes(program, before, wanted))
         session.execute(
             BountyScope.__table__.delete().where(
                 BountyScope.__table__.c.program_id == program.id

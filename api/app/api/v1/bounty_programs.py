@@ -18,6 +18,7 @@ from shared.definitions.bounty_programs import (
     EVENTS,
     MAX_SEVERITIES,
     PLATFORMS,
+    PLATFORMS_BY_KEY,
     AssetGroup,
     BountyPlatform,
     ProgramState,
@@ -100,6 +101,9 @@ async def vocabulary(_current_user: CurrentUser) -> dict:
                 "url": p.url,
                 "supports_private": p.supports_private,
                 "note": p.note,
+                "source": p.source,
+                "api_provider": p.api_provider,
+                "credential": p.credential,
             }
             for p in PLATFORMS
         ],
@@ -203,24 +207,43 @@ async def get_status(
     return await service.status(BountyProgramService.require_platform(platform))
 
 
+def _not_connected(platform: str | None) -> str:
+    spec = PLATFORMS_BY_KEY.get(platform or "")
+    if spec and not spec.api_provider:
+        return (
+            f"{spec.label} has no researcher API. Public programs come from the feed."
+        )
+    if spec:
+        return (
+            f"{spec.label} is not connected. Add the {spec.credential} under API keys."
+        )
+    return "No bug bounty platform is connected. Add a platform API key."
+
+
 @router.post("/sync")
 async def sync(
     session: SessionDep,
     service: ServiceDep,
     _current_user: CurrentSuperuser,
-    platform: str = Query(BountyPlatform.HACKERONE.value),
+    platform: str | None = Query(
+        None, description="One platform, or every connected one"
+    ),
     scopes: bool = Query(True, description="Refresh every program's scope"),
 ) -> dict:
     """Queue a refresh of the program library."""
     await _require_mode(session)
-    BountyProgramService.require_platform(platform)
-    state = await service.status(platform)
-    if not state.configured:
+    if platform:
+        BountyProgramService.require_platform(platform)
+    counts = await service.platform_counts()
+    connected = [
+        c for c in counts if c.configured and (not platform or c.platform == platform)
+    ]
+    if not connected:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="HackerOne API username and token are not set. Add them under API keys.",
+            detail=_not_connected(platform),
         )
-    return {"queued": dispatch_bounty_sync(scopes=scopes)}
+    return {"queued": dispatch_bounty_sync(scopes=scopes, platform=platform)}
 
 
 @router.post("/sync-feed")

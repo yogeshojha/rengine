@@ -1,11 +1,9 @@
 <script lang="ts">
-	import KeyRoundIcon from '@lucide/svelte/icons/key-round';
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import TargetIcon from '@lucide/svelte/icons/target';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import EmptyState from '$lib/components/empty-state.svelte';
@@ -13,6 +11,7 @@
 	import ResultsPagination from '$lib/components/scans/results/table/results-pagination.svelte';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import FilterBar from '$lib/components/bounty-hub/filter-bar.svelte';
+	import ConnectAlert from '$lib/components/bounty-hub/connect-alert.svelte';
 	import UpdatesFeed from '$lib/components/bounty-hub/updates-feed.svelte';
 	import ProgramRow from '$lib/components/bounty-hub/program-row.svelte';
 	import ProgramSheet from '$lib/components/bounty-hub/program-sheet.svelte';
@@ -22,7 +21,12 @@
 	import { watchesStore } from '$lib/stores/watches.svelte';
 	import type { StreamStatus, Watch, WatchHostFilter } from '$lib/types/watch';
 	import { bountyProgramsApi } from '$lib/api/bounty-programs';
-	import { PROGRAM_PAGE_SIZE, SYNC_INTERVAL_LABELS } from '$lib/config/bounty-programs';
+	import {
+		PROGRAM_PAGE_SIZE,
+		REFRESH_POLLS,
+		REFRESH_POLL_MS,
+		SYNC_INTERVAL_LABELS
+	} from '$lib/config/bounty-programs';
 	import { BOUNTY_HUB_TABS, ROUTES, type BountyHubTab } from '$lib/config/routes';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
@@ -208,14 +212,30 @@
 		}
 	}
 
+	const anyConnected = $derived((status?.platforms ?? []).some((p) => p.configured));
+
+	async function settled(before: string | null): Promise<boolean> {
+		for (let i = 0; i < REFRESH_POLLS; i++) {
+			await new Promise((r) => setTimeout(r, REFRESH_POLL_MS));
+			const next = await bountyProgramsApi.status().catch(() => null);
+			if (!next) continue;
+			status = next;
+			if (next.last_synced_at !== before) return true;
+		}
+		return false;
+	}
+
 	async function sync() {
 		syncing = true;
+		const before = status?.last_synced_at ?? null;
 		try {
 			await Promise.all([
-				status?.configured ? bountyProgramsApi.sync() : Promise.resolve(),
+				anyConnected ? bountyProgramsApi.sync() : Promise.resolve(),
 				bountyProgramsApi.syncFeed()
 			]);
-			toast.success('Refresh started');
+			const done = await settled(before);
+			await loadPrograms(filters, pageIndex, pageSize, projectId);
+			toast.success(done ? 'Programs refreshed' : 'Refresh running');
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Refresh not started');
 		} finally {
@@ -257,22 +277,7 @@
 		</LoadingButton>
 	</div>
 
-	{#if status && !status.configured}
-		<Card.Root class="border-dashed">
-			<div class="flex flex-wrap items-center justify-between gap-3 p-4">
-				<div class="flex min-w-0 items-start gap-3">
-					<KeyRoundIcon class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-					<div class="flex min-w-0 flex-col gap-0.5">
-						<span class="text-sm font-medium">HackerOne is not connected</span>
-						<span class="text-xs text-muted-foreground">
-							A HackerOne API token adds its public and private programs.
-						</span>
-					</div>
-				</div>
-				<Button href={ROUTES.settings('api-keys')} size="sm" variant="outline">Add API key</Button>
-			</div>
-		</Card.Root>
-	{/if}
+	<ConnectAlert platforms={status?.platforms ?? []} dismissible />
 
 	{#if status || watchesStore.watches.length > 0}
 		<CountTabs
@@ -307,7 +312,12 @@
 		{:else if tab === 'updates'}
 			<UpdatesFeed onOpenProgram={openProgram} />
 		{:else}
-			<FilterBar {filters} platforms={status?.platforms ?? []} onChange={onFilters} />
+			<FilterBar
+				{filters}
+				platforms={status?.platforms ?? []}
+				sourceCounts={status?.source_counts ?? {}}
+				onChange={onFilters}
+			/>
 
 			<Card.Root class="gap-0 overflow-hidden py-0">
 				{#if loading}

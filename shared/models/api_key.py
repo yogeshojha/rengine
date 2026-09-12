@@ -50,6 +50,14 @@ API_PROVIDER_META: dict[str, dict] = {
         "icon": "shield",
         "color": "#ef4444",
     },
+    APIProvider.INTIGRITI: {
+        "name": "Intigriti",
+        "description": "Program scope from Intigriti, including invite-only programs",
+        "docs_url": "https://app.intigriti.com/researcher/personal-access-tokens",
+        "requires_username": False,
+        "icon": "shield",
+        "color": "#8b5cf6",
+    },
     APIProvider.VULNX: {
         "name": "vulnx",
         "description": "ProjectDiscovery vulnerability intelligence: exploits, coverage and exposure",

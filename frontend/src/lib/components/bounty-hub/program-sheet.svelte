@@ -19,6 +19,7 @@
 	import ScopeRow from './scope-row.svelte';
 	import { bountyProgramsApi } from '$lib/api/bounty-programs';
 	import {
+		SOURCE_LABELS,
 		SOURCE_NOTES,
 		SUBMISSION_STATE_LABELS,
 		formatPayout,
@@ -28,6 +29,7 @@
 	import type { Watch } from '$lib/types/watch';
 	import {
 		ProgramState,
+		ScopeAccess,
 		ScopeState,
 		SubmissionState,
 		type BountyProgram,
@@ -254,9 +256,15 @@
 				/>
 			</div>
 
-			<div class="border-b bg-muted/20 px-4 py-2 text-xs text-muted-foreground">
-				<span class="font-medium text-foreground">{program.source_label}</span>
-				· {SOURCE_NOTES[program.source] ?? ''}
+			<div
+				class="flex flex-wrap gap-x-4 gap-y-1 border-b bg-muted/20 px-4 py-2 text-xs text-muted-foreground"
+			>
+				{#each program.sources as source (source)}
+					<span>
+						<span class="font-medium text-foreground">{SOURCE_LABELS[source] ?? source}</span>
+						· {SOURCE_NOTES[source] ?? ''}
+					</span>
+				{/each}
 			</div>
 
 			<ScrollArea.Root class="min-h-0 flex-1">
@@ -282,6 +290,12 @@
 							Policy on {program.platform_label}
 						</Button>
 					</EmptyState>
+				{:else if scopes.length === 0 && program.scope_access === ScopeAccess.Denied}
+					<EmptyState
+						title="Scope not shared"
+						description={`${program.platform_label} did not return this program's scope.`}
+						class="p-10"
+					/>
 				{:else if scopes.length === 0}
 					<EmptyState title="Scope not fetched" class="p-10">
 						<LoadingButton loading={syncing} variant="outline" size="sm" onclick={refreshScope}>

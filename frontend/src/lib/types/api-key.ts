@@ -3,7 +3,8 @@ export enum APIProvider {
 	CHAOS = 'chaos',
 	NETLAS = 'netlas',
 	SECURITYTRAILS = 'securitytrails',
-	HACKERONE = 'hackerone'
+	HACKERONE = 'hackerone',
+	INTIGRITI = 'intigriti'
 }
 
 export interface ProviderMeta {

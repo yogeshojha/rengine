@@ -21,10 +21,11 @@
 	interface Props {
 		filters: BountyProgramFilters;
 		platforms: PlatformCount[];
+		sourceCounts?: Record<string, number>;
 		onChange: (next: BountyProgramFilters) => void;
 	}
 
-	let { filters, platforms, onChange }: Props = $props();
+	let { filters, platforms, sourceCounts = {}, onChange }: Props = $props();
 
 	let draft = $state('');
 	let timer: ReturnType<typeof setTimeout> | undefined;
@@ -64,10 +65,10 @@
 			.map((p) => ({ value: p.platform, label: p.label, count: p.programs }))
 	);
 	const sourceFacets = $derived(
-		[ProgramSource.Api, ProgramSource.Feed].map((source) => ({
+		Object.values(ProgramSource).map((source) => ({
 			value: source as string,
 			label: SOURCE_LABELS[source],
-			count: platforms.filter((p) => p.source === source).reduce((n, p) => n + p.programs, 0)
+			count: sourceCounts[source] ?? 0
 		}))
 	);
 
@@ -218,7 +219,7 @@
 		size="sm"
 		class="h-9"
 	>
-		Bookmarked
+		Following
 	</Toggle>
 
 	<Select.Root

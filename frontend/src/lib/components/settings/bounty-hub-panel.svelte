@@ -1,14 +1,13 @@
 <script lang="ts">
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
-	import KeyRoundIcon from '@lucide/svelte/icons/key-round';
 	import { toast } from 'svelte-sonner';
-	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import * as Select from '$lib/components/ui/select';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import { Switch } from '$lib/components/ui/switch';
 	import SectionHead from '$lib/components/section-head.svelte';
 	import CertificateStreamCard from './certificate-stream-card.svelte';
+	import ConnectAlert from '$lib/components/bounty-hub/connect-alert.svelte';
 	import { bountyProgramsApi } from '$lib/api/bounty-programs';
 	import {
 		EVENT_TONE,
@@ -21,23 +20,20 @@
 	import type {
 		BountyEventSpec,
 		BountySettings,
-		BountyStatus,
 		BountyVocabulary
 	} from '$lib/types/bounty-program';
 
 	let settings = $state<BountySettings | null>(null);
 	let vocabulary = $state<BountyVocabulary | null>(null);
-	let status = $state<BountyStatus | null>(null);
 	let loading = $state(true);
 	let saving = $state(false);
 
 	async function load() {
 		loading = true;
 		try {
-			[settings, vocabulary, status] = await Promise.all([
+			[settings, vocabulary] = await Promise.all([
 				bountyProgramsApi.settings(),
-				bountyProgramsApi.vocabulary(),
-				bountyProgramsApi.status()
+				bountyProgramsApi.vocabulary()
 			]);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Bounty Hub settings not loaded');
@@ -49,6 +45,10 @@
 	$effect(() => {
 		void load();
 	});
+
+	const platforms = $derived(settings?.platforms ?? []);
+	const connected = $derived(platforms.filter((p) => p.configured));
+	const fedPlatforms = $derived(platforms.filter((p) => p.has_feed));
 
 	const specs = $derived<BountyEventSpec[]>(
 		(settings?.notifiable_events ?? [])
@@ -83,27 +83,10 @@
 {:else if settings}
 	<div class="flex flex-col gap-6">
 		<CertificateStreamCard />
-		{#if status && !status.configured}
-			<Card.Root class="border-dashed">
-				<div class="flex flex-wrap items-center justify-between gap-3 p-4">
-					<div class="flex min-w-0 items-start gap-3">
-						<KeyRoundIcon class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-						<div class="flex min-w-0 flex-col gap-0.5">
-							<span class="text-sm font-medium">HackerOne not connected</span>
-							<span class="text-xs text-muted-foreground">
-								A HackerOne token adds its public and private programs.
-							</span>
-						</div>
-					</div>
-					<Button href={ROUTES.settings('api-keys')} size="sm" variant="outline">
-						Add credentials
-					</Button>
-				</div>
-			</Card.Root>
-		{/if}
+		<ConnectAlert {platforms} />
 		<Card.Root class="gap-0 py-0">
 			<div class="border-b p-4">
-				<SectionHead title="HackerOne" count={`${settings.programs} programs`}>
+				<SectionHead title="Platform APIs" count={`${connected.length} connected`}>
 					{#if settings.last_synced_at}
 						<span>Last synced {relativeTime(settings.last_synced_at)}</span>
 					{/if}
@@ -113,9 +96,21 @@
 				</SectionHead>
 			</div>
 
+			{#each connected as platform (platform.platform)}
+				<div class="flex flex-wrap items-center justify-between gap-4 border-b px-4 py-2.5 text-sm">
+					<span class="font-medium">{platform.label}</span>
+					<span class="text-xs text-muted-foreground">
+						{platform.programs.toLocaleString()} programs
+						{#if platform.private_programs > 0}
+							· {platform.private_programs.toLocaleString()} private
+						{/if}
+					</span>
+				</div>
+			{/each}
+
 			<div class="flex flex-wrap items-center justify-between gap-4 p-4">
 				<div class="flex min-w-0 flex-col gap-0.5">
-					<span class="text-sm font-medium">HackerOne sync interval</span>
+					<span class="text-sm font-medium">Sync interval</span>
 				</div>
 				<Select.Root
 					type="single"
@@ -152,9 +147,18 @@
 				</SectionHead>
 			</div>
 
+			{#each fedPlatforms as platform (platform.platform)}
+				<div class="flex flex-wrap items-center justify-between gap-4 border-b px-4 py-2.5 text-sm">
+					<span class="font-medium">{platform.label}</span>
+					<span class="text-xs text-muted-foreground">
+						{platform.feed_programs.toLocaleString()} programs
+					</span>
+				</div>
+			{/each}
+
 			<div class="flex flex-wrap items-center justify-between gap-4 p-4">
 				<div class="flex min-w-0 flex-col gap-0.5">
-					<span class="text-sm font-medium"> Bugcrowd, Intigriti and YesWeHack sync interval </span>
+					<span class="text-sm font-medium">Sync interval</span>
 					<span class="text-xs text-muted-foreground">
 						From
 						<a

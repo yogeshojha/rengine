@@ -149,6 +149,8 @@ export const SYNC_INTERVAL_LABELS: Record<string, string> = {
 };
 
 export const SEARCH_DEBOUNCE_MS = 250;
+export const REFRESH_POLL_MS = 2000;
+export const REFRESH_POLLS = 30;
 export const EVENT_PAGE_SIZE = 50;
 export const PROGRAM_PAGE_SIZE = 25;
 

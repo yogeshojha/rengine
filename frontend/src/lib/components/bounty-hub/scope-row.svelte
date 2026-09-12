@@ -65,6 +65,9 @@
 			{#if scope.max_severity}
 				<span>Pays up to {scope.max_severity}</span>
 			{/if}
+			{#if scope.tier}
+				<span>{scope.tier}</span>
+			{/if}
 			{#if scope.eligible_for_bounty === false}
 				<span>No bounty</span>
 			{/if}

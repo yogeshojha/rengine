@@ -182,11 +182,13 @@ def dispatch_threat_intel_refresh(*, force: bool = False) -> bool:
     return True
 
 
-def dispatch_bounty_sync(*, scopes: bool = True) -> bool:
+def dispatch_bounty_sync(*, scopes: bool = True, platform: str | None = None) -> bool:
     """Refresh the bug bounty program library."""
     try:
         get_celery_client().send_task(
-            "app.tasks.bounty_programs.sync", kwargs={"scopes": scopes}, queue="default"
+            "app.tasks.bounty_programs.sync",
+            kwargs={"scopes": scopes, "platform": platform},
+            queue="default",
         )
     except Exception:
         logger.warning("bounty program sync dispatch failed", exc_info=True)

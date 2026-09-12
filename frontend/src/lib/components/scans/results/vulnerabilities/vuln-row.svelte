@@ -94,7 +94,9 @@
 	);
 	let epssFill = $derived(BAND_FILL[bandFor(v.epss_score) ?? 'unlikely']);
 	let bounty = $derived(
-		capabilitiesStore.has(Capability.HACKERONE) && v.hackerone_reports ? v.hackerone_reports : 0
+		capabilitiesStore.has(Capability.BOUNTY_PLATFORMS) && v.hackerone_reports
+			? v.hackerone_reports
+			: 0
 	);
 	let cvss = $derived(v.cvss_score);
 	let path = $derived(locationLabel(v));

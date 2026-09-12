@@ -45,5 +45,6 @@ export const STORAGE_KEYS = {
 	vulnsDensity: 'rengine:vulns:density',
 	vulnsPageSize: 'rengine:vulns:pageSize',
 	vulnsView: 'rengine:vulns:view',
-	launchLastPlan: 'rengine:launch:lastPlan'
+	launchLastPlan: 'rengine:launch:lastPlan',
+	bountyConnectDismissed: 'rengine:bountyhub:connectDismissed'
 } as const;

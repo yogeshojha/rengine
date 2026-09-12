@@ -108,7 +108,7 @@ export const bountyProgramsApi = {
 		return api.post('/bounty-programs/sync-feed', {});
 	},
 
-	async sync(scopes = true, platform: string = BountyPlatform.HackerOne): Promise<unknown> {
+	async sync(scopes = true, platform?: string): Promise<unknown> {
 		return api.post(`/bounty-programs/sync${query({ platform, scopes })}`, {});
 	},
 

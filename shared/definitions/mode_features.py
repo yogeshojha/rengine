@@ -1,13 +1,13 @@
 from shared.enums.instance import InstanceMode
 
-CAP_HACKERONE = "hackerone"
+CAP_BOUNTY_PLATFORMS = "bounty_platforms"
 CAP_BOUNTY_PROGRAMS = "bounty_programs"
 CAP_BB_RECON_PRESETS = "bb_recon_presets"
 CAP_PROGRAM_WATCHES = "program_watches"
 
 _MODE_CAPABILITIES: dict[str, set[str]] = {
     InstanceMode.BUG_BOUNTY.value: {
-        CAP_HACKERONE,
+        CAP_BOUNTY_PLATFORMS,
         CAP_BOUNTY_PROGRAMS,
         CAP_BB_RECON_PRESETS,
         CAP_PROGRAM_WATCHES,
@@ -15,7 +15,7 @@ _MODE_CAPABILITIES: dict[str, set[str]] = {
     InstanceMode.CORPORATE.value: set(),
 }
 
-BUG_BOUNTY_PROVIDERS: frozenset[str] = frozenset({"hackerone"})
+BUG_BOUNTY_PROVIDERS: frozenset[str] = frozenset({"hackerone", "intigriti"})
 
 VALID_MODES: frozenset[str] = frozenset(
     {InstanceMode.BUG_BOUNTY.value, InstanceMode.CORPORATE.value}
@@ -34,5 +34,5 @@ def has_capability(mode: str | None, capability: str) -> bool:
 
 def provider_allowed(mode: str | None, provider: str) -> bool:
     if provider in BUG_BOUNTY_PROVIDERS:
-        return has_capability(mode, CAP_HACKERONE)
+        return has_capability(mode, CAP_BOUNTY_PLATFORMS)
     return True

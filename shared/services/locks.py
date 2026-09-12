@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import zlib
 from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import TYPE_CHECKING
@@ -11,7 +12,15 @@ from sqlalchemy import text
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
+# bounty_platform() spans BOUNTY_SYNC .. BOUNTY_SYNC + 0xFFFF
+BOUNTY_SYNC = 0x624F0001
+BOUNTY_FEED = 0x624F0002
 IP_RANGES = 0x624E0001
+
+
+def bounty_platform(platform: str) -> int:
+    """One lock per platform."""
+    return BOUNTY_SYNC + (zlib.crc32(platform.encode()) & 0xFFFF)
 
 
 @contextmanager

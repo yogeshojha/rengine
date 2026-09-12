@@ -10,6 +10,7 @@ from shared.definitions.bounty_feed import FEEDS_BY_PLATFORM
 from shared.definitions.bounty_programs import (
     BountyPlatform,
     ProgramSource,
+    ScopeAccess,
     notify_enabled,
     notify_events,
 )
@@ -23,18 +24,21 @@ from shared.services.bounty_feed import (
     sync_platform,
 )
 from shared.services.bounty_programs import (
-    FEED_LOCK_KEY,
-    SYNC_LOCK_KEY,
-    CredentialsError,
-    HackerOneError,
-    credentials,
     mark_synced,
+    scopes_to_refresh,
     sync_due,
-    sync_lock,
     sync_programs,
     sync_scopes,
 )
+from shared.services.bounty_providers import (
+    BountyProvider,
+    BountyProviderError,
+    CredentialsError,
+    configured_providers,
+    provider_for,
+)
 from shared.services.celery_dispatch import dispatch_watch_reconcile
+from shared.services.locks import BOUNTY_FEED, bounty_platform, sync_lock
 from shared.services.notification_sync import SyncNotificationPublisher
 from shared.utils.datetime import utc_now
 
@@ -94,63 +98,86 @@ def _notify(session, since) -> int:
     return len(rows)
 
 
+def _sync_platform(session, provider: BountyProvider, *, scopes: bool) -> dict:
+    """One platform's programs, then the scope of every program that moved."""
+    try:
+        result = sync_programs(session, provider)
+    except BountyProviderError as exc:
+        logger.warning(
+            "bounty program sync failed", platform=provider.platform, error=str(exc)
+        )
+        return {"platform": provider.platform, "error": str(exc)}
+    if not scopes:
+        return result
+
+    assets = 0
+    failed = 0
+    denied = 0
+    for program in scopes_to_refresh(session, provider):
+        try:
+            assets += sync_scopes(session, program, provider)
+            denied += program.scope_access == ScopeAccess.DENIED.value
+        except CredentialsError as exc:
+            logger.warning(
+                "bounty scope sync rejected",
+                platform=provider.platform,
+                error=str(exc),
+            )
+            break
+        except BountyProviderError as exc:
+            failed += 1
+            logger.info(
+                "bounty scope sync failed",
+                platform=provider.platform,
+                handle=program.handle,
+                error=str(exc),
+            )
+            if failed >= SCOPE_FAILURE_BUDGET:
+                logger.warning(
+                    "bounty scope sync abandoned",
+                    platform=provider.platform,
+                    failed=failed,
+                )
+                break
+    return {
+        **result,
+        "assets": assets,
+        "scope_failures": failed,
+        "scope_denied": denied,
+    }
+
+
 @shared_task(name="app.tasks.bounty_programs.sync")
-def sync(scopes: bool = True, force: bool = True) -> dict:
-    """Pull programs, then each program's scope."""
+def sync(scopes: bool = True, force: bool = True, platform: str | None = None) -> dict:
+    """Pull programs, then each program's scope, for every connected platform."""
     started = utc_now()
-    with get_sync_session() as session, sync_lock(session, SYNC_LOCK_KEY) as held:
-        if not held:
-            return {"skipped": "already_running"}
+    with get_sync_session() as session:
         if not force and not sync_due(session):
             return {"skipped": "not_due"}
-        auth = credentials(session)
-        if not auth:
-            logger.info("bounty program sync skipped, no hackerone credentials")
-            return {"skipped": "not_configured"}
-        try:
-            result = sync_programs(session, auth)
-        except HackerOneError as exc:
-            logger.warning("bounty program sync failed", error=str(exc))
-            return {"error": str(exc)}
-
-        if not scopes:
-            mark_synced(session)
-            return {**result, "alerted": _notify(session, started)}
-
-        programs = (
-            session.execute(
-                select(BountyProgram).where(
-                    BountyProgram.platform == BountyPlatform.HACKERONE.value
-                )
-            )
-            .scalars()
-            .all()
+        providers = (
+            [p for p in [provider_for(session, platform)] if p]
+            if platform
+            else configured_providers(session)
         )
-        assets = 0
-        failed = 0
-        for program in programs:
-            try:
-                assets += sync_scopes(session, program, auth)
-            except CredentialsError as exc:
-                logger.warning("bounty scope sync rejected", error=str(exc))
-                break
-            except HackerOneError as exc:
-                failed += 1
-                logger.info(
-                    "bounty scope sync failed", handle=program.handle, error=str(exc)
-                )
-                if failed >= SCOPE_FAILURE_BUDGET:
-                    logger.warning("bounty scope sync abandoned", failed=failed)
-                    break
+        if not providers:
+            logger.info("bounty program sync skipped, no platform credentials")
+            return {"skipped": "not_configured"}
+
+        results = []
+        for provider in providers:
+            with sync_lock(session, bounty_platform(provider.platform)) as held:
+                if not held:
+                    results.append(
+                        {"platform": provider.platform, "skipped": "already_running"}
+                    )
+                    continue
+                results.append(_sync_platform(session, provider, scopes=scopes))
+
         mark_synced(session)
         alerted = _notify(session, started)
-        dispatch_watch_reconcile()
-        return {
-            **result,
-            "assets": assets,
-            "scope_failures": failed,
-            "alerted": alerted,
-        }
+        if scopes:
+            dispatch_watch_reconcile()
+        return {"platforms": results, "alerted": alerted}
 
 
 @shared_task(name="app.tasks.bounty_programs.sync_program")
@@ -166,7 +193,7 @@ def sync_program(handle: str, platform: str = BountyPlatform.HACKERONE.value) ->
         if not program:
             return {"error": "unknown program"}
         feed = program.source == ProgramSource.FEED.value
-        key = FEED_LOCK_KEY if feed else SYNC_LOCK_KEY
+        key = BOUNTY_FEED if feed else bounty_platform(platform)
         with sync_lock(session, key) as held:
             if not held:
                 return {"skipped": "already_running"}
@@ -177,13 +204,18 @@ def sync_program(handle: str, platform: str = BountyPlatform.HACKERONE.value) ->
                     if spec
                     else {"error": "unknown platform"}
                 )
-            auth = credentials(session)
-            if not auth:
+            provider = provider_for(session, platform)
+            if not provider:
                 return {"skipped": "not_configured"}
             try:
-                return {"assets": sync_scopes(session, program, auth)}
-            except HackerOneError as exc:
-                logger.info("bounty scope sync failed", handle=handle, error=str(exc))
+                return {"assets": sync_scopes(session, program, provider)}
+            except BountyProviderError as exc:
+                logger.info(
+                    "bounty scope sync failed",
+                    platform=platform,
+                    handle=handle,
+                    error=str(exc),
+                )
                 return {"error": str(exc)}
 
 
@@ -191,7 +223,7 @@ def sync_program(handle: str, platform: str = BountyPlatform.HACKERONE.value) ->
 def sync_feed(force: bool = True) -> dict:
     """Public scope for the platforms with no researcher API."""
     started = utc_now()
-    with get_sync_session() as session, sync_lock(session, FEED_LOCK_KEY) as held:
+    with get_sync_session() as session, sync_lock(session, BOUNTY_FEED) as held:
         if not held:
             return {"skipped": "already_running"}
         if not force and not feed_due(session):

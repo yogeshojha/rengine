@@ -27,6 +27,10 @@ export enum ScopeState {
 	OutOfScope = 'out_of_scope'
 }
 
+export enum ScopeAccess {
+	Denied = 'denied'
+}
+
 export enum AssetGroup {
 	Network = 'network',
 	Mobile = 'mobile',
@@ -40,6 +44,9 @@ export interface PlatformSpec {
 	url: string;
 	supports_private: boolean;
 	note: string;
+	source: ProgramSource;
+	api_provider: string | null;
+	credential: string;
 }
 
 export interface AssetTypeSpec {
@@ -74,6 +81,7 @@ export interface BountyScope {
 	scope_state: ScopeState;
 	eligible_for_bounty: boolean | null;
 	max_severity: string | null;
+	tier: string | null;
 	instruction: string | null;
 	target_value: string | null;
 	target_type: string | null;
@@ -87,6 +95,9 @@ export interface BountyProgram {
 	platform_label: string;
 	source: ProgramSource;
 	source_label: string;
+	sources: ProgramSource[];
+	source_labels: string[];
+	follow_label: string;
 	handle: string;
 	name: string;
 	url: string | null;
@@ -111,6 +122,7 @@ export interface BountyProgram {
 	safe_harbor: string | null;
 	requires_2fa: boolean | null;
 	scopes_synced_at: string | null;
+	scope_access: string | null;
 	synced_at: string;
 	in_scope_count: number;
 	out_of_scope_count: number;
@@ -137,6 +149,14 @@ export interface PlatformCount {
 	label: string;
 	source: ProgramSource;
 	programs: number;
+	private_programs: number;
+	feed_programs: number;
+	has_feed: boolean;
+	api_provider: string | null;
+	supports_private: boolean;
+	credential: string;
+	note: string;
+	configured: boolean;
 }
 
 export interface BountyEventSpec {
@@ -166,6 +186,7 @@ export interface BountyEvent {
 }
 
 export interface BountySettings {
+	platforms: PlatformCount[];
 	sync_interval: SyncInterval;
 	feed_interval: SyncInterval;
 	feed_synced_at: string | null;
@@ -196,11 +217,14 @@ export interface BountyStatus {
 	username: string | null;
 	programs: number;
 	private_programs: number;
+	feed_programs: number;
+	has_feed: boolean;
 	last_synced_at: string | null;
 	sync_interval: SyncInterval;
 	next_sync_at: string | null;
 	unseen_events: number;
 	platforms: PlatformCount[];
+	source_counts: Record<string, number>;
 	feed_interval: SyncInterval;
 	feed_synced_at: string | null;
 	error: string | null;

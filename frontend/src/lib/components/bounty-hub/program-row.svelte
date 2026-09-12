@@ -7,7 +7,12 @@
 	import Hint from '$lib/components/hint.svelte';
 	import { SUBMISSION_STATE_LABELS, formatPayout } from '$lib/config/bounty-programs';
 	import { formatShortDate } from '$lib/utilities/dates';
-	import { ProgramState, SubmissionState, type BountyProgram } from '$lib/types/bounty-program';
+	import {
+		ProgramState,
+		ScopeAccess,
+		SubmissionState,
+		type BountyProgram
+	} from '$lib/types/bounty-program';
 
 	interface Props {
 		program: BountyProgram;
@@ -31,6 +36,7 @@
 		formatPayout(program.min_payout, program.max_payout, program.payout_currency)
 	);
 	const scopeKnown = $derived(program.scopes_synced_at !== null);
+	const scopeDenied = $derived(program.scope_access === ScopeAccess.Denied);
 	const scopeTotal = $derived(program.in_scope_count + program.out_of_scope_count);
 </script>
 
@@ -53,8 +59,8 @@
 		<span class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
 			<span class="truncate text-sm font-medium">{program.name}</span>
 			<span class="truncate font-mono text-xs text-muted-foreground">@{program.handle}</span>
-			{#if program.bookmarked}
-				<Hint text="Bookmarked on HackerOne">
+			{#if program.bookmarked && program.follow_label}
+				<Hint text={program.follow_label}>
 					{#snippet child(props)}
 						<span {...props} class="flex h-4 items-center">
 							<BookmarkCheckIcon class="size-3.5 text-warning" />
@@ -65,7 +71,9 @@
 		</span>
 
 		<span class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-			{#if !scopeKnown}
+			{#if scopeDenied}
+				<span class="text-muted-foreground/70">Scope not shared</span>
+			{:else if !scopeKnown}
 				<span class="text-muted-foreground/70">Scope not fetched</span>
 			{:else if scopeTotal === 0}
 				<span class="text-muted-foreground/70">No structured scope</span>
@@ -81,6 +89,9 @@
 				</span>
 			{/if}
 			<span class="text-muted-foreground/70">{program.platform_label}</span>
+			{#each program.source_labels as label (label)}
+				<span class="text-muted-foreground/70">{label}</span>
+			{/each}
 			{#if program.started_accepting_at}
 				<span>Since {formatShortDate(program.started_accepting_at)}</span>
 			{/if}

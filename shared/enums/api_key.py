@@ -7,5 +7,6 @@ class APIProvider(Enum):
     NETLAS = "netlas"
     SECURITYTRAILS = "securitytrails"
     HACKERONE = "hackerone"
+    INTIGRITI = "intigriti"
     VULNX = "vulnx"
     INTERACTSH = "interactsh"
