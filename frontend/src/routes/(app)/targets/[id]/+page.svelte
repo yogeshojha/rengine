@@ -16,6 +16,7 @@
 	import Network from '@lucide/svelte/icons/network';
 
 	import { targetsApi } from '$lib/api/targets';
+	import type { RelatedTarget } from '$lib/types/relations';
 	import { scansApi } from '$lib/api/scans';
 	import { whoisApi } from '$lib/api/whois';
 	import { subdomainsApi } from '$lib/api/subdomains';
@@ -111,6 +112,7 @@
 	let historyLoaded = $state(false);
 	let correlations = $state<WhoisCorrelationResult[]>([]);
 	let relatedDomains = $state<RelatedDomain[]>([]);
+	let relations = $state<RelatedTarget[]>([]);
 	let relatedLoading = $state(true);
 	let geography = $state<InsightTally[]>([]);
 	let geoReady = $state(false);
@@ -283,6 +285,16 @@
 		}
 	}
 
+	async function fetchRelations() {
+		const project = projectsStore.activeProject;
+		if (!project) return;
+		try {
+			relations = (await targetsApi.getRelations(targetId, project.id)).items;
+		} catch {
+			relations = [];
+		}
+	}
+
 	let relatedFor: string | null = null;
 	async function fetchRelated(scanId: string) {
 		const project = projectsStore.activeProject;
@@ -369,6 +381,7 @@
 			if (!hasPendingEnrichment() || attempts >= MAX_ENRICHMENT_POLLS) {
 				stopPolling();
 				fetchCorrelations();
+				fetchRelations();
 			}
 		}, ENRICHMENT_POLL_MS);
 	}
@@ -383,6 +396,7 @@
 			fetchTarget();
 			fetchDetail();
 			fetchCorrelations();
+			fetchRelations();
 		}
 		activityScope.targetId = targetId;
 		return () => activityScope.clear();
@@ -702,7 +716,12 @@
 							{run}
 							{now}
 						/>
-						<RelatedPanel groups={correlations} related={relatedDomains} loading={relatedLoading} />
+						<RelatedPanel
+							groups={correlations}
+							related={relatedDomains}
+							{relations}
+							loading={relatedLoading}
+						/>
 					</div>
 					<div
 						class="border-t pt-5 lg:sticky lg:self-start lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6"

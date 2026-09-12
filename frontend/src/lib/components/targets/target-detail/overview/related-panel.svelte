@@ -9,17 +9,22 @@
 	import { targetsApi } from '$lib/api/targets';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { ROUTES } from '$lib/config/routes';
+	import Hint from '$lib/components/hint.svelte';
+	import { Badge } from '$lib/components/ui/badge';
 	import { CORRELATION_REASON_LABELS, type CorrelationReason } from '$lib/types/whois';
 	import type { WhoisCorrelationResult } from '$lib/types/whois';
 	import type { RelatedDomain } from '$lib/types/asset-query';
+	import type { RelatedTarget } from '$lib/types/relations';
+	import { RELATION_HELP } from '$lib/config/relations';
 
 	interface Props {
 		groups: WhoisCorrelationResult[];
 		related: RelatedDomain[];
+		relations: RelatedTarget[];
 		loading: boolean;
 	}
 
-	let { groups, related, loading }: Props = $props();
+	let { groups, related, relations, loading }: Props = $props();
 
 	const MAX_CHIPS = 12;
 	const RANK: Record<string, number> = {
@@ -32,16 +37,16 @@
 		registrar_name: 3
 	};
 
+	// a target of this project is a relation, a record that is not one is a domain to add
 	let ranked = $derived(
 		[...groups]
-			.filter((g) => g.count > 0)
+			.map((g) => ({ ...g, records: g.records.filter((r) => !r.target_id) }))
+			.filter((g) => g.records.length > 0)
 			.sort((a, b) => (RANK[a.correlation_type] ?? 9) - (RANK[b.correlation_type] ?? 9))
 	);
-	let linked = $derived(
-		new Set(ranked.flatMap((g) => g.records.map((r) => r.target_id ?? r.query_value))).size
-	);
-	let total = $derived(linked + related.length);
-	let hasData = $derived(ranked.length > 0 || related.length > 0);
+	let unlinked = $derived(new Set(ranked.flatMap((g) => g.records.map((r) => r.query_value))).size);
+	let total = $derived(relations.length + unlinked + related.length);
+	let hasData = $derived(relations.length > 0 || ranked.length > 0 || related.length > 0);
 
 	let expanded = new SvelteSet<string>();
 	let added = new SvelteSet<string>();
@@ -77,6 +82,27 @@
 	<section class="flex flex-col gap-3 border-t py-5">
 		<SectionHead title="Related targets" count={total} />
 		<div class="flex flex-col gap-3">
+			{#each relations as rel (rel.target_id)}
+				<div class="grid grid-cols-1 gap-x-3 gap-y-1.5 sm:grid-cols-[11rem_minmax(0,1fr)]">
+					<a
+						href={ROUTES.target(rel.target_id)}
+						class="truncate font-mono text-sm text-foreground hover:text-primary"
+					>
+						{rel.target_value}
+					</a>
+					<span class="flex flex-wrap items-start gap-1.5">
+						{#each rel.reasons as r (r.kind + r.value)}
+							<Hint text="{RELATION_HELP[r.kind] ?? r.label}. {r.detail || r.value}">
+								{#snippet child(props)}
+									<span {...props} class="inline-flex">
+										<Badge variant="secondary" class="h-6 font-normal">{r.label}</Badge>
+									</span>
+								{/snippet}
+							</Hint>
+						{/each}
+					</span>
+				</div>
+			{/each}
 			{#each ranked as g (g.correlation_type)}
 				{@const open = expanded.has(g.correlation_type)}
 				{@const shown = open ? g.records : g.records.slice(0, MAX_CHIPS)}

@@ -1,3 +1,7 @@
+from shared.utils.privacy import registrant_key
+
+_MIN_IDENTITY = 4
+
 _SHARED_NS_TOKENS = frozenset(
     {
         "cloudflare",
@@ -139,3 +143,20 @@ def public_ca(issuer: str | None) -> str | None:
         if token in normalized:
             return name
     return None
+
+
+def owns_network(as_name: str | None, identities: set[str]) -> bool:
+    """Whether the network's holder is one of these parties, not a landlord."""
+    holder = registrant_key(as_name)
+    if not holder:
+        return False
+    for identity in identities:
+        if len(identity) < _MIN_IDENTITY:
+            continue
+        if (
+            holder == identity
+            or holder.startswith(identity)
+            or identity.startswith(holder)
+        ):
+            return True
+    return False

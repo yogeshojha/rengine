@@ -12,6 +12,7 @@ from app.core.database import get_session
 from app.services.target import TargetService
 from app.services.target_assets import TargetAssetService
 from app.services.target_filters import SignalName, SortDir, SortKey
+from app.services.target_relations import TargetRelationService
 from app.services.target_summary import TargetSummaryService
 from shared.definitions.constants import MAX_TARGET_IMPORT
 from shared.models import (
@@ -25,6 +26,7 @@ from shared.models import (
     TargetValidationRequest,
     TargetValidationResponse,
 )
+from shared.models.relations import TargetRelations
 from shared.models.target_asset import TargetAssetFilter, TargetAssetPage
 from shared.models.target_summary import TargetSummaryRead
 from shared.schemas.target_detail import (
@@ -385,6 +387,17 @@ async def get_target_whois(
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
     return await service.get_target_whois(target_id)
+
+
+@router.get("/{target_id}/relations", response_model=TargetRelations)
+async def get_target_relations(
+    target_id: UUID,
+    _current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+):
+    """Other targets in the project shown to be the same estate."""
+    return await TargetRelationService(session).for_target(project_id, target_id)
 
 
 @router.get("/{target_id}/bgp", response_model=TargetBgpDetailResponse)
