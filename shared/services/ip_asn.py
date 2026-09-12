@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import shutil
 import tempfile
+import time
 import urllib.request
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -15,12 +16,15 @@ from sqlalchemy.orm import Session
 
 from shared.logging import get_logger
 from shared.models.ip_asn_range import IpAsnRange, IpCountryRange
+from shared.services.locks import IP_RANGES, sync_lock
 
 logger = get_logger(__name__)
 
 BASE_URL = "https://github.com/sapics/ip-location-db/releases/download/latest"
 DOWNLOAD_TIMEOUT = 180
+SYNC_BUDGET = 900
 MAX_FEED_BYTES = 256 * 1024 * 1024
+BACKFILL_LIMIT = 200_000
 
 
 @dataclass(frozen=True)
@@ -58,7 +62,7 @@ UPDATE ip_addresses a SET
     asn_org = coalesce(r.as_name, a.asn_org),
     country = coalesce(c.country, a.country),
     prefix  = coalesce(r.prefix, a.prefix)
-FROM ip_addresses base
+FROM {source} base
 LEFT JOIN LATERAL (
     SELECT asn, as_name, end_ip,
            CASE
@@ -73,10 +77,15 @@ LEFT JOIN LATERAL (
     SELECT country, end_ip FROM ip_country_ranges
     WHERE start_ip <= base.ip::inet ORDER BY start_ip DESC LIMIT 1
 ) c ON c.end_ip >= base.ip::inet
-WHERE a.id = base.id AND base.scan_id = :sid{scope}{only}
+WHERE a.id = base.id AND (r.asn IS NOT NULL OR c.country IS NOT NULL){filter}
 """
 _ONLY_MISSING = " AND (base.asn IS NULL OR base.country IS NULL)"
 _SCOPED = " AND base.ip = ANY(:ips)"
+_PENDING_SQL = """
+SELECT id, ip FROM ip_addresses
+WHERE asn IS NULL OR country IS NULL
+ORDER BY discovered_at DESC LIMIT :lim
+"""
 
 
 def enrich_addresses(
@@ -91,22 +100,39 @@ def enrich_addresses(
         return 0
     if not ranges_ready(session):
         return 0
-    sql = _ENRICH_SQL.format(
-        scope=_SCOPED if ips is not None else "",
-        only=_ONLY_MISSING if only_missing else "",
-    )
+    where = " AND base.scan_id = :sid"
+    where += _SCOPED if ips is not None else ""
+    where += _ONLY_MISSING if only_missing else ""
+    sql = _ENRICH_SQL.format(source="ip_addresses", filter=where)
     statement = text(sql).bindparams(sid=scan_id)
     if ips is not None:
         statement = statement.bindparams(ips=list(ips))
     return int(session.execute(statement).rowcount or 0)
 
 
+def backfill_addresses(session: Session, limit: int = BACKFILL_LIMIT) -> int:
+    """Fill addresses left blank by a scan that ran before the ranges were loaded."""
+    if not ranges_ready(session):
+        return 0
+    sql = _ENRICH_SQL.format(source=f"({_PENDING_SQL})", filter="")
+    filled = int(session.execute(text(sql).bindparams(lim=limit)).rowcount or 0)
+    session.commit()
+    return filled
+
+
+def _check_deadline(deadline: float, name: str) -> None:
+    if time.monotonic() > deadline:
+        msg = f"{name} exceeded the {SYNC_BUDGET}s range sync budget"
+        raise TimeoutError(msg)
+
+
 @contextmanager
-def _downloaded(feed: Feed) -> Iterator[list[Path]]:
+def _downloaded(feed: Feed, deadline: float) -> Iterator[list[Path]]:
     workdir = Path(tempfile.mkdtemp(prefix="ip_asn_"))
     try:
         paths = []
         for name in feed.files:
+            _check_deadline(deadline, name)
             target = workdir / name
             request = urllib.request.Request(  # noqa: S310
                 f"{BASE_URL}/{name}", headers={"User-Agent": "reNgine"}
@@ -124,6 +150,7 @@ def _downloaded(feed: Feed) -> Iterator[list[Path]]:
                         msg = f"{name} exceeded {MAX_FEED_BYTES} bytes"
                         raise ValueError(msg)
                     handle.write(chunk)
+                    _check_deadline(deadline, name)
             paths.append(target)
         yield paths
     finally:
@@ -146,18 +173,23 @@ def _load(session: Session, feed: Feed, paths: list[Path]) -> int:
 
 
 def sync_ranges(session: Session) -> dict[str, int]:
-    """Refresh both range tables."""
+    """Refresh both range tables. One loader at a time across the instance."""
     counts: dict[str, int] = {}
-    for feed in FEEDS:
-        try:
-            with _downloaded(feed) as paths:
-                counts[feed.table] = _load(session, feed, paths)
-            session.commit()
-        except Exception:
-            session.rollback()
-            logger.warning(
-                "ip range feed refresh failed", table=feed.table, exc_info=True
-            )
+    with sync_lock(session, IP_RANGES) as held:
+        if not held:
+            logger.info("ip range refresh already running, skipped")
+            return counts
+        deadline = time.monotonic() + SYNC_BUDGET
+        for feed in FEEDS:
+            try:
+                with _downloaded(feed, deadline) as paths:
+                    counts[feed.table] = _load(session, feed, paths)
+                session.commit()
+            except Exception:
+                session.rollback()
+                logger.warning(
+                    "ip range feed refresh failed", table=feed.table, exc_info=True
+                )
     return counts
 
 

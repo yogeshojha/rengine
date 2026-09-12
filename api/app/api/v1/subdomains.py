@@ -163,7 +163,14 @@ async def subdomain_correlation_graph(
     scan_id: Annotated[UUID, Query(description="Scan ID")],
 ):
     """Identities shared by two or more web assets, as hubs."""
-    return await CorrelationGraphService(session).build(project_id, scan_id)
+    return await lead_cache.cached(
+        session,
+        name="correlation_graph",
+        scans=(scan_id,),
+        facets=str(project_id),
+        model=CorrelationGraph,
+        build=lambda: CorrelationGraphService(session).build(project_id, scan_id),
+    )
 
 
 @router.get("/related-domains", response_model=RelatedDomains)

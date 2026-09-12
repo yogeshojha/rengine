@@ -7,6 +7,8 @@ from enum import StrEnum
 MAX_GRAPH_HOSTS = 3000
 MAX_HUBS_PER_KIND = 80
 MIN_SHARED = 2
+# a body this small is not an identity
+MIN_BODY_BYTES = 512
 # hidden by default at or above this share
 COMMON_SHARE = 0.5
 MIN_ESTATE_FOR_COMMON = 25

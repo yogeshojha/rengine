@@ -83,6 +83,7 @@ from shared.models.subdomain import (
 from shared.models.vulnerability import Vulnerability
 from shared.services.asset_query import lead_cache
 from shared.utils.datetime import utc_now
+from shared.utils.infra import shared_edge
 
 logger = get_logger(__name__)
 
@@ -773,6 +774,15 @@ class SubdomainService:
             "tech", project_id, scan_id, limit=min(limit, _TECH_LIMIT), search=search
         )
 
+    async def _cdn_addresses(self, scan_id: UUID) -> set[str]:
+        """The scan's addresses cdncheck attributed to a CDN edge."""
+        rows = await self.session.execute(
+            select(IpAddress.ip).where(
+                IpAddress.scan_id == scan_id, IpAddress.is_cdn.is_(True)
+            )
+        )
+        return set(rows.scalars().all())
+
     async def related(
         self, project_id: UUID, scan_id: UUID, name: str
     ) -> list[SubdomainRelation]:
@@ -821,12 +831,14 @@ class SubdomainService:
             res = await self.session.execute(stmt.limit(_RELATION_CAP))
             return list(dict.fromkeys(res.scalars().all())), counted
 
-        if target.resolved_ips:
+        edge = await self._cdn_addresses(scan_id)
+        own = [ip for ip in (target.resolved_ips or []) if ip not in edge]
+        if own:
             h, seen = await hosts(
                 others.where(
                     func.jsonb_exists_any(
                         cast(Subdomain.resolved_ips, JSONB),
-                        pg_array(target.resolved_ips),
+                        pg_array(own),
                     )
                 )
             )
@@ -834,8 +846,8 @@ class SubdomainService:
                 out.append(
                     SubdomainRelation(
                         kind="ip",
-                        reason=f"Same IP {target.resolved_ips[0]}",
-                        value=target.resolved_ips[0],
+                        reason=f"Same IP {own[0]}",
+                        value=own[0],
                         hosts=h,
                         total=seen,
                     )
@@ -854,7 +866,7 @@ class SubdomainService:
                         total=seen,
                     )
                 )
-        if target.cname:
+        if target.cname and not shared_edge(target.cname):
             h, seen = await hosts(others.where(Subdomain.cname == target.cname))
             if h:
                 out.append(
@@ -866,7 +878,7 @@ class SubdomainService:
                         total=seen,
                     )
                 )
-        if target.asn:
+        if target.asn and not target.is_cdn:
             h, seen = await hosts(others.where(Subdomain.asn == target.asn))
             if h:
                 out.append(

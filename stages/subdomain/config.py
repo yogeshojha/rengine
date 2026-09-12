@@ -100,6 +100,11 @@ class SubdomainConfig(StageConfig):
         title="Resolver stall timeout",
         description="Abandon a resolver batch after this many seconds with no answer.",
     )
+    dns_retry_silent: bool = Field(
+        default=True,
+        title="Re-query unanswered names",
+        description="Ask the resolver a second time for names that returned nothing.",
+    )
 
     @property
     def enabled_sources(self) -> list[str]:

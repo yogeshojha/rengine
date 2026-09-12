@@ -4,6 +4,8 @@ import pytest
 
 from app.services.subdomain import _RELATION_CAP, SubdomainService
 from shared.definitions.correlation import MIN_ESTATE_FOR_COMMON
+from shared.enums.ip import IpSource
+from shared.models.ip_address import IpAddress
 
 pytestmark = pytest.mark.api
 
@@ -60,3 +62,31 @@ async def test_a_small_scan_suppresses_nothing(estate, now):
     rows = await _related(estate, "run", names[0])
 
     assert rows["cname"].total == 3
+
+
+async def test_a_shared_edge_is_the_provider_not_a_relation(estate, now):
+    await estate.scan("example.com", "run", at=now)
+    await estate.hosts(
+        "run",
+        ["a.example.com", "b.example.com"],
+        at=now,
+        ips=["151.101.2.132"],
+        cname="j.sni.global.fastly.net",
+    )
+    sid = estate.scans["run"]
+    estate.session.add(
+        IpAddress(
+            project_id=estate.project_id,
+            scan_id=sid,
+            target_id=await estate._target_of(sid),
+            ip="151.101.2.132",
+            version=4,
+            source=IpSource.DNS_RESOLUTION.value,
+            is_cdn=True,
+            cdn_name="fastly",
+            discovered_at=now,
+        )
+    )
+    await estate.session.flush()
+
+    assert await _related(estate, "run", "a.example.com") == {}

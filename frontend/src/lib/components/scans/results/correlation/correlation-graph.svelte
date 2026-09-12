@@ -409,7 +409,7 @@
 			const hot = n.id === focus?.id;
 			const r = n.r * g * (hot ? 1.08 : 1);
 			const color = tone(n.hub.kind);
-			const fade = n.hub.common ? 0.55 : 1;
+			const fade = n.hub.common || n.hub.platform ? 0.55 : 1;
 			ctx.globalAlpha = (on ? 1 : 0.12) * g * fade;
 
 			ctx.shadowColor = tone(n.hub.kind, dark ? 0.55 : 0.4);
@@ -637,6 +637,12 @@
 		schedule();
 	});
 
+	let degree = $derived.by(() => {
+		const counts: Record<number, number> = {};
+		for (const hub of hubs) for (const i of hub.members) counts[i] = (counts[i] ?? 0) + 1;
+		return counts;
+	});
+
 	let tip = $derived.by(() => {
 		const n = hovered;
 		if (!n) return null;
@@ -646,19 +652,22 @@
 				title: n.hub.value,
 				lines: [
 					`Shared by ${n.hub.count.toLocaleString()} web assets`,
-					n.hub.common ? 'Common in this scan' : ''
+					n.hub.common ? 'Common in this scan' : '',
+					n.hub.platform_label ? `${n.hub.platform_label} infrastructure` : ''
 				]
 			};
-		if (n.host)
+		if (n.host) {
+			const drawn = n.hostIndex !== undefined ? (degree[n.hostIndex] ?? 0) : 0;
 			return {
 				kind: null,
 				title: n.host.name,
 				lines: [
 					n.host.status !== null ? `HTTP ${n.host.status}` : 'No HTTP response',
 					n.host.title ?? '',
-					`${n.host.hubs} shared ${n.host.hubs === 1 ? 'identity' : 'identities'}`
+					`${drawn} shared ${drawn === 1 ? 'identity' : 'identities'}`
 				]
 			};
+		}
 		return null;
 	});
 </script>

@@ -45,6 +45,7 @@
 	let errored = $state(false);
 	let enabled = new SvelteSet<string>();
 	let hideCommon = $state(true);
+	let hidePlatform = $state(true);
 	let selected = $state<GraphNode | null>(null);
 	let search = $state('');
 	let chart = $state<ReturnType<typeof CorrelationGraph> | null>(null);
@@ -85,7 +86,9 @@
 	onDestroy(() => liveRefresh.stop());
 
 	let hubs = $derived(
-		(graph?.hubs ?? []).filter((h) => enabled.has(h.kind) && (!hideCommon || !h.common))
+		(graph?.hubs ?? []).filter(
+			(h) => enabled.has(h.kind) && (!hideCommon || !h.common) && (!hidePlatform || !h.platform)
+		)
 	);
 	let hosts = $derived(graph?.hosts ?? []);
 	let sharing = $derived(new Set(hubs.flatMap((h) => h.members)).size);
@@ -93,9 +96,21 @@
 	$effect(() => {
 		if (graph) onTotal?.(sharing);
 	});
-	let commonHidden = $derived(
-		hideCommon ? (graph?.hubs ?? []).filter((h) => enabled.has(h.kind) && h.common).length : 0
+	let hidden = $derived(
+		(graph?.hubs ?? []).filter(
+			(h) => enabled.has(h.kind) && ((hideCommon && h.common) || (hidePlatform && h.platform))
+		).length
 	);
+	// a chip counts what it would draw
+	let byKind = $derived.by(() => {
+		const shown: Record<string, number> = {};
+		const hid: Record<string, number> = {};
+		for (const h of graph?.hubs ?? []) {
+			const bag = (hideCommon && h.common) || (hidePlatform && h.platform) ? hid : shown;
+			bag[h.kind] = (bag[h.kind] ?? 0) + 1;
+		}
+		return { shown, hid };
+	});
 	let kinds = $derived(graph?.kinds ?? []);
 	let nothingShared = $derived(!!graph && graph.hubs.length === 0);
 
@@ -160,13 +175,16 @@
 					<b class="font-semibold tabular-nums">{sharing.toLocaleString()}</b> of
 					{plural(graph.total_hosts, 'web asset', 'web assets')} share an identity
 					<span class="text-muted-foreground"
-						>· {plural(hubs.length, 'shared identity', 'shared identities')}{commonHidden
-							? ` · ${commonHidden} common hidden`
+						>· {plural(hubs.length, 'shared identity', 'shared identities')}{hidden
+							? ` · ${hidden.toLocaleString()} hidden`
 							: ''}</span
 					>
 				</p>
 				{#if graph.truncated}
-					<p class="text-xs text-muted-foreground">Limited to the first 3,000 web assets.</p>
+					<p class="text-xs text-muted-foreground">
+						{graph.total_hosts.toLocaleString()} of {graph.estate_hosts.toLocaleString()} web assets graphed,
+						the ones that answered first.
+					</p>
 				{/if}
 			{:else}
 				<Skeleton class="h-5 w-72" />
@@ -199,7 +217,11 @@
 				aria-label="Identity types"
 			>
 				{#each kinds as k (k.key)}
-					<Hint text="{k.help}. On {plural(k.hosts, 'web asset', 'web assets')}.">
+					<Hint
+						text="{k.help}. On {plural(k.hosts, 'web asset', 'web assets')}.{byKind.hid[k.key]
+							? ` ${byKind.hid[k.key]} hidden.`
+							: ''}"
+					>
 						{#snippet child(props)}
 							<span {...props} class="inline-flex">
 								<ToggleGroup.Item value={k.key} class="h-7 gap-1.5 px-2 text-xs font-normal">
@@ -208,31 +230,44 @@
 										style="background:{kindColor(k.key, mode.current === 'dark')}"
 									></span>
 									{k.label}
-									<span class="text-muted-foreground tabular-nums">{k.hubs}</span>
+									<span class="text-muted-foreground tabular-nums">{byKind.shown[k.key] ?? 0}</span>
 								</ToggleGroup.Item>
 							</span>
 						{/snippet}
 					</Hint>
 				{/each}
 			</ToggleGroup.Root>
-			<Hint text="Hides identities present on half or more of the web assets">
-				{#snippet child(props)}
-					<span {...props} class="ml-auto inline-flex">
-						<ToggleGroup.Root
-							type="single"
-							size="sm"
-							variant="outline"
-							value={hideCommon ? 'hide' : ''}
-							onValueChange={(v) => (hideCommon = v === 'hide')}
-							aria-label="Common identities"
-						>
-							<ToggleGroup.Item value="hide" class="h-7 px-2 text-xs font-normal"
+			<ToggleGroup.Root
+				type="multiple"
+				size="sm"
+				variant="outline"
+				class="ml-auto"
+				value={[...(hideCommon ? ['common'] : []), ...(hidePlatform ? ['platform'] : [])]}
+				onValueChange={(v) => {
+					hideCommon = v.includes('common');
+					hidePlatform = v.includes('platform');
+				}}
+				aria-label="Hidden identities"
+			>
+				<Hint text="Identities on half or more of the web assets that carry one">
+					{#snippet child(props)}
+						<span {...props} class="inline-flex">
+							<ToggleGroup.Item value="common" class="h-7 px-2 text-xs font-normal"
 								>Hide common</ToggleGroup.Item
 							>
-						</ToggleGroup.Root>
-					</span>
-				{/snippet}
-			</Hint>
+						</span>
+					{/snippet}
+				</Hint>
+				<Hint text="Identities every tenant of a CDN, platform or certificate authority shares">
+					{#snippet child(props)}
+						<span {...props} class="inline-flex">
+							<ToggleGroup.Item value="platform" class="h-7 px-2 text-xs font-normal"
+								>Hide provider</ToggleGroup.Item
+							>
+						</span>
+					{/snippet}
+				</Hint>
+			</ToggleGroup.Root>
 		</div>
 	{/if}
 

@@ -69,8 +69,9 @@
 				</p>
 				<p class="mt-0.5 font-mono text-xs break-all">{hub.value}</p>
 				<p class="mt-1 text-xs text-muted-foreground">
-					{plural(hub.count, 'web asset', 'web assets')} · {Math.round(hub.share * 100)}% of the
-					scan{hub.common ? ' · common' : ''}
+					{plural(hub.count, 'web asset', 'web assets')}{hub.common
+						? ' · common'
+						: ''}{hub.platform_label ? ` · ${hub.platform_label}` : ''}
 				</p>
 			</div>
 			<Button
@@ -205,7 +206,9 @@
 										<span class="truncate font-mono text-xs">{hub.label}</span>
 										<span class="flex items-center gap-1 text-2xs text-muted-foreground">
 											{#if Icon}<Icon class="size-3" />{/if}
-											{labelFor(hub.kind)}{hub.common ? ' · common' : ''}
+											{labelFor(hub.kind)}{hub.common ? ' · common' : ''}{hub.platform_label
+												? ` · ${hub.platform_label}`
+												: ''}
 										</span>
 									</span>
 									<span class="text-xs font-medium tabular-nums">{hub.count}</span>

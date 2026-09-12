@@ -312,6 +312,8 @@ class CorrelationHub(BaseModel):
     count: int
     share: float = 0.0
     common: bool = False
+    platform: bool = False
+    platform_label: str = ""
     query: str
     members: list[int] = Field(default_factory=list)
 
@@ -324,6 +326,7 @@ class CorrelationKindStat(BaseModel):
     hubs: int = 0
     hosts: int = 0
     common: int = 0
+    platform: int = 0
 
 
 class CorrelationGraph(BaseModel):
@@ -331,5 +334,6 @@ class CorrelationGraph(BaseModel):
     hubs: list[CorrelationHub] = Field(default_factory=list)
     kinds: list[CorrelationKindStat] = Field(default_factory=list)
     total_hosts: int = 0
+    estate_hosts: int = 0
     shared_hosts: int = 0
     truncated: bool = False

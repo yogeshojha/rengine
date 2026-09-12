@@ -10,6 +10,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from shared.definitions.correlation import MIN_BODY_BYTES
 from shared.definitions.ports import SENSITIVE_PORTS
 from shared.models.http_asset import HttpAsset
 from shared.models.port import Port
@@ -31,7 +32,6 @@ MEDIUM_CONFIDENCE = 2
 MAX_SHARED_HOSTS = 60
 NARROW_REACH = 3
 BROAD_REACH = 12
-MIN_BODY_BYTES = 512
 HTTP_OK = 200
 HTTP_REDIRECT = 300
 HTTP_CLIENT_ERROR = 400

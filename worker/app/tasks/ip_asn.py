@@ -4,7 +4,7 @@ from celery import shared_task
 
 from app.database import get_sync_session
 from shared.logging import get_logger
-from shared.services.ip_asn import sync_ranges
+from shared.services.ip_asn import backfill_addresses, sync_ranges
 
 logger = get_logger(__name__)
 
@@ -13,5 +13,7 @@ logger = get_logger(__name__)
 def refresh() -> dict:
     with get_sync_session() as session:
         counts = sync_ranges(session)
+        if counts:
+            counts["addresses_filled"] = backfill_addresses(session)
     logger.info("ip range tables refreshed", **counts)
     return counts

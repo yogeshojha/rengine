@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.definitions.correlation import (
@@ -16,10 +16,13 @@ from shared.definitions.correlation import (
     CORRELATION_KIND_ORDER,
     MAX_GRAPH_HOSTS,
     MAX_HUBS_PER_KIND,
+    MIN_BODY_BYTES,
+    MIN_ESTATE_FOR_COMMON,
     MIN_SHARED,
     CorrelationKind,
 )
 from shared.models.http_asset import HttpAsset
+from shared.models.ip_address import IpAddress
 from shared.models.scan_correlation import (
     CorrelationGraph,
     CorrelationHost,
@@ -28,6 +31,7 @@ from shared.models.scan_correlation import (
 )
 from shared.models.subdomain import Subdomain
 from shared.services.asset_query.groups import group_token
+from shared.utils.infra import public_ca, shared_edge
 
 _HTTP_OK = 200
 _HTTP_CLIENT = 400
@@ -62,6 +66,17 @@ def _values(raw) -> list[str]:
     return [text] if text else []
 
 
+def _platform(kind: str, value: str, cdn_addresses: dict[str, str]) -> str:
+    """The provider whose tenants all carry this value."""
+    if kind == CorrelationKind.IP.value:
+        return cdn_addresses.get(value, "")
+    if kind == CorrelationKind.CNAME.value:
+        return shared_edge(value) or ""
+    if kind == CorrelationKind.CERT_ISSUER.value:
+        return public_ca(value) or ""
+    return ""
+
+
 def _label(kind: str, value: str) -> str:
     # keep both ends of a hash
     if kind in (
@@ -71,6 +86,46 @@ def _label(kind: str, value: str) -> str:
     ):
         return value if len(value) <= _HASH_LABEL else f"{value[:8]}…{value[-4:]}"
     return value if len(value) <= _LABEL_MAX else f"{value[: _LABEL_MAX - 1]}…"
+
+
+def _hubs_of_kind(
+    kind: str, values: dict[str, set[int]], cdn_addresses: dict[str, str]
+) -> list[CorrelationHub]:
+    """The hubs one kind contributes, most telling first."""
+    # denominator: the hosts carrying this kind
+    carriers = len({i for idx in values.values() for i in idx})
+    candidates = []
+    for value, idx in values.items():
+        if len(idx) < MIN_SHARED:
+            continue
+        share = len(idx) / carriers if carriers else 0.0
+        candidates.append(
+            (
+                value,
+                sorted(idx),
+                share,
+                carriers >= MIN_ESTATE_FOR_COMMON and share >= COMMON_SHARE,
+                _platform(kind, value, cdn_addresses),
+            )
+        )
+    candidates.sort(key=lambda c: (bool(c[4]), c[3], -len(c[1]), c[0]))
+    operator = {**_HOST_KINDS, **_ASSET_KINDS}[kind][1]
+    return [
+        CorrelationHub(
+            id=f"{kind}:{value}",
+            kind=kind,
+            value=value,
+            label=_label(kind, value),
+            count=len(idx),
+            share=round(share, 4),
+            common=common,
+            platform=bool(platform),
+            platform_label=platform,
+            query=group_token(kind, operator, value),
+            members=idx,
+        )
+        for value, idx, share, common, platform in candidates[:MAX_HUBS_PER_KIND]
+    ]
 
 
 class CorrelationGraphService:
@@ -94,14 +149,19 @@ class CorrelationGraphService:
                     Subdomain.cdn_name,
                 )
                 .where(Subdomain.project_id == project_id, Subdomain.scan_id == scan_id)
-                .order_by(Subdomain.name)
+                .order_by(
+                    Subdomain.http_status.is_(None),
+                    Subdomain.is_active.is_(False),
+                    Subdomain.name,
+                )
                 .limit(MAX_GRAPH_HOSTS + 1)
             )
         ).all()
         truncated = len(rows) > MAX_GRAPH_HOSTS
         rows = rows[:MAX_GRAPH_HOSTS]
         if not rows:
-            return CorrelationGraph(kinds=self._kinds({}, {}, 0))
+            return CorrelationGraph(kinds=self._kinds([], {}, 0))
+        estate = await self._estate(project_id, scan_id) if truncated else len(rows)
 
         index = {row.name: i for i, row in enumerate(rows)}
         hosts = [
@@ -126,6 +186,7 @@ class CorrelationGraphService:
             await self.session.execute(
                 select(
                     HttpAsset.host,
+                    HttpAsset.content_length,
                     *[getattr(HttpAsset, attr) for attr, _op in _ASSET_KINDS.values()],
                 ).where(HttpAsset.scan_id == scan_id)
             )
@@ -134,43 +195,21 @@ class CorrelationGraphService:
             i = index.get(asset.host)
             if i is None:
                 continue
+            thin = (asset.content_length or 0) < MIN_BODY_BYTES
             for kind, (attr, _op) in _ASSET_KINDS.items():
+                if kind == CorrelationKind.BODY.value and thin:
+                    continue
                 for value in _values(getattr(asset, attr)):
                     members[kind][value].add(i)
 
         total = len(hosts)
+        cdn_addresses = await self._cdn_addresses(scan_id)
         hubs: list[CorrelationHub] = []
-        per_kind_hubs: dict[str, int] = defaultdict(int)
-        per_kind_common: dict[str, int] = defaultdict(int)
         per_kind_hosts: dict[str, set[int]] = defaultdict(set)
-        ops = {**_HOST_KINDS, **_ASSET_KINDS}
         for kind in CORRELATION_KIND_ORDER:
-            shared = [
-                (value, sorted(idx))
-                for value, idx in members.get(kind, {}).items()
-                if len(idx) >= MIN_SHARED
-            ]
-            shared.sort(key=lambda x: (-len(x[1]), x[0]))
-            for value, idx in shared[:MAX_HUBS_PER_KIND]:
-                share = len(idx) / total
-                common = share >= COMMON_SHARE
-                per_kind_hubs[kind] += 1
-                if common:
-                    per_kind_common[kind] += 1
-                per_kind_hosts[kind].update(idx)
-                hubs.append(
-                    CorrelationHub(
-                        id=f"{kind}:{value}",
-                        kind=kind,
-                        value=value,
-                        label=_label(kind, value),
-                        count=len(idx),
-                        share=round(share, 4),
-                        common=common,
-                        query=group_token(kind, ops[kind][1], value),
-                        members=idx,
-                    )
-                )
+            for hub in _hubs_of_kind(kind, members.get(kind, {}), cdn_addresses):
+                hubs.append(hub)
+                per_kind_hosts[kind].update(hub.members)
 
         degree: dict[int, int] = defaultdict(int)
         for hub in hubs:
@@ -183,29 +222,54 @@ class CorrelationGraphService:
             hosts=hosts,
             hubs=hubs,
             kinds=self._kinds(
-                {k: (per_kind_hubs[k], per_kind_common[k]) for k in per_kind_hubs},
+                hubs,
                 {k: len(v) for k, v in per_kind_hosts.items()},
                 total,
             ),
             total_hosts=total,
+            estate_hosts=estate,
             shared_hosts=sum(1 for h in hosts if h.hubs),
             truncated=truncated,
         )
 
+    async def _estate(self, project_id: UUID, scan_id: UUID) -> int:
+        return int(
+            await self.session.scalar(
+                select(func.count(Subdomain.id)).where(
+                    Subdomain.project_id == project_id, Subdomain.scan_id == scan_id
+                )
+            )
+            or 0
+        )
+
+    async def _cdn_addresses(self, scan_id: UUID) -> dict[str, str]:
+        rows = (
+            await self.session.execute(
+                select(IpAddress.ip, IpAddress.cdn_name).where(
+                    IpAddress.scan_id == scan_id, IpAddress.is_cdn.is_(True)
+                )
+            )
+        ).all()
+        return {ip: name or "CDN" for ip, name in rows}
+
     @staticmethod
     def _kinds(
-        counts: dict[str, tuple[int, int]], covered: dict[str, int], total: int
+        hubs: list[CorrelationHub], covered: dict[str, int], total: int
     ) -> list[CorrelationKindStat]:
+        drawn: dict[str, list[CorrelationHub]] = defaultdict(list)
+        for hub in hubs:
+            drawn[hub.kind].append(hub)
         return [
             CorrelationKindStat(
                 key=kind,
                 label=CORRELATION_KIND_LABELS[kind],
                 help=CORRELATION_KIND_HELP[kind],
                 default=kind in CORRELATION_DEFAULT_KINDS,
-                hubs=counts.get(kind, (0, 0))[0],
-                common=counts.get(kind, (0, 0))[1],
+                hubs=len(drawn[kind]),
+                common=sum(1 for h in drawn[kind] if h.common),
+                platform=sum(1 for h in drawn[kind] if h.platform),
                 hosts=covered.get(kind, 0),
             )
             for kind in CORRELATION_KIND_ORDER
-            if total == 0 or counts.get(kind, (0, 0))[0] > 0
+            if total == 0 or drawn[kind]
         ]

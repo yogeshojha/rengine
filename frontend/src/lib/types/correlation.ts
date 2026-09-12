@@ -15,6 +15,8 @@ export interface CorrelationHub {
 	count: number;
 	share: number;
 	common: boolean;
+	platform: boolean;
+	platform_label: string;
 	query: string;
 	members: number[];
 }
@@ -27,6 +29,7 @@ export interface CorrelationKindStat {
 	hubs: number;
 	hosts: number;
 	common: number;
+	platform: number;
 }
 
 export interface CorrelationGraph {
@@ -34,6 +37,7 @@ export interface CorrelationGraph {
 	hubs: CorrelationHub[];
 	kinds: CorrelationKindStat[];
 	total_hosts: number;
+	estate_hosts: number;
 	shared_hosts: number;
 	truncated: boolean;
 }

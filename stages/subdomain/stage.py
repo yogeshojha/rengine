@@ -66,6 +66,7 @@ _MAX_RESOLVE_THREADS = 50
 _MIN_RESOLVE_THREADS = 10
 _MIN_BATCHES_FOR_MEDIAN = 3
 _DEGRADED_RATIO = 0.5
+_SILENCE_PASSES = 1
 _SHUFFLE_SEED = 1
 _GUESS_FLOOR_RATE = 5
 _GUESS_MIN_BUDGET = 300
@@ -96,6 +97,8 @@ class _Resolution:
     retried: int = 0
     stalled: int = 0
     degraded: int = 0
+    recovered: int = 0
+    still_dropping: bool = False
     unavailable: bool = False
 
     @property
@@ -104,7 +107,9 @@ class _Resolution:
 
     @property
     def lost(self) -> bool:
-        return self.unavailable or bool(self.stalled or self.degraded)
+        return self.unavailable or bool(
+            self.stalled or self.degraded or self.still_dropping
+        )
 
 
 @dataclass
@@ -204,6 +209,7 @@ class SubdomainStage(Stage):
                 "active": active,
                 "ips": len(ips_seen),
                 "excluded": len(excluded),
+                **({"recovered": state.recovered} if state.recovered else {}),
                 **{r.source.value: len(r.subdomains) for r in extra if r.subdomains},
             },
             warnings=self._resolution_warnings(state),
@@ -447,6 +453,11 @@ class SubdomainStage(Stage):
                 f"{state.degraded} of {state.batches} resolver batches answered "
                 "below the others after a retry. Some hosts are likely missing."
             )
+        if state.still_dropping:
+            notes.append(
+                f"A second resolver pass answered {state.recovered:,} names the first "
+                "pass missed. Some hosts are likely still missing."
+            )
         return notes
 
     def _check_abort(self) -> None:
@@ -607,6 +618,7 @@ class SubdomainStage(Stage):
             self.emit_progress(note)
 
         self._retry_degraded(client, batches, state, cfg)
+        self._retry_silent(client, names, state, cfg, wildcard_ips)
         return state
 
     def _resolve_batches(
@@ -664,6 +676,38 @@ class SubdomainStage(Stage):
         state.degraded = sum(
             1 for b in batches if not b.stalled and floor and b.rate < floor
         )
+
+    def _retry_silent(
+        self,
+        client: DnsxClient,
+        names: list[str],
+        state: _Resolution,
+        cfg: SubdomainConfig,
+        wildcard_ips: set[str] | None,
+    ) -> None:
+        """dnsx says nothing for a name it dropped and for a name that does not exist."""
+        if not cfg.dns_retry_silent:
+            return
+        size = max(1, cfg.dns_batch_size)
+        for _ in range(_SILENCE_PASSES):
+            pending = [n for n in names if n not in state.records]
+            if not pending:
+                return
+            self.emit_progress(f"re-resolving {len(pending):,} unanswered names")
+            found = 0
+            for start in range(0, len(pending), size):
+                self._check_abort()
+                records, _stalled = self._run_batch(
+                    client, pending[start : start + size], cfg
+                )
+                state.records.update(records)
+                found += len(records)
+                if wildcard_ips is not None:
+                    self._write_resolution(records, wildcard_ips)
+            state.recovered += found
+            state.still_dropping = bool(found)
+            if not found:
+                return
 
     def _retry_batches(
         self,

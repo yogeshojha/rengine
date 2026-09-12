@@ -223,7 +223,10 @@ class CorrelationProvider(InterestProvider):
         )
         for row in rows:
             reason = (
-                f"Runs {row.tech}, found on {_plural(row.matches, 'web asset')} "
+                f"Runs {row.tech}, found on no other web asset of the {row.estate} "
+                "responding."
+                if row.matches == 1
+                else f"Runs {row.tech}, found on {_plural(row.matches, 'web asset')} "
                 f"of the {row.estate} responding."
             )
             yield self._signal(
@@ -258,8 +261,10 @@ class CorrelationProvider(InterestProvider):
         )
         for row in rows:
             reason = (
-                f"Serves a favicon shared by {_plural(row.matches, 'web asset')} "
-                f"of {row.estate}."
+                f"Serves a favicon no other web asset of the {row.estate} serves."
+                if row.matches == 1
+                else f"Serves a favicon shared by {_plural(row.matches, 'web asset')} "
+                f"of the {row.estate} serving one."
             )
             yield self._signal(
                 row,
