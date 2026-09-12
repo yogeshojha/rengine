@@ -19,8 +19,10 @@
 	import type { TargetSummaryRead } from '$lib/types/target-summary';
 	import type { LiveRun } from '$lib/stores/live-scans.svelte';
 	import type { RailGroup, Tone } from './derive';
+	import type { ProgramMatch } from '$lib/types/relations';
 
 	interface Props {
+		programs: ProgramMatch[];
 		groups: RailGroup[];
 		summary: TargetSummaryRead | null;
 		loading: boolean;
@@ -37,6 +39,7 @@
 	}
 
 	let {
+		programs,
 		groups,
 		summary,
 		loading,
@@ -95,6 +98,24 @@
 			class="p-0 pb-4"
 			onPick={onPickCountry}
 		/>
+	{/if}
+	{#if programs.length}
+		<div class="flex flex-col gap-1.5 pb-4">
+			<h4 class="mb-1 text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+				Bounty
+			</h4>
+			{#each programs as p (p.program_id)}
+				<div class="flex min-w-0 flex-col text-sm">
+					<span class="truncate">
+						{p.name}
+						<span class="text-muted-foreground">· {p.platform}</span>
+					</span>
+					<span class="truncate font-mono text-xs text-muted-foreground">
+						{p.scope_identifier}{p.in_scope ? '' : ' · out of scope'}
+					</span>
+				</div>
+			{/each}
+		</div>
 	{/if}
 	<div class="flex flex-col gap-1.5 pb-4">
 		<h4 class="mb-1 text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">

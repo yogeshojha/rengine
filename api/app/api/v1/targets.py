@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.api.pagination import Page
 from app.core.database import get_session
+from app.services.program_coverage import ProgramCoverageService
 from app.services.target import TargetService
 from app.services.target_assets import TargetAssetService
 from app.services.target_filters import SignalName, SortDir, SortKey
@@ -26,7 +27,7 @@ from shared.models import (
     TargetValidationRequest,
     TargetValidationResponse,
 )
-from shared.models.relations import TargetRelations
+from shared.models.relations import TargetPrograms, TargetRelations
 from shared.models.target_asset import TargetAssetFilter, TargetAssetPage
 from shared.models.target_summary import TargetSummaryRead
 from shared.schemas.target_detail import (
@@ -398,6 +399,17 @@ async def get_target_relations(
 ):
     """Other targets in the project shown to be the same estate."""
     return await TargetRelationService(session).for_target(project_id, target_id)
+
+
+@router.get("/{target_id}/programs", response_model=TargetPrograms)
+async def get_target_programs(
+    target_id: UUID,
+    _current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+):
+    """Bounty programs whose scope covers this target."""
+    return await ProgramCoverageService(session).for_target(project_id, target_id)
 
 
 @router.get("/{target_id}/bgp", response_model=TargetBgpDetailResponse)

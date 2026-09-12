@@ -15,7 +15,7 @@ import type {
 import type { TargetDetailRead, TargetBgpDetailResponse } from '@/types/target-detail';
 import type { TargetSummaryRead } from '$lib/types/target-summary';
 import type { TargetAssetFilter, TargetAssetPage } from '$lib/types/target-asset';
-import type { TargetRelations } from '$lib/types/relations';
+import type { TargetPrograms, TargetRelations } from '$lib/types/relations';
 
 import type { PaginatedResponse, TargetCounts } from '$lib/types/pagination';
 import type { SignalFilter, SortDir, SortKey, TargetSummary } from '$lib/utilities/target-signals';
@@ -63,6 +63,10 @@ export const targetsApi = {
 
 	async getRelations(targetId: string, projectId: string): Promise<TargetRelations> {
 		return api.get<TargetRelations>(`/targets/${targetId}/relations?project_id=${projectId}`);
+	},
+
+	async getPrograms(targetId: string, projectId: string): Promise<TargetPrograms> {
+		return api.get<TargetPrograms>(`/targets/${targetId}/programs?project_id=${projectId}`);
 	},
 
 	async getStats(params: TargetStatsParams): Promise<TargetSummary> {

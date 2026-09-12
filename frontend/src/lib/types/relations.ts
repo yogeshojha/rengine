@@ -16,3 +16,23 @@ export interface TargetRelations {
 	total: number;
 	considered: number;
 }
+
+export interface ProgramMatch {
+	program_id: string;
+	handle: string;
+	name: string;
+	platform: string;
+	url: string | null;
+	scope_identifier: string;
+	asset_type: string;
+	wildcard: boolean;
+	in_scope: boolean;
+	offers_bounties: boolean;
+	eligible_for_bounty: boolean | null;
+	max_severity: string | null;
+}
+
+export interface TargetPrograms {
+	items: ProgramMatch[];
+	total: number;
+}

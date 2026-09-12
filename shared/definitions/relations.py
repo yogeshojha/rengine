@@ -45,5 +45,6 @@ RELATION_HELP: dict[str, str] = {
 MAX_RELATED_TARGETS = 50
 MAX_RELATION_EVIDENCE = 8
 MAX_SAN_ROWS = 5000
+MAX_COVERED_PROGRAMS = 20
 # a favicon on more estates than this is a framework's, not an owner's
 FAVICON_MAX_TARGETS = 4

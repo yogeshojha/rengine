@@ -16,7 +16,9 @@
 	import Network from '@lucide/svelte/icons/network';
 
 	import { targetsApi } from '$lib/api/targets';
-	import type { RelatedTarget } from '$lib/types/relations';
+	import type { ProgramMatch, RelatedTarget } from '$lib/types/relations';
+	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
+	import { Capability } from '$lib/config/capabilities';
 	import { scansApi } from '$lib/api/scans';
 	import { whoisApi } from '$lib/api/whois';
 	import { subdomainsApi } from '$lib/api/subdomains';
@@ -113,6 +115,7 @@
 	let correlations = $state<WhoisCorrelationResult[]>([]);
 	let relatedDomains = $state<RelatedDomain[]>([]);
 	let relations = $state<RelatedTarget[]>([]);
+	let programs = $state<ProgramMatch[]>([]);
 	let relatedLoading = $state(true);
 	let geography = $state<InsightTally[]>([]);
 	let geoReady = $state(false);
@@ -295,6 +298,16 @@
 		}
 	}
 
+	async function fetchPrograms() {
+		const project = projectsStore.activeProject;
+		if (!project || !capabilitiesStore.has(Capability.BOUNTY_PROGRAMS)) return;
+		try {
+			programs = (await targetsApi.getPrograms(targetId, project.id)).items;
+		} catch {
+			programs = [];
+		}
+	}
+
 	let relatedFor: string | null = null;
 	async function fetchRelated(scanId: string) {
 		const project = projectsStore.activeProject;
@@ -397,6 +410,7 @@
 			fetchDetail();
 			fetchCorrelations();
 			fetchRelations();
+			fetchPrograms();
 		}
 		activityScope.targetId = targetId;
 		return () => activityScope.clear();
@@ -728,6 +742,7 @@
 						style="top: calc(var(--target-tabs-h, 0px) + 1rem)"
 					>
 						<Rail
+							{programs}
 							groups={intel.rail}
 							{summary}
 							loading={detailLoading || summaryLoading}
