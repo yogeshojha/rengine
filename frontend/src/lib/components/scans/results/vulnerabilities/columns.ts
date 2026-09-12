@@ -11,13 +11,13 @@ export const VULN_LEAD_COLUMNS: TableColumn[] = [
 		key: 'location',
 		label: 'Location',
 		sort: 'host',
-		width: 'hidden min-w-0 shrink-0 sm:block sm:w-72'
+		width: 'hidden min-w-0 shrink-0 sm:flex sm:w-72'
 	}
 ];
 
 export const VULN_COLUMNS: TableColumn[] = [
 	{ key: 'asset', label: 'Asset', width: 'min-w-48 max-w-[20rem]', grow: true },
-	{ key: 'risk', label: 'Risk', sort: 'exploit', width: 'w-48' },
+	{ key: 'risk', label: 'Risk', sort: 'exploit', width: 'w-56' },
 	{ key: 'exploit', label: 'Exploitation', sort: 'exploit', width: 'w-32' },
 	{ key: 'reach', label: 'Reach', width: 'w-24' },
 	{ key: 'type', label: 'Type', sort: 'type', width: 'w-24' },

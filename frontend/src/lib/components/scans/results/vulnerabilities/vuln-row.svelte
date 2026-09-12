@@ -77,6 +77,7 @@
 	}: Props = $props();
 
 	const MAX_TAGS = 3;
+	const MARK_SIZE = 30;
 
 	let fill = $derived(SEVERITY_FILL[v.severity] ?? SEVERITY_FILL.unknown);
 	let tone = $derived(rowTone(selected || checked, focused));
@@ -257,7 +258,7 @@
 				<button
 					{...props}
 					type="button"
-					class="min-w-0 text-left font-mono text-xs leading-4 wrap-anywhere hover:underline"
+					class="min-w-0 text-left font-mono text-xs leading-5 wrap-anywhere hover:underline"
 					onclick={(e) => pivot(e, filterToken('location', path))}
 				>
 					<HighlightText text={path} {term} />
@@ -281,11 +282,13 @@
 				: ''}"
 		>
 			{#if col.key === 'target'}
-				<TargetCell value={v.target_value} {onFilter} />
+				<div class="flex h-5 min-w-0 items-center">
+					<TargetCell value={v.target_value} {onFilter} />
+				</div>
 			{:else if col.key === 'asset'}
 				{#if asset}
 					<div class="flex min-w-0 flex-col gap-1">
-						<div class="flex min-w-0 items-center gap-1.5">
+						<div class="flex h-5 min-w-0 items-center gap-1.5">
 							{#if asset.status_code != null}
 								<span
 									class="shrink-0 font-mono text-xs tabular-nums {httpStatusTextClass(
@@ -328,21 +331,23 @@
 						{/if}
 					</div>
 				{:else}
-					<span class="text-xs text-muted-foreground">—</span>
+					<span class="text-xs leading-5 text-muted-foreground">—</span>
 				{/if}
 			{:else if col.key === 'exploit'}
 				{#if v.exploit_score > 0}
 					<button
 						type="button"
-						class="flex items-center gap-2"
+						class="flex items-start gap-2"
 						onclick={(e) => pivot(e, `exploit:>=${Math.max(10, v.exploit_score - 10)}`)}
 						aria-label="Filter to findings ranked {v.exploit_score} or higher"
 					>
-						<ExploitMark score={v.exploit_score} size={28} />
+						<span class="flex h-5 shrink-0 items-center">
+							<ExploitMark score={v.exploit_score} size={MARK_SIZE} />
+						</span>
 						{#if v.poc_count}
 							<Hint text="{v.poc_count} public exploits published">
 								{#snippet child(props)}
-									<span {...props} class="text-2xs text-muted-foreground tabular-nums">
+									<span {...props} class="text-2xs leading-5 text-muted-foreground tabular-nums">
 										{v.poc_count}
 										{v.poc_count === 1 ? 'exploit' : 'exploits'}
 									</span>
@@ -351,10 +356,10 @@
 						{/if}
 					</button>
 				{:else}
-					<span class="text-xs text-muted-foreground">—</span>
+					<span class="text-xs leading-5 text-muted-foreground">—</span>
 				{/if}
 			{:else if col.key === 'risk'}
-				<div class="flex min-w-0 items-center gap-2">
+				<div class="flex min-w-0 items-start gap-2">
 					{#if v.exploit_score > 0}
 						<Hint
 							text="Exploitation rank {v.exploit_score} of 100{v.poc_count
@@ -365,11 +370,11 @@
 								<button
 									{...props}
 									type="button"
-									class="flex shrink-0 items-center"
+									class="flex h-5 shrink-0 items-center"
 									onclick={(e) => pivot(e, `exploit:>=${Math.max(10, v.exploit_score - 10)}`)}
 									aria-label="Filter to findings ranked {v.exploit_score} or higher"
 								>
-									<ExploitMark score={v.exploit_score} size={26} />
+									<ExploitMark score={v.exploit_score} size={MARK_SIZE} />
 								</button>
 							{/snippet}
 						</Hint>
@@ -378,7 +383,7 @@
 						{#if v.cve_ids.length}
 							<button
 								type="button"
-								class="flex h-4 items-center"
+								class="flex h-5 items-center"
 								onclick={(e) => pivot(e, exactToken('cve', v.cve_ids[0]))}
 							>
 								<Badge
@@ -389,13 +394,17 @@
 								</Badge>
 							</button>
 							{#if v.cve_ids.length > 1}
-								<span class="text-2xs text-muted-foreground">+{v.cve_ids.length - 1}</span>
+								<span class="text-2xs leading-5 text-muted-foreground">+{v.cve_ids.length - 1}</span
+								>
 							{/if}
 						{/if}
 						{#if cvss !== null}
 							<Hint text="CVSS base score">
 								{#snippet child(props)}
-									<span {...props} class="font-mono text-xs tabular-nums text-muted-foreground">
+									<span
+										{...props}
+										class="font-mono text-xs leading-5 tabular-nums text-muted-foreground"
+									>
 										{cvss.toFixed(1)}
 									</span>
 								{/snippet}
@@ -406,7 +415,7 @@
 								{#snippet child(props)}
 									<span
 										{...props}
-										class="font-mono text-xs tabular-nums"
+										class="font-mono text-xs leading-5 tabular-nums"
 										style={likely ? `color:${epssFill}` : ''}
 										class:text-muted-foreground={!likely}
 									>
@@ -416,7 +425,7 @@
 							</Hint>
 						{/if}
 						{#if !v.cve_ids.length && v.cvss_score == null && v.epss_score == null}
-							<span class="text-xs text-muted-foreground">—</span>
+							<span class="text-xs leading-5 text-muted-foreground">—</span>
 						{/if}
 					</div>
 				</div>
@@ -427,7 +436,7 @@
 							<button
 								{...props}
 								type="button"
-								class="text-xs text-muted-foreground hover:text-foreground hover:underline"
+								class="text-xs leading-5 text-muted-foreground hover:text-foreground hover:underline"
 								onclick={(e) => pivot(e, exactToken('template', v.template_id))}
 							>
 								{v.host_count} hosts
@@ -435,12 +444,12 @@
 						{/snippet}
 					</Hint>
 				{:else}
-					<span class="text-xs text-muted-foreground">—</span>
+					<span class="text-xs leading-5 text-muted-foreground">—</span>
 				{/if}
 			{:else if col.key === 'type'}
 				<button
 					type="button"
-					class="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+					class="flex h-5 items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
 					onclick={(e) => pivot(e, exactToken('type', v.protocol))}
 				>
 					<ProtocolIcon class="size-3.5" />
@@ -452,7 +461,7 @@
 						<button
 							{...props}
 							type="button"
-							class="min-w-0 truncate text-xs text-muted-foreground hover:text-foreground hover:underline"
+							class="min-w-0 truncate text-xs leading-5 text-muted-foreground hover:text-foreground hover:underline"
 							onclick={(e) => pivot(e, exactToken('scanner', v.scanner))}
 						>
 							{SCANNER_LABELS[v.scanner] ?? v.scanner}
@@ -471,10 +480,10 @@
 						</Badge>
 					</button>
 				{:else}
-					<span class="text-xs text-muted-foreground">Open</span>
+					<span class="text-xs leading-5 text-muted-foreground">Open</span>
 				{/if}
 			{:else if col.key === 'seen'}
-				<span class="text-xs whitespace-nowrap text-muted-foreground">
+				<span class="text-xs leading-5 whitespace-nowrap text-muted-foreground">
 					{formatShortDate(v.discovered_at)}
 				</span>
 			{/if}
