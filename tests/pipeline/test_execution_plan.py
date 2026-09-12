@@ -49,7 +49,7 @@ def test_a_producer_runs_before_anything_that_consumes_it():
 def test_vulnerability_scan_no_longer_holds_up_the_last_stages():
     plan = execution_plan()
     last = set(plan[-1])
-    assert {"vulnerability_scan", "waf_detect"} <= last
+    assert "vulnerability_scan" in last
     assert {"screenshot", "endpoint_probe", "ip_enrichment"} <= last, (
         "they must run alongside it, not after it"
     )
@@ -58,6 +58,11 @@ def test_vulnerability_scan_no_longer_holds_up_the_last_stages():
         assert "vulnerability_scan" not in before[late]
     assert "origin_probe" in before["screenshot"]
     assert "url_discovery" in before["endpoint_probe"]
+
+
+def test_waf_detection_settles_before_the_scanner_reads_it():
+    """nuclei splits its rate groups on http_assets.waf, which waf_detect writes."""
+    assert "waf_detect" in _before(execution_plan())["vulnerability_scan"]
 
 
 def test_a_stage_that_feeds_another_is_never_deferred():
@@ -105,5 +110,5 @@ def test_a_stage_that_sends_nothing_is_not_deferred():
 def test_the_deferred_stages_join_the_last_step_rather_than_follow_it():
     plan = execution_plan()
     last = set(plan[-1])
-    assert {"vulnerability_scan", "waf_detect", "ip_enrichment"} <= last
+    assert {"vulnerability_scan", "ip_enrichment"} <= last
     assert len(plan) == len(ordered_levels()), "no extra step was appended"
