@@ -9,6 +9,10 @@
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
 	import ShieldIcon from '@lucide/svelte/icons/shield';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
+	import SunIcon from '@lucide/svelte/icons/sun';
+	import MoonIcon from '@lucide/svelte/icons/moon';
+	import MonitorIcon from '@lucide/svelte/icons/monitor';
+	import { setMode, resetMode, userPrefersMode } from 'mode-watcher';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { VERSION } from '$lib/version.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -86,6 +90,21 @@
 						About reNgine
 					</DropdownMenu.Item>
 				</DropdownMenu.Group>
+				<DropdownMenu.Separator />
+				<DropdownMenu.RadioGroup value={userPrefersMode.current}>
+					<DropdownMenu.RadioItem value="light" onclick={() => setMode('light')}>
+						<SunIcon class="size-4" />
+						Light
+					</DropdownMenu.RadioItem>
+					<DropdownMenu.RadioItem value="dark" onclick={() => setMode('dark')}>
+						<MoonIcon class="size-4" />
+						Dark
+					</DropdownMenu.RadioItem>
+					<DropdownMenu.RadioItem value="system" onclick={() => resetMode()}>
+						<MonitorIcon class="size-4" />
+						System
+					</DropdownMenu.RadioItem>
+				</DropdownMenu.RadioGroup>
 				<DropdownMenu.Separator />
 				<DropdownMenu.Item onclick={handleLogout}>
 					<LogOutIcon class="size-4" />

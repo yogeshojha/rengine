@@ -8,7 +8,6 @@
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import NotificationsMenu from '$lib/components/layout/notifications-menu.svelte';
 	import QuickActionsMenu from '$lib/components/layout/quick-actions-menu.svelte';
-	import ThemeToggle from '$lib/components/layout/theme-toggle.svelte';
 	import ToolboxMenu from '$lib/components/toolbox/toolbox-menu.svelte';
 
 	interface BreadcrumbItem {
@@ -63,7 +62,6 @@
 	<ToolboxMenu />
 	<NotificationsMenu />
 	<QuickActionsMenu onAddTarget={handleAddTarget} />
-	<ThemeToggle />
 </header>
 
 <AddTargetModal bind:open={addTargetOpen} />

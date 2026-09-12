@@ -4,6 +4,8 @@
 	import RadarIcon from '@lucide/svelte/icons/radar';
 	import StickyNoteIcon from '@lucide/svelte/icons/sticky-note';
 	import WorkflowIcon from '@lucide/svelte/icons/workflow';
+	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
+	import KeyRoundIcon from '@lucide/svelte/icons/key-round';
 	import LibraryIcon from '@lucide/svelte/icons/library';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import ScanEyeIcon from '@lucide/svelte/icons/scan-eye';
@@ -12,9 +14,6 @@
 	import Settings2Icon from '@lucide/svelte/icons/settings-2';
 	import NavMain, { type NavGroup } from './nav-main.svelte';
 	import { SURFACE_ORDER } from '$lib/config/surface';
-	import { surfaceStore } from '$lib/stores/surface.svelte';
-	import { projectsStore } from '$lib/stores/projects.svelte';
-	import { compactCount } from '$lib/utilities/strings';
 	import NavUser from './nav-user.svelte';
 	import ProjectSwitcher from './project-switcher.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
@@ -23,7 +22,7 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { reports } from '$lib/stores/reports.svelte';
-	import { ROUTES, routeLabels, SETTINGS_SECTIONS } from '$lib/config/routes';
+	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
 	import { Capability } from '$lib/config/capabilities';
 
@@ -33,21 +32,12 @@
 		...restProps
 	}: ComponentProps<typeof Sidebar.Root> = $props();
 
-	$effect(() => {
-		const id = projectsStore.activeProject?.id;
-		if (id) void surfaceStore.load(id);
-	});
-
 	const surfaceItems = $derived(
-		SURFACE_ORDER.map((spec) => {
-			const total = surfaceStore.total(spec.key);
-			return {
-				title: spec.label,
-				url: ROUTES.surface(spec.tab),
-				icon: spec.icon,
-				badge: total ? { label: compactCount(total), tone: 'muted' as const } : null
-			};
-		})
+		SURFACE_ORDER.map((spec) => ({
+			title: spec.label,
+			url: ROUTES.surface(spec.tab),
+			icon: spec.icon
+		}))
 	);
 
 	const userData = $derived({
@@ -55,12 +45,6 @@
 		email: auth.user?.email ?? 'admin@rengine.local',
 		is_superuser: auth.user?.is_superuser ?? false
 	});
-
-	const settingsSections = $derived(
-		SETTINGS_SECTIONS.filter(
-			(section) => section !== 'bounty-hub' || capabilitiesStore.has(Capability.BOUNTY_PROGRAMS)
-		).map((section) => ({ title: routeLabels[section], url: ROUTES.settings(section) }))
-	);
 
 	const navGroups = $derived<NavGroup[]>([
 		{
@@ -71,23 +55,22 @@
 			label: routeLabels.surface,
 			items: [
 				...surfaceItems,
-				{
-					title: routeLabels.exposures,
-					url: ROUTES.exposures(),
-					icon: ScanEyeIcon,
-					badge: surfaceStore.exposures
-						? { label: compactCount(surfaceStore.exposures), tone: 'muted' as const }
-						: null
-				}
+				{ title: routeLabels.exposures, url: ROUTES.exposures(), icon: ScanEyeIcon }
 			]
 		},
 		{
-			label: 'Discovery',
+			label: 'Scope',
 			items: [
+				{ title: routeLabels.targets, url: ROUTES.targets, icon: TargetIcon },
 				...(capabilitiesStore.has(Capability.BOUNTY_PROGRAMS)
 					? [{ title: routeLabels['bounty-hub'], url: ROUTES.bountyHub(), icon: AwardIcon }]
 					: []),
-				{ title: routeLabels.targets, url: ROUTES.targets, icon: TargetIcon },
+				{ title: routeLabels.connectors, url: ROUTES.connectors(), icon: CableIcon }
+			]
+		},
+		{
+			label: routeLabels.scans,
+			items: [
 				{
 					title: routeLabels.scans,
 					url: ROUTES.scans,
@@ -96,12 +79,13 @@
 						? { label: String(liveScans.count), live: true, tone: 'info' as const }
 						: null
 				},
-				{ title: routeLabels.connectors, url: ROUTES.connectors(), icon: CableIcon },
-				{ title: routeLabels.notes, url: ROUTES.notes, icon: StickyNoteIcon }
+				{ title: routeLabels.schedules, url: ROUTES.schedules, icon: CalendarClockIcon },
+				{ title: routeLabels.engines, url: ROUTES.engines, icon: WorkflowIcon },
+				{ title: routeLabels.contexts, url: ROUTES.contexts, icon: KeyRoundIcon }
 			]
 		},
 		{
-			label: null,
+			label: 'Output',
 			items: [
 				{
 					title: routeLabels.reports,
@@ -111,17 +95,8 @@
 						? { label: String(reports.liveCount), live: true, tone: 'info' as const }
 						: null
 				},
-				{ title: routeLabels.arsenal, url: ROUTES.arsenal(), icon: LibraryIcon },
-				{
-					title: routeLabels.automation,
-					url: ROUTES.automation,
-					icon: WorkflowIcon,
-					items: [
-						{ title: routeLabels.engines, url: ROUTES.engines },
-						{ title: routeLabels.contexts, url: ROUTES.contexts },
-						{ title: routeLabels.schedules, url: ROUTES.schedules }
-					]
-				}
+				{ title: routeLabels.notes, url: ROUTES.notes, icon: StickyNoteIcon },
+				{ title: routeLabels.arsenal, url: ROUTES.arsenal(), icon: LibraryIcon }
 			]
 		}
 	]);
@@ -129,14 +104,7 @@
 	const settingsGroup = $derived<NavGroup[]>([
 		{
 			label: null,
-			items: [
-				{
-					title: routeLabels.settings,
-					url: ROUTES.settings(),
-					icon: Settings2Icon,
-					items: settingsSections
-				}
-			]
+			items: [{ title: routeLabels.settings, url: ROUTES.settings(), icon: Settings2Icon }]
 		}
 	]);
 </script>

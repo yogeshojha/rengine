@@ -6,7 +6,6 @@ import {
 	groupByDay,
 	groupByTarget,
 	type ActivityGrouping,
-	type ActivityLevel,
 	type ActivityLog
 } from '$lib/types/activity';
 import Activity from '@lucide/svelte/icons/activity';
@@ -53,13 +52,6 @@ export const FILTER_LABELS: Record<ActivityFilter, string> = {
 	enrichment: 'Enrichment',
 	alert: 'Alerts',
 	system: 'System'
-};
-
-export const LEVEL_DOT: Record<ActivityLevel, string> = {
-	success: 'bg-foreground',
-	info: 'bg-muted-foreground/50',
-	warning: 'bg-warning',
-	error: 'bg-destructive'
 };
 
 export function categorize(t: string): ActivityFilter {

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
-	import { activityFeed, LEVEL_DOT } from '$lib/stores/activity-feed.svelte';
+	import { activityFeed } from '$lib/stores/activity-feed.svelte';
 	import { sseStore } from '$lib/stores/sse.svelte';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
@@ -61,10 +61,7 @@
 			{:else if latest}
 				<span class="hidden min-w-0 items-center gap-2 sm:flex">
 					{#key latest.id}
-						<span in:fly={{ y: -6, duration: 220 }} class="flex items-center gap-1.5 min-w-0">
-							<span
-								class="h-1 w-1 shrink-0 rounded-full {LEVEL_DOT[latest.level] ?? LEVEL_DOT.info}"
-							></span>
+						<span in:fly={{ y: -6, duration: 220 }} class="flex min-w-0 items-center">
 							<span class="max-w-[180px] truncate text-foreground/70">{latest.title}</span>
 						</span>
 					{/key}

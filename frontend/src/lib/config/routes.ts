@@ -19,7 +19,7 @@ export const routeLabels: Record<string, string> = {
 	arsenal: 'Arsenal',
 
 	// Automation
-	automation: 'Automation',
+	automation: 'Scans',
 	engines: 'Scan engines',
 	contexts: 'Scan contexts',
 	schedules: 'Schedules',

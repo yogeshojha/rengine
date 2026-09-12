@@ -78,7 +78,7 @@
 	{@const tone = b.tone ?? 'info'}
 	<Sidebar.MenuBadge
 		class={cn(
-			'gap-1 rounded-full px-1.5 font-mono text-[10px] font-semibold',
+			'top-1 gap-1 rounded-full px-1.5 font-mono text-[10px] font-semibold',
 			tone === 'info' &&
 				'bg-info/10 text-info peer-hover/menu-button:text-info peer-data-[active=true]/menu-button:text-info',
 			tone === 'attention' &&
@@ -94,15 +94,18 @@
 {/snippet}
 
 {#each groups as group, groupIndex (group.label ?? groupIndex)}
+	{#if groupIndex > 0}
+		<Sidebar.Separator class="mx-auto hidden w-4 group-data-[collapsible=icon]:block" />
+	{/if}
 	<Sidebar.Group class={cn(groupIndex > 0 && 'pt-0', className)}>
 		{#if group.label}
 			<Sidebar.GroupLabel
-				class="h-7 px-2 text-[10px] font-semibold tracking-[0.1em] text-muted-foreground/60 uppercase"
+				class="h-6 px-2 text-[10px] font-semibold tracking-[0.1em] text-muted-foreground/60 uppercase"
 			>
 				{group.label}
 			</Sidebar.GroupLabel>
 		{/if}
-		<Sidebar.Menu>
+		<Sidebar.Menu class="gap-0.5">
 			{#each group.items as item (item.title)}
 				{#if item.items && item.items.length > 0}
 					<Collapsible.Root
@@ -149,7 +152,11 @@
 					</Collapsible.Root>
 				{:else}
 					<Sidebar.MenuItem>
-						<Sidebar.MenuButton tooltipContent={item.title} isActive={isActive(item.url)}>
+						<Sidebar.MenuButton
+							class="h-7"
+							tooltipContent={item.title}
+							isActive={isActive(item.url)}
+						>
 							{#snippet child({ props })}
 								{@render link(item, props)}
 							{/snippet}
