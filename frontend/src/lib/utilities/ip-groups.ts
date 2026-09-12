@@ -131,7 +131,11 @@ export function ipQueryChips(q: IpQuery, facets: IpFacetSet): IpFilterChip[] {
 			remove: (x) => ({ ...x, cdn: 'any' })
 		});
 	if (q.hostedOnly)
-		chips.push({ id: 'hosted', label: 'Has hosts', remove: (x) => ({ ...x, hostedOnly: false }) });
+		chips.push({
+			id: 'hosted',
+			label: 'Has web assets',
+			remove: (x) => ({ ...x, hostedOnly: false })
+		});
 	if (q.sensitiveOnly)
 		chips.push({
 			id: 'sensitive',

@@ -216,11 +216,11 @@
 		list.push(
 			{
 				key: 'live',
-				label: 'Live hosts',
+				label: 'Live web assets',
 				value: stats.live,
 				tab: 'web-assets',
 				filter: 'is:live',
-				hint: livePct ? `${livePct} of web hosts` : undefined,
+				hint: livePct ? `${livePct} of web assets` : undefined,
 				trend: null
 			},
 			{

@@ -344,7 +344,7 @@ export const ISSUE_SORTS: SortOption[] = [
 	{ key: 'risk', label: 'Risk' },
 	{ key: 'severity', label: 'Severity' },
 	{ key: 'name', label: 'Finding' },
-	{ key: 'host', label: 'Hosts affected' },
+	{ key: 'host', label: 'Web assets affected' },
 	{ key: 'findings', label: 'Findings' },
 	{ key: 'cvss', label: 'CVSS' },
 	{ key: 'epss', label: 'EPSS' },

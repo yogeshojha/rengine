@@ -26,7 +26,7 @@ _RULES = {
     "takeover": ("Subdomain takeover candidates", 9.0, 18.0),
     "origin": ("Origins reachable outside the CDN", 7.0, 14.0),
     "sensitive": ("Sensitive services exposed", 2.0, 12.0),
-    "expired": ("Expired certificates on live hosts", 3.0, 9.0),
+    "expired": ("Expired certificates on live web assets", 3.0, 9.0),
     "medium": ("Medium findings", 1.2, 10.0),
     "default_login": ("Default credentials", 10.0, 20.0),
 }

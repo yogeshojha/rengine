@@ -75,7 +75,7 @@
 		return signal.targets.map((t) => ({
 			key: t.target_id,
 			primary: t.target_value,
-			meta: plural(t.count, 'host', 'hosts'),
+			meta: plural(t.count, 'web asset', 'web assets'),
 			href: ROUTES.scanTab(t.scan_id, WEB.tab, { [WEB.queryParam]: signal.query })
 		}));
 	}
@@ -125,13 +125,13 @@
 				key: 'cert-expired',
 				icon: Lock,
 				tone: 'bad',
-				label: 'Expired certificates on live hosts',
+				label: 'Expired certificates on live web assets',
 				count: certs.expired.count,
 				detail: `on ${plural(certs.expired.targets.length, 'target', 'targets')}`,
 				open: () =>
 					show({
 						title: 'Expired certificates',
-						description: 'Live hosts presenting an expired certificate',
+						description: 'Live web assets presenting an expired certificate',
 						rows: certRows(certs.expired)
 					})
 			});

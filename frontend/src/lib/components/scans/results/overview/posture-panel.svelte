@@ -78,7 +78,7 @@
 			out.push({
 				key: 'http',
 				title: 'HTTP responses',
-				subtitle: `${total.toLocaleString()} web hosts`,
+				subtitle: `${total.toLocaleString()} web assets`,
 				segments: http,
 				total,
 				note:

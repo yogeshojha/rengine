@@ -43,11 +43,11 @@
 				: 'No vulnerability scan ran on this scan.';
 		const parts = [
 			`${n(checks)} ${checks === 1 ? 'check' : 'checks'} against ${n(targets)} ${
-				targets === 1 ? 'target' : 'targets'
+				targets === 1 ? 'asset' : 'assets'
 			}`
 		];
 		if (requests !== null) parts.push(`${n(requests)} ${requests === 1 ? 'request' : 'requests'}`);
-		if (dropped) parts.push(`${n(dropped)} ${dropped === 1 ? 'host' : 'hosts'} dropped`);
+		if (dropped) parts.push(`${n(dropped)} ${dropped === 1 ? 'web asset' : 'web assets'} dropped`);
 		else if (errors) parts.push(`${n(errors)} request ${errors === 1 ? 'error' : 'errors'}`);
 		return parts.join(' · ');
 	});
@@ -134,7 +134,7 @@
 							{#if row.hosts_dropped_count && row.hosts_dropped.length}
 								<p class="text-2xs text-warning">
 									Stopped testing {row.hosts_dropped_count}
-									{row.hosts_dropped_count === 1 ? 'host' : 'hosts'} after repeated errors:
+									{row.hosts_dropped_count === 1 ? 'web asset' : 'web assets'} after repeated errors:
 									<span class="font-mono">{row.hosts_dropped[0].host}</span>
 									{#if row.hosts_dropped_count > 1}and {row.hosts_dropped_count - 1} more{/if}
 								</p>

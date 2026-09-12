@@ -86,7 +86,7 @@
 	let reviewed = $derived(it.findings - openCount);
 	let allReviewed = $derived(openCount === 0 && it.findings > 0);
 	let reach = $derived.by(() => {
-		const hosts = plural(it.hosts, 'host', 'hosts');
+		const hosts = plural(it.hosts, 'web asset', 'web assets');
 		if (it.addresses > 0 && it.addresses < it.hosts) {
 			return `${hosts} on ${plural(it.addresses, 'address', 'addresses')}`;
 		}
@@ -399,7 +399,7 @@
 					</DropdownMenu.Item>
 					{#if it.sample_hosts.length}
 						<DropdownMenu.Item onclick={() => onHosts(hostFilter)}>
-							<Globe class="mr-2 size-3.5" /> Affected hosts in Web assets
+							<Globe class="mr-2 size-3.5" /> Open affected web assets
 						</DropdownMenu.Item>
 					{/if}
 					<DropdownMenu.Separator />

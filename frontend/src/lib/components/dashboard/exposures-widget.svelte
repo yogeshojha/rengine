@@ -94,7 +94,7 @@
 	</ul>
 	{#snippet footer()}
 		{#if page}
-			{plural(page.total, 'exposed host', 'exposed hosts')} across the project
+			{plural(page.total, 'exposed web asset', 'exposed web assets')} across the project
 		{/if}
 	{/snippet}
 </Widget>

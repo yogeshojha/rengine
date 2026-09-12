@@ -143,7 +143,7 @@
 		<form onsubmit={confirmSave} class="space-y-4">
 			<div class="space-y-2">
 				<Label for="view-name">View name</Label>
-				<Input id="view-name" bind:value={newName} placeholder="e.g. Live web hosts" autofocus />
+				<Input id="view-name" bind:value={newName} placeholder="e.g. Live web assets" autofocus />
 			</div>
 			<Dialog.Footer>
 				<Button type="button" variant="outline" onclick={() => (saveOpen = false)}>Cancel</Button>

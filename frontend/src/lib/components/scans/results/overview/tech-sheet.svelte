@@ -77,8 +77,8 @@
 				Technology stack
 			</Sheet.Title>
 			<Sheet.Description>
-				{total.toLocaleString()} technologies across {hosts.toLocaleString()} web hosts. Select one to
-				list its hosts.
+				{total.toLocaleString()} technologies across {hosts.toLocaleString()} web assets. Select one to
+				list the web assets that run it.
 			</Sheet.Description>
 		</Sheet.Header>
 		<div class="border-b px-6 py-4">

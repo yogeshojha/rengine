@@ -271,7 +271,7 @@ def _expired_certificates(
         return None
     return AttackPath(
         key="expired_certificates",
-        title="Live hosts serve an expired certificate",
+        title="Live web assets serve an expired certificate",
         detail=(
             f"{len(expired)} host{'s' if len(expired) != 1 else ''} answered over TLS "
             "with a certificate past its validity date. Users are trained through the "

@@ -1087,7 +1087,7 @@ class SubdomainService:
             ),
             (
                 "nowaf",
-                "Live hosts without a CDN or WAF",
+                "Live web assets without a CDN or WAF",
                 counts.nowaf,
                 "is:live waf:none cdn:no",
                 "warning",
