@@ -24,6 +24,7 @@
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import MatchChips from './match-chips.svelte';
+	import CrossLinks from '$lib/components/cross-links.svelte';
 	import HighlightText from '../table/highlight-text.svelte';
 	import TargetCell from '../table/target-cell.svelte';
 	import OverflowPopover from '../table/overflow-popover.svelte';
@@ -158,6 +159,7 @@
 	let cnameToken = $derived(s.cname ? filterToken('cname', s.cname) : '');
 	let faviconToken = $derived(s.favicon_hash ? filterToken('favicon', s.favicon_hash) : '');
 	let matches = $derived(s.matched_in ?? []);
+	let crossLinks = $derived(s.cross_links ?? []);
 	let titleTerm = $derived(matches.find((m) => m.field === 'title')?.term ?? '');
 	let suppressed = $derived(
 		new Set([
@@ -416,6 +418,12 @@
 
 		{#if matches.length}
 			<MatchChips {matches} suppress={suppressed} onOpen={(field) => onEvidence(s, field)} />
+		{/if}
+
+		{#if crossLinks.length}
+			<div class="flex flex-wrap items-center gap-1.5">
+				<CrossLinks links={crossLinks} {onHost} />
+			</div>
 		{/if}
 
 		{#if signals}

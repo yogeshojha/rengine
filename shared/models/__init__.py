@@ -49,6 +49,7 @@ from shared.models.connector import (
     TargetAdded,
     TargetOption,
 )
+from shared.models.crosslink import CrossLink, CrossLinkPeer
 from shared.models.dns import (
     DnsLookup,
     DnsLookupRead,
@@ -286,6 +287,8 @@ __all__ = [
     "ConnectorScope",
     "ConnectorUpdate",
     "CoverageLine",
+    "CrossLink",
+    "CrossLinkPeer",
     "DimensionDelta",
     "DimensionVerdict",
     "DiscoveredDomain",

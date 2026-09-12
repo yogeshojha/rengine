@@ -1,4 +1,5 @@
 import type { MatchEvidence } from './asset-query';
+import type { CrossLink } from './crosslink';
 
 export interface SubdomainRead {
 	target_value?: string | null;
@@ -42,6 +43,7 @@ export interface SubdomainRead {
 	vuln_severity?: string | null;
 	vuln_kev?: boolean;
 	matched_in?: MatchEvidence[];
+	cross_links?: CrossLink[];
 	discovered_at: string;
 }
 

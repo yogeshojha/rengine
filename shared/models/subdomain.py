@@ -8,6 +8,7 @@ from sqlmodel import Field, SQLModel, UniqueConstraint
 
 from shared.definitions.asset_query import MAX_QUERY_LENGTH
 from shared.models.asset_query import MatchEvidence, QueryError
+from shared.models.crosslink import CrossLink
 from shared.utils.datetime import utc_now
 
 
@@ -121,6 +122,7 @@ class SubdomainRow(SubdomainRead):
     vuln_severity: str | None = None
     vuln_kev: bool = False
     matched_in: list[MatchEvidence] = Field(default_factory=list)
+    cross_links: list[CrossLink] = Field(default_factory=list)
 
 
 class SubdomainSummary(BaseModel):

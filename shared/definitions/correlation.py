@@ -73,3 +73,29 @@ CORRELATION_DEFAULT_KINDS: frozenset[str] = frozenset(
 )
 
 CORRELATION_KIND_ORDER: tuple[str, ...] = tuple(k.value for k in CorrelationKind)
+
+
+# a value shared with a host under another target, strongest first
+CROSS_LINK_ORDER: tuple[str, ...] = (
+    CorrelationKind.CERT.value,
+    CorrelationKind.BODY.value,
+    CorrelationKind.FAVICON.value,
+    CorrelationKind.CNAME.value,
+    CorrelationKind.IP.value,
+    CorrelationKind.TITLE.value,
+)
+CROSS_LINK_KINDS: frozenset[str] = frozenset(CROSS_LINK_ORDER)
+# identities read off the page
+CROSS_PAGE_KINDS: frozenset[str] = frozenset(
+    {
+        CorrelationKind.TITLE.value,
+        CorrelationKind.FAVICON.value,
+        CorrelationKind.BODY.value,
+    }
+)
+MAX_CROSS_LINKS = 3
+MAX_CROSS_PEERS = 6
+MAX_CROSS_VALUES = 500
+# the share of a project's targets past which a value is the estate's norm
+CROSS_COMMON_TARGET_SHARE = 0.5
+MIN_TARGETS_FOR_COMMON = 4

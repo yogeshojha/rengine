@@ -1,3 +1,6 @@
+import re
+from collections.abc import Iterable
+
 from shared.utils.privacy import registrant_key
 
 _MIN_IDENTITY = 4
@@ -208,3 +211,55 @@ def owns_network(as_name: str | None, identities: set[str]) -> bool:
         ):
             return True
     return False
+
+
+# pages a server or an edge writes, keyed by the platform they come from
+GENERIC_TITLE_PHRASES: dict[str, str] = {
+    "just a moment": "Cloudflare",
+    "attention required": "Cloudflare",
+    "sorry, you have been blocked": "Cloudflare",
+    "access denied": "an edge",
+    "403 forbidden": "the server",
+    "404 not found": "the server",
+    "page not found": "the server",
+    "not found": "the server",
+    "site not found": "the server",
+    "no such app": "the server",
+    "under construction": "the server",
+    "welcome to nginx": "nginx",
+    "apache2 ubuntu default page": "Apache",
+    "apache2 debian default page": "Apache",
+    "it works": "Apache",
+    "iis windows server": "IIS",
+    "default web site page": "the server",
+    "domain default page": "the server",
+    "bad gateway": "the server",
+    "service unavailable": "the server",
+    "gateway timeout": "the server",
+    "are you a robot": "an edge",
+    "request rejected": "an edge",
+}
+
+_MIN_TITLE_LENGTH = 4
+_STATUS_CODE = re.compile(r"\b([1-5]\d{2})\b")
+
+
+def _normalize_title(title: str) -> str:
+    return re.sub(r"[^a-z0-9 ]+", " ", title.strip().lower())
+
+
+def generic_page(title: str | None, statuses: Iterable[int | None] = ()) -> str | None:
+    """Who wrote the page, when the title is not the application's own."""
+    if not title or not title.strip():
+        return "the server"
+    normalized = " ".join(_normalize_title(title).split())
+    if len(normalized) < _MIN_TITLE_LENGTH or normalized.isdigit():
+        return "the server"
+    for phrase, source in GENERIC_TITLE_PHRASES.items():
+        if " ".join(_normalize_title(phrase).split()) in normalized:
+            return source
+    codes = {int(m.group(1)) for m in _STATUS_CODE.finditer(normalized)}
+    answered = {code for code in statuses if code is not None}
+    if codes and answered and codes <= answered:
+        return "the server"
+    return None

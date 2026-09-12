@@ -3,6 +3,7 @@
 	import * as HoverCard from '$lib/components/ui/hover-card';
 	import { Badge } from '$lib/components/ui/badge';
 	import TechIcon from '../tech-icon.svelte';
+	import CrossLinks from '$lib/components/cross-links.svelte';
 	import { screenshotUrl } from '$lib/utilities/media';
 	import { providerFor, PROVIDER_KIND_ICONS } from '$lib/config/hosting-providers';
 	import { httpStatusClass, httpStatusReason, STATUS_DOT } from '$lib/utilities/scan-correlation';
@@ -96,6 +97,11 @@
 				{/if}
 				{#if (sub.title_count ?? 0) > 1}
 					<p class="text-muted-foreground">Same page on {(sub.title_count ?? 0) - 1} other hosts</p>
+				{/if}
+				{#if sub.cross_links?.length}
+					<div class="flex flex-wrap items-center gap-1">
+						<CrossLinks links={sub.cross_links} />
+					</div>
 				{/if}
 				{#if hygiene.length && hygieneTone}
 					<div class="flex flex-col gap-1">

@@ -1,5 +1,6 @@
 import ipaddress
 import socket
+from collections.abc import Iterable
 from urllib.parse import urlsplit
 
 
@@ -34,3 +35,25 @@ def validate_public_https_url(raw: str, *, label: str = "URL") -> None:
         ):
             msg = f"{label} resolves to a disallowed address."
             raise ValueError(msg)
+
+
+def cert_covers(
+    host: str | None, subject_cn: str | None, sans: Iterable[str] = ()
+) -> bool:
+    """Whether a certificate names the host presenting it."""
+    if not host:
+        return False
+    target = host.strip().lower().rstrip(".")
+    for raw in (subject_cn, *sans):
+        if not raw:
+            continue
+        name = str(raw).strip().lower().rstrip(".")
+        if name == target:
+            return True
+        if (
+            name.startswith("*.")
+            and target.endswith(name[1:])
+            and target.count(".") == name.count(".")
+        ):
+            return True
+    return False

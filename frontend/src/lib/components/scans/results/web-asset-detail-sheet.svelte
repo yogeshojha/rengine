@@ -33,6 +33,7 @@
 	import Filter from '@lucide/svelte/icons/filter';
 	import ImageOff from '@lucide/svelte/icons/image-off';
 	import Layers from '@lucide/svelte/icons/layers';
+	import CrossLinks from '$lib/components/cross-links.svelte';
 	import Fingerprint from '@lucide/svelte/icons/fingerprint';
 	import CornerDownRight from '@lucide/svelte/icons/corner-down-right';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
@@ -596,6 +597,14 @@
 														{sub.title_count} hosts show this page
 													</Button>
 												{/if}
+											</dd>
+										</div>
+									{/if}
+									{#if sub.cross_links?.length}
+										<div class={ROW}>
+											<dt class={DT}>Shared with</dt>
+											<dd class="flex flex-wrap items-center gap-2 text-sm">
+												<CrossLinks links={sub.cross_links} onHost={onPivot} />
 											</dd>
 										</div>
 									{/if}

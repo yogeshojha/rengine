@@ -37,6 +37,7 @@ from app.services.asset_query import (
     vuln_suppressed,
 )
 from app.services.asset_query import predicates as preds
+from app.services.cross_links import CrossLinkService
 from app.services.http_asset import HttpAssetService
 from app.services.ip_address import IpAddressService
 from app.services.port import PortService
@@ -381,6 +382,7 @@ class SubdomainService:
         endpoint_counts = await self._endpoint_counts(scope, [s.name for s in rows])
         evidence = await collect_evidence(self.session, scope, rows, node)
         names = await target_names(self.session, (s.target_id for s in rows))
+        links = await CrossLinkService(self.session).for_rows(project_id, rows)
         items = []
         for s in rows:
             nums: set[int] = set()
@@ -398,6 +400,7 @@ class SubdomainService:
                     vuln_severity=findings.get(s.name, _NO_FINDINGS)[1],
                     vuln_kev=findings.get(s.name, _NO_FINDINGS)[2],
                     matched_in=evidence.get(s.id, []),
+                    cross_links=links.get(s.id, []),
                 )
             )
         return SubdomainSearchResult(
