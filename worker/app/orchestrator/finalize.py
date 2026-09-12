@@ -35,6 +35,7 @@ from shared.services.orchestrator import (
     derived_counts,
 )
 from shared.services.orchestrator.events import ScanEventPublisher
+from shared.services.planner_stats import analyze_result_tables
 from shared.services.recheck import compute_rechecks
 from shared.utils.datetime import utc_now
 from stages.registry import ordered_levels
@@ -79,6 +80,7 @@ def _notify(
 def _finalize_user_cancelled(
     session: Session, scan: Scan, events: ScanEventPublisher
 ) -> None:
+    _guard(lambda: analyze_result_tables(session), None)
     if scan.completed_at is None:
         scan.completed_at = utc_now()
         session.add(scan)
@@ -256,6 +258,11 @@ def _guard(fn, fallback):
         return fallback
 
 
+def _settled_counts(session: Session, scan: Scan) -> dict:
+    _guard(lambda: analyze_result_tables(session), None)
+    return derived_counts(session, scan.id)
+
+
 def _measure(session: Session, scan: Scan) -> ScanDeltas:
     """Each dimension is only compared where an earlier census run covered it."""
     hosts, services, vulns = (
@@ -317,7 +324,7 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
     if truncated:
         status = ScanStatus.FAILED.value
         logger.error("scan %s finalized incomplete: %s", scan.id, truncated)
-    counts = derived_counts(session, scan.id)
+    counts = _settled_counts(session, scan)
 
     locked = session.get(Scan, scan.id, with_for_update=True)
     if locked is None or locked.status in SCAN_TERMINAL_STATUSES:

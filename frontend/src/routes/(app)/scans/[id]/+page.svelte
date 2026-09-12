@@ -630,6 +630,18 @@
 			</p>
 		{/if}
 
+		{#snippet tabFailed(err: unknown, reset: () => void)}
+			<Empty.Root class="rounded-lg border border-dashed py-20">
+				<Empty.Header>
+					<Empty.Title class="text-sm">This tab could not be rendered</Empty.Title>
+					<Empty.Description>{err instanceof Error ? err.message : String(err)}</Empty.Description>
+				</Empty.Header>
+				<Empty.Content>
+					<Button size="sm" variant="outline" onclick={() => reset()}>Retry</Button>
+				</Empty.Content>
+			</Empty.Root>
+		{/snippet}
+
 		<Tabs.Root value={activeTab} onValueChange={setTab} style="--scan-tabs-h: {tabsHeight}px">
 			<div
 				bind:clientHeight={tabsHeight}
@@ -691,138 +703,156 @@
 			</div>
 
 			<Tabs.Content value="overview" class="mt-6">
-				{#key scan.id}
-					<ScanOverview
-						{scan}
-						scanId={scan.id}
-						{projectId}
-						{activities}
-						{commands}
-						{history}
-						{historyLoaded}
-						{previous}
-						{previousDuration}
-						{now}
-						active={activeTab === 'overview'}
-						revision={liveTick}
-						onFilter={applyFilter}
-						onTab={openTab}
-						onRescan={() => (showRescan = true)}
-					/>
-				{/key}
+				<svelte:boundary failed={tabFailed}>
+					{#key scan.id}
+						<ScanOverview
+							{scan}
+							scanId={scan.id}
+							{projectId}
+							{activities}
+							{commands}
+							{history}
+							{historyLoaded}
+							{previous}
+							{previousDuration}
+							{now}
+							active={activeTab === 'overview'}
+							revision={liveTick}
+							onFilter={applyFilter}
+							onTab={openTab}
+							onRescan={() => (showRescan = true)}
+						/>
+					{/key}
+				</svelte:boundary>
 			</Tabs.Content>
 
 			<Tabs.Content value={INTEREST_TAB} class="mt-6">
-				{#key scan.id}
-					<InterestingTable
-						scanId={scan.id}
-						{projectId}
-						active={activeTab === INTEREST_TAB}
-						revision={resultTicks[INTEREST_TAB] ?? 0}
-						onTab={openTab}
-						onTotal={(n) => (interestTotal = n)}
-					/>
-				{/key}
+				<svelte:boundary failed={tabFailed}>
+					{#key scan.id}
+						<InterestingTable
+							scanId={scan.id}
+							{projectId}
+							active={activeTab === INTEREST_TAB}
+							revision={resultTicks[INTEREST_TAB] ?? 0}
+							onTab={openTab}
+							onTotal={(n) => (interestTotal = n)}
+						/>
+					{/key}
+				</svelte:boundary>
 			</Tabs.Content>
 
 			<Tabs.Content value={CORRELATION_TAB} class="mt-6">
-				{#key scan.id}
-					<CorrelationTab
-						scanId={scan.id}
-						{projectId}
-						active={activeTab === CORRELATION_TAB}
-						revision={resultTicks[SurfaceDimension.WEB_ASSETS] ?? 0}
-						onTab={openTab}
-						onTotal={(n) => (correlationTotal = n)}
-					/>
-				{/key}
+				<svelte:boundary failed={tabFailed}>
+					{#key scan.id}
+						<CorrelationTab
+							scanId={scan.id}
+							{projectId}
+							active={activeTab === CORRELATION_TAB}
+							revision={resultTicks[SurfaceDimension.WEB_ASSETS] ?? 0}
+							onTab={openTab}
+							onTotal={(n) => (correlationTotal = n)}
+						/>
+					{/key}
+				</svelte:boundary>
 			</Tabs.Content>
 
 			<Tabs.Content value="web-assets" class="mt-6">
-				{#key scan.id}
-					<WebAssetsTable
-						scanId={scan.id}
-						targetType={scan.execution_config.target_type}
-						{projectId}
-						apex={scan.execution_config.target_value}
-						active={activeTab === 'web-assets'}
-						revision={resultTicks[SurfaceDimension.WEB_ASSETS] ?? 0}
-						onTab={openTab}
-						bind:query={webQuery}
-					/>
-				{/key}
+				<svelte:boundary failed={tabFailed}>
+					{#key scan.id}
+						<WebAssetsTable
+							scanId={scan.id}
+							targetType={scan.execution_config.target_type}
+							{projectId}
+							apex={scan.execution_config.target_value}
+							active={activeTab === 'web-assets'}
+							revision={resultTicks[SurfaceDimension.WEB_ASSETS] ?? 0}
+							onTab={openTab}
+							bind:query={webQuery}
+						/>
+					{/key}
+				</svelte:boundary>
 			</Tabs.Content>
 
 			<Tabs.Content value="endpoints" class="mt-6">
-				{#key scan.id}
-					<EndpointsTable
-						scanId={scan.id}
-						{projectId}
-						active={activeTab === 'endpoints'}
-						revision={resultTicks[SurfaceDimension.ENDPOINTS] ?? 0}
-						onTab={openTab}
-						onScanTotal={(n) => (endpointsTotal = n)}
-						bind:query={endpointQuery}
-					/>
-				{/key}
+				<svelte:boundary failed={tabFailed}>
+					{#key scan.id}
+						<EndpointsTable
+							scanId={scan.id}
+							{projectId}
+							active={activeTab === 'endpoints'}
+							revision={resultTicks[SurfaceDimension.ENDPOINTS] ?? 0}
+							onTab={openTab}
+							onScanTotal={(n) => (endpointsTotal = n)}
+							bind:query={endpointQuery}
+						/>
+					{/key}
+				</svelte:boundary>
 			</Tabs.Content>
 
 			<Tabs.Content value="services" class="mt-6">
-				{#key scan.id}
-					<ServicesTable
-						scanId={scan.id}
-						targetType={scan.execution_config.target_type}
-						{projectId}
-						active={activeTab === 'services'}
-						revision={resultTicks[SurfaceDimension.SERVICES] ?? 0}
-						onTab={openTab}
-						onScanTotal={(n) => (servicesTotal = n)}
-						bind:query={serviceQuery}
-					/>
-				{/key}
+				<svelte:boundary failed={tabFailed}>
+					{#key scan.id}
+						<ServicesTable
+							scanId={scan.id}
+							targetType={scan.execution_config.target_type}
+							{projectId}
+							active={activeTab === 'services'}
+							revision={resultTicks[SurfaceDimension.SERVICES] ?? 0}
+							onTab={openTab}
+							onScanTotal={(n) => (servicesTotal = n)}
+							bind:query={serviceQuery}
+						/>
+					{/key}
+				</svelte:boundary>
 			</Tabs.Content>
 
 			<Tabs.Content value="ips" class="mt-6">
-				{#key scan.id}
-					<IpsTable
-						scanId={scan.id}
-						targetType={scan.execution_config.target_type}
-						{projectId}
-						active={activeTab === 'ips'}
-						revision={resultTicks[SurfaceDimension.IPS] ?? 0}
-						onTab={openTab}
-						onScanTotal={(n) => (ipsTotal = n)}
-						bind:query={ipQuery}
-					/>
-				{/key}
+				<svelte:boundary failed={tabFailed}>
+					{#key scan.id}
+						<IpsTable
+							scanId={scan.id}
+							targetType={scan.execution_config.target_type}
+							{projectId}
+							active={activeTab === 'ips'}
+							revision={resultTicks[SurfaceDimension.IPS] ?? 0}
+							onTab={openTab}
+							onScanTotal={(n) => (ipsTotal = n)}
+							bind:query={ipQuery}
+						/>
+					{/key}
+				</svelte:boundary>
 			</Tabs.Content>
 
 			<Tabs.Content value={NOTES_TAB} class="mt-6">
-				{#key scan.id}
-					<div class="overflow-hidden rounded-xl border bg-card">
-						<NotePanel
-							anchor={{ targetId: scan.target_id, scanId: scan.id }}
-							filter={{ scan_id: scan.id }}
-							emptyTitle="No notes on this run"
-							emptyDescription="Notes written on this run's assets appear here."
-							onCount={(n) => (notesTotal = n)}
-						/>
-					</div>
-				{/key}
+				<svelte:boundary failed={tabFailed}>
+					{#key scan.id}
+						<div class="overflow-hidden rounded-xl border bg-card">
+							<NotePanel
+								anchor={{ targetId: scan.target_id, scanId: scan.id }}
+								filter={{ scan_id: scan.id }}
+								emptyTitle="No notes on this run"
+								emptyDescription="Notes written on this run's assets appear here."
+								onCount={(n) => (notesTotal = n)}
+							/>
+						</div>
+					{/key}
+				</svelte:boundary>
 			</Tabs.Content>
 
 			<Tabs.Content value="vulnerabilities" class="mt-6">
-				{#key scan.id}
-					<VulnerabilitiesTable
-						scanId={scan.id}
-						targetType={scan.execution_config.target_type}
-						active={activeTab === 'vulnerabilities'}
-						revision={resultTicks[SurfaceDimension.VULNERABILITIES] ?? 0}
-						onTab={openTab}
-						onScanTotal={(n) => (vulnsTotal = n)}
-						bind:query={vulnQuery}
-					/>
-				{/key}
+				<svelte:boundary failed={tabFailed}>
+					{#key scan.id}
+						<VulnerabilitiesTable
+							scanId={scan.id}
+							targetType={scan.execution_config.target_type}
+							active={activeTab === 'vulnerabilities'}
+							revision={resultTicks[SurfaceDimension.VULNERABILITIES] ?? 0}
+							onTab={openTab}
+							onScanTotal={(n) => (vulnsTotal = n)}
+							bind:query={vulnQuery}
+						/>
+					{/key}
+				</svelte:boundary>
 			</Tabs.Content>
 		</Tabs.Root>
 	{/if}

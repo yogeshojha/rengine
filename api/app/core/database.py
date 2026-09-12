@@ -15,7 +15,7 @@ if settings.DB_IDLE_TX_TIMEOUT > 0:
 
 engine = create_async_engine(
     settings.database_url,
-    echo=settings.DEBUG,
+    echo=settings.SQL_ECHO,
     future=True,
     pool_size=settings.DB_POOL_SIZE,
     max_overflow=settings.DB_MAX_OVERFLOW,

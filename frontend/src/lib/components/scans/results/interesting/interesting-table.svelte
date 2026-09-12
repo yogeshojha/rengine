@@ -97,6 +97,7 @@
 
 	$effect(() => {
 		void signature;
+		if (projectWide ? !projectId : !scanId) return;
 		if (loaded && !active) return;
 		loaded = true;
 		void run();

@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from shared.logging import get_logger
 from shared.models.subdomain import Subdomain
+from shared.services.asset_query.lead_cache import bump_sync
 from shared.utils.datetime import utc_now
 from tools.tlsx.client import TlsxClient, TlsxError
 from tools.tlsx.parser import parse_certificate
@@ -141,6 +142,7 @@ def _apply(session: Session, rows: list[Subdomain], seen: dict[str, dict]) -> Fr
     if payload:
         session.execute(update(Subdomain), payload)
         session.commit()
+        bump_sync({row.target_id for row in rows})
     logger.info(
         "certificate re-check",
         picked=state.picked,

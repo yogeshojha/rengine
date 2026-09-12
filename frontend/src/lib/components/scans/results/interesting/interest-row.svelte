@@ -97,7 +97,7 @@
 		{/if}
 
 		<div class="flex flex-wrap items-center gap-1">
-			{#each chips as signal (signal.source + signal.kind)}
+			{#each chips as signal (`${signal.source}:${signal.kind}:${signal.rule_id ?? ''}`)}
 				<SignalChip {signal} onPick={onKind} />
 			{/each}
 			{#if rest > 0}

@@ -85,6 +85,7 @@ class InstanceSettingsService:
             onboarding_state=settings.onboarding_state or {},
             scan_history_retention_days=settings.scan_history_retention_days,
             screenshot_retention_days=settings.screenshot_retention_days,
+            cert_recheck_enabled=settings.cert_recheck_enabled,
             ai_enabled=settings.ai_enabled,
             ai_provider=settings.ai_provider,
             ai_model=settings.ai_model,

@@ -41,6 +41,16 @@ class QueryLeads(BaseModel):
     computed: bool = False
 
 
+class QueryCountRequest(BaseModel):
+    queries: list[str] = Field(default_factory=list, max_length=32)
+
+
+class QueryCounts(BaseModel):
+    counts: dict[str, int] = Field(default_factory=dict)
+    capped: dict[str, bool] = Field(default_factory=dict)
+    computed: bool = False
+
+
 class QueryGroupSpec(BaseModel):
     key: str
     label: str

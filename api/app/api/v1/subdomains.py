@@ -12,7 +12,13 @@ from app.services.correlation_graph import CorrelationGraphService
 from app.services.hosting_flow import HostingFlowService
 from app.services.related_domains import RelatedDomainService
 from app.services.subdomain import SubdomainService
-from shared.models.asset_query import QueryGroups, QueryLeads, QuerySchema
+from shared.models.asset_query import (
+    QueryCountRequest,
+    QueryCounts,
+    QueryGroups,
+    QueryLeads,
+    QuerySchema,
+)
 from shared.models.hosting_flow import HostingFlow
 from shared.models.related import RelatedDomains
 from shared.models.scan_correlation import (
@@ -30,6 +36,7 @@ from shared.models.subdomain import (
     SubdomainSummary,
     TargetSubdomainRead,
 )
+from shared.services.asset_query import lead_cache
 
 router = APIRouter(
     prefix="/subdomains",
@@ -81,7 +88,28 @@ async def search_subdomains(
     project_id: Annotated[UUID, Query(description="Project ID")],
     scope: WebAssetScope,
 ):
-    return await service.search(project_id=project_id, scope=scope, f=body)
+    return await lead_cache.cached(
+        service.session,
+        name="search:web_assets",
+        scans=scope.ids,
+        facets=f"{project_id}|{body.model_dump_json()}",
+        model=SubdomainSearchResult,
+        build=lambda: service.search(project_id=project_id, scope=scope, f=body),
+        ttl=lead_cache.SEARCH_TTL_SECONDS,
+    )
+
+
+@router.post("/search/counts", response_model=QueryCounts)
+async def subdomain_search_counts(
+    _current_user: CurrentUser,
+    service: Annotated[SubdomainService, Depends(get_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    scope: WebAssetScope,
+    body: QueryCountRequest,
+):
+    return await service.counts(
+        project_id=project_id, scope=scope, queries=body.queries
+    )
 
 
 @router.post("/search/leads", response_model=QueryLeads)
@@ -116,7 +144,14 @@ async def subdomain_hosting_flow(
     project_id: Annotated[UUID, Query(description="Project ID")],
     scan_id: Annotated[UUID, Query(description="Scan ID")],
 ):
-    return await HostingFlowService(session).for_scan(project_id, scan_id)
+    return await lead_cache.cached(
+        session,
+        name="hosting_flow",
+        scans=(scan_id,),
+        facets=str(project_id),
+        model=HostingFlow,
+        build=lambda: HostingFlowService(session).for_scan(project_id, scan_id),
+    )
 
 
 @router.get("/correlation-graph", response_model=CorrelationGraph)
@@ -137,8 +172,15 @@ async def subdomain_related_domains(
     project_id: Annotated[UUID, Query(description="Project ID")],
     scan_id: Annotated[UUID, Query(description="Scan ID")],
 ):
-    return await RelatedDomainService(session).for_scan(
-        project_id=project_id, scan_id=scan_id
+    return await lead_cache.cached(
+        session,
+        name="related_domains",
+        scans=(scan_id,),
+        facets=str(project_id),
+        model=RelatedDomains,
+        build=lambda: RelatedDomainService(session).for_scan(
+            project_id=project_id, scan_id=scan_id
+        ),
     )
 
 
@@ -149,7 +191,14 @@ async def subdomain_facets(
     project_id: Annotated[UUID, Query(description="Project ID")],
     scope: WebAssetScope,
 ):
-    return await service.facets(project_id=project_id, scope=scope)
+    return await lead_cache.cached(
+        service.session,
+        name="facets:web_assets",
+        scans=scope.ids,
+        facets=str(project_id),
+        model=SubdomainFacets,
+        build=lambda: service.facets(project_id=project_id, scope=scope),
+    )
 
 
 @router.get("/related", response_model=list[SubdomainRelation])
@@ -182,7 +231,14 @@ async def subdomain_insights(
     project_id: Annotated[UUID, Query(description="Project ID")],
     scan_id: Annotated[UUID, Query(description="Scan ID")],
 ):
-    return await service.insights(project_id=project_id, scan_id=scan_id)
+    return await lead_cache.cached(
+        service.session,
+        name="insights",
+        scans=(scan_id,),
+        facets=str(project_id),
+        model=SubdomainInsights,
+        build=lambda: service.insights(project_id=project_id, scan_id=scan_id),
+    )
 
 
 @router.get("/correlation", response_model=SubdomainCorrelation)

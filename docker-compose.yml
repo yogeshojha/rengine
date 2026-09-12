@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:16-alpine
+    shm_size: ${POSTGRES_SHM_SIZE:-1gb}
     env_file:
       - .env
     volumes:

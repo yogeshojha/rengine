@@ -20,6 +20,7 @@ from shared.models.scan_correlation import (
     ServiceFilter,
     ServicePage,
 )
+from shared.services.asset_query import lead_cache
 
 router = APIRouter(
     prefix="/ports",
@@ -79,7 +80,15 @@ async def search_services(
     scope: ServiceScope,
     body: ServiceFilter,
 ):
-    return await service.search(scope, body)
+    return await lead_cache.cached(
+        service.session,
+        name="search:services",
+        scans=scope.ids,
+        facets=body.model_dump_json(),
+        model=ServicePage,
+        build=lambda: service.search(scope, body),
+        ttl=lead_cache.SEARCH_TTL_SECONDS,
+    )
 
 
 @router.post("/search/leads", response_model=QueryLeads)
@@ -109,7 +118,14 @@ async def service_facets(
     service: Annotated[PortService, Depends(get_service)],
     scope: ServiceScope,
 ):
-    return await service.facets(scope)
+    return await lead_cache.cached(
+        service.session,
+        name="facets:services",
+        scans=scope.ids,
+        facets="",
+        model=ServiceFacets,
+        build=lambda: service.facets(scope),
+    )
 
 
 @router.get("/origins", response_model=OriginExposure)
@@ -118,7 +134,14 @@ async def origin_exposure(
     session: Annotated[AsyncSession, Depends(get_session)],
     scan_id: Annotated[UUID, Query(description="Scan ID")],
 ):
-    return await OriginExposureService(session).run(scan_id)
+    return await lead_cache.cached(
+        session,
+        name="origins",
+        scans=(scan_id,),
+        facets="",
+        model=OriginExposure,
+        build=lambda: OriginExposureService(session).run(scan_id),
+    )
 
 
 @router.get("/exposure", response_model=ScanExposure)
@@ -127,4 +150,11 @@ async def scan_exposure(
     service: Annotated[PortService, Depends(get_service)],
     scope: ServiceScope,
 ):
-    return await service.exposure(scope)
+    return await lead_cache.cached(
+        service.session,
+        name="exposure",
+        scans=scope.ids,
+        facets="",
+        model=ScanExposure,
+        build=lambda: service.exposure(scope),
+    )

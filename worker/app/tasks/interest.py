@@ -15,6 +15,7 @@ from shared.enums.scan import SCAN_TERMINAL_STATUSES, ScanStatus
 from shared.logging import get_logger
 from shared.models.scan import Scan
 from shared.services.ai.config import load_config
+from shared.services.asset_query.lead_cache import bump_sync
 from shared.services.interest import (
     LIVE_SOURCES,
     ensure_builtin,
@@ -45,6 +46,7 @@ def _yield_to_scans(session):
 def _publish(scan: Scan, result) -> None:
     try:
         redis_url = BaseAppSettings().redis_url
+        bump_sync((scan.target_id,), redis_url)
         events = ScanEventPublisher(
             redis_url, scan_id=str(scan.id), project_id=str(scan.project_id)
         )

@@ -32,18 +32,6 @@ RUN uv sync --no-install-project
 # Expose port
 EXPOSE 8000
 
-CMD ["uv", "run", "uvicorn", "app.main:app", \
-     "--host", "0.0.0.0", \
-     "--port", "8000", \
-     "--reload", \
-     "--reload-dir", "/app/app", \
-     "--reload-dir", "/app/shared", \
-     "--reload-dir", "/app/tools", \
-     "--reload-dir", "/app/stages", \
-     "--reload-dir", "/app/reports", \
-     "--reload-dir", "/app/toolbox", \
-     "--timeout-graceful-shutdown", "2"]
+COPY api/entrypoint.sh /app/entrypoint.sh
 
-##################################################################
-# TODO: Production
-##################################################################
+CMD ["/app/entrypoint.sh"]

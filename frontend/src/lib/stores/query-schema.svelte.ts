@@ -1,13 +1,24 @@
 import { SvelteMap } from 'svelte/reactivity';
 import { api } from '$lib/api/client';
+import { SurfaceDimension } from '$lib/config/surface';
 import { EMPTY_QUERY_SCHEMA, type QueryFieldSpec, type QuerySchema } from '$lib/types/asset-query';
+
+const SCHEMAS_ENDPOINT = '/surface/schemas';
+let allPending: Promise<Record<string, QuerySchema>> | null = null;
+
+function loadAll(): Promise<Record<string, QuerySchema>> {
+	allPending ??= api.get<Record<string, QuerySchema>>(SCHEMAS_ENDPOINT).finally(() => {
+		allPending = null;
+	});
+	return allPending;
+}
 
 class QuerySchemaStore {
 	schema = $state<QuerySchema>(EMPTY_QUERY_SCHEMA);
 	loaded = $state(false);
 	private pending: Promise<void> | null = null;
 
-	constructor(private readonly endpoint: string) {}
+	constructor(private readonly dimension: string) {}
 
 	byName = $derived.by(() => {
 		const map = new SvelteMap<string, QueryFieldSpec>();
@@ -22,10 +33,9 @@ class QuerySchemaStore {
 
 	async load(): Promise<void> {
 		if (this.loaded) return;
-		this.pending ??= api
-			.get<QuerySchema>(this.endpoint)
-			.then((schema) => {
-				this.schema = schema;
+		this.pending ??= loadAll()
+			.then((schemas) => {
+				this.schema = schemas[this.dimension] ?? EMPTY_QUERY_SCHEMA;
 				this.loaded = true;
 			})
 			.catch(() => {
@@ -50,8 +60,8 @@ class QuerySchemaStore {
 
 export type { QuerySchemaStore };
 
-export const querySchema = new QuerySchemaStore('/subdomains/search/schema');
-export const ipQuerySchema = new QuerySchemaStore('/ips/search/schema');
-export const serviceQuerySchema = new QuerySchemaStore('/ports/search/schema');
-export const vulnQuerySchema = new QuerySchemaStore('/vulnerabilities/search/schema');
-export const endpointQuerySchema = new QuerySchemaStore('/endpoints/search/schema');
+export const querySchema = new QuerySchemaStore(SurfaceDimension.WEB_ASSETS);
+export const ipQuerySchema = new QuerySchemaStore(SurfaceDimension.IPS);
+export const serviceQuerySchema = new QuerySchemaStore(SurfaceDimension.SERVICES);
+export const vulnQuerySchema = new QuerySchemaStore(SurfaceDimension.VULNERABILITIES);
+export const endpointQuerySchema = new QuerySchemaStore(SurfaceDimension.ENDPOINTS);

@@ -257,6 +257,7 @@ export interface CoverageRead {
 	hosts_total: number;
 	hosts_scanned: number | null;
 	hosts_dropped: { host: string; reason: string }[];
+	hosts_dropped_count: number;
 	requests_sent: number | null;
 	matched: number | null;
 	errors: number | null;

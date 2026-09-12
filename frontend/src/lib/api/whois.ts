@@ -58,6 +58,15 @@ export const whoisApi = {
 		return api.get<WhoisCorrelationResult[]>(`/tools/whois/correlations/target/${targetId}`);
 	},
 
+	async getTargetsCorrelations(
+		targetIds: string[]
+	): Promise<Record<string, WhoisCorrelationResult[]>> {
+		const ids = encodeURIComponent(targetIds.join(','));
+		return api.get<Record<string, WhoisCorrelationResult[]>>(
+			`/tools/whois/correlations/targets?ids=${ids}`
+		);
+	},
+
 	async correlateByRegistrant(name: string): Promise<WhoisCorrelationResult[]> {
 		return api.get<WhoisCorrelationResult[]>(
 			`/tools/whois/correlations/registrant?name=${encodeURIComponent(name)}`

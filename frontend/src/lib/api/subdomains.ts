@@ -3,7 +3,7 @@ import { scopeQuery } from '$lib/utilities/surface-scope';
 import type { HostingFlow } from '$lib/types/hosting-flow';
 import type { CorrelationGraph } from '$lib/types/correlation';
 import type { SubdomainSummary, TargetSubdomainRead } from '$lib/types/subdomain';
-import type { QueryGroups, QueryLeads, RelatedDomains } from '$lib/types/asset-query';
+import type { QueryCounts, QueryGroups, QueryLeads, RelatedDomains } from '$lib/types/asset-query';
 import type {
 	Facet,
 	SubdomainFilter,
@@ -55,6 +55,12 @@ export const subdomainsApi = {
 			`/subdomains/search?${scopeQuery({ projectId, scanId })}`,
 			filter
 		);
+	},
+
+	async counts(projectId: string, scanId: string, queries: string[]): Promise<QueryCounts> {
+		return api.post<QueryCounts>(`/subdomains/search/counts?${scopeQuery({ projectId, scanId })}`, {
+			queries
+		});
 	},
 
 	async leads(projectId: string, scanId: string, filter: SubdomainFilter): Promise<QueryLeads> {

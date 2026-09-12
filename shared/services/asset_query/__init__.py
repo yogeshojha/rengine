@@ -11,7 +11,7 @@ from .groups import (
     build_vuln_groups,
 )
 from .ip_compiler import IpQueryContext, compile_ip_query
-from .leads import build_leads
+from .leads import build_leads, count_queries
 from .parser import parse_query
 from .predicates import (
     endpoint_has_baseline,
@@ -59,6 +59,7 @@ __all__ = [
     "compile_query",
     "compile_service_query",
     "compile_vuln_query",
+    "count_queries",
     "endpoint_has_baseline",
     "endpoint_is_new",
     "endpoint_source",

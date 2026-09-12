@@ -13,6 +13,7 @@ from shared.definitions.asset_query import IP_QUERY
 from shared.models.asset_query import QueryGroups, QueryLeads, QuerySchema
 from shared.models.ip_address import IpAddressRead, IpAddressSummary
 from shared.models.scan_correlation import IpFacets, IpGroupFilter, IpGroupPage
+from shared.services.asset_query import lead_cache
 
 router = APIRouter(
     prefix="/ips",
@@ -59,7 +60,15 @@ async def ip_search(
     scope: IpScope,
     body: IpGroupFilter,
 ):
-    return await service.search(scope=scope, f=body)
+    return await lead_cache.cached(
+        service.session,
+        name="search:ips",
+        scans=scope.ids,
+        facets=body.model_dump_json(),
+        model=IpGroupPage,
+        build=lambda: service.search(scope=scope, f=body),
+        ttl=lead_cache.SEARCH_TTL_SECONDS,
+    )
 
 
 @router.post("/search/leads", response_model=QueryLeads)
@@ -89,7 +98,14 @@ async def ip_facets(
     service: Annotated[IpAddressService, Depends(get_service)],
     scope: IpScope,
 ):
-    return await service.facets(scope=scope)
+    return await lead_cache.cached(
+        service.session,
+        name="facets:ips",
+        scans=scope.ids,
+        facets="",
+        model=IpFacets,
+        build=lambda: service.facets(scope=scope),
+    )
 
 
 @router.get("/summary", response_model=IpAddressSummary)

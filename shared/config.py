@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings
 class BaseAppSettings(BaseSettings):
     APP_NAME: str = "reNgine"
     DEBUG: bool = False
+    SQL_ECHO: bool = False
     APP_VERSION: str = "3.0.0"
 
     LOG_LEVEL: str = "INFO"

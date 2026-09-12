@@ -48,6 +48,12 @@ export interface QueryLead extends QueryExampleSpec {
 
 export type QueryStarter = QueryExampleSpec | QueryLead;
 
+export interface QueryCounts {
+	counts: Record<string, number>;
+	capped: Record<string, boolean>;
+	computed: boolean;
+}
+
 export interface QueryLeads {
 	leads: QueryLead[];
 	total: number;

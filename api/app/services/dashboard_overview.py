@@ -7,6 +7,7 @@ from uuid import UUID
 
 from sqlalchemy import Text, and_, case, cast, exists, func, not_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from app.services.asset_query.predicates import cert_state, live, vuln_seen_earlier
 from app.services.dashboard import DashboardService
@@ -163,11 +164,11 @@ class DashboardOverviewService:
         scans: dict[UUID, Scan] = {
             s.id: s for runs in runs_by_target.values() for s in runs
         }
-        counts = await self._counts(project_id)
+        counts = await self._counts(list(scans))
         ran = await self._ran(list(scans))
         covered = self._covered(runs_by_target, counts, ran)
-        firsts = await self._first_seen(project_id)
         baselines = self._baselines(counts, scans)
+        firsts = await self._first_seen(scans, baselines)
         names = {t.id: t.target_value for t in targets}
 
         signals = await self.signals.signals(project_id)
@@ -419,13 +420,15 @@ class DashboardOverviewService:
         )
         return by_target, int(total or 0)
 
-    async def _counts(self, project_id: UUID) -> Counts:
+    async def _counts(self, scan_ids: list[UUID]) -> Counts:
         """Rows per scan and when its first row landed, per dimension."""
-        out: Counts = {}
+        out: Counts = {key: {} for key in _TABLES}
+        if not scan_ids:
+            return out
         for key, model in _TABLES.items():
             query = (
                 select(model.scan_id, func.count(), func.min(model.discovered_at))
-                .where(model.project_id == project_id)
+                .where(model.scan_id.in_(scan_ids))
                 .group_by(model.scan_id)
             )
             if key == VULNS:
@@ -466,25 +469,36 @@ class DashboardOverviewService:
                 ]
         return out
 
-    async def _first_seen(self, project_id: UUID) -> dict[str, dict[UUID, int]]:
+    async def _first_seen(
+        self, scans: dict[UUID, Scan], baselines: dict[str, set[UUID]]
+    ) -> dict[str, dict[UUID, int]]:
         """Per dimension, how many keys each scan was the first to report for its target."""
-        out: dict[str, dict[UUID, int]] = {}
+        out: dict[str, dict[UUID, int]] = {key: {} for key in _TABLES}
         for key, model in _TABLES.items():
-            keys = [model.target_id, *_KEYS[key]]
-            firsts = select(model.scan_id.label("scan_id")).where(
-                model.project_id == project_id
-            )
-            if key == VULNS:
-                firsts = firsts.where(not_(_suppressed()))
-            firsts = (
-                firsts.distinct(*keys)
-                .order_by(*keys, model.discovered_at.asc(), model.scan_id.asc())
-                .subquery()
-            )
-            result = await self.session.execute(
-                select(firsts.c.scan_id, func.count()).group_by(firsts.c.scan_id)
-            )
-            out[key] = {row[0]: int(row[1]) for row in result.all()}
+            earlier = aliased(model)
+            for sid in baselines.get(key, ()):
+                scan = scans.get(sid)
+                if scan is None:
+                    continue
+                seen_before = exists(
+                    select(1).where(
+                        earlier.target_id == scan.target_id,
+                        *[
+                            getattr(earlier, column.key) == column
+                            for column in _KEYS[key]
+                        ],
+                        earlier.scan_id != sid,
+                        earlier.discovered_at < model.discovered_at,
+                    )
+                )
+                stmt = (
+                    select(func.count())
+                    .select_from(model)
+                    .where(model.scan_id == sid, not_(seen_before))
+                )
+                if key == VULNS:
+                    stmt = stmt.where(not_(_suppressed()))
+                out[key][sid] = int(await self.session.scalar(stmt) or 0)
         return out
 
     def _baselines(

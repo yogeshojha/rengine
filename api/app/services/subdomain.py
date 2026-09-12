@@ -31,6 +31,7 @@ from app.services.asset_query import (
     build_leads,
     collect_evidence,
     compile_query,
+    count_queries,
     parse_query,
     query_error_for,
     vuln_suppressed,
@@ -45,7 +46,12 @@ from shared.definitions.correlation import COMMON_SHARE, MIN_ESTATE_FOR_COMMON
 from shared.definitions.ports import SENSITIVE_PORTS, port_interest
 from shared.definitions.vulnerabilities import SEVERITY_ORDER
 from shared.logging import get_logger
-from shared.models.asset_query import QueryError, QueryGroups, QueryLeads
+from shared.models.asset_query import (
+    QueryCounts,
+    QueryError,
+    QueryGroups,
+    QueryLeads,
+)
 from shared.models.endpoint import Endpoint
 from shared.models.http_asset import HttpAsset
 from shared.models.ip_address import IpAddress
@@ -422,6 +428,41 @@ class SubdomainService:
             for host, count, worst, kev in rows.all()
             if worst is not None and int(worst) < len(SEVERITY_ORDER)
         }
+
+    async def counts(
+        self, project_id: UUID, scope: ScopeLike, queries: list[str]
+    ) -> QueryCounts:
+        scope = QueryScope.of(scope)
+
+        async def _build() -> QueryCounts:
+            now = utc_now()
+            base = select(Subdomain.id).where(
+                Subdomain.project_id == project_id, scope.match(Subdomain.scan_id)
+            )
+            await self.session.execute(text(STATEMENT_TIMEOUT))
+            await self.session.execute(text(NO_JIT))
+            ctx = QueryContext(scope=scope, now=now)
+            try:
+                return await count_queries(
+                    self.session,
+                    base,
+                    queries,
+                    lambda q: compile_query(parse_query(q), ctx),
+                )
+            except DBAPIError as exc:
+                await self.session.rollback()
+                logger.info("search counts failed", error=str(exc.orig))
+                return QueryCounts()
+
+        return await lead_cache.cached(
+            self.session,
+            name="counts:web_assets",
+            scans=scope.ids,
+            facets=f"{project_id}|{'|'.join(queries)}",
+            model=QueryCounts,
+            build=_build,
+            keep=lambda computed: computed.computed,
+        )
 
     async def leads(
         self, project_id: UUID, scope: ScopeLike, f: SubdomainFilter

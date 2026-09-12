@@ -359,34 +359,10 @@ async def delete_whois_record(
     await session.commit()
 
 
-@router.get(
-    "/correlations/target/{target_id}",
-    response_model=list[WhoisCorrelationResult],
-    summary="Get Target Correlations",
-    description=(
-        "Find all targets related to the given target through shared WHOIS data. "
-        "Returns groups by correlation type: registrant, registrar, nameserver, "
-        "network block, and country."
-    ),
-)
-async def get_target_correlations(
-    target_id: str,
-    _current_user: CurrentUser,
-    session: Annotated[AsyncSession, Depends(get_session)],
-    service: Annotated[WhoisService, Depends(get_whois_service)],
-):
-    try:
-        tid = _uuid.UUID(target_id)
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="That is not a valid target ID.",
-        ) from e
-
-    target_result = await session.execute(select(Target).where(Target.id == tid))
-    target = target_result.scalar_one_or_none()
-
-    if not target or not target.whois_record_id:
+async def _target_correlations(
+    session: AsyncSession, service: WhoisService, target: Target
+) -> list[WhoisCorrelationResult]:
+    if not target.whois_record_id:
         return []
 
     correlations = await service.get_correlations_for_target(
@@ -442,6 +418,63 @@ async def get_target_correlations(
         )
 
     return results
+
+
+@router.get(
+    "/correlations/targets",
+    response_model=dict[str, list[WhoisCorrelationResult]],
+    summary="Get Correlations For Several Targets",
+)
+async def get_targets_correlations(
+    _current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    service: Annotated[WhoisService, Depends(get_whois_service)],
+    ids: Annotated[str, Query(description="Comma-separated target IDs")],
+):
+    wanted = []
+    for raw in ids.split(","):
+        try:
+            wanted.append(_uuid.UUID(raw.strip()))
+        except ValueError:
+            continue
+    if not wanted:
+        return {}
+    rows = await session.execute(select(Target).where(Target.id.in_(wanted[:100])))
+    out: dict[str, list[WhoisCorrelationResult]] = {}
+    for target in rows.scalars().all():
+        out[str(target.id)] = await _target_correlations(session, service, target)
+    return out
+
+
+@router.get(
+    "/correlations/target/{target_id}",
+    response_model=list[WhoisCorrelationResult],
+    summary="Get Target Correlations",
+    description=(
+        "Find all targets related to the given target through shared WHOIS data. "
+        "Returns groups by correlation type: registrant, registrar, nameserver, "
+        "network block, and country."
+    ),
+)
+async def get_target_correlations(
+    target_id: str,
+    _current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    service: Annotated[WhoisService, Depends(get_whois_service)],
+):
+    try:
+        tid = _uuid.UUID(target_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="That is not a valid target ID.",
+        ) from e
+
+    target_result = await session.execute(select(Target).where(Target.id == tid))
+    target = target_result.scalar_one_or_none()
+    if not target:
+        return []
+    return await _target_correlations(session, service, target)
 
 
 def _correlation_results(

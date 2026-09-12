@@ -25,6 +25,7 @@ from shared.models.vulnerability import (
     VulnerabilityPage,
     VulnerabilityRead,
 )
+from shared.services.asset_query import lead_cache
 
 router = APIRouter(prefix="/vulnerabilities", tags=["vulnerabilities"])
 
@@ -47,7 +48,15 @@ async def search_vulnerabilities(
     scope: VulnScope,
     body: VulnerabilityFilter,
 ):
-    return await service.search(scope, body)
+    return await lead_cache.cached(
+        service.session,
+        name="search:vulnerabilities",
+        scans=scope.ids,
+        facets=body.model_dump_json(),
+        model=VulnerabilityPage,
+        build=lambda: service.search(scope, body),
+        ttl=lead_cache.SEARCH_TTL_SECONDS,
+    )
 
 
 @router.post("/search/issues", response_model=IssuePage)
@@ -87,7 +96,14 @@ async def vulnerability_facets(
     service: Annotated[VulnerabilityService, Depends(get_service)],
     scope: VulnScope,
 ):
-    return await service.facets(scope)
+    return await lead_cache.cached(
+        service.session,
+        name="facets:vulnerabilities",
+        scans=scope.ids,
+        facets="",
+        model=VulnerabilityFacets,
+        build=lambda: service.facets(scope),
+    )
 
 
 @router.get("/overview", response_model=ScanVulnerabilities)
@@ -96,7 +112,14 @@ async def vulnerability_overview(
     service: Annotated[VulnerabilityService, Depends(get_service)],
     scope: VulnScope,
 ):
-    return await service.overview(scope)
+    return await lead_cache.cached(
+        service.session,
+        name="overview:vulnerabilities",
+        scans=scope.ids,
+        facets="",
+        model=ScanVulnerabilities,
+        build=lambda: service.overview(scope),
+    )
 
 
 @router.get("/coverage", response_model=list[CoverageRead])

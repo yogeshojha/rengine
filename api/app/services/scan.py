@@ -8,7 +8,18 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 from pydantic import ValidationError
-from sqlalchemy import Select, case, exists, func, nullslast, or_, select, update
+from sqlalchemy import (
+    Select,
+    and_,
+    case,
+    exists,
+    func,
+    not_,
+    nullslast,
+    or_,
+    select,
+    update,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
@@ -145,6 +156,36 @@ def _human_duration(seconds: int) -> str:
     hours = minutes // _MINUTES_PER_HOUR
     rem = minutes % _MINUTES_PER_HOUR
     return f"{hours}h {rem}m" if rem else f"{hours}h"
+
+
+def _host_seen_before():
+    """An earlier row of the same name for the target."""
+    earlier = aliased(Subdomain)
+    return exists(
+        select(1).where(
+            earlier.target_id == Subdomain.target_id,
+            earlier.name == Subdomain.name,
+            earlier.scan_id != Subdomain.scan_id,
+            or_(
+                earlier.discovered_at < Subdomain.discovered_at,
+                and_(
+                    earlier.discovered_at == Subdomain.discovered_at,
+                    earlier.scan_id < Subdomain.scan_id,
+                ),
+            ),
+        )
+    )
+
+
+def _scans_writing_since(project_id: UUID, since, target_id: UUID | None = None):
+    """Scans that could have written a row at or after `since`."""
+    conds = [
+        Scan.project_id == project_id,
+        or_(Scan.completed_at.is_(None), Scan.completed_at >= since),
+    ]
+    if target_id is not None:
+        conds.append(Scan.target_id == target_id)
+    return select(Scan.id).where(*conds)
 
 
 class ScanService:
@@ -694,24 +735,11 @@ class ScanService:
         """Per scan, how many subdomain names it was the FIRST to discover for its target."""
         if not scan_ids or not target_ids:
             return {}
-        rn = (
-            func.row_number()
-            .over(
-                partition_by=[Subdomain.target_id, Subdomain.name],
-                order_by=[Subdomain.discovered_at.asc(), Subdomain.scan_id.asc()],
-            )
-            .label("rn")
-        )
-        firsts = (
-            select(Subdomain.scan_id.label("scan_id"), rn)
-            .where(Subdomain.target_id.in_(target_ids))
-            .subquery()
-        )
         rows = (
             await self.session.execute(
-                select(firsts.c.scan_id, func.count())
-                .where(firsts.c.rn == 1, firsts.c.scan_id.in_(scan_ids))
-                .group_by(firsts.c.scan_id)
+                select(Subdomain.scan_id, func.count())
+                .where(Subdomain.scan_id.in_(scan_ids), not_(_host_seen_before()))
+                .group_by(Subdomain.scan_id)
             )
         ).all()
         return dict(rows)
@@ -872,30 +900,19 @@ class ScanService:
     ) -> ScanChanges:
         cutoff = utc_now() - _WINDOW_DELTAS.get(window, timedelta(days=7))
 
-        sub_conds = [Subdomain.project_id == project_id]
-        if target_id is not None:
-            sub_conds.append(Subdomain.target_id == target_id)
-        firsts = (
-            select(
-                Subdomain.target_id.label("target_id"),
-                func.min(Subdomain.discovered_at).label("first_seen"),
-            )
-            .where(*sub_conds)
-            .group_by(Subdomain.target_id, Subdomain.name)
-            .subquery()
-        )
-        new_subdomains = (
+        new_subdomains, targets_changed = (
             await self.session.execute(
-                select(func.count()).where(firsts.c.first_seen >= cutoff)
-            )
-        ).scalar_one()
-        targets_changed = (
-            await self.session.execute(
-                select(func.count(func.distinct(firsts.c.target_id))).where(
-                    firsts.c.first_seen >= cutoff
+                select(
+                    func.count(), func.count(func.distinct(Subdomain.target_id))
+                ).where(
+                    Subdomain.scan_id.in_(
+                        _scans_writing_since(project_id, cutoff, target_id)
+                    ),
+                    Subdomain.discovered_at >= cutoff,
+                    not_(_host_seen_before()),
                 )
             )
-        ).scalar_one()
+        ).one()
 
         scan_conds = [Scan.project_id == project_id, Scan.created_at >= cutoff]
         if target_id is not None:
@@ -988,20 +1005,17 @@ class ScanService:
         for d, st, n in status_day_rows:
             by_day_status.setdefault(str(d), {})[st] = n
 
-        sub_conds = [Subdomain.project_id == project_id]
-        if target_id is not None:
-            sub_conds.append(Subdomain.target_id == target_id)
-        firsts = (
-            select(func.min(Subdomain.discovered_at).label("first_seen"))
-            .where(*sub_conds)
-            .group_by(Subdomain.target_id, Subdomain.name)
-            .subquery()
-        )
-        first_day = func.date(firsts.c.first_seen)
+        first_day = func.date(Subdomain.discovered_at)
         new_day_rows = (
             await self.session.execute(
                 select(first_day, func.count())
-                .where(first_day >= start)
+                .where(
+                    Subdomain.scan_id.in_(
+                        _scans_writing_since(project_id, start, target_id)
+                    ),
+                    first_day >= start,
+                    not_(_host_seen_before()),
+                )
                 .group_by(first_day)
             )
         ).all()

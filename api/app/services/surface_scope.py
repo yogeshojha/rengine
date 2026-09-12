@@ -6,6 +6,7 @@ from datetime import timedelta
 from functools import lru_cache
 from uuid import UUID
 
+from pydantic import BaseModel
 from sqlalchemy import distinct, exists, func, not_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
@@ -30,9 +31,15 @@ from shared.models.subdomain import Subdomain
 from shared.models.surface import SurfaceCoverage, SurfaceOverview, SurfaceTargetRead
 from shared.models.target import Target
 from shared.models.vulnerability import Vulnerability
+from shared.services.asset_query import lead_cache
 from shared.services.scan_scope import census_only
 from shared.utils.datetime import utc_now
 from stages.registry import stages
+
+
+class _Count(BaseModel):
+    n: int = 0
+
 
 TABLES = {
     SurfaceDimension.WEB_ASSETS.value: Subdomain,
@@ -232,7 +239,19 @@ class SurfaceScopeService:
             generated_at=utc_now(),
         )
         for dimension in SURFACE_ORDER:
-            out.dimensions.append(await self.coverage(project_id, dimension))
+            scope = await self.scope(project_id, dimension)
+            out.dimensions.append(
+                await lead_cache.cached(
+                    self.session,
+                    name=f"surface_coverage:{dimension}",
+                    scans=scope.ids,
+                    facets=str(project_id),
+                    model=SurfaceCoverage,
+                    build=lambda dimension=dimension: self.coverage(
+                        project_id, dimension
+                    ),
+                )
+            )
         out.exposures = await self._exposures(project_id)
         return out
 
@@ -241,10 +260,23 @@ class SurfaceScopeService:
         scope = await self.scope(project_id, SurfaceDimension.WEB_ASSETS.value)
         if not scope:
             return 0
-        counted = await self.session.scalar(
-            select(func.count()).where(
-                scope.match(Subdomain.scan_id),
-                Subdomain.interest_band.isnot(None),
+
+        async def _count() -> _Count:
+            counted = await self.session.scalar(
+                select(func.count()).where(
+                    scope.match(Subdomain.scan_id),
+                    Subdomain.interest_band.isnot(None),
+                )
             )
-        )
-        return int(counted or 0)
+            return _Count(n=int(counted or 0))
+
+        return (
+            await lead_cache.cached(
+                self.session,
+                name="surface_exposures",
+                scans=scope.ids,
+                facets=str(project_id),
+                model=_Count,
+                build=_count,
+            )
+        ).n

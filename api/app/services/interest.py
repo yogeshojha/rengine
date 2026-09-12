@@ -55,6 +55,7 @@ from shared.models.interest import (
 )
 from shared.models.scan import Scan
 from shared.models.subdomain import Subdomain
+from shared.services.asset_query import lead_cache
 from shared.utils.datetime import utc_now
 
 logger = get_logger(__name__)
@@ -616,6 +617,7 @@ class InterestReadService(InterestService):
             )
         )
         await self.session.commit()
+        await lead_cache.bump((target_id,))
 
     async def restore(self, dismissal_id: uuid.UUID) -> bool:
         row = await self.session.get(InterestDismissal, dismissal_id)
@@ -623,6 +625,7 @@ class InterestReadService(InterestService):
             return False
         await self.session.delete(row)
         await self.session.commit()
+        await lead_cache.bump((row.target_id,))
         return True
 
     async def dismissals(

@@ -28,6 +28,7 @@ from shared.models.endpoint import (
     VerifyBranchRequest,
     VerifyBranchResponse,
 )
+from shared.services.asset_query import lead_cache
 
 router = APIRouter(prefix="/endpoints", tags=["endpoints"])
 
@@ -52,7 +53,15 @@ async def search_endpoints(
     scope: EndpointScope,
     body: EndpointFilter,
 ):
-    return await service.search(scope, body)
+    return await lead_cache.cached(
+        service.session,
+        name="search:endpoints",
+        scans=scope.ids,
+        facets=body.model_dump_json(),
+        model=EndpointPage,
+        build=lambda: service.search(scope, body),
+        ttl=lead_cache.SEARCH_TTL_SECONDS,
+    )
 
 
 @router.post("/search/leads", response_model=QueryLeads)
@@ -135,7 +144,14 @@ async def endpoint_facets(
     scope: EndpointScope,
     q: Annotated[str | None, Query(description="Query string")] = None,
 ):
-    return await service.facets(scope, EndpointFilter(q=q))
+    return await lead_cache.cached(
+        service.session,
+        name="facets:endpoints",
+        scans=scope.ids,
+        facets=q or "",
+        model=EndpointFacets,
+        build=lambda: service.facets(scope, EndpointFilter(q=q)),
+    )
 
 
 @router.get("/summary", response_model=EndpointSummary)
@@ -145,7 +161,14 @@ async def endpoint_summary(
     scope: EndpointScope,
     host: Annotated[str | None, Query(description="Scope to one host")] = None,
 ):
-    return await service.summary(scope, host)
+    return await lead_cache.cached(
+        service.session,
+        name="summary:endpoints",
+        scans=scope.ids,
+        facets=host or "",
+        model=EndpointSummary,
+        build=lambda: service.summary(scope, host),
+    )
 
 
 @router.get("/host", response_model=HostBrief)
@@ -176,7 +199,14 @@ async def endpoint_structure(
     session: Annotated[AsyncSession, Depends(get_session)],
     scan_id: Annotated[UUID, Query(description="Scan ID")],
 ):
-    return await EndpointStructureService(session).build(scan_id)
+    return await lead_cache.cached(
+        session,
+        name="structure",
+        scans=(scan_id,),
+        facets="",
+        model=ScanStructure,
+        build=lambda: EndpointStructureService(session).build(scan_id),
+    )
 
 
 @router.get("/{endpoint_id}", response_model=EndpointDetail)

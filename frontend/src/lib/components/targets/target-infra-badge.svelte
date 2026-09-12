@@ -17,6 +17,19 @@
 		string,
 		{ total: number; breakdown: { label: string; count: number }[] }
 	>();
+	let queued: string[] = [];
+	let flush: Promise<Record<string, WhoisCorrelationResult[]>> | null = null;
+
+	function correlationsFor(id: string): Promise<WhoisCorrelationResult[]> {
+		queued.push(id);
+		flush ??= Promise.resolve().then(() => {
+			const ids = [...new Set(queued)];
+			queued = [];
+			flush = null;
+			return whoisApi.getTargetsCorrelations(ids);
+		});
+		return flush.then((byTarget) => byTarget[id] ?? []);
+	}
 
 	const TYPE_LABELS: Record<string, string> = {
 		registrant_name: 'Registrant',
@@ -50,7 +63,7 @@
 		}
 
 		try {
-			const groups = await whoisApi.getTargetCorrelations(targetId);
+			const groups = await correlationsFor(targetId);
 			const { t, b } = summarize(groups);
 			total = t;
 			breakdown = b;

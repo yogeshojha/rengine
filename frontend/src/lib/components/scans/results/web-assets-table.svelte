@@ -336,6 +336,11 @@
 		}
 	}
 
+	let seen = $state(false);
+	$effect(() => {
+		if (active) seen = true;
+	});
+
 	const liveRefresh = new LiveRefresh(() => refresh(true));
 	$effect(() => {
 		liveRefresh.notify(revision, active);
@@ -353,7 +358,7 @@
 		void scanId;
 		void projectId;
 		void queryReady;
-		if (!ready) return;
+		if (!ready || !seen) return;
 		if (timer) clearTimeout(timer);
 		timer = setTimeout(runSearch, primed ? SEARCH_DEBOUNCE_MS : 0);
 		primed = true;
@@ -365,6 +370,7 @@
 	$effect(() => {
 		void scanId;
 		void projectId;
+		if (!seen) return;
 		untrack(loadFacets);
 	});
 

@@ -10,6 +10,7 @@ import type {
 
 function createConnectorsStore() {
 	let catalog = $state<ConnectorSpec[]>([]);
+	let catalogPending: Promise<void> | null = null;
 	let items = $state<Connector[]>([]);
 	let queue = $state<CandidatePage | null>(null);
 	let coverage = $state<ConnectorCoverage[]>([]);
@@ -73,11 +74,18 @@ function createConnectorsStore() {
 
 		async loadCatalog() {
 			if (catalog.length) return;
-			try {
-				catalog = await connectorsApi.catalog();
-			} catch (e) {
-				error = message(e, 'Connector catalog could not be loaded');
-			}
+			catalogPending ??= connectorsApi
+				.catalog()
+				.then((c) => {
+					catalog = c;
+				})
+				.catch((e) => {
+					error = message(e, 'Connector catalog could not be loaded');
+				})
+				.finally(() => {
+					catalogPending = null;
+				});
+			return catalogPending;
 		},
 
 		async load(projectId: string, force = false) {

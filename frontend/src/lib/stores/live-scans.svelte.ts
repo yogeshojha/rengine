@@ -68,9 +68,11 @@ function createLiveScansStore() {
 		if (scans.length > 0) pollTimer = setTimeout(() => void load(), FALLBACK_POLL_MS);
 	}
 
+	let inflight = false;
 	async function load() {
 		const pid = projectId;
-		if (!pid) return;
+		if (!pid || inflight) return;
+		inflight = true;
 		const mySeq = ++seq;
 		try {
 			const live = await scansApi.list(pid, {
@@ -86,6 +88,7 @@ function createLiveScansStore() {
 		} catch (e) {
 			console.error('[liveScans]', e);
 		} finally {
+			inflight = false;
 			if (mySeq === seq) schedulePoll();
 		}
 	}

@@ -20,6 +20,8 @@ class ApiClient {
 
 	private refreshPromise: Promise<RefreshResult> | null = null;
 
+	private inflight = new Map<string, Promise<unknown>>();
+
 	private async request<T>(
 		endpoint: string,
 		options: RequestInit = {},
@@ -103,7 +105,13 @@ class ApiClient {
 	}
 
 	get<T>(endpoint: string): Promise<T> {
-		return this.request<T>(endpoint);
+		const open = this.inflight.get(endpoint);
+		if (open) return open as Promise<T>;
+		const pending = this.request<T>(endpoint).finally(() => {
+			this.inflight.delete(endpoint);
+		});
+		this.inflight.set(endpoint, pending);
+		return pending;
 	}
 
 	async text(endpoint: string, isRetry = false): Promise<string> {

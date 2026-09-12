@@ -5,7 +5,7 @@ import { endpointsApi, ipsApi, servicesApi } from '$lib/api/scan-results';
 import { vulnerabilitiesApi } from '$lib/api/vulnerabilities';
 import { compileVulnQuery, emptyVulnQuery } from '$lib/utilities/vulns';
 import { compileServiceQuery, emptyServiceQuery } from '$lib/utilities/services';
-import type { Facet, SubdomainFilter } from '$lib/utilities/scan-insights';
+import type { Facet } from '$lib/utilities/scan-insights';
 import type { IpFacetSet } from '$lib/utilities/ip-groups';
 import type { InterestPage } from '$lib/types/interest';
 import {
@@ -23,26 +23,14 @@ import {
 const FEED_ROWS = 4;
 const EXPOSURE_ROWS = 8;
 
-function hostCount(projectId: string, q: string) {
-	const filter: SubdomainFilter = {
-		q,
-		statuses: [],
-		tech: [],
-		services: [],
-		cert: [],
-		sources: [],
-		cdn: 'any',
-		waf: 'any',
-		live: false,
-		screenshot: false,
-		issues: false,
-		new: false,
-		sort: 'status',
-		order: 'asc',
-		limit: 1,
-		offset: 0
-	};
-	return subdomainsApi.search(projectId, '', filter).then((r) => r.total);
+function hostingCounts(projectId: string): Promise<HostingSplit> {
+	const queries = Object.values(HOSTING_QUERIES);
+	return subdomainsApi.counts(projectId, '', queries).then((r) => ({
+		resolved: r.counts[HOSTING_QUERIES.resolved] ?? 0,
+		edge: r.counts[HOSTING_QUERIES.edge] ?? 0,
+		cloud: r.counts[HOSTING_QUERIES.cloud] ?? 0,
+		direct: r.counts[HOSTING_QUERIES.direct] ?? 0
+	}));
 }
 
 function createDashboardStore() {
@@ -123,15 +111,7 @@ function createDashboardStore() {
 				(v) => (tech = v)
 			),
 			settle(ipsApi.facets(pid, ''), (v) => (ipFacets = v)),
-			settle(
-				Promise.all([
-					hostCount(pid, HOSTING_QUERIES.resolved),
-					hostCount(pid, HOSTING_QUERIES.edge),
-					hostCount(pid, HOSTING_QUERIES.cloud),
-					hostCount(pid, HOSTING_QUERIES.direct)
-				]).then(([resolved, edge, cloud, direct]) => ({ resolved, edge, cloud, direct })),
-				(v) => (hosting = v)
-			),
+			settle(hostingCounts(pid), (v) => (hosting = v)),
 			settle(interestApi.project(pid, { limit: EXPOSURE_ROWS }), (v) => (exposures = v)),
 			settle(
 				Promise.all([
@@ -247,7 +227,7 @@ function createDashboardStore() {
 		},
 
 		refresh() {
-			void load();
+			if (!loading) void load();
 		},
 
 		markStale() {

@@ -30,7 +30,7 @@
 		const known = coverage.map((c) => c.errors).filter((v): v is number => v !== null);
 		return known.length ? known.reduce((a, b) => a + b, 0) : null;
 	});
-	let dropped = $derived(coverage.reduce((a, c) => a + c.hosts_dropped.length, 0));
+	let dropped = $derived(coverage.reduce((a, c) => a + c.hosts_dropped_count, 0));
 	let partial = $derived(coverage.some((c) => c.status === 'partial' || c.status === 'failed'));
 	let Icon = $derived(!ran ? CircleSlash : partial ? TriangleAlert : CircleCheck);
 	let tone = $derived(
@@ -131,12 +131,12 @@
 									by the scanner.
 								</p>
 							{/if}
-							{#if row.hosts_dropped.length}
+							{#if row.hosts_dropped_count && row.hosts_dropped.length}
 								<p class="text-[11px] text-warning">
-									Stopped testing {row.hosts_dropped.length}
-									{row.hosts_dropped.length === 1 ? 'host' : 'hosts'} after repeated errors:
+									Stopped testing {row.hosts_dropped_count}
+									{row.hosts_dropped_count === 1 ? 'host' : 'hosts'} after repeated errors:
 									<span class="font-mono">{row.hosts_dropped[0].host}</span>
-									{#if row.hosts_dropped.length > 1}and {row.hosts_dropped.length - 1} more{/if}
+									{#if row.hosts_dropped_count > 1}and {row.hosts_dropped_count - 1} more{/if}
 								</p>
 							{/if}
 							{#if row.error}

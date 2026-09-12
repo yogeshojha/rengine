@@ -35,6 +35,7 @@ from shared.models.scan import Scan
 from shared.models.tag import Tag, TagSummary
 from shared.models.target import Target
 from shared.models.user import User
+from shared.services.asset_query import lead_cache
 from shared.utils.datetime import utc_now
 
 _SCAN_NOT_FOUND = "Scan not found"
@@ -214,6 +215,7 @@ class NoteService:
         await self.session.flush()
         self.session.add_all([NoteTag(note_id=note.id, tag_id=tag.id) for tag in tags])
         await self.session.commit()
+        await lead_cache.bump((note.target_id,))
         await self.session.refresh(note)
         return await self.read(note)
 
@@ -238,6 +240,7 @@ class NoteService:
             )
         note.updated_at = utc_now()
         await self.session.commit()
+        await lead_cache.bump((note.target_id,))
         await self.session.refresh(note)
         return await self.read(note)
 
@@ -245,6 +248,7 @@ class NoteService:
         note = await self._own(note_id, project_id)
         await self.session.delete(note)
         await self.session.commit()
+        await lead_cache.bump((note.target_id,))
 
     async def read(self, note: Note) -> NoteRead:
         row = (
