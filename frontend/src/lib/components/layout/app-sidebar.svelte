@@ -22,6 +22,7 @@
 	import NavUser from './nav-user.svelte';
 	import ProjectSwitcher from './project-switcher.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import type { ComponentProps } from 'svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
@@ -132,8 +133,10 @@
 	<Sidebar.Header>
 		<ProjectSwitcher />
 	</Sidebar.Header>
-	<Sidebar.Content>
-		<NavMain groups={navGroups} />
+	<Sidebar.Content class="overflow-hidden">
+		<ScrollArea class="min-h-0 flex-1">
+			<NavMain groups={navGroups} />
+		</ScrollArea>
 	</Sidebar.Content>
 	<Sidebar.Footer>
 		<NavUser user={userData} />
