@@ -4,7 +4,7 @@ import uuid
 
 import redis
 from celery import shared_task
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from app.celery import celery_app
@@ -160,8 +160,7 @@ def reap_stalled(self) -> dict:  # noqa: ARG001
                     scan.id,
                     idle,
                 )
-                _close_ledger(session, scan)
-                finalize_scan.apply_async(kwargs={"scan_id": str(scan.id)})
+                _abandon(session, scan)
                 abandoned.append(str(scan.id))
                 continue
             logger.warning(
@@ -174,8 +173,8 @@ def reap_stalled(self) -> dict:  # noqa: ARG001
     return {"resumed": resumed, "abandoned": abandoned}
 
 
-def _close_ledger(session: Session, scan: Scan) -> None:
-    """Fail every stage row the worker never returned to, so finalize can settle."""
+def _abandon(session: Session, scan: Scan) -> None:
+    """Close the ledger so finalize can settle. An empty ledger has nothing to aggregate."""
     session.execute(
         update(ScanActivity)
         .where(
@@ -188,6 +187,21 @@ def _close_ledger(session: Session, scan: Scan) -> None:
             completed_at=utc_now(),
         )
     )
+    session.commit()
+
+    stages = session.scalar(
+        select(func.count())
+        .select_from(ScanActivity)
+        .where(ScanActivity.scan_id == scan.id)
+    )
+    if stages:
+        finalize_scan.apply_async(kwargs={"scan_id": str(scan.id)})
+        return
+
+    scan.status = ScanStatus.FAILED.value
+    scan.error = _ABANDON_REASON
+    scan.completed_at = utc_now()
+    session.add(scan)
     session.commit()
 
 
