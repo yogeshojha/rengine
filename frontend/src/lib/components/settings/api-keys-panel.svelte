@@ -236,7 +236,7 @@
 <div class="space-y-6">
 	<div class="flex items-start justify-between">
 		<div>
-			<h3 class="text-lg font-semibold">API Keys</h3>
+			<h1 class="text-2xl font-semibold tracking-tight">API keys</h1>
 			<p class="text-sm text-muted-foreground">
 				Configure API keys for external intelligence providers. Keys are used instance-wide across
 				all projects.

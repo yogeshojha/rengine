@@ -5,42 +5,47 @@ export const routeLabels: Record<string, string> = {
 
 	surface: 'Attack surface',
 	...Object.fromEntries(SURFACE_ORDER.map((spec) => [spec.tab, spec.label])),
+	exposures: 'Exposures',
 
-	// Reconnaissance
+	// Discovery
 	targets: 'Targets',
 	scans: 'Scans',
 	compare: 'Compare runs',
+	connectors: 'Connectors',
 	notes: 'Notes',
+	'bounty-hub': 'Bounty Hub',
+
+	reports: 'Reports',
+	arsenal: 'Arsenal',
+
+	// Automation
 	automation: 'Automation',
 	engines: 'Scan engines',
 	contexts: 'Scan contexts',
 	schedules: 'Schedules',
 
-	// Tools
-	arsenal: 'Arsenal',
-	exposures: 'Exposures',
-	connectors: 'Connectors',
-	bountyHub: 'Bounty Hub',
-
-	// Reporting
-	reports: 'Reports',
-	ai: 'AI',
-	mcp: 'MCP',
-
 	// Settings
 	settings: 'Settings',
+	general: 'General',
+	'api-keys': 'API keys',
+	proxies: 'Proxies',
+	notifications: 'Notifications',
+	ai: 'AI',
+	mcp: 'MCP',
 
 	profile: 'Profile'
 };
 
-export const SETTINGS_TABS = [
+export const SETTINGS_SECTIONS = [
 	'general',
 	'api-keys',
 	'proxies',
 	'notifications',
-	'bounty-hub'
+	'bounty-hub',
+	'ai',
+	'mcp'
 ] as const;
-export type SettingsTab = (typeof SETTINGS_TABS)[number];
+export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
 
 export const BOUNTY_HUB_TABS = ['programs', 'updates'] as const;
 export type BountyHubTab = (typeof BOUNTY_HUB_TABS)[number];
@@ -96,7 +101,7 @@ export const ROUTES = {
 		const query = params.toString();
 		return `/automation/contexts/new${query ? `?${query}` : ''}`;
 	},
-	schedules: '/schedules',
+	schedules: '/automation/schedules',
 	arsenal: (tab?: ArsenalTab) => (tab ? `/arsenal?tab=${tab}` : '/arsenal'),
 	bountyHub: (handle?: string, platform?: string) =>
 		handle ? `/bounty-hub?program=${handle}&platform=${platform ?? 'hackerone'}` : '/bounty-hub',
@@ -112,10 +117,10 @@ export const ROUTES = {
 	reportTemplate: (id: string) => `/reports/templates/${id}`,
 	reportsForScan: (scanId: string) => `/reports?scan=${scanId}`,
 	reportsForTarget: (targetId: string) => `/reports?target=${targetId}`,
-	ai: (tab?: AiTab) => (tab ? `/ai?tab=${tab}` : '/ai'),
-	mcp: (tab?: McpTab) => (tab ? `/mcp?tab=${tab}` : '/mcp'),
+	ai: (tab?: AiTab) => (tab ? `/settings/ai?tab=${tab}` : '/settings/ai'),
+	mcp: (tab?: McpTab) => (tab ? `/settings/mcp?tab=${tab}` : '/settings/mcp'),
 	connectors: (tab?: ConnectorTab) => (tab ? `/connectors?tab=${tab}` : '/connectors'),
-	settings: (tab?: SettingsTab) => (tab ? `/settings?tab=${tab}` : '/settings')
+	settings: (section?: SettingsSection) => (section ? `/settings/${section}` : '/settings')
 } as const;
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

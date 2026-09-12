@@ -28,11 +28,14 @@
 	import { navAccent } from '$lib/config/nav-accents';
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import { useSidebar } from '$lib/components/ui/sidebar/context.svelte.js';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import { page } from '$app/state';
 	import { SvelteSet } from 'svelte/reactivity';
 
 	let { groups }: { groups: NavGroup[] } = $props();
+
+	const sidebar = useSidebar();
 
 	const isActive = (url: string) => {
 		const path = page.url.pathname;
@@ -53,6 +56,11 @@
 		}
 	});
 	const toggleOpen = (title: string, open: boolean) => {
+		if (!sidebar.isMobile && sidebar.state === 'collapsed') {
+			sidebar.setOpen(true);
+			openItems.add(title);
+			return;
+		}
 		if (open) openItems.add(title);
 		else openItems.delete(title);
 	};
@@ -100,6 +108,7 @@
 		<Sidebar.Menu>
 			{#each group.items as item (item.title)}
 				{#if item.items && item.items.length > 0}
+					{@const accent = isActive(item.url) ? navAccent(item.url) : null}
 					<Collapsible.Root
 						open={openItems.has(item.title)}
 						onOpenChange={(open) => toggleOpen(item.title, open)}
@@ -107,22 +116,21 @@
 					>
 						{#snippet child({ props })}
 							<Sidebar.MenuItem {...props}>
-								<Sidebar.MenuButton tooltipContent={item.title} isActive={isActive(item.url)}>
-									{#snippet child({ props })}
-										{@render link(item, props)}
-									{/snippet}
-								</Sidebar.MenuButton>
 								<Collapsible.Trigger>
 									{#snippet child({ props })}
-										<Sidebar.MenuAction
+										<Sidebar.MenuButton
 											{...props}
-											class="transition-transform data-[state=open]:rotate-90"
-											aria-label={openItems.has(item.title)
-												? `Collapse ${item.title}`
-												: `Expand ${item.title}`}
+											tooltipContent={item.title}
+											isActive={isActive(item.url)}
 										>
-											<ChevronRightIcon class="size-4" />
-										</Sidebar.MenuAction>
+											{#if item.icon}
+												<item.icon class="size-4" style={accent ? `color: ${accent}` : undefined} />
+											{/if}
+											<span>{item.title}</span>
+											<ChevronRightIcon
+												class="ms-auto size-4 transition-transform group-data-[state=open]/collapsible:rotate-90"
+											/>
+										</Sidebar.MenuButton>
 									{/snippet}
 								</Collapsible.Trigger>
 								<Collapsible.Content>

@@ -306,7 +306,7 @@
 <div class="space-y-6">
 	<div class="flex items-start justify-between">
 		<div>
-			<h3 class="text-lg font-semibold">Notifications</h3>
+			<h1 class="text-2xl font-semibold tracking-tight">Notifications</h1>
 			<p class="text-sm text-muted-foreground">
 				Route scan and recon events to Slack, Discord, Telegram, Teams, email or a webhook. Any
 				other Apprise-supported service can be added as a custom URL.

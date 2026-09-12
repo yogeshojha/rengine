@@ -1,21 +1,18 @@
 const ACCENTS: Record<string, string> = {
 	'/dashboard': 'var(--chart-1)',
-	'/targets': 'var(--chart-3)',
 	'/surface/web-assets': 'var(--chart-1)',
 	'/surface/endpoints': 'var(--chart-2)',
 	'/surface/services': 'var(--chart-3)',
 	'/surface/ips': 'var(--chart-5)',
 	'/surface/vulnerabilities': 'var(--destructive)',
-	'/scans': 'var(--chart-2)',
-	'/schedules': 'var(--chart-5)',
-	'/automation': 'var(--chart-4)',
-	'/arsenal': 'var(--chart-1)',
 	'/exposures': 'var(--chart-4)',
 	'/bounty-hub': 'var(--chart-4)',
+	'/targets': 'var(--chart-3)',
+	'/scans': 'var(--chart-2)',
+	'/connectors': 'var(--chart-2)',
 	'/reports': 'var(--chart-3)',
-	'/ai': 'var(--chart-4)',
-	'/mcp': 'var(--chart-5)',
-	'/connectors': 'var(--chart-2)'
+	'/arsenal': 'var(--chart-1)',
+	'/automation': 'var(--chart-4)'
 };
 
 export function navAccent(url: string): string | null {
