@@ -15,6 +15,9 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
+	import CountTabs from '$lib/components/count-tabs.svelte';
+	import SortMenu from './table/sort-menu.svelte';
+	import { Toggle } from '$lib/components/ui/toggle';
 
 	import QueryBar from './query-bar/query-bar.svelte';
 	import ListHeader from './table/list-header.svelte';
@@ -25,6 +28,7 @@
 	import {
 		SOFTWARE_COLUMNS,
 		SOFTWARE_LEAD_COLUMNS,
+		SOFTWARE_SORTS,
 		DEFAULT_VISIBLE_SOFTWARE_COLUMNS
 	} from './software/columns';
 
@@ -34,6 +38,7 @@
 	import { appendToken, type Facet } from '$lib/utilities/scan-insights';
 	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 	import { LiveRefresh } from '$lib/utilities/live-results';
+	import { SEVERITY_LABELS, SEVERITY_ORDER } from '$lib/config/vulnerabilities';
 	import type { QueryError } from '$lib/types/asset-query';
 	import type {
 		SoftwareCoverage,
@@ -110,6 +115,20 @@
 	let errored = $state(false);
 	let facets = $state<SoftwareFacets>(EMPTY_FACETS);
 	let coverage = $state<SoftwareCoverage | null>(null);
+
+	const SEVERITY_TABS = [
+		{ key: 'all', label: 'All' },
+		...SEVERITY_ORDER.filter((k) => k !== 'unknown').map((k) => ({
+			key: k,
+			label: SEVERITY_LABELS[k]
+		}))
+	];
+	const QUICK_FILTERS = [
+		{ token: 'is:new', label: 'New' },
+		{ token: 'is:kev', label: 'Known exploited' },
+		{ token: 'is:firm', label: 'Firm' },
+		{ token: 'is:stated', label: 'Server stated' }
+	];
 	let selected = $state<SoftwareCve | null>(null);
 	let drawerOpen = $state(false);
 
@@ -128,6 +147,15 @@
 	let rowPad = $derived(ROW_PAD[density] ?? ROW_PAD.cozy);
 	let term = $derived(search.trim().includes(':') ? '' : search.trim());
 	let filtered = $derived(Boolean(search.trim()));
+	let severityCounts = $derived.by(() => {
+		const out: Record<string, number> = { all: coverage?.findings ?? 0 };
+		for (const f of facets.severity) out[f.key] = f.count;
+		return out;
+	});
+	let severityTab = $derived.by(() => {
+		const m = search.match(/(?:^|\s)severity:([a-z]+)(?:\s|$)/);
+		return m ? m[1] : 'all';
+	});
 	let barFacets = $derived<Record<string, Facet[]>>({
 		severity: facets.severity.map((f) => ({ value: f.key, label: f.label, count: f.count })),
 		confidence: facets.confidence.map((f) => ({ value: f.key, label: f.label, count: f.count })),
@@ -247,6 +275,23 @@
 		schedule();
 	}
 
+	function setSeverityTab(key: string) {
+		const without = search.replace(/(?:^|\s)severity:[a-z]+/g, '').trim();
+		onQuery(key === 'all' ? without : `${without} severity:${key}`.trim());
+	}
+
+	function hasToken(token: string) {
+		return new RegExp(`(?:^|\\s)${token}(?:\\s|$)`).test(search);
+	}
+
+	function toggleToken(token: string) {
+		if (!hasToken(token)) {
+			onQuery(appendToken(search, token));
+			return;
+		}
+		onQuery(search.replace(new RegExp(`(?:^|\\s)${token}`, 'g'), '').trim());
+	}
+
 	function onToken(token: string) {
 		onQuery(appendToken(search, token));
 	}
@@ -270,88 +315,117 @@
 	}
 </script>
 
-<Card.Root class="flex min-h-0 flex-col">
-	<Card.Header class="gap-3 pb-3">
-		<div class="flex flex-wrap items-center justify-between gap-2">
-			<div class="flex items-center gap-2">
-				<Card.Title class="text-base">Software CVEs</Card.Title>
-				<Hint text="Reported versions matched against the NVD corpus. Not confirmed by a request.">
-					{#snippet child(props)}
-						<Badge {...props} variant="outline" class="h-5 px-1.5 text-2xs">Inferred</Badge>
-					{/snippet}
-				</Hint>
-			</div>
-			{#if refreshing}
-				<RefreshCw class="size-3.5 animate-spin text-muted-foreground" />
-			{/if}
+<div class="z-20 bg-background md:sticky md:top-[var(--scan-tabs-h,0px)] md:pt-2">
+	<QueryBar
+		store={softwareQuerySchema}
+		recentsKey={STORAGE_KEYS.softwareRecentQueries}
+		hint="severity:critical and is:stated"
+		value={search}
+		facets={barFacets}
+		onChange={onQuery}
+		busy={refreshing}
+		total={errored ? null : total}
+		capped={totalCapped}
+		serverError={queryError}
+		onReady={(value) => (queryReady = value)}
+	/>
+</div>
+
+<Card.Root class="gap-0 overflow-hidden rounded-t-none border-t-0 py-0">
+	<div class="flex items-center gap-3 border-b pr-3 pl-2">
+		<div class="min-w-0 flex-1">
+			<CountTabs
+				tabs={SEVERITY_TABS}
+				value={severityTab}
+				counts={severityCounts}
+				onChange={setSeverityTab}
+			/>
 		</div>
+		<Hint text="Reported versions matched against the NVD corpus. Not confirmed by a request.">
+			{#snippet child(props)}
+				<Badge {...props} variant="outline" class="h-5 shrink-0 px-1.5 text-2xs">Inferred</Badge>
+			{/snippet}
+		</Hint>
+	</div>
 
-		<QueryBar
-			store={softwareQuerySchema}
-			recentsKey={STORAGE_KEYS.softwareRecentQueries}
-			hint="Search software CVEs"
-			value={search}
-			facets={barFacets}
-			onChange={onQuery}
-			busy={refreshing}
-			total={queryError ? null : total}
-			capped={totalCapped}
-			serverError={queryError}
-			onReady={(value) => (queryReady = value)}
-		/>
+	{#if coverage && !coverage.feed_ready}
+		<div class="flex items-start gap-2 border-b bg-muted/10 px-4 py-2 text-xs">
+			<TriangleAlert class="mt-0.5 size-3.5 shrink-0 text-warning" />
+			<span class="text-muted-foreground">
+				The NVD corpus has not been downloaded. Turn on feed downloads in Arsenal.
+			</span>
+		</div>
+	{:else if coverage && coverage.components > 0}
+		<div class="border-b bg-muted/10 px-4 py-2 text-xs text-muted-foreground">
+			{coverage.mapped.toLocaleString()} of {coverage.components.toLocaleString()} reported components
+			map to an NVD product.
+		</div>
+	{/if}
 
-		{#if coverage && !coverage.feed_ready}
-			<div
-				class="flex items-start gap-2 rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs"
+	<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/10 px-4 py-2">
+		{#each QUICK_FILTERS as filter (filter.token)}
+			<Toggle
+				size="sm"
+				variant="outline"
+				pressed={hasToken(filter.token)}
+				onPressedChange={() => toggleToken(filter.token)}
+				class="h-7 px-2.5 text-xs font-normal"
 			>
-				<TriangleAlert class="mt-0.5 size-3.5 shrink-0 text-[var(--warning)]" />
-				<span class="text-muted-foreground">
-					The NVD corpus has not been downloaded. Turn on feed downloads in Settings.
-				</span>
-			</div>
-		{:else if coverage && coverage.unmapped > 0}
-			<p class="text-xs text-muted-foreground">
-				{coverage.mapped.toLocaleString()} of {coverage.components.toLocaleString()} reported components
-				map to an NVD product.
-			</p>
-		{/if}
-	</Card.Header>
-
-	<Card.Content class="flex min-h-0 flex-col gap-0 p-0">
-		{#if loading}
-			<div class="flex flex-col gap-2 px-4 pb-4">
-				{#each Array(6) as _, i (i)}
-					<Skeleton class="h-10 w-full" />
-				{/each}
-			</div>
-		{:else if errored}
-			<EmptyState icon={TriangleAlert} title="Software CVEs not loaded">
-				<Button variant="outline" size="sm" onclick={() => void runSearch()}>Retry</Button>
-			</EmptyState>
-		{:else if coverage && coverage.components === 0}
-			<EmptyState icon={Package} title="No software versions reported" />
-		{:else if items.length === 0}
-			<EmptyState
-				icon={filtered ? SearchX : Package}
-				title={filtered ? 'No software CVEs match' : 'No software CVEs'}
+				{filter.label}
+			</Toggle>
+		{/each}
+		<div class="ml-auto flex items-center gap-1.5">
+			<SortMenu sorts={SOFTWARE_SORTS} sortKey={sort.key} sortDir={sort.dir} {onSort} />
+			<Button
+				variant="ghost"
+				size="icon"
+				class="size-7"
+				aria-label="Refresh"
+				onclick={() => {
+					void runSearch();
+					void loadSide();
+				}}
 			>
-				{#if filtered}
-					<Button variant="outline" size="sm" onclick={() => onQuery('')}>Clear query</Button>
-				{/if}
-			</EmptyState>
-		{:else}
-			<ScrollArea orientation="horizontal" class="min-h-0">
-				<div class="min-w-max">
-					<ListHeader
-						lead={projectWide
-							? [{ key: 'target', label: 'Target', width: 'w-40' }, ...SOFTWARE_LEAD_COLUMNS]
-							: SOFTWARE_LEAD_COLUMNS}
-						columns={shownColumns.filter((c) => c.key !== 'target')}
-						sortKey={sort.key}
-						sortDir={sort.dir}
-						{onSort}
-					/>
-					{#each items as row, index (row.id)}
+				<RefreshCw class="size-3.5 {refreshing ? 'animate-spin' : ''}" />
+			</Button>
+		</div>
+	</div>
+
+	{#if loading}
+		<div class="flex flex-col gap-2 px-4 py-4">
+			{#each Array(6) as _, i (i)}
+				<Skeleton class="h-10 w-full" />
+			{/each}
+		</div>
+	{:else if errored}
+		<EmptyState icon={TriangleAlert} title="Software CVEs not loaded">
+			<Button variant="outline" size="sm" onclick={() => void runSearch()}>Retry</Button>
+		</EmptyState>
+	{:else if coverage && coverage.components === 0}
+		<EmptyState icon={Package} title="No software versions reported" />
+	{:else if items.length === 0}
+		<EmptyState
+			icon={filtered ? SearchX : Package}
+			title={filtered ? 'No software CVEs match' : 'No software CVEs'}
+		>
+			{#if filtered}
+				<Button variant="outline" size="sm" onclick={() => onQuery('')}>Clear query</Button>
+			{/if}
+		</EmptyState>
+	{:else}
+		<ScrollArea orientation="horizontal" class="min-h-0">
+			<div class="min-w-max">
+				<ListHeader
+					lead={projectWide
+						? [{ key: 'target', label: 'Target', width: 'w-40' }, ...SOFTWARE_LEAD_COLUMNS]
+						: SOFTWARE_LEAD_COLUMNS}
+					columns={shownColumns.filter((c) => c.key !== 'target')}
+					sortKey={sort.key}
+					sortDir={sort.dir}
+					{onSort}
+				/>
+				<div class="divide-y divide-border/50 transition-opacity {refreshing ? 'opacity-60' : ''}">
+					{#each items as row (row.id)}
 						<SoftwareRow
 							{row}
 							{term}
@@ -363,27 +437,26 @@
 							onOpen={openRow}
 							{onToken}
 						/>
-						{void index}
 					{/each}
 				</div>
-			</ScrollArea>
+			</div>
+		</ScrollArea>
 
-			<ResultsPagination
-				{total}
-				page={pageIndex + 1}
-				{pageSize}
-				capped={totalCapped}
-				noun="software CVE"
-				plural="software CVEs"
-				{onPage}
-				onPageSize={(size) => {
-					pageSize = size;
-					pageIndex = 0;
-					void runSearch();
-				}}
-			/>
-		{/if}
-	</Card.Content>
+		<ResultsPagination
+			{total}
+			page={pageIndex + 1}
+			{pageSize}
+			capped={totalCapped}
+			noun="software CVE"
+			plural="software CVEs"
+			{onPage}
+			onPageSize={(size) => {
+				pageSize = size;
+				pageIndex = 0;
+				void runSearch();
+			}}
+		/>
+	{/if}
 </Card.Root>
 
 <SoftwareDetailSheet
