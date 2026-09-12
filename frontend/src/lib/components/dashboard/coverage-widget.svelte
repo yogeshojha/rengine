@@ -56,13 +56,13 @@
 				key: 'fresh',
 				label: `Scanned in the last ${FRESH_DAYS} days`,
 				n: buckets.fresh,
-				color: 'var(--chart-2)'
+				color: 'var(--success)'
 			},
 			{
 				key: 'aging',
 				label: `Scanned ${FRESH_DAYS} to ${STALE_DAYS} days ago`,
 				n: buckets.aging,
-				color: 'var(--chart-4)'
+				color: 'var(--warning)'
 			},
 			{
 				key: 'stale',
@@ -226,7 +226,7 @@
 						{#snippet child(props)}
 							<span {...props} class="flex h-full flex-1 items-end">
 								<span
-									class="block w-full rounded-sm {d.failed ? 'bg-destructive/70' : 'bg-chart-1/70'}"
+									class="block w-full rounded-sm {d.failed ? 'bg-destructive/70' : 'bg-series/70'}"
 									style="height:{d.runs
 										? Math.max(12, (d.runs / maxRuns) * 100)
 										: 4}%;opacity:{d.runs ? 1 : 0.25}"

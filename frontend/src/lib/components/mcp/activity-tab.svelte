@@ -378,7 +378,7 @@
 							</span>
 							<span class="h-1 w-full overflow-hidden rounded-full bg-muted">
 								<span
-									class="block h-full rounded-full bg-chart-1 {tool && tool !== t.name
+									class="block h-full rounded-full bg-series {tool && tool !== t.name
 										? 'opacity-40'
 										: ''}"
 									style="width: {(t.count / maxTool) * 100}%"

@@ -121,7 +121,7 @@
 				<button
 					{...props}
 					type="button"
-					class="inline-flex items-center gap-1 text-[11px] text-chart-1 hover:text-chart-1/80 transition-colors cursor-pointer"
+					class="inline-flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 transition-colors cursor-pointer"
 					onclick={handleClick}
 				>
 					<Sparkles class="h-3 w-3" />

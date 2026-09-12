@@ -88,7 +88,7 @@
 				</span>
 			{/if}
 			{#if fresh}
-				<span class="size-1.5 rounded-full bg-chart-1"></span>
+				<span class="size-1.5 rounded-full bg-info"></span>
 			{/if}
 			<span class="font-mono text-[10px] text-muted-foreground tabular-nums">
 				{collapsed ? `${eventCount} · ${timeAgo}` : timeAgo}

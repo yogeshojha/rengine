@@ -175,7 +175,7 @@ export const BAND_HELP: Record<string, string> = {
 
 export const BAND_FILL: Record<string, string> = {
 	[ExploitBand.VERY_LIKELY]: 'var(--destructive)',
-	[ExploitBand.LIKELY]: 'var(--chart-4)',
+	[ExploitBand.LIKELY]: 'var(--sev-high)',
 	[ExploitBand.POSSIBLE]: 'var(--warning)',
 	[ExploitBand.UNLIKELY]: 'var(--muted-foreground)'
 };

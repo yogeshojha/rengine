@@ -314,37 +314,38 @@ def validate_embedded_image(value: str, field: str) -> str:
 
 
 DEFAULT_SEVERITY_COLORS: dict[str, str] = {
-    "critical": "#d02f43",
-    "high": "#f07c21",
-    "medium": "#e7c65c",
-    "low": "#3c8edf",
-    "info": "#a8bacb",
-    "unknown": "#a8bacb",
+    "critical": "#d40924",
+    "high": "#e96500",
+    "medium": "#d6ab1b",
+    "low": "#0098b7",
+    "info": "#a0b1b6",
+    "unknown": "#a0b1b6",
 }
 
 # the same ramp restepped for dark paper
 DARK_SEVERITY_COLORS: dict[str, str] = {
-    "critical": "#ed566f",
-    "high": "#f3963e",
-    "medium": "#efda79",
-    "low": "#69bbff",
-    "info": "#858f9a",
-    "unknown": "#858f9a",
+    "critical": "#ff645f",
+    "high": "#f98942",
+    "medium": "#eec651",
+    "low": "#26b7d3",
+    "info": "#85969a",
+    "unknown": "#85969a",
 }
 
+# the categorical scale the UI draws with, mirrors frontend/src/app.css --chart-1..5
 DEFAULT_CHART_PALETTE: tuple[str, ...] = (
-    "#2a78d6",
-    "#eb6834",
-    "#1baf7a",
-    "#eda100",
-    "#e87ba4",
+    "#0091ad",
+    "#008a39",
+    "#943ca7",
+    "#c85d00",
+    "#cd3380",
 )
 DARK_CHART_PALETTE: tuple[str, ...] = (
-    "#3987e5",
-    "#d95926",
-    "#199e70",
-    "#c98500",
-    "#d55181",
+    "#21a3bc",
+    "#139948",
+    "#b25ec5",
+    "#d97230",
+    "#d8488c",
 )
 
 

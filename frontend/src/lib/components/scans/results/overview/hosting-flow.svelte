@@ -460,17 +460,13 @@
 
 <style>
 	.flow {
-		--flow-edge: oklch(0.62 0.17 245);
-		--flow-cloud: oklch(0.6 0.21 300);
-		--flow-direct: oklch(0.66 0.16 160);
-		--flow-other: oklch(0.68 0.02 265);
+		--flow-edge: var(--chart-1);
+		--flow-cloud: var(--chart-3);
+		--flow-direct: var(--chart-4);
+		--flow-other: var(--series);
 		--flow-ribbon: 0.45;
 	}
 	:global(.dark) .flow {
-		--flow-edge: oklch(0.74 0.15 240);
-		--flow-cloud: oklch(0.72 0.17 300);
-		--flow-direct: oklch(0.76 0.15 160);
-		--flow-other: oklch(0.6 0.02 265);
 		--flow-ribbon: 0.5;
 	}
 	:global(.dark) .flow .ribbon {

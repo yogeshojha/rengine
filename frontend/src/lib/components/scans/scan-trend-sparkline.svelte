@@ -14,11 +14,11 @@
 
 	let data = $derived(values.map((v, i) => ({ i: String(i), v })));
 
-	let config = $derived({ v: { label, color: 'var(--chart-1)' } } satisfies Chart.ChartConfig);
-	let series = $derived([{ key: 'v', label, color: 'var(--chart-1)' }]);
+	let config = $derived({ v: { label, color: 'var(--series)' } } satisfies Chart.ChartConfig);
+	let series = $derived([{ key: 'v', label, color: 'var(--series)' }]);
 	const stops = [
-		'color-mix(in oklab, var(--chart-1) 30%, transparent)',
-		'color-mix(in oklab, var(--chart-1) 2%, transparent)'
+		'color-mix(in oklab, var(--series) 30%, transparent)',
+		'color-mix(in oklab, var(--series) 2%, transparent)'
 	];
 </script>
 

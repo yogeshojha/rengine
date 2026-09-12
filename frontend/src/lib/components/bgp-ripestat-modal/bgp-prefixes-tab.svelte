@@ -114,7 +114,7 @@
 							v{prefix.ip_version}
 						</Badge>
 						{#if active}
-							<span class="inline-block h-1.5 w-1.5 rounded-full bg-chart-1 shrink-0"></span>
+							<span class="inline-block h-1.5 w-1.5 rounded-full bg-series shrink-0"></span>
 						{/if}
 					</div>
 

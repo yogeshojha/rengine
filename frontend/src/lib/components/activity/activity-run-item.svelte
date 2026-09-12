@@ -121,7 +121,7 @@
 					<span class="font-mono text-[10px] text-muted-foreground tabular-nums">{timeAgo}</span>
 					{#if isNew}
 						<span
-							class="new-badge inline-flex h-4 items-center rounded px-1 text-[10px] font-semibold tracking-wide text-chart-1 uppercase"
+							class="new-badge inline-flex h-4 items-center rounded px-1 text-[10px] font-semibold tracking-wide text-info uppercase"
 						>
 							new
 						</span>

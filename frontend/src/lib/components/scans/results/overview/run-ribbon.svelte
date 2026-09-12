@@ -56,7 +56,7 @@
 	const INSIGHT_SHARE = 0.5;
 	const MIN_METER = 4;
 	const FILL: Record<'done' | 'running' | 'failed' | 'stopped' | 'partial' | 'pending', string> = {
-		done: 'var(--chart-1)',
+		done: 'var(--success)',
 		running: 'var(--info)',
 		failed: 'var(--destructive)',
 		stopped: 'var(--warning)',

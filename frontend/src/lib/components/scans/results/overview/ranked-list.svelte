@@ -77,7 +77,7 @@
 				</span>
 				<span class="block h-1 w-full overflow-hidden rounded-full bg-muted" aria-hidden="true">
 					<span
-						class="block h-full rounded-full bg-chart-1"
+						class="block h-full rounded-full bg-series"
 						style="width:{Math.max(MIN_METER, share(r.count))}%"
 					></span>
 				</span>

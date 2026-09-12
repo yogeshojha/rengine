@@ -191,7 +191,7 @@
 												class="cursor-pointer"
 											>
 												<span
-													class="inline-flex items-center text-[11px] border border-border/60 rounded-md overflow-hidden hover:ring-1 hover:ring-chart-1/30 transition-shadow"
+													class="inline-flex items-center text-[11px] border border-border/60 rounded-md overflow-hidden hover:ring-1 hover:ring-ring/30 transition-shadow"
 												>
 													<span class="px-2 py-1 font-medium bg-muted/60 text-foreground/70">
 														{reasonLabel(type)?.full ?? type}

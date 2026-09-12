@@ -23,8 +23,8 @@
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 
 	const chartConfig = {
-		scans: { label: 'Scans', color: 'var(--chart-1)' },
-		new_subdomains: { label: `New ${WEB.nounPlural}`, color: 'var(--chart-1)' }
+		scans: { label: 'Scans', color: 'var(--series)' },
+		new_subdomains: { label: `New ${WEB.nounPlural}`, color: 'var(--series)' }
 	} satisfies Chart.ChartConfig;
 
 	const METRICS: { value: Metric; label: string; unit: string }[] = [
@@ -83,8 +83,8 @@
 			timeZone: 'UTC'
 		});
 	const stops = [
-		'color-mix(in oklab, var(--chart-1) 85%, transparent)',
-		'color-mix(in oklab, var(--chart-1) 20%, transparent)'
+		'color-mix(in oklab, var(--series) 85%, transparent)',
+		'color-mix(in oklab, var(--series) 20%, transparent)'
 	];
 </script>
 

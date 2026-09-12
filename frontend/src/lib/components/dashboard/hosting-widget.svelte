@@ -43,7 +43,7 @@
 						key: 'direct',
 						label: 'Direct to origin',
 						n: hosting.direct,
-						color: 'var(--chart-2)',
+						color: 'var(--chart-4)',
 						q: HOSTING_QUERIES.direct
 					}
 				].filter((s) => s.n > 0)

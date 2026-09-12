@@ -37,7 +37,7 @@
 			<span class="relative flex h-2 w-2 shrink-0">
 				{#if activityFeed.isLive}
 					<span
-						class="absolute inline-flex h-full w-full animate-ping rounded-full bg-chart-1 opacity-75"
+						class="absolute inline-flex h-full w-full animate-ping rounded-full bg-info opacity-75"
 					></span>
 				{/if}
 				<span class="relative inline-flex h-2 w-2 rounded-full {statusDot}"></span>
@@ -81,7 +81,7 @@
 			{#if activityFeed.newCount > 0}
 				<span
 					in:fly={{ y: -4, duration: 180 }}
-					class="ml-0.5 inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-chart-1/15 px-1 text-[10px] font-semibold text-chart-1"
+					class="ml-0.5 inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-info/15 px-1 text-[10px] font-semibold text-info"
 				>
 					{activityFeed.newCount}
 				</span>

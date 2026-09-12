@@ -358,7 +358,7 @@
 									</span>
 									<span class="flex h-1 w-full overflow-hidden rounded-full bg-muted">
 										<span
-											class="h-full rounded-full bg-[var(--chart-1)]"
+											class="h-full rounded-full bg-series"
 											style="width:{(spec.count / maxSet) * 100}%"
 										></span>
 									</span>

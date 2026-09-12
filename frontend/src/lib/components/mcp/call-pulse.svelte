@@ -56,8 +56,8 @@
 					<div
 						class="w-full rounded-[2px] transition-[opacity,background-color] duration-150 {b.calls
 							? hovered === null || hovered === i
-								? 'bg-chart-1'
-								: 'bg-chart-1/40'
+								? 'bg-info'
+								: 'bg-info/40'
 							: 'bg-muted-foreground/15'}"
 						style="height: {height}px"
 					></div>

@@ -67,7 +67,7 @@
 							<span class="truncate font-medium">{user.name}</span>
 							<span class="truncate text-xs">{user.email}</span>
 							{#if user.is_superuser}
-								<Badge variant="secondary" class="bg-chart-1/15 text-chart-1 mt-1">
+								<Badge variant="secondary" class="bg-primary/15 text-primary mt-1">
 									<ShieldIcon class="w-3 h-3 mr-1" />
 									Admin
 								</Badge>
@@ -112,14 +112,14 @@
 				<a
 					href="https://github.com/yogeshojha/rengine"
 					target="_blank"
-					class="text-sm text-chart-1 hover:underline"
+					class="text-sm text-primary hover:underline"
 				>
 					github.com/yogeshojha/rengine
 				</a>
 			</div>
 			<div class="space-y-2">
 				<h4 class="font-medium">Wiki</h4>
-				<a href="https://rengine.wiki" target="_blank" class="text-sm text-chart-1 hover:underline">
+				<a href="https://rengine.wiki" target="_blank" class="text-sm text-primary hover:underline">
 					rengine.wiki
 				</a>
 			</div>

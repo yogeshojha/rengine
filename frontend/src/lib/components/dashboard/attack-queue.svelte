@@ -92,7 +92,7 @@
 				count: t.findings,
 				mono: true,
 				sub: t.kev ? `${t.kev} KEV` : (SEVERITY_LABELS[t.worst_severity ?? ''] ?? undefined),
-				tone: t.worst_severity ? SEVERITY_FILL[t.worst_severity] : 'var(--chart-1)',
+				tone: t.worst_severity ? SEVERITY_FILL[t.worst_severity] : 'var(--series)',
 				href: t.risk_scan_id ? ROUTES.scanTab(t.risk_scan_id, VULNS.tab) : undefined
 			}))
 	);

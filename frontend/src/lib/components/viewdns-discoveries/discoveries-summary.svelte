@@ -423,7 +423,7 @@
 										{#if sr.newDomains.length > 0}
 											<Badge
 												variant="outline"
-												class="text-[10px] h-5 px-1.5 font-normal text-chart-1 border-chart-1/30"
+												class="text-[10px] h-5 px-1.5 font-normal text-primary border-primary/30"
 											>
 												{sr.newDomains.length.toLocaleString()} new
 											</Badge>

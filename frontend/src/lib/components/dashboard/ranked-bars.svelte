@@ -64,7 +64,7 @@
 					<span class="h-1 w-full overflow-hidden rounded-full bg-muted">
 						<span
 							class="block h-full rounded-full"
-							style="width:{width(r.count)}%;background:{r.tone ?? 'var(--chart-1)'}"
+							style="width:{width(r.count)}%;background:{r.tone ?? 'var(--series)'}"
 						></span>
 					</span>
 				</span>

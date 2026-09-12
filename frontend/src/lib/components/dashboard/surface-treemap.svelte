@@ -107,12 +107,12 @@
 	let rects = $derived(squarify(leaves, Math.max(0, width), HEIGHT));
 
 	function fill(l: Leaf): string {
-		const base = l.severity ? (SEVERITY_FILL[l.severity] ?? 'var(--chart-1)') : 'var(--chart-1)';
+		const base = l.severity ? (SEVERITY_FILL[l.severity] ?? 'var(--series)') : 'var(--series)';
 		const wash = l.severity ? 34 : 18;
 		return `color-mix(in oklch, ${base} ${wash}%, transparent)`;
 	}
 	function edge(l: Leaf): string {
-		return l.severity ? (SEVERITY_FILL[l.severity] ?? 'var(--chart-1)') : 'var(--chart-1)';
+		return l.severity ? (SEVERITY_FILL[l.severity] ?? 'var(--series)') : 'var(--series)';
 	}
 	function hint(l: Leaf): string {
 		const parts = [

@@ -241,7 +241,7 @@
 						onclick={() => onScan(target)}
 					>
 						{#if isScanning}
-							<Spinner class="h-4 w-4 text-chart-1" />
+							<Spinner class="h-4 w-4 text-info" />
 						{:else}
 							<Play class="h-4 w-4" />
 						{/if}

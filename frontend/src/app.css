@@ -7,6 +7,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* hue anchors: indigo 264 interactive · red 25 · orange 50 · amber 90 · green 150 · cyan 215 · purple 320 · magenta 355 */
 :root {
 	--background: oklch(1 0 0);
 	--foreground: oklch(0.145 0.012 265);
@@ -22,32 +23,30 @@
 	--muted-foreground: oklch(0.556 0.018 265);
 	--accent: oklch(0.955 0.014 265);
 	--accent-foreground: oklch(0.205 0.014 265);
-	--destructive: oklch(0.577 0.245 27.325);
+	--destructive: oklch(0.55 0.22 25);
 	--destructive-foreground: oklch(1 0 0);
 	--success: oklch(0.52 0.12 150);
 	--success-foreground: oklch(0.985 0 0);
-	--warning: oklch(0.5 0.12 75);
+	--warning: oklch(0.5 0.12 90);
 	--warning-foreground: oklch(0.985 0 0);
-	/* severity — the same ramp the report prints, mirrors shared/definitions/reports.py.
-	   Lightness carries the rank so it survives deuteranopia; never colour alone. */
-	--sev-critical: #d02f43;
-	--sev-critical-wash: #ffebea;
-	--sev-critical-ink: #991129;
-	--sev-high: #f07c21;
-	--sev-high-wash: #ffefe0;
-	--sev-high-ink: #8c3200;
-	--sev-medium: #e7c65c;
-	--sev-medium-wash: #fbf4e1;
-	--sev-medium-ink: #684f00;
-	--sev-low: #3c8edf;
-	--sev-low-wash: #e7f6ff;
-	--sev-low-ink: #075494;
-	--sev-info: #a8bacb;
-	--sev-info-wash: #f1f5f8;
-	--sev-info-ink: #475461;
+	/* severity, mirrors shared/definitions/reports.py */
+	--sev-critical: #d40924;
+	--sev-critical-wash: #ffebe8;
+	--sev-critical-ink: #940015;
+	--sev-high: #e96500;
+	--sev-high-wash: #ffebda;
+	--sev-high-ink: #923900;
+	--sev-medium: #d6ab1b;
+	--sev-medium-wash: #fff5d7;
+	--sev-medium-ink: #765900;
+	--sev-low: #0098b7;
+	--sev-low-wash: #e4f6fa;
+	--sev-low-ink: #006278;
+	--sev-info: #a0b1b6;
+	--sev-info-wash: #eef3f4;
+	--sev-info-ink: #49585c;
 
-	/* code — a reserved syntax ramp, like severity. Roles map to fixed hues and each
-	   theme keeps one lightness band, so every kind clears 4.5:1 on --code-surface. */
+	/* code, a reserved syntax ramp */
 	--code-surface: oklch(0.982 0.004 265);
 	--code-fg: oklch(0.38 0.014 265);
 	--code-keyword: oklch(0.53 0.19 350);
@@ -65,17 +64,18 @@
 	--code-punct: oklch(0.62 0.016 265);
 	--code-gutter: oklch(0.65 0.014 265);
 	--code-mark: oklch(0.88 0.09 95);
-	--info: oklch(0.52 0.16 252);
+	--info: oklch(0.52 0.12 215);
 	--info-foreground: oklch(0.985 0 0);
 	--border: oklch(0.922 0.01 265);
 	--input: oklch(0.922 0.01 265);
 	--ring: oklch(0.55 0.14 264);
-	--chart-1: oklch(0.52 0.16 258);
-	--chart-2: oklch(0.56 0.14 152);
-	--chart-3: oklch(0.5 0.19 330);
-	--chart-4: oklch(0.62 0.16 55);
-	--chart-5: oklch(0.6 0.12 210);
-	--sidebar: oklch(0.985 0.004 265);
+	--series: oklch(0.45 0.02 265);
+	--chart-1: oklch(0.6 0.12 215);
+	--chart-2: oklch(0.55 0.16 150);
+	--chart-3: oklch(0.52 0.18 320);
+	--chart-4: oklch(0.6 0.16 50);
+	--chart-5: oklch(0.58 0.2 355);
+	--sidebar: oklch(0.975 0.005 265);
 	--sidebar-foreground: oklch(0.145 0.012 265);
 	--sidebar-primary: oklch(0.55 0.18 264);
 	--sidebar-primary-foreground: oklch(0.985 0.004 265);
@@ -122,30 +122,30 @@
 	--muted-foreground: oklch(0.708 0.018 265);
 	--accent: oklch(0.371 0.016 265);
 	--accent-foreground: oklch(0.985 0.003 265);
-	--destructive: oklch(0.704 0.191 22.216);
+	--destructive: oklch(0.7 0.19 25);
 	--destructive-foreground: oklch(0.985 0 0);
-	--success: oklch(0.72 0.13 152);
+	--success: oklch(0.72 0.13 150);
 	--success-foreground: oklch(0.205 0 0);
-	--warning: oklch(0.8 0.14 80);
+	--warning: oklch(0.82 0.14 90);
 	--warning-foreground: oklch(0.205 0 0);
-	/* severity, restepped for the dark surface */
-	--sev-critical: #ed566f;
-	--sev-critical-wash: #331b22;
-	--sev-critical-ink: #ed566f;
-	--sev-high: #f3963e;
-	--sev-high-wash: #34241e;
-	--sev-high-ink: #f3963e;
-	--sev-medium: #efda79;
-	--sev-medium-wash: #333023;
-	--sev-medium-ink: #efda79;
-	--sev-low: #69bbff;
-	--sev-low-wash: #1c2a39;
-	--sev-low-ink: #69bbff;
-	--sev-info: #858f9a;
-	--sev-info-wash: #202328;
-	--sev-info-ink: #858f9a;
+	/* severity, dark paper */
+	--sev-critical: #ff645f;
+	--sev-critical-wash: #3b1c1a;
+	--sev-critical-ink: #ff645f;
+	--sev-high: #f98942;
+	--sev-high-wash: #362014;
+	--sev-high-ink: #f98942;
+	--sev-medium: #eec651;
+	--sev-medium-wash: #312810;
+	--sev-medium-ink: #eec651;
+	--sev-low: #26b7d3;
+	--sev-low-wash: #11282d;
+	--sev-low-ink: #26b7d3;
+	--sev-info: #85969a;
+	--sev-info-wash: #1d2021;
+	--sev-info-ink: #85969a;
 
-	/* code, restepped for the dark well */
+	/* code, dark well */
 	--code-surface: oklch(0.19 0.012 265);
 	--code-fg: oklch(0.86 0.008 265);
 	--code-keyword: oklch(0.75 0.18 350);
@@ -163,16 +163,17 @@
 	--code-punct: oklch(0.65 0.016 265);
 	--code-gutter: oklch(0.52 0.014 265);
 	--code-mark: oklch(0.42 0.1 95);
-	--info: oklch(0.72 0.14 252);
+	--info: oklch(0.74 0.12 215);
 	--info-foreground: oklch(0.205 0 0);
 	--border: oklch(0.275 0.012 265);
 	--input: oklch(0.325 0.014 265);
 	--ring: oklch(0.65 0.14 264);
-	--chart-1: oklch(0.62 0.15 258);
-	--chart-2: oklch(0.64 0.13 152);
-	--chart-3: oklch(0.58 0.17 330);
-	--chart-4: oklch(0.655 0.14 55);
-	--chart-5: oklch(0.66 0.11 210);
+	--series: oklch(0.75 0.02 265);
+	--chart-1: oklch(0.66 0.11 215);
+	--chart-2: oklch(0.6 0.16 150);
+	--chart-3: oklch(0.62 0.17 320);
+	--chart-4: oklch(0.66 0.15 50);
+	--chart-5: oklch(0.62 0.19 355);
 	--sidebar: oklch(0.205 0.01 265);
 	--sidebar-foreground: oklch(0.985 0.003 265);
 	--sidebar-primary: oklch(0.7 0.16 264);
@@ -245,6 +246,7 @@
 	--color-border: var(--border);
 	--color-input: var(--input);
 	--color-ring: var(--ring);
+	--color-series: var(--series);
 	--color-chart-1: var(--chart-1);
 	--color-chart-2: var(--chart-2);
 	--color-chart-3: var(--chart-3);

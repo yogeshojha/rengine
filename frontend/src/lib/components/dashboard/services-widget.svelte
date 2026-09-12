@@ -50,7 +50,7 @@
 			count: t.count,
 			sub: t.sensitive ? 'sensitive' : undefined,
 			href: link(t.query),
-			tone: t.sensitive ? 'var(--destructive)' : 'var(--chart-1)'
+			tone: t.sensitive ? 'var(--destructive)' : 'var(--series)'
 		}))
 	);
 </script>

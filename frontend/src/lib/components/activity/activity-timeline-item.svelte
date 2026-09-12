@@ -42,7 +42,7 @@
 		warning: 'bg-warning/10 text-warning ring-1 ring-warning/30',
 		error: 'bg-destructive/10 text-destructive ring-1 ring-destructive/40'
 	};
-	const RUNNING_TINT = 'bg-chart-1/10 text-chart-1 ring-1 ring-chart-1/30';
+	const RUNNING_TINT = 'bg-info/10 text-info ring-1 ring-info/30';
 
 	function navigate(targetId: string | null) {
 		if (!targetId) return;
@@ -73,7 +73,7 @@
 		<span class="font-mono text-[10px] tabular-nums text-muted-foreground">{timeAgo}</span>
 		{#if isNew}
 			<span
-				class="new-badge inline-flex h-4 items-center rounded px-1 text-[10px] font-semibold uppercase tracking-wide text-chart-1"
+				class="new-badge inline-flex h-4 items-center rounded px-1 text-[10px] font-semibold uppercase tracking-wide text-info"
 			>
 				new
 			</span>
@@ -159,7 +159,7 @@
 								>{primary.title}</span
 							>
 							{#if running}
-								<span class="shrink-0 text-[10px] font-medium uppercase tracking-wide text-chart-1"
+								<span class="shrink-0 text-[10px] font-medium uppercase tracking-wide text-info"
 									>running</span
 								>
 							{/if}

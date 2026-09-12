@@ -25,7 +25,6 @@
 
 <script lang="ts">
 	import { cn } from '$lib/utils';
-	import { navAccent } from '$lib/config/nav-accents';
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { useSidebar } from '$lib/components/ui/sidebar/context.svelte.js';
@@ -67,11 +66,9 @@
 </script>
 
 {#snippet link(item: NavItem, props: Record<string, unknown>)}
-	{@const active = isActive(item.url)}
-	{@const accent = active ? navAccent(item.url) : null}
 	<a href={item.url} {...props}>
 		{#if item.icon}
-			<item.icon class="size-4" style={accent ? `color: ${accent}` : undefined} />
+			<item.icon class="size-4" />
 		{/if}
 		<span>{item.title}</span>
 	</a>
@@ -108,7 +105,6 @@
 		<Sidebar.Menu>
 			{#each group.items as item (item.title)}
 				{#if item.items && item.items.length > 0}
-					{@const accent = isActive(item.url) ? navAccent(item.url) : null}
 					<Collapsible.Root
 						open={openItems.has(item.title)}
 						onOpenChange={(open) => toggleOpen(item.title, open)}
@@ -124,7 +120,7 @@
 											isActive={isActive(item.url)}
 										>
 											{#if item.icon}
-												<item.icon class="size-4" style={accent ? `color: ${accent}` : undefined} />
+												<item.icon class="size-4" />
 											{/if}
 											<span>{item.title}</span>
 											<ChevronRightIcon

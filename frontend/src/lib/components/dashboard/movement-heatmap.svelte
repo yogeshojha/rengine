@@ -102,7 +102,7 @@
 												class="flex h-8 items-center justify-end rounded-md px-2 text-xs font-semibold tabular-nums {scanId
 													? 'hover:ring-1 hover:ring-primary/40'
 													: ''}"
-												style="background:color-mix(in oklch, var(--chart-1) {c.wash}%, transparent)"
+												style="background:color-mix(in oklch, var(--series) {c.wash}%, transparent)"
 											>
 												▲ {fresh.toLocaleString()}
 											</svelte:element>

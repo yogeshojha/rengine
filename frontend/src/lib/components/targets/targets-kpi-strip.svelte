@@ -54,8 +54,8 @@
 			label: 'Enriching',
 			value: summary.awaiting,
 			icon: Loader,
-			accent: 'text-chart-1',
-			activeRing: 'ring-chart-1/40 border-chart-1/40 bg-chart-1/10'
+			accent: 'text-info',
+			activeRing: 'ring-info/40 border-info/40 bg-info/10'
 		},
 		{
 			signal: 'enriched',

@@ -54,7 +54,7 @@
 
 					{#if row.known_endpoints}
 						<div class="bg-muted h-1 overflow-hidden rounded-full">
-							<div class="bg-chart-2 h-full rounded-full" style="width: {share(row)}%"></div>
+							<div class="bg-series h-full rounded-full" style="width: {share(row)}%"></div>
 						</div>
 					{/if}
 

@@ -31,12 +31,12 @@
 	let empty = $derived(data.every((d) => d.value === 0));
 
 	const chartConfig = {
-		value: { label: 'Value', color: 'var(--chart-1)' }
+		value: { label: 'Value', color: 'var(--series)' }
 	} satisfies Chart.ChartConfig;
-	let series = $derived([{ key: 'value', label: spec.label, color: 'var(--chart-1)' }]);
+	let series = $derived([{ key: 'value', label: spec.label, color: 'var(--series)' }]);
 	const stops = [
-		'color-mix(in oklab, var(--chart-1) 55%, transparent)',
-		'color-mix(in oklab, var(--chart-1) 4%, transparent)'
+		'color-mix(in oklab, var(--series) 55%, transparent)',
+		'color-mix(in oklab, var(--series) 4%, transparent)'
 	];
 	const fmtDay = (v: Date) =>
 		v.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });

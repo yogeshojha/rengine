@@ -68,7 +68,7 @@
 						</span>
 						<span class="h-1 w-full overflow-hidden rounded-full bg-muted">
 							<span
-								class="block h-full rounded-full bg-chart-1 transition-opacity {active &&
+								class="block h-full rounded-full bg-series transition-opacity {active &&
 								active !== e.code
 									? 'opacity-40'
 									: ''}"
