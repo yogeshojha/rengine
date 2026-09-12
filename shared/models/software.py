@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import BigInteger, Column, Text
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
@@ -195,6 +195,7 @@ class SoftwarePage(BaseModel):
 
 
 class SoftwareFilter(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     q: str | None = None
     limit: int = 50
     offset: int = 0

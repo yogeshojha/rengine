@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from pydantic import Field as PydanticField
 from sqlalchemy import Column, Text
 from sqlalchemy.types import JSON
@@ -205,6 +205,7 @@ class EndpointDetail(EndpointRead):
 
 
 class EndpointFilter(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     q: str | None = PydanticField(default=None, max_length=MAX_QUERY_LENGTH)
     host: str | None = None
     dir_path: str | None = None

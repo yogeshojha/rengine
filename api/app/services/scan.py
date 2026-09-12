@@ -364,6 +364,22 @@ class ScanService:
             configured.add(provider)
         return configured
 
+    async def _live_runs(self, target_id: UUID | None, project_id: UUID) -> int:
+        """Runs already sending traffic to this target."""
+        if target_id is None:
+            return 0
+        return (
+            await self.session.scalar(
+                select(func.count())
+                .select_from(Scan)
+                .where(
+                    Scan.target_id == target_id,
+                    Scan.project_id == project_id,
+                    Scan.status.in_(SCAN_LIVE_STATUSES),
+                )
+            )
+        ) or 0
+
     async def preview(self, data: ScanCreate, project_id: UUID) -> ScanPreview:
         engine, context, target, resolved = await self._resolve_and_validate(
             data, project_id
@@ -371,6 +387,12 @@ class ScanService:
         configured = await self._configured_providers()
 
         phases, warnings = stage_effects(resolved, configured)
+        live = await self._live_runs(target.id, project_id)
+        if live:
+            warnings.append(
+                f"{target.target_value} already has {live} run"
+                f"{'' if live == 1 else 's'} in flight. Both send traffic to it."
+            )
 
         will_run = sum(
             1 for p in phases for t in p.tools if t.status == PreviewToolStatus.WILL_RUN

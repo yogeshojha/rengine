@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from pydantic import Field as PField
 from sqlalchemy import Column, Index
 from sqlalchemy.types import JSON
@@ -198,6 +198,7 @@ class InterestSummary(BaseModel):
 
 
 class InterestFilter(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     q: str | None = PField(default=None, max_length=200)
     bands: list[str] = PField(default_factory=list, max_length=8)
     sources: list[str] = PField(default_factory=list, max_length=8)

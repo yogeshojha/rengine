@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 MAX_ASSET_SEARCH = 200
 
@@ -34,6 +34,7 @@ class TargetAssetRow(BaseModel):
 
 
 class TargetAssetFilter(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     search: str | None = Field(default=None, max_length=MAX_ASSET_SEARCH)
     state: str = Field(default="all", max_length=10)
     live: bool = False

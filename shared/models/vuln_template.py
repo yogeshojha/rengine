@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 from pydantic import Field as PydanticField
 from sqlalchemy import Column, Text
 from sqlalchemy.types import JSON
@@ -127,6 +127,7 @@ class TemplateSourceUpdate(BaseModel):
 
 
 class TemplateFilter(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     q: str | None = PydanticField(default=None, max_length=200)
     origins: list[str] = PydanticField(default_factory=list, max_length=4)
     severities: list[str] = PydanticField(default_factory=list, max_length=8)

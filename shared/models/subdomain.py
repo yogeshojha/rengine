@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import Column
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
@@ -138,6 +138,7 @@ class Facet(BaseModel):
 
 
 class SubdomainFilter(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     q: str | None = Field(default=None, max_length=MAX_QUERY_LENGTH)
     statuses: list[str] = Field(default_factory=list, max_length=10)
     tech: list[str] = Field(default_factory=list, max_length=200)
