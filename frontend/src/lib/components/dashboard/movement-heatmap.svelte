@@ -6,15 +6,14 @@
 	import { getTargetTypeIcon } from '$lib/config/icons';
 	import type { TargetType } from '$lib/types/target';
 	import { relativeTime } from '$lib/utilities/dates';
-	import { windowText, type DashboardOverview, type DashboardWindow } from '$lib/types/dashboard';
+	import type { DashboardOverview } from '$lib/types/dashboard';
 
 	interface Props {
 		overview: DashboardOverview;
-		window: DashboardWindow;
 		class?: string;
 	}
 
-	let { overview, window, class: className = '' }: Props = $props();
+	let { overview, class: className = '' }: Props = $props();
 
 	const ROWS = 10;
 	const MIN_WASH = 10;
@@ -33,11 +32,7 @@
 	}
 </script>
 
-<Widget
-	title="Changes by target"
-	description="Items first reported per target in the {windowText(window)}"
-	class={className}
->
+<Widget title="Changes by target" class={className}>
 	<div class="overflow-x-auto">
 		<table class="w-full border-separate border-spacing-0 text-sm">
 			<thead>

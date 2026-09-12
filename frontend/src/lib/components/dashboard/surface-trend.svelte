@@ -59,7 +59,6 @@
 
 <Widget
 	title="Attack surface over time"
-	description="Daily totals from the latest covering run of each target"
 	href={ROUTES.surface(spec.tab)}
 	hrefLabel={spec.label}
 	class={className}

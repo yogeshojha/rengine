@@ -92,10 +92,7 @@
 </script>
 
 <div class="space-y-6">
-	<div>
-		<h1 class="text-2xl font-semibold tracking-tight">Notes</h1>
-		<p class="mt-1 text-sm text-muted-foreground">Notes attached to assets in this project</p>
-	</div>
+	<h1 class="text-2xl font-semibold tracking-tight">Notes</h1>
 
 	<Card.Root class="gap-0 overflow-hidden py-0">
 		<div class="border-b px-2">

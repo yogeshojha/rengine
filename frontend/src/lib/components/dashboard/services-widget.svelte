@@ -55,13 +55,7 @@
 	);
 </script>
 
-<Widget
-	title="Services"
-	description="Service classes from the latest service scan of each target"
-	href={ROUTES.surface(SPEC.tab)}
-	hrefLabel="Services"
-	class={className}
->
+<Widget title="Services" href={ROUTES.surface(SPEC.tab)} hrefLabel="Services" class={className}>
 	<div class="flex flex-col gap-4 px-5 py-4">
 		<div class="flex items-center gap-5">
 			{#if slices.length >= 2}

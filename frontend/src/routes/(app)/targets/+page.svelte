@@ -537,9 +537,6 @@
 	<div class="flex items-start justify-between">
 		<div>
 			<h1 class="text-2xl font-semibold tracking-tight">Targets</h1>
-			<p class="text-sm text-muted-foreground mt-1">
-				Domains, addresses, ranges, URLs and ASNs in this project
-			</p>
 		</div>
 		<div class="flex items-center gap-2">
 			<Button

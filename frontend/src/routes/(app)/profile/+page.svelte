@@ -15,10 +15,7 @@
 </script>
 
 <div class="container max-w-5xl mx-auto space-y-6">
-	<div>
-		<h1 class="text-2xl font-semibold tracking-tight">Account and security</h1>
-		<p class="text-sm text-muted-foreground">Credentials and two-factor authentication</p>
-	</div>
+	<h1 class="text-2xl font-semibold tracking-tight">Account and security</h1>
 
 	<Card.Root class="overflow-hidden">
 		<Card.Content class="pt-0">

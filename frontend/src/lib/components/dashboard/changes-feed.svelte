@@ -62,11 +62,7 @@
 	});
 </script>
 
-<Widget
-	title="New since previous scan"
-	description="Items first reported by the latest run of each target"
-	class={className}
->
+<Widget title="New since previous scan" class={className}>
 	<div class="divide-y divide-border/60">
 		{#each sections as s (s.key)}
 			<section class="flex flex-col gap-1 px-5 py-3">

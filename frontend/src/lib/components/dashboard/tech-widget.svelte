@@ -30,7 +30,6 @@
 
 <Widget
 	title="Technology"
-	description="Technologies fingerprinted on web assets"
 	href={ROUTES.surface(SPEC.tab)}
 	hrefLabel="Web assets"
 	loading={loading && !tech}

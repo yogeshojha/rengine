@@ -103,7 +103,7 @@
 
 <Widget
 	title="Findings by risk"
-	description="Open findings across all targets, ranked by exploitability"
+	description="Open findings, ranked by exploitability"
 	href={ROUTES.surface(VULNS.tab)}
 	hrefLabel="All findings"
 	class={className}

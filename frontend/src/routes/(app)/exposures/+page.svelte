@@ -45,12 +45,7 @@
 </script>
 
 <div class="space-y-6">
-	<div>
-		<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.exposures}</h1>
-		<p class="mt-1 text-sm text-muted-foreground">
-			Assets matched by rules, correlation signals and AI judgement
-		</p>
-	</div>
+	<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.exposures}</h1>
 
 	<Tabs.Root
 		value={activeTab}

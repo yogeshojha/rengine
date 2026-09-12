@@ -119,7 +119,6 @@
 	<div class="flex items-start justify-between">
 		<div>
 			<h1 class="text-2xl font-semibold tracking-tight">Schedules</h1>
-			<p class="mt-1 text-sm text-muted-foreground">Recurring and one-off scans in this project</p>
 		</div>
 		<div class="flex items-center gap-2">
 			<Button

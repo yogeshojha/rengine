@@ -273,11 +273,7 @@
 				/>
 
 				{#if hasMovement}
-					<MovementHeatmap
-						{overview}
-						window={dashboardStore.window}
-						class="col-span-12 {hasTreemap ? 'xl:col-span-8' : ''}"
-					/>
+					<MovementHeatmap {overview} class="col-span-12 {hasTreemap ? 'xl:col-span-8' : ''}" />
 				{/if}
 				{#if hasTreemap}
 					<SurfaceTreemap {overview} class="col-span-12 {hasMovement ? 'xl:col-span-4' : ''}" />

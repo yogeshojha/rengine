@@ -62,7 +62,7 @@
 
 <Widget
 	title="Hosting"
-	description="Resolving web assets by fronting and network"
+	description="By fronting and network"
 	href={ROUTES.surface(WEB.tab, { [WEB.queryParam]: HOSTING_QUERIES.resolved })}
 	hrefLabel="Resolving"
 	loading={loading && !hosting}

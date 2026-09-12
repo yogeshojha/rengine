@@ -109,9 +109,6 @@
 	<header class="flex flex-wrap items-start justify-between gap-4">
 		<div class="min-w-0">
 			<h1 class="text-xl font-semibold">{routeLabels.connectors}</h1>
-			<p class="text-muted-foreground text-sm">
-				Requests observed in Burp Suite, recorded as endpoints of their target
-			</p>
 		</div>
 		<Button size="sm" onclick={() => (newOpen = true)}>
 			<PlusIcon class="size-4" />

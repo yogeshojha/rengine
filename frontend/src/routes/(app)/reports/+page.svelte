@@ -184,7 +184,6 @@
 	<div class="flex flex-wrap items-start justify-between gap-3">
 		<div>
 			<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.reports}</h1>
-			<p class="mt-1 text-sm text-muted-foreground">Documents generated from scan results</p>
 		</div>
 		<Button onclick={() => (generateOpen = true)} disabled={!projectId}>
 			<PlusIcon class="mr-1.5 size-4" />

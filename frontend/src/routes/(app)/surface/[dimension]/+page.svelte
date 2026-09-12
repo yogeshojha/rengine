@@ -40,14 +40,7 @@
 	</EmptyState>
 {:else}
 	<div class="space-y-6">
-		<div class="flex flex-wrap items-end justify-between gap-3">
-			<div>
-				<h1 class="text-2xl font-semibold tracking-tight">{spec.label}</h1>
-				<p class="mt-1 text-sm text-muted-foreground">
-					Every {spec.noun} in this project from the latest scan of each target
-				</p>
-			</div>
-		</div>
+		<h1 class="text-2xl font-semibold tracking-tight">{spec.label}</h1>
 
 		<div class="overflow-hidden rounded-xl border bg-card">
 			<ScopeStrip
