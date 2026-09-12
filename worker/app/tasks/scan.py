@@ -1,11 +1,10 @@
 """Scan orchestrator celery tasks: run_scan (dispatch canvas), run_scan_stage, finalize_scan."""
 
 import uuid
-from datetime import timedelta
 
 import redis
 from celery import shared_task
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.celery import celery_app
@@ -17,12 +16,14 @@ from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.scan import (
     ACTIVITY_TERMINAL_STATUSES,
     SCAN_TERMINAL_STATUSES,
+    ScanActivityStatus,
     ScanStatus,
 )
 from shared.logging import get_logger
 from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
 from shared.services.activity_log import ActivityLogService
+from shared.services.orchestrator import stages_done
 from shared.services.orchestrator.events import ScanEventPublisher
 from shared.utils.datetime import utc_now
 from stages.registry import get_stage, ordered_levels
@@ -32,7 +33,9 @@ logger = get_logger(__name__)
 _DISPATCHED_TASK_IDS = 2
 
 STALL_GRACE_SECONDS = 600
+STALL_ABANDON_SECONDS = settings.TASK_HARD_TIME_LIMIT
 _INSPECT_TIMEOUT = 5.0
+_ABANDON_REASON = "The worker never came back to this stage."
 
 _broker_client: redis.Redis | None = None
 
@@ -132,13 +135,14 @@ def finalize_scan(self, scan_id: str) -> dict:  # noqa: ARG001
 
 @shared_task(bind=True, name="app.tasks.scan.reap_stalled", max_retries=0)
 def reap_stalled(self) -> dict:  # noqa: ARG001
-    """Resume a RUNNING scan whose canvas died."""
+    """Resume a RUNNING scan whose canvas died, and settle one that never comes back."""
     if _scans_queued():
         return {"skipped": "queue busy"}
     active = _active_task_ids()
     if active is None:
         return {"skipped": "no worker replied"}
     resumed = []
+    abandoned = []
     with get_sync_session() as session:
         scans = (
             session.execute(select(Scan).where(Scan.status == ScanStatus.RUNNING.value))
@@ -149,7 +153,17 @@ def reap_stalled(self) -> dict:  # noqa: ARG001
             resume = _resume_level(session, scan, active)
             if resume is None:
                 continue
-            level, done = resume
+            level, done, idle = resume
+            if idle >= STALL_ABANDON_SECONDS:
+                logger.error(
+                    "scan %s abandoned after %.0fs with no task in flight",
+                    scan.id,
+                    idle,
+                )
+                _close_ledger(session, scan)
+                finalize_scan.apply_async(kwargs={"scan_id": str(scan.id)})
+                abandoned.append(str(scan.id))
+                continue
             logger.warning(
                 "scan %s stalled with no task in flight, resuming at level %s",
                 scan.id,
@@ -157,7 +171,24 @@ def reap_stalled(self) -> dict:  # noqa: ARG001
             )
             build_canvas(str(scan.id), start_level=level, done=done).apply_async()
             resumed.append(str(scan.id))
-    return {"resumed": resumed}
+    return {"resumed": resumed, "abandoned": abandoned}
+
+
+def _close_ledger(session: Session, scan: Scan) -> None:
+    """Fail every stage row the worker never returned to, so finalize can settle."""
+    session.execute(
+        update(ScanActivity)
+        .where(
+            ScanActivity.scan_id == scan.id,
+            ScanActivity.status.not_in(ACTIVITY_TERMINAL_STATUSES),
+        )
+        .values(
+            status=ScanActivityStatus.FAILED.value,
+            error=_ABANDON_REASON,
+            completed_at=utc_now(),
+        )
+    )
+    session.commit()
 
 
 def _broker() -> redis.Redis:
@@ -188,7 +219,7 @@ def _active_task_ids() -> set[str] | None:
 
 def _resume_level(
     session: Session, scan: Scan, active: set[str]
-) -> tuple[int, set[str]] | None:
+) -> tuple[int, set[str], float] | None:
     rows = (
         session.execute(select(ScanActivity).where(ScanActivity.scan_id == scan.id))
         .scalars()
@@ -203,11 +234,12 @@ def _resume_level(
         (r.completed_at or r.started_at or r.created_at for r in rows),
         default=scan.started_at or scan.created_at,
     )
-    if utc_now() - last < timedelta(seconds=STALL_GRACE_SECONDS):
+    idle = (utc_now() - last).total_seconds()
+    if idle < STALL_GRACE_SECONDS:
         return None
-    done = {r.name for r in rows if r.status in ACTIVITY_TERMINAL_STATUSES}
+    done = stages_done(rows)
     levels = ordered_levels()
     for index, level in enumerate(levels):
         if not all(spec.name in done for spec in level):
-            return index, done
-    return len(levels), done
+            return index, done, idle
+    return len(levels), done, idle

@@ -35,6 +35,13 @@ def derived_counts(
     }
 
 
+def stages_done(activities: Iterable[ScanActivity]) -> set[str]:
+    """Stage names that finished. A stage holding a stranded row is not one of them."""
+    rows = list(activities)
+    stranded = {a.name for a in rows if a.status not in ACTIVITY_TERMINAL_STATUSES}
+    return {a.name for a in rows if a.status in ACTIVITY_TERMINAL_STATUSES} - stranded
+
+
 def aggregate_status(activities: Iterable[ScanActivity]) -> str:
     statuses = [a.status for a in activities]
     if not statuses:

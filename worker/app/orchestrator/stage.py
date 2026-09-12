@@ -134,6 +134,8 @@ def run_stage(
     )
     _register_task_id(session, scan, celery_task_id)
 
+    _supersede_orphan_activities(session, scan, spec.name)
+
     done = activity_svc.finished(scan.id, spec.name)
     if done is not None:
         logger.info(
@@ -143,8 +145,6 @@ def run_stage(
             status=done.status,
         )
         return
-
-    _supersede_orphan_activities(session, scan, spec.name)
 
     activity = activity_svc.create(
         scan, name=spec.name, title=spec.title, celery_task_id=celery_task_id
