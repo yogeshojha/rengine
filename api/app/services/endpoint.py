@@ -1361,6 +1361,7 @@ class EndpointService:
                 errors=row.errors,
                 capped=row.capped,
                 cap_reason=row.cap_reason,
+                urls_dropped=dict(row.urls_dropped or {}),
                 error=row.error,
                 started_at=row.started_at,
                 ended_at=row.ended_at,

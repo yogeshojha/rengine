@@ -115,6 +115,7 @@ class HttpAsset(SQLModel, table=True):
     body_preview: str | None = Field(default=None, max_length=512)
     hygiene_issues: list | None = _json_optional_list()
     hygiene_checked: list | None = _json_optional_list()
+    not_found: list | None = _json_optional_list()
     search_tsv: Any | None = Field(
         default=None,
         sa_column=Column(TSVECTOR, Computed(SEARCH_TSV_SQL, persisted=True)),

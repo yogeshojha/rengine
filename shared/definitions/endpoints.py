@@ -765,6 +765,7 @@ class ParsedUrl:
     params: tuple[str, ...]
     param_values: dict[str, str]
     signature: str
+    family: str
 
 
 def _collapse_dots(path: str) -> str:
@@ -862,6 +863,7 @@ def parse_url(raw: str, *, default_scheme: str = "https") -> ParsedUrl | None:
         params=params,
         param_values=values,
         signature=signature_for(scheme, host, port, path, params),
+        family=family_for(host, port, path, params),
     )
 
 
@@ -1011,3 +1013,477 @@ def folder_glyph(interest: set[str] | frozenset[str], api: int, total: int) -> s
     if PathInterest.AUTH.value in interest:
         return FolderGlyph.AUTH.value
     return FolderGlyph.FOLDER.value
+
+
+# ---------- noise ----------
+
+
+class NoiseRule(StrEnum):
+    STATIC = "static"
+    ARTIFACT = "artifact"
+    PLATFORM = "platform"
+    FAMILY = "family"
+    LOCALE = "locale"
+    SIBLINGS = "siblings"
+    NOT_FOUND = "not_found"
+    SAME_RESPONSE = "same_response"
+    SAME_REDIRECT = "same_redirect"
+    CATCH_ALL = "catch_all"
+    SIMILAR_RESPONSE = "similar_response"
+    ARCHIVE_ROT = "archive_rot"
+    OFF_SCOPE = "off_scope"
+
+
+URL_RULES: tuple[str, ...] = (
+    NoiseRule.STATIC.value,
+    NoiseRule.ARTIFACT.value,
+    NoiseRule.PLATFORM.value,
+    NoiseRule.FAMILY.value,
+    NoiseRule.LOCALE.value,
+    NoiseRule.SIBLINGS.value,
+)
+RESPONSE_RULES: tuple[str, ...] = (
+    NoiseRule.NOT_FOUND.value,
+    NoiseRule.SAME_RESPONSE.value,
+    NoiseRule.SAME_REDIRECT.value,
+    NoiseRule.CATCH_ALL.value,
+    NoiseRule.SIMILAR_RESPONSE.value,
+    NoiseRule.ARCHIVE_ROT.value,
+    NoiseRule.OFF_SCOPE.value,
+)
+
+NOISE_RULE_LABELS: dict[str, str] = {
+    NoiseRule.STATIC.value: "Static files",
+    NoiseRule.ARTIFACT.value: "Crawler artifacts",
+    NoiseRule.PLATFORM.value: "Platform noise",
+    NoiseRule.FAMILY.value: "Past the family cap",
+    NoiseRule.LOCALE.value: "Other languages",
+    NoiseRule.SIBLINGS.value: "Past the sibling cap",
+    NoiseRule.NOT_FOUND.value: "Not found",
+    NoiseRule.SAME_RESPONSE.value: "Same response",
+    NoiseRule.SAME_REDIRECT.value: "Same redirect",
+    NoiseRule.CATCH_ALL.value: "Same as the site root",
+    NoiseRule.SIMILAR_RESPONSE.value: "Similar response",
+    NoiseRule.ARCHIVE_ROT.value: "Archive rot",
+    NoiseRule.OFF_SCOPE.value: "Redirect out of scope",
+}
+
+NOISE_RULE_HELP: dict[str, str] = {
+    NoiseRule.STATIC.value: "Images, fonts, media and stylesheets.",
+    NoiseRule.ARTIFACT.value: "Template literals, quotes and JavaScript values read as URLs.",
+    NoiseRule.PLATFORM.value: "Feeds, oEmbed, print views, comment replies and CDN paths.",
+    NoiseRule.FAMILY.value: "URLs that differ from a kept one only by an identifier.",
+    NoiseRule.LOCALE.value: "The same path under another language prefix.",
+    NoiseRule.SIBLINGS.value: "Children of one folder past the cap, of one kind.",
+    NoiseRule.NOT_FOUND.value: "The response matches what the host answers for a path that does not exist.",
+    NoiseRule.SAME_RESPONSE.value: "Byte-identical to a kept response on the host.",
+    NoiseRule.SAME_REDIRECT.value: "Redirects where a kept URL on the host already redirects.",
+    NoiseRule.CATCH_ALL.value: "The site root's response served at another path.",
+    NoiseRule.SIMILAR_RESPONSE.value: "Same status, title and size as ten or more kept responses.",
+    NoiseRule.ARCHIVE_ROT.value: "Known only from archives and gone.",
+    NoiseRule.OFF_SCOPE.value: "Redirects to a host outside the scan.",
+}
+
+NOT_FOUND_TOLERANCE = 0.02
+SAME_RESPONSE_MIN = 3
+SAME_REDIRECT_MIN = 5
+SIMILAR_RESPONSE_MIN = 10
+CANARY_LENGTH = 24
+
+NOISE_STATIC_EXTENSIONS: tuple[str, ...] = (
+    "png",
+    "jpg",
+    "jpeg",
+    "gif",
+    "svg",
+    "webp",
+    "avif",
+    "bmp",
+    "ico",
+    "tif",
+    "tiff",
+    "css",
+    "scss",
+    "less",
+    "map",
+    "woff",
+    "woff2",
+    "ttf",
+    "eot",
+    "otf",
+    "mp4",
+    "webm",
+    "mov",
+    "avi",
+    "mp3",
+    "wav",
+    "ogg",
+    "m4a",
+    "flac",
+)
+
+NOISE_IGNORED_PARAMS: tuple[str, ...] = (
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "utm_term",
+    "utm_content",
+    "utm_id",
+    "fbclid",
+    "gclid",
+    "dclid",
+    "msclkid",
+    "yclid",
+    "mc_cid",
+    "mc_eid",
+    "_ga",
+    "_gl",
+    "_hsenc",
+    "_hsmi",
+    "ref",
+    "v",
+    "ver",
+    "version",
+    "_",
+    "cb",
+    "cache",
+    "nocache",
+    "rand",
+    "random",
+    "t",
+    "ts",
+    "timestamp",
+    "hash",
+    "rev",
+    "build",
+    "itok",
+    "cachebuster",
+)
+NOISE_IGNORED_PARAM_PREFIXES: tuple[str, ...] = ("utm_",)
+
+NOISE_KEEP_PER_FAMILY = 3
+NOISE_SIBLING_CAP = 12
+MAX_NOISE_KEEP_PER_FAMILY = 100
+MAX_NOISE_SIBLING_CAP = 1000
+
+INDEX_FILES: frozenset[str] = frozenset(
+    {
+        "index.html",
+        "index.htm",
+        "index.php",
+        "index.jsp",
+        "index.asp",
+        "index.aspx",
+        "default.asp",
+        "default.aspx",
+        "default.htm",
+        "default.html",
+    }
+)
+
+LANG_PLACEHOLDER = "{lang}"
+_LANG_RE = re.compile(r"^([a-z]{2})(?:[-_][a-z]{2,4}){0,2}$", re.IGNORECASE)
+_LANG_PRIMARY: frozenset[str] = frozenset(
+    [
+        "aa",
+        "ab",
+        "af",
+        "ak",
+        "am",
+        "ar",
+        "av",
+        "ay",
+        "az",
+        "ba",
+        "bg",
+        "bh",
+        "bi",
+        "bm",
+        "bn",
+        "bo",
+        "br",
+        "bs",
+        "ca",
+        "ce",
+        "ch",
+        "co",
+        "cr",
+        "cs",
+        "cu",
+        "cv",
+        "cy",
+        "da",
+        "de",
+        "dv",
+        "dz",
+        "ee",
+        "el",
+        "en",
+        "eo",
+        "es",
+        "et",
+        "eu",
+        "fa",
+        "ff",
+        "fi",
+        "fj",
+        "fo",
+        "fr",
+        "fy",
+        "ga",
+        "gd",
+        "gl",
+        "gn",
+        "gu",
+        "gv",
+        "ha",
+        "he",
+        "hi",
+        "ho",
+        "hr",
+        "ht",
+        "hu",
+        "hy",
+        "hz",
+        "ia",
+        "ie",
+        "ig",
+        "ii",
+        "ik",
+        "it",
+        "iu",
+        "ja",
+        "jv",
+        "ka",
+        "kg",
+        "ki",
+        "kj",
+        "kk",
+        "kl",
+        "km",
+        "kn",
+        "ko",
+        "kr",
+        "ks",
+        "ku",
+        "kv",
+        "kw",
+        "ky",
+        "la",
+        "lb",
+        "lg",
+        "li",
+        "ln",
+        "lo",
+        "lt",
+        "lu",
+        "lv",
+        "mg",
+        "mh",
+        "mi",
+        "mk",
+        "ml",
+        "mn",
+        "mr",
+        "ms",
+        "mt",
+        "na",
+        "nb",
+        "nd",
+        "ne",
+        "ng",
+        "nl",
+        "nn",
+        "nr",
+        "nv",
+        "ny",
+        "oc",
+        "oj",
+        "om",
+        "os",
+        "pa",
+        "pi",
+        "pl",
+        "ps",
+        "pt",
+        "qu",
+        "rm",
+        "rn",
+        "ro",
+        "ru",
+        "rw",
+        "sa",
+        "sc",
+        "sd",
+        "se",
+        "sg",
+        "si",
+        "sk",
+        "sl",
+        "sm",
+        "sn",
+        "sq",
+        "sr",
+        "ss",
+        "st",
+        "su",
+        "sv",
+        "sw",
+        "ta",
+        "te",
+        "tg",
+        "th",
+        "ti",
+        "tk",
+        "tl",
+        "tn",
+        "tr",
+        "ts",
+        "tt",
+        "tw",
+        "ty",
+        "ug",
+        "uk",
+        "ur",
+        "uz",
+        "ve",
+        "vi",
+        "vo",
+        "wa",
+        "wo",
+        "xh",
+        "yi",
+        "yo",
+        "za",
+        "zh",
+        "zu",
+    ]
+)
+_LANG_NOT: frozenset[str] = frozenset(
+    {"my", "me", "us", "go", "to", "in", "on", "at", "by", "or", "an", "as", "be", "do", "if", "is", "so", "no", "io", "ai", "tv", "id"}
+)  # fmt: skip
+
+_TOKEN_PARAM_RE = re.compile(r"^(?=.*[a-z])[a-z0-9]{8,}$")
+_TOKEN_PARAM_MIN_DIGITS = 3
+_SESSION_PATH_RE = re.compile(r";[A-Za-z_]+=[^/?#]*", re.IGNORECASE)
+_ARTIFACT_RE = re.compile(
+    r"\{\{|\}\}|\$\{|%7B%7B|%7D%7D|%24%7B|[<>\"`\\]|%3C|%3E|%22|%5C|%60",
+    re.IGNORECASE,
+)
+_ARTIFACT_SEGMENTS: frozenset[str] = frozenset(
+    {
+        "undefined",
+        "null",
+        "nan",
+        "[object object]",
+        "%5bobject%20object%5d",
+        "true",
+        "false",
+    }
+)
+_PLATFORM_PATH_RE = re.compile(
+    r"(^|/)(feed|rss|atom|comments/feed|wp-json/oembed|cdn-cgi|trackback)(/|$)",
+    re.IGNORECASE,
+)
+_PLATFORM_PARAMS: frozenset[str] = frozenset(
+    {"replytocom", "share", "print", "printable", "tmpl", "format", "output", "amp"}
+)
+_PLATFORM_PARAM_VALUES: dict[str, frozenset[str]] = {
+    "tmpl": frozenset({"component", "print"}),
+    "format": frozenset({"feed", "rss", "atom", "print", "pdf", "amp"}),
+    "output": frozenset({"rss", "atom", "amp"}),
+}
+
+
+def is_lang_segment(segment: str) -> bool:
+    match = _LANG_RE.match(segment)
+    if match is None:
+        return False
+    primary = match.group(1).lower()
+    return primary in _LANG_PRIMARY and primary not in _LANG_NOT
+
+
+def is_ignored_param(name: str, ignored: frozenset[str] | None = None) -> bool:
+    lowered = name.strip().lower()
+    names = ignored if ignored is not None else frozenset(NOISE_IGNORED_PARAMS)
+    if lowered in names or lowered.startswith(NOISE_IGNORED_PARAM_PREFIXES):
+        return True
+    if (
+        _SHAPE_NUMERIC.match(lowered)
+        or _SHAPE_UUID.match(lowered)
+        or _SHAPE_HEX.match(lowered)
+    ):
+        return True
+    return bool(_TOKEN_PARAM_RE.match(lowered)) and (
+        sum(c.isdigit() for c in lowered) >= _TOKEN_PARAM_MIN_DIGITS
+    )
+
+
+def is_artifact(path: str) -> bool:
+    if _ARTIFACT_RE.search(path):
+        return True
+    return any(s.lower() in _ARTIFACT_SEGMENTS for s in path.split("/") if s)
+
+
+def is_platform_noise(
+    path: str, params: tuple[str, ...], values: dict[str, str]
+) -> bool:
+    if _PLATFORM_PATH_RE.search(path):
+        return True
+    for name in params:
+        lowered = name.lower()
+        if lowered not in _PLATFORM_PARAMS:
+            continue
+        allowed = _PLATFORM_PARAM_VALUES.get(lowered)
+        if allowed is None or (values.get(name) or "").lower() in allowed:
+            return True
+    return False
+
+
+def strip_session_path(path: str) -> str:
+    return _SESSION_PATH_RE.sub("", path)
+
+
+def fold_index_file(path: str) -> str:
+    cut = path.rfind("/")
+    if cut >= 0 and path[cut + 1 :].lower() in INDEX_FILES:
+        return path[: cut + 1]
+    return path
+
+
+def lang_of(path: str) -> str | None:
+    """The leading language segment, or None."""
+    first = path.split("/", 2)[1] if path.startswith("/") else ""
+    return first.lower() if first and is_lang_segment(first) else None
+
+
+def family_shape(path: str) -> str:
+    """The shape with a leading language segment folded."""
+    shaped, _ = shape_for(path)
+    lang = lang_of(path)
+    if lang is None:
+        return shaped
+    rest = shaped.split("/", 2)[2:]
+    return "/" + LANG_PLACEHOLDER + ("/" + rest[0] if rest else "")
+
+
+def family_for(
+    host: str, port: int, path: str, params: tuple[str, ...] | list[str]
+) -> str:
+    """Structural family of an endpoint: scheme-agnostic, identifiers and language folded."""
+    names = sorted(n for n in params if not is_ignored_param(n))
+    key = f"{host}:{port}|{family_shape(path)}|{','.join(names)}"
+    return hashlib.sha256(key.encode("utf-8", "replace")).hexdigest()
+
+
+def sibling_key(path: str, extension: str | None) -> tuple[str, str] | None:
+    """The folder and kind a leaf competes in, or None for a folded or root path."""
+    if path == "/" or shape_for(path)[1]:
+        return None
+    trimmed = path[:-1] if path.endswith("/") else path
+    cut = trimmed.rfind("/")
+    if cut < 0:
+        return None
+    parent = trimmed[: cut + 1]
+    kind = "dir" if path.endswith("/") else (extension or "")
+    return parent, kind

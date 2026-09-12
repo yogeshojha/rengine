@@ -7,7 +7,11 @@
 	import { Button } from '$lib/components/ui/button';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { COVERAGE_STATUS_LABELS } from '$lib/config/vulnerabilities';
-	import { PROBE_COVERAGE_SOURCE } from '$lib/config/endpoints';
+	import {
+		NOISE_RULE_LABELS,
+		NOISE_RULE_ORDER,
+		PROBE_COVERAGE_SOURCE
+	} from '$lib/config/endpoints';
 	import type { EndpointCoverageRead, EndpointSummary } from '$lib/utilities/endpoints';
 
 	interface Props {
@@ -47,6 +51,20 @@
 	);
 	let unverified = $derived(Math.max(0, (summary?.total ?? 0) - (summary?.probed ?? 0) - noAnswer));
 	let capped = $derived(coverage.some((c) => c.capped));
+	let dropped = $derived.by(() => {
+		const totals: Record<string, number> = {};
+		for (const row of coverage) {
+			for (const [rule, count] of Object.entries(row.urls_dropped ?? {})) {
+				totals[rule] = (totals[rule] ?? 0) + count;
+			}
+		}
+		return totals;
+	});
+	let droppedTotal = $derived(Object.values(dropped).reduce((a, b) => a + b, 0));
+	const droppedRows = (values: Record<string, number>) =>
+		NOISE_RULE_ORDER.filter((rule) => (values[rule] ?? 0) > 0).map(
+			(rule) => [NOISE_RULE_LABELS[rule], values[rule]] as const
+		);
 	let failed = $derived(coverage.some((c) => c.status === 'failed'));
 	let Icon = $derived(!ran ? CircleSlash : failed || capped ? TriangleAlert : CircleCheck);
 	let tone = $derived(
@@ -65,6 +83,7 @@
 			if (noAnswer) parts.push(`${n(noAnswer)} no answer`);
 			if (unverified) parts.push(`${n(unverified)} not checked`);
 		}
+		if (droppedTotal) parts.push(`${n(droppedTotal)} dropped as noise`);
 		return parts.join(' · ');
 	});
 </script>
@@ -164,6 +183,16 @@
 										{/if}
 									{/each}
 								</dl>
+								{#if droppedRows(row.urls_dropped ?? {}).length}
+									<dl class="mt-1 grid grid-cols-2 gap-x-4 gap-y-0.5 border-t pt-1 text-xs">
+										{#each droppedRows(row.urls_dropped ?? {}) as [label, value] (label)}
+											<div class="flex justify-between gap-2">
+												<dt class="text-muted-foreground">Dropped, {label.toLowerCase()}</dt>
+												<dd class="tabular-nums">{n(value)}</dd>
+											</div>
+										{/each}
+									</dl>
+								{/if}
 								{#if row.cap_reason}
 									<p class="mt-1 text-2xs text-muted-foreground">{row.cap_reason}</p>
 								{/if}

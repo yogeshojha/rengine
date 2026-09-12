@@ -303,6 +303,7 @@ export interface EndpointCoverageRead {
 	errors: number | null;
 	capped: boolean;
 	cap_reason: string | null;
+	urls_dropped: Record<string, number>;
 	error: string | null;
 	started_at: string;
 	ended_at: string | null;

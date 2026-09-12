@@ -39,6 +39,8 @@ class KatanaClient:
         include_js: bool = True,
         headless: bool = False,
         form_extraction: bool = True,
+        ignore_query_params: bool = True,
+        exclude_extensions: list[str] | None = None,
         proxy_url: str | None = None,
         headers: dict[str, str] | None = None,
         recorder: CommandRecorder | None = None,
@@ -53,6 +55,8 @@ class KatanaClient:
         self.include_js = include_js
         self.headless = headless
         self.form_extraction = form_extraction
+        self.ignore_query_params = ignore_query_params
+        self.exclude_extensions = list(exclude_extensions or [])
         self.proxy_url = proxy_url
         self.headers = headers or {}
         self.recorder = recorder
@@ -77,6 +81,10 @@ class KatanaClient:
             args += ["-jsluice", "-js-crawl"]
         if self.form_extraction:
             args.append("-automatic-form-fill")
+        if self.ignore_query_params:
+            args.append("-ignore-query-params")
+        if self.exclude_extensions:
+            args += ["-extension-filter", ",".join(self.exclude_extensions)]
         if self.headless:
             args += ["-headless", "-no-sandbox"]
         if self.proxy_url:

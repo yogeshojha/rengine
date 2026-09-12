@@ -16,6 +16,7 @@ from shared.models.endpoint import Endpoint
 from shared.models.scan import Scan
 from shared.services import endpoint_inventory
 from shared.services.endpoint_inventory import EndpointObservation, UpsertResult
+from shared.services.endpoint_noise import NoisePolicy
 from shared.services.scan_scope import census_only, covers
 from shared.utils.datetime import utc_now
 
@@ -131,6 +132,7 @@ def write(
         observations=[_observation(c) for c in rows],
         index=endpoint_inventory.build_index(session, scan.id, hosts),
         default_scheme="http",
+        policy=NoisePolicy.protected(),
     )
 
 

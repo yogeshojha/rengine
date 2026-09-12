@@ -7,6 +7,7 @@ from shared.definitions.endpoints import EndpointSource
 from shared.models.endpoint import Endpoint
 from shared.services import endpoint_inventory
 from shared.services.endpoint_inventory import EndpointObservation
+from shared.services.endpoint_noise import NoisePolicy
 
 pytestmark = pytest.mark.pipeline
 
@@ -31,6 +32,7 @@ async def _upsert(
             project_id=estate.project_id,
             source=source,
             observations=observations,
+            policy=NoisePolicy.off(),
         )
     )
 

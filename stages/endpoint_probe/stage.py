@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import uuid
+from urllib.parse import urlsplit
+
 from sqlalchemy import cast, func, select
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -9,8 +12,10 @@ from shared.definitions.vulnerabilities import CoverageStatus
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.logging import get_logger
 from shared.models.endpoint import Endpoint, EndpointCoverage
-from shared.services import endpoint_inventory
+from shared.models.http_asset import HttpAsset
+from shared.services import endpoint_inventory, endpoint_judge
 from shared.services.endpoint_inventory import EndpointObservation
+from shared.services.endpoint_judge import Fingerprint
 from shared.services.scope_filter import matches_any
 from shared.utils.datetime import utc_now
 from stages.base import ALL_TARGETS, Stage, StageResult
@@ -21,6 +26,7 @@ from tools.httpx.parser import parse_httpx_record
 logger = get_logger(__name__)
 
 _WRITE_BATCH = 500
+_DEFAULT_PORTS = {"http": 80, "https": 443}
 
 
 class EndpointProbeStage(Stage):
@@ -86,12 +92,18 @@ class EndpointProbeStage(Stage):
         sink = self.results_sink(
             SurfaceDimension.ENDPOINTS.value, _write, rows=_WRITE_BATCH
         )
-        with client.stream_probe(selected) as stream:
+        canaries = self._canaries(selected)
+        fingerprints: dict = {}
+        with client.stream_probe([*canaries, *selected]) as stream:
             for record in stream.records:
                 self._check_abort()
                 fields = parse_httpx_record(record)
                 url = fields.get("url")
                 if not url:
+                    continue
+                owner = canaries.get(url)
+                if owner is not None:
+                    fingerprints.setdefault(owner, []).append(Fingerprint.of(fields))
                     continue
                 sink.add(
                     EndpointObservation(
@@ -112,6 +124,10 @@ class EndpointProbeStage(Stage):
                 )
         sink.close()
         answered = sink.written
+        endpoint_judge.store_fingerprints(self.session, fingerprints)
+        dropped = endpoint_judge.judge(self.session, self.ctx.scan_id)
+        if dropped:
+            self.publish_results(SurfaceDimension.ENDPOINTS.value)
         status = (
             CoverageStatus.PARTIAL.value if skipped else CoverageStatus.COMPLETED.value
         )
@@ -129,9 +145,12 @@ class EndpointProbeStage(Stage):
             None,
             reason,
             answered=answered,
+            dropped=dict(dropped),
         )
+        removed = sum(dropped.values())
         self.emit_progress(
             f"verified {len(selected)} endpoints, {answered} answered"
+            + (f", {removed} removed as noise" if removed else "")
             + (f", {skipped} left unverified" if skipped else "")
         )
         return StageResult(counts={"endpoints_probed": len(selected)})
@@ -142,10 +161,10 @@ class EndpointProbeStage(Stage):
         novel = (
             func.row_number()
             .over(
-                partition_by=(Endpoint.host, Endpoint.dir_path),
+                partition_by=Endpoint.family,
                 order_by=(Endpoint.depth.asc(), Endpoint.url.asc()),
             )
-            .label("in_dir")
+            .label("in_family")
         )
         ranked = select(
             Endpoint.url.label("url"),
@@ -169,7 +188,7 @@ class EndpointProbeStage(Stage):
             .order_by(
                 sub.c.flagged.desc(),
                 sub.c.has_params.desc(),
-                (sub.c.in_dir == 1).desc(),
+                (sub.c.in_family == 1).desc(),
                 sub.c.depth.asc(),
                 sub.c.url.asc(),
             )
@@ -178,6 +197,38 @@ class EndpointProbeStage(Stage):
         if excluded:
             rows = [r for r in rows if not matches_any(r.path, excluded)]
         return [r.url for r in rows[:budget]]
+
+    def _canaries(self, selected: list[str]) -> dict[str, uuid.UUID]:
+        """Three URLs no site has, per root the probe will touch, keyed to the root's web asset."""
+        wanted: set[tuple[str, str, int]] = set()
+        for url in selected:
+            try:
+                parts = urlsplit(url)
+                port = parts.port
+            except ValueError:
+                continue
+            scheme = parts.scheme.lower()
+            host = (parts.hostname or "").lower()
+            if host:
+                wanted.add((scheme, host, port or _DEFAULT_PORTS.get(scheme, 0)))
+        if not wanted:
+            return {}
+        rows = self.session.execute(
+            select(
+                HttpAsset.id, HttpAsset.scheme, HttpAsset.host, HttpAsset.port
+            ).where(
+                HttpAsset.scan_id == self.ctx.scan_id,
+                HttpAsset.host.in_({h for _, h, _ in wanted}),
+            )
+        ).all()
+        out: dict[str, uuid.UUID] = {}
+        for asset_id, scheme, host, port in rows:
+            key = (scheme, host.lower(), int(port or _DEFAULT_PORTS.get(scheme, 0)))
+            if key not in wanted:
+                continue
+            for url in endpoint_judge.canary_urls(endpoint_judge.root_of(*key)):
+                out[url] = asset_id
+        return out
 
     def _unverified(self) -> int:
         q = select(func.count()).where(
@@ -198,6 +249,7 @@ class EndpointProbeStage(Stage):
         error: str | None,
         reason: str | None,
         answered: int | None = None,
+        dropped: dict[str, int] | None = None,
     ) -> None:
         ended = utc_now()
         self.session.add(
@@ -215,6 +267,7 @@ class EndpointProbeStage(Stage):
                 errors=None if answered is None else max(0, probed - answered),
                 capped=bool(skipped),
                 cap_reason=reason,
+                urls_dropped=dropped or {},
                 error=error,
                 started_at=started,
                 ended_at=ended,

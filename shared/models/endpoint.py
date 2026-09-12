@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from pydantic import Field as PydanticField
 from sqlalchemy import Column, Text
 from sqlalchemy.types import JSON
-from sqlmodel import Field, SQLModel, UniqueConstraint
+from sqlmodel import Field, Index, SQLModel, UniqueConstraint
 
 from shared.definitions.asset_query import MAX_QUERY_LENGTH
 from shared.definitions.endpoints import (
@@ -37,6 +37,7 @@ class Endpoint(SQLModel, table=True):
     __tablename__ = "endpoints"
     __table_args__ = (
         UniqueConstraint("scan_id", "signature", name="uq_endpoint_scan_signature"),
+        Index("ix_endpoints_scan_family", "scan_id", "family"),
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -47,6 +48,7 @@ class Endpoint(SQLModel, table=True):
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
 
     signature: str = Field(max_length=64, index=True)
+    family: str = Field(default="", max_length=64)
 
     # where it is
     url: str = Field(max_length=MAX_URL_LENGTH)
@@ -130,6 +132,7 @@ class EndpointCoverage(SQLModel, table=True):
     errors: int | None = Field(default=None)
     capped: bool = Field(default=False)
     cap_reason: str | None = Field(default=None, max_length=200)
+    urls_dropped: dict = _json_dict()
 
     command: str | None = _text()
     error: str | None = Field(default=None, max_length=2000)
@@ -433,6 +436,7 @@ class CoverageRead(BaseModel):
     errors: int | None = None
     capped: bool = False
     cap_reason: str | None = None
+    urls_dropped: dict[str, int] = PydanticField(default_factory=dict)
     error: str | None = None
     started_at: datetime
     ended_at: datetime | None = None

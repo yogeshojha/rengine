@@ -25,6 +25,7 @@ from shared.logging import get_logger
 from shared.models.endpoint import Endpoint
 from shared.models.http_asset import HttpAsset
 from shared.models.subdomain import Subdomain
+from shared.services.endpoint_noise import NoisePolicy, Sifter
 from shared.utils.datetime import utc_now
 from shared.utils.text import scrub
 
@@ -65,6 +66,15 @@ class UpsertResult:
     updated: int = 0
     rejected: int = 0
     seen: int = 0
+    dropped: dict[str, int] = field(default_factory=dict)
+
+    def add(self, other: UpsertResult) -> None:
+        self.created += other.created
+        self.updated += other.updated
+        self.rejected += other.rejected
+        self.seen += other.seen
+        for rule, count in other.dropped.items():
+            self.dropped[rule] = self.dropped.get(rule, 0) + count
 
 
 @dataclass
@@ -103,6 +113,7 @@ class _Merged:
     """One signature's worth of observations, folded before the database is touched."""
 
     signature: str
+    family: str
     url: str
     scheme: str
     host: str
@@ -171,19 +182,32 @@ class _Merged:
 
 
 def _fold(
-    observations: list[EndpointObservation], default_scheme: str
-) -> tuple[dict[str, _Merged], int]:
+    observations: list[EndpointObservation],
+    default_scheme: str,
+    sifter: Sifter | None = None,
+) -> tuple[dict[str, _Merged], int, dict[str, int]]:
     folded: dict[str, _Merged] = {}
     rejected = 0
-    for obs in observations:
-        parsed = parse_url(obs.url, default_scheme=default_scheme)
-        if parsed is None:
-            rejected += 1
-            continue
+    dropped: dict[str, int] = {}
+    if sifter is not None:
+        sifted = sifter.sift(observations, default_scheme)
+        pairs = sifted.kept
+        rejected = sifted.dropped.pop("rejected", 0)
+        dropped = dict(sifted.dropped)
+    else:
+        pairs = []
+        for obs in observations:
+            parsed = parse_url(obs.url, default_scheme=default_scheme)
+            if parsed is None:
+                rejected += 1
+                continue
+            pairs.append((obs, parsed))
+    for obs, parsed in pairs:
         merged = folded.get(parsed.signature)
         if merged is None:
             merged = _Merged(
                 signature=parsed.signature,
+                family=parsed.family,
                 url=parsed.url,
                 scheme=parsed.scheme,
                 host=parsed.host,
@@ -199,7 +223,7 @@ def _fold(
             folded[parsed.signature] = merged
         merged.add_sample(dict(parsed.param_values))
         merged.absorb(obs)
-    return folded, rejected
+    return folded, rejected, dropped
 
 
 def _row(
@@ -226,6 +250,7 @@ def _row(
             "target_id": target_id,
             "project_id": project_id,
             "signature": merged.signature,
+            "family": merged.family,
             "url": merged.url,
             "host": merged.host,
             "port": merged.port,
@@ -390,11 +415,15 @@ def upsert(
     observations: list[EndpointObservation],
     index: AssetIndex | None = None,
     default_scheme: str = "https",
+    sifter: Sifter | None = None,
+    policy: NoisePolicy | None = None,
 ) -> UpsertResult:
     """Merge one provider's sightings into the scan's endpoints."""
     resolved_source = coerce_source(source)
-    folded, rejected = _fold(observations, default_scheme)
-    result = UpsertResult(rejected=rejected, seen=len(observations))
+    if sifter is None:
+        sifter = Sifter(session, scan_id, policy)
+    folded, rejected, dropped = _fold(observations, default_scheme, sifter)
+    result = UpsertResult(rejected=rejected, seen=len(observations), dropped=dropped)
     if not folded:
         session.commit()
         return result
@@ -472,7 +501,7 @@ def verify(
     default_scheme: str = "https",
 ) -> UpsertResult:
     """Apply probe results to endpoints that already exist."""
-    folded, rejected = _fold(observations, default_scheme)
+    folded, rejected, _dropped = _fold(observations, default_scheme)
     result = UpsertResult(rejected=rejected, seen=len(observations))
     if not folded:
         session.commit()
@@ -534,6 +563,7 @@ def seed_from_assets(
     scan_id: uuid.UUID,
     target_id: uuid.UUID,
     project_id: uuid.UUID,
+    sifter: Sifter | None = None,
 ) -> UpsertResult:
     """Every live web asset is an endpoint the scan already proved exists."""
     rows = session.execute(
@@ -577,4 +607,5 @@ def seed_from_assets(
         project_id=project_id,
         source=EndpointSource.SEED.value,
         observations=observations,
+        sifter=sifter,
     )

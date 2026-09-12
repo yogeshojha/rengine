@@ -17,6 +17,7 @@ from shared.models.http_asset import HttpAsset
 from shared.models.subdomain import Subdomain
 from shared.services import endpoint_inventory
 from shared.services.endpoint_inventory import UpsertResult
+from shared.services.endpoint_noise import NoisePolicy, Sifter
 from shared.services.scope_filter import matches_any
 from shared.utils.datetime import utc_now
 from shared.utils.validation import normalize_domain
@@ -70,11 +71,15 @@ class UrlDiscoveryStage(Stage):
         self._check_abort()
         cfg = self.cfg
 
+        self.sifter = Sifter(
+            self.session, self.ctx.scan_id, NoisePolicy.from_stage(cfg.model_dump())
+        )
         seeded = endpoint_inventory.seed_from_assets(
             self.session,
             scan_id=self.ctx.scan_id,
             target_id=self.ctx.target_id,
             project_id=self.ctx.project_id,
+            sifter=self.sifter,
         )
         hosts = self._hosts()
         if not hosts:
@@ -145,12 +150,9 @@ class UrlDiscoveryStage(Stage):
             source=source,
             observations=kept,
             index=index,
+            sifter=self.sifter,
         )
-        total = tallies.setdefault(source, UpsertResult())
-        total.created += written.created
-        total.updated += written.updated
-        total.rejected += written.rejected
-        total.seen += written.seen
+        tallies.setdefault(source, UpsertResult()).add(written)
         return written.created + written.updated
 
     def _collect(self, sources, context, passive: bool, coverage: list, drain):
@@ -260,6 +262,7 @@ class UrlDiscoveryStage(Stage):
             hosts_dropped=list(result.hosts_dropped),
             urls_found=result.urls_found,
             urls_stored=written.created + written.updated,
+            urls_dropped=dict(written.dropped),
             pages_fetched=result.pages_fetched,
             depth_reached=result.depth_reached,
             errors=result.errors,

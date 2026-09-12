@@ -15,7 +15,8 @@ from shared.definitions.vulnerabilities import CoverageStatus
 from shared.logging import get_logger
 from shared.models.endpoint import Endpoint, EndpointCoverage
 from shared.models.scan import Scan
-from shared.services import endpoint_inventory
+from shared.services import endpoint_inventory, endpoint_judge
+from shared.services.asset_query.lead_cache import bump_sync
 from shared.services.endpoint_inventory import EndpointObservation
 from shared.services.scope_filter import matches_any
 from shared.utils.datetime import utc_now
@@ -129,6 +130,9 @@ def verify_branch(
         written = endpoint_inventory.verify(
             session, scan_id=scan.id, observations=observations
         )
+        dropped = endpoint_judge.judge(session, scan.id, hosts=[host])
+        if dropped:
+            bump_sync([scan.target_id])
         status = (
             CoverageStatus.PARTIAL.value if skipped else CoverageStatus.COMPLETED.value
         )
@@ -145,6 +149,7 @@ def verify_branch(
             status,
             None,
             reason,
+            dropped=dict(dropped),
         )
         logger.info(
             "verified branch", host=host, dir_path=dir_path, requested=len(selected)
@@ -162,6 +167,7 @@ def _store(
     status: str,
     error: str | None,
     reason: str,
+    dropped: dict[str, int] | None = None,
 ) -> None:
     ended = utc_now()
     session.add(
@@ -180,6 +186,7 @@ def _store(
             errors=None if answered is None else max(0, probed - answered),
             capped=total > probed,
             cap_reason=reason,
+            urls_dropped=dropped or {},
             error=error,
             started_at=started,
             ended_at=ended,

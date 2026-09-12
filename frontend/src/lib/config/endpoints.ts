@@ -182,6 +182,71 @@ export const COVERAGE_SOURCE_LABELS: Record<string, string> = {
 	[PROBE_COVERAGE_SOURCE]: 'Verification'
 };
 
+export enum NoiseRule {
+	STATIC = 'static',
+	ARTIFACT = 'artifact',
+	PLATFORM = 'platform',
+	FAMILY = 'family',
+	LOCALE = 'locale',
+	SIBLINGS = 'siblings',
+	NOT_FOUND = 'not_found',
+	SAME_RESPONSE = 'same_response',
+	SAME_REDIRECT = 'same_redirect',
+	CATCH_ALL = 'catch_all',
+	SIMILAR_RESPONSE = 'similar_response',
+	ARCHIVE_ROT = 'archive_rot',
+	OFF_SCOPE = 'off_scope'
+}
+
+export const NOISE_RULE_ORDER: NoiseRule[] = [
+	NoiseRule.STATIC,
+	NoiseRule.ARTIFACT,
+	NoiseRule.PLATFORM,
+	NoiseRule.FAMILY,
+	NoiseRule.LOCALE,
+	NoiseRule.SIBLINGS,
+	NoiseRule.NOT_FOUND,
+	NoiseRule.SAME_RESPONSE,
+	NoiseRule.SAME_REDIRECT,
+	NoiseRule.CATCH_ALL,
+	NoiseRule.SIMILAR_RESPONSE,
+	NoiseRule.ARCHIVE_ROT,
+	NoiseRule.OFF_SCOPE
+];
+
+export const NOISE_RULE_LABELS: Record<string, string> = {
+	[NoiseRule.STATIC]: 'Static files',
+	[NoiseRule.ARTIFACT]: 'Crawler artifacts',
+	[NoiseRule.PLATFORM]: 'Platform noise',
+	[NoiseRule.FAMILY]: 'Past the family cap',
+	[NoiseRule.LOCALE]: 'Other languages',
+	[NoiseRule.SIBLINGS]: 'Past the sibling cap',
+	[NoiseRule.NOT_FOUND]: 'Not found',
+	[NoiseRule.SAME_RESPONSE]: 'Same response',
+	[NoiseRule.SAME_REDIRECT]: 'Same redirect',
+	[NoiseRule.CATCH_ALL]: 'Same as the site root',
+	[NoiseRule.SIMILAR_RESPONSE]: 'Similar response',
+	[NoiseRule.ARCHIVE_ROT]: 'Archive rot',
+	[NoiseRule.OFF_SCOPE]: 'Redirect out of scope'
+};
+
+export const NOISE_RULE_HELP: Record<string, string> = {
+	[NoiseRule.STATIC]: 'Images, fonts, media and stylesheets.',
+	[NoiseRule.ARTIFACT]: 'Template literals, quotes and JavaScript values read as URLs.',
+	[NoiseRule.PLATFORM]: 'Feeds, oEmbed, print views, comment replies and CDN paths.',
+	[NoiseRule.FAMILY]: 'URLs that differ from a kept one only by an identifier.',
+	[NoiseRule.LOCALE]: 'The same path under another language prefix.',
+	[NoiseRule.SIBLINGS]: 'Children of one folder past the cap, of one kind.',
+	[NoiseRule.NOT_FOUND]:
+		'The response matches what the host answers for a path that does not exist.',
+	[NoiseRule.SAME_RESPONSE]: 'Byte-identical to a kept response on the host.',
+	[NoiseRule.SAME_REDIRECT]: 'Redirects where a kept URL on the host already redirects.',
+	[NoiseRule.CATCH_ALL]: "The site root's response served at another path.",
+	[NoiseRule.SIMILAR_RESPONSE]: 'Same status, title and size as ten or more kept responses.',
+	[NoiseRule.ARCHIVE_ROT]: 'Known only from archives and gone.',
+	[NoiseRule.OFF_SCOPE]: 'Redirects to a host outside the scan.'
+};
+
 export const SOURCE_ICONS: Record<string, IconComponent> = {
 	[EndpointSource.SEED]: Home,
 	[EndpointSource.RESPONSE_MINING]: FileSearch,

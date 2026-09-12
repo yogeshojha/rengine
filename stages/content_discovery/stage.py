@@ -16,6 +16,7 @@ from shared.logging import get_logger
 from shared.models.http_asset import HttpAsset
 from shared.services import endpoint_inventory
 from shared.services.endpoint_inventory import EndpointObservation
+from shared.services.endpoint_noise import NoisePolicy
 from shared.services.wordlists import WordlistError, read_words
 from stages.base import ALL_TARGETS, Stage, StageResult
 from stages.content_discovery.config import ContentDiscoveryConfig
@@ -163,6 +164,7 @@ class ContentDiscoveryStage(Stage):
             project_id=self.ctx.project_id,
             source=EndpointSource.FUZZ.value,
             observations=batch,
+            policy=NoisePolicy.protected(),
         )
         self.session.commit()
         return result.created + result.updated

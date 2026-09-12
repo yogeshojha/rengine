@@ -13,6 +13,7 @@ from shared.models.scan import Scan
 from shared.models.subdomain import Subdomain
 from shared.services import endpoint_inventory, ip_inventory
 from shared.services.endpoint_inventory import EndpointObservation
+from shared.services.endpoint_noise import NoisePolicy
 from shared.utils.datetime import utc_now
 from stages.asset_seed.config import AssetSeedConfig
 from stages.base import ALL_TARGETS, Stage, StageResult
@@ -79,6 +80,7 @@ class AssetSeedStage(Stage):
             project_id=self.ctx.project_id,
             source=EndpointSource.PROXY.value,
             observations=[EndpointObservation(url=url) for url in urls],
+            policy=NoisePolicy.protected(),
         )
         return result.created + result.updated
 
