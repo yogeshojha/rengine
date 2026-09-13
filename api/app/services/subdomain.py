@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from datetime import datetime, timedelta
+from datetime import timedelta
 from uuid import UUID
 
 from sqlalchemy import (
@@ -95,6 +95,7 @@ from shared.models.subdomain import (
 from shared.models.vulnerability import Vulnerability
 from shared.services.asset_query import lead_cache
 from shared.services.asset_query.renders import cluster, is_identity
+from shared.services.surface_query import web_assets as surface_hosts
 from shared.utils.datetime import utc_now
 from shared.utils.imagehash import distance, hex_digest
 from shared.utils.infra import shared_edge
@@ -279,68 +280,17 @@ class SubdomainService:
     _status_pred = staticmethod(preds.status_class)
     _cert_pred = staticmethod(preds.cert_state)
 
-    def _apply_filter(self, query, f: SubdomainFilter, now: datetime, scope: ScopeLike):
-        if f.statuses:
-            query = query.where(or_(*[self._status_pred(s) for s in f.statuses]))
-        if f.tech:
-            query = query.where(
-                func.jsonb_exists_any(cast(Subdomain.tech, JSONB), pg_array(f.tech))
-            )
-        if f.sources:
-            query = query.where(
-                func.jsonb_exists_any(
-                    cast(Subdomain.sources, JSONB), pg_array(f.sources)
-                )
-            )
-        if f.cert:
-            query = query.where(or_(*[self._cert_pred(c, now) for c in f.cert]))
-        if f.hygiene:
-            query = query.where(preds.hygiene(f.hygiene))
-        if f.services:
-            query = query.where(
-                preds.port_match(Port.service_name.in_(f.services), scope)
-            )
-        if f.cdn == "yes":
-            query = query.where(Subdomain.is_cdn.is_(True))
-        elif f.cdn == "no":
-            query = query.where(Subdomain.is_cdn.is_(False))
-        if f.waf == "present":
-            query = query.where(Subdomain.waf.isnot(None))
-        elif f.waf == "none":
-            query = query.where(Subdomain.waf.is_(None))
-        if f.live:
-            query = query.where(preds.live())
-        if f.screenshot:
-            query = query.where(Subdomain.screenshot_path.isnot(None))
-        if f.new:
-            query = query.where(preds.is_new(scope))
-        if f.issues:
-            query = query.where(preds.issues(now))
-        return query
-
-    @staticmethod
-    def _order(query, f: SubdomainFilter):
-        col = {
-            "status": Subdomain.http_status,
-            "size": Subdomain.content_length,
-            "time": Subdomain.response_time,
-            "title": Subdomain.page_title,
-            "cert": Subdomain.tls_not_after,
-            "discovered": Subdomain.discovered_at,
-            "ip": cast(Subdomain.resolved_ips, JSONB).op("->>")(0),
-        }.get(f.sort, Subdomain.name)
-        primary = col.desc() if f.order == "desc" else col.asc()
-        return query.order_by(primary.nulls_last(), Subdomain.name.asc())
+    _apply_filter = staticmethod(surface_hosts.apply_filter)
+    _order = staticmethod(surface_hosts.order)
+    _scoped = staticmethod(surface_hosts.scoped)
+    _compiled = staticmethod(surface_hosts.compiled)
 
     async def search(
         self, project_id: UUID, scope: ScopeLike, f: SubdomainFilter
     ) -> SubdomainSearchResult:
         now = utc_now()
         scope = QueryScope.of(scope)
-        base = select(Subdomain).where(
-            Subdomain.project_id == project_id, scope.match(Subdomain.scan_id)
-        )
-        base = self._apply_filter(base, f, now, scope)
+        base = self._scoped(project_id, scope, f, now)
         try:
             node = parse_query(f.q)
             predicate = compile_query(node, QueryContext(scope=scope, now=now))
@@ -504,10 +454,7 @@ class SubdomainService:
 
         async def _build() -> QueryLeads:
             now = utc_now()
-            base = select(Subdomain.id).where(
-                Subdomain.project_id == project_id, scope.match(Subdomain.scan_id)
-            )
-            base = self._apply_filter(base, f, now, scope)
+            base = self._scoped(project_id, scope, f, now, columns=(Subdomain.id,))
             await self.session.execute(text(STATEMENT_TIMEOUT))
             await self.session.execute(text(NO_JIT))
             try:
@@ -537,10 +484,9 @@ class SubdomainService:
     ) -> list[tuple[str, UUID]]:
         now = utc_now()
         scope = QueryScope.of(scope)
-        base = select(Subdomain.name, Subdomain.scan_id).where(
-            Subdomain.project_id == project_id, scope.match(Subdomain.scan_id)
+        base = self._scoped(
+            project_id, scope, f, now, columns=(Subdomain.name, Subdomain.scan_id)
         )
-        base = self._apply_filter(base, f, now, scope)
         try:
             predicate = compile_query(
                 parse_query(f.q), QueryContext(scope=scope, now=now)
@@ -559,10 +505,7 @@ class SubdomainService:
     ) -> QueryGroups:
         now = utc_now()
         scope = QueryScope.of(scope)
-        base = select(Subdomain.id).where(
-            Subdomain.project_id == project_id, scope.match(Subdomain.scan_id)
-        )
-        base = self._apply_filter(base, f, now, scope)
+        base = self._scoped(project_id, scope, f, now, columns=(Subdomain.id,))
         try:
             node = parse_query(f.q)
             predicate = compile_query(node, QueryContext(scope=scope, now=now))

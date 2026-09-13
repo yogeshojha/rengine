@@ -29,7 +29,6 @@ from sqlalchemy.orm import aliased
 from app.services.asset_query import (
     NO_JIT,
     STATEMENT_TIMEOUT,
-    EndpointQueryContext,
     QueryScope,
     QuerySyntaxError,
     ScopeLike,
@@ -104,6 +103,7 @@ from shared.models.scan import Scan
 from shared.models.vulnerability import Vulnerability
 from shared.services.asset_query import lead_cache
 from shared.services.celery_dispatch import dispatch_endpoint_verify
+from shared.services.surface_query import endpoints as surface_endpoints
 from shared.utils.datetime import utc_now
 
 logger = get_logger(__name__)
@@ -262,82 +262,11 @@ class EndpointService:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    @staticmethod
-    def _context(scope: QueryScope, now: datetime) -> EndpointQueryContext:
-        return EndpointQueryContext(scope=scope, now=now)
-
-    @staticmethod
-    def _apply_filter(query, f: EndpointFilter, scope: QueryScope):
-        if f.host:
-            query = query.where(Endpoint.host == f.host)
-        if f.dir_path:
-            prefix = f.dir_path if f.dir_path.endswith("/") else f"{f.dir_path}/"
-            if f.subtree:
-                escaped = (
-                    prefix.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-                )
-                query = query.where(Endpoint.dir_path.like(f"{escaped}%", escape="\\"))
-            else:
-                query = query.where(Endpoint.dir_path == prefix)
-        if f.endpoint_class:
-            query = query.where(Endpoint.endpoint_class == f.endpoint_class)
-        if f.source:
-            query = query.where(
-                func.jsonb_exists(cast(Endpoint.sources, JSONB), f.source)
-            )
-        if f.interest:
-            query = query.where(
-                func.jsonb_exists(cast(Endpoint.interest, JSONB), f.interest)
-            )
-        if f.status_class:
-            query = query.where(endpoint_status_class(f.status_class))
-        if f.probed is not None:
-            query = query.where(Endpoint.is_probed.is_(f.probed))
-        if f.new:
-            query = query.where(endpoint_is_new(scope))
-        if f.hide_static:
-            query = query.where(~_is_static())
-        return query
-
-    @staticmethod
-    def _order(query, f: EndpointFilter):
-        if f.sort == "relevance":
-            return query.order_by(
-                (func.jsonb_array_length(cast(Endpoint.interest, JSONB)) > 0)
-                .desc()
-                .nulls_last(),
-                (Endpoint.param_count > 0).desc(),
-                Endpoint.is_probed.desc(),
-                endpoint_status_class("2xx").desc(),
-                Endpoint.depth.asc(),
-                Endpoint.host.asc(),
-                Endpoint.path.asc(),
-            )
-        column = {
-            "path": Endpoint.path,
-            "url": Endpoint.url,
-            "host": Endpoint.host,
-            "status": Endpoint.status_code,
-            "length": Endpoint.content_length,
-            "params": Endpoint.param_count,
-            "depth": Endpoint.depth,
-            "seen": Endpoint.discovered_at,
-            "class": Endpoint.endpoint_class,
-        }.get(f.sort, Endpoint.path)
-        primary = column.desc() if f.direction == "desc" else column.asc()
-        return query.order_by(
-            primary.nulls_last(), Endpoint.host.asc(), Endpoint.path.asc()
-        )
-
-    def _scoped(self, scope: QueryScope, f: EndpointFilter, columns=None):
-        base = select(Endpoint) if columns is None else select(*columns)
-        base = base.where(scope.match(Endpoint.scan_id))
-        return self._apply_filter(base, f, scope)
-
-    def _compiled(self, scope: QueryScope, f: EndpointFilter, now: datetime):
-        return compile_endpoint_query(
-            parse_query(f.q, ENDPOINT_QUERY), self._context(scope, now)
-        )
+    _context = staticmethod(surface_endpoints.context)
+    _apply_filter = staticmethod(surface_endpoints.apply_filter)
+    _order = staticmethod(surface_endpoints.order)
+    _scoped = staticmethod(surface_endpoints.scoped)
+    _compiled = staticmethod(surface_endpoints.compiled)
 
     async def seeds(
         self, scope: ScopeLike, f: EndpointFilter, limit: int
