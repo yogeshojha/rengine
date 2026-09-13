@@ -9,6 +9,10 @@ MAX_HUBS_PER_KIND = 80
 MIN_SHARED = 2
 # a body this small is not an identity
 MIN_BODY_BYTES = 512
+# two renders within this many bits of each other are the same page
+SCREENSHOT_DISTANCE = 2
+# a render whose hash sets fewer bits than this is blank, not an identity
+SCREENSHOT_MIN_POPCOUNT = 4
 # hidden by default at or above this share
 COMMON_SHARE = 0.5
 MIN_ESTATE_FOR_COMMON = 25
@@ -20,6 +24,7 @@ class CorrelationKind(StrEnum):
     TITLE = "title"
     FAVICON = "favicon"
     BODY = "content_hash"
+    SCREENSHOT = "screenshot"
     JARM = "jarm"
     CERT = "cert.fingerprint"
     CERT_ISSUER = "cert.issuer"
@@ -35,6 +40,7 @@ CORRELATION_KIND_LABELS: dict[str, str] = {
     CorrelationKind.TITLE.value: "Page title",
     CorrelationKind.FAVICON.value: "Favicon",
     CorrelationKind.BODY.value: "Body hash",
+    CorrelationKind.SCREENSHOT.value: "Rendered page",
     CorrelationKind.JARM.value: "TLS fingerprint",
     CorrelationKind.CERT.value: "Certificate",
     CorrelationKind.CERT_ISSUER.value: "Certificate issuer",
@@ -50,6 +56,7 @@ CORRELATION_KIND_HELP: dict[str, str] = {
     CorrelationKind.TITLE.value: "Hosts responding with the same page title",
     CorrelationKind.FAVICON.value: "Hosts serving the same favicon hash",
     CorrelationKind.BODY.value: "Hosts returning an identical response body",
+    CorrelationKind.SCREENSHOT.value: "Hosts whose screenshots render the same page",
     CorrelationKind.JARM.value: "Hosts with the same JARM TLS fingerprint",
     CorrelationKind.CERT.value: "Hosts presenting the same certificate",
     CorrelationKind.CERT_ISSUER.value: "Hosts presenting certificates from the same issuer",
@@ -67,6 +74,7 @@ CORRELATION_DEFAULT_KINDS: frozenset[str] = frozenset(
         CorrelationKind.TITLE.value,
         CorrelationKind.FAVICON.value,
         CorrelationKind.BODY.value,
+        CorrelationKind.SCREENSHOT.value,
         CorrelationKind.JARM.value,
         CorrelationKind.CERT.value,
     }

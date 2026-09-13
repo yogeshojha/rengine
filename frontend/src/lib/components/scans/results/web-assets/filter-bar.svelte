@@ -32,6 +32,8 @@
 		density: string;
 		onDensity: (d: string) => void;
 		onlyShots: boolean;
+		groupRenders: boolean;
+		onGroupRenders: (v: boolean) => void;
 		onOnlyShots: (v: boolean) => void;
 		sortKey: string;
 		sortDir: 1 | -1;
@@ -55,6 +57,8 @@
 		density,
 		onDensity,
 		onlyShots,
+		groupRenders,
+		onGroupRenders,
 		onOnlyShots,
 		sortKey,
 		sortDir,
@@ -193,6 +197,16 @@
 			>
 				<Image class="h-4 w-4" />
 				<span class="hidden sm:inline">With screenshot</span>
+			</Toggle>
+			<Toggle
+				pressed={groupRenders}
+				onPressedChange={onGroupRenders}
+				variant="outline"
+				class="h-9 gap-2 px-3 text-sm font-normal"
+				aria-label="Group web assets that render the same page"
+			>
+				<Layers class="h-4 w-4" />
+				<span class="hidden sm:inline">Group identical</span>
 			</Toggle>
 		{/if}
 

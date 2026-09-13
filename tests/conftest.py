@@ -200,6 +200,7 @@ class Estate:
         cdn_name: str | None = None,
         favicon: str | None = None,
         sources: list[str] | None = None,
+        phash: int | None = None,
     ) -> None:
         sid = self.scans[scan]
         target_id = await self._target_of(sid)
@@ -221,6 +222,8 @@ class Estate:
                     is_cdn=cdn_name is not None,
                     cdn_name=cdn_name,
                     favicon_hash=favicon,
+                    screenshot_path=f"{sid}/screenshot/{n}.png" if phash else None,
+                    screenshot_phash=phash,
                 )
             )
         await self.session.flush()

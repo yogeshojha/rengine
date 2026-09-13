@@ -43,8 +43,17 @@ from app.services.ip_address import IpAddressService
 from app.services.port import PortService
 from app.services.target_names import target_names
 from shared.definitions import hygiene as hygiene_defs
-from shared.definitions.asset_query import COUNT_CAP, HOST_QUERY
-from shared.definitions.correlation import COMMON_SHARE, MIN_ESTATE_FOR_COMMON
+from shared.definitions.asset_query import (
+    COUNT_CAP,
+    HOST_QUERY,
+    MAX_GROUPS,
+    RENDER_SAMPLE_HOSTS,
+)
+from shared.definitions.correlation import (
+    COMMON_SHARE,
+    MIN_ESTATE_FOR_COMMON,
+    SCREENSHOT_DISTANCE,
+)
 from shared.definitions.ports import SENSITIVE_PORTS, port_interest
 from shared.definitions.vulnerabilities import SEVERITY_ORDER
 from shared.logging import get_logger
@@ -71,6 +80,8 @@ from shared.models.subdomain import (
     Facet,
     HygieneCheckCount,
     HygieneSummary,
+    RenderGroup,
+    RenderGroups,
     Subdomain,
     SubdomainFacets,
     SubdomainFilter,
@@ -83,7 +94,9 @@ from shared.models.subdomain import (
 )
 from shared.models.vulnerability import Vulnerability
 from shared.services.asset_query import lead_cache
+from shared.services.asset_query.renders import cluster, is_identity
 from shared.utils.datetime import utc_now
+from shared.utils.imagehash import distance, hex_digest
 from shared.utils.infra import shared_edge
 
 logger = get_logger(__name__)
@@ -378,6 +391,9 @@ class SubdomainService:
             Subdomain.favicon_hash,
             {s.favicon_hash for s in rows if s.favicon_hash},
         )
+        render_counts = await self._render_counts(
+            scope, {s.screenshot_phash for s in rows if s.screenshot_phash is not None}
+        )
         findings = await self._findings_for(scope, [s.name for s in rows])
         endpoint_counts = await self._endpoint_counts(scope, [s.name for s in rows])
         evidence = await collect_evidence(self.session, scope, rows, node)
@@ -396,6 +412,12 @@ class SubdomainService:
                     endpoint_count=endpoint_counts.get(s.name, 0),
                     title_count=title_counts.get(s.page_title, 0),
                     favicon_count=favicon_counts.get(s.favicon_hash, 0),
+                    render_hash=(
+                        hex_digest(s.screenshot_phash)
+                        if s.screenshot_phash is not None
+                        else None
+                    ),
+                    render_count=render_counts.get(s.screenshot_phash, 0),
                     vuln_count=findings.get(s.name, _NO_FINDINGS)[0],
                     vuln_severity=findings.get(s.name, _NO_FINDINGS)[1],
                     vuln_kev=findings.get(s.name, _NO_FINDINGS)[2],
@@ -556,6 +578,111 @@ class SubdomainService:
             await self.session.rollback()
             logger.info("search groups failed", error=str(exc.orig))
             return QueryGroups(dimension=key)
+
+    async def _render_histogram(self, scope: QueryScope) -> dict[int, int]:
+        rows = await self.session.execute(
+            select(Subdomain.screenshot_phash, func.count())
+            .where(
+                scope.match(Subdomain.scan_id),
+                Subdomain.screenshot_phash.isnot(None),
+            )
+            .group_by(Subdomain.screenshot_phash)
+        )
+        return {int(value): int(n) for value, n in rows.all()}
+
+    async def renders(
+        self, project_id: UUID, scope: ScopeLike, f: SubdomainFilter
+    ) -> RenderGroups:
+        """Screenshot clusters over the filtered rows, one sample image each."""
+        now = utc_now()
+        scope = QueryScope.of(scope)
+        base = select(Subdomain.id).where(
+            Subdomain.project_id == project_id, scope.match(Subdomain.scan_id)
+        )
+        base = self._apply_filter(base, f, now, scope)
+        try:
+            node = parse_query(f.q)
+            predicate = compile_query(node, QueryContext(scope=scope, now=now))
+        except QuerySyntaxError as exc:
+            return RenderGroups(
+                error=QueryError(message=exc.message, start=exc.start, end=exc.end)
+            )
+        if predicate is not None:
+            base = base.where(predicate)
+
+        await self.session.execute(text(STATEMENT_TIMEOUT))
+        await self.session.execute(text(NO_JIT))
+        scoped = base.subquery()
+        rows = (
+            await self.session.execute(
+                select(
+                    Subdomain.screenshot_phash,
+                    func.count(func.distinct(Subdomain.id)),
+                    func.mode().within_group(Subdomain.page_title),
+                    func.min(Subdomain.name),
+                    func.min(Subdomain.screenshot_path),
+                )
+                .select_from(Subdomain)
+                .join(scoped, Subdomain.id == scoped.c.id)
+                .where(Subdomain.screenshot_phash.isnot(None))
+                .group_by(Subdomain.screenshot_phash)
+            )
+        ).all()
+        histogram = {int(raw): int(n) for raw, n, _, _, _ in rows}
+        detail = {int(raw): (title, name, path) for raw, _, title, name, path in rows}
+        clusters = cluster(histogram)
+        shared = {h for found in clusters if found.count > 1 for h in found.hashes}
+        total = await self.session.scalar(select(func.count()).select_from(scoped))
+        groups = [
+            RenderGroup(
+                hash=found.digest,
+                label=detail[found.value][0],
+                count=found.count,
+                hosts=await self._render_hosts(scoped, found.hashes),
+                screenshot_path=detail[found.value][2],
+                query=f"screenshot:{found.digest}",
+            )
+            for found in clusters[:MAX_GROUPS]
+        ]
+        return RenderGroups(
+            groups=groups,
+            total_groups=len(clusters),
+            grouped=sum(
+                n for h, n in histogram.items() if is_identity(h) and h in shared
+            ),
+            ungrouped=sum(
+                n for h, n in histogram.items() if is_identity(h) and h not in shared
+            ),
+            blank=sum(n for h, n in histogram.items() if not is_identity(h)),
+            unrendered=int(total or 0) - sum(histogram.values()),
+        )
+
+    async def _render_hosts(self, scoped, hashes: tuple[int, ...]) -> list[str]:
+        rows = await self.session.execute(
+            select(Subdomain.name)
+            .select_from(Subdomain)
+            .join(scoped, Subdomain.id == scoped.c.id)
+            .where(Subdomain.screenshot_phash.in_(hashes))
+            .order_by(Subdomain.name)
+            .limit(RENDER_SAMPLE_HOSTS)
+        )
+        return [name for (name,) in rows.all()]
+
+    async def _render_counts(
+        self, scope: QueryScope, values: set[int]
+    ) -> dict[int, int]:
+        """How many rows in scope render like each of the page's own hashes."""
+        if not values:
+            return {}
+        histogram = await self._render_histogram(scope)
+        return {
+            value: sum(
+                n
+                for other, n in histogram.items()
+                if distance(value, other) <= SCREENSHOT_DISTANCE
+            )
+            for value in values
+        }
 
     async def _endpoint_counts(
         self, scope: QueryScope, hosts: list[str]

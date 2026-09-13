@@ -95,6 +95,7 @@ celery_app.conf.task_routes = {
     "app.tasks.threat_intel.*": {"queue": "default"},
     "app.tasks.freshness.*": {"queue": "default"},
     "app.tasks.hygiene.*": {"queue": "default"},
+    "app.tasks.screenshots.*": {"queue": "default"},
     "app.tasks.software.*": {"queue": "default"},
     "app.tasks.bounty_programs.*": {"queue": "default"},
     "app.tasks.toolbox.*": {"queue": CRITICAL_QUEUE},
@@ -121,6 +122,7 @@ celery_app.autodiscover_tasks(
         "app.tasks.toolbox",
         "app.tasks.retention",
         "app.tasks.hygiene",
+        "app.tasks.screenshots",
         "app.tasks.software",
         "app.tasks.watch",
     ]
@@ -192,6 +194,10 @@ celery_app.conf.beat_schedule = {
     },
     "hygiene-backfill": {
         "task": "app.tasks.hygiene.backfill",
+        "schedule": HYGIENE_BACKFILL_SECONDS,
+    },
+    "screenshot-backfill": {
+        "task": "app.tasks.screenshots.backfill",
         "schedule": HYGIENE_BACKFILL_SECONDS,
     },
     "software-backfill": {

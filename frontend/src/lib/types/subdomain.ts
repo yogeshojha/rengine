@@ -1,4 +1,4 @@
-import type { MatchEvidence } from './asset-query';
+import type { MatchEvidence, QueryError } from './asset-query';
 import type { CrossLink } from './crosslink';
 
 export interface SubdomainRead {
@@ -39,12 +39,33 @@ export interface SubdomainRead {
 	endpoint_count?: number;
 	title_count?: number;
 	favicon_count?: number;
+	render_hash?: string | null;
+	render_count?: number;
 	vuln_count?: number;
 	vuln_severity?: string | null;
 	vuln_kev?: boolean;
 	matched_in?: MatchEvidence[];
 	cross_links?: CrossLink[];
 	discovered_at: string;
+}
+
+export interface RenderGroup {
+	hash: string;
+	label: string | null;
+	count: number;
+	hosts: string[];
+	screenshot_path: string | null;
+	query: string;
+}
+
+export interface RenderGroups {
+	groups: RenderGroup[];
+	total_groups: number;
+	grouped: number;
+	ungrouped: number;
+	blank: number;
+	unrendered: number;
+	error?: QueryError | null;
 }
 
 export interface SubdomainSummary {

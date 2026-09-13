@@ -19,11 +19,12 @@ from sqlalchemy import (
     select,
     union_all,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import BIT, JSONB
 from sqlalchemy.dialects.postgresql import array as pg_array
 from sqlalchemy.orm import aliased
 
 from shared.definitions import hygiene as hygiene_defs
+from shared.definitions.correlation import SCREENSHOT_DISTANCE
 from shared.definitions.endpoints import ARCHIVE_SOURCES, LINKED_SOURCES
 from shared.definitions.evidence import Evidence
 from shared.definitions.ports import SENSITIVE_PORTS
@@ -289,6 +290,14 @@ def auth():
 
 def resolved():
     return func.jsonb_array_length(cast(Subdomain.resolved_ips, JSONB)) > 0
+
+
+def render_distance(column, value: int):
+    return func.bit_count(cast(column.op("#")(literal(value)), BIT(64)))
+
+
+def renders_like(column, value: int):
+    return render_distance(column, value) <= SCREENSHOT_DISTANCE
 
 
 def sensitive(scope: ScopeLike):

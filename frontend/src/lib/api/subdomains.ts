@@ -2,7 +2,7 @@ import { api } from './client';
 import { scopeQuery } from '$lib/utilities/surface-scope';
 import type { HostingFlow } from '$lib/types/hosting-flow';
 import type { CorrelationGraph } from '$lib/types/correlation';
-import type { SubdomainSummary, TargetSubdomainRead } from '$lib/types/subdomain';
+import type { RenderGroups, SubdomainSummary, TargetSubdomainRead } from '$lib/types/subdomain';
 import type { QueryCounts, QueryGroups, QueryLeads, RelatedDomains } from '$lib/types/asset-query';
 import type {
 	Facet,
@@ -79,6 +79,13 @@ export const subdomainsApi = {
 	): Promise<QueryGroups> {
 		return api.post<QueryGroups>(
 			`/subdomains/search/groups?${scopeQuery({ projectId, scanId })}&group_by=${encodeURIComponent(groupBy)}`,
+			filter
+		);
+	},
+
+	async renders(projectId: string, scanId: string, filter: SubdomainFilter): Promise<RenderGroups> {
+		return api.post<RenderGroups>(
+			`/subdomains/search/renders?${scopeQuery({ projectId, scanId })}`,
 			filter
 		);
 	},

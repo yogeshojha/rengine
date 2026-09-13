@@ -29,6 +29,7 @@ async def _rich_scan(estate, now):
         cdn_name="cloudflare",
         favicon="1234567890",
         cname="edge.cdn.example.net",
+        phash=0x0030242430D41010,
     )
     await estate.hosts(
         "run",
@@ -39,9 +40,16 @@ async def _rich_scan(estate, now):
         title="Login",
         tech=["nginx"],
         webserver="nginx",
+        phash=0x0030242430D41012,
     )
     await estate.hosts(
-        "run", ["dev.example.com"], at=now, ips=["10.0.0.2"], status=403, title="Denied"
+        "run",
+        ["dev.example.com"],
+        at=now,
+        ips=["10.0.0.2"],
+        status=403,
+        title="Denied",
+        phash=0x7F3C1908A4D6E251,
     )
     await estate.hosts("run", ["dead.example.com"], at=now)
     await estate.ports(

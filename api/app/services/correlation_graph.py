@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
+from collections.abc import Callable
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -31,6 +32,7 @@ from shared.models.scan_correlation import (
 )
 from shared.models.subdomain import Subdomain
 from shared.services.asset_query.groups import group_token
+from shared.services.asset_query.renders import cluster
 from shared.utils.infra import public_ca, shared_edge
 
 _HTTP_OK = 200
@@ -48,6 +50,8 @@ _HOST_KINDS: dict[str, tuple[str, str]] = {
     CorrelationKind.SERVER.value: ("webserver", "="),
     CorrelationKind.CDN.value: ("cdn_name", "="),
 }
+# a kind whose value is derived rather than read off a column
+_DERIVED_OPERATORS: dict[str, str] = {CorrelationKind.SCREENSHOT.value: ":"}
 _ASSET_KINDS: dict[str, tuple[str, str]] = {
     CorrelationKind.BODY.value: ("content_hash", "="),
     CorrelationKind.JARM.value: ("jarm", "="),
@@ -83,9 +87,30 @@ def _label(kind: str, value: str) -> str:
         CorrelationKind.BODY.value,
         CorrelationKind.JARM.value,
         CorrelationKind.FAVICON.value,
+        CorrelationKind.SCREENSHOT.value,
     ):
         return value if len(value) <= _HASH_LABEL else f"{value[:8]}…{value[-4:]}"
     return value if len(value) <= _LABEL_MAX else f"{value[: _LABEL_MAX - 1]}…"
+
+
+def _render_members(rows) -> dict[str, set[int]]:
+    """Hosts grouped by the cluster their screenshot falls in."""
+    found = cluster(Counter(r.screenshot_phash for r in rows if r.screenshot_phash))
+    digests: dict[int, str] = {}
+    for group in found:
+        for value in group.hashes:
+            digests.setdefault(value, group.digest)
+    members: dict[str, set[int]] = defaultdict(set)
+    for i, row in enumerate(rows):
+        digest = digests.get(row.screenshot_phash)
+        if digest is not None:
+            members[digest].add(i)
+    return members
+
+
+_DERIVED_MEMBERS: dict[str, Callable[[list], dict[str, set[int]]]] = {
+    CorrelationKind.SCREENSHOT.value: _render_members,
+}
 
 
 def _hubs_of_kind(
@@ -109,7 +134,7 @@ def _hubs_of_kind(
             )
         )
     candidates.sort(key=lambda c: (bool(c[4]), c[3], -len(c[1]), c[0]))
-    operator = {**_HOST_KINDS, **_ASSET_KINDS}[kind][1]
+    operator = _DERIVED_OPERATORS.get(kind) or {**_HOST_KINDS, **_ASSET_KINDS}[kind][1]
     return [
         CorrelationHub(
             id=f"{kind}:{value}",
@@ -147,6 +172,7 @@ class CorrelationGraphService:
                     Subdomain.tech,
                     Subdomain.webserver,
                     Subdomain.cdn_name,
+                    Subdomain.screenshot_phash,
                 )
                 .where(Subdomain.project_id == project_id, Subdomain.scan_id == scan_id)
                 .order_by(
@@ -181,6 +207,9 @@ class CorrelationGraphService:
             for kind, (attr, _op) in _HOST_KINDS.items():
                 for value in _values(getattr(row, attr)):
                     members[kind][value].add(i)
+
+        for kind, build_members in _DERIVED_MEMBERS.items():
+            members[kind] = build_members(rows)
 
         assets = (
             await self.session.execute(

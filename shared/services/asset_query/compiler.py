@@ -41,7 +41,7 @@ from .terms import (
     target_match,
     tri_state,
 )
-from .values import asn_number, like, network, status_range, tsquery
+from .values import asn_number, like, network, render_hash, status_range, tsquery
 
 _IPV4_RE = re.compile(r"^[0-9]{1,3}(\.[0-9]{1,3}){3}$")
 _IP_CHARS_RE = r"^[0-9a-fA-F:.]+$"
@@ -287,6 +287,9 @@ _SUBDOMAIN_BUILDERS = {
     ),
     "paths": lambda c, ctx: number_match(_endpoint_count(ctx.scope), c, int_coerce(c)),
     "favicon": lambda c, _ctx: string_match(Subdomain.favicon_hash, c),
+    "screenshot": lambda c, _ctx: preds.renders_like(
+        Subdomain.screenshot_phash, render_hash(c.values[0], c.start, c.end)
+    ),
     "ip": lambda c, _ctx: _ip(c),
     "asn": lambda c, _ctx: number_match(
         Subdomain.asn, c, lambda raw: asn_number(raw, c.start, c.end)

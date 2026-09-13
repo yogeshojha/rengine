@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel
-from sqlalchemy import Column, Computed, Text
+from sqlalchemy import BigInteger, Column, Computed, Text
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
@@ -104,6 +104,9 @@ class HttpAsset(SQLModel, table=True):
     tls_self_signed: bool | None = Field(default=None)
 
     screenshot_path: str | None = Field(default=None, max_length=500)
+    screenshot_phash: int | None = Field(
+        default=None, sa_column=Column(BigInteger, nullable=True)
+    )
 
     # raw capture (httpx -irr)
     raw_request: str | None = _text()

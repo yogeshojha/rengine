@@ -29,6 +29,7 @@ from shared.models.scan_correlation import (
 from shared.models.subdomain import (
     Facet,
     HygieneSummary,
+    RenderGroups,
     SubdomainFacets,
     SubdomainFilter,
     SubdomainRead,
@@ -135,6 +136,25 @@ async def subdomain_search_groups(
 ):
     return await service.groups(
         project_id=project_id, scope=scope, f=body, key=group_by
+    )
+
+
+@router.post("/search/renders", response_model=RenderGroups)
+async def subdomain_search_renders(
+    _current_user: CurrentUser,
+    service: Annotated[SubdomainService, Depends(get_service)],
+    body: SubdomainFilter,
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    scope: WebAssetScope,
+):
+    return await lead_cache.cached(
+        service.session,
+        name="search:renders",
+        scans=scope.ids,
+        facets=f"{project_id}|{body.model_dump_json()}",
+        model=RenderGroups,
+        build=lambda: service.renders(project_id=project_id, scope=scope, f=body),
+        ttl=lead_cache.SEARCH_TTL_SECONDS,
     )
 
 

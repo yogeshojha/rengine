@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import Column
+from sqlalchemy import BigInteger, Column
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
@@ -56,6 +56,9 @@ class Subdomain(SQLModel, table=True):
     tls_expired: bool | None = Field(default=None)
     tls_self_signed: bool | None = Field(default=None)
     screenshot_path: str | None = Field(default=None, max_length=500)
+    screenshot_phash: int | None = Field(
+        default=None, sa_column=Column(BigInteger, nullable=True)
+    )
     hygiene_issues: list | None = Field(
         default=None, sa_column=Column(JSON(none_as_null=True), nullable=True)
     )
@@ -118,6 +121,8 @@ class SubdomainRow(SubdomainRead):
     endpoint_count: int = 0
     title_count: int = 0
     favicon_count: int = 0
+    render_hash: str | None = None
+    render_count: int = 0
     vuln_count: int = 0
     vuln_severity: str | None = None
     vuln_kev: bool = False
@@ -178,6 +183,27 @@ class SubdomainSearchResult(BaseModel):
     items: list[SubdomainRow] = Field(default_factory=list)
     total: int = 0
     total_capped: bool = False
+    error: QueryError | None = None
+
+
+class RenderGroup(BaseModel):
+    """Web assets whose screenshots render the same page."""
+
+    hash: str
+    label: str | None = None
+    count: int = 0
+    hosts: list[str] = Field(default_factory=list)
+    screenshot_path: str | None = None
+    query: str
+
+
+class RenderGroups(BaseModel):
+    groups: list[RenderGroup] = Field(default_factory=list)
+    total_groups: int = 0
+    grouped: int = 0
+    ungrouped: int = 0
+    blank: int = 0
+    unrendered: int = 0
     error: QueryError | None = None
 
 

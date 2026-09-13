@@ -12,6 +12,7 @@ dependencies = [
     "httpx>=0.27",
     "jinja2>=3.1.4",
     "markdown-it-py>=3.0.0",
+    "pillow>=11.0",
     "flower>=2.0.1",
     "psycopg2-binary>=2.9.11",
     "pyyaml>=6.0",

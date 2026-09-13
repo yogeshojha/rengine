@@ -2,6 +2,7 @@ import Network from '@lucide/svelte/icons/network';
 import Link2 from '@lucide/svelte/icons/link-2';
 import Heading from '@lucide/svelte/icons/heading';
 import Image from '@lucide/svelte/icons/image';
+import Camera from '@lucide/svelte/icons/camera';
 import FileDigit from '@lucide/svelte/icons/file-digit';
 import Fingerprint from '@lucide/svelte/icons/fingerprint';
 import FileBadge from '@lucide/svelte/icons/file-badge';
@@ -20,6 +21,7 @@ export enum CorrelationKind {
 	TITLE = 'title',
 	FAVICON = 'favicon',
 	BODY = 'content_hash',
+	SCREENSHOT = 'screenshot',
 	JARM = 'jarm',
 	CERT = 'cert.fingerprint',
 	CERT_ISSUER = 'cert.issuer',
@@ -35,6 +37,7 @@ export const KIND_ICONS: Record<string, IconComponent> = {
 	[CorrelationKind.TITLE]: Heading,
 	[CorrelationKind.FAVICON]: Image,
 	[CorrelationKind.BODY]: FileDigit,
+	[CorrelationKind.SCREENSHOT]: Camera,
 	[CorrelationKind.JARM]: Fingerprint,
 	[CorrelationKind.CERT]: ShieldCheck,
 	[CorrelationKind.CERT_ISSUER]: FileBadge,
@@ -50,6 +53,7 @@ export const KIND_HUE: Record<string, number> = {
 	[CorrelationKind.TITLE]: 150,
 	[CorrelationKind.FAVICON]: 65,
 	[CorrelationKind.BODY]: 300,
+	[CorrelationKind.SCREENSHOT]: 85,
 	[CorrelationKind.JARM]: 335,
 	[CorrelationKind.CERT]: 5,
 	[CorrelationKind.CERT_ISSUER]: 25,

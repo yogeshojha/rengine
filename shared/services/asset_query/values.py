@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 
 from shared.definitions.asset_query import MAX_NUMBER, FieldType
 from shared.utils.datetime import utc_now
+from shared.utils.imagehash import DIGEST_CHARS, to_signed
 
 from .ast import QuerySyntaxError
 
@@ -59,6 +60,13 @@ def asn_number(raw: str, start: int, end: int) -> int:
     if not text.isdigit():
         raise _fail(raw, "AS number", start, end)
     return int(_bounded(float(text), raw, start, end))
+
+
+def render_hash(raw: str, start: int, end: int) -> int:
+    text = raw.strip().lower().removeprefix("0x")
+    if len(text) != DIGEST_CHARS or any(c not in "0123456789abcdef" for c in text):
+        raise _fail(raw, "rendered page hash", start, end)
+    return to_signed(int(text, 16))
 
 
 def moment(raw: str, start: int, end: int) -> datetime:

@@ -9,6 +9,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.definitions.asset_query import MAX_GROUPS
+from shared.definitions.correlation import CorrelationKind
 from shared.definitions.endpoints import (
     CLASS_LABELS,
     INTEREST_LABELS,
@@ -32,6 +33,7 @@ from shared.models.target import Target
 from shared.models.vulnerability import Vulnerability
 
 from . import predicates as preds
+from .renders import cluster
 from .scope import QueryScope
 
 _STATUS_LABELS = {
@@ -133,7 +135,57 @@ def _dimension(key: str):
     return build(), field, op, asset
 
 
+async def _render_groups(session: AsyncSession, base) -> QueryGroups:
+    """Group by how the page renders, counted the way `screenshot:` filters."""
+    scoped = base.subquery()
+    value = Subdomain.screenshot_phash.label("value")
+    hosts = await session.scalar(select(func.count()).select_from(scoped))
+    rows = (
+        await session.execute(
+            select(
+                value,
+                func.count(func.distinct(Subdomain.id)).label("n"),
+                func.mode().within_group(Subdomain.page_title).label("title"),
+            )
+            .select_from(Subdomain)
+            .join(scoped, Subdomain.id == scoped.c.id)
+            .where(value.isnot(None))
+            .group_by(value)
+        )
+    ).all()
+    histogram = {int(raw): int(n) for raw, n, _ in rows}
+    titles = {int(raw): title for raw, _, title in rows}
+    clusters = cluster(histogram)
+    reachable = {h for found in clusters for h in found.hashes}
+    groups = [
+        QueryGroup(
+            value=found.digest,
+            label=titles.get(found.value) or found.digest,
+            count=found.count,
+            query=_token("screenshot", ":", found.digest),
+        )
+        for found in clusters[:MAX_GROUPS]
+    ]
+    return QueryGroups(
+        dimension="screenshot",
+        groups=groups,
+        total_groups=len(clusters),
+        truncated=len(clusters) > len(groups),
+        rows=int(hosts or 0),
+        covered=sum(n for h, n in histogram.items() if h in reachable),
+    )
+
+
+# dimensions whose value is derived rather than read off a column
+DERIVED_DIMENSIONS: dict[str, Callable] = {
+    CorrelationKind.SCREENSHOT.value: _render_groups,
+}
+
+
 async def build_groups(session: AsyncSession, base, key: str) -> QueryGroups:
+    derived = DERIVED_DIMENSIONS.get(key)
+    if derived is not None:
+        return await derived(session, base)
     dimension = _dimension(key)
     if dimension is None:
         return QueryGroups(dimension=key)

@@ -91,6 +91,7 @@
 		onFilter: (token: string) => void;
 		onEvidence: (sub: SubdomainRead, field: string) => void;
 		hostsWithTitle: (title: string) => Promise<string[]>;
+		hostsWithRender: (hash: string) => Promise<string[]>;
 		loadServices: (host: string) => Promise<ServiceRead[]>;
 		onServices?: (host: string, port: number) => void;
 		onStructure?: (s: SubdomainRead) => void;
@@ -115,6 +116,7 @@
 		onFilter,
 		onEvidence,
 		hostsWithTitle,
+		hostsWithRender,
 		loadServices,
 		onServices,
 		onVulns,
@@ -726,7 +728,20 @@
 				{/if}
 			{:else if col.key === 'screenshot'}
 				{#if s.screenshot_path}
-					<ScreenshotThumb path={s.screenshot_path} alt={s.name} class="h-14 w-24" preview />
+					<div class="flex items-center gap-1.5">
+						<ScreenshotThumb path={s.screenshot_path} alt={s.name} class="h-14 w-24" preview />
+						{#if (s.render_count ?? 0) > 1 && s.render_hash}
+							{@const hash = s.render_hash}
+							<SamePagePopover
+								count={s.render_count ?? 0}
+								title="{s.render_count} web assets render this page"
+								load={() => hostsWithRender(hash)}
+								{onHost}
+								onFilter={() => onFilter(`screenshot:${hash}`)}
+								class="flex h-4 items-center"
+							/>
+						{/if}
+					</div>
 				{:else}
 					<span class="text-xs text-muted-foreground">—</span>
 				{/if}

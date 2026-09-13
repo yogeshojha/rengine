@@ -26,6 +26,7 @@
 	import { withTarget } from './table/columns';
 	import AssetRow from './web-assets/asset-row.svelte';
 	import AssetGallery from './web-assets/asset-gallery.svelte';
+	import RenderGallery from './web-assets/render-gallery.svelte';
 	import HygieneRail from './web-assets/hygiene-rail.svelte';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import SelectionBar from './table/selection-bar.svelte';
@@ -48,7 +49,7 @@
 	import { querySchema } from '$lib/stores/query-schema.svelte';
 	import { HygieneTone, TONE_DOT } from '$lib/config/hygiene';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
-	import type { SubdomainRead } from '$lib/types/subdomain';
+	import type { RenderGroups, SubdomainRead } from '$lib/types/subdomain';
 	import type { SeedPick, SeedSelection } from '$lib/types/recheck';
 	import {
 		appendToken,
@@ -130,6 +131,10 @@
 	let density = $state<string>(readPref(STORAGE_KEYS.webAssetsDensity, 'cozy'));
 	let pageSize = $state<number>(readPref(STORAGE_KEYS.webAssetsPageSize, RESULTS_PAGE_SIZE));
 	let onlyShots = $state(true);
+	let groupRenders = $state(false);
+	let renderSet = $state<RenderGroups | null>(null);
+	let renderLoading = $state(false);
+	let renderReq = 0;
 	let sort = $state<{ key: string; dir: 1 | -1 }>(
 		initialSort[0]
 			? { key: initialSort[0], dir: initialSort[1] === 'desc' ? -1 : 1 }
@@ -332,6 +337,27 @@
 		}
 	}
 
+	let renderSig = $derived(
+		groupRenders && view === 'gallery' ? JSON.stringify(leadFilterWithQuery) : ''
+	);
+
+	async function loadRenders() {
+		if (!renderSig || !ready) {
+			renderSet = null;
+			return;
+		}
+		const my = ++renderReq;
+		renderLoading = true;
+		try {
+			const res = await subdomainsApi.renders(projectId, scanId, leadFilterWithQuery);
+			if (my === renderReq) renderSet = res;
+		} catch {
+			if (my === renderReq) renderSet = null;
+		} finally {
+			if (my === renderReq) renderLoading = false;
+		}
+	}
+
 	async function loadFacets() {
 		if (!ready) return;
 		try {
@@ -413,6 +439,16 @@
 			return;
 		}
 		const handle = setTimeout(() => untrack(loadGroups), SEARCH_DEBOUNCE_MS);
+		return () => clearTimeout(handle);
+	});
+
+	$effect(() => {
+		void renderSig;
+		if (!renderSig) {
+			renderSet = null;
+			return;
+		}
+		const handle = setTimeout(() => untrack(loadRenders), SEARCH_DEBOUNCE_MS);
 		return () => clearTimeout(handle);
 	});
 
@@ -554,6 +590,15 @@
 				projectId,
 				scanId,
 				compileQuery({ ...emptyQuery(), search: exactToken('title', title) }, 'name', 1, 0, 50)
+			)
+			.then((r) => r.items.map((i) => i.name));
+	}
+	function hostsWithRender(hash: string): Promise<string[]> {
+		return subdomainsApi
+			.search(
+				projectId,
+				scanId,
+				compileQuery({ ...emptyQuery(), search: `screenshot:${hash}` }, 'name', 1, 0, 50)
 			)
 			.then((r) => r.items.map((i) => i.name));
 	}
@@ -730,6 +775,10 @@
 		onToggleColumn={toggleCol}
 		{density}
 		onDensity={(d) => (density = d)}
+		{groupRenders}
+		onGroupRenders={(v) => {
+			groupRenders = v;
+		}}
 		{onlyShots}
 		onOnlyShots={(v) => {
 			onlyShots = v;
@@ -854,6 +903,13 @@
 						class="rounded-none border-0 bg-transparent py-16"
 					/>
 				{/if}
+			{:else if view === 'gallery' && groupRenders}
+				<RenderGallery
+					data={renderSet}
+					loading={renderLoading}
+					onFilter={(token) => setQuery({ ...query, search: token })}
+					onHost={openHost}
+				/>
 			{:else if view === 'gallery'}
 				<AssetGallery
 					{items}
@@ -890,6 +946,7 @@
 								onFilter={applyDsl}
 								onEvidence={openEvidence}
 								{hostsWithTitle}
+								{hostsWithRender}
 								loadServices={(host) => servicesOn(projectId, scanId, 'host', host)}
 								onServices={onTab ? showServices : undefined}
 								onVulns={onTab ? showVulns : undefined}

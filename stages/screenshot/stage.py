@@ -10,6 +10,7 @@ from shared.enums.target import TargetType
 from shared.logging import get_logger
 from shared.models.http_asset import HttpAsset
 from shared.models.subdomain import Subdomain
+from shared.utils.imagehash import phash_file
 from stages.base import Stage, StageResult
 from stages.screenshot.config import ScreenshotConfig
 from tools.httpx.client import HttpxClient, HttpxError
@@ -90,7 +91,13 @@ class ScreenshotStage(Stage):
                 if asset_id is None or not path:
                     continue
                 captured += 1
-                sink.add({"id": asset_id, "screenshot_path": _relpath(path)[:500]})
+                sink.add(
+                    {
+                        "id": asset_id,
+                        "screenshot_path": _relpath(path)[:500],
+                        "screenshot_phash": phash_file(path),
+                    }
+                )
                 if sink.pending == 0:
                     self._check_abort()
         sink.close()
@@ -116,14 +123,19 @@ class ScreenshotStage(Stage):
         )
 
     def _denormalize_to_subdomains(self) -> None:
-        shots = dict(
-            self.session.execute(
-                select(HttpAsset.url, HttpAsset.screenshot_path).where(
+        shots = {
+            url: (path, phash)
+            for url, path, phash in self.session.execute(
+                select(
+                    HttpAsset.url,
+                    HttpAsset.screenshot_path,
+                    HttpAsset.screenshot_phash,
+                ).where(
                     HttpAsset.scan_id == self.ctx.scan_id,
                     HttpAsset.screenshot_path.isnot(None),
                 )
             ).all()
-        )
+        }
         if not shots:
             return
         rows = self.session.execute(
@@ -133,7 +145,11 @@ class ScreenshotStage(Stage):
             )
         ).all()
         updates = [
-            {"id": sub_id, "screenshot_path": shots[url]}
+            {
+                "id": sub_id,
+                "screenshot_path": shots[url][0],
+                "screenshot_phash": shots[url][1],
+            }
             for sub_id, url in rows
             if url in shots
         ]

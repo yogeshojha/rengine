@@ -337,6 +337,17 @@ FIELDS: tuple[QueryField, ...] = (
         evidence="favicon",
     ),
     QueryField(
+        name="screenshot",
+        type=FieldType.STRING,
+        group="HTTP",
+        description=(
+            "Perceptual hash of the rendered page. Matches every host whose "
+            "screenshot renders the same way."
+        ),
+        example="screenshot:0030242430d41010",
+        aliases=("render",),
+    ),
+    QueryField(
         name="body",
         type=FieldType.TEXT,
         group="Response",
@@ -582,6 +593,7 @@ EVIDENCE_LABELS: dict[str, str] = {
     "content_type": "Content type",
     "redirect": "Redirect",
     "favicon": "Favicon",
+    "screenshot": "Rendered page",
     "body": "Response body",
     "header": "Response headers",
     "ip": "IP",
@@ -614,6 +626,11 @@ GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
         key="favicon",
         label="Favicon",
         description="Names serving the same favicon",
+    ),
+    GroupDimension(
+        key="screenshot",
+        label="Rendered page",
+        description="Names whose screenshots render the same page",
     ),
     GroupDimension(
         key="title",
@@ -677,6 +694,7 @@ GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
     ),
 )
 
+RENDER_SAMPLE_HOSTS = 12
 MAX_GROUPS = 50
 
 
