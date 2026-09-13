@@ -351,7 +351,7 @@ class ScanScheduleService:
             except HTTPException as exc:
                 errors.append(f"{t}: {exc.detail}")
         if not spawned:
-            msg = "No scans could be launched for this schedule."
+            msg = "; ".join(errors)[:500] or "No scans were launched."
             raise _bad(msg)
         sched.last_run_at = utc_now()
         sched.total_run_count += 1

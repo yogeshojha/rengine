@@ -90,7 +90,7 @@ class BannerClient:
         result = Fingerprint(ip=endpoint.ip, port=endpoint.port, tls=endpoint.tls)
         try:
             data, tls = self._read(endpoint)
-        except (OSError, ssl.SSLError, BannerError, ProxyError, IndexError):
+        except (OSError, ssl.SSLError, BannerError, ProxyError, IndexError, ValueError):
             return None
         result.tls = tls
         if not data:

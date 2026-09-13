@@ -101,6 +101,7 @@ function createActivityFeed() {
 	let search = $state('');
 	let scopeMode = $state<ActivityScopeMode>('project');
 	let targetId = $state<string | undefined>(undefined);
+	let loadError = $state<string | null>(null);
 
 	const scoped = $derived(
 		scopeMode === 'project' || !targetId ? items : items.filter((a) => a.target_id === targetId)
@@ -220,6 +221,9 @@ function createActivityFeed() {
 		get counts() {
 			return counts;
 		},
+		get loadError() {
+			return loadError;
+		},
 		get errorsOnly() {
 			return errorsOnly;
 		},
@@ -293,8 +297,9 @@ function createActivityFeed() {
 				}
 				totalPages = res.pages;
 				page = p;
+				loadError = null;
 			} catch (e) {
-				console.error('[activityFeed]', e);
+				loadError = e instanceof Error ? e.message : 'Activity not loaded';
 			} finally {
 				loading = false;
 				initialLoad = false;
@@ -322,6 +327,7 @@ function createActivityFeed() {
 			initialLoad = true;
 			newCount = 0;
 			freshIds = new Set();
+			loadError = null;
 		}
 	};
 }

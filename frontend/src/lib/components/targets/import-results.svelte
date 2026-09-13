@@ -16,8 +16,10 @@
 
 	let { total, imported, failed, skipped_duplicates, results }: Props = $props();
 
+	const DUPLICATE_REASON = /duplicate|exists in this project/i;
+
 	function isDuplicate(result: TargetImportResult): boolean {
-		return !result.success && !!result.error && result.error.toLowerCase().includes('duplicate');
+		return !result.success && !!result.error && DUPLICATE_REASON.test(result.error);
 	}
 
 	let successResults = $derived(results.filter((r) => r.success));
@@ -66,7 +68,7 @@
 	function friendlyError(error: string | null): string {
 		if (!error) return 'Unknown error';
 		switch (error) {
-			case 'Target already exists in project':
+			case 'Target exists in this project':
 				return 'Already exists';
 			case 'Duplicate within import batch':
 				return 'Duplicate in batch';
@@ -120,7 +122,10 @@
 						<Tabs.Trigger value={tab.value} class="text-xs h-7 px-3">
 							<div class="flex items-center gap-1.5">
 								<div class="h-1.5 w-1.5 rounded-full {tab.color}"></div>
-								{tab.label} ({tab.count})
+								{tab.label}
+								<span class="font-mono text-2xs text-muted-foreground tabular-nums">
+									{tab.count}
+								</span>
 							</div>
 						</Tabs.Trigger>
 					{/each}
@@ -129,7 +134,7 @@
 
 			<ScrollArea class="h-[200px] rounded-md border">
 				<div class="divide-y">
-					{#each activeItems as result (result.target_value)}
+					{#each activeItems as result, i (`${result.target_value}:${i}`)}
 						<div
 							class="px-4 py-2.5 flex items-center justify-between gap-3 hover:bg-accent/50 transition-colors"
 						>

@@ -111,7 +111,6 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:
         service = WhoisService()
         service.ensure_ready()
 
-        # load all targets
         targets = (
             session.execute(select(Target).where(Target.id.in_(target_ids)))
             .scalars()

@@ -165,6 +165,7 @@
 						variant="ghost"
 						size="icon"
 						class="h-8 w-8 flex-shrink-0"
+						aria-label="Remove file"
 						onclick={handleRemoveFile}
 						{disabled}
 					>
@@ -231,6 +232,7 @@
 			variant="ghost"
 			size="icon"
 			class="h-8 w-8 flex-shrink-0"
+			aria-label="Remove file"
 			onclick={handleRemoveFile}
 			{disabled}
 		>

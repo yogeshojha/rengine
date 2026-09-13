@@ -6,7 +6,7 @@ from typing import Any
 
 from mcp import auth, limits, protocol, server, telemetry
 from mcp.context import ToolContext
-from mcp.errors import McpError
+from mcp.errors import FORBIDDEN, AuthError, McpError
 from mcp.service import McpService
 from mcp.settings import HTTP_PATH
 from shared.logging import get_logger
@@ -41,8 +41,6 @@ async def handle_request(
         identity, row = await service.authenticate(auth.from_header(authorization))
 
         if await limits.exceeded(identity.id, config.rate_limit_per_minute):
-            from mcp.errors import FORBIDDEN  # noqa: PLC0415
-
             return protocol.failure(request.id, FORBIDDEN, RATE_MESSAGE)
     except McpError as exc:
         return protocol.failure(request.id, exc.code, exc.message)
@@ -72,8 +70,6 @@ async def handle_request(
 
 
 def _stopped() -> McpError:
-    from mcp.errors import AuthError  # noqa: PLC0415
-
     return AuthError(DISABLED_MESSAGE)
 
 

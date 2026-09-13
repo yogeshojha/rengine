@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from reports.base import RenderContext, Section
 from reports.config import SectionConfig, flag, paragraph
+from reports.data.source import REPORT_DIMENSIONS
 from shared.definitions.reports import SectionGroup
-from shared.definitions.surface import SURFACE_LABELS, SURFACE_ORDER, SurfaceDimension
+from shared.definitions.surface import SURFACE_LABELS, SurfaceDimension
 from shared.definitions.vulnerabilities import SEVERITY_LABELS, SEVERITY_ORDER, Severity
 
 
@@ -55,7 +56,7 @@ class ExecutiveSummarySection(Section):
                 "note": _note(ctx, key),
                 "dash": not ctx.data.coverage[key].covered,
             }
-            for key in SURFACE_ORDER
+            for key in REPORT_DIMENSIONS
         ]
         return {
             "narrative": ctx.narrator.executive_summary(brief),

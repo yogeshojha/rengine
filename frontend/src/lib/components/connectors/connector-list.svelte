@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
+	import { toast } from 'svelte-sonner';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import PanelHead from '$lib/components/panel-head.svelte';
@@ -26,6 +27,9 @@
 			await connectorsApi.remove(pending.id, projectId);
 			connectors.drop(pending.id);
 			pending = null;
+		} catch (e) {
+			pending = null;
+			toast.error(e instanceof Error ? e.message : 'Connector not deleted');
 		} finally {
 			deleting = false;
 		}

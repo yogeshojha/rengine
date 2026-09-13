@@ -83,3 +83,14 @@ export const SCAN_POLICY_LABELS: Record<string, string> = {
 export function serviceClassLabel(key: string | null | undefined): string {
 	return SERVICE_CLASS_LABELS[key ?? ''] ?? 'Other';
 }
+
+// mirrors shared/definitions/ports.py:SENSITIVE_PORTS
+export const SENSITIVE_PORTS = new Set([
+	21, 22, 23, 25, 53, 111, 135, 139, 389, 445, 512, 513, 514, 623, 873, 1080, 1433, 1521, 1723,
+	2049, 2181, 2375, 2376, 2379, 3306, 3389, 4369, 5432, 5601, 5672, 5900, 5901, 5984, 6379, 8086,
+	9042, 9092, 9160, 9200, 9300, 11211, 15672, 27017, 27018, 50000
+]);
+
+export function isSensitivePort(n: number): boolean {
+	return SENSITIVE_PORTS.has(n);
+}

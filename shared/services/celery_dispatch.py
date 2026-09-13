@@ -1,7 +1,7 @@
 from celery import Celery
 
 from shared.config import BaseAppSettings
-from shared.definitions.constants import SCANS_QUEUE
+from shared.definitions.constants import CRITICAL_QUEUE, SCANS_QUEUE
 from shared.logging import get_logger
 
 logger = get_logger(__name__)
@@ -50,7 +50,7 @@ def dispatch_dns_lookups(target_ids: list[str]) -> None:
     if not target_ids:
         return
 
-    logger.info(f"Dispatching DNS lookup for {len(target_ids)} target(s)")
+    logger.info("Dispatching DNS lookups for %d targets", len(target_ids))
     get_celery_client().send_task(
         "app.tasks.dns.perform_dns_lookups",
         kwargs={"target_ids": target_ids},
@@ -183,7 +183,7 @@ def dispatch_interest_refresh(project_id: str) -> None:
     )
 
 
-def dispatch_threat_intel(scan_id: str, *, enrich: bool = True) -> None:
+def dispatch_threat_intel(scan_id: str, *, enrich: bool = True) -> bool:
     """Score a finished scan from the feeds, then fill the provider cache behind it."""
     try:
         client = get_celery_client()
@@ -196,6 +196,8 @@ def dispatch_threat_intel(scan_id: str, *, enrich: bool = True) -> None:
             )
     except Exception:
         logger.warning("threat intel dispatch failed", exc_info=True)
+        return False
+    return True
 
 
 def dispatch_threat_intel_refresh(*, force: bool = False) -> bool:
@@ -259,8 +261,6 @@ def dispatch_toolbox_run(
     project_id: str | None,
 ) -> bool:
     """Hand a toolbox run to the worker."""
-    from shared.definitions.constants import CRITICAL_QUEUE  # noqa: PLC0415
-
     try:
         get_celery_client().send_task(
             "app.tasks.toolbox.run",

@@ -37,7 +37,7 @@ def connectors() -> dict[str, ProxyConnector]:
             continue
         try:
             loaded = importlib.import_module(f"connectors.{module.name}.connector")
-        except Exception as exc:  # a broken module must not break discovery
+        except Exception as exc:
             logger.warning(
                 "connector module failed to import", module=module.name, error=str(exc)
             )

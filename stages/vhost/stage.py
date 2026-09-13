@@ -74,9 +74,9 @@ class VhostStage(Stage):
                 recorder=self.ctx.recorder,
                 extra_args=self.ctx.resolved.tool_args("ffuf"),
             )
-        except FfufError:
+        except FfufError as exc:
             logger.warning("ffuf unavailable, skipping vhost discovery")
-            return StageResult(counts={"subdomains": 0})
+            return StageResult(warnings=[str(exc)], partial=True)
 
         found: dict[str, set[str]] = {}
         for ip in ips:

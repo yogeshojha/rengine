@@ -3,7 +3,6 @@ import asyncio
 from fastapi import APIRouter
 
 from app.api.deps import CurrentSuperuser
-from app.config import settings
 from shared.services.celery_dispatch import get_celery_client
 
 router = APIRouter(prefix="/health", tags=["Health"])
@@ -13,11 +12,7 @@ INSPECT_TIMEOUT = 1.0
 
 @router.get("/health")
 async def health_check():
-    return {
-        "status": "healthy",
-        "app": settings.APP_NAME,
-        "version": settings.APP_VERSION,
-    }
+    return {"status": "healthy"}
 
 
 def _collect_worker_health() -> dict:

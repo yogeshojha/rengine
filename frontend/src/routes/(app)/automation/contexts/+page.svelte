@@ -16,7 +16,7 @@
 	import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { proxiesStore } from '$lib/stores/proxies.svelte';
-	import { ROUTES } from '$lib/config/routes';
+	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Alert from '$lib/components/ui/alert';
@@ -64,7 +64,7 @@
 	});
 
 	$effect(() => {
-		if (!proxiesStore.hasFetched) proxiesStore.fetch();
+		if (!proxiesStore.hasFetched) untrack(() => proxiesStore.fetch());
 	});
 
 	function proxyName(context: ScanContextRead): string | null {
@@ -210,6 +210,8 @@
 
 	const total = $derived(scanContextsStore.contexts.length);
 </script>
+
+<svelte:head><title>{routeLabels.contexts} · reNgine</title></svelte:head>
 
 <div class="space-y-6">
 	<div class="flex flex-wrap items-start justify-between gap-4">

@@ -37,9 +37,8 @@
 	let signal = $derived(row ? signalSpec(row.signal) : null);
 	let verb = $derived(row ? VERB[row.verb] : null);
 	let spec = $derived(row ? surfaceSpec(row.dimension) : undefined);
-	let gone = $derived(
-		row?.verb === CHANGE_VERB.DISAPPEARED || row?.verb === CHANGE_VERB.UNCONFIRMED
-	);
+	let unconfirmed = $derived(row?.verb === CHANGE_VERB.UNCONFIRMED);
+	let gone = $derived(row?.verb === CHANGE_VERB.DISAPPEARED || unconfirmed);
 	let appeared = $derived(row?.verb === CHANGE_VERB.APPEARED);
 	let leftShot = $derived(screenshotUrl(row?.screenshots?.baseline));
 	let rightShot = $derived(screenshotUrl(row?.screenshots?.current));
@@ -119,6 +118,7 @@
 						{#snippet child(props)}
 							<Button
 								{...props}
+								aria-label="Copy"
 								variant="ghost"
 								size="icon-sm"
 								class="size-6 shrink-0"
@@ -143,6 +143,7 @@
 							{#snippet child(props)}
 								<Button
 									{...props}
+									aria-label="Previous change"
 									variant="outline"
 									size="icon-sm"
 									class="size-7"
@@ -157,6 +158,7 @@
 							{#snippet child(props)}
 								<Button
 									{...props}
+									aria-label="Next change"
 									variant="outline"
 									size="icon-sm"
 									class="size-7"
@@ -226,11 +228,13 @@
 						</dl>
 					{:else}
 						<p class="px-5 py-4 text-xs text-muted-foreground">
-							{gone
-								? 'Present in the baseline run, absent in the current one.'
-								: appeared
-									? 'Absent from the baseline run.'
-									: 'Identity only. No watched field differs.'}
+							{unconfirmed
+								? 'Present in the baseline run, not confirmed by the current one.'
+								: gone
+									? 'Present in the baseline run, absent in the current one.'
+									: appeared
+										? 'Absent from the baseline run.'
+										: 'Identity only. No watched field differs.'}
 						</p>
 					{/if}
 				</div>
@@ -246,7 +250,11 @@
 					Open in results <ArrowUpRight class="size-3.5" />
 				</Button>
 				<span class="text-xs text-muted-foreground">
-					{gone ? 'Last seen in the baseline run' : 'Recorded by the current run'}
+					{unconfirmed
+						? 'Not confirmed by the current run'
+						: gone
+							? 'Last seen in the baseline run'
+							: 'Recorded by the current run'}
 				</span>
 			</div>
 		{/if}

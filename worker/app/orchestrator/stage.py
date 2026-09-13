@@ -124,7 +124,7 @@ def _supersede_orphan_activities(session: Session, scan: Scan, name: str) -> Non
     session.commit()
 
 
-def _apply_counts(session: Session, scan: Scan) -> None:
+def apply_counts(session: Session, scan: Scan) -> None:
     for column, value in derived_counts(session, scan.id).items():
         setattr(scan, column, value)
     session.add(scan)
@@ -261,7 +261,7 @@ def run_stage(
         )
         scan = session.get(Scan, scan.id)
         if scan is not None:
-            _apply_counts(session, scan)
+            apply_counts(session, scan)
     except Exception:
         logger.warning(
             "stage bookkeeping failed after a terminal activity", exc_info=True

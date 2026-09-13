@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import RadarIcon from '@lucide/svelte/icons/radar';
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
@@ -22,9 +23,9 @@
 		SOURCE_LABELS,
 		SOURCE_NOTES,
 		SUBMISSION_STATE_LABELS,
-		formatPayout,
-		platformUrl
+		formatPayout
 	} from '$lib/config/bounty-programs';
+	import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
 	import { formatShortDate } from '$lib/utilities/dates';
 	import type { Watch } from '$lib/types/watch';
 	import {
@@ -52,6 +53,7 @@
 
 	let detail = $state<BountyProgramDetail | null>(null);
 	let loading = $state(false);
+	let loadError = $state<string | null>(null);
 	let importing = $state(false);
 	let syncing = $state(false);
 	let tab = $state<string>('all');
@@ -63,6 +65,7 @@
 		loading = true;
 		try {
 			detail = await bountyProgramsApi.detail(handle, projectId, null, platform);
+			loadError = null;
 			selected.clear();
 			for (const s of detail.scopes) {
 				if (s.importable && !s.already_target && s.scope_state === ScopeState.InScope) {
@@ -70,6 +73,7 @@
 				}
 			}
 		} catch (error) {
+			loadError = error instanceof Error ? error.message : 'Request failed.';
 			toast.error(error instanceof Error ? error.message : 'Program not loaded');
 			detail = null;
 		} finally {
@@ -78,11 +82,16 @@
 	}
 
 	$effect(() => {
+		untrack(() => bountyVocabulary.load());
+	});
+
+	$effect(() => {
 		const handle = program?.handle;
 		const platform = program?.platform;
 		if (!open || !handle || !platform) return;
 		tab = 'all';
 		showOutOfScope = false;
+		loadError = null;
 		void load(handle, platform);
 	});
 
@@ -202,7 +211,7 @@
 				</Sheet.Title>
 				<Sheet.Description class="flex flex-wrap items-center gap-x-3 gap-y-1">
 					<a
-						href={program.url ?? platformUrl(program.platform)}
+						href={program.url ?? bountyVocabulary.url(program.platform)}
 						target="_blank"
 						rel="noreferrer noopener"
 						class="inline-flex items-center gap-1 font-mono text-xs hover:underline"
@@ -280,7 +289,7 @@
 						class="p-10"
 					>
 						<Button
-							href={program.url ?? platformUrl(program.platform)}
+							href={program.url ?? bountyVocabulary.url(program.platform)}
 							target="_blank"
 							rel="noreferrer noopener"
 							variant="outline"
@@ -288,6 +297,21 @@
 						>
 							<ExternalLinkIcon class="mr-2 size-3.5" />
 							Policy on {program.platform_label}
+						</Button>
+					</EmptyState>
+				{:else if loadError}
+					<EmptyState
+						icon={TriangleAlertIcon}
+						title="Program not loaded"
+						description={loadError}
+						class="p-10"
+					>
+						<Button
+							variant="outline"
+							size="sm"
+							onclick={() => void load(program.handle, program.platform)}
+						>
+							Retry
 						</Button>
 					</EmptyState>
 				{:else if scopes.length === 0 && program.scope_access === ScopeAccess.Denied}

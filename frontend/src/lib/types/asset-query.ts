@@ -137,8 +137,8 @@ export interface MatchEvidence {
 export const EMPTY_QUERY_SCHEMA: QuerySchema = {
 	max_length: 2000,
 	max_terms: 8,
-	noun: 'host',
-	noun_plural: 'hosts',
+	noun: '',
+	noun_plural: '',
 	groups: [],
 	example_groups: [],
 	group_dimensions: [],

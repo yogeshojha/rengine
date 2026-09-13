@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { routeLabels } from '$lib/config/routes';
 	import { page } from '$app/state';
 	import { toast } from 'svelte-sonner';
 
@@ -49,6 +50,8 @@
 		scansStore.refresh();
 	}
 </script>
+
+<svelte:head><title>{routeLabels.scans} · reNgine</title></svelte:head>
 
 <div class="flex flex-col gap-4">
 	<h1 class="sr-only">Scans</h1>

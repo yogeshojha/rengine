@@ -11,12 +11,14 @@ class NotesStore {
 	tags = $state<Tag[]>([]);
 	private counts = new SvelteMap<string, SvelteMap<string, NoteCount>>();
 	private tagsProjectId: string | null = null;
-	private tagsPending: Promise<void> | null = null;
+	private tagsPending = new Map<string, Promise<void>>();
 	private countsPending = new Map<string, Promise<void>>();
 
 	async loadTags(projectSlug: string, projectId: string): Promise<void> {
 		if (this.tagsProjectId === projectId) return;
-		this.tagsPending ??= tagsApi
+		const inflight = this.tagsPending.get(projectId);
+		if (inflight) return inflight;
+		const pending = tagsApi
 			.list({ project_slug: projectSlug })
 			.then((rows) => {
 				this.tags = rows;
@@ -24,9 +26,10 @@ class NotesStore {
 			})
 			.catch(() => {})
 			.finally(() => {
-				this.tagsPending = null;
+				this.tagsPending.delete(projectId);
 			});
-		return this.tagsPending;
+		this.tagsPending.set(projectId, pending);
+		return pending;
 	}
 
 	countFor(dimension: string, scope: string, assetKey: string): NoteCount | null {
@@ -78,6 +81,7 @@ class NotesStore {
 	reset(): void {
 		this.tags = [];
 		this.tagsProjectId = null;
+		this.tagsPending.clear();
 		this.counts.clear();
 		this.countsPending.clear();
 	}

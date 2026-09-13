@@ -41,12 +41,12 @@
 				{@const count = getCount(tab.value)}
 				<Tabs.Trigger
 					value={tab.value}
-					class="flex items-center gap-2 px-4 py-1 text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+					class="group flex items-center gap-2 px-4 py-1 text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
 				>
 					<tab.icon class="h-4 w-4" />
 					<span>{tab.label}</span>
 					<span
-						class="ml-1 text-xs px-1.5 py-0.5 rounded-full bg-muted data-[state=active]:bg-primary/10 data-[state=active]:text-primary font-medium tabular-nums"
+						class="ml-1 text-xs px-1.5 py-0.5 rounded-full bg-muted group-data-[state=active]:bg-primary/10 group-data-[state=active]:text-primary font-medium tabular-nums"
 					>
 						{count}
 					</span>

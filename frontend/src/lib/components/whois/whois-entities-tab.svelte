@@ -2,7 +2,7 @@
 	import type { WhoisRecordRead, WhoisEntity, WhoisEntityRole } from '$lib/types/whois';
 	import { ENTITY_ROLE_LABELS } from '$lib/types/whois';
 	import { Badge } from '$lib/components/ui/badge';
-	import * as Empty from '$lib/components/ui/empty';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import UserRound from '@lucide/svelte/icons/user-round';
 	import Building from '@lucide/svelte/icons/building';
 	import Shield from '@lucide/svelte/icons/shield';
@@ -72,14 +72,7 @@
 </script>
 
 {#if populatedRoles.length === 0}
-	<Empty.Root>
-		<Empty.Header>
-			<Empty.Media variant="icon">
-				<UserRound />
-			</Empty.Media>
-			<Empty.Title>No entities</Empty.Title>
-		</Empty.Header>
-	</Empty.Root>
+	<EmptyState icon={UserRound} title="No entities" />
 {:else}
 	<div class="space-y-4 py-1">
 		{#each populatedRoles as role (role)}

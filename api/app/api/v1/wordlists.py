@@ -8,9 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from shared.definitions.wordlists import (
+    BUILTIN_WORDLISTS,
     KIND_LABELS,
     MAX_WORDLIST_BYTES,
-    WordlistKind,
     WordlistOrigin,
     slugify,
 )
@@ -24,6 +24,7 @@ from shared.models.wordlist import (
 )
 from shared.services.wordlists import (
     WordlistError,
+    builtin_root,
     clean_words,
     delete_custom,
     resolve_path,
@@ -36,9 +37,6 @@ router = APIRouter(prefix="/wordlists", tags=["wordlists"])
 
 async def _index_builtin(session: AsyncSession) -> None:
     """Shipped lists are indexed on read."""
-    from shared.definitions.wordlists import BUILTIN_WORDLISTS  # noqa: PLC0415
-    from shared.services.wordlists import builtin_root  # noqa: PLC0415
-
     root = builtin_root()
     now = utc_now()
     changed = False
@@ -97,7 +95,12 @@ async def upload_wordlists(
     session: Annotated[AsyncSession, Depends(get_session)],
     body: WordlistUploadRequest,
 ):
-    kind = body.kind if body.kind in KIND_LABELS else WordlistKind.SUBDOMAIN.value
+    kind = body.kind
+    if kind not in KIND_LABELS:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Unknown wordlist kind. Kinds: {', '.join(sorted(KIND_LABELS))}.",
+        )
     result = WordlistUploadResult()
     for item in body.files:
         if len(item.content.encode("utf-8", errors="ignore")) > MAX_WORDLIST_BYTES:

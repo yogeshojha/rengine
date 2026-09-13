@@ -5,7 +5,8 @@ from __future__ import annotations
 import json
 
 from reports.base import RenderContext
-from shared.definitions.surface import SURFACE_LABELS, SURFACE_ORDER
+from reports.data.source import REPORT_DIMENSIONS
+from shared.definitions.surface import SURFACE_LABELS
 from shared.definitions.vulnerabilities import SEVERITY_LABELS, SEVERITY_ORDER
 
 
@@ -27,7 +28,7 @@ def to_markdown(ctx: RenderContext) -> str:
         "| Dimension | Observed | Previous |",
         "| --- | ---: | ---: |",
     ]
-    for dimension in SURFACE_ORDER:
+    for dimension in REPORT_DIMENSIONS:
         entry = ctx.data.coverage[dimension]
         observed = f"{entry.count:,}" if entry.covered else "Not scanned"
         previous = f"{entry.previous:,}" if entry.previous is not None else "—"

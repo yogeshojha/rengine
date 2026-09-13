@@ -101,10 +101,6 @@ def severity_fill(value: str | None) -> str:
     return f"var(--r-sev-{(value or 'unknown').lower()})"
 
 
-def chart_fill(index: int) -> str:
-    return f"var(--r-chart-{(index % 8) + 1})"
-
-
 @lru_cache(maxsize=1)
 def environment() -> Environment:
     env = Environment(
@@ -142,8 +138,6 @@ def environment() -> Environment:
             "sparkline": sparkline,
             "matrix": matrix,
             "cover_art": cover_art,
-            "chart_fill": chart_fill,
-            "severity_fill": severity_fill,
         }
     )
     return env

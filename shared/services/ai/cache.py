@@ -11,7 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from shared.definitions.ai import CACHE_VERSION, GLOBAL_CACHE_TASKS
 from shared.logging import get_logger
 from shared.models.ai import AiNarrative
-from shared.services.ai.client import AIError, AIResult, AIUsage, complete
+from shared.services.ai.client import AIResult, AIUsage, complete
 from shared.services.ai.config import AIConfig
 from shared.utils.datetime import utc_now
 
@@ -100,7 +100,7 @@ def narrate(
 
     try:
         result = complete(cfg, system=system, prompt=prompt, task=task, fast=fast)
-    except (AIError, Exception) as exc:
+    except Exception as exc:
         logger.warning("ai narration failed", task=task, error=str(exc)[:200])
         if usage is not None:
             usage.failures.append(f"{task}: {exc}"[:300])

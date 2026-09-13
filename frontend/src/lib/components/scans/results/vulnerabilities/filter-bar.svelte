@@ -1,16 +1,8 @@
 <script lang="ts">
-	import Columns3 from '@lucide/svelte/icons/columns-3';
-	import Layers from '@lucide/svelte/icons/layers';
-	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
-	import X from '@lucide/svelte/icons/x';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
-	import { Button } from '$lib/components/ui/button';
-	import { ButtonGroup } from '$lib/components/ui/button-group';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import FacetedFilter from '../faceted-filter.svelte';
-	import ExportMenu from '../export-menu.svelte';
-	import SortMenu from '../table/sort-menu.svelte';
+	import { SurfaceDimension } from '$lib/config/surface';
+	import ViewControls from '../table/view-controls.svelte';
 	import type { SortOption, TableColumn } from '../table/columns';
 	import type { QueryGroupSpec } from '$lib/types/asset-query';
 	import type { Facet } from '$lib/utilities/scan-insights';
@@ -34,7 +26,6 @@
 		onRefresh: () => void;
 		projectId?: string;
 		scanId?: string;
-		targetId?: string;
 		exportFilters?: Record<string, unknown>;
 		groupBy: string;
 		onGroupBy: (key: string) => void;
@@ -62,7 +53,6 @@
 		columnsLocked = false,
 		projectId = '',
 		scanId = '',
-		targetId = '',
 		exportFilters = {}
 	}: Props = $props();
 
@@ -74,8 +64,6 @@
 		{ value: 'noinfo', label: 'Hide info' },
 		{ value: 'reviewed', label: 'Show reviewed' }
 	];
-
-	let groupLabel = $derived(dimensions.find((d) => d.key === groupBy)?.label ?? 'Group');
 
 	let quick = $derived(
 		[
@@ -178,108 +166,26 @@
 	</div>
 
 	<div class="flex items-center gap-2">
-		{#if dimensions.length}
-			<ButtonGroup>
-				<DropdownMenu.Root>
-					<DropdownMenu.Trigger>
-						{#snippet child({ props })}
-							<Button
-								{...props}
-								variant="outline"
-								size="sm"
-								class="h-9 gap-2 {groupBy ? 'border-primary/50 bg-primary/5' : ''}"
-							>
-								<Layers class="h-4 w-4" />
-								<span class="hidden sm:inline">{groupLabel}</span>
-							</Button>
-						{/snippet}
-					</DropdownMenu.Trigger>
-					<DropdownMenu.Content align="end" class="max-h-none w-52 overflow-visible">
-						<DropdownMenu.Label>Group by</DropdownMenu.Label>
-						<DropdownMenu.Separator />
-						<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
-							<DropdownMenu.RadioGroup value={groupBy} onValueChange={onGroupBy}>
-								<DropdownMenu.RadioItem value="">No grouping</DropdownMenu.RadioItem>
-								{#each dimensions as dimension (dimension.key)}
-									<DropdownMenu.RadioItem value={dimension.key}>
-										{dimension.label}
-									</DropdownMenu.RadioItem>
-								{/each}
-							</DropdownMenu.RadioGroup>
-						</ScrollArea>
-					</DropdownMenu.Content>
-				</DropdownMenu.Root>
-				{#if groupBy}
-					<Button
-						variant="outline"
-						size="icon"
-						class="h-9 w-9 border-primary/50 bg-primary/5 text-muted-foreground hover:text-foreground"
-						aria-label="Clear grouping"
-						onclick={() => onGroupBy('')}
-					>
-						<X class="h-4 w-4" />
-					</Button>
-				{/if}
-			</ButtonGroup>
-		{/if}
-
-		{#if !groupBy}
-			<SortMenu {sorts} {sortKey} {sortDir} {onSort} />
-
-			<DropdownMenu.Root>
-				<DropdownMenu.Trigger>
-					{#snippet child({ props })}
-						<Button {...props} variant="outline" size="sm" class="h-9 gap-2">
-							<Columns3 class="h-4 w-4" />
-							<span class="hidden sm:inline">Columns</span>
-						</Button>
-					{/snippet}
-				</DropdownMenu.Trigger>
-				<DropdownMenu.Content align="end" class="max-h-none w-44 overflow-visible">
-					{#if !columnsLocked}
-						<DropdownMenu.Group>
-							<DropdownMenu.Label>Columns</DropdownMenu.Label>
-							<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-64">
-								{#each columns as col (col.key)}
-									<DropdownMenu.CheckboxItem
-										checked={visible.includes(col.key)}
-										onCheckedChange={() => onToggleColumn(col.key)}
-										closeOnSelect={false}
-									>
-										{col.label}
-									</DropdownMenu.CheckboxItem>
-								{/each}
-							</ScrollArea>
-						</DropdownMenu.Group>
-						<DropdownMenu.Separator />
-					{/if}
-					<DropdownMenu.Group>
-						<DropdownMenu.Label>Density</DropdownMenu.Label>
-						<DropdownMenu.RadioGroup value={density} onValueChange={onDensity}>
-							<DropdownMenu.RadioItem value="compact">Compact</DropdownMenu.RadioItem>
-							<DropdownMenu.RadioItem value="cozy">Cozy</DropdownMenu.RadioItem>
-						</DropdownMenu.RadioGroup>
-					</DropdownMenu.Group>
-				</DropdownMenu.Content>
-			</DropdownMenu.Root>
-		{/if}
-
-		<ExportMenu
-			dimension="vulnerabilities"
+		<ViewControls
+			dimension={SurfaceDimension.VULNERABILITIES}
+			{dimensions}
+			{groupBy}
+			{onGroupBy}
+			{sorts}
+			{sortKey}
+			{sortDir}
+			{onSort}
+			{columns}
+			{visible}
+			{onToggleColumn}
+			{density}
+			{onDensity}
+			{refreshing}
+			{onRefresh}
 			{projectId}
 			{scanId}
-			{targetId}
-			filters={exportFilters}
+			{exportFilters}
+			{columnsLocked}
 		/>
-		<Button
-			variant="outline"
-			size="icon"
-			class="h-9 w-9"
-			aria-label="Refresh"
-			onclick={onRefresh}
-			disabled={refreshing}
-		>
-			<RefreshCw class="h-4 w-4 {refreshing ? 'animate-spin' : ''}" />
-		</Button>
 	</div>
 </div>

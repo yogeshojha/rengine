@@ -138,32 +138,28 @@ class TargetRelationService:
         assets = await scopes.scope(project_id, SurfaceDimension.WEB_ASSETS.value)
         addresses = await scopes.scope(project_id, SurfaceDimension.IPS.value)
         facts: _Facts = defaultdict(lambda: defaultdict(dict))
-        await self._registration(targets, facts)
+        registrants = await self._registrants(targets)
+        await self._registration(targets, registrants, facts)
         await self._dns(targets, facts)
         if assets:
             await self._certificates(assets, targets, facts)
             await self._favicons(assets, facts)
         if addresses:
-            await self._networks(addresses, targets, facts)
+            await self._networks(addresses, targets, registrants, facts)
         return facts
 
-    async def _registration(self, targets: dict[UUID, Target], facts: _Facts) -> None:
+    async def _registration(
+        self, targets: dict[UUID, Target], registrants: dict[UUID, str], facts: _Facts
+    ) -> None:
+        for target_id, registrant in registrants.items():
+            key = registrant_key(registrant)
+            if key:
+                facts[TargetRelation.REGISTRANT.value][key][target_id] = registrant
+
         ids = [t.whois_record_id for t in targets.values() if t.whois_record_id]
         if not ids:
             return
         by_record = {t.whois_record_id: t.id for t in targets.values()}
-        rows = await self.session.execute(
-            select(WhoisRecord.id, WhoisRecord.registrant_name).where(
-                WhoisRecord.id.in_(ids)
-            )
-        )
-        for record_id, registrant in rows.all():
-            key = registrant_key(registrant)
-            if key:
-                facts[TargetRelation.REGISTRANT.value][key][by_record[record_id]] = (
-                    registrant
-                )
-
         names = await self.session.execute(
             select(WhoisNameserver.whois_record_id, WhoisNameserver.nameserver).where(
                 WhoisNameserver.whois_record_id.in_(ids)
@@ -178,29 +174,38 @@ class TargetRelationService:
 
     async def _dns(self, targets: dict[UUID, Target], facts: _Facts) -> None:
         """A mail host, a zone contact or an address that is not a provider's."""
-        rows = await self.session.execute(
-            select(
-                DnsRecord.target_id,
-                DnsRecord.record_type,
-                DnsRecord.value,
-                DnsRecord.soa_email,
-            ).where(DnsRecord.target_id.in_(list(targets)))
+        rows = (
+            await self.session.execute(
+                select(
+                    DnsRecord.target_id,
+                    DnsRecord.record_type,
+                    DnsRecord.value,
+                    DnsRecord.soa_email,
+                ).where(DnsRecord.target_id.in_(list(targets)))
+            )
+        ).all()
+        cdn = await self._cdn_addresses(
+            {(value or "").strip().lower().rstrip(".") for _, _, value, _ in rows}
         )
-        cdn = await self._cdn_addresses()
         owned = {
             registrable_domain(t.target_value)
             for t in targets.values()
             if registrable_domain(t.target_value)
         }
-        for target_id, kind, value, soa_email in rows.all():
+        for target_id, kind, value, soa_email in rows:
             for shown, key in _dns_keys(
                 str(kind), value or "", soa_email or "", cdn, owned
             ):
                 facts[TargetRelation.DNS_RECORD.value][key][target_id] = shown
 
-    async def _cdn_addresses(self) -> set[str]:
+    async def _cdn_addresses(self, candidates: set[str]) -> set[str]:
+        """The given values that are a provider's edge address."""
+        if not candidates:
+            return set()
         rows = await self.session.execute(
-            select(IpAddress.ip).where(IpAddress.is_cdn.is_(True)).distinct()
+            select(IpAddress.ip)
+            .where(IpAddress.is_cdn.is_(True), IpAddress.ip.in_(candidates))
+            .distinct()
         )
         return set(rows.scalars().all())
 
@@ -262,7 +267,11 @@ class TargetRelationService:
                 facts[TargetRelation.FAVICON.value][value] = owners
 
     async def _networks(
-        self, scope: QueryScope, targets: dict[UUID, Target], facts: _Facts
+        self,
+        scope: QueryScope,
+        targets: dict[UUID, Target],
+        registrants: dict[UUID, str],
+        facts: _Facts,
     ) -> None:
         rows = await self.session.execute(
             select(
@@ -280,7 +289,6 @@ class TargetRelationService:
             holders[asn] = org or ""
             carried[asn][target_id] = f"{count} addresses"
 
-        registrants = await self._registrants(targets)
         for asn, owners in carried.items():
             identities: set[str] = set()
             for target_id in owners:

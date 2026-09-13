@@ -6,7 +6,9 @@ import shutil
 import subprocess
 import sys
 import uuid
+import zlib
 from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -30,6 +32,8 @@ from shared.models.vulnerability import Vulnerability
 from shared.utils.datetime import utc_now
 
 TEST_DB = os.environ.get("POSTGRES_TEST_DB", "rengine_test")
+# one run of the suite at a time per database; a second waits rather than dropping it
+_RUN_LOCK = zlib.crc32(TEST_DB.encode()) - 2**31
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ALEMBIC = shutil.which("alembic") or str(Path(sys.executable).parent / "alembic")
 
@@ -50,38 +54,44 @@ def _test_url(driver: str = "postgresql+asyncpg") -> str:
     )
 
 
-async def _recreate_database() -> None:
+@asynccontextmanager
+async def _own_the_database() -> AsyncIterator[None]:
+    """Recreate the test database and hold the lock for the whole run."""
     engine = create_async_engine(_admin_url(), isolation_level="AUTOCOMMIT")
-    async with engine.connect() as conn:
-        await conn.execute(
-            sa.text(
-                "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
-                "WHERE datname = :db AND pid <> pg_backend_pid()"
-            ),
-            {"db": TEST_DB},
-        )
-        await conn.execute(sa.text(f'DROP DATABASE IF EXISTS "{TEST_DB}"'))
-        await conn.execute(sa.text(f'CREATE DATABASE "{TEST_DB}"'))
-    await engine.dispose()
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(sa.text("SELECT pg_advisory_lock(:k)"), {"k": _RUN_LOCK})
+            await conn.execute(
+                sa.text(
+                    "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+                    "WHERE datname = :db AND pid <> pg_backend_pid()"
+                ),
+                {"db": TEST_DB},
+            )
+            await conn.execute(sa.text(f'DROP DATABASE IF EXISTS "{TEST_DB}"'))
+            await conn.execute(sa.text(f'CREATE DATABASE "{TEST_DB}"'))
+            yield
+    finally:
+        await engine.dispose()
 
 
 @pytest_asyncio.fixture(scope="session")
 async def database() -> AsyncIterator[str]:
     """A migrated database of its own."""
-    await _recreate_database()
-    env = {**os.environ, "POSTGRES_DB": TEST_DB}
-    proc = await asyncio.to_thread(
-        subprocess.run,
-        [ALEMBIC, "upgrade", "head"],
-        cwd=str(REPO_ROOT),
-        env=env,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if proc.returncode != 0:
-        pytest.fail(f"alembic upgrade failed:\n{proc.stdout}\n{proc.stderr}")
-    yield _test_url()
+    async with _own_the_database():
+        env = {**os.environ, "POSTGRES_DB": TEST_DB}
+        proc = await asyncio.to_thread(
+            subprocess.run,
+            [ALEMBIC, "upgrade", "head"],
+            cwd=str(REPO_ROOT),
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if proc.returncode != 0:
+            pytest.fail(f"alembic upgrade failed:\n{proc.stdout}\n{proc.stderr}")
+        yield _test_url()
 
 
 @pytest_asyncio.fixture(scope="session")

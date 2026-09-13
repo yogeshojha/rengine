@@ -709,6 +709,7 @@
 			{#snippet child(props)}
 				<Button
 					{...props}
+					aria-label="Zoom in"
 					variant="outline"
 					size="icon"
 					class="size-7 bg-card/90 backdrop-blur"
@@ -722,6 +723,7 @@
 			{#snippet child(props)}
 				<Button
 					{...props}
+					aria-label="Zoom out"
 					variant="outline"
 					size="icon"
 					class="size-7 bg-card/90 backdrop-blur"
@@ -735,6 +737,7 @@
 			{#snippet child(props)}
 				<Button
 					{...props}
+					aria-label="Fit to view"
 					variant="outline"
 					size="icon"
 					class="size-7 bg-card/90 backdrop-blur"
@@ -748,6 +751,7 @@
 			{#snippet child(props)}
 				<Button
 					{...props}
+					aria-label="Re-run layout"
 					variant="outline"
 					size="icon"
 					class="size-7 bg-card/90 backdrop-blur"

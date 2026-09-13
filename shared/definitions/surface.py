@@ -46,7 +46,7 @@ SURFACE_KINDS: dict[str, frozenset[str]] = {
     SurfaceDimension.VULNERABILITIES.value: frozenset(
         {AssetKind.VULNERABILITIES.value}
     ),
-    # inferred from what the probe stages report, never produced by a stage of its own
+    # inferred from what the probe stages report
     SurfaceDimension.SOFTWARE.value: frozenset(
         {AssetKind.HTTP_ASSETS.value, AssetKind.PORTS.value}
     ),
@@ -172,3 +172,13 @@ SURFACE_TEXT_VALUE: dict[str, tuple[str, ...]] = {
     SurfaceDimension.IPS.value: ("ip",),
     SurfaceDimension.VULNERABILITIES.value: ("matched_at",),
 }
+
+# a dimension an export can write: every map an export run reads has an entry for it
+EXPORTABLE_DIMENSIONS: tuple[str, ...] = tuple(
+    d
+    for d in SURFACE_ORDER
+    if d in SURFACE_COLUMNS
+    and d in SURFACE_IDENTITY
+    and d in SURFACE_TEXT_VALUE
+    and d in SURFACE_COUNT_COLUMNS
+)

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { routeLabels } from '$lib/config/routes';
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
@@ -115,6 +116,8 @@
 	}
 </script>
 
+<svelte:head><title>{routeLabels.schedules} · reNgine</title></svelte:head>
+
 <div class="space-y-6">
 	<div class="flex items-start justify-between">
 		<div>
@@ -178,7 +181,7 @@
 		<p class="pt-2 text-center text-xs text-muted-foreground">
 			{scanSchedulesStore.schedules.length} schedule{scanSchedulesStore.schedules.length !== 1
 				? 's'
-				: ''} in this project
+				: ''}
 		</p>
 	{/if}
 </div>

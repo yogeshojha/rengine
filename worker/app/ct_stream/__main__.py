@@ -185,7 +185,7 @@ class Supervisor:
                 path.unlink(missing_ok=True)
 
     def _handle(self, event: dict[str, str]) -> bool:
-        """True when the entry is consumed; a failed dispatch keeps it for the next tick."""
+        """True when the entry is consumed."""
         kind = event.get("EVENT")
         if kind == "discovered_cert":
             names = _names_for(event)

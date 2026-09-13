@@ -58,9 +58,6 @@ FONT_FORMATS: tuple[FontFormat, ...] = (
     FontFormat("otf", "opentype", "font/otf", (b"OTTO",)),
 )
 
-FORMAT_BY_EXTENSION: dict[str, FontFormat] = {f.extension: f for f in FONT_FORMATS}
-FONT_EXTENSIONS: tuple[str, ...] = tuple(f.extension for f in FONT_FORMATS)
-
 
 def detect_format(data: bytes) -> FontFormat | None:
     """Format detected from the file bytes."""

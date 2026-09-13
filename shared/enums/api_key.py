@@ -10,3 +10,4 @@ class APIProvider(Enum):
     INTIGRITI = "intigriti"
     VULNX = "vulnx"
     INTERACTSH = "interactsh"
+    GITHUB = "github"

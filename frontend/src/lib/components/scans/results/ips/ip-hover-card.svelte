@@ -5,7 +5,8 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import TechIcon from '../tech-icon.svelte';
 	import CountryFlag from '../country-flag.svelte';
-	import { isPrivateIp, isSensitivePort } from '$lib/utilities/scan-correlation';
+	import { isPrivateIp } from '$lib/utilities/scan-correlation';
+	import { isSensitivePort } from '$lib/config/service-classes';
 	import type { IpGroupRead } from '$lib/utilities/scan-insights';
 	import { claimHover, releaseHover } from '$lib/utilities/hover-exclusive';
 
@@ -30,6 +31,7 @@
 	$effect(() => {
 		if (hoverOpen) claimHover(closeSelf);
 		else releaseHover(closeSelf);
+		return () => releaseHover(closeSelf);
 	});
 </script>
 

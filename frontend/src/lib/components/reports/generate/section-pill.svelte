@@ -7,25 +7,19 @@
 	interface Props {
 		section: SectionCatalogEntry;
 		on: boolean;
-		unavailable?: boolean;
 		onToggle: () => void;
 		children?: Snippet;
 	}
 
-	let { section, on, unavailable = false, onToggle, children }: Props = $props();
-
-	const UNAVAILABLE = 'No data for this section in this scan. Skipped.';
-	let hint = $derived(unavailable ? UNAVAILABLE : section.description);
+	let { section, on, onToggle, children }: Props = $props();
 </script>
 
 <span
 	class="inline-flex h-7 items-stretch rounded-md border text-sm transition-colors {on
 		? 'border-border bg-muted text-foreground'
-		: unavailable
-			? 'border-border/60 text-muted-foreground/60'
-			: 'border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground'}"
+		: 'border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground'}"
 >
-	<Hint text={hint}>
+	<Hint text={section.description}>
 		{#snippet child(props)}
 			<button
 				{...props}

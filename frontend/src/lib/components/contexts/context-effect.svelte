@@ -321,7 +321,7 @@
 		font-weight: 600;
 	}
 	.group {
-		font-size: 10px;
+		font-size: 11px;
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.06em;
@@ -351,7 +351,7 @@
 		flex-shrink: 0;
 		max-width: 60%;
 		font-family: var(--font-mono, ui-monospace, monospace);
-		font-size: 11.5px;
+		font-size: 12px;
 		font-variant-numeric: tabular-nums;
 	}
 	.from {

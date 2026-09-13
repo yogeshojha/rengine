@@ -49,9 +49,9 @@
 		httpStatusReason,
 		httpStatusTextClass,
 		isPrivateIp,
-		isSensitivePort,
 		STATUS_DOT
 	} from '$lib/utilities/scan-correlation';
+	import { isSensitivePort } from '$lib/config/service-classes';
 	import {
 		certState,
 		daysUntilExpiry,
@@ -75,6 +75,7 @@
 	import RecheckChip from '../recheck-chip.svelte';
 	import type { ServiceRead } from '$lib/utilities/services';
 	import { ACTIONS_BODY, ACTIONS_PIN, pinTone, rowTone, type TableColumn } from '../table/columns';
+	import { WEB_ASSET_LEAD_COLUMNS } from './columns';
 
 	interface Props {
 		sub: SubdomainRead;
@@ -257,7 +258,7 @@
 		/>
 	</div>
 
-	<div class="flex min-w-0 flex-[3] flex-col gap-1 contain-inline-size sm:min-w-56">
+	<div class="flex flex-col gap-1 {WEB_ASSET_LEAD_COLUMNS[0].width}">
 		<div class="flex items-start gap-1.5">
 			{#if s.is_important}
 				<span class="flex h-5 shrink-0 items-center">
@@ -479,7 +480,7 @@
 		{/if}
 	</div>
 
-	<div class="w-12 shrink-0 sm:w-16">
+	<div class={WEB_ASSET_LEAD_COLUMNS[1].width}>
 		<Tooltip.Root>
 			<Tooltip.Trigger>
 				{#snippet child({ props })}
@@ -513,12 +514,17 @@
 		</Tooltip.Root>
 	</div>
 
-	<div class="hidden min-w-40 flex-[2] items-start gap-1.5 text-xs text-muted-foreground sm:flex">
+	<div class="items-start gap-1.5 text-xs text-muted-foreground {WEB_ASSET_LEAD_COLUMNS[2].width}">
 		{@render title('line-clamp-2')}
 	</div>
 
 	{#each columns as col (col.key)}
-		<div class="hidden shrink-0 sm:block {col.width} {col.align === 'right' ? 'text-right' : ''}">
+		<div
+			class="hidden sm:block {col.grow ? 'min-w-0 flex-1' : 'shrink-0'} {col.width} {col.align ===
+			'right'
+				? 'text-right'
+				: ''}"
+		>
 			{#if col.key === 'target'}
 				<TargetCell value={s.target_value} {onFilter} />
 			{:else if col.key === 'tech'}

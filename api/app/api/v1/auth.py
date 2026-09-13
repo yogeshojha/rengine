@@ -3,14 +3,18 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from app.api.deps import BEARER_HEADERS, CurrentSuperuser, CurrentUser
+from app.api.deps import BEARER_HEADERS, CurrentSuperuser, CurrentUser, security
 from app.config import settings
 from app.core.database import get_session
 from app.core.ratelimit import (
     clear_failures,
+    clear_token_grace,
+    grant_token_grace,
+    is_token_in_grace,
     is_token_revoked,
     record_failure,
     revoke_token,
@@ -43,6 +47,8 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
 
 ACCESS_TOKEN_COOKIE = "access_token"  # noqa: S105
 REFRESH_TOKEN_COOKIE = "refresh_token"  # noqa: S105
+AUTH_COOKIES = (ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE)
+REFRESH_GRACE_SECONDS = 30
 
 
 def set_auth_cookies(
@@ -166,7 +172,7 @@ async def refresh_access_token(
         )
 
     jti = payload.get("jti")
-    if jti and await is_token_revoked(jti):
+    if jti and await is_token_revoked(jti) and not await is_token_in_grace(jti):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token has been revoked",
@@ -209,6 +215,10 @@ async def refresh_access_token(
     new_access_token = create_access_token(str(user.id))
     new_refresh_token = create_refresh_token(str(user.id))
 
+    if jti and payload.get("exp"):
+        await grant_token_grace(jti, REFRESH_GRACE_SECONDS)
+        await revoke_token(jti, int(payload["exp"] - utc_now().timestamp()))
+
     set_auth_cookies(response, new_access_token, new_refresh_token)
 
     return TokenResponse(
@@ -218,14 +228,23 @@ async def refresh_access_token(
 
 
 @router.post("/logout")
-async def logout(request: Request, response: Response):
-    for cookie_name in (ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE):
-        token = request.cookies.get(cookie_name)
+async def logout(
+    request: Request,
+    response: Response,
+    credentials: Annotated[
+        HTTPAuthorizationCredentials | None, Depends(security)
+    ] = None,
+):
+    presented = [request.cookies.get(name) for name in AUTH_COOKIES]
+    if credentials:
+        presented.append(credentials.credentials)
+    for token in presented:
         if not token:
             continue
         payload = decode_token(token)
         if payload and payload.get("jti") and payload.get("exp"):
             ttl = int(payload["exp"] - utc_now().timestamp())
+            await clear_token_grace(payload["jti"])
             await revoke_token(payload["jti"], ttl)
     clear_auth_cookies(response)
     return {"message": "Logged out"}
@@ -287,8 +306,6 @@ async def change_password(
     current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    validate_password_strength(password_data.new_password)
-
     target_user_id = password_data.user_id or current_user.id
 
     result = await session.execute(select(User).where(User.id == target_user_id))
@@ -342,8 +359,6 @@ async def change_username(
     current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    validate_username(username_data.new_username)
-
     target_user_id = username_data.user_id or current_user.id
 
     result = await session.execute(select(User).where(User.id == target_user_id))

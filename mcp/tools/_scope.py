@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 
-from sqlmodel import select
+from sqlmodel import col, select
 
 from mcp.context import ToolContext
 from mcp.dimensions import Dimension
@@ -88,29 +88,48 @@ async def resolve(ctx: ToolContext, value: str) -> Scope:
 
 async def find_target(ctx: ToolContext, value: str) -> Target:
     """Find one target by value, id, or unique suffix, inside the token's scope."""
-    needle = (value or "").strip().lower()
+    raw = (value or "").strip()
+    needle = raw.lower()
     if not needle:
         msg = "Name a target: a domain, IP address, CIDR range, URL or ASN."
         raise ToolError(msg)
 
-    statement = select(Target)
     scoped = ctx.scoped_projects()
-    if scoped is not None:
-        statement = statement.where(Target.project_id.in_(scoped))
 
-    rows = (await ctx.session.execute(statement)).scalars().all()
-    if not rows:
-        msg = "No targets in this token's scope."
-        raise ToolError(msg)
+    def _scoped(statement):
+        if scoped is None:
+            return statement
+        return statement.where(col(Target.project_id).in_(scoped))
 
-    match = _pick(rows, needle)
+    direct = _scoped(
+        select(Target).where(col(Target.target_value).in_({raw, needle}))
+    ).limit(1)
+    match = (await ctx.session.execute(direct)).scalars().first()
+
+    if match is None and (as_id := _as_uuid(needle)) is not None:
+        by_id = _scoped(select(Target).where(col(Target.id) == as_id)).limit(1)
+        match = (await ctx.session.execute(by_id)).scalars().first()
+
     if match is None:
-        near = ", ".join(sorted(r.target_value for r in rows)[:8])
-        msg = f"No target matches {value!r}. Known targets include: {near}."
-        raise ToolError(msg)
+        rows = (await ctx.session.execute(_scoped(select(Target)))).scalars().all()
+        if not rows:
+            msg = "No targets in this token's scope."
+            raise ToolError(msg)
+        match = _pick(rows, needle)
+        if match is None:
+            near = ", ".join(sorted(r.target_value for r in rows)[:8])
+            msg = f"No target matches {value!r}. Known targets include: {near}."
+            raise ToolError(msg)
 
     ctx.check_project(match.project_id)
     return match
+
+
+def _as_uuid(needle: str) -> uuid.UUID | None:
+    try:
+        return uuid.UUID(needle)
+    except ValueError:
+        return None
 
 
 def _pick(rows: list[Target], needle: str) -> Target | None:

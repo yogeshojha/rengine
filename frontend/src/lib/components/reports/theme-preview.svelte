@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { cn } from '$lib/utils.js';
+	import { SEVERITY_ORDER } from '$lib/config/vulnerabilities';
 	import { fontStack } from '$lib/config/reports';
 	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
 	import type { ThemeSummary } from '$lib/types/report';
@@ -8,7 +9,7 @@
 		theme,
 		variant = 'page',
 		class: className = ''
-	}: { theme: ThemeSummary; variant?: 'page' | 'cover' | 'spread'; class?: string } = $props();
+	}: { theme: ThemeSummary; variant?: 'page' | 'cover'; class?: string } = $props();
 
 	const fonts = $derived(reportCatalog.catalog?.fonts ?? []);
 	const heading = $derived(fontStack(theme.heading_font, fonts));
@@ -20,8 +21,8 @@
 	const ground = $derived(onDark ? theme.cover_background : theme.page);
 	const inkOn = $derived(onDark ? theme.cover_ink : theme.ink);
 
-	const SEV = ['critical', 'high', 'medium', 'low', 'info'];
 	const COUNTS = [20, 0, 4, 13, 589];
+	const SEV = SEVERITY_ORDER.slice(0, COUNTS.length);
 	const LINES = [100, 100, 97, 100, 62];
 	const ROWS = ['critical', 'medium', 'low'];
 </script>
@@ -193,15 +194,10 @@
 
 <div
 	class={cn('relative overflow-hidden rounded-md border', className)}
-	style="aspect-ratio:{variant === 'spread' ? '1.414/1' : '1/1.414'}"
+	style="aspect-ratio:1/1.414"
 	aria-hidden="true"
 >
-	{#if variant === 'spread'}
-		<div class="grid h-full grid-cols-2">
-			<div class="border-r" style="border-color:{theme.rule}">{@render cover()}</div>
-			{@render page()}
-		</div>
-	{:else if variant === 'cover'}
+	{#if variant === 'cover'}
 		{@render cover()}
 	{:else}
 		{@render page()}

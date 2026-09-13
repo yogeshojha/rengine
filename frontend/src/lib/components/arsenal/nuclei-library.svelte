@@ -51,9 +51,11 @@
 
 	let stats = $state<TemplateLibraryStats | null>(null);
 	let statsLoading = $state(true);
+	let statsError = $state<string | null>(null);
 	let items = $state<VulnTemplateRead[]>([]);
 	let total = $state(0);
 	let listLoading = $state(true);
+	let listError = $state<string | null>(null);
 	let syncing = $state(false);
 	let uploading = $state(false);
 	let removing = $state<VulnTemplateRead | null>(null);
@@ -89,8 +91,10 @@
 		statsLoading = true;
 		try {
 			stats = await vulnTemplatesApi.stats();
-		} catch {
+			statsError = null;
+		} catch (e) {
 			stats = null;
+			statsError = e instanceof Error ? e.message : 'Request failed.';
 		} finally {
 			statsLoading = false;
 		}
@@ -104,10 +108,12 @@
 			if (my !== reqId) return;
 			items = res.items;
 			total = res.total;
-		} catch {
+			listError = null;
+		} catch (e) {
 			if (my === reqId) {
 				items = [];
 				total = 0;
+				listError = e instanceof Error ? e.message : 'Request failed.';
 			}
 		} finally {
 			if (my === reqId) listLoading = false;
@@ -257,6 +263,16 @@
 		<Card.Content class="space-y-4">
 			{#if statsLoading}
 				<Skeleton class="h-20 w-full" />
+			{:else if statsError}
+				<div
+					class="flex items-start gap-3 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3"
+				>
+					<TriangleAlert class="mt-0.5 size-4 shrink-0 text-destructive" />
+					<div class="space-y-1">
+						<p class="text-sm font-medium">Library not loaded</p>
+						<p class="text-sm text-muted-foreground">{statsError}</p>
+					</div>
+				</div>
 			{:else if !stats?.ready}
 				<div
 					class="flex items-start gap-3 rounded-md border border-warning/40 bg-warning/5 px-4 py-3"
@@ -441,11 +457,19 @@
 							<div class="px-4 py-3"><Skeleton class="h-9 w-full" /></div>
 						{/each}
 					</div>
+				{:else if listError}
+					<EmptyState
+						icon={TriangleAlert}
+						title="Checks not loaded"
+						description={listError}
+						class="rounded-none border-0 bg-transparent py-12"
+					>
+						<Button variant="outline" size="sm" onclick={() => void loadList()}>Retry</Button>
+					</EmptyState>
 				{:else if items.length === 0}
 					<EmptyState
 						icon={SearchX}
 						title="No checks match"
-						description="Widen the search or remove a filter."
 						class="rounded-none border-0 bg-transparent py-12"
 					/>
 				{:else}

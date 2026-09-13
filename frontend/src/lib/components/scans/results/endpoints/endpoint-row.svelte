@@ -1,5 +1,7 @@
 <script lang="ts">
 	import ExternalLink from '@lucide/svelte/icons/external-link';
+	import { filterToken } from '$lib/utilities/scan-insights';
+	import { formatBytes } from '$lib/utilities/scan-correlation';
 	import Copy from '@lucide/svelte/icons/copy';
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 
@@ -86,13 +88,6 @@
 				}
 			: {}
 	);
-
-	function size(bytes: number | null): string {
-		if (bytes == null) return '—';
-		if (bytes < 1024) return `${bytes} B`;
-		if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-		return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-	}
 </script>
 
 {#snippet badges(compact: boolean)}
@@ -215,7 +210,7 @@
 					class="block w-full truncate text-left text-xs hover:text-primary hover:underline"
 					onclick={(e) => {
 						e.stopPropagation();
-						onFilter?.(`host:${endpoint.host}`);
+						onFilter?.(filterToken('host', endpoint.host));
 					}}
 				>
 					<HighlightText text={endpoint.host} {terms} />
@@ -236,7 +231,7 @@
 								class="rounded bg-muted px-1 font-mono text-2xs hover:bg-muted/70"
 								onclick={(e) => {
 									e.stopPropagation();
-									onFilter?.(`param:${name}`);
+									onFilter?.(filterToken('param', name));
 								}}
 							>
 								{name}
@@ -281,7 +276,7 @@
 				</div>
 			{:else if column.key === 'size'}
 				<span class="font-mono text-xs tabular-nums text-muted-foreground">
-					{size(endpoint.content_length)}
+					{formatBytes(endpoint.content_length)}
 				</span>
 			{:else if column.key === 'sources'}
 				<SourceMarks sources={endpoint.sources} evidence={endpoint.evidence} />
@@ -299,6 +294,7 @@
 				{#snippet child(props)}
 					<Button
 						{...props}
+						aria-label="Copy URL"
 						variant="ghost"
 						size="icon"
 						class="size-7"
@@ -315,6 +311,7 @@
 				{#snippet child(props)}
 					<Button
 						{...props}
+						aria-label="Open in a new tab"
 						variant="ghost"
 						size="icon"
 						class="size-7"

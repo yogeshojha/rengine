@@ -13,6 +13,8 @@ from shared.definitions.bounty_programs import (
 from shared.enums.instance import InstanceMode
 from shared.utils.datetime import utc_now
 
+SINGLETON_KEY = "instance"
+
 
 class InstanceSettings(SQLModel, table=True):
     __tablename__ = "instance_settings"
@@ -21,7 +23,7 @@ class InstanceSettings(SQLModel, table=True):
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    singleton_key: str = Field(default="instance", max_length=20)
+    singleton_key: str = Field(default=SINGLETON_KEY, max_length=20)
     instance_name: str = Field(default="reNgine", max_length=120)
     timezone: str = Field(default="UTC", max_length=64)
     mode: str = Field(default=InstanceMode.BUG_BOUNTY.value)

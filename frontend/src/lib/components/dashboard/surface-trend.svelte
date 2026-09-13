@@ -8,7 +8,7 @@
 	import Widget from './widget.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SURFACE_ORDER, SurfaceDimension } from '$lib/config/surface';
-	import type { DashboardOverview, DashboardWindow } from '$lib/types/dashboard';
+	import { TREND_DAYS, type DashboardOverview, type DashboardWindow } from '$lib/types/dashboard';
 
 	interface Props {
 		overview: DashboardOverview;
@@ -20,7 +20,7 @@
 
 	let dim = $state<SurfaceDimension>(SurfaceDimension.WEB_ASSETS);
 	let spec = $derived(SURFACE[dim]);
-	let days = $derived(window === '30d' ? 30 : 7);
+	let days = $derived(TREND_DAYS[window]);
 	let recent = $derived(overview.daily.slice(-days));
 	let data = $derived(
 		recent.map((d) => ({ date: new Date(`${d.date}T00:00:00Z`), value: d.total[dim] ?? 0 }))
@@ -71,7 +71,11 @@
 			<span class="flex items-center gap-2 text-xs text-muted-foreground">
 				<span>{spec.nounPlural} today</span>
 				{#if delta !== 0}
-					<span class="font-medium tabular-nums {delta > 0 ? 'text-success' : 'text-destructive'}">
+					<span
+						class="font-medium tabular-nums {delta > 0
+							? 'text-foreground'
+							: 'text-muted-foreground'}"
+					>
 						{delta > 0 ? '▲' : '▼'}
 						{Math.abs(delta).toLocaleString()} since {fmtDay(data[0].date)}
 					</span>

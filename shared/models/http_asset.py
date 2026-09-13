@@ -80,7 +80,7 @@ class HttpAsset(SQLModel, table=True):
     a_records: list = _json_list()
     aaaa_records: list = _json_list()
     cname: str | None = Field(default=None, max_length=500)
-    asn: int | None = Field(default=None)
+    asn: int | None = Field(default=None, sa_type=BigInteger)
     asn_org: str | None = Field(default=None, max_length=255)
     is_cdn: bool = Field(default=False, index=True)
     cdn_name: str | None = Field(default=None, max_length=100)

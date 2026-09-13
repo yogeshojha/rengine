@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
@@ -7,11 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.api.scope import EndpointScope
 from app.core.database import get_session
-from app.services.asset_query import build_schema
 from app.services.endpoint import EndpointService
 from app.services.endpoint_structure import EndpointStructureService
-from shared.definitions.asset_query import ENDPOINT_QUERY
-from shared.models.asset_query import QueryGroups, QueryLeads, QuerySchema
+from shared.models.asset_query import QueryGroups, QueryLeads
 from shared.models.endpoint import (
     CoverageRead,
     EndpointDetail,
@@ -32,18 +30,13 @@ from shared.services.asset_query import lead_cache
 
 router = APIRouter(prefix="/endpoints", tags=["endpoints"])
 
-_TREE_MODES = ("host", "merged")
+TreeMode = Literal["host", "merged"]
 
 
 def get_service(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> EndpointService:
     return EndpointService(session)
-
-
-@router.get("/search/schema", response_model=QuerySchema)
-async def endpoint_query_schema(_current_user: CurrentUser):
-    return build_schema(ENDPOINT_QUERY)
 
 
 @router.post("/search", response_model=EndpointPage)
@@ -91,10 +84,9 @@ async def endpoint_tree(
     service: Annotated[EndpointService, Depends(get_service)],
     scope: EndpointScope,
     body: EndpointFilter,
-    mode: Annotated[str, Query(description="host or merged")] = "host",
+    mode: Annotated[TreeMode, Query(description="host or merged")] = "host",
 ):
-    resolved = mode if mode in _TREE_MODES else "host"
-    return await service.tree(scope, body, resolved)
+    return await service.tree(scope, body, mode)
 
 
 @router.post("/tree/hosts", response_model=HostPage)

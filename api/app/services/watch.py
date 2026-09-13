@@ -77,12 +77,9 @@ from shared.services.asset_query import (
 )
 from shared.services.celery_dispatch import dispatch_watch_reconcile
 from shared.utils.datetime import utc_now
+from shared.utils.text import counted
 
 _SCOPE_KINDS = (WatchEventKind.SCOPE_ADDED.value, WatchEventKind.SCOPE_REMOVED.value)
-
-
-def _plural(n: int, noun: str) -> str:
-    return f"{n} {noun}" if n == 1 else f"{n} {noun}s"
 
 
 def _bad(detail: str) -> HTTPException:
@@ -357,9 +354,9 @@ class WatchService:
                 kind=WatchEventKind.WATCH_STARTED.value,
                 detail=", ".join(
                     [
-                        _plural(len(targets), "target"),
-                        _plural(plan.wildcards, "wildcard") + " watched",
-                        _plural(
+                        counted(len(targets), "target"),
+                        counted(plan.wildcards, "wildcard") + " watched",
+                        counted(
                             len(plan.excluded_subdomains) + len(plan.excluded_ips),
                             "exclusion",
                         ),

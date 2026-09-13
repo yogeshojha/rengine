@@ -18,7 +18,12 @@
 	import { formatShortDate } from '$lib/utilities/dates';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { SELECT_NONE } from '$lib/constants';
-	import { MCP_EXPIRY_CHOICES, TOUCHES_TARGETS, type McpTokenCreated } from '$lib/types/mcp';
+	import {
+		ALWAYS_GRANTED,
+		MCP_DEFAULT_GRANTS,
+		MCP_EXPIRY_CHOICES,
+		type McpTokenCreated
+	} from '$lib/types/mcp';
 
 	interface Props {
 		open: boolean;
@@ -29,7 +34,7 @@
 
 	let name = $state('');
 	let projectId = $state<string>(SELECT_NONE);
-	const granted = new SvelteSet<string>(['read', 'plan']);
+	const granted = new SvelteSet<string>(MCP_DEFAULT_GRANTS);
 	let expiry = $state<string>('30');
 	let creating = $state(false);
 	let created = $state<McpTokenCreated | null>(null);
@@ -37,6 +42,10 @@
 
 	const status = $derived(mcp.status);
 	const capabilities = $derived(status?.capabilities ?? []);
+	const alwaysGranted = $derived.by(() => {
+		const served = capabilities.filter((c) => c.always).map((c) => c.key);
+		return served.length ? served : ALWAYS_GRANTED;
+	});
 	const ceiling = $derived(status?.ceiling ?? {});
 	const projectList = $derived(projectsStore.projects ?? []);
 
@@ -53,8 +62,8 @@
 		name = '';
 		projectId = SELECT_NONE;
 		granted.clear();
-		granted.add('read');
-		granted.add('plan');
+		for (const key of MCP_DEFAULT_GRANTS) granted.add(key);
+		for (const key of alwaysGranted) granted.add(key);
 		expiry = '30';
 		created = null;
 		copied = '';
@@ -63,7 +72,7 @@
 	function toggle(key: string, value: boolean) {
 		if (value) granted.add(key);
 		else granted.delete(key);
-		granted.add('read');
+		for (const always of alwaysGranted) granted.add(always);
 	}
 
 	async function copy(value: string, key: string) {
@@ -186,7 +195,7 @@
 							{#each capabilities as capability (capability.key)}
 								{@const locked = capability.always}
 								{@const blocked = !locked && !ceiling[capability.key]}
-								{@const touches = TOUCHES_TARGETS.includes(capability.key)}
+								{@const touches = capability.touches_targets}
 								<label
 									class="flex items-start gap-2.5 rounded-md border px-3 py-2.5 {touches &&
 									granted.has(capability.key)

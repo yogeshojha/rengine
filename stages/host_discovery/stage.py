@@ -52,9 +52,9 @@ class HostDiscoveryStage(Stage):
                 ),
                 recorder=self.ctx.recorder,
             )
-        except NaabuError:
+        except NaabuError as exc:
             logger.warning("naabu unavailable, skipping host discovery")
-            return StageResult(counts={"alive": 0})
+            return StageResult(warnings=[str(exc)], partial=True)
 
         found = client.scan([row.ip for row in rows], ["-p", _LIVENESS_PORTS])
         self._check_abort()

@@ -13,7 +13,7 @@ from shared.services.ip_asn import ranges_ready
 from shared.services.ip_inventory import collect_ips
 from shared.services.scope_filter import ip_excluded
 from shared.utils.datetime import utc_now
-from stages.base import ALL_TARGETS, Stage, StageResult
+from stages.base import DOMAIN_TARGETS, Stage, StageResult
 from stages.netblock_sweep.config import NetblockSweepConfig
 from stages.subdomain.parser import in_scope, normalize_host, passes_included
 from tools.dnsx.client import DnsxClient, DnsxError
@@ -63,7 +63,7 @@ class NetblockSweepStage(Stage):
     role = StageRole.CAPABILITY.value
     consumes = frozenset({AssetKind.ADDRESSES.value})
     produces = frozenset({AssetKind.HOSTS.value})
-    applies_to = ALL_TARGETS
+    applies_to = DOMAIN_TARGETS
     tools = ("dnsx",)
     touches_target = False
     config_model = NetblockSweepConfig
@@ -113,7 +113,7 @@ class NetblockSweepStage(Stage):
             )
         if foreign:
             warnings.append(
-                f"{len(foreign)} hostname(s) in these ranges are outside the target "
+                f"{len(foreign)} hostnames in these ranges are outside the target "
                 f"and were not stored: {', '.join(sorted(foreign)[:_NAMED_FOREIGN])}"
                 + (
                     f" and {len(foreign) - _NAMED_FOREIGN} more"
@@ -123,7 +123,7 @@ class NetblockSweepStage(Stage):
             )
 
         self.emit_progress(
-            f"netblock sweep found {added} host(s) in {len(addresses):,} addresses"
+            f"netblock sweep found {added} hosts in {len(addresses):,} addresses"
         )
         return StageResult(
             counts={"hosts": added},

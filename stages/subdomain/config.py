@@ -7,7 +7,9 @@ from shared.enums.scan import Intensity
 from stages.config import StageConfig, threads, timeout, wordlist
 from stages.subdomain.providers import PASSIVE_PROVIDERS
 
-PASSIVE_TOOLS: tuple[str, ...] = tuple(sorted(PASSIVE_PROVIDERS))
+PASSIVE_TOOLS: tuple[str, ...] = tuple(
+    sorted({cls.tool for cls in PASSIVE_PROVIDERS.values()})
+)
 DEFAULT_PASSIVE_TOOLS: list[str] = [
     "subfinder",
     "ctfr",

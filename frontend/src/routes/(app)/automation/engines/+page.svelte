@@ -17,7 +17,7 @@
 	import { scanEnginesStore } from '$lib/stores/scan-engines.svelte';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
-	import { ROUTES } from '$lib/config/routes';
+	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Alert from '$lib/components/ui/alert';
@@ -60,7 +60,7 @@
 	let sortKey = $state<SortKey>('recent');
 
 	$effect(() => {
-		engineCatalogStore.fetch();
+		untrack(() => engineCatalogStore.fetch());
 	});
 
 	$effect(() => {
@@ -271,6 +271,8 @@
 	const stageCount = $derived(stages.length);
 	const total = $derived(scanEnginesStore.engines.length);
 </script>
+
+<svelte:head><title>{routeLabels.engines} · reNgine</title></svelte:head>
 
 <div class="space-y-6">
 	<div class="flex flex-wrap items-start justify-between gap-4">

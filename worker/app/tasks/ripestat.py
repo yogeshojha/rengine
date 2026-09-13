@@ -22,7 +22,6 @@ from shared.services.notification_sync import (
     single_project,
 )
 from shared.utils.net import is_registry_routable
-from tools.ripestat.client import RIPEStatRateLimitError
 from tools.ripestat.service import RIPEStatLookupError, RIPEStatService
 
 logger = get_logger(__name__)
@@ -31,10 +30,6 @@ logger = get_logger(__name__)
 @celery_app.task(
     name="app.tasks.ripestat.enrich_targets_bgp",
     queue="default",
-    autoretry_for=(RIPEStatRateLimitError,),
-    max_retries=3,
-    # 429 means daily quota hit, retry tomorrow
-    default_retry_delay=86400,
     soft_time_limit=600,
     time_limit=900,
 )

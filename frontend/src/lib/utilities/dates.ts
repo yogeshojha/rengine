@@ -42,6 +42,13 @@ export function relativeTimeLong(timestamp: string | Date | null | undefined): s
 	return `${e.count} ${e.long}${e.count === 1 ? '' : 's'} ago`;
 }
 
+/** How long something has been running, as "3h" or "under a minute". */
+export function uptime(timestamp: string | Date | null | undefined): string {
+	const e = elapsed(timestamp);
+	if (!e) return '';
+	return e.count ? `${e.count}${e.short}` : 'under a minute';
+}
+
 export function formatShortDate(date: string | Date): string {
 	return new Date(date).toLocaleDateString('en-US', {
 		year: 'numeric',

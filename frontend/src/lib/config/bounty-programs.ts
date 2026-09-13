@@ -77,17 +77,6 @@ export const SUBMISSION_STATE_LABELS: Record<SubmissionState, string> = {
 	[SubmissionState.Unknown]: 'Not reported'
 };
 
-const PLATFORM_URLS: Record<string, string> = {
-	hackerone: 'https://hackerone.com',
-	bugcrowd: 'https://bugcrowd.com',
-	intigriti: 'https://app.intigriti.com',
-	yeswehack: 'https://yeswehack.com'
-};
-
-export function platformUrl(platform: string): string {
-	return PLATFORM_URLS[platform] ?? '';
-}
-
 export const SOURCE_LABELS: Record<string, string> = {
 	api: 'Platform API',
 	feed: 'Bounty Targets feed'
@@ -155,10 +144,3 @@ export const EVENT_PAGE_SIZE = 50;
 export const PROGRAM_PAGE_SIZE = 25;
 
 export const MAX_IMPORT_TAGS = 10;
-
-export const PLATFORM_LABELS: Record<string, string> = {
-	hackerone: 'HackerOne',
-	bugcrowd: 'Bugcrowd',
-	intigriti: 'Intigriti',
-	yeswehack: 'YesWeHack'
-};

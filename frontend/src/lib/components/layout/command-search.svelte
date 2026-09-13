@@ -2,10 +2,8 @@
 	import * as Command from '$lib/components/ui/command/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import Crosshair from '@lucide/svelte/icons/crosshair';
-	import Building from '@lucide/svelte/icons/building';
 	import Cog from '@lucide/svelte/icons/cog';
 	import Layers from '@lucide/svelte/icons/layers';
 	import Play from '@lucide/svelte/icons/play';
@@ -92,6 +90,10 @@
 
 <Dialog.Root bind:open={commandOpen}>
 	<Dialog.Content class="overflow-hidden p-0 shadow-lg sm:max-w-[550px]">
+		<Dialog.Header class="sr-only">
+			<Dialog.Title>Search</Dialog.Title>
+			<Dialog.Description>Targets and actions</Dialog.Description>
+		</Dialog.Header>
 		<Command.Root shouldFilter={false} class="[&_[data-cmd-input-wrapper]]:border-b">
 			<Command.Input bind:value={searchQuery} placeholder="Search targets or run an action…" />
 			<Command.List>
@@ -150,13 +152,6 @@
 							<Crosshair class="mr-2 h-4 w-4" />
 							<span>Add target</span>
 						</Command.Item>
-						<Command.Item disabled class="justify-between">
-							<span class="flex items-center">
-								<Building class="mr-2 h-4 w-4" />
-								Add organization
-							</span>
-							<Badge variant="secondary" class="text-2xs">Soon</Badge>
-						</Command.Item>
 						<Command.Item
 							onSelect={() => {
 								commandOpen = false;
@@ -169,7 +164,7 @@
 						<Command.Item
 							onSelect={() => {
 								commandOpen = false;
-								goto(ROUTES.contexts);
+								goto(ROUTES.newContext());
 							}}
 						>
 							<Layers class="mr-2 h-4 w-4" />

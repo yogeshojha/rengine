@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from shared.definitions.compare import Comparability
+from shared.definitions.compare import Comparability, Tone
 
 
 class RunSide(BaseModel):
@@ -95,7 +95,7 @@ class ChangeField(BaseModel):
     label: str
     before: str | None = None
     after: str | None = None
-    tone: str = "neutral"
+    tone: str = Tone.NEUTRAL.value
 
 
 class ScreenshotPair(BaseModel):

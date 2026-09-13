@@ -38,13 +38,8 @@ def _unmask_tool_options(submitted: dict | None, stored: dict | None) -> dict[st
         restored = value
         for original in originals:
             restored = restored.replace(MASK, original, 1)
-        out[tool] = stored[tool] if MASK in restored else restored
+        out[tool] = restored
     return out
-
-
-_MAX_HEADERS = 1000
-_MAX_HEADER_LEN = 4096
-_MAX_YAML_LEN = 512 * 1024
 
 
 def _validate_yaml_source(source: str | None) -> str | None:
@@ -66,9 +61,6 @@ def _validate_yaml_source(source: str | None) -> str | None:
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid YAML: {exc}"
         ) from exc
     return source
-
-
-_INTENSITIES = set(INTENSITIES)
 
 
 def _validate_tool_options(options: dict | None) -> dict[str, str]:
@@ -238,11 +230,3 @@ def _full_stages(stored: dict | None) -> dict[str, dict]:
         for spec in stages()
         if not spec.catalog_hidden
     }
-
-
-_JSON_TYPES = {
-    "integer": "integer",
-    "number": "number",
-    "boolean": "boolean",
-    "string": "string",
-}

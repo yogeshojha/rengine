@@ -67,4 +67,6 @@ export interface ProxyTestResult {
 	success: boolean;
 	message: string;
 	latency_ms: number | null;
+	// false when the port answered but the proxy did not carry the request
+	reachable: boolean;
 }

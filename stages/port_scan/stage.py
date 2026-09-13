@@ -92,9 +92,9 @@ class PortScanStage(Stage):
                 ),
                 recorder=self.ctx.recorder,
             )
-        except NaabuError:
+        except NaabuError as exc:
             logger.warning("naabu unavailable, skipping port scan")
-            return StageResult(counts={"open_ports": 0, "scanned": 0})
+            return StageResult(warnings=[str(exc)], partial=True)
 
         found: set[tuple[str, int, str]] = set()
         failures: list[str] = []
@@ -181,7 +181,11 @@ class PortScanStage(Stage):
                     if sink.pending == 0:
                         self._check_abort()
             sink.flush()
-            if stream.return_code != 0 and stream.record_count == 0:
+            if (
+                stream.return_code != 0
+                and not stream.record_count
+                and not stream.stopped
+            ):
                 failures.append(
                     stream.stderr.strip()[:300] or "naabu produced no output"
                 )

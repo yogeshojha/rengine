@@ -29,7 +29,7 @@ class Export(SQLModel, table=True):
     created_by: uuid.UUID | None = Field(default=None)
     created_at: datetime = Field(default_factory=utc_now, index=True)
 
-    # the recipe — everything a re-run needs
+    # the recipe
     dimension: str = Field(max_length=32, index=True)
     scope: str = Field(default=ExportScope.SCAN.value, max_length=16)
     scan_id: uuid.UUID | None = Field(

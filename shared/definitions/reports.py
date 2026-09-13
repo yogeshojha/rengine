@@ -9,9 +9,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 MAX_SECTIONS = 60
-MAX_CUSTOM_BLOCKS = 20
 MAX_TITLE_LENGTH = 200
-MAX_TEXT_BLOCK = 20_000
 MAX_LOGO_BYTES = 512_000
 MAX_REPORT_ROWS = 5_000
 MAX_EVIDENCE_CHARS = 4_000
@@ -27,8 +25,6 @@ class ReportFormat(StrEnum):
     MARKDOWN = "markdown"
     JSON = "json"
 
-
-REPORT_FORMATS: tuple[str, ...] = tuple(f.value for f in ReportFormat)
 
 FORMAT_LABELS: dict[str, str] = {
     ReportFormat.PDF.value: "PDF",
@@ -57,6 +53,7 @@ class ReportStatus(StrEnum):
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
+    EXPIRED = "expired"
 
 
 REPORT_STATUS_LABELS: dict[str, str] = {
@@ -64,11 +61,13 @@ REPORT_STATUS_LABELS: dict[str, str] = {
     ReportStatus.RUNNING.value: "Generating",
     ReportStatus.COMPLETED.value: "Ready",
     ReportStatus.FAILED.value: "Failed",
+    ReportStatus.EXPIRED.value: "Expired",
 }
 
 TERMINAL_STATUSES: tuple[str, ...] = (
     ReportStatus.COMPLETED.value,
     ReportStatus.FAILED.value,
+    ReportStatus.EXPIRED.value,
 )
 
 
@@ -116,9 +115,6 @@ class SectionRole(StrEnum):
 
     CONTENT = "content"
     FURNITURE = "furniture"
-
-
-SECTION_ROLES: tuple[str, ...] = tuple(r.value for r in SectionRole)
 
 
 class Audience(StrEnum):
@@ -171,22 +167,10 @@ PAGE_SIZE_CSS: dict[str, str] = {
     PageSize.LEGAL.value: "Legal",
 }
 
-PAGE_WIDTH_MM: dict[str, float] = {
-    PageSize.A4.value: 210.0,
-    PageSize.LETTER.value: 215.9,
-    PageSize.LEGAL.value: 215.9,
-}
-
 
 class Orientation(StrEnum):
     PORTRAIT = "portrait"
     LANDSCAPE = "landscape"
-
-
-ORIENTATION_LABELS: dict[str, str] = {
-    Orientation.PORTRAIT.value: "Portrait",
-    Orientation.LANDSCAPE.value: "Landscape",
-}
 
 
 class Density(StrEnum):
@@ -214,9 +198,6 @@ class Classification(StrEnum):
     INTERNAL = "Internal"
     CONFIDENTIAL = "Confidential"
     RESTRICTED = "Restricted"
-
-
-CLASSIFICATIONS: tuple[str, ...] = tuple(c.value for c in Classification)
 
 
 @dataclass(frozen=True)
@@ -248,9 +229,6 @@ FONT_FAMILIES: tuple[FontFamily, ...] = (
 )
 
 FONT_BY_KEY: dict[str, FontFamily] = {f.key: f for f in FONT_FAMILIES}
-SANS_FONTS: tuple[str, ...] = tuple(f.key for f in FONT_FAMILIES if f.role == "sans")
-SERIF_FONTS: tuple[str, ...] = tuple(f.key for f in FONT_FAMILIES if f.role == "serif")
-MONO_FONTS: tuple[str, ...] = tuple(f.key for f in FONT_FAMILIES if f.role == "mono")
 
 
 @dataclass(frozen=True)
@@ -471,11 +449,6 @@ class ReportSpec(BaseModel):
     branding: ReportBranding = Field(default_factory=ReportBranding)
     narrative: NarrativeOptions = Field(default_factory=NarrativeOptions)
     formats: list[str] = Field(default_factory=lambda: [ReportFormat.PDF.value])
-
-
-def coerce_format(value: str | None) -> str:
-    key = (value or "").strip().lower()
-    return key if key in FORMAT_LABELS else ReportFormat.PDF.value
 
 
 def coerce_scope(value: str | None) -> str:

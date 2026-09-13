@@ -7,10 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.api.scope import SoftwareScope
 from app.core.database import get_session
-from app.services.asset_query import build_schema
 from app.services.software import SoftwareService
-from shared.definitions.asset_query import SOFTWARE_QUERY
-from shared.models.asset_query import QuerySchema
 from shared.models.software import (
     SoftwareCoverage,
     SoftwareFacets,
@@ -28,11 +25,6 @@ def get_service(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> SoftwareService:
     return SoftwareService(session)
-
-
-@router.get("/search/schema", response_model=QuerySchema)
-async def software_schema(_current_user: CurrentUser):
-    return build_schema(SOFTWARE_QUERY)
 
 
 @router.post("/search", response_model=SoftwarePage)

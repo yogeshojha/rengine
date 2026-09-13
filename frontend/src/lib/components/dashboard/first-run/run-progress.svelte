@@ -11,7 +11,7 @@
 	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE_ORDER } from '$lib/config/surface';
 	import type { DashboardOverview } from '$lib/types/dashboard';
-	import { formatSeconds } from '$lib/utilities/scan-status';
+	import { elapsedSeconds, formatSeconds } from '$lib/utilities/scan-status';
 	import { plannedStages, stageProgress } from '$lib/utilities/scan-progress';
 
 	interface Props {
@@ -27,10 +27,7 @@
 	let produced = $derived(new Set(planned.flatMap((s) => s.produces)));
 	let progress = $derived(scan ? stageProgress(scan, run, planned) : null);
 	let rows = $derived(progress?.steps ?? []);
-	let elapsed = $derived.by(() => {
-		if (!scan?.started_at) return null;
-		return Math.max(0, Math.floor((now - new Date(scan.started_at).getTime()) / 1000));
-	});
+	let elapsed = $derived(scan ? elapsedSeconds(scan, now) : null);
 	let headline = $derived.by(() => {
 		if (!progress) return '';
 		const parts = [progress.label];

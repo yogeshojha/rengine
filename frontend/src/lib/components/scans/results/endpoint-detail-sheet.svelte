@@ -1,5 +1,7 @@
 <script lang="ts">
 	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import { filterToken } from '$lib/utilities/scan-insights';
+	import { formatBytes, formatResponseTime } from '$lib/utilities/scan-correlation';
 	import NoteSection from '$lib/components/notes/note-section.svelte';
 	import { SurfaceDimension } from '$lib/config/surface';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
@@ -96,13 +98,6 @@
 	let position = $derived(index >= 0 ? pageOffset + index + 1 : 0);
 	let sensitive = $derived((endpoint?.interest ?? []).filter((i) => SENSITIVE_INTEREST.has(i)));
 	let testable = $derived((endpoint?.interest ?? []).filter((i) => !SENSITIVE_INTEREST.has(i)));
-
-	function size(bytes: number | null | undefined): string {
-		if (bytes == null) return '—';
-		if (bytes < 1024) return `${bytes} B`;
-		if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-		return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-	}
 </script>
 
 <Sheet.Root {open} {onOpenChange}>
@@ -209,7 +204,10 @@
 						<PathBreadcrumb
 							host={endpoint.host}
 							path={endpoint.dir_path}
-							onSelect={(h, p) => onFilter?.(`dir:"${p}"` + (h ? ` host:${h}` : ''))}
+							onSelect={(h, p) =>
+								onFilter?.(
+									[filterToken('dir', p), h ? filterToken('host', h) : ''].filter(Boolean).join(' ')
+								)}
 						/>
 						<dl class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
 							<div class="flex justify-between gap-2">
@@ -307,7 +305,7 @@
 									<button
 										type="button"
 										class="rounded bg-muted px-1.5 py-0.5 font-mono text-xs hover:bg-muted/70"
-										onclick={() => onFilter?.(`param:${name}`)}
+										onclick={() => onFilter?.(filterToken('param', name))}
 									>
 										{name}
 									</button>
@@ -339,7 +337,7 @@
 							<p class="text-xs text-muted-foreground">Not requested in this scan.</p>
 						{:else}
 							<dl class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
-								{#each [['Status', endpoint.status_code], ['Content type', endpoint.content_type], ['Size', size(endpoint.content_length)], ['Words', endpoint.words], ['Lines', endpoint.lines], ['Response time', endpoint.response_time ? `${Math.round(endpoint.response_time * 1000)} ms` : null]] as [label, value] (label)}
+								{#each [['Status', endpoint.status_code], ['Content type', endpoint.content_type], ['Size', formatBytes(endpoint.content_length)], ['Words', endpoint.words], ['Lines', endpoint.lines], ['Response time', endpoint.response_time ? formatResponseTime(endpoint.response_time) : null]] as [label, value] (label)}
 									{#if value !== null && value !== undefined}
 										<div class="flex justify-between gap-2">
 											<dt class="text-muted-foreground">{label}</dt>
@@ -365,7 +363,7 @@
 										<button
 											type="button"
 											class="flex items-center gap-1 rounded border px-1.5 py-0.5 text-xs hover:bg-muted/50"
-											onclick={() => onFilter?.(`tech:${name}`)}
+											onclick={() => onFilter?.(filterToken('tech', name))}
 										>
 											<TechIcon {name} class="size-3.5" />
 											{name}

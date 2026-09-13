@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.celery import celery_app
 from app.config import settings
 from app.database import get_sync_session
-from app.orchestrator import build_canvas, finalize_scan_run, run_stage
+from app.orchestrator import apply_counts, build_canvas, finalize_scan_run, run_stage
 from shared.definitions.constants import SCANS_QUEUE
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.scan import (
@@ -76,7 +76,7 @@ def run_scan(self, scan_id: str, epoch: int = 0) -> dict:
             scan.status = ScanStatus.FAILED.value
             scan.error = f"Scan not queued: {exc}"[:2000]
             scan.completed_at = utc_now()
-            session.commit()
+            apply_counts(session, scan)
             return {"error": "dispatch failed"}
         scan.celery_task_ids = [self.request.id, result.id]
         session.commit()
@@ -176,7 +176,7 @@ def resume_scan(self, scan_id: str, epoch: int) -> dict:
             scan.status = ScanStatus.FAILED.value
             scan.error = f"Scan not resumed: {exc}"[:2000]
             scan.completed_at = utc_now()
-            session.commit()
+            apply_counts(session, scan)
             return {"error": "dispatch failed"}
         scan.celery_task_ids = [*(scan.celery_task_ids or []), result.id]
         session.commit()
@@ -229,7 +229,7 @@ def reap_stalled(self) -> dict:  # noqa: ARG001
 
 
 def _abandon(session: Session, scan: Scan) -> None:
-    """Close the ledger so finalize can settle. An empty ledger has nothing to aggregate."""
+    """Close the ledger and hand the run to finalize."""
     session.execute(
         update(ScanActivity)
         .where(

@@ -208,6 +208,7 @@ function createLiveScansStore() {
 		clearTimeout(refreshTimer);
 		clearTimeout(pollTimer);
 		seq++;
+		inflight = false;
 		projectId = undefined;
 		scans = [];
 		hasFetched = false;
@@ -238,6 +239,10 @@ function createLiveScansStore() {
 
 		isLive(scanId: string): boolean {
 			return scans.some((s) => s.id === scanId);
+		},
+
+		isTargetLive(targetId: string): boolean {
+			return scans.some((s) => s.target_id === targetId);
 		},
 
 		previousDuration(scanId: string): number | null {

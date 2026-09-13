@@ -9,13 +9,8 @@ import TrendingUp from '@lucide/svelte/icons/trending-up';
 import ShieldOff from '@lucide/svelte/icons/shield-off';
 import Unplug from '@lucide/svelte/icons/unplug';
 import Zap from '@lucide/svelte/icons/zap';
+import type { BadgeVariant } from '$lib/components/ui/badge';
 import type { IconComponent } from './icons';
-
-// mirrors shared/definitions/threat_intel.py
-export enum FeedKind {
-	EPSS = 'epss',
-	KEV = 'kev'
-}
 
 export enum FeedStatus {
 	EMPTY = 'empty',
@@ -84,19 +79,20 @@ export const SIGNAL_LABELS: Record<string, string> = {
 };
 
 export const SIGNAL_HELP: Record<string, string> = {
-	[ExploitSignal.KEV]: 'CISA lists these CVEs as exploited in the wild.',
+	[ExploitSignal.KEV]: 'CISA lists this CVE as exploited in the wild.',
 	[ExploitSignal.RANSOM_PATH]:
-		'Used in ransomware campaigns. The same host exposes a sensitive service.',
-	[ExploitSignal.RANSOMWARE]: 'CISA records these CVEs in known ransomware campaigns.',
-	[ExploitSignal.FRESH_EXPLOIT]: 'A public exploit was published after the scan that found these.',
-	[ExploitSignal.OVERDUE]: 'The federal remediation deadline for these CVEs has passed.',
-	[ExploitSignal.WEAPONISED]: 'Working exploit code is published for these.',
+		'Used in ransomware campaigns, and the host exposes a remote access or database service.',
+	[ExploitSignal.RANSOMWARE]: 'CISA records this CVE in known ransomware campaigns.',
+	[ExploitSignal.FRESH_EXPLOIT]:
+		'A public exploit was published after the scan that recorded this finding.',
+	[ExploitSignal.OVERDUE]: 'The federal remediation deadline for this CVE has passed.',
+	[ExploitSignal.WEAPONISED]: 'Working exploit code is published.',
 	[ExploitSignal.LIKELY]: 'EPSS 8.8% or above.',
 	[ExploitSignal.REACHABLE]:
 		'The host answers from the internet with no CDN or WAF in front of it.',
 	[ExploitSignal.BYPASSED]: 'A WAF or CDN sits in front of the host and the check succeeded.',
-	[ExploitSignal.CROWD]: 'Hundreds of thousands of hosts run this software.',
-	[ExploitSignal.UNTESTABLE]: 'No scanner template covers these.'
+	[ExploitSignal.CROWD]: 'Run by more than 100,000 hosts on the internet.',
+	[ExploitSignal.UNTESTABLE]: 'No scanner template covers this CVE.'
 };
 
 export const SIGNAL_ICONS: Record<string, IconComponent> = {
@@ -126,6 +122,39 @@ export const SIGNAL_QUERY: Record<string, string> = {
 	[ExploitSignal.CROWD]: 'signal:crowd',
 	[ExploitSignal.UNTESTABLE]: 'is:untestable'
 };
+
+export enum SignalTone {
+	CRITICAL = 'critical',
+	WARNING = 'warning',
+	INFO = 'info',
+	NEUTRAL = 'neutral'
+}
+
+export const SIGNAL_TONE: Record<string, SignalTone> = {
+	[ExploitSignal.KEV]: SignalTone.CRITICAL,
+	[ExploitSignal.RANSOM_PATH]: SignalTone.CRITICAL,
+	[ExploitSignal.RANSOMWARE]: SignalTone.CRITICAL,
+	[ExploitSignal.FRESH_EXPLOIT]: SignalTone.CRITICAL,
+	[ExploitSignal.OVERDUE]: SignalTone.WARNING,
+	[ExploitSignal.WEAPONISED]: SignalTone.WARNING,
+	[ExploitSignal.LIKELY]: SignalTone.WARNING,
+	[ExploitSignal.REACHABLE]: SignalTone.WARNING,
+	[ExploitSignal.BYPASSED]: SignalTone.WARNING,
+	[ExploitSignal.CROWD]: SignalTone.INFO,
+	[ExploitSignal.UNTESTABLE]: SignalTone.INFO
+};
+
+export const TONE_BADGE: Record<SignalTone, BadgeVariant> = {
+	[SignalTone.CRITICAL]: 'destructive',
+	[SignalTone.WARNING]: 'warning',
+	[SignalTone.INFO]: 'info',
+	[SignalTone.NEUTRAL]: 'secondary'
+};
+
+/** The badge variant for an exploit signal. */
+export function signalVariant(kind: string): BadgeVariant {
+	return TONE_BADGE[SIGNAL_TONE[kind] ?? SignalTone.NEUTRAL];
+}
 
 export const TONE_TEXT: Record<string, string> = {
 	critical: 'text-destructive',

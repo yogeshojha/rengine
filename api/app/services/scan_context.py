@@ -25,6 +25,7 @@ from shared.models.scan_schedule import ScanSchedule
 from shared.services.scan_resolve import (
     _SENSITIVE_HEADER,
     MASK,
+    SECRET_FIELDS,
     _auth_summary,
     _mask_auth,
     _mask_headers,
@@ -251,9 +252,9 @@ def _apply_auth_update(ctx: ScanContext, data: ScanContextUpdate) -> None:
     if data.auth is not None:
         incoming = data.auth.model_dump()
         for key, value in incoming.items():
-            if key == "auth_type":
+            if key == "auth_type" or value is None:
                 continue
-            if value is None:
+            if key in SECRET_FIELDS and MASK in str(value):
                 continue
             merged[key] = value
     merged["auth_type"] = new_auth_type
@@ -484,7 +485,8 @@ class ScanContextService:
         ctx = await self.session.get(ScanContext, id)
         if ctx is None or ctx.project_id != project_id:
             return
-        _validate_rate("global_rate_limit_override", rate)
+        if rate is not None:
+            _validate_rate("global_rate_limit_override", rate)
         ctx.global_rate_limit_override = rate
         ctx.updated_at = utc_now()
         await self.session.flush()

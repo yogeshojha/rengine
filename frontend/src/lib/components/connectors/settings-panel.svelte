@@ -13,7 +13,7 @@
 	import { connectorsApi } from '$lib/api/connectors';
 	import { connectors } from '$lib/stores/connectors.svelte';
 	import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
-	import { SOURCE_TOOL_LABELS } from '$lib/config/connectors';
+	import { INGESTED_TOOLS, SOURCE_TOOL_LABELS } from '$lib/config/connectors';
 	import { SELECT_NONE } from '$lib/constants';
 	import type { Connector, ConnectorCreated, SourceTool } from '$lib/types/connector';
 
@@ -29,7 +29,7 @@
 	let confirmDelete = $state(false);
 	let error = $state<string | null>(null);
 
-	const tools: SourceTool[] = ['proxy', 'repeater'];
+	const tools: SourceTool[] = INGESTED_TOOLS;
 	const contexts = $derived(scanContextsStore.contexts);
 	const contextName = $derived(contexts.find((c) => c.id === connector.context_id)?.name ?? 'None');
 
@@ -82,9 +82,14 @@
 	}
 
 	async function remove() {
-		await connectorsApi.remove(connector.id, projectId);
-		connectors.drop(connector.id);
-		confirmDelete = false;
+		try {
+			await connectorsApi.remove(connector.id, projectId);
+			connectors.drop(connector.id);
+			confirmDelete = false;
+		} catch (e) {
+			confirmDelete = false;
+			error = e instanceof Error ? e.message : 'Connector not deleted.';
+		}
 	}
 
 	function toggleTool(tool: SourceTool) {

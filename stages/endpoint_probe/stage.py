@@ -125,17 +125,26 @@ class EndpointProbeStage(Stage):
                     )
                 )
         sink.close()
+        stalled = stream.timed_out
         answered = sink.written
         endpoint_judge.store_fingerprints(self.session, fingerprints)
         dropped = endpoint_judge.judge(self.session, self.ctx.scan_id)
         if dropped:
             self.publish_results(SurfaceDimension.ENDPOINTS.value)
         status = (
-            CoverageStatus.PARTIAL.value if skipped else CoverageStatus.COMPLETED.value
+            CoverageStatus.PARTIAL.value
+            if skipped or stalled
+            else CoverageStatus.COMPLETED.value
         )
         reason = (
             f"{skipped} endpoints not requested. Budget of {budget} reached."
             if skipped
+            else None
+        )
+        stall = (
+            f"httpx stalled and was stopped. {answered:,} of {len(selected):,} "
+            "endpoints answered."
+            if stalled
             else None
         )
         self._store(
@@ -144,7 +153,7 @@ class EndpointProbeStage(Stage):
             len(selected),
             skipped,
             status,
-            None,
+            stall,
             reason,
             answered=answered,
             dropped=dict(dropped),
@@ -155,7 +164,11 @@ class EndpointProbeStage(Stage):
             + (f", {removed} removed as noise" if removed else "")
             + (f", {skipped} left unverified" if skipped else "")
         )
-        return StageResult(counts={"endpoints_probed": len(selected)})
+        return StageResult(
+            counts={"endpoints_probed": len(selected)},
+            warnings=[stall] if stall else [],
+            partial=stalled,
+        )
 
     def _pending(self, budget: int) -> list[str]:
         """The unverified endpoints most likely to matter, ranked in the database."""

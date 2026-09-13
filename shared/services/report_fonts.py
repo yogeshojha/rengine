@@ -8,6 +8,7 @@ from pathlib import Path
 
 from shared.definitions.report_fonts import (
     FONT_ROOT,
+    FONT_SLUG_LENGTH,
     MAX_FACE_BYTES,
     MIN_FACE_BYTES,
     FontOrigin,
@@ -49,7 +50,7 @@ def clean_name(name: str) -> str:
 
 
 def slugify(name: str) -> str:
-    slug = generate_slug(clean_name(name))[:48]
+    slug = generate_slug(clean_name(name))[:FONT_SLUG_LENGTH]
     if not slug:
         msg = "The family name must contain letters or digits."
         raise FontError(msg)

@@ -56,16 +56,21 @@ class PassivePortsStage(Stage):
                 ),
                 recorder=self.ctx.recorder,
             )
-        except NaabuError:
+        except NaabuError as exc:
             logger.warning("naabu unavailable, skipping passive port lookup")
-            return StageResult(counts={"known_ports": 0, "addresses": 0})
+            return StageResult(warnings=[str(exc)], partial=True)
 
         try:
             found = client.passive(addresses)
         except NaabuError as exc:
             logger.warning("passive port lookup failed: %s", exc)
-            self.emit_progress(f"passive lookup failed: {exc}")
-            return StageResult(counts={"known_ports": 0, "addresses": len(addresses)})
+            note = f"Indexed ports not read. {exc}"
+            self.emit_progress(note)
+            return StageResult(
+                counts={"addresses": len(addresses)},
+                warnings=[note],
+                partial=True,
+            )
         self._check_abort()
         count = port_inventory.upsert(
             self.session,

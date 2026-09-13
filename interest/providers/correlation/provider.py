@@ -159,6 +159,7 @@ class CorrelationProvider(InterestProvider):
         try:
             return list(fn(ctx))
         except Exception:
+            ctx.session.rollback()
             logger.warning("correlation signal failed", exc_info=True)
             return []
 

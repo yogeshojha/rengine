@@ -101,6 +101,29 @@ DNS_ELIGIBLE_TYPES = {TargetType.DOMAIN, TargetType.URL}
 class BulkTargetResult:
     import_result: TargetImportResult
     target: Target | None = None
+    duplicate: bool = False
+
+
+def _rejected(
+    value: str, seen_in_batch: set[str], existing: set[str]
+) -> BulkTargetResult | None:
+    """The result for a value no import may store, or None."""
+    if not value:
+        reason, duplicate = "Empty target value", False
+    elif value in seen_in_batch:
+        reason, duplicate = "Duplicate within import batch", True
+    elif value in existing:
+        reason, duplicate = "Target exists in this project", True
+    elif validate_target(value) is None:
+        reason, duplicate = unrecognised_target(value), False
+    else:
+        return None
+    return BulkTargetResult(
+        import_result=TargetImportResult(
+            target_value=value, success=False, error=reason
+        ),
+        duplicate=duplicate,
+    )
 
 
 def _csv_value(
@@ -146,14 +169,7 @@ class TargetService:
             .group_by(Target.target_type)
         )
 
-        counts = {
-            "all": 0,
-            "domain": 0,
-            "ip": 0,
-            "ip_range": 0,
-            "asn": 0,
-            "url": 0,
-        }
+        counts = {"all": 0} | {kind.value: 0 for kind in TargetType}
 
         for target_type, count in result.all():
             counts[target_type.value] = count
@@ -165,7 +181,7 @@ class TargetService:
         self,
         target_value: str,
         project_slug: str | None = None,
-    ) -> select:
+    ) -> Select:
         query = select(Target).where(Target.target_value.ilike(f"%{target_value}%"))
 
         if project_slug:
@@ -556,7 +572,7 @@ class TargetService:
                 imported_count += 1
                 if result.target:
                     created_targets.append(result.target)
-            elif "duplicate" in result.import_result.error.lower():
+            elif result.duplicate:
                 skipped_duplicates += 1
             else:
                 failed_count += 1
@@ -852,7 +868,7 @@ class TargetService:
                 imported_count += 1
                 if result.target:
                     created_targets.append(result.target)
-            elif "duplicate" in result.import_result.error.lower():
+            elif result.duplicate:
                 skipped_duplicates += 1
             else:
                 failed_count += 1
@@ -1127,43 +1143,10 @@ class TargetService:
         seen_in_batch: set[str],
     ) -> "BulkTargetResult":
         _target_value = normalize_target_value(target_value)
-
-        if not _target_value:
-            return BulkTargetResult(
-                import_result=TargetImportResult(
-                    target_value=_target_value,
-                    success=False,
-                    error="Empty target value",
-                )
-            )
-
-        if _target_value in seen_in_batch:
-            return BulkTargetResult(
-                import_result=TargetImportResult(
-                    target_value=_target_value,
-                    success=False,
-                    error="Duplicate within import batch",
-                )
-            )
-
-        if _target_value in existing_target_values:
-            return BulkTargetResult(
-                import_result=TargetImportResult(
-                    target_value=_target_value,
-                    success=False,
-                    error="Target exists in this project",
-                )
-            )
-
+        rejected = _rejected(_target_value, seen_in_batch, existing_target_values)
+        if rejected is not None:
+            return rejected
         target_type = validate_target(_target_value)
-        if not target_type:
-            return BulkTargetResult(
-                import_result=TargetImportResult(
-                    target_value=_target_value,
-                    success=False,
-                    error=unrecognised_target(_target_value),
-                )
-            )
 
         target = Target(
             target_value=_target_value,
@@ -1198,43 +1181,10 @@ class TargetService:
         seen_in_batch: set[str],
     ) -> "BulkTargetResult":
         target_value = normalize_target_value(item.target_value)
-
-        if not target_value:
-            return BulkTargetResult(
-                import_result=TargetImportResult(
-                    target_value=target_value,
-                    success=False,
-                    error="Empty target value",
-                )
-            )
-
-        if target_value in seen_in_batch:
-            return BulkTargetResult(
-                import_result=TargetImportResult(
-                    target_value=target_value,
-                    success=False,
-                    error="Duplicate within import batch",
-                )
-            )
-
-        if target_value in existing_target_values:
-            return BulkTargetResult(
-                import_result=TargetImportResult(
-                    target_value=target_value,
-                    success=False,
-                    error="Target exists in this project",
-                )
-            )
-
+        rejected = _rejected(target_value, seen_in_batch, existing_target_values)
+        if rejected is not None:
+            return rejected
         target_type = validate_target(target_value)
-        if not target_type:
-            return BulkTargetResult(
-                import_result=TargetImportResult(
-                    target_value=target_value,
-                    success=False,
-                    error=unrecognised_target(target_value),
-                )
-            )
 
         organizations = []
         for org_name in item.organizations:
@@ -1577,13 +1527,14 @@ class TargetService:
                 if not any(row.values()):
                     continue
 
-                target_value = None
-                for key in ["target_value", "target", "value", "domain", "ip"]:
-                    if key in fieldnames:
-                        idx = fieldnames.index(key)
-                        orig_key = csv_reader.fieldnames[idx]
-                        target_value = normalize_target_value(row.get(orig_key, ""))
-                        break
+                target_value = normalize_target_value(
+                    _csv_value(
+                        row,
+                        csv_reader.fieldnames,
+                        fieldnames,
+                        ("target_value", "target", "value", "domain", "ip"),
+                    )
+                )
 
                 if not target_value:
                     continue

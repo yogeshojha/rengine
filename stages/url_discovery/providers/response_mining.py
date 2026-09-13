@@ -21,6 +21,7 @@ class ResponseMiningProvider(UrlProvider):
     uses_session = True
 
     def discover(self, result: ProviderResult) -> None:
+        found = 0
         offsite = 0
         mined = 0
         seen: set[str] = set()
@@ -47,8 +48,11 @@ class ResponseMiningProvider(UrlProvider):
                 continue
             mined += 1
             for candidate in mine.candidates(body, row.response_headers or {}):
-                resolved = self._resolve(base, candidate)
+                resolved = mine.resolve(base, candidate)
                 if resolved is None:
+                    continue
+                found += 1
+                if not self.in_scope(resolved):
                     offsite += 1
                     continue
                 if resolved in seen:
@@ -63,17 +67,13 @@ class ResponseMiningProvider(UrlProvider):
                 )
 
         result.observations = observations
-        result.urls_found = len(observations)
+        result.urls_found = found
         result.pages_fetched = 0
         result.hosts_scanned = mined
-        if offsite:
+        if offsite and not result.cap_reason:
             result.cap_reason = (
                 f"{offsite} links pointed outside the scan's scope and were not stored."
             )
         self.progress(
             f"mined {len(observations)} in-scope urls from {mined} stored responses, no requests sent"
         )
-
-    def _resolve(self, base: str, candidate: str) -> str | None:
-        absolute = mine.resolve(base, candidate)
-        return absolute if absolute and self.in_scope(absolute) else None

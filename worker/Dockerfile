@@ -7,7 +7,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.12.13 /uv /usr/local/bin/uv
 
 
 ##################################################################
@@ -27,39 +27,39 @@ RUN curl -fsSL https://go.dev/dl/go1.25.7.linux-amd64.tar.gz | tar -C /usr/local
 ENV PATH="/usr/local/go/bin:/root/go/bin:${PATH}"
 
 
-RUN go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest \
-    && go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest \
-    && go install -v github.com/projectdiscovery/tlsx/cmd/tlsx@latest \
-    && go install -v github.com/projectdiscovery/alterx/cmd/alterx@latest \
-    && go install -v github.com/tomnomnom/assetfinder@latest \
-    && go install -v github.com/owasp-amass/amass/v4/...@master
+RUN go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@v1.3.1 \
+    && go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@v2.16.0 \
+    && go install -v github.com/projectdiscovery/tlsx/cmd/tlsx@v1.4.0 \
+    && go install -v github.com/projectdiscovery/alterx/cmd/alterx@v0.1.0 \
+    && go install -v github.com/tomnomnom/assetfinder@v0.1.1 \
+    && go install -v github.com/gwen001/github-subdomains@v1.2.2 \
+    && go install -v github.com/owasp-amass/amass/v4/...@v4.2.0
 
-# Expansion-phase tools (naabu needs libpcap)
+# naabu needs libpcap
 RUN apt-get update && apt-get install -y --no-install-recommends libpcap-dev \
     && rm -rf /var/lib/apt/lists/* \
-    && go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest \
-    && go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest \
-    && go install -v github.com/projectdiscovery/cdncheck/cmd/cdncheck@latest
+    && go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@v2.6.1 \
+    && go install -v github.com/projectdiscovery/httpx/cmd/httpx@v1.12.0 \
+    && go install -v github.com/projectdiscovery/cdncheck/cmd/cdncheck@v1.3.0
 
-# EX-2 / EX-4 tools: ffuf (vhost brute), chromium (httpx screenshots), wafw00f (WAF)
+# ffuf, chromium for screenshots, wafw00f
 RUN apt-get update && apt-get install -y --no-install-recommends chromium \
     && rm -rf /var/lib/apt/lists/* \
-    && go install -v github.com/ffuf/ffuf/v2@latest \
+    && go install -v github.com/ffuf/ffuf/v2@v2.3.0 \
     && python3 -m pip install --no-cache-dir --break-system-packages wafw00f
 
-# Depth-phase: URL discovery (katana crawls, urlfinder reads public archives)
-RUN go install -v github.com/projectdiscovery/katana/cmd/katana@latest \
-    && go install -v github.com/projectdiscovery/urlfinder/cmd/urlfinder@latest
+# url discovery
+RUN go install -v github.com/projectdiscovery/katana/cmd/katana@v1.7.0 \
+    && go install -v github.com/projectdiscovery/urlfinder/cmd/urlfinder@v0.0.3
 
-# Depth-phase: nuclei (vulnerability scanning). Templates live on the shared
-# vuln-templates volume and are synced at runtime, not baked into the image.
-RUN go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
+# nuclei, with templates synced at runtime onto the vuln-templates volume
+RUN go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@v3.11.1
 
 # certificate transparency stream for program watches
 RUN go install -v software.sslmate.com/src/certspotter/cmd/certspotter@v0.24.2
 
 
-# WeasyPrint renders the PDF reports; pango does the text layout
+# WeasyPrint and its text layout
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fontconfig \
     && rm -rf /var/lib/apt/lists/*
@@ -78,8 +78,4 @@ RUN uv sync --no-install-project
 CMD ["uv", "run", "celery", "-A", "app.celery", "worker", "--loglevel=INFO"]
 
 
-###################################################################
-# TODO: Production
-# NOTE: stages/ and reports/ resolve via PYTHONPATH=/app (not packaged deps) —
-# the prod stage MUST COPY both and keep PYTHONPATH=/app.
-###################################################################
+# a prod stage must COPY stages/ and reports/ and keep PYTHONPATH=/app

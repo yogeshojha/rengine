@@ -235,10 +235,14 @@
 						<Clock class="h-3 w-3" />
 						<span>Queried {bgp.queried_at ? formatShortDate(bgp.queried_at) : 'Unknown'}</span>
 					</div>
-					<span class="flex items-center gap-1 text-2xs text-primary/70">
+					<button
+						type="button"
+						class="flex items-center gap-1 text-2xs text-primary/70 transition-colors hover:text-primary"
+						onclick={handleClick}
+					>
 						See details
 						<ExternalLink class="h-2.5 w-2.5" />
-					</span>
+					</button>
 				</div>
 			</div>
 		</HoverCard.Content>

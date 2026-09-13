@@ -12,6 +12,7 @@ from app.services.asset_query import predicates as preds
 from shared.definitions.endpoints import (
     CLASS_LABELS,
     INTEREST_LABELS,
+    SENSITIVE_INTERESTS,
     SOURCE_LABELS,
     EndpointClass,
 )
@@ -22,6 +23,8 @@ from shared.models.endpoint import (
     StructureFinding,
     StructureLine,
 )
+from shared.services.asset_query.tokens import token as _token
+from shared.utils.text import plural
 
 _MIN_WALLED = 2
 _MAX_OPEN_INSIDE = 2
@@ -34,19 +37,7 @@ _CONTENT_CLASSES = (
     EndpointClass.MEDIA.value,
     EndpointClass.OTHER.value,
 )
-_NEEDS_QUOTE = ' ()"[]:=><~'
-
-
-def _token(field: str, value: str, op: str = ":") -> str:
-    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
-    quoted = (
-        f'"{escaped}"' if any(c in value for c in _NEEDS_QUOTE) or not value else value
-    )
-    return f"{field}{op}{quoted}"
-
-
-def _plural(word: str, n: int) -> str:
-    return word if n == 1 else f"{word}s"
+_TOP_INTEREST = 10
 
 
 class EndpointStructureService:
@@ -119,14 +110,14 @@ class EndpointStructureService:
                 kind="auth_boundary",
                 label=f"{row.dir_path} on {row.host}",
                 detail=(
-                    f"{row.walled} {_plural('endpoint', row.walled)} "
+                    f"{row.walled} {plural(row.walled, 'endpoint')} "
                     f"{'requires' if row.walled == 1 else 'require'} authentication. "
                     f"{row.opened} {'answers' if row.opened == 1 else 'answer'} without it."
                 ),
                 count=int(row.opened),
                 query=(
-                    f"{_token('dir', row.dir_path, '=')} "
-                    f"{_token('host', row.host, '=')} status:200..299"
+                    f"{_token('dir', '=', row.dir_path)} "
+                    f"{_token('host', '=', row.host)} status:200..299"
                 ),
                 samples=[row.sample] if row.sample else [],
             )
@@ -148,7 +139,7 @@ class EndpointStructureService:
                 .select_from(Endpoint)
                 .where(
                     Endpoint.scan_id == scan_id,
-                    value.in_(("vcs", "secrets", "backup")),
+                    value.in_(tuple(sorted(SENSITIVE_INTERESTS))),
                 )
                 .group_by(value)
                 .order_by(desc("n"))
@@ -159,11 +150,11 @@ class EndpointStructureService:
                 kind="exposed_file",
                 label=INTEREST_LABELS.get(row.interest, row.interest),
                 detail=(
-                    f"{row.n} {_plural('path', row.n)} across {row.hosts} "
-                    f"{_plural('host', row.hosts)}."
+                    f"{row.n} {plural(row.n, 'path')} across {row.hosts} "
+                    f"{plural(row.hosts, 'host')}."
                 ),
                 count=int(row.n),
-                query=_token("interest", row.interest),
+                query=_token("interest", ":", row.interest),
                 samples=[row.sample] if row.sample else [],
             )
             for row in rows
@@ -183,7 +174,7 @@ class EndpointStructureService:
                 kind="archive_only",
                 label="Archive only",
                 detail=(
-                    f"{count} {_plural('endpoint', count)} from a public archive "
+                    f"{count} {plural(count, 'endpoint')} from a public archive "
                     "did not answer."
                 ),
                 count=count,
@@ -192,7 +183,7 @@ class EndpointStructureService:
         ]
 
     async def _shared_paths(self, scan_id: UUID) -> list[PathSpread]:
-        """The same route on many hosts is one framework."""
+        """Routes that answer on several hosts."""
         hosts = func.count(func.distinct(Endpoint.host))
         rows = (
             await self.session.execute(
@@ -217,7 +208,7 @@ class EndpointStructureService:
                 path=row.path,
                 hosts=int(row.hosts),
                 endpoints=int(row.endpoints),
-                query=_token("path", row.path, "="),
+                query=_token("path", "=", row.path),
             )
             for row in rows
         ]
@@ -237,7 +228,7 @@ class EndpointStructureService:
                 .where(Endpoint.scan_id == scan_id)
                 .group_by(value)
                 .order_by(desc("n"))
-                .limit(10)
+                .limit(_TOP_INTEREST)
             )
         ).all()
         return [
@@ -246,7 +237,7 @@ class EndpointStructureService:
                 label=INTEREST_LABELS.get(row.interest, row.interest),
                 count=int(row.n),
                 hosts=int(row.hosts),
-                query=_token("interest", row.interest),
+                query=_token("interest", ":", row.interest),
             )
             for row in rows
         ]
@@ -265,7 +256,7 @@ class EndpointStructureService:
                 key=key,
                 label=CLASS_LABELS.get(key, key),
                 count=int(n),
-                query=_token("class", key),
+                query=_token("class", ":", key),
             )
             for key, n in rows
         ]
@@ -291,7 +282,7 @@ class EndpointStructureService:
                 key=row.source,
                 label=SOURCE_LABELS.get(row.source, row.source),
                 count=int(row.n),
-                query=_token("source", row.source),
+                query=_token("source", ":", row.source),
             )
             for row in rows
         ]
@@ -304,16 +295,16 @@ def _headline(out: ScanStructure) -> str:
         n = len(auth)
         one = n == 1
         return (
-            f"{n} {_plural('folder', n)} behind authentication "
+            f"{n} {plural(n, 'folder')} behind authentication "
             f"{'answers' if one else 'answer'} on some paths"
         )
     exposed = [f for f in out.findings if f.kind == "exposed_file"]
     if exposed:
         total = sum(f.count for f in exposed)
-        return f"{total} {_plural('path', total)} expose source, credentials or backups"
+        return f"{total} {plural(total, 'path')} expose source, credentials or backups"
     if out.shared_paths:
         top = out.shared_paths[0]
         return f"{top.path} answers on {top.hosts} hosts"
     if out.with_params:
-        return f"{out.with_params} {_plural('endpoint', out.with_params)} accept input"
-    return f"{out.endpoints} endpoints across {out.hosts} {_plural('host', out.hosts)}"
+        return f"{out.with_params} {plural(out.with_params, 'endpoint')} accept input"
+    return f"{out.endpoints} endpoints across {out.hosts} {plural(out.hosts, 'host')}"

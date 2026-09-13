@@ -10,6 +10,7 @@ from mcp.dimensions import DIMENSIONS
 from mcp.result import ToolResult
 from mcp.tools._scope import resolve
 from mcp.tools.base import Tool, ToolGroup, ToolInput
+from shared.utils.text import counted
 
 
 class Input(ToolInput):
@@ -72,7 +73,7 @@ class ResolveTarget(Tool):
                 "Report these as not scanned, not as zero."
             )
         if summary.scans_running:
-            caveats.append(f"{summary.scans_running} scan(s) running now.")
+            caveats.append(f"{counted(summary.scans_running, 'scan')} running now.")
 
         return ToolResult(
             summary=headline,

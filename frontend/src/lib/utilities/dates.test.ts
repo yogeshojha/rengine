@@ -1,5 +1,5 @@
 import { describe, expect, it, afterEach, beforeEach, vi } from 'vitest';
-import { relativeTime, relativeTimeLong } from './dates';
+import { relativeTime, relativeTimeLong, uptime } from './dates';
 
 const NOW = new Date('2026-09-11T12:00:00Z');
 const ago = (minutes: number) => new Date(NOW.getTime() - minutes * 60_000).toISOString();
@@ -84,5 +84,24 @@ describe('the two renderings agree on the bucket', () => {
 		const short = relativeTime(ago(minutes));
 		const long = relativeTimeLong(ago(minutes));
 		expect(long.split(' ')[0]).toBe(short.match(/^\d+/)?.[0]);
+	});
+});
+
+describe('uptime', () => {
+	it.each([
+		[0.5 * MIN, 'under a minute'],
+		[1 * MIN, '1m'],
+		[3 * HOUR, '3h'],
+		[2 * DAY, '2d']
+	])('reads %i minutes back as %s', (minutes, expected) => {
+		expect(uptime(ago(minutes))).toBe(expected);
+	});
+
+	it('reads a missing start as empty, never "never"', () => {
+		expect(uptime(null)).toBe('');
+	});
+
+	it('shares the bucket relativeTime uses', () => {
+		expect(relativeTime(ago(3 * HOUR))).toBe(`${uptime(ago(3 * HOUR))} ago`);
 	});
 });

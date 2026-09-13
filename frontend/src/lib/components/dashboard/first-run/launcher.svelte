@@ -139,7 +139,10 @@
 						<Select.Group>
 							<Select.Label>Scan engines</Select.Label>
 							{#each engines as engine (engine.id)}
-								<Select.Item value="engine:{engine.id}" label={engine.name}>
+								<Select.Item
+									value={encodeSelection({ kind: 'engine', engineId: engine.id })}
+									label={engine.name}
+								>
 									{engine.name}
 								</Select.Item>
 							{/each}
@@ -148,7 +151,10 @@
 					<Select.Group>
 						<Select.Label>Presets</Select.Label>
 						{#each presets as preset (preset.name)}
-							<Select.Item value="recipe:{preset.name}" label={preset.title}>
+							<Select.Item
+								value={encodeSelection({ kind: 'recipe', preset: preset.name })}
+								label={preset.title}
+							>
 								{preset.title}
 							</Select.Item>
 						{/each}

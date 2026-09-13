@@ -20,6 +20,7 @@ from shared.models.scan_activity import ScanActivity
 from shared.models.subdomain import Subdomain
 from shared.models.vulnerability import Vulnerability
 from shared.utils.datetime import utc_now
+from shared.utils.text import counted
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -329,9 +330,9 @@ def compute_rechecks(session: Session, scan: Scan) -> int:
     session.commit()
     changed = sum(1 for r in records if r.changed)
     logger.info(
-        "recheck: scan %s wrote %d asset row(s), %d changed",
+        "recheck: scan %s wrote %s, %d changed",
         scan.id,
-        len(records),
+        counted(len(records), "asset row"),
         changed,
     )
     return changed

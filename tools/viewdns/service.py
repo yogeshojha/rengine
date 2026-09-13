@@ -224,7 +224,7 @@ class ViewDNSService:
         session.refresh(record)
         return record
 
-    # async for fasapi methods
+    # async methods (API handlers)
 
     async def ip_history(
         self, domain: str, cached_only: bool = False

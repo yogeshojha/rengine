@@ -42,7 +42,7 @@
 
 	$effect(() => {
 		if (auth.isAuthenticated) {
-			projectsStore.fetchProjects();
+			untrack(() => projectsStore.fetchProjects());
 		}
 	});
 
@@ -55,7 +55,7 @@
 	$effect(() => {
 		if (auth.isAuthenticated && !auth.isLoading) {
 			if (!onboardingStore.hasFetched) {
-				onboardingStore.fetchStatus();
+				untrack(() => onboardingStore.fetchStatus());
 				return;
 			}
 			const status = onboardingStore.status;
@@ -80,6 +80,7 @@
 		});
 	});
 
+	// reads activeProject so a project switch tears the stream down and re-inits it on the new channel
 	$effect(() => {
 		if (auth.isAuthenticated && !auth.isLoading) {
 			const projectId = projectsStore.activeProject?.id;
@@ -96,17 +97,6 @@
 	$effect(() => {
 		const projectId = projectsStore.activeProject?.id;
 		if (auth.isAuthenticated && !auth.isLoading && projectId) liveScans.init(projectId);
-	});
-
-	let prevProjectId: string | undefined;
-	$effect(() => {
-		const projectId = projectsStore.activeProject?.id;
-		if (sseStore.isConnected && projectId && projectId !== prevProjectId) {
-			if (prevProjectId) {
-				sseStore.switchProject(prevProjectId, projectId);
-			}
-			prevProjectId = projectId;
-		}
 	});
 
 	let showRequiredProjectCreateModal = $derived(

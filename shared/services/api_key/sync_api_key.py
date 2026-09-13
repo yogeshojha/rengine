@@ -15,7 +15,7 @@ class SyncAPIKeyService:
         result = self.session.execute(
             select(APIKey).where(
                 APIKey.provider == provider,
-                APIKey.is_enabled == True,  # noqa: E712
+                APIKey.is_enabled.is_(True),
             )
         )
         api_key = result.scalar_one_or_none()

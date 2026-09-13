@@ -14,6 +14,7 @@ from mcp.tools._scope import resolve
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.definitions.surface import SurfaceDimension
 from shared.definitions.vulnerabilities import VulnState
+from shared.utils.text import counted
 
 STATES = tuple(s.value for s in VulnState)
 
@@ -75,7 +76,7 @@ class RecordTriage(Tool):
 
         return ToolResult(
             summary=(
-                f"Marked {result.updated} observation(s) as {result.state} "
+                f"Marked {counted(result.updated, 'observation')} as {result.state} "
                 f"on {scope.target.target_value}"
             ),
             data={

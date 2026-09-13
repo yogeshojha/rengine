@@ -48,14 +48,6 @@ export const sseStore = {
 		sseClient.connect(channels);
 	},
 
-	switchProject(oldProjectId: string | undefined, newProjectId: string): void {
-		if (oldProjectId) {
-			sseClient.removeChannels([SSEChannel.project(oldProjectId)]);
-		}
-		sseClient.addChannels([SSEChannel.project(newProjectId)]);
-		state.activeChannels = Array.from(sseClient.activeChannels);
-	},
-
 	subscribe(channel: string, callback: (message: SSEMessage) => void): () => void {
 		return sseClient.subscribe(channel, callback);
 	},

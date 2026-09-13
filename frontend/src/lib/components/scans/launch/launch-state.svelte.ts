@@ -145,6 +145,10 @@ export class LaunchState {
 		return this.resolution?.states.get(name) ?? 'off';
 	}
 
+	stageUnsatisfied(name: string) {
+		return this.resolution?.unsatisfied.has(name) ?? false;
+	}
+
 	toggleStage(name: string) {
 		const next = !this.effective[name]?.enabled;
 		this.setStageField(name, 'enabled', next);
@@ -224,19 +228,6 @@ export class LaunchState {
 		this.engineId = id;
 		this.patch = {};
 		this.intensity = null;
-	}
-
-	applyStored(plan: StoredPlan, engineExists: (id: string) => boolean) {
-		if (plan.mode === 'engine') {
-			if (!plan.engineId || !engineExists(plan.engineId)) return false;
-			this.applyEngine(plan.engineId);
-			return true;
-		}
-		this.mode = 'quick';
-		this.engineId = null;
-		this.patch = this.capabilityPatch(cloneStages(plan.stages));
-		this.intensity = plan.intensity;
-		return true;
 	}
 
 	restoreRun(scan: ScanRead, engineExists: (id: string) => boolean) {

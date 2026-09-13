@@ -21,6 +21,7 @@ from shared.models.http_asset import HttpAsset
 from shared.models.related import RelatedDomain, RelatedDomains, RelatedEvidence
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
+from shared.utils.net import cert_covers
 
 _MAX_TRUST_PASSES = 3
 
@@ -54,32 +55,20 @@ def _clean(value: str | None) -> str:
     return host if "." in host and " " not in host else ""
 
 
-def _covers(host: str, sans: list) -> bool:
-    """Whether the certificate was issued to the host that served it (wildcards match one label)."""
-    name = (host or "").strip().lower().rstrip(".")
-    if not name:
-        return False
-    for raw in sans:
-        san = str(raw).strip().lower().rstrip(".")
-        if san.startswith("*."):
-            if name.partition(".")[2] == san[2:]:
-                return True
-        elif san and name == san:
-            return True
-    return False
-
-
 class RelatedDomainService:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def for_scan(self, project_id: UUID, scan_id: UUID) -> RelatedDomains:
-        target_value = await self.session.scalar(
-            select(Target.target_value)
-            .join(Subdomain, Subdomain.target_id == Target.id)
-            .where(Subdomain.scan_id == scan_id)
-            .limit(1)
-        )
+    async def for_scan(
+        self, project_id: UUID, scan_id: UUID, target_value: str | None = None
+    ) -> RelatedDomains:
+        if target_value is None:
+            target_value = await self.session.scalar(
+                select(Target.target_value)
+                .join(Subdomain, Subdomain.target_id == Target.id)
+                .where(Subdomain.scan_id == scan_id)
+                .limit(1)
+            )
         root = registrable_domain(target_value or "")
         if not root:
             return RelatedDomains()
@@ -107,7 +96,7 @@ class RelatedDomainService:
                         names=names,
                         host=host,
                         fronted=bool(is_cdn),
-                        covers_host=_covers(host, sans or []),
+                        covers_host=cert_covers(host, None, sans or []),
                     )
                 )
 

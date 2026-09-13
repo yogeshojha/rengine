@@ -205,7 +205,7 @@
 				cx={dot.x}
 				cy={dot.y}
 				r={dot.r}
-				fill="var(--primary)"
+				fill="var(--series)"
 				stroke="var(--background)"
 				stroke-width="0.75"
 			/>
@@ -222,7 +222,7 @@
 	}
 	.arc {
 		fill: none;
-		stroke: var(--primary);
+		stroke: var(--series);
 		stroke-width: 0.75;
 		opacity: 0.22;
 	}

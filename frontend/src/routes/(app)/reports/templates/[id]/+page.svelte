@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
@@ -55,8 +56,10 @@
 	$effect(() => {
 		const id = projectId;
 		if (!id) return;
-		void reportsStore.fetchTemplates(id);
-		void reportCatalog.fetch();
+		untrack(() => {
+			void reportsStore.fetchTemplates(id);
+			void reportCatalog.fetch();
+		});
 	});
 
 	$effect(() => {

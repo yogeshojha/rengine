@@ -36,41 +36,14 @@ export const COMPARE_PAGE_SIZE = 50;
 export interface VerbSpec {
 	key: ChangeVerb;
 	label: string;
-	rail: string;
-	dot: string;
 }
 
 export const VERB: Record<ChangeVerb, VerbSpec> = {
-	[CHANGE_VERB.APPEARED]: {
-		key: CHANGE_VERB.APPEARED,
-		label: 'Appeared',
-		rail: 'bg-primary',
-		dot: 'bg-primary'
-	},
-	[CHANGE_VERB.CHANGED]: {
-		key: CHANGE_VERB.CHANGED,
-		label: 'Changed',
-		rail: 'bg-info',
-		dot: 'bg-info'
-	},
-	[CHANGE_VERB.DISAPPEARED]: {
-		key: CHANGE_VERB.DISAPPEARED,
-		label: 'Disappeared',
-		rail: 'bg-transparent ring-1 ring-inset ring-muted-foreground/50',
-		dot: 'bg-transparent ring-1 ring-inset ring-muted-foreground/50'
-	},
-	[CHANGE_VERB.UNCONFIRMED]: {
-		key: CHANGE_VERB.UNCONFIRMED,
-		label: 'Unconfirmed',
-		rail: 'bg-warning/60',
-		dot: 'bg-warning/60'
-	},
-	[CHANGE_VERB.UNCHANGED]: {
-		key: CHANGE_VERB.UNCHANGED,
-		label: 'Unchanged',
-		rail: 'bg-border',
-		dot: 'bg-border'
-	}
+	[CHANGE_VERB.APPEARED]: { key: CHANGE_VERB.APPEARED, label: 'Appeared' },
+	[CHANGE_VERB.CHANGED]: { key: CHANGE_VERB.CHANGED, label: 'Changed' },
+	[CHANGE_VERB.DISAPPEARED]: { key: CHANGE_VERB.DISAPPEARED, label: 'Disappeared' },
+	[CHANGE_VERB.UNCONFIRMED]: { key: CHANGE_VERB.UNCONFIRMED, label: 'Unconfirmed' },
+	[CHANGE_VERB.UNCHANGED]: { key: CHANGE_VERB.UNCHANGED, label: 'Unchanged' }
 };
 
 export const COMPARABILITY_LABEL: Record<Comparability, string> = {
@@ -154,9 +127,11 @@ export const RUN_FACET_ORDER = [
 	'excluded_paths',
 	'excluded_ips',
 	'http_protocol',
-	'crawl',
 	'headers',
-	'schedule'
+	'schedule',
+	'rate_ceiling',
+	'thread_multiplier',
+	'timeout_multiplier'
 ] as const;
 
 export function facetRank(key: string): number {

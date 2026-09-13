@@ -25,22 +25,11 @@ from .terms import (
     target_match,
     tri_state,
 )
-from .values import asn_number, like, network
+from .values import PRIVATE_NETWORKS, asn_number, like, network
 
 _IPV4_RE = re.compile(r"^[0-9]{1,3}(\.[0-9]{1,3}){3}$")
 _IPV4 = 4
 _IPV6 = 6
-_PRIVATE_NETWORKS = (
-    "10.0.0.0/8",
-    "172.16.0.0/12",
-    "192.168.0.0/16",
-    "127.0.0.0/8",
-    "169.254.0.0/16",
-    "100.64.0.0/10",
-    "::1/128",
-    "fc00::/7",
-    "fe80::/10",
-)
 
 
 @dataclass(frozen=True)
@@ -107,7 +96,7 @@ _FLAG_BUILDERS = {
     "confirmed": lambda ctx: ctx.source.c.source != PortSource.INTERNETDB.value,
     "cdn": lambda ctx: ctx.source.c.is_cdn.is_(True),
     "hosted": lambda ctx: ctx.source.c.host_count > 0,
-    "private": lambda ctx: or_(*[_within(ctx, n) for n in _PRIVATE_NETWORKS]),
+    "private": lambda ctx: or_(*[_within(ctx, n) for n in PRIVATE_NETWORKS]),
     "v4": lambda ctx: ctx.source.c.version == _IPV4,
     "v6": lambda ctx: ctx.source.c.version == _IPV6,
     "vulnerable": lambda ctx: preds.service_vuln(

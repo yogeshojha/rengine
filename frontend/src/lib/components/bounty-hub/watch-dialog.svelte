@@ -122,9 +122,12 @@
 	}
 
 	$effect(() => {
-		if (!open || isEdit || engineId !== SELECT_NONE) return;
+		if (!open || isEdit) return;
 		const first = scanEnginesStore.engines[0];
-		if (enginesReady && first) engineId = first.id;
+		if (!enginesReady || !first) return;
+		untrack(() => {
+			if (engineId === SELECT_NONE) engineId = first.id;
+		});
 	});
 
 	$effect(() => {

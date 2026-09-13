@@ -17,11 +17,7 @@
 	let { open = $bindable(false) }: { open?: boolean } = $props();
 
 	const WEIGHTS = [100, 200, 300, 400, 500, 600, 700, 800, 900];
-	const ROLES = [
-		{ key: 'sans', label: 'Sans' },
-		{ key: 'serif', label: 'Serif' },
-		{ key: 'mono', label: 'Monospaced' }
-	];
+	const ROLES = $derived(reportCatalog.catalog?.font_roles ?? []);
 
 	let name = $state('');
 	let role = $state('sans');
@@ -131,7 +127,7 @@
 						<Label class="text-xs">Role</Label>
 						<Select.Root type="single" bind:value={role}>
 							<Select.Trigger class="h-9 w-full">
-								{ROLES.find((r) => r.key === role)?.label}
+								{ROLES.find((r) => r.key === role)?.label ?? role}
 							</Select.Trigger>
 							<Select.Content>
 								{#each ROLES as item (item.key)}

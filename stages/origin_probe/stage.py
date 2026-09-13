@@ -61,27 +61,30 @@ class OriginProbeStage(Stage):
                 recorder=self.ctx.recorder,
                 extra_args=self.ctx.resolved.tool_args("httpx"),
             )
-        except HttpxError:
+        except HttpxError as exc:
             logger.warning("httpx unavailable, skipping origin probe")
-            return StageResult(counts={"probed": 0, "answered": 0})
+            return StageResult(warnings=[str(exc)], partial=True)
 
         self.emit_progress(f"requesting {len(targets)} addresses without a hostname")
         with client.stream_probe(targets) as stream:
-            answered = self._persist(stream.records)
+            answered, rejected = self._persist(stream.records)
         self.emit_progress(f"{answered} of {len(targets)} answered by address alone")
         exposed = self._record_exposure()
+        warnings = []
+        if stream.timed_out:
+            warnings.append(
+                f"httpx stalled and was stopped. {len(targets):,} addresses queued."
+            )
+        if rejected:
+            warnings.append(f"{rejected:,} responses could not be stored")
         return StageResult(
             counts={
                 "probed": len(targets),
                 "answered": answered,
                 "vulnerabilities": exposed,
             },
-            warnings=[
-                f"httpx stalled and was stopped. {len(targets):,} addresses queued."
-            ]
-            if stream.timed_out
-            else [],
-            partial=stream.timed_out,
+            warnings=warnings,
+            partial=bool(warnings),
         )
 
     def _record_exposure(self) -> int:
@@ -131,8 +134,9 @@ class OriginProbeStage(Stage):
             targets.extend(host_port(ip, port) for port in ports)
         return targets
 
-    def _persist(self, records) -> int:
+    def _persist(self, records) -> tuple[int, int]:
         now = utc_now()
+        rejected = 0
         known = set(
             self.session.execute(
                 select(HttpAsset.url).where(HttpAsset.scan_id == self.ctx.scan_id)
@@ -140,9 +144,11 @@ class OriginProbeStage(Stage):
         )
 
         def _write(batch: list[HttpAsset]) -> int:
-            self.session.add_all(batch)
+            nonlocal rejected
+            bad = self.flush_rows(batch)
+            rejected += bad
             self.session.commit()
-            return len(batch)
+            return len(batch) - bad
 
         sink = self.results_sink(
             SurfaceDimension.WEB_ASSETS.value, _write, rows=_WRITE_BATCH
@@ -166,4 +172,4 @@ class OriginProbeStage(Stage):
             if sink.pending == 0:
                 self._check_abort()
         sink.close()
-        return sink.written
+        return sink.written, rejected

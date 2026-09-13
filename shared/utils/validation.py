@@ -108,7 +108,7 @@ def _refusal(value: str, shown: str) -> str | None:
     except ValueError:
         return None
     if block.prefixlen == 0:
-        return f"{shown} covers every address. Enter the range you own."
+        return f"{shown} covers every address. Enter a narrower range."
     return (
         f"{shown} is out of scope. Loopback, link-local, multicast and reserved "
         "address space are not scanned."

@@ -264,7 +264,6 @@ async def refresh_whois_record(
     record_id: str,
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
-    service: Annotated[WhoisService, Depends(get_whois_service)],
 ):
     result = await session.execute(
         select(WhoisRecord).where(WhoisRecord.id == record_id)
@@ -279,17 +278,15 @@ async def refresh_whois_record(
 
     previous_queried_at = record.queried_at.isoformat() if record.queried_at else None
 
+    service = WhoisService(cache_ttl_days=0)
     try:
         service.ensure_ready()
 
-        original_ttl = service.cache_ttl_days
-        service.cache_ttl_days = 0
         await service.lookup(
             query=record.query_value,
             store_in_db=True,
             session=session,
         )
-        service.cache_ttl_days = original_ttl
 
         await session.refresh(record)
 

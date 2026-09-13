@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from shared.definitions.connectors import SourceTool
+
+CLIENT_DIR = Path(os.environ.get("CLIENTS_DIR", "/app/binaries"))
 
 
 @dataclass(frozen=True)
@@ -24,11 +28,18 @@ class ProxyConnector:
     description: str = ""
     docs_url: str = ""
     source_path: str = ""
-    client_file: str = ""
+    client_pattern: str = ""
     tools: tuple[str, ...] = (SourceTool.PROXY.value, SourceTool.REPEATER.value)
-    # scope can be pushed back into the proxy
     supports_scope_push: bool = False
     available: bool = True
+
+    @property
+    def client_file(self) -> str:
+        """The client build present in the clients directory."""
+        if not self.client_pattern:
+            return ""
+        found = sorted(CLIENT_DIR.glob(self.client_pattern))
+        return found[-1].name if found else ""
 
     def setup(self, *, endpoint: str, secret: str) -> list[SetupStep]:
         raise NotImplementedError

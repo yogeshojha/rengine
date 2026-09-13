@@ -29,7 +29,8 @@
 		WATCH_HOST_PAGE_SIZE
 	} from '$lib/config/watch';
 	import { CADENCE_LABELS } from '$lib/config/watch';
-	import { PLATFORM_LABELS, SUBMISSION_STATE_LABELS } from '$lib/config/bounty-programs';
+	import { SUBMISSION_STATE_LABELS } from '$lib/config/bounty-programs';
+	import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
 	import { SubmissionState } from '$lib/types/bounty-program';
 	import { watchesStore } from '$lib/stores/watches.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
@@ -80,7 +81,7 @@
 	let stopOpen = $state(false);
 	let seenAt = $state<string | null>(null);
 
-	const platformLabel = $derived(watch ? (PLATFORM_LABELS[watch.platform] ?? watch.platform) : '');
+	const platformLabel = $derived(watch ? bountyVocabulary.label(watch.platform) : '');
 	const paused = $derived(watch?.status === WatchStatus.Paused);
 	const since = $derived(sinceSeen ? seenAt : null);
 

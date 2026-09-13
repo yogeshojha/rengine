@@ -24,7 +24,6 @@ from reports.data.models import (
     HygieneHost,
     HygieneRollup,
     Service,
-    StageRun,
 )
 from shared.definitions import hygiene as hygiene_defs
 from shared.definitions.ports import SENSITIVE_PORTS, ServiceClass
@@ -41,7 +40,6 @@ from shared.models.http_asset import HttpAsset
 from shared.models.ip_address import IpAddress
 from shared.models.port import Port
 from shared.models.scan import Scan
-from shared.models.scan_activity import ScanActivity
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.vulnerability import (
@@ -77,6 +75,9 @@ _LABEL = {
     _DIM.ENDPOINTS.value: Endpoint.url,
     _DIM.VULNERABILITIES.value: Vulnerability.matched_at,
 }
+
+# the dimensions a report counts: those with a per-scan table above
+REPORT_DIMENSIONS: tuple[str, ...] = tuple(d for d in SURFACE_ORDER if d in _TABLE)
 
 
 class ReportSource:
@@ -210,13 +211,13 @@ class ReportSource:
         except ImportError:
             return {}
         specs = {spec.name: spec for spec in stage_specs()}
-        out: dict[str, set[str]] = {dim: set() for dim in SURFACE_ORDER}
+        out: dict[str, set[str]] = {dim: set() for dim in REPORT_DIMENSIONS}
         for name in self.planned_stages:
             spec = specs.get(name)
             if spec is None:
                 continue
             for dimension, kinds in SURFACE_KINDS.items():
-                if spec.produces & kinds:
+                if dimension in out and spec.produces & kinds:
                     out[dimension].add(name)
         return out
 
@@ -232,7 +233,7 @@ class ReportSource:
     @cached_property
     def coverage(self) -> dict[str, DimensionCoverage]:
         out: dict[str, DimensionCoverage] = {}
-        for dimension in SURFACE_ORDER:
+        for dimension in REPORT_DIMENSIONS:
             scan_id = self.scan_for(dimension)
             count = self._count(dimension, scan_id)
             planned = bool(self.producing_stages.get(dimension))
@@ -267,7 +268,7 @@ class ReportSource:
 
     def _covered_by(self, scan: Scan) -> set[str]:
         """Rows are the only proof a previous run produced a dimension."""
-        return {d for d in SURFACE_ORDER if self._count(d, scan.id)}
+        return {d for d in REPORT_DIMENSIONS if self._count(d, scan.id)}
 
     @cached_property
     def covered_dimensions(self) -> frozenset[str]:
@@ -959,49 +960,6 @@ class ReportSource:
         return (edge, cloud, direct)
 
     # ---------- run detail ----------
-
-    @cached_property
-    def stage_runs(self) -> list[StageRun]:
-        if self.scan is None:
-            return []
-        rows = (
-            self.session.execute(
-                select(ScanActivity)
-                .where(ScanActivity.scan_id == self.scan.id)
-                .order_by(ScanActivity.created_at)
-            )
-            .scalars()
-            .all()
-        )
-        try:
-            from stages.registry import stages as stage_specs  # noqa: PLC0415
-
-            specs = {spec.name: spec for spec in stage_specs()}
-        except ImportError:
-            specs = {}
-        out: list[StageRun] = []
-        for row in rows:
-            name = getattr(row, "stage_name", None) or getattr(row, "name", "")
-            spec = specs.get(name)
-            started = getattr(row, "started_at", None) or row.created_at
-            ended = getattr(row, "completed_at", None) or getattr(row, "ended_at", None)
-            duration = None
-            if started and ended:
-                duration = (ended - started).total_seconds()
-            out.append(
-                StageRun(
-                    name=name,
-                    title=spec.title if spec else name.replace("_", " ").title(),
-                    status=str(getattr(row, "status", "")),
-                    started_at=started,
-                    ended_at=ended,
-                    duration_seconds=duration,
-                    counts=getattr(row, "counts", None) or {},
-                    warnings=list(getattr(row, "warnings", None) or []),
-                    error=getattr(row, "error", None),
-                )
-            )
-        return out
 
     @cached_property
     def tools_used(self) -> list[str]:

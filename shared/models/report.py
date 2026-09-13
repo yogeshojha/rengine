@@ -8,6 +8,7 @@ from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
 from shared.definitions.report_fonts import (
+    DEFAULT_WEIGHT,
     MAX_FACES,
     MAX_FAMILY_NAME,
     FontOrigin,
@@ -21,7 +22,6 @@ from shared.definitions.reports import (
     ReportBranding,
     ReportFormat,
     ReportScope,
-    ReportSpec,
     ReportStatus,
     ReportStyle,
     SectionEntry,
@@ -149,7 +149,7 @@ class ReportFont(SQLModel, table=True):
 
 
 class FontFace(BaseModel):
-    weight: int = 400
+    weight: int = DEFAULT_WEIGHT
     italic: bool = False
     filename: str = ""
     format: str = "woff2"
@@ -161,7 +161,7 @@ class FontFaceUpload(BaseModel):
 
     filename: str = PydanticField(default="", max_length=200)
     content: str = PydanticField(max_length=3_000_000)
-    weight: int = PydanticField(default=400, ge=100, le=900)
+    weight: int = PydanticField(default=DEFAULT_WEIGHT, ge=100, le=900)
     italic: bool = False
 
 
@@ -344,14 +344,6 @@ class ReportThemeUpload(BaseModel):
     content: str = PydanticField(max_length=200_000)
 
 
-class ReportThemeUpdate(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    name: str | None = PydanticField(default=None, max_length=120)
-    description: str | None = PydanticField(default=None, max_length=400)
-    content: str | None = PydanticField(default=None, max_length=200_000)
-
-
 class SectionField(BaseModel):
     """One control the builder renders for a section."""
 
@@ -460,6 +452,3 @@ class ReportEstimate(BaseModel):
     ai_cost_usd: float = 0.0
     ai_cached: int = 0
     warnings: list[str] = PydanticField(default_factory=list)
-
-
-ReportSpecModel = ReportSpec

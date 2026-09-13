@@ -131,7 +131,7 @@
 				open: () =>
 					show({
 						title: 'Expired certificates',
-						description: 'Web assets presenting an expired certificate',
+						description: 'Targets with an expired certificate',
 						rows: certRows(certs.expired)
 					})
 			});
@@ -146,7 +146,7 @@
 				open: () =>
 					show({
 						title: 'Certificates expiring within 30 days',
-						description: 'Web assets with a certificate expiring within 30 days',
+						description: 'Targets with a certificate expiring within 30 days',
 						rows: certRows(certs.expiring)
 					})
 			});

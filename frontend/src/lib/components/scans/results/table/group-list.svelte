@@ -12,7 +12,9 @@
 	import Building2 from '@lucide/svelte/icons/building-2';
 	import Flag from '@lucide/svelte/icons/flag';
 	import Plug from '@lucide/svelte/icons/plug';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { Button } from '$lib/components/ui/button';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import TechIcon from '../tech-icon.svelte';
@@ -34,10 +36,21 @@
 		noun: string;
 		nounPlural: string;
 		loading: boolean;
+		failed?: boolean;
+		onRetry?: () => void;
 		onPick: (query: string) => void;
 	}
 
-	let { set, dimensions, noun, nounPlural, loading, onPick }: Props = $props();
+	let {
+		set,
+		dimensions,
+		noun,
+		nounPlural,
+		loading,
+		failed = false,
+		onRetry,
+		onPick
+	}: Props = $props();
 
 	interface Identity {
 		icon: IconComponent;
@@ -137,6 +150,16 @@
 			</div>
 		{/each}
 	</div>
+{:else if failed}
+	<EmptyState
+		icon={TriangleAlert}
+		title="Groups not loaded"
+		class="rounded-none border-0 bg-transparent py-16"
+	>
+		{#if onRetry}
+			<Button variant="outline" size="sm" onclick={() => onRetry()}>Retry</Button>
+		{/if}
+	</EmptyState>
 {:else if groups.length === 0}
 	<EmptyState
 		icon={Layers}
@@ -166,7 +189,7 @@
 					aria-valuemax={100}
 					aria-label="{nounPlural} with a {label.toLowerCase()}"
 				>
-					<span class="block h-full rounded-full bg-primary" style="width: {coverage}%"></span>
+					<span class="block h-full rounded-full bg-series" style="width: {coverage}%"></span>
 				</span>
 			</span>
 		</div>
@@ -238,7 +261,7 @@
 				</span>
 				<span class="block h-1 w-full overflow-hidden rounded-full bg-muted">
 					<span
-						class="block h-full rounded-full bg-primary/70 transition-[width] duration-500"
+						class="block h-full rounded-full bg-series transition-[width] duration-500"
 						style="width: {Math.max(share(group.count), 1)}%"
 					></span>
 				</span>

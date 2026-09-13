@@ -1,4 +1,4 @@
-name: 🏗️ Build Docker image for pull request
+name: 🏗️ Build Docker images for pull request
 
 on:
   pull_request:
@@ -6,44 +6,41 @@ on:
       - master
       - release/*
 
+concurrency:
+  group: build-pr-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
-    name: 🐳 Build Docker image
+    name: 🐳 Build ${{ matrix.image }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        platform:
-          - linux/amd64
-          - linux/arm64
-          # - linux/arm/v7
+        include:
+          - image: api
+            dockerfile: api/Dockerfile
+            target: development
+          - image: worker
+            dockerfile: worker/Dockerfile
+            target: development
+          - image: frontend
+            dockerfile: frontend/Dockerfile.dev
+            target: ""
     steps:
       - name: 📥 Checkout the git repo
         uses: actions/checkout@v4
 
-      - name: 🖥️ Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
       - name: 🏗️ Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: 🏷️ Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
+      - name: 🏗️ Build ${{ matrix.image }}
+        uses: docker/build-push-action@v6
         with:
-          images: yogeshojha/rengine
-          tags: |
-            type=raw,value=pr-${{ github.event.pull_request.number }}
-            type=sha,prefix=sha-
-            type=ref,event=branch
-            type=ref,event=pr
-
-      - name: 🏗️ Build Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: web/
-          platforms: ${{ matrix.platform }}
+          context: .
+          file: ${{ matrix.dockerfile }}
+          target: ${{ matrix.target }}
+          platforms: linux/amd64
           push: false
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}

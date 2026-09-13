@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Input } from '$lib/components/ui/input/index.js';
+	import { SEVERITY_ORDER } from '$lib/config/vulnerabilities';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
@@ -21,7 +22,6 @@
 	const monoFonts = $derived((catalog?.fonts ?? []).filter((f) => f.role === 'mono'));
 	const activeTheme = $derived(reportCatalog.theme(style.theme));
 
-	const SEVERITIES = ['critical', 'high', 'medium', 'low', 'info'];
 	const MAX_COVER = 512_000;
 	let coverInput = $state<HTMLInputElement | null>(null);
 
@@ -238,7 +238,7 @@
 				/>
 				<span class="text-xs text-muted-foreground">Accent</span>
 			</div>
-			{#each SEVERITIES as key (key)}
+			{#each SEVERITY_ORDER as key (key)}
 				<div class="flex items-center gap-2">
 					<input
 						type="color"

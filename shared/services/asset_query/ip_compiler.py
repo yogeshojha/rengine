@@ -25,23 +25,12 @@ from .terms import (
     target_overlap,
     tri_state,
 )
-from .values import asn_number, like, network
+from .values import PRIVATE_NETWORKS, asn_number, like, network
 
 _IP_CHARS_RE = r"^[0-9a-fA-F:.]+$"
 _IPV4_RE = re.compile(r"^[0-9]{1,3}(\.[0-9]{1,3}){3}$")
 _IPV4 = 4
 _IPV6 = 6
-_PRIVATE_NETWORKS = (
-    "10.0.0.0/8",
-    "172.16.0.0/12",
-    "192.168.0.0/16",
-    "127.0.0.0/8",
-    "169.254.0.0/16",
-    "100.64.0.0/10",
-    "::1/128",
-    "fc00::/7",
-    "fe80::/10",
-)
 
 
 @dataclass(frozen=True)
@@ -120,7 +109,7 @@ _FLAG_BUILDERS = {
     "web": lambda ctx: ctx.source.c.asset_count > 0,
     "cdn": lambda ctx: ctx.source.c.is_cdn.is_(True),
     "ptr": lambda ctx: func.jsonb_array_length(ctx.source.c.ptr_hostnames) > 0,
-    "private": lambda ctx: or_(*[_within(ctx, n) for n in _PRIVATE_NETWORKS]),
+    "private": lambda ctx: or_(*[_within(ctx, n) for n in PRIVATE_NETWORKS]),
     "v4": lambda ctx: ctx.source.c.version == _IPV4,
     "v6": lambda ctx: ctx.source.c.version == _IPV6,
     "vulnerable": lambda ctx: preds.address_vuln(ctx.scope, ctx.source.c.ip),

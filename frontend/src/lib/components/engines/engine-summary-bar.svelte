@@ -175,7 +175,7 @@
 	}
 	.tool {
 		font-family: var(--font-mono, ui-monospace, monospace);
-		font-size: 10.5px;
+		font-size: 11px;
 		line-height: 18px;
 		padding: 0 6px;
 		border-radius: 4px;

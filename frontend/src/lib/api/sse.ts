@@ -13,6 +13,7 @@ type MessageCallback = (message: SSEMessage) => void;
 type StateCallback = (state: ConnectionState) => void;
 
 const REFRESH_ATTEMPT_AFTER_FAILURES = 3;
+const MAX_REFRESHES = 3;
 
 export class SSEClient {
 	private eventSource: EventSource | null = null;
@@ -24,6 +25,7 @@ export class SSEClient {
 
 	private _state: ConnectionState = 'disconnected';
 	private reconnectAttempts = 0;
+	private refreshAttempts = 0;
 	private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
 	private readonly maxReconnectAttempts = 10;
@@ -40,6 +42,7 @@ export class SSEClient {
 
 		this.channels = incoming;
 		this.reconnectAttempts = 0;
+		this.refreshAttempts = 0;
 		this.openConnection();
 	}
 
@@ -140,14 +143,13 @@ export class SSEClient {
 
 		es.addEventListener('unauthorized', () => {
 			this.closeEventSource();
-			this.reconnectAttempts = 0;
 			void this.refreshAndReconnect();
 		});
 
 		es.onopen = () => {
 			this.reconnectAttempts = 0;
+			this.refreshAttempts = 0;
 			this.setState('connected');
-			console.log(`[SSE] Connected, channels: ${Array.from(this.channels).join(', ')}`);
 		};
 
 		es.onerror = () => {
@@ -200,8 +202,11 @@ export class SSEClient {
 			return;
 		}
 
-		if (this.reconnectAttempts === REFRESH_ATTEMPT_AFTER_FAILURES) {
-			this.refreshAndReconnect();
+		if (
+			this.reconnectAttempts === REFRESH_ATTEMPT_AFTER_FAILURES &&
+			this.refreshAttempts < MAX_REFRESHES
+		) {
+			void this.refreshAndReconnect();
 			return;
 		}
 
@@ -209,6 +214,7 @@ export class SSEClient {
 	}
 
 	private async refreshAndReconnect(): Promise<void> {
+		this.refreshAttempts++;
 		try {
 			const response = await fetch(`${API_PREFIX}/auth/refresh`, {
 				method: 'POST',
@@ -222,7 +228,7 @@ export class SSEClient {
 				return;
 			}
 
-			this.reconnectAttempts = 0;
+			if (this.refreshAttempts < MAX_REFRESHES) this.reconnectAttempts = 0;
 		} catch {
 			/* empty */
 		}
@@ -238,10 +244,6 @@ export class SSEClient {
 
 		this.reconnectAttempts++;
 		this.setState('reconnecting');
-
-		console.log(
-			`[SSE] Reconnecting in ${Math.round(delay)}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`
-		);
 
 		this.reconnectTimer = setTimeout(() => {
 			this.openConnection();

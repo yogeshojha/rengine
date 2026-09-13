@@ -19,7 +19,7 @@
 		SurfaceDimension,
 		type FindingsTab
 	} from '$lib/config/surface';
-	import { ROUTES } from '$lib/config/routes';
+	import { ROUTES, routeLabels } from '$lib/config/routes';
 
 	let spec = $derived(SURFACE_ORDER.find((s) => s.tab === page.params.dimension) ?? null);
 	const FINDINGS_KEYS = new Set<string>(FINDINGS_TABS.map((t) => t.key));
@@ -43,6 +43,8 @@
 		if (projectId) void surfaceStore.load(projectId, true);
 	}
 </script>
+
+<svelte:head><title>{spec?.label ?? routeLabels.surface} · reNgine</title></svelte:head>
 
 {#if !spec}
 	<EmptyState title="Unknown dimension">

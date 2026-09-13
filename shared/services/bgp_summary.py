@@ -2,6 +2,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 from sqlmodel import select
 
+from shared.enums.target import TargetType
 from shared.models.bgp_summary import TargetBgpSummary
 from shared.models.ripestat import (
     RIPEStatAnnouncedPrefix,
@@ -17,7 +18,7 @@ from shared.utils.datetime import utc_now
 def write_bgp_summary_for_target(session: Session, target: Target) -> None:
     now = utc_now()
 
-    if target.target_type.value == "asn":
+    if target.target_type.value == TargetType.ASN.value:
         asn_number = int(target.target_value.upper().replace("AS", "").strip())
 
         prefix_count = session.execute(
@@ -45,7 +46,7 @@ def write_bgp_summary_for_target(session: Session, target: Target) -> None:
             queried_at=now,
         )
 
-    elif target.target_type.value == "ip":
+    elif target.target_type.value == TargetType.IP.value:
         info = session.execute(
             select(RIPEStatNetworkInfo).where(
                 RIPEStatNetworkInfo.ip == target.target_value
@@ -68,7 +69,7 @@ def write_bgp_summary_for_target(session: Session, target: Target) -> None:
         else:
             _upsert_summary(session, target_id=target.id, queried_at=now)
 
-    elif target.target_type.value == "ip_range":
+    elif target.target_type.value == TargetType.IP_RANGE.value:
         po = (
             session.execute(
                 select(RIPEStatPrefixOverview).where(

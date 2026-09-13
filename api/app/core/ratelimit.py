@@ -67,3 +67,28 @@ async def is_token_revoked(jti: str) -> bool:
     except Exception as exc:
         logger.warning("token revoke check unavailable for %s: %s", jti, exc)
         return False
+
+
+async def grant_token_grace(jti: str, ttl_seconds: int) -> None:
+    """How long a rotated token stays usable."""
+    if ttl_seconds <= 0:
+        return
+    try:
+        await _client().set(f"grace:jti:{jti}", "1", ex=ttl_seconds)
+    except Exception as exc:
+        logger.warning("token grace unavailable for %s: %s", jti, exc)
+
+
+async def is_token_in_grace(jti: str) -> bool:
+    try:
+        return await _client().exists(f"grace:jti:{jti}") == 1
+    except Exception as exc:
+        logger.warning("token grace check unavailable for %s: %s", jti, exc)
+        return False
+
+
+async def clear_token_grace(jti: str) -> None:
+    try:
+        await _client().delete(f"grace:jti:{jti}")
+    except Exception as exc:
+        logger.warning("token grace clear unavailable for %s: %s", jti, exc)

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from shared.definitions.interest import InterestKind, RuleMode
 
@@ -26,7 +26,6 @@ class Preset:
     enabled: bool = True
     notify: bool = False
     weight: int | None = None
-    tags: tuple[str, ...] = field(default_factory=tuple)
 
 
 PRESETS: tuple[Preset, ...] = (
@@ -207,9 +206,6 @@ PRESETS: tuple[Preset, ...] = (
         query="cert:expired and is:live",
     ),
 )
-
-PRESET_BY_NAME: dict[str, Preset] = {p.name: p for p in PRESETS}
-
 
 SYNCED_FIELDS: tuple[str, ...] = ("description", "mode", "query", "kind")
 USER_FIELDS: tuple[str, ...] = (

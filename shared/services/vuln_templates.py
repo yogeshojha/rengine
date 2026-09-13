@@ -304,7 +304,7 @@ def _extract(archive: Path, destination: Path) -> int:
                 msg = "Template archive expanded beyond the size limit."
                 raise ValueError(msg)
             target = staging.joinpath(*parts).resolve()
-            if not str(target).startswith(str(staging.resolve())):
+            if not target.is_relative_to(staging.resolve()):
                 continue
             target.parent.mkdir(parents=True, exist_ok=True)
             with bundle.open(entry) as source, target.open("wb") as handle:

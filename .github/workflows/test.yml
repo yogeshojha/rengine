@@ -26,7 +26,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
 
       - name: 🧹 ruff check
-        run: uvx ruff@0.14.14 check api shared reports worker interest connectors mcp toolbox stages tools
+        run: uvx ruff@0.14.14 check api shared reports worker interest connectors mcp toolbox stages tools tests
 
       - name: 🎨 ruff format
         run: uvx ruff@0.14.14 format --check api shared reports worker interest connectors mcp toolbox stages tools tests

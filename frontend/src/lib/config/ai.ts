@@ -16,7 +16,7 @@ export interface AIProviderMeta {
 
 export const AI_PROVIDERS: readonly AIProviderMeta[] = [
 	{ value: AIProvider.OPENAI, name: 'OpenAI', model: 'gpt-4o-mini' },
-	{ value: AIProvider.ANTHROPIC, name: 'Anthropic', model: 'claude-3-5-haiku-latest' },
+	{ value: AIProvider.ANTHROPIC, name: 'Anthropic', model: 'claude-opus-5' },
 	{ value: AIProvider.AZURE_OPENAI, name: 'Azure OpenAI', model: 'gpt-4o-mini' },
 	{ value: AIProvider.GOOGLE, name: 'Google', model: 'gemini-1.5-flash' }
 ] as const;

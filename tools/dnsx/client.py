@@ -156,19 +156,6 @@ class DnsxClient:
         ) as stream:
             yield stream
 
-    def resolve(
-        self,
-        targets: str | list[str],
-    ) -> ToolResult:
-        """Simple DNS resolution check (filters alive hosts)."""
-        args = self._build_base_args()
-
-        return self._run(
-            targets,
-            args,
-            output_format=OutputFormat.PLAIN,
-        )
-
     def ptr(
         self,
         ips: str | list[str],
@@ -179,12 +166,7 @@ class DnsxClient:
 
         return self._run(ips, args)
 
-    def _run(
-        self,
-        targets: str | list[str],
-        args: list[str],
-        output_format: OutputFormat = OutputFormat.JSONL,
-    ) -> ToolResult:
+    def _run(self, targets: str | list[str], args: list[str]) -> ToolResult:
         """Execute dnsx with the given arguments."""
         if isinstance(targets, str):
             targets = [targets]
@@ -193,7 +175,7 @@ class DnsxClient:
             args=args,
             input_data=targets,
             input_flag="-l",
-            output_format=output_format,
+            output_format=OutputFormat.JSONL,
             json_flag="-json",
             timeout=self.timeout,
             silent=True,

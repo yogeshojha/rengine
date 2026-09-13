@@ -3,12 +3,16 @@ from functools import lru_cache
 from urllib.parse import quote
 
 from pydantic import field_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _UNSAFE_IN_ARGV = re.compile(r"[\s\"'\\]")
 
 
 class BaseAppSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env", case_sensitive=True, extra="ignore"
+    )
+
     APP_NAME: str = "reNgine"
     DEBUG: bool = False
     SQL_ECHO: bool = False
@@ -87,11 +91,6 @@ class BaseAppSettings(BaseSettings):
     @property
     def celery_result_backend(self) -> str:
         return self._redis_url(self.REDIS_DB + 1)
-
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
-        extra = "ignore"
 
 
 @lru_cache(maxsize=1)

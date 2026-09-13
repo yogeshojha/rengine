@@ -7,6 +7,7 @@
 	import type { IconComponent } from '$lib/config/icons';
 	import {
 		DASHBOARD_WINDOWS,
+		TREND_DAYS,
 		type DashboardOverview,
 		type DashboardWindow
 	} from '$lib/types/dashboard';
@@ -32,7 +33,7 @@
 		sparkLabel: string;
 	}
 
-	let days = $derived(window === '30d' ? 30 : 7);
+	let days = $derived(TREND_DAYS[window]);
 	let recent = $derived((overview?.daily ?? []).slice(-days));
 	let windowLabel = $derived(DASHBOARD_WINDOWS.find((w) => w.key === window)?.label ?? window);
 	const plural = (n: number, one: string, many: string) =>
@@ -79,7 +80,7 @@
 	class="grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border md:grid-cols-4 xl:grid-cols-7"
 >
 	{#if !overview}
-		{#each Array(6) as _, i (i)}
+		{#each Array(SURFACE_ORDER.length + 1) as _, i (i)}
 			<div class="flex flex-col gap-3 bg-card p-4">
 				<Skeleton class="h-4 w-20" />
 				<Skeleton class="h-8 w-24" />
@@ -114,7 +115,7 @@
 						<svelte:element
 							this={t.freshHref ? 'a' : 'span'}
 							href={t.freshHref}
-							class="truncate font-medium text-success tabular-nums {t.freshHref
+							class="truncate font-medium tabular-nums text-foreground {t.freshHref
 								? 'hover:underline'
 								: ''}"
 						>

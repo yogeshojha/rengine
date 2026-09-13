@@ -7,7 +7,7 @@ from sqlalchemy import Column
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
-from shared.enums.notification import NotificationType
+from shared.enums.notification import NotificationSeverity, NotificationType
 from shared.enums.notification_channel import NotificationProvider
 from shared.utils.datetime import utc_now
 from shared.utils.validation import clean_name, clean_optional_name
@@ -26,7 +26,7 @@ DEFAULT_PREFERENCE_TYPES = [
 
 class NotificationPreference(BaseModel):
     types: list[str] = Field(default_factory=lambda: list(DEFAULT_PREFERENCE_TYPES))
-    min_severity: str = "info"
+    min_severity: str = NotificationSeverity.INFO.value
 
 
 class NotificationChannel(SQLModel, table=True):

@@ -13,6 +13,7 @@ from shared.definitions.bounty_programs import (
     MAX_EVENT_DETAIL,
     SYNC_INTERVAL_HOURS,
     BountyEvent,
+    ProgramState,
     ScopeAccess,
     ScopeState,
     SubmissionState,
@@ -48,7 +49,7 @@ def _program_changes(current: BountyProgram, row: dict) -> list[str]:
         )
     if (
         current.program_state != row["program_state"]
-        and row["program_state"] == "public"
+        and row["program_state"] == ProgramState.PUBLIC.value
     ):
         kinds.append(BountyEvent.PROGRAM_WENT_PUBLIC.value)
     if row["offers_bounties"] and not current.offers_bounties:

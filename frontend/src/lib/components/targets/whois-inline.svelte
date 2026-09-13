@@ -22,7 +22,9 @@
 	import Flag from '@lucide/svelte/icons/flag';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import { Spinner } from '$lib/components/ui/spinner';
+	import Hint from '$lib/components/hint.svelte';
 	import { getLookupTypeIcon } from '$lib/config/icons';
+	import { whoisLookupLabel } from '$lib/types/whois';
 
 	interface Props {
 		status: TaskStatus;
@@ -32,7 +34,7 @@
 		onClick?: () => void;
 	}
 
-	let { status, whois, targetId, error: _error = null, onClick }: Props = $props();
+	let { status, whois, targetId, error = null, onClick }: Props = $props();
 
 	let urgency = $derived<ExpirationUrgency>(
 		whois?.expiration_date ? getExpirationUrgency(whois.expiration_date) : 'none'
@@ -110,10 +112,14 @@
 		<span class="animate-pulse">Fetching WHOIS…</span>
 	</div>
 {:else if status === TaskStatus.FAILED}
-	<div class="flex items-center gap-1.5 text-xs text-destructive/70">
-		<TriangleAlert class="h-3 w-3" />
-		<span>WHOIS failed</span>
-	</div>
+	<Hint text={error}>
+		{#snippet child(props)}
+			<div {...props} class="flex items-center gap-1.5 text-xs text-destructive/70">
+				<TriangleAlert class="h-3 w-3" />
+				<span>WHOIS failed</span>
+			</div>
+		{/snippet}
+	</Hint>
 {:else if status === TaskStatus.SUCCESS && whois}
 	<HoverCard.Root openDelay={250} closeDelay={100}>
 		<HoverCard.Trigger>
@@ -139,7 +145,9 @@
 					</div>
 					<div class="min-w-0 flex-1">
 						<p class="text-sm font-medium truncate">{whois.name || whois.query_value}</p>
-						<p class="text-xs text-muted-foreground">{whois.lookup_type} Record</p>
+						<p class="text-xs text-muted-foreground">
+							{whoisLookupLabel(whois.lookup_type)} record
+						</p>
 					</div>
 				</div>
 			</div>

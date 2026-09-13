@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import lru_cache
 
-from mcp.capabilities import CAPABILITY_ORDER
+from mcp.capabilities import CAPABILITY_ORDER, Capability
 from mcp.tools import Tool, discover
 
 
@@ -36,7 +36,7 @@ class ToolSpec:
             "description": self.description,
             "inputSchema": self.schema,
             "annotations": {
-                "readOnlyHint": self.capability == CAPABILITY_ORDER[0],
+                "readOnlyHint": self.capability == Capability.READ.value,
                 "destructiveHint": self.destructive,
             },
         }

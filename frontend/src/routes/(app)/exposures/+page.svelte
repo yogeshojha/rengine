@@ -44,6 +44,8 @@
 	});
 </script>
 
+<svelte:head><title>{routeLabels.exposures} · reNgine</title></svelte:head>
+
 <div class="space-y-6">
 	<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.exposures}</h1>
 

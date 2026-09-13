@@ -3,6 +3,7 @@
 	import { replaceState } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import { untrack } from 'svelte';
+	import { toast } from 'svelte-sonner';
 	import PlugZapIcon from '@lucide/svelte/icons/plug-zap';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
@@ -97,9 +98,12 @@
 
 	async function togglePause() {
 		if (!selected || !projectId) return;
-		connectors.upsert(
-			await connectorsApi.update(selected.id, projectId, { paused: !selected.paused })
-		);
+		const paused = !selected.paused;
+		try {
+			connectors.upsert(await connectorsApi.update(selected.id, projectId, { paused }));
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : 'Connector not updated');
+		}
 	}
 </script>
 

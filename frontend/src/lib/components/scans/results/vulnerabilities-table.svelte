@@ -7,7 +7,7 @@
 	import { seedKindFor, selectionLabel } from '$lib/utilities/rechecks';
 	import { rechecks } from '$lib/stores/rechecks.svelte';
 	import { startRescan } from '$lib/utilities/rechecks';
-	import { SurfaceDimension } from '$lib/config/surface';
+	import { SURFACE, SurfaceDimension, type ResultTab } from '$lib/config/surface';
 	import { SvelteSet, SvelteURLSearchParams } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
@@ -30,7 +30,7 @@
 	import QueryBar from './query-bar/query-bar.svelte';
 	import GroupList from './table/group-list.svelte';
 	import ListHeader from './table/list-header.svelte';
-	import { withTarget } from './table/columns';
+	import { readPref, rowPadding, selectAllState, withTarget, writePref } from './table/columns';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import CoverageStrip from './vulnerabilities/coverage-strip.svelte';
 	import FilterBar from './vulnerabilities/filter-bar.svelte';
@@ -83,7 +83,7 @@
 		targetType?: string;
 		active?: boolean;
 		revision?: number;
-		onTab?: (tab: string, filter?: string) => void;
+		onTab?: (tab: ResultTab, filter?: string) => void;
 		onScanTotal?: (total: number) => void;
 		query?: VulnQuery;
 	}
@@ -102,29 +102,17 @@
 		})
 	}: Props = $props();
 
+	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
+	const EP = SURFACE[SurfaceDimension.ENDPOINTS];
+
+	const VULN = SURFACE[SurfaceDimension.VULNERABILITIES];
+
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
 	let ready = $derived(projectWide ? Boolean(projectId) : Boolean(scanId));
 
 	const DEFAULT_SORT = { key: 'risk', dir: -1 as const };
-	const ROW_PAD: Record<string, string> = { compact: 'py-2', cozy: 'py-3' };
 	const INSTANCE_PAGE = 100;
 	const VIEW_KEYS = new Set<string>(VULN_VIEWS.map((v) => v.key));
-
-	function readPref<T>(key: string, fallback: T): T {
-		try {
-			const raw = localStorage.getItem(key);
-			return raw ? (JSON.parse(raw) as T) : fallback;
-		} catch {
-			return fallback;
-		}
-	}
-	function writePref(key: string, value: unknown) {
-		try {
-			localStorage.setItem(key, JSON.stringify(value));
-		} catch {
-			// ignore
-		}
-	}
 
 	const initial = appPage.url.searchParams;
 	const initialSort = initial.get('vuln_sort')?.split(':') ?? [];
@@ -160,6 +148,7 @@
 	let leadSet = $state<QueryLeads | null>(null);
 	let groupBy = $state<string>(initial.get('vuln_group') ?? '');
 	let groupSet = $state<QueryGroups | null>(null);
+	let groupFailed = $state(false);
 	let groupLoading = $state(false);
 	let groupReq = 0;
 
@@ -200,12 +189,10 @@
 			? issues.filter((i) => checkedIds.has(i.template_id)).length
 			: items.filter((v) => checkedIds.has(v.id)).length
 	);
-	let selectAllChecked = $derived<boolean | 'indeterminate'>(
-		rowCount > 0 && checkedCount === rowCount ? true : checkedCount > 0 ? 'indeterminate' : false
-	);
+	let selectAllChecked = $derived(selectAllState(checkedCount, rowCount));
 	let filtered = $derived(vulnActiveFacetCount(query) > 0 || !!query.search);
 	let chips = $derived(vulnQueryChips(query, facets));
-	let rowPad = $derived(ROW_PAD[density] ?? ROW_PAD.cozy);
+	let rowPad = $derived(rowPadding(density));
 	let term = $derived(query.search.trim().includes(':') ? '' : query.search.trim());
 	let severityTab = $derived(
 		query.severities.length === 0 ? 'all' : query.severities.length === 1 ? query.severities[0] : ''
@@ -217,9 +204,10 @@
 		for (const f of source) m[f.name] = f.count;
 		return m;
 	});
+	let coverageLoaded = $state(false);
 	let ranScan = $derived(coverage.some((c) => c.status !== 'skipped'));
-	let noun = $derived(isIssues ? 'weakness' : 'finding');
-	let nounPlural = $derived(isIssues ? 'weaknesses' : 'findings');
+	let noun = $derived(isIssues ? 'weakness' : VULN.noun);
+	let nounPlural = $derived(isIssues ? 'weaknesses' : VULN.nounPlural);
 
 	$effect(() => {
 		if (visiblePref) writePref(STORAGE_KEYS.vulnsColumns, visiblePref);
@@ -333,9 +321,15 @@
 		groupLoading = true;
 		try {
 			const res = await vulnerabilitiesApi.groups(projectId, scanId, groupBy, leadFilterWithQuery);
-			if (my === groupReq) groupSet = res;
+			if (my === groupReq) {
+				groupSet = res;
+				groupFailed = false;
+			}
 		} catch {
-			if (my === groupReq) groupSet = null;
+			if (my === groupReq) {
+				groupSet = null;
+				groupFailed = true;
+			}
 		} finally {
 			if (my === groupReq) groupLoading = false;
 		}
@@ -346,10 +340,9 @@
 		try {
 			facets = await vulnerabilitiesApi.facets(projectId, scanId);
 			onScanTotal?.(facets.severity.reduce((n, f) => n + f.count, 0));
-		} catch {
-			facets = EMPTY_VULN_FACETS;
-		} finally {
 			facetsLoaded = true;
+		} catch {
+			if (!facetsLoaded) facets = EMPTY_VULN_FACETS;
 		}
 	}
 
@@ -357,6 +350,7 @@
 		if (!ready) return;
 		try {
 			coverage = await vulnerabilitiesApi.coverage(projectId, scanId);
+			coverageLoaded = true;
 		} catch {
 			coverage = [];
 		}
@@ -564,7 +558,7 @@
 	function showHost(filter: string) {
 		drawerOpen = false;
 		syncUrl();
-		onTab?.('web-assets', filter);
+		onTab?.(WEB.tab, filter);
 	}
 	function showLocation(matchedAt: string) {
 		drawerOpen = false;
@@ -837,7 +831,9 @@
 		</ToggleGroup.Root>
 	</div>
 
-	<CoverageStrip {projectWide} {coverage} />
+	{#if coverageLoaded}
+		<CoverageStrip {projectWide} {coverage} />
+	{/if}
 
 	<FilterBar
 		{query}
@@ -927,8 +923,8 @@
 	{#if !groupBy}
 		<SelectionBar
 			count={checkedCount}
-			noun="finding"
-			nounPlural="findings"
+			noun={VULN.noun}
+			nounPlural={VULN.nounPlural}
 			{total}
 			{totalCapped}
 			maxAssets={rechecks.schema?.max_assets ?? 0}
@@ -966,6 +962,8 @@
 	{:else if groupBy}
 		<GroupList
 			set={groupSet}
+			failed={groupFailed}
+			onRetry={loadGroups}
 			dimensions={vulnQuerySchema.schema.group_dimensions}
 			noun={vulnQuerySchema.schema.noun}
 			nounPlural={vulnQuerySchema.schema.noun_plural}
@@ -1002,13 +1000,23 @@
 				title="No findings"
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
-		{:else}
+		{:else if coverageLoaded}
 			<EmptyState
 				icon={ShieldCheck}
 				title="No vulnerability scan ran"
 				description="Enable it on the scan engine or add it at launch."
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
+		{:else}
+			<EmptyState
+				icon={TriangleAlert}
+				title="Scan coverage not loaded"
+				class="rounded-none border-0 bg-transparent py-16"
+			>
+				<Button variant="outline" class="gap-2" onclick={() => loadCoverage()}>
+					<RefreshCw class="h-4 w-4" /> Retry
+				</Button>
+			</EmptyState>
 		{/if}
 	{:else if isIssues}
 		<ScrollArea orientation="horizontal">
@@ -1046,6 +1054,7 @@
 								items={instances}
 								loading={instancesLoading}
 								total={instancesTotal}
+								pageSize={INSTANCE_PAGE}
 								selectedId={drawerOpen ? (selected?.id ?? null) : null}
 								onOpen={open}
 								onMore={moreInstances}
@@ -1126,7 +1135,7 @@
 				const tokens = locationTokensFromUrl(u);
 				if (tokens) {
 					drawerOpen = false;
-					onTab('endpoints', tokens);
+					onTab(EP.tab, tokens);
 				}
 			}
 		: undefined}

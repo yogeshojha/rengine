@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 
 from mcp.capabilities import DEFAULT_CEILING
@@ -23,7 +23,7 @@ _STARTED = "started_at"
 class ServerSettings:
     enabled: bool = False
     rate_limit_per_minute: int = DEFAULT_RATE_LIMIT
-    ceiling: dict[str, bool] = None  # type: ignore[assignment]
+    ceiling: dict[str, bool] = field(default_factory=dict)
     started_at: datetime | None = None
 
     def __post_init__(self) -> None:

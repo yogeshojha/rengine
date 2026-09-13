@@ -26,7 +26,7 @@ DB_NAME="$(grep -E '^POSTGRES_DB=' .env | cut -d= -f2- || echo rengine)"
 VOLUMES=(vuln_templates wordlists report_fonts reports_out)
 
 WORK=""
-cleanup() { [ -n "$WORK" ] && rm -rf "$WORK"; }
+cleanup() { [ -n "$WORK" ] && rm -rf "$WORK"; return 0; }
 trap cleanup EXIT
 
 say() { printf '\033[1m%s\033[0m\n' "$*"; }

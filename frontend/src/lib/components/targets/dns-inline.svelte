@@ -50,21 +50,7 @@
 		return Object.values(dns.record_counts).reduce((sum, n) => sum + n, 0);
 	});
 
-	let cdnInfo = $derived.by(() => {
-		if (!dns?.cdn || !dns.cdn_name) return null;
-		const name = dns.cdn_name.toLowerCase();
-
-		if (name.includes('cloudflare')) return { label: 'Cloudflare' };
-		if (name.includes('akamai')) return { label: 'Akamai' };
-		if (name.includes('fastly')) return { label: 'Fastly' };
-		if (name.includes('cloudfront') || name.includes('amazon')) return { label: 'CloudFront' };
-		if (name.includes('google')) return { label: 'Google CDN' };
-		if (name.includes('azure') || name.includes('microsoft')) return { label: 'Azure CDN' };
-		if (name.includes('incapsula') || name.includes('imperva')) return { label: 'Imperva' };
-		if (name.includes('sucuri')) return { label: 'Sucuri' };
-
-		return { label: dns.cdn_name };
-	});
+	let cdnName = $derived(dns?.cdn && dns.cdn_name ? dns.cdn_name : null);
 
 	const RECORD_META: Partial<Record<DnsRecordType, { label: string; icon: IconComponent }>> = {
 		[DnsRecordType.A]: { label: 'A (IPv4)', icon: Globe },
@@ -108,12 +94,12 @@
 	</div>
 {:else if status === TaskStatus.SUCCESS && dns}
 	<div class="flex items-center gap-1.5 flex-wrap">
-		{#if cdnInfo}
+		{#if cdnName}
 			<span
 				class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-2xs font-medium border border-border/60 bg-muted/60 text-foreground/70"
 			>
 				<ShieldCheck class="h-3 w-3" />
-				{cdnInfo.label}
+				{cdnName}
 			</span>
 		{/if}
 
@@ -150,12 +136,12 @@
 						</div>
 					</div>
 
-					{#if cdnInfo}
+					{#if cdnName}
 						<div class="px-4 py-2.5 border-b border-border/50 bg-muted/20">
 							<div class="flex items-center gap-2">
 								<ShieldCheck class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
 								<span class="text-xs font-medium text-foreground/80">
-									Behind {cdnInfo.label}
+									Behind {cdnName}
 								</span>
 								<span class="text-2xs text-muted-foreground">WAF or proxy detected</span>
 							</div>

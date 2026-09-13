@@ -13,6 +13,7 @@ from mcp.result import ToolResult
 from mcp.tools._scope import project_for
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.models.scan_preview import PreviewToolStatus
+from shared.utils.text import counted
 
 
 class Input(ToolInput):
@@ -92,7 +93,7 @@ class PlanScan(Tool):
 
         return ToolResult(
             summary=(
-                f"{running} stage(s) would run against {preview.target_value} "
+                f"{counted(running, 'stage')} would run against {preview.target_value} "
                 f"using {preview.engine_name}"
             ),
             data={

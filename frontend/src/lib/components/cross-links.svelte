@@ -3,6 +3,7 @@
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
 	import * as Popover from '$lib/components/ui/popover';
+	import Hint from '$lib/components/hint.svelte';
 	import { KIND_ICONS } from '$lib/config/correlation';
 	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
@@ -70,9 +71,11 @@
 						>
 							<Icon class="size-3 shrink-0 text-muted-foreground" />
 							<span class="shrink-0 text-2xs text-muted-foreground">{link.label}</span>
-							<span class="min-w-0 truncate font-mono text-2xs" title={link.value}>
-								{link.value}
-							</span>
+							<Hint text={link.value}>
+								{#snippet child(props)}
+									<span {...props} class="min-w-0 truncate font-mono text-2xs">{link.value}</span>
+								{/snippet}
+							</Hint>
 							<ArrowUpRight
 								class="size-2.5 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100"
 							/>

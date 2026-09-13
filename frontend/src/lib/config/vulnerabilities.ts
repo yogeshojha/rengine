@@ -48,11 +48,11 @@ export const SEVERITY_LABELS: Record<string, string> = {
 };
 
 export const SEVERITY_HELP: Record<string, string> = {
-	[Severity.CRITICAL]: 'Exploitable now. Leads to system or data compromise.',
-	[Severity.HIGH]: 'Direct path to compromise given one more condition.',
+	[Severity.CRITICAL]: 'Exploitable now. System or data compromise.',
+	[Severity.HIGH]: 'Direct path to compromise with one further condition.',
 	[Severity.MEDIUM]: 'Exploitable under specific conditions.',
-	[Severity.LOW]: 'Hygiene defect with limited standalone impact.',
-	[Severity.INFO]: 'An observation about the asset, not a weakness.',
+	[Severity.LOW]: 'Hygiene defect.',
+	[Severity.INFO]: 'An observation, not a weakness.',
 	[Severity.UNKNOWN]: 'The check did not state a severity.'
 };
 
@@ -87,8 +87,8 @@ export const CORROBORATION_BASIS_LABELS: Record<string, string> = {
 };
 
 export function severityRank(value: string | null | undefined): number {
-	const index = SEVERITY_ORDER.indexOf(value ?? '');
-	return index === -1 ? SEVERITY_ORDER.length : index;
+	const index = SEVERITY_ORDER.indexOf((value ?? '').toLowerCase());
+	return index === -1 ? SEVERITY_ORDER.indexOf(Severity.UNKNOWN) : index;
 }
 
 export function severityLabel(value: string | null | undefined): string {
@@ -117,10 +117,10 @@ export const VULN_STATE_LABELS: Record<string, string> = {
 };
 
 export const VULN_STATE_HELP: Record<string, string> = {
-	[VulnState.OPEN]: 'Not yet reviewed.',
+	[VulnState.OPEN]: 'Not reviewed.',
 	[VulnState.CONFIRMED]: 'Reviewed and reproduced.',
 	[VulnState.FALSE_POSITIVE]: 'Reviewed and rejected. Suppressed on later scans of this target.',
-	[VulnState.ACCEPTED]: 'Reviewed and accepted. Kept out of the alerting path.'
+	[VulnState.ACCEPTED]: 'Reviewed and accepted. Not alerted.'
 };
 
 export const SUPPRESSED_STATES: string[] = [VulnState.FALSE_POSITIVE, VulnState.ACCEPTED];
@@ -151,7 +151,11 @@ export const PROTOCOL_ICONS: Record<string, IconComponent> = {
 	other: CircleHelp
 };
 
-export const SCANNER_LABELS: Record<string, string> = { nuclei: 'Nuclei' };
+export const SCANNER_LABELS: Record<string, string> = {
+	nuclei: 'Nuclei',
+	rengine: 'reNgine',
+	manual: 'Manual testing'
+};
 
 export const TEMPLATE_SET_ICONS: Record<string, IconComponent> = {
 	kev: Flame,

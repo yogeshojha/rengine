@@ -22,7 +22,7 @@
 	import QueryBar from './query-bar/query-bar.svelte';
 	import ListHeader from './table/list-header.svelte';
 	import ResultsPagination from './table/results-pagination.svelte';
-	import { withTarget } from './table/columns';
+	import { readPref, rowPadding, TARGET_COLUMN, withTarget, writePref } from './table/columns';
 	import SoftwareRow from './software/software-row.svelte';
 	import SoftwareDetailSheet from './software/software-detail-sheet.svelte';
 	import {
@@ -38,8 +38,9 @@
 	import { appendToken, type Facet } from '$lib/utilities/scan-insights';
 	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 	import { LiveRefresh } from '$lib/utilities/live-results';
-	import { SEVERITY_LABELS, SEVERITY_ORDER } from '$lib/config/vulnerabilities';
+	import { SEVERITY_TABS } from '$lib/utilities/vulns';
 	import type { QueryError } from '$lib/types/asset-query';
+	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import type {
 		SoftwareCoverage,
 		SoftwareCve,
@@ -65,6 +66,8 @@
 		onScanTotal
 	}: Props = $props();
 
+	const SW = SURFACE[SurfaceDimension.SOFTWARE];
+
 	const EMPTY_FACETS: SoftwareFacets = {
 		severity: [],
 		confidence: [],
@@ -74,28 +77,13 @@
 		product: []
 	};
 	const DEFAULT_SORT = { key: 'rank', dir: -1 as const };
-	const ROW_PAD: Record<string, string> = { compact: 'py-2', cozy: 'py-3' };
-
-	function readPref<T>(key: string, fallback: T): T {
-		try {
-			const raw = localStorage.getItem(key);
-			return raw ? (JSON.parse(raw) as T) : fallback;
-		} catch {
-			return fallback;
-		}
-	}
-	function writePref(key: string, value: unknown) {
-		try {
-			localStorage.setItem(key, JSON.stringify(value));
-		} catch {
-			// ignore
-		}
-	}
 
 	const initial = appPage.url.searchParams;
 	const initialSort = initial.get('sw_sort')?.split(':') ?? [];
 
 	let search = $state(initial.get('sw_q') ?? '');
+	let queryBar = $state<ReturnType<typeof QueryBar> | null>(null);
+	let sideLoaded = $state(false);
 	let density = $state<string>(readPref(STORAGE_KEYS.softwareDensity, 'cozy'));
 	let pageSize = $state<number>(readPref(STORAGE_KEYS.softwarePageSize, RESULTS_PAGE_SIZE));
 	let visiblePref = $state<string[] | null>(readPref(STORAGE_KEYS.softwareColumns, null));
@@ -117,13 +105,6 @@
 	let facets = $state<SoftwareFacets>(EMPTY_FACETS);
 	let coverage = $state<SoftwareCoverage | null>(null);
 
-	const SEVERITY_TABS = [
-		{ key: 'all', label: 'All' },
-		...SEVERITY_ORDER.filter((k) => k !== 'unknown').map((k) => ({
-			key: k,
-			label: SEVERITY_LABELS[k]
-		}))
-	];
 	const QUICK_FILTERS = [
 		{ token: 'is:new', label: 'New' },
 		{ token: 'is:kev', label: 'Known exploited' },
@@ -146,10 +127,11 @@
 		allColumns.filter((c) => visible.includes(c.key) || c.key === 'target')
 	);
 	let pageCount = $derived(Math.max(1, Math.ceil(total / pageSize)));
-	let rowPad = $derived(ROW_PAD[density] ?? ROW_PAD.cozy);
+	let rowPad = $derived(rowPadding(density));
 	let term = $derived(search.trim().includes(':') ? '' : search.trim());
 	let filtered = $derived(Boolean(search.trim()));
 	let severityCounts = $derived.by(() => {
+		if (!sideLoaded) return null;
 		const out: Record<string, number> = { all: coverage?.findings ?? 0 };
 		for (const f of facets.severity) out[f.key] = f.count;
 		return out;
@@ -189,14 +171,16 @@
 		if (!ready || !queryReady) return;
 		const mine = ++reqId;
 		refreshing = items.length > 0;
+		const filter = filterOf();
 		try {
-			const result = await softwareApi.search(projectId, scanId, filterOf());
+			const result = await softwareApi.search(projectId, scanId, filter);
 			if (mine !== reqId) return;
 			queryError = result.error ?? null;
 			items = result.error ? [] : result.items;
 			total = result.error ? 0 : result.total;
 			totalCapped = result.total_capped;
 			errored = false;
+			if (!result.error && filter.q) queryBar?.remember(filter.q);
 		} catch {
 			if (mine !== reqId) return;
 			errored = true;
@@ -227,6 +211,7 @@
 			]);
 			facets = f;
 			coverage = c;
+			sideLoaded = true;
 			onScanTotal?.(c.findings);
 		} catch {
 			// ignore
@@ -320,6 +305,7 @@
 
 <div class="z-20 bg-background md:sticky md:top-[var(--scan-tabs-h,0px)] md:pt-2">
 	<QueryBar
+		bind:this={queryBar}
 		store={softwareQuerySchema}
 		recentsKey={STORAGE_KEYS.softwareRecentQueries}
 		hint="severity:critical and is:stated"
@@ -419,9 +405,7 @@
 		<ScrollArea orientation="horizontal" class="min-h-0">
 			<div class="min-w-max">
 				<ListHeader
-					lead={projectWide
-						? [{ key: 'target', label: 'Target', width: 'w-40' }, ...SOFTWARE_LEAD_COLUMNS]
-						: SOFTWARE_LEAD_COLUMNS}
+					lead={projectWide ? [TARGET_COLUMN, ...SOFTWARE_LEAD_COLUMNS] : SOFTWARE_LEAD_COLUMNS}
 					columns={shownColumns.filter((c) => c.key !== 'target')}
 					sortKey={sort.key}
 					sortDir={sort.dir}
@@ -450,8 +434,8 @@
 			page={pageIndex}
 			{pageSize}
 			capped={totalCapped}
-			noun="software CVE"
-			plural="software CVEs"
+			noun={SW.noun}
+			plural={SW.nounPlural}
 			{onPage}
 			onPageSize={(size) => {
 				pageSize = size;

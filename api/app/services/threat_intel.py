@@ -4,17 +4,21 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.definitions.threat_intel import (
     BANDS_BY_KEY,
+    EXPLOIT_BANDS,
     FEED_STATUS_LABELS,
     FEEDS,
     SIGNALS_BY_KIND,
+    ExploitSignal,
     FeedStatus,
     exploit_band,
 )
+from shared.enums.api_key import APIProvider
+from shared.models.api_key import APIKey
 from shared.models.threat_intel import (
     CveIntelRead,
     ExposureProduct,
@@ -47,14 +51,16 @@ FROM vulnerabilities
 {scope}
 """
 
+_BAND_CASE = "CASE {arms} ELSE '{floor}' END".format(
+    arms=" ".join(
+        f"WHEN epss_score >= {band.floor} THEN '{band.key}'"
+        for band in EXPLOIT_BANDS[:-1]
+    ),
+    floor=EXPLOIT_BANDS[-1].key,
+)
+
 _BANDS_SQL = """
-SELECT CASE
-         WHEN epss_score >= 0.5   THEN 'very_likely'
-         WHEN epss_score >= 0.088 THEN 'likely'
-         WHEN epss_score >= 0.01  THEN 'possible'
-         ELSE 'unlikely'
-       END AS band,
-       count(*) AS n
+SELECT {case} AS band, count(*) AS n
 FROM vulnerabilities
 WHERE epss_score IS NOT NULL {and_scope}
 GROUP BY 1
@@ -108,7 +114,7 @@ class ThreatIntelService:
         bands = {
             r.band: int(r.n)
             for r in await self.session.execute(
-                text(_BANDS_SQL.format(and_scope=and_scope)), params
+                text(_BANDS_SQL.format(case=_BAND_CASE, and_scope=and_scope)), params
             )
         }
         return IntelCoverage(
@@ -174,7 +180,12 @@ class ThreatIntelService:
     ) -> list[IntelChange]:
         and_scope = "AND v.project_id = :project_id" if project_id else ""
         params: dict = {
-            "kinds": ["kev", "ransom_path", "fresh_exploit", "weaponised"],
+            "kinds": [
+                ExploitSignal.KEV.value,
+                ExploitSignal.RANSOM_PATH.value,
+                ExploitSignal.FRESH_EXPLOIT.value,
+                ExploitSignal.WEAPONISED.value,
+            ],
             "days": days,
             "limit": limit,
         }
@@ -241,14 +252,14 @@ class ThreatIntelService:
             or 0
         )
         has_key = bool(
-            (
-                await self.session.execute(
-                    text(
-                        "SELECT 1 FROM api_keys WHERE provider = 'VULNX'"
-                        " AND is_enabled LIMIT 1"
-                    )
+            await self.session.scalar(
+                select(APIKey.id)
+                .where(
+                    APIKey.provider == APIProvider.VULNX,
+                    APIKey.is_enabled.is_(True),
                 )
-            ).scalar()
+                .limit(1)
+            )
         )
         last_applied = (
             await self.session.execute(

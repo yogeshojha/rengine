@@ -27,7 +27,7 @@ class Proxy(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str = Field(max_length=120)
     description: str | None = Field(default=None, max_length=500)
-    mode: str = Field(default="single")
+    mode: str = Field(default=ProxyMode.SINGLE.value)
     is_active: bool = Field(default=True)
     is_default: bool = Field(default=False)
     endpoints_encrypted: str
@@ -52,7 +52,7 @@ class ProxyEndpointRead(BaseModel):
 class ProxyCreate(BaseModel):
     name: str
     description: str | None = None
-    mode: str = "single"
+    mode: str = ProxyMode.SINGLE.value
     is_active: bool = True
     is_default: bool = False
     endpoints: list[ProxyEndpoint] = Field(min_length=1)
@@ -91,3 +91,5 @@ class ProxyTestResult(BaseModel):
     success: bool
     message: str
     latency_ms: int | None = None
+    # false when the port answered but the proxy did not carry the request
+    reachable: bool = False

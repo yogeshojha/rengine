@@ -167,7 +167,7 @@ def parse_dnsx_jsonl(json_records: list[dict]) -> list[DnsxReconResponse]:
     for i, raw in enumerate(json_records):
         try:
             results.append(parse_dnsx_record(raw))
-        except (ValueError, Exception) as e:
+        except Exception as e:
             host = raw.get("host", "unknown")
             logger.warning(f"Failed to parse dnsx record #{i} (host={host}): {e}")
     return results

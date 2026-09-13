@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from sqlalchemy import bindparam, delete, select, update
-from sqlalchemy.exc import StatementError
 from sqlalchemy.orm import defer
 
 from shared.definitions.ports import (
@@ -116,9 +115,9 @@ class HttpProbeStage(Stage):
                 recorder=self.ctx.recorder,
                 extra_args=self.ctx.resolved.tool_args("httpx"),
             )
-        except HttpxError:
+        except HttpxError as exc:
             logger.warning("httpx unavailable, skipping HTTP probe")
-            return StageResult(counts={"http_assets": 0})
+            return StageResult(warnings=[str(exc)], partial=True)
 
         with client.stream_probe(targets) as stream:
             self._check_abort()
@@ -193,7 +192,7 @@ class HttpProbeStage(Stage):
                 if is_wildcard or not is_active:
                     continue
                 targets.extend(
-                    f"{name}:{port}"
+                    host_port(name, port)
                     for port in self._ports_for(resolved_ips or [], port_map)
                 )
         elif target_type in _IP_FAMILY:
@@ -287,7 +286,7 @@ class HttpProbeStage(Stage):
                     delete(HttpAsset).where(HttpAsset.scan_id == self.ctx.scan_id)
                 )
                 cleared = True
-            bad = self._flush_batch(batch)
+            bad = self.flush_rows(batch)
             rejected += bad
             self._denormalize_batch(summaries)
             summaries.clear()
@@ -359,28 +358,6 @@ class HttpProbeStage(Stage):
             ],
         )
 
-    def _flush_batch(self, batch: list[HttpAsset]) -> int:
-        """Flush inside a savepoint."""
-        pending = list(batch)
-        rejected = 0
-        try:
-            with self.session.begin_nested():
-                self.session.add_all(pending)
-                self.session.flush()
-        except StatementError:
-            logger.warning("http asset batch rejected, retrying row by row")
-            for obj in pending:
-                try:
-                    with self.session.begin_nested():
-                        self.session.add(obj)
-                        self.session.flush()
-                except StatementError:
-                    rejected += 1
-        for obj in pending:
-            if obj in self.session:
-                self.session.expunge(obj)
-        return rejected
-
     def _denormalize_to_subdomains(self) -> None:
         assets = (
             self.session.execute(
@@ -413,23 +390,8 @@ class HttpProbeStage(Stage):
             asset = primary.get(sub.name)
             if asset is None:
                 continue
-            sub.http_url = asset.url
-            sub.final_url = asset.final_url
-            sub.http_status = asset.status_code
-            sub.page_title = asset.title
-            sub.content_type = asset.content_type
-            sub.content_length = asset.content_length
-            sub.response_time = asset.response_time
-            sub.webserver = asset.webserver
-            sub.tech = list(asset.tech or [])
-            sub.is_cdn = asset.is_cdn
-            sub.cdn_name = asset.cdn_name
-            sub.waf = asset.waf
-            sub.asn = asset.asn
-            sub.asn_org = asset.asn_org
-            sub.favicon_hash = asset.favicon_hash
-            sub.tls_not_after = asset.tls_not_after
-            sub.tls_expired = asset.tls_expired
-            sub.tls_self_signed = asset.tls_self_signed
+            for column, field in _DENORM_FIELDS.items():
+                value = getattr(asset, field)
+                setattr(sub, column, list(value or []) if column == "tech" else value)
             self.session.add(sub)
         self.session.commit()

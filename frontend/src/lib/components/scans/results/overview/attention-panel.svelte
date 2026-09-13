@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SURFACE, SurfaceDimension, type ResultTab } from '$lib/config/surface';
 	import Lock from '@lucide/svelte/icons/lock';
 	import ShieldOff from '@lucide/svelte/icons/shield-off';
 	import CircleX from '@lucide/svelte/icons/circle-x';
@@ -38,11 +39,13 @@
 		loading: boolean;
 		errored: boolean;
 		onFilter: (search: string) => void;
-		onTab: (tab: string, filter?: string) => void;
+		onTab: (tab: ResultTab, filter?: string) => void;
 	}
 
 	let { attention, clusters, related, origins, loading, errored, onFilter, onTab }: Props =
 		$props();
+
+	const SVC = SURFACE[SurfaceDimension.SERVICES];
 
 	type Tone = InsightAttention['tone'];
 	interface Finding {
@@ -272,5 +275,5 @@
 	open={originOpen}
 	onOpenChange={(v) => (originOpen = v)}
 	onStep={(next) => (originIndex = next)}
-	onServices={(filter) => onTab('services', filter)}
+	onServices={(filter) => onTab(SVC.tab, filter)}
 />

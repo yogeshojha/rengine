@@ -533,7 +533,7 @@
 	title="Cancel scan"
 	description="The scan stops and is marked cancelled."
 	confirmLabel="Cancel scan"
-	cancelLabel="Keep running"
+	cancelLabel="Keep"
 	onOpenChange={(o) => !o && (cancelTarget = null)}
 	onConfirm={confirmCancel}
 />
@@ -580,10 +580,10 @@
 
 <ConfirmDialog
 	open={bulkCancelOpen}
-	title="Cancel {selectedLiveCount} running scan{selectedLiveCount !== 1 ? 's' : ''}"
+	title="Cancel {selectedLiveCount} unfinished scan{selectedLiveCount !== 1 ? 's' : ''}"
 	description="The selected scans stop and are marked cancelled."
 	confirmLabel="Cancel scans"
-	cancelLabel="Keep running"
+	cancelLabel="Keep"
 	onOpenChange={(o) => (bulkCancelOpen = o)}
 	onConfirm={confirmBulkCancel}
 />

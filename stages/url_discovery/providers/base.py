@@ -9,11 +9,11 @@ from functools import cached_property
 from typing import TYPE_CHECKING, ClassVar
 from urllib.parse import urlsplit
 
-from shared.definitions.tools import parse_tool_args
 from shared.definitions.vulnerabilities import CoverageStatus
 from shared.logging import get_logger
 from shared.services.endpoint_inventory import EndpointObservation
 from shared.utils.datetime import utc_now
+from tools.runner import tool_path
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -70,7 +70,7 @@ class ProviderResult:
     hosts_total: int = 0
     hosts_scanned: int | None = None
     hosts_dropped: list[str] = field(default_factory=list)
-    urls_found: int | None = None
+    urls_found: int | None = None  # every url produced, before dedupe and scope
     pages_fetched: int | None = None
     depth_reached: int | None = None
     errors: int | None = None
@@ -98,11 +98,10 @@ class UrlProvider(ABC):
 
     @property
     def extra_args(self) -> list[str]:
-        options = getattr(self.ctx.resolved, "tool_options", None) or {}
-        return parse_tool_args(options.get(self.tool or "", ""))
+        return self.ctx.resolved.tool_args(self.tool or "")
 
     def availability(self) -> tuple[bool, str | None]:
-        if self.binary and shutil.which(self.binary) is None:
+        if self.binary and shutil.which(self.binary, path=tool_path()) is None:
             return False, f"{self.binary} is not installed on this instance."
         if self.requires_key is not None and not self.ctx.api_keys.get(
             self.requires_key.value

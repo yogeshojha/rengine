@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import Counter
 from uuid import UUID
 
 from sqlalchemy import (
@@ -73,6 +72,22 @@ class IpAddressService:
             discovered_at=ip.discovered_at,
         )
 
+    def _filters(
+        self,
+        project_id: UUID,
+        scan_id: UUID | None,
+        target_id: UUID | None,
+        search: str | None,
+    ) -> list:
+        conditions = [IpAddress.project_id == project_id]
+        if scan_id is not None:
+            conditions.append(IpAddress.scan_id == scan_id)
+        if target_id is not None:
+            conditions.append(IpAddress.target_id == target_id)
+        if search:
+            conditions.append(IpAddress.ip.ilike(f"%{search}%"))
+        return conditions
+
     def _base_query(
         self,
         project_id: UUID,
@@ -80,14 +95,9 @@ class IpAddressService:
         target_id: UUID | None,
         search: str | None,
     ):
-        query = select(IpAddress).where(IpAddress.project_id == project_id)
-        if scan_id is not None:
-            query = query.where(IpAddress.scan_id == scan_id)
-        if target_id is not None:
-            query = query.where(IpAddress.target_id == target_id)
-        if search:
-            query = query.where(IpAddress.ip.ilike(f"%{search}%"))
-        return query
+        return select(IpAddress).where(
+            *self._filters(project_id, scan_id, target_id, search)
+        )
 
     async def list(
         self,
@@ -109,20 +119,28 @@ class IpAddressService:
         scan_id: UUID | None = None,
         target_id: UUID | None = None,
     ) -> IpAddressSummary:
-        query = self._base_query(project_id, scan_id, target_id, None)
-        result = await self.session.execute(query)
-        rows = result.scalars().all()
-        by_source: Counter = Counter()
-        alive = 0
-        cdn = 0
-        for row in rows:
-            by_source[row.source] += 1
-            if row.is_alive:
-                alive += 1
-            if row.is_cdn:
-                cdn += 1
+        where = self._filters(project_id, scan_id, target_id, None)
+        totals = (
+            await self.session.execute(
+                select(
+                    func.count(),
+                    func.count().filter(IpAddress.is_alive.is_(True)),
+                    func.count().filter(IpAddress.is_cdn.is_(True)),
+                ).where(*where)
+            )
+        ).one()
+        by_source = (
+            await self.session.execute(
+                select(IpAddress.source, func.count())
+                .where(*where)
+                .group_by(IpAddress.source)
+            )
+        ).all()
         return IpAddressSummary(
-            total=len(rows), alive=alive, cdn=cdn, by_source=dict(by_source)
+            total=int(totals[0] or 0),
+            alive=int(totals[1] or 0),
+            cdn=int(totals[2] or 0),
+            by_source={str(source): int(n) for source, n in by_source},
         )
 
     async def _page_details(

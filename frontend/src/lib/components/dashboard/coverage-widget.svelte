@@ -32,8 +32,6 @@
 	let days = $derived(window === '30d' ? 30 : 7);
 	let recent = $derived(overview.daily.slice(-days));
 	let maxRuns = $derived(Math.max(1, ...recent.map((d) => d.runs)));
-	let runsTotal = $derived(recent.reduce((n, d) => n + d.runs, 0));
-	let failedTotal = $derived(recent.reduce((n, d) => n + d.failed, 0));
 
 	let buckets = $derived.by(() => {
 		const now = Date.now();
@@ -212,8 +210,10 @@
 			<div class="flex items-baseline justify-between text-xs">
 				<span class="text-muted-foreground">Runs in the {windowText(window)}</span>
 				<span class="tabular-nums">
-					<span class="font-medium">{runsTotal}</span>
-					{#if failedTotal}<span class="text-destructive"> · {failedTotal} failed</span>{/if}
+					<span class="font-medium">{overview.runs_in_window.toLocaleString()}</span>
+					{#if overview.failed_in_window}
+						<span class="text-destructive"> · {overview.failed_in_window} failed</span>
+					{/if}
 				</span>
 			</div>
 			<div class="flex h-6 items-end gap-1">

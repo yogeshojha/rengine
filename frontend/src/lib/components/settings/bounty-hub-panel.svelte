@@ -1,10 +1,13 @@
 <script lang="ts">
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { toast } from 'svelte-sonner';
 	import * as Card from '$lib/components/ui/card';
+	import { Button } from '$lib/components/ui/button';
 	import * as Select from '$lib/components/ui/select';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import { Switch } from '$lib/components/ui/switch';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import SectionHead from '$lib/components/section-head.svelte';
 	import CertificateStreamCard from './certificate-stream-card.svelte';
 	import ConnectAlert from '$lib/components/bounty-hub/connect-alert.svelte';
@@ -26,6 +29,7 @@
 	let settings = $state<BountySettings | null>(null);
 	let vocabulary = $state<BountyVocabulary | null>(null);
 	let loading = $state(true);
+	let loadError = $state<string | null>(null);
 	let saving = $state(false);
 
 	async function load() {
@@ -35,7 +39,9 @@
 				bountyProgramsApi.settings(),
 				bountyProgramsApi.vocabulary()
 			]);
+			loadError = null;
 		} catch (error) {
+			loadError = error instanceof Error ? error.message : 'Request failed.';
 			toast.error(error instanceof Error ? error.message : 'Bounty Hub settings not loaded');
 		} finally {
 			loading = false;
@@ -247,4 +253,12 @@
 			{/if}
 		</Card.Root>
 	</div>
+{:else}
+	<EmptyState
+		icon={TriangleAlert}
+		title="Bounty Hub settings not loaded"
+		description={loadError ?? undefined}
+	>
+		<Button variant="outline" size="sm" onclick={() => void load()}>Retry</Button>
+	</EmptyState>
 {/if}

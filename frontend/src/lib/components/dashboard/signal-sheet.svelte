@@ -25,9 +25,12 @@
 <script lang="ts">
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
 	import Check from '@lucide/svelte/icons/check';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import * as Sheet from '$lib/components/ui/sheet';
 	import { Button } from '$lib/components/ui/button';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import { Skeleton } from '$lib/components/ui/skeleton';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 
 	interface Props {
@@ -36,10 +39,23 @@
 		title: string;
 		description?: string;
 		rows: SheetRow[];
+		noun?: string;
+		loading?: boolean;
+		error?: string | null;
 		action?: SheetAction | null;
 	}
 
-	let { open, onOpenChange, title, description, rows, action = null }: Props = $props();
+	let {
+		open,
+		onOpenChange,
+		title,
+		description,
+		rows,
+		noun = 'Rows',
+		loading = false,
+		error = null,
+		action = null
+	}: Props = $props();
 
 	const TONE = { warn: 'text-warning', bad: 'text-destructive' };
 
@@ -83,8 +99,25 @@
 			{/if}
 		</Sheet.Header>
 		<ScrollArea class="min-h-0 flex-1">
+			{#if loading}
+				<div class="flex flex-col gap-2 px-3 py-3">
+					{#each Array(6) as _, i (i)}
+						<Skeleton class="h-10 w-full" />
+					{/each}
+				</div>
+			{:else if error}
+				<EmptyState
+					compact
+					icon={TriangleAlert}
+					title="{noun} not loaded"
+					description={error}
+					class="m-3 border-dashed"
+				/>
+			{:else if rows.length === 0}
+				<EmptyState compact title="No {noun.toLowerCase()}" class="m-3 border-dashed" />
+			{/if}
 			<div class="flex flex-col px-2 py-1">
-				{#each groups as g, gi (g.label ?? gi)}
+				{#each groups as g, gi (`${gi}:${g.label ?? ''}`)}
 					{#if g.label}
 						<span
 							class="flex items-center justify-between px-3 pt-4 pb-1 text-2xs font-medium tracking-wide text-muted-foreground uppercase"

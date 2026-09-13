@@ -242,6 +242,7 @@
 				{#snippet child(props)}
 					<Button
 						{...props}
+						aria-label="Copy every URL on this host"
 						variant="ghost"
 						size="icon"
 						class="size-7"

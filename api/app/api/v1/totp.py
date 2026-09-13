@@ -9,7 +9,13 @@ from sqlmodel import select
 from app.api.deps import BEARER_HEADERS, CurrentUser
 from app.api.v1.auth import set_auth_cookies
 from app.core.database import get_session
-from app.core.ratelimit import clear_failures, record_failure, too_many_attempts
+from app.core.ratelimit import (
+    clear_failures,
+    is_token_revoked,
+    record_failure,
+    revoke_token,
+    too_many_attempts,
+)
 from app.core.security import (
     TOKEN_TYPE_MFA,
     create_access_token,
@@ -19,6 +25,7 @@ from app.core.security import (
 from app.services.totp import TOTPService
 from shared.models.user import User
 from shared.schemas.auth import LoginResponse, TwoFactorLoginRequest
+from shared.utils.datetime import utc_now
 
 router = APIRouter(prefix="/auth/2fa", tags=["two-factor"])
 
@@ -110,6 +117,14 @@ async def login_2fa(
             headers=BEARER_HEADERS,
         )
 
+    jti = payload.get("jti")
+    if jti and await is_token_revoked(jti):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="MFA token has been used",
+            headers=BEARER_HEADERS,
+        )
+
     user_id_str = payload.get("sub")
     if not user_id_str:
         raise HTTPException(
@@ -153,6 +168,9 @@ async def login_2fa(
         )
 
     await clear_failures(rl_key)
+
+    if jti and payload.get("exp"):
+        await revoke_token(jti, int(payload["exp"] - utc_now().timestamp()))
 
     access_token = create_access_token(str(user.id))
     refresh_token = create_refresh_token(str(user.id))

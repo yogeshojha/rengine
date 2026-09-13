@@ -16,7 +16,13 @@ API_PROVIDER_META: dict[str, dict] = {
         "docs_url": "https://viewdns.info/api/?src=reNgine",
         "requires_username": False,
         "icon": "scan-search",
-        "color": "#6366f1",
+    },
+    APIProvider.GITHUB: {
+        "name": "GitHub",
+        "description": "Subdomains found in public code, and subfinder's GitHub source",
+        "docs_url": "https://github.com/settings/tokens",
+        "requires_username": False,
+        "icon": "github",
     },
     APIProvider.CHAOS: {
         "name": "Chaos",
@@ -24,7 +30,6 @@ API_PROVIDER_META: dict[str, dict] = {
         "docs_url": "https://cloud.projectdiscovery.io",
         "requires_username": False,
         "icon": "radar",
-        "color": "#f59e0b",
     },
     APIProvider.NETLAS: {
         "name": "Netlas",
@@ -32,7 +37,6 @@ API_PROVIDER_META: dict[str, dict] = {
         "docs_url": "https://netlas.io",
         "requires_username": False,
         "icon": "globe",
-        "color": "#10b981",
     },
     APIProvider.SECURITYTRAILS: {
         "name": "SecurityTrails",
@@ -40,7 +44,6 @@ API_PROVIDER_META: dict[str, dict] = {
         "docs_url": "https://securitytrails.com",
         "requires_username": False,
         "icon": "route",
-        "color": "#3b82f6",
     },
     APIProvider.HACKERONE: {
         "name": "HackerOne",
@@ -48,7 +51,6 @@ API_PROVIDER_META: dict[str, dict] = {
         "docs_url": "https://api.hackerone.com",
         "requires_username": True,
         "icon": "shield",
-        "color": "#ef4444",
     },
     APIProvider.INTIGRITI: {
         "name": "Intigriti",
@@ -56,7 +58,6 @@ API_PROVIDER_META: dict[str, dict] = {
         "docs_url": "https://app.intigriti.com/researcher/personal-access-tokens",
         "requires_username": False,
         "icon": "shield",
-        "color": "#8b5cf6",
     },
     APIProvider.VULNX: {
         "name": "vulnx",
@@ -64,7 +65,6 @@ API_PROVIDER_META: dict[str, dict] = {
         "docs_url": "https://cloud.projectdiscovery.io",
         "requires_username": False,
         "icon": "biohazard",
-        "color": "#f43f5e",
     },
     APIProvider.INTERACTSH: {
         "name": "Interactsh",
@@ -72,7 +72,6 @@ API_PROVIDER_META: dict[str, dict] = {
         "docs_url": "https://github.com/projectdiscovery/interactsh",
         "requires_username": False,
         "icon": "satellite-dish",
-        "color": "#8b5cf6",
     },
 }
 
@@ -123,7 +122,6 @@ class ProviderInfo(BaseModel):
     description: str
     docs_url: str
     icon: str = "package"
-    color: str = "#64748b"
     requires_username: bool = False
     configured: bool = False
     is_enabled: bool = False

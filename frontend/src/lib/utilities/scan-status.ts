@@ -170,16 +170,6 @@ export function activitySummary(result: Record<string, number | string> | undefi
 export const SCAN_POLL_MS = 4000;
 export const RESULTS_PAGE_SIZE = 50;
 export const SEARCH_DEBOUNCE_MS = 220;
-export const RESULTS_SCROLL = 'max-h-[calc(100svh-25rem)] min-h-[15rem]';
-
-export const SCAN_STATUS_RANK: Record<ScanStatus, number> = {
-	running: 0,
-	paused: 1,
-	pending: 2,
-	completed: 3,
-	failed: 4,
-	cancelled: 5
-};
 
 export function elapsedSeconds(scan: ScanRead, now: number = Date.now()): number | null {
 	if (!isLiveStatus(scan.status) || !scan.started_at) return null;

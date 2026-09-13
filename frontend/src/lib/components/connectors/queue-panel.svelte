@@ -27,6 +27,8 @@
 	import { connectorsApi } from '$lib/api/connectors';
 	import { connectors } from '$lib/stores/connectors.svelte';
 	import {
+		ACTION_KIND_LABELS,
+		ActionKind,
 		CANDIDATE_STATES,
 		CANDIDATE_STATE_LABELS,
 		NOTICE_HELP,
@@ -60,7 +62,7 @@
 	let notice = $state<string>('');
 	let known = $state<'any' | 'yes' | 'no'>('any');
 	let search = $state('');
-	let pageNumber = $state(1);
+	let pageNumber = $state(0);
 	let picked = new SvelteSet<string>();
 	let opened = new SvelteSet<string>();
 	let scanning = $state(false);
@@ -77,7 +79,7 @@
 		notice: notice || undefined,
 		known: known === 'any' ? undefined : known === 'yes',
 		search: search || undefined,
-		page: pageNumber
+		page: pageNumber + 1
 	});
 
 	$effect(() => {
@@ -107,7 +109,7 @@
 		void notice;
 		void known;
 		void search;
-		untrack(() => (pageNumber = 1));
+		untrack(() => (pageNumber = 0));
 	});
 
 	$effect(() => {
@@ -284,7 +286,7 @@
 					disabled={connector.paused}
 				>
 					<SendIcon class="size-3.5" />
-					Send to Repeater
+					{ACTION_KIND_LABELS[ActionKind.REPEATER]}
 				</LoadingButton>
 				<LoadingButton loading={scanning} size="sm" onclick={scan}>
 					<RadarIcon class="size-3.5" />

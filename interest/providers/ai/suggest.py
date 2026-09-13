@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 
+from interest.providers.ai.prompt import json_array
 from shared.definitions.ai import AITask
 from shared.definitions.asset_query import FLAGS, HOST_QUERY, FieldType
 from shared.definitions.interest import MAX_RULE_NAME, coerce_kind, kind_label
@@ -65,20 +66,8 @@ def build_prompt(rows: list[dict]) -> str:
 
 
 def parse(text: str) -> list[dict]:
-    body = text.strip()
-    if body.startswith("```"):
-        body = body.split("\n", 1)[-1].rsplit("```", 1)[0]
-    start, end = body.find("["), body.rfind("]")
-    if start == -1 or end <= start:
-        return []
-    try:
-        parsed = json.loads(body[start : end + 1])
-    except (ValueError, TypeError):
-        return []
     out = []
-    for item in parsed[:MAX_SUGGESTIONS]:
-        if not isinstance(item, dict):
-            continue
+    for item in json_array(text)[:MAX_SUGGESTIONS]:
         query = strip_control(str(item.get("query") or "")).strip()[:MAX_QUERY_CHARS]
         name = strip_control(str(item.get("name") or "")).strip()[:MAX_RULE_NAME]
         if not query or not name:

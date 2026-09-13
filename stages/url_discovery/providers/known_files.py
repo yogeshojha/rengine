@@ -10,6 +10,7 @@ import httpx
 
 from shared.definitions.endpoints import EndpointSource
 from shared.services.endpoint_inventory import EndpointObservation
+from shared.utils.net import host_port
 from stages.url_discovery.providers.base import ProviderResult, UrlProvider
 
 _ROBOTS = "/robots.txt"
@@ -56,8 +57,8 @@ class KnownFilesProvider(UrlProvider):
         kept = [o for o in state.observations if self.in_scope(o.url)]
         offsite = len(state.observations) - len(kept)
         result.observations = kept
-        result.urls_found = len(kept)
-        if offsite:
+        result.urls_found = len(state.observations)
+        if offsite and not result.cap_reason:
             result.cap_reason = f"{offsite} declared urls pointed outside the scan's scope and were not stored."
         result.pages_fetched = state.fetched
         result.errors = state.errors
@@ -117,14 +118,19 @@ class KnownFilesProvider(UrlProvider):
 
     def _get(self, client: httpx.Client, url: str, state: _State) -> str | None:
         state.fetched += 1
+        body = bytearray()
         try:
-            response = client.get(url)
+            with client.stream("GET", url) as response:
+                if response.status_code >= _CLIENT_ERROR:
+                    return None
+                for chunk in response.iter_bytes():
+                    body += chunk
+                    if len(body) >= _MAX_BYTES:
+                        break
         except (httpx.HTTPError, ValueError):
             state.errors += 1
             return None
-        if response.status_code >= _CLIENT_ERROR:
-            return None
-        return response.text[:_MAX_BYTES]
+        return bytes(body[:_MAX_BYTES]).decode("utf-8", errors="replace")
 
 
 class _State:
@@ -182,7 +188,7 @@ def _fetchable(url: str, in_scope) -> bool:
 def _roots(hosts) -> list[str]:
     seen: dict[str, str] = {}
     for host in hosts:
-        seen.setdefault(f"{host.scheme}://{host.host}:{host.port}", host.url)
+        seen.setdefault(f"{host.scheme}://{host_port(host.host, host.port)}", host.url)
     return list(seen.values())
 
 

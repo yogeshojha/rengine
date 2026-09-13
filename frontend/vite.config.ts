@@ -3,10 +3,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { compile } from 'svelte/compiler';
 import { defineConfig, type Plugin } from 'vite';
 
-// vite-plugin-svelte 6.x can serve the raw .svelte source for a component's `?type=style&lang.css`
-// virtual module (compiled-CSS cache miss); compile it so `:global()` is unwrapped and local rules stay
-// scoped, before @tailwindcss/vite parses its <script> as CSS ("Invalid declaration").
-// Fixed upstream in vite-plugin-svelte 7.1.x (needs Vite 8).
+// vite-plugin-svelte 6.x serves raw .svelte source for `?type=style`. Fixed in 7.1.x, which needs Vite 8.
 function svelteStyleCssLeakGuard(): Plugin {
 	return {
 		name: 'svelte-style-css-leak-guard',

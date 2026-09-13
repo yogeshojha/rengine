@@ -12,6 +12,7 @@ from mcp.errors import ToolError
 from mcp.result import ToolResult
 from mcp.tools._scope import find_target
 from mcp.tools.base import Tool, ToolGroup, ToolInput
+from shared.utils.text import counted
 
 MAX_LOCATIONS = 50
 _CVE = re.compile(r"^CVE-\d{4}-\d{4,7}$", re.IGNORECASE)
@@ -58,7 +59,7 @@ class CveExposure(Tool):
         ladder = {step.evidence: step.count for step in report.ladder}
         steps = " · ".join(f"{n} {name}" for name, n in ladder.items() if n)
         summary = (
-            f"{cve}: {report.assets} asset(s) across {report.targets} target(s)"
+            f"{cve}: {counted(report.assets, 'asset')} across {counted(report.targets, 'target')}"
             + (f" · {steps}" if steps else "")
             if report.assets
             else f"{cve}: no asset in this project carries it"
@@ -70,7 +71,7 @@ class CveExposure(Tool):
             caveats.append("No scan has run vulnerability checks in this project.")
         if report.suppressed:
             caveats.append(
-                f"{report.suppressed} finding(s) set aside by a reviewer are not counted."
+                f"{counted(report.suppressed, 'finding')} set aside by a reviewer are not counted."
             )
 
         return ToolResult(

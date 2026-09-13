@@ -29,7 +29,7 @@ from shared.services.api_key.sync_api_key import SyncAPIKeyService
 from shared.services.scope_filter import matches_any
 from shared.services.wordlists import WordlistError, read_words
 from shared.utils.datetime import utc_now
-from stages.base import DOMAIN_TARGETS, Stage, StageAbortedError, StageResult
+from stages.base import DOMAIN_TARGETS, Stage, StageResult
 from stages.subdomain.config import PASSIVE_TOOLS, SubdomainConfig
 from stages.subdomain.parser import in_scope, merge_and_filter
 from stages.subdomain.providers import (
@@ -465,10 +465,6 @@ class SubdomainStage(Stage):
             )
         return notes
 
-    def _check_abort(self) -> None:
-        if self.ctx.is_aborted is not None and self.ctx.is_aborted():
-            raise StageAbortedError
-
     def _prefetch_keys(self) -> dict[str, str | None]:
         svc = SyncAPIKeyService(self.session)
         return {p.value: svc.get_key_for_provider(p) for p in _PREFETCH_KEYS}
@@ -666,7 +662,7 @@ class SubdomainStage(Stage):
         suspect = [b for b in batches if b.stalled or b.rate < floor]
         if not suspect:
             return
-        self.emit_progress(f"re-resolving {len(suspect)} degraded batch(es)")
+        self.emit_progress(f"re-resolving {len(suspect)} degraded batches")
         retries = [
             (batch, [n for n in batch.names if n not in state.records])
             for batch in suspect

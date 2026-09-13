@@ -34,6 +34,7 @@ from shared.services.proxy_resolve import (
 )
 from shared.services.scan_resolve import MASK
 from shared.utils.datetime import utc_now
+from shared.utils.net import host_port
 
 _TEST_URL = "https://api.ipify.org"
 _TEST_TIMEOUT = 8.0
@@ -203,15 +204,14 @@ class ProxyService:
         endpoints = _load_endpoints(proxy)
         if not endpoints:
             return await self._persist_test(
-                proxy, False, "No endpoints configured.", None
+                proxy,
+                ProxyTestResult(success=False, message="No endpoints configured."),
             )
 
         ep = endpoints[0]
         url = _build_url(ep)
         result = await self._probe(ep, url)
-        return await self._persist_test(
-            proxy, result.success, result.message, result.latency_ms
-        )
+        return await self._persist_test(proxy, result)
 
     async def resolve_proxy_url(self, proxy_id: UUID) -> str | None:
         proxy = await self.session.get(Proxy, proxy_id)
@@ -220,14 +220,25 @@ class ProxyService:
     def _merge_endpoints(
         self, proxy: Proxy, incoming: list[ProxyEndpoint]
     ) -> list[ProxyEndpoint]:
-        stored = {_endpoint_key(e): e.password for e in _load_endpoints(proxy)}
+        previous = _load_endpoints(proxy)
+        stored = {_endpoint_key(e): e.password for e in previous}
+        by_user: dict[str | None, list[str | None]] = {}
+        for ep in previous:
+            by_user.setdefault(ep.username, []).append(ep.password)
         merged: list[ProxyEndpoint] = []
         for ep in incoming:
-            if ep.password == MASK:
-                prev = stored.get(_endpoint_key(ep))
-                merged.append(ep.model_copy(update={"password": prev}))
-            else:
+            if ep.password != MASK:
                 merged.append(ep)
+                continue
+            key = _endpoint_key(ep)
+            if key in stored:
+                merged.append(ep.model_copy(update={"password": stored[key]}))
+                continue
+            same_user = by_user.get(ep.username) or []
+            if len(same_user) != 1:
+                msg = f"Enter the password again for {host_port(ep.host, ep.port)}."
+                raise _bad(msg)
+            merged.append(ep.model_copy(update={"password": same_user[0]}))
         return merged
 
     async def _probe(self, ep: ProxyEndpoint, url: str) -> ProxyTestResult:
@@ -238,15 +249,18 @@ class ProxyService:
             ) as client:
                 resp = await client.get(_TEST_URL)
                 resp.raise_for_status()
-        except (httpx.HTTPError, ImportError, ValueError, OSError):
-            return await self._tcp_probe(ep)
+        except (httpx.HTTPError, ImportError, ValueError, OSError) as exc:
+            return await self._tcp_probe(ep, str(exc) or exc.__class__.__name__)
         latency = int((time.monotonic() - start) * 1000)
         return ProxyTestResult(
-            success=True, message="Proxy reachable.", latency_ms=latency
+            success=True,
+            message="Proxy reachable.",
+            latency_ms=latency,
+            reachable=True,
         )
 
-    async def _tcp_probe(self, ep: ProxyEndpoint) -> ProxyTestResult:
-        start = time.monotonic()
+    async def _tcp_probe(self, ep: ProxyEndpoint, reason: str) -> ProxyTestResult:
+        """The port's own reachability, after the proxied request failed."""
         try:
             conn = asyncio.open_connection(ep.host, ep.port)
             _, writer = await asyncio.wait_for(conn, timeout=_TCP_TIMEOUT)
@@ -256,19 +270,25 @@ class ProxyService:
             return ProxyTestResult(
                 success=False, message=f"Connection failed: {exc}", latency_ms=None
             )
-        latency = int((time.monotonic() - start) * 1000)
         return ProxyTestResult(
-            success=True, message="TCP connect succeeded.", latency_ms=latency
+            success=False,
+            message=(
+                f"{host_port(ep.host, ep.port)} accepts connections. "
+                f"The request through the proxy failed: {reason[:200]}. "
+                "Check the scheme and the credentials."
+            ),
+            latency_ms=None,
+            reachable=True,
         )
 
     async def _persist_test(
-        self, proxy: Proxy, ok: bool, message: str, latency_ms: int | None
+        self, proxy: Proxy, result: ProxyTestResult
     ) -> ProxyTestResult:
         proxy.last_test_at = utc_now()
-        proxy.last_test_ok = ok
-        proxy.last_test_message = message
+        proxy.last_test_ok = result.success
+        proxy.last_test_message = result.message
         await self.session.commit()
-        return ProxyTestResult(success=ok, message=message, latency_ms=latency_ms)
+        return result
 
     async def _lock_defaults(self) -> None:
         await self.session.execute(

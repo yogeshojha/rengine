@@ -15,10 +15,13 @@ class ColoredFormatter(logging.Formatter):
     }
 
     def format(self, record: logging.LogRecord) -> str:
-        color = self.COLORS.get(record.levelname, self.COLORS["RESET"])
-        reset = self.COLORS["RESET"]
-        record.levelname = f"{color}{record.levelname}{reset}"
-        return super().format(record)
+        plain = record.levelname
+        color = self.COLORS.get(plain, self.COLORS["RESET"])
+        record.levelname = f"{color}{plain}{self.COLORS['RESET']}"
+        try:
+            return super().format(record)
+        finally:
+            record.levelname = plain
 
 
 def setup_logging(

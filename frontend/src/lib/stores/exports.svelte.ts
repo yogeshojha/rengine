@@ -1,4 +1,4 @@
-import { SvelteSet } from 'svelte/reactivity';
+import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { exportsApi } from '$lib/api/exports';
 import { isLive } from '$lib/config/exports';
 import type { ExportCreate, ExportRead } from '$lib/types/export';
@@ -15,8 +15,12 @@ function createExportsStore() {
 	let timer: ReturnType<typeof setTimeout> | null = null;
 	let watchingSince = 0;
 	let projectId = '';
-	let onReady: ((row: ExportRead) => void) | null = null;
+	const handlers = new SvelteMap<string, (row: ExportRead) => void>();
 	const awaited = new SvelteSet<string>();
+
+	function claimHandler(id: string, handler?: (row: ExportRead) => void) {
+		if (handler) handlers.set(id, handler);
+	}
 
 	function stop() {
 		if (timer) clearTimeout(timer);
@@ -37,7 +41,11 @@ function createExportsStore() {
 				try {
 					const fresh = await exportsApi.get(projectId, row.id);
 					rows = rows.map((r) => (r.id === fresh.id ? fresh : r));
-					if (!isLive(fresh.status) && awaited.delete(fresh.id)) onReady?.(fresh);
+					if (!isLive(fresh.status) && awaited.delete(fresh.id)) {
+						const handler = handlers.get(fresh.id);
+						handlers.delete(fresh.id);
+						handler?.(fresh);
+					}
 				} catch {
 					/* a row that vanished stops being polled on the next pass */
 				}
@@ -60,11 +68,6 @@ function createExportsStore() {
 			return rows.filter((row) => isLive(row.status)).length;
 		},
 
-		/** Called when an export the user is waiting on becomes ready. */
-		setOnReady(handler: ((row: ExportRead) => void) | null) {
-			onReady = handler;
-		},
-
 		async load(project: string, scope: { scanId?: string; targetId?: string } = {}) {
 			projectId = project;
 			loading = true;
@@ -77,12 +80,17 @@ function createExportsStore() {
 			}
 		},
 
-		async create(project: string, body: ExportCreate): Promise<ExportRead | null> {
+		async create(
+			project: string,
+			body: ExportCreate,
+			onReady?: (row: ExportRead) => void
+		): Promise<ExportRead | null> {
 			projectId = project;
 			creating = true;
 			try {
 				const row = await exportsApi.create(project, body);
 				rows = [row, ...rows];
+				claimHandler(row.id, onReady);
 				awaited.add(row.id);
 				watchingSince = Date.now();
 				schedule();
@@ -92,9 +100,10 @@ function createExportsStore() {
 			}
 		},
 
-		async rerun(id: string): Promise<ExportRead | null> {
+		async rerun(id: string, onReady?: (row: ExportRead) => void): Promise<ExportRead | null> {
 			const row = await exportsApi.rerun(projectId, id);
 			rows = [row, ...rows];
+			claimHandler(row.id, onReady);
 			awaited.add(row.id);
 			watchingSince = Date.now();
 			schedule();
@@ -115,7 +124,7 @@ function createExportsStore() {
 			rows = [];
 			projectId = '';
 			awaited.clear();
-			onReady = null;
+			handlers.clear();
 		}
 	};
 }

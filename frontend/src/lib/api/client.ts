@@ -2,6 +2,24 @@ const SESSION_EXPIRED_EVENT = 'auth:session-expired';
 
 export const API_PREFIX = '/api/v1';
 
+export const REQUEST_TIMEOUT_MS = 120_000;
+export const LONG_REQUEST_TIMEOUT_MS = 300_000;
+
+const NO_RESPONSE = 'The API did not respond. Check that the api service is running.';
+
+function isTimeout(e: unknown): boolean {
+	return e instanceof DOMException && (e.name === 'TimeoutError' || e.name === 'AbortError');
+}
+
+async function timedFetch(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+	try {
+		return await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+	} catch (e) {
+		if (isTimeout(e)) throw new Error(NO_RESPONSE);
+		throw e;
+	}
+}
+
 type RefreshResult = 'ok' | 'expired' | 'error';
 
 function extractErrorMessage(detail: unknown, status: number): string {
@@ -25,22 +43,27 @@ class ApiClient {
 	private async request<T>(
 		endpoint: string,
 		options: RequestInit = {},
-		isRetry = false
+		isRetry = false,
+		timeoutMs = REQUEST_TIMEOUT_MS
 	): Promise<T> {
-		const response = await fetch(`${this.baseUrl}${endpoint}`, {
-			...options,
-			headers: {
-				'Content-Type': 'application/json',
-				...options.headers
+		const response = await timedFetch(
+			`${this.baseUrl}${endpoint}`,
+			{
+				...options,
+				headers: {
+					'Content-Type': 'application/json',
+					...options.headers
+				},
+				credentials: 'include'
 			},
-			credentials: 'include'
-		});
+			timeoutMs
+		);
 
 		if (!response.ok) {
 			if (response.status === 401 && !isRetry && !this.isAuthEndpoint(endpoint)) {
 				const result = await this.tryRefresh();
 				if (result === 'ok') {
-					return this.request<T>(endpoint, options, true);
+					return this.request<T>(endpoint, options, true, timeoutMs);
 				}
 				throw new Error(
 					result === 'expired'
@@ -78,10 +101,11 @@ class ApiClient {
 
 	private async performRefresh(): Promise<RefreshResult> {
 		try {
-			const response = await fetch(`${this.baseUrl}/auth/refresh`, {
-				method: 'POST',
-				credentials: 'include'
-			});
+			const response = await timedFetch(
+				`${this.baseUrl}/auth/refresh`,
+				{ method: 'POST', credentials: 'include' },
+				REQUEST_TIMEOUT_MS
+			);
 
 			if (response.ok) {
 				return 'ok';
@@ -104,10 +128,10 @@ class ApiClient {
 		}
 	}
 
-	get<T>(endpoint: string): Promise<T> {
+	get<T>(endpoint: string, timeoutMs = REQUEST_TIMEOUT_MS): Promise<T> {
 		const open = this.inflight.get(endpoint);
 		if (open) return open as Promise<T>;
-		const pending = this.request<T>(endpoint).finally(() => {
+		const pending = this.request<T>(endpoint, {}, false, timeoutMs).finally(() => {
 			this.inflight.delete(endpoint);
 		});
 		this.inflight.set(endpoint, pending);
@@ -115,7 +139,11 @@ class ApiClient {
 	}
 
 	async text(endpoint: string, isRetry = false): Promise<string> {
-		const response = await fetch(`${this.baseUrl}${endpoint}`, { credentials: 'include' });
+		const response = await timedFetch(
+			`${this.baseUrl}${endpoint}`,
+			{ credentials: 'include' },
+			REQUEST_TIMEOUT_MS
+		);
 		if (response.ok) return response.text();
 
 		if (response.status === 401 && !isRetry) {
@@ -133,7 +161,11 @@ class ApiClient {
 	}
 
 	async bytes(endpoint: string, isRetry = false): Promise<ArrayBuffer> {
-		const response = await fetch(`${this.baseUrl}${endpoint}`, { credentials: 'include' });
+		const response = await timedFetch(
+			`${this.baseUrl}${endpoint}`,
+			{ credentials: 'include' },
+			REQUEST_TIMEOUT_MS
+		);
 		if (response.ok) return response.arrayBuffer();
 
 		if (response.status === 401 && !isRetry) {
@@ -150,11 +182,16 @@ class ApiClient {
 		throw new Error(extractErrorMessage(errorData?.detail, response.status));
 	}
 
-	post<T>(endpoint: string, data?: unknown): Promise<T> {
-		return this.request<T>(endpoint, {
-			method: 'POST',
-			body: data !== undefined ? JSON.stringify(data) : undefined
-		});
+	post<T>(endpoint: string, data?: unknown, timeoutMs = REQUEST_TIMEOUT_MS): Promise<T> {
+		return this.request<T>(
+			endpoint,
+			{
+				method: 'POST',
+				body: data !== undefined ? JSON.stringify(data) : undefined
+			},
+			false,
+			timeoutMs
+		);
 	}
 
 	put<T>(endpoint: string, data: unknown): Promise<T> {

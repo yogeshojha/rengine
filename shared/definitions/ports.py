@@ -116,12 +116,7 @@ WELL_KNOWN: dict[int, ServiceSpec] = {
     ),
     88: _s("kerberos", "Kerberos", ServiceClass.INFRA, "Kerberos authentication"),
     110: _s("pop3", "POP3", ServiceClass.MAIL, "Mailbox retrieval, unencrypted"),
-    111: _s(
-        "rpcbind",
-        "RPC portmapper",
-        ServiceClass.INFRA,
-        "RPC portmapper",
-    ),
+    111: _s("rpcbind", "RPC portmapper", ServiceClass.INFRA),
     135: _s("msrpc", "MSRPC", ServiceClass.INFRA, "Windows RPC endpoint mapper"),
     137: _s("netbios", "NetBIOS", ServiceClass.INFRA, "NetBIOS name service"),
     139: _s(
@@ -178,10 +173,13 @@ WELL_KNOWN: dict[int, ServiceSpec] = {
         "socks",
         "SOCKS proxy",
         ServiceClass.INFRA,
-        "SOCKS proxy",
+        "Proxy relaying arbitrary TCP connections",
     ),
     1433: _s(
-        "mssql", "Microsoft SQL Server", ServiceClass.DATABASE, "Microsoft SQL Server"
+        "mssql",
+        "Microsoft SQL Server",
+        ServiceClass.DATABASE,
+        "SQL Server database engine",
     ),
     1521: _s("oracle", "Oracle DB", ServiceClass.DATABASE, "Oracle database listener"),
     1723: _s("pptp", "PPTP", ServiceClass.REMOTE, "PPTP VPN, cryptographically broken"),
@@ -213,12 +211,7 @@ WELL_KNOWN: dict[int, ServiceSpec] = {
     ),
     3306: _s("mysql", "MySQL", ServiceClass.DATABASE, "MySQL or MariaDB database"),
     3389: _s("rdp", "RDP", ServiceClass.REMOTE, "Windows remote desktop"),
-    4369: _s(
-        "epmd",
-        "Erlang port mapper",
-        ServiceClass.INFRA,
-        "Erlang port mapper",
-    ),
+    4369: _s("epmd", "Erlang port mapper", ServiceClass.INFRA),
     4444: _s(
         "metasploit",
         "Metasploit",
@@ -235,12 +228,7 @@ WELL_KNOWN: dict[int, ServiceSpec] = {
     5672: _s("amqp", "AMQP", ServiceClass.INFRA, "AMQP message broker"),
     5900: _s("vnc", "VNC", ServiceClass.REMOTE, "VNC remote desktop"),
     5901: _s("vnc", "VNC", ServiceClass.REMOTE, "VNC remote desktop, second display"),
-    5984: _s(
-        "couchdb",
-        "CouchDB",
-        ServiceClass.DATABASE,
-        "CouchDB",
-    ),
+    5984: _s("couchdb", "CouchDB", ServiceClass.DATABASE, "CouchDB HTTP API"),
     6379: _s(
         "redis", "Redis", ServiceClass.DATABASE, "Redis, no authentication by default"
     ),
@@ -254,7 +242,7 @@ WELL_KNOWN: dict[int, ServiceSpec] = {
         "cassandra",
         "Cassandra JMX",
         ServiceClass.DATABASE,
-        "Cassandra JMX",
+        "Java management interface for a Cassandra node",
     ),
     8086: _s(
         "influxdb", "InfluxDB", ServiceClass.DATABASE, "InfluxDB time-series database"
@@ -300,12 +288,7 @@ WELL_KNOWN: dict[int, ServiceSpec] = {
     15672: _s(
         "rabbitmq", "RabbitMQ", ServiceClass.WEB, "RabbitMQ management interface"
     ),
-    27017: _s(
-        "mongodb",
-        "MongoDB",
-        ServiceClass.DATABASE,
-        "MongoDB",
-    ),
+    27017: _s("mongodb", "MongoDB", ServiceClass.DATABASE),
     27018: _s(
         "mongodb", "MongoDB shard", ServiceClass.DATABASE, "MongoDB shard member"
     ),

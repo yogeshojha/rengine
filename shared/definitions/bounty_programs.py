@@ -310,18 +310,6 @@ EVENTS: tuple[EventSpec, ...] = (
 
 EVENTS_BY_KIND: dict[str, EventSpec] = {e.kind: e for e in EVENTS}
 
-ALERT_EVENTS: frozenset[str] = frozenset(
-    {
-        BountyEvent.PROGRAM_ADDED.value,
-        BountyEvent.SCOPE_ADDED.value,
-        BountyEvent.CAME_INTO_SCOPE.value,
-        BountyEvent.WENT_OUT_OF_SCOPE.value,
-        BountyEvent.SUBMISSIONS_OPENED.value,
-        BountyEvent.BOUNTIES_STARTED.value,
-    }
-)
-
-
 NOTIFIABLE_EVENTS: tuple[str, ...] = (
     BountyEvent.PROGRAM_ADDED.value,
     BountyEvent.SCOPE_ADDED.value,

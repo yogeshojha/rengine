@@ -8,22 +8,25 @@ export const ReportStatus = {
 	QUEUED: 'queued',
 	RUNNING: 'running',
 	COMPLETED: 'completed',
-	FAILED: 'failed'
+	FAILED: 'failed',
+	EXPIRED: 'expired'
 } as const;
 export type ReportStatusValue = (typeof ReportStatus)[keyof typeof ReportStatus];
 
-export const REPORT_STATUS_LABELS: Record<string, string> = {
+export const REPORT_STATUS_LABELS: Record<ReportStatusValue, string> = {
 	queued: 'Queued',
 	running: 'Generating',
 	completed: 'Ready',
-	failed: 'Failed'
+	failed: 'Failed',
+	expired: 'Expired'
 };
 
-export const REPORT_STATUS_TONE: Record<string, string> = {
+export const REPORT_STATUS_TONE: Record<ReportStatusValue, string> = {
 	queued: 'text-muted-foreground',
 	running: 'text-info',
 	completed: 'text-success',
-	failed: 'text-destructive'
+	failed: 'text-destructive',
+	expired: 'text-muted-foreground'
 };
 
 export const ReportFormat = {
@@ -53,16 +56,11 @@ export const ReportScope = {
 	TARGET: 'target'
 } as const;
 
-export const SECTION_GROUP_ORDER = [
-	'front_matter',
-	'summary',
-	'findings',
-	'surface',
-	'intelligence',
-	'appendix'
-] as const;
-
-export const TERMINAL_STATUSES = new Set<string>([ReportStatus.COMPLETED, ReportStatus.FAILED]);
+export const TERMINAL_STATUSES = new Set<string>([
+	ReportStatus.COMPLETED,
+	ReportStatus.FAILED,
+	ReportStatus.EXPIRED
+]);
 
 export function isLive(status: string): boolean {
 	return !TERMINAL_STATUSES.has(status);

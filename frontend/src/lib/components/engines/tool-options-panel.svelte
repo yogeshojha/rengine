@@ -6,7 +6,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
 	import Terminal from '@lucide/svelte/icons/terminal';
-	import type { ToolOption } from '$lib/types/scan-engine';
+	import { phaseLabel, type ToolOption } from '$lib/types/scan-engine';
 
 	interface Props {
 		open: boolean;
@@ -52,7 +52,7 @@
 				{#each phases as phase (phase)}
 					<div class="space-y-3">
 						<h4 class="text-2xs font-semibold uppercase tracking-wide text-muted-foreground">
-							{phase}
+							{phaseLabel(phase)}
 						</h4>
 						{#each tools.filter((t) => t.phase === phase) as tool (tool.name)}
 							<div class="space-y-1.5">

@@ -105,7 +105,8 @@ class StartScan(Tool):
 
 
 def _traffic_note(scan) -> str:
-    passive = getattr(scan.execution_config, "intensity", "") == Intensity.PASSIVE.value
+    config = scan.execution_config or {}
+    passive = config.get("intensity") == Intensity.PASSIVE.value
     return (
         "Passive intensity. No traffic reaches the target."
         if passive

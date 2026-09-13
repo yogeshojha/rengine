@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import uuid
-from collections.abc import Callable
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any
@@ -18,7 +17,6 @@ from shared.definitions.asset_query import (
 )
 from shared.definitions.surface import (
     SURFACE_COLUMNS,
-    SURFACE_IDENTITY,
     SURFACE_LABELS,
     SURFACE_NOUN,
     SURFACE_ORDER,
@@ -43,23 +41,14 @@ class Dimension:
     service_path: str
     needs_project: bool = False
     page_args: tuple[str, str] = ("limit", "offset")
-    order_arg: str = "order"
 
     @property
     def fields(self) -> tuple[str, ...]:
         return SURFACE_COLUMNS[self.key]
 
     @property
-    def identity(self) -> str:
-        return SURFACE_IDENTITY[self.key]
-
-    @property
     def label(self) -> str:
         return SURFACE_LABELS[self.key]
-
-    @property
-    def noun(self) -> str:
-        return SURFACE_NOUN[self.key][0]
 
     @property
     def noun_plural(self) -> str:
@@ -76,7 +65,9 @@ class Dimension:
     ) -> BaseModel:
         size_arg, offset_arg = self.page_args
         payload: dict[str, Any] = {"q": query or None, size_arg: limit}
-        payload[offset_arg] = offset if offset_arg == "offset" else max(1, offset)
+        payload[offset_arg] = (
+            offset if offset_arg == "offset" else offset // max(1, limit) + 1
+        )
         payload.update({k: v for k, v in extra.items() if v is not None})
         return self.load_filter().model_validate(payload)
 
@@ -162,7 +153,6 @@ DIMENSIONS: tuple[Dimension, ...] = (
         filter_path="shared.models.endpoint.EndpointFilter",
         service_path="app.services.endpoint.EndpointService",
         page_args=("size", "page"),
-        order_arg="direction",
     ),
 )
 
@@ -186,5 +176,3 @@ def dimension(key: str) -> Dimension:
 DIMENSION_KEYS: tuple[str, ...] = tuple(
     key for key in SURFACE_ORDER if key in {d.key for d in DIMENSIONS}
 )
-
-DimensionResolver = Callable[[str], Dimension]

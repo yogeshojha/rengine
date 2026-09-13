@@ -155,7 +155,7 @@ def registrant_key_sql(column):
     key = func.regexp_replace(
         func.regexp_replace(
             func.lower(column),
-            f"([^a-z0-9]+({suffixes}))+[^a-z0-9]*$",
+            f"((^|[^a-z0-9]+)({suffixes}))+[^a-z0-9]*$",
             "",
             "g",
         ),

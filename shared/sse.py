@@ -1,12 +1,13 @@
 import asyncio
 import json
-import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
-from datetime import UTC, datetime
 from typing import Any
 
-logger = logging.getLogger(__name__)
+from shared.logging import get_logger
+from shared.utils.datetime import utc_now
+
+logger = get_logger(__name__)
 
 
 class SSEManager:
@@ -120,7 +121,7 @@ class SSEManager:
                 queue.put_nowait(message)
                 delivered += 1
             except asyncio.QueueFull:
-                logger.warning("SSE queue full — dropping stale connection")
+                logger.warning("SSE queue full, dropping stale connection")
                 dead.add(queue)
 
         if dead:
@@ -145,7 +146,7 @@ class SSEManager:
             "channel": channel,
             "type": event_type,
             "data": data,
-            "ts": datetime.now(UTC).isoformat(),
+            "ts": utc_now().isoformat(),
         }
         json_data = json.dumps(payload, default=str)
         return f"event: message\ndata: {json_data}\n\n"

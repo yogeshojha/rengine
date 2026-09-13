@@ -1,4 +1,5 @@
-.PHONY: help up down build logs migrate migrate-create migrate-history migrate-downgrade db-stamp db-reset
+.PHONY: help up down build logs logs-api logs-worker migrate migrate-create migrate-draft migrate-history \
+        migrate-downgrade db-stamp db-reset shell-api shell-worker db-shell
 
 help:
 	@echo "reNgine 3.0 Dev Commands"
@@ -48,6 +49,10 @@ migrate:
 
 migrate-create:
 	@if [ -z "$(m)" ]; then echo "Usage: make migrate-create m='migration message'"; exit 1; fi
+	docker compose exec api uv run alembic revision -m "$(m)"
+
+migrate-draft:
+	@if [ -z "$(m)" ]; then echo "Usage: make migrate-draft m='migration message'"; exit 1; fi
 	docker compose exec api uv run alembic revision --autogenerate -m "$(m)"
 
 migrate-history:
@@ -60,8 +65,8 @@ db-stamp:
 	docker compose exec api uv run alembic stamp head
 
 db-reset:
-	@echo "WARNING: This will drop all tables and re-migrate!"
-	@read -p "Are you sure? [y/N] " confirm && [ "$$confirm" = "y" ] || exit 1
+	@echo "Every table is dropped and the migrations are re-applied."
+	@read -p "Continue? [y/N] " confirm && [ "$$confirm" = "y" ] || exit 1
 	docker compose exec api uv run alembic downgrade base
 	docker compose exec api uv run alembic upgrade head
 
@@ -73,4 +78,4 @@ shell-worker:
 	docker compose exec worker-default bash
 
 db-shell:
-	docker compose exec db psql -U rengine -d rengine
+	docker compose exec db sh -c 'psql -U "$${POSTGRES_USER:-rengine}" -d "$${POSTGRES_DB:-rengine}"'

@@ -4,15 +4,14 @@ from __future__ import annotations
 
 import re
 
+from shared.definitions.software import MAX_COMPONENTS_PER_ASSET, VersionSource
+
 MAX_NAME = 120
 MAX_VERSION = 64
 MAX_CPE = 300
-MAX_COMPONENTS = 60
-BANNER_STATED = "banner"
-BANNER_FINGERPRINT = "fingerprint"
 _SEGMENTS = 16
 _PAD = 8
-_ZERO = "0" * 8
+_ZERO = "0" * _PAD
 _ALPHA_PREFIX = "~"
 KIND_NUMERIC = "n"
 KIND_ALPHA = "a"
@@ -44,6 +43,12 @@ DISTRO_MARKERS: frozenset[str] = frozenset(
 )
 
 
+def _numeric_segment(run: str) -> str:
+    """A run wider than the pad clamps rather than truncating, which would invert the order."""
+    trimmed = run.lstrip("0") or "0"
+    return trimmed.zfill(_PAD) if len(trimmed) <= _PAD else "9" * _PAD
+
+
 def version_key(version: str | None) -> str | None:
     """Zero-padded so a string comparison in SQL orders versions correctly."""
     if not version:
@@ -52,7 +57,7 @@ def version_key(version: str | None) -> str | None:
     for token in _SPLIT.split(version.strip()):
         for run in _RUNS.findall(token):
             if run.isdigit():
-                parts.append(run[-_PAD:].zfill(_PAD))
+                parts.append(_numeric_segment(run))
             else:
                 parts.append(f"{_ALPHA_PREFIX}{run.lower()[:_PAD]}")
             if len(parts) >= _SEGMENTS:
@@ -137,8 +142,14 @@ def components_of(tech: list[str], webserver: str | None) -> list[dict]:
         if not version or (name, version) in seen:
             continue
         seen.add((name, version))
-        out.append({"name": name, "version": version, "source": BANNER_FINGERPRINT})
-        if len(out) >= MAX_COMPONENTS:
+        out.append(
+            {
+                "name": name,
+                "version": version,
+                "source": VersionSource.FINGERPRINT.value,
+            }
+        )
+        if len(out) >= MAX_COMPONENTS_PER_ASSET:
             return out
     product, version, distro = parse_banner(webserver)
     if product and version and (product, version) not in seen:
@@ -146,7 +157,7 @@ def components_of(tech: list[str], webserver: str | None) -> list[dict]:
             {
                 "name": product,
                 "version": version,
-                "source": BANNER_STATED,
+                "source": VersionSource.BANNER.value,
                 "distro": distro,
             }
         )

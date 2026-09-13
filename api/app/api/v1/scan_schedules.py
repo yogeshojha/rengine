@@ -115,12 +115,7 @@ async def list_schedule_scans(
         query,
         transformer=lambda items: [scan_service.to_read(s) for s in items],
     )
-    if page.items:
-        scan_ids = [i.id for i in page.items]
-        target_ids = list({i.target_id for i in page.items})
-        new_counts = await scan_service.new_subdomain_counts(scan_ids, target_ids)
-        for i in page.items:
-            i.new_subdomains = new_counts.get(i.id, 0)
+    await scan_service.attach_deltas(page.items)
     return page
 
 

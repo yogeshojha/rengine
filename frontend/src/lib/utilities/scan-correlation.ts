@@ -64,15 +64,6 @@ export function httpStatusReason(code: number | null | undefined): string {
 	return STATUS_REASON[code] ?? CLASS_LABEL[httpStatusClass(code)];
 }
 
-export const SENSITIVE_PORTS = new Set([
-	21, 22, 23, 25, 53, 135, 139, 445, 1433, 1521, 2049, 2375, 3306, 3389, 5432, 5601, 5900, 6379,
-	8086, 9200, 11211, 15672, 27017
-]);
-
-export function isSensitivePort(n: number): boolean {
-	return SENSITIVE_PORTS.has(n);
-}
-
 export function formatBytes(n: number | null | undefined): string {
 	if (n == null) return '—';
 	if (n < 1024) return `${n} B`;

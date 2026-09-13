@@ -15,6 +15,7 @@ from shared.definitions.endpoints import (
     MAX_URL_LENGTH,
     EndpointClass,
     EndpointSource,
+    FolderGlyph,
 )
 from shared.definitions.vulnerabilities import CoverageStatus
 from shared.models.asset_query import MatchEvidence, QueryError
@@ -288,7 +289,7 @@ class FolderChip(BaseModel):
     name: str
     path: str
     count: int = 0
-    glyph: str = "folder"
+    glyph: str = FolderGlyph.FOLDER.value
     archive_only: bool = False
     query: str
 
@@ -327,7 +328,7 @@ class TreeNode(BaseModel):
     gone_count: int = 0
     anomaly: str | None = None
     archive_only: bool = False
-    glyph: str = "folder"
+    glyph: str = FolderGlyph.FOLDER.value
     sample_url: str | None = None
     leaf: TreeLeaf | None = None
     query: str

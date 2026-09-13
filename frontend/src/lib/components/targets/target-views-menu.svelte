@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
+	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import ConfirmDialog from '@/components/confirm-dialog.svelte';
@@ -24,7 +25,7 @@
 		query: string;
 	}
 
-	const KEY = 'targets:views';
+	const KEY = STORAGE_KEYS.targetViews;
 
 	let views = $state<SavedView[]>(load());
 	let saveOpen = $state(false);

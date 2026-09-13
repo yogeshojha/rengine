@@ -9,12 +9,8 @@
 	import ServiceIcon from './services/service-icon.svelte';
 	import { screenshotUrl } from '$lib/utilities/media';
 	import { claimHover, releaseHover } from '$lib/utilities/hover-exclusive';
-	import {
-		httpStatusClass,
-		httpStatusReason,
-		isSensitivePort,
-		STATUS_DOT
-	} from '$lib/utilities/scan-correlation';
+	import { httpStatusClass, httpStatusReason, STATUS_DOT } from '$lib/utilities/scan-correlation';
+	import { isSensitivePort } from '$lib/config/service-classes';
 	import { serviceLabel, type ServiceRead } from '$lib/utilities/services';
 	import {
 		PORT_SOURCE_HELP,
@@ -71,6 +67,7 @@
 	$effect(() => {
 		if (open) claimHover(closeSelf);
 		else releaseHover(closeSelf);
+		return () => releaseHover(closeSelf);
 	});
 
 	$effect(() => {

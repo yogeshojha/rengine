@@ -1,3 +1,5 @@
+import type { ReportStatusValue } from '$lib/config/reports';
+
 export interface SectionEntry {
 	section: string;
 	enabled: boolean;
@@ -157,7 +159,7 @@ export interface Report {
 	target_id: string | null;
 	subject: string;
 	title: string;
-	status: string;
+	status: ReportStatusValue;
 	progress: number;
 	step: string;
 	error: string | null;

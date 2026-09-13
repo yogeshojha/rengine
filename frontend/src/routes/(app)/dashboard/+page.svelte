@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { routeLabels } from '$lib/config/routes';
 	import { untrack } from 'svelte';
 	import FolderOpen from '@lucide/svelte/icons/folder-open';
 	import Plus from '@lucide/svelte/icons/plus';
@@ -32,7 +33,12 @@
 	import MovementHeatmap from '$lib/components/dashboard/movement-heatmap.svelte';
 	import SurfaceTreemap from '$lib/components/dashboard/surface-treemap.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
-	import { DASHBOARD_WINDOWS, type DashboardWindow, type QueueFilter } from '$lib/types/dashboard';
+	import {
+		DASHBOARD_SLICE_LABELS,
+		DASHBOARD_WINDOWS,
+		type DashboardWindow,
+		type QueueFilter
+	} from '$lib/types/dashboard';
 
 	const TICK_MS = 1000;
 
@@ -63,6 +69,9 @@
 	let hasGeo = $derived((dashboardStore.ipFacets?.country.length ?? 0) > 0);
 	let hasExposures = $derived((dashboardStore.exposures?.total ?? 0) > 0);
 	let hasMovement = $derived((overview?.changes.length ?? 0) > 0);
+	let notLoaded = $derived(
+		dashboardStore.failedSlices.map((slice) => DASHBOARD_SLICE_LABELS[slice])
+	);
 	let hasTreemap = $derived(
 		!!overview && overview.targets.some((t) => t.surface.some((s) => (s.value ?? 0) > 0))
 	);
@@ -103,6 +112,8 @@
 		scheduleOpen = true;
 	}
 </script>
+
+<svelte:head><title>{routeLabels.dashboard} · reNgine</title></svelte:head>
 
 <div class="flex flex-col gap-4">
 	<div class="flex flex-wrap items-start justify-between gap-3">
@@ -191,6 +202,25 @@
 		</Card.Root>
 	{:else}
 		<StatStrip {overview} window={dashboardStore.window} />
+
+		{#if notLoaded.length}
+			<div
+				class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-dashed px-4 py-2.5 text-sm text-muted-foreground"
+			>
+				<TriangleAlert class="size-4 shrink-0 text-warning" strokeWidth={1.5} />
+				<span>{notLoaded.join(', ')} did not load.</span>
+				<Button
+					variant="outline"
+					size="sm"
+					class="ml-auto"
+					onclick={() => dashboardStore.refresh()}
+					disabled={dashboardStore.loading}
+				>
+					<RefreshCw class="size-3.5 {dashboardStore.loading ? 'animate-spin' : ''}" />
+					Retry
+				</Button>
+			</div>
+		{/if}
 
 		{#if overview}
 			<div class="grid grid-cols-12 gap-4">

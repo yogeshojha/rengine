@@ -20,7 +20,7 @@
 
 	import QueryBar from './query-bar/query-bar.svelte';
 	import ListHeader from './table/list-header.svelte';
-	import { withTarget } from './table/columns';
+	import { readPref, rowPadding, selectAllState, withTarget, writePref } from './table/columns';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import SelectionBar from './table/selection-bar.svelte';
 	import { RowSelection } from './table/selection.svelte';
@@ -43,7 +43,7 @@
 	import { seedKindFor, selectionLabel } from '$lib/utilities/rechecks';
 	import { rechecks } from '$lib/stores/rechecks.svelte';
 	import { startRescan } from '$lib/utilities/rechecks';
-	import { SurfaceDimension } from '$lib/config/surface';
+	import { SURFACE, SurfaceDimension, type ResultTab } from '$lib/config/surface';
 	import {
 		compileServiceQuery,
 		emptyServiceQuery,
@@ -67,7 +67,7 @@
 		projectId: string;
 		active?: boolean;
 		revision?: number;
-		onTab?: (tab: string, filter?: string) => void;
+		onTab?: (tab: ResultTab, filter?: string) => void;
 		onScanTotal?: (total: number) => void;
 		query?: ServiceQuery;
 	}
@@ -87,26 +87,14 @@
 		})
 	}: Props = $props();
 
+	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
+	const IP = SURFACE[SurfaceDimension.IPS];
+
+	const SVC = SURFACE[SurfaceDimension.SERVICES];
+
 	let ready = $derived(Boolean(projectId) && (projectWide || Boolean(scanId)));
 
 	const DEFAULT_SORT = { key: 'exposure', dir: -1 as const };
-	const ROW_PAD: Record<string, string> = { compact: 'py-2', cozy: 'py-3' };
-
-	function readPref<T>(key: string, fallback: T): T {
-		try {
-			const raw = localStorage.getItem(key);
-			return raw ? (JSON.parse(raw) as T) : fallback;
-		} catch {
-			return fallback;
-		}
-	}
-	function writePref(key: string, value: unknown) {
-		try {
-			localStorage.setItem(key, JSON.stringify(value));
-		} catch {
-			// ignore
-		}
-	}
 
 	const initial = appPage.url.searchParams;
 	const initialSort = initial.get('svc_sort')?.split(':') ?? [];
@@ -134,6 +122,7 @@
 	let leadSet = $state<QueryLeads | null>(null);
 	let groupBy = $state<string>(initial.get('svc_group') ?? '');
 	let groupSet = $state<QueryGroups | null>(null);
+	let groupFailed = $state(false);
 	let groupLoading = $state(false);
 	let groupReq = 0;
 
@@ -160,16 +149,10 @@
 	);
 	let checkedCount = $derived(selection.countOn(items));
 	let pickedCount = $derived(selection.size);
-	let selectAllChecked = $derived<boolean | 'indeterminate'>(
-		items.length > 0 && checkedCount === items.length
-			? true
-			: checkedCount > 0
-				? 'indeterminate'
-				: false
-	);
+	let selectAllChecked = $derived(selectAllState(checkedCount, items.length));
 	let filtered = $derived(serviceActiveFacetCount(query) > 0 || !!query.search);
 	let chips = $derived(serviceQueryChips(query, facets));
-	let rowPad = $derived(ROW_PAD[density] ?? ROW_PAD.cozy);
+	let rowPad = $derived(rowPadding(density));
 	let term = $derived(query.search.trim().includes(':') ? '' : query.search.trim());
 	let classTab = $derived(
 		query.classes.length === 0 ? 'all' : query.classes.length === 1 ? query.classes[0] : ''
@@ -277,9 +260,15 @@
 		groupLoading = true;
 		try {
 			const res = await servicesApi.groups(projectId, scanId, groupBy, leadFilterWithQuery);
-			if (my === groupReq) groupSet = res;
+			if (my === groupReq) {
+				groupSet = res;
+				groupFailed = false;
+			}
 		} catch {
-			if (my === groupReq) groupSet = null;
+			if (my === groupReq) {
+				groupSet = null;
+				groupFailed = true;
+			}
 		} finally {
 			if (my === groupReq) groupLoading = false;
 		}
@@ -290,10 +279,9 @@
 		try {
 			facets = await servicesApi.facets(projectId, scanId);
 			onScanTotal?.(facets['class'].reduce((n, f) => n + f.count, 0));
-		} catch {
-			facets = EMPTY_SERVICE_FACETS;
-		} finally {
 			facetsLoaded = true;
+		} catch {
+			if (!facetsLoaded) facets = EMPTY_SERVICE_FACETS;
 		}
 	}
 
@@ -432,12 +420,12 @@
 	function showHosts(filter: string) {
 		drawerOpen = false;
 		syncUrl();
-		onTab?.('web-assets', filter);
+		onTab?.(WEB.tab, filter);
 	}
 	function showAddress(filter: string) {
 		drawerOpen = false;
 		syncUrl();
-		onTab?.('ips', filter);
+		onTab?.(IP.tab, filter);
 	}
 	function scrollCursor() {
 		document
@@ -619,8 +607,8 @@
 	{#if !groupBy}
 		<SelectionBar
 			count={pickedCount}
-			noun="service"
-			nounPlural="services"
+			noun={SVC.noun}
+			nounPlural={SVC.nounPlural}
 			{total}
 			{totalCapped}
 			maxAssets={rechecks.schema?.max_assets ?? 0}
@@ -658,6 +646,8 @@
 	{:else if groupBy}
 		<GroupList
 			set={groupSet}
+			failed={groupFailed}
+			onRetry={loadGroups}
 			dimensions={serviceQuerySchema.schema.group_dimensions}
 			noun={serviceQuerySchema.schema.noun}
 			nounPlural={serviceQuerySchema.schema.noun_plural}
@@ -736,8 +726,8 @@
 			capped={totalCapped}
 			page={pageIndex}
 			{pageSize}
-			noun="service"
-			plural="services"
+			noun={SVC.noun}
+			plural={SVC.nounPlural}
 			selectedCount={checkedCount}
 			onClearSelection={() => selection.clear()}
 			onPage={(p) => (pageIndex = p)}

@@ -125,7 +125,7 @@
 		margin-bottom: 8px;
 	}
 	.phase-head h3 {
-		font-size: 10.5px;
+		font-size: 11px;
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.06em;
@@ -208,7 +208,7 @@
 		color: var(--muted-foreground);
 	}
 	.sub {
-		font-size: 10.5px;
+		font-size: 11px;
 		line-height: 1.35;
 		color: var(--muted-foreground);
 		font-variant-numeric: tabular-nums;

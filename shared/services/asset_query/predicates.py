@@ -304,7 +304,7 @@ def sensitive(scope: ScopeLike):
     return port_match(Port.number.in_(SENSITIVE_PORTS), scope)
 
 
-def issues(now: datetime):
+def issues(now: datetime, scope: ScopeLike):
     return or_(
         cert_state("expired", now),
         cert_state("expiring", now),
@@ -315,7 +315,7 @@ def issues(now: datetime):
             Subdomain.waf.is_(None),
             Subdomain.is_cdn.is_(False),
         ),
-        sensitive(),
+        sensitive(scope),
     )
 
 

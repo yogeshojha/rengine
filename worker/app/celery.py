@@ -84,7 +84,6 @@ celery_app.conf.task_routes = {
     "app.tasks.scan.reap_stalled": {"queue": "default"},
     "app.tasks.scan.*": {"queue": SCANS_QUEUE},
     "app.tasks.whois.*": {"queue": "default"},
-    "app.tasks.debug.*": {"queue": "default"},
     "app.tasks.ripestat.*": {"queue": "default"},
     "app.tasks.dns.*": {"queue": "default"},
     "app.tasks.schedule.*": {"queue": "default"},
@@ -105,7 +104,6 @@ celery_app.conf.task_routes = {
 
 celery_app.autodiscover_tasks(
     [
-        "app.tasks.debug",
         "app.tasks.whois",
         "app.tasks.ripestat",
         "app.tasks.dns",

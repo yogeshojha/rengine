@@ -11,13 +11,13 @@
 	interface Props {
 		geography: InsightTally[];
 		total: number;
-		live: boolean;
+		unfinished: boolean;
 		ready: boolean;
 		class?: string;
 		onPick: (code: string) => void;
 	}
 
-	let { geography, total, live, ready, class: className, onPick }: Props = $props();
+	let { geography, total, unfinished, ready, class: className, onPick }: Props = $props();
 
 	const MAX_CHIPS = 8;
 
@@ -118,7 +118,7 @@
 			<Skeleton class="h-4 w-2/3" />
 		{:else}
 			<p class="text-center text-xs text-muted-foreground">
-				{live ? 'Locations pending IP enrichment' : 'No location data'}
+				{unfinished ? 'Locations pending IP enrichment' : 'No location data'}
 			</p>
 		{/if}
 	</div>

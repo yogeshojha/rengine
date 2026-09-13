@@ -7,10 +7,16 @@ from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
 from shared.definitions.evidence import Evidence
-from shared.definitions.software import Confidence, VersionSource
+from shared.definitions.software import (
+    MAX_PRODUCT,
+    MAX_VENDOR,
+    Confidence,
+    VersionSource,
+)
 from shared.definitions.vulnerabilities import Severity
 from shared.models.asset_query import QueryError
 from shared.utils.datetime import utc_now
+from shared.utils.software import MAX_CPE, MAX_NAME, MAX_VERSION
 
 
 def _json_list() -> Field:
@@ -40,8 +46,8 @@ class NvdCpeMatch(SQLModel, table=True):
         default=None, sa_column=Column(BigInteger, primary_key=True, autoincrement=True)
     )
     cve: str = Field(max_length=30, index=True)
-    vendor: str = Field(max_length=200)
-    product: str = Field(max_length=200, index=True)
+    vendor: str = Field(max_length=MAX_VENDOR)
+    product: str = Field(max_length=MAX_PRODUCT, index=True)
     version_kind: str = Field(max_length=1)
     exact_key: str | None = Field(default=None, max_length=160)
     start_key: str | None = Field(default=None, max_length=160)
@@ -70,11 +76,11 @@ class SoftwareCve(SQLModel, table=True):
     cve: str = Field(max_length=30, index=True)
 
     # what it runs
-    name: str = Field(max_length=120, index=True)
-    version: str = Field(max_length=64)
-    vendor: str = Field(max_length=200)
-    product: str = Field(max_length=200, index=True)
-    cpe: str = Field(max_length=300)
+    name: str = Field(max_length=MAX_NAME, index=True)
+    version: str = Field(max_length=MAX_VERSION)
+    vendor: str = Field(max_length=MAX_VENDOR)
+    product: str = Field(max_length=MAX_PRODUCT, index=True)
+    cpe: str = Field(max_length=MAX_CPE)
     version_source: str = Field(default=VersionSource.BANNER.value, max_length=16)
 
     # what it is worth

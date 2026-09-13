@@ -10,7 +10,7 @@
 	let { delta, class: className }: Props = $props();
 
 	const SEGMENTS = [
-		{ key: 'appeared', fill: 'bg-primary' },
+		{ key: 'appeared', fill: 'bg-series' },
 		{ key: 'changed', fill: 'bg-info' },
 		{ key: 'disappeared', fill: 'bg-muted-foreground/45' },
 		{ key: 'unconfirmed', fill: 'bg-warning/50' },

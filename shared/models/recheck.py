@@ -6,6 +6,7 @@ from sqlalchemy import Column
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
+from shared.definitions.compare import Tone
 from shared.utils.datetime import utc_now
 
 
@@ -34,7 +35,7 @@ class RecheckChange(BaseModel):
     label: str
     before: str | None = None
     after: str | None = None
-    tone: str = "neutral"
+    tone: str = Tone.NEUTRAL.value
 
 
 class RecheckRead(BaseModel):

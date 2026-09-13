@@ -7,6 +7,7 @@ from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
 from shared.definitions.threat_intel import FeedStatus
+from shared.enums.api_key import APIProvider
 from shared.utils.datetime import utc_now
 
 
@@ -44,7 +45,7 @@ class CveIntel(SQLModel, table=True):
     __tablename__ = "cve_intel"
 
     cve: str = Field(max_length=30, primary_key=True)
-    provider: str = Field(default="vulnx", max_length=32)
+    provider: str = Field(default=APIProvider.VULNX.value, max_length=32)
     severity: str | None = Field(default=None, max_length=16)
     cvss_score: float | None = Field(default=None)
     description: str | None = Field(default=None, sa_column=Column(Text))
@@ -196,13 +197,6 @@ class SyncResult(BaseModel):
     queued: bool
     feeds: list[str] = []
     detail: str | None = None
-
-
-class RerankSummary(BaseModel):
-    scanned: int = 0
-    changed: int = 0
-    became_kev: int = 0
-    epss_moved: int = 0
 
 
 class PocRef(BaseModel):

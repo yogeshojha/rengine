@@ -63,23 +63,6 @@ class RDAPProvider:
         except BootstrapError:
             self.bootstrap()
 
-    def save_bootstrap_data(self) -> str | None:
-        if not self.is_bootstrapped:
-            return None
-        try:
-            return whoisit.save_bootstrap_data()
-        except BootstrapError:
-            return None
-
-    def load_bootstrap_data(self, data: str) -> None:
-        try:
-            whoisit.load_bootstrap_data(data, overrides=True)
-            self._bootstrap_data = data
-            logger.debug("RDAP bootstrap data loaded from external source")
-        except BootstrapError as e:
-            msg = f"Failed to load bootstrap data: {e}"
-            raise RDAPProviderError(msg) from e
-
     def lookup_domain(self, domain: str) -> dict[str, Any]:
         """Look up WHOIS data for a domain."""
         self.ensure_bootstrapped()

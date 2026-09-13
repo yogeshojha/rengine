@@ -4,7 +4,7 @@ import json
 
 from sqlalchemy import Text, TypeDecorator
 
-from shared.utils.crypto import decrypt_stored, encrypt_secret
+from shared.utils.crypto import SecretDecryptionError, decrypt_stored, encrypt_secret
 
 
 class EncryptedJSON(TypeDecorator):
@@ -24,5 +24,9 @@ class EncryptedJSON(TypeDecorator):
         plain = decrypt_stored(value, label="A stored configuration value")
         try:
             return json.loads(plain)
-        except (TypeError, ValueError):
-            return None
+        except (TypeError, ValueError) as exc:
+            msg = (
+                "A stored configuration value could not be read. "
+                "Save the setting again."
+            )
+            raise SecretDecryptionError(msg) from exc

@@ -136,10 +136,9 @@ class SessionCheckStage(Stage):
 
     def _result(self, verdict: str, detail: str, url: str | None = None) -> StageResult:
         counts = {"checked": 1 if url else 0}
-        if verdict == Verdict.LIVE:
-            self.emit_progress(detail)
-            return StageResult(counts=counts)
         self.emit_progress(detail)
+        if verdict == Verdict.LIVE:
+            return StageResult(counts=counts)
         return StageResult(counts=counts, warnings=[detail], partial=True)
 
 

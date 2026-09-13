@@ -91,7 +91,7 @@
 					<EmptyState
 						icon={FileDown}
 						title="No exports yet"
-						description="An export keeps the filter it was run with, so it can be run again later."
+						description="An export keeps the filter it was run with."
 					/>
 				{:else}
 					{#each exportsStore.rows as row (row.id)}

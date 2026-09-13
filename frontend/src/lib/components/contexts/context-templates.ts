@@ -24,7 +24,7 @@ export const CONTEXT_TEMPLATES: readonly ContextTemplate[] = [
 	{
 		key: 'scoped',
 		title: 'Program scope',
-		description: 'Excludes out-of-scope subdomains, paths and IP ranges.',
+		description: 'Starts at the scope section with no exclusions set.',
 		focus: 'scope',
 		patch: {}
 	},

@@ -65,7 +65,7 @@ def apply_filter(query, f: SubdomainFilter, now: datetime, scope: ScopeLike):
     if f.new:
         query = query.where(preds.is_new(scope))
     if f.issues:
-        query = query.where(preds.issues(now))
+        query = query.where(preds.issues(now, scope))
     return query
 
 
@@ -80,7 +80,9 @@ def order(query, f: SubdomainFilter):
         "ip": cast(Subdomain.resolved_ips, JSONB).op("->>")(0),
     }.get(f.sort, Subdomain.name)
     primary = col.desc() if f.order == "desc" else col.asc()
-    return query.order_by(primary.nulls_last(), Subdomain.name.asc())
+    return query.order_by(
+        primary.nulls_last(), Subdomain.name.asc(), Subdomain.id.asc()
+    )
 
 
 def scoped(
@@ -90,7 +92,7 @@ def scoped(
     now: datetime,
     columns=None,
 ):
-    """The one definition of the filtered host set. Was inlined four times."""
+    """The one definition of the filtered host set."""
     base = select(Subdomain) if columns is None else select(*columns)
     base = base.where(
         Subdomain.project_id == project_id, scope.match(Subdomain.scan_id)

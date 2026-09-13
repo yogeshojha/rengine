@@ -91,6 +91,7 @@ def order(query, f: VulnerabilityFilter, scope: QueryScope):
             Vulnerability.cvss_score.desc().nulls_last(),
             Vulnerability.template_id.asc(),
             Vulnerability.matched_at.asc(),
+            Vulnerability.id.asc(),
         )
     column = {
         "severity": severity_rank(),
@@ -108,6 +109,7 @@ def order(query, f: VulnerabilityFilter, scope: QueryScope):
         primary.nulls_last(),
         Vulnerability.template_id.asc(),
         Vulnerability.matched_at.asc(),
+        Vulnerability.id.asc(),
     )
 
 

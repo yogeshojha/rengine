@@ -76,6 +76,3 @@ class ExportScope(StrEnum):
     SCAN = "scan"
     TARGET = "target"
     PROJECT = "project"
-
-
-EXPORT_SCOPES: tuple[str, ...] = tuple(s.value for s in ExportScope)

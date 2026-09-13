@@ -4,7 +4,7 @@ import uuid
 
 import pytest
 
-from app.services.cross_links import _TOKEN_OP, Carrier
+from app.services.cross_links import Carrier
 from shared.definitions.asset_query import HOST_QUERY
 from shared.definitions.correlation import (
     CORRELATION_KIND_LABELS,
@@ -42,11 +42,15 @@ def test_every_kind_can_be_drawn_and_searched(kind: str):
     assert kind in CORRELATION_KIND_LABELS, "the chip has no label for it"
     assert kind in _DIMENSIONS, "a link could not carry a drill-down token"
     assert HOST_QUERY.by_name.get(kind) is not None, "the token would not compile"
-    assert _DIMENSIONS[kind][2] == _TOKEN_OP.get(kind, "="), "the token uses another op"
+    assert _DIMENSIONS[kind][2] == "=", "the token uses another op"
 
 
 def test_jarm_is_not_a_cross_link():
     assert CorrelationKind.JARM.value not in CROSS_LINK_ORDER
+
+
+def test_a_shared_address_is_not_a_cross_link():
+    assert CorrelationKind.IP.value not in CROSS_LINK_ORDER
 
 
 @pytest.mark.parametrize(("title", "status"), MEASURED_GENERIC)

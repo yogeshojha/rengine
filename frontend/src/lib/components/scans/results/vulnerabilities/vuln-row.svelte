@@ -30,7 +30,7 @@
 	import { exactToken, filterToken } from '$lib/utilities/scan-insights';
 	import { epssPercent, locationLabel, originLabel } from '$lib/utilities/vulns';
 	import type { VulnerabilityRead } from '$lib/utilities/vulns';
-	import { BAND_FILL, bandFor } from '$lib/config/threat-intel';
+	import { BAND_FILL, bandFor, ExploitSignal } from '$lib/config/threat-intel';
 	import { Capability } from '$lib/config/capabilities';
 	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
 	import {
@@ -42,7 +42,14 @@
 		VULN_STATE_LABELS,
 		VulnState
 	} from '$lib/config/vulnerabilities';
-	import { ACTIONS_BODY, ACTIONS_PIN, pinTone, rowTone, type TableColumn } from '../table/columns';
+	import {
+		ACTIONS_BODY,
+		ACTIONS_PIN,
+		columnCell,
+		pinTone,
+		rowTone,
+		type TableColumn
+	} from '../table/columns';
 	import { VULN_LEAD_COLUMNS } from './columns';
 
 	interface Props {
@@ -87,7 +94,13 @@
 	let ProtocolIcon = $derived(PROTOCOL_ICONS[v.protocol] ?? Globe);
 	let reviewed = $derived(v.state !== VulnState.OPEN);
 	let likely = $derived((v.epss_score ?? 0) >= EPSS_HIGH);
-	const ROW_SIGNALS = ['ransom_path', 'fresh_exploit', 'ransomware', 'overdue', 'untestable'];
+	const ROW_SIGNALS: string[] = [
+		ExploitSignal.RANSOM_PATH,
+		ExploitSignal.FRESH_EXPLOIT,
+		ExploitSignal.RANSOMWARE,
+		ExploitSignal.OVERDUE,
+		ExploitSignal.UNTESTABLE
+	];
 	const MAX_ROW_SIGNALS = 2;
 	let rowSignals = $derived(
 		(v.intel_kinds ?? []).filter((k) => ROW_SIGNALS.includes(k)).slice(0, MAX_ROW_SIGNALS)
@@ -278,12 +291,7 @@
 	</div>
 
 	{#each columns as col (col.key)}
-		<div
-			class="hidden sm:flex {col.grow ? 'min-w-0 flex-1' : 'shrink-0'} {col.width} {col.align ===
-			'right'
-				? 'justify-end'
-				: ''}"
-		>
+		<div class={columnCell(col)}>
 			{#if col.key === 'target'}
 				<div class="flex h-5 min-w-0 items-center">
 					<TargetCell value={v.target_value} {onFilter} />

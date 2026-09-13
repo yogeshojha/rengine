@@ -7,10 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.api.scope import IpScope
 from app.core.database import get_session
-from app.services.asset_query import build_schema
 from app.services.ip_address import IpAddressService
-from shared.definitions.asset_query import IP_QUERY
-from shared.models.asset_query import QueryGroups, QueryLeads, QuerySchema
+from shared.models.asset_query import QueryGroups, QueryLeads
 from shared.models.ip_address import IpAddressRead, IpAddressSummary
 from shared.models.scan_correlation import IpFacets, IpGroupFilter, IpGroupPage
 from shared.services.asset_query import lead_cache
@@ -46,11 +44,6 @@ async def list_ips(
         limit=limit,
         offset=offset,
     )
-
-
-@router.get("/search/schema", response_model=QuerySchema)
-async def ip_search_schema(_current_user: CurrentUser) -> QuerySchema:
-    return build_schema(IP_QUERY)
 
 
 @router.post("/search", response_model=IpGroupPage)

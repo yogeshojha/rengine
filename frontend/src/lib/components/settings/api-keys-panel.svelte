@@ -19,9 +19,10 @@
 	import { SvelteMap } from 'svelte/reactivity';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import EyeIcon from '@lucide/svelte/icons/eye';
+	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
-	import * as Empty from '$lib/components/ui/empty/index.js';
+	import EmptyState from '$lib/components/empty-state.svelte';
 
 	let providers = $state<ProviderInfo[]>([]);
 	let configuredKeys = new SvelteMap<string, APIKeyRead>();
@@ -266,22 +267,17 @@
 			{/each}
 		</div>
 	{:else if loadError}
-		<Empty.Root class="min-h-[200px] gap-0 border border-border bg-muted/20 p-8">
-			<Empty.Header class="gap-0">
-				<Empty.Media class="mb-3">
-					<TriangleAlertIcon class="size-6 text-muted-foreground" />
-				</Empty.Media>
-				<Empty.Title class="text-sm font-medium text-foreground">API keys not loaded</Empty.Title>
-				<Empty.Description class="mt-1 text-xs text-muted-foreground">{loadError}</Empty.Description
-				>
-			</Empty.Header>
-			<Empty.Content class="mt-4">
-				<Button variant="outline" size="sm" onclick={fetchData}>
-					<RefreshCwIcon class="size-3.5 mr-1.5" />
-					Retry
-				</Button>
-			</Empty.Content>
-		</Empty.Root>
+		<EmptyState
+			compact
+			icon={TriangleAlertIcon}
+			title="API keys not loaded"
+			description={loadError}
+		>
+			<Button variant="outline" size="sm" onclick={fetchData}>
+				<RefreshCwIcon class="mr-1.5 size-3.5" />
+				Retry
+			</Button>
+		</EmptyState>
 	{:else}
 		<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
 			{#each providers as provider (provider.provider)}
@@ -360,9 +356,15 @@
 								variant="ghost"
 								size="icon"
 								class="absolute right-1.5 top-1/2 size-7 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+								aria-label={addShowKey ? 'Hide key' : 'Show key'}
+								aria-pressed={addShowKey}
 								onclick={() => (addShowKey = !addShowKey)}
 							>
-								<EyeIcon class="size-4" />
+								{#if addShowKey}
+									<EyeOffIcon class="size-4" />
+								{:else}
+									<EyeIcon class="size-4" />
+								{/if}
 							</Button>
 						</div>
 					{/snippet}

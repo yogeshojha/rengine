@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from collections import Counter
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import cast, func, select
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.models.http_asset import (
@@ -103,6 +103,22 @@ class HttpAssetService:
         asset = result.scalar_one_or_none()
         return self._to_detail(asset) if asset else None
 
+    def _filters(
+        self,
+        project_id: UUID,
+        scan_id: UUID | None,
+        target_id: UUID | None,
+        search: str | None,
+    ) -> list:
+        conditions = [HttpAsset.project_id == project_id]
+        if scan_id is not None:
+            conditions.append(HttpAsset.scan_id == scan_id)
+        if target_id is not None:
+            conditions.append(HttpAsset.target_id == target_id)
+        if search:
+            conditions.append(HttpAsset.url.ilike(f"%{search}%"))
+        return conditions
+
     def _base_query(
         self,
         project_id: UUID,
@@ -110,14 +126,9 @@ class HttpAssetService:
         target_id: UUID | None,
         search: str | None,
     ):
-        query = select(HttpAsset).where(HttpAsset.project_id == project_id)
-        if scan_id is not None:
-            query = query.where(HttpAsset.scan_id == scan_id)
-        if target_id is not None:
-            query = query.where(HttpAsset.target_id == target_id)
-        if search:
-            query = query.where(HttpAsset.url.ilike(f"%{search}%"))
-        return query
+        return select(HttpAsset).where(
+            *self._filters(project_id, scan_id, target_id, search)
+        )
 
     async def list(
         self,
@@ -141,34 +152,36 @@ class HttpAssetService:
         scan_id: UUID | None = None,
         target_id: UUID | None = None,
     ) -> HttpAssetSummary:
-        query = self._base_query(project_id, scan_id, target_id, None)
-        result = await self.session.execute(query)
-        rows = result.scalars().all()
-        by_status: Counter = Counter()
-        by_tech: Counter = Counter()
-        cdn = 0
-        for row in rows:
-            if row.status_code is not None:
-                by_status[str(row.status_code)] += 1
-            if row.is_cdn:
-                cdn += 1
-            for tech in row.tech or []:
-                by_tech[tech] += 1
+        where = self._filters(project_id, scan_id, target_id, None)
+        totals = (
+            await self.session.execute(
+                select(
+                    func.count(),
+                    func.count().filter(HttpAsset.is_cdn.is_(True)),
+                ).where(*where)
+            )
+        ).one()
+        status_rows = (
+            await self.session.execute(
+                select(HttpAsset.status_code, func.count())
+                .where(*where, HttpAsset.status_code.isnot(None))
+                .group_by(HttpAsset.status_code)
+            )
+        ).all()
+        tech = func.jsonb_array_elements_text(
+            cast(HttpAsset.tech, JSONB)
+        ).column_valued("v")
+        tech_rows = (
+            await self.session.execute(
+                select(tech, func.count())
+                .select_from(HttpAsset)
+                .where(*where)
+                .group_by(tech)
+            )
+        ).all()
         return HttpAssetSummary(
-            total=len(rows),
-            by_status=dict(by_status),
-            by_tech=dict(by_tech),
-            cdn=cdn,
+            total=int(totals[0] or 0),
+            by_status={str(code): int(n) for code, n in status_rows},
+            by_tech={str(name): int(n) for name, n in tech_rows},
+            cdn=int(totals[1] or 0),
         )
-
-    async def count(
-        self,
-        project_id: UUID,
-        scan_id: UUID | None = None,
-        target_id: UUID | None = None,
-    ) -> int:
-        query = select(func.count()).select_from(
-            self._base_query(project_id, scan_id, target_id, None).subquery()
-        )
-        result = await self.session.execute(query)
-        return int(result.scalar_one())

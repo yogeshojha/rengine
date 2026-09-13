@@ -22,6 +22,7 @@ from shared.models.interest import (
     RuleSuggestion,
 )
 from shared.models.scan import Scan
+from shared.models.target import Target
 from shared.services.celery_dispatch import (
     dispatch_interest_evaluation,
     dispatch_interest_refresh,
@@ -79,7 +80,7 @@ async def update_rule(
     project_id: Annotated[UUID, Query()],
 ) -> InterestRuleRead:
     try:
-        rule = await InterestReadService(session).update(rule_id, payload)
+        rule = await InterestReadService(session).update(rule_id, payload, project_id)
     except InterestError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     if rule is None:
@@ -95,7 +96,7 @@ async def delete_rule(
     rule_id: Annotated[UUID, Path()],
     project_id: Annotated[UUID, Query()],
 ) -> None:
-    if not await InterestReadService(session).delete(rule_id):
+    if not await InterestReadService(session).delete(rule_id, project_id):
         raise HTTPException(
             status.HTTP_404_NOT_FOUND,
             "Rule not found. Shipped rules cannot be deleted.",
@@ -171,8 +172,6 @@ async def dismiss(
     user: CurrentUser,
     payload: DismissRequest,
 ) -> None:
-    from shared.models.target import Target  # noqa: PLC0415
-
     target = await session.get(Target, payload.target_id)
     if target is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Target not found")

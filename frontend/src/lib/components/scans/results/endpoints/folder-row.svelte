@@ -232,7 +232,14 @@
 		<div class={ACTIONS_BODY}>
 			<Hint text="Copy every URL in this branch">
 				{#snippet child(props)}
-					<Button {...props} variant="ghost" size="icon" class="size-7" onclick={onCopy}>
+					<Button
+						{...props}
+						aria-label="Copy every URL in this branch"
+						variant="ghost"
+						size="icon"
+						class="size-7"
+						onclick={onCopy}
+					>
 						<Copy class="size-3.5" />
 					</Button>
 				{/snippet}

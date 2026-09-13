@@ -113,7 +113,6 @@ _HTTP_OK = preds.HTTP_OK
 _HTTP_REDIRECT = preds.HTTP_REDIRECT
 _HTTP_CLIENT = preds.HTTP_CLIENT
 _HTTP_SERVER = preds.HTTP_SERVER
-_HTTP_MAX = preds.HTTP_MAX
 _AUTH_STATUS = preds.AUTH_STATUS
 _STATUS_BUCKETS = preds.STATUS_BUCKETS
 _SENSITIVE_PORTS = SENSITIVE_PORTS
@@ -231,16 +230,28 @@ class SubdomainService:
         active_only: bool,
         search: str | None,
     ):
-        query = select(Subdomain).where(Subdomain.project_id == project_id)
+        return select(Subdomain).where(
+            *self._conditions(project_id, scan_id, target_id, active_only, search)
+        )
+
+    def _conditions(
+        self,
+        project_id: UUID,
+        scan_id: UUID | None,
+        target_id: UUID | None,
+        active_only: bool,
+        search: str | None,
+    ) -> list:
+        where = [Subdomain.project_id == project_id]
         if scan_id is not None:
-            query = query.where(Subdomain.scan_id == scan_id)
+            where.append(Subdomain.scan_id == scan_id)
         if target_id is not None:
-            query = query.where(Subdomain.target_id == target_id)
+            where.append(Subdomain.target_id == target_id)
         if active_only:
-            query = query.where(Subdomain.is_active == True)  # noqa: E712
+            where.append(Subdomain.is_active.is_(True))
         if search:
-            query = query.where(Subdomain.name.ilike(f"%{search}%"))
-        return query
+            where.append(Subdomain.name.ilike(f"%{search}%"))
+        return where
 
     async def list(
         self,
@@ -263,18 +274,30 @@ class SubdomainService:
         scan_id: UUID | None = None,
         target_id: UUID | None = None,
     ) -> SubdomainSummary:
-        query = self._base_query(project_id, scan_id, target_id, False, None)
-        result = await self.session.execute(query)
-        rows = result.scalars().all()
-        source_counts: Counter = Counter()
-        active = 0
-        for row in rows:
-            if row.is_active:
-                active += 1
-            for src in row.sources or []:
-                source_counts[src] += 1
+        where = self._conditions(project_id, scan_id, target_id, False, None)
+        totals = (
+            await self.session.execute(
+                select(
+                    func.count(),
+                    func.count().filter(Subdomain.is_active.is_(True)),
+                ).where(*where)
+            )
+        ).one()
+        source = func.jsonb_array_elements_text(
+            cast(Subdomain.sources, JSONB)
+        ).column_valued("source")
+        rows = (
+            await self.session.execute(
+                select(source, func.count())
+                .select_from(Subdomain)
+                .where(*where)
+                .group_by(source)
+            )
+        ).all()
         return SubdomainSummary(
-            total=len(rows), active=active, sources=dict(source_counts)
+            total=int(totals[0] or 0),
+            active=int(totals[1] or 0),
+            sources={str(name): int(count) for name, count in rows},
         )
 
     # ── server-side faceted search (Web Assets table) ──────────────────
@@ -708,7 +731,7 @@ class SubdomainService:
             .where(*reach)
             .group_by(status_key)
         )
-        order = ["2xx", "3xx", "4xx", "5xx", "none"]
+        order = list(_STATUS_LABELS)
         status_map = {k: c for k, c in status_rows.all() if k is not None}
         status = [
             Facet(value=k, label=_STATUS_LABELS[k], count=status_map[k])

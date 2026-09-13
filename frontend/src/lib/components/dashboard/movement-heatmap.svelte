@@ -128,6 +128,6 @@
 		</table>
 	</div>
 	{#snippet footer()}
-		Shading is the share of new {SURFACE_ORDER[0].nounPlural}.
+		Shading is the share of that column's total that is new.
 	{/snippet}
 </Widget>

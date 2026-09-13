@@ -1,4 +1,5 @@
 import { checkLabel } from '$lib/config/hygiene';
+import { STATUS_CLASSES, statusClassLabel } from '$lib/config/endpoints';
 import type { SubdomainRead } from '$lib/types/subdomain';
 import type { HttpAssetRead } from '$lib/types/http-asset';
 import type { IpAddressRead } from '$lib/types/ip-address';
@@ -86,11 +87,7 @@ export interface FilterChip {
 
 export const STATUS_CLASS_TABS: { key: string; label: string }[] = [
 	{ key: 'all', label: 'All' },
-	{ key: '2xx', label: '2xx OK' },
-	{ key: '3xx', label: '3xx Redirect' },
-	{ key: '4xx', label: '4xx Client' },
-	{ key: '5xx', label: '5xx Server' },
-	{ key: 'none', label: 'No HTTP' }
+	...STATUS_CLASSES.map((key) => ({ key, label: statusClassLabel(key) }))
 ];
 
 export const WEB_ASSET_SORTS: { key: string; label: string }[] = [

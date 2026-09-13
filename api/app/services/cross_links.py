@@ -6,9 +6,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from uuid import UUID
 
-from sqlalchemy import cast, func, select
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.dialects.postgresql import array as pg_array
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.surface_scope import SurfaceScopeService
@@ -36,7 +34,6 @@ from shared.utils.net import cert_covers
 
 MIN_TARGETS = 2
 
-_TOKEN_OP: dict[str, str] = {CorrelationKind.IP.value: ":"}
 
 _ASSET_COLUMNS = {
     CorrelationKind.BODY.value: HttpAsset.content_hash,
@@ -112,9 +109,6 @@ class CrossLinkService:
                 wanted[CorrelationKind.FAVICON.value].add(row.favicon_hash)
             if row.cname and shared_edge(row.cname) is None:
                 wanted[CorrelationKind.CNAME.value].add(row.cname)
-            if not row.is_cdn:
-                for ip in row.resolved_ips or []:
-                    wanted[CorrelationKind.IP.value].add(ip)
         return {
             kind: set(sorted(values)[:MAX_CROSS_VALUES])
             for kind, values in wanted.items()
@@ -155,10 +149,6 @@ class CrossLinkService:
             crossing = await self._crossing(scope, column, wanted.get(kind, set()))
             for value, carrier in await self._host_carriers(scope, column, crossing):
                 out[kind][value].append(carrier)
-        for value, carrier in await self._address_carriers(
-            scope, wanted.get(CorrelationKind.IP.value, set())
-        ):
-            out[CorrelationKind.IP.value][value].append(carrier)
         for kind, column in _ASSET_COLUMNS.items():
             values = set(sorted(set(held.get(kind, {}).values()))[:MAX_CROSS_VALUES])
             for value, carrier in await self._asset_carriers(scope, column, values):
@@ -204,34 +194,6 @@ class CrossLinkService:
             (value, Carrier(name, target_id, cname, status, title))
             for value, name, target_id, cname, status, title in rows.all()
         ]
-
-    async def _address_carriers(
-        self, scope: QueryScope, values: set[str]
-    ) -> list[tuple[str, Carrier]]:
-        if not values:
-            return []
-        rows = await self.session.execute(
-            select(
-                Subdomain.resolved_ips,
-                Subdomain.name,
-                Subdomain.target_id,
-                Subdomain.cname,
-                Subdomain.http_status,
-                Subdomain.page_title,
-            ).where(
-                scope.match(Subdomain.scan_id),
-                Subdomain.is_excluded.is_(False),
-                Subdomain.is_cdn.is_(False),
-                func.jsonb_exists_any(
-                    cast(Subdomain.resolved_ips, JSONB), pg_array(sorted(values))
-                ),
-            )
-        )
-        out: list[tuple[str, Carrier]] = []
-        for ips, name, target_id, cname, status, title in rows.all():
-            carrier = Carrier(name, target_id, cname, status, title)
-            out.extend((ip, carrier) for ip in set(ips or []) & values)
-        return out
 
     async def _asset_carriers(
         self, scope: QueryScope, column, values: set[str]
@@ -353,7 +315,7 @@ class CrossLinkService:
             kind=kind,
             label=CORRELATION_KIND_LABELS[kind],
             value=value,
-            query=group_token(kind, _TOKEN_OP.get(kind, "="), value),
+            query=group_token(kind, "=", value),
             peers=[
                 CrossLinkPeer(
                     host=c.host,

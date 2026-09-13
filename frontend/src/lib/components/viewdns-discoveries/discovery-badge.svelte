@@ -36,7 +36,12 @@
 	async function fetchCounts() {
 		if (targetType !== TargetType.DOMAIN && targetType !== TargetType.IP) return;
 
-		const cached = cache.get(targetValue);
+		loaded = false;
+		total = 0;
+		breakdown = [];
+
+		const key = `${targetType}:${targetValue}:${whois?.registrant_name ?? ''}`;
+		const cached = cache.get(key);
 		if (cached) {
 			total = cached.total;
 			breakdown = cached.breakdown;
@@ -76,7 +81,7 @@
 			breakdown = b;
 			loaded = true;
 
-			cache.set(targetValue, { total: t, breakdown: b });
+			cache.set(key, { total: t, breakdown: b });
 		} catch {
 			// nothing
 		}

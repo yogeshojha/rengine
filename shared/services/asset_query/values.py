@@ -19,6 +19,18 @@ _DATE_FORMATS = ("%Y-%m-%d", "%Y/%m/%d", "%d-%m-%Y")
 _STATUS_CLASS_RE = re.compile(r"^([1-5])xx$", re.IGNORECASE)
 _ASN_RE = re.compile(r"^as(\d+)$", re.IGNORECASE)
 
+PRIVATE_NETWORKS: tuple[str, ...] = (
+    "10.0.0.0/8",
+    "172.16.0.0/12",
+    "192.168.0.0/16",
+    "127.0.0.0/8",
+    "169.254.0.0/16",
+    "100.64.0.0/10",
+    "::1/128",
+    "fc00::/7",
+    "fe80::/10",
+)
+
 
 def _fail(raw: str, expected: str, start: int, end: int):
     msg = f"{raw!r} is not a valid {expected}."

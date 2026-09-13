@@ -14,7 +14,6 @@ from shared.services.scan_resolve import ResolvedScanConfig
 from shared.utils.datetime import utc_now
 
 SCAN_STATUSES = tuple(s.value for s in ScanStatus)
-SCAN_SCOPES = tuple(s.value for s in ScanScope)
 
 
 class SeedAsset(BaseModel):
@@ -157,7 +156,7 @@ class Scan(SQLModel, table=True):
 
 
 def fold_pause(scan: Scan, at: datetime) -> None:
-    """Move an open pause into paused_seconds, so it never counts as run time."""
+    """Move an open pause into paused_seconds."""
     if scan.paused_at is None:
         return
     scan.paused_seconds = (scan.paused_seconds or 0.0) + (

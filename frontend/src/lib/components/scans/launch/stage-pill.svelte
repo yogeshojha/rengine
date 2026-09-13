@@ -3,6 +3,7 @@
 	import Check from '@lucide/svelte/icons/check';
 	import Link from '@lucide/svelte/icons/link';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
+	import CircleSlash from '@lucide/svelte/icons/circle-slash';
 	import Hint from '$lib/components/hint.svelte';
 	import type { StageCatalogEntry } from '$lib/types/scan-engine';
 	import type { StageState } from '$lib/utilities/launch-plan';
@@ -10,30 +11,40 @@
 	interface Props {
 		stage: StageCatalogEntry;
 		state: StageState;
+		unsatisfied?: boolean;
 		disabled?: boolean;
 		onToggle: () => void;
 		children?: Snippet;
 	}
 
-	let { stage, state, disabled = false, onToggle, children }: Props = $props();
+	let { stage, state, unsatisfied = false, disabled = false, onToggle, children }: Props = $props();
 
 	const BLOCKED_HINT = 'Skipped at passive intensity.';
 	const IMPLIED_HINT = 'Required by a selected stage.';
+	const UNSATISFIED_HINT = 'No selected stage produces its input.';
 
 	let hint = $derived(
-		state === 'blocked' ? BLOCKED_HINT : state === 'implied' ? IMPLIED_HINT : stage.description
+		state === 'blocked'
+			? BLOCKED_HINT
+			: unsatisfied
+				? UNSATISFIED_HINT
+				: state === 'implied'
+					? IMPLIED_HINT
+					: stage.description
 	);
 	let pressed = $derived(state === 'on' || state === 'implied');
 </script>
 
 <span
-	class="inline-flex h-7 items-stretch rounded-md border text-sm transition-colors {state === 'on'
-		? 'border-border bg-muted text-foreground'
-		: state === 'implied'
-			? 'border-dashed border-border bg-muted/60 text-muted-foreground'
-			: state === 'blocked'
-				? 'border-border/60 text-muted-foreground/60'
-				: 'border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground'}"
+	class="inline-flex h-7 items-stretch rounded-md border text-sm transition-colors {unsatisfied
+		? 'border-dashed border-warning/60 bg-warning/5 text-foreground'
+		: state === 'on'
+			? 'border-border bg-muted text-foreground'
+			: state === 'implied'
+				? 'border-dashed border-border bg-muted/60 text-muted-foreground'
+				: state === 'blocked'
+					? 'border-border/60 text-muted-foreground/60'
+					: 'border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground'}"
 >
 	<Hint text={hint}>
 		{#snippet child(props)}
@@ -48,7 +59,9 @@
 				{disabled}
 				onclick={onToggle}
 			>
-				{#if state === 'on'}
+				{#if unsatisfied}
+					<CircleSlash class="size-3 shrink-0 text-warning" />
+				{:else if state === 'on'}
 					<Check class="size-3 shrink-0" />
 				{:else if state === 'implied'}
 					<Link class="size-3 shrink-0" />

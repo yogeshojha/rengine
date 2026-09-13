@@ -123,6 +123,38 @@ SELECT count(DISTINCT cve) FROM (
 """
 
 
+_ONE = """
+WITH sw AS (
+    SELECT target_id, coalesce(host, ip) AS asset, discovered_at,
+           1 AS is_software, 0 AS is_finding
+      FROM software_cves
+     WHERE scan_id = ANY(:software_scans) AND cve = :cve
+), vu AS (
+    SELECT v.target_id, coalesce(v.host, v.ip) AS asset, v.discovered_at,
+           0 AS is_software, 1 AS is_finding
+      FROM vulnerabilities v
+     WHERE v.scan_id = ANY(:finding_scans)
+       AND jsonb_exists(v.cve_ids::jsonb, :cve)
+       AND NOT EXISTS (
+           SELECT 1 FROM vulnerability_triage t
+            WHERE t.target_id = v.target_id AND t.fingerprint = v.fingerprint
+              AND t.state = ANY(:suppressed))
+), rows AS (
+    SELECT * FROM sw
+    UNION ALL
+    SELECT * FROM vu
+)
+SELECT target_id,
+       count(*) AS locations,
+       count(DISTINCT asset) AS assets,
+       sum(is_software) AS software,
+       sum(is_finding) AS findings,
+       min(discovered_at) AS first_seen
+  FROM rows
+ GROUP BY GROUPING SETS ((), (target_id))
+"""
+
+
 def _case(ranks: dict[str, int], column: str) -> str:
     arms = " ".join(f"WHEN '{k}' THEN {v}" for k, v in ranks.items())
     return f"(CASE {column} {arms} ELSE {len(ranks)} END)"
@@ -301,13 +333,46 @@ class CveExposureService:
         names = await self._targets(project_id)
         for loc in locations:
             loc.target_value = names.get(loc.target_id, (None, None))[0]
-        out.locations_total = len(locations)
         out.locations = locations[:MAX_LOCATIONS]
-        out.assets = len({loc.host or loc.ip or "" for loc in locations})
-        out.first_seen = min((loc.discovered_at for loc in locations), default=None)
-        out.by_target = self._by_target(locations, names)
-        out.targets = len(out.by_target)
+        await self._counted(out, software, findings, names)
         return out
+
+    async def _counted(
+        self,
+        out: CveExposure,
+        software: QueryScope,
+        findings: QueryScope,
+        names: dict[UUID, tuple[str, str]],
+    ) -> None:
+        """Count every row the CVE holds."""
+        rows = (
+            await self.session.execute(
+                text(_ONE), {**self._params(software, findings), "cve": out.cve}
+            )
+        ).all()
+        by_target: list[CveTargetRow] = []
+        for row in rows:
+            if row.target_id is None:
+                out.locations_total = int(row.locations or 0)
+                out.assets = int(row.assets or 0)
+                out.first_seen = row.first_seen
+                continue
+            value, kind = names.get(row.target_id, ("", ""))
+            by_target.append(
+                CveTargetRow(
+                    target_id=row.target_id,
+                    target_value=value,
+                    target_type=kind,
+                    assets=int(row.assets or 0),
+                    software=int(row.software or 0),
+                    findings=int(row.findings or 0),
+                    first_seen=row.first_seen,
+                )
+            )
+        out.by_target = sorted(
+            by_target, key=lambda r: (-r.assets, -r.findings, r.target_value)
+        )
+        out.targets = len(out.by_target)
 
     async def _intel(self, out: CveExposure) -> None:
         nvd = await self.session.get(NvdCve, out.cve)
@@ -521,30 +586,3 @@ class CveExposureService:
             row[0]: (row[1], str(getattr(row[2], "value", row[2]) or ""))
             for row in rows.all()
         }
-
-    @staticmethod
-    def _by_target(
-        locations: list[CveLocation], names: dict[UUID, tuple[str, str]]
-    ) -> list[CveTargetRow]:
-        grouped: dict[UUID, CveTargetRow] = {}
-        assets: dict[UUID, set[str]] = {}
-        for loc in locations:
-            value, kind = names.get(loc.target_id, ("", ""))
-            row = grouped.setdefault(
-                loc.target_id,
-                CveTargetRow(
-                    target_id=loc.target_id, target_value=value, target_type=kind
-                ),
-            )
-            assets.setdefault(loc.target_id, set()).add(loc.host or loc.ip or "")
-            if loc.dimension == SurfaceDimension.SOFTWARE.value:
-                row.software += 1
-            else:
-                row.findings += 1
-            if row.first_seen is None or loc.discovered_at < row.first_seen:
-                row.first_seen = loc.discovered_at
-        for target_id, row in grouped.items():
-            row.assets = len(assets[target_id])
-        return sorted(
-            grouped.values(), key=lambda r: (-r.assets, -r.findings, r.target_value)
-        )

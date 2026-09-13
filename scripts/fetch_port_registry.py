@@ -21,6 +21,7 @@ TARGET = (
 PROTOCOLS = ("tcp",)
 MAX_DESCRIPTION = 120
 UNASSIGNED = {"", "reserved", "unassigned", "de-registered", "deregistered"}
+MIN_PORTS = 4000
 
 _ALNUM = re.compile(r"[^a-z0-9]")
 _HOUSEKEEPING = re.compile(
@@ -54,9 +55,10 @@ def main() -> int:
     with urllib.request.urlopen(SOURCE, timeout=60) as response:  # noqa: S310
         raw = response.read().decode("utf-8")
     registry = build(raw)
-    if len(registry) < 4000:  # noqa: PLR2004
+    if len(registry) < MIN_PORTS:
         print(
-            f"refusing to write a suspiciously small registry ({len(registry)} ports)"
+            f"refusing to write a registry of only {len(registry)} ports",
+            file=sys.stderr,
         )
         return 1
     TARGET.parent.mkdir(parents=True, exist_ok=True)

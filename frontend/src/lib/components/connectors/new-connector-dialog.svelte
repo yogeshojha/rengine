@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -18,23 +19,28 @@
 		oncreated: (created: ConnectorCreated) => void;
 	} = $props();
 
-	let kind = $state<ConnectorKind>('burp');
+	let kind = $state<ConnectorKind | null>(null);
 	let name = $state('');
 	let saving = $state(false);
 	let error = $state<string | null>(null);
 
 	const specs = $derived(connectors.catalog);
-	const spec = $derived(specs.find((s) => s.kind === kind) ?? null);
+	const spec = $derived(specs.find((s) => s.kind === kind) ?? specs[0] ?? null);
 
 	$effect(() => {
 		if (open) void connectors.loadCatalog();
 	});
 
 	$effect(() => {
-		if (open && !name && spec) name = spec.title;
+		if (!open || !spec) return;
+		const title = spec.title;
+		untrack(() => {
+			if (!name) name = title;
+		});
 	});
 
 	async function submit() {
+		if (!spec) return;
 		if (!name.trim()) {
 			error = 'Enter a name.';
 			return;
@@ -44,7 +50,7 @@
 		try {
 			const created = await connectorsApi.create({
 				name: name.trim(),
-				kind,
+				kind: spec.kind,
 				project_id: projectId
 			});
 			connectors.upsert(created.connector, true);
@@ -74,7 +80,8 @@
 					{#each specs as candidate (candidate.kind)}
 						<button
 							type="button"
-							class="rounded-lg border p-3 text-left transition-colors {kind === candidate.kind
+							class="rounded-lg border p-3 text-left transition-colors {spec?.kind ===
+							candidate.kind
 								? 'border-primary bg-primary/5'
 								: 'hover:bg-muted/50'}"
 							onclick={() => (kind = candidate.kind)}
@@ -93,7 +100,7 @@
 
 			<FormField label="Name">
 				{#snippet children({ id })}
-					<Input {id} bind:value={name} placeholder="Burp Suite" />
+					<Input {id} bind:value={name} placeholder={spec?.title ?? ''} />
 				{/snippet}
 			</FormField>
 

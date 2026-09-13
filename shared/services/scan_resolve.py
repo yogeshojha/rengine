@@ -451,10 +451,7 @@ def merge_engine_context(
     excluded_ips = list(_ctx_get(ctx, "excluded_ips") or [])
     included_subdomains = list(_ctx_get(ctx, "included_subdomains") or [])
 
-    follow_redirects_override = _ctx_get(ctx, "follow_redirects_override")
-    follow_redirects = (
-        follow_redirects_override if follow_redirects_override is not None else None
-    )
+    follow_redirects = _ctx_get(ctx, "follow_redirects_override")
     http_protocol = _ctx_get(ctx, "http_protocol", "both") or "both"
 
     config = ResolvedScanConfig(

@@ -10,7 +10,7 @@ from shared.models.ip_address import IpAddress
 from shared.models.ripestat import RIPEStatASOverview
 from shared.services.ip_asn import enrich_addresses, ranges_ready, sync_ranges
 from shared.services.ip_inventory import collect_ips, materialize
-from stages.base import ALL_TARGETS, Stage, StageResult
+from stages.base import ALL_TARGETS, Stage, StageResult, parse_asn
 from stages.ip_enrichment.config import IpEnrichmentConfig
 
 logger = get_logger(__name__)
@@ -53,13 +53,6 @@ FROM (
 ) h
 WHERE s.id = h.id
 """
-
-
-def _parse_asn(value: str) -> int | None:
-    try:
-        return int(value.upper().replace("AS", "").strip())
-    except ValueError:
-        return None
 
 
 class IpEnrichmentStage(Stage):
@@ -162,7 +155,7 @@ class IpEnrichmentStage(Stage):
         """An ASN target states the network of its own sweep."""
         if self.ctx.target_type != TargetType.ASN.value:
             return
-        asn = _parse_asn(self.ctx.target_value)
+        asn = parse_asn(self.ctx.target_value)
         if asn is None:
             return
         overview = self.session.execute(

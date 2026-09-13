@@ -25,10 +25,18 @@
 	import CountryFlag from '../country-flag.svelte';
 	import { stopProp } from '$lib/utilities';
 	import { writeClipboard } from '$lib/utilities/clipboard';
-	import { isPrivateIp, isSensitivePort } from '$lib/utilities/scan-correlation';
+	import { isPrivateIp } from '$lib/utilities/scan-correlation';
+	import { isSensitivePort } from '$lib/config/service-classes';
 	import { exactToken, filterToken, type IpGroupRead } from '$lib/utilities/scan-insights';
 	import type { ServiceRead } from '$lib/utilities/services';
-	import { ACTIONS_BODY, ACTIONS_PIN, pinTone, rowTone, type TableColumn } from '../table/columns';
+	import {
+		ACTIONS_BODY,
+		ACTIONS_PIN,
+		columnCell,
+		pinTone,
+		rowTone,
+		type TableColumn
+	} from '../table/columns';
 	import { IP_LEAD_COLUMNS } from './columns';
 	import RecheckChip from '../recheck-chip.svelte';
 	import type { Recheck } from '$lib/types/recheck';
@@ -245,12 +253,7 @@
 	</div>
 
 	{#each columns as col (col.key)}
-		<div
-			class="hidden sm:flex {col.grow ? 'min-w-0 flex-1' : 'shrink-0'} {col.width} {col.align ===
-			'right'
-				? 'justify-end'
-				: ''}"
-		>
+		<div class={columnCell(col)}>
 			{#if col.key === 'target'}
 				<TargetCell values={g.targets} {onFilter} />
 			{:else if col.key === 'ports'}

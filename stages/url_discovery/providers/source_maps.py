@@ -55,7 +55,7 @@ class SourceMapProvider(UrlProvider):
             state.absorb(outcome, self.in_scope)
 
         result.observations = state.observations
-        result.urls_found = len(state.observations)
+        result.urls_found = state.found
         result.pages_fetched = len(selected)
         result.hosts_scanned = len(selected)
         result.errors = state.errors
@@ -156,6 +156,7 @@ class _State:
     def __init__(self) -> None:
         self.observations: list[EndpointObservation] = []
         self.seen: set[str] = set()
+        self.found = 0
         self.digests: set[str] = set()
         self.exposed = 0
         self.modules = 0
@@ -174,6 +175,7 @@ class _State:
             return
 
         self.exposed += 1
+        self.found += 1
         self.modules += len(outcome.sources)
         shown = ", ".join(outcome.sources[:_MAX_SOURCES_SHOWN])
         self._add(
@@ -192,6 +194,7 @@ class _State:
                 absolute = mine.resolve(outcome.bundle, candidate)
                 if absolute is None:
                     continue
+                self.found += 1
                 if not in_scope(absolute):
                     self.offsite += 1
                     continue

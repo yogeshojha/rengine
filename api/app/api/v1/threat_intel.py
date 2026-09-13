@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Path, Query
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentSuperuser, CurrentUser
@@ -13,6 +13,7 @@ from shared.definitions.threat_intel import (
     MAX_EXPLOIT_SCORE,
     SIGNALS,
 )
+from shared.models.scan import Scan
 from shared.models.threat_intel import (
     AutoSyncUpdate,
     CveIntelRead,
@@ -124,11 +125,20 @@ async def sync(_current_user: CurrentSuperuser) -> SyncResult:
 @router.post("/scan/{scan_id}/enrich", response_model=SyncResult)
 async def enrich(
     _current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
     scan_id: Annotated[UUID, Path()],
 ) -> SyncResult:
     """Fetch provider intel for the scan's CVEs and re-rank."""
-    dispatch_threat_intel(str(scan_id))
-    return SyncResult(queued=True, feeds=["vulnx"])
+    if await session.get(Scan, scan_id) is None:
+        raise HTTPException(status_code=404, detail="Scan not found")
+    queued = dispatch_threat_intel(str(scan_id))
+    return SyncResult(
+        queued=queued,
+        feeds=["vulnx"],
+        detail=None
+        if queued
+        else "The task queue did not accept the request. Check the worker.",
+    )
 
 
 @router.get("/cve/{cve_id}", response_model=CveIntelRead)

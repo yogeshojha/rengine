@@ -18,7 +18,6 @@
 		coverage: EndpointCoverageRead[];
 		summary: EndpointSummary | null;
 		projectWide?: boolean;
-		compact?: boolean;
 		hidden?: number;
 		rootOnly?: number;
 		onShowStatic?: () => void;
@@ -31,7 +30,6 @@
 		coverage,
 		summary,
 		projectWide = false,
-		compact = false,
 		hidden = 0,
 		rootOnly = 0,
 		onShowStatic,
@@ -89,9 +87,7 @@
 </script>
 
 <div
-	class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs {tone} {compact
-		? ''
-		: 'border-b bg-muted/10 px-4 py-2'}"
+	class="flex flex-wrap items-center gap-x-2 gap-y-1 border-b bg-muted/10 px-4 py-2 text-xs {tone}"
 >
 	<Icon class="size-3.5 shrink-0" />
 	<span>{line}</span>

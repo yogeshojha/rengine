@@ -33,19 +33,22 @@
 		running: 'Running',
 		completed: 'Completed',
 		failed: 'Failed',
-		cancelled: 'Cancelled'
+		cancelled: 'Cancelled',
+		paused: 'Paused'
 	};
 	const STATUS_VARIANT: Record<RunStatus, BadgeVariant> = {
 		running: 'info',
 		completed: 'success',
 		failed: 'destructive',
-		cancelled: 'warning'
+		cancelled: 'warning',
+		paused: 'secondary'
 	};
 	const NODE_TINT: Record<RunStatus, string> = {
 		running: 'bg-info/10 text-info ring-1 ring-info/30',
 		completed: 'bg-success/10 text-success ring-1 ring-success/30',
 		failed: 'bg-destructive/10 text-destructive ring-1 ring-destructive/40',
-		cancelled: 'bg-warning/10 text-warning ring-1 ring-warning/30'
+		cancelled: 'bg-warning/10 text-warning ring-1 ring-warning/30',
+		paused: 'bg-muted text-muted-foreground ring-1 ring-border'
 	};
 
 	let run = $derived(cluster.run!);
@@ -167,9 +170,7 @@
 							>
 								{step.title}
 								{#if step.description}
-									<span class="text-muted-foreground">
-										{stage ? ' · ' : ' · '}{step.description}
-									</span>
+									<span class="text-muted-foreground"> · {step.description}</span>
 								{/if}
 							</p>
 						</div>

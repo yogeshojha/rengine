@@ -80,7 +80,7 @@
 	import type { TargetType } from '$lib/types/target';
 	import { SCAN_COUNT_COLUMNS } from '$lib/types/scan';
 	import type { ScanRead, ScanActivityRead, ScanCommandRead } from '$lib/types/scan';
-	import { ROUTES } from '$lib/config/routes';
+	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import { REFUSAL } from '$lib/config/compare';
 	import GenerateReportDialog from '$lib/components/reports/generate-dialog.svelte';
 	import { NOW_TICK_MS } from '$lib/constants';
@@ -479,7 +479,7 @@
 	});
 
 	$effect(() => {
-		if (!engineCatalogStore.hasFetched) engineCatalogStore.fetch();
+		if (!engineCatalogStore.hasFetched) untrack(() => engineCatalogStore.fetch());
 	});
 
 	$effect(() => {
@@ -522,21 +522,24 @@
 		const project = projectsStore.activeProject?.id;
 		if (!project || !scan) return;
 		bundling = true;
-		exportsStore.setOnReady((row: ExportRead) => {
-			bundling = false;
-			if (row.status !== 'completed') {
-				toast.error(row.error || 'Export not written.');
-				return;
-			}
-			toast.success(`${row.row_count.toLocaleString()} rows exported`);
-			window.location.href = exportsStore.downloadUrl(row.id);
-		});
 		try {
-			await exportsStore.create(project, {
-				dimension: BUNDLE,
-				scan_id: scan.id,
-				export_format: 'csv'
-			});
+			await exportsStore.create(
+				project,
+				{
+					dimension: BUNDLE,
+					scan_id: scan.id,
+					export_format: 'csv'
+				},
+				(row: ExportRead) => {
+					bundling = false;
+					if (row.status !== 'completed') {
+						toast.error(row.error || 'Export not written.');
+						return;
+					}
+					toast.success(`${row.row_count.toLocaleString()} rows exported`);
+					window.location.href = exportsStore.downloadUrl(row.id);
+				}
+			);
 			toast.success('Export started');
 		} catch (e) {
 			bundling = false;
@@ -544,6 +547,11 @@
 		}
 	}
 </script>
+
+<svelte:head
+	><title>{scan ? `${scan.execution_config.target_value} scan` : routeLabels.scans} · reNgine</title
+	></svelte:head
+>
 
 <svelte:window onkeydown={onKeydown} />
 

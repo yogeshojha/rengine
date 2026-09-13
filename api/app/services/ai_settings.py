@@ -32,9 +32,9 @@ from shared.models.instance_settings import InstanceSettings
 from shared.models.report import Report
 from shared.services.ai.client import AIError, complete
 from shared.services.ai.config import AIConfig
+from shared.services.scan_resolve import MASK
 from shared.utils.datetime import utc_now
 
-MASK = "••••••••"
 _VALID_PROVIDERS = frozenset(p.value for p in AIProvider)
 _TEST_PROMPT = "Reply with the single word: ready."
 _TAIL = 4
@@ -43,7 +43,7 @@ _TAIL = 4
 def _mask(key: str | None) -> str | None:
     if not key:
         return None
-    return f"{MASK}{key[-4:]}" if len(key) > _TAIL else MASK
+    return f"{MASK}{key[-_TAIL:]}" if len(key) > _TAIL else MASK
 
 
 class AiSettingsService:
@@ -110,7 +110,7 @@ class AiSettingsService:
             cached=int(row[1]) if row else 0,
             input_tokens=int(row[2]) if row else 0,
             output_tokens=int(row[3]) if row else 0,
-            cost_usd=round(cost, 4) if cost else None,
+            cost_usd=round(cost, 4) if cost is not None else None,
             reports=int(row[4]) if row else 0,
             since=row[5] if row else None,
         )

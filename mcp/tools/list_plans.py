@@ -11,6 +11,7 @@ from mcp.errors import ToolError
 from mcp.result import ToolResult
 from mcp.tools._scope import project_for
 from mcp.tools.base import Tool, ToolGroup, ToolInput
+from shared.utils.text import counted
 
 MAX_ROWS = 50
 
@@ -54,7 +55,7 @@ class ListEngines(Tool):
 
         shown = rows[: args.limit]
         return ToolResult(
-            summary=f"{len(rows)} scan engine(s) in this project",
+            summary=f"{counted(len(rows), 'scan engine')} in this project",
             data=[
                 {
                     "id": str(row.id),
@@ -106,7 +107,7 @@ class ListContexts(Tool):
         rows = await ScanContextService(ctx.session).list(project_id)
         shown = rows[: args.limit]
         return ToolResult(
-            summary=f"{len(rows)} scan context(s) in this project",
+            summary=f"{counted(len(rows), 'scan context')} in this project",
             data=[
                 {
                     "id": str(row.id),

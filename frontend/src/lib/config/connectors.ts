@@ -22,6 +22,17 @@ export const SOURCE_TOOL_LABELS: Record<SourceTool, string> = {
 	other: 'Other'
 };
 
+export const INGESTED_TOOLS: SourceTool[] = ['proxy', 'repeater'];
+
+// mirrors shared/definitions/connectors.py:ActionKind
+export enum ActionKind {
+	REPEATER = 'repeater'
+}
+
+export const ACTION_KIND_LABELS: Record<ActionKind, string> = {
+	[ActionKind.REPEATER]: 'Send to Repeater'
+};
+
 export const CANDIDATE_STATES: CandidateState[] = ['new', 'queued', 'scanned', 'ignored'];
 
 export const CANDIDATE_STATE_LABELS: Record<CandidateState, string> = {

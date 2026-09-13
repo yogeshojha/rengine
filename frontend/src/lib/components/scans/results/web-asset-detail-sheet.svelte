@@ -1,9 +1,5 @@
-<script module lang="ts">
-	const ROW = 'grid grid-cols-[7.5rem_1fr] items-start gap-3 py-2';
-	const DT = 'pt-0.5 text-xs text-muted-foreground';
-</script>
-
 <script lang="ts">
+	import { SHEET_ROW_TIGHT, SHEET_DT, sheetStep } from './sheet';
 	import Globe from '@lucide/svelte/icons/globe';
 	import NoteSection from '$lib/components/notes/note-section.svelte';
 	import { SurfaceDimension } from '$lib/config/surface';
@@ -76,9 +72,9 @@
 		httpStatusReason,
 		httpStatusTextClass,
 		isPrivateIp,
-		isSensitivePort,
 		STATUS_DOT
 	} from '$lib/utilities/scan-correlation';
+	import { isSensitivePort } from '$lib/config/service-classes';
 	import { formatShortDate, relativeTime } from '$lib/utilities/dates';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 
@@ -242,21 +238,9 @@
 	function copy(text: string) {
 		writeClipboard(text);
 	}
-	function onKey(e: KeyboardEvent) {
-		if (!open || e.metaKey || e.ctrlKey || e.altKey) return;
-		const t = e.target as HTMLElement | null;
-		if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
-		if (e.key === 'ArrowDown' || e.key === 'j') {
-			e.preventDefault();
-			onStep?.(1);
-		} else if (e.key === 'ArrowUp' || e.key === 'k') {
-			e.preventDefault();
-			onStep?.(-1);
-		}
-	}
 </script>
 
-<svelte:window onkeydown={onKey} />
+<svelte:window onkeydown={(e) => sheetStep(e, open, onStep)} />
 
 <Sheet.Root {open} {onOpenChange}>
 	<Sheet.Content
@@ -450,8 +434,8 @@
 						<section class="flex flex-col gap-2">
 							{@render heading(Network, 'Identity')}
 							<dl class="flex flex-col divide-y divide-border/60">
-								<div class={ROW}>
-									<dt class={DT}>Resolves to</dt>
+								<div class={SHEET_ROW_TIGHT}>
+									<dt class={SHEET_DT}>Resolves to</dt>
 									<dd class="flex flex-wrap gap-1">
 										{#if sub.resolved_ips?.length}
 											{#each sub.resolved_ips as ip (ip)}
@@ -468,8 +452,8 @@
 									</dd>
 								</div>
 								{#if sub.cname}
-									<div class={ROW}>
-										<dt class={DT}>CNAME</dt>
+									<div class={SHEET_ROW_TIGHT}>
+										<dt class={SHEET_DT}>CNAME</dt>
 										<dd class="flex flex-wrap items-center gap-1">
 											{#if provider && ProviderIcon}
 												{@const prov = provider}
@@ -498,8 +482,8 @@
 									</div>
 								{/if}
 								{#if sub.asn}
-									<div class={ROW}>
-										<dt class={DT}>Network</dt>
+									<div class={SHEET_ROW_TIGHT}>
+										<dt class={SHEET_DT}>Network</dt>
 										<dd class="text-sm">
 											<span class="font-mono">AS{sub.asn}</span>
 											{#if sub.asn_org}<span class="text-muted-foreground">
@@ -508,16 +492,16 @@
 										</dd>
 									</div>
 								{/if}
-								<div class={ROW}>
-									<dt class={DT}>Discovered via</dt>
+								<div class={SHEET_ROW_TIGHT}>
+									<dt class={SHEET_DT}>Discovered via</dt>
 									<dd class="flex flex-wrap gap-1">
 										{#each sub.sources ?? [] as src (src)}
 											{@render chip(src, `source:${src}`)}
 										{/each}
 									</dd>
 								</div>
-								<div class={ROW}>
-									<dt class={DT}>First seen</dt>
+								<div class={SHEET_ROW_TIGHT}>
+									<dt class={SHEET_DT}>First seen</dt>
 									<Hint text={sub.discovered_at}>
 										{#snippet child(props)}
 											<dd {...props} class="text-sm">
@@ -530,8 +514,8 @@
 									</Hint>
 								</div>
 								{#if sub.favicon_hash}
-									<div class={ROW}>
-										<dt class={DT}>Favicon</dt>
+									<div class={SHEET_ROW_TIGHT}>
+										<dt class={SHEET_DT}>Favicon</dt>
 										<dd>
 											{@render chip(
 												sub.favicon_hash,
@@ -554,8 +538,8 @@
 							<section class="flex flex-col gap-2">
 								{@render heading(Globe, 'Web service')}
 								<dl class="flex flex-col divide-y divide-border/60">
-									<div class={ROW}>
-										<dt class={DT}>URL</dt>
+									<div class={SHEET_ROW_TIGHT}>
+										<dt class={SHEET_DT}>URL</dt>
 										<dd>
 											<a
 												href={url}
@@ -566,8 +550,8 @@
 										</dd>
 									</div>
 									{#if sub.page_title}
-										<div class={ROW}>
-											<dt class={DT}>Page title</dt>
+										<div class={SHEET_ROW_TIGHT}>
+											<dt class={SHEET_DT}>Page title</dt>
 											<dd class="flex flex-wrap items-center gap-2 text-sm">
 												<span class="break-words">{sub.page_title}</span>
 												{#if (sub.title_count ?? 0) > 1}
@@ -586,8 +570,8 @@
 										</div>
 									{/if}
 									{#if sub.cross_links?.length}
-										<div class={ROW}>
-											<dt class={DT}>Shared with</dt>
+										<div class={SHEET_ROW_TIGHT}>
+											<dt class={SHEET_DT}>Shared with</dt>
 											<dd class="flex flex-wrap items-center gap-2 text-sm">
 												<CrossLinks links={sub.cross_links} onHost={onPivot} />
 											</dd>
@@ -761,8 +745,8 @@
 										{@render kv('Subject', primaryAsset.tls_subject_cn)}
 										{@render kv('Issuer', primaryAsset.tls_issuer_org ?? primaryAsset.tls_issuer)}
 										{#if primaryAsset.tls_sans?.length}
-											<div class={ROW}>
-												<dt class={DT}>SANs</dt>
+											<div class={SHEET_ROW_TIGHT}>
+												<dt class={SHEET_DT}>SANs</dt>
 												<dd class="flex flex-wrap items-center gap-1">
 													{#each primaryAsset.tls_sans.slice(0, MAX_SANS) as san (san)}
 														<Badge variant="outline" class="font-mono text-2xs font-normal"
@@ -779,8 +763,8 @@
 											</div>
 										{/if}
 										{#if primaryAsset.tls_fingerprint}
-											<div class={ROW}>
-												<dt class={DT}>Fingerprint</dt>
+											<div class={SHEET_ROW_TIGHT}>
+												<dt class={SHEET_DT}>Fingerprint</dt>
 												<dd class="flex items-center gap-1">
 													<span class="truncate font-mono text-xs"
 														>{primaryAsset.tls_fingerprint}</span
@@ -1136,8 +1120,8 @@
 
 {#snippet kv(label: string, value: string | number | null | undefined)}
 	{#if value !== null && value !== undefined && value !== ''}
-		<div class={ROW}>
-			<dt class={DT}>{label}</dt>
+		<div class={SHEET_ROW_TIGHT}>
+			<dt class={SHEET_DT}>{label}</dt>
 			<dd class="min-w-0 text-sm break-words">{value}</dd>
 		</div>
 	{/if}

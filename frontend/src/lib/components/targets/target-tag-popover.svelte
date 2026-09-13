@@ -6,7 +6,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Command from '$lib/components/ui/command';
-	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as HoverCard from '$lib/components/ui/hover-card';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { targetsApi } from '$lib/api/targets';
@@ -76,8 +75,9 @@
 	let hasOverflow = $derived(overflowTags.length > 0);
 
 	async function toggleTag(tag: TagSummary) {
+		const previous = [...currentTags];
 		const isApplied = appliedIds.has(tag.id);
-		const newTags = isApplied ? currentTags.filter((t) => t.id !== tag.id) : [...currentTags, tag];
+		const newTags = isApplied ? previous.filter((t) => t.id !== tag.id) : [...previous, tag];
 		const newTagNames = newTags.map((t) => t.name);
 
 		applyPatch({ tags: newTags });
@@ -85,7 +85,7 @@
 		try {
 			await targetsApi.update(targetId, { tag_names: newTagNames });
 		} catch {
-			applyPatch({ tags: currentTags });
+			applyPatch({ tags: previous });
 			toast.error('Tags not updated');
 		}
 	}
@@ -193,19 +193,13 @@
 						Tag
 					</button>
 				{:else}
-					<Tooltip.Root>
-						<Tooltip.Trigger>
-							<button
-								{...props}
-								class="inline-flex items-center justify-center h-5 w-5 rounded-full text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted transition-colors cursor-pointer shrink-0"
-							>
-								<Plus class="h-3 w-3" />
-							</button>
-						</Tooltip.Trigger>
-						<Tooltip.Content>
-							<p>Manage tags</p>
-						</Tooltip.Content>
-					</Tooltip.Root>
+					<button
+						{...props}
+						aria-label="Manage tags"
+						class="inline-flex items-center justify-center h-5 w-5 rounded-full text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted transition-colors cursor-pointer shrink-0"
+					>
+						<Plus class="h-3 w-3" />
+					</button>
 				{/if}
 			{/snippet}
 		</Popover.Trigger>

@@ -198,7 +198,7 @@
 								{#each counts as c (c.text)}
 									<span
 										class="rounded-md border px-[7px] py-px text-xs tabular-nums {c.up
-											? 'border-success/40 text-success'
+											? 'border-foreground/25 text-foreground'
 											: 'text-muted-foreground'}"
 									>
 										{c.text}

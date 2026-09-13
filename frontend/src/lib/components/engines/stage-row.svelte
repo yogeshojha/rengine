@@ -312,7 +312,7 @@
 		transform: rotate(90deg);
 	}
 	.title {
-		font-size: 13px;
+		font-size: 14px;
 		font-weight: 500;
 		white-space: nowrap;
 		overflow: hidden;
@@ -343,7 +343,7 @@
 		font-variant-numeric: tabular-nums;
 	}
 	.meta :global(.tag) {
-		font-size: 10px;
+		font-size: 11px;
 		font-weight: 400;
 		padding: 1px 6px;
 	}
@@ -369,7 +369,7 @@
 	}
 	.tool {
 		font-family: var(--font-mono, ui-monospace, monospace);
-		font-size: 10.5px;
+		font-size: 11px;
 		line-height: 18px;
 		color: var(--muted-foreground);
 		background: var(--muted);

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import OverflowPopover from './table/overflow-popover.svelte';
 	import ServiceIcon from './services/service-icon.svelte';
-	import { isSensitivePort } from '$lib/utilities/scan-correlation';
+	import { isSensitivePort } from '$lib/config/service-classes';
 	import { serviceLabel, type ServiceRead } from '$lib/utilities/services';
 
 	interface Props {

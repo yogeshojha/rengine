@@ -6,6 +6,8 @@ import base64
 from functools import lru_cache
 from pathlib import Path
 
+from shared.definitions.reports import MAX_SCREENSHOTS
+
 MEDIA_ROOT = Path("/app/scan_media")
 _TYPES = {
     ".png": "image/png",
@@ -16,7 +18,7 @@ _TYPES = {
 _MAX_BYTES = 3_000_000
 
 
-@lru_cache(maxsize=256)
+@lru_cache(maxsize=MAX_SCREENSHOTS)
 def image_data_uri(path: str | None) -> str:
     if not path:
         return ""
@@ -28,3 +30,8 @@ def image_data_uri(path: str | None) -> str:
         return ""
     encoded = base64.b64encode(candidate.read_bytes()).decode("ascii")
     return f"data:{media_type};base64,{encoded}"
+
+
+def forget_images() -> None:
+    """Drop the embedded images once a document is rendered."""
+    image_data_uri.cache_clear()

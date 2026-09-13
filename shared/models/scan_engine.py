@@ -8,6 +8,7 @@ from sqlalchemy import Column
 from sqlalchemy.types import JSON, Text
 from sqlmodel import Field, SQLModel
 
+from shared.enums.scan import Intensity
 from shared.models.scan_context import ScanContextCreate
 from shared.utils.datetime import utc_now
 from shared.utils.validation import clean_name, clean_optional_name
@@ -21,7 +22,7 @@ class ScanEngine(SQLModel, table=True):
     created_by: uuid.UUID = Field(foreign_key="users.id")
     name: str = Field(max_length=200)
     description: str | None = Field(default=None, max_length=1000)
-    intensity: str = Field(default="normal")
+    intensity: str = Field(default=Intensity.NORMAL.value)
     global_headers: list = Field(
         default_factory=list, sa_column=Column(JSON, nullable=False)
     )
@@ -38,7 +39,7 @@ class ScanEngine(SQLModel, table=True):
 class ScanEngineCreate(BaseModel):
     name: str
     description: str | None = None
-    intensity: str = "normal"
+    intensity: str = Intensity.NORMAL.value
     global_headers: list[str] = PydanticField(default_factory=list)
     stages: dict[str, dict] = PydanticField(default_factory=dict)
     yaml_source: str | None = None
@@ -171,5 +172,5 @@ class EnginePreviewRequest(BaseModel):
     target_type: str
     context_id: uuid.UUID | None = None
     context: ScanContextCreate | None = None
-    intensity: str = "normal"
+    intensity: str = Intensity.NORMAL.value
     stages: dict[str, dict] = PydanticField(default_factory=dict)

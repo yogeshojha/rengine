@@ -11,6 +11,7 @@ from mcp.result import ToolResult
 from mcp.tools._scope import resolve
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.definitions.surface import SurfaceDimension
+from shared.utils.text import counted
 
 _COVERAGE_DIMENSIONS = (
     SurfaceDimension.VULNERABILITIES.value,
@@ -58,7 +59,7 @@ class ScanCoverage(Tool):
         ]
         partial = [r for r in runs if r.get("status") not in ("completed", None)]
 
-        summary_line = f"{len(runs)} run(s) recorded for {dim.label}"
+        summary_line = f"{counted(len(runs), 'run')} recorded for {dim.label}"
         if partial:
             summary_line += f", {len(partial)} incomplete"
 
@@ -71,7 +72,7 @@ class ScanCoverage(Tool):
         )
         if shortfall:
             caveats.append(
-                f"{shortfall} selected check(s) were not loaded and did not run."
+                f"{counted(shortfall, 'selected check')} were not loaded and did not run."
             )
         if not runs:
             caveats.append("No coverage rows exist.")

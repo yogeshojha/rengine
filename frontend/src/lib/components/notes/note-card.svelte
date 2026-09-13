@@ -6,6 +6,8 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import Hint from '$lib/components/hint.svelte';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
+	import { toast } from 'svelte-sonner';
 	import NoteComposer from './note-composer.svelte';
 	import { notes } from '$lib/stores/notes.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
@@ -25,6 +27,7 @@
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
 	let editing = $state(false);
 	let busy = $state(false);
+	let confirmDelete = $state(false);
 	let resolved = $derived(note.status === 'resolved');
 	let spec = $derived(SURFACE_ORDER.find((s) => s.key === note.dimension) ?? null);
 
@@ -34,6 +37,8 @@
 		try {
 			await notes.update(projectId, note.id, { status: resolved ? 'open' : 'resolved' });
 			onChanged?.();
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : 'Note not updated');
 		} finally {
 			busy = false;
 		}
@@ -44,7 +49,10 @@
 		busy = true;
 		try {
 			await notes.remove(projectId, note);
+			confirmDelete = false;
 			onChanged?.();
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : 'Note not deleted');
 		} finally {
 			busy = false;
 		}
@@ -119,7 +127,7 @@
 							variant="ghost"
 							size="icon"
 							class="size-7 text-muted-foreground hover:text-destructive"
-							onclick={remove}
+							onclick={() => (confirmDelete = true)}
 							disabled={busy}
 						>
 							<Trash2 class="size-3.5" />
@@ -161,3 +169,15 @@
 		</div>
 	{/if}
 </article>
+
+<ConfirmDialog
+	open={confirmDelete}
+	title="Delete note"
+	description="The note is removed."
+	confirmLabel="Delete"
+	destructive
+	loading={busy}
+	loadingLabel="Deleting"
+	onOpenChange={(o) => (confirmDelete = o)}
+	onConfirm={remove}
+/>

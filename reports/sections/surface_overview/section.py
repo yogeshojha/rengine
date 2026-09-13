@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from reports.base import RenderContext, Section
 from reports.config import SectionConfig, flag
+from reports.data.source import REPORT_DIMENSIONS
 from shared.definitions.reports import SectionGroup
-from shared.definitions.surface import SURFACE_LABELS, SURFACE_NOUN, SURFACE_ORDER
+from shared.definitions.surface import SURFACE_LABELS, SURFACE_NOUN
 
 
 class SurfaceOverviewConfig(SectionConfig):
@@ -26,7 +27,7 @@ class SurfaceOverviewSection(Section):
 
     def build(self, ctx: RenderContext, cfg: SurfaceOverviewConfig) -> dict:
         rows = []
-        for dimension in SURFACE_ORDER:
+        for dimension in REPORT_DIMENSIONS:
             entry = ctx.data.coverage[dimension]
             rows.append(
                 {

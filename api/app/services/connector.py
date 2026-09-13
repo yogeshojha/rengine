@@ -36,7 +36,6 @@ from shared.definitions.connectors import (
     SAFE_METHODS,
     ActionKind,
     CandidateState,
-    ConnectorKind,
     NoticeKind,
     state_for,
 )
@@ -99,6 +98,8 @@ _RANK = (
 )
 MAX_DISCOVERED = 40
 MAX_DISCOVERED_HOSTNAMES = 12
+MAX_FLAGGED = 20
+MAX_CANDIDATE_HOSTS = 30
 _PROXY_ONLY = and_(
     func.jsonb_array_length(cast(Endpoint.sources, JSONB)) == 1,
     cast(Endpoint.sources, JSONB).has_key(EndpointSource.PROXY.value),
@@ -168,7 +169,8 @@ class ConnectorService:
             .all()
         )
         owned = await self._owned_domains(project_id)
-        return [await self._read(row, owned=owned) for row in rows]
+        forbidden = await self.forbidden_hosts(project_id)
+        return [await self._read(row, owned=owned, forbidden=forbidden) for row in rows]
 
     async def get(self, connector_id: uuid.UUID, project_id: uuid.UUID) -> Connector:
         row = await self.session.get(Connector, connector_id)
@@ -314,7 +316,7 @@ class ConnectorService:
             }
             for data in rows
             if set(data["notices"]) & LOUD_NOTICES
-        ][:20]
+        ][:MAX_FLAGGED]
         novel = await self._upsert(rows) if rows else 0
 
         row.requests_seen += batch.seen
@@ -623,6 +625,7 @@ class ConnectorService:
         connector_id: uuid.UUID,
         project_id: uuid.UUID,
         owned: set[str] | None = None,
+        forbidden: dict[str, str] | None = None,
     ) -> list[DiscoveredDomain]:
         """Domains this proxy reached that no target covers, vendors and noise removed."""
         await self.get(connector_id, project_id)
@@ -642,7 +645,8 @@ class ConnectorService:
             .scalars()
             .all()
         )
-        forbidden = await self.forbidden_hosts(project_id)
+        if forbidden is None:
+            forbidden = await self.forbidden_hosts(project_id)
         grouped: dict[str, list[ConnectorHost]] = {}
         for host in hosts:
             domain = host.registrable
@@ -889,7 +893,7 @@ class ConnectorService:
                     .where(ConnectorCandidate.connector_id == connector_id)
                     .group_by(ConnectorCandidate.host)
                     .order_by(func.count().desc())
-                    .limit(30)
+                    .limit(MAX_CANDIDATE_HOSTS)
                 )
             ).all()
         ]
@@ -1051,7 +1055,7 @@ class ConnectorService:
         target_value = next(v for i, v in targets if i == target_id)
 
         scan_id = await self._manual_run(row, target_id, created_by)
-        title = strip_control(report.title).strip()[:500] or "Manual finding"
+        title = strip_control(report.title).strip() or "Manual finding"
         template_id = f"manual:{row.kind}"
         mark = fingerprint(Scanner.MANUAL.value, template_id, title, parsed.url)
         existing = await self.session.scalar(
@@ -1074,9 +1078,7 @@ class ConnectorService:
                 host=parsed.host,
                 port=parsed.port,
                 scheme=parsed.scheme,
-                description=strip_control(report.notes)[:8000]
-                if report.notes
-                else None,
+                description=strip_control(report.notes) if report.notes else None,
                 request=self._evidence(report.request),
                 response=self._evidence(report.response),
             )
@@ -1101,7 +1103,7 @@ class ConnectorService:
     def _evidence(text: str | None) -> str | None:
         if not text:
             return None
-        return redact_message(strip_control(text))[:200_000]
+        return redact_message(strip_control(text))
 
     async def _manual_run(
         self, row: Connector, target_id: uuid.UUID, created_by: uuid.UUID | None
@@ -1583,7 +1585,10 @@ class ConnectorService:
         )
 
     async def _read(
-        self, row: Connector, owned: set[str] | None = None
+        self,
+        row: Connector,
+        owned: set[str] | None = None,
+        forbidden: dict[str, str] | None = None,
     ) -> ConnectorRead:
         now = utc_now()
         minutes = (
@@ -1606,7 +1611,11 @@ class ConnectorService:
             )
         ).one()
         queued, unseen, unassigned, flagged, out_of_scope = counted
-        discovered = len(await self.discovered(row.id, row.project_id, owned=owned))
+        discovered = len(
+            await self.discovered(
+                row.id, row.project_id, owned=owned, forbidden=forbidden
+            )
+        )
         return ConnectorRead(
             id=row.id,
             project_id=row.project_id,
@@ -1638,6 +1647,3 @@ class ConnectorService:
             last_scan_at=row.last_scan_at,
             created_at=row.created_at,
         )
-
-
-DEFAULT_KIND = ConnectorKind.BURP.value

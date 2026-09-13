@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
@@ -16,7 +16,7 @@ from shared.definitions.asset_query import (
     SOFTWARE_QUERY,
     VULN_QUERY,
 )
-from shared.definitions.surface import SURFACE_ORDER, SurfaceDimension
+from shared.definitions.surface import SurfaceDimension
 from shared.models.asset_query import QuerySchema
 from shared.models.surface import SurfaceCoverage, SurfaceOverview
 
@@ -57,9 +57,4 @@ async def surface_coverage(
     project_id: Annotated[UUID, Query(description="Project ID")],
     dimension: Annotated[SurfaceDimension, Query(description="Result dimension")],
 ):
-    if dimension.value not in SURFACE_ORDER:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Unknown dimension '{dimension}'.",
-        )
     return await service.coverage(project_id, dimension.value)

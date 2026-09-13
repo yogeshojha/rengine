@@ -19,7 +19,7 @@ repos:
     hooks:
       - id: prettier
         name: prettier-format
-        entry: bash -c 'cd frontend && npx prettier --write --ignore-unknown'
+        entry: bash -c 'cd frontend && npx prettier --write --ignore-unknown "${@#frontend/}"' --
         language: system
         files: ^frontend/.*\.(js|ts|svelte|json|css|scss|html)$
         pass_filenames: true

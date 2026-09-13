@@ -50,6 +50,7 @@
 	const NVD = 'https://nvd.nist.gov/vuln/detail/';
 
 	let shown = $derived(new Set(columns.map((c) => c.key)));
+	let width = $derived(new Map(columns.map((c) => [c.key, c.width])));
 	let location = $derived(row.host ?? row.ip ?? '');
 	let epss = $derived(row.epss_score == null ? null : Math.round(row.epss_score * 100));
 	let fill = $derived(SEVERITY_FILL[row.severity] ?? SEVERITY_FILL.unknown);
@@ -83,7 +84,7 @@
 	></span>
 
 	{#if projectWide}
-		<div class="flex w-40 shrink-0 items-center {pad}">
+		<div class="flex shrink-0 items-center {width.get('target')} {pad}">
 			<TargetCell value={row.target_value} />
 		</div>
 	{/if}
@@ -141,7 +142,7 @@
 	{/if}
 
 	{#if shown.has('severity')}
-		<div class="flex w-28 items-center gap-1.5 {pad}">
+		<div class="flex items-center gap-1.5 {width.get('severity')} {pad}">
 			<span class={SEVERITY_TEXT[row.severity] ?? 'text-muted-foreground'}>
 				{severityLabel(row.severity)}
 			</span>
@@ -152,7 +153,7 @@
 	{/if}
 
 	{#if shown.has('exploitation')}
-		<div class="flex w-28 items-center {pad}">
+		<div class="flex items-center {width.get('exploitation')} {pad}">
 			{#if epss != null}
 				<span class="text-xs tabular-nums">{epss}%</span>
 			{:else}
@@ -162,13 +163,13 @@
 	{/if}
 
 	{#if shown.has('evidence')}
-		<div class="flex w-32 items-center {pad}">
+		<div class="flex items-center {width.get('evidence')} {pad}">
 			<EvidenceMark evidence={row.evidence} onFilter={onToken} />
 		</div>
 	{/if}
 
 	{#if shown.has('confidence')}
-		<div class="flex w-28 items-center {pad}">
+		<div class="flex items-center {width.get('confidence')} {pad}">
 			<Hint text={confidenceHint}>
 				{#snippet child(props)}
 					<span {...props} class={CONFIDENCE_TEXT[row.confidence] ?? 'text-muted-foreground'}>
@@ -180,7 +181,7 @@
 	{/if}
 
 	{#if shown.has('seen')}
-		<div class="flex w-24 items-center text-xs text-muted-foreground {pad}">
+		<div class="flex items-center text-xs text-muted-foreground {width.get('seen')} {pad}">
 			{relativeTime(row.discovered_at)}
 		</div>
 	{/if}

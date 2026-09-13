@@ -48,7 +48,7 @@ class StageSpec:
 
 
 class StageRegistrationError(RuntimeError):
-    """An engine module declares an invalid or duplicate stage."""
+    """A stage module declares an invalid or duplicate stage."""
 
 
 _GROUPS = frozenset(g.value for g in StageGroup)
@@ -91,7 +91,7 @@ def _stage_classes() -> list[type[Stage]]:
                     msg = f"{obj.__qualname__} must set a `name`."
                     raise StageRegistrationError(msg)
                 if found.setdefault(name, obj) is not obj:
-                    msg = f"Duplicate engine name {name!r}: {obj.__qualname__}."
+                    msg = f"Duplicate stage name {name!r}: {obj.__qualname__}."
                     raise StageRegistrationError(msg)
     return list(found.values())
 

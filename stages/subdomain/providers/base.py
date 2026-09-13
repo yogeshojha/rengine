@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, ClassVar
 
 from shared.definitions.tools import parse_tool_args
 from shared.logging import get_logger
+from tools.runner import tool_path
 
 if TYPE_CHECKING:
     from shared.enums.api_key import APIProvider
@@ -54,7 +55,7 @@ class SubdomainProvider(ABC):
         return parse_tool_args((self.ctx.tool_options or {}).get(self.tool, ""))
 
     def availability(self) -> tuple[bool, str | None]:
-        if self.binary and shutil.which(self.binary) is None:
+        if self.binary and shutil.which(self.binary, path=tool_path()) is None:
             return False, f"{self.binary} not installed"
         if self.requires_key is not None and not self.ctx.api_keys.get(
             self.requires_key.value

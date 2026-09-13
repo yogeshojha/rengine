@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
+	import { SURFACE, SurfaceDimension, type ResultTab } from '$lib/config/surface';
+	import { onDestroy, untrack } from 'svelte';
 	import { LiveRefresh } from '$lib/utilities/live-results';
 	import Search from '@lucide/svelte/icons/search';
 	import Sparkle from '@lucide/svelte/icons/sparkle';
@@ -34,7 +35,7 @@
 		projectId: string;
 		projectWide?: boolean;
 		active: boolean;
-		onTab?: (tab: string, filter?: string) => void;
+		onTab?: (tab: ResultTab, filter?: string) => void;
 		revision?: number;
 		onTotal?: (total: number) => void;
 	}
@@ -49,6 +50,8 @@
 		onTab,
 		onTotal
 	}: Props = $props();
+
+	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 
 	const PAGE_SIZE = 25;
 	const ALL = 'all';
@@ -88,7 +91,7 @@
 	let filtered = $derived(q.trim() !== '' || sources.length > 0 || kinds.length > 0);
 
 	$effect(() => {
-		void interestCatalog.load();
+		untrack(() => interestCatalog.load());
 	});
 
 	let signature = $derived(
@@ -192,7 +195,7 @@
 	});
 
 	function openInAssets(row: InterestRow): void {
-		onTab?.('web-assets', `host="${row.host}"`);
+		onTab?.(WEB.tab, `host="${row.host}"`);
 	}
 </script>
 
@@ -207,9 +210,8 @@
 					<p class="text-xs text-muted-foreground">
 						{summary.total.toLocaleString()}
 						{summary.total === 1 ? 'asset' : 'assets'} flagged
-						{#each activeSources as s, i (s.key)}{i === 0 ? ' · ' : ' · '}{(
-								summary.sources[s.key] ?? 0
-							).toLocaleString()}
+						{#each activeSources as s (s.key)}
+							· {(summary.sources[s.key] ?? 0).toLocaleString()}
 							{s.key === 'ai' ? 'judged by AI' : `from ${s.label.toLowerCase()}`}{/each}
 					</p>
 				{/if}

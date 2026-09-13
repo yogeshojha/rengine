@@ -110,10 +110,8 @@ CROSS_LINK_ORDER: tuple[str, ...] = (
     CorrelationKind.BODY.value,
     CorrelationKind.FAVICON.value,
     CorrelationKind.CNAME.value,
-    CorrelationKind.IP.value,
     CorrelationKind.TITLE.value,
 )
-CROSS_LINK_KINDS: frozenset[str] = frozenset(CROSS_LINK_ORDER)
 # identities read off the page
 CROSS_PAGE_KINDS: frozenset[str] = frozenset(
     {

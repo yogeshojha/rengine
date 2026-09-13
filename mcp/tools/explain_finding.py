@@ -14,6 +14,7 @@ from mcp.result import ToolResult
 from mcp.tools._scope import resolve
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.definitions.surface import SurfaceDimension
+from shared.utils.text import counted
 
 MAX_LOCATIONS = 25
 MAX_EVIDENCE_CHARS = 1200
@@ -86,7 +87,7 @@ class ExplainFinding(Tool):
         return ToolResult(
             summary=(
                 f"{detail.severity.upper()}: {detail.template_name} on "
-                f"{scope.target.target_value}, {page.total} occurrence(s)"
+                f"{scope.target.target_value}, {counted(page.total, 'occurrence')}"
             ),
             data={
                 "check": {

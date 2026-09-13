@@ -12,6 +12,7 @@ export const MCP_CAPABILITY_LABELS: Record<McpCapability, string> = {
 
 export const ALWAYS_GRANTED: McpCapability[] = ['read'];
 export const TOUCHES_TARGETS: McpCapability[] = ['launch'];
+export const MCP_DEFAULT_GRANTS: McpCapability[] = ['read', 'plan'];
 
 export const MCP_EXPIRY_CHOICES: { value: number | null; label: string }[] = [
 	{ value: 7, label: 'In 7 days' },

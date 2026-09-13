@@ -65,7 +65,7 @@ async def event_stream(
     if not validated:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="No authorized channels in request",
+            detail="No valid channels in request",
         )
 
     if sse_manager.at_capacity():

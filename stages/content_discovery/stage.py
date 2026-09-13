@@ -230,7 +230,6 @@ class _Outcome:
 
 @dataclass
 class _Run:
-    kept: int = 0
     uncalibrated: int = 0
     cut_short: int = 0
     failed: int = 0
@@ -245,14 +244,12 @@ class _Run:
         if outcome.uncalibrated:
             self.uncalibrated += 1
             self.dropped.append(outcome.host)
-            return
-        self.kept += len(outcome.kept)
 
     def note(self, written: int, tried: int, hosts: int) -> str:
         text = f"{written:,} paths answered out of {tried:,} guessed on {hosts} sites"
         if self.uncalibrated:
             text += (
-                f", {self.uncalibrated} site(s) answered to everything and were dropped"
+                f", {self.uncalibrated} sites answered to everything and were dropped"
             )
         return text
 
@@ -263,17 +260,17 @@ class _Run:
             extra = len(self.dropped) - _NAMED
             more = f" and {extra} more" if extra > 0 else ""
             out.append(
-                f"{self.uncalibrated} site(s) answered at least "
+                f"{self.uncalibrated} sites answered at least "
                 f"{int(MAX_HIT_SHARE * 100)}% of {tried:,} guessed paths and were "
                 f"dropped as catch-all: {shown}{more}."
             )
         if self.cut_short:
             out.append(
-                f"{self.cut_short} site(s) reached the {cfg.max_minutes}-minute "
+                f"{self.cut_short} sites reached the {cfg.max_minutes}-minute "
                 "budget with wordlist remaining."
             )
         if self.failed:
-            out.append(f"{self.failed} site(s) could not be guessed against.")
+            out.append(f"{self.failed} sites could not be guessed against.")
         return out
 
 

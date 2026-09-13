@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Plus from '@lucide/svelte/icons/plus';
 	import StickyNote from '@lucide/svelte/icons/sticky-note';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { untrack } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
@@ -35,6 +36,7 @@
 	let items = $state<Note[]>([]);
 	let total = $state(0);
 	let loading = $state(false);
+	let error = $state<string | null>(null);
 	let reqId = 0;
 
 	async function load() {
@@ -46,9 +48,14 @@
 			if (seq !== reqId) return;
 			items = page.items;
 			total = page.total;
+			error = null;
 			onCount?.(page.total);
-		} catch {
-			if (seq === reqId) items = [];
+		} catch (e) {
+			if (seq === reqId) {
+				items = [];
+				total = 0;
+				error = e instanceof Error ? e.message : 'Request failed.';
+			}
 		} finally {
 			if (seq === reqId) loading = false;
 		}
@@ -99,6 +106,15 @@
 				<Skeleton class="h-12 w-full" />
 			{/each}
 		</div>
+	{:else if error}
+		<EmptyState
+			icon={TriangleAlert}
+			title="Notes not loaded"
+			description={error}
+			class="border-0 bg-transparent py-10"
+		>
+			<Button variant="outline" size="sm" onclick={() => void load()}>Retry</Button>
+		</EmptyState>
 	{:else if items.length === 0}
 		<EmptyState
 			icon={StickyNote}

@@ -7,6 +7,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { EXPORT_FORMATS, FORMAT_LABELS, isLive } from '$lib/config/exports';
 	import { exportsStore } from '$lib/stores/exports.svelte';
+	import { SurfaceDimension } from '$lib/config/surface';
 	import type { ExportRead } from '$lib/types/export';
 	import ExportsSheet from './exports-sheet.svelte';
 
@@ -33,7 +34,7 @@
 	let withEvidence = $state(false);
 
 	// only findings carry a stored request and response
-	let offersEvidence = $derived(dimension === 'vulnerabilities');
+	let offersEvidence = $derived(dimension === SurfaceDimension.VULNERABILITIES);
 
 	let live = $derived(exportsStore.rows.some((row) => isLive(row.status)));
 
@@ -51,22 +52,25 @@
 	async function start(format: string) {
 		if (!projectId) return;
 		pending = true;
-		exportsStore.setOnReady(ready);
 		try {
-			await exportsStore.create(projectId, {
-				dimension,
-				scan_id: scanId || null,
-				target_id: targetId || null,
-				export_format: format,
-				include_evidence: offersEvidence && withEvidence,
-				filters: {
-					...filters,
-					limit: undefined,
-					offset: undefined,
-					page: undefined,
-					size: undefined
-				}
-			});
+			await exportsStore.create(
+				projectId,
+				{
+					dimension,
+					scan_id: scanId || null,
+					target_id: targetId || null,
+					export_format: format,
+					include_evidence: offersEvidence && withEvidence,
+					filters: {
+						...filters,
+						limit: undefined,
+						offset: undefined,
+						page: undefined,
+						size: undefined
+					}
+				},
+				ready
+			);
 		} catch (e) {
 			pending = false;
 			toast.error(e instanceof Error ? e.message : 'Export not started.');
@@ -115,7 +119,7 @@
 				Include request and response
 			</DropdownMenu.CheckboxItem>
 			<p class="px-2 pb-1 text-2xs text-muted-foreground">
-				Adds the stored request and response. Scan headers are masked; response bodies are not.
+				Adds the stored request and response. Scan headers are masked. Response bodies are not.
 			</p>
 		{/if}
 		<DropdownMenu.Separator />

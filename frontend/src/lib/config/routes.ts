@@ -59,12 +59,12 @@ export type ExposureTab = (typeof EXPOSURE_TABS)[number];
 export const REPORT_TABS = ['reports', 'templates', 'themes', 'defaults'] as const;
 export type ReportTab = (typeof REPORT_TABS)[number];
 
-export const AI_TABS = ['connection', 'features', 'usage'] as const;
+export const AI_SECTIONS = ['connection', 'features', 'usage'] as const;
 export const CONNECTOR_TABS = ['queue', 'discovered', 'settings'] as const;
 export type ConnectorTab = (typeof CONNECTOR_TABS)[number];
 export const MCP_TABS = ['server', 'tools', 'access', 'activity'] as const;
 export type McpTab = (typeof MCP_TABS)[number];
-export type AiTab = (typeof AI_TABS)[number];
+export type AiSection = (typeof AI_SECTIONS)[number];
 export type ArsenalTab = (typeof ARSENAL_TABS)[number];
 
 export const ROUTES = {
@@ -120,11 +120,10 @@ export const ROUTES = {
 		return `/exposures${suffix ? `?${suffix}` : ''}`;
 	},
 	reports: (tab?: ReportTab) => (tab ? `/reports?tab=${tab}` : '/reports'),
-	report: (id: string) => `/reports/${id}`,
 	reportTemplate: (id: string) => `/reports/templates/${id}`,
 	reportsForScan: (scanId: string) => `/reports?scan=${scanId}`,
 	reportsForTarget: (targetId: string) => `/reports?target=${targetId}`,
-	ai: (tab?: AiTab) => (tab ? `/settings/ai?tab=${tab}` : '/settings/ai'),
+	ai: (section?: AiSection) => (section ? `/settings/ai#ai-${section}` : '/settings/ai'),
 	mcp: (tab?: McpTab) => (tab ? `/settings/mcp?tab=${tab}` : '/settings/mcp'),
 	connectors: (tab?: ConnectorTab) => (tab ? `/connectors?tab=${tab}` : '/connectors'),
 	settings: (section?: SettingsSection) => (section ? `/settings/${section}` : '/settings')

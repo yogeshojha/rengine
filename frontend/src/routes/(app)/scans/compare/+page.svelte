@@ -37,7 +37,7 @@
 		COMPARE_TAB_ALL,
 		type CompareMode
 	} from '$lib/config/compare';
-	import { SURFACE_ORDER } from '$lib/config/surface';
+	import { SURFACE_ORDER, SurfaceDimension } from '$lib/config/surface';
 	import {
 		CHANGE_VERB,
 		COMPARABILITY,
@@ -49,11 +49,12 @@
 		type ScanComparison
 	} from '$lib/types/compare';
 
-	const RESCANNABLE = ['web_assets', 'ips'];
+	const RESCANNABLE: string[] = [SurfaceDimension.WEB_ASSETS, SurfaceDimension.IPS];
 
 	let comparison = $state<ScanComparison | null>(null);
 	let runs = $state<ComparableRun[]>([]);
 	let runsLoading = $state(false);
+	let runsError = $state<string | null>(null);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 
@@ -170,8 +171,9 @@
 		runsLoading = true;
 		try {
 			runs = await compareApi.comparable(projectId, currentId);
-		} catch {
-			runs = [];
+			runsError = null;
+		} catch (e) {
+			runsError = e instanceof Error ? e.message : 'Runs not loaded.';
 		} finally {
 			runsLoading = false;
 		}
@@ -323,7 +325,9 @@
 							.filter(
 								(r) => r.verb !== CHANGE_VERB.DISAPPEARED && r.verb !== CHANGE_VERB.UNCONFIRMED
 							)
-							.map((r) => (r.dimension === 'services' ? r.title.split(':')[0] : r.title))
+							.map((r) =>
+								r.dimension === SurfaceDimension.SERVICES ? r.title.split(':')[0] : r.title
+							)
 					)
 				].slice(0, rechecks.schema?.max_assets || 500)
 			: []
@@ -385,7 +389,7 @@
 		</div>
 	{:else if error || !comparison}
 		<CompareUnavailable
-			reason={error ?? 'Pick two finished runs of the same target.'}
+			reason={error ?? runsError ?? 'Pick two finished runs of the same target.'}
 			{currentId}
 			{runs}
 			loading={runsLoading}

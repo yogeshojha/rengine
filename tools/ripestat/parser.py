@@ -22,12 +22,6 @@ from tools.ripestat.models import (
 logger = get_logger(__name__)
 
 
-def _parse_asn(resource: str) -> int:
-    """Extract numeric ASN from strings like 'AS23752', '23752', etc."""
-    cleaned = resource.upper().replace("AS", "").strip()
-    return int(cleaned)
-
-
 def _detect_ip_version(prefix: str) -> int:
     return 6 if ":" in prefix else 4
 
@@ -104,7 +98,7 @@ def parse_as_overview(data: dict[str, Any], asn: int) -> ASOverviewResponse:
     return ASOverviewResponse(
         asn=asn,
         holder=data.get("holder", ""),
-        rir=data.get("type"),  # "RIR" isn't the RIR name, but it's what we get
+        rir=data.get("type"),  # not the RIR name
         announced=data.get("announced", False),
         block_name=block.get("name"),
         block_resource=block.get("resource"),

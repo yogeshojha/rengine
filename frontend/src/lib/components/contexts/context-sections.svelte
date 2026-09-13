@@ -265,7 +265,7 @@
 		max-width: 46%;
 	}
 	.title {
-		font-size: 13px;
+		font-size: 14px;
 		font-weight: 500;
 	}
 	.subtitle {
@@ -279,7 +279,7 @@
 		flex: 1;
 		min-width: 0;
 		text-align: right;
-		font-size: 11.5px;
+		font-size: 12px;
 		color: var(--foreground);
 		white-space: nowrap;
 		overflow: hidden;

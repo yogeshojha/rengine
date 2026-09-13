@@ -131,22 +131,6 @@ WATCHED_FIELDS: dict[str, tuple[WatchedField, ...]] = {
     SurfaceDimension.SOFTWARE.value: _SOFTWARE_FIELDS,
 }
 
-# moves every run
-IGNORED_FIELDS: dict[str, tuple[str, ...]] = {
-    SurfaceDimension.WEB_ASSETS.value: ("content_length", "response_time"),
-    SurfaceDimension.ENDPOINTS.value: (
-        "words",
-        "lines",
-        "response_time",
-        "content_length",
-        "variants",
-    ),
-    SurfaceDimension.SERVICES.value: ("source",),
-    SurfaceDimension.IPS.value: ("source", "scan_policy_reason"),
-    SurfaceDimension.VULNERABILITIES.value: ("description", "remediation"),
-    SurfaceDimension.SOFTWARE.value: ("description",),
-}
-
 # Class D: moves without a scan
 INTEL_FIELDS: tuple[str, ...] = (
     "is_kev",
@@ -229,21 +213,21 @@ SIGNAL_RANK: dict[str, int] = {
 # ---------- run-level facets ----------
 
 
-@dataclass(frozen=True)
-class RunFacet:
-    key: str
-    label: str
-    path: str
-    kind: str = "scalar"
-    material: bool = True
-
-
 class FacetKind(StrEnum):
     SCALAR = "scalar"
     LIST = "list"
     BOOL = "bool"
     COUNT = "count"
     MASKED = "masked"
+
+
+@dataclass(frozen=True)
+class RunFacet:
+    key: str
+    label: str
+    path: str
+    kind: str = FacetKind.SCALAR.value
+    material: bool = True
 
 
 RUN_FACETS: tuple[RunFacet, ...] = (

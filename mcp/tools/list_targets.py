@@ -11,6 +11,7 @@ from mcp.result import ToolResult
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.models.project import Project
 from shared.models.target import Target
+from shared.utils.text import counted
 
 MAX_TARGETS = 100
 
@@ -52,7 +53,7 @@ class ListTargets(Tool):
 
         shown = rows[: args.limit]
         return ToolResult(
-            summary=f"{len(rows)} target(s) in scope",
+            summary=f"{counted(len(rows), 'target')} in scope",
             data={
                 "scope": "all projects"
                 if ctx.token.project_id is None
@@ -89,7 +90,7 @@ class ListProjects(Tool):
         scoped = ctx.scoped_projects()
         visible = [r for r in rows if scoped is None or r.id in scoped]
         return ToolResult(
-            summary=f"{len(visible)} project(s) in scope",
+            summary=f"{counted(len(visible), 'project')} in scope",
             data=[{"id": str(r.id), "name": r.name, "slug": r.slug} for r in visible],
             pivot=links.dashboard(ctx.ui_base_url),
         )

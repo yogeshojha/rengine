@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { SEVERITY_ORDER } from '$lib/config/vulnerabilities';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
@@ -81,7 +82,7 @@
 			{faces}
 		</span>
 		<span class="flex shrink-0 gap-1" aria-hidden="true">
-			{#each ['critical', 'high', 'medium', 'low', 'info'] as key (key)}
+			{#each SEVERITY_ORDER as key (key)}
 				<span class="size-2 rounded-full" style="background:{theme.severity[key]}"></span>
 			{/each}
 		</span>

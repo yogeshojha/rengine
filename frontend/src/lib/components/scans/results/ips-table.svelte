@@ -21,7 +21,7 @@
 
 	import QueryBar from './query-bar/query-bar.svelte';
 	import ListHeader from './table/list-header.svelte';
-	import { withTarget } from './table/columns';
+	import { readPref, rowPadding, selectAllState, withTarget, writePref } from './table/columns';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import SelectionBar from './table/selection-bar.svelte';
 	import type { SeedPick, SeedSelection } from '$lib/types/recheck';
@@ -37,7 +37,7 @@
 	import { seedKindFor, selectionLabel } from '$lib/utilities/rechecks';
 	import { rechecks } from '$lib/stores/rechecks.svelte';
 	import { startRescan } from '$lib/utilities/rechecks';
-	import { SurfaceDimension } from '$lib/config/surface';
+	import { SURFACE, SurfaceDimension, type ResultTab } from '$lib/config/surface';
 	import { ipQuerySchema } from '$lib/stores/query-schema.svelte';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import {
@@ -68,7 +68,7 @@
 		projectId: string;
 		active?: boolean;
 		revision?: number;
-		onTab?: (tab: string, filter?: string) => void;
+		onTab?: (tab: ResultTab, filter?: string) => void;
 		onScanTotal?: (total: number) => void;
 		query?: IpQuery;
 	}
@@ -88,26 +88,14 @@
 		})
 	}: Props = $props();
 
+	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
+	const SVC = SURFACE[SurfaceDimension.SERVICES];
+
+	const IP = SURFACE[SurfaceDimension.IPS];
+
 	let ready = $derived(Boolean(projectId) && (projectWide || Boolean(scanId)));
 
 	const DEFAULT_SORT = { key: 'hosts', dir: -1 as const };
-	const ROW_PAD: Record<string, string> = { compact: 'py-2', cozy: 'py-3' };
-
-	function readPref<T>(key: string, fallback: T): T {
-		try {
-			const raw = localStorage.getItem(key);
-			return raw ? (JSON.parse(raw) as T) : fallback;
-		} catch {
-			return fallback;
-		}
-	}
-	function writePref(key: string, value: unknown) {
-		try {
-			localStorage.setItem(key, JSON.stringify(value));
-		} catch {
-			// ignore
-		}
-	}
 
 	const initial = appPage.url.searchParams;
 	const initialSort = initial.get('ip_sort')?.split(':') ?? [];
@@ -136,6 +124,7 @@
 	let leadSet = $state<QueryLeads | null>(null);
 	let groupBy = $state<string>(initial.get('ip_group') ?? '');
 	let groupSet = $state<QueryGroups | null>(null);
+	let groupFailed = $state(false);
 	let groupLoading = $state(false);
 	let groupReq = 0;
 
@@ -163,16 +152,10 @@
 		allColumns.filter((c) => visible.includes(c.key) || c.key === 'target')
 	);
 	let checkedCount = $derived(items.filter((g) => checkedIps.has(g.ip)).length);
-	let selectAllChecked = $derived<boolean | 'indeterminate'>(
-		items.length > 0 && checkedCount === items.length
-			? true
-			: checkedCount > 0
-				? 'indeterminate'
-				: false
-	);
+	let selectAllChecked = $derived(selectAllState(checkedCount, items.length));
 	let filtered = $derived(ipActiveFacetCount(query) > 0 || !!query.search);
 	let chips = $derived(ipQueryChips(query, facets));
-	let rowPad = $derived(ROW_PAD[density] ?? ROW_PAD.cozy);
+	let rowPad = $derived(rowPadding(density));
 	let term = $derived(query.search.trim().includes(':') ? '' : query.search.trim());
 	let exposureTab = $derived(
 		query.exposure.length === 0 ? 'all' : query.exposure.length === 1 ? query.exposure[0] : ''
@@ -290,9 +273,15 @@
 		groupLoading = true;
 		try {
 			const res = await ipsApi.groups(projectId, scanId, groupBy, leadFilterWithQuery);
-			if (my === groupReq) groupSet = res;
+			if (my === groupReq) {
+				groupSet = res;
+				groupFailed = false;
+			}
 		} catch {
-			if (my === groupReq) groupSet = null;
+			if (my === groupReq) {
+				groupSet = null;
+				groupFailed = true;
+			}
 		} finally {
 			if (my === groupReq) groupLoading = false;
 		}
@@ -303,10 +292,9 @@
 		try {
 			facets = await ipsApi.facets(projectId, scanId);
 			onScanTotal?.(facets.exposure.reduce((n, f) => n + f.count, 0));
-		} catch {
-			facets = EMPTY_IP_FACETS;
-		} finally {
 			facetsLoaded = true;
+		} catch {
+			if (!facetsLoaded) facets = EMPTY_IP_FACETS;
 		}
 	}
 
@@ -465,12 +453,12 @@
 	function showHosts(filter: string) {
 		drawerOpen = false;
 		syncUrl();
-		onTab?.('web-assets', filter);
+		onTab?.(WEB.tab, filter);
 	}
 	function showServices(filter: string) {
 		drawerOpen = false;
 		syncUrl();
-		onTab?.('services', filter);
+		onTab?.(SVC.tab, filter);
 	}
 	function scrollCursor() {
 		document.querySelector(`[data-ip-row-index="${cursor}"]`)?.scrollIntoView({ block: 'nearest' });
@@ -652,8 +640,8 @@
 	{#if !groupBy}
 		<SelectionBar
 			count={checkedIps.size}
-			noun="address"
-			nounPlural="addresses"
+			noun={IP.noun}
+			nounPlural={IP.nounPlural}
 			{total}
 			{totalCapped}
 			maxAssets={rechecks.schema?.max_assets ?? 0}
@@ -691,6 +679,8 @@
 	{:else if groupBy}
 		<GroupList
 			set={groupSet}
+			failed={groupFailed}
+			onRetry={loadGroups}
 			dimensions={ipQuerySchema.schema.group_dimensions}
 			noun={ipQuerySchema.schema.noun}
 			nounPlural={ipQuerySchema.schema.noun_plural}
@@ -765,8 +755,8 @@
 			capped={totalCapped}
 			page={pageIndex}
 			{pageSize}
-			noun="address"
-			plural="addresses"
+			noun={IP.noun}
+			plural={IP.nounPlural}
 			selectedCount={checkedCount}
 			onClearSelection={() => checkedIps.clear()}
 			onPage={(p) => (pageIndex = p)}

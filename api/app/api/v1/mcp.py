@@ -1,12 +1,24 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, status
+from fastapi import (
+    APIRouter,
+    Body,
+    Depends,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    status,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentSuperuser, CurrentUser
 from app.config import settings
+from app.core.client_ip import client_id
 from app.core.database import get_session
+from app.core.ratelimit import clear_failures, record_failure, too_many_attempts
+from mcp.errors import UNAUTHORIZED
 from mcp.models import (
     McpCallRead,
     McpSettingsUpdate,
@@ -17,11 +29,14 @@ from mcp.models import (
     McpToolRead,
 )
 from mcp.service import McpConfigError, McpService
-from mcp.transport import handle_request
+from mcp.transport import DISABLED_MESSAGE, handle_request
 
 router = APIRouter(prefix="/mcp", tags=["mcp"])
 
 Session = Annotated[AsyncSession, Depends(get_session)]
+
+TOKEN_ATTEMPT_LIMIT = 20
+TOKEN_ATTEMPT_WINDOW = 900
 
 
 def ui_base() -> str:
@@ -34,15 +49,27 @@ def _guard(exc: McpConfigError) -> HTTPException:
     return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
 
+def _rejected_token(response: dict | list | None) -> bool:
+    if not isinstance(response, dict):
+        return False
+    error = response.get("error")
+    if not isinstance(error, dict) or error.get("code") != UNAUTHORIZED:
+        return False
+    return error.get("message") != DISABLED_MESSAGE
+
+
 @router.post("", include_in_schema=False)
 @router.post("/", include_in_schema=False)
 async def mcp_endpoint(
     session: Session,
+    request: Request,
     payload: Annotated[dict | list, Body()],
     authorization: Annotated[str | None, Header()] = None,
     user_agent: Annotated[str | None, Header()] = None,
 ):
     """MCP protocol endpoint. Authenticated by service token."""
+    key = f"mcp:token:{client_id(request)}"
+    await too_many_attempts(key, limit=TOKEN_ATTEMPT_LIMIT)
     response = await handle_request(
         payload,
         session=session,
@@ -50,6 +77,10 @@ async def mcp_endpoint(
         ui_base_url=ui_base(),
         client_hint=(user_agent or "unknown")[:120],
     )
+    if _rejected_token(response):
+        await record_failure(key, window_seconds=TOKEN_ATTEMPT_WINDOW)
+    else:
+        await clear_failures(key)
     return response if response is not None else {}
 
 

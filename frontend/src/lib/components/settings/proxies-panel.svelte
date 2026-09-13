@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 	import { proxiesStore } from '$lib/stores/proxies.svelte';
 	import {
 		PROXY_SCHEMES,
@@ -23,6 +24,7 @@
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import FormField from '$lib/components/form-field.svelte';
@@ -178,15 +180,23 @@
 		}
 	}
 
+	// `reachable` is on the test result, not on the stored row, so the middle state lives here
+	const reachedOnly = new SvelteSet<string>();
+
 	async function handleTest(id: string) {
 		testingId = id;
 		try {
 			const result = await proxiesStore.test(id);
 			if (!result) return;
 			if (result.success) {
+				reachedOnly.delete(id);
 				const ms = result.latency_ms != null ? ` (${result.latency_ms} ms)` : '';
 				toast.success(`${result.message}${ms}`);
+			} else if (result.reachable) {
+				reachedOnly.add(id);
+				toast.warning(result.message);
 			} else {
+				reachedOnly.delete(id);
 				toast.error(result.message);
 			}
 		} finally {
@@ -313,7 +323,7 @@
 						<Separator class="my-3" />
 
 						<div class="space-y-2">
-							{#each proxy.endpoints.slice(0, 3) as ep (ep.url_masked)}
+							{#each proxy.endpoints.slice(0, 3) as ep, i (`${i}:${ep.url_masked}`)}
 								<code class="block truncate font-mono text-xs text-muted-foreground"
 									>{ep.url_masked}</code
 								>
@@ -324,13 +334,30 @@
 						</div>
 
 						{#if proxy.last_test_at}
-							<div class="mt-3 flex items-center gap-1.5 text-xs">
-								{#if proxy.last_test_ok}
-									<CheckIcon class="size-3 text-foreground" />
-								{:else}
-									<CircleXIcon class="size-3 text-destructive" />
+							{@const reachedNotVerified = !proxy.last_test_ok && reachedOnly.has(proxy.id)}
+							<div class="mt-3 flex flex-col gap-0.5 text-xs">
+								<span class="flex items-center gap-1.5">
+									{#if proxy.last_test_ok}
+										<CheckIcon class="size-3 text-foreground" />
+										<span class="text-muted-foreground"
+											>Tested {formatDate(proxy.last_test_at)}</span
+										>
+									{:else if reachedNotVerified}
+										<TriangleAlertIcon class="size-3 text-warning" />
+										<span class="text-warning">Reachable, not verified</span>
+										<span class="text-muted-foreground">· {formatDate(proxy.last_test_at)}</span>
+									{:else}
+										<CircleXIcon class="size-3 text-destructive" />
+										<span class="text-muted-foreground"
+											>Tested {formatDate(proxy.last_test_at)}</span
+										>
+									{/if}
+								</span>
+								{#if proxy.last_test_message}
+									<span class="pl-[18px] break-words text-muted-foreground">
+										{proxy.last_test_message}
+									</span>
 								{/if}
-								<span class="text-muted-foreground">Tested {formatDate(proxy.last_test_at)}</span>
 							</div>
 						{/if}
 

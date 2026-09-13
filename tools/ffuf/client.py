@@ -7,6 +7,7 @@ import json
 from collections.abc import Iterator
 
 from shared.logging import get_logger
+from shared.utils.net import bracketed
 from tools.runner import (
     CLIToolRunner,
     OutputFormat,
@@ -117,7 +118,7 @@ class FfufClient:
             "-w",
             f"{self.wordlist}:FUZZ",
             "-u",
-            f"{scheme}://{ip}/",
+            f"{scheme}://{bracketed(ip)}/",
             HEADER_FLAG,
             f"Host: FUZZ.{base_host}",
             "-ac",

@@ -102,6 +102,7 @@ from shared.models.http_asset import HttpAsset
 from shared.models.scan import Scan
 from shared.models.vulnerability import Vulnerability
 from shared.services.asset_query import lead_cache
+from shared.services.asset_query.tokens import token as _token
 from shared.services.celery_dispatch import dispatch_endpoint_verify
 from shared.services.surface_query import endpoints as surface_endpoints
 from shared.utils.datetime import utc_now
@@ -191,16 +192,6 @@ _ARRAY_FACETS = {
     "interest": Endpoint.interest,
     "param": Endpoint.params,
 }
-
-
-def _needs_quote(value: str) -> bool:
-    return any(c in value for c in ' ()"[]:=><~') or not value
-
-
-def _token(field: str, op: str, value: str) -> str:
-    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
-    quoted = f'"{escaped}"' if _needs_quote(value) else value
-    return f"{field}{op}{quoted}"
 
 
 class _Reach:
@@ -1002,7 +993,7 @@ class EndpointService:
     async def pick(
         self, scope: ScopeLike, f: EndpointFilter, limit: int
     ) -> list[Endpoint]:
-        """The rows a filter names, in relevance order, capped: what a proxy is handed."""
+        """The rows a filter names, in relevance order, capped."""
         scope = QueryScope.of(scope)
         now = utc_now()
         base = self._scoped(scope, f)

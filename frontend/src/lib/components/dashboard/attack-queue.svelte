@@ -1,5 +1,4 @@
 <script lang="ts">
-	import Flame from '@lucide/svelte/icons/flame';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import ShieldCheck from '@lucide/svelte/icons/shield-check';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
@@ -15,6 +14,7 @@
 	import { SEVERITY_FILL, SEVERITY_LABELS, severityRank } from '$lib/config/vulnerabilities';
 	import { exactToken } from '$lib/utilities/scan-insights';
 	import { epssPercent } from '$lib/utilities/vulns';
+	import { ExploitSignal, SIGNAL_ICONS, signalVariant } from '$lib/config/threat-intel';
 	import { relativeTime } from '$lib/utilities/dates';
 	import {
 		windowText,
@@ -36,6 +36,7 @@
 	const SHOWN = 8;
 	const TOP_TARGETS = 6;
 	const VULNS = SURFACE[SurfaceDimension.VULNERABILITIES];
+	const KevIcon = SIGNAL_ICONS[ExploitSignal.KEV];
 	const plural = (n: number, one: string, many: string) =>
 		`${n.toLocaleString()} ${n === 1 ? one : many}`;
 
@@ -174,8 +175,11 @@
 									<span class="flex min-w-0 items-center gap-2">
 										<span class="truncate text-sm font-medium">{f.name}</span>
 										{#if f.is_kev}
-											<Badge variant="destructive" class="h-4 gap-1 px-1.5 text-2xs">
-												<Flame class="size-2.5" /> KEV
+											<Badge
+												variant={signalVariant(ExploitSignal.KEV)}
+												class="h-4 gap-1 px-1.5 text-2xs"
+											>
+												<KevIcon class="size-2.5" /> KEV
 											</Badge>
 										{/if}
 										{#if f.is_new}
@@ -234,7 +238,7 @@
 		{#if risk.new_in_window > 0}
 			<a
 				href={ROUTES.surface(VULNS.tab, { [VULNS.queryParam]: 'is:new' })}
-				class="font-medium text-success hover:underline"
+				class="font-medium text-foreground hover:underline"
 			>
 				▲ {plural(risk.new_in_window, 'finding', 'findings')} first reported in the {windowText(
 					window

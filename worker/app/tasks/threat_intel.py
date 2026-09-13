@@ -157,7 +157,7 @@ def refresh(feeds: list[str] | None = None, force: bool = False) -> dict:
 
 @shared_task(name="app.tasks.threat_intel.apply_scan")
 def apply_scan(scan_id: str) -> dict:
-    """Score and rank one scan's findings from the feeds we already hold."""
+    """Score and rank one scan's findings against the stored feeds."""
     with get_sync_session() as session:
         if not feeds_ready(session):
             logger.info("threat feeds empty, skipping scan intel", scan_id=scan_id)

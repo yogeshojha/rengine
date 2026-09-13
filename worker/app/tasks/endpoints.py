@@ -67,14 +67,17 @@ def verify_branch(
             return {"error": "scan not found"}
         resolved = load_resolved(scan.execution_config)
         cfg = EndpointProbeConfig()
-        rows = session.execute(
-            branch_candidates(scan.id, host, dir_path).limit(cap * 4)
-        ).all()
+        candidates = branch_candidates(scan.id, host, dir_path)
         excluded = resolved.excluded_paths or []
         if excluded:
-            rows = [r for r in rows if not matches_any(r.path, excluded)]
-        selected = [r.url for r in rows[:cap]]
-        skipped = max(0, len(rows) - len(selected))
+            selected, total = _in_scope(session, candidates, excluded, cap)
+        else:
+            total = int(
+                session.scalar(select(func.count()).select_from(candidates.subquery()))
+                or 0
+            )
+            selected = [r.url for r in session.execute(candidates.limit(cap)).all()]
+        skipped = max(0, total - len(selected))
         where = f"{dir_path or '/'} on {host}"
         if not selected:
             return {"verified": 0, "answered": 0}
@@ -157,6 +160,19 @@ def verify_branch(
             "verified branch", host=host, dir_path=dir_path, requested=len(selected)
         )
         return {"verified": len(selected), "answered": written.updated}
+
+
+def _in_scope(session, candidates, excluded: list[str], cap: int):
+    """Count every candidate the scope keeps, and take the first cap of them."""
+    selected: list[str] = []
+    total = 0
+    for row in session.execute(candidates.execution_options(yield_per=1000)):
+        if matches_any(row.path, excluded):
+            continue
+        total += 1
+        if len(selected) < cap:
+            selected.append(row.url)
+    return selected, total
 
 
 def _store(

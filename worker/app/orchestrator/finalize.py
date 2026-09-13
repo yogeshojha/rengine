@@ -89,13 +89,21 @@ def _notify(
 def _finalize_user_cancelled(
     session: Session, scan: Scan, events: ScanEventPublisher
 ) -> None:
-    _guard(lambda: _match_software(session, scan), None)
-    _guard(lambda: analyze_result_tables(session), None)
-    _settle(session, scan)
-    if scan.completed_at is None:
-        scan.completed_at = utc_now()
-        session.add(scan)
+    counts = _settled_counts(session, scan)
+    locked = session.get(Scan, scan.id, with_for_update=True)
+    if locked is None:
         session.commit()
+        return
+    first = locked.completed_at is None
+    for column, value in counts.items():
+        setattr(locked, column, value)
+    if first:
+        locked.completed_at = utc_now()
+    session.add(locked)
+    session.commit()
+    scan = locked
+    _settle(session, scan)
+    if first:
         _log_cancelled(ActivityLogService(session), scan)
         session.commit()
     events.scan_cancelled(status=scan.status)
@@ -270,39 +278,40 @@ def _match_software(session: Session, scan: Scan) -> None:
     )
 
 
-def _guard(fn, fallback):
+def _guard(session: Session, fn, fallback):
     try:
         return fn()
     except Exception:
-        logger.warning("scan delta measurement failed", exc_info=True)
+        session.rollback()
+        logger.warning("finalize step failed", exc_info=True)
         return fallback
 
 
 def _settled_counts(session: Session, scan: Scan) -> dict:
-    _guard(lambda: _match_software(session, scan), None)
-    _guard(lambda: analyze_result_tables(session), None)
+    _guard(session, lambda: _match_software(session, scan), None)
+    _guard(session, lambda: analyze_result_tables(session), None)
     return derived_counts(session, scan.id)
 
 
 def _measure(session: Session, scan: Scan) -> ScanDeltas:
     """Each dimension is only compared where an earlier census run covered it."""
     hosts, services, vulns = (
-        _guard(lambda sql=sql: _has_baseline(session, scan, sql), False)
+        _guard(session, lambda sql=sql: _has_baseline(session, scan, sql), False)
         for sql in (_HOST_BASELINE_SQL, _SERVICE_BASELINE_SQL, _VULN_BASELINE_SQL)
     )
     new_services, sensitive = (
-        _guard(lambda: _count_new_services(session, scan), (0, 0))
+        _guard(session, lambda: _count_new_services(session, scan), (0, 0))
         if services
         else (0, 0)
     )
     vuln_counts, kev, new_vulns = (
-        _guard(lambda: _count_new_vulnerabilities(session, scan), ({}, 0, 0))
+        _guard(session, lambda: _count_new_vulnerabilities(session, scan), ({}, 0, 0))
         if vulns
         else ({}, 0, 0)
     )
     return ScanDeltas(
         baseline=hosts or services or vulns,
-        new_hosts=_guard(lambda: _count_new_subdomains(session, scan), 0)
+        new_hosts=_guard(session, lambda: _count_new_subdomains(session, scan), 0)
         if hosts
         else 0,
         new_services=new_services,
@@ -310,12 +319,12 @@ def _measure(session: Session, scan: Scan) -> ScanDeltas:
         new_vulnerabilities=new_vulns,
         vulnerability_counts=vuln_counts,
         kev=kev,
-        dropped_hosts=_guard(lambda: _dropped_hosts(session, scan), 0),
+        dropped_hosts=_guard(session, lambda: _dropped_hosts(session, scan), 0),
     )
 
 
 def _settle(session: Session, scan: Scan) -> None:
-    """Rechecks for a focused run. Recorded browsing joins a census run."""
+    """Settle the per-scope work a terminal run leaves behind."""
     if scan.scope == ScanScope.FOCUSED.value:
         try:
             compute_rechecks(session, scan)

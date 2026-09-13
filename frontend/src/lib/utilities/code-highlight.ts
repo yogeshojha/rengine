@@ -741,14 +741,3 @@ export function applySearch(lines: CodeLine[], term: string): CodeSearch {
 	});
 	return { lines: marked, hits };
 }
-
-export function guessLang(code: string, fallback: CodeLang = 'text'): CodeLang {
-	const head = code.slice(0, 400).trimStart();
-	if (!head) return fallback;
-	const first = head.split('\n', 1)[0];
-	if (REQUEST_LINE.test(first) || STATUS_LINE.test(first)) return 'http';
-	if (head[0] === '{' || head[0] === '[') return 'json';
-	if (/^(curl|docker|npm|npx|python|sh|bash|git|nuclei|httpx|naabu|subfinder)\b/.test(head))
-		return 'shell';
-	return fallback;
-}

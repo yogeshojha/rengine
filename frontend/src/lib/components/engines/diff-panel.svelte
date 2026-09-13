@@ -97,7 +97,7 @@
 		padding: 10px 14px 16px;
 	}
 	.stage {
-		font-size: 10px;
+		font-size: 11px;
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
@@ -112,7 +112,7 @@
 		align-items: baseline;
 		gap: 6px;
 		padding: 3px 0;
-		font-size: 11.5px;
+		font-size: 12px;
 		flex-wrap: wrap;
 	}
 	.label {

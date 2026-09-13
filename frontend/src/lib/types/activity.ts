@@ -23,11 +23,13 @@ export const ACTIVITY_EVENT = {
 	SCAN_COMPLETED: 'scan.completed',
 	SCAN_FAILED: 'scan.failed',
 	SCAN_CANCELLED: 'scan.cancelled',
+	SCAN_PAUSED: 'scan.paused',
+	SCAN_RESUMED: 'scan.resumed',
 	SCAN_STAGE_COMPLETED: 'scan.stage.completed',
 	SCAN_STAGE_FAILED: 'scan.stage.failed'
 } as const;
 
-export const RUN_STATUSES = ['running', 'completed', 'failed', 'cancelled'] as const;
+export const RUN_STATUSES = ['running', 'paused', 'completed', 'failed', 'cancelled'] as const;
 export type RunStatus = (typeof RUN_STATUSES)[number];
 
 export interface RunSummary {
@@ -200,13 +202,21 @@ function buildRun(items: ActivityLog[]): RunSummary {
 	const started = byType(ACTIVITY_EVENT.SCAN_STARTED);
 	const head = completed ?? failed ?? cancelled ?? started ?? items[0];
 
+	const halted = items.find(
+		(i) =>
+			i.event_type === ACTIVITY_EVENT.SCAN_PAUSED || i.event_type === ACTIVITY_EVENT.SCAN_RESUMED
+	);
+	const paused = halted?.event_type === ACTIVITY_EVENT.SCAN_PAUSED;
+
 	const status: RunStatus = completed
 		? 'completed'
 		: failed
 			? 'failed'
 			: cancelled
 				? 'cancelled'
-				: 'running';
+				: paused
+					? 'paused'
+					: 'running';
 
 	return {
 		status,

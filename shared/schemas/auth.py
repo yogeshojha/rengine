@@ -2,8 +2,6 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.utils.validation import validate_password_strength, validate_username
-
 
 class LoginRequest(BaseModel):
     username: str
@@ -37,6 +35,8 @@ class PasswordChangeRequest(BaseModel):
     @field_validator("new_password")
     @classmethod
     def validate_password(cls, password: str) -> str:
+        from app.utils.validation import validate_password_strength  # noqa: PLC0415
+
         return validate_password_strength(password)
 
 
@@ -47,4 +47,6 @@ class UsernameChangeRequest(BaseModel):
     @field_validator("new_username")
     @classmethod
     def validate_username_field(cls, username: str) -> str:
+        from app.utils.validation import validate_username  # noqa: PLC0415
+
         return validate_username(username)

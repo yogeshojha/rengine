@@ -10,10 +10,13 @@ import type { Facet } from '$lib/utilities/scan-insights';
 import type { IpFacetSet } from '$lib/utilities/ip-groups';
 import type { InterestPage } from '$lib/types/interest';
 import type { ThreatIntelStatus } from '$lib/types/threat-intel';
+import { SvelteSet } from 'svelte/reactivity';
 import {
+	DASHBOARD_SLICES,
 	DEFAULT_DASHBOARD_WINDOW,
 	FEED_QUERIES,
 	HOSTING_QUERIES,
+	type DashboardSlice,
 	type DashboardDiscovery,
 	type DashboardFeed,
 	type DashboardOverview,
@@ -51,6 +54,7 @@ function createDashboardStore() {
 	let loading = $state(false);
 	let error = $state<string | null>(null);
 	let hasFetched = $state(false);
+	const failed = new SvelteSet<DashboardSlice>();
 	let seq = 0;
 
 	async function load() {
@@ -90,9 +94,13 @@ function createDashboardStore() {
 	async function loadDiscovery(pid: string, mySeq: number) {
 		try {
 			const data = await dashboardApi.discovery(pid);
-			if (mySeq === seq) discovery = data;
+			if (mySeq !== seq) return;
+			discovery = data;
+			failed.delete('discovery');
 		} catch {
-			if (mySeq === seq) discovery = null;
+			if (mySeq !== seq) return;
+			discovery = null;
+			failed.add('discovery');
 		}
 	}
 
@@ -100,24 +108,38 @@ function createDashboardStore() {
 	async function loadExtras(pid: string, mySeq: number) {
 		extrasLoading = true;
 		const keep = () => mySeq === seq;
-		const settle = async <T>(work: Promise<T>, apply: (value: T | null) => void) => {
+		const settle = async <T>(
+			slice: DashboardSlice,
+			work: Promise<T>,
+			apply: (value: T | null) => void
+		) => {
 			try {
 				const value = await work;
-				if (keep()) apply(value);
+				if (!keep()) return;
+				apply(value);
+				failed.delete(slice);
 			} catch {
-				if (keep()) apply(null);
+				if (!keep()) return;
+				apply(null);
+				failed.add(slice);
 			}
 		};
 		await Promise.all([
 			settle(
+				'tech',
 				subdomainsApi.facets(pid, '').then((f) => f.tech),
 				(v) => (tech = v)
 			),
-			settle(ipsApi.facets(pid, ''), (v) => (ipFacets = v)),
-			settle(threatIntelApi.status(pid), (v) => (intel = v)),
-			settle(hostingCounts(pid), (v) => (hosting = v)),
-			settle(interestApi.project(pid, { limit: EXPOSURE_ROWS }), (v) => (exposures = v)),
+			settle('ipFacets', ipsApi.facets(pid, ''), (v) => (ipFacets = v)),
+			settle('intel', threatIntelApi.status(pid), (v) => (intel = v)),
+			settle('hosting', hostingCounts(pid), (v) => (hosting = v)),
 			settle(
+				'exposures',
+				interestApi.project(pid, { limit: EXPOSURE_ROWS }),
+				(v) => (exposures = v)
+			),
+			settle(
+				'feed',
 				Promise.all([
 					vulnerabilitiesApi.search(
 						pid,
@@ -178,6 +200,7 @@ function createDashboardStore() {
 		extrasLoading = false;
 		error = null;
 		hasFetched = false;
+		failed.clear();
 	}
 
 	return {
@@ -222,6 +245,9 @@ function createDashboardStore() {
 		},
 		get hasFetched() {
 			return hasFetched;
+		},
+		get failedSlices(): DashboardSlice[] {
+			return DASHBOARD_SLICES.filter((slice) => failed.has(slice));
 		},
 
 		init(pid: string) {

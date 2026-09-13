@@ -16,12 +16,6 @@ class ThemeOrigin(StrEnum):
     CUSTOM = "custom"
 
 
-THEME_ORIGIN_LABELS: dict[str, str] = {
-    ThemeOrigin.BUILTIN.value: "Shipped themes",
-    ThemeOrigin.CUSTOM.value: "Custom themes",
-}
-
-
 class CoverLayout(StrEnum):
     BAND = "band"
     RULE = "rule"

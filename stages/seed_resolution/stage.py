@@ -12,7 +12,7 @@ from shared.models.ip_address import IpAddress
 from shared.utils.cidr import expand_network, parse_network
 from shared.utils.datetime import utc_now
 from shared.utils.validation import normalize_domain
-from stages.base import IP_TARGETS, Stage, StageResult
+from stages.base import IP_TARGETS, Stage, StageResult, parse_asn
 from stages.seed_resolution.config import SeedResolutionConfig
 from tools.dnsx.service import DnsxLookupError, DnsxService
 from tools.ripestat.service import RIPEStatError, RIPEStatService
@@ -20,13 +20,6 @@ from tools.ripestat.service import RIPEStatError, RIPEStatService
 logger = get_logger(__name__)
 
 _MAX_ASN_PREFIXES = 256
-
-
-def _parse_asn(value: str) -> int | None:
-    try:
-        return int(value.upper().replace("AS", "").strip())
-    except ValueError:
-        return None
 
 
 class SeedResolutionStage(Stage):
@@ -161,7 +154,7 @@ class SeedResolutionStage(Stage):
         if not prefixes:
             logger.warning("no announced prefixes for %s", value)
             return [], False
-        asn = _parse_asn(value)
+        asn = parse_asn(value)
         per_prefix = max(cfg.max_expansion_hosts // len(prefixes), 1)
         records: list[dict] = []
         truncated = False

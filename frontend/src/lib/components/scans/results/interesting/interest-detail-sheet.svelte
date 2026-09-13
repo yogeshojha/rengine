@@ -58,7 +58,7 @@
 						<h3 class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
 							Signals
 						</h3>
-						{#each ordered as signal (signal.source + signal.kind)}
+						{#each ordered as signal (`${signal.source}:${signal.kind}:${signal.rule_id ?? ''}`)}
 							{@const Icon = kindIcon(signal.kind)}
 							{@const isAi = signal.source === INTEREST_SOURCE.AI}
 							<div

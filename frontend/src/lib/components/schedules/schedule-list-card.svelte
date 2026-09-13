@@ -141,9 +141,13 @@
 	</div>
 
 	{#if schedule.last_error}
-		<p class="mb-2 truncate text-2xs text-destructive" title={schedule.last_error}>
-			Last run error: {schedule.last_error}
-		</p>
+		<Hint text={schedule.last_error}>
+			{#snippet child(props)}
+				<p {...props} class="mb-2 truncate text-2xs text-destructive">
+					Last run error: {schedule.last_error}
+				</p>
+			{/snippet}
+		</Hint>
 	{/if}
 
 	<div

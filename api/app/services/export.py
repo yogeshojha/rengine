@@ -1,4 +1,4 @@
-"""Exports: creating one, listing what a context has, and handing the file back."""
+"""Exports: creating one, listing them, and handing the file back."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from shared.definitions.exports import (
     ExportScope,
     ExportStatus,
 )
-from shared.definitions.surface import SURFACE_LABELS, SURFACE_ORDER
+from shared.definitions.surface import EXPORTABLE_DIMENSIONS, SURFACE_LABELS
 from shared.models.export import Export, ExportCreate, ExportRead
 from shared.models.scan import Scan
 from shared.models.target import Target
@@ -33,10 +33,10 @@ class ExportService:
     async def create(
         self, data: ExportCreate, project_id: UUID, created_by: UUID | None
     ) -> ExportRead:
-        if data.dimension != BUNDLE and data.dimension not in SURFACE_ORDER:
+        if data.dimension != BUNDLE and data.dimension not in EXPORTABLE_DIMENSIONS:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"'{data.dimension}' is not a result dimension.",
+                detail=f"'{data.dimension}' cannot be exported.",
             )
         if data.export_format not in EXPORT_FORMATS:
             raise HTTPException(
@@ -66,7 +66,7 @@ class ExportService:
         return self._read(row)
 
     async def rerun(self, export_id: UUID, project_id: UUID) -> ExportRead:
-        """The recipe runs again against today's rows, never yesterday's file."""
+        """Run the export's recipe again."""
         original = await self._get(export_id, project_id)
         await self._check_capacity(project_id)
         row = Export(
@@ -182,7 +182,7 @@ class ExportService:
 
 
 def _resolve(export_id: UUID, filename: str) -> Path | None:
-    """The file, only when it really sits under the export root."""
+    """Resolve the export's file under the export root."""
     root = Path(EXPORT_ROOT).resolve()
     path = (root / str(export_id) / filename).resolve()
     if not path.is_relative_to(root) or not path.exists():

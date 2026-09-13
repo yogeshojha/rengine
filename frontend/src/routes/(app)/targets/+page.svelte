@@ -4,6 +4,7 @@
 	import { targetsStore } from '$lib/stores/targets.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { sseStore } from '$lib/stores/sse.svelte';
+	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { SSEChannel, SSEEventType } from '$lib/types/sse';
 	import type { ActivityLog } from '$lib/types/activity';
 	import { targetsApi } from '$lib/api/targets';
@@ -48,9 +49,9 @@
 	import { TaskStatus } from '$lib/types/task-status';
 	import { browser } from '$app/environment';
 	import { goto, replaceState } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import TargetViewsMenu from '$lib/components/targets/target-views-menu.svelte';
-	import { ROUTES } from '$lib/config/routes';
+	import { ROUTES, routeLabels } from '$lib/config/routes';
 
 	type EnrichmentKind = 'whois' | 'dns' | 'bgp';
 
@@ -129,7 +130,7 @@
 		if (activeProject && hasFetched) {
 			untrack(() => {
 				if (!urlReady) {
-					targetsStore.applyQueryState(parseQuery($page.url.searchParams));
+					targetsStore.applyQueryState(parseQuery(page.url.searchParams));
 					urlReady = true;
 				}
 				targetsStore.fetchAll(activeProject.slug);
@@ -451,11 +452,11 @@
 	}
 
 	async function confirmDelete() {
+		if (deleteMode === 'single' && !targetToDelete) return;
 		isDeleting = true;
 
 		if (deleteMode === 'single') {
-			if (!targetToDelete) return;
-			const success = await targetsStore.deleteTarget(targetToDelete.id);
+			const success = await targetsStore.deleteTarget(targetToDelete!.id);
 			isDeleting = false;
 
 			if (success) {
@@ -468,10 +469,9 @@
 			}
 		} else {
 			const ids = Array.from(selectedTargetIds);
-			const results = await Promise.all(ids.map((id) => targetsStore.deleteTarget(id)));
+			const ok = await targetsStore.deleteTargets(ids);
 			isDeleting = false;
 
-			const ok = results.filter(Boolean).length;
 			const fail = ids.length - ok;
 			if (ok) toast.success(`${ok} target${ok !== 1 ? 's' : ''} deleted`);
 			if (fail) toast.error(`${fail} target${fail !== 1 ? 's' : ''} not deleted`);
@@ -540,6 +540,8 @@
 		setSelection();
 	}
 </script>
+
+<svelte:head><title>{routeLabels.targets} · reNgine</title></svelte:head>
 
 <div class="space-y-6">
 	<div class="flex items-start justify-between">
@@ -686,7 +688,7 @@
 					<TargetListItem
 						{target}
 						isSelected={selectedTargetIds.has(target.id)}
-						isScanning={false}
+						isScanning={liveScans.isTargetLive(target.id)}
 						onSelect={handleTargetSelect}
 						onScan={handleScan}
 						onSchedule={handleSchedule}

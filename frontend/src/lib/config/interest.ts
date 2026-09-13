@@ -27,27 +27,51 @@ import { INTEREST_BAND, INTEREST_SOURCE } from '$lib/types/interest';
 
 export const INTEREST_TAB = 'interesting';
 
+// mirrors shared/definitions/interest.py:InterestKind
+export enum InterestKind {
+	ADMIN_INTERFACE = 'admin_interface',
+	DEVELOPER_TOOLING = 'developer_tooling',
+	REMOTE_ACCESS = 'remote_access',
+	BUSINESS_SYSTEM = 'business_system',
+	NON_PRODUCTION = 'non_production',
+	LEGACY = 'legacy',
+	INTERNAL_NAMING = 'internal_naming',
+	NO_AUTHENTICATION = 'no_authentication',
+	EXPOSED_CONTENT = 'exposed_content',
+	DIAGNOSTIC = 'diagnostic',
+	SENSITIVE_SERVICE = 'sensitive_service',
+	EXPLOITED_SOFTWARE = 'exploited_software',
+	CERTIFICATE_ANOMALY = 'certificate_anomaly',
+	TAKEOVER_RISK = 'takeover_risk',
+	NETWORK_OUTLIER = 'network_outlier',
+	RARE_TECHNOLOGY = 'rare_technology',
+	RARE_IDENTITY = 'rare_identity',
+	UNPROTECTED_EDGE = 'unprotected_edge',
+	NEWLY_APPEARED = 'newly_appeared',
+	OTHER = 'other'
+}
+
 export const KIND_ICONS: Record<string, IconComponent> = {
-	admin_interface: ShieldAlert,
-	developer_tooling: Wrench,
-	remote_access: KeyRound,
-	business_system: Building2,
-	non_production: FlaskConical,
-	legacy: Archive,
-	internal_naming: House,
-	no_authentication: LockOpen,
-	exposed_content: FolderOpen,
-	diagnostic: Bug,
-	sensitive_service: Plug,
-	exploited_software: Flame,
-	certificate_anomaly: FileBadge,
-	takeover_risk: Unlink,
-	network_outlier: Network,
-	rare_technology: Layers,
-	rare_identity: Image,
-	unprotected_edge: ShieldOff,
-	newly_appeared: Plus,
-	other: Eye
+	[InterestKind.ADMIN_INTERFACE]: ShieldAlert,
+	[InterestKind.DEVELOPER_TOOLING]: Wrench,
+	[InterestKind.REMOTE_ACCESS]: KeyRound,
+	[InterestKind.BUSINESS_SYSTEM]: Building2,
+	[InterestKind.NON_PRODUCTION]: FlaskConical,
+	[InterestKind.LEGACY]: Archive,
+	[InterestKind.INTERNAL_NAMING]: House,
+	[InterestKind.NO_AUTHENTICATION]: LockOpen,
+	[InterestKind.EXPOSED_CONTENT]: FolderOpen,
+	[InterestKind.DIAGNOSTIC]: Bug,
+	[InterestKind.SENSITIVE_SERVICE]: Plug,
+	[InterestKind.EXPLOITED_SOFTWARE]: Flame,
+	[InterestKind.CERTIFICATE_ANOMALY]: FileBadge,
+	[InterestKind.TAKEOVER_RISK]: Unlink,
+	[InterestKind.NETWORK_OUTLIER]: Network,
+	[InterestKind.RARE_TECHNOLOGY]: Layers,
+	[InterestKind.RARE_IDENTITY]: Image,
+	[InterestKind.UNPROTECTED_EDGE]: ShieldOff,
+	[InterestKind.NEWLY_APPEARED]: Plus,
+	[InterestKind.OTHER]: Eye
 };
 
 export const SOURCE_ICONS: Record<string, IconComponent> = {

@@ -11,12 +11,13 @@ export function plannedStages(scan: ScanRead, catalog: StageCatalogEntry[]): Sta
 	);
 }
 
-export type StageStepState = 'done' | 'failed' | 'running' | 'pending';
+export type StageStepState = 'done' | 'failed' | 'running' | 'paused' | 'pending';
 
 export const STAGE_STEP_CLASS: Record<StageStepState, string> = {
 	done: 'bg-info',
 	failed: 'bg-destructive',
 	running: 'bg-info/45 animate-pulse',
+	paused: 'bg-muted-foreground/50',
 	pending: 'bg-muted-foreground/20'
 };
 
@@ -86,7 +87,8 @@ const ACTIVITY_STATE: Record<string, StageStepState | undefined> = {
 	partial: 'done',
 	failed: 'failed',
 	aborted: 'failed',
-	running: 'running'
+	running: 'running',
+	paused: 'paused'
 };
 
 export function stageRows(

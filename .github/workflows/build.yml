@@ -1,22 +1,32 @@
-name: 🚀 Build and Push Docker image
+name: 🚀 Build and Push Docker images
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   release:
     types: [published]
-  schedule:
-    - cron: '0 0 */5 * *'  # Run every 5 days at midnight UTC
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build-and-push:
-    name: 🐳 Build and Push Docker image
+    name: 🐳 Push ${{ matrix.image }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        platform:
-          - linux/amd64
-          - linux/arm64
+        include:
+          - image: api
+            dockerfile: api/Dockerfile
+            target: development
+          - image: worker
+            dockerfile: worker/Dockerfile
+            target: development
+          - image: frontend
+            dockerfile: frontend/Dockerfile.dev
+            target: ""
     steps:
       - name: 📥 Checkout the git repo
         uses: actions/checkout@v4
@@ -37,22 +47,22 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: yogeshojha/rengine
+          images: yogeshojha/rengine-${{ matrix.image }}
           tags: |
-            type=raw,value=${{ matrix.platform }}-latest,enable={{is_default_branch}}
-            type=semver,pattern=${{ matrix.platform }}-{{version}}
-            type=semver,pattern=${{ matrix.platform }}-{{major}}.{{minor}}
-            type=semver,pattern=${{ matrix.platform }}-{{major}}
-            type=sha,prefix=${{ matrix.platform }}-sha-
-            type=schedule,pattern=${{ matrix.platform }}-{{date 'YYYYMMDD'}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-
 
-      - name: 🏗️ Build and push Docker image
-        uses: docker/build-push-action@v5
+      - name: 🏗️ Build and push ${{ matrix.image }}
+        uses: docker/build-push-action@v6
         with:
-          context: web/
-          platforms: ${{ matrix.platform }}
-          push: ${{ github.event_name != 'pull_request' }}
+          context: .
+          file: ${{ matrix.dockerfile }}
+          target: ${{ matrix.target }}
+          platforms: linux/amd64,linux/arm64
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}

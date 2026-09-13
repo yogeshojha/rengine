@@ -363,19 +363,15 @@ def _rank(session: Session, scan_id: uuid.UUID) -> None:
     ).all()
     if not rows:
         return
-    payload = [
-        {
-            "cve": row.cve,
-            "score": exploit_score(
-                _signals(
-                    row.is_kev, row.kev_ransomware, row.kev_due_date, row.epss_score
-                )
-            ),
-            "kinds": _signals(
-                row.is_kev, row.kev_ransomware, row.kev_due_date, row.epss_score
-            ),
-        }
+    ranked = {
+        row.cve: _signals(
+            row.is_kev, row.kev_ransomware, row.kev_due_date, row.epss_score
+        )
         for row in rows
+    }
+    payload = [
+        {"cve": cve, "score": exploit_score(kinds), "kinds": kinds}
+        for cve, kinds in ranked.items()
     ]
     session.execute(
         text(

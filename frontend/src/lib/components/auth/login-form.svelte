@@ -35,8 +35,10 @@
 	let code = $state('');
 	let mfaError = $state('');
 	let verifying = $state(false);
+	let useBackupCode = $state(false);
 
 	let inMfa = $derived(mfaToken !== null);
+	let canVerify = $derived(useBackupCode ? code.trim().length > 0 : code.length === 6);
 
 	onMount(() => usernameEl?.focus());
 
@@ -68,11 +70,11 @@
 	}
 
 	async function verifyMfa() {
-		if (!mfaToken || code.length !== 6 || verifying) return;
+		if (!mfaToken || !canVerify || verifying) return;
 		verifying = true;
 		mfaError = '';
 		try {
-			await twoFactorApi.loginVerify(mfaToken, code);
+			await twoFactorApi.loginVerify(mfaToken, code.trim());
 			await auth.checkAuth();
 		} catch (err) {
 			mfaError = err instanceof Error ? err.message : 'Invalid code';
@@ -92,6 +94,13 @@
 		code = '';
 		mfaError = '';
 		password = '';
+		useBackupCode = false;
+	}
+
+	function toggleBackupCode() {
+		useBackupCode = !useBackupCode;
+		code = '';
+		mfaError = '';
 	}
 </script>
 
@@ -103,19 +112,46 @@
 					<ShieldCheckIcon class="size-5 text-foreground" />
 				</div>
 				<Card.Title class="text-xl">Two-factor authentication</Card.Title>
-				<Card.Description>Enter the 6-digit code from the authenticator app</Card.Description>
+				<Card.Description>
+					{useBackupCode
+						? 'Enter one of the backup codes saved at enrollment'
+						: 'Enter the 6-digit code from the authenticator app'}
+				</Card.Description>
 			</Card.Header>
 			<Card.Content>
 				<div class="flex flex-col items-center gap-5">
-					<div class="space-y-2">
-						<Label class="sr-only">Authentication code</Label>
-						<OtpInput value={code} onValueChange={onCodeChange} disabled={verifying} />
+					<div class="w-full space-y-2">
+						<Label for="mfa-code" class="sr-only">
+							{useBackupCode ? 'Backup code' : 'Authentication code'}
+						</Label>
+						{#if useBackupCode}
+							<Input
+								id="mfa-code"
+								type="text"
+								autocomplete="one-time-code"
+								placeholder="0000-0000"
+								class="text-center font-mono"
+								disabled={verifying}
+								bind:value={code}
+							/>
+						{:else}
+							<OtpInput value={code} onValueChange={onCodeChange} disabled={verifying} />
+						{/if}
 					</div>
 					{#if mfaError}
 						<p class="text-sm text-destructive">{mfaError}</p>
 					{/if}
-					<Button class="w-full" onclick={verifyMfa} disabled={verifying || code.length !== 6}>
+					<Button class="w-full" onclick={verifyMfa} disabled={verifying || !canVerify}>
 						{#if verifying}<Spinner class="mr-2" />Verifying{:else}Verify{/if}
+					</Button>
+					<Button
+						variant="link"
+						size="sm"
+						class="text-muted-foreground"
+						onclick={toggleBackupCode}
+						disabled={verifying}
+					>
+						{useBackupCode ? 'Use the authenticator app' : 'Use a backup code'}
 					</Button>
 					<Button
 						variant="ghost"

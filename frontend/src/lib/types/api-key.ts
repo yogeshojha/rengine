@@ -1,17 +1,20 @@
+// mirrors shared/enums/api_key.py:APIProvider
 export enum APIProvider {
 	VIEWDNS = 'viewdns',
 	CHAOS = 'chaos',
 	NETLAS = 'netlas',
 	SECURITYTRAILS = 'securitytrails',
 	HACKERONE = 'hackerone',
-	INTIGRITI = 'intigriti'
+	INTIGRITI = 'intigriti',
+	VULNX = 'vulnx',
+	INTERACTSH = 'interactsh',
+	GITHUB = 'github'
 }
 
 export interface ProviderMeta {
 	name: string;
 	description: string;
 	docs_url: string;
-	color: string;
 	icon: string;
 	requires_username: boolean;
 }
@@ -34,7 +37,6 @@ export interface ProviderInfo {
 	name: string;
 	description: string;
 	docs_url: string;
-	color: string;
 	icon: string;
 	requires_username: boolean;
 	configured: boolean;

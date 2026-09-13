@@ -235,6 +235,7 @@
 								<StagePill
 									{stage}
 									state={launch.stageState(stage.name)}
+									unsatisfied={launch.stageUnsatisfied(stage.name)}
 									{disabled}
 									onToggle={() => launch.toggleStage(stage.name)}
 								>

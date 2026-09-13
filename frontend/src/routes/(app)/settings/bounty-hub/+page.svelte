@@ -1,6 +1,9 @@
 <script lang="ts">
+	import { routeLabels } from '$lib/config/routes';
 	import BountyHubPanel from '$lib/components/settings/bounty-hub-panel.svelte';
 </script>
+
+<svelte:head><title>{routeLabels['bounty-hub']} · reNgine</title></svelte:head>
 
 <div class="space-y-6">
 	<div class="max-w-2xl">

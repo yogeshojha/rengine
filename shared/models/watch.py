@@ -6,6 +6,7 @@ from sqlalchemy import Column, PrimaryKeyConstraint, UniqueConstraint
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
+from shared.definitions.bounty_programs import SubmissionState
 from shared.definitions.watch import (
     DEFAULT_RATE_LIMIT,
     MAX_ALERT_QUERY,
@@ -136,8 +137,29 @@ class UserMark(SQLModel, table=True):
 # ---------- schemas ----------
 
 
-def _clean_query(v: str) -> str:
-    return strip_control(v or "").strip()[:MAX_ALERT_QUERY]
+def _clean_query(v: str | None) -> str | None:
+    return None if v is None else strip_control(v).strip()[:MAX_ALERT_QUERY]
+
+
+def _check_cadence(v: str | None) -> str | None:
+    if v is not None and v not in {c.value for c in WatchCadence}:
+        msg = "Unknown cadence."
+        raise ValueError(msg)
+    return v
+
+
+def _check_intensity(v: str | None) -> str | None:
+    if v is not None and v not in INTENSITIES:
+        msg = "Unknown intensity."
+        raise ValueError(msg)
+    return v
+
+
+def _check_rate(v: int | None) -> int | None:
+    if v is not None and not 1 <= v <= MAX_RATE_LIMIT:
+        msg = f"Rate ceiling must be between 1 and {MAX_RATE_LIMIT}."
+        raise ValueError(msg)
+    return v
 
 
 class WatchSettings(BaseModel):
@@ -156,30 +178,9 @@ class WatchSettings(BaseModel):
     notify_in_app: bool = True
 
     _clean_query = field_validator("alert_query")(_clean_query)
-
-    @field_validator("cadence")
-    @classmethod
-    def _cadence(cls, v: str) -> str:
-        if v not in {c.value for c in WatchCadence}:
-            msg = "Unknown cadence."
-            raise ValueError(msg)
-        return v
-
-    @field_validator("intensity")
-    @classmethod
-    def _intensity(cls, v: str | None) -> str | None:
-        if v is not None and v not in INTENSITIES:
-            msg = "Unknown intensity."
-            raise ValueError(msg)
-        return v
-
-    @field_validator("rate_limit")
-    @classmethod
-    def _rate(cls, v: int | None) -> int | None:
-        if v is not None and not 1 <= v <= MAX_RATE_LIMIT:
-            msg = f"Rate ceiling must be between 1 and {MAX_RATE_LIMIT}."
-            raise ValueError(msg)
-        return v
+    _cadence = field_validator("cadence")(_check_cadence)
+    _intensity = field_validator("intensity")(_check_intensity)
+    _rate = field_validator("rate_limit")(_check_rate)
 
 
 class WatchCreate(WatchSettings):
@@ -211,34 +212,10 @@ class WatchUpdate(BaseModel):
             raise ValueError(msg)
         return v
 
-    @field_validator("alert_query")
-    @classmethod
-    def _query(cls, v: str | None) -> str | None:
-        return None if v is None else _clean_query(v)
-
-    @field_validator("cadence")
-    @classmethod
-    def _cadence(cls, v: str | None) -> str | None:
-        if v is not None and v not in {c.value for c in WatchCadence}:
-            msg = "Unknown cadence."
-            raise ValueError(msg)
-        return v
-
-    @field_validator("intensity")
-    @classmethod
-    def _intensity(cls, v: str | None) -> str | None:
-        if v is not None and v not in INTENSITIES:
-            msg = "Unknown intensity."
-            raise ValueError(msg)
-        return v
-
-    @field_validator("rate_limit")
-    @classmethod
-    def _rate(cls, v: int | None) -> int | None:
-        if v is not None and not 1 <= v <= MAX_RATE_LIMIT:
-            msg = f"Rate ceiling must be between 1 and {MAX_RATE_LIMIT}."
-            raise ValueError(msg)
-        return v
+    _clean_query = field_validator("alert_query")(_clean_query)
+    _cadence = field_validator("cadence")(_check_cadence)
+    _intensity = field_validator("intensity")(_check_intensity)
+    _rate = field_validator("rate_limit")(_check_rate)
 
 
 class WatchTargetPreview(BaseModel):
@@ -277,7 +254,7 @@ class WatchRead(BaseModel):
     handle: str
     program_name: str
     profile_picture: str | None = None
-    submission_state: str = "unknown"
+    submission_state: str = SubmissionState.UNKNOWN.value
     status: str
     organization_id: uuid.UUID | None
     context_id: uuid.UUID | None

@@ -8,7 +8,6 @@ from urllib.parse import parse_qsl, urlsplit
 
 from shared.utils.net import bracketed
 
-MAX_ENDPOINTS_PER_SCAN = 200_000
 MAX_URL_LENGTH = 2000
 MAX_PATH_LENGTH = 1500
 MAX_HOST_LENGTH = 500
@@ -190,19 +189,6 @@ CLASS_LABELS: dict[str, str] = {
     EndpointClass.OTHER.value: "Other",
 }
 
-CLASS_HELP: dict[str, str] = {
-    EndpointClass.PAGE.value: "A rendered page, or a path with no file extension.",
-    EndpointClass.API.value: "An API route, by path shape or by content type.",
-    EndpointClass.SCRIPT.value: "JavaScript, including bundles and source maps.",
-    EndpointClass.STYLE.value: "Stylesheets.",
-    EndpointClass.DOCUMENT.value: "Documents.",
-    EndpointClass.IMAGE.value: "Images.",
-    EndpointClass.MEDIA.value: "Audio and video.",
-    EndpointClass.DATA.value: "Structured data served as a file.",
-    EndpointClass.ARCHIVE_FILE.value: "Archives and compressed files.",
-    EndpointClass.OTHER.value: "Anything else.",
-}
-
 STATIC_CLASSES: frozenset[str] = frozenset(
     {
         EndpointClass.STYLE.value,
@@ -227,6 +213,7 @@ class FolderGlyph(StrEnum):
     SENSITIVE = "sensitive"
     API = "api"
     AUTH = "auth"
+    GROUP = "group"
 
 
 _API_DOMINANT = 0.5
@@ -1035,24 +1022,6 @@ class NoiseRule(StrEnum):
     ARCHIVE_ROT = "archive_rot"
     OFF_SCOPE = "off_scope"
 
-
-URL_RULES: tuple[str, ...] = (
-    NoiseRule.STATIC.value,
-    NoiseRule.ARTIFACT.value,
-    NoiseRule.PLATFORM.value,
-    NoiseRule.FAMILY.value,
-    NoiseRule.LOCALE.value,
-    NoiseRule.SIBLINGS.value,
-)
-RESPONSE_RULES: tuple[str, ...] = (
-    NoiseRule.NOT_FOUND.value,
-    NoiseRule.SAME_RESPONSE.value,
-    NoiseRule.SAME_REDIRECT.value,
-    NoiseRule.CATCH_ALL.value,
-    NoiseRule.SIMILAR_RESPONSE.value,
-    NoiseRule.ARCHIVE_ROT.value,
-    NoiseRule.OFF_SCOPE.value,
-)
 
 NOISE_RULE_LABELS: dict[str, str] = {
     NoiseRule.STATIC.value: "Static files",

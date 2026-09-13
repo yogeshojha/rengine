@@ -7,7 +7,7 @@
 	import X from '@lucide/svelte/icons/x';
 	import * as Card from '$lib/components/ui/card';
 	import ExportMenu from '$lib/components/scans/results/export-menu.svelte';
-	import * as Empty from '$lib/components/ui/empty';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Skeleton } from '$lib/components/ui/skeleton';
@@ -204,41 +204,22 @@
 			{/each}
 		</div>
 	{:else if error}
-		<Empty.Root class="py-16">
-			<Empty.Header>
-				<Empty.Media class="size-12 rounded-2xl bg-destructive/10">
-					<TriangleAlert class="size-6 text-destructive" />
-				</Empty.Media>
-				<Empty.Title>Web assets not loaded</Empty.Title>
-				<Empty.Description class="max-w-md">{error}</Empty.Description>
-			</Empty.Header>
-		</Empty.Root>
+		<EmptyState
+			class="py-16"
+			icon={TriangleAlert}
+			title="Web assets not loaded"
+			description={error}
+		/>
 	{:else if rows.length === 0 && filtered}
-		<Empty.Root class="py-16">
-			<Empty.Header>
-				<Empty.Title>No web assets match this filter</Empty.Title>
-			</Empty.Header>
-			<Empty.Content>
-				<Button size="sm" variant="outline" class="gap-2" onclick={reset}>
-					<X class="size-4" /> Clear filters
-				</Button>
-			</Empty.Content>
-		</Empty.Root>
+		<EmptyState class="py-16" title="No web assets match this filter">
+			<Button size="sm" variant="outline" class="gap-2" onclick={reset}>
+				<X class="size-4" /> Clear filters
+			</Button>
+		</EmptyState>
 	{:else if rows.length === 0}
-		<Empty.Root class="py-16">
-			<Empty.Header>
-				<Empty.Media
-					variant="icon"
-					class="size-14 rounded-2xl bg-muted text-muted-foreground/60 [&_svg:not([class*='size-'])]:size-6"
-				>
-					<Globe />
-				</Empty.Media>
-				<Empty.Title>No web assets</Empty.Title>
-			</Empty.Header>
-			<Empty.Content>
-				<Button class="gap-2" onclick={onScan}>Start scan</Button>
-			</Empty.Content>
-		</Empty.Root>
+		<EmptyState class="py-16" icon={Globe} title="No web assets">
+			<Button class="gap-2" onclick={onScan}>Start scan</Button>
+		</EmptyState>
 	{:else}
 		<ListHeader
 			lead={ASSET_LEAD_COLUMNS}

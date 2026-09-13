@@ -15,7 +15,7 @@
 
 <span class={cn('flex shrink-0 flex-col gap-[3px] overflow-hidden rounded-full', box, className)}>
 	{#if verb === CHANGE_VERB.APPEARED}
-		<span class="flex-1 rounded-full bg-primary"></span>
+		<span class="flex-1 rounded-full bg-series"></span>
 	{:else if verb === CHANGE_VERB.CHANGED}
 		<span class="flex-1 rounded-full bg-info"></span>
 		<span class="flex-1 rounded-full bg-info"></span>

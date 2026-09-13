@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 from dataclasses import dataclass, field
 from uuid import UUID
@@ -20,6 +21,7 @@ from shared.definitions.endpoints import (
     STATIC_CLASSES,
     STATIC_EXTENSIONS,
     EndpointClass,
+    FolderGlyph,
     PathInterest,
     folder_glyph,
 )
@@ -28,7 +30,7 @@ from shared.models.endpoint import Endpoint, EndpointTree, TreeLeaf, TreeNode
 _MERGED = "merged"
 _HOST = "host"
 _LEAF = "leaf"
-_GROUP = "group"
+_GROUP = FolderGlyph.GROUP.value
 _AUTH_WALL = (401, 403)
 _MIN_WALLED = 2
 _MAX_OPEN_INSIDE = 2
@@ -37,6 +39,7 @@ _MAX_ERROR_SHARE = 0.1
 _MIN_GROUP = 3
 _MIN_SHARED = 2
 _CORE_SHARE = 0.6
+_QUOTE_CHARS = re.compile(r'[\s()"\[\]:=><~,]')
 _MAX_HINT = 4
 _MAX_GROUP_TOKEN = 40
 _STATUS_BUCKETS = (
@@ -55,7 +58,7 @@ def static_clause():
 
 
 def _needs_quote(value: str) -> bool:
-    return any(c in value for c in ' ()"[]:=><~,') or not value
+    return bool(_QUOTE_CHARS.search(value)) or not value
 
 
 def _token(field: str, value: str) -> str:
@@ -389,7 +392,7 @@ def _rank(node: _Node) -> tuple:
 
 
 def _index_only(node: _Node) -> bool:
-    """A folder whose only content is its own index reads as a leaf, the way Burp shows it."""
+    """A folder whose only content is its own index reads as a leaf."""
     if node.kind != "directory" or node.children or not node.index_rows:
         return False
     if len(node.index_rows) != node.direct:
@@ -538,7 +541,7 @@ def _emit_group(group: _Node) -> TreeNode:
         gone_count=group.gone,
         anomaly=None,
         archive_only=archive_only_for(group.sources, group.status_mix),
-        glyph="group",
+        glyph=FolderGlyph.GROUP.value,
         sample_url=group.sample_url,
         leaf=None,
         query=_list_token("dir", paths),

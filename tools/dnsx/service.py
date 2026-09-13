@@ -1,9 +1,8 @@
-"""DNS lookup service - standalone/persistent lookup plus cross-target correlation queries."""
+"""DNS recon lookups, standalone or persisted per target."""
 
 import uuid
 from collections import Counter
 
-from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from shared.enums.dns import DnsRecordType
@@ -11,16 +10,12 @@ from shared.logging import get_logger
 from shared.models.dns import DnsLookup, DnsLookupSummary, DnsRecord
 from shared.models.target import Target
 from shared.utils.datetime import utc_now
-from shared.utils.infra import is_shared_nameserver
 from tools.dnsx.client import DnsxClient, DnsxError
 from tools.dnsx.models import DnsxReconResponse
 from tools.dnsx.parser import parse_dnsx_jsonl
 from tools.runner.models import CommandRecorder
 
 logger = get_logger(__name__)
-
-# cap rows per correlation query
-MAX_CORRELATION_TARGETS = 500
 
 
 class DnsxServiceError(Exception):
@@ -82,43 +77,6 @@ class DnsxService:
             raise DnsxLookupError(msg)
 
         return parsed[0]
-
-    def do_recon_batch(self, domains: list[str]) -> list[DnsxReconResponse]:
-        """Run full DNS recon on multiple domains in one dnsx invocation."""
-        if not domains:
-            return []
-
-        result = self.client.recon(domains)
-
-        if not result.success and not result.has_output:
-            logger.warning(f"dnsx batch recon failed: {result.error}")
-            return []
-
-        return parse_dnsx_jsonl(result.json_records)
-
-    def do_query(
-        self,
-        domain: str,
-        record_types: list[str],
-    ) -> DnsxReconResponse:
-        """Run targeted DNS query for specific record types."""
-        result = self.client.query(domain, record_types=record_types)
-
-        if not result.success and not result.has_output:
-            msg = f"dnsx query failed for {domain}: {result.error or 'no output'}"
-            raise DnsxLookupError(msg)
-
-        parsed = parse_dnsx_jsonl(result.json_records)
-        if not parsed:
-            msg = f"dnsx returned no parseable results for {domain}"
-            raise DnsxLookupError(msg)
-
-        return parsed[0]
-
-    def do_resolve(self, domains: list[str]) -> list[str]:
-        """Check which domains resolve (have active DNS)."""
-        result = self.client.resolve(domains)
-        return result.output_lines
 
     def lookup_and_store(
         self,
@@ -185,102 +143,6 @@ class DnsxService:
         session.commit()
         session.refresh(lookup)
         return lookup
-
-    def get_lookup_sync(
-        self, session: Session, target_id: uuid.UUID
-    ) -> DnsLookup | None:
-        """Get existing DNS lookup for a target (sync)."""
-        target = session.get(Target, target_id)
-        if target and target.dns_lookup_id:
-            return session.get(DnsLookup, target.dns_lookup_id)
-        return None
-
-    def find_targets_by_record(
-        self,
-        session: Session,
-        record_type: DnsRecordType,
-        value: str,
-        limit: int = MAX_CORRELATION_TARGETS,
-    ) -> list[DnsRecord]:
-        """Find all DNS records matching a type and value (rows include target_id for joining)."""
-        result = session.execute(
-            select(DnsRecord)
-            .where(DnsRecord.record_type == record_type)
-            .where(DnsRecord.value == value)
-            .limit(limit)
-        )
-        return list(result.scalars().all())
-
-    def find_targets_sharing_ns(
-        self,
-        session: Session,
-        nameserver: str,
-        include_shared: bool = False,
-        limit: int = MAX_CORRELATION_TARGETS,
-    ) -> list[uuid.UUID]:
-        """Target IDs sharing a nameserver (shared NS skipped unless include_shared)."""
-        if not include_shared and is_shared_nameserver(nameserver):
-            return []
-        result = session.execute(
-            select(DnsRecord.target_id)
-            .where(DnsRecord.record_type == DnsRecordType.NS)
-            .where(DnsRecord.value == nameserver)
-            .distinct()
-            .limit(limit)
-        )
-        return list(result.scalars().all())
-
-    def find_targets_sharing_mx(
-        self,
-        session: Session,
-        mx_host: str,
-        limit: int = MAX_CORRELATION_TARGETS,
-    ) -> list[uuid.UUID]:
-        """Find all target IDs that share a given MX host."""
-        result = session.execute(
-            select(DnsRecord.target_id)
-            .where(DnsRecord.record_type == DnsRecordType.MX)
-            .where(DnsRecord.value == mx_host)
-            .distinct()
-            .limit(limit)
-        )
-        return list(result.scalars().all())
-
-    def find_targets_sharing_ip(
-        self,
-        session: Session,
-        ip: str,
-        exclude_cdn: bool = True,
-        limit: int = MAX_CORRELATION_TARGETS,
-    ) -> list[uuid.UUID]:
-        """Target IDs resolving to an IP (CDN-fronted excluded unless exclude_cdn=False)."""
-        query = (
-            select(DnsRecord.target_id)
-            .where(DnsRecord.record_type.in_([DnsRecordType.A, DnsRecordType.AAAA]))
-            .where(DnsRecord.value == ip)
-        )
-        if exclude_cdn:
-            query = query.join(
-                DnsLookup, DnsLookup.id == DnsRecord.dns_lookup_id
-            ).where(DnsLookup.cdn.is_(False))
-        result = session.execute(query.distinct().limit(limit))
-        return list(result.scalars().all())
-
-    def get_record_value_counts(
-        self,
-        session: Session,
-        record_type: DnsRecordType,
-        limit: int = MAX_CORRELATION_TARGETS,
-    ) -> list[tuple[str, int]]:
-        """Get value counts for a record type, ordered by frequency."""
-        result = session.execute(
-            select(DnsRecord.value, func.count(DnsRecord.target_id).label("count"))
-            .where(DnsRecord.record_type == record_type)
-            .group_by(DnsRecord.value)
-            .order_by(func.count(DnsRecord.target_id).desc())
-            .limit(limit)
-        )
-        return list(result.all())
 
     @staticmethod
     def to_lookup_summary(lookup: DnsLookup) -> DnsLookupSummary:

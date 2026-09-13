@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import TargetIcon from '@lucide/svelte/icons/target';
 	import { toast } from 'svelte-sonner';
@@ -19,6 +20,7 @@
 	import WatchSheet from '$lib/components/bounty-hub/watch-sheet.svelte';
 	import { watchesApi } from '$lib/api/watches';
 	import { watchesStore } from '$lib/stores/watches.svelte';
+	import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
 	import type { StreamStatus, Watch, WatchHostFilter } from '$lib/types/watch';
 	import { bountyProgramsApi } from '$lib/api/bounty-programs';
 	import {
@@ -104,16 +106,23 @@
 	});
 
 	$effect(() => {
-		if (!projectId) return;
-		if (watchesStore.fetchedProjectId !== projectId) {
-			void watchesStore.fetch(projectId).then(() => {
-				if (!tabChosen && watchesStore.watches.length > 0) tab = 'watching';
-			});
-		}
-		void watchesApi
-			.stream()
-			.then((s) => (stream = s))
-			.catch(() => (stream = null));
+		untrack(() => bountyVocabulary.load());
+	});
+
+	$effect(() => {
+		const id = projectId;
+		if (!id) return;
+		untrack(() => {
+			if (watchesStore.fetchedProjectId !== id) {
+				void watchesStore.fetch(id).then(() => {
+					if (!tabChosen && watchesStore.watches.length > 0) tab = 'watching';
+				});
+			}
+			void watchesApi
+				.stream()
+				.then((st) => (stream = st))
+				.catch(() => (stream = null));
+		});
 	});
 
 	$effect(() => {

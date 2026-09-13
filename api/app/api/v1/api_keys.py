@@ -10,6 +10,7 @@ from shared.enums.api_key import APIProvider
 from shared.models.api_key import APIKeyCreate, APIKeyRead, APIKeyUpdate, ProviderInfo
 from shared.services.api_key.async_api_key import APIKeyService
 from shared.services.bounty_providers import HackerOneProvider, IntigritiProvider
+from shared.services.scan_resolve import MASK
 from shared.utils.crypto import try_decrypt
 from tools.viewdns.client import ViewDNSClient
 
@@ -130,10 +131,10 @@ async def test_api_key(
             "message": f"No test available for {api_key.provider.value}",
         }
 
+    key_value = try_decrypt(api_key.key_value) or api_key.key_value
     try:
-        result = await tester(
-            try_decrypt(api_key.key_value) or api_key.key_value, api_key.key_meta
-        )
+        result = await tester(key_value, api_key.key_meta)
         return {"provider": api_key.provider, "success": True, **result}
     except Exception as e:
-        return {"provider": api_key.provider, "success": False, "message": str(e)}
+        message = str(e).replace(key_value, MASK) if key_value else str(e)
+        return {"provider": api_key.provider, "success": False, "message": message}

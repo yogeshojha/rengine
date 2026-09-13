@@ -1,4 +1,4 @@
-"""Force every SQLModel datetime column to TIMESTAMPTZ — asyncpg rejects a naive bind."""
+"""Force every SQLModel datetime column to TIMESTAMPTZ."""
 
 import sqlmodel.main as _sqlmodel_main
 from sqlalchemy import DateTime as _SADateTime

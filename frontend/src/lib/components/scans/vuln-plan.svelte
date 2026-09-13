@@ -88,13 +88,14 @@
 
 	$effect(() => {
 		if (!engineCatalogStore.hasFetched) engineCatalogStore.fetch();
-		untrack(() => {
-			vulnTemplatesApi
-				.stats()
-				.then((res) => (stats = res))
-				.catch(() => (stats = null))
-				.finally(() => (statsLoading = false));
-		});
+	});
+
+	$effect(() => {
+		vulnTemplatesApi
+			.stats()
+			.then((res) => (stats = res))
+			.catch(() => (stats = null))
+			.finally(() => (statsLoading = false));
 	});
 
 	let baselineKey = $derived(baseline ? JSON.stringify([baseline, carried]) : '');

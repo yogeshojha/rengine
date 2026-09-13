@@ -8,7 +8,7 @@ export const WEB_ASSET_LEAD_COLUMNS: TableColumn[] = [
 		width: 'min-w-0 flex-[3] contain-inline-size sm:min-w-56'
 	},
 	{ key: 'status', label: 'Status', sort: 'status', width: 'w-12 shrink-0 sm:w-16' },
-	{ key: 'title', label: 'Title', sort: 'title', width: 'hidden min-w-40 flex-[2] sm:block' }
+	{ key: 'title', label: 'Title', sort: 'title', width: 'hidden min-w-40 flex-[2] sm:flex' }
 ];
 
 export const WEB_ASSET_COLUMNS: TableColumn[] = [

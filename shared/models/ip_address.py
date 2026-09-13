@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from pydantic import BaseModel
-from sqlalchemy import Column
+from sqlalchemy import BigInteger, Column
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
@@ -26,7 +26,7 @@ class IpAddress(SQLModel, table=True):
     ptr_hostnames: list = Field(
         default_factory=list, sa_column=Column(JSON, nullable=False)
     )
-    asn: int | None = Field(default=None, index=True)
+    asn: int | None = Field(default=None, index=True, sa_type=BigInteger)
     asn_org: str | None = Field(default=None, max_length=255)
     prefix: str | None = Field(default=None, max_length=64)
     country: str | None = Field(default=None, max_length=10)

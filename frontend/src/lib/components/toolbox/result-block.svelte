@@ -181,7 +181,7 @@
 		{/if}
 	{:else if block.kind === 'tags'}
 		<div class="flex flex-wrap gap-1.5">
-			{#each block.tags as t (t.value)}
+			{#each block.tags as t, i (`${i}:${t.value}`)}
 				{@const go = chase(t.lookup)}
 				{#if go}
 					<button

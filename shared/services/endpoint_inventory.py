@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.exc import StatementError
 
 from shared.definitions.endpoints import (
     MAX_PARAM_SAMPLES,
@@ -27,7 +26,7 @@ from shared.models.http_asset import HttpAsset
 from shared.models.subdomain import Subdomain
 from shared.services.endpoint_noise import NoisePolicy, Sifter
 from shared.utils.datetime import utc_now
-from shared.utils.text import scrub
+from shared.utils.text import REFUSED_ROW, scrub
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -386,7 +385,7 @@ def _insert_rows(session: Session, rows: list[dict]) -> tuple[set[str], int]:
                 .returning(Endpoint.signature)
             )
             return set(written.scalars().all()), 0
-    except StatementError:
+    except REFUSED_ROW:
         logger.warning("endpoint batch rejected, retrying row by row")
     created: set[str] = set()
     refused = 0
@@ -400,7 +399,7 @@ def _insert_rows(session: Session, rows: list[dict]) -> tuple[set[str], int]:
                     .returning(Endpoint.signature)
                 )
                 created.update(written.scalars().all())
-        except StatementError:
+        except REFUSED_ROW:
             refused += 1
     return created, refused
 

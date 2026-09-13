@@ -70,9 +70,9 @@ class ScreenshotStage(Stage):
                 recorder=self.ctx.recorder,
                 extra_args=self.ctx.resolved.tool_args("httpx"),
             )
-        except HttpxError:
+        except HttpxError as exc:
             logger.warning("httpx unavailable, skipping screenshots")
-            return StageResult(counts={"screenshots": 0})
+            return StageResult(warnings=[str(exc)], partial=True)
 
         by_url = {url: asset_id for asset_id, url in live}
         selected = [url for _, url in live][:_MAX_TARGETS]

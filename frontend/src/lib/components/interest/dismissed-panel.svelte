@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import Undo2 from '@lucide/svelte/icons/undo-2';
 	import { toast } from 'svelte-sonner';
@@ -20,7 +21,7 @@
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
 
 	$effect(() => {
-		void interestCatalog.load();
+		untrack(() => interestCatalog.load());
 	});
 
 	$effect(() => {

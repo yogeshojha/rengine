@@ -1,12 +1,17 @@
-"""Text stored in postgres: NUL is rejected outright, in text and in json alike."""
+"""Text for postgres and for a reader: NUL is rejected outright, in text and in json alike."""
 
 from __future__ import annotations
 
 import re
 from typing import Any
 
+from sqlalchemy.exc import StatementError
+
 _NUL = "\x00"
 _CTRL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+
+# asyncpg raises DBAPIError for a NUL; psycopg raises a bare ValueError while binding
+REFUSED_ROW = (StatementError, ValueError)
 
 
 def strip_nul(value: str) -> str:
@@ -28,3 +33,13 @@ def scrub(value: Any) -> Any:
     if isinstance(value, dict):
         return {scrub(k): scrub(v) for k, v in value.items()}
     return value
+
+
+def plural(count: int, word: str, many: str | None = None) -> str:
+    """The form of a word that matches a count."""
+    return word if count == 1 else (many or f"{word}s")
+
+
+def counted(count: int, word: str, many: str | None = None) -> str:
+    """A count and the form of its word that matches it."""
+    return f"{count} {plural(count, word, many)}"

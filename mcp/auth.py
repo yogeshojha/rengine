@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import hmac
 import secrets
 
 PREFIX = "rngmcp_"
@@ -24,10 +23,6 @@ def fingerprint(secret: str) -> str:
 
 def looks_like_token(value: str) -> bool:
     return value.startswith(PREFIX) and len(value) == len(PREFIX) + SECRET_BYTES * 2
-
-
-def matches(secret: str, stored_hash: str) -> bool:
-    return hmac.compare_digest(fingerprint(secret), stored_hash)
 
 
 def from_header(value: str | None) -> str | None:

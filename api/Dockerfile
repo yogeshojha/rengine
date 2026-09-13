@@ -1,4 +1,4 @@
-FROM python:3.13-slim as base
+FROM python:3.13-slim AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -6,7 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.12.13 /uv /usr/local/bin/uv
 
 
 ##################################################################
@@ -15,7 +15,6 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 FROM base AS development
 
-# Copy shared directory inside the app
 COPY shared /app/shared
 COPY tools /app/tools
 COPY stages /app/stages
@@ -30,7 +29,6 @@ COPY api/pyproject.toml api/uv.lock* ./
 
 RUN uv sync --no-install-project
 
-# Expose port
 EXPOSE 8000
 
 COPY api/entrypoint.sh /app/entrypoint.sh

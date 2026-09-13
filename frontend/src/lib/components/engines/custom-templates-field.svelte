@@ -18,13 +18,20 @@
 
 	let templates = $state<VulnTemplateRead[]>([]);
 	let loaded = $state(false);
+	let failed = $state(false);
 
 	$effect(() => {
 		untrack(() => {
 			vulnTemplatesApi
 				.search({ ...emptyTemplateFilter(), origins: ['custom'], limit: 200 })
-				.then((res) => (templates = res.items))
-				.catch(() => (templates = []))
+				.then((res) => {
+					templates = res.items;
+					failed = false;
+				})
+				.catch(() => {
+					templates = [];
+					failed = true;
+				})
 				.finally(() => (loaded = true));
 		});
 	});
@@ -35,7 +42,9 @@
 	);
 </script>
 
-{#if loaded && templates.length === 0}
+{#if loaded && failed}
+	<p class="w-[280px] text-right text-2xs text-destructive">Templates not loaded.</p>
+{:else if loaded && templates.length === 0}
 	<div class="w-[280px] text-right">
 		<p class="text-2xs text-muted-foreground">No uploaded templates.</p>
 		<Button variant="link" size="sm" class="h-auto px-0 text-2xs" href={ROUTES.arsenal('nuclei')}>

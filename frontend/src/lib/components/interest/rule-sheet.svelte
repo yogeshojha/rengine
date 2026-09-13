@@ -12,6 +12,7 @@
 	import { interestApi } from '$lib/api/interest';
 	import { interestCatalog } from '$lib/stores/interest-catalog.svelte';
 	import { RULE_MODE, type InterestRule, type RulePreview } from '$lib/types/interest';
+	import { InterestKind } from '$lib/config/interest';
 
 	interface Props {
 		rule: InterestRule | null;
@@ -26,7 +27,7 @@
 	let name = $state('');
 	let description = $state('');
 	let query = $state('');
-	let kind = $state('other');
+	let kind = $state<string>(InterestKind.OTHER);
 	let notify = $state(false);
 	let enabled = $state(true);
 	let saving = $state(false);
@@ -43,7 +44,7 @@
 		name = rule?.name ?? '';
 		description = rule?.description ?? '';
 		query = rule?.query ?? '';
-		kind = rule?.kind ?? 'other';
+		kind = rule?.kind ?? InterestKind.OTHER;
 		notify = rule?.notify ?? false;
 		enabled = rule?.enabled ?? true;
 		preview = null;

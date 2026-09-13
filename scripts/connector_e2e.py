@@ -64,7 +64,7 @@ def check(name, cond, detail=""):
 
 
 print("== auth ==")
-s, _ = call("POST", "/auth/login", {"username": "rengine", "password": "rengine@123"})
+s, _ = call("POST", "/auth/login", {"username": USER, "password": PASSWORD})
 check("login", s == OK, s)
 
 s, tpage = call("GET", f"/targets?project_id={PID}&size=50")

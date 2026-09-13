@@ -76,14 +76,14 @@ async def list_fonts(_current_user: CurrentUser, session: Session):
     "/fonts", response_model=ReportFontRead, status_code=status.HTTP_201_CREATED
 )
 async def upload_font(
-    _admin: CurrentSuperuser, session: Session, body: ReportFontUpload
+    current_user: CurrentUser, session: Session, body: ReportFontUpload
 ):
-    return await ReportService(session).upload_font(body, _admin.id)
+    return await ReportService(session).upload_font(body, current_user.id)
 
 
 @router.delete("/fonts/{slug}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_font(
-    _admin: CurrentSuperuser,
+    _current_user: CurrentUser,
     session: Session,
     slug: Annotated[str, Path(description="Typeface key")],
 ):

@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 
 from pydantic import BaseModel
+from sqlalchemy import BigInteger
 from sqlmodel import Field, SQLModel
 
 from shared.utils.datetime import utc_now
@@ -21,7 +22,7 @@ class TargetBgpSummary(SQLModel, table=True):
     announced: bool | None = Field(default=None)
 
     # IP / IP_RANGE targets
-    asn: int | None = Field(default=None)
+    asn: int | None = Field(default=None, sa_type=BigInteger)
     prefix: str | None = Field(default=None)
     holder: str | None = Field(default=None)
 

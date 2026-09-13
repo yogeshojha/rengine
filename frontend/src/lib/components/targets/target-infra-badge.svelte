@@ -1,22 +1,7 @@
-<script lang="ts">
+<script lang="ts" module>
 	import { whoisApi } from '$lib/api/whois';
 	import type { WhoisCorrelationResult } from '$lib/types/whois';
-	import * as Tooltip from '$lib/components/ui/tooltip';
-	import Share2 from '@lucide/svelte/icons/share-2';
-	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
-	interface Props {
-		targetId: string;
-		whoisRecordId: string | null;
-		onClick?: () => void;
-	}
-
-	let { targetId, whoisRecordId, onClick }: Props = $props();
-
-	const cache = new SvelteMap<
-		string,
-		{ total: number; breakdown: { label: string; count: number }[] }
-	>();
 	let queued: string[] = [];
 	let flush: Promise<Record<string, WhoisCorrelationResult[]>> | null = null;
 
@@ -30,6 +15,20 @@
 		});
 		return flush.then((byTarget) => byTarget[id] ?? []);
 	}
+</script>
+
+<script lang="ts">
+	import * as Tooltip from '$lib/components/ui/tooltip';
+	import Share2 from '@lucide/svelte/icons/share-2';
+	import { SvelteSet } from 'svelte/reactivity';
+
+	interface Props {
+		targetId: string;
+		whoisRecordId: string | null;
+		onClick?: () => void;
+	}
+
+	let { targetId, whoisRecordId, onClick }: Props = $props();
 
 	const TYPE_LABELS: Record<string, string> = {
 		registrant_name: 'Registrant',
@@ -54,21 +53,12 @@
 		breakdown = [];
 		if (!whoisRecordId) return;
 
-		const cached = cache.get(targetId);
-		if (cached) {
-			total = cached.total;
-			breakdown = cached.breakdown;
-			loaded = true;
-			return;
-		}
-
 		try {
 			const groups = await correlationsFor(targetId);
 			const { t, b } = summarize(groups);
 			total = t;
 			breakdown = b;
 			loaded = true;
-			cache.set(targetId, { total: t, breakdown: b });
 		} catch {
 			//
 		}

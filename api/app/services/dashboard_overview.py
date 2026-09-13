@@ -247,19 +247,24 @@ class DashboardOverviewService:
             select(
                 HttpAsset.target_id,
                 HttpAsset.scan_id,
-                func.max(HttpAsset.discovered_at).label("at"),
+                HttpAsset.discovered_at,
             )
             .join(Target, Target.id == HttpAsset.target_id)
             .where(
                 HttpAsset.project_id == project_id,
                 Target.target_type.in_(_DOMAIN_TYPES),
             )
-            .group_by(HttpAsset.target_id, HttpAsset.scan_id)
+            .distinct(HttpAsset.target_id)
+            .order_by(
+                HttpAsset.target_id,
+                HttpAsset.discovered_at.desc(),
+                HttpAsset.scan_id,
+            )
         )
-        latest: dict[UUID, tuple[datetime, UUID]] = {}
-        for tid, sid, at in (await self.session.execute(newest)).all():
-            if tid not in latest or at > latest[tid][0]:
-                latest[tid] = (at, sid)
+        latest: dict[UUID, tuple[datetime, UUID]] = {
+            tid: (at, sid)
+            for tid, sid, at in (await self.session.execute(newest)).all()
+        }
         out = DashboardDiscovery(targets_examined=len(latest))
         if not latest:
             return out
@@ -275,7 +280,7 @@ class DashboardOverviewService:
         related = RelatedDomainService(self.session)
         merged: dict[str, DashboardDiscoveredDomain] = {}
         for tid, (_at, sid) in latest.items():
-            result = await related.for_scan(project_id, sid)
+            result = await related.for_scan(project_id, sid, names.get(tid))
             for d in result.domains:
                 if d.is_target:
                     continue
@@ -479,29 +484,36 @@ class DashboardOverviewService:
         out: dict[str, dict[UUID, int]] = {key: {} for key in _TABLES}
         for key, model in _TABLES.items():
             earlier = aliased(model)
+            by_target: dict[UUID, list[UUID]] = defaultdict(list)
             for sid in baselines.get(key, ()):
                 scan = scans.get(sid)
-                if scan is None:
-                    continue
+                if scan is not None:
+                    by_target[scan.target_id].append(sid)
+            for target_id, sids in by_target.items():
                 seen_before = exists(
                     select(1).where(
-                        earlier.target_id == scan.target_id,
+                        earlier.target_id == target_id,
                         *[
                             getattr(earlier, column.key) == column
                             for column in _KEYS[key]
                         ],
-                        earlier.scan_id != sid,
+                        earlier.scan_id != model.scan_id,
                         earlier.discovered_at < model.discovered_at,
                     )
                 )
                 stmt = (
-                    select(func.count())
-                    .select_from(model)
-                    .where(model.scan_id == sid, not_(seen_before))
+                    select(model.scan_id, func.count())
+                    .where(model.scan_id.in_(sids), not_(seen_before))
+                    .group_by(model.scan_id)
                 )
                 if key == VULNS:
                     stmt = stmt.where(not_(_suppressed()))
-                out[key][sid] = int(await self.session.scalar(stmt) or 0)
+                counted = {
+                    scan_id: int(total)
+                    for scan_id, total in (await self.session.execute(stmt)).all()
+                }
+                for sid in sids:
+                    out[key][sid] = counted.get(sid, 0)
         return out
 
     def _baselines(

@@ -184,7 +184,7 @@ def _prepare(session, watch: ProgramWatch, item, name: str, cert: dict):
 
 
 def _resolver_down(session, pending) -> None:
-    """Leave the ledger untouched and retry soon; the resolver, not DNS, failed."""
+    """Leave the ledger untouched and retry in ten minutes."""
     retry = utc_now() + timedelta(minutes=10)
     for watch, _program, host in pending:
         host.next_check_at = retry

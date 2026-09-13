@@ -13,6 +13,7 @@ from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError
 _SUBFINDER_KEY_SOURCES = {
     "securitytrails": "securitytrails",
     "chaos": "chaos",
+    "github": "github",
 }
 
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SURFACE, SurfaceDimension, type ResultTab } from '$lib/config/surface';
 	import { onDestroy, untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import Search from '@lucide/svelte/icons/search';
@@ -31,7 +32,7 @@
 		projectId: string;
 		active?: boolean;
 		revision?: number;
-		onTab?: (tab: string, filter?: string) => void;
+		onTab?: (tab: ResultTab, filter?: string) => void;
 		onTotal?: (total: number) => void;
 	}
 
@@ -44,6 +45,8 @@
 		onTab,
 		onTotal
 	}: Props = $props();
+
+	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 
 	const HEIGHT = 600;
 	const plural = (n: number, one: string, many: string) =>
@@ -160,10 +163,10 @@
 		chart?.focusNode(`host:${host.id}`);
 	}
 	function openHub(hub: CorrelationHub) {
-		onTab?.('web-assets', hub.query);
+		onTab?.(WEB.tab, hub.query);
 	}
 	function openHost(host: CorrelationHost) {
-		onTab?.('web-assets', exactToken('host', host.name));
+		onTab?.(WEB.tab, exactToken('host', host.name));
 	}
 	function openNode(node: GraphNode) {
 		if (node.hub) openHub(node.hub);

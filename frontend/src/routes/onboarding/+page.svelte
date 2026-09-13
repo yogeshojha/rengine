@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { untrack } from 'svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { onboardingStore } from '$lib/stores/onboarding.svelte';
 	import { onboardingApi } from '$lib/api/onboarding';
@@ -7,6 +8,7 @@
 	import { ROUTES } from '$lib/config/routes';
 	import { toast } from 'svelte-sonner';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
 	import WizardShell from '$lib/components/onboarding/wizard-shell.svelte';
 	import StepWelcomeSecurity from '$lib/components/onboarding/step-welcome-security.svelte';
 	import StepTwoFactor from '$lib/components/onboarding/step-two-factor.svelte';
@@ -45,8 +47,7 @@
 		{
 			key: 'mode',
 			title: 'Operating mode',
-			description:
-				'One mode is active at a time. Corporate hides bug bounty tooling. Bug bounty adds the HackerOne integration.',
+			description: 'One mode is active at a time. Corporate hides bug bounty tooling.',
 			icon: CompassIcon,
 			component: StepMode
 		},
@@ -103,6 +104,7 @@
 	}));
 
 	let ready = $state(false);
+	let loadFailed = $state(false);
 	let currentIndex = $state(0);
 	let direction = $state<'forward' | 'back'>('forward');
 	let data = $state<WizardData>({ mode: null, instanceName: '', twoFactorEnabled: false });
@@ -125,13 +127,17 @@
 			goto(ROUTES.login);
 			return;
 		}
-		guard();
+		untrack(guard);
 	});
 
 	async function guard() {
-		await onboardingStore.fetchStatus();
+		loadFailed = false;
+		await onboardingStore.refresh();
 		const status = onboardingStore.status;
-		if (!status) return;
+		if (!status) {
+			loadFailed = true;
+			return;
+		}
 		if (status.completed || !status.can_setup) {
 			goto(ROUTES.dashboard);
 			return;
@@ -172,7 +178,16 @@
 	}
 </script>
 
-{#if !ready}
+<svelte:head><title>{STEPS[currentIndex]?.title ?? 'Setup'} · reNgine</title></svelte:head>
+
+{#if loadFailed}
+	<div class="flex min-h-svh flex-col items-center justify-center gap-3 bg-background">
+		<p class="text-sm text-muted-foreground">
+			The API did not respond. Check that the api service is running.
+		</p>
+		<Button variant="outline" size="sm" onclick={() => guard()}>Retry</Button>
+	</div>
+{:else if !ready}
 	<div class="flex min-h-svh items-center justify-center gap-3 bg-background">
 		<Spinner />
 		<p class="text-sm text-muted-foreground">Loading setup</p>

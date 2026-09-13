@@ -13,6 +13,7 @@ from sqlmodel import Field, SQLModel
 
 import shared.models._tztypes  # noqa: F401
 from shared.definitions.connectors import (
+    MAX_BATCH,
     MAX_NAME,
     MAX_PENDING_ACTIONS,
     ActionKind,
@@ -20,6 +21,7 @@ from shared.definitions.connectors import (
     ConnectorKind,
     SourceTool,
 )
+from shared.definitions.vulnerabilities import Severity
 from shared.models.endpoint import EndpointFilter
 from shared.utils.datetime import utc_now
 
@@ -196,7 +198,7 @@ class FindingReport(BaseModel):
 
     title: str = PydanticField(min_length=1, max_length=500)
     url: str = PydanticField(min_length=1, max_length=2000)
-    severity: str = PydanticField(default="medium", max_length=16)
+    severity: str = PydanticField(default=Severity.MEDIUM.value, max_length=16)
     method: str = PydanticField(default="GET", max_length=16)
     notes: str | None = PydanticField(default=None, max_length=8000)
     request: str | None = PydanticField(default=None, max_length=200_000)
@@ -399,7 +401,7 @@ class IngestRequest(BaseModel):
     client: str | None = PydanticField(default=None, max_length=120)
     target_id: uuid.UUID | None = None
     program_id: uuid.UUID | None = None
-    items: list[IngestItem] = PydanticField(default_factory=list, max_length=500)
+    items: list[IngestItem] = PydanticField(default_factory=list, max_length=MAX_BATCH)
 
 
 class IngestResult(BaseModel):

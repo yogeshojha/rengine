@@ -15,6 +15,7 @@ from shared.models.connector import Connector, ConnectorCandidate
 from shared.models.endpoint import Endpoint
 from shared.models.scan import Scan
 from shared.services import endpoint_inventory
+from shared.services.asset_query.lead_cache import bump_sync
 from shared.services.endpoint_inventory import EndpointObservation, UpsertResult
 from shared.services.endpoint_noise import NoisePolicy
 from shared.services.scan_scope import census_only, covers
@@ -123,7 +124,7 @@ def write(
     if not rows:
         return UpsertResult()
     hosts = sorted({c.host for c in rows})
-    return endpoint_inventory.upsert(
+    result = endpoint_inventory.upsert(
         session,
         scan_id=scan.id,
         target_id=scan.target_id,
@@ -134,6 +135,9 @@ def write(
         default_scheme="http",
         policy=NoisePolicy.protected(),
     )
+    if result.created or result.updated:
+        bump_sync([scan.target_id])
+    return result
 
 
 def sync_target(

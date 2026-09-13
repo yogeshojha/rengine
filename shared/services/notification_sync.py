@@ -1,6 +1,5 @@
 import logging
 import uuid
-from datetime import timedelta
 
 from sqlalchemy.orm import Session
 
@@ -11,8 +10,6 @@ from shared.services.event_publisher import SyncEventPublisher
 from shared.utils.datetime import utc_now
 
 logger = logging.getLogger(__name__)
-
-NOTIFICATION_EXPIRY_DAYS = 7
 
 
 def single_project(rows) -> uuid.UUID | None:
@@ -54,7 +51,6 @@ class SyncNotificationPublisher:
             notification_metadata=metadata_dict,
             project_id=uuid.UUID(str(project_id)) if project_id else None,
             created_at=now,
-            expires_at=now + timedelta(days=NOTIFICATION_EXPIRY_DAYS),
         )
 
         session.add(notification)

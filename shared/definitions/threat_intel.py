@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
+from shared.definitions.ports import ServiceClass
+
 
 class FeedKind(StrEnum):
     EPSS = "epss"
@@ -245,7 +247,9 @@ SIGNAL_ORDER: tuple[str, ...] = tuple(spec.kind for spec in SIGNALS)
 MAX_EXPLOIT_SCORE = 100
 
 CROWD_HOSTS = 100_000
-RANSOM_SERVICE_CLASSES: frozenset[str] = frozenset({"remote", "database"})
+RANSOM_SERVICE_CLASSES: frozenset[str] = frozenset(
+    {ServiceClass.REMOTE.value, ServiceClass.DATABASE.value}
+)
 
 
 def exploit_score(signals: list[str] | tuple[str, ...]) -> int:

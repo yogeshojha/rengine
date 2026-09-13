@@ -48,6 +48,7 @@ REQUIRED_FIELDS: dict[str, tuple[str, ...]] = {
 }
 
 _URL_FIELDS = {"webhook_url", "apprise_url"}
+_HTTP_SCHEMES = frozenset({"http", "https"})
 
 _DISALLOWED_CUSTOM_SCHEMES = frozenset(
     {"http", "https", "json", "jsons", "xml", "xmls", "form", "forms"}
@@ -87,10 +88,12 @@ def _validate_config(provider: str, config: dict) -> None:
 
 def _mask_url(url: str) -> str:
     parts = urlsplit(url)
+    scheme = parts.scheme or "https"
+    if scheme.lower() not in _HTTP_SCHEMES:
+        return f"{scheme}://{MASK}"
     host = parts.hostname or url[:24]
     if parts.port:
         host = f"{host}:{parts.port}"
-    scheme = parts.scheme or "https"
     return f"{scheme}://{host}/{MASK}"
 
 
@@ -221,6 +224,10 @@ class NotificationChannelService:
             msg = f"Invalid provider. Must be one of {', '.join(PROVIDERS)}."
             raise _bad(msg)
         config = {k: v for k, v in (config or {}).items() if v is not None}
+        for field, value in config.items():
+            if isinstance(value, str) and MASK in value:
+                msg = f"'{field}' carries a masked value. Enter the value again."
+                raise _bad(msg)
         _validate_config(provider, config)
         ok, message = await asyncio.to_thread(
             send_one,

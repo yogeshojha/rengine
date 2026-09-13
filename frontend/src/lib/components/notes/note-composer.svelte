@@ -133,7 +133,7 @@
 		<span class="text-xs text-muted-foreground">Tags</span>
 		{#if notes.tags.length === 0}
 			<span class="text-xs text-muted-foreground">
-				No tags in this project. Add one in Settings.
+				No tags in this project. A tag is added from a target.
 			</span>
 		{:else if notes.tags.length > TAG_SCROLL_AT}
 			<ScrollArea class="h-[76px]">

@@ -7,11 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.api.scope import VulnScope
 from app.core.database import get_session
-from app.services.asset_query import build_schema
 from app.services.vulnerability import VulnerabilityService
-from shared.definitions.asset_query import VULN_QUERY
 from shared.definitions.vulnerabilities import VULN_STATES
-from shared.models.asset_query import QueryGroups, QueryLeads, QuerySchema
+from shared.models.asset_query import QueryGroups, QueryLeads
 from shared.models.vulnerability import (
     BulkTriageResult,
     BulkTriageUpdate,
@@ -36,9 +34,13 @@ def get_service(
     return VulnerabilityService(session)
 
 
-@router.get("/search/schema", response_model=QuerySchema)
-async def vulnerability_query_schema(_current_user: CurrentUser):
-    return build_schema(VULN_QUERY)
+def _check_state(state: str) -> None:
+    if state not in VULN_STATES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Unknown review state '{state}'. Expected one of "
+            f"{', '.join(sorted(VULN_STATES))}.",
+        )
 
 
 @router.post("/search", response_model=VulnerabilityPage)
@@ -153,12 +155,7 @@ async def triage_many(
     scope: VulnScope,
     body: BulkTriageUpdate,
 ):
-    if body.state not in VULN_STATES:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Unknown review state '{body.state}'. Expected one of "
-            f"{', '.join(sorted(VULN_STATES))}.",
-        )
+    _check_state(body.state)
     return await service.triage_many(scope, body, current_user.id)
 
 
@@ -170,6 +167,7 @@ async def triage_vulnerability(
     scope: VulnScope,
     body: TriageUpdate,
 ):
+    _check_state(body.state)
     result = await service.triage(scope, fingerprint, body, current_user.id)
     if result is None:
         raise HTTPException(

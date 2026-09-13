@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import Plus from '@lucide/svelte/icons/plus';
 	import Search from '@lucide/svelte/icons/search';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
@@ -47,7 +48,7 @@
 	);
 
 	$effect(() => {
-		void interestCatalog.load();
+		untrack(() => interestCatalog.load());
 	});
 
 	$effect(() => {

@@ -4,7 +4,19 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import Text, and_, case, cast, false, func, literal, or_, select, true
+from sqlalchemy import (
+    Text,
+    and_,
+    case,
+    cast,
+    false,
+    func,
+    literal,
+    or_,
+    select,
+    true,
+    union_all,
+)
 from sqlalchemy.dialects.postgresql import INET, JSONB
 
 from shared.definitions.asset_query import VULN_FLAGS, VULN_QUERY, Op
@@ -202,6 +214,7 @@ def compile_vuln_compare(cmp: Compare, ctx: VulnQueryContext):
 
 
 def compile_vuln_term(term: Term, ctx: VulnQueryContext):
+    reach = ctx.scope.match(Vulnerability.scan_id)
     branches = []
     for spec in VULN_QUERY.fields:
         if not spec.free_text:
@@ -216,7 +229,15 @@ def compile_vuln_term(term: Term, ctx: VulnQueryContext):
             end=term.end,
         )
         branches.append(_VULN_BUILDERS[spec.name](cmp, ctx))
-    return or_(*branches) if branches else false()
+    if not branches:
+        return false()
+    reachable = union_all(
+        *[
+            select(Vulnerability.id).where(reach, branch).correlate(None)
+            for branch in branches
+        ]
+    ).subquery()
+    return Vulnerability.id.in_(select(reachable.c.id))
 
 
 def compile_vuln_node(node: Node, ctx: VulnQueryContext):

@@ -4,6 +4,7 @@ from reports.base import RenderContext, Section
 from reports.config import SectionConfig, flag, limit
 from shared.definitions.reports import SectionGroup
 from shared.definitions.surface import SurfaceDimension
+from shared.utils.net import host_port
 
 
 class AppendixAssetsConfig(SectionConfig):
@@ -38,7 +39,7 @@ class AppendixAssetsSection(Section):
             blocks.append(
                 _block(
                     "Services",
-                    [f"{s.ip}:{s.port}" for s in ctx.data.service_rows],
+                    [host_port(s.ip, s.port) for s in ctx.data.service_rows],
                     cfg.max_rows,
                 )
             )

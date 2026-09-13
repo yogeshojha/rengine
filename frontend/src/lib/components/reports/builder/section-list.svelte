@@ -13,7 +13,6 @@
 	import Settings2Icon from '@lucide/svelte/icons/settings-2';
 	import SectionFieldControl from './section-field.svelte';
 	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
-	import { SECTION_GROUP_ORDER } from '$lib/config/reports';
 	import type { SectionEntry } from '$lib/types/report';
 
 	let { sections = $bindable() }: { sections: SectionEntry[] } = $props();
@@ -77,11 +76,11 @@
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content align="end" class="max-h-none w-80 overflow-visible">
 				<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-96">
-					{#each SECTION_GROUP_ORDER as group (group)}
-						{@const items = reportCatalog.sectionsByGroup(group)}
+					{#each reportCatalog.catalog?.groups ?? [] as group (group.key)}
+						{@const items = reportCatalog.sectionsByGroup(group.key)}
 						{#if items.length}
 							<DropdownMenu.Label class="text-2xs uppercase tracking-wide text-muted-foreground">
-								{reportCatalog.catalog?.groups.find((g) => g.key === group)?.label ?? group}
+								{group.label}
 							</DropdownMenu.Label>
 							{#each items as item (item.name)}
 								<DropdownMenu.Item

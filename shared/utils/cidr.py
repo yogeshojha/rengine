@@ -1,4 +1,4 @@
-"""Stdlib CIDR/IP math for seed expansion (no external binary — pure arithmetic)."""
+"""CIDR and IP math for seed expansion."""
 
 from __future__ import annotations
 

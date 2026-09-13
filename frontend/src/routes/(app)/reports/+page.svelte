@@ -25,6 +25,7 @@
 	import FontUploadDialog from '$lib/components/reports/font-upload-dialog.svelte';
 	import FontRow from '$lib/components/reports/font-row.svelte';
 	import DefaultsPanel from '$lib/components/reports/defaults-panel.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import GenerateDialog from '$lib/components/reports/generate-dialog.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { reports as reportsStore } from '$lib/stores/reports.svelte';
@@ -115,9 +116,11 @@
 	$effect(() => {
 		const id = projectId;
 		if (!id) return;
-		void reportsStore.fetch(id);
-		void reportsStore.fetchTemplates(id);
-		void reportCatalog.fetch();
+		untrack(() => {
+			void reportsStore.fetch(id);
+			void reportsStore.fetchTemplates(id);
+			void reportCatalog.fetch();
+		});
 	});
 
 	$effect(() => {
@@ -133,6 +136,19 @@
 			// ignore
 		}
 	});
+
+	let defaultsDirty = $state(false);
+	let leaveTabOpen = $state(false);
+	let pendingTab = $state<ReportTab | null>(null);
+
+	function requestTab(tab: ReportTab) {
+		if (activeTab === 'defaults' && tab !== 'defaults' && defaultsDirty) {
+			pendingTab = tab;
+			leaveTabOpen = true;
+			return;
+		}
+		activeTab = tab;
+	}
 
 	async function duplicate(template: ReportTemplate) {
 		const created = await reportsStore.createTemplate(projectId, {
@@ -191,7 +207,7 @@
 		</Button>
 	</div>
 
-	<Tabs.Root value={activeTab} onValueChange={(v) => v && (activeTab = v as ReportTab)}>
+	<Tabs.Root value={activeTab} onValueChange={(v) => v && requestTab(v as ReportTab)}>
 		<div class="flex flex-wrap items-center justify-between gap-3">
 			<Tabs.List class="w-full sm:w-fit">
 				<Tabs.Trigger value="reports">
@@ -324,7 +340,7 @@
 		</Tabs.Content>
 
 		<Tabs.Content value="defaults" class="mt-5">
-			<DefaultsPanel />
+			<DefaultsPanel onDirtyChange={(v) => (defaultsDirty = v)} />
 		</Tabs.Content>
 	</Tabs.Root>
 </div>
@@ -364,4 +380,18 @@
 	title={`Delete ${pendingDelete?.kind ?? 'report'}`}
 	description={deleteDescription}
 	onConfirm={confirmDelete}
+/>
+
+<UnsavedChangesDialog
+	bind:open={leaveTabOpen}
+	onOpenChange={(open) => {
+		leaveTabOpen = open;
+		if (!open) pendingTab = null;
+	}}
+	onConfirm={() => {
+		const tab = pendingTab;
+		pendingTab = null;
+		defaultsDirty = false;
+		if (tab) activeTab = tab;
+	}}
 />

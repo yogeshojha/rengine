@@ -7,6 +7,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
+from shared.definitions.bounty_programs import ProgramSource
 from shared.enums.target import TargetType
 from shared.models.organization import OrganizationSummary
 from shared.models.tag import TagSummary
@@ -21,7 +22,7 @@ class BountyProgram(SQLModel, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     platform: str = Field(max_length=32, index=True)
-    source: str = Field(default="api", max_length=16, index=True)
+    source: str = Field(default=ProgramSource.API.value, max_length=16, index=True)
     sources: list[str] = Field(
         default_factory=list,
         sa_column=Column(JSONB, nullable=False, server_default=text("'[]'::jsonb")),
@@ -138,7 +139,7 @@ class BountyProgramRead(BaseModel):
     id: uuid.UUID
     platform: str
     platform_label: str = ""
-    source: str = "api"
+    source: str = ProgramSource.API.value
     source_label: str = ""
     sources: list[str] = []
     source_labels: list[str] = []
@@ -180,22 +181,6 @@ class BountyProgramRead(BaseModel):
 class BountyProgramDetail(BountyProgramRead):
     scopes: list[BountyScopeRead] = []
     unreachable: dict[str, int] = {}
-
-
-class BountyScopeCounts(BaseModel):
-    total: int
-    in_scope: int
-    out_of_scope: int
-    importable: int
-
-
-class BountySyncResult(BaseModel):
-    platform: str
-    programs: int
-    created: int
-    updated: int
-    duration_ms: int
-    error: str | None = None
 
 
 class BountyImportRequest(BaseModel):

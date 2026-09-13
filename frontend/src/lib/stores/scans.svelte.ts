@@ -435,6 +435,7 @@ function createScansStore() {
 		},
 
 		clear() {
+			loadSeq++;
 			scans = [];
 			targetGroups = [];
 			groupByTarget = false;

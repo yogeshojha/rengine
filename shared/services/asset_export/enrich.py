@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import select
+from sqlalchemy import cast, func, select
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import array as pg_array
 
 from shared.models.port import Port
 from shared.models.subdomain import Subdomain
@@ -45,7 +47,9 @@ def hosts_for(
     rows = session.execute(
         select(Subdomain.name, Subdomain.resolved_ips).where(
             scope.match(Subdomain.scan_id),
-            Subdomain.resolved_ips.isnot(None),
+            func.jsonb_exists_any(
+                cast(Subdomain.resolved_ips, JSONB), pg_array(wanted)
+            ),
         )
     ).all()
     keep = set(wanted)

@@ -28,7 +28,9 @@
 
 	const theme = $derived(reportCatalog.theme(template.theme));
 	const enabled = $derived(template.sections.filter((s) => s.enabled).length);
-	const scopeLabel = $derived(template.scope === 'target' ? 'Target' : 'Scan');
+	const scopeLabel = $derived(
+		reportCatalog.catalog?.scopes.find((s) => s.key === template.scope)?.label ?? template.scope
+	);
 </script>
 
 <Card.Root class="gap-0 py-0">

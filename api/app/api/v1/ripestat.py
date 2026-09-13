@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, NoReturn
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,7 +24,7 @@ def get_ripestat_service(
     return RIPEStatService(session)
 
 
-def _handle_lookup_error(e: RIPEStatLookupError):
+def _handle_lookup_error(e: RIPEStatLookupError) -> NoReturn:
     if isinstance(e.__cause__, RIPEStatInvalidResourceError):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

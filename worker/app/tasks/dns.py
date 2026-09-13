@@ -51,7 +51,6 @@ def perform_dns_lookups(self, target_ids: list[str]) -> dict:  # noqa: ARG001, P
                 results["skipped"] += 1
                 continue
 
-            # Only process domain targets
             if target.target_type != TargetType.DOMAIN:
                 logger.debug(
                     f"Target {target_id} is {target.target_type.value}, "
@@ -73,7 +72,6 @@ def perform_dns_lookups(self, target_ids: list[str]) -> dict:  # noqa: ARG001, P
                     domain=target.target_value,
                 )
 
-                # Link lookup to target and mark complete
                 target.dns_lookup_id = lookup.id
                 target.dns_status = TaskStatus.SUCCESS
                 target.dns_error = None
@@ -87,7 +85,6 @@ def perform_dns_lookups(self, target_ids: list[str]) -> dict:  # noqa: ARG001, P
                 )
                 results["success"] += 1
 
-                # log
                 activity.log(
                     event=ActivityEvent.TARGET_ENRICHMENT_DNS_COMPLETED,
                     title=f"DNS lookup completed · {target.target_value}",
@@ -136,7 +133,7 @@ def perform_dns_lookups(self, target_ids: list[str]) -> dict:  # noqa: ARG001, P
 
 
 def _mark_all_failed(target_ids: list[str], error: str) -> None:
-    """Mark all targets as DNS failed (used when service init fails)."""
+    """Mark every target in the batch as failed."""
     try:
         with get_sync_session() as session:
             for target_id in target_ids:

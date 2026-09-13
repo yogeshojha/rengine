@@ -37,7 +37,6 @@
 		registrar_name: 3
 	};
 
-	// a target of this project is a relation, a record that is not one is a domain to add
 	let ranked = $derived(
 		[...groups]
 			.map((g) => ({ ...g, records: g.records.filter((r) => !r.target_id) }))

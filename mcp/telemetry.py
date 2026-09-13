@@ -98,19 +98,12 @@ async def sessions() -> list[dict]:
     return sorted(live, key=lambda r: r.get("last_seen", ""), reverse=True)
 
 
-async def drop(token_id: uuid.UUID, client: str | None = None) -> int:
+async def drop(token_id: uuid.UUID) -> int:
     """Forget a session."""
+    prefix = SESSION_KEY.format(token_id=token_id, client="")
     try:
         redis = _client()
-        keys = [
-            k
-            for k in await redis.smembers(SESSION_INDEX)
-            if k.startswith(SESSION_KEY.format(token_id=token_id, client=""))
-            or (
-                client
-                and k == SESSION_KEY.format(token_id=token_id, client=_slug(client))
-            )
-        ]
+        keys = [k for k in await redis.smembers(SESSION_INDEX) if k.startswith(prefix)]
         if not keys:
             return 0
         await redis.delete(*keys)

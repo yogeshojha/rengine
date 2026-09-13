@@ -47,6 +47,7 @@ logger = get_logger(__name__)
 WHOIS_LOCK_NAMESPACE = 0x5748
 
 DEFAULT_CACHE_TTL_DAYS = 7
+BOOTSTRAP_MAX_AGE_DAYS = 3
 
 # cap rows per correlation group
 MAX_CORRELATION_RECORDS = 500
@@ -503,24 +504,15 @@ class WhoisService:
         return list(result.scalars().all())
 
     def ensure_ready(self) -> None:
+        self.refresh_bootstrap()
         try:
             self._provider.ensure_bootstrapped()
         except RDAPProviderError as e:
             msg = f"Failed to initialize WHOIS service: {e}"
             raise WhoisLookupError(msg) from e
 
-    def refresh_bootstrap(self, max_age_days: int = 3) -> None:
+    def refresh_bootstrap(self, max_age_days: int = BOOTSTRAP_MAX_AGE_DAYS) -> None:
         try:
             self._provider.refresh_if_stale(max_age_days)
         except RDAPProviderError as e:
             logger.warning(f"Failed to refresh bootstrap data: {e}")
-
-    def save_bootstrap(self) -> str | None:
-        return self._provider.save_bootstrap_data()
-
-    def load_bootstrap(self, data: str) -> None:
-        try:
-            self._provider.load_bootstrap_data(data)
-        except RDAPProviderError as e:
-            msg = f"Failed to load bootstrap data: {e}"
-            raise WhoisLookupError(msg) from e

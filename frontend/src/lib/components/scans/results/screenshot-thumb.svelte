@@ -35,6 +35,7 @@
 	$effect(() => {
 		if (hoverOpen) claimHover(closeSelf);
 		else releaseHover(closeSelf);
+		return () => releaseHover(closeSelf);
 	});
 </script>
 

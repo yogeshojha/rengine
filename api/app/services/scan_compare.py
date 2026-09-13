@@ -95,6 +95,7 @@ from shared.models.target import Target
 from shared.models.vulnerability import Vulnerability, VulnerabilityCoverage
 from shared.services.scan_scope import covering_stages
 from shared.utils.datetime import utc_now
+from shared.utils.net import host_port
 from stages.registry import stage_by_name
 
 RAN = (ScanActivityStatus.SUCCESS.value, ScanActivityStatus.PARTIAL.value)
@@ -714,10 +715,13 @@ class ScanCompareService:
         )
         runs = list(result.scalars().all())
         activities = await self._activities([r.id for r in runs])
+        counts = await self._measured_counts([r.id for r in runs])
         census = scan.scope == ScanScope.FULL.value
 
         return [
-            self._comparable_read(run, activities, self._refusal(scan, run, census))
+            self._comparable_read(
+                run, activities, self._refusal(scan, run, census), counts
+            )
             for run in runs
         ]
 
@@ -1122,12 +1126,13 @@ class ScanCompareService:
             .limit(MAX_COMPARABLE_RUNS)
         )
         for row in rows.scalars().all():
-            if self._run_diff(row, current):
+            if any(diff.material for diff in self._run_diff(row, current)):
                 continue
             if self._setting_diff(row, current, titles)[0]:
                 continue
             ran = await self._activities([row.id])
-            return self._comparable_read(row, ran, "")
+            counts = await self._measured_counts([row.id])
+            return self._comparable_read(row, ran, "", counts)
         return None
 
     def _stage_diff(
@@ -1277,10 +1282,31 @@ class ScanCompareService:
             counts={d.dimension: getattr(d, attr) for d in deltas},
         )
 
+    async def _measured_counts(
+        self, scan_ids: list[UUID]
+    ) -> dict[UUID, dict[str, int]]:
+        """Rows each run wrote, never the rollup columns."""
+        out: dict[UUID, dict[str, int]] = {sid: {} for sid in scan_ids}
+        if not scan_ids:
+            return out
+        for dimension, spec in SPECS.items():
+            rows = await self.session.execute(
+                select(spec.model.scan_id, func.count())
+                .where(spec.model.scan_id.in_(scan_ids))
+                .group_by(spec.model.scan_id)
+            )
+            for scan_id, total in rows.all():
+                out.setdefault(scan_id, {})[dimension] = int(total)
+        return out
+
     def _comparable_read(
-        self, run: Scan, activities: dict[UUID, dict[str, str]], reason: str
+        self,
+        run: Scan,
+        activities: dict[UUID, dict[str, str]],
+        reason: str,
+        measured: dict[UUID, dict[str, int]],
     ) -> ComparableRun:
-        counts = self._counts(run)
+        counts = {key: measured.get(run.id, {}).get(key, 0) for key in SURFACE_ORDER}
         return ComparableRun(
             scan_id=run.id,
             engine_name=run.engine_name,
@@ -1298,20 +1324,11 @@ class ScanCompareService:
             reason=reason,
         )
 
-    def _counts(self, scan: Scan) -> dict[str, int]:
-        return {
-            SurfaceDimension.WEB_ASSETS.value: scan.subdomains_found,
-            SurfaceDimension.ENDPOINTS.value: scan.endpoints_found,
-            SurfaceDimension.SERVICES.value: scan.open_ports_found,
-            SurfaceDimension.IPS.value: scan.ips_found,
-            SurfaceDimension.VULNERABILITIES.value: scan.vulnerabilities_found,
-        }
-
     def _duration(self, scan: Scan) -> float | None:
         start, end = scan.started_at, scan.completed_at
         if start is None or end is None:
             return None
-        return (end - start).total_seconds()
+        return (end - start).total_seconds() - (scan.paused_seconds or 0.0)
 
     def _wanted(self, verbs: list[str], confirmed: bool) -> set[str]:
         asked = {
@@ -1381,7 +1398,7 @@ class ScanCompareService:
 
     def _title(self, spec: DimSpec, values: dict) -> str:
         if spec.dimension == SurfaceDimension.SERVICES.value:
-            return f"{values.get('ip')}:{values.get('number')}"
+            return host_port(str(values.get("ip") or ""), values.get("number") or "")
         return str(values.get(spec.title) or self._key(spec, values))
 
     def _subtitle(self, spec: DimSpec, values: dict) -> str:

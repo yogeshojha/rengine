@@ -36,22 +36,16 @@ SCAN_TOOLS: tuple[ToolSpec, ...] = (
         example="-active",
     ),
     ToolSpec(
+        name="github-subdomains",
+        label="GitHub Subdomains",
+        phase="Subdomain Discovery",
+        example="-e",
+    ),
+    ToolSpec(
         name="assetfinder",
         label="Assetfinder",
         phase="Subdomain Discovery",
         example="--subs-only",
-    ),
-    ToolSpec(
-        name="sublist3r",
-        label="Sublist3r",
-        phase="Subdomain Discovery",
-        example="-v",
-    ),
-    ToolSpec(
-        name="oneforall",
-        label="OneForAll",
-        phase="Subdomain Discovery",
-        example="--takeover False",
     ),
     ToolSpec(
         name="tlsx",

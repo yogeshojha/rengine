@@ -27,6 +27,12 @@ logger = get_logger(__name__)
 
 _TOOL_BIN = os.environ.get("RENGINE_TOOL_BIN", "/root/go/bin")
 
+
+def tool_path() -> str:
+    """PATH the worker's tool binaries are looked up on."""
+    return f"{_TOOL_BIN}{os.pathsep}{os.environ.get('PATH', '')}"
+
+
 _STOP_POLL_SECONDS = 2.0
 _KILL_GRACE_SECONDS = 5
 
@@ -168,8 +174,7 @@ class CLIToolRunner:
 
     def _verify_binary(self) -> None:
         """Check that the binary exists in PATH."""
-        lookup = f"{_TOOL_BIN}{os.pathsep}{os.environ.get('PATH', '')}"
-        path = shutil.which(self.binary, path=lookup)
+        path = shutil.which(self.binary, path=tool_path())
         if not path:
             msg = (
                 f"Binary '{self.binary}' not found in PATH. "
@@ -371,6 +376,7 @@ class CLIToolRunner:
         stderr_thread: threading.Thread | None = None
         stderr_chunks: list[str] = []
         killed_for: list[str] = [""]
+        stopped: list[bool] = [False]
         outcome = StreamOutcome(records=iter(()))
         try:
             lead: list[str] = []
@@ -442,7 +448,8 @@ class CLIToolRunner:
                 def _watch_stop() -> None:
                     while proc is not None and proc.poll() is None:
                         if stop_check():
-                            _terminate(proc)
+                            stopped[0] = True
+                            _kill("the scan was halted")
                             return
                         time.sleep(_STOP_POLL_SECONDS)
 
@@ -480,7 +487,8 @@ class CLIToolRunner:
                 stderr_thread.join(timeout=5)
             stderr = "".join(stderr_chunks)
             outcome.return_code = return_code
-            outcome.timed_out = bool(killed_for[0])
+            outcome.stopped = stopped[0]
+            outcome.timed_out = bool(killed_for[0]) and not stopped[0]
             outcome.stderr = stderr
             if killed_for[0]:
                 logger.warning("%s killed: %s", self.binary, killed_for[0])

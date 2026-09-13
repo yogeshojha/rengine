@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SURFACE, SurfaceDimension, type ResultTab } from '$lib/config/surface';
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
 	import ArrowDownRight from '@lucide/svelte/icons/arrow-down-right';
 	import * as Card from '$lib/components/ui/card';
@@ -13,7 +14,8 @@
 		activityRan,
 		elapsedSeconds,
 		formatSeconds,
-		isLiveStatus
+		isLiveStatus,
+		isOpenStatus
 	} from '$lib/utilities/scan-status';
 	import { etaLabel, plannedStages, stageProgress } from '$lib/utilities/scan-progress';
 	import { targetAssetNoun, TargetType } from '$lib/types/target';
@@ -24,9 +26,12 @@
 	import type { InsightTally } from '$lib/utilities/scan-insights';
 
 	export interface SurfaceStats {
+		assets: number | null;
 		resolved: number | null;
 		live: number | null;
 		web: number | null;
+		ips: number | null;
+		ports: number | null;
 		networks: number | null;
 	}
 
@@ -47,7 +52,7 @@
 		geography: InsightTally[];
 		geoTotal: number;
 		geoReady: boolean;
-		onTab: (tab: string, filter?: string) => void;
+		onTab: (tab: ResultTab, filter?: string) => void;
 	}
 
 	let {
@@ -70,6 +75,12 @@
 		onTab
 	}: Props = $props();
 
+	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
+	const SVC = SURFACE[SurfaceDimension.SERVICES];
+	const IP = SURFACE[SurfaceDimension.IPS];
+	const VULN = SURFACE[SurfaceDimension.VULNERABILITIES];
+	const EP = SURFACE[SurfaceDimension.ENDPOINTS];
+
 	const TREND_RUNS = 5;
 	const NEW_FILTER = 'is:new';
 	const fmtRun = (iso: string) =>
@@ -83,6 +94,7 @@
 	let type = $derived(scan.execution_config.target_type);
 	let isDomain = $derived(type === TargetType.DOMAIN);
 	let live = $derived(isLiveStatus(scan.status));
+	let unfinished = $derived(isOpenStatus(scan.status));
 	let completed = $derived(scan.status === 'completed');
 	let planned = $derived(plannedStages(scan, catalog));
 	let progress = $derived(stageProgress(scan, run, planned));
@@ -101,8 +113,11 @@
 	let noun = (n: number) => targetAssetNoun(type, n);
 	let nounPlural = $derived(targetAssetNoun(type));
 	let nounTitle = $derived(nounPlural.charAt(0).toUpperCase() + nounPlural.slice(1));
-	let showGeo = $derived(geography.length > 0 || (scan.ips_found > 0 && (live || !geoReady)));
-	let showKpis = $derived(live || !scanFoundNothing(scan));
+	let assetCount = $derived(stats.assets ?? scan.subdomains_found);
+	let ipCount = $derived(stats.ips ?? scan.ips_found);
+	let portCount = $derived(stats.ports ?? scan.open_ports_found);
+	let showGeo = $derived(geography.length > 0 || (ipCount > 0 && (unfinished || !geoReady)));
+	let showKpis = $derived(unfinished || !scanFoundNothing(scan));
 
 	let headline = $derived.by(() => {
 		switch (scan.status) {
@@ -177,7 +192,7 @@
 		key: string;
 		label: string;
 		value: number | null;
-		tab: string;
+		tab: ResultTab;
 		filter?: string;
 		added?: number;
 		gone?: number;
@@ -196,20 +211,20 @@
 			{
 				key: 'assets',
 				label: nounTitle,
-				value: scan.subdomains_found,
-				tab: 'web-assets',
+				value: assetCount,
+				tab: WEB.tab,
 				added: compared ? added : undefined,
 				gone: compared ? gone : undefined,
 				trend: trendOf('subdomains_found')
 			}
 		];
 		if (isDomain) {
-			const pct = pctOf(stats.resolved, scan.subdomains_found);
+			const pct = pctOf(stats.resolved, assetCount);
 			list.push({
 				key: 'resolved',
 				label: 'Resolved',
 				value: stats.resolved,
-				tab: 'web-assets',
+				tab: WEB.tab,
 				filter: 'is:resolved',
 				hint: pct ? `${pct} of ${nounPlural}` : undefined,
 				trend: null
@@ -221,7 +236,7 @@
 				key: 'live',
 				label: 'Live web assets',
 				value: stats.live,
-				tab: 'web-assets',
+				tab: WEB.tab,
 				filter: 'is:live',
 				hint: livePct ? `${livePct} of web assets` : undefined,
 				trend: null
@@ -230,26 +245,24 @@
 				key: 'http',
 				label: 'HTTP services',
 				value: scan.http_assets_found,
-				...(scan.subdomains_found
-					? { tab: 'web-assets', filter: 'is:web' }
-					: { tab: 'services', filter: 'is:http' }),
+				...(assetCount ? { tab: WEB.tab, filter: 'is:web' } : { tab: SVC.tab, filter: 'is:http' }),
 				diff: diffVs(scan.http_assets_found, cmp?.http_assets_found),
 				trend: trendOf('http_assets_found')
 			},
 			{
 				key: 'ips',
 				label: 'IP addresses',
-				value: scan.ips_found,
-				tab: 'ips',
-				diff: diffVs(scan.ips_found, cmp?.ips_found),
+				value: ipCount,
+				tab: IP.tab,
+				diff: diffVs(ipCount, cmp?.ips_found),
 				trend: trendOf('ips_found')
 			},
 			{
 				key: 'ports',
 				label: 'Open ports',
-				value: scan.open_ports_found,
-				tab: 'services',
-				diff: diffVs(scan.open_ports_found, cmp?.open_ports_found),
+				value: portCount,
+				tab: SVC.tab,
+				diff: diffVs(portCount, cmp?.open_ports_found),
 				trend: trendOf('open_ports_found')
 			}
 		);
@@ -258,7 +271,7 @@
 				key: 'networks',
 				label: 'Networks',
 				value: stats.networks,
-				tab: 'ips',
+				tab: IP.tab,
 				trend: null
 			});
 		if (scan.vulnerabilities_found > 0)
@@ -266,7 +279,7 @@
 				key: 'vulns',
 				label: 'Vulnerabilities',
 				value: scan.vulnerabilities_found,
-				tab: 'vulnerabilities',
+				tab: VULN.tab,
 				trend: trendOf('vulnerabilities_found')
 			});
 		if (scan.endpoints_found > 0)
@@ -274,10 +287,10 @@
 				key: 'endpoints',
 				label: 'Endpoints',
 				value: scan.endpoints_found,
-				tab: 'endpoints',
+				tab: EP.tab,
 				trend: trendOf('endpoints_found')
 			});
-		return live ? list : list.filter((k) => k.value !== 0);
+		return unfinished ? list : list.filter((k) => k.value !== 0);
 	});
 
 	const GRID_COLS: Record<number, string> = {
@@ -307,7 +320,7 @@
 	let lastSpanMobile = $derived(kpis.length % 2 === 1 ? 'col-span-2' : '');
 
 	function pickCountry(code: string) {
-		onTab('ips', code ? `country:${code}` : '');
+		onTab(IP.tab, code ? `country:${code}` : '');
 	}
 </script>
 
@@ -336,7 +349,7 @@
 							<button
 								type="button"
 								class="inline-flex h-6 items-center gap-1 rounded-md border px-2 text-xs transition-colors hover:border-primary/40 hover:bg-accent/60"
-								onclick={() => onTab('web-assets', NEW_FILTER)}
+								onclick={() => onTab(WEB.tab, NEW_FILTER)}
 								aria-label="View {added.toLocaleString()} new {nounPlural}"
 							>
 								<ArrowUpRight class="size-3.5 text-success" />
@@ -437,7 +450,7 @@
 			<GeoPanel
 				{geography}
 				total={geoTotal}
-				{live}
+				{unfinished}
 				ready={geoReady}
 				class="border-t lg:border-t-0 lg:border-l"
 				onPick={pickCountry}

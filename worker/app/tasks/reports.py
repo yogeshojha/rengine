@@ -219,13 +219,17 @@ def _notify(session, report: Report, *, ok: bool) -> None:
 
 @shared_task(name="app.tasks.reports.cleanup")
 def cleanup() -> dict:
-    """Drop generated files past their retention date."""
+    """An expired report keeps its recipe and loses its files."""
     removed = 0
     with get_sync_session() as session:
         now = utc_now()
         rows = (
             session.query(Report)
-            .filter(Report.expires_at.is_not(None), Report.expires_at < now)
+            .filter(
+                Report.status == ReportStatus.COMPLETED.value,
+                Report.expires_at.is_not(None),
+                Report.expires_at < now,
+            )
             .limit(500)
             .all()
         )
@@ -236,8 +240,8 @@ def cleanup() -> dict:
                     item.unlink(missing_ok=True)
                 root.rmdir()
             report.files = []
-            report.status = ReportStatus.FAILED.value
-            report.error = "Files removed after the retention period."
+            report.status = ReportStatus.EXPIRED.value
+            report.step = "Expired"
             session.add(report)
             removed += 1
         if removed:

@@ -17,12 +17,3 @@ export function scopeQuery(scope: ScopeArg, extra: Record<string, string> = {}):
 	for (const [key, value] of Object.entries(extra)) sp.set(key, value);
 	return sp.toString();
 }
-
-export function isProjectScope(scope: ScopeArg): boolean {
-	return !scopeOf(scope).scanId;
-}
-
-export function scopeReady(scope: ScopeArg): boolean {
-	const { scanId, projectId } = scopeOf(scope);
-	return Boolean(scanId || projectId);
-}

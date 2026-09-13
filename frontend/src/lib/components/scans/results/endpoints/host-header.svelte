@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Globe from '@lucide/svelte/icons/globe';
+	import { filterToken } from '$lib/utilities/scan-insights';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import Copy from '@lucide/svelte/icons/copy';
 	import ListOrdered from '@lucide/svelte/icons/list-ordered';
@@ -184,7 +185,7 @@
 								class="inline-flex h-5 items-center gap-1 rounded border px-1.5 font-mono text-2xs leading-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {paramClass(
 									p
 								)}"
-								onclick={() => onPivot(`param:${p.name}`)}
+								onclick={() => onPivot(filterToken('param', p.name))}
 							>
 								{p.name}
 								<span class="font-sans tabular-nums text-muted-foreground">{n(p.count)}</span>

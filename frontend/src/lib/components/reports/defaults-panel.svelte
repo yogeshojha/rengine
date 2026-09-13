@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
+	import { beforeNavigate, goto } from '$app/navigation';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -11,7 +13,14 @@
 	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { toast } from 'svelte-sonner';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import type { ReportBranding, ReportDefaults } from '$lib/types/report';
+
+	interface Props {
+		onDirtyChange?: (dirty: boolean) => void;
+	}
+
+	let { onDirtyChange }: Props = $props();
 
 	let defaults = $state<ReportDefaults | null>(null);
 	let branding = $state<ReportBranding | null>(null);
@@ -23,22 +32,54 @@
 	const isAdmin = $derived(auth.user?.is_superuser ?? false);
 	const dirty = $derived(Boolean(branding) && JSON.stringify({ branding, theme }) !== snapshot);
 
+	$effect(() => onDirtyChange?.(dirty));
+
+	let showLeaveDialog = $state(false);
+	let pendingNav: (() => void) | null = $state(null);
+	let allowNavigation = $state(false);
+
+	beforeNavigate((nav) => {
+		if (allowNavigation) {
+			allowNavigation = false;
+			return;
+		}
+		if (!dirty || saving || pendingNav) return;
+		nav.cancel();
+		pendingNav = () => {
+			allowNavigation = true;
+			if (nav.to) goto(nav.to.url);
+		};
+		showLeaveDialog = true;
+	});
+
 	$effect(() => {
-		void reportCatalog.fetch();
-		reportsApi
-			.defaults()
-			.then((value) => {
-				defaults = value;
-				branding = {
-					...value.branding,
-					distribution: [...value.branding.distribution],
-					revisions: value.branding.revisions.map((r) => ({ ...r }))
-				};
-				theme = value.theme;
-				snapshot = JSON.stringify({ branding, theme });
-			})
-			.catch((e) => toast.error(e instanceof Error ? e.message : 'Defaults not loaded'))
-			.finally(() => (loading = false));
+		if (typeof window === 'undefined') return;
+		function onBeforeUnload(e: BeforeUnloadEvent) {
+			if (!dirty || saving) return;
+			e.preventDefault();
+		}
+		window.addEventListener('beforeunload', onBeforeUnload);
+		return () => window.removeEventListener('beforeunload', onBeforeUnload);
+	});
+
+	$effect(() => {
+		untrack(() => {
+			void reportCatalog.fetch();
+			reportsApi
+				.defaults()
+				.then((value) => {
+					defaults = value;
+					branding = {
+						...value.branding,
+						distribution: [...value.branding.distribution],
+						revisions: value.branding.revisions.map((r) => ({ ...r }))
+					};
+					theme = value.theme;
+					snapshot = JSON.stringify({ branding, theme });
+				})
+				.catch((e) => toast.error(e instanceof Error ? e.message : 'Defaults not loaded'))
+				.finally(() => (loading = false));
+		});
 	});
 
 	async function save() {
@@ -130,3 +171,16 @@
 		</div>
 	</div>
 {/if}
+
+<UnsavedChangesDialog
+	bind:open={showLeaveDialog}
+	onOpenChange={(open) => {
+		showLeaveDialog = open;
+		if (!open) pendingNav = null;
+	}}
+	onConfirm={() => {
+		const go = pendingNav;
+		pendingNav = null;
+		go?.();
+	}}
+/>

@@ -9,6 +9,7 @@ function createToolboxStore() {
 	let loadingCatalog = $state(false);
 	let catalogError = $state<string | null>(null);
 	let runs = $state<ToolRun[]>([]);
+	let historyError = $state<string | null>(null);
 	let busy = $state(false);
 	let timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -57,6 +58,9 @@ function createToolboxStore() {
 		get history() {
 			return runs;
 		},
+		get historyError() {
+			return historyError;
+		},
 		get busy() {
 			return busy;
 		},
@@ -86,8 +90,9 @@ function createToolboxStore() {
 		async loadHistory() {
 			try {
 				runs = await toolboxApi.runs();
-			} catch {
-				runs = [];
+				historyError = null;
+			} catch (e) {
+				historyError = e instanceof Error ? e.message : 'Recent runs not loaded';
 			}
 		},
 
@@ -118,6 +123,7 @@ function createToolboxStore() {
 			catalog = null;
 			catalogError = null;
 			runs = [];
+			historyError = null;
 			busy = false;
 		}
 	};

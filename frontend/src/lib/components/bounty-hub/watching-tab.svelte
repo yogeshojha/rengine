@@ -6,7 +6,8 @@
 	import { Spinner } from '$lib/components/ui/spinner';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import { CADENCE_LABELS } from '$lib/config/watch';
-	import { PLATFORM_LABELS, SUBMISSION_STATE_LABELS } from '$lib/config/bounty-programs';
+	import { SUBMISSION_STATE_LABELS } from '$lib/config/bounty-programs';
+	import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
 	import { SubmissionState } from '$lib/types/bounty-program';
 	import { ROUTES } from '$lib/config/routes';
 	import { relativeTime } from '$lib/utilities/dates';
@@ -161,7 +162,7 @@
 								{/if}
 							</span>
 							<span class="truncate text-xs text-muted-foreground">
-								{PLATFORM_LABELS[watch.platform] ?? watch.platform} · {watch.targets}
+								{bountyVocabulary.label(watch.platform)} · {watch.targets}
 								{watch.targets === 1 ? 'target' : 'targets'} · {baselineLine(watch)}
 							</span>
 						</span>

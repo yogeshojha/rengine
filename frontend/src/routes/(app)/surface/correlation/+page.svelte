@@ -27,6 +27,8 @@
 	}
 </script>
 
+<svelte:head><title>{routeLabels.correlation} · reNgine</title></svelte:head>
+
 <div class="space-y-6">
 	<div class="flex flex-col gap-1">
 		<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.correlation}</h1>

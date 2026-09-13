@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SURFACE, SurfaceDimension, type ResultTab } from '$lib/config/surface';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
@@ -15,10 +16,12 @@
 	interface Props {
 		exposure: ScanExposure | null;
 		loading: boolean;
-		onTab: (tab: string, filter?: string) => void;
+		onTab: (tab: ResultTab, filter?: string) => void;
 	}
 
 	let { exposure, loading, onTab }: Props = $props();
+
+	const SVC = SURFACE[SurfaceDimension.SERVICES];
 
 	const TOP = 5;
 	const NON_WEB_FILTER = `not class:${ServiceClass.WEB}`;
@@ -31,7 +34,7 @@
 		`${n.toLocaleString()} ${n === 1 ? one : many}`;
 
 	function pick(filter: string) {
-		onTab('services', filter);
+		onTab(SVC.tab, filter);
 	}
 
 	let bands = $derived.by<Segment[]>(() =>
@@ -223,7 +226,7 @@
 						variant="link"
 						size="sm"
 						class="mt-auto h-auto gap-1 self-start px-0 text-xs"
-						onclick={() => onTab('services')}
+						onclick={() => onTab(SVC.tab)}
 					>
 						View all services
 						<ChevronRight class="size-3.5" />

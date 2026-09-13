@@ -56,7 +56,7 @@
 
 	let dialogOpen = $state(false);
 	let editingId = $state<string | null>(null);
-	let formProvider = $state<NotifProvider>('slack');
+	let formProvider = $state<NotifProvider>(PROVIDERS[0].provider);
 	let formName = $state('');
 	let formActive = $state(true);
 	let formConfig = $state<Record<string, unknown>>({});
@@ -131,11 +131,11 @@
 
 	function openAdd() {
 		editingId = null;
-		formProvider = 'slack';
+		formProvider = PROVIDERS[0].provider;
 		formName = '';
 		formActive = true;
 		formPref = defaultNotificationPreference();
-		applyDefaults(metaFor('slack'));
+		applyDefaults(PROVIDERS[0]);
 		clearErrors();
 		dialogOpen = true;
 	}
@@ -347,7 +347,7 @@
 				<div class="space-y-1">
 					<p class="text-sm font-medium">No notification channels</p>
 					<p class="text-xs text-muted-foreground">
-						Add Slack, Discord, Telegram, Teams, email or an Apprise URL.
+						{PROVIDERS.map((p) => p.name).join(', ')}
 					</p>
 				</div>
 				<Button size="sm" variant="outline" onclick={openAdd}>

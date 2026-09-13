@@ -45,7 +45,7 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { scanEnginesApi } from '$lib/api/scan-engines';
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
-	import { ROUTES } from '$lib/config/routes';
+	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import type { IconComponent } from '$lib/config/icons';
 	import { downloadBlob } from '$lib/utilities/download';
@@ -256,7 +256,7 @@
 	}
 
 	$effect(() => {
-		engineCatalogStore.fetch();
+		untrack(() => engineCatalogStore.fetch());
 	});
 
 	$effect(() => {
@@ -496,6 +496,8 @@
 		};
 	});
 </script>
+
+<svelte:head><title>{engine?.name ?? routeLabels.engines} · reNgine</title></svelte:head>
 
 {#snippet controls()}
 	<section class="controls">
@@ -982,7 +984,7 @@
 		border-radius: 999px;
 		background: var(--primary);
 		color: var(--primary-foreground);
-		font-size: 10px;
+		font-size: 11px;
 		font-variant-numeric: tabular-nums;
 	}
 

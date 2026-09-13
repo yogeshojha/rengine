@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from collections.abc import Iterable
 
 from interest.base import InterestProvider, RawSignal
@@ -16,6 +15,7 @@ from interest.providers.ai.prompt import (
     MAX_TITLE,
     PROMPT_VERSION,
     SYSTEM,
+    json_array,
     render,
 )
 from shared.definitions.ai import AITask
@@ -44,21 +44,6 @@ def _asset(row: HostRow) -> dict:
         "title": strip_control(row.page_title or "")[:MAX_TITLE],
         "tech": [strip_control(str(t))[:40] for t in (row.tech or [])][:MAX_TECH],
     }
-
-
-def _payload(text: str) -> list[dict]:
-    body = text.strip()
-    if body.startswith("```"):
-        body = body.split("\n", 1)[-1]
-        body = body.rsplit("```", 1)[0]
-    start, end = body.find("["), body.rfind("]")
-    if start == -1 or end <= start:
-        return []
-    try:
-        parsed = json.loads(body[start : end + 1])
-    except (ValueError, TypeError):
-        return []
-    return [item for item in parsed if isinstance(item, dict)]
 
 
 def _kinds(raw: object) -> list[str]:
@@ -115,7 +100,7 @@ class AIProvider(InterestProvider):
             return
         allowed = {row.name.lower() for row in batch}
         model = ctx.ai.model_for_task(fast=True)
-        for item in _payload(answer):
+        for item in json_array(answer):
             host = str(item.get("host") or "").strip().lower()
             if host not in allowed:
                 continue

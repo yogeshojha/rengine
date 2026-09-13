@@ -1,5 +1,4 @@
 import uuid
-import uuid as uuid_pkg
 from datetime import datetime
 
 from sqlalchemy import Column
@@ -7,10 +6,6 @@ from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
 from shared.utils.datetime import utc_now
-
-# Password policy
-MIN_PASSWORD_SCORE = 3
-MIN_PASSWORD_LENGTH = 10
 
 
 class UserBase(SQLModel):
@@ -41,12 +36,12 @@ class UserCreate(SQLModel):
 
 
 class UserRead(UserBase):
-    id: uuid_pkg.UUID
+    id: uuid.UUID
     totp_enabled: bool = False
     created_at: datetime
     updated_at: datetime | None = None
 
 
 class UserSummary(SQLModel):
-    id: uuid_pkg.UUID
+    id: uuid.UUID
     username: str

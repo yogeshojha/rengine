@@ -1,4 +1,5 @@
 import { api } from './client';
+import { ActionKind } from '$lib/config/connectors';
 import { scopeQuery } from '$lib/utilities/surface-scope';
 import type { EndpointFilter } from '$lib/utilities/endpoints';
 import type {
@@ -79,7 +80,7 @@ export const connectorsApi = {
 	send(id: string, projectId: string, ids: string[]): Promise<{ queued: number }> {
 		return api.post<{ queued: number }>(`/connectors/${id}/send?project_id=${projectId}`, {
 			ids,
-			kind: 'repeater'
+			kind: ActionKind.REPEATER
 		});
 	},
 

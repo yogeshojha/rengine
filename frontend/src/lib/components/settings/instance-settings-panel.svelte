@@ -12,7 +12,7 @@
 	} from '$lib/config/capabilities';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
-	import * as Empty from '$lib/components/ui/empty/index.js';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
@@ -191,20 +191,12 @@
 			<Skeleton class="h-40 w-full rounded-xl" />
 		</div>
 	{:else if loadFailed}
-		<Empty.Root class="border bg-muted/20 py-16">
-			<Empty.Header>
-				<Empty.Media class="size-14 rounded-2xl bg-destructive/10">
-					<CircleAlertIcon class="size-7 text-destructive" />
-				</Empty.Media>
-				<Empty.Title>Settings not loaded</Empty.Title>
-			</Empty.Header>
-			<Empty.Content>
-				<Button onclick={load} class="gap-2">
-					<RotateCwIcon class="size-4" />
-					Retry
-				</Button>
-			</Empty.Content>
-		</Empty.Root>
+		<EmptyState class="py-16" icon={CircleAlertIcon} title="Settings not loaded">
+			<Button onclick={load} class="gap-2">
+				<RotateCwIcon class="size-4" />
+				Retry
+			</Button>
+		</EmptyState>
 	{:else}
 		<Card.Root>
 			<Card.Header>
@@ -247,7 +239,7 @@
 						</Select.Content>
 					</Select.Root>
 					<p class="text-xs text-muted-foreground">
-						Sets which integrations and scoping options appear. Bug bounty adds HackerOne.
+						Sets which integrations and scoping options appear.
 					</p>
 				</div>
 			</Card.Content>

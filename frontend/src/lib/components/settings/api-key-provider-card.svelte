@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { Component } from 'svelte';
 	import { APIProvider, type APIKeyRead, type ProviderInfo } from '$lib/types/api-key';
+	import { getProviderIcon } from '$lib/config/icons';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Popover from '$lib/components/ui/popover/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
@@ -15,11 +15,6 @@
 	import FormField from '$lib/components/form-field.svelte';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { toast } from 'svelte-sonner';
-	import GlobeIcon from '@lucide/svelte/icons/globe';
-	import ShieldIcon from '@lucide/svelte/icons/shield';
-	import RadarIcon from '@lucide/svelte/icons/radar';
-	import RouteIcon from '@lucide/svelte/icons/route';
-	import ScanSearchIcon from '@lucide/svelte/icons/scan-search';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import Pencil from '@lucide/svelte/icons/pencil';
@@ -29,9 +24,9 @@
 	import KeyIcon from '@lucide/svelte/icons/key';
 	import UserIcon from '@lucide/svelte/icons/user';
 	import EyeIcon from '@lucide/svelte/icons/eye';
+	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 	import CopyIcon from '@lucide/svelte/icons/copy';
 	import CheckIcon from '@lucide/svelte/icons/check';
-	import PackageIcon from '@lucide/svelte/icons/package';
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import { formatDate } from '$lib/utilities';
 
@@ -59,15 +54,7 @@
 		onEditSave
 	}: Props = $props();
 
-	const ICON_MAP: Record<string, Component> = {
-		globe: GlobeIcon,
-		shield: ShieldIcon,
-		radar: RadarIcon,
-		route: RouteIcon,
-		'scan-search': ScanSearchIcon
-	};
-
-	const Icon = $derived(ICON_MAP[provider.icon] ?? PackageIcon);
+	const Icon = $derived(getProviderIcon(provider.icon));
 	const isConfigured = $derived(!!apiKey);
 
 	let revealedKeyValue = $state<string | null>(null);
@@ -197,6 +184,7 @@
 									variant="ghost"
 									size="icon"
 									class="size-7 shrink-0 text-muted-foreground hover:text-foreground"
+									aria-label="Reveal key"
 								>
 									<EyeIcon class="size-3.5" />
 								</Button>
@@ -337,9 +325,15 @@
 												variant="ghost"
 												size="icon"
 												class="absolute right-1 top-1/2 size-6 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+												aria-label={editShowKey ? 'Hide key' : 'Show key'}
+												aria-pressed={editShowKey}
 												onclick={() => (editShowKey = !editShowKey)}
 											>
-												<EyeIcon class="size-3.5" />
+												{#if editShowKey}
+													<EyeOffIcon class="size-3.5" />
+												{:else}
+													<EyeIcon class="size-3.5" />
+												{/if}
 											</Button>
 										</div>
 									{/snippet}

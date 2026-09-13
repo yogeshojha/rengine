@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi_pagination.ext.sqlalchemy import paginate
 from pydantic import BaseModel
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentSuperuser, CurrentUser
@@ -95,20 +95,7 @@ async def delete_activity_logs(
     if event_type:
         stmt = stmt.where(ActivityLog.event_type == event_type)
 
-    count_query = select(func.count()).select_from(ActivityLog)
-    if target_id:
-        count_query = count_query.where(ActivityLog.target_id == target_id)
-    elif project_id:
-        count_query = count_query.where(ActivityLog.project_id == project_id)
-    if level:
-        count_query = count_query.where(ActivityLog.level == level)
-    if event_type:
-        count_query = count_query.where(ActivityLog.event_type == event_type)
-
-    result = await session.execute(count_query)
-    count = result.scalar_one()
-
-    await session.execute(stmt)
+    result = await session.execute(stmt)
     await session.commit()
 
-    return ActivityDeleteResponse(deleted=count)
+    return ActivityDeleteResponse(deleted=result.rowcount)

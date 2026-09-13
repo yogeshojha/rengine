@@ -16,6 +16,7 @@ from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.definitions.compare import Comparability
 from shared.enums.scan import SCAN_OPEN_STATUSES, ScanScope
 from shared.models.scan import Scan
+from shared.utils.text import counted
 
 MAX_ROWS = 25
 NEEDED_RUNS = 2
@@ -189,7 +190,7 @@ class CompareRuns(Tool):
             out.append(f"The runs were set up differently: {named}.")
         if report.runs_between:
             out.append(
-                f"{report.runs_between} other run(s) of this target ran between these two."
+                f"{counted(report.runs_between, 'other run')} of this target ran between these two."
             )
         if report.suggestion is not None:
             out.append(
@@ -201,7 +202,7 @@ class CompareRuns(Tool):
                 out.append(f"{d.label}: {d.verdict.note}")
             elif d.unconfirmed:
                 out.append(
-                    f"{d.label}: {d.unconfirmed} missing row(s) are unconfirmed. "
+                    f"{d.label}: {counted(d.unconfirmed, 'missing row')} unconfirmed. "
                     "The later run did not finish this dimension."
                 )
             elif d.verdict.settings:

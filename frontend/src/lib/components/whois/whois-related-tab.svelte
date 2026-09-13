@@ -2,7 +2,8 @@
 	import {
 		type WhoisCorrelationResult,
 		type WhoisRecordSummary,
-		CORRELATION_REASON_LABELS
+		CORRELATION_REASON_LABELS,
+		whoisLookupLabel
 	} from '$lib/types/whois';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -152,7 +153,7 @@
 									variant="outline"
 									class="text-2xs font-normal shrink-0 text-muted-foreground border-border/60"
 								>
-									{record.lookup_type}
+									{whoisLookupLabel(record.lookup_type)}
 								</Badge>
 							</div>
 							{#if record.name && record.name !== record.query_value}

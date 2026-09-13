@@ -48,7 +48,7 @@ class Subdomain(SQLModel, table=True):
     is_cdn: bool = Field(default=False)
     cdn_name: str | None = Field(default=None, max_length=100)
     waf: str | None = Field(default=None, max_length=100)
-    asn: int | None = Field(default=None)
+    asn: int | None = Field(default=None, sa_type=BigInteger)
     asn_org: str | None = Field(default=None, max_length=255)
     favicon_hash: str | None = Field(default=None, max_length=64)
     tls_not_after: datetime | None = Field(default=None)

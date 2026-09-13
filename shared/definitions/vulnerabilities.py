@@ -11,7 +11,6 @@ MAX_EVIDENCE_BYTES = 100_000
 
 OFFICIAL_ROOT = "/app/vuln-templates/official"
 CUSTOM_ROOT = "/app/vuln-templates/custom"
-TEMPLATE_REPO = "https://github.com/projectdiscovery/nuclei-templates"
 
 
 class Severity(StrEnum):
@@ -39,7 +38,7 @@ SEVERITY_LABELS: dict[str, str] = {
 SEVERITY_HELP: dict[str, str] = {
     Severity.CRITICAL.value: "Exploitable now. System or data compromise.",
     Severity.HIGH.value: "Direct path to compromise with one further condition.",
-    Severity.MEDIUM.value: "Weakness with limited direct impact.",
+    Severity.MEDIUM.value: "Exploitable under specific conditions.",
     Severity.LOW.value: "Hygiene defect.",
     Severity.INFO.value: "An observation, not a weakness.",
     Severity.UNKNOWN.value: "The check did not state a severity.",
@@ -336,7 +335,6 @@ def reject_unknown(values: list[str], known, axis: str) -> list[str]:
 FORBIDDEN_TEMPLATE_KEYS: frozenset[str] = frozenset({"code"})
 
 KEV_TAG = "kev"
-CVE_TAG = "cve"
 
 EPSS_HIGH = 0.5
 CVSS_HIGH = 7.0
@@ -344,22 +342,3 @@ CVSS_HIGH = 7.0
 
 def is_kev(tags: list[str] | tuple[str, ...] | None) -> bool:
     return KEV_TAG in {t.lower() for t in tags or ()}
-
-
-@dataclass(frozen=True)
-class RiskSignal:
-    key: str
-    label: str
-    description: str
-
-
-RISK_SIGNALS: tuple[RiskSignal, ...] = (
-    RiskSignal("kev", "Known exploited", "Listed as exploited in the wild."),
-    RiskSignal(
-        "epss", "Likely to be exploited", f"EPSS above {int(EPSS_HIGH * 100)}%."
-    ),
-    RiskSignal("new", "New", "Not present at the previous scan of this target."),
-    RiskSignal(
-        "origin", "Origin exposed", "On an address that also answers behind the CDN."
-    ),
-)

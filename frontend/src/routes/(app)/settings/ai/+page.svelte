@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import * as Alert from '$lib/components/ui/alert/index.js';
@@ -41,7 +42,7 @@
 	const isAnthropic = $derived(provider === 'anthropic');
 
 	$effect(() => {
-		void ai.fetch();
+		untrack(() => void ai.fetch());
 	});
 
 	$effect(() => {
@@ -141,6 +142,7 @@
 
 		<div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
 			<Card.Root class="gap-0 py-0">
+				<div id="ai-connection" class="scroll-mt-20"></div>
 				<PanelHead title="Connection" description="Provider and model used for narratives" />
 				<div class="space-y-5 px-5 py-5">
 					<div class="space-y-2">
@@ -269,6 +271,7 @@
 
 				<Separator />
 
+				<div id="ai-features" class="scroll-mt-20"></div>
 				<PanelHead title="Features" description="Opt in per report" />
 				<div class="space-y-4 px-5 py-5">
 					{#each catalog?.features ?? [] as feature (feature.key)}
@@ -289,6 +292,7 @@
 
 			<div class="space-y-5">
 				<Card.Root class="gap-0 py-0">
+					<div id="ai-usage" class="scroll-mt-20"></div>
 					<PanelHead title="Usage" description="All reports on this instance" />
 					<div class="divide-y">
 						<div class="flex items-baseline justify-between px-5 py-3">

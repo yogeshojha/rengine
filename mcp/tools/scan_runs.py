@@ -26,6 +26,7 @@ from shared.enums.scan import ScanStatus as RunStatus
 from shared.models.scan import Scan
 from shared.models.target import Target
 from shared.utils.datetime import utc_now
+from shared.utils.text import counted
 
 MAX_RUNS = 20
 
@@ -320,9 +321,9 @@ async def _running(ctx: ToolContext, limit: int) -> ToolResult:
     targets = {t.id: t.target_value for t in await _targets(ctx, rows)}
     return ToolResult(
         summary=(
-            f"{len(rows)} scan(s) running"
+            f"{counted(len(rows), 'scan')} running"
             if live
-            else f"Nothing is running. The {len(rows)} most recent run(s):"
+            else f"Nothing is running. The {counted(len(rows), 'most recent run')}:"
         ),
         data=[
             {
@@ -400,8 +401,12 @@ def _status_line(row: Scan, stages: dict[str, list[str]], live: bool) -> str:
     if live:
         now = ", ".join(stages["running"][:3]) or "starting"
         return f"{row.status}: {done} of {total} stages done, running {now}"
-    failed = f", {len(stages['failed'])} stage(s) failed" if stages["failed"] else ""
-    return f"{row.status}: {done} stage(s) completed{failed}"
+    failed = (
+        f", {counted(len(stages['failed']), 'stage')} failed"
+        if stages["failed"]
+        else ""
+    )
+    return f"{row.status}: {counted(done, 'stage')} completed{failed}"
 
 
 def _status_caveats(row: Scan, unfinished: bool) -> list[str]:

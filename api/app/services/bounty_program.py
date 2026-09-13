@@ -778,12 +778,6 @@ class BountyProgramService:
             .on_conflict_do_nothing()
         )
 
-    async def _all_scopes(self, program_id: UUID) -> list[BountyScope]:
-        rows = await self.session.execute(
-            select(BountyScope).where(BountyScope.program_id == program_id)
-        )
-        return list(rows.scalars().all())
-
     @staticmethod
     def require_platform(platform: str) -> str:
         if platform not in PLATFORMS_BY_KEY:

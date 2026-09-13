@@ -10,7 +10,6 @@
 	import {
 		MCP_STATE_DOT,
 		MCP_STATE_LABEL,
-		TOUCHES_TARGETS,
 		type McpCapability,
 		type McpStatus
 	} from '$lib/types/mcp';
@@ -109,7 +108,7 @@
 			</span>
 		</h4>
 		{#each status.capabilities as capability (capability.key)}
-			{@const touches = TOUCHES_TARGETS.includes(capability.key)}
+			{@const touches = capability.touches_targets}
 			{@const on = capability.always || (status.ceiling[capability.key] ?? false)}
 			<div class="flex items-start justify-between gap-3">
 				<span class="flex min-w-0 flex-col">

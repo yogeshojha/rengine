@@ -5,7 +5,6 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Command from '$lib/components/ui/command';
-	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as HoverCard from '$lib/components/ui/hover-card';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { targetsApi } from '$lib/api/targets';
@@ -59,8 +58,9 @@
 	let hasOverflow = $derived(overflowOrgs.length > 0);
 
 	async function toggleOrg(org: OrganizationSummary) {
+		const previous = [...currentOrgs];
 		const isApplied = appliedIds.has(org.id);
-		const newOrgs = isApplied ? currentOrgs.filter((o) => o.id !== org.id) : [...currentOrgs, org];
+		const newOrgs = isApplied ? previous.filter((o) => o.id !== org.id) : [...previous, org];
 		const newOrgNames = newOrgs.map((o) => o.name);
 
 		applyPatch({ organizations: newOrgs });
@@ -68,7 +68,7 @@
 		try {
 			await targetsApi.update(targetId, { organization_names: newOrgNames });
 		} catch {
-			applyPatch({ organizations: currentOrgs });
+			applyPatch({ organizations: previous });
 			toast.error('Organizations not updated');
 		}
 	}
@@ -152,19 +152,13 @@
 						Org
 					</button>
 				{:else}
-					<Tooltip.Root>
-						<Tooltip.Trigger>
-							<button
-								{...props}
-								class="inline-flex items-center justify-center h-5 w-5 rounded-full text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted transition-colors cursor-pointer shrink-0"
-							>
-								<Plus class="h-3 w-3" />
-							</button>
-						</Tooltip.Trigger>
-						<Tooltip.Content>
-							<p>Manage organizations</p>
-						</Tooltip.Content>
-					</Tooltip.Root>
+					<button
+						{...props}
+						aria-label="Manage organizations"
+						class="inline-flex items-center justify-center h-5 w-5 rounded-full text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted transition-colors cursor-pointer shrink-0"
+					>
+						<Plus class="h-3 w-3" />
+					</button>
 				{/if}
 			{/snippet}
 		</Popover.Trigger>

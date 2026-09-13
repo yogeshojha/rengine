@@ -69,28 +69,6 @@ def _wrap(
     )
 
 
-def _build_one(
-    ctx: RenderContext, spec: SectionSpec, entry, index: int, doc: RenderedDocument
-):
-    """Returns (payload, config, title, anchor) or None."""
-    instance: Section = spec.instance()
-    if not instance.available(ctx):
-        doc.skipped.append(spec.name)
-        return None
-    try:
-        config = spec.config(entry.config)
-        payload = instance.build(ctx, config)
-    except Exception as exc:
-        logger.warning("section failed", section=spec.name, error=str(exc)[:300])
-        doc.warnings.append(f"{spec.title} not rendered: {exc}")
-        return None
-    if payload is None:
-        doc.skipped.append(spec.name)
-        return None
-    title = (entry.title or payload.pop("title", "") or spec.title).strip()
-    return payload, config, title, f"s{index}-{slug(spec.name)}"
-
-
 def _fill_contents(
     env, ctx: RenderContext, doc: RenderedDocument, blocks: list[str], slots: list[int]
 ) -> None:

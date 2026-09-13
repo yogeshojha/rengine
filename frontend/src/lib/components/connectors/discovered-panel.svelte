@@ -58,6 +58,8 @@
 		try {
 			await connectorsApi.dismissDomain(connector.id, projectId, domain);
 			await reload();
+		} catch (e) {
+			error = e instanceof Error ? e.message : 'Domain not dismissed.';
 		} finally {
 			working = null;
 		}

@@ -53,8 +53,9 @@ class AssetSeedStage(Stage):
                 partial=True,
             )
 
-        carried = self._carried(hosts)
+        self._cnames: dict[str, str] = {}
         self._recovered = 0
+        carried = self._carried(hosts)
         answers, unanswered = self._resolve([h for h in hosts if h not in carried])
         stored = self._persist_hosts(hosts, carried, answers)
         answered = [ip for answer in answers.values() for ip in answer.get("ips") or []]
@@ -74,32 +75,25 @@ class AssetSeedStage(Stage):
         seeded_urls = self._persist_urls(urls)
         self.session.commit()
         self.emit_progress(
-            f"seeded {stored} host(s), {materialized} address(es) and {seeded_urls} URL(s)"
+            f"seeded {stored} hosts, {materialized} addresses and {seeded_urls} URLs"
         )
         counts = {"subdomains": stored, "ips": materialized}
         if seeded_urls:
             counts["endpoints"] = seeded_urls
+        warnings: list[str] = []
         if self._recovered:
             counts["recovered"] = self._recovered
-            return StageResult(
-                counts=counts,
-                warnings=[
-                    f"dnsx dropped {self._recovered} of {stored} seeded host(s) on the "
-                    f"first pass. A second pass answered for them."
-                ],
-                partial=True,
+            warnings.append(
+                f"dnsx dropped {self._recovered} of {stored} seeded hosts on the "
+                "first pass. A second pass answered for them."
             )
         if unanswered:
             counts["unresolved"] = unanswered
-            return StageResult(
-                counts=counts,
-                warnings=[
-                    f"{unanswered} of {stored} seeded host(s) have no DNS answer. "
-                    f"They are stored and not probed."
-                ],
-                partial=True,
+            warnings.append(
+                f"{unanswered} of {stored} seeded hosts have no DNS answer. "
+                "They are stored and not probed."
             )
-        return StageResult(counts=counts)
+        return StageResult(counts=counts, warnings=warnings, partial=bool(warnings))
 
     def _persist_urls(self, urls: list[str]) -> int:
         """A URL seed carries the exact request shape a person chose, not just its host."""
@@ -219,11 +213,7 @@ class AssetSeedStage(Stage):
     ) -> dict:
         answer = answers.get(name) or {}
         ips = carried.get(name) if name in carried else list(answer.get("ips") or [])
-        cname = (
-            getattr(self, "_cnames", {}).get(name)
-            if name in carried
-            else answer.get("cname")
-        )
+        cname = self._cnames.get(name) if name in carried else answer.get("cname")
         return {
             "resolved_ips": list(ips or []),
             "cname": cname,

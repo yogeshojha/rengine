@@ -55,12 +55,12 @@
 					t.description.toLowerCase().includes(q))
 		);
 	});
-	const groups = $derived(
-		MCP_TOOL_GROUPS.map((group) => ({
-			group,
-			tools: filtered.filter((t) => t.group === group)
-		})).filter((g) => g.tools.length)
-	);
+	const groups = $derived.by(() => {
+		const order = [...new Set<string>([...MCP_TOOL_GROUPS, ...tools.map((t) => t.group)])];
+		return order
+			.map((group) => ({ group, tools: filtered.filter((t) => t.group === group) }))
+			.filter((g) => g.tools.length);
+	});
 	const ordered = $derived(groups.flatMap((g) => g.tools));
 	const off = $derived(tools.filter((t) => !ceiling[t.capability]));
 	const offCapabilities = $derived([...new Set(off.map((t) => t.capability))]);

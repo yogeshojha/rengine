@@ -27,7 +27,7 @@
 	import SortMenu from '$lib/components/scans/results/table/sort-menu.svelte';
 	import { cvesApi } from '$lib/api/cves';
 	import { projectsStore } from '$lib/stores/projects.svelte';
-	import { ROUTES } from '$lib/config/routes';
+	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import { EVIDENCE_ORDER } from '$lib/config/evidence';
 	import { SEVERITY_LABELS, SEVERITY_ORDER } from '$lib/config/vulnerabilities';
 	import { SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
@@ -171,6 +171,8 @@
 			: ''
 	);
 </script>
+
+<svelte:head><title>{routeLabels.cves} · reNgine</title></svelte:head>
 
 <svelte:window onkeydown={onKey} />
 

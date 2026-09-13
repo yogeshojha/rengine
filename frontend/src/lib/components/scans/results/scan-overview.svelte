@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SURFACE, SurfaceDimension, type ResultTab } from '$lib/config/surface';
 	import { onDestroy, untrack } from 'svelte';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import SearchX from '@lucide/svelte/icons/search-x';
@@ -45,7 +46,7 @@
 		active?: boolean;
 		revision?: number;
 		onFilter: (search: string) => void;
-		onTab: (tab: string, filter?: string) => void;
+		onTab: (tab: ResultTab, filter?: string) => void;
 		onRescan: () => void;
 	}
 
@@ -66,6 +67,8 @@
 		onTab,
 		onRescan
 	}: Props = $props();
+
+	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 
 	let seen = $state(false);
 	$effect(() => {
@@ -192,9 +195,12 @@
 
 	const stat = (key: string) => insights?.surface.find((s) => s.key === key)?.value ?? null;
 	let stats = $derived({
+		assets: stat('subdomains'),
 		resolved: stat('resolved'),
 		live: stat('live'),
 		web: stat('web'),
+		ips: stat('ips'),
+		ports: stat('ports'),
 		networks: stat('asns')
 	});
 	let insightsFailed = $derived(errored && !insights);
@@ -258,7 +264,7 @@
 			</EmptyState>
 		{:else}
 			<VulnerabilityPanel {vulns} {onTab} />
-			<HostingPanel flow={hostingFlow} onPick={(q) => onTab('web-assets', q)} />
+			<HostingPanel flow={hostingFlow} onPick={(q) => onTab(WEB.tab, q)} />
 			<PosturePanel {insights} {loading} {isDomain} {nounPlural} {onFilter} />
 			<HygienePanel summary={hygiene} loading={loading && !hygiene} {onFilter} />
 			<ExposurePanel {exposure} {loading} {onTab} />

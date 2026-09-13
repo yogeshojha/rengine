@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { routeLabels } from '$lib/config/routes';
 	import { untrack } from 'svelte';
 	import Search from '@lucide/svelte/icons/search';
 	import StickyNote from '@lucide/svelte/icons/sticky-note';
@@ -12,7 +13,7 @@
 	import { notes } from '$lib/stores/notes.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { SURFACE_ORDER } from '$lib/config/surface';
-	import type { Note, NoteStatus } from '$lib/types/note';
+	import { NOTE_STATUS_LABELS, NOTE_STATUSES, type Note, type NoteStatus } from '$lib/types/note';
 
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
 	let projectSlug = $derived(projectsStore.activeProject?.slug ?? '');
@@ -20,6 +21,7 @@
 	let items = $state<Note[]>([]);
 	let total = $state(0);
 	let loading = $state(false);
+	let error = $state<string | null>(null);
 	let search = $state('');
 	let statusTab = $state<'all' | NoteStatus>('open');
 	let dimension = $state<string | null>(null);
@@ -29,8 +31,7 @@
 	let timer: ReturnType<typeof setTimeout> | null = null;
 
 	const STATUS_TABS = [
-		{ key: 'open', label: 'Open' },
-		{ key: 'resolved', label: 'Resolved' },
+		...NOTE_STATUSES.map((status) => ({ key: status, label: NOTE_STATUS_LABELS[status] })),
 		{ key: 'all', label: 'All' }
 	];
 
@@ -38,43 +39,61 @@
 		if (projectSlug && projectId) void notes.loadTags(projectSlug, projectId);
 	});
 
-	async function load() {
+	async function loadPage() {
 		if (!projectId) return;
 		const seq = ++reqId;
 		loading = true;
 		try {
-			const [page, open, resolved] = await Promise.all([
-				notes.list(projectId, {
-					search: search.trim() || undefined,
-					status: statusTab === 'all' ? undefined : [statusTab],
-					dimension: dimension ?? undefined,
-					tag: tagIds.length ? tagIds : undefined,
-					size: 100
-				}),
-				notes.list(projectId, { status: ['open'], size: 1 }),
-				notes.list(projectId, { status: ['resolved'], size: 1 })
-			]);
+			const page = await notes.list(projectId, {
+				search: search.trim() || undefined,
+				status: statusTab === 'all' ? undefined : [statusTab],
+				dimension: dimension ?? undefined,
+				tag: tagIds.length ? tagIds : undefined,
+				size: 100
+			});
 			if (seq !== reqId) return;
 			items = page.items;
 			total = page.total;
-			counts = {
-				open: open.total,
-				resolved: resolved.total,
-				all: open.total + resolved.total
-			};
-		} catch {
-			if (seq === reqId) items = [];
+			error = null;
+		} catch (e) {
+			if (seq === reqId) error = e instanceof Error ? e.message : 'Notes not loaded';
 		} finally {
 			if (seq === reqId) loading = false;
 		}
 	}
+
+	// the tab totals depend on the project alone, never on the filters
+	async function loadCounts() {
+		if (!projectId) return;
+		const id = projectId;
+		try {
+			const [open, resolved] = await Promise.all([
+				notes.list(id, { status: ['open'], size: 1 }),
+				notes.list(id, { status: ['resolved'], size: 1 })
+			]);
+			if (id !== projectId) return;
+			counts = { open: open.total, resolved: resolved.total, all: open.total + resolved.total };
+		} catch {
+			/* the tab totals keep their last good value */
+		}
+	}
+
+	function reload() {
+		void loadPage();
+		void loadCounts();
+	}
+
+	$effect(() => {
+		const id = projectId;
+		if (id) untrack(() => void loadCounts());
+	});
 
 	$effect(() => {
 		const signature = JSON.stringify([projectId, statusTab, dimension, tagIds, search]);
 		void signature;
 		untrack(() => {
 			if (timer) clearTimeout(timer);
-			timer = setTimeout(() => void load(), search ? 250 : 0);
+			timer = setTimeout(() => void loadPage(), search ? 250 : 0);
 		});
 	});
 
@@ -90,6 +109,8 @@
 		tagIds = [];
 	}
 </script>
+
+<svelte:head><title>{routeLabels.notes} · reNgine</title></svelte:head>
 
 <div class="space-y-6">
 	<h1 class="text-2xl font-semibold tracking-tight">Notes</h1>
@@ -161,6 +182,13 @@
 					<Skeleton class="h-16 w-full" />
 				{/each}
 			</div>
+		{:else if error}
+			<EmptyState
+				icon={StickyNote}
+				title="Notes not loaded"
+				description={error}
+				class="rounded-none border-0 bg-transparent py-16"
+			/>
 		{:else if items.length === 0}
 			<EmptyState
 				icon={StickyNote}
@@ -171,7 +199,7 @@
 		{:else}
 			<div class="transition-opacity {loading ? 'opacity-60' : ''}">
 				{#each items as note (note.id)}
-					<NoteCard {note} onChanged={load} />
+					<NoteCard {note} onChanged={reload} />
 				{/each}
 			</div>
 			{#if total > items.length}

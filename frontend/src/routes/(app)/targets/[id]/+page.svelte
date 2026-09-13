@@ -3,7 +3,7 @@
 	import { goto, replaceState } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import { onDestroy, untrack } from 'svelte';
-	import { SvelteURLSearchParams } from 'svelte/reactivity';
+	import { SvelteSet, SvelteURLSearchParams } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
@@ -63,7 +63,7 @@
 	import DnsTab from '$lib/components/targets/target-detail/dns/dns-tab.svelte';
 	import WhoisTab from '$lib/components/targets/target-detail/whois/whois-tab.svelte';
 	import BgpTab from '$lib/components/targets/target-detail/bgp/bgp-tab.svelte';
-	import { ROUTES } from '$lib/config/routes';
+	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import type { IconComponent } from '$lib/config/icons';
 	import { NOW_TICK_MS } from '$lib/constants';
@@ -120,6 +120,14 @@
 	let relatedLoading = $state(true);
 	let geography = $state<InsightTally[]>([]);
 	let geoReady = $state(false);
+	const notLoaded = new SvelteSet<string>();
+
+	function loaded(section: string) {
+		notLoaded.delete(section);
+	}
+	function notLoadedNow(section: string) {
+		notLoaded.add(section);
+	}
 	let creator = $state<string | null>(null);
 	let refreshing = $state<Record<string, boolean>>({});
 	let pollTimer: ReturnType<typeof setInterval> | null = null;
@@ -255,8 +263,9 @@
 		if (!silent) summaryLoading = true;
 		try {
 			summary = await targetsApi.getSummary(targetId, project.id);
+			loaded('Surface');
 		} catch {
-			summary = null;
+			notLoadedNow('Surface');
 		} finally {
 			if (!silent) summaryLoading = false;
 		}
@@ -274,8 +283,9 @@
 				include_focused: true
 			});
 			history = res.items;
+			loaded('Runs');
 		} catch {
-			history = [];
+			notLoadedNow('Runs');
 		} finally {
 			historyLoaded = true;
 		}
@@ -284,8 +294,9 @@
 	async function fetchCorrelations() {
 		try {
 			correlations = await whoisApi.getTargetCorrelations(targetId);
+			loaded('WHOIS correlations');
 		} catch {
-			correlations = [];
+			notLoadedNow('WHOIS correlations');
 		}
 	}
 
@@ -294,8 +305,9 @@
 		if (!project) return;
 		try {
 			relations = (await targetsApi.getRelations(targetId, project.id)).items;
+			loaded('Related targets');
 		} catch {
-			relations = [];
+			notLoadedNow('Related targets');
 		}
 	}
 
@@ -304,8 +316,9 @@
 		if (!project || !capabilitiesStore.has(Capability.BOUNTY_PROGRAMS)) return;
 		try {
 			programs = (await targetsApi.getPrograms(targetId, project.id)).items;
+			loaded('Programs');
 		} catch {
-			programs = [];
+			notLoadedNow('Programs');
 		}
 	}
 
@@ -317,8 +330,10 @@
 		try {
 			const res = await subdomainsApi.relatedDomains(project.id, scanId);
 			relatedDomains = res.domains;
+			loaded('Related domains');
 		} catch {
-			relatedDomains = [];
+			relatedFor = null;
+			notLoadedNow('Related domains');
 		} finally {
 			relatedLoading = false;
 		}
@@ -332,8 +347,10 @@
 		hostingFor = scanId;
 		try {
 			hostingFlow = await subdomainsApi.hostingFlow(project.id, scanId);
+			loaded('Hosting');
 		} catch {
-			hostingFlow = null;
+			hostingFor = null;
+			notLoadedNow('Hosting');
 		}
 	}
 	function pickHosting(query: string) {
@@ -352,8 +369,10 @@
 			geography = facets.country
 				.filter((f) => f.value)
 				.map((f) => ({ name: f.value, count: f.count }));
+			loaded('Geography');
 		} catch {
-			geography = [];
+			geoFor = null;
+			notLoadedNow('Geography');
 		} finally {
 			geoReady = true;
 		}
@@ -372,7 +391,6 @@
 	}
 
 	function hasPendingEnrichment(): boolean {
-		const inFlight = (s: TaskStatus) => s === TaskStatus.PENDING || s === TaskStatus.QUERYING;
 		if (inFlight(whoisStatus)) return true;
 		if (showDns && inFlight(dnsStatus)) return true;
 		if (showBgp && inFlight(bgpStatus)) return true;
@@ -406,14 +424,17 @@
 	}
 
 	$effect(() => {
-		if (targetId) {
-			fetchTarget();
-			fetchDetail();
-			fetchCorrelations();
-			fetchRelations();
-			fetchPrograms();
+		const id = targetId;
+		if (id) {
+			untrack(() => {
+				fetchTarget();
+				fetchDetail();
+				fetchCorrelations();
+				fetchRelations();
+				fetchPrograms();
+			});
 		}
-		activityScope.targetId = targetId;
+		activityScope.targetId = id;
 		return () => activityScope.clear();
 	});
 
@@ -440,6 +461,19 @@
 			clearInterval(poll);
 		};
 	});
+
+	function refreshSections() {
+		void fetchSummary();
+		void fetchHistory();
+		void fetchCorrelations();
+		void fetchRelations();
+		void fetchPrograms();
+		if (webScanId) {
+			void fetchRelated(webScanId);
+			void fetchHostingFlow(webScanId);
+		}
+		if (ipsScanId) void fetchGeography(ipsScanId);
+	}
 
 	$effect(() => {
 		const scanId = webScanId;
@@ -611,6 +645,8 @@
 	}
 </script>
 
+<svelte:head><title>{target?.target_value ?? routeLabels.targets} · reNgine</title></svelte:head>
+
 <svelte:window onkeydown={onKeydown} />
 
 <div class="flex w-full flex-col gap-4 px-4 py-4 md:px-6">
@@ -668,6 +704,15 @@
 					Enrichment not loaded. {detailError}
 				</p>
 				<Button variant="outline" size="sm" onclick={() => fetchDetail()}>Retry</Button>
+			</div>
+		{/if}
+
+		{#if notLoaded.size}
+			<div
+				class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-dashed px-4 py-2.5 text-sm text-muted-foreground"
+			>
+				<span>{[...notLoaded].join(', ')} did not load.</span>
+				<Button variant="outline" size="sm" class="ml-auto" onclick={refreshSections}>Retry</Button>
 			</div>
 		{/if}
 
@@ -770,7 +815,6 @@
 							{geography}
 							{geoTotal}
 							{geoReady}
-							{live}
 							onPickCountry={pickCountry}
 							onTab={setTab}
 							onRefresh={handleRefreshEnrichment}
@@ -841,14 +885,12 @@
 </div>
 
 {#if target}
-	{#if target}
-		<GenerateReportDialog
-			bind:open={reportOpen}
-			projectId={target.project_id}
-			targetId={target.id}
-			subject={target.target_value}
-		/>
-	{/if}
+	<GenerateReportDialog
+		bind:open={reportOpen}
+		projectId={target.project_id}
+		targetId={target.id}
+		subject={target.target_value}
+	/>
 	<LaunchDialog
 		bind:open={showLaunchModal}
 		targetId={target.id}

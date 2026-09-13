@@ -137,11 +137,7 @@ class Sifter:
             and host in self._https_only()
         ):
             scheme = "https"
-            netloc = (
-                parts.netloc.replace(":80", "")
-                if parts.port == _HTTP_PORT
-                else parts.netloc
-            )
+            netloc = parts.netloc.removesuffix(f":{_HTTP_PORT}")
         else:
             netloc = parts.netloc
         return urlunsplit((scheme, netloc, path, urlencode(pairs), ""))

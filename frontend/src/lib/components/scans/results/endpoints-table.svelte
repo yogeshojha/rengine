@@ -21,6 +21,7 @@
 	import CountTabs from '$lib/components/count-tabs.svelte';
 
 	import QueryBar from './query-bar/query-bar.svelte';
+	import { readPref, rowPadding, writePref } from './table/columns';
 	import ListHeader from './table/list-header.svelte';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import GroupList from './table/group-list.svelte';
@@ -53,7 +54,7 @@
 	import { endpointQuerySchema } from '$lib/stores/query-schema.svelte';
 	import { connectors as connectorStore } from '$lib/stores/connectors.svelte';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
-	import { SurfaceDimension } from '$lib/config/surface';
+	import { SURFACE, SurfaceDimension, type ResultTab } from '$lib/config/surface';
 	import { STATIC_CLASSES } from '$lib/config/endpoints';
 	import { appendToken, exactToken, type Facet } from '$lib/utilities/scan-insights';
 	import {
@@ -95,7 +96,7 @@
 		targetType?: string;
 		active?: boolean;
 		revision?: number;
-		onTab?: (tab: string, filter?: string) => void;
+		onTab?: (tab: ResultTab, filter?: string) => void;
 		onScanTotal?: (total: number) => void;
 		query?: EndpointQuery;
 	}
@@ -117,28 +118,17 @@
 		})
 	}: Props = $props();
 
+	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
+	const VULN = SURFACE[SurfaceDimension.VULNERABILITIES];
+
+	const EP = SURFACE[SurfaceDimension.ENDPOINTS];
+
 	let ready = $derived(Boolean(projectId) && (projectWide || Boolean(scanId)));
 
 	const DEFAULT_SORT = { key: 'relevance', dir: -1 as const };
-	const ROW_PAD: Record<string, string> = { compact: 'py-2', cozy: 'py-3' };
 	const DEFAULT_HIDE_STATIC: Record<string, boolean> = { hosts: true, merged: true, list: false };
 	const SEND_CAP = 200;
 
-	function readPref<T>(key: string, fallback: T): T {
-		try {
-			const raw = localStorage.getItem(key);
-			return raw ? (JSON.parse(raw) as T) : fallback;
-		} catch {
-			return fallback;
-		}
-	}
-	function writePref(key: string, value: unknown) {
-		try {
-			localStorage.setItem(key, JSON.stringify(value));
-		} catch {
-			// ignore
-		}
-	}
 	function normalizeView(raw: string | null | undefined): EndpointView {
 		if (raw === 'outline') return 'hosts';
 		return raw && (ENDPOINT_VIEWS as readonly string[]).includes(raw)
@@ -181,9 +171,11 @@
 	let errored = $state(false);
 	let facets = $state<EndpointFacetSet>(EMPTY_ENDPOINT_FACETS);
 	let facetsLoaded = $state(false);
+	let accountLoaded = $state(false);
 	let leadSet = $state<QueryLeads | null>(null);
 	let groupBy = $state<string>(initial.get('ep_group') ?? '');
 	let groupSet = $state<QueryGroups | null>(null);
+	let groupFailed = $state(false);
 	let groupLoading = $state(false);
 	let groupReq = 0;
 	let tree = $state<EndpointTree | null>(null);
@@ -251,7 +243,7 @@
 	let shownColumns = $derived(columnOptions.filter((c) => visible.includes(c.key)));
 	let filtered = $derived(endpointActiveFacetCount({ ...query, host: '' }) > 0 || !!query.search);
 	let chips = $derived(endpointQueryChips(query).filter((c) => !(inHost && c.id === 'host')));
-	let rowPad = $derived(ROW_PAD[density] ?? ROW_PAD.cozy);
+	let rowPad = $derived(rowPadding(density));
 	let known = $derived((name: string) => endpointQuerySchema.byName.has(name));
 	let terms = $derived(highlightTerms(query.search, known));
 	let classTab = $derived(query.endpointClass || 'all');
@@ -290,7 +282,7 @@
 	$effect(() => writePref(STORAGE_KEYS.endpointsHideRootOnly, hideRootOnly));
 
 	$effect(() => {
-		if (!projectId) return;
+		if (!seen || !projectId) return;
 		void connectorStore.load(projectId);
 		void connectorStore.loadCatalog();
 	});
@@ -319,7 +311,8 @@
 	let rescanOptionsFor = $state<SeedSelection | null>(null);
 
 	$effect(() => {
-		if (projectId) void rechecks.loadSchema();
+		if (!active || !projectId) return;
+		void rechecks.loadSchema();
 	});
 
 	function queryLabel(): string {
@@ -532,9 +525,15 @@
 		groupLoading = true;
 		try {
 			const res = await endpointsApi.groups(projectId, scanId, groupBy, leadFilterWithQuery);
-			if (my === groupReq) groupSet = res;
+			if (my === groupReq) {
+				groupSet = res;
+				groupFailed = false;
+			}
 		} catch {
-			if (my === groupReq) groupSet = null;
+			if (my === groupReq) {
+				groupSet = null;
+				groupFailed = true;
+			}
 		} finally {
 			if (my === groupReq) groupLoading = false;
 		}
@@ -545,10 +544,9 @@
 		try {
 			facets = await endpointsApi.facets(projectId, scanId);
 			onScanTotal?.(facets.total);
-		} catch {
-			facets = EMPTY_ENDPOINT_FACETS;
-		} finally {
 			facetsLoaded = true;
+		} catch {
+			if (!facetsLoaded) facets = EMPTY_ENDPOINT_FACETS;
 		}
 	}
 
@@ -556,6 +554,7 @@
 		if (!ready) return;
 		try {
 			summary = await endpointsApi.summary(projectId, scanId);
+			accountLoaded = true;
 		} catch {
 			summary = null;
 		}
@@ -880,7 +879,7 @@
 	function showHost(filter: string) {
 		drawerOpen = false;
 		syncUrl();
-		onTab?.('web-assets', filter);
+		onTab?.(WEB.tab, filter);
 	}
 
 	function enterHost(host: string, chip?: FolderChip) {
@@ -1148,9 +1147,7 @@
 			{catalog}
 			onPivot={showInList}
 			onNew={() => setQuery({ ...query, newOnly: true })}
-			onFindings={onTab
-				? () => onTab('vulnerabilities', exactToken('host', query.host))
-				: undefined}
+			onFindings={onTab ? () => onTab(VULN.tab, exactToken('host', query.host)) : undefined}
 			onWebAsset={onTab ? () => showHost(exactToken('host', query.host)) : undefined}
 			onCopy={() => copyBranch(branchScope, hostStandIn)}
 			onWordlist={() => copyWordlist(branchScope, hostStandIn)}
@@ -1158,7 +1155,7 @@
 			onSend={proxies.length ? (id) => sendBranch(hostStandIn, id) : undefined}
 			onAcross={acrossHosts}
 		/>
-	{:else}
+	{:else if accountLoaded}
 		<CoverageStrip
 			{coverage}
 			{summary}
@@ -1312,8 +1309,8 @@
 					capped={gonePage.total_capped}
 					page={goneIndex}
 					{pageSize}
-					noun="endpoint"
-					plural="endpoints"
+					noun={EP.noun}
+					plural={EP.nounPlural}
 					onPage={(p) => (goneIndex = p)}
 				/>
 			{/if}
@@ -1418,6 +1415,8 @@
 			{:else if groupBy}
 				<GroupList
 					set={groupSet}
+					failed={groupFailed}
+					onRetry={loadGroups}
 					dimensions={endpointQuerySchema.schema.group_dimensions}
 					noun={endpointQuerySchema.schema.noun}
 					nounPlural={endpointQuerySchema.schema.noun_plural}
@@ -1460,8 +1459,8 @@
 					capped={totalCapped}
 					page={pageIndex}
 					{pageSize}
-					noun="endpoint"
-					plural="endpoints"
+					noun={EP.noun}
+					plural={EP.nounPlural}
 					onPage={(p) => (pageIndex = p)}
 					onPageSize={(s) => {
 						pageSize = s;

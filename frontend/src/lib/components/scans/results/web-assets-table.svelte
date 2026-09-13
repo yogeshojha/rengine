@@ -23,7 +23,7 @@
 	import QueryBar from './query-bar/query-bar.svelte';
 	import FilterBar from './web-assets/filter-bar.svelte';
 	import ListHeader from './table/list-header.svelte';
-	import { withTarget } from './table/columns';
+	import { readPref, rowPadding, selectAllState, withTarget, writePref } from './table/columns';
 	import AssetRow from './web-assets/asset-row.svelte';
 	import AssetGallery from './web-assets/asset-gallery.svelte';
 	import RenderGallery from './web-assets/render-gallery.svelte';
@@ -45,7 +45,7 @@
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import { runDescription, runStarted, seedKindFor, selectionLabel } from '$lib/utilities/rechecks';
 	import { rechecks } from '$lib/stores/rechecks.svelte';
-	import { SurfaceDimension } from '$lib/config/surface';
+	import { SURFACE, SurfaceDimension, type ResultTab } from '$lib/config/surface';
 	import { querySchema } from '$lib/stores/query-schema.svelte';
 	import { HygieneTone, TONE_DOT } from '$lib/config/hygiene';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
@@ -78,7 +78,7 @@
 		active?: boolean;
 		revision?: number;
 		query?: WebAssetQuery;
-		onTab?: (tab: string, filter?: string) => void;
+		onTab?: (tab: ResultTab, filter?: string) => void;
 	}
 
 	let {
@@ -93,6 +93,11 @@
 		onTab
 	}: Props = $props();
 
+	const SVC = SURFACE[SurfaceDimension.SERVICES];
+	const VULN = SURFACE[SurfaceDimension.VULNERABILITIES];
+	const EP = SURFACE[SurfaceDimension.ENDPOINTS];
+
+	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 	let ready = $derived(Boolean(projectId) && (projectWide || Boolean(scanId)));
 
 	const DEFAULT_SORT = { key: 'status', dir: 1 as const };
@@ -104,23 +109,6 @@
 		cert: [],
 		hygiene: []
 	};
-	const ROW_PAD: Record<string, string> = { compact: 'py-2', cozy: 'py-3' };
-
-	function readPref<T>(key: string, fallback: T): T {
-		try {
-			const raw = localStorage.getItem(key);
-			return raw ? (JSON.parse(raw) as T) : fallback;
-		} catch {
-			return fallback;
-		}
-	}
-	function writePref(key: string, value: unknown) {
-		try {
-			localStorage.setItem(key, JSON.stringify(value));
-		} catch {
-			// ignore
-		}
-	}
 
 	const initial = appPage.url.searchParams;
 	const initialSort = initial.get('sort')?.split(':') ?? [];
@@ -133,6 +121,7 @@
 	let onlyShots = $state(true);
 	let groupRenders = $state(false);
 	let renderSet = $state<RenderGroups | null>(null);
+	let renderFailed = $state(false);
 	let renderLoading = $state(false);
 	let renderReq = 0;
 	let sort = $state<{ key: string; dir: 1 | -1 }>(
@@ -157,6 +146,7 @@
 	let leadSet = $state<QueryLeads | null>(null);
 	let groupBy = $state<string>(initial.get('group') ?? '');
 	let groupSet = $state<QueryGroups | null>(null);
+	let groupFailed = $state(false);
 	let groupLoading = $state(false);
 	let groupReq = 0;
 
@@ -186,16 +176,10 @@
 	);
 	let checkedCount = $derived(selection.countOn(items));
 	let pickedCount = $derived(selection.size);
-	let selectAllChecked = $derived<boolean | 'indeterminate'>(
-		items.length > 0 && checkedCount === items.length
-			? true
-			: checkedCount > 0
-				? 'indeterminate'
-				: false
-	);
+	let selectAllChecked = $derived(selectAllState(checkedCount, items.length));
 	let filtered = $derived(activeFacetCount(query) > 0 || !!query.search);
 	let chips = $derived(queryChips(query));
-	let rowPad = $derived(ROW_PAD[density] ?? ROW_PAD.cozy);
+	let rowPad = $derived(rowPadding(density));
 	let statusTab = $derived(
 		query.status.length === 0 ? 'all' : query.status.length === 1 ? query.status[0] : ''
 	);
@@ -333,9 +317,15 @@
 		groupLoading = true;
 		try {
 			const res = await subdomainsApi.groups(projectId, scanId, groupBy, leadFilterWithQuery);
-			if (my === groupReq) groupSet = res;
+			if (my === groupReq) {
+				groupSet = res;
+				groupFailed = false;
+			}
 		} catch {
-			if (my === groupReq) groupSet = null;
+			if (my === groupReq) {
+				groupSet = null;
+				groupFailed = true;
+			}
 		} finally {
 			if (my === groupReq) groupLoading = false;
 		}
@@ -354,9 +344,15 @@
 		renderLoading = true;
 		try {
 			const res = await subdomainsApi.renders(projectId, scanId, leadFilterWithQuery);
-			if (my === renderReq) renderSet = res;
+			if (my === renderReq) {
+				renderSet = res;
+				renderFailed = false;
+			}
 		} catch {
-			if (my === renderReq) renderSet = null;
+			if (my === renderReq) {
+				renderSet = null;
+				renderFailed = true;
+			}
 		} finally {
 			if (my === renderReq) renderLoading = false;
 		}
@@ -366,10 +362,9 @@
 		if (!ready) return;
 		try {
 			facets = await subdomainsApi.facets(projectId, scanId);
-		} catch {
-			facets = EMPTY_FACETS;
-		} finally {
 			facetsLoaded = true;
+		} catch {
+			if (!facetsLoaded) facets = EMPTY_FACETS;
 		}
 	}
 
@@ -581,12 +576,12 @@
 	function showServices(host: string, port: number) {
 		drawerOpen = false;
 		syncUrl();
-		onTab?.('services', `${exactToken('host', host)} port:${port}`);
+		onTab?.(SVC.tab, `${exactToken('host', host)} port:${port}`);
 	}
 	function showVulns(filter: string) {
 		drawerOpen = false;
 		syncUrl();
-		onTab?.('vulnerabilities', filter);
+		onTab?.(VULN.tab, filter);
 	}
 	function hostsWithTitle(title: string): Promise<string[]> {
 		return subdomainsApi
@@ -745,8 +740,10 @@
 				>
 					<PanelRight class="size-4" />
 					<span class="max-sm:hidden">Hygiene</span>
-					<span class="size-1.5 rounded-full {TONE_DOT[hygieneTone]}" aria-hidden="true"></span>
-					<span class="tabular-nums">{hygieneHeadline.toLocaleString()}</span>
+					{#if hygieneHeadline > 0}
+						<span class="size-1.5 rounded-full {TONE_DOT[hygieneTone]}" aria-hidden="true"></span>
+						<span class="tabular-nums">{hygieneHeadline.toLocaleString()}</span>
+					{/if}
 				</Button>
 			{/if}
 		{/snippet}
@@ -832,8 +829,8 @@
 	{#if !groupBy}
 		<SelectionBar
 			count={pickedCount}
-			noun="web asset"
-			nounPlural="web assets"
+			noun={WEB.noun}
+			nounPlural={WEB.nounPlural}
 			{total}
 			{totalCapped}
 			maxAssets={rechecks.schema?.max_assets ?? 0}
@@ -873,6 +870,8 @@
 			{:else if groupBy}
 				<GroupList
 					set={groupSet}
+					failed={groupFailed}
+					onRetry={loadGroups}
 					dimensions={querySchema.schema.group_dimensions}
 					noun={querySchema.schema.noun}
 					nounPlural={querySchema.schema.noun_plural}
@@ -914,6 +913,8 @@
 				<RenderGallery
 					data={renderSet}
 					loading={renderLoading}
+					failed={renderFailed}
+					onRetry={loadRenders}
 					onFilter={(token) => setQuery({ ...query, search: token })}
 					onHost={openHost}
 				/>
@@ -976,6 +977,8 @@
 					capped={totalCapped}
 					page={pageIndex}
 					{pageSize}
+					noun={WEB.noun}
+					plural={WEB.nounPlural}
 					selectedCount={pickedCount}
 					onClearSelection={() => selection.clear()}
 					onPage={(p) => (pageIndex = p)}
@@ -1011,7 +1014,7 @@
 	onStep={step}
 	onFilter={applyDsl}
 	onPivot={openHost}
-	onOpenEndpoints={onTab ? (h) => onTab('endpoints', exactToken('host', h)) : undefined}
+	onOpenEndpoints={onTab ? (h) => onTab(EP.tab, exactToken('host', h)) : undefined}
 />
 
 <HostStructureDialog
@@ -1022,7 +1025,7 @@
 	}}
 	{projectId}
 	scanId={structureScanId || scanId}
-	onOpenEndpoints={onTab ? (h) => onTab('endpoints', exactToken('host', h)) : undefined}
+	onOpenEndpoints={onTab ? (h) => onTab(EP.tab, exactToken('host', h)) : undefined}
 />
 
 <LaunchDialog

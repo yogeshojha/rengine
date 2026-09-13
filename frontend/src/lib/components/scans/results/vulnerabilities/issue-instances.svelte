@@ -13,12 +13,13 @@
 		items: VulnerabilityRead[];
 		loading: boolean;
 		total: number;
+		pageSize: number;
 		selectedId: string | null;
 		onOpen: (v: VulnerabilityRead) => void;
 		onMore: () => void;
 	}
 
-	let { items, loading, total, selectedId, onOpen, onMore }: Props = $props();
+	let { items, loading, total, pageSize, selectedId, onOpen, onMore }: Props = $props();
 
 	interface HostGroup {
 		host: string;
@@ -136,7 +137,7 @@
 		{#if total > items.length}
 			<div class="py-2">
 				<Button variant="ghost" size="sm" class="h-7 text-xs" onclick={onMore}>
-					Show {Math.min(total - items.length, 100)} more of {total.toLocaleString()} findings
+					Show {Math.min(total - items.length, pageSize)} more of {total.toLocaleString()} findings
 				</Button>
 			</div>
 		{/if}

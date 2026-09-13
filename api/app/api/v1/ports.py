@@ -7,11 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.api.scope import ServiceScope
 from app.core.database import get_session
-from app.services.asset_query import build_schema
 from app.services.origin_exposure import OriginExposureService
 from app.services.port import PortService
-from shared.definitions.asset_query import SERVICE_QUERY
-from shared.models.asset_query import QueryGroups, QueryLeads, QuerySchema
+from shared.models.asset_query import QueryGroups, QueryLeads
 from shared.models.port import PortRead, PortSummary
 from shared.models.scan_correlation import (
     OriginExposure,
@@ -66,11 +64,6 @@ async def port_summary(
     return await service.summary(
         project_id=project_id, scan_id=scan_id, target_id=target_id
     )
-
-
-@router.get("/search/schema", response_model=QuerySchema)
-async def service_query_schema(_current_user: CurrentUser):
-    return build_schema(SERVICE_QUERY)
 
 
 @router.post("/search", response_model=ServicePage)

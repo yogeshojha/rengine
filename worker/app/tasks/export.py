@@ -123,7 +123,7 @@ def run_export(self, export_id: str) -> None:
 
 
 def _scope(session, row: Export) -> QueryScope:
-    """Resolved now, not when the export was saved, so a re-run reads today's scans."""
+    """Resolve the scope against today's scans."""
     dimension = (
         SurfaceDimension.WEB_ASSETS.value if row.dimension == BUNDLE else row.dimension
     )
@@ -176,7 +176,7 @@ def _dimension_scope(session, row: Export, dimension: str) -> QueryScope:
 
 
 def _notify(session, row: Export, *, ok: bool) -> None:
-    """An export outlives the page it was started from, so it says when it is ready."""
+    """Announce the finished export."""
     label = SURFACE_LABELS.get(row.dimension, "All dimensions")
     body = (
         f"{label} for {row.subject}: {row.row_count:,} rows ready to download."
@@ -200,7 +200,7 @@ _FAILED_MESSAGE = "The export did not finish. Run it again."
 
 
 def _fail(session, export_id: str, exc: Exception) -> None:
-    """The progress commits poisoned the session, so roll back before recording."""
+    """Record the failure on a rolled-back session."""
     session.rollback()
     logger.warning("export failed", export_id=export_id, error=str(exc), exc_info=True)
     row = session.get(Export, UUID(export_id))

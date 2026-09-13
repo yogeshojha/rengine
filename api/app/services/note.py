@@ -8,6 +8,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import (
     Select,
     String,
+    case,
     delete,
     exists,
     func,
@@ -45,7 +46,12 @@ _NOTE_NOT_FOUND = "Note not found"
 def _identity(dimension: str, model):
     """This dimension's identity column."""
     if dimension == SurfaceDimension.SERVICES.value:
-        return func.concat(Port.ip, literal(":"), func.cast(Port.number, String))
+        # an IPv6 literal is bracketed, so the port is never ambiguous
+        host = case(
+            (Port.ip.like("%:%"), func.concat(literal("["), Port.ip, literal("]"))),
+            else_=Port.ip,
+        )
+        return func.concat(host, literal(":"), func.cast(Port.number, String))
     return getattr(model, ASSET_IDENTITY[dimension])
 
 

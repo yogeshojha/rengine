@@ -8,7 +8,6 @@ from enum import StrEnum
 from shared.enums.instance import AIProvider
 
 MAX_BRIEF_BYTES = 24_000
-MAX_CALLS_PER_REPORT = 40
 MAX_OUTPUT_TOKENS = 2_000
 REQUEST_TIMEOUT = 120.0
 CACHE_VERSION = "1"
@@ -24,17 +23,6 @@ class AITask(StrEnum):
     ASSET_JUDGEMENT = "asset_judgement"
     RULE_SUGGESTION = "rule_suggestion"
 
-
-AI_TASK_LABELS: dict[str, str] = {
-    AITask.EXECUTIVE_SUMMARY.value: "Executive summary",
-    AITask.RISK_NARRATIVE.value: "Risk narrative",
-    AITask.REMEDIATION_PLAN.value: "Remediation plan",
-    AITask.ISSUE_EXPLAINER.value: "Finding explanations",
-    AITask.ATTACK_PATH.value: "Attack path narrative",
-    AITask.SURFACE_NARRATIVE.value: "Attack surface narrative",
-    AITask.ASSET_JUDGEMENT.value: "Asset judgement",
-    AITask.RULE_SUGGESTION.value: "Rule suggestions",
-}
 
 REPORT_TASKS: tuple[str, ...] = (
     AITask.EXECUTIVE_SUMMARY.value,
@@ -215,7 +203,6 @@ AI_FEATURES: tuple[AIFeature, ...] = (
     ),
 )
 
-AI_FEATURE_KEYS: tuple[str, ...] = tuple(f.key for f in AI_FEATURES)
 DEFAULT_AI_FEATURES: dict[str, bool] = {f.key: f.default for f in AI_FEATURES}
 
 

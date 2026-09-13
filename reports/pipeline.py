@@ -15,10 +15,10 @@ from reports.data.source import ReportSource
 from reports.fonts import font_faces
 from reports.narrate import build_narrator
 from reports.render.document import render_html
+from reports.render.media import forget_images
 from reports.render.text import to_json, to_markdown
 from reports.theme import resolve
 from shared.definitions.reports import (
-    FORMAT_EXTENSIONS,
     ReportFormat,
     ReportScope,
     ReportSpec,
@@ -46,9 +46,6 @@ class RenderOutput:
     ai_model: str = ""
     ai_provider: str = ""
     html: str = ""
-
-    def filename(self, fmt: str, stem: str) -> str:
-        return f"{stem}.{FORMAT_EXTENSIONS.get(fmt, fmt)}"
 
 
 def build_context(
@@ -108,7 +105,10 @@ def generate(
     )
 
     step(35, "Writing narrative")
-    document = render_html(ctx)
+    try:
+        document = render_html(ctx)
+    finally:
+        forget_images()
 
     out = RenderOutput(
         warnings=document.warnings,

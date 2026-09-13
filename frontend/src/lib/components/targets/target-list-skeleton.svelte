@@ -26,7 +26,7 @@
 				<Skeleton class="h-6 w-16 rounded-full" />
 				<Skeleton class="h-6 w-14 rounded-full" />
 			</div>
-			<Skeleton class="hidden sm:block h-3 w-16 w-[80px]" />
+			<Skeleton class="hidden sm:block h-3 w-[92px]" />
 			<div class="flex gap-1">
 				<Skeleton class="h-8 w-8 rounded" />
 				<Skeleton class="h-8 w-8 rounded" />

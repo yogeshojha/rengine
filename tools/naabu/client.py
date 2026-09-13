@@ -14,6 +14,7 @@ from shared.definitions.ports import (
 )
 from shared.logging import get_logger
 from shared.services.proxy_resolve import is_socks5, proxy_env
+from shared.utils.net import bracketed, host_port
 from tools.runner import (
     CLIToolRunner,
     OutputFormat,
@@ -28,8 +29,6 @@ logger = get_logger(__name__)
 NAABU_BINARY = "naabu"
 DEFAULT_TIMEOUT = 3600
 SCAN_TYPES = {"connect": "c", "syn": "s"}
-
-# naabu takes a socks5 address only, and its credentials in their own flag
 
 
 class NaabuError(Exception):
@@ -49,7 +48,11 @@ def proxy_args(proxy_url: str | None) -> tuple[list[str], str | None]:
         )
     if not parts.hostname:
         return [], "The scan's proxy names no host. The port scan did not use it."
-    address = f"{parts.hostname}:{parts.port}" if parts.port else parts.hostname
+    address = (
+        host_port(parts.hostname, parts.port)
+        if parts.port
+        else bracketed(parts.hostname)
+    )
     args = ["-proxy", address]
     if parts.username:
         user = unquote(parts.username)

@@ -13,7 +13,7 @@ from reports.analysis.brief import (
 from reports.analysis.narratives import attack_paths
 from reports.analysis.scoring import effort_for, issue_risk, posture
 from reports.data.models import Issue
-from reports.data.source import ReportSource
+from reports.data.source import REPORT_DIMENSIONS, ReportSource
 from shared.definitions.compliance import (
     FRAMEWORK_BY_KEY,
     SURFACE_CONTROLS,
@@ -23,7 +23,6 @@ from shared.definitions.compliance import (
 from shared.definitions.ports import ServiceClass
 from shared.definitions.surface import (
     SURFACE_LABELS,
-    SURFACE_ORDER,
     SurfaceDimension,
 )
 from shared.definitions.vulnerabilities import (
@@ -132,7 +131,7 @@ def _changes(source: ReportSource) -> list[ChangeLine]:
     if source.previous_scan is None:
         return []
     lines: list[ChangeLine] = []
-    for dimension in SURFACE_ORDER:
+    for dimension in REPORT_DIMENSIONS:
         if not source.coverage[dimension].covered:
             continue
         added, gone, added_total, gone_total = source.added_and_gone(
@@ -172,7 +171,7 @@ def _concentration(source: ReportSource, issues: list[Issue]) -> list[Concentrat
 
 def _caveats(source: ReportSource) -> list[Caveat]:
     out: list[Caveat] = []
-    for dimension in SURFACE_ORDER:
+    for dimension in REPORT_DIMENSIONS:
         entry = source.coverage[dimension]
         if not entry.covered:
             out.append(
@@ -249,7 +248,7 @@ def _compliance(issues: list[Issue], covered: frozenset[str]) -> dict:
 
 def _highlights(source: ReportSource, brief: ReportBrief) -> list[Highlight]:
     out: list[Highlight] = []
-    for dimension in SURFACE_ORDER:
+    for dimension in REPORT_DIMENSIONS:
         entry = source.coverage[dimension]
         if not entry.covered:
             out.append(
@@ -314,7 +313,7 @@ def build_brief(source: ReportSource) -> ReportBrief:
     issues = build_issues(source)
     paths = attack_paths(source, issues)
 
-    counts = {d: source.count_of(d) for d in SURFACE_ORDER}
+    counts = {d: source.count_of(d) for d in REPORT_DIMENSIONS}
     coverage = [
         {
             "dimension": d,
@@ -323,7 +322,7 @@ def build_brief(source: ReportSource) -> ReportBrief:
             "count": source.coverage[d].count,
             "previous": source.coverage[d].previous,
         }
-        for d in SURFACE_ORDER
+        for d in REPORT_DIMENSIONS
     ]
 
     brief = ReportBrief(

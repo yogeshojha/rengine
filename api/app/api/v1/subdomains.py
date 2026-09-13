@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.api.scope import WebAssetScope
 from app.core.database import get_session
-from app.services.asset_query import build_schema
 from app.services.correlation_graph import CorrelationGraphService
 from app.services.hosting_flow import HostingFlowService
 from app.services.related_domains import RelatedDomainService
@@ -17,7 +16,6 @@ from shared.models.asset_query import (
     QueryCounts,
     QueryGroups,
     QueryLeads,
-    QuerySchema,
 )
 from shared.models.hosting_flow import HostingFlow
 from shared.models.related import RelatedDomains
@@ -75,11 +73,6 @@ async def list_subdomains(
         limit=limit,
         offset=offset,
     )
-
-
-@router.get("/search/schema", response_model=QuerySchema)
-async def subdomain_search_schema(_current_user: CurrentUser) -> QuerySchema:
-    return build_schema()
 
 
 @router.post("/search", response_model=SubdomainSearchResult)

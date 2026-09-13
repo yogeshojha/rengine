@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pydantic import Field
 
+from shared.definitions.endpoints import DEFAULT_PROBE_CAP
 from stages.config import StageConfig, rate, threads, timeout
 
 
@@ -15,7 +16,7 @@ class EndpointProbeConfig(StageConfig):
     timeout: int = timeout(10, title="Timeout (s)")
     rate: int = rate(150, tool="httpx", title="Requests/s")
     max_urls: int = Field(
-        default=5000,
+        default=DEFAULT_PROBE_CAP,
         ge=0,
         le=100000,
         title="URLs to verify",

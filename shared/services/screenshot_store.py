@@ -46,8 +46,8 @@ def relative(path: Path) -> str:
         return str(path)
 
 
-def rewrite(stored: str) -> Rewritten:
-    """Hash a render and, when it is still a PNG, replace it with a WebP."""
+def rewrite(stored: str) -> Rewritten | None:
+    """Hash a render and, when it is still a PNG, replace it with a WebP. None means retry."""
     from PIL import Image, UnidentifiedImageError  # noqa: PLC0415
 
     source = absolute(stored)
@@ -60,7 +60,14 @@ def rewrite(stored: str) -> Rewritten:
             if source.suffix.lower() != SOURCE_SUFFIX:
                 return Rewritten(value, stored)
             target = source.with_suffix(STORED_SUFFIX)
-            img.convert("RGB").save(target, "WEBP", quality=QUALITY, method=METHOD)
+            try:
+                img.convert("RGB").save(target, "WEBP", quality=QUALITY, method=METHOD)
+            except OSError as exc:
+                logger.warning(
+                    "screenshot could not be rewritten", path=stored, error=str(exc)
+                )
+                target.unlink(missing_ok=True)
+                return None
     except (OSError, UnidentifiedImageError, ValueError):
         return Rewritten(None, None)
     source.unlink(missing_ok=True)
@@ -99,6 +106,8 @@ def process_scan(session: Session, scan_id: UUID) -> tuple[int, int]:
     for path in stored:
         before = _size(path)
         done = rewrite(path)
+        if done is None:
+            continue
         if done.path != path:
             reclaimed += max(0, before - _size(done.path))
         changes.append({"b_old": path, "b_phash": done.phash, "b_path": done.path})

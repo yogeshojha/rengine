@@ -13,6 +13,7 @@
 		elapsedSeconds,
 		formatSeconds,
 		isLiveStatus,
+		isOpenStatus,
 		SCAN_STATUS_LABEL
 	} from '$lib/utilities/scan-status';
 	import type { ScanStatus } from '$lib/types/scan';
@@ -32,7 +33,6 @@
 		geography: InsightTally[];
 		geoTotal: number;
 		geoReady: boolean;
-		live: boolean;
 		onPickCountry: (code: string) => void;
 		onTab: (tab: string) => void;
 		onRefresh: () => void;
@@ -49,7 +49,6 @@
 		geography,
 		geoTotal,
 		geoReady,
-		live: scanLive,
 		onTab,
 		onRefresh,
 		onPickCountry
@@ -72,6 +71,7 @@
 
 	let latest = $derived(summary?.latest_scan ?? null);
 	let live = $derived(latest ? isLiveStatus(latest.status as ScanStatus) : false);
+	let unfinished = $derived(latest ? isOpenStatus(latest.status as ScanStatus) : false);
 	let scanLine = $derived.by(() => {
 		if (!latest) return null;
 		if (live) return latest.engine_name;
@@ -94,7 +94,7 @@
 		<GeoPanel
 			{geography}
 			total={geoTotal}
-			live={scanLive}
+			{unfinished}
 			ready={geoReady}
 			class="p-0 pb-4"
 			onPick={onPickCountry}

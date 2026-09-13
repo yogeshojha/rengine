@@ -1,5 +1,16 @@
 export type WhoisLookupType = 'DOMAIN' | 'IP' | 'ASN';
 
+// mirrors shared/enums/whois.py:WhoisLookupType
+export const WHOIS_LOOKUP_LABELS: Record<WhoisLookupType, string> = {
+	DOMAIN: 'Domain',
+	IP: 'IP address',
+	ASN: 'ASN'
+};
+
+export function whoisLookupLabel(type: string): string {
+	return WHOIS_LOOKUP_LABELS[type as WhoisLookupType] ?? type;
+}
+
 export interface WhoisEntityAddress {
 	po_box: string;
 	ext_address: string;

@@ -1,9 +1,5 @@
-<script module lang="ts">
-	const ROW = 'grid grid-cols-[8.5rem_1fr] items-start gap-3 py-2';
-	const DT = 'pt-0.5 text-xs text-muted-foreground';
-</script>
-
 <script lang="ts">
+	import { SHEET_ROW, SHEET_DT, sheetStep } from './sheet';
 	import Network from '@lucide/svelte/icons/network';
 	import Plug from '@lucide/svelte/icons/plug';
 	import Server from '@lucide/svelte/icons/server';
@@ -22,7 +18,8 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Kbd } from '$lib/components/ui/kbd';
-	import { isPrivateIp, isSensitivePort } from '$lib/utilities/scan-correlation';
+	import { isPrivateIp } from '$lib/utilities/scan-correlation';
+	import { isSensitivePort } from '$lib/config/service-classes';
 	import { exactToken, filterToken, type IpGroupRead } from '$lib/utilities/scan-insights';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import CountryFlag from './country-flag.svelte';
@@ -68,21 +65,9 @@
 	function copy(text: string) {
 		writeClipboard(text);
 	}
-	function onKey(e: KeyboardEvent) {
-		if (!open || e.metaKey || e.ctrlKey || e.altKey) return;
-		const t = e.target as HTMLElement | null;
-		if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
-		if (e.key === 'ArrowDown' || e.key === 'j') {
-			e.preventDefault();
-			onStep?.(1);
-		} else if (e.key === 'ArrowUp' || e.key === 'k') {
-			e.preventDefault();
-			onStep?.(-1);
-		}
-	}
 </script>
 
-<svelte:window onkeydown={onKey} />
+<svelte:window onkeydown={(e) => sheetStep(e, open, onStep)} />
 
 <Sheet.Root {open} {onOpenChange}>
 	<Sheet.Content
@@ -204,8 +189,8 @@
 					<section class="flex flex-col gap-2">
 						{@render heading(Network, 'Network')}
 						<dl class="flex flex-col divide-y divide-border/60">
-							<div class={ROW}>
-								<dt class={DT}>Autonomous system</dt>
+							<div class={SHEET_ROW}>
+								<dt class={SHEET_DT}>Autonomous system</dt>
 								<dd class="flex flex-wrap items-center gap-1">
 									{#if group.asn}
 										{@render chip(
@@ -219,8 +204,8 @@
 								</dd>
 							</div>
 							{#if group.country}
-								<div class={ROW}>
-									<dt class={DT}>Country</dt>
+								<div class={SHEET_ROW}>
+									<dt class={SHEET_DT}>Country</dt>
 									<dd>
 										{@render chip(
 											group.country,
@@ -234,8 +219,8 @@
 								</div>
 							{/if}
 							{#if group.prefix}
-								<div class={ROW}>
-									<dt class={DT}>Prefix</dt>
+								<div class={SHEET_ROW}>
+									<dt class={SHEET_DT}>Prefix</dt>
 									<dd>
 										{@render chip(
 											group.prefix,
@@ -247,8 +232,8 @@
 								</div>
 							{/if}
 							{#if group.ptr_hostnames.length}
-								<div class={ROW}>
-									<dt class={DT}>PTR</dt>
+								<div class={SHEET_ROW}>
+									<dt class={SHEET_DT}>PTR</dt>
 									<dd class="flex flex-wrap gap-1">
 										{#each group.ptr_hostnames as ptr (ptr)}
 											{@render chip(ptr, filterToken('ptr', ptr), 'Filter by PTR', true)}
@@ -256,8 +241,8 @@
 									</dd>
 								</div>
 							{/if}
-							<div class={ROW}>
-								<dt class={DT}>Responding</dt>
+							<div class={SHEET_ROW}>
+								<dt class={SHEET_DT}>Responding</dt>
 								<dd class="text-sm">
 									{group.is_alive ? 'Yes' : 'No response observed'}
 								</dd>

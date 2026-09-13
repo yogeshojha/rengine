@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import { Label } from '$lib/components/ui/label';
@@ -22,7 +23,7 @@
 	let { context, onChange }: Props = $props();
 
 	$effect(() => {
-		engineCatalogStore.fetch();
+		untrack(() => engineCatalogStore.fetch());
 	});
 
 	const rateTools = $derived(engineCatalogStore.catalog?.rate_tools ?? []);

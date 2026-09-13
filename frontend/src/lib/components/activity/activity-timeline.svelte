@@ -2,6 +2,7 @@
 	import Activity from '@lucide/svelte/icons/activity';
 	import SearchX from '@lucide/svelte/icons/search-x';
 	import ShieldX from '@lucide/svelte/icons/shield-x';
+	import PlugZap from '@lucide/svelte/icons/plug-zap';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Empty from '$lib/components/ui/empty/index.js';
 	import ActivityTimelineItem from './activity-timeline-item.svelte';
@@ -38,6 +39,8 @@
 	}: Props = $props();
 
 	let empty = $derived.by(() => {
+		if (activityFeed.loadError)
+			return { icon: PlugZap, title: 'Activity not loaded', sub: activityFeed.loadError };
 		if (activityFeed.search.trim())
 			return {
 				icon: SearchX,

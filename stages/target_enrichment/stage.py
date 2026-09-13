@@ -41,6 +41,7 @@ class TargetEnrichmentStage(Stage):
     tools = ("dnsx", "whois")
     touches_target = False
     config_model = TargetEnrichmentConfig
+    _notes: list[str]
 
     def run(self) -> StageResult:
         self._check_abort()
@@ -49,20 +50,24 @@ class TargetEnrichmentStage(Stage):
         if target is None:
             return StageResult(counts={})
 
+        self._notes = []
         dns_records = self._ensure_dns(target, cfg)
         whois_present = self._ensure_whois(target)
         bgp_present = self._read_bgp()
 
         self.emit_progress(
-            f"enrichment · dns:{dns_records} "
-            f"whois:{int(whois_present)} bgp:{int(bgp_present)}"
+            f"{dns_records} DNS records, "
+            f"WHOIS {'stored' if whois_present else 'absent'}, "
+            f"BGP {'stored' if bgp_present else 'absent'}"
         )
         return StageResult(
             counts={
                 "dns_records": dns_records,
                 "whois": int(whois_present),
                 "bgp": int(bgp_present),
-            }
+            },
+            warnings=self._notes,
+            partial=bool(self._notes),
         )
 
     def _ensure_dns(self, target: Target, cfg: TargetEnrichmentConfig) -> int:
@@ -88,6 +93,7 @@ class TargetEnrichmentStage(Stage):
                 self.session.commit()
             except Exception as exc:
                 logger.warning("in-scan DNS refresh failed for %s: %s", host, exc)
+                self._notes.append(f"DNS was not refreshed for {host}. {exc}")
         return len(lookup.records) if lookup else 0
 
     def _ensure_whois(self, target: Target) -> bool:
@@ -116,6 +122,7 @@ class TargetEnrichmentStage(Stage):
                 self.session.commit()
             except Exception as exc:
                 logger.warning("in-scan WHOIS refresh failed: %s", exc)
+                self._notes.append(f"WHOIS was not refreshed. {exc}")
         return record is not None
 
     def _read_bgp(self) -> bool:

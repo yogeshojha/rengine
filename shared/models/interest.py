@@ -9,10 +9,9 @@ from sqlmodel import Field, SQLModel, UniqueConstraint
 
 from shared.definitions.interest import (
     MAX_EVIDENCE,
+    MAX_KEYWORDS,
     MAX_REASON,
     MAX_RULE_NAME,
-    InterestBand,
-    InterestSource,
     RuleMode,
 )
 from shared.utils.datetime import utc_now
@@ -103,7 +102,7 @@ class InterestRuleCreate(BaseModel):
     description: str | None = None
     mode: str = RuleMode.QUERY.value
     query: str = ""
-    keywords: list[str] = PField(default_factory=list)
+    keywords: list[str] = PField(default_factory=list, max_length=MAX_KEYWORDS)
     keyword_fields: list[str] = PField(default_factory=list)
     live_only: bool = False
     kind: str
@@ -117,7 +116,7 @@ class InterestRuleUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
     query: str | None = None
-    keywords: list[str] | None = None
+    keywords: list[str] | None = PField(default=None, max_length=MAX_KEYWORDS)
     keyword_fields: list[str] | None = None
     live_only: bool | None = None
     kind: str | None = None
@@ -268,11 +267,3 @@ class DismissRequest(BaseModel):
     target_id: uuid.UUID
     kind: str = ""
     note: str | None = None
-
-
-class JudgeRequest(BaseModel):
-    force: bool = False
-
-
-DEFAULT_BAND = InterestBand.NOTABLE.value
-DEFAULT_SOURCE = InterestSource.RULE.value

@@ -56,6 +56,7 @@ from shared.models.interest import (
 from shared.models.scan import Scan
 from shared.models.subdomain import Subdomain
 from shared.services.asset_query import lead_cache
+from shared.services.interest import HOST_ROLLUP_SQL, signature
 from shared.utils.datetime import utc_now
 
 logger = get_logger(__name__)
@@ -101,6 +102,10 @@ def catalog() -> InterestCatalog:
         max_score=MAX_SCORE,
         providers=list(provider_names()),
     )
+
+
+def _in_project(rule: InterestRule, project_id: uuid.UUID) -> bool:
+    return rule.project_id is None or rule.project_id == project_id
 
 
 def _to_read(rule: InterestRule, matches: int | None = None) -> InterestRuleRead:
@@ -274,10 +279,10 @@ class InterestService:
         return _to_read(rule, 0)
 
     async def update(
-        self, rule_id: uuid.UUID, payload: InterestRuleUpdate
+        self, rule_id: uuid.UUID, payload: InterestRuleUpdate, project_id: uuid.UUID
     ) -> InterestRuleRead | None:
         rule = await self.session.get(InterestRule, rule_id)
-        if rule is None:
+        if rule is None or not _in_project(rule, project_id):
             return None
         data = payload.model_dump(exclude_unset=True)
 
@@ -313,9 +318,9 @@ class InterestService:
         await self.session.refresh(rule)
         return _to_read(rule)
 
-    async def delete(self, rule_id: uuid.UUID) -> bool:
+    async def delete(self, rule_id: uuid.UUID, project_id: uuid.UUID) -> bool:
         rule = await self.session.get(InterestRule, rule_id)
-        if rule is None or rule.builtin:
+        if rule is None or rule.builtin or rule.project_id != project_id:
             return False
         await self.session.delete(rule)
         await self.session.commit()
@@ -348,15 +353,6 @@ class InterestService:
             capped=len(rows) >= PREVIEW_CAP,
             sample=list(rows[:SAMPLE]),
         )
-
-
-from shared.services.interest import HOST_ROLLUP_SQL  # noqa: E402
-
-
-def _signature(rules: list[InterestRule]) -> str:
-    from shared.services.interest import signature  # noqa: PLC0415
-
-    return signature(rules)
 
 
 class InterestReadService(InterestService):
@@ -571,7 +567,7 @@ class InterestReadService(InterestService):
             ai_enabled=bool(cfg and cfg.allows("asset_judgement")),
             stale=bool(scan)
             and scan.status in SCAN_TERMINAL_STATUSES
-            and scan.interest_signature != _signature(rules),
+            and scan.interest_signature != signature(rules),
         )
 
     async def dismiss(
@@ -650,7 +646,7 @@ class InterestReadService(InterestService):
         )
 
     async def suggestions(self, scan: Scan) -> list[RuleSuggestion]:
-        """A proposal, counted against this scan, that becomes a rule only if someone accepts it."""
+        """Rule proposals, each counted against this scan."""
         from interest.providers.ai.suggest import MAX_EXAMPLES, propose  # noqa: PLC0415
         from shared.services.ai.config import load_config_async  # noqa: PLC0415
 

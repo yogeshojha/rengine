@@ -185,7 +185,7 @@ _FLAG_BUILDERS = {
     "screenshot": lambda _ctx: Subdomain.screenshot_path.isnot(None),
     "important": lambda _ctx: Subdomain.is_important.is_(True),
     "wildcard": lambda _ctx: Subdomain.is_wildcard.is_(True),
-    "issue": lambda ctx: preds.issues(ctx.now),
+    "issue": lambda ctx: preds.issues(ctx.now, ctx.scope),
     "sensitive": lambda ctx: preds.sensitive(ctx.scope),
     "http2": lambda ctx: preds.asset_match(
         ctx.scope, HttpAsset.supports_http2.is_(True)

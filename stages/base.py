@@ -18,6 +18,8 @@ from shared.models.scan_context import PROBE_SCHEME
 from shared.services.celery_dispatch import dispatch_interest_live
 from shared.services.debounce import claim
 from shared.services.orchestrator.aggregate import derived_counts
+from shared.utils.text import REFUSED_ROW
+from shared.utils.validation import extract_asn_number
 from stages.config import StageConfig
 from stages.sink import DEFAULT_ROWS, DEFAULT_SECONDS, ResultSink
 from tools.runner import CLIToolRunner
@@ -74,6 +76,14 @@ DOMAIN_TARGETS: frozenset[str] = frozenset({TargetType.DOMAIN.value})
 RANGE_TARGETS: frozenset[str] = frozenset(
     {TargetType.IP_RANGE.value, TargetType.ASN.value}
 )
+
+
+def parse_asn(value: str) -> int | None:
+    """The AS number a target value names, or None when it names none."""
+    try:
+        return extract_asn_number(value)
+    except ValueError:
+        return None
 
 
 class Stage(ABC):
@@ -152,6 +162,28 @@ class Stage(ABC):
             rows=rows,
             seconds=seconds,
         )
+
+    def flush_rows(self, batch: list) -> int:
+        """Flush a batch inside a savepoint, returning how many rows the DB refused."""
+        pending = list(batch)
+        rejected = 0
+        try:
+            with self.session.begin_nested():
+                self.session.add_all(pending)
+                self.session.flush()
+        except REFUSED_ROW:
+            logger.warning("row batch rejected, retrying row by row", stage=self.name)
+            for obj in pending:
+                try:
+                    with self.session.begin_nested():
+                        self.session.add(obj)
+                        self.session.flush()
+                except REFUSED_ROW:
+                    rejected += 1
+        for obj in pending:
+            if obj in self.session:
+                self.session.expunge(obj)
+        return rejected
 
     def publish_results(self, dimension: str) -> None:
         """Roll this dimension's scan counters forward and say that rows landed."""

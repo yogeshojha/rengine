@@ -14,15 +14,17 @@ from sqlalchemy import select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
+from shared.enums.api_key import APIProvider
 from shared.logging import get_logger
 from shared.models.threat_intel import CveIntel
+from shared.services.api_key.sync_api_key import SyncAPIKeyService
 from shared.utils.datetime import utc_now
 from shared.utils.text import strip_control
 
 logger = get_logger(__name__)
 
 BASE_URL = "https://api.projectdiscovery.io/v2/vulnerability"
-PROVIDER = "vulnx"
+PROVIDER = APIProvider.VULNX.value
 TIMEOUT = 30
 MAX_PER_RUN = 200
 FIELDS = (
@@ -167,14 +169,7 @@ def _row(cve: str, data: dict) -> dict:
 def api_key(session: Session) -> str | None:
     """The stored vulnx key, if the operator added one."""
     try:
-        from shared.utils.crypto import decrypt  # noqa: PLC0415
-
-        raw = session.execute(
-            text(
-                "SELECT key_value FROM api_keys WHERE provider = 'VULNX' AND is_enabled LIMIT 1"
-            )
-        ).scalar()
-        return decrypt(raw) if raw else None
+        return SyncAPIKeyService(session).get_key_for_provider(APIProvider.VULNX)
     except Exception:
         logger.debug("vulnx key unavailable", exc_info=True)
         return None

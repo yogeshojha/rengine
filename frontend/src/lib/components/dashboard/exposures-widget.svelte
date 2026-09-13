@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import Widget from './widget.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import { interestCatalog } from '$lib/stores/interest-catalog.svelte';
@@ -19,7 +20,7 @@
 		`${n.toLocaleString()} ${n === 1 ? one : many}`;
 
 	$effect(() => {
-		void interestCatalog.load();
+		untrack(() => interestCatalog.load());
 	});
 
 	let bands = $derived(
@@ -54,7 +55,7 @@
 						<span class="flex min-w-0 items-center gap-2">
 							<span class="truncate font-mono text-xs font-medium">{r.host}</span>
 							{#if r.is_new}
-								<span class="shrink-0 text-2xs font-medium text-success uppercase">new</span>
+								<span class="shrink-0 text-2xs font-medium text-info uppercase">new</span>
 							{/if}
 						</span>
 						<span
@@ -88,7 +89,7 @@
 	</ul>
 	{#snippet footer()}
 		{#if page}
-			{plural(page.total, 'exposed web asset', 'exposed web assets')} across the project
+			{plural(page.total, 'exposed web asset', 'exposed web assets')}
 		{/if}
 	{/snippet}
 </Widget>

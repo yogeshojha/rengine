@@ -9,7 +9,7 @@ from pathlib import Path
 
 from sqlalchemy import select
 
-from shared.definitions.report_fonts import FONT_ROOT, FontOrigin, FontRole
+from shared.definitions.report_fonts import FONT_ROLES, FONT_ROOT, FontOrigin, FontRole
 from shared.definitions.reports import FONT_FAMILIES
 from shared.models.report import FontFace, ReportFont, ReportFontRead
 
@@ -44,9 +44,7 @@ def custom(session) -> list[ReportFontRead]:
                 id=row.id,
                 slug=row.slug,
                 name=row.name,
-                role=row.role
-                if row.role in tuple(r.value for r in FontRole)
-                else FontRole.SANS.value,
+                role=row.role if row.role in FONT_ROLES else FontRole.SANS.value,
                 origin=row.origin,
                 note=row.note,
                 faces=faces,

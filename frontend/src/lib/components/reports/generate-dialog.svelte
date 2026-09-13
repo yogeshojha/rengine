@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group/index.js';
@@ -63,6 +64,7 @@
 	let estimate = $state<ReportEstimate | null>(null);
 	let baseEstimate = $state<ReportEstimate | null>(null);
 	let estimating = $state(false);
+	let estimateError = $state<string | null>(null);
 	let seededFor = $state('');
 	let subjectKind = $state<'scan' | 'target'>('scan');
 	let pickedScan = $state('');
@@ -136,7 +138,7 @@
 		seededFor = key;
 		plan.seed(sections, selected);
 		title = selected?.title || selected?.name || 'Security Assessment Report';
-		if (selected?.theme) theme = selected.theme;
+		theme = selected?.theme ?? '';
 		formats = selected?.formats?.length ? [...selected.formats] : [ReportFormat.PDF];
 		baseEstimate = null;
 	});
@@ -159,20 +161,34 @@
 	});
 
 	const signature = $derived(
-		JSON.stringify({ activeScan, activeTarget, useAi, explainFindings, entries: plan.entries })
+		JSON.stringify({
+			activeScan,
+			activeTarget,
+			useAi,
+			explainFindings,
+			formats,
+			entries: plan.entries
+		})
 	);
 
 	$effect(() => {
 		void signature;
 		if (!open || !hasSubject) return;
 		estimating = true;
+		estimateError = null;
 		reportsApi
-			.estimate(projectId, body)
+			.estimate(
+				projectId,
+				untrack(() => body)
+			)
 			.then((result) => {
 				estimate = result;
 				if (!plan.changed) baseEstimate = result;
 			})
-			.catch(() => (estimate = null))
+			.catch((e) => {
+				estimate = null;
+				estimateError = e instanceof Error ? e.message : 'Request failed.';
+			})
 			.finally(() => (estimating = false));
 	});
 
@@ -190,7 +206,7 @@
 
 	async function start() {
 		if (!hasSubject) return toast.error('Select a scan or a target.');
-		if (!plan.enabledCount) return toast.error('Select at least one section.');
+		if (!plan.enabledContentCount) return toast.error('Select at least one section.');
 		if (!formats.length) return toast.error('Select at least one output format.');
 		busy = true;
 		const report = await reportsStore.create(projectId, body);
@@ -310,7 +326,8 @@
 						<div class="flex flex-wrap items-baseline justify-between gap-x-3 border-b pb-1.5">
 							<span class="text-sm font-medium">Contents</span>
 							<span class="text-xs text-muted-foreground">
-								{plan.enabledCount} sections{#if plan.furniture.length}
+								{plan.enabledContentCount}
+								{plan.enabledContentCount === 1 ? 'section' : 'sections'}{#if plan.furniture.length}
 									&nbsp;· cover, contents and reference sections included{/if}
 							</span>
 						</div>
@@ -503,6 +520,11 @@
 							{/if}
 						{:else if estimating}
 							{#each [1, 2, 3, 4] as n (n)}<Skeleton class="h-4 w-full" />{/each}
+						{:else if estimateError}
+							<p class="flex items-start gap-1.5 text-destructive">
+								<TriangleAlertIcon class="mt-px size-3.5 shrink-0" />
+								<span>Estimate not loaded. {estimateError}</span>
+							</p>
 						{:else}
 							<p class="text-muted-foreground">No subject. Select a scan or a target.</p>
 						{/if}

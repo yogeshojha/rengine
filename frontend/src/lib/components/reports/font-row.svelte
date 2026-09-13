@@ -3,22 +3,21 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import { formatBytes } from '$lib/config/reports';
+	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
 	import type { ReportFont } from '$lib/types/report';
 
 	let { font, onDelete }: { font: ReportFont; onDelete: (slug: string) => void } = $props();
 
-	const ROLE_LABEL: Record<string, string> = {
-		sans: 'Sans',
-		serif: 'Serif',
-		mono: 'Monospaced'
-	};
+	const roleLabel = $derived(
+		reportCatalog.catalog?.font_roles.find((r) => r.key === font.role)?.label ?? font.role
+	);
 </script>
 
 <div class="flex items-center gap-3 border-b px-4 py-3 last:border-b-0">
 	<div class="min-w-0 flex-1">
 		<div class="flex flex-wrap items-center gap-2">
 			<span class="truncate font-medium">{font.name}</span>
-			<Badge variant="outline" class="text-2xs">{ROLE_LABEL[font.role] ?? font.role}</Badge>
+			<Badge variant="outline" class="text-2xs">{roleLabel}</Badge>
 			{#if font.origin === 'custom'}<Badge variant="secondary" class="text-2xs">Custom</Badge>{/if}
 		</div>
 		<div class="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">

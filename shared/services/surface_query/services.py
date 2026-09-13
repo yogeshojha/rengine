@@ -181,6 +181,7 @@ def order(query, d, f: ServiceFilter):
             d.c.host_count.desc(),
             d.c.inet.asc(),
             d.c.port.asc(),
+            d.c.id.asc(),
         )
     col = {
         "port": d.c.port,
@@ -194,7 +195,9 @@ def order(query, d, f: ServiceFilter):
         "status": d.c.status_code,
     }.get(f.sort, d.c.inet)
     primary = col.desc() if f.order == "desc" else col.asc()
-    return query.order_by(primary.nulls_last(), d.c.inet.asc(), d.c.port.asc())
+    return query.order_by(
+        primary.nulls_last(), d.c.inet.asc(), d.c.port.asc(), d.c.id.asc()
+    )
 
 
 def scoped(scope: QueryScope, f: ServiceFilter, columns=None):

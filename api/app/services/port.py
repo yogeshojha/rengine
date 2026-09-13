@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import Counter
 from uuid import UUID
 
 from sqlalchemy import (
@@ -99,6 +98,22 @@ class PortService:
             discovered_at=port.discovered_at,
         )
 
+    def _conditions(
+        self,
+        project_id: UUID,
+        scan_id: UUID | None,
+        target_id: UUID | None,
+        search: str | None,
+    ) -> list:
+        where = [Port.project_id == project_id]
+        if scan_id is not None:
+            where.append(Port.scan_id == scan_id)
+        if target_id is not None:
+            where.append(Port.target_id == target_id)
+        if search:
+            where.append(Port.ip.ilike(f"%{search}%"))
+        return where
+
     def _base_query(
         self,
         project_id: UUID,
@@ -106,14 +121,9 @@ class PortService:
         target_id: UUID | None,
         search: str | None,
     ):
-        query = select(Port).where(Port.project_id == project_id)
-        if scan_id is not None:
-            query = query.where(Port.scan_id == scan_id)
-        if target_id is not None:
-            query = query.where(Port.target_id == target_id)
-        if search:
-            query = query.where(Port.ip.ilike(f"%{search}%"))
-        return query
+        return select(Port).where(
+            *self._conditions(project_id, scan_id, target_id, search)
+        )
 
     async def list(
         self,
@@ -135,13 +145,16 @@ class PortService:
         scan_id: UUID | None = None,
         target_id: UUID | None = None,
     ) -> PortSummary:
-        query = self._base_query(project_id, scan_id, target_id, None)
-        result = await self.session.execute(query)
-        rows = result.scalars().all()
-        by_service: Counter = Counter()
-        for row in rows:
-            by_service[row.service_name or "unknown"] += 1
-        return PortSummary(total=len(rows), by_service=dict(by_service))
+        name = func.coalesce(func.nullif(Port.service_name, ""), "unknown")
+        rows = (
+            await self.session.execute(
+                select(name, func.count())
+                .where(*self._conditions(project_id, scan_id, target_id, None))
+                .group_by(name)
+            )
+        ).all()
+        by_service = {str(service): int(count) for service, count in rows}
+        return PortSummary(total=sum(by_service.values()), by_service=by_service)
 
     _derived = staticmethod(surface_services.derived)
     _apply_filter = staticmethod(surface_services.apply_filter)
@@ -507,7 +520,7 @@ class PortService:
 
 _COVERAGE_LABELS: dict[str, tuple[str, str]] = {
     ScanPolicy.FULL.value: ("Scanned in full", ""),
-    ScanPolicy.WEB.value: ("Web ports only", "is:cdn"),
+    ScanPolicy.WEB.value: ("Web ports only", ""),
     ScanPolicy.SKIP.value: ("Not scanned", ""),
     "unplanned": ("Not reached", ""),
 }

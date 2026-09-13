@@ -437,6 +437,17 @@ function createTargetsStore() {
 			}
 		},
 
+		async deleteTargets(ids: string[]): Promise<number> {
+			const results = await Promise.allSettled(ids.map((id) => targetsApi.delete(id)));
+			const ok = results.filter((r) => r.status === 'fulfilled').length;
+			if (ok) {
+				await this.refresh();
+				scansStore.markStale();
+				dashboardStore.markStale();
+			}
+			return ok;
+		},
+
 		async fetchTags() {
 			if (!filters.projectSlug) return;
 			try {
@@ -482,6 +493,7 @@ function createTargetsStore() {
 				totalItems: 0,
 				totalPages: 0
 			};
+			signalSummary = { total: 0, expiring: 0, attention: 0, awaiting: 0, enriched: 0 };
 			error = null;
 			hasFetched = false;
 		}

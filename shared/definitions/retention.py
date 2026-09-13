@@ -10,7 +10,7 @@ KEEP_NEWEST_PER_TARGET = True
 
 MEDIA_ROOT = Path("/app/scan_media")
 
-# written by the toolbox, which prunes its own runs
+# written by the toolbox
 MEDIA_RESERVED = frozenset({"toolbox"})
 
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from datetime import datetime
 
-from sqlalchemy import and_, cast, false, func, or_, true
+from sqlalchemy import and_, cast, false, func, or_, select, true, union_all
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import array as pg_array
 
@@ -179,6 +179,7 @@ def compile_endpoint_compare(cmp: Compare, ctx: EndpointQueryContext):
 
 
 def compile_endpoint_term(term: Term, ctx: EndpointQueryContext):
+    reach = ctx.scope.match(Endpoint.scan_id)
     branches = []
     for spec in ENDPOINT_QUERY.fields:
         if not spec.free_text:
@@ -193,7 +194,15 @@ def compile_endpoint_term(term: Term, ctx: EndpointQueryContext):
             end=term.end,
         )
         branches.append(_ENDPOINT_BUILDERS[spec.name](cmp, ctx))
-    return or_(*branches) if branches else false()
+    if not branches:
+        return false()
+    reachable = union_all(
+        *[
+            select(Endpoint.id).where(reach, branch).correlate(None)
+            for branch in branches
+        ]
+    ).subquery()
+    return Endpoint.id.in_(select(reachable.c.id))
 
 
 def compile_endpoint_node(node: Node, ctx: EndpointQueryContext):

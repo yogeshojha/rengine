@@ -18,7 +18,7 @@ class BurpConnector(ProxyConnector):
         "https://portswigger.net/burp/documentation/desktop/extend-burp/extensions"
     )
     source_path = "clients/burp"
-    client_file = "rengine-connector-0.1.0.jar"
+    client_pattern = "rengine-connector-*.jar"
     supports_scope_push = True
 
     def setup(self, **_: str) -> list[SetupStep]:

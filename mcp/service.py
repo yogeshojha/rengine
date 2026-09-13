@@ -11,6 +11,7 @@ from sqlmodel import select
 from mcp import auth, registry, telemetry
 from mcp import settings as server_settings
 from mcp.capabilities import (
+    ALWAYS_GRANTED,
     CAPABILITY_HELP,
     CAPABILITY_LABELS,
     CAPABILITY_ORDER,
@@ -282,7 +283,7 @@ def capability_catalog() -> list[dict]:
             "key": key,
             "label": CAPABILITY_LABELS[key],
             "help": CAPABILITY_HELP[key],
-            "always": key not in ("plan", "write", "launch"),
+            "always": key in ALWAYS_GRANTED,
             "touches_targets": key in TOUCHES_TARGETS,
         }
         for key in CAPABILITY_ORDER

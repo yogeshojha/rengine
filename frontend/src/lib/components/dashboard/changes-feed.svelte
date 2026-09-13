@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
 	import Widget from './widget.svelte';
 	import SeverityMark from '$lib/components/scans/results/vulnerabilities/severity-mark.svelte';
@@ -8,6 +9,7 @@
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { BAND_RAIL, KIND_ICONS } from '$lib/config/interest';
 	import { FEED_QUERIES, type DashboardFeed } from '$lib/types/dashboard';
+	import { exactToken } from '$lib/utilities/scan-insights';
 
 	interface Props {
 		feed: DashboardFeed | null;
@@ -24,7 +26,7 @@
 		`${n.toLocaleString()} ${n === 1 ? one : many}`;
 
 	$effect(() => {
-		void interestCatalog.load();
+		untrack(() => interestCatalog.load());
 	});
 
 	let sections = $derived.by(() => {
@@ -72,7 +74,7 @@
 				>
 					<s.spec.icon class="size-3.5" />
 					{s.label}
-					<span class="text-success tabular-nums normal-case">▲ {s.total.toLocaleString()}</span>
+					<span class="tabular-nums text-foreground normal-case">▲ {s.total.toLocaleString()}</span>
 					<ArrowUpRight class="ml-auto size-3" />
 				</a>
 				<ul class="flex flex-col">
@@ -81,7 +83,7 @@
 							<li>
 								<a
 									href={ROUTES.scanTab(v.scan_id, VULNS.tab, {
-										[VULNS.queryParam]: `template=${JSON.stringify(v.template_id)}`
+										[VULNS.queryParam]: exactToken('template', v.template_id)
 									})}
 									class="flex items-center gap-2 py-1 text-sm hover:text-foreground"
 								>
@@ -140,7 +142,7 @@
 								<a
 									href={ROUTES.surface(ENDPOINTS.tab, {
 										ep_host: e.host,
-										ep_q: `path=${JSON.stringify(e.path)}`
+										[ENDPOINTS.queryParam]: exactToken('path', e.path)
 									})}
 									class="flex items-center gap-2 py-1 text-sm hover:text-foreground"
 								>

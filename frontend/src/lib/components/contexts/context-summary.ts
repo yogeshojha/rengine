@@ -78,26 +78,6 @@ function listOf(items: string[], max: number): string {
 	return rest > 0 ? `${shown} +${rest}` : shown;
 }
 
-export function countExclusions(ctx: CtxLike): number {
-	return (
-		ctx.excluded_subdomains.length +
-		ctx.excluded_paths.length +
-		ctx.excluded_ips.length +
-		ctx.included_subdomains.length
-	);
-}
-
-export function countOverrides(ctx: CtxLike): number {
-	let n = 0;
-	if (ctx.global_rate_limit_override != null) n++;
-	n += Object.keys(ctx.per_tool_rate_overrides).length;
-	if (ctx.thread_multiplier !== 1.0) n++;
-	if (ctx.timeout_multiplier !== 1.0) n++;
-	if (ctx.follow_redirects_override != null) n++;
-	if (ctx.http_protocol !== 'both') n++;
-	return n;
-}
-
 export function contextFacets(ctx: CtxLike, proxyName?: string | null): ContextFacet[] {
 	const headerNames = ctx.extra_headers.map((h) => h.name).filter(Boolean);
 
@@ -168,5 +148,3 @@ export function facetLine(ctx: CtxLike, proxyName?: string | null): string {
 	const set = contextFacets(ctx, proxyName).filter((f) => f.set);
 	return set.length ? set.map((f) => f.value).join(' · ') : PASS_THROUGH;
 }
-
-export const buildContextSummary = facetLine;

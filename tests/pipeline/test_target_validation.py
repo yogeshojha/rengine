@@ -81,7 +81,7 @@ def test_a_private_range_stays_available_for_corporate_estates():
 
 def test_the_default_route_says_what_is_wrong():
     assert unrecognised_target("0.0.0.0/0") == (
-        "0.0.0.0/0 covers every address. Enter the range you own."
+        "0.0.0.0/0 covers every address. Enter a narrower range."
     )
 
 

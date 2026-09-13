@@ -50,9 +50,13 @@ class CdnCheckStage(Stage):
                 recorder=self.ctx.recorder,
                 extra_args=self.ctx.resolved.tool_args("cdncheck"),
             ).check(ips[:_MAX_IPS])
-        except CdncheckError:
+        except CdncheckError as exc:
             logger.warning("cdncheck unavailable, skipping CDN attribution")
-            return StageResult(counts={"addresses": len(ips), "cdn": 0, "cloud": 0})
+            return StageResult(
+                counts={"addresses": len(ips)},
+                warnings=[str(exc)],
+                partial=True,
+            )
 
         self._check_abort()
         rows = {

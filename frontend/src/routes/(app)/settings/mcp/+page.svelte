@@ -23,7 +23,7 @@
 	import { MCP_TABS, routeLabels, type McpTab } from '$lib/config/routes';
 	import { MCP_STATE_DOT, MCP_STATE_LABEL, MCP_TAB_LABELS } from '$lib/types/mcp';
 	import { MCP_POLL_MS } from '$lib/utilities/mcp';
-	import { relativeTime } from '$lib/utilities/dates';
+	import { uptime } from '$lib/utilities/dates';
 
 	const DEFAULT_TAB: McpTab = MCP_TABS[0];
 	const validTabs = new Set<string>(MCP_TABS);
@@ -131,7 +131,7 @@
 					{MCP_STATE_LABEL[serverState]}
 					{#if running && status.started_at}
 						<span class="text-xs text-muted-foreground">
-							{relativeTime(status.started_at).replace(' ago', '')}
+							{uptime(status.started_at)}
 						</span>
 					{/if}
 				</span>

@@ -51,23 +51,31 @@
 		</div>
 		<div class="flex flex-col gap-0.5 bg-card px-4 py-3">
 			<span class="text-2xs tracking-wide text-muted-foreground uppercase">Watched apexes</span>
-			<span class="text-sm font-medium tabular-nums">{stream?.items ?? 0}</span>
+			<span class="text-sm font-medium tabular-nums">{stream ? stream.items : 'Not read'}</span>
 		</div>
 		<div class="flex flex-col gap-0.5 bg-card px-4 py-3">
 			<span class="text-2xs tracking-wide text-muted-foreground uppercase">Last certificate</span>
 			<span class="text-sm font-medium">
-				{stream?.last_certificate_at ? relativeTime(stream.last_certificate_at) : 'None yet'}
+				{#if !stream}
+					Not read
+				{:else}
+					{stream.last_certificate_at ? relativeTime(stream.last_certificate_at) : 'None yet'}
+				{/if}
 			</span>
 		</div>
 		<div class="flex flex-col gap-0.5 bg-card px-4 py-3">
 			<span class="text-2xs tracking-wide text-muted-foreground uppercase">Since start</span>
 			<span class="text-sm font-medium tabular-nums">
-				{stream?.certificates_seen ?? 0}
-				{(stream?.certificates_seen ?? 0) === 1 ? 'certificate' : 'certificates'}
-				{#if stream?.started_at}
-					<span class="text-xs font-normal text-muted-foreground">
-						· {relativeTime(stream.started_at)}
-					</span>
+				{#if !stream}
+					Not read
+				{:else}
+					{stream.certificates_seen}
+					{stream.certificates_seen === 1 ? 'certificate' : 'certificates'}
+					{#if stream.started_at}
+						<span class="text-xs font-normal text-muted-foreground">
+							· {relativeTime(stream.started_at)}
+						</span>
+					{/if}
 				{/if}
 			</span>
 		</div>

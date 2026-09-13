@@ -1,7 +1,7 @@
 from datetime import timedelta
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import Row, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.definitions.domains import takeover_provider
@@ -57,7 +57,14 @@ class DashboardService:
 
     async def _takeover_candidates(self, project_id: UUID) -> TakeoverSignal:
         query = (
-            select(Subdomain)
+            select(
+                Subdomain.target_id,
+                Subdomain.name,
+                Subdomain.cname,
+                Subdomain.resolved_ips,
+                Subdomain.discovered_at,
+                Subdomain.scan_id,
+            )
             .where(
                 Subdomain.project_id == project_id,
                 Subdomain.cname.is_not(None),
@@ -66,12 +73,12 @@ class DashboardService:
             .order_by(Subdomain.discovered_at.desc(), Subdomain.scan_id.desc())
             .limit(_CNAME_SCAN_CAP + 1)
         )
-        rows = list((await self.session.execute(query)).scalars().all())
+        rows = list((await self.session.execute(query)).all())
         if len(rows) > _CNAME_SCAN_CAP:
             logger.warning("takeover scan capped at %d cname rows", _CNAME_SCAN_CAP)
             rows = rows[:_CNAME_SCAN_CAP]
         rows.sort(key=lambda r: (r.discovered_at, str(r.scan_id)))
-        latest: dict[tuple, Subdomain] = {}
+        latest: dict[tuple, Row] = {}
         for r in rows:
             latest[(r.target_id, r.name)] = r
 

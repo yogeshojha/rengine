@@ -10,11 +10,12 @@
 		runs: ToolRun[];
 		activeId: string | null;
 		limit?: number;
+		error?: string | null;
 		onOpen: (run: ToolRun) => void;
 		onClear: () => void;
 	}
 
-	let { runs, activeId, limit = 6, onOpen, onClear }: Props = $props();
+	let { runs, activeId, limit = 6, error = null, onOpen, onClear }: Props = $props();
 
 	const shown = $derived.by(() => {
 		const seen: Record<string, true> = {};
@@ -29,7 +30,11 @@
 	});
 </script>
 
-{#if shown.length}
+{#if !shown.length && error}
+	<div class="shrink-0 border-t p-2">
+		<p class="px-2 py-1 text-2xs text-muted-foreground">Recent runs not loaded.</p>
+	</div>
+{:else if shown.length}
 	<div class="shrink-0 border-t p-2">
 		<div class="flex items-center justify-between px-2 pb-1">
 			<p class="text-2xs font-medium tracking-wide text-muted-foreground uppercase">Recent</p>

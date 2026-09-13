@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import uuid
+
 from pydantic import Field
 
 from mcp import links
@@ -10,6 +12,7 @@ from mcp.result import ToolResult
 from mcp.tools._scope import project_for
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.definitions.dashboard import DEFAULT_WINDOW, WINDOW_DELTAS
+from shared.utils.text import counted
 
 MAX_ROWS = 30
 WINDOWS = tuple(WINDOW_DELTAS)
@@ -40,15 +43,13 @@ class WhatChanged(Tool):
     examples = ("what_changed window=7d",)
 
     async def run(self, ctx: ToolContext, args: Input) -> ToolResult:
-        import uuid as _uuid  # noqa: PLC0415
-
         from app.services.dashboard_overview import (  # noqa: PLC0415
             DashboardOverviewService,
         )
 
         window = args.window if args.window in WINDOWS else DEFAULT_WINDOW
         project_id = await project_for(
-            ctx, _uuid.UUID(args.project_id) if args.project_id else None
+            ctx, uuid.UUID(args.project_id) if args.project_id else None
         )
         overview = await DashboardOverviewService(ctx.session).overview(
             project_id, window
@@ -73,18 +74,24 @@ class WhatChanged(Tool):
 
         risk = overview.risk
         headline = (
-            f"{len(changes)} target(s) changed in the last {window}"
+            f"{counted(len(changes), 'target')} changed in the last {window}"
             if changes
             else f"Nothing new in the last {window}"
         )
 
         caveats = []
         if overview.targets_never_scanned:
-            caveats.append(f"{overview.targets_never_scanned} target(s) not scanned.")
+            caveats.append(
+                f"{counted(overview.targets_never_scanned, 'target')} not scanned."
+            )
         if overview.targets_stale:
-            caveats.append(f"{overview.targets_stale} target(s) have a stale last run.")
+            caveats.append(
+                f"{counted(overview.targets_stale, 'target')} have a stale last run."
+            )
         if overview.failed_in_window:
-            caveats.append(f"{overview.failed_in_window} run(s) failed in this window.")
+            caveats.append(
+                f"{counted(overview.failed_in_window, 'run')} failed in this window."
+            )
 
         return ToolResult(
             summary=headline,

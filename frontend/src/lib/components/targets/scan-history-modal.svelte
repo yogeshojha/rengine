@@ -1,11 +1,10 @@
 <script lang="ts">
 	import type { Target } from '$lib/types/target';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import { Separator } from '$lib/components/ui/separator';
-	import Clock from '@lucide/svelte/icons/clock';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import History from '@lucide/svelte/icons/history';
 	import CopyButton from '@/components/copy-button.svelte';
-	import * as Empty from '$lib/components/ui/empty/index.js';
+	import ScanHistoryTable from '$lib/components/scans/scan-history-table.svelte';
 
 	interface Props {
 		open: boolean;
@@ -18,38 +17,30 @@
 
 <Dialog.Root {open} {onOpenChange}>
 	<Dialog.Content
-		class="sm:max-w-[560px] gap-0 p-0 overflow-hidden"
+		class="flex max-h-[88vh] flex-col gap-0 p-0 sm:max-w-5xl"
 		onOpenAutoFocus={(e) => e.preventDefault()}
 	>
 		{#if target}
-			<div class="p-6 pb-4">
-				<div class="flex items-center gap-3">
-					<div class="flex items-center justify-center h-9 w-9 rounded-lg bg-muted">
-						<History class="h-4 w-4 text-muted-foreground" />
-					</div>
-					<div class="min-w-0 flex-1">
-						<Dialog.Title class="text-lg font-semibold">Scan history</Dialog.Title>
-						<div class="flex items-center gap-1.5 mt-0.5">
-							<code class="text-xs font-mono text-muted-foreground truncate"
-								>{target.target_value}</code
-							>
-							<CopyButton value={target.target_value} />
-						</div>
-					</div>
+			<Dialog.Header class="gap-1 border-b px-6 pt-5 pr-12 pb-4">
+				<div class="flex items-center gap-2.5">
+					<span class="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted">
+						<History class="size-4 text-muted-foreground" />
+					</span>
+					<Dialog.Title class="text-base font-semibold">Scan history</Dialog.Title>
 				</div>
-			</div>
+				<Dialog.Description class="flex items-center gap-1.5">
+					<code class="truncate font-mono text-xs">{target.target_value}</code>
+					<CopyButton value={target.target_value} />
+				</Dialog.Description>
+			</Dialog.Header>
 
-			<Separator />
-
-			<!-- TODO: implement scan history fetching & rendering -->
-			<Empty.Root>
-				<Empty.Header>
-					<Empty.Media variant="icon">
-						<Clock class="h-4 w-4 text-muted-foreground" />
-					</Empty.Media>
-					<Empty.Title>No scans</Empty.Title>
-				</Empty.Header>
-			</Empty.Root>
+			<ScrollArea
+				class="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(88vh-7rem)]"
+			>
+				<div class="p-4">
+					<ScanHistoryTable targetId={target.id} />
+				</div>
+			</ScrollArea>
 		{/if}
 	</Dialog.Content>
 </Dialog.Root>

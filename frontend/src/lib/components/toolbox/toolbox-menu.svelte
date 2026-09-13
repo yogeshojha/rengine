@@ -16,7 +16,7 @@
 
 <svelte:window onkeydown={onKeydown} />
 
-<Hint text="Toolbox (⌘⇧K)">
+<Hint text="Toolbox · ⌘⇧K">
 	{#snippet child(hintProps)}
 		<span {...hintProps} class="inline-flex">
 			<Button variant="ghost" size="icon" onclick={() => (open = true)}>

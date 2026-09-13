@@ -33,6 +33,7 @@ from shared.definitions.software import (
 from shared.definitions.software import (
     VERSION_SOURCE_LABELS,
 )
+from shared.definitions.surface import SURFACE_NOUN, SurfaceDimension
 from shared.definitions.threat_intel import SIGNAL_ORDER
 from shared.definitions.vulnerabilities import (
     PROTOCOLS,
@@ -1060,8 +1061,8 @@ class QueryRegistry:
 
 HOST_QUERY = QueryRegistry(
     key="host",
-    noun="host",
-    noun_plural="hosts",
+    noun=SURFACE_NOUN[SurfaceDimension.WEB_ASSETS.value][0],
+    noun_plural=SURFACE_NOUN[SurfaceDimension.WEB_ASSETS.value][1],
     fields=FIELDS,
     flags=FLAGS,
     groups=GROUPS,
@@ -1393,8 +1394,8 @@ IP_EXAMPLES: tuple[QueryExample, ...] = (
 
 IP_QUERY = QueryRegistry(
     key="ip",
-    noun="address",
-    noun_plural="addresses",
+    noun=SURFACE_NOUN[SurfaceDimension.IPS.value][0],
+    noun_plural=SURFACE_NOUN[SurfaceDimension.IPS.value][1],
     fields=IP_FIELDS,
     flags=IP_FLAGS,
     groups=IP_GROUPS,
@@ -1769,8 +1770,8 @@ SERVICE_EXAMPLES: tuple[QueryExample, ...] = (
 
 SERVICE_QUERY = QueryRegistry(
     key="service",
-    noun="service",
-    noun_plural="services",
+    noun=SURFACE_NOUN[SurfaceDimension.SERVICES.value][0],
+    noun_plural=SURFACE_NOUN[SurfaceDimension.SERVICES.value][1],
     fields=SERVICE_FIELDS,
     flags=SERVICE_FLAGS,
     groups=SERVICE_GROUPS,
@@ -2263,8 +2264,8 @@ VULN_EXAMPLES: tuple[QueryExample, ...] = (
 
 VULN_QUERY = QueryRegistry(
     key="vulnerability",
-    noun="finding",
-    noun_plural="findings",
+    noun=SURFACE_NOUN[SurfaceDimension.VULNERABILITIES.value][0],
+    noun_plural=SURFACE_NOUN[SurfaceDimension.VULNERABILITIES.value][1],
     fields=VULN_FIELDS,
     flags=VULN_FLAGS,
     groups=VULN_GROUPS,
@@ -2722,8 +2723,8 @@ ENDPOINT_EXAMPLES: tuple[QueryExample, ...] = (
 
 ENDPOINT_QUERY = QueryRegistry(
     key="endpoint",
-    noun="endpoint",
-    noun_plural="endpoints",
+    noun=SURFACE_NOUN[SurfaceDimension.ENDPOINTS.value][0],
+    noun_plural=SURFACE_NOUN[SurfaceDimension.ENDPOINTS.value][1],
     fields=ENDPOINT_FIELDS,
     flags=ENDPOINT_FLAGS,
     groups=ENDPOINT_GROUPS,
@@ -3034,8 +3035,8 @@ SOFTWARE_EXAMPLES: tuple[QueryExample, ...] = (
 
 SOFTWARE_QUERY = QueryRegistry(
     key="software",
-    noun="software CVE",
-    noun_plural="software CVEs",
+    noun=SURFACE_NOUN[SurfaceDimension.SOFTWARE.value][0],
+    noun_plural=SURFACE_NOUN[SurfaceDimension.SOFTWARE.value][1],
     fields=SOFTWARE_FIELDS,
     flags=SOFTWARE_FLAGS,
     groups=SOFTWARE_GROUPS,

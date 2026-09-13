@@ -34,10 +34,18 @@
 		serviceClassLabel
 	} from '$lib/config/service-classes';
 	import type { ServiceRead } from '$lib/utilities/services';
-	import { ACTIONS_BODY, ACTIONS_PIN, pinTone, rowTone, type TableColumn } from '../table/columns';
+	import {
+		ACTIONS_BODY,
+		ACTIONS_PIN,
+		columnCell,
+		pinTone,
+		rowTone,
+		type TableColumn
+	} from '../table/columns';
 	import RecheckChip from '../recheck-chip.svelte';
 	import type { Recheck } from '$lib/types/recheck';
 	import { SERVICE_LEAD_COLUMNS } from './columns';
+	import { hostPort } from '$lib/utilities/net';
 
 	interface Props {
 		service: ServiceRead;
@@ -76,7 +84,7 @@
 	const MAX_HOSTS = 3;
 
 	let hosts = $derived(s.hosts ?? []);
-	let endpoint = $derived(`${s.ip}:${s.port}`);
+	let endpoint = $derived(hostPort(s.ip, s.port));
 	let passive = $derived(s.source === PortSource.INTERNETDB);
 	let software = $derived(s.product ? (s.version ? `${s.product} ${s.version}` : s.product) : null);
 	let tone = $derived(rowTone(selected || checked, focused));
@@ -299,12 +307,7 @@
 	</div>
 
 	{#each columns as col (col.key)}
-		<div
-			class="hidden sm:flex {col.grow ? 'min-w-0 flex-1' : 'shrink-0'} {col.width} {col.align ===
-			'right'
-				? 'justify-end'
-				: ''}"
-		>
+		<div class={columnCell(col)}>
 			{#if col.key === 'target'}
 				<TargetCell value={s.target_value} {onFilter} />
 			{:else if col.key === 'hosts'}

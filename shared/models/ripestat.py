@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 
+from sqlalchemy import BigInteger
 from sqlmodel import Field, Index, SQLModel, UniqueConstraint
 
 from shared.utils.datetime import utc_now
@@ -31,7 +32,7 @@ class RIPEStatAnnouncedPrefix(SQLModel, table=True):
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    asn: int
+    asn: int = Field(sa_type=BigInteger)
     prefix: str
     ip_version: int = Field(default=4)
     first_seen: datetime | None = None
@@ -47,8 +48,8 @@ class RIPEStatASNNeighbour(SQLModel, table=True):
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    asn: int
-    neighbour_asn: int
+    asn: int = Field(sa_type=BigInteger)
+    neighbour_asn: int = Field(sa_type=BigInteger)
     relationship: str
     power: int = Field(default=0)
     queried_at: datetime = Field(default_factory=utc_now)
@@ -62,7 +63,7 @@ class RIPEStatASOverview(SQLModel, table=True):
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    asn: int = Field(index=True)
+    asn: int = Field(index=True, sa_type=BigInteger)
     holder: str = Field(default="")
     rir: str | None = None
     announced: bool = Field(default=False)
@@ -82,7 +83,7 @@ class RIPEStatNetworkInfo(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     ip: str
     prefix: str = Field(default="")
-    asn: int = Field(default=0)
+    asn: int = Field(default=0, sa_type=BigInteger)
     queried_at: datetime = Field(default_factory=utc_now)
 
 
@@ -106,7 +107,7 @@ class RIPEStatPrefixOverview(SQLModel, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     prefix: str
-    asn: int
+    asn: int = Field(sa_type=BigInteger)
     holder: str = Field(default="")
     is_announced: bool = Field(default=True)
     queried_at: datetime = Field(default_factory=utc_now)
@@ -123,5 +124,5 @@ class RIPEStatRelatedPrefix(SQLModel, table=True):
     prefix: str
     related_prefix: str
     relationship: str
-    origin_asn: int | None = None
+    origin_asn: int | None = Field(default=None, sa_type=BigInteger)
     queried_at: datetime = Field(default_factory=utc_now)

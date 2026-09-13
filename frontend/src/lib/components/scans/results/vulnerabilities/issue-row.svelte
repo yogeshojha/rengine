@@ -31,7 +31,14 @@
 		VULN_STATE_LABELS,
 		VulnState
 	} from '$lib/config/vulnerabilities';
-	import { ACTIONS_BODY, ACTIONS_PIN, pinTone, rowTone, type TableColumn } from '../table/columns';
+	import {
+		ACTIONS_BODY,
+		ACTIONS_PIN,
+		columnCell,
+		pinTone,
+		rowTone,
+		type TableColumn
+	} from '../table/columns';
 	import { ISSUE_LEAD_COLUMNS } from './columns';
 
 	interface Props {
@@ -257,12 +264,7 @@
 	</div>
 
 	{#each columns as col (col.key)}
-		<div
-			class="hidden sm:flex {col.grow ? 'min-w-0 flex-1' : 'shrink-0'} {col.width} {col.align ===
-			'right'
-				? 'justify-end'
-				: ''}"
-		>
+		<div class={columnCell(col)}>
 			{#if col.key === 'affected'}
 				<div class="flex min-w-0 flex-col gap-1">
 					<span class="text-xs leading-5">

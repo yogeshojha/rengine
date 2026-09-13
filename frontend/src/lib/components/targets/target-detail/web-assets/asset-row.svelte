@@ -49,7 +49,7 @@
 	let scanHref = $derived(
 		ROUTES.scanTab(asset.last_scan_id, WEB.tab, { [WEB.queryParam]: `host:${asset.name}` })
 	);
-	let url = $derived(`http${asset.status_code ? 's' : ''}://${asset.name}`);
+	let url = $derived(`https://${asset.name}`);
 	const width = (key: string) => columns.find((c) => c.key === key)?.width ?? '';
 	const grow = (key: string) =>
 		columns.find((c) => c.key === key)?.grow ? 'min-w-0 flex-1' : 'shrink-0';
@@ -74,7 +74,7 @@
 			{#if asset.is_new}
 				<Hint text="First seen in the latest scan">
 					{#snippet child(props)}
-						<span {...props} class="flex h-5 shrink-0 items-center text-success">
+						<span {...props} class="flex h-5 shrink-0 items-center text-info">
 							<Sparkles class="size-3.5" />
 						</span>
 					{/snippet}
@@ -241,8 +241,12 @@
 					{/snippet}
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content align="end" class="w-56">
-					<DropdownMenu.Item onclick={() => window.open(scanHref, '_self')}>
-						<ExternalLink class="mr-2 size-3.5" /> Open in scan
+					<DropdownMenu.Item>
+						{#snippet child({ props })}
+							<a {...props} href={scanHref}>
+								<ExternalLink class="mr-2 size-3.5" /> Open in scan
+							</a>
+						{/snippet}
 					</DropdownMenu.Item>
 					<DropdownMenu.Item onclick={copyHost}>
 						<Copy class="mr-2 size-3.5" /> Copy host

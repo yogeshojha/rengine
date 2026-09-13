@@ -580,15 +580,6 @@ export function locationTokensFromUrl(url: string): string | null {
 	}
 }
 
-export function endpointLabel(e: EndpointRead): string {
-	if (e.path === '/') return '/';
-	return e.filename ?? e.path;
-}
-
-export function paramSuffix(e: EndpointRead): string {
-	return e.param_count ? `?${e.params.join('&')}` : '';
-}
-
 export interface StructureFinding {
 	kind: string;
 	label: string;

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as RadioGroup from '$lib/components/ui/radio-group';
 	import { Input } from '$lib/components/ui/input';
@@ -34,10 +35,19 @@
 	let selected = $state('');
 
 	$effect(() => {
-		if (open) {
+		if (!open) return;
+		untrack(() => {
 			name = '';
 			selected = initialPreset ?? presets[0]?.name ?? '';
-		}
+		});
+	});
+
+	$effect(() => {
+		const first = presets[0]?.name;
+		if (!open || !first) return;
+		untrack(() => {
+			if (!selected) selected = initialPreset ?? first;
+		});
 	});
 
 	const preset = $derived(presets.find((p) => p.name === selected));

@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from shared.logging import get_logger
+from shared.services.scan_resolve import redact_command
 from tools.nuclei.parser import Finding, parse_finding
 from tools.runner import CLIToolRunner, ToolNotFoundError
 from tools.runner.models import CommandRecorder
@@ -346,8 +347,10 @@ class NucleiClient:
         )
 
     def _command(self, targets: list[str]) -> str:
-        return " ".join(
-            [NUCLEI_BINARY, "-list", f"<{len(targets)} targets>", *self.args()]
+        return redact_command(
+            " ".join(
+                [NUCLEI_BINARY, "-list", f"<{len(targets)} targets>", *self.args()]
+            )
         )
 
     @staticmethod
@@ -381,7 +384,3 @@ def write_template_list(paths: list[str]) -> Path:
     with os.fdopen(descriptor, "w") as handle:
         handle.write("\n".join(paths) + "\n")
     return Path(name)
-
-
-def iter_findings(run: NucleiRun) -> Iterator[Finding]:
-    yield from run.findings

@@ -12,6 +12,7 @@ from shared.definitions.mode_features import VALID_MODES, capabilities_for
 from shared.enums.instance import AIProvider
 from shared.http import get_async_client
 from shared.models.instance_settings import (
+    SINGLETON_KEY,
     InstanceSettings,
     InstanceSettingsRead,
     InstanceSettingsUpdate,
@@ -20,7 +21,6 @@ from shared.services.scan_resolve import MASK
 from shared.utils.datetime import utc_now
 from shared.utils.net import validate_public_https_url
 
-_SINGLETON_KEY = "instance"
 _TEST_TIMEOUT = 10
 _OPENAI_BASE = "https://api.openai.com"
 _ANTHROPIC_BASE = "https://api.anthropic.com"
@@ -30,12 +30,13 @@ _GOOGLE_BASE = "https://generativelanguage.googleapis.com"
 _HTTP_OK = 200
 _HTTP_UNAUTHORIZED = 401
 _VALID_AI_PROVIDERS = frozenset(p.value for p in AIProvider)
+_TAIL = 4
 
 
 def _mask_ai_key(key: str) -> str:
-    if len(key) <= 4:  # noqa: PLR2004
+    if len(key) <= _TAIL:
         return MASK
-    return f"{MASK}{key[-4:]}"
+    return f"{MASK}{key[-_TAIL:]}"
 
 
 def _validate_public_https_url(raw: str) -> str:
@@ -50,12 +51,12 @@ class InstanceSettingsService:
     async def get_or_create(self) -> InstanceSettings:
         result = await self.session.execute(
             select(InstanceSettings).where(
-                InstanceSettings.singleton_key == _SINGLETON_KEY
+                InstanceSettings.singleton_key == SINGLETON_KEY
             )
         )
         settings = result.scalar_one_or_none()
         if settings is None:
-            settings = InstanceSettings(singleton_key=_SINGLETON_KEY)
+            settings = InstanceSettings(singleton_key=SINGLETON_KEY)
             self.session.add(settings)
             try:
                 await self.session.commit()
@@ -64,7 +65,7 @@ class InstanceSettingsService:
                 await self.session.rollback()
                 result = await self.session.execute(
                     select(InstanceSettings).where(
-                        InstanceSettings.singleton_key == _SINGLETON_KEY
+                        InstanceSettings.singleton_key == SINGLETON_KEY
                     )
                 )
                 settings = result.scalar_one()
@@ -137,7 +138,7 @@ class InstanceSettingsService:
         if data.ai_features is not None:
             settings.ai_features = dict(data.ai_features)
 
-        if data.ai_api_key is not None and data.ai_api_key != MASK:
+        if data.ai_api_key is not None and MASK not in data.ai_api_key:
             settings.ai_api_key_encrypted = (
                 encrypt_secret(data.ai_api_key) if data.ai_api_key else None
             )
@@ -150,7 +151,7 @@ class InstanceSettingsService:
     async def test_ai(
         self, provider: str, model: str | None, api_key: str | None
     ) -> dict:
-        if not api_key or api_key == MASK:
+        if not api_key or MASK in api_key:
             api_key = try_decrypt((await self.get_or_create()).ai_api_key_encrypted)
         if not api_key:
             return {"success": False, "message": "No API key provided."}

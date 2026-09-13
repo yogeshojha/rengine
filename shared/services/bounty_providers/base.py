@@ -58,7 +58,7 @@ def api_key_row(session: Session, provider: APIProvider) -> APIKey | None:
     return session.execute(
         select(APIKey).where(
             APIKey.provider == provider,
-            APIKey.is_enabled == True,  # noqa: E712
+            APIKey.is_enabled.is_(True),
         )
     ).scalar_one_or_none()
 

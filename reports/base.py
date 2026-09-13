@@ -18,20 +18,6 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class Counters:
-    figure: int = 0
-    table: int = 0
-
-    def next_figure(self) -> int:
-        self.figure += 1
-        return self.figure
-
-    def next_table(self) -> int:
-        self.table += 1
-        return self.table
-
-
-@dataclass
 class RenderContext:
     spec: ReportSpec
     theme: ThemeTokens
@@ -39,7 +25,6 @@ class RenderContext:
     brief: ReportBrief
     narrator: Narrator
     now: datetime
-    counters: Counters = field(default_factory=Counters)
     preview: bool = False
     warnings: list[str] = field(default_factory=list)
 
@@ -77,18 +62,6 @@ class RenderContext:
             self.warnings.append(message)
 
 
-@dataclass
-class SectionOutput:
-    """What one section contributes to the document."""
-
-    html: str
-    title: str = ""
-    in_toc: bool = True
-    anchor: str = ""
-    page_break: str = "auto"
-    bookmarks: list[tuple[str, str]] = field(default_factory=list)
-
-
 class Section(ABC):
     name: ClassVar[str]
     title: ClassVar[str]
@@ -108,14 +81,6 @@ class Section(ABC):
     @classmethod
     def template_name(cls) -> str:
         return cls.template or f"{cls.name}/section.html"
-
-    @classmethod
-    def defaults(cls) -> dict:
-        return cls.config_model().model_dump()
-
-    @classmethod
-    def schema(cls) -> dict:
-        return cls.config_model.model_json_schema()
 
     def available(self, ctx: RenderContext) -> bool:
         return not self.requires or bool(self.requires & ctx.data.covered_dimensions)

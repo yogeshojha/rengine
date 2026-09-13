@@ -37,7 +37,7 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { proxiesStore } from '$lib/stores/proxies.svelte';
 	import { scanContextsApi } from '$lib/api/scan-contexts';
-	import { ROUTES } from '$lib/config/routes';
+	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
 
@@ -119,7 +119,7 @@
 	);
 
 	$effect(() => {
-		if (!proxiesStore.hasFetched) proxiesStore.fetch();
+		if (!proxiesStore.hasFetched) untrack(() => proxiesStore.fetch());
 	});
 
 	$effect(() => {
@@ -348,6 +348,8 @@
 		}
 	}
 </script>
+
+<svelte:head><title>{loaded?.name ?? routeLabels.contexts} · reNgine</title></svelte:head>
 
 {#snippet form()}
 	<section class="form">

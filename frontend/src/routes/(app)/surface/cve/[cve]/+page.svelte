@@ -24,12 +24,11 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import { BAND_LABELS } from '$lib/config/threat-intel';
-	import { formatShortDate, relativeTimeLong } from '$lib/utilities/dates';
+	import { formatShortDate, MS_PER_DAY, relativeTimeLong } from '$lib/utilities/dates';
 	import type { CveExposure } from '$lib/types/cve';
 
 	const NVD = 'https://nvd.nist.gov/vuln/detail/';
 	const DESCRIPTION_CLAMP = 280;
-	const DAY_MS = 86_400_000;
 
 	let cve = $derived(decodeURIComponent(page.params.cve ?? '').toUpperCase());
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
@@ -66,7 +65,8 @@
 	let affected = $derived((report?.assets ?? 0) > 0);
 	let dwellDays = $derived.by(() => {
 		if (!report?.first_seen) return null;
-		return Math.max(0, Math.floor((Date.now() - new Date(report.first_seen).getTime()) / DAY_MS));
+		const since = Date.now() - new Date(report.first_seen).getTime();
+		return Math.max(0, Math.floor(since / MS_PER_DAY));
 	});
 	let description = $derived(report?.description?.trim() ?? '');
 	let clamped = $derived(description.length > DESCRIPTION_CLAMP && !showDescription);
@@ -81,6 +81,8 @@
 	let plural = (n: number, one: string, many: string) =>
 		`${n.toLocaleString()} ${n === 1 ? one : many}`;
 </script>
+
+<svelte:head><title>{cve || routeLabels.cves} · reNgine</title></svelte:head>
 
 <div class="space-y-6">
 	<a

@@ -19,7 +19,8 @@ import {
 	querySchema,
 	serviceQuerySchema,
 	vulnQuerySchema,
-	endpointQuerySchema
+	endpointQuerySchema,
+	softwareQuerySchema
 } from './query-schema.svelte';
 import { dashboardStore } from '$lib/stores/dashboard.svelte';
 import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
@@ -35,6 +36,7 @@ import { exportsStore } from '$lib/stores/exports.svelte';
 import { reports } from '$lib/stores/reports.svelte';
 import { reportCatalog } from '$lib/stores/report-catalog.svelte';
 import { interestCatalog } from '$lib/stores/interest-catalog.svelte';
+import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
 import { surfaceStore } from '$lib/stores/surface.svelte';
 import { ai } from '$lib/stores/ai.svelte';
 import { mcp } from '$lib/stores/mcp.svelte';
@@ -118,6 +120,7 @@ function createAuthStore() {
 		serviceQuerySchema.reset();
 		vulnQuerySchema.reset();
 		endpointQuerySchema.reset();
+		softwareQuerySchema.reset();
 		dashboardStore.clear();
 		breadcrumbStore.clear();
 		activityScope.clear();
@@ -130,6 +133,7 @@ function createAuthStore() {
 		exportsStore.reset();
 		reportCatalog.reset();
 		interestCatalog.reset();
+		bountyVocabulary.reset();
 		surfaceStore.reset();
 		ai.reset();
 		mcp.reset();

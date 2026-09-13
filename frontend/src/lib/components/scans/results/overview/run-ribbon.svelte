@@ -15,7 +15,7 @@
 		durationLabel,
 		durationText,
 		formatSeconds,
-		isLiveStatus
+		isOpenStatus
 	} from '$lib/utilities/scan-status';
 	import { plannedStages, stageRows } from '$lib/utilities/scan-progress';
 	import type { StageStepState } from '$lib/utilities/scan-progress';
@@ -55,12 +55,16 @@
 	const FALLBACK_SECONDS = 30;
 	const INSIGHT_SHARE = 0.5;
 	const MIN_METER = 4;
-	const FILL: Record<'done' | 'running' | 'failed' | 'stopped' | 'partial' | 'pending', string> = {
+	const FILL: Record<
+		'done' | 'running' | 'failed' | 'stopped' | 'partial' | 'paused' | 'pending',
+		string
+	> = {
 		done: 'var(--success)',
 		running: 'var(--info)',
 		failed: 'var(--destructive)',
 		stopped: 'var(--warning)',
 		partial: 'var(--warning)',
+		paused: 'color-mix(in oklch, var(--muted-foreground) 55%, transparent)',
 		pending: 'color-mix(in oklch, var(--muted-foreground) 25%, transparent)'
 	};
 	const fmtTime = (iso: string) =>
@@ -72,6 +76,7 @@
 		state: StageStepState;
 		stopped: boolean;
 		degraded: boolean;
+		paused: boolean;
 		seconds: number | null;
 		weight: number;
 		fill: string;
@@ -81,7 +86,7 @@
 		error: string | null;
 	}
 
-	let live = $derived(isLiveStatus(scan.status));
+	let unfinished = $derived(isOpenStatus(scan.status));
 	let planned = $derived(plannedStages(scan, catalog));
 	let byName = $derived(new Map(activities.map((a) => [a.name, a])));
 	let rows = $derived(stageRows(planned, activities, run));
@@ -104,12 +109,13 @@
 		const pendingCount = measured.length - known.length;
 		const average = known.length ? spent / known.length : FALLBACK_SECONDS;
 		const remaining = previousDuration != null ? Math.max(0, previousDuration - spent) : 0;
-		const estimate = live ? (remaining > 0 ? remaining / pendingCount : average) : 0;
+		const estimate = unfinished ? (remaining > 0 ? remaining / pendingCount : average) : 0;
 		const total = spent + estimate * pendingCount;
 		const floor = total > 0 ? total * FLOOR_SHARE : 1;
 		return measured.map(({ r, a, seconds }) => {
 			const stopped = a?.status === 'aborted';
 			const degraded = a?.status === 'partial';
+			const paused = r.state === 'paused';
 			const fill =
 				r.state === 'failed'
 					? stopped
@@ -124,6 +130,7 @@
 				state: r.state,
 				stopped,
 				degraded,
+				paused,
 				seconds,
 				weight: Math.max(floor, seconds ?? estimate),
 				fill,
@@ -195,7 +202,8 @@
 		const parts = [s.title];
 		if (s.startedAt) parts.push(fmtTime(s.startedAt));
 		if (s.state === 'running') parts.push(`running ${formatSeconds(s.seconds ?? 0)}`);
-		else if (s.state === 'pending') parts.push(live ? 'queued' : 'did not run');
+		else if (s.paused) parts.push(`${durationText(s.seconds)} · paused`);
+		else if (s.state === 'pending') parts.push(unfinished ? 'queued' : 'did not run');
 		else if (s.state === 'failed') parts.push(s.stopped ? 'stopped' : 'failed');
 		else if (s.degraded) parts.push(`${durationText(s.seconds)} · partial`);
 		else parts.push(durationText(s.seconds));
@@ -330,8 +338,10 @@
 									>
 										{#if s.state === 'running'}
 											{formatSeconds(s.seconds ?? 0)}
+										{:else if s.paused}
+											{durationText(s.seconds)}
 										{:else if s.state === 'pending'}
-											{live ? 'Queued' : '—'}
+											{unfinished ? 'Queued' : '—'}
 										{:else}
 											{durationText(s.seconds)}
 										{/if}

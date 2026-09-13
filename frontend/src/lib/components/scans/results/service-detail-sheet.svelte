@@ -1,9 +1,5 @@
-<script module lang="ts">
-	const ROW = 'grid grid-cols-[8.5rem_1fr] items-start gap-3 py-2';
-	const DT = 'pt-0.5 text-xs text-muted-foreground';
-</script>
-
 <script lang="ts">
+	import { SHEET_ROW, SHEET_DT, sheetStep } from './sheet';
 	import Network from '@lucide/svelte/icons/network';
 	import NoteSection from '$lib/components/notes/note-section.svelte';
 	import { SurfaceDimension } from '$lib/config/surface';
@@ -37,6 +33,7 @@
 		serviceClassLabel
 	} from '$lib/config/service-classes';
 	import { writeClipboard } from '$lib/utilities/clipboard';
+	import { hostPort } from '$lib/utilities/net';
 	import CountryFlag from './country-flag.svelte';
 	import TechIcon from './tech-icon.svelte';
 	import ServiceIcon from './services/service-icon.svelte';
@@ -69,7 +66,7 @@
 
 	let contentEl = $state<HTMLElement | null>(null);
 	let position = $derived(pageOffset + index + 1);
-	let endpoint = $derived(s ? `${s.ip}:${s.port}` : '');
+	let endpoint = $derived(s ? hostPort(s.ip, s.port) : '');
 	let network = $derived(
 		s ? [s.asn ? `AS${s.asn}` : null, s.asn_org].filter(Boolean).join(' · ') : ''
 	);
@@ -78,21 +75,9 @@
 	function copy(text: string) {
 		writeClipboard(text);
 	}
-	function onKey(e: KeyboardEvent) {
-		if (!open || e.metaKey || e.ctrlKey || e.altKey) return;
-		const t = e.target as HTMLElement | null;
-		if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
-		if (e.key === 'ArrowDown' || e.key === 'j') {
-			e.preventDefault();
-			onStep?.(1);
-		} else if (e.key === 'ArrowUp' || e.key === 'k') {
-			e.preventDefault();
-			onStep?.(-1);
-		}
-	}
 </script>
 
-<svelte:window onkeydown={onKey} />
+<svelte:window onkeydown={(e) => sheetStep(e, open, onStep)} />
 
 <Sheet.Root {open} {onOpenChange}>
 	<Sheet.Content
@@ -211,14 +196,14 @@
 					<section class="flex flex-col gap-2">
 						{@render heading(Plug, 'Service')}
 						<dl class="flex flex-col divide-y divide-border/60">
-							<div class={ROW}>
-								<dt class={DT}>Port</dt>
+							<div class={SHEET_ROW}>
+								<dt class={SHEET_DT}>Port</dt>
 								<dd class="flex flex-wrap items-center gap-1">
 									{@render chip(String(s.port), `port:${s.port}`, 'Filter to this port', true)}
 								</dd>
 							</div>
-							<div class={ROW}>
-								<dt class={DT}>Service</dt>
+							<div class={SHEET_ROW}>
+								<dt class={SHEET_DT}>Service</dt>
 								<dd class="flex flex-wrap items-center gap-1">
 									{#if s.service_name}
 										{@render chip(
@@ -233,8 +218,8 @@
 								</dd>
 							</div>
 							{#if s.description}
-								<div class={ROW}>
-									<dt class={DT}>Description</dt>
+								<div class={SHEET_ROW}>
+									<dt class={SHEET_DT}>Description</dt>
 									<dd class="flex flex-col gap-0.5">
 										<span class="text-sm">{s.description}</span>
 										{#if s.registered}
@@ -245,8 +230,8 @@
 									</dd>
 								</div>
 							{/if}
-							<div class={ROW}>
-								<dt class={DT}>Class</dt>
+							<div class={SHEET_ROW}>
+								<dt class={SHEET_DT}>Class</dt>
 								<dd class="flex flex-wrap items-center gap-1.5">
 									<ClassIcon class="size-3.5 shrink-0 text-muted-foreground" />
 									{@render chip(
@@ -257,8 +242,8 @@
 								</dd>
 							</div>
 							{#if s.product}
-								<div class={ROW}>
-									<dt class={DT}>Software</dt>
+								<div class={SHEET_ROW}>
+									<dt class={SHEET_DT}>Software</dt>
 									<dd class="flex flex-wrap items-center gap-1">
 										<TechIcon name={productBrand(s.product)} class="size-3.5 shrink-0" />
 										{@render chip(
@@ -269,8 +254,8 @@
 									</dd>
 								</div>
 							{/if}
-							<div class={ROW}>
-								<dt class={DT}>Evidence</dt>
+							<div class={SHEET_ROW}>
+								<dt class={SHEET_DT}>Evidence</dt>
 								<dd class="flex flex-col gap-1">
 									{@render chip(
 										PORT_SOURCE_LABELS[s.source] ?? s.source,
@@ -283,8 +268,8 @@
 								</dd>
 							</div>
 							{#if s.banner}
-								<div class={ROW}>
-									<dt class={DT}>Banner</dt>
+								<div class={SHEET_ROW}>
+									<dt class={SHEET_DT}>Banner</dt>
 									<dd>
 										<CodeBlock code={s.banner} label="Banner" maxHeight="10rem" maxLines={0} />
 									</dd>
@@ -298,8 +283,8 @@
 							{@render heading(Globe, 'Web service')}
 							<dl class="flex flex-col divide-y divide-border/60">
 								{#if s.status_code != null}
-									<div class={ROW}>
-										<dt class={DT}>Status</dt>
+									<div class={SHEET_ROW}>
+										<dt class={SHEET_DT}>Status</dt>
 										<dd>
 											<button
 												type="button"
@@ -314,14 +299,14 @@
 									</div>
 								{/if}
 								{#if s.title}
-									<div class={ROW}>
-										<dt class={DT}>Title</dt>
+									<div class={SHEET_ROW}>
+										<dt class={SHEET_DT}>Title</dt>
 										<dd class="text-sm break-words">{s.title}</dd>
 									</div>
 								{/if}
 								{#if s.url}
-									<div class={ROW}>
-										<dt class={DT}>URL</dt>
+									<div class={SHEET_ROW}>
+										<dt class={SHEET_DT}>URL</dt>
 										<dd>
 											<a
 												href={s.url}
@@ -336,8 +321,8 @@
 									</div>
 								{/if}
 								{#if s.web_count > 1}
-									<div class={ROW}>
-										<dt class={DT}>Hostnames served</dt>
+									<div class={SHEET_ROW}>
+										<dt class={SHEET_DT}>Hostnames served</dt>
 										<dd class="text-sm tabular-nums">{s.web_count}</dd>
 									</div>
 								{/if}
@@ -348,8 +333,8 @@
 					<section class="flex flex-col gap-2">
 						{@render heading(Network, 'Address')}
 						<dl class="flex flex-col divide-y divide-border/60">
-							<div class={ROW}>
-								<dt class={DT}>Address</dt>
+							<div class={SHEET_ROW}>
+								<dt class={SHEET_DT}>Address</dt>
 								<dd class="flex flex-wrap items-center gap-1">
 									{@render chip(s.ip, filterToken('ip', s.ip), 'Filter to this address', true)}
 									<Button
@@ -362,8 +347,8 @@
 									</Button>
 								</dd>
 							</div>
-							<div class={ROW}>
-								<dt class={DT}>Autonomous system</dt>
+							<div class={SHEET_ROW}>
+								<dt class={SHEET_DT}>Autonomous system</dt>
 								<dd class="flex flex-wrap items-center gap-1">
 									{#if s.asn}
 										{@render chip(
@@ -377,8 +362,8 @@
 								</dd>
 							</div>
 							{#if s.country}
-								<div class={ROW}>
-									<dt class={DT}>Country</dt>
+								<div class={SHEET_ROW}>
+									<dt class={SHEET_DT}>Country</dt>
 									<dd>
 										{@render chip(
 											s.country,
@@ -391,14 +376,14 @@
 								</div>
 							{/if}
 							{#if s.prefix}
-								<div class={ROW}>
-									<dt class={DT}>Prefix</dt>
+								<div class={SHEET_ROW}>
+									<dt class={SHEET_DT}>Prefix</dt>
 									<dd class="font-mono text-xs">{s.prefix}</dd>
 								</div>
 							{/if}
 							{#if s.scan_policy}
-								<div class={ROW}>
-									<dt class={DT}>Scan coverage</dt>
+								<div class={SHEET_ROW}>
+									<dt class={SHEET_DT}>Scan coverage</dt>
 									<dd class="text-sm">{SCAN_POLICY_LABELS[s.scan_policy] ?? s.scan_policy}</dd>
 								</div>
 							{/if}
@@ -444,8 +429,8 @@
 								targetId: s.target_id,
 								scanId: s.scan_id,
 								dimension: SurfaceDimension.SERVICES,
-								assetKey: `${s.ip}:${s.port}`,
-								assetLabel: `${s.ip}:${s.port}`
+								assetKey: hostPort(s.ip, s.port),
+								assetLabel: hostPort(s.ip, s.port)
 							}}
 						/>
 					{/if}

@@ -19,6 +19,7 @@ from shared.models.subdomain import Subdomain
 
 from .ast import Node, positive_compares, positive_terms
 from .scope import QueryScope, ScopeLike
+from .values import like
 
 MAX_PROBES = 4
 _WHITESPACE = re.compile(r"\s+")
@@ -149,7 +150,7 @@ async def _asset_evidence(
         by_host.setdefault(row.name, []).append(row)
     hosts = list(by_host)
     for probe in wanted:
-        pattern = f"%{probe.term}%"
+        pattern = like(probe.term)
         result = await session.execute(
             _ASSET_SQL,
             {

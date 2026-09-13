@@ -105,7 +105,8 @@ export enum FolderGlyph {
 	ADMIN = 'admin',
 	SENSITIVE = 'sensitive',
 	API = 'api',
-	AUTH = 'auth'
+	AUTH = 'auth',
+	GROUP = 'group'
 }
 
 export const FOLDER_GLYPH_ICONS: Record<string, IconComponent> = {
@@ -114,7 +115,7 @@ export const FOLDER_GLYPH_ICONS: Record<string, IconComponent> = {
 	[FolderGlyph.SENSITIVE]: FolderLock,
 	[FolderGlyph.API]: FolderCode,
 	[FolderGlyph.AUTH]: FolderKey,
-	group: Folders
+	[FolderGlyph.GROUP]: Folders
 };
 
 export const FOLDER_OPEN_ICON: IconComponent = FolderOpen;
@@ -125,7 +126,7 @@ export const FOLDER_GLYPH_TONE: Record<string, string> = {
 	[FolderGlyph.SENSITIVE]: 'text-destructive',
 	[FolderGlyph.API]: 'text-chart-2',
 	[FolderGlyph.AUTH]: 'text-warning',
-	group: 'text-muted-foreground'
+	[FolderGlyph.GROUP]: 'text-muted-foreground'
 };
 
 export const FOLDER_GLYPH_LABELS: Record<string, string> = {
@@ -134,7 +135,7 @@ export const FOLDER_GLYPH_LABELS: Record<string, string> = {
 	[FolderGlyph.SENSITIVE]: 'Holds a credential, backup or version control file',
 	[FolderGlyph.API]: 'Mostly API routes',
 	[FolderGlyph.AUTH]: 'Holds an authentication boundary',
-	group: 'Folders that share one layout'
+	[FolderGlyph.GROUP]: 'Folders that share one layout'
 };
 
 export const ENDPOINT_CLASS_TONE: Record<string, string> = {
@@ -308,15 +309,15 @@ export const INTEREST_HELP: Record<string, string> = {
 	open_redirect: 'Carries a destination the application redirects to.',
 	ssrf: 'Carries a location the server fetches server-side.',
 	traversal: 'Carries a file or path the server reads.',
-	sqli: 'Commonly reaches a query directly.',
-	xss: 'Commonly reflected into the page.',
+	sqli: 'Reaches a database query.',
+	xss: 'Reflected into the page.',
 	rce: 'Names a command or process the server runs.',
 	ssti: 'Names a template the server renders.',
 	upload: 'Carries a file name or upload target.',
 	debug: 'Switches on diagnostic behaviour.',
 	vcs: 'A version control directory served over HTTP.',
 	secrets: 'A file that conventionally holds credentials or keys.',
-	backup: 'An editor or backup artefact left in the web root.',
+	backup: 'A backup or editor file in the web root.',
 	admin: 'An administrative interface reachable from the internet.',
 	api_doc: 'A machine-readable description of the API surface.',
 	debug_endpoint: 'A diagnostic route.',
@@ -359,13 +360,23 @@ export const INTEREST_TONE: Record<string, 'destructive' | 'warning' | 'info'> =
 
 export const SENSITIVE_INTEREST: ReadonlySet<string> = new Set(['vcs', 'secrets', 'backup']);
 
+// mirrors shared/definitions/asset_query.py:STATUS_CLASSES
+export const STATUS_CLASSES = ['2xx', '3xx', '4xx', '5xx', 'none'] as const;
+
 export const STATUS_CLASS_LABELS: Record<string, string> = {
 	'2xx': 'OK',
 	'3xx': 'Redirect',
 	'4xx': 'Client error',
 	'5xx': 'Server error',
-	none: 'Not checked'
+	none: 'No status'
 };
+
+/** The label on its own, where no status code sits beside it. */
+export function statusClassLabel(key: string): string {
+	const noun = STATUS_CLASS_LABELS[key];
+	if (!noun) return key;
+	return key === 'none' ? noun : `${key} ${noun}`;
+}
 
 export const STATUS_CLASS_FILL: Record<string, string> = {
 	'2xx': 'var(--success)',

@@ -10,6 +10,7 @@ from reports.data.models import Issue
 from reports.data.source import ReportSource
 from shared.definitions.ports import ServiceClass
 from shared.definitions.vulnerabilities import Severity
+from shared.utils.net import host_port
 
 _OK = 2
 
@@ -217,9 +218,10 @@ def _sensitive_services(
         ),
         severity=Severity.HIGH.value,
         evidence=[
-            f"{s.ip}:{s.port} {s.service_name or ''}".strip() for s in exposed[:5]
+            f"{host_port(s.ip, s.port)} {s.service_name or ''}".strip()
+            for s in exposed[:5]
         ],
-        assets=[f"{s.ip}:{s.port}" for s in exposed[:8]],
+        assets=[host_port(s.ip, s.port) for s in exposed[:8]],
         count=len(exposed),
     )
 
@@ -243,8 +245,11 @@ def _database_exposed(source: ReportSource, _issues: list[Issue]) -> AttackPath 
             f"connection {'from the internal network' if internal else 'from the internet'}."
         ),
         severity=Severity.HIGH.value,
-        evidence=[f"{s.ip}:{s.port} {s.service_name or ''}".strip() for s in rows[:5]],
-        assets=[f"{s.ip}:{s.port}" for s in rows[:8]],
+        evidence=[
+            f"{host_port(s.ip, s.port)} {s.service_name or ''}".strip()
+            for s in rows[:5]
+        ],
+        assets=[host_port(s.ip, s.port) for s in rows[:8]],
         count=len(rows),
     )
 

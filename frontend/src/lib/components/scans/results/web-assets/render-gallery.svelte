@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ImageOff from '@lucide/svelte/icons/image-off';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import Filter from '@lucide/svelte/icons/filter';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import { Badge } from '$lib/components/ui/badge';
@@ -14,11 +15,13 @@
 	interface Props {
 		data: RenderGroups | null;
 		loading: boolean;
+		failed?: boolean;
+		onRetry?: () => void;
 		onFilter: (token: string) => void;
 		onHost: (name: string) => void;
 	}
 
-	let { data, loading, onFilter, onHost }: Props = $props();
+	let { data, loading, failed = false, onRetry, onFilter, onHost }: Props = $props();
 
 	const MAX_HOSTS = 6;
 	const broken = new SvelteSet<string>();
@@ -36,6 +39,16 @@
 			<Skeleton class="aspect-video w-full rounded-lg" />
 		{/each}
 	</div>
+{:else if failed}
+	<EmptyState
+		icon={TriangleAlert}
+		title="Renders not loaded"
+		class="rounded-none border-0 bg-transparent py-16"
+	>
+		{#if onRetry}
+			<Button variant="outline" size="sm" onclick={() => onRetry()}>Retry</Button>
+		{/if}
+	</EmptyState>
 {:else if data && data.groups.length === 0}
 	<EmptyState
 		icon={Camera}

@@ -3,6 +3,9 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Spinner } from '$lib/components/ui/spinner';
+	import { Button } from '$lib/components/ui/button';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import ToolList from './tool-list.svelte';
 	import ToolForm from './tool-form.svelte';
@@ -116,6 +119,18 @@
 					<div class="flex flex-1 items-center justify-center">
 						<Spinner class="size-4 text-muted-foreground" />
 					</div>
+				{:else if toolbox.catalogError && !toolbox.tools.length}
+					<EmptyState
+						compact
+						icon={TriangleAlert}
+						title="Tools not loaded"
+						description={toolbox.catalogError}
+						class="m-3 border-dashed"
+					>
+						<Button variant="outline" size="sm" onclick={() => void toolbox.load(true)}>
+							Retry
+						</Button>
+					</EmptyState>
 				{:else}
 					<ToolList
 						tools={toolbox.tools}
@@ -125,6 +140,7 @@
 					/>
 					<RecentRuns
 						runs={toolbox.history}
+						error={toolbox.historyError}
 						activeId={run?.id ?? null}
 						onOpen={replay}
 						onClear={clearHistory}
@@ -177,6 +193,10 @@
 							{/if}
 						</div>
 					</ScrollArea>
+				{:else if toolbox.catalogError}
+					<div class="flex flex-1 items-center justify-center px-6 text-center">
+						<p class="text-sm text-muted-foreground">Tools not loaded. {toolbox.catalogError}</p>
+					</div>
 				{:else}
 					<div class="flex flex-1 items-center justify-center">
 						<Spinner class="size-4 text-muted-foreground" />

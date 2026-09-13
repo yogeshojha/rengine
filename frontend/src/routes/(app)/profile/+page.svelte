@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { routeLabels } from '$lib/config/routes';
 	import { auth } from '$lib/stores/auth.svelte';
 	import ChangeUsernameCard from '$lib/components/profile/change-username-card.svelte';
 	import ChangePasswordCard from '$lib/components/profile/change-password-card.svelte';
@@ -10,9 +11,12 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import MailIcon from '@lucide/svelte/icons/mail';
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
+	import CircleSlashIcon from '@lucide/svelte/icons/circle-slash';
 	import { formatDate } from '$lib/utilities';
 	import { getInitials } from '$lib/utilities';
 </script>
+
+<svelte:head><title>{routeLabels.profile} · reNgine</title></svelte:head>
 
 <div class="container max-w-5xl mx-auto space-y-6">
 	<h1 class="text-2xl font-semibold tracking-tight">Account and security</h1>
@@ -43,8 +47,13 @@
 							</span>
 							<span class="text-xs">•</span>
 							<span class="flex items-center gap-1.5">
-								<CheckCircleIcon class="w-3.5 h-3.5 text-foreground" />
-								Active
+								{#if auth.user?.is_active}
+									<CheckCircleIcon class="w-3.5 h-3.5 text-foreground" />
+									Active
+								{:else}
+									<CircleSlashIcon class="w-3.5 h-3.5 text-muted-foreground" />
+									Inactive
+								{/if}
 							</span>
 						</div>
 					</div>

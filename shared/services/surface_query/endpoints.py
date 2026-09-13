@@ -79,6 +79,7 @@ def order(query, f: EndpointFilter):
             Endpoint.depth.asc(),
             Endpoint.host.asc(),
             Endpoint.path.asc(),
+            Endpoint.id.asc(),
         )
     column = {
         "path": Endpoint.path,
@@ -93,7 +94,10 @@ def order(query, f: EndpointFilter):
     }.get(f.sort, Endpoint.path)
     primary = column.desc() if f.direction == "desc" else column.asc()
     return query.order_by(
-        primary.nulls_last(), Endpoint.host.asc(), Endpoint.path.asc()
+        primary.nulls_last(),
+        Endpoint.host.asc(),
+        Endpoint.path.asc(),
+        Endpoint.id.asc(),
     )
 
 

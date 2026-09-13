@@ -110,7 +110,7 @@
 		return m.scan_id && spec ? ROUTES.scanTab(m.scan_id, spec.tab) : null;
 	};
 	const TONE = {
-		up: 'text-success',
+		up: 'text-foreground',
 		down: 'text-muted-foreground',
 		warn: 'text-warning',
 		bad: 'text-destructive'

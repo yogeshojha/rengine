@@ -8,6 +8,34 @@ export const DASHBOARD_WINDOWS = [
 ] as const;
 export type DashboardWindow = (typeof DASHBOARD_WINDOWS)[number]['key'];
 export const DEFAULT_DASHBOARD_WINDOW: DashboardWindow = '7d';
+
+// days of daily history a sparkline draws; 24h keeps a week of context rather than one point
+export const TREND_DAYS: Record<DashboardWindow, number> = {
+	'24h': 7,
+	'7d': 7,
+	'30d': 30
+};
+export const DASHBOARD_SLICES = [
+	'tech',
+	'ipFacets',
+	'intel',
+	'hosting',
+	'exposures',
+	'feed',
+	'discovery'
+] as const;
+export type DashboardSlice = (typeof DASHBOARD_SLICES)[number];
+
+export const DASHBOARD_SLICE_LABELS: Record<DashboardSlice, string> = {
+	tech: 'Technology',
+	ipFacets: 'Geography and networks',
+	intel: 'Exploitation',
+	hosting: 'Hosting',
+	exposures: 'Exposures',
+	feed: 'Changes',
+	discovery: 'Hygiene'
+};
+
 export const windowText = (w: DashboardWindow) =>
 	DASHBOARD_WINDOWS.find((x) => x.key === w)?.text ?? '';
 

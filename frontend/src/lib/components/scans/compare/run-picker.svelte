@@ -73,7 +73,7 @@
 		{/snippet}
 	</Popover.Trigger>
 	<Popover.Content align="start" class="w-[26rem] max-w-[calc(100vw-2rem)] p-0">
-		<PanelHead title="Choose the {label.toLowerCase()} run" description="Runs of this target" />
+		<PanelHead title="Choose the {label.toLowerCase()} run" />
 		<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-[22rem]">
 			<div class="flex flex-col p-1.5">
 				{#if loading}

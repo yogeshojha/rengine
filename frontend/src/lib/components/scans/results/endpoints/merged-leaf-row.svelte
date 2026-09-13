@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ExternalLink from '@lucide/svelte/icons/external-link';
+	import { filterToken } from '$lib/utilities/scan-insights';
 	import Copy from '@lucide/svelte/icons/copy';
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 	import Rows3 from '@lucide/svelte/icons/rows-3';
@@ -238,7 +239,7 @@
 								class="rounded bg-muted px-1 font-mono text-2xs hover:bg-muted/70"
 								onclick={(e) => {
 									e.stopPropagation();
-									onFilter(`param:${name}`);
+									onFilter(filterToken('param', name));
 								}}
 							>
 								{name}
@@ -263,6 +264,7 @@
 				{#snippet child(props)}
 					<Button
 						{...props}
+						aria-label="Copy a sample URL"
 						variant="ghost"
 						size="icon"
 						class="size-7"
@@ -279,6 +281,7 @@
 				{#snippet child(props)}
 					<Button
 						{...props}
+						aria-label="Open a sample in a new tab"
 						variant="ghost"
 						size="icon"
 						class="size-7"

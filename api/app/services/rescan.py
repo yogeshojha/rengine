@@ -22,7 +22,7 @@ from shared.definitions.rescan import (
     stages_for,
 )
 from shared.definitions.surface import SURFACE_LABELS, SURFACE_NOUN, SURFACE_ORDER
-from shared.enums.scan import SCAN_OPEN_STATUSES, Phase, ScanScope
+from shared.enums.scan import SCAN_OPEN_STATUSES, ScanScope
 from shared.models.recheck import AssetRecheck, RecheckRead
 from shared.models.scan import (
     FocusedRunRead,
@@ -52,7 +52,6 @@ def _seed_kind(value: str, default: str) -> str:
 
 
 _VULN_STAGE = "vulnerability_scan"
-_DISCOVERY = Phase.DISCOVERY.value
 _MAX_RUNS = 50
 
 
@@ -224,6 +223,7 @@ class RescanService:
             ]
             duration = (
                 (run.completed_at - run.started_at).total_seconds()
+                - (run.paused_seconds or 0.0)
                 if run.completed_at and run.started_at
                 else None
             )

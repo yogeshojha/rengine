@@ -596,8 +596,9 @@ class ScanService:
     def _sort_expr(self, sort_by: ScanSortKey):
         if sort_by == "duration":
             return func.extract(
-                "epoch", func.coalesce(Scan.completed_at, utc_now()) - Scan.started_at
-            )
+                "epoch",
+                func.coalesce(Scan.completed_at, utc_now()) - Scan.started_at,
+            ) - func.coalesce(Scan.paused_seconds, 0.0)
         if sort_by == "status":
             return _STATUS_RANK
         if sort_by == "subdomains":
@@ -1029,7 +1030,10 @@ class ScanService:
         avg_duration = (
             await self.session.execute(
                 select(
-                    func.avg(func.extract("epoch", Scan.completed_at - Scan.started_at))
+                    func.avg(
+                        func.extract("epoch", Scan.completed_at - Scan.started_at)
+                        - func.coalesce(Scan.paused_seconds, 0.0)
+                    )
                 ).where(
                     *conds,
                     Scan.status == ScanStatus.COMPLETED.value,
@@ -1240,6 +1244,7 @@ class ScanService:
             )
         now = utc_now()
         paused_at = scan.paused_at
+        paused_seconds = scan.paused_seconds
         left = await self._stages_left(scan)
         fold_pause(scan, now)
         scan.status = ScanStatus.RUNNING.value
@@ -1256,6 +1261,7 @@ class ScanService:
             logger.warning("scan resume dispatch failed", exc_info=True)
             scan.status = ScanStatus.PAUSED.value
             scan.paused_at = paused_at or now
+            scan.paused_seconds = paused_seconds
             await self.session.commit()
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

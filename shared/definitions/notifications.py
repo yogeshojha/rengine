@@ -6,6 +6,7 @@ from datetime import datetime
 
 from shared.definitions.bounty_programs import BountyEvent, event_spec
 from shared.definitions.interest import InterestBand, kind_label
+from shared.definitions.surface import SURFACE_NOUN, SurfaceDimension
 from shared.definitions.vulnerabilities import (
     ALERT_SEVERITIES,
     SEVERITY_LABELS,
@@ -87,13 +88,26 @@ def _scan_meta(scan_id: str, tab: str | None = None) -> dict:
     return {"scan_id": str(scan_id), "url": url}
 
 
-_SCAN_COUNT_LABELS = {
-    "subdomains_found": ("host", "hosts"),
-    "ips_found": ("address", "addresses"),
-    "open_ports_found": ("service", "services"),
-    "http_assets_found": ("HTTP service", "HTTP services"),
-    "vulnerabilities_found": ("finding", "findings"),
-    "endpoints_found": ("endpoint", "endpoints"),
+def _noun(
+    dimension: SurfaceDimension, *, before: str = "", after: str = ""
+) -> tuple[str, str]:
+    singular, plural = SURFACE_NOUN[dimension.value]
+    return (
+        " ".join(w for w in (before, singular, after) if w),
+        " ".join(w for w in (before, plural, after) if w),
+    )
+
+
+HTTP_SERVICE_NOUN = ("HTTP service", "HTTP services")
+
+
+_SCAN_COUNT_LABELS: dict[str, tuple[str, str]] = {
+    "subdomains_found": _noun(SurfaceDimension.WEB_ASSETS),
+    "ips_found": _noun(SurfaceDimension.IPS),
+    "open_ports_found": _noun(SurfaceDimension.SERVICES),
+    "http_assets_found": HTTP_SERVICE_NOUN,
+    "vulnerabilities_found": _noun(SurfaceDimension.VULNERABILITIES),
+    "endpoints_found": _noun(SurfaceDimension.ENDPOINTS),
 }
 
 
@@ -107,37 +121,37 @@ def scan_count_summary(counts: dict) -> str:
 
 
 _STAGE_COUNT_LABELS: dict[str, tuple[str, str]] = {
-    "active": ("resolving host", "resolving hosts"),
-    "addresses": ("address", "addresses"),
-    "alive": ("responsive host", "responsive hosts"),
+    "active": _noun(SurfaceDimension.WEB_ASSETS, before="resolving"),
+    "addresses": _noun(SurfaceDimension.IPS),
+    "alive": _noun(SurfaceDimension.WEB_ASSETS, before="responsive"),
     "answered": ("answered", "answered"),
     "bgp": ("BGP record", "BGP records"),
     "cdn": ("CDN-fronted address", "CDN-fronted addresses"),
-    "checked": ("service checked", "services checked"),
+    "checked": _noun(SurfaceDimension.SERVICES, after="checked"),
     "checks": ("check run", "checks run"),
     "cloud": ("cloud-hosted address", "cloud-hosted addresses"),
     "dns_records": ("DNS record", "DNS records"),
     "edge_only": ("CDN edge address", "CDN edge addresses"),
-    "endpoints": ("endpoint", "endpoints"),
-    "endpoints_new": ("new endpoint", "new endpoints"),
-    "endpoints_probed": ("endpoint requested", "endpoints requested"),
-    "enriched": ("address enriched", "addresses enriched"),
-    "fingerprinted": ("service identified", "services identified"),
-    "http_assets": ("web service", "web services"),
-    "ips": ("address", "addresses"),
-    "known_ports": ("known service", "known services"),
+    "endpoints": _noun(SurfaceDimension.ENDPOINTS),
+    "endpoints_new": _noun(SurfaceDimension.ENDPOINTS, before="new"),
+    "endpoints_probed": _noun(SurfaceDimension.ENDPOINTS, after="requested"),
+    "enriched": _noun(SurfaceDimension.IPS, after="enriched"),
+    "fingerprinted": _noun(SurfaceDimension.SERVICES, after="identified"),
+    "http_assets": HTTP_SERVICE_NOUN,
+    "ips": _noun(SurfaceDimension.IPS),
+    "known_ports": _noun(SurfaceDimension.SERVICES, before="known"),
     "new": ("new", "new"),
-    "open_ports": ("open service", "open services"),
-    "probed": ("host probed", "hosts probed"),
+    "open_ports": _noun(SurfaceDimension.SERVICES, before="open"),
+    "probed": _noun(SurfaceDimension.WEB_ASSETS, after="probed"),
     "ptr": ("PTR record", "PTR records"),
-    "scanned": ("address scanned", "addresses scanned"),
+    "scanned": _noun(SurfaceDimension.IPS, after="scanned"),
     "screenshots": ("screenshot", "screenshots"),
     "skipped": ("skipped", "skipped"),
-    "subdomains": ("host", "hosts"),
+    "subdomains": _noun(SurfaceDimension.WEB_ASSETS),
     "targets": ("target", "targets"),
-    "vulnerabilities": ("finding", "findings"),
+    "vulnerabilities": _noun(SurfaceDimension.VULNERABILITIES),
     "waf": ("firewall identified", "firewalls identified"),
-    "web_services": ("web service", "web services"),
+    "web_services": _noun(SurfaceDimension.SERVICES, before="web"),
     "whois": ("WHOIS record", "WHOIS records"),
 }
 
@@ -192,7 +206,9 @@ def _severity_phrase(counts: dict) -> str:
 
 def _digest_title(target: str, deltas: ScanDeltas) -> str:
     if deltas.critical:
-        head = _count(deltas.critical, "critical finding", "critical findings")
+        head = _count(
+            deltas.critical, *_noun(SurfaceDimension.VULNERABILITIES, before="critical")
+        )
     elif deltas.kev:
         head = _count(
             deltas.kev, "exploited vulnerability", "exploited vulnerabilities"
@@ -202,7 +218,10 @@ def _digest_title(target: str, deltas: ScanDeltas) -> str:
     elif not deltas.baseline:
         return f"First scan of {target}"
     elif deltas.new_vulnerabilities:
-        head = _count(deltas.new_vulnerabilities, "new finding", "new findings")
+        head = _count(
+            deltas.new_vulnerabilities,
+            *_noun(SurfaceDimension.VULNERABILITIES, before="new"),
+        )
     elif deltas.new_hosts or deltas.new_services:
         head = "New assets"
     else:
@@ -218,13 +237,25 @@ def _digest_body(counts: dict, deltas: ScanDeltas) -> str:
         parts = [
             text
             for text, n in (
-                (_count(deltas.new_hosts, "new host", "new hosts"), deltas.new_hosts),
                 (
-                    _count(deltas.new_services, "new service", "new services"),
+                    _count(
+                        deltas.new_hosts,
+                        *_noun(SurfaceDimension.WEB_ASSETS, before="new"),
+                    ),
+                    deltas.new_hosts,
+                ),
+                (
+                    _count(
+                        deltas.new_services,
+                        *_noun(SurfaceDimension.SERVICES, before="new"),
+                    ),
                     deltas.new_services,
                 ),
                 (
-                    _count(deltas.new_vulnerabilities, "new finding", "new findings")
+                    _count(
+                        deltas.new_vulnerabilities,
+                        *_noun(SurfaceDimension.VULNERABILITIES, before="new"),
+                    )
                     + (f" ({detail})" if detail else ""),
                     deltas.new_vulnerabilities,
                 ),
@@ -248,7 +279,8 @@ def _digest_body(counts: dict, deltas: ScanDeltas) -> str:
         )
     if deltas.dropped_hosts:
         body += (
-            f" Testing stopped on {_count(deltas.dropped_hosts, 'host', 'hosts')} "
+            " Testing stopped on "
+            f"{_count(deltas.dropped_hosts, *_noun(SurfaceDimension.WEB_ASSETS))} "
             f"after repeated errors. Coverage there is partial."
         )
     return body

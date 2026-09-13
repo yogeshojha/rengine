@@ -11,6 +11,7 @@
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
@@ -40,6 +41,7 @@
 
 	let disableOpen = $state(false);
 	let disableCode = $state('');
+	let disableUseBackupCode = $state(false);
 	let isDisabling = $state(false);
 
 	let copiedBackup = $state(false);
@@ -55,8 +57,12 @@
 		if (setupOpen && setupQr && !backupCodes) focusOtp(setupOtpWrap);
 	});
 	$effect(() => {
-		if (disableOpen) focusOtp(disableOtpWrap);
+		if (disableOpen && !disableUseBackupCode) focusOtp(disableOtpWrap);
 	});
+
+	const canDisable = $derived(
+		disableUseBackupCode ? disableCode.trim().length > 0 : disableCode.length === 6
+	);
 
 	const enrollDirty = $derived(
 		setupOpen && ((!backupCodes && setupCode.length > 0) || (!!backupCodes && !backupCodesSaved))
@@ -150,17 +156,20 @@
 		closeSetup();
 	}
 
+	function toggleDisableBackupCode() {
+		disableUseBackupCode = !disableUseBackupCode;
+		disableCode = '';
+	}
+
 	async function handleDisable() {
-		if (disableCode.length !== 6) {
-			toast.error('Enter the 6-digit code');
-			return;
-		}
+		if (!canDisable) return;
 		isDisabling = true;
 		try {
-			const res = await twoFactorApi.disable(disableCode);
+			const res = await twoFactorApi.disable(disableCode.trim());
 			twoFactorEnabled = res.enabled;
 			disableOpen = false;
 			disableCode = '';
+			disableUseBackupCode = false;
 			await auth.checkAuth();
 			toast.success('Two-factor authentication disabled');
 		} catch (error) {
@@ -237,21 +246,47 @@
 							Removes the second factor and invalidates every backup code.
 						</Alert.Description>
 					</Alert.Root>
-					<p class="text-xs text-muted-foreground">Enter an authenticator code or a backup code.</p>
-					<div bind:this={disableOtpWrap}>
-						<OtpInput
-							value={disableCode}
-							onValueChange={(v) => (disableCode = v)}
+					<p class="text-xs text-muted-foreground">
+						{disableUseBackupCode
+							? 'Enter one of the backup codes saved at enrollment.'
+							: 'Enter the 6-digit code from the authenticator app.'}
+					</p>
+					{#if disableUseBackupCode}
+						<Label for="disable-backup-code" class="sr-only">Backup code</Label>
+						<Input
+							id="disable-backup-code"
+							type="text"
+							autocomplete="one-time-code"
+							placeholder="0000-0000"
+							class="max-w-48 font-mono"
 							disabled={isDisabling}
+							bind:value={disableCode}
 						/>
-					</div>
+					{:else}
+						<div bind:this={disableOtpWrap}>
+							<OtpInput
+								value={disableCode}
+								onValueChange={(v) => (disableCode = v)}
+								disabled={isDisabling}
+							/>
+						</div>
+					{/if}
+					<Button
+						variant="link"
+						size="sm"
+						class="h-auto p-0 text-muted-foreground"
+						onclick={toggleDisableBackupCode}
+						disabled={isDisabling}
+					>
+						{disableUseBackupCode ? 'Use the authenticator app' : 'Use a backup code'}
+					</Button>
 					<div class="flex items-center gap-2">
 						<LoadingButton
 							variant="destructive"
 							onclick={handleDisable}
 							loading={isDisabling}
 							loadingLabel="Disabling"
-							disabled={disableCode.length !== 6}
+							disabled={!canDisable}
 						>
 							Disable 2FA
 						</LoadingButton>
@@ -260,6 +295,7 @@
 							onclick={() => {
 								disableOpen = false;
 								disableCode = '';
+								disableUseBackupCode = false;
 							}}
 							disabled={isDisabling}
 						>

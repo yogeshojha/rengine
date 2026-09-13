@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SURFACE, SurfaceDimension, type ResultTab } from '$lib/config/surface';
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 	import Archive from '@lucide/svelte/icons/archive';
 	import DoorOpen from '@lucide/svelte/icons/door-open';
@@ -18,10 +19,12 @@
 	interface Props {
 		structure: ScanStructure | null;
 		loading: boolean;
-		onTab: (tab: string, filter?: string) => void;
+		onTab: (tab: ResultTab, filter?: string) => void;
 	}
 
 	let { structure, loading, onTab }: Props = $props();
+
+	const EP = SURFACE[SurfaceDimension.ENDPOINTS];
 
 	const TOP = 5;
 	const FINDING_ICON = {
@@ -34,7 +37,7 @@
 		`${n.toLocaleString()} ${n === 1 ? one : many}`;
 
 	function pick(filter: string) {
-		onTab('endpoints', filter);
+		onTab(EP.tab, filter);
 	}
 
 	let hasData = $derived(!!structure && structure.endpoints > 0);

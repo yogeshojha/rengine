@@ -23,6 +23,7 @@ from shared.definitions.ai import (
 )
 from shared.definitions.compliance import FRAMEWORKS
 from shared.definitions.report_fonts import (
+    DEFAULT_WEIGHT,
     FONT_ROLE_HELP,
     FONT_ROLE_LABELS,
     MAX_FACES,
@@ -334,22 +335,7 @@ class ReportService:
             .scalars()
             .all()
         )
-        custom = [
-            ReportFontRead(
-                id=row.id,
-                slug=row.slug,
-                name=row.name,
-                role=row.role,
-                origin=row.origin,
-                note=row.note,
-                faces=[FontFace.model_validate(f) for f in (row.faces or [])],
-                weights=sorted({int(f.get("weight", 400)) for f in (row.faces or [])}),
-                bytes=row.bytes,
-                created_at=row.created_at,
-            )
-            for row in rows
-        ]
-        return [*vendored(), *custom]
+        return [*vendored(), *[_font_read(row) for row in rows]]
 
     async def upload_font(
         self, data: ReportFontUpload, user_id: UUID
@@ -425,18 +411,7 @@ class ReportService:
             self.session.add(row)
         await self.session.commit()
         await self.session.refresh(row)
-        return ReportFontRead(
-            id=row.id,
-            slug=row.slug,
-            name=row.name,
-            role=row.role,
-            origin=row.origin,
-            note=row.note,
-            faces=[FontFace.model_validate(f) for f in row.faces],
-            weights=sorted({int(f["weight"]) for f in row.faces}),
-            bytes=row.bytes,
-            created_at=row.created_at,
-        )
+        return _font_read(row)
 
     async def delete_font(self, slug: str) -> None:
         row = (
@@ -839,19 +814,7 @@ class ReportService:
             ),
         )
         if spec.narrative.ai_enabled and cfg is not None:
-            calls = len(
-                [
-                    t
-                    for t in REPORT_TASKS
-                    if t
-                    in (
-                        "executive_summary",
-                        "risk_narrative",
-                        "remediation_plan",
-                        "surface_narrative",
-                    )
-                ]
-            )
+            calls = len(REPORT_TASKS)
             if spec.narrative.explain_findings:
                 calls += min(spec.narrative.max_explained_issues, max(1, findings // 8))
             estimate.ai_calls = calls
@@ -981,6 +944,22 @@ _ROLLED_PER_PAGE = 26
 _QUIET_SEVERITIES = frozenset({Severity.INFO.value, Severity.UNKNOWN.value})
 _PAGE_SAVED_PER_RUN_ON = 0.4
 _PAGE_TAIL_PER_CHAPTER = 0.3
+
+
+def _font_read(row: ReportFont) -> ReportFontRead:
+    faces = list(row.faces or [])
+    return ReportFontRead(
+        id=row.id,
+        slug=row.slug,
+        name=row.name,
+        role=row.role,
+        origin=row.origin,
+        note=row.note,
+        faces=[FontFace.model_validate(f) for f in faces],
+        weights=sorted({int(f.get("weight", DEFAULT_WEIGHT)) for f in faces}),
+        bytes=row.bytes,
+        created_at=row.created_at,
+    )
 
 
 def _section_config(sections: list[SectionEntry], name: str) -> dict | None:

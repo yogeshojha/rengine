@@ -25,7 +25,7 @@ services:
       -c track_io_timing=on
       -c log_min_duration_statement=${POSTGRES_LOG_MIN_DURATION:-2000}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U rengine"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-rengine}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -50,8 +50,8 @@ services:
     command: >
       redis-server
       --appendonly yes
-      --maxmemory 256mb
-      --maxmemory-policy allkeys-lru
+      --maxmemory ${REDIS_MAXMEMORY:-1gb}
+      --maxmemory-policy noeviction
       ${REDIS_PASSWORD:+--requirepass} ${REDIS_PASSWORD:-}
 
   api:
@@ -125,8 +125,7 @@ services:
       - /app/tools/rengine_tools.egg-info
     env_file:
       - .env
-    # one scan now holds up to 5 slots at its widest — 3 gating stages plus the 2 that
-    # run beside them — so 8 covered a single scan and queued the moment two overlapped
+    # the widest level holds 5 stages
     command: >
       uv run celery -A app.celery worker
       --loglevel=DEBUG

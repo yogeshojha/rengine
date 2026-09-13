@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { WhoisRecordRead, WhoisLookupType } from '$lib/types/whois';
+	import { whoisLookupLabel, type WhoisRecordRead, type WhoisLookupType } from '$lib/types/whois';
 	import { getLookupTypeIcon } from '$lib/config/icons';
 	import {
 		formatShortDate,
@@ -114,7 +114,7 @@
 				<CopyButton value={record.query_value} />
 			</div>
 			<div class="flex items-center gap-2 mt-0.5">
-				<Badge variant="outline" class="text-xs">{record.lookup_type}</Badge>
+				<Badge variant="outline" class="text-xs">{whoisLookupLabel(record.lookup_type)}</Badge>
 				{#if record.handle}
 					<span class="text-xs text-muted-foreground font-mono">{record.handle}</span>
 				{/if}

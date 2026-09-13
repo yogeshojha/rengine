@@ -21,6 +21,7 @@ class SubdomainSource(Enum):
     BRUTEFORCE = "bruteforce"
     PERMUTATION = "permutation"
     ZONE_TRANSFER = "zone_transfer"
+    GITHUB = "github"
     SCRAPING = "scraping"
     TLS_CERT = "tls_cert"
     CT_LOG = "ct_log"

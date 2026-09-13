@@ -18,6 +18,7 @@ from shared.services.asset_query import (
     vuln_is_new,
     vuln_state,
 )
+from shared.utils.net import host_port
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -126,10 +127,20 @@ def columns_for(dimension: str, scope: QueryScope, *, evidence: bool = False):
     return lambda d: selectables(dimension, scope, d, evidence=evidence)
 
 
+# the only two-part text value is an authority
+_AUTHORITY_PARTS = 2
+
+
 def text_values(dimension: str, row: dict) -> str:
     """The single value a plain text export writes for this row."""
-    parts = [row.get(key) for key in SURFACE_TEXT_VALUE[dimension]]
-    return ":".join(str(part) for part in parts if part not in (None, ""))
+    parts = [
+        str(row[key])
+        for key in SURFACE_TEXT_VALUE[dimension]
+        if row.get(key) not in (None, "")
+    ]
+    if len(parts) == _AUTHORITY_PARTS:
+        return host_port(*parts)
+    return ":".join(parts)
 
 
 def project(row: Any, names: Sequence[str]) -> dict:

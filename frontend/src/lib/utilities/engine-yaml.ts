@@ -254,10 +254,6 @@ function checkField(spec: StageCatalogEntry, name: string, value: unknown): stri
 	return out;
 }
 
-export function stageRange(doc: Document.Parsed, stage: string): [number, number] | null {
-	return rangeOf(doc, ['stages', stage]);
-}
-
 export interface StageBlock {
 	name: string;
 	from: number;

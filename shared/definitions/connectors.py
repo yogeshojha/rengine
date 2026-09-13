@@ -142,14 +142,6 @@ COMMON_METHODS: frozenset[str] = frozenset(
     {"GET", "POST", "HEAD", "OPTIONS", "PUT", "PATCH", "DELETE"}
 )
 
-AUTH_HEADERS: tuple[str, ...] = (
-    "authorization",
-    "cookie",
-    "x-api-key",
-    "x-auth-token",
-    "x-csrf-token",
-)
-
 
 def state_for(minutes_since: float | None, paused: bool) -> str:
     if paused:

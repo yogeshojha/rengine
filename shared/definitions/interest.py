@@ -226,9 +226,7 @@ KINDS: tuple[KindSpec, ...] = (
 KIND_BY_KEY: dict[str, KindSpec] = {k.key: k for k in KINDS}
 KIND_KEYS: tuple[str, ...] = tuple(k.key for k in KINDS)
 KIND_LABELS: dict[str, str] = {k.key: k.label for k in KINDS}
-KIND_HELP: dict[str, str] = {k.key: k.help for k in KINDS}
 KIND_WEIGHTS: dict[str, int] = {k.key: k.weight for k in KINDS}
-KIND_TONES: dict[str, str] = {k.key: k.tone for k in KINDS}
 
 
 def kind_weight(kind: str) -> int:
@@ -278,16 +276,6 @@ BAND_FLOOR: dict[str, int] = {
 }
 
 
-def band_for(score: int) -> str:
-    for band in BAND_ORDER:
-        if score >= BAND_FLOOR[band]:
-            return band
-    return InterestBand.NOTABLE.value
-
-
-DEFAULT_NOTIFY_BAND = InterestBand.HIGH.value
-
-
 class RuleMode(StrEnum):
     KEYWORD = "keyword"
     QUERY = "query"
@@ -298,7 +286,6 @@ RULE_MODE_LABELS: dict[str, str] = {
     RuleMode.QUERY.value: "Query",
 }
 
-KEYWORD_FIELDS: tuple[str, ...] = ("host", "title")
 KEYWORD_FIELD_LABELS: dict[str, str] = {
     "host": "Hostname",
     "title": "Page title",

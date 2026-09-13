@@ -34,7 +34,3 @@ STATUS_LABELS: dict[str, str] = {
     NoteStatus.OPEN.value: "Open",
     NoteStatus.RESOLVED.value: "Resolved",
 }
-
-
-def service_key(ip: str, port: int) -> str:
-    return f"{ip}:{port}"

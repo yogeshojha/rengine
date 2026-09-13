@@ -234,19 +234,6 @@ class Certificate:
 
 
 @dataclass
-class StageRun:
-    name: str
-    title: str
-    status: str
-    started_at: datetime | None = None
-    ended_at: datetime | None = None
-    duration_seconds: float | None = None
-    counts: dict = field(default_factory=dict)
-    warnings: list[str] = field(default_factory=list)
-    error: str | None = None
-
-
-@dataclass
 class Facet:
     name: str
     count: int

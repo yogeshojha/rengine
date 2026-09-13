@@ -177,7 +177,3 @@ export interface ScanComparison {
 export function listedCount(delta: DimensionDelta): number {
 	return delta.appeared + delta.changed + delta.disappeared + delta.unconfirmed;
 }
-
-export function verbCount(delta: DimensionDelta, verb: ChangeVerb): number {
-	return delta[verb] ?? 0;
-}

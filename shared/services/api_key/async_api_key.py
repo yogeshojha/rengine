@@ -1,6 +1,9 @@
-import uuid
+from __future__ import annotations
 
-from fastapi import HTTPException, status
+import uuid
+from http import HTTPStatus
+from typing import TYPE_CHECKING
+
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
@@ -16,9 +19,18 @@ from shared.models.api_key import (
     APIKeyUpdate,
     ProviderInfo,
 )
-from shared.models.instance_settings import InstanceSettings
+from shared.models.instance_settings import SINGLETON_KEY, InstanceSettings
 from shared.utils.crypto import encrypt_secret, try_decrypt
 from shared.utils.datetime import utc_now
+
+if TYPE_CHECKING:
+    from fastapi import HTTPException
+
+
+def _http_error(status: HTTPStatus, detail: str) -> HTTPException:
+    from fastapi import HTTPException  # noqa: PLC0415
+
+    return HTTPException(status_code=status, detail=detail)
 
 
 class APIKeyService:
@@ -28,7 +40,7 @@ class APIKeyService:
     async def _instance_mode(self) -> str:
         result = await self.session.execute(
             select(InstanceSettings.mode).where(
-                InstanceSettings.singleton_key == "instance"
+                InstanceSettings.singleton_key == SINGLETON_KEY
             )
         )
         return result.scalar_one_or_none() or InstanceMode.BUG_BOUNTY.value
@@ -72,7 +84,6 @@ class APIKeyService:
                     description=meta["description"],
                     docs_url=meta["docs_url"],
                     icon=meta.get("icon", "package"),
-                    color=meta.get("color", "#64748b"),
                     requires_username=meta.get("requires_username", False),
                     configured=key is not None,
                     is_enabled=key.is_enabled if key else False,
@@ -84,17 +95,17 @@ class APIKeyService:
     async def create_key(self, data: APIKeyCreate) -> APIKeyRead:
         mode = await self._instance_mode()
         if not provider_allowed(mode, data.provider.value):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"{data.provider.value} requires Bug bounty mode.",
+            raise _http_error(
+                HTTPStatus.FORBIDDEN,
+                f"{data.provider.value} requires Bug bounty mode.",
             )
 
         if API_PROVIDER_META.get(data.provider, {}).get("requires_username"):
             username = (data.key_meta or {}).get("username")
             if not username or not str(username).strip():
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"{data.provider.value} requires a username.",
+                raise _http_error(
+                    HTTPStatus.BAD_REQUEST,
+                    f"{data.provider.value} requires a username.",
                 )
 
         existing = await self.session.execute(
@@ -103,9 +114,9 @@ class APIKeyService:
             )
         )
         if existing.scalar_one_or_none():
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"An API key for {data.provider.value} exists.",
+            raise _http_error(
+                HTTPStatus.CONFLICT,
+                f"An API key for {data.provider.value} exists.",
             )
 
         api_key = APIKey(
@@ -118,9 +129,9 @@ class APIKeyService:
             await self.session.commit()
         except IntegrityError as e:
             await self.session.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"An API key for {data.provider.value} exists.",
+            raise _http_error(
+                HTTPStatus.CONFLICT,
+                f"An API key for {data.provider.value} exists.",
             ) from e
         await self.session.refresh(api_key)
         return self._to_read(api_key)
@@ -150,7 +161,7 @@ class APIKeyService:
         result = await self.session.execute(
             select(APIKey).where(
                 APIKey.provider == provider,
-                APIKey.is_enabled == True,  # noqa: E712
+                APIKey.is_enabled.is_(True),
             )
         )
         api_key = result.scalar_one_or_none()
@@ -188,16 +199,10 @@ class APIKeyService:
         try:
             uuid_id = uuid.UUID(key_id)
         except ValueError as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid key ID",
-            ) from e
+            raise _http_error(HTTPStatus.BAD_REQUEST, "Invalid key ID") from e
 
         result = await self.session.execute(select(APIKey).where(APIKey.id == uuid_id))
         api_key = result.scalar_one_or_none()
         if not api_key:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="API key not found",
-            )
+            raise _http_error(HTTPStatus.NOT_FOUND, "API key not found")
         return api_key
