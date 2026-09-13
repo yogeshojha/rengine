@@ -73,6 +73,26 @@ def _drop_record(line: str) -> dict | None:
     }
 
 
+def _oast_args(opt: NucleiOptions) -> list[str]:
+    """The out-of-band flags, or the switch that turns the collaborator off."""
+    if not opt.interactsh:
+        return ["-no-interactsh"]
+    args: list[str] = []
+    if opt.interactsh_server:
+        args += ["-interactsh-server", opt.interactsh_server]
+    token = (opt.interactsh_token or "").strip()
+    if token:
+        args += ["-interactsh-token", token]
+    if opt.oast_wait_seconds > 0:
+        args += [
+            "-interactions-cooldown-period",
+            str(opt.oast_wait_seconds),
+            "-interactions-eviction",
+            str(opt.oast_wait_seconds + _EVICTION_SLACK),
+        ]
+    return args
+
+
 def _paced(
     records: Iterator[dict], on_idle: Callable[[], None] | None
 ) -> Iterator[object]:
@@ -164,6 +184,7 @@ class NucleiOptions:
     headers: dict[str, str] = field(default_factory=dict)
     exclude_hosts: tuple[str, ...] = ()
     follow_redirects: bool | None = None
+    store_resp_dir: str | None = None
     extra_args: list[str] = field(default_factory=list)
 
 
@@ -252,21 +273,7 @@ class NucleiClient:
             args += ["-max-time", f"{opt.max_minutes}m"]
         if opt.headless:
             args += ["-headless", "-system-chrome"]
-        if not opt.interactsh:
-            args.append("-no-interactsh")
-        else:
-            if opt.interactsh_server:
-                args += ["-interactsh-server", opt.interactsh_server]
-            token = (opt.interactsh_token or "").strip()
-            if token:
-                args += ["-interactsh-token", token]
-            if opt.oast_wait_seconds > 0:
-                args += [
-                    "-interactions-cooldown-period",
-                    str(opt.oast_wait_seconds),
-                    "-interactions-eviction",
-                    str(opt.oast_wait_seconds + _EVICTION_SLACK),
-                ]
+        args += _oast_args(opt)
         if opt.honeypot_threshold > 0:
             args += [
                 "-honeypot-detect",
@@ -284,6 +291,9 @@ class NucleiClient:
             args.append("-follow-redirects")
         elif opt.follow_redirects is False:
             args.append("-disable-redirects")
+        # writes every exchange, matched or not: one template against one target only
+        if opt.store_resp_dir:
+            args += ["-store-resp", "-store-resp-dir", opt.store_resp_dir]
         return args
 
     def scan(

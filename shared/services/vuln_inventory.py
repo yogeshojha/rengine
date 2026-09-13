@@ -6,7 +6,7 @@ import uuid
 from dataclasses import dataclass
 from urllib.parse import urlsplit
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -209,6 +209,27 @@ def upsert(
             .returning(Vulnerability.id)
         )
         written += len(session.execute(statement).scalars().all())
+    session.commit()
+    return written
+
+
+def attach_evidence(
+    session: Session, scan_id: uuid.UUID, exchanges: dict[str, str]
+) -> int:
+    """Store the exchange a recovery run retained for findings that carried none."""
+    if not exchanges:
+        return 0
+    written = 0
+    for fingerprint in sorted(exchanges):
+        written += session.execute(
+            update(Vulnerability)
+            .where(
+                Vulnerability.scan_id == scan_id,
+                Vulnerability.fingerprint == fingerprint,
+                Vulnerability.response.is_(None),
+            )
+            .values(response=exchanges[fingerprint])
+        ).rowcount
     session.commit()
     return written
 
