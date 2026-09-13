@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from enum import StrEnum
 from urllib.parse import parse_qsl, urlsplit
 
+from shared.utils.net import bracketed
+
 MAX_ENDPOINTS_PER_SCAN = 200_000
 MAX_URL_LENGTH = 2000
 MAX_PATH_LENGTH = 1500
@@ -846,7 +848,7 @@ def parse_url(raw: str, *, default_scheme: str = "https") -> ParsedUrl | None:
             break
     params = tuple(sorted(values))
 
-    literal = f"[{host}]" if ":" in host else host
+    literal = bracketed(host)
     authority = literal if port == _DEFAULT_PORTS[scheme] else f"{literal}:{port}"
     query = "&".join(f"{n}={values[n]}" for n in params)
     url = f"{scheme}://{authority}{path}" + (f"?{query}" if query else "")

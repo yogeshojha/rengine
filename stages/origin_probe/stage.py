@@ -12,6 +12,7 @@ from shared.services import vuln_inventory
 from shared.services.origin_exposure import OriginExposureService
 from shared.services.scope_filter import ip_excluded
 from shared.utils.datetime import utc_now
+from shared.utils.net import host_port
 from stages.base import ALL_TARGETS, Stage, StageResult
 from stages.origin_probe.config import OriginProbeConfig
 from stages.origin_probe.finding import origin_finding
@@ -126,7 +127,7 @@ class OriginProbeStage(Stage):
             ports = sorted(by_ip[ip], key=lambda p: (p not in DEFAULT_WEB_PORTS, p))[
                 : cfg.max_ports_per_address
             ]
-            targets.extend(f"{ip}:{port}" for port in ports)
+            targets.extend(host_port(ip, port) for port in ports)
         return targets
 
     def _persist(self, records) -> int:

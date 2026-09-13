@@ -23,6 +23,7 @@ from shared.models.subdomain import Subdomain
 from shared.services import port_inventory, web_hygiene
 from shared.services.port_inventory import ServiceObservation
 from shared.utils.datetime import utc_now
+from shared.utils.net import host_port
 from shared.utils.software import parse_banner
 from stages.base import Stage, StageResult
 from stages.http_probe.config import HttpProbeConfig
@@ -204,7 +205,7 @@ class HttpProbeStage(Stage):
             )
             for ip in dict.fromkeys(ips):
                 targets.extend(
-                    f"{ip}:{port}" for port in self._ports_for([ip], port_map)
+                    host_port(ip, port) for port in self._ports_for([ip], port_map)
                 )
         return list(dict.fromkeys(targets))[:_MAX_TARGETS]
 

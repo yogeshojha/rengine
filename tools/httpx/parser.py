@@ -7,6 +7,7 @@ from typing import Any
 from shared.services.scan_resolve import MASK
 from shared.services.web_hygiene import evaluate as evaluate_hygiene
 from shared.utils.datetime import utc_now
+from shared.utils.net import split_host_port
 from shared.utils.software import components_of
 from tools.runner.fieldmap import F, parse_record
 
@@ -76,7 +77,7 @@ def _host_of(record: dict) -> str:
     raw = (record.get("input") or record.get("url") or "").strip()
     if "://" in raw:
         raw = raw.split("://", 1)[1]
-    return raw.split("/", 1)[0].rsplit(":", 1)[0].strip().lower()
+    return split_host_port(raw.split("/", 1)[0])[0].strip().lower()
 
 
 def _tls_expired(record: dict) -> bool | None:

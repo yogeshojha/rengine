@@ -59,7 +59,24 @@ def cert_covers(
     return False
 
 
+def bracketed(host: str) -> str:
+    """An IPv6 literal in brackets. Anything else is returned as it is."""
+    return f"[{host}]" if ":" in host and not host.startswith("[") else host
+
+
 def host_port(host: str, port: int | str) -> str:
-    """An authority a tool can parse, with an IPv6 literal in brackets."""
-    literal = f"[{host}]" if ":" in host and not host.startswith("[") else host
-    return f"{literal}:{port}"
+    """An authority a tool can parse."""
+    return f"{bracketed(host)}:{port}"
+
+
+def split_host_port(authority: str) -> tuple[str, str | None]:
+    """The host and port of an authority, with an IPv6 literal unwrapped."""
+    value = authority.strip()
+    if value.startswith("["):
+        literal, _, rest = value.partition("]")
+        port = rest[1:] if rest.startswith(":") else ""
+        return literal[1:], port or None
+    if value.count(":") == 1:
+        host, _, port = value.partition(":")
+        return host, port or None
+    return value, None

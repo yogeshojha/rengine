@@ -27,6 +27,7 @@ from shared.logging import get_logger
 from shared.models.endpoint import Endpoint
 from shared.models.http_asset import HttpAsset
 from shared.models.subdomain import Subdomain
+from shared.utils.net import bracketed
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -108,7 +109,7 @@ def canary_urls(root: str) -> list[str]:
 
 
 def root_of(scheme: str, host: str, port: int) -> str:
-    literal = f"[{host}]" if ":" in host else host
+    literal = bracketed(host)
     if port and port != _DEFAULT_PORTS.get(scheme):
         return f"{scheme}://{literal}:{port}"
     return f"{scheme}://{literal}"
