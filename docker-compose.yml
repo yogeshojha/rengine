@@ -7,7 +7,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "${BIND_ADDR:-127.0.0.1}:5432:5432"
     command: >
       postgres
       -c shared_buffers=${POSTGRES_SHARED_BUFFERS:-2GB}
@@ -33,11 +33,17 @@ services:
   redis:
     image: redis:8-alpine
     ports:
-      - "6379:6379"
+      - "${BIND_ADDR:-127.0.0.1}:6379:6379"
     volumes:
       - redis_data:/data
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test:
+        [
+          "CMD-SHELL",
+          "redis-cli $${REDIS_PASSWORD:+-a \"$$REDIS_PASSWORD\"} --no-auth-warning ping | grep -q PONG",
+        ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -46,6 +52,7 @@ services:
       --appendonly yes
       --maxmemory 256mb
       --maxmemory-policy allkeys-lru
+      ${REDIS_PASSWORD:+--requirepass} ${REDIS_PASSWORD:-}
 
   api:
     build:
@@ -80,7 +87,7 @@ services:
       - /app/tools/build
       - /app/tools/rengine_tools.egg-info
     ports:
-      - "8000:8000"
+      - "${APP_BIND_ADDR:-0.0.0.0}:8000:8000"
     env_file:
       - .env
     environment:
@@ -229,16 +236,14 @@ services:
       - /app/shared/rengine_shared.egg-info
       - /app/tools/build
       - /app/tools/rengine_tools.egg-info
+    profiles: ["debug"]
     ports:
-      - "5555:5555"
+      - "${BIND_ADDR:-127.0.0.1}:5555:5555"
     env_file:
       - .env
-    environment:
-      - FLOWER_UNAUTHENTICATED_API=true
     command: >
       uv run celery -A app.celery flower
       --port=5555
-      --broker=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/${REDIS_DB:-0}
       --basic-auth=${FLOWER_USER:-admin}:${FLOWER_PASSWORD:-admin}
     depends_on:
       redis:
@@ -252,7 +257,7 @@ services:
       - ./frontend/src:/app/src
       - ./frontend/vite.config.ts:/app/vite.config.ts
     ports:
-      - "5173:5173"
+      - "${APP_BIND_ADDR:-0.0.0.0}:5173:5173"
     environment:
       - NODE_ENV=development
     depends_on:

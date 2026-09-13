@@ -1,4 +1,10 @@
+import re
+from urllib.parse import quote
+
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
+
+_UNSAFE_IN_ARGV = re.compile(r"[\s\"'\\]")
 
 
 class BaseAppSettings(BaseSettings):
@@ -43,10 +49,28 @@ class BaseAppSettings(BaseSettings):
     REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
+    REDIS_PASSWORD: str = ""
+
+    @field_validator("REDIS_PASSWORD")
+    @classmethod
+    def validate_redis_password(cls, v: str) -> str:
+        if _UNSAFE_IN_ARGV.search(v):
+            msg = (
+                "REDIS_PASSWORD must not contain whitespace, quotes or backslashes. "
+                "Generate one with: openssl rand -hex 32"
+            )
+            raise ValueError(msg)
+        return v
+
+    def _redis_url(self, db: int) -> str:
+        credentials = (
+            f":{quote(self.REDIS_PASSWORD, safe='')}@" if self.REDIS_PASSWORD else ""
+        )
+        return f"redis://{credentials}{self.REDIS_HOST}:{self.REDIS_PORT}/{db}"
 
     @property
     def redis_url(self) -> str:
-        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+        return self._redis_url(self.REDIS_DB)
 
     @property
     def celery_broker_url(self) -> str:
@@ -54,7 +78,7 @@ class BaseAppSettings(BaseSettings):
 
     @property
     def celery_result_backend(self) -> str:
-        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB + 1}"
+        return self._redis_url(self.REDIS_DB + 1)
 
     class Config:
         env_file = ".env"
