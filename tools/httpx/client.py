@@ -11,6 +11,10 @@ logger = get_logger(__name__)
 
 HTTPX_BINARY = "httpx"
 DEFAULT_TIMEOUT = 900
+
+# httpx spells it -H/-header
+HEADER_FLAG = "-header"
+
 _IDLE_FLOOR = 120
 _IDLE_TIMEOUT_FACTOR = 6
 _CAPTURE_IDLE_FLOOR = 300
@@ -93,7 +97,7 @@ class HttpxClient:
         if self.proxy_url:
             args += ["-proxy", self.proxy_url]
         for key, value in self.headers.items():
-            args += ["-header", f"{key}: {value}"]
+            args += [HEADER_FLAG, f"{key}: {value}"]
 
         with self._runner.stream_json(
             args=args,
@@ -126,7 +130,7 @@ class HttpxClient:
         if self.proxy_url:
             args += ["-proxy", self.proxy_url]
         for key, value in self.headers.items():
-            args += ["-header", f"{key}: {value}"]
+            args += [HEADER_FLAG, f"{key}: {value}"]
         return args
 
     @contextlib.contextmanager

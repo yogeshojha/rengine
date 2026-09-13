@@ -22,6 +22,9 @@ logger = get_logger(__name__)
 
 NUCLEI_BINARY = "nuclei"
 DEFAULT_TIMEOUT = 7200
+
+# nuclei spells it -H/-header
+HEADER_FLAG = "-header"
 _EVICTION_SLACK = 120
 
 _DROPPED = re.compile(
@@ -251,7 +254,7 @@ class NucleiClient:
         if opt.proxy_url:
             args += ["-proxy", opt.proxy_url]
         for name, value in (opt.headers or {}).items():
-            args += ["-header", f"{name}: {value}"]
+            args += [HEADER_FLAG, f"{name}: {value}"]
         if opt.exclude_hosts:
             args += ["-exclude-hosts", ",".join(opt.exclude_hosts)]
         if opt.follow_redirects is True:

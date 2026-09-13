@@ -12,6 +12,9 @@ logger = get_logger(__name__)
 KATANA_BINARY = "katana"
 DEFAULT_TIMEOUT = 1800
 
+# katana spells it -H/-headers; httpx and nuclei spell it -header
+HEADER_FLAG = "-headers"
+
 _BASE_FLAGS = [
     "-jsonl",
     "-omit-raw",
@@ -90,7 +93,7 @@ class KatanaClient:
         if self.proxy_url:
             args += ["-proxy", self.proxy_url]
         for key, value in self.headers.items():
-            args += ["-header", f"{key}: {value}"]
+            args += [HEADER_FLAG, f"{key}: {value}"]
         return args
 
     @contextlib.contextmanager

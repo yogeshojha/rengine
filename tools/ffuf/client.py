@@ -18,6 +18,9 @@ logger = get_logger(__name__)
 
 FFUF_BINARY = "ffuf"
 DEFAULT_TIMEOUT = 1800
+
+# ffuf takes -H only
+HEADER_FLAG = "-H"
 DEFAULT_MATCH_CODES = "200,204,301,302,307,401,403,405,500"
 DEFAULT_REQUEST_TIMEOUT = 8
 _BUDGET_SLACK = 60
@@ -88,7 +91,7 @@ class FfufClient:
         if self.proxy_url:
             args += ["-x", self.proxy_url]
         for key, value in self.headers.items():
-            args += ["-H", f"{key}: {value}"]
+            args += [HEADER_FLAG, f"{key}: {value}"]
 
         with self._runner.stream_json(
             args=args,
@@ -109,7 +112,7 @@ class FfufClient:
             f"{self.wordlist}:FUZZ",
             "-u",
             f"{scheme}://{ip}/",
-            "-H",
+            HEADER_FLAG,
             f"Host: FUZZ.{base_host}",
             "-ac",
             "-mc",
@@ -127,7 +130,7 @@ class FfufClient:
         if self.proxy_url:
             args += ["-x", self.proxy_url]
         for key, value in self.headers.items():
-            args += ["-H", f"{key}: {value}"]
+            args += [HEADER_FLAG, f"{key}: {value}"]
 
         result = self._runner.run(
             args=args,
