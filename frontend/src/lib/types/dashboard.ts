@@ -317,6 +317,7 @@ export interface HostingSplit {
 	edge: number;
 	cloud: number;
 	direct: number;
+	capped: Record<string, boolean>;
 }
 
 export const FEED_QUERIES = {

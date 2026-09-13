@@ -1,26 +1,24 @@
 <script lang="ts">
 	import SectionHead from '$lib/components/section-head.svelte';
-	import HostingFlow from '$lib/components/scans/results/overview/hosting-flow.svelte';
-	import type { HostingFlow as Flow } from '$lib/types/hosting-flow';
+	import HostingBody, {
+		coverage,
+		networkNote
+	} from '$lib/components/scans/results/overview/hosting-body.svelte';
+	import type { HostingComposition } from '$lib/types/hosting';
 
 	interface Props {
-		flow: Flow | null;
+		hosting: HostingComposition | null;
 		onPick: (query: string) => void;
 	}
 
-	let { flow, onPick }: Props = $props();
-
-	const plural = (n: number, one: string, many: string) =>
-		`${n.toLocaleString()} ${n === 1 ? one : many}`;
+	let { hosting, onPick }: Props = $props();
 </script>
 
-{#if flow && flow.resolving > 0}
-	<section class="flex flex-col gap-3 border-t py-5" style="--flow-halo: var(--background)">
-		<SectionHead title="Hosting" count={plural(flow.networks, 'network', 'networks')}>
-			<span class="tabular-nums">
-				{flow.resolving.toLocaleString()} of {flow.hosts.toLocaleString()} resolve
-			</span>
+{#if hosting && hosting.resolving > 0}
+	<section class="flex flex-col gap-3 border-t py-5">
+		<SectionHead title="Hosting" count={networkNote(hosting)}>
+			<span class="tabular-nums">{coverage(hosting)}</span>
 		</SectionHead>
-		<HostingFlow {flow} {onPick} />
+		<HostingBody {hosting} {onPick} />
 	</section>
 {/if}

@@ -30,7 +30,7 @@
 	import type { ScanStructure } from '$lib/utilities/endpoints';
 	import type { ScanVulnerabilities } from '$lib/utilities/vulns';
 	import type { OriginExposure } from '$lib/utilities/origins';
-	import type { HostingFlow } from '$lib/types/hosting-flow';
+	import type { HostingComposition } from '$lib/types/hosting';
 
 	interface Props {
 		scan: ScanRead;
@@ -149,13 +149,13 @@
 			.catch(() => (hygiene = null));
 	}
 
-	let hostingFlow = $state<HostingFlow | null>(null);
-	function loadHostingFlow() {
+	let hosting = $state<HostingComposition | null>(null);
+	function loadHosting() {
 		if (!scanId || !projectId) return;
 		subdomainsApi
-			.hostingFlow(projectId, scanId)
-			.then((d) => (hostingFlow = d))
-			.catch(() => (hostingFlow = null));
+			.hosting(projectId, scanId)
+			.then((d) => (hosting = d))
+			.catch(() => (hosting = null));
 	}
 
 	function loadRelated() {
@@ -169,7 +169,7 @@
 	function reload() {
 		loadInsights();
 		loadRelated();
-		loadHostingFlow();
+		loadHosting();
 		loadHygiene();
 		loadExposure();
 		loadStructure();
@@ -264,7 +264,7 @@
 			</EmptyState>
 		{:else}
 			<VulnerabilityPanel {vulns} {onTab} />
-			<HostingPanel flow={hostingFlow} onPick={(q) => onTab(WEB.tab, q)} />
+			<HostingPanel {hosting} onPick={(q) => onTab(WEB.tab, q)} />
 			<PosturePanel {insights} {loading} {isDomain} {nounPlural} {onFilter} />
 			<HygienePanel summary={hygiene} loading={loading && !hygiene} {onFilter} />
 			<ExposurePanel {exposure} {loading} {onTab} />

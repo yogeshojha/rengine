@@ -6,6 +6,7 @@
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import type { Facet } from '$lib/utilities/scan-insights';
 	import { HOSTING_QUERIES, type HostingSplit } from '$lib/types/dashboard';
+	import { FRONTING_FILL } from '$lib/config/hosting';
 
 	interface Props {
 		hosting: HostingSplit | null;
@@ -19,8 +20,8 @@
 	const TOP = 5;
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 	const IPS = SURFACE[SurfaceDimension.IPS];
-	const plural = (n: number, one: string, many: string) =>
-		`${n.toLocaleString()} ${n === 1 ? one : many}`;
+	const capped = (q: string) => hosting?.capped?.[q] ?? false;
+	const reads = (n: number, q: string) => `${n.toLocaleString()}${capped(q) ? '+' : ''}`;
 
 	let segments = $derived(
 		hosting
@@ -29,27 +30,30 @@
 						key: 'edge',
 						label: 'CDN or WAF edge',
 						n: hosting.edge,
-						color: 'var(--chart-1)',
+						color: FRONTING_FILL.edge,
 						q: HOSTING_QUERIES.edge
 					},
 					{
 						key: 'cloud',
 						label: 'Cloud provider',
 						n: hosting.cloud,
-						color: 'var(--chart-3)',
+						color: FRONTING_FILL.cloud,
 						q: HOSTING_QUERIES.cloud
 					},
 					{
 						key: 'direct',
 						label: 'Direct to origin',
 						n: hosting.direct,
-						color: 'var(--chart-4)',
+						color: FRONTING_FILL.direct,
 						q: HOSTING_QUERIES.direct
 					}
 				].filter((s) => s.n > 0)
 			: []
 	);
 	let resolved = $derived(hosting?.resolved ?? 0);
+	let exact = $derived(
+		!!hosting && !capped(HOSTING_QUERIES.resolved) && !segments.some((s) => capped(s.q))
+	);
 	let rows = $derived<BarRow[]>(
 		(networks ?? []).slice(0, TOP).map((f) => ({
 			key: f.value,
@@ -73,7 +77,7 @@
 			<div class="flex flex-col gap-2">
 				<div class="flex h-2.5 w-full gap-px overflow-hidden rounded-full bg-muted">
 					{#each segments as s (s.key)}
-						<Hint text="{plural(s.n, 'web asset', 'web assets')} · {s.label}">
+						<Hint text="{reads(s.n, s.q)} {s.n === 1 ? 'web asset' : 'web assets'} · {s.label}">
 							{#snippet child(props)}
 								<a
 									{...props}
@@ -95,10 +99,12 @@
 							>
 								<span class="size-2.5 shrink-0 rounded-[3px]" style="background:{s.color}"></span>
 								<span class="min-w-0 flex-1 truncate text-muted-foreground">{s.label}</span>
-								<span class="font-medium tabular-nums">{s.n.toLocaleString()}</span>
-								<span class="w-9 text-right text-2xs text-muted-foreground tabular-nums">
-									{resolved ? Math.round((s.n / resolved) * 100) : 0}%
-								</span>
+								<span class="font-medium tabular-nums">{reads(s.n, s.q)}</span>
+								{#if exact}
+									<span class="w-9 text-right text-2xs text-muted-foreground tabular-nums">
+										{resolved ? Math.round((s.n / resolved) * 100) : 0}%
+									</span>
+								{/if}
 							</a>
 						</li>
 					{/each}
@@ -116,7 +122,9 @@
 	</div>
 	{#snippet footer()}
 		{#if hosting}
-			{plural(resolved, 'resolving web asset', 'resolving web assets')}
+			{reads(resolved, HOSTING_QUERIES.resolved)} resolving {resolved === 1
+				? 'web asset'
+				: 'web assets'}
 		{/if}
 	{/snippet}
 </Widget>

@@ -1,6 +1,6 @@
 import { api } from './client';
 import { scopeQuery } from '$lib/utilities/surface-scope';
-import type { HostingFlow } from '$lib/types/hosting-flow';
+import type { HostingComposition } from '$lib/types/hosting';
 import type { CorrelationGraph } from '$lib/types/correlation';
 import type { RenderGroups, SubdomainSummary, TargetSubdomainRead } from '$lib/types/subdomain';
 import type { QueryCounts, QueryGroups, QueryLeads, RelatedDomains } from '$lib/types/asset-query';
@@ -102,8 +102,8 @@ export const subdomainsApi = {
 		);
 	},
 
-	async hostingFlow(projectId: string, scanId: string): Promise<HostingFlow> {
-		return api.get<HostingFlow>(`/subdomains/hosting-flow?${scopeQuery({ projectId, scanId })}`);
+	async hosting(projectId: string, scanId: string): Promise<HostingComposition> {
+		return api.get<HostingComposition>(`/subdomains/hosting?${scopeQuery({ projectId, scanId })}`);
 	},
 
 	async facets(projectId: string, scanId: string): Promise<SubdomainFacetSet> {

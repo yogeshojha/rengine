@@ -8,7 +8,7 @@ from app.api.deps import CurrentUser
 from app.api.scope import WebAssetScope
 from app.core.database import get_session
 from app.services.correlation_graph import CorrelationGraphService
-from app.services.hosting_flow import HostingFlowService
+from app.services.hosting import HostingService
 from app.services.related_domains import RelatedDomainService
 from app.services.subdomain import SubdomainService
 from shared.models.asset_query import (
@@ -17,7 +17,7 @@ from shared.models.asset_query import (
     QueryGroups,
     QueryLeads,
 )
-from shared.models.hosting_flow import HostingFlow
+from shared.models.hosting import HostingComposition
 from shared.models.related import RelatedDomains
 from shared.models.scan_correlation import (
     CorrelationGraph,
@@ -151,8 +151,8 @@ async def subdomain_search_renders(
     )
 
 
-@router.get("/hosting-flow", response_model=HostingFlow)
-async def subdomain_hosting_flow(
+@router.get("/hosting", response_model=HostingComposition)
+async def subdomain_hosting(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
     project_id: Annotated[UUID, Query(description="Project ID")],
@@ -160,11 +160,11 @@ async def subdomain_hosting_flow(
 ):
     return await lead_cache.cached(
         session,
-        name="hosting_flow",
+        name="hosting",
         scans=(scan_id,),
         facets=str(project_id),
-        model=HostingFlow,
-        build=lambda: HostingFlowService(session).for_scan(project_id, scan_id),
+        model=HostingComposition,
+        build=lambda: HostingService(session).for_scan(project_id, scan_id),
     )
 
 

@@ -37,7 +37,7 @@
 	import type { ScanRead, ScanStatus } from '$lib/types/scan';
 	import type { WhoisCorrelationResult } from '$lib/types/whois';
 	import type { RelatedDomain } from '$lib/types/asset-query';
-	import type { HostingFlow } from '$lib/types/hosting-flow';
+	import type { HostingComposition } from '$lib/types/hosting';
 	import type { InsightTally } from '$lib/utilities/scan-insights';
 	import { Button } from '$lib/components/ui/button';
 	import * as Empty from '$lib/components/ui/empty';
@@ -339,14 +339,14 @@
 		}
 	}
 
-	let hostingFlow = $state<HostingFlow | null>(null);
+	let hosting = $state<HostingComposition | null>(null);
 	let hostingFor: string | null = null;
-	async function fetchHostingFlow(scanId: string) {
+	async function fetchHosting(scanId: string) {
 		const project = projectsStore.activeProject;
 		if (!project || hostingFor === scanId) return;
 		hostingFor = scanId;
 		try {
-			hostingFlow = await subdomainsApi.hostingFlow(project.id, scanId);
+			hosting = await subdomainsApi.hosting(project.id, scanId);
 			loaded('Hosting');
 		} catch {
 			hostingFor = null;
@@ -470,7 +470,7 @@
 		void fetchPrograms();
 		if (webScanId) {
 			void fetchRelated(webScanId);
-			void fetchHostingFlow(webScanId);
+			void fetchHosting(webScanId);
 		}
 		if (ipsScanId) void fetchGeography(ipsScanId);
 	}
@@ -480,7 +480,7 @@
 		if (scanId)
 			untrack(() => {
 				fetchRelated(scanId);
-				fetchHostingFlow(scanId);
+				fetchHosting(scanId);
 			});
 		else if (!summaryLoading) relatedLoading = false;
 	});
@@ -778,7 +778,7 @@
 							loading={detailLoading || summaryLoading}
 							onTab={setTab}
 						/>
-						<HostingSection flow={hostingFlow} onPick={pickHosting} />
+						<HostingSection {hosting} onPick={pickHosting} />
 						<ActivityTimeline
 							{target}
 							{creator}

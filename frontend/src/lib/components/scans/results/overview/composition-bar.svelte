@@ -14,9 +14,10 @@
 		total: number;
 		label: string;
 		onSelect?: (filter: string) => void;
+		inline?: boolean;
 	}
 
-	let { segments, total, label, onSelect }: Props = $props();
+	let { segments, total, label, onSelect, inline = false }: Props = $props();
 
 	const MIN_BAR_SEGMENTS = 2;
 
@@ -60,19 +61,21 @@
 		</div>
 	{/if}
 
-	<ul class="-mx-1.5 flex flex-col">
+	<ul class="-mx-1.5 flex {inline ? 'flex-wrap items-center gap-x-2' : 'flex-col'}">
 		{#each segments as s (s.key)}
 			<li>
 				{#if s.filter && onSelect}
 					<button
 						type="button"
-						class="flex w-full cursor-pointer items-center gap-2.5 rounded-md px-1.5 py-1 text-left transition-colors hover:bg-muted/50"
+						class="flex {inline
+							? ''
+							: 'w-full'} cursor-pointer items-center gap-2.5 rounded-md px-1.5 py-1 text-left transition-colors hover:bg-muted/50"
 						onclick={() => onSelect(s.filter!)}
 					>
 						{@render row(s)}
 					</button>
 				{:else}
-					<div class="flex w-full items-center gap-2.5 px-1.5 py-1">
+					<div class="flex {inline ? '' : 'w-full'} items-center gap-2.5 px-1.5 py-1">
 						{@render row(s)}
 					</div>
 				{/if}
@@ -84,9 +87,11 @@
 {#snippet row(s: Segment)}
 	<span class="size-2 shrink-0 rounded-[2px]" style="background:{s.color}" aria-hidden="true"
 	></span>
-	<span class="min-w-0 flex-1 text-sm leading-5">{s.label}</span>
+	<span class="min-w-0 {inline ? '' : 'flex-1'} truncate text-sm leading-5">{s.label}</span>
 	<span class="text-sm font-medium tabular-nums">{s.count.toLocaleString()}</span>
-	<span class="w-9 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
+	<span
+		class="{inline ? '' : 'w-9'} shrink-0 text-right text-xs text-muted-foreground tabular-nums"
+	>
 		{pctLabel(s.count)}
 	</span>
 {/snippet}

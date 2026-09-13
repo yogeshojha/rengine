@@ -34,7 +34,8 @@ function hostingCounts(projectId: string): Promise<HostingSplit> {
 		resolved: r.counts[HOSTING_QUERIES.resolved] ?? 0,
 		edge: r.counts[HOSTING_QUERIES.edge] ?? 0,
 		cloud: r.counts[HOSTING_QUERIES.cloud] ?? 0,
-		direct: r.counts[HOSTING_QUERIES.direct] ?? 0
+		direct: r.counts[HOSTING_QUERIES.direct] ?? 0,
+		capped: r.capped ?? {}
 	}));
 }
 

@@ -3,6 +3,12 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import Hint from '$lib/components/hint.svelte';
 
+	export interface RankedSegment {
+		key: string;
+		count: number;
+		color: string;
+	}
+
 	export interface RankedRow {
 		key: string;
 		label: string;
@@ -12,6 +18,8 @@
 		badge?: string;
 		meta?: string;
 		filter?: string;
+		hint?: string;
+		segments?: RankedSegment[];
 	}
 
 	interface Props {
@@ -51,13 +59,16 @@
 						</span>
 					{/if}
 					<span class="flex min-w-0 flex-1 flex-col">
-						<Hint text={r.label}>
+						<Hint text={r.hint ?? r.label}>
 							{#snippet child(props)}
 								<span
 									{...props}
 									class="truncate leading-5 {r.mono ? 'font-mono text-xs' : 'text-sm'}"
 								>
 									{r.label}
+									{#if r.meta}<span class="ml-1.5 text-2xs text-muted-foreground tabular-nums"
+											>{r.meta}</span
+										>{/if}
 								</span>
 							{/snippet}
 						</Hint>
@@ -77,9 +88,17 @@
 				</span>
 				<span class="block h-1 w-full overflow-hidden rounded-full bg-muted" aria-hidden="true">
 					<span
-						class="block h-full rounded-full bg-series"
+						class="flex h-full overflow-hidden rounded-full"
 						style="width:{Math.max(MIN_METER, share(r.count))}%"
-					></span>
+					>
+						{#if r.segments?.length}
+							{#each r.segments as s (s.key)}
+								<span class="h-full" style="flex:{s.count} 1 0;background:{s.color}"></span>
+							{/each}
+						{:else}
+							<span class="h-full flex-1 bg-series"></span>
+						{/if}
+					</span>
 				</span>
 			</button>
 		</li>
