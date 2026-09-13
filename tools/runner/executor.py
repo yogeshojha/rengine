@@ -4,6 +4,7 @@ import contextlib
 import json
 import os
 import shutil
+import signal
 import subprocess
 import tempfile
 import threading
@@ -14,7 +15,7 @@ from pathlib import Path
 from shared.definitions.constants import MAX_COMMAND_OUTPUT
 from shared.logging import get_logger
 from shared.services.scan_resolve import redact_command
-from tools.runner.abort import active_abort
+from tools.runner.abort import StageAbortedError, active_abort
 from tools.runner.models import (
     CommandRecorder,
     OutputFormat,
@@ -27,6 +28,104 @@ logger = get_logger(__name__)
 _TOOL_BIN = os.environ.get("RENGINE_TOOL_BIN", "/root/go/bin")
 
 _STOP_POLL_SECONDS = 2.0
+_KILL_GRACE_SECONDS = 5
+
+
+def _terminate(proc: subprocess.Popen) -> None:
+    """Kill the tool and anything it started, so no grandchild keeps running."""
+    with contextlib.suppress(Exception):
+        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+    with contextlib.suppress(Exception):
+        proc.kill()
+    with contextlib.suppress(Exception):
+        proc.wait(timeout=_KILL_GRACE_SECONDS)
+
+
+def _drain(stream, into: list[str]) -> None:
+    with contextlib.suppress(Exception):
+        into.append(stream.read())
+
+
+def _feed(stream, data: str) -> None:
+    with contextlib.suppress(Exception):
+        stream.write(data)
+        stream.close()
+
+
+def _wait(
+    proc: subprocess.Popen,
+    *,
+    timeout: int | None,
+    should_stop: Callable[[], bool] | None,
+) -> bool:
+    """Wait for the tool, answering the stage's abort check while it runs."""
+    deadline = time.monotonic() + timeout if timeout else None
+    while True:
+        left = None if deadline is None else deadline - time.monotonic()
+        if left is not None and left <= 0:
+            return False
+        slice_seconds = (
+            _STOP_POLL_SECONDS if left is None else min(_STOP_POLL_SECONDS, left)
+        )
+        try:
+            proc.wait(timeout=slice_seconds)
+        except subprocess.TimeoutExpired:
+            if should_stop is not None and should_stop():
+                return True
+        else:
+            return False
+
+
+def _run_process(
+    cmd: list[str],
+    *,
+    stdin_data: str | None,
+    env: dict[str, str],
+    cwd: str,
+    timeout: int | None,
+    should_stop: Callable[[], bool] | None,
+) -> subprocess.CompletedProcess[str]:
+    """subprocess.run, plus a kill when the scan is halted."""
+    proc = subprocess.Popen(  # noqa: S603
+        cmd,
+        stdin=subprocess.PIPE if stdin_data is not None else subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        errors="replace",
+        env=env,
+        cwd=cwd,
+        start_new_session=True,
+    )
+    out: list[str] = []
+    err: list[str] = []
+    readers = [
+        threading.Thread(target=_drain, args=(proc.stdout, out), daemon=True),
+        threading.Thread(target=_drain, args=(proc.stderr, err), daemon=True),
+    ]
+    if stdin_data is not None and proc.stdin is not None:
+        readers.append(
+            threading.Thread(target=_feed, args=(proc.stdin, stdin_data), daemon=True)
+        )
+    for reader in readers:
+        reader.start()
+
+    stopped = _wait(proc, timeout=timeout, should_stop=should_stop)
+    timed_out = proc.poll() is None and not stopped
+    if proc.poll() is None:
+        _terminate(proc)
+    for reader in readers:
+        reader.join(timeout=_KILL_GRACE_SECONDS)
+    if stopped:
+        raise StageAbortedError
+    if timed_out:
+        raise subprocess.TimeoutExpired(cmd, timeout or 0)
+    return subprocess.CompletedProcess(
+        cmd,
+        proc.returncode if proc.returncode is not None else -1,
+        "".join(out),
+        "".join(err),
+    )
 
 
 class ToolNotFoundError(Exception):
@@ -97,6 +196,7 @@ class CLIToolRunner:
         recorder: CommandRecorder | None = None,
         tool: str | None = None,
         extra_args: list[str] | None = None,
+        should_stop: Callable[[], bool] | None = None,
     ) -> ToolResult:
         """Execute the CLI tool and return parsed results."""
         timeout = timeout or self.default_timeout
@@ -155,16 +255,13 @@ class CLIToolRunner:
             if recorder is not None:
                 handle = recorder.start(tool or self.binary, cmd_str)
 
-            process_result = subprocess.run(  # noqa: S603
+            process_result = _run_process(
                 cmd,
-                input=stdin_data,
-                capture_output=True,
-                text=True,
-                errors="replace",
-                timeout=timeout,
-                check=False,
+                stdin_data=stdin_data,
                 env=self._build_env(env),
                 cwd=tempfile.gettempdir(),
+                timeout=timeout,
+                should_stop=should_stop or active_abort(),
             )
 
             duration = time.monotonic() - start_time
@@ -175,13 +272,7 @@ class CLIToolRunner:
                 use_output_file=use_output_file,
             )
 
-            output_lines: list[str] = []
-            json_records: list[dict] = []
-
-            if output_format == OutputFormat.JSONL:
-                json_records = self._parse_jsonl(raw_output)
-            else:
-                output_lines = self._parse_lines(raw_output)
+            output_lines, json_records = self._parse(raw_output, output_format)
 
             success = process_result.returncode == 0
             error = None
@@ -212,6 +303,11 @@ class CLIToolRunner:
                 error=error,
             )
 
+        except StageAbortedError:
+            logger.info("%s stopped: the scan was halted", self.binary)
+            _finish(-1, "", f"{self.binary} stopped: the scan was halted")
+            raise
+
         except subprocess.TimeoutExpired:
             duration = time.monotonic() - start_time
             logger.error(f"{self.binary} timed out after {timeout}s")
@@ -219,12 +315,7 @@ class CLIToolRunner:
             raw_output = self._read_output(
                 output_file=output_file, stdout="", use_output_file=use_output_file
             )
-            partial_lines: list[str] = []
-            partial_records: list[dict] = []
-            if output_format == OutputFormat.JSONL:
-                partial_records = self._parse_jsonl(raw_output)
-            else:
-                partial_lines = self._parse_lines(raw_output)
+            partial_lines, partial_records = self._parse(raw_output, output_format)
             _finish(-1, "", timeout_error)
             return ToolResult(
                 success=False,
@@ -305,15 +396,15 @@ class CLIToolRunner:
                 errors="replace",
                 env=self._build_env(env),
                 cwd=tempfile.gettempdir(),
+                start_new_session=True,
             )
             stdout = proc.stdout
             last_seen = [time.monotonic()]
 
             def _kill(reason: str) -> None:
                 killed_for[0] = reason
-                with contextlib.suppress(Exception):
-                    if proc is not None:
-                        proc.kill()
+                if proc is not None:
+                    _terminate(proc)
 
             if idle_timeout:
 
@@ -351,8 +442,7 @@ class CLIToolRunner:
                 def _watch_stop() -> None:
                     while proc is not None and proc.poll() is None:
                         if stop_check():
-                            with contextlib.suppress(Exception):
-                                proc.kill()
+                            _terminate(proc)
                             return
                         time.sleep(_STOP_POLL_SECONDS)
 
@@ -384,9 +474,7 @@ class CLIToolRunner:
                 with contextlib.suppress(Exception):
                     return_code = proc.wait(timeout=10)
                 if proc.poll() is None:
-                    with contextlib.suppress(Exception):
-                        proc.kill()
-                        proc.wait(timeout=5)
+                    _terminate(proc)
                     return_code = proc.returncode if proc.returncode is not None else -1
             if stderr_thread is not None:
                 stderr_thread.join(timeout=5)
@@ -460,6 +548,15 @@ class CLIToolRunner:
             except OSError as e:
                 logger.warning(f"Failed to read output file {output_file}: {e}")
         return stdout or ""
+
+    @classmethod
+    def _parse(
+        cls, raw: str, output_format: OutputFormat
+    ) -> tuple[list[str], list[dict]]:
+        """Lines or records, whichever this run asked for."""
+        if output_format == OutputFormat.JSONL:
+            return [], cls._parse_jsonl(raw)
+        return cls._parse_lines(raw), []
 
     @staticmethod
     def _parse_jsonl(raw: str) -> list[dict]:

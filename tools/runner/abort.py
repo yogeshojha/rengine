@@ -3,6 +3,11 @@
 import contextlib
 from collections.abc import Callable, Iterator
 
+
+class StageAbortedError(Exception):
+    """Raised when a stage detects the scan was cancelled or paused mid-run."""
+
+
 _active: Callable[[], bool] | None = None
 
 

@@ -20,6 +20,7 @@ from shared.services.orchestrator.aggregate import derived_counts
 from stages.config import StageConfig
 from stages.sink import DEFAULT_ROWS, DEFAULT_SECONDS, ResultSink
 from tools.runner import CLIToolRunner
+from tools.runner.abort import StageAbortedError
 
 logger = get_logger(__name__)
 
@@ -62,10 +63,6 @@ class NetOptions:
     proxy_url: str | None = None
     headers: dict[str, str] = field(default_factory=dict)
     user_agent: str | None = None
-
-
-class StageAbortedError(Exception):
-    """Raised when a stage detects the scan was cancelled mid-run."""
 
 
 ALL_TARGETS: frozenset[str] = frozenset(t.value for t in TargetType)
