@@ -64,7 +64,7 @@ from shared.definitions.surface import (
 )
 from shared.definitions.vulnerabilities import SEVERITY_ORDER, Severity
 from shared.enums.scan import (
-    SCAN_LIVE_STATUSES,
+    SCAN_OPEN_STATUSES,
     ScanActivityStatus,
     ScanScope,
     ScanStatus,
@@ -489,7 +489,7 @@ class ScanCompareService:
             headline=self._headline(total, deltas, current),
             summary=self._summary(deltas, setting_diff, run_diff),
             changes_total=total,
-            live=current.status in SCAN_LIVE_STATUSES,
+            live=current.status in SCAN_OPEN_STATUSES,
             suggestion=suggestion,
             generated_at=utc_now(),
         )
@@ -763,7 +763,7 @@ class ScanCompareService:
                 Scan.project_id == project_id,
                 Scan.id != current.id,
                 Scan.scope == current.scope,
-                Scan.status.not_in(SCAN_LIVE_STATUSES),
+                Scan.status.not_in(SCAN_OPEN_STATUSES),
                 started < func.coalesce(current.started_at, current.created_at),
             )
             .order_by(started.desc())
@@ -780,7 +780,7 @@ class ScanCompareService:
     def _refusal(self, scan: Scan, other: Scan, census: bool) -> str:
         if other.target_id != scan.target_id:
             return REFUSAL_REASON[Refusal.DIFFERENT_TARGET.value]
-        if other.status in SCAN_LIVE_STATUSES:
+        if other.status in SCAN_OPEN_STATUSES:
             return REFUSAL_REASON[Refusal.UNFINISHED.value]
         if census and other.scope != ScanScope.FULL.value:
             return REFUSAL_REASON[Refusal.FOCUSED_AGAINST_FULL.value]
@@ -1090,7 +1090,7 @@ class ScanCompareService:
                 Scan.target_id == current.target_id,
                 Scan.scope == current.scope,
                 Scan.id.not_in([baseline.id, current.id]),
-                Scan.status.not_in(SCAN_LIVE_STATUSES),
+                Scan.status.not_in(SCAN_OPEN_STATUSES),
                 started > low,
                 started < high,
             )
@@ -1201,7 +1201,7 @@ class ScanCompareService:
             found.add(Comparability.SETTINGS_DIFFER.value)
         if any(
             run.status != ScanStatus.COMPLETED.value
-            and run.status not in SCAN_LIVE_STATUSES
+            and run.status not in SCAN_OPEN_STATUSES
             for run in (baseline, current)
         ):
             found.add(Comparability.QUALITY_DIFFERS.value)
@@ -1213,7 +1213,9 @@ class ScanCompareService:
     # ---------- narration ----------
 
     def _headline(self, total: int, deltas: list[DimensionDelta], current: Scan) -> str:
-        if current.status in SCAN_LIVE_STATUSES:
+        if current.status == ScanStatus.PAUSED.value:
+            return "Scan paused"
+        if current.status in SCAN_OPEN_STATUSES:
             return "Scan in progress"
         if total == 0:
             return "Nothing changed"

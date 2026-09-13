@@ -10,6 +10,7 @@
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import Play from '@lucide/svelte/icons/play';
 	import Ban from '@lucide/svelte/icons/ban';
+	import Pause from '@lucide/svelte/icons/pause';
 	import Copy from '@lucide/svelte/icons/copy';
 	import FileText from '@lucide/svelte/icons/file-text';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
@@ -36,6 +37,7 @@
 	import ScanStatusBadge from '@/components/scan-status-badge.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import ConfirmDialog from '@/components/confirm-dialog.svelte';
+	import LoadingButton from '@/components/loading-button.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import ScanOverview from '$lib/components/scans/results/scan-overview.svelte';
 	import WebAssetsTable from '$lib/components/scans/results/web-assets-table.svelte';
@@ -106,8 +108,11 @@
 	let error = $state<string | null>(null);
 	let showRescan = $state(false);
 	let cancelOpen = $state(false);
+	let pauseOpen = $state(false);
 	let reportOpen = $state(false);
 	let cancelling = $state(false);
+	let pausing = $state(false);
+	let resuming = $state(false);
 	let headerEl = $state<HTMLElement | null>(null);
 	let condensed = $state(false);
 	let tabsHeight = $state(0);
@@ -236,6 +241,13 @@
 	});
 
 	let live = $derived(!!scan && isLiveStatus(scan.status));
+	let paused = $derived(scan?.status === 'paused');
+	let runningStages = $derived(activities.filter((a) => a.status === 'running').length);
+	let pauseNote = $derived(
+		runningStages
+			? `${runningStages} running ${runningStages === 1 ? 'stage' : 'stages'} stop and run again from the start when the scan resumes.`
+			: 'The scan stops before its next stage.'
+	);
 	let focused = $derived(scan?.scope === 'focused');
 	let seedNoun = $derived(
 		(scan?.seed_count ?? 0) === 1 ? '1 asset' : `${scan?.seed_count ?? 0} assets`
@@ -419,6 +431,31 @@
 		}, 600);
 	}
 
+	async function confirmPause() {
+		if (!scan) return;
+		pausing = true;
+		const ok = await liveScans.pause(scan);
+		pausing = false;
+		pauseOpen = false;
+		if (ok) {
+			toast.success('Scan paused');
+			load(true);
+		} else toast.error('Scan not paused');
+	}
+
+	async function resume() {
+		if (!scan) return;
+		resuming = true;
+		const ok = await liveScans.resume(scan);
+		resuming = false;
+		if (ok) {
+			toast.success('Scan resuming');
+			load(true);
+		} else {
+			toast.error('Scan not resumed');
+		}
+	}
+
 	async function confirmCancel() {
 		if (!scan) return;
 		cancelling = true;
@@ -536,6 +573,25 @@
 			</div>
 			<div class="flex items-center gap-2">
 				{#if live}
+					<Button variant="outline" size="sm" class="gap-1.5" onclick={() => (pauseOpen = true)}>
+						<Pause class="size-3.5" />
+						Pause
+					</Button>
+					<Button variant="outline" size="sm" class="gap-1.5" onclick={() => (cancelOpen = true)}>
+						<Ban class="size-3.5" />
+						Cancel
+					</Button>
+				{:else if paused}
+					<LoadingButton
+						size="sm"
+						class="gap-1.5"
+						loading={resuming}
+						loadingLabel="Resuming…"
+						onclick={() => resume()}
+					>
+						<Play class="size-3.5" />
+						Resume
+					</LoadingButton>
 					<Button variant="outline" size="sm" class="gap-1.5" onclick={() => (cancelOpen = true)}>
 						<Ban class="size-3.5" />
 						Cancel
@@ -888,6 +944,18 @@
 		targetId={scan.target_id}
 		rerun={scan}
 		onClose={() => (showRescan = false)}
+	/>
+	<ConfirmDialog
+		bind:open={pauseOpen}
+		title="Pause scan"
+		description={pauseNote}
+		confirmLabel="Pause"
+		cancelLabel="Keep running"
+		icon={Pause}
+		loading={pausing}
+		loadingLabel="Pausing…"
+		onOpenChange={(o) => (pauseOpen = o)}
+		onConfirm={confirmPause}
 	/>
 	<ConfirmDialog
 		bind:open={cancelOpen}

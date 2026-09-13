@@ -1,4 +1,4 @@
-"""Scan status and cancellation."""
+"""Scan status, pause, resume and cancellation."""
 
 from __future__ import annotations
 
@@ -17,7 +17,12 @@ from mcp.result import ToolResult
 from mcp.tools._scope import find_target
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.definitions.surface import SurfaceDimension
-from shared.enums.scan import SCAN_LIVE_STATUSES, ScanActivityStatus
+from shared.enums.scan import (
+    SCAN_LIVE_STATUSES,
+    SCAN_OPEN_STATUSES,
+    ScanActivityStatus,
+)
+from shared.enums.scan import ScanStatus as RunStatus
 from shared.models.scan import Scan
 from shared.models.target import Target
 from shared.utils.datetime import utc_now
@@ -108,8 +113,15 @@ class CancelScan(Tool):
             msg = "Name the scan to stop, by scan id or by target. scan_status lists what is running."
             raise ToolError(msg)
 
-        row = await _one_run(ctx, args.scan, args.target, live_only=bool(args.target))
-        if row.status not in SCAN_LIVE_STATUSES:
+        row = await _one_run(
+            ctx,
+            args.scan,
+            args.target,
+            statuses=SCAN_OPEN_STATUSES,
+            state="unfinished",
+            hint="Nothing to stop.",
+        )
+        if row.status not in SCAN_OPEN_STATUSES:
             msg = f"The scan is {row.status}. Nothing to stop."
             raise ToolError(msg)
 
@@ -132,8 +144,117 @@ class CancelScan(Tool):
         )
 
 
+class PauseInput(ToolInput):
+    scan: str | None = Field(default=None, description="The scan id to pause.")
+    target: str | None = Field(
+        default=None, description="A target, to pause whichever run of it is live."
+    )
+
+
+class PauseScan(Tool):
+    name = "pause_scan"
+    title = "Pause a scan"
+    capability = Capability.LAUNCH.value
+    group = ToolGroup.ACT.value
+    description = (
+        "Pause a running scan. Stages in flight stop and run again from the start "
+        "when the scan resumes. Results written so far are kept."
+    )
+    Input = PauseInput
+    examples = ("pause_scan target=example.com", "pause_scan scan=<id>")
+
+    async def run(self, ctx: ToolContext, args: PauseInput) -> ToolResult:
+        from app.services.scan import ScanService  # noqa: PLC0415
+
+        if not args.scan and not args.target:
+            msg = "Name the scan to pause, by scan id or by target. scan_status lists what is running."
+            raise ToolError(msg)
+
+        row = await _one_run(
+            ctx,
+            args.scan,
+            args.target,
+            statuses=SCAN_LIVE_STATUSES,
+            state="running",
+            hint="Nothing to pause.",
+        )
+        result = await ScanService(ctx.session).pause(row.id, row.project_id)
+        target = await ctx.session.get(Target, row.target_id)
+        return ToolResult(
+            summary=f"Paused the scan of {target.target_value if target else row.target_id}",
+            data={
+                "scan_id": str(result.id),
+                "status": result.status,
+                "engine": result.engine_name,
+                "kept": _found(result),
+            },
+            pivot=links.scan(ctx.ui_base_url, result.id),
+            caveats=[
+                "Stages that were running re-run from the start on resume.",
+                "resume_scan continues the run at its first unfinished stage.",
+                f"Paused by agent token '{ctx.token.name}' via MCP.",
+            ],
+        )
+
+
+class ResumeInput(ToolInput):
+    scan: str | None = Field(default=None, description="The scan id to resume.")
+    target: str | None = Field(
+        default=None, description="A target, to resume its paused run."
+    )
+
+
+class ResumeScan(Tool):
+    name = "resume_scan"
+    title = "Resume a scan"
+    capability = Capability.LAUNCH.value
+    group = ToolGroup.ACT.value
+    description = (
+        "Resume a paused scan. It restarts at its first unfinished stage. Stages "
+        "that already succeeded are not run again."
+    )
+    Input = ResumeInput
+    examples = ("resume_scan target=example.com", "resume_scan scan=<id>")
+
+    async def run(self, ctx: ToolContext, args: ResumeInput) -> ToolResult:
+        from app.services.scan import ScanService  # noqa: PLC0415
+
+        if not args.scan and not args.target:
+            msg = "Name the scan to resume, by scan id or by target."
+            raise ToolError(msg)
+
+        row = await _one_run(
+            ctx,
+            args.scan,
+            args.target,
+            statuses=(RunStatus.PAUSED.value,),
+            state="paused",
+            hint="Nothing to resume.",
+        )
+        result = await ScanService(ctx.session).resume(row.id, row.project_id)
+        target = await ctx.session.get(Target, row.target_id)
+        return ToolResult(
+            summary=f"Resuming the scan of {target.target_value if target else row.target_id}",
+            data={
+                "scan_id": str(result.id),
+                "status": result.status,
+                "engine": result.engine_name,
+            },
+            pivot=links.scan(ctx.ui_base_url, result.id),
+            caveats=[
+                "The worker picks the run up. scan_status reports it running.",
+                f"Resumed by agent token '{ctx.token.name}' via MCP.",
+            ],
+        )
+
+
 async def _one_run(
-    ctx: ToolContext, scan: str | None, target: str | None, live_only: bool = False
+    ctx: ToolContext,
+    scan: str | None,
+    target: str | None,
+    statuses: tuple[str, ...] | None = None,
+    state: str = "",
+    hint: str = "Start one with start_scan.",
 ) -> Scan:
     if scan:
         row = await ctx.session.get(Scan, _uuid(scan, "scan"))
@@ -147,16 +268,14 @@ async def _one_run(
 
     found = await find_target(ctx, target or "")
     statement = select(Scan).where(Scan.target_id == found.id)
-    if live_only:
-        statement = statement.where(Scan.status.in_(SCAN_LIVE_STATUSES))
+    if statuses is not None:
+        statement = statement.where(Scan.status.in_(statuses))
     row = (
         await ctx.session.execute(statement.order_by(Scan.created_at.desc()).limit(1))
     ).scalar_one_or_none()
     if row is None:
-        msg = (
-            f"No {'running ' if live_only else ''}scan of {found.target_value}. "
-            f"{'Nothing to stop.' if live_only else 'Start one with start_scan.'}"
-        )
+        named = f"{state} " if state else ""
+        msg = f"No {named}scan of {found.target_value}. {hint}"
         raise ToolError(msg)
     return row
 
@@ -295,8 +414,9 @@ def _elapsed(row: Scan) -> float | None:
     start: datetime | None = row.started_at
     if start is None:
         return None
-    end = row.completed_at or utc_now()
-    return round((end - start).total_seconds(), 1)
+    end = row.completed_at or row.paused_at or utc_now()
+    ran = (end - start).total_seconds() - (row.paused_seconds or 0.0)
+    return round(max(ran, 0.0), 1)
 
 
 def _uuid(value: str, field: str) -> uuid.UUID:

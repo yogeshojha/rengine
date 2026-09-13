@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import ColumnElement, Select, and_, func, literal, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.enums.scan import SCAN_LIVE_STATUSES
+from shared.enums.scan import SCAN_OPEN_STATUSES
 from shared.models.http_asset import HttpAsset
 from shared.models.scan import Scan
 from shared.models.subdomain import Subdomain
@@ -56,7 +56,7 @@ class TargetAssetService:
             select(Scan.id).where(
                 Scan.project_id == project_id,
                 Scan.target_id == target_id,
-                Scan.status.in_(SCAN_LIVE_STATUSES),
+                Scan.status.in_(SCAN_OPEN_STATUSES),
                 census_only(),
             )
         )

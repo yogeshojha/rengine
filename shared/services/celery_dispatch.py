@@ -67,6 +67,24 @@ def dispatch_scan_run(scan_id: str) -> None:
     )
 
 
+def dispatch_scan_resume(scan_id: str) -> None:
+    logger.info("Dispatching scan resume %s", scan_id)
+    get_celery_client().send_task(
+        "app.tasks.scan.resume_scan",
+        kwargs={"scan_id": scan_id},
+        queue=SCANS_QUEUE,
+    )
+
+
+def dispatch_scan_finalize(scan_id: str) -> None:
+    logger.info("Dispatching scan finalize %s", scan_id)
+    get_celery_client().send_task(
+        "app.tasks.scan.finalize_scan",
+        kwargs={"scan_id": scan_id},
+        queue=SCANS_QUEUE,
+    )
+
+
 def revoke_scan_tasks(task_ids: list[str]) -> None:
     """SIGKILL-revoke a scan's celery tasks."""
     if not task_ids:

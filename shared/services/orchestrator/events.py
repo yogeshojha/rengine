@@ -43,6 +43,17 @@ class ScanEventPublisher:
     def scan_cancelled(self, *, status: str) -> None:
         self._emit(ScanEventKind.SCAN_CANCELLED, {"status": status})
 
+    def scan_paused(self, *, status: str, stages_stopped: int) -> None:
+        self._emit(
+            ScanEventKind.SCAN_PAUSED,
+            {"status": status, "stages_stopped": stages_stopped},
+        )
+
+    def scan_resumed(self, *, status: str, stages_left: int) -> None:
+        self._emit(
+            ScanEventKind.SCAN_RESUMED, {"status": status, "stages_left": stages_left}
+        )
+
     def results_found(self, *, dimension: str, counts: dict[str, int]) -> None:
         self._emit(
             ScanEventKind.RESULTS_FOUND, {"dimension": dimension, "counts": counts}

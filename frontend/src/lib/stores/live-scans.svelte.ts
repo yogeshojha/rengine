@@ -151,11 +151,13 @@ function createLiveScansStore() {
 	function onEvent(e: ScanEvent) {
 		switch (e.kind) {
 			case SCAN_EVENT_KIND.SCAN_STARTED:
+			case SCAN_EVENT_KIND.SCAN_RESUMED:
 				scheduleRefresh();
 				break;
 			case SCAN_EVENT_KIND.SCAN_COMPLETED:
 			case SCAN_EVENT_KIND.SCAN_FAILED:
 			case SCAN_EVENT_KIND.SCAN_CANCELLED:
+			case SCAN_EVENT_KIND.SCAN_PAUSED:
 				runs.delete(e.scan_id);
 				previousDurations.delete(e.scan_id);
 				completedTick++;
@@ -262,6 +264,30 @@ function createLiveScansStore() {
 			if (!pid) return false;
 			try {
 				await scansApi.cancel(scan.id, pid);
+				scheduleRefresh();
+				return true;
+			} catch {
+				return false;
+			}
+		},
+
+		async pause(scan: ScanRead): Promise<boolean> {
+			const pid = projectId;
+			if (!pid) return false;
+			try {
+				await scansApi.pause(scan.id, pid);
+				scheduleRefresh();
+				return true;
+			} catch {
+				return false;
+			}
+		},
+
+		async resume(scan: ScanRead): Promise<boolean> {
+			const pid = projectId;
+			if (!pid) return false;
+			try {
+				await scansApi.resume(scan.id, pid);
 				scheduleRefresh();
 				return true;
 			} catch {

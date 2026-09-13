@@ -58,6 +58,7 @@
 	let { targetId, onLaunch, onRescan, onRescanMany }: Props = $props();
 
 	let cancelTarget = $state<ScanRead | null>(null);
+	let pauseTarget = $state<ScanRead | null>(null);
 	let deleteTarget = $state<ScanRead | null>(null);
 	let bulkDeleteOpen = $state(false);
 	let bulkCancelOpen = $state(false);
@@ -220,6 +221,18 @@
 		} finally {
 			exporting = false;
 		}
+	}
+
+	async function confirmPause() {
+		const s = pauseTarget;
+		pauseTarget = null;
+		if (s && (await scansStore.pause(s))) toast.success('Scan paused');
+		else if (s) toast.error(scansStore.error ?? 'Scan not paused');
+	}
+
+	async function resume(scan: ScanRead) {
+		if (await scansStore.resume(scan)) toast.success('Scan resuming');
+		else toast.error(scansStore.error ?? 'Scan not resumed');
 	}
 
 	async function confirmCancel() {
@@ -479,6 +492,8 @@
 					loadScans={(tid) => scansStore.loadTargetScans(tid)}
 					onRescan={(s) => onRescan?.(s)}
 					onCancel={(s) => (cancelTarget = s)}
+					onPause={(s) => (pauseTarget = s)}
+					onResume={(s) => resume(s)}
 					onDelete={(s) => (deleteTarget = s)}
 				/>
 			{/each}
@@ -506,6 +521,8 @@
 					onSelect={toggleScan}
 					onRescan={(s) => onRescan?.(s)}
 					onCancel={(s) => (cancelTarget = s)}
+					onPause={(s) => (pauseTarget = s)}
+					onResume={(s) => resume(s)}
 					onDelete={(s) => (deleteTarget = s)}
 				/>
 			{/each}
@@ -513,6 +530,16 @@
 		{@render footer(scans.length, 'scan')}
 	{/if}
 </Card.Root>
+
+<ConfirmDialog
+	open={!!pauseTarget}
+	title="Pause scan"
+	description="Running stages stop and run again from the start when the scan resumes."
+	confirmLabel="Pause"
+	cancelLabel="Keep running"
+	onOpenChange={(o) => !o && (pauseTarget = null)}
+	onConfirm={confirmPause}
+/>
 
 <ConfirmDialog
 	open={!!cancelTarget}

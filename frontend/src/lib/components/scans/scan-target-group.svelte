@@ -19,10 +19,12 @@
 		loadScans: (targetId: string) => Promise<ScanRead[]>;
 		onRescan: (scan: ScanRead) => void;
 		onCancel: (scan: ScanRead) => void;
+		onPause: (scan: ScanRead) => void;
+		onResume: (scan: ScanRead) => void;
 		onDelete: (scan: ScanRead) => void;
 	}
 
-	let { group, now, loadScans, onRescan, onCancel, onDelete }: Props = $props();
+	let { group, now, loadScans, onRescan, onCancel, onPause, onResume, onDelete }: Props = $props();
 
 	let expanded = $state(false);
 	let loading = $state(false);
@@ -125,6 +127,8 @@
 							{now}
 							{onRescan}
 							{onCancel}
+							{onPause}
+							{onResume}
 							{onDelete}
 						/>
 					{/each}

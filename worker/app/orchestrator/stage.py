@@ -32,27 +32,32 @@ from stages.registry import StageSpec
 logger = get_logger(__name__)
 
 _ABORT_POLL_SECONDS = 2.0
+_HALTED_STATUSES = (ScanStatus.CANCELLED.value, ScanStatus.PAUSED.value)
+_UNSETTLED_ACTIVITY_STATUSES = (
+    ScanActivityStatus.RUNNING.value,
+    ScanActivityStatus.PAUSED.value,
+)
 
 
 def _throttled_abort(
     session_factory: Callable[[], Session], scan_id: uuid.UUID
 ) -> Callable[[], bool]:
     lock = threading.Lock()
-    state = {"at": 0.0, "cancelled": False}
+    state = {"at": 0.0, "halted": False}
 
     def _is_aborted() -> bool:
         with lock:
-            if state["cancelled"]:
+            if state["halted"]:
                 return True
             now = time.monotonic()
             if now - state["at"] < _ABORT_POLL_SECONDS:
                 return False
             state["at"] = now
             try:
-                state["cancelled"] = _scan_is_cancelled(session_factory, scan_id)
+                state["halted"] = _scan_is_halted(session_factory, scan_id)
             except Exception:
                 logger.warning("abort check failed, keeping last answer", exc_info=True)
-            return state["cancelled"]
+            return state["halted"]
 
     return _is_aborted
 
@@ -66,12 +71,24 @@ def load_resolved(execution_config: dict) -> ResolvedScanConfig:
     return config
 
 
-def _scan_is_cancelled(
-    session_factory: Callable[[], Session], scan_id: uuid.UUID
-) -> bool:
+def _scan_is_halted(session_factory: Callable[[], Session], scan_id: uuid.UUID) -> bool:
     with session_factory() as session:
         scan = session.get(Scan, scan_id)
-        return scan is None or scan.status == ScanStatus.CANCELLED.value
+        return scan is None or scan.status in _HALTED_STATUSES
+
+
+def _halt_status(
+    session_factory: Callable[[], Session], scan_id: uuid.UUID
+) -> ScanActivityStatus:
+    """A paused stage re-runs on resume; an aborted one does not."""
+    try:
+        with session_factory() as session:
+            scan = session.get(Scan, scan_id)
+            paused = scan is not None and scan.status == ScanStatus.PAUSED.value
+    except Exception:
+        logger.warning("halt status read failed, recording an abort", exc_info=True)
+        return ScanActivityStatus.ABORTED
+    return ScanActivityStatus.PAUSED if paused else ScanActivityStatus.ABORTED
 
 
 def _register_task_id(session: Session, scan: Scan, celery_task_id: str | None) -> None:
@@ -95,7 +112,7 @@ def _supersede_orphan_activities(session: Session, scan: Scan, name: str) -> Non
         .where(
             ScanActivity.scan_id == scan.id,
             ScanActivity.name == name,
-            ScanActivity.status == ScanActivityStatus.RUNNING.value,
+            ScanActivity.status.in_(_UNSETTLED_ACTIVITY_STATUSES),
         )
         .values(
             status=ScanActivityStatus.SKIPPED.value,
@@ -203,7 +220,12 @@ def run_stage(
         result = engine.run()
     except StageAbortedError:
         _fail_stage(
-            activity_svc, events, spec, activity.id, ScanActivityStatus.ABORTED, ids
+            activity_svc,
+            events,
+            spec,
+            activity.id,
+            _halt_status(session_factory, scan.id),
+            ids,
         )
         return
     except Exception as exc:

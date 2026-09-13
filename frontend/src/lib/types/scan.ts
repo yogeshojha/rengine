@@ -1,12 +1,20 @@
 import type { HttpProtocol } from './scan-context';
 import type { StageConfig } from './scan-engine';
 
-export const SCAN_STATUSES = ['pending', 'running', 'completed', 'failed', 'cancelled'] as const;
+export const SCAN_STATUSES = [
+	'pending',
+	'running',
+	'paused',
+	'completed',
+	'failed',
+	'cancelled'
+] as const;
 export type ScanStatus = (typeof SCAN_STATUSES)[number];
 
 export const SCAN_ACTIVITY_STATUSES = [
 	'pending',
 	'running',
+	'paused',
 	'success',
 	'partial',
 	'failed',
@@ -146,6 +154,8 @@ export interface ScanRead {
 	created_at: string;
 	started_at: string | null;
 	completed_at: string | null;
+	paused_at: string | null;
+	paused_seconds: number;
 	duration_seconds: number | null;
 	new_subdomains: number | null;
 	gone_subdomains: number | null;
@@ -223,6 +233,7 @@ export interface PreviewSummary {
 export interface ScanStatusCounts {
 	pending: number;
 	running: number;
+	paused: number;
 	completed: number;
 	failed: number;
 	cancelled: number;
@@ -235,6 +246,7 @@ export interface ScanDailyCount {
 	failed: number;
 	cancelled: number;
 	running: number;
+	paused: number;
 	pending: number;
 	new_subdomains: number;
 }

@@ -29,8 +29,14 @@ from app.services.scan_engine import ScanEngineService, stage_effects
 from app.services.target import TargetService
 from shared.config import BaseAppSettings
 from shared.definitions.rescan import ASSET_SEED_STAGE, rescan_label
+from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.api_key import APIProvider
-from shared.enums.scan import SCAN_LIVE_STATUSES, ScanActivityStatus, ScanStatus
+from shared.enums.scan import (
+    SCAN_LIVE_STATUSES,
+    SCAN_OPEN_STATUSES,
+    ScanActivityStatus,
+    ScanStatus,
+)
 from shared.models.api_key import APIKey
 from shared.models.scan import (
     SCAN_STATUSES,
@@ -60,7 +66,12 @@ from shared.models.scan_preview import (
 )
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
-from shared.services.celery_dispatch import revoke_scan_tasks
+from shared.services.activity_log import ActivityLogService
+from shared.services.celery_dispatch import (
+    dispatch_scan_finalize,
+    dispatch_scan_resume,
+    revoke_scan_tasks,
+)
 from shared.services.launch_plan import AdHocEngine, plan_label
 from shared.services.orchestrator.events import ScanEventPublisher
 from shared.services.scan_factory import build_scan_row
@@ -136,15 +147,26 @@ def _command_read(cmd: ScanCommand) -> ScanCommandRead:
     return read
 
 
+_UNSETTLED_ACTIVITY_STATUSES = (
+    ScanActivityStatus.RUNNING.value,
+    ScanActivityStatus.PAUSED.value,
+)
+
+
 def _scan_duration(scan: Scan) -> float | None:
     if scan.started_at is None:
         return None
-    end = scan.completed_at or (
-        utc_now() if scan.status == ScanStatus.RUNNING.value else None
-    )
+    end = scan.completed_at or _open_end(scan)
     if end is None:
         return None
-    return round((end - scan.started_at).total_seconds(), 1)
+    ran = (end - scan.started_at).total_seconds() - (scan.paused_seconds or 0.0)
+    return round(max(ran, 0.0), 1)
+
+
+def _open_end(scan: Scan) -> datetime | None:
+    if scan.status == ScanStatus.RUNNING.value:
+        return utc_now()
+    return scan.paused_at if scan.status == ScanStatus.PAUSED.value else None
 
 
 def _human_duration(seconds: int) -> str:
@@ -1128,9 +1150,11 @@ class ScanService:
 
     async def cancel(self, id: UUID, project_id: UUID) -> ScanRead:
         scan = await self._get_scan(id, project_id)
-        if scan.status in SCAN_LIVE_STATUSES:
+        if scan.status in SCAN_OPEN_STATUSES:
+            was_paused = scan.status == ScanStatus.PAUSED.value
             scan.status = ScanStatus.CANCELLED.value
             scan.completed_at = utc_now()
+            scan.paused_at = None
             scan.error = "Cancelled by user."
             await self.session.commit()
 
@@ -1141,14 +1165,87 @@ class ScanService:
                     update(model)
                     .where(
                         model.scan_id == scan.id,
-                        model.status == ScanActivityStatus.RUNNING.value,
+                        model.status.in_(_UNSETTLED_ACTIVITY_STATUSES),
                     )
                     .values(status=ScanActivityStatus.ABORTED.value, completed_at=now)
                 )
             await self.session.commit()
+            if was_paused:
+                dispatch_scan_finalize(str(scan.id))
             await self._announce_cancelled(scan)
             await self.session.refresh(scan)
         return self._to_read(scan)
+
+    async def pause(self, id: UUID, project_id: UUID) -> ScanRead:
+        """Stop the run where it stands. Stages in flight re-run when it resumes."""
+        scan = await self._get_scan(id, project_id)
+        if scan.status not in SCAN_LIVE_STATUSES:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail="The scan is not running."
+            )
+        now = utc_now()
+        scan.status = ScanStatus.PAUSED.value
+        scan.paused_at = now
+        stopped = (
+            await self.session.execute(
+                update(ScanActivity)
+                .where(
+                    ScanActivity.scan_id == scan.id,
+                    ScanActivity.status == ScanActivityStatus.RUNNING.value,
+                )
+                .values(status=ScanActivityStatus.PAUSED.value)
+            )
+        ).rowcount
+        await self.session.execute(
+            update(ScanCommand)
+            .where(
+                ScanCommand.scan_id == scan.id,
+                ScanCommand.status == ScanActivityStatus.RUNNING.value,
+            )
+            .values(status=ScanActivityStatus.ABORTED.value, completed_at=now)
+        )
+        await self._log_paused(scan, stopped)
+        await self.session.commit()
+
+        revoke_scan_tasks(scan.celery_task_ids or [])
+        self._announce_paused(scan, stopped)
+        await self.session.refresh(scan)
+        return self._to_read(scan)
+
+    async def resume(self, id: UUID, project_id: UUID) -> ScanRead:
+        """Hand the run back to the worker, which restarts it at its first unfinished level."""
+        scan = await self._get_scan(id, project_id)
+        if scan.status != ScanStatus.PAUSED.value:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, detail="The scan is not paused."
+            )
+        dispatch_scan_resume(str(scan.id))
+        return self._to_read(scan)
+
+    async def _log_paused(self, scan: Scan, stopped: int) -> None:
+        target_value = (scan.execution_config or {}).get("target_value", "")
+        await ActivityLogService(self.session).log_async(
+            event=ActivityEvent.SCAN_PAUSED,
+            title=f"Scan paused · {target_value}",
+            description=f"{stopped} stage{'s' if stopped != 1 else ''} stopped"
+            if stopped
+            else None,
+            level=ActivityLevel.INFO,
+            project_id=scan.project_id,
+            target_id=scan.target_id,
+            scan_id=scan.id,
+            target_value=target_value,
+        )
+
+    def _announce_paused(self, scan: Scan, stopped: int) -> None:
+        try:
+            ScanEventPublisher(
+                BaseAppSettings().redis_url,
+                scan_id=str(scan.id),
+                project_id=str(scan.project_id),
+            ).scan_paused(status=ScanStatus.PAUSED.value, stages_stopped=stopped)
+        except Exception:
+            logger.debug("pause event emit failed", exc_info=True)
 
     async def _announce_cancelled(self, scan: Scan) -> None:
         try:
@@ -1236,7 +1333,7 @@ class ScanService:
 
     async def delete(self, id: UUID, project_id: UUID) -> None:
         scan = await self._get_scan(id, project_id)
-        if scan.status in SCAN_LIVE_STATUSES:
+        if scan.status in SCAN_OPEN_STATUSES:
             revoke_scan_tasks(scan.celery_task_ids or [])
         await self.session.delete(scan)
         await self.session.commit()
@@ -1275,5 +1372,7 @@ class ScanService:
             created_at=scan.created_at,
             started_at=scan.started_at,
             completed_at=scan.completed_at,
+            paused_at=scan.paused_at,
+            paused_seconds=scan.paused_seconds or 0.0,
             duration_seconds=_scan_duration(scan),
         )

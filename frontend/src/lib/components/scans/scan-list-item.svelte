@@ -25,6 +25,7 @@
 	import { SCHEDULE_TYPE_BADGE, type ScheduleType } from '$lib/types/scan-schedule';
 	import { isLiveStatus, durationLabel, scanCountPills } from '$lib/utilities/scan-status';
 	import { STAGE_STEP_CLASS, plannedStages, stageProgress } from '$lib/utilities/scan-progress';
+	import Pause from '@lucide/svelte/icons/pause';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 	import { ROUTES } from '$lib/config/routes';
@@ -39,6 +40,8 @@
 		onSelect?: (id: string) => void;
 		onRescan: (scan: ScanRead) => void;
 		onCancel: (scan: ScanRead) => void;
+		onPause: (scan: ScanRead) => void;
+		onResume: (scan: ScanRead) => void;
 		onDelete: (scan: ScanRead) => void;
 	}
 
@@ -51,10 +54,13 @@
 		onSelect,
 		onRescan,
 		onCancel,
+		onPause,
+		onResume,
 		onDelete
 	}: Props = $props();
 
 	let live = $derived(isLiveStatus(scan.status));
+	let paused = $derived(scan.status === 'paused');
 	let primary = $derived(targetId ? scan.engine_name : scan.execution_config.target_value);
 	let startedLabel = $derived(relativeTime(scan.started_at ?? scan.created_at));
 
@@ -322,6 +328,16 @@
 				</DropdownMenu.Item>
 				<DropdownMenu.Separator />
 				{#if live}
+					<DropdownMenu.Item onclick={() => onPause(scan)} class="gap-2">
+						<Pause class="h-4 w-4" /> Pause
+					</DropdownMenu.Item>
+					<DropdownMenu.Item onclick={() => onCancel(scan)} class="gap-2">
+						<Ban class="h-4 w-4" /> Cancel
+					</DropdownMenu.Item>
+				{:else if paused}
+					<DropdownMenu.Item onclick={() => onResume(scan)} class="gap-2">
+						<Play class="h-4 w-4" /> Resume
+					</DropdownMenu.Item>
 					<DropdownMenu.Item onclick={() => onCancel(scan)} class="gap-2">
 						<Ban class="h-4 w-4" /> Cancel
 					</DropdownMenu.Item>

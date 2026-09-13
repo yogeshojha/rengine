@@ -19,7 +19,7 @@ from app.services.scan_engine.validation import (
     _validate_tool_options,
     _validate_yaml_source,
 )
-from shared.enums.scan import SCAN_LIVE_STATUSES
+from shared.enums.scan import SCAN_OPEN_STATUSES
 from shared.models.scan import Scan
 from shared.models.scan_engine import (
     EngineUsage,
@@ -71,7 +71,7 @@ async def _running_scans_for(session: AsyncSession, engine_id: UUID) -> int:
     rows = await session.execute(
         select(func.count())
         .select_from(Scan)
-        .where(Scan.engine_id == engine_id, Scan.status.in_(SCAN_LIVE_STATUSES))
+        .where(Scan.engine_id == engine_id, Scan.status.in_(SCAN_OPEN_STATUSES))
     )
     return rows.scalar_one()
 

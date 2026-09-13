@@ -21,7 +21,7 @@ from app.services.target_filters import (
     with_whois_join,
 )
 from shared.enums.activity import ActivityLevel
-from shared.enums.scan import SCAN_LIVE_STATUSES
+from shared.enums.scan import SCAN_OPEN_STATUSES
 from shared.enums.target import TargetType
 from shared.enums.task_status import TaskStatus
 from shared.models import (
@@ -589,7 +589,7 @@ class TargetService:
             await self.session.execute(
                 select(func.count())
                 .select_from(Scan)
-                .where(Scan.target_id == target.id, Scan.status.in_(SCAN_LIVE_STATUSES))
+                .where(Scan.target_id == target.id, Scan.status.in_(SCAN_OPEN_STATUSES))
             )
         ).scalar_one()
         if running:

@@ -45,6 +45,7 @@
 	const STATUS_VARIANT: Record<ScanActivityStatus, BadgeVariant> = {
 		pending: 'secondary',
 		running: 'info',
+		paused: 'secondary',
 		success: 'success',
 		partial: 'warning',
 		failed: 'destructive',

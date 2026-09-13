@@ -4,6 +4,7 @@ from enum import Enum
 class ScanStatus(Enum):
     PENDING = "pending"
     RUNNING = "running"
+    PAUSED = "paused"
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
@@ -17,6 +18,7 @@ class ScanScope(Enum):
 class ScanActivityStatus(Enum):
     PENDING = "pending"
     RUNNING = "running"
+    PAUSED = "paused"
     SUCCESS = "success"
     PARTIAL = "partial"
     FAILED = "failed"
@@ -25,6 +27,7 @@ class ScanActivityStatus(Enum):
 
 
 SCAN_LIVE_STATUSES = (ScanStatus.PENDING.value, ScanStatus.RUNNING.value)
+SCAN_OPEN_STATUSES = (*SCAN_LIVE_STATUSES, ScanStatus.PAUSED.value)
 SCAN_TERMINAL_STATUSES = (
     ScanStatus.COMPLETED.value,
     ScanStatus.FAILED.value,
@@ -91,6 +94,8 @@ class ScanEventKind(Enum):
     SCAN_COMPLETED = "scan_completed"
     SCAN_FAILED = "scan_failed"
     SCAN_CANCELLED = "scan_cancelled"
+    SCAN_PAUSED = "scan_paused"
+    SCAN_RESUMED = "scan_resumed"
     STAGE_STARTED = "stage_started"
     STAGE_PROGRESS = "stage_progress"
     STAGE_COMPLETED = "stage_completed"

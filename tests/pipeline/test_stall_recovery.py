@@ -61,6 +61,10 @@ def test_an_earlier_success_does_not_make_a_stranded_stage_done():
             _row("subdomain_discovery", ScanActivityStatus.RUNNING.value),
             _row("http_probe", ScanActivityStatus.SUCCESS.value),
         ],
+        [
+            _row("subdomain_discovery", ScanActivityStatus.SUCCESS.value),
+            _row("http_probe", ScanActivityStatus.PAUSED.value),
+        ],
     ],
 )
 def test_the_resumer_and_finalize_never_disagree(rows):

@@ -45,6 +45,12 @@ from stages.registry import ordered_levels
 
 logger = get_logger(__name__)
 
+_FINALIZE_SKIPPED = (
+    ScanStatus.COMPLETED.value,
+    ScanStatus.FAILED.value,
+    ScanStatus.PAUSED.value,
+)
+
 
 def _undispatched(activities: list[ScanActivity]) -> str | None:
     """The stages the canvas did not reach."""
@@ -332,7 +338,7 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
     notifier = SyncNotificationPublisher(redis_url)
     target_value = (scan.execution_config or {}).get("target_value", "")
 
-    if scan.status in (ScanStatus.COMPLETED.value, ScanStatus.FAILED.value):
+    if scan.status in _FINALIZE_SKIPPED:
         return
 
     if scan.status == ScanStatus.CANCELLED.value:
@@ -369,6 +375,7 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
     locked.completed_at = utc_now()
     duration = (
         (locked.completed_at - locked.started_at).total_seconds()
+        - (locked.paused_seconds or 0.0)
         if locked.started_at
         else None
     )

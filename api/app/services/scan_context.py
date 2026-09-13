@@ -5,7 +5,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.enums.scan import SCAN_LIVE_STATUSES
+from shared.enums.scan import SCAN_OPEN_STATUSES
 from shared.models.proxy import Proxy
 from shared.models.scan import Scan
 from shared.models.scan_context import (
@@ -423,7 +423,7 @@ class ScanContextService:
             await self.session.execute(
                 select(func.count())
                 .select_from(Scan)
-                .where(Scan.context_id == ctx.id, Scan.status.in_(SCAN_LIVE_STATUSES))
+                .where(Scan.context_id == ctx.id, Scan.status.in_(SCAN_OPEN_STATUSES))
             )
         ).scalar_one()
         if running:

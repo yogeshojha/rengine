@@ -66,6 +66,7 @@
 		cancelled: 'bg-warning',
 		failed: 'bg-destructive',
 		running: 'bg-info shadow-[0_0_0_3px_color-mix(in_oklch,var(--info)_18%,transparent)]',
+		paused: 'bg-muted-foreground',
 		pending: 'bg-muted-foreground/50'
 	};
 

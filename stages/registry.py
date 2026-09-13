@@ -232,6 +232,15 @@ def execution_plan(
     return steps
 
 
+def resume_level(done: frozenset[str]) -> int:
+    """The first level still holding a stage that has not finished."""
+    levels = ordered_levels()
+    for index, level in enumerate(levels):
+        if not all(spec.name in done for spec in level):
+            return index
+    return len(levels)
+
+
 def phases() -> list[tuple[str, list[StageSpec]]]:
     grouped: dict[str, list[StageSpec]] = {}
     for spec in stages():

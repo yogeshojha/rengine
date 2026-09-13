@@ -122,6 +122,14 @@ export const scansApi = {
 		return api.post<ScanRead>(`/scans/${id}/cancel?project_id=${projectId}`);
 	},
 
+	async pause(id: string, projectId: string): Promise<ScanRead> {
+		return api.post<ScanRead>(`/scans/${id}/pause?project_id=${projectId}`);
+	},
+
+	async resume(id: string, projectId: string): Promise<ScanRead> {
+		return api.post<ScanRead>(`/scans/${id}/resume?project_id=${projectId}`);
+	},
+
 	async remove(id: string, projectId: string): Promise<void> {
 		return api.delete<void>(`/scans/${id}?project_id=${projectId}`);
 	},

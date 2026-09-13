@@ -137,6 +137,9 @@ class Scan(SQLModel, table=True):
     celery_task_ids: list = Field(
         default_factory=list, sa_column=Column(JSON, nullable=False)
     )
+    run_epoch: int = Field(default=0)
+    paused_at: datetime | None = Field(default=None)
+    paused_seconds: float = Field(default=0.0)
     subdomains_found: int = Field(default=0)
     ips_found: int = Field(default=0)
     open_ports_found: int = Field(default=0)
@@ -290,6 +293,8 @@ class ScanRead(BaseModel):
     created_at: datetime
     started_at: datetime | None
     completed_at: datetime | None
+    paused_at: datetime | None = None
+    paused_seconds: float = 0.0
     duration_seconds: float | None = None
     new_subdomains: int | None = None
     gone_subdomains: int | None = None
@@ -300,6 +305,7 @@ class ScanRead(BaseModel):
 class ScanStatusCounts(BaseModel):
     pending: int = 0
     running: int = 0
+    paused: int = 0
     completed: int = 0
     failed: int = 0
     cancelled: int = 0
@@ -312,6 +318,7 @@ class ScanDailyCount(BaseModel):
     failed: int = 0
     cancelled: int = 0
     running: int = 0
+    paused: int = 0
     pending: int = 0
     new_subdomains: int = 0
 

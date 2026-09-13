@@ -18,6 +18,8 @@ export const SCAN_EVENT_KIND = {
 	SCAN_COMPLETED: 'scan_completed',
 	SCAN_FAILED: 'scan_failed',
 	SCAN_CANCELLED: 'scan_cancelled',
+	SCAN_PAUSED: 'scan_paused',
+	SCAN_RESUMED: 'scan_resumed',
 	STAGE_STARTED: 'stage_started',
 	STAGE_PROGRESS: 'stage_progress',
 	STAGE_COMPLETED: 'stage_completed',

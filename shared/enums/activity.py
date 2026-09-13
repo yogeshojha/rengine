@@ -30,6 +30,8 @@ class ActivityEvent(Enum):
     SCAN_COMPLETED = "scan.completed"
     SCAN_FAILED = "scan.failed"
     SCAN_CANCELLED = "scan.cancelled"
+    SCAN_PAUSED = "scan.paused"
+    SCAN_RESUMED = "scan.resumed"
     SCAN_STAGE_COMPLETED = "scan.stage.completed"
     SCAN_STAGE_FAILED = "scan.stage.failed"
 

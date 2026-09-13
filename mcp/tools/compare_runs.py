@@ -14,7 +14,7 @@ from mcp.result import ToolResult
 from mcp.tools._scope import find_target
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.definitions.compare import Comparability
-from shared.enums.scan import SCAN_LIVE_STATUSES, ScanScope
+from shared.enums.scan import SCAN_OPEN_STATUSES, ScanScope
 from shared.models.scan import Scan
 
 MAX_ROWS = 25
@@ -160,7 +160,7 @@ class CompareRuns(Tool):
                     .where(
                         Scan.target_id == target.id,
                         Scan.scope == ScanScope.FULL.value,
-                        Scan.status.not_in(SCAN_LIVE_STATUSES),
+                        Scan.status.not_in(SCAN_OPEN_STATUSES),
                     )
                     .order_by(started.desc())
                     .limit(NEEDED_RUNS)

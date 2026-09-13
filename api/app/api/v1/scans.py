@@ -426,6 +426,26 @@ async def cancel_scan(
     return await service.cancel(id=id, project_id=project_id)
 
 
+@router.post("/{id}/pause", response_model=ScanRead)
+async def pause_scan(
+    id: UUID,
+    _current_user: CurrentUser,
+    service: Annotated[ScanService, Depends(get_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+):
+    return await service.pause(id=id, project_id=project_id)
+
+
+@router.post("/{id}/resume", response_model=ScanRead)
+async def resume_scan(
+    id: UUID,
+    _current_user: CurrentUser,
+    service: Annotated[ScanService, Depends(get_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+):
+    return await service.resume(id=id, project_id=project_id)
+
+
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_scan(
     id: UUID,

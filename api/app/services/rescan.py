@@ -22,7 +22,7 @@ from shared.definitions.rescan import (
     stages_for,
 )
 from shared.definitions.surface import SURFACE_LABELS, SURFACE_NOUN, SURFACE_ORDER
-from shared.enums.scan import SCAN_LIVE_STATUSES, Phase, ScanScope
+from shared.enums.scan import SCAN_OPEN_STATUSES, Phase, ScanScope
 from shared.models.recheck import AssetRecheck, RecheckRead
 from shared.models.scan import (
     FocusedRunRead,
@@ -254,7 +254,7 @@ class RescanService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Scan not found"
             )
-        if scan.status in SCAN_LIVE_STATUSES:
+        if scan.status in SCAN_OPEN_STATUSES:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="The run has not finished. Wait for it to complete before rescanning.",

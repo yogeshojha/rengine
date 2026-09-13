@@ -1,4 +1,4 @@
-"""Scan orchestrator celery tasks: run_scan (dispatch canvas), run_scan_stage, finalize_scan."""
+"""Scan orchestrator celery tasks: run_scan, run_scan_stage, resume_scan, finalize_scan."""
 
 import uuid
 
@@ -11,6 +11,7 @@ from app.celery import celery_app
 from app.config import settings
 from app.database import get_sync_session
 from app.orchestrator import build_canvas, finalize_scan_run, run_stage
+from app.orchestrator.canvas import resume_point
 from shared.definitions.constants import SCANS_QUEUE
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.scan import (
@@ -23,10 +24,9 @@ from shared.logging import get_logger
 from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
 from shared.services.activity_log import ActivityLogService
-from shared.services.orchestrator import stages_done
 from shared.services.orchestrator.events import ScanEventPublisher
 from shared.utils.datetime import utc_now
-from stages.registry import get_stage, ordered_levels
+from stages.registry import execution_plan, get_stage
 
 logger = get_logger(__name__)
 
@@ -52,6 +52,9 @@ def run_scan(self, scan_id: str) -> dict:
         if scan.status in SCAN_TERMINAL_STATUSES:
             logger.info("scan %s already %s, skipping", scan_id, scan.status)
             return {"skipped": scan.status}
+        if scan.status == ScanStatus.PAUSED.value:
+            logger.info("scan %s paused before it started, skipping", scan_id)
+            return {"skipped": scan.status}
         if (
             scan.status == ScanStatus.RUNNING.value
             and len(scan.celery_task_ids or []) >= _DISPATCHED_TASK_IDS
@@ -68,7 +71,7 @@ def run_scan(self, scan_id: str) -> dict:
         session.commit()
 
         try:
-            result = build_canvas(scan_id).apply_async()
+            result = build_canvas(scan_id, scan.run_epoch or 0).apply_async()
         except Exception as exc:
             logger.exception("scan %s canvas dispatch failed", scan_id)
             scan.status = ScanStatus.FAILED.value
@@ -101,7 +104,7 @@ def run_scan(self, scan_id: str) -> dict:
 
 
 @shared_task(bind=True, name="app.tasks.scan.run_scan_stage", max_retries=0)
-def run_scan_stage(self, scan_id: str, stage_name: str) -> dict:
+def run_scan_stage(self, scan_id: str, stage_name: str, epoch: int = 0) -> dict:
     """Run one engine stage with activity tracking + command registration."""
     spec = get_stage(stage_name)
     if spec is None:
@@ -112,6 +115,16 @@ def run_scan_stage(self, scan_id: str, stage_name: str) -> dict:
         scan = session.get(Scan, uuid.UUID(scan_id))
         if scan is None:
             return {"error": "scan not found"}
+        if epoch != (scan.run_epoch or 0):
+            logger.info(
+                "stage %s belongs to a superseded canvas of scan %s",
+                stage_name,
+                scan_id,
+            )
+            return {"skipped": "superseded canvas", "stage": stage_name}
+        if scan.status == ScanStatus.PAUSED.value:
+            logger.info("stage %s not started, scan %s paused", stage_name, scan_id)
+            return {"skipped": ScanStatus.PAUSED.value, "stage": stage_name}
         run_stage(
             session,
             scan,
@@ -123,14 +136,82 @@ def run_scan_stage(self, scan_id: str, stage_name: str) -> dict:
 
 
 @shared_task(bind=True, name="app.tasks.scan.finalize_scan", max_retries=0)
-def finalize_scan(self, scan_id: str) -> dict:  # noqa: ARG001
+def finalize_scan(self, scan_id: str, epoch: int | None = None) -> dict:  # noqa: ARG001
     """Aggregate stage outcomes into the final scan status + terminal notif."""
     with get_sync_session() as session:
         scan = session.get(Scan, uuid.UUID(scan_id))
         if scan is None:
             return {"error": "scan not found"}
+        if epoch is not None and epoch != (scan.run_epoch or 0):
+            logger.info("finalize of scan %s belongs to a superseded canvas", scan_id)
+            return {"skipped": "superseded canvas"}
         finalize_scan_run(session, scan, redis_url=settings.celery_broker_url)
     return {"finalized": True, "scan_id": scan_id}
+
+
+@shared_task(bind=True, name="app.tasks.scan.resume_scan", max_retries=0)
+def resume_scan(self, scan_id: str) -> dict:
+    """Dispatch a fresh canvas for a paused scan, starting at its first unfinished level."""
+    with get_sync_session() as session:
+        scan = session.get(Scan, uuid.UUID(scan_id), with_for_update=True)
+        if scan is None:
+            logger.warning("scan %s not found", scan_id)
+            return {"error": "scan not found"}
+        if scan.status != ScanStatus.PAUSED.value:
+            logger.info("scan %s is %s, not resuming", scan_id, scan.status)
+            return {"skipped": scan.status}
+
+        rows = _activities(session, scan)
+        level, done = resume_point(rows)
+        now = utc_now()
+        epoch = (scan.run_epoch or 0) + 1
+        scan.run_epoch = epoch
+        scan.status = ScanStatus.RUNNING.value
+        scan.error = None
+        if scan.paused_at is not None:
+            scan.paused_seconds = (scan.paused_seconds or 0.0) + (
+                now - scan.paused_at
+            ).total_seconds()
+            scan.paused_at = None
+        if scan.started_at is None:
+            scan.started_at = now
+        scan.celery_task_ids = [*(scan.celery_task_ids or []), self.request.id]
+        session.commit()
+
+        try:
+            result = build_canvas(
+                scan_id, epoch, start_level=level, done=done
+            ).apply_async()
+        except Exception as exc:
+            logger.exception("scan %s canvas dispatch failed on resume", scan_id)
+            scan.status = ScanStatus.FAILED.value
+            scan.error = f"Scan not resumed: {exc}"[:2000]
+            scan.completed_at = utc_now()
+            session.commit()
+            return {"error": "dispatch failed"}
+        scan.celery_task_ids = [*(scan.celery_task_ids or []), result.id]
+        session.commit()
+
+        left = sum(len(step) for step in execution_plan(level, frozenset(done)))
+        target_value = (scan.execution_config or {}).get("target_value", "")
+        ActivityLogService(session).log(
+            event=ActivityEvent.SCAN_RESUMED,
+            title=f"Scan resumed · {target_value}",
+            description=f"{left} stage{'s' if left != 1 else ''} remaining",
+            level=ActivityLevel.INFO,
+            project_id=scan.project_id,
+            target_id=scan.target_id,
+            scan_id=scan.id,
+            target_value=target_value,
+        )
+        session.commit()
+        ScanEventPublisher(
+            settings.celery_broker_url,
+            scan_id=scan_id,
+            project_id=str(scan.project_id),
+        ).scan_resumed(status=scan.status, stages_left=left)
+        logger.info("scan %s resumed at level %s (epoch %s)", scan_id, level, epoch)
+        return {"resumed": True, "task_id": result.id, "stages_left": left}
 
 
 @shared_task(bind=True, name="app.tasks.scan.reap_stalled", max_retries=0)
@@ -154,6 +235,7 @@ def reap_stalled(self) -> dict:  # noqa: ARG001
             if resume is None:
                 continue
             level, done, idle = resume
+            epoch = (scan.run_epoch or 0) + 1
             if idle >= STALL_ABANDON_SECONDS:
                 logger.error(
                     "scan %s abandoned after %.0fs with no task in flight",
@@ -168,7 +250,11 @@ def reap_stalled(self) -> dict:  # noqa: ARG001
                 scan.id,
                 level,
             )
-            build_canvas(str(scan.id), start_level=level, done=done).apply_async()
+            scan.run_epoch = epoch
+            session.commit()
+            build_canvas(
+                str(scan.id), epoch, start_level=level, done=done
+            ).apply_async()
             resumed.append(str(scan.id))
     return {"resumed": resumed, "abandoned": abandoned}
 
@@ -231,14 +317,18 @@ def _active_task_ids() -> set[str] | None:
     return {t.get("id") for tasks in replies.values() for t in tasks}
 
 
-def _resume_level(
-    session: Session, scan: Scan, active: set[str]
-) -> tuple[int, set[str], float] | None:
-    rows = (
+def _activities(session: Session, scan: Scan) -> list[ScanActivity]:
+    return list(
         session.execute(select(ScanActivity).where(ScanActivity.scan_id == scan.id))
         .scalars()
         .all()
     )
+
+
+def _resume_level(
+    session: Session, scan: Scan, active: set[str]
+) -> tuple[int, set[str], float] | None:
+    rows = _activities(session, scan)
     if any(
         r.status not in ACTIVITY_TERMINAL_STATUSES and r.celery_task_id in active
         for r in rows
@@ -251,9 +341,5 @@ def _resume_level(
     idle = (utc_now() - last).total_seconds()
     if idle < STALL_GRACE_SECONDS:
         return None
-    done = stages_done(rows)
-    levels = ordered_levels()
-    for index, level in enumerate(levels):
-        if not all(spec.name in done for spec in level):
-            return index, done, idle
-    return len(levels), done, idle
+    level, done = resume_point(rows)
+    return level, done, idle

@@ -349,6 +349,32 @@ function createScansStore() {
 			}
 		},
 
+		async pause(scan: ScanRead): Promise<boolean> {
+			const projectId = filters.projectId;
+			if (!projectId) return false;
+			try {
+				await scansApi.pause(scan.id, projectId);
+				this.refresh();
+				return true;
+			} catch (e) {
+				error = e instanceof Error ? e.message : 'Scan not paused';
+				return false;
+			}
+		},
+
+		async resume(scan: ScanRead): Promise<boolean> {
+			const projectId = filters.projectId;
+			if (!projectId) return false;
+			try {
+				await scansApi.resume(scan.id, projectId);
+				this.refresh();
+				return true;
+			} catch (e) {
+				error = e instanceof Error ? e.message : 'Scan not resumed';
+				return false;
+			}
+		},
+
 		async remove(scan: ScanRead): Promise<boolean> {
 			const projectId = filters.projectId;
 			if (!projectId) return false;

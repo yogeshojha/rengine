@@ -6,6 +6,7 @@ import CircleMinus from '@lucide/svelte/icons/circle-minus';
 import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 import Ban from '@lucide/svelte/icons/ban';
 import Radio from '@lucide/svelte/icons/radio';
+import Pause from '@lucide/svelte/icons/pause';
 import type { ScanActivityStatus, ScanRead, ScanStatus, ScanStatusCounts } from '$lib/types/scan';
 import type { BadgeVariant } from '$lib/components/ui/badge';
 import type { IconComponent } from '$lib/config/icons';
@@ -14,6 +15,7 @@ import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 export const SCAN_STATUS_LABEL: Record<ScanStatus, string> = {
 	pending: 'Queued',
 	running: 'Running',
+	paused: 'Paused',
 	completed: 'Completed',
 	failed: 'Failed',
 	cancelled: 'Cancelled'
@@ -22,6 +24,7 @@ export const SCAN_STATUS_LABEL: Record<ScanStatus, string> = {
 export const SCAN_STATUS_VARIANT: Record<ScanStatus, BadgeVariant> = {
 	pending: 'secondary',
 	running: 'info',
+	paused: 'secondary',
 	completed: 'success',
 	failed: 'destructive',
 	cancelled: 'outline'
@@ -32,6 +35,7 @@ export const SCAN_STATUS_DOT: Record<ScanStatus, string> = {
 	cancelled: 'border-warning bg-warning',
 	failed: 'border-destructive bg-destructive',
 	running: 'border-info bg-info shadow-[0_0_0_4px_color-mix(in_oklch,var(--info)_18%,transparent)]',
+	paused: 'border-muted-foreground bg-muted-foreground',
 	pending: 'border-muted-foreground bg-card'
 };
 
@@ -40,6 +44,7 @@ export const SCAN_STATUS_PILL: Record<ScanStatus, string> = {
 	cancelled: 'bg-warning/12 text-warning',
 	failed: 'bg-destructive/10 text-destructive',
 	running: 'bg-info/10 text-info',
+	paused: 'bg-muted text-foreground',
 	pending: 'bg-muted text-muted-foreground'
 };
 
@@ -53,6 +58,8 @@ export function scanStatusIcon(s: ScanStatus): IconComponent {
 			return LoaderCircle;
 		case 'pending':
 			return Clock;
+		case 'paused':
+			return Pause;
 		case 'completed':
 			return CircleCheck;
 		case 'cancelled':
@@ -66,11 +73,12 @@ export function isLiveStatus(s: ScanStatus): boolean {
 	return s === 'running' || s === 'pending';
 }
 
-export type ScanStatusTab = 'all' | 'active' | 'completed' | 'failed' | 'cancelled';
+export type ScanStatusTab = 'all' | 'active' | 'paused' | 'completed' | 'failed' | 'cancelled';
 
 export const SCAN_STATUS_TABS: { key: ScanStatusTab; label: string; statuses: ScanStatus[] }[] = [
 	{ key: 'all', label: 'All', statuses: [] },
 	{ key: 'active', label: 'Active', statuses: ['running', 'pending'] },
+	{ key: 'paused', label: 'Paused', statuses: ['paused'] },
 	{ key: 'completed', label: 'Completed', statuses: ['completed'] },
 	{ key: 'failed', label: 'Failed', statuses: ['failed'] },
 	{ key: 'cancelled', label: 'Cancelled', statuses: ['cancelled'] }
@@ -99,6 +107,8 @@ export function activityStatusIcon(s: ScanActivityStatus): IconComponent {
 			return LoaderCircle;
 		case 'pending':
 			return Clock;
+		case 'paused':
+			return Pause;
 		case 'success':
 			return CircleCheck;
 		case 'partial':
@@ -135,6 +145,7 @@ export const activityRan = (s: ScanActivityStatus | undefined): boolean =>
 export const ACTIVITY_STATUS_LABEL: Record<ScanActivityStatus, string> = {
 	pending: 'Queued',
 	running: 'Running',
+	paused: 'Paused',
 	success: 'Success',
 	partial: 'Partial',
 	failed: 'Failed',
@@ -158,15 +169,17 @@ export const RESULTS_SCROLL = 'max-h-[calc(100svh-25rem)] min-h-[15rem]';
 
 export const SCAN_STATUS_RANK: Record<ScanStatus, number> = {
 	running: 0,
-	pending: 1,
-	completed: 2,
-	failed: 3,
-	cancelled: 4
+	paused: 1,
+	pending: 2,
+	completed: 3,
+	failed: 4,
+	cancelled: 5
 };
 
 export function elapsedSeconds(scan: ScanRead, now: number = Date.now()): number | null {
 	if (!isLiveStatus(scan.status) || !scan.started_at) return null;
-	return Math.max(0, (now - new Date(scan.started_at).getTime()) / 1000);
+	const ran = (now - new Date(scan.started_at).getTime()) / 1000 - (scan.paused_seconds ?? 0);
+	return Math.max(0, ran);
 }
 
 export function formatSeconds(total: number): string {
