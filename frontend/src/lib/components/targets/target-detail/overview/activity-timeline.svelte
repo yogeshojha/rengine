@@ -15,6 +15,7 @@
 		elapsedSeconds,
 		formatSeconds,
 		isLiveStatus,
+		isOpenStatus,
 		SCAN_STATUS_DOT,
 		SCAN_STATUS_LABEL,
 		SCAN_STATUS_PILL
@@ -62,7 +63,7 @@
 		}
 		return census.map((scan, i) => ({
 			scan,
-			previous: census.slice(i + 1).find((s) => !isLiveStatus(s.status)) ?? null,
+			previous: census.slice(i + 1).find((s) => !isOpenStatus(s.status)) ?? null,
 			rescans: (children[scan.id] ?? []).slice(0, 4)
 		}));
 	});
@@ -182,7 +183,7 @@
 								{SCAN_STATUS_LABEL[s.status]}
 							</span>
 							<span class="text-muted-foreground">{detailFor(s)}</span>
-							{#if previous && !isLiveStatus(s.status) && s.scope === previous.scope}
+							{#if previous && !isOpenStatus(s.status) && s.scope === previous.scope}
 								<a
 									href={ROUTES.compare(s.id, previous.id)}
 									class="inline-flex items-center gap-1 text-2xs font-medium text-muted-foreground hover:text-primary"

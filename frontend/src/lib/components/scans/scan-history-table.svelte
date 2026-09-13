@@ -29,7 +29,7 @@
 	import {
 		SCAN_STATUS_TABS,
 		SCAN_POLL_MS,
-		isLiveStatus,
+		isOpenStatus,
 		scanStatusTab
 	} from '$lib/utilities/scan-status';
 	import { NOW_TICK_MS } from '$lib/constants';
@@ -58,7 +58,6 @@
 	let { targetId, onLaunch, onRescan, onRescanMany }: Props = $props();
 
 	let cancelTarget = $state<ScanRead | null>(null);
-	let pauseTarget = $state<ScanRead | null>(null);
 	let deleteTarget = $state<ScanRead | null>(null);
 	let bulkDeleteOpen = $state(false);
 	let bulkCancelOpen = $state(false);
@@ -101,7 +100,7 @@
 	let statusTab = $derived(scanStatusTab(scansStore.filters.statuses));
 
 	let selectedScans = $derived(scans.filter((s) => selectedScanIds.has(s.id)));
-	let selectedLiveCount = $derived(selectedScans.filter((s) => isLiveStatus(s.status)).length);
+	let selectedLiveCount = $derived(selectedScans.filter((s) => isOpenStatus(s.status)).length);
 	let selectedTargetIds = $derived([...new Set(selectedScans.map((s) => s.target_id))]);
 	let comparePair = $derived(eligibility(selectedScans));
 	let compareHref = $derived(
@@ -154,7 +153,7 @@
 	}
 
 	async function confirmBulkCancel() {
-		const ids = selectedScans.filter((s) => isLiveStatus(s.status)).map((s) => s.id);
+		const ids = selectedScans.filter((s) => isOpenStatus(s.status)).map((s) => s.id);
 		bulkCancelOpen = false;
 		if (ids.length === 0) return;
 		const { ok, failed } = await scansStore.cancelMany(ids);
@@ -223,15 +222,13 @@
 		}
 	}
 
-	async function confirmPause() {
-		const s = pauseTarget;
-		pauseTarget = null;
-		if (s && (await scansStore.pause(s))) toast.success('Scan paused');
-		else if (s) toast.error(scansStore.error ?? 'Scan not paused');
+	async function pause(scan: ScanRead) {
+		if (await scansStore.pause(scan)) toast.success('Scan paused');
+		else toast.error(scansStore.error ?? 'Scan not paused');
 	}
 
 	async function resume(scan: ScanRead) {
-		if (await scansStore.resume(scan)) toast.success('Scan resuming');
+		if (await scansStore.resume(scan)) toast.success('Scan resumed');
 		else toast.error(scansStore.error ?? 'Scan not resumed');
 	}
 
@@ -492,7 +489,7 @@
 					loadScans={(tid) => scansStore.loadTargetScans(tid)}
 					onRescan={(s) => onRescan?.(s)}
 					onCancel={(s) => (cancelTarget = s)}
-					onPause={(s) => (pauseTarget = s)}
+					onPause={(s) => pause(s)}
 					onResume={(s) => resume(s)}
 					onDelete={(s) => (deleteTarget = s)}
 				/>
@@ -521,7 +518,7 @@
 					onSelect={toggleScan}
 					onRescan={(s) => onRescan?.(s)}
 					onCancel={(s) => (cancelTarget = s)}
-					onPause={(s) => (pauseTarget = s)}
+					onPause={(s) => pause(s)}
 					onResume={(s) => resume(s)}
 					onDelete={(s) => (deleteTarget = s)}
 				/>
@@ -530,16 +527,6 @@
 		{@render footer(scans.length, 'scan')}
 	{/if}
 </Card.Root>
-
-<ConfirmDialog
-	open={!!pauseTarget}
-	title="Pause scan"
-	description="Running stages stop and run again from the start when the scan resumes."
-	confirmLabel="Pause"
-	cancelLabel="Keep running"
-	onOpenChange={(o) => !o && (pauseTarget = null)}
-	onConfirm={confirmPause}
-/>
 
 <ConfirmDialog
 	open={!!cancelTarget}

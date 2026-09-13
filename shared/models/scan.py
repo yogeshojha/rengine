@@ -156,6 +156,16 @@ class Scan(SQLModel, table=True):
     completed_at: datetime | None = Field(default=None)
 
 
+def fold_pause(scan: Scan, at: datetime) -> None:
+    """Move an open pause into paused_seconds, so it never counts as run time."""
+    if scan.paused_at is None:
+        return
+    scan.paused_seconds = (scan.paused_seconds or 0.0) + (
+        at - scan.paused_at
+    ).total_seconds()
+    scan.paused_at = None
+
+
 class ScanCreate(BaseModel):
     """A launch names a saved engine, or runs an ad hoc plan carried in `overrides`."""
 

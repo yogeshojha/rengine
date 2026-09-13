@@ -43,6 +43,11 @@ describe('eligibility', () => {
 		expect(eligibility(pair)).toMatchObject({ ok: false, reason: REFUSAL.UNFINISHED });
 	});
 
+	it('refuses a paused run, which the API refuses too', () => {
+		const pair = [scan(), scan({ status: 'paused' })];
+		expect(eligibility(pair)).toMatchObject({ ok: false, reason: REFUSAL.UNFINISHED });
+	});
+
 	it('refuses a focused run against a full one', () => {
 		const pair = [scan({ scope: 'focused' }), scan({ scope: 'full' })];
 		expect(eligibility(pair)).toMatchObject({

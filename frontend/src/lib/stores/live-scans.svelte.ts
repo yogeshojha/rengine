@@ -271,27 +271,27 @@ function createLiveScansStore() {
 			}
 		},
 
-		async pause(scan: ScanRead): Promise<boolean> {
+		async pause(scan: ScanRead): Promise<ScanRead | null> {
 			const pid = projectId;
-			if (!pid) return false;
+			if (!pid) return null;
 			try {
-				await scansApi.pause(scan.id, pid);
+				const updated = await scansApi.pause(scan.id, pid);
 				scheduleRefresh();
-				return true;
+				return updated;
 			} catch {
-				return false;
+				return null;
 			}
 		},
 
-		async resume(scan: ScanRead): Promise<boolean> {
+		async resume(scan: ScanRead): Promise<ScanRead | null> {
 			const pid = projectId;
-			if (!pid) return false;
+			if (!pid) return null;
 			try {
-				await scansApi.resume(scan.id, pid);
+				const updated = await scansApi.resume(scan.id, pid);
 				scheduleRefresh();
-				return true;
+				return updated;
 			} catch {
-				return false;
+				return null;
 			}
 		},
 

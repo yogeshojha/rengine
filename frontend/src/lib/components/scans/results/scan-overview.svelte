@@ -203,6 +203,8 @@
 		switch (scan.status) {
 			case 'failed':
 				return 'The scan failed.';
+			case 'paused':
+				return 'The scan is paused.';
 			case 'cancelled':
 				return 'The scan was cancelled.';
 			default:

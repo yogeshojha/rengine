@@ -4,7 +4,7 @@ import pytest
 
 from shared.enums.scan import ScanActivityStatus, ScanStatus
 from shared.models.scan_activity import ScanActivity
-from shared.services.orchestrator import aggregate_status, stages_done
+from shared.services.orchestrator import aggregate_status, stages_done, superseded
 from stages.registry import ordered_levels, resume_level
 
 pytestmark = pytest.mark.pipeline
@@ -70,3 +70,31 @@ def test_a_paused_stage_sets_the_resume_level_to_its_own():
     rows.append(_row(paused, ScanActivityStatus.PAUSED.value))
 
     assert resume_level(frozenset(stages_done(rows))) == 1
+
+
+# ---------- the canvas epoch ----------
+
+
+def test_a_task_from_the_current_canvas_runs():
+    assert superseded(3, 3) is False
+
+
+@pytest.mark.parametrize("task_epoch", [0, 1, 2])
+def test_a_task_from_a_torn_down_canvas_is_refused(task_epoch):
+    """A run_scan or stage task queued before a pause must not run beside the resumed canvas."""
+    assert superseded(3, task_epoch) is True
+
+
+def test_a_task_ahead_of_the_scan_is_refused():
+    assert superseded(1, 2) is True
+
+
+def test_a_legacy_row_with_no_epoch_reads_as_zero():
+    assert superseded(None, 0) is False
+    assert superseded(None, 1) is True
+
+
+def test_a_task_that_carries_no_epoch_always_runs():
+    """The reaper dispatches finalize without one, and it must still settle the scan."""
+    assert superseded(0, None) is False
+    assert superseded(7, None) is False

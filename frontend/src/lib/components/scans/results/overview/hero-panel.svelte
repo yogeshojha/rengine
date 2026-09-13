@@ -112,6 +112,8 @@
 				return 'Scan in progress';
 			case 'failed':
 				return 'Scan failed';
+			case 'paused':
+				return 'Scan paused';
 			case 'cancelled':
 				return 'Scan cancelled';
 			default:
@@ -133,6 +135,8 @@
 			}
 			case 'failed':
 				return scan.error ?? 'A stage failed. Select the stage for details.';
+			case 'paused':
+				return `Paused after ${doneCount} of ${planned.length} stages.`;
 			case 'cancelled':
 				return `Stopped after ${doneCount} of ${planned.length} stages.`;
 			default:

@@ -349,29 +349,29 @@ function createScansStore() {
 			}
 		},
 
-		async pause(scan: ScanRead): Promise<boolean> {
+		async pause(scan: ScanRead): Promise<ScanRead | null> {
 			const projectId = filters.projectId;
-			if (!projectId) return false;
+			if (!projectId) return null;
 			try {
-				await scansApi.pause(scan.id, projectId);
+				const updated = await scansApi.pause(scan.id, projectId);
 				this.refresh();
-				return true;
+				return updated;
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Scan not paused';
-				return false;
+				return null;
 			}
 		},
 
-		async resume(scan: ScanRead): Promise<boolean> {
+		async resume(scan: ScanRead): Promise<ScanRead | null> {
 			const projectId = filters.projectId;
-			if (!projectId) return false;
+			if (!projectId) return null;
 			try {
-				await scansApi.resume(scan.id, projectId);
+				const updated = await scansApi.resume(scan.id, projectId);
 				this.refresh();
-				return true;
+				return updated;
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Scan not resumed';
-				return false;
+				return null;
 			}
 		},
 

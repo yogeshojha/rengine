@@ -241,6 +241,16 @@ def resume_level(done: frozenset[str]) -> int:
     return len(levels)
 
 
+def resume_point(activities) -> tuple[int, set[str], int]:
+    """The level a resumed canvas starts at, the stages it skips, and how many it will run."""
+    from shared.services.orchestrator import stages_done  # noqa: PLC0415
+
+    done = stages_done(activities)
+    level = resume_level(frozenset(done))
+    left = sum(len(step) for step in execution_plan(level, frozenset(done)))
+    return level, done, left
+
+
 def phases() -> list[tuple[str, list[StageSpec]]]:
     grouped: dict[str, list[StageSpec]] = {}
     for spec in stages():

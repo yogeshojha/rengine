@@ -83,7 +83,7 @@ class ScanStatus(Tool):
             summary=_status_line(row, stages, live),
             data=_describe(row, stages),
             pivot=links.scan(ctx.ui_base_url, row.id),
-            caveats=_status_caveats(row, live),
+            caveats=_status_caveats(row, row.status in SCAN_OPEN_STATUSES),
         )
 
 
@@ -178,6 +178,10 @@ class PauseScan(Tool):
             state="running",
             hint="Nothing to pause.",
         )
+        if row.status not in SCAN_LIVE_STATUSES:
+            msg = f"The scan is {row.status}. Nothing to pause."
+            raise ToolError(msg)
+
         result = await ScanService(ctx.session).pause(row.id, row.project_id)
         target = await ctx.session.get(Target, row.target_id)
         return ToolResult(
@@ -231,6 +235,10 @@ class ResumeScan(Tool):
             state="paused",
             hint="Nothing to resume.",
         )
+        if row.status != RunStatus.PAUSED.value:
+            msg = f"The scan is {row.status}. Nothing to resume."
+            raise ToolError(msg)
+
         result = await ScanService(ctx.session).resume(row.id, row.project_id)
         target = await ctx.session.get(Target, row.target_id)
         return ToolResult(
@@ -396,10 +404,10 @@ def _status_line(row: Scan, stages: dict[str, list[str]], live: bool) -> str:
     return f"{row.status}: {done} stage(s) completed{failed}"
 
 
-def _status_caveats(row: Scan, live: bool) -> list[str]:
+def _status_caveats(row: Scan, unfinished: bool) -> list[str]:
     notes = []
-    if live:
-        notes.append("Counts are partial while the scan runs.")
+    if unfinished:
+        notes.append("The run has not finished. Counts are partial.")
     else:
         notes.append(
             "Counts are the run's own rollup. resolve_target gives the target's "

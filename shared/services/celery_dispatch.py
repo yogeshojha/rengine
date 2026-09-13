@@ -67,11 +67,11 @@ def dispatch_scan_run(scan_id: str) -> None:
     )
 
 
-def dispatch_scan_resume(scan_id: str) -> None:
+def dispatch_scan_resume(scan_id: str, epoch: int) -> None:
     logger.info("Dispatching scan resume %s", scan_id)
     get_celery_client().send_task(
         "app.tasks.scan.resume_scan",
-        kwargs={"scan_id": scan_id},
+        kwargs={"scan_id": scan_id, "epoch": epoch},
         queue=SCANS_QUEUE,
     )
 
@@ -86,14 +86,12 @@ def dispatch_scan_finalize(scan_id: str) -> None:
 
 
 def revoke_scan_tasks(task_ids: list[str]) -> None:
-    """SIGKILL-revoke a scan's celery tasks."""
+    """Drop a scan's queued tasks. A task already running stops through its abort check."""
     if not task_ids:
         return
     logger.info("Revoking %d scan task(s)", len(task_ids))
     try:
-        get_celery_client().control.revoke(
-            list(task_ids), terminate=True, signal="SIGKILL"
-        )
+        get_celery_client().control.revoke(list(task_ids))
     except Exception:
         logger.warning("scan task revoke failed", exc_info=True)
 

@@ -29,6 +29,7 @@ from app.services.scan_engine import ScanEngineService, stage_effects
 from app.services.target import TargetService
 from shared.config import BaseAppSettings
 from shared.definitions.rescan import rescan_label
+from shared.definitions.watch import WATCH_HOST_KEY
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.api_key import APIProvider
 from shared.enums.scan import (
@@ -50,6 +51,7 @@ from shared.models.scan import (
     ScanRead,
     ScanStats,
     ScanStatusCounts,
+    fold_pause,
 )
 from shared.models.scan_activity import ScanActivity, ScanActivityRead
 from shared.models.scan_command import (
@@ -87,6 +89,7 @@ from shared.services.scan_resolve import (
 from shared.services.scan_scope import census_only
 from shared.utils.datetime import utc_now
 from shared.utils.validation import unrecognised_target, validate_target
+from stages.registry import resume_point
 
 logger = logging.getLogger(__name__)
 
@@ -1086,6 +1089,7 @@ class ScanService:
                     failed=s.get(ScanStatus.FAILED.value, 0),
                     cancelled=s.get(ScanStatus.CANCELLED.value, 0),
                     running=s.get(ScanStatus.RUNNING.value, 0),
+                    paused=s.get(ScanStatus.PAUSED.value, 0),
                     pending=s.get(ScanStatus.PENDING.value, 0),
                     new_subdomains=new_by_day.get(d, 0),
                 )
@@ -1146,10 +1150,11 @@ class ScanService:
             i.prev_subdomains_found = prev_counts.get(i.id)
             i.is_first_scan = i.id in first_ids
 
-    async def _get_scan(self, id: UUID, project_id: UUID) -> Scan:
-        result = await self.session.execute(
-            select(Scan).where(Scan.id == id, Scan.project_id == project_id)
-        )
+    async def _get_scan(self, id: UUID, project_id: UUID, lock: bool = False) -> Scan:
+        statement = select(Scan).where(Scan.id == id, Scan.project_id == project_id)
+        if lock:
+            statement = statement.with_for_update()
+        result = await self.session.execute(statement)
         scan = result.scalar_one_or_none()
         if not scan:
             raise HTTPException(
@@ -1158,12 +1163,12 @@ class ScanService:
         return scan
 
     async def cancel(self, id: UUID, project_id: UUID) -> ScanRead:
-        scan = await self._get_scan(id, project_id)
+        scan = await self._get_scan(id, project_id, lock=True)
         if scan.status in SCAN_OPEN_STATUSES:
             was_paused = scan.status == ScanStatus.PAUSED.value
             scan.status = ScanStatus.CANCELLED.value
             scan.completed_at = utc_now()
-            scan.paused_at = None
+            fold_pause(scan, scan.completed_at)
             scan.error = "Cancelled by user."
             await self.session.commit()
 
@@ -1186,11 +1191,16 @@ class ScanService:
         return self._to_read(scan)
 
     async def pause(self, id: UUID, project_id: UUID) -> ScanRead:
-        """Stop the run where it stands. Stages in flight re-run when it resumes."""
-        scan = await self._get_scan(id, project_id)
+        """Stop the run where it stands."""
+        scan = await self._get_scan(id, project_id, lock=True)
         if scan.status not in SCAN_LIVE_STATUSES:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT, detail="The scan is not running."
+            )
+        if (scan.execution_config or {}).get(WATCH_HOST_KEY):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="A watch probe cannot be paused. Cancel it to stop the run.",
             )
         now = utc_now()
         scan.status = ScanStatus.PAUSED.value
@@ -1222,14 +1232,73 @@ class ScanService:
         return self._to_read(scan)
 
     async def resume(self, id: UUID, project_id: UUID) -> ScanRead:
-        """Hand the run back to the worker, which restarts it at its first unfinished level."""
-        scan = await self._get_scan(id, project_id)
+        """Move the run back to RUNNING here, so the answer is true before the worker acts."""
+        scan = await self._get_scan(id, project_id, lock=True)
         if scan.status != ScanStatus.PAUSED.value:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT, detail="The scan is not paused."
             )
-        dispatch_scan_resume(str(scan.id))
+        now = utc_now()
+        paused_at = scan.paused_at
+        left = await self._stages_left(scan)
+        fold_pause(scan, now)
+        scan.status = ScanStatus.RUNNING.value
+        scan.error = None
+        scan.run_epoch = epoch = (scan.run_epoch or 0) + 1
+        if scan.started_at is None:
+            scan.started_at = now
+        await self._log_resumed(scan, left)
+        await self.session.commit()
+
+        try:
+            dispatch_scan_resume(str(scan.id), epoch)
+        except Exception:
+            logger.warning("scan resume dispatch failed", exc_info=True)
+            scan.status = ScanStatus.PAUSED.value
+            scan.paused_at = paused_at or now
+            await self.session.commit()
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="The scan was not resumed. Check that the worker service is running.",
+            ) from None
+        self._announce_resumed(scan, left)
+        await self.session.refresh(scan)
         return self._to_read(scan)
+
+    async def _stages_left(self, scan: Scan) -> int:
+        rows = (
+            (
+                await self.session.execute(
+                    select(ScanActivity).where(ScanActivity.scan_id == scan.id)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        return resume_point(list(rows))[2]
+
+    async def _log_resumed(self, scan: Scan, left: int) -> None:
+        target_value = (scan.execution_config or {}).get("target_value", "")
+        await ActivityLogService(self.session).log_async(
+            event=ActivityEvent.SCAN_RESUMED,
+            title=f"Scan resumed · {target_value}",
+            description=f"{left} {'stage' if left == 1 else 'stages'} remaining",
+            level=ActivityLevel.INFO,
+            project_id=scan.project_id,
+            target_id=scan.target_id,
+            scan_id=scan.id,
+            target_value=target_value,
+        )
+
+    def _announce_resumed(self, scan: Scan, left: int) -> None:
+        try:
+            ScanEventPublisher(
+                BaseAppSettings().redis_url,
+                scan_id=str(scan.id),
+                project_id=str(scan.project_id),
+            ).scan_resumed(status=ScanStatus.RUNNING.value, stages_left=left)
+        except Exception:
+            logger.debug("resume event emit failed", exc_info=True)
 
     async def _log_paused(self, scan: Scan, stopped: int) -> None:
         target_value = (scan.execution_config or {}).get("target_value", "")

@@ -1,14 +1,10 @@
 """Render the stage execution plan as a celery canvas."""
 
-from collections.abc import Iterable
-
 from celery import chain, chord, group, signature
 
 from app.celery import celery_app
 from shared.definitions.constants import SCANS_QUEUE
-from shared.models.scan_activity import ScanActivity
-from shared.services.orchestrator import stages_done
-from stages.registry import execution_plan, resume_level
+from stages.registry import execution_plan
 
 
 def _stage_sig(scan_id: str, stage_name: str, epoch: int):
@@ -46,9 +42,3 @@ def build_canvas(
             else chord(group(sigs, app=celery_app), workflow, app=celery_app)
         )
     return workflow
-
-
-def resume_point(activities: Iterable[ScanActivity]) -> tuple[int, set[str]]:
-    """The level a resumed canvas starts at, and the stages it does not run again."""
-    done = stages_done(activities)
-    return resume_level(frozenset(done)), done

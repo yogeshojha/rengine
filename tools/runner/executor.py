@@ -14,6 +14,7 @@ from pathlib import Path
 from shared.definitions.constants import MAX_COMMAND_OUTPUT
 from shared.logging import get_logger
 from shared.services.scan_resolve import redact_command
+from tools.runner.abort import active_abort
 from tools.runner.models import (
     CommandRecorder,
     OutputFormat,
@@ -344,11 +345,12 @@ class CLIToolRunner:
             stderr_thread = threading.Thread(target=_drain_stderr, daemon=True)
             stderr_thread.start()
 
-            if should_stop is not None:
+            stop_check = should_stop or active_abort()
+            if stop_check is not None:
 
                 def _watch_stop() -> None:
                     while proc is not None and proc.poll() is None:
-                        if should_stop():
+                        if stop_check():
                             with contextlib.suppress(Exception):
                                 proc.kill()
                             return

@@ -73,6 +73,11 @@ export function isLiveStatus(s: ScanStatus): boolean {
 	return s === 'running' || s === 'pending';
 }
 
+/** Unfinished: still moving, or paused and able to resume. Mirrors SCAN_OPEN_STATUSES. */
+export function isOpenStatus(s: ScanStatus): boolean {
+	return isLiveStatus(s) || s === 'paused';
+}
+
 export type ScanStatusTab = 'all' | 'active' | 'paused' | 'completed' | 'failed' | 'cancelled';
 
 export const SCAN_STATUS_TABS: { key: ScanStatusTab; label: string; statuses: ScanStatus[] }[] = [

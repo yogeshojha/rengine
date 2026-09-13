@@ -1,5 +1,5 @@
 import { REFUSAL } from '$lib/config/compare';
-import { isLiveStatus } from '$lib/utilities/scan-status';
+import { isOpenStatus } from '$lib/utilities/scan-status';
 import type { ScanRead } from '$lib/types/scan';
 
 export interface Eligibility {
@@ -21,7 +21,7 @@ export function eligibility(scans: ScanRead[]): Eligibility {
 	if (baseline.target_id !== current.target_id) {
 		return { ok: false, reason: REFUSAL.DIFFERENT_TARGET };
 	}
-	if (isLiveStatus(baseline.status) || isLiveStatus(current.status)) {
+	if (isOpenStatus(baseline.status) || isOpenStatus(current.status)) {
 		return { ok: false, reason: REFUSAL.UNFINISHED };
 	}
 	if (baseline.scope !== current.scope) {

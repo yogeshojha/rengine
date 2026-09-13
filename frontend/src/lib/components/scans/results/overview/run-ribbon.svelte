@@ -157,6 +157,9 @@
 				parts.push(failed ? `Failed at ${failed.title} after ${dur}` : `Failed after ${dur}`);
 				break;
 			}
+			case 'paused':
+				parts.push(`Paused after ${done} of ${rows.length} stages · ${dur}`);
+				break;
 			case 'cancelled':
 				parts.push(`Stopped after ${done} of ${rows.length} stages · ${dur}`);
 				break;

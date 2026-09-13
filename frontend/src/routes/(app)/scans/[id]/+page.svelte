@@ -51,6 +51,7 @@
 	import {
 		durationLabel,
 		isLiveStatus,
+		isOpenStatus,
 		scanStatusIcon,
 		SCAN_STATUS_LABEL,
 		SCAN_POLL_MS
@@ -108,7 +109,6 @@
 	let error = $state<string | null>(null);
 	let showRescan = $state(false);
 	let cancelOpen = $state(false);
-	let pauseOpen = $state(false);
 	let reportOpen = $state(false);
 	let cancelling = $state(false);
 	let pausing = $state(false);
@@ -242,10 +242,11 @@
 
 	let live = $derived(!!scan && isLiveStatus(scan.status));
 	let paused = $derived(scan?.status === 'paused');
+	let unfinished = $derived(!!scan && isOpenStatus(scan.status));
 	let runningStages = $derived(activities.filter((a) => a.status === 'running').length);
 	let pauseNote = $derived(
 		runningStages
-			? `${runningStages} running ${runningStages === 1 ? 'stage' : 'stages'} stop and run again from the start when the scan resumes.`
+			? `${runningStages} running ${runningStages === 1 ? 'stage' : 'stages'} stop and run again from the start on resume.`
 			: 'The scan stops before its next stage.'
 	);
 	let focused = $derived(scan?.scope === 'focused');
@@ -270,21 +271,21 @@
 		);
 	});
 	let comparable = $derived.by<ScanRead | null>(() => {
-		if (!scan || live) return null;
+		if (!scan || unfinished) return null;
 		const at = new Date(scan.started_at ?? scan.created_at).getTime();
 		return (
 			history.find(
 				(s) =>
 					s.id !== scan!.id &&
 					s.scope === scan!.scope &&
-					!isLiveStatus(s.status) &&
+					!isOpenStatus(s.status) &&
 					new Date(s.started_at ?? s.created_at).getTime() < at
 			) ?? null
 		);
 	});
 	let compareReason = $derived.by<string>(() => {
 		if (!scan || comparable) return '';
-		if (live) return REFUSAL.UNFINISHED;
+		if (unfinished) return REFUSAL.UNFINISHED;
 		if (!historyLoaded) return '';
 		return focused
 			? REFUSAL.FOCUSED_AGAINST_FULL
@@ -329,7 +330,7 @@
 			if ((tabCounts[t.key] ?? 0) > 0) return true;
 			if (t.key === INTEREST_TAB) return false;
 			const spec = SURFACE_ORDER.find((sp) => sp.tab === t.key);
-			return live && !!spec && spec.kinds.some((k) => plannedKinds.has(k));
+			return unfinished && !!spec && spec.kinds.some((k) => plannedKinds.has(k));
 		})
 	);
 	$effect(() => {
@@ -431,29 +432,28 @@
 		}, 600);
 	}
 
-	async function confirmPause() {
-		if (!scan) return;
+	async function pause() {
+		if (!scan || pausing) return;
 		pausing = true;
-		const ok = await liveScans.pause(scan);
+		const updated = await liveScans.pause(scan);
 		pausing = false;
-		pauseOpen = false;
-		if (ok) {
+		if (updated) {
+			scan = updated;
 			toast.success('Scan paused');
 			load(true);
 		} else toast.error('Scan not paused');
 	}
 
 	async function resume() {
-		if (!scan) return;
+		if (!scan || resuming) return;
 		resuming = true;
-		const ok = await liveScans.resume(scan);
+		const updated = await liveScans.resume(scan);
 		resuming = false;
-		if (ok) {
-			toast.success('Scan resuming');
+		if (updated) {
+			scan = updated;
+			toast.success('Scan resumed');
 			load(true);
-		} else {
-			toast.error('Scan not resumed');
-		}
+		} else toast.error('Scan not resumed');
 	}
 
 	async function confirmCancel() {
@@ -573,10 +573,23 @@
 			</div>
 			<div class="flex items-center gap-2">
 				{#if live}
-					<Button variant="outline" size="sm" class="gap-1.5" onclick={() => (pauseOpen = true)}>
-						<Pause class="size-3.5" />
-						Pause
-					</Button>
+					<Hint text={pauseNote}>
+						{#snippet child(props)}
+							<span {...props} class="inline-flex">
+								<LoadingButton
+									variant="outline"
+									size="sm"
+									class="gap-1.5"
+									loading={pausing}
+									loadingLabel="Pausing…"
+									onclick={() => pause()}
+								>
+									<Pause class="size-3.5" />
+									Pause
+								</LoadingButton>
+							</span>
+						{/snippet}
+					</Hint>
 					<Button variant="outline" size="sm" class="gap-1.5" onclick={() => (cancelOpen = true)}>
 						<Ban class="size-3.5" />
 						Cancel
@@ -944,18 +957,6 @@
 		targetId={scan.target_id}
 		rerun={scan}
 		onClose={() => (showRescan = false)}
-	/>
-	<ConfirmDialog
-		bind:open={pauseOpen}
-		title="Pause scan"
-		description={pauseNote}
-		confirmLabel="Pause"
-		cancelLabel="Keep running"
-		icon={Pause}
-		loading={pausing}
-		loadingLabel="Pausing…"
-		onOpenChange={(o) => (pauseOpen = o)}
-		onConfirm={confirmPause}
 	/>
 	<ConfirmDialog
 		bind:open={cancelOpen}

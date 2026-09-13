@@ -28,6 +28,7 @@ from shared.services.scan_resolve import ResolvedScanConfig, unseal_headers
 from shared.utils.datetime import utc_now
 from stages.base import StageAbortedError, StageContext
 from stages.registry import StageSpec
+from tools.runner.abort import aborting_on
 
 logger = get_logger(__name__)
 
@@ -80,7 +81,7 @@ def _scan_is_halted(session_factory: Callable[[], Session], scan_id: uuid.UUID) 
 def _halt_status(
     session_factory: Callable[[], Session], scan_id: uuid.UUID
 ) -> ScanActivityStatus:
-    """A paused stage re-runs on resume; an aborted one does not."""
+    """PAUSED while the scan is paused, ABORTED otherwise."""
     try:
         with session_factory() as session:
             scan = session.get(Scan, scan_id)
@@ -217,7 +218,8 @@ def run_stage(
             _emit_stage_done(events, spec, activity, ScanActivityStatus.SKIPPED.value)
             return
 
-        result = engine.run()
+        with aborting_on(ctx.is_aborted):
+            result = engine.run()
     except StageAbortedError:
         _fail_stage(
             activity_svc,
