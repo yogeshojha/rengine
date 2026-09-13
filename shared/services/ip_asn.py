@@ -6,10 +6,11 @@ import shutil
 import tempfile
 import time
 import urllib.request
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+from uuid import UUID
 
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
@@ -86,6 +87,28 @@ SELECT id, ip FROM ip_addresses
 WHERE asn IS NULL OR country IS NULL
 ORDER BY discovered_at DESC LIMIT :lim
 """
+_FOLD_ASSETS_SQL = """
+UPDATE http_assets h SET asn = a.asn, asn_org = a.asn_org
+FROM ip_addresses a
+WHERE a.scan_id = ANY(CAST(:sids AS uuid[]))
+  AND h.scan_id = a.scan_id AND h.ip = a.ip
+  AND a.asn IS NOT NULL AND h.asn IS NULL
+"""
+_FOLD_HOSTS_SQL = """
+UPDATE subdomains s SET asn = a.asn, asn_org = a.asn_org
+FROM ip_addresses a
+WHERE a.scan_id = ANY(CAST(:sids AS uuid[]))
+  AND s.scan_id = a.scan_id
+  AND cast(s.resolved_ips AS jsonb) ->> 0 = a.ip
+  AND a.asn IS NOT NULL AND s.asn IS NULL
+"""
+
+
+@dataclass(frozen=True)
+class Backfilled:
+    addresses: int = 0
+    hosts: int = 0
+    scans: tuple[UUID, ...] = field(default_factory=tuple)
 
 
 def enrich_addresses(
@@ -110,14 +133,28 @@ def enrich_addresses(
     return int(session.execute(statement).rowcount or 0)
 
 
-def backfill_addresses(session: Session, limit: int = BACKFILL_LIMIT) -> int:
+def fold_onto_hosts(session: Session, scan_ids: Sequence[UUID]) -> int:
+    """Carry the address network onto the web assets and hosts of those scans."""
+    if not scan_ids:
+        return 0
+    ids = [str(s) for s in scan_ids]
+    return sum(
+        int(session.execute(text(sql).bindparams(sids=ids)).rowcount or 0)
+        for sql in (_FOLD_ASSETS_SQL, _FOLD_HOSTS_SQL)
+    )
+
+
+def backfill_addresses(session: Session, limit: int = BACKFILL_LIMIT) -> Backfilled:
     """Fill addresses left blank by a scan that ran before the ranges were loaded."""
     if not ranges_ready(session):
-        return 0
+        return Backfilled()
     sql = _ENRICH_SQL.format(source=f"({_PENDING_SQL})", filter="")
-    filled = int(session.execute(text(sql).bindparams(lim=limit)).rowcount or 0)
+    sql += " RETURNING a.scan_id"
+    filled = session.execute(text(sql).bindparams(lim=limit)).fetchall()
+    scans = sorted({row[0] for row in filled})
+    hosts = fold_onto_hosts(session, scans)
     session.commit()
-    return filled
+    return Backfilled(addresses=len(filled), hosts=hosts, scans=tuple(scans))
 
 
 def _check_deadline(deadline: float, name: str) -> None:

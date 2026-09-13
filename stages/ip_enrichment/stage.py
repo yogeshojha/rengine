@@ -8,7 +8,12 @@ from shared.enums.target import TargetType
 from shared.logging import get_logger
 from shared.models.ip_address import IpAddress
 from shared.models.ripestat import RIPEStatASOverview
-from shared.services.ip_asn import enrich_addresses, ranges_ready, sync_ranges
+from shared.services.ip_asn import (
+    enrich_addresses,
+    fold_onto_hosts,
+    ranges_ready,
+    sync_ranges,
+)
 from shared.services.ip_inventory import collect_ips, materialize
 from stages.base import ALL_TARGETS, Stage, StageResult, parse_asn
 from stages.ip_enrichment.config import IpEnrichmentConfig
@@ -24,20 +29,6 @@ FROM (
     GROUP BY ip
 ) h
 WHERE a.scan_id = :sid AND a.ip = h.ip AND a.is_cdn IS NOT TRUE
-"""
-
-_BACKFILL_ASSETS_SQL = """
-UPDATE http_assets h SET asn = a.asn, asn_org = a.asn_org
-FROM ip_addresses a
-WHERE a.scan_id = :sid AND h.scan_id = :sid AND h.ip = a.ip AND a.asn IS NOT NULL
-"""
-
-_BACKFILL_SUBDOMAINS_SQL = """
-UPDATE subdomains s SET asn = a.asn, asn_org = a.asn_org
-FROM ip_addresses a
-WHERE a.scan_id = :sid AND s.scan_id = :sid
-  AND cast(s.resolved_ips AS jsonb) ->> 0 = a.ip
-  AND a.asn IS NOT NULL
 """
 
 _ADOPT_HOST_CDN_SQL = """
@@ -143,13 +134,9 @@ class IpEnrichmentStage(Stage):
         )
 
     def _backfill(self) -> None:
-        for statement in (
-            _ADOPT_CDN_SQL,
-            _ADOPT_HOST_CDN_SQL,
-            _BACKFILL_ASSETS_SQL,
-            _BACKFILL_SUBDOMAINS_SQL,
-        ):
+        for statement in (_ADOPT_CDN_SQL, _ADOPT_HOST_CDN_SQL):
             self.session.execute(text(statement).bindparams(sid=self.ctx.scan_id))
+        fold_onto_hosts(self.session, [self.ctx.scan_id])
 
     def _apply_target_asn(self) -> None:
         """An ASN target states the network of its own sweep."""

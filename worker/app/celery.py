@@ -170,6 +170,10 @@ celery_app.conf.beat_schedule = {
         "task": "app.tasks.ip_asn.refresh",
         "schedule": IP_RANGE_REFRESH_SECONDS,
     },
+    "ip-range-backfill": {
+        "task": "app.tasks.ip_asn.backfill",
+        "schedule": HYGIENE_BACKFILL_SECONDS,
+    },
     "vuln-template-sync": {
         "task": "app.tasks.vuln_templates.sync",
         "schedule": TEMPLATE_SYNC_SECONDS,
