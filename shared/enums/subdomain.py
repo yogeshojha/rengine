@@ -24,6 +24,7 @@ class SubdomainSource(Enum):
     SCRAPING = "scraping"
     TLS_CERT = "tls_cert"
     CT_LOG = "ct_log"
+    IMPORTED = "imported"
     VHOST = "vhost"
     NETBLOCK = "netblock"
     OTHER = "other"

@@ -248,6 +248,7 @@ class ResolvedScanConfig(BaseModel):
     tool_options: dict[str, str] = Field(default_factory=dict)
     overrides: dict[str, dict] = Field(default_factory=dict)
     seed_assets: list[dict] = Field(default_factory=list)
+    seed_only: bool = False
 
     _auth_header_names: list[str] = PrivateAttr(default_factory=list)
 

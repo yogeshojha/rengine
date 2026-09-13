@@ -5,6 +5,7 @@ from __future__ import annotations
 from enum import StrEnum
 
 from shared.definitions.surface import SurfaceDimension
+from shared.enums.subdomain import SubdomainSource
 
 
 class SeedKind(StrEnum):
@@ -17,6 +18,8 @@ MAX_RUN_ASSETS = 5000
 MAX_RUN_SCANS = 25
 RESCAN_LABEL = "Rescan"
 ASSET_SEED_STAGE = "asset_seed"
+RESCAN_SOURCE = "rescan"
+SEED_SOURCES: tuple[str, ...] = (RESCAN_SOURCE, SubdomainSource.IMPORTED.value)
 
 # the seed a row of each dimension contributes
 DIMENSION_SEED: dict[str, str] = {

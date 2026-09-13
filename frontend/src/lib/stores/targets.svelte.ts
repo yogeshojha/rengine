@@ -348,6 +348,7 @@ function createTargetsStore() {
 			project_slug: string;
 			organization_names?: string[];
 			tag_names?: string[];
+			seeds?: string[];
 		}): Promise<Target | null> {
 			error = null;
 			try {

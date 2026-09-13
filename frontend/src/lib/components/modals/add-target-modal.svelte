@@ -6,6 +6,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import { Input } from '$lib/components/ui/input';
+	import { Textarea } from '$lib/components/ui/textarea';
 	import { Label } from '$lib/components/ui/label';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -55,6 +56,7 @@
 	} | null>(null);
 	let isSubmitting = $state(false);
 
+	let seedText = $state('');
 	let selectedOrganizations = $state<Array<{ id: string; label: string }>>([]);
 	let selectedTags = $state<Array<{ id: string; label: string; color: string }>>([]);
 
@@ -79,6 +81,13 @@
 			label: tag.name,
 			color: tag.color
 		}))
+	);
+
+	let seedLines = $derived(
+		seedText
+			.split(/[\s,]+/)
+			.map((line) => line.trim())
+			.filter(Boolean)
 	);
 
 	let TypeIcon = $derived(
@@ -182,6 +191,20 @@
 				return;
 			}
 
+			if (seedLines.length > 0) {
+				try {
+					const stored = await targetsApi.writeSeeds(result.id, seedLines);
+					if (stored.rejected.length > 0) {
+						toast.warning(
+							`${stored.rejected.length} of ${seedLines.length} lines not stored. ` +
+								stored.rejected[0].reason
+						);
+					}
+				} catch {
+					toast.error('Target added. Seed assets not stored.');
+				}
+			}
+
 			if (!wantsScan) {
 				toast.success('Target added');
 				resetForm();
@@ -223,6 +246,7 @@
 		clearTimeout(validateTimeout);
 		targetValue = '';
 		displayName = '';
+		seedText = '';
 		isValidating = false;
 		validationResult = null;
 		selectedOrganizations = [];
@@ -232,6 +256,7 @@
 	let isDirty = $derived(
 		targetValue.trim().length > 0 ||
 			displayName.trim().length > 0 ||
+			seedText.trim().length > 0 ||
 			selectedOrganizations.length > 0 ||
 			selectedTags.length > 0
 	);
@@ -347,6 +372,20 @@
 					<div class="space-y-2">
 						<Label for="display-name">Display name</Label>
 						<Input id="display-name" type="text" placeholder="Optional" bind:value={displayName} />
+					</div>
+
+					<div class="space-y-2">
+						<Label for="target-seeds">Seed assets</Label>
+						<Textarea
+							id="target-seeds"
+							rows={4}
+							placeholder="www.example.com"
+							bind:value={seedText}
+							class="font-mono text-xs"
+						/>
+						<p class="text-2xs text-muted-foreground">
+							One host name, address or URL per line. Every scan of this target starts from them.
+						</p>
 					</div>
 
 					<div class="space-y-2">

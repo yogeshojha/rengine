@@ -2,6 +2,8 @@ import { api, API_PREFIX } from './client';
 import type {
 	Target,
 	TargetCreate,
+	TargetSeed,
+	TargetSeedResult,
 	TargetUpdate,
 	TargetValidationRequest,
 	TargetValidationResponse,
@@ -63,6 +65,18 @@ export const targetsApi = {
 
 		const query = sp.toString();
 		return api.get<PaginatedResponse<Target>>(query ? `/targets?${query}` : '/targets');
+	},
+
+	async listSeeds(targetId: string): Promise<TargetSeed[]> {
+		return api.get<TargetSeed[]>(`/targets/${targetId}/seeds`);
+	},
+
+	async writeSeeds(targetId: string, values: string[], replace = false): Promise<TargetSeedResult> {
+		return api.put<TargetSeedResult>(`/targets/${targetId}/seeds`, { values, replace });
+	},
+
+	async deleteSeed(targetId: string, seedId: string): Promise<void> {
+		return api.delete<void>(`/targets/${targetId}/seeds/${seedId}`);
 	},
 
 	async getRelations(targetId: string, projectId: string): Promise<TargetRelations> {

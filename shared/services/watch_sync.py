@@ -439,6 +439,7 @@ def build_probe_scan(
         intensity=Intensity.NORMAL.value,
     )
     resolved.seed_assets = [{"kind": SeedKind.HOST.value, "value": host.name}]
+    resolved.seed_only = True
     resolved.stages[ASSET_SEED_STAGE] = {
         **(resolved.stages.get(ASSET_SEED_STAGE) or {}),
         "enabled": True,

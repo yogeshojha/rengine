@@ -125,13 +125,21 @@ def _routable(address) -> bool:
     )
 
 
+def scannable_address(value: str) -> bool:
+    """Address space a scan may be aimed at. Private ranges stay in for corporate estates."""
+    try:
+        return _routable(ipaddress.ip_address(value))
+    except ValueError:
+        return False
+
+
 def _scannable(value: str, target_type: TargetType) -> bool:
     """Address space a scan may be aimed at. Private ranges stay in for corporate estates."""
     if target_type is TargetType.IP_RANGE:
         block = ipaddress.ip_network(value, strict=False)
         return block.prefixlen > 0 and _routable(block.network_address)
     if target_type is TargetType.IP:
-        return _routable(ipaddress.ip_address(value))
+        return scannable_address(value)
     return True
 
 
@@ -195,3 +203,22 @@ def validate_hex_color(color: str) -> str:
         msg = "Color must use hexadecimal digits 0-9 and A-F"
         raise ValueError(msg)
     return color.upper()
+
+
+_HOST_RE = re.compile(
+    r"^(?=.{1,253}$)([a-z0-9_](?:[a-z0-9_-]{0,62}[a-z0-9_])?\.)+[a-z0-9][a-z0-9-]{0,62}$"
+)
+
+
+def normalize_host(raw: str) -> str | None:
+    """A bare host name, wildcard label and trailing dot stripped. None when it is not one."""
+    if not raw:
+        return None
+    name = raw.strip().lower().rstrip(".")
+    if name.startswith("*."):
+        name = name[2:]
+    if not name or "." not in name or " " in name or "/" in name or "@" in name:
+        return None
+    if not _HOST_RE.match(name):
+        return None
+    return name

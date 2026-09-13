@@ -1,29 +1,15 @@
 from __future__ import annotations
 
-import re
 from typing import TYPE_CHECKING
+
+from shared.utils.validation import normalize_host
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from stages.subdomain.providers.base import ProviderResult
 
-_HOST_RE = re.compile(
-    r"^(?=.{1,253}$)([a-z0-9_](?:[a-z0-9_-]{0,62}[a-z0-9_])?\.)+[a-z0-9][a-z0-9-]{0,62}$"
-)
-
-
-def normalize_host(raw: str) -> str | None:
-    if not raw:
-        return None
-    name = raw.strip().lower().rstrip(".")
-    if name.startswith("*."):
-        name = name[2:]
-    if not name or "." not in name or " " in name or "/" in name or "@" in name:
-        return None
-    if not _HOST_RE.match(name):
-        return None
-    return name
+__all__ = ["in_scope", "merge_and_filter", "normalize_host", "passes_included"]
 
 
 def in_scope(name: str, domain: str) -> bool:

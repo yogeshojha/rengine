@@ -149,6 +149,7 @@ export const RUN_FACET_ORDER = [
 	'intensity',
 	'proxy',
 	'included_subdomains',
+	'seed_assets',
 	'excluded_subdomains',
 	'excluded_paths',
 	'excluded_ips',

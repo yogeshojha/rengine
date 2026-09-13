@@ -271,6 +271,7 @@ RUN_FACETS: tuple[RunFacet, ...] = (
         "included_subdomains",
         FacetKind.LIST.value,
     ),
+    RunFacet("seed_assets", "Seed assets", "seed_assets", FacetKind.COUNT.value),
     RunFacet(
         "rate_ceiling",
         "Global rate limit",

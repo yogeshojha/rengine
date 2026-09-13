@@ -12,9 +12,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from sqlalchemy import bindparam, delete, update
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import bindparam, cast, delete, not_, or_, update
+from sqlalchemy.dialects.postgresql import JSONB, insert
 
+from shared.definitions.rescan import SEED_SOURCES
 from shared.definitions.surface import SurfaceDimension
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.api_key import APIProvider
@@ -22,6 +23,7 @@ from shared.enums.scan import AssetKind, Intensity, Phase, StageGroup, StageRole
 from shared.enums.subdomain import SubdomainSource
 from shared.logging import get_logger
 from shared.models.subdomain import Subdomain
+from shared.services import target_seeds
 from shared.services.activity_log import ActivityLogService
 from shared.services.api_key.sync_api_key import SyncAPIKeyService
 from shared.services.scope_filter import matches_any
@@ -29,7 +31,7 @@ from shared.services.wordlists import WordlistError, read_words
 from shared.utils.datetime import utc_now
 from stages.base import DOMAIN_TARGETS, Stage, StageAbortedError, StageResult
 from stages.subdomain.config import PASSIVE_TOOLS, SubdomainConfig
-from stages.subdomain.parser import merge_and_filter
+from stages.subdomain.parser import in_scope, merge_and_filter
 from stages.subdomain.providers import (
     PASSIVE_PROVIDERS,
     ProviderContext,
@@ -190,6 +192,9 @@ class SubdomainStage(Stage):
             )
 
         merged.setdefault(domain, set()).add(SubdomainSource.TARGET.value)
+        for host in target_seeds.seeded_hosts(resolved.seed_assets):
+            if in_scope(host, domain):
+                merged.setdefault(host, set()).add(SubdomainSource.IMPORTED.value)
         excluded = {n for n in merged if matches_any(n, resolved.excluded_subdomains)}
         logger.info(
             "subdomain merge for %s: %d unique (%d excluded)",
@@ -729,11 +734,17 @@ class SubdomainStage(Stage):
                 yield futures[future], future.result()
 
     def _clear_once(self) -> None:
-        """Drop the previous attempt's rows inside the first write."""
+        """Drop the previous attempt's rows inside the first write. Seeded rows belong to asset_seed."""
         if self._cleared:
             return
+        seeded = or_(
+            *[
+                cast(Subdomain.sources, JSONB).contains([source])
+                for source in SEED_SOURCES
+            ]
+        )
         self.session.execute(
-            delete(Subdomain).where(Subdomain.scan_id == self.ctx.scan_id)
+            delete(Subdomain).where(Subdomain.scan_id == self.ctx.scan_id, not_(seeded))
         )
         self._cleared = True
 

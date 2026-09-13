@@ -41,6 +41,10 @@
 				requestsPerSecond={launch.summary.requestsPerSecond}
 				class="text-sm"
 			/>
+			{#if preview?.summary.seed_count}
+				<span class="text-muted-foreground">·</span>
+				<span>{preview.summary.seed_count} seed assets</span>
+			{/if}
 			{#if preview?.summary.estimated_duration_seconds}
 				<span class="text-muted-foreground">·</span>
 				<span>Estimated {preview.summary.estimated_duration_human}</span>

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import ipaddress
+import uuid
 
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
 
 from shared.definitions.endpoints import EndpointSource, parse_url
-from shared.definitions.rescan import SeedKind
+from shared.definitions.rescan import RESCAN_SOURCE, SeedKind
 from shared.enums.ip import IpSource
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.logging import get_logger
@@ -17,16 +19,20 @@ from shared.services.endpoint_noise import NoisePolicy
 from shared.utils.datetime import utc_now
 from stages.asset_seed.config import AssetSeedConfig
 from stages.base import ALL_TARGETS, Stage, StageResult
+from tools.dnsx.client import DnsxClient, DnsxError
 
 logger = get_logger(__name__)
 
-_SEED_SOURCE = "rescan"
+_RECORD_TYPES = ("a", "aaaa", "cname")
+_RESOLVE_TIMEOUT = 300
+_RESOLVE_IDLE = 30
+_WRITE_BATCH = 1000
 
 
 class AssetSeedStage(Stage):
     name = "asset_seed"
     title = "Seed Assets"
-    description = "Start a focused scan from assets chosen in an earlier run."
+    description = "Start a run from stored assets and assets chosen in an earlier run."
     phase = Phase.DISCOVERY.value
     group = StageGroup.HOSTS.value
     role = StageRole.SUPPORT.value
@@ -34,6 +40,7 @@ class AssetSeedStage(Stage):
     applies_to = ALL_TARGETS
     touches_target = False
     catalog_hidden = True
+    tools = ("dnsx",)
     config_model = AssetSeedConfig
 
     def run(self) -> StageResult:
@@ -47,9 +54,14 @@ class AssetSeedStage(Stage):
             )
 
         carried = self._carried(hosts)
-        stored = self._persist_hosts(hosts, carried)
+        self._recovered = 0
+        answers, unanswered = self._resolve([h for h in hosts if h not in carried])
+        stored = self._persist_hosts(hosts, carried, answers)
+        answered = [ip for answer in answers.values() for ip in answer.get("ips") or []]
         addresses = list(
-            dict.fromkeys(addresses + [ip for ips in carried.values() for ip in ips])
+            dict.fromkeys(
+                addresses + [ip for ips in carried.values() for ip in ips] + answered
+            )
         )
         materialized = ip_inventory.materialize(
             self.session,
@@ -67,6 +79,26 @@ class AssetSeedStage(Stage):
         counts = {"subdomains": stored, "ips": materialized}
         if seeded_urls:
             counts["endpoints"] = seeded_urls
+        if self._recovered:
+            counts["recovered"] = self._recovered
+            return StageResult(
+                counts=counts,
+                warnings=[
+                    f"dnsx dropped {self._recovered} of {stored} seeded host(s) on the "
+                    f"first pass. A second pass answered for them."
+                ],
+                partial=True,
+            )
+        if unanswered:
+            counts["unresolved"] = unanswered
+            return StageResult(
+                counts=counts,
+                warnings=[
+                    f"{unanswered} of {stored} seeded host(s) have no DNS answer. "
+                    f"They are stored and not probed."
+                ],
+                partial=True,
+            )
         return StageResult(counts=counts)
 
     def _persist_urls(self, urls: list[str]) -> int:
@@ -88,10 +120,12 @@ class AssetSeedStage(Stage):
         hosts: list[str] = []
         addresses: list[str] = []
         urls: list[str] = []
+        self._sources: dict[str, str] = {}
         for seed in self.ctx.resolved.seed_assets or []:
             value = (seed.get("value") or "").strip()
             if not value:
                 continue
+            source = seed.get("source") or RESCAN_SOURCE
             if seed.get("kind") == SeedKind.ADDRESS.value:
                 try:
                     ipaddress.ip_address(value)
@@ -106,8 +140,10 @@ class AssetSeedStage(Stage):
                     continue
                 urls.append(parsed.url)
                 hosts.append(parsed.host)
+                self._sources[parsed.host] = source
             else:
                 hosts.append(value.lower())
+                self._sources[value.lower()] = source
         return (
             list(dict.fromkeys(hosts)),
             list(dict.fromkeys(addresses)),
@@ -131,25 +167,106 @@ class AssetSeedStage(Stage):
         self._cnames = {name: cname for name, _, cname in rows if cname}
         return {name: list(ips or []) for name, ips, _ in rows}
 
-    def _persist_hosts(self, hosts: list[str], carried: dict[str, list[str]]) -> int:
+    def _resolve(self, hosts: list[str]) -> tuple[dict[str, dict], int]:
+        """Two dnsx passes: the resolver answers nothing both for an absent name and a dropped query."""
+        if not hosts:
+            return {}, 0
+        answers, failed = self._query(hosts)
+        missing = [host for host in hosts if host not in answers]
+        if missing and not failed:
+            recovered, failed = self._query(missing)
+            answers.update(recovered)
+            self._recovered = len(recovered)
+            missing = [host for host in missing if host not in answers]
+        return answers, len(missing)
+
+    def _query(self, hosts: list[str]) -> tuple[dict[str, dict], bool]:
+        """One pass. The bool says the resolver broke, not that a name is absent."""
+        try:
+            client = DnsxClient(
+                timeout=_RESOLVE_TIMEOUT,
+                recorder=self.ctx.recorder,
+                extra_args=self.ctx.resolved.tool_args("dnsx"),
+            )
+        except DnsxError:
+            logger.warning("dnsx unavailable, seeding hosts without resolution")
+            return {}, True
+        answers: dict[str, dict] = {}
+        try:
+            with client.stream_query(
+                hosts, record_types=list(_RECORD_TYPES), idle_timeout=_RESOLVE_IDLE
+            ) as stream:
+                for rec in stream.records:
+                    name = (rec.get("host") or "").strip().lower().rstrip(".")
+                    if not name:
+                        continue
+                    cnames = rec.get("cname") or []
+                    answers[name] = {
+                        "ips": [
+                            str(x)
+                            for x in [*(rec.get("a") or []), *(rec.get("aaaa") or [])]
+                        ],
+                        "cname": str(cnames[0]) if cnames else None,
+                    }
+                    self._check_abort()
+        except DnsxError as exc:
+            logger.warning("dnsx seed resolution failed", error=str(exc))
+            return answers, True
+        return answers, False
+
+    def _row(
+        self, name: str, carried: dict[str, list[str]], answers: dict[str, dict]
+    ) -> dict:
+        answer = answers.get(name) or {}
+        ips = carried.get(name) if name in carried else list(answer.get("ips") or [])
+        cname = (
+            getattr(self, "_cnames", {}).get(name)
+            if name in carried
+            else answer.get("cname")
+        )
+        return {
+            "resolved_ips": list(ips or []),
+            "cname": cname,
+            "is_active": name in carried or bool(ips) or bool(cname),
+        }
+
+    def _persist_hosts(
+        self,
+        hosts: list[str],
+        carried: dict[str, list[str]],
+        answers: dict[str, dict],
+    ) -> int:
+        """Insert in sorted key order."""
         if not hosts:
             return 0
         now = utc_now()
-        cnames = getattr(self, "_cnames", {})
-        self.session.add_all(
-            [
-                Subdomain(
-                    scan_id=self.ctx.scan_id,
-                    target_id=self.ctx.target_id,
-                    project_id=self.ctx.project_id,
-                    name=name,
-                    sources=[_SEED_SOURCE],
-                    resolved_ips=carried.get(name, []),
-                    cname=cnames.get(name),
-                    is_active=True,
-                    discovered_at=now,
+        rows = [
+            {
+                "id": uuid.uuid4(),
+                "scan_id": self.ctx.scan_id,
+                "target_id": self.ctx.target_id,
+                "project_id": self.ctx.project_id,
+                "name": name,
+                "sources": [self._sources.get(name, RESCAN_SOURCE)],
+                "tech": [],
+                "interest_kinds": [],
+                "discovered_at": now,
+                "created_at": now,
+                **self._row(name, carried, answers),
+            }
+            for name in sorted(hosts)
+        ]
+        for start in range(0, len(rows), _WRITE_BATCH):
+            statement = insert(Subdomain).values(rows[start : start + _WRITE_BATCH])
+            self.session.execute(
+                statement.on_conflict_do_update(
+                    constraint="uq_subdomain_scan_name",
+                    set_={
+                        "resolved_ips": statement.excluded.resolved_ips,
+                        "cname": statement.excluded.cname,
+                        "is_active": statement.excluded.is_active,
+                    },
+                    where=statement.excluded.is_active,
                 )
-                for name in hosts
-            ]
-        )
-        return len(hosts)
+            )
+        return len(rows)

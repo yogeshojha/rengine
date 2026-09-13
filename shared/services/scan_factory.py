@@ -2,6 +2,7 @@ import uuid
 
 from shared.enums.scan import ScanScope, ScanStatus
 from shared.models.scan import Scan
+from shared.services import target_seeds
 from shared.services.proxy_resolve import resolve_proxy_url
 from shared.services.scan_resolve import (
     ResolvedScanConfig,
@@ -55,9 +56,7 @@ def build_scan_row(
         created_by=created_by,
         schedule_id=schedule_id,
         schedule_type=schedule_type,
-        scope=(
-            ScanScope.FOCUSED.value if resolved.seed_assets else ScanScope.FULL.value
-        ),
+        scope=(ScanScope.FOCUSED.value if resolved.seed_only else ScanScope.FULL.value),
         parent_scan_id=parent_scan_id,
         run_group_id=run_group_id,
     )
@@ -110,6 +109,9 @@ def build_scan_for_target_sync(
         proxy_url=proxy_url,
         intensity=intensity,
     )
+    if target.seed_scans:
+        stored = target_seeds.load_sync(session, [target.id])
+        target_seeds.apply(resolved, stored.get(target.id) or [], seed_only=False)
     scan = build_scan_row(
         resolved=resolved,
         engine=engine,

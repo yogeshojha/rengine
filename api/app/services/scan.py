@@ -28,7 +28,7 @@ from app.services.scan_context import ScanContextService
 from app.services.scan_engine import ScanEngineService, stage_effects
 from app.services.target import TargetService
 from shared.config import BaseAppSettings
-from shared.definitions.rescan import ASSET_SEED_STAGE, rescan_label
+from shared.definitions.rescan import rescan_label
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.api_key import APIProvider
 from shared.enums.scan import (
@@ -66,6 +66,7 @@ from shared.models.scan_preview import (
 )
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
+from shared.services import target_seeds
 from shared.services.activity_log import ActivityLogService
 from shared.services.celery_dispatch import (
     dispatch_scan_finalize,
@@ -298,6 +299,7 @@ class ScanService:
         target: Target,
         proxy_url: str | None,
         data: ScanCreate | ScanBatchCreate,
+        stored_seeds: list[dict] | None = None,
     ):
         resolved = merge_engine_context(
             engine,
@@ -310,11 +312,11 @@ class ScanService:
         )
         seeds = list(getattr(data, "seed_assets", None) or [])
         if seeds:
-            resolved.seed_assets = [seed.model_dump() for seed in seeds]
-            resolved.stages[ASSET_SEED_STAGE] = {
-                **(resolved.stages.get(ASSET_SEED_STAGE) or {}),
-                "enabled": True,
-            }
+            target_seeds.apply(
+                resolved, [seed.model_dump() for seed in seeds], seed_only=True
+            )
+        elif target.seed_scans:
+            target_seeds.apply(resolved, stored_seeds or [], seed_only=False)
         if engine.id is None:
             label = (
                 rescan_label(data.dimension or "", len(seeds))
@@ -353,7 +355,10 @@ class ScanService:
             data.engine_id, data.context_id, project_id
         )
         target = await self._launch_target(data, project_id, created_by)
-        engine, resolved = self._resolve_for(engine, context, target, proxy_url, data)
+        stored = await target_seeds.load_async(self.session, [target.id])
+        engine, resolved = self._resolve_for(
+            engine, context, target, proxy_url, data, stored.get(target.id)
+        )
         return engine, context, target, resolved
 
     async def _batch_targets(
@@ -455,6 +460,7 @@ class ScanService:
             excluded_paths=resolved.excluded_paths,
             excluded_ips=resolved.excluded_ips,
             included_subdomains=resolved.included_subdomains,
+            seed_count=0 if resolved.seed_only else len(resolved.seed_assets),
             proxy_name=proxy_name,
             estimated_duration_seconds=est_seconds,
             estimated_duration_human=_human_duration(est_seconds),
@@ -527,10 +533,13 @@ class ScanService:
         )
         targets = await self._batch_targets(data, project_id, created_by)
 
+        stored = await target_seeds.load_async(
+            self.session, [target.id for target in targets]
+        )
         scans: list[Scan] = []
         for target in targets:
             run_engine, resolved = self._resolve_for(
-                engine, context, target, proxy_url, data
+                engine, context, target, proxy_url, data, stored.get(target.id)
             )
             scan = build_scan_row(
                 resolved=resolved,

@@ -43,6 +43,7 @@ class PreviewSummary(BaseModel):
     excluded_paths: list[str] = Field(default_factory=list)
     excluded_ips: list[str] = Field(default_factory=list)
     included_subdomains: list[str] = Field(default_factory=list)
+    seed_count: int = 0
     proxy_name: str | None = None
     estimated_duration_seconds: int = 0
     estimated_duration_human: str = ""

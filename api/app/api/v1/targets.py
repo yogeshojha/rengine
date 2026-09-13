@@ -22,6 +22,9 @@ from shared.models import (
     TargetCreate,
     TargetImportRequest,
     TargetRead,
+    TargetSeedRead,
+    TargetSeedResult,
+    TargetSeedWrite,
     TargetType,
     TargetUpdate,
     TargetValidationRequest,
@@ -446,6 +449,35 @@ async def refresh_target_bgp(
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
     return await service.refresh_target_bgp(target_id)
+
+
+@router.get("/{target_id}/seeds", response_model=list[TargetSeedRead])
+async def list_target_seeds(
+    target_id: str,
+    _current_user: CurrentUser,
+    service: Annotated[TargetService, Depends(get_target_service)],
+):
+    return await service.list_seeds(target_id)
+
+
+@router.put("/{target_id}/seeds", response_model=TargetSeedResult)
+async def write_target_seeds(
+    target_id: str,
+    body: TargetSeedWrite,
+    _current_user: CurrentUser,
+    service: Annotated[TargetService, Depends(get_target_service)],
+):
+    return await service.write_seeds(target_id, body)
+
+
+@router.delete("/{target_id}/seeds/{seed_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_target_seed(
+    target_id: str,
+    seed_id: UUID,
+    _current_user: CurrentUser,
+    service: Annotated[TargetService, Depends(get_target_service)],
+):
+    await service.delete_seed(target_id, seed_id)
 
 
 @router.get("/{target_id}", response_model=TargetRead)

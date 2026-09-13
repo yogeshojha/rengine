@@ -2,11 +2,12 @@ import csv
 import io
 from collections import Counter
 from dataclasses import dataclass
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import HTTPException, UploadFile, status
 from sqlalchemy import Select, func, select
 from sqlalchemy import delete as sa_delete
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
@@ -38,6 +39,10 @@ from shared.models import (
     TargetImportRequest,
     TargetImportResult,
     TargetRead,
+    TargetSeed,
+    TargetSeedRead,
+    TargetSeedResult,
+    TargetSeedWrite,
     TargetUpdate,
 )
 from shared.models.activity_log import ActivityEvent
@@ -53,6 +58,7 @@ from shared.models.ripestat import (
     RIPEStatRelatedPrefix,
 )
 from shared.models.scan import Scan
+from shared.models.target_seed import TargetSeedRejection
 from shared.models.whois import WhoisRecordRead, WhoisRecordSummary
 from shared.schemas.target_detail import (
     AbuseContactDetail,
@@ -68,7 +74,7 @@ from shared.schemas.target_detail import (
     TargetDnsDetailResponse,
     TargetWhoisDetailResponse,
 )
-from shared.services import get_or_create_organization, get_or_create_tag
+from shared.services import get_or_create_organization, get_or_create_tag, target_seeds
 from shared.services.activity_log import ActivityLogService
 from shared.services.celery_dispatch import (
     dispatch_dns_lookups,
@@ -389,6 +395,8 @@ class TargetService:
             ) from e
         await self.session.refresh(target)
 
+        stored, _ = await self._write_seeds(target, target_in.seeds, replace=False)
+
         await self._activity.log_async(
             event=ActivityEvent.TARGET_CREATED,
             title="Target created.",
@@ -400,7 +408,7 @@ class TargetService:
 
         self._dispatch_post_target_creation([target])
 
-        return self._to_target_read(target)
+        return self._to_target_read(target, stored)
 
     async def ensure_targets(
         self, values: list[str], project_id: UUID, user_id
@@ -543,9 +551,119 @@ class TargetService:
             results=results,
         )
 
+    # ---------- seeds ----------
+
+    async def _seed_count(self, target_id: UUID) -> int:
+        return (
+            await self.session.execute(
+                select(func.count())
+                .select_from(TargetSeed)
+                .where(TargetSeed.target_id == target_id)
+            )
+        ).scalar_one()
+
+    async def _write_seeds(
+        self, target: Target, values: list[str], *, replace: bool
+    ) -> tuple[int, TargetSeedResult]:
+        """Store the lines this target accepts and name every line it does not."""
+        seeds, rejected = target_seeds.parse(values, target)
+        removed = 0
+        if replace:
+            keep = [seed.value for seed in seeds]
+            statement = sa_delete(TargetSeed).where(TargetSeed.target_id == target.id)
+            if keep:
+                statement = statement.where(TargetSeed.value.notin_(keep))
+            removed = (await self.session.execute(statement)).rowcount or 0
+        held = set(
+            (
+                await self.session.execute(
+                    select(TargetSeed.value).where(TargetSeed.target_id == target.id)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        fresh = [seed for seed in seeds if seed.value not in held]
+        total = len(held) + len(fresh)
+        if total > target_seeds.MAX_TARGET_SEEDS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"A target holds at most {target_seeds.MAX_TARGET_SEEDS} seeds. "
+                    f"This would store {total}."
+                ),
+            )
+        if fresh:
+            await self.session.execute(
+                pg_insert(TargetSeed)
+                .values(
+                    [
+                        {
+                            "id": uuid4(),
+                            "target_id": target.id,
+                            "project_id": target.project_id,
+                            "kind": seed.kind,
+                            "value": seed.value,
+                        }
+                        for seed in fresh
+                    ]
+                )
+                .on_conflict_do_nothing(constraint="uq_target_seed_value")
+            )
+        await self.session.commit()
+        total = await self._seed_count(target.id)
+        return total, TargetSeedResult(
+            total=total,
+            added=max(0, total - len(held)),
+            removed=removed,
+            rejected=[
+                TargetSeedRejection(value=item.value, reason=item.reason)
+                for item in rejected
+            ],
+        )
+
+    async def list_seeds(self, target_id: str) -> list[TargetSeedRead]:
+        target = await self._get_target_or_404(target_id)
+        rows = (
+            (
+                await self.session.execute(
+                    select(TargetSeed)
+                    .where(TargetSeed.target_id == target.id)
+                    .order_by(TargetSeed.kind, TargetSeed.value)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        return [
+            TargetSeedRead.model_validate(row, from_attributes=True) for row in rows
+        ]
+
+    async def write_seeds(
+        self, target_id: str, data: TargetSeedWrite
+    ) -> TargetSeedResult:
+        target = await self._get_target_or_404(target_id)
+        _, result = await self._write_seeds(target, data.values, replace=data.replace)
+        return result
+
+    async def delete_seed(self, target_id: str, seed_id: UUID) -> None:
+        target = await self._get_target_or_404(target_id)
+        deleted = (
+            await self.session.execute(
+                sa_delete(TargetSeed).where(
+                    TargetSeed.target_id == target.id, TargetSeed.id == seed_id
+                )
+            )
+        ).rowcount
+        if not deleted:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Seed not found"
+            )
+        await self.session.commit()
+
     async def get_target(self, target_id: str) -> TargetRead:
         target = await self._get_target_or_404(target_id)
-        return self._to_target_read(target)
+        return self._to_target_read(target, await self._seed_count(target.id))
 
     async def update_target(
         self, target_id: str, target_in: TargetUpdate, user_id: str
@@ -567,6 +685,9 @@ class TargetService:
             )
             target.tags = tags
 
+        if target_in.seed_scans is not None:
+            target.seed_scans = target_in.seed_scans
+
         target.updated_at = utc_now()
         await self.session.commit()
         await self.session.refresh(target)
@@ -580,7 +701,7 @@ class TargetService:
         )
         await self.session.commit()
 
-        return self._to_target_read(target)
+        return self._to_target_read(target, await self._seed_count(target.id))
 
     async def delete_target(self, target_id: str, user_id: str) -> None:
         target = await self._get_target_or_404(target_id)
@@ -1113,7 +1234,9 @@ class TargetService:
             target=target,
         )
 
-    def _to_target_read(self, target: Target) -> TargetRead:
+    def _to_target_read(
+        self, target: Target, seed_count: int | None = None
+    ) -> TargetRead:
         whois = None
         if target.whois_record:
             whois = WhoisRecordSummary(
@@ -1168,6 +1291,7 @@ class TargetService:
                 TagSummary(id=tag.id, name=tag.name, slug=tag.slug, color=tag.color)
                 for tag in target.tags
             ],
+            seed_count=seed_count,
         )
 
     def _to_dns_lookup_read(self, lookup: DnsLookup) -> DnsLookupRead:

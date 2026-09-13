@@ -85,18 +85,43 @@ export interface Target extends TargetBase {
 	dns: DnsSummaryData | null;
 	organizations: OrganizationSummary[];
 	tags: TagSummary[];
+	seed_scans: boolean;
+	seed_count: number | null;
+}
+
+export type SeedKind = 'host' | 'address' | 'url';
+
+export interface TargetSeed {
+	id: string;
+	kind: SeedKind;
+	value: string;
+	created_at: string;
+}
+
+export interface TargetSeedRejection {
+	value: string;
+	reason: string;
+}
+
+export interface TargetSeedResult {
+	total: number;
+	added: number;
+	removed: number;
+	rejected: TargetSeedRejection[];
 }
 
 export interface TargetCreate extends TargetBase {
 	project_slug: string;
 	organization_names?: string[];
 	tag_names?: string[];
+	seeds?: string[];
 }
 
 export interface TargetUpdate {
 	display_name?: string | null;
 	organization_names?: string[] | null;
 	tag_names?: string[] | null;
+	seed_scans?: boolean | null;
 }
 
 export interface TargetValidationRequest {

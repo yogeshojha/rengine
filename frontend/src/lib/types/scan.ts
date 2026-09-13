@@ -122,6 +122,7 @@ export interface ResolvedScanConfig {
 export interface SeedAsset {
 	kind: string;
 	value: string;
+	source?: string;
 }
 
 export type ScanScope = 'full' | 'focused';
@@ -226,6 +227,7 @@ export interface PreviewSummary {
 	excluded_paths: string[];
 	excluded_ips: string[];
 	included_subdomains: string[];
+	seed_count: number;
 	estimated_duration_seconds: number;
 	estimated_duration_human: string;
 }

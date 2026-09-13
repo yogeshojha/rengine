@@ -216,6 +216,12 @@ from shared.models.target import (
     TargetValidationRequest,
     TargetValidationResponse,
 )
+from shared.models.target_seed import (
+    TargetSeed,
+    TargetSeedRead,
+    TargetSeedResult,
+    TargetSeedWrite,
+)
 from shared.models.user import User, UserBase, UserCreate, UserRead
 from shared.models.viewdns import ViewDNSCache
 from shared.models.vuln_template import (
@@ -443,6 +449,10 @@ __all__ = [
     "TargetIpAddressRead",
     "TargetOption",
     "TargetRead",
+    "TargetSeed",
+    "TargetSeedRead",
+    "TargetSeedResult",
+    "TargetSeedWrite",
     "TargetSubdomainRead",
     "TargetType",
     "TargetUpdate",

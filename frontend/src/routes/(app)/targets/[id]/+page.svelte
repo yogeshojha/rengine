@@ -56,6 +56,7 @@
 	import HostingSection from '$lib/components/targets/target-detail/overview/hosting-section.svelte';
 	import ActivityTimeline from '$lib/components/targets/target-detail/overview/activity-timeline.svelte';
 	import RelatedPanel from '$lib/components/targets/target-detail/overview/related-panel.svelte';
+	import SeedsPanel from '$lib/components/targets/target-detail/overview/seeds-panel.svelte';
 	import Rail from '$lib/components/targets/target-detail/overview/rail.svelte';
 	import { buildTargetIntel } from '$lib/components/targets/target-detail/overview/derive';
 	import TargetWebAssets from '$lib/components/targets/target-detail/target-web-assets.svelte';
@@ -500,6 +501,18 @@
 		} else toast.error('Scan not cancelled');
 	}
 
+	async function setSeedScans(on: boolean) {
+		if (!target) return;
+		const before = target.seed_scans;
+		target = { ...target, seed_scans: on };
+		try {
+			await targetsApi.update(targetId, { seed_scans: on });
+		} catch {
+			target = target ? { ...target, seed_scans: before } : target;
+			toast.error('Setting not saved.');
+		}
+	}
+
 	async function handleRefreshEnrichment() {
 		if (!target) return;
 		const requests: Promise<unknown>[] = [targetsApi.refreshWhois(target.id)];
@@ -735,6 +748,11 @@
 							related={relatedDomains}
 							{relations}
 							loading={relatedLoading}
+						/>
+						<SeedsPanel
+							targetId={target.id}
+							seedScans={target.seed_scans}
+							onToggle={setSeedScans}
 						/>
 					</div>
 					<div

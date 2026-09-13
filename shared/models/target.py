@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from pydantic import BaseModel, field_validator
 from sqlmodel import Field, Relationship, SQLModel, UniqueConstraint
 
+from shared.definitions.rescan import MAX_RUN_ASSETS
 from shared.enums.target import TargetType
 from shared.enums.task_status import TaskStatus
 from shared.models.bgp_summary import BgpSummaryRead, TargetBgpSummary
@@ -84,6 +85,8 @@ class Target(TargetBase, table=True):
         sa_relationship_kwargs={"lazy": "selectin", "passive_deletes": True},
     )
 
+    seed_scans: bool = Field(default=True)
+
     dns_status: TaskStatus = Field(default=TaskStatus.PENDING, index=True)
     dns_error: str | None = Field(default=None, max_length=1000)
     dns_lookup: DnsLookup | None = Relationship(
@@ -112,6 +115,7 @@ class TargetCreate(TargetBase):
     project_slug: str
     organization_names: list[str] = Field(default_factory=list)
     tag_names: list[str] = Field(default_factory=list)
+    seeds: list[str] = Field(default_factory=list, max_length=MAX_RUN_ASSETS)
 
     @field_validator("tag_names", check_fields=False)
     @classmethod
@@ -168,6 +172,7 @@ class TargetUpdate(SQLModel):
     display_name: str | None = Field(default=None, max_length=200)
     organization_names: list[str] | None = None
     tag_names: list[str] | None = None
+    seed_scans: bool | None = None
 
     @field_validator("tag_names", "tags", check_fields=False)
     @classmethod
@@ -199,6 +204,8 @@ class TargetRead(TargetBase):
     dns: DnsLookupSummary | None = None
     organizations: list[OrganizationSummary] = Field(default_factory=list)
     tags: list[TagSummary] = Field(default_factory=list)
+    seed_scans: bool = True
+    seed_count: int | None = None
 
 
 # imports for both json and csv support
