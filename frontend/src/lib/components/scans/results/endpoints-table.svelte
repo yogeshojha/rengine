@@ -496,6 +496,9 @@
 		untrack(() => (hostPage = 1));
 	});
 
+	let exportFilters = $derived(
+		compiled(query, sort.key, sort.dir, 1, 1) as unknown as Record<string, unknown>
+	);
 	let leadFilter = $derived(compiled({ ...query, search: '' }, 'path', 1, 1, 1));
 	let leadSig = $derived(JSON.stringify(leadFilter));
 	let leadFilterWithQuery = $derived({ ...leadFilter, q: treeFilter.q });
@@ -1184,6 +1187,9 @@
 		sortDir={atEstate ? hostSort.dir : sort.dir}
 		onSort={toggleSort}
 		{refreshing}
+		{projectId}
+		{scanId}
+		{exportFilters}
 		onRefresh={refresh}
 		{groupBy}
 		onGroupBy={(key) => (groupBy = key)}

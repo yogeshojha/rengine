@@ -166,18 +166,21 @@ def _dimension_scope(session, row: Export, dimension: str) -> QueryScope:
     return project_scope(session, row.project_id, dimension)
 
 
+_FAILED_MESSAGE = "The export did not finish. Run it again."
+
+
 def _fail(session, export_id: str, exc: Exception) -> None:
     """The progress commits poisoned the session, so roll back before recording."""
     session.rollback()
+    logger.warning("export failed", export_id=export_id, error=str(exc), exc_info=True)
     row = session.get(Export, UUID(export_id))
     if row is None:
         return
     row.status = ExportStatus.FAILED.value
-    row.error = str(exc)[:2000]
+    row.error = _FAILED_MESSAGE
     row.step = "Failed"
     row.completed_at = utc_now()
     session.commit()
-    logger.warning("export failed", export_id=export_id, error=str(exc))
 
 
 @shared_task(name="app.tasks.export.cleanup")

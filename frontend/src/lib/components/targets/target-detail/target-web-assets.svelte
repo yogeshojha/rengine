@@ -6,6 +6,7 @@
 	import Globe from '@lucide/svelte/icons/globe';
 	import X from '@lucide/svelte/icons/x';
 	import * as Card from '$lib/components/ui/card';
+	import ExportMenu from '$lib/components/scans/results/export-menu.svelte';
 	import * as Empty from '$lib/components/ui/empty';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -174,6 +175,12 @@
 			sortKey={sort}
 			sortDir={order === 'asc' ? 1 : -1}
 			onSort={setSort}
+		/>
+		<ExportMenu
+			dimension="web_assets"
+			projectId={projectsStore.activeProject?.id ?? ''}
+			{targetId}
+			filters={{}}
 		/>
 		<Button
 			variant="outline"

@@ -241,6 +241,9 @@
 		}
 	}
 
+	let exportFilters = $derived(
+		compileServiceQuery(query, sort.key, sort.dir, 0, 1) as unknown as Record<string, unknown>
+	);
 	let leadFilter = $derived(compileServiceQuery({ ...query, search: '' }, 'port', 1, 0, 1));
 	let leadSig = $derived(JSON.stringify(leadFilter));
 	let leadFilterWithQuery = $derived({ ...leadFilter, q: query.search.trim() || null });
@@ -577,6 +580,9 @@
 		sortDir={sort.dir}
 		onSort={toggleSort}
 		{refreshing}
+		{projectId}
+		{scanId}
+		{exportFilters}
 		onRefresh={refresh}
 		{groupBy}
 		onGroupBy={(key) => (groupBy = key)}

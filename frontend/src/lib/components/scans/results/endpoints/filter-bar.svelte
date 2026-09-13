@@ -13,6 +13,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import Hint from '$lib/components/hint.svelte';
 	import SortMenu from '../table/sort-menu.svelte';
+	import ExportMenu from '../export-menu.svelte';
 	import type { SortOption, TableColumn } from '../table/columns';
 	import type { QueryGroupSpec } from '$lib/types/asset-query';
 	import { EndpointSource } from '$lib/config/endpoints';
@@ -34,6 +35,10 @@
 		onSort: (key: string) => void;
 		refreshing: boolean;
 		onRefresh: () => void;
+		projectId?: string;
+		scanId?: string;
+		targetId?: string;
+		exportFilters?: Record<string, unknown>;
 		groupBy: string;
 		onGroupBy: (key: string) => void;
 		view: EndpointView;
@@ -79,7 +84,11 @@
 		onCollapseAll,
 		goneCount = 0,
 		goneLens = false,
-		onGoneLens
+		onGoneLens,
+		projectId = '',
+		scanId = '',
+		targetId = '',
+		exportFilters = {}
 	}: Props = $props();
 
 	const LENSES: { value: EndpointView; label: string; hint: string; icon: typeof Network }[] = [
@@ -392,6 +401,7 @@
 			</DropdownMenu.Root>
 		{/if}
 
+		<ExportMenu dimension="endpoints" {projectId} {scanId} {targetId} filters={exportFilters} />
 		<Button
 			variant="outline"
 			size="icon"

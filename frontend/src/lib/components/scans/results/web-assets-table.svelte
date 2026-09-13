@@ -286,6 +286,10 @@
 		}
 	}
 
+	let exportFilters = $derived({
+		...compileQuery(query, sort.key, sort.dir, 0, 1),
+		q: query.search.trim() || null
+	} as unknown as Record<string, unknown>);
 	let leadFilter = $derived(
 		compileQuery(
 			view === 'gallery' && onlyShots
@@ -789,6 +793,9 @@
 		sortDir={sort.dir}
 		onSort={toggleSort}
 		{refreshing}
+		{projectId}
+		{scanId}
+		{exportFilters}
 		onRefresh={refresh}
 		{groupBy}
 		onGroupBy={(key) => (groupBy = key)}
@@ -997,6 +1004,7 @@
 	onOpenChange={(o) => (drawerOpen = o)}
 	{projectId}
 	scanId={selected?.scan_id || scanId}
+	scopeScanId={scanId}
 	index={selectedIndex}
 	pageOffset={pageIndex * pageSize}
 	{total}

@@ -13,6 +13,7 @@
 	import Pause from '@lucide/svelte/icons/pause';
 	import Copy from '@lucide/svelte/icons/copy';
 	import FileText from '@lucide/svelte/icons/file-text';
+	import FileDown from '@lucide/svelte/icons/file-down';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
@@ -20,6 +21,9 @@
 
 	import { scansApi } from '$lib/api/scans';
 	import { projectsStore } from '$lib/stores/projects.svelte';
+	import { exportsStore } from '$lib/stores/exports.svelte';
+	import { BUNDLE } from '$lib/config/exports';
+	import type { ExportRead } from '$lib/types/export';
 	import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
 	import { sseStore } from '$lib/stores/sse.svelte';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
@@ -512,6 +516,33 @@
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
 	let targetHref = $derived(scan ? ROUTES.target(scan.target_id) : ROUTES.scans);
 	let reportsHref = $derived(scan ? ROUTES.reportsForScan(scan.id) : ROUTES.reports());
+	let bundling = $state(false);
+
+	async function exportEverything() {
+		const project = projectsStore.activeProject?.id;
+		if (!project || !scan) return;
+		bundling = true;
+		exportsStore.setOnReady((row: ExportRead) => {
+			bundling = false;
+			if (row.status !== 'completed') {
+				toast.error(row.error || 'Export not written.');
+				return;
+			}
+			toast.success(`${row.row_count.toLocaleString()} rows exported`);
+			window.location.href = exportsStore.downloadUrl(row.id);
+		});
+		try {
+			await exportsStore.create(project, {
+				dimension: BUNDLE,
+				scan_id: scan.id,
+				export_format: 'csv'
+			});
+			toast.success('Export started');
+		} catch (e) {
+			bundling = false;
+			toast.error(e instanceof Error ? e.message : 'Export not started.');
+		}
+	}
 </script>
 
 <svelte:window onkeydown={onKeydown} />
@@ -663,6 +694,10 @@
 						<DropdownMenu.Item onclick={copyTarget}>
 							<Copy class="size-4" />
 							Copy target
+						</DropdownMenu.Item>
+						<DropdownMenu.Item disabled={bundling} onclick={exportEverything}>
+							<FileDown class="size-4" />
+							Export all dimensions
 						</DropdownMenu.Item>
 						<DropdownMenu.Item>
 							{#snippet child({ props })}

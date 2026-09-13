@@ -9,6 +9,7 @@
 	import { ButtonGroup } from '$lib/components/ui/button-group';
 	import { Button } from '$lib/components/ui/button';
 	import FacetedFilter from '../faceted-filter.svelte';
+	import ExportMenu from '../export-menu.svelte';
 	import SortMenu from '../table/sort-menu.svelte';
 	import type { SortOption, TableColumn } from '../table/columns';
 	import type { QueryGroupSpec } from '$lib/types/asset-query';
@@ -30,6 +31,10 @@
 		onSort: (key: string) => void;
 		refreshing: boolean;
 		onRefresh: () => void;
+		projectId?: string;
+		scanId?: string;
+		targetId?: string;
+		exportFilters?: Record<string, unknown>;
 		groupBy: string;
 		onGroupBy: (key: string) => void;
 	}
@@ -51,7 +56,11 @@
 		refreshing,
 		onRefresh,
 		groupBy,
-		onGroupBy
+		onGroupBy,
+		projectId = '',
+		scanId = '',
+		targetId = '',
+		exportFilters = {}
 	}: Props = $props();
 
 	let groupLabel = $derived(dimensions.find((d) => d.key === groupBy)?.label ?? 'Group');
@@ -220,6 +229,7 @@
 			</DropdownMenu.Root>
 		{/if}
 
+		<ExportMenu dimension="ips" {projectId} {scanId} {targetId} filters={exportFilters} />
 		<Button
 			variant="outline"
 			size="icon"

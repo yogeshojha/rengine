@@ -9,6 +9,7 @@
 	import { ButtonGroup } from '$lib/components/ui/button-group';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import FacetedFilter from '../faceted-filter.svelte';
+	import ExportMenu from '../export-menu.svelte';
 	import SortMenu from '../table/sort-menu.svelte';
 	import type { SortOption, TableColumn } from '../table/columns';
 	import type { QueryGroupSpec } from '$lib/types/asset-query';
@@ -31,6 +32,10 @@
 		onSort: (key: string) => void;
 		refreshing: boolean;
 		onRefresh: () => void;
+		projectId?: string;
+		scanId?: string;
+		targetId?: string;
+		exportFilters?: Record<string, unknown>;
 		groupBy: string;
 		onGroupBy: (key: string) => void;
 		columnsLocked?: boolean;
@@ -54,7 +59,11 @@
 		onRefresh,
 		groupBy,
 		onGroupBy,
-		columnsLocked = false
+		columnsLocked = false,
+		projectId = '',
+		scanId = '',
+		targetId = '',
+		exportFilters = {}
 	}: Props = $props();
 
 	const QUICK = [
@@ -255,6 +264,13 @@
 			</DropdownMenu.Root>
 		{/if}
 
+		<ExportMenu
+			dimension="vulnerabilities"
+			{projectId}
+			{scanId}
+			{targetId}
+			filters={exportFilters}
+		/>
 		<Button
 			variant="outline"
 			size="icon"
