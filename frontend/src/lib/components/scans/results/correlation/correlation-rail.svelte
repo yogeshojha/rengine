@@ -69,9 +69,11 @@
 				</p>
 				<p class="mt-0.5 font-mono text-xs break-all">{hub.value}</p>
 				<p class="mt-1 text-xs text-muted-foreground">
-					{plural(hub.count, 'web asset', 'web assets')}{hub.common
-						? ' · common'
-						: ''}{hub.platform_label ? ` · ${hub.platform_label}` : ''}
+					{plural(hub.count, 'web asset', 'web assets')}{hub.targets > 1
+						? ` · ${hub.targets} targets`
+						: ''}{hub.common ? ' · common' : ''}{hub.platform_label
+						? ` · ${hub.platform_label}`
+						: ''}
 				</p>
 			</div>
 			<Button
@@ -136,9 +138,9 @@
 			<div class="min-w-0 flex-1">
 				<p class="font-mono text-xs font-medium break-all">{host.name}</p>
 				<p class="mt-0.5 truncate text-xs text-muted-foreground">
-					{host.status !== null ? `HTTP ${host.status}` : 'No HTTP response'}{host.title
-						? ` · ${host.title}`
-						: ''}
+					{host.status !== null ? `HTTP ${host.status}` : 'No HTTP response'}{host.target
+						? ` · ${host.target}`
+						: ''}{host.title ? ` · ${host.title}` : ''}
 				</p>
 			</div>
 			<Button
@@ -206,7 +208,9 @@
 										<span class="truncate font-mono text-xs">{hub.label}</span>
 										<span class="flex items-center gap-1 text-2xs text-muted-foreground">
 											{#if Icon}<Icon class="size-3" />{/if}
-											{labelFor(hub.kind)}{hub.common ? ' · common' : ''}{hub.platform_label
+											{labelFor(hub.kind)}{hub.targets > 1
+												? ` · ${hub.targets} targets`
+												: ''}{hub.common ? ' · common' : ''}{hub.platform_label
 												? ` · ${hub.platform_label}`
 												: ''}
 										</span>

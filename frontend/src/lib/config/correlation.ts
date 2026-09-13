@@ -11,6 +11,7 @@ import List from '@lucide/svelte/icons/list';
 import Layers from '@lucide/svelte/icons/layers';
 import Server from '@lucide/svelte/icons/server';
 import Cloud from '@lucide/svelte/icons/cloud';
+import Route from '@lucide/svelte/icons/route';
 import type { IconComponent } from './icons';
 
 export const CORRELATION_TAB = 'correlation';
@@ -28,7 +29,8 @@ export enum CorrelationKind {
 	HEADERS = 'header_hash',
 	TECH = 'tech',
 	SERVER = 'server',
-	CDN = 'cdn'
+	CDN = 'cdn',
+	ASN = 'asn'
 }
 
 export const KIND_ICONS: Record<string, IconComponent> = {
@@ -44,7 +46,8 @@ export const KIND_ICONS: Record<string, IconComponent> = {
 	[CorrelationKind.HEADERS]: List,
 	[CorrelationKind.TECH]: Layers,
 	[CorrelationKind.SERVER]: Server,
-	[CorrelationKind.CDN]: Cloud
+	[CorrelationKind.CDN]: Cloud,
+	[CorrelationKind.ASN]: Route
 };
 
 export const KIND_HUE: Record<string, number> = {
@@ -60,12 +63,14 @@ export const KIND_HUE: Record<string, number> = {
 	[CorrelationKind.HEADERS]: 278,
 	[CorrelationKind.TECH]: 105,
 	[CorrelationKind.SERVER]: 235,
-	[CorrelationKind.CDN]: 180
+	[CorrelationKind.CDN]: 180,
+	[CorrelationKind.ASN]: 130
 };
 const QUIET_KINDS: ReadonlySet<string> = new Set([
 	CorrelationKind.TECH,
 	CorrelationKind.SERVER,
-	CorrelationKind.CDN
+	CorrelationKind.CDN,
+	CorrelationKind.ASN
 ]);
 
 export function kindColor(kind: string, dark: boolean, alpha = 1): string {

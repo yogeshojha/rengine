@@ -21,7 +21,7 @@ from shared.models.scan import Scan
 logger = get_logger(__name__)
 
 # bumped when the shape of a cached entry changes
-VERSION = "1"
+VERSION = "3"
 
 TTL_SECONDS = 6 * 3600
 SEARCH_TTL_SECONDS = 600

@@ -173,6 +173,8 @@
 	let tone = $derived(rowTone(selected || checked, focused));
 	let pin = $derived(pinTone(selected || checked, focused));
 
+	const acrossTargets = (n: number | undefined) => ((n ?? 1) > 1 ? `, across ${n} targets` : '');
+
 	function pivot(e: Event, token: string) {
 		stopProp(e);
 		onFilter(token);
@@ -214,7 +216,7 @@
 			{@const pageTitle = s.page_title}
 			<SamePagePopover
 				count={s.title_count ?? 0}
-				title="{s.title_count} hosts show “{pageTitle}”"
+				title="{s.title_count} hosts show “{pageTitle}”{acrossTargets(s.title_targets)}"
 				load={() => hostsWithTitle(pageTitle)}
 				{onHost}
 				onFilter={() => onFilter(exactToken('title', pageTitle))}
@@ -734,7 +736,9 @@
 							{@const hash = s.render_hash}
 							<SamePagePopover
 								count={s.render_count ?? 0}
-								title="{s.render_count} web assets render this page"
+								title="{s.render_count} web assets render this page{acrossTargets(
+									s.render_targets
+								)}"
 								load={() => hostsWithRender(hash)}
 								{onHost}
 								onFilter={() => onFilter(`screenshot:${hash}`)}

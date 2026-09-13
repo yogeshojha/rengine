@@ -32,6 +32,7 @@ class CorrelationKind(StrEnum):
     TECH = "tech"
     SERVER = "server"
     CDN = "cdn"
+    ASN = "asn"
 
 
 CORRELATION_KIND_LABELS: dict[str, str] = {
@@ -48,6 +49,7 @@ CORRELATION_KIND_LABELS: dict[str, str] = {
     CorrelationKind.TECH.value: "Technology",
     CorrelationKind.SERVER.value: "Server header",
     CorrelationKind.CDN.value: "CDN",
+    CorrelationKind.ASN.value: "Network",
 }
 
 CORRELATION_KIND_HELP: dict[str, str] = {
@@ -64,6 +66,25 @@ CORRELATION_KIND_HELP: dict[str, str] = {
     CorrelationKind.TECH.value: "Hosts fingerprinted with the same technology",
     CorrelationKind.SERVER.value: "Hosts returning the same Server header",
     CorrelationKind.CDN.value: "Hosts fronted by the same CDN or WAF",
+    CorrelationKind.ASN.value: "Hosts announced by the same autonomous system",
+}
+
+# what a set of hosts sharing this identity does, after "N hosts"
+CORRELATION_RELATION_PHRASE: dict[str, str] = {
+    CorrelationKind.IP.value: "resolve to the same address",
+    CorrelationKind.CNAME.value: "share a CNAME target",
+    CorrelationKind.TITLE.value: "show the same page title",
+    CorrelationKind.FAVICON.value: "serve the same favicon",
+    CorrelationKind.BODY.value: "return the same response body",
+    CorrelationKind.SCREENSHOT.value: "render the same page",
+    CorrelationKind.JARM.value: "share a TLS fingerprint",
+    CorrelationKind.CERT.value: "present the same certificate",
+    CorrelationKind.CERT_ISSUER.value: "share a certificate issuer",
+    CorrelationKind.HEADERS.value: "return the same header set",
+    CorrelationKind.TECH.value: "run the same technology",
+    CorrelationKind.SERVER.value: "return the same Server header",
+    CorrelationKind.CDN.value: "sit behind the same CDN",
+    CorrelationKind.ASN.value: "sit in the same network",
 }
 
 # drawn by default

@@ -120,9 +120,12 @@ class SubdomainRow(SubdomainRead):
     ports: list[int] = Field(default_factory=list)
     endpoint_count: int = 0
     title_count: int = 0
+    title_targets: int = 1
     favicon_count: int = 0
+    favicon_targets: int = 1
     render_hash: str | None = None
     render_count: int = 0
+    render_targets: int = 1
     vuln_count: int = 0
     vuln_severity: str | None = None
     vuln_kev: bool = False
@@ -237,6 +240,9 @@ class SubdomainRelation(BaseModel):
     kind: str
     reason: str
     value: str
+    label: str = ""
+    query: str = ""
+    targets: int = 1
     hosts: list[str] = Field(default_factory=list)
     total: int = 0
 

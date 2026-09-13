@@ -5,6 +5,7 @@ export interface CorrelationHost {
 	status: number | null;
 	title: string | null;
 	hubs: number;
+	target: string;
 }
 
 export interface CorrelationHub {
@@ -13,6 +14,7 @@ export interface CorrelationHub {
 	value: string;
 	label: string;
 	count: number;
+	targets: number;
 	share: number;
 	common: boolean;
 	platform: boolean;
@@ -27,9 +29,11 @@ export interface CorrelationKindStat {
 	help: string;
 	default: boolean;
 	hubs: number;
+	total: number;
 	hosts: number;
 	common: number;
 	platform: number;
+	crossing: number;
 }
 
 export interface CorrelationGraph {
@@ -39,5 +43,6 @@ export interface CorrelationGraph {
 	total_hosts: number;
 	estate_hosts: number;
 	shared_hosts: number;
+	targets_total: number;
 	truncated: boolean;
 }

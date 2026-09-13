@@ -9,6 +9,7 @@
 	import LibraryIcon from '@lucide/svelte/icons/library';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import ScanEyeIcon from '@lucide/svelte/icons/scan-eye';
+	import Share2Icon from '@lucide/svelte/icons/share-2';
 	import CableIcon from '@lucide/svelte/icons/cable';
 	import AwardIcon from '@lucide/svelte/icons/award';
 	import Settings2Icon from '@lucide/svelte/icons/settings-2';
@@ -56,7 +57,8 @@
 			label: routeLabels.surface,
 			items: [
 				...surfaceItems,
-				{ title: routeLabels.exposures, url: ROUTES.exposures(), icon: ScanEyeIcon }
+				{ title: routeLabels.exposures, url: ROUTES.exposures(), icon: ScanEyeIcon },
+				{ title: routeLabels.correlation, url: ROUTES.correlation, icon: Share2Icon }
 			]
 		},
 		{

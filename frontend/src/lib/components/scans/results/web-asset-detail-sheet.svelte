@@ -1,18 +1,6 @@
 <script module lang="ts">
 	const ROW = 'grid grid-cols-[7.5rem_1fr] items-start gap-3 py-2';
 	const DT = 'pt-0.5 text-xs text-muted-foreground';
-	function relationDsl(kind: string, value: string): string | null {
-		switch (kind) {
-			case 'ip':
-				return `ip:${value}`;
-			case 'cname':
-				return `cname:${value}`;
-			case 'favicon':
-				return `favicon:${value}`;
-			default:
-				return null;
-		}
-	}
 </script>
 
 <script lang="ts">
@@ -80,12 +68,7 @@
 	import type { SubdomainRead } from '$lib/types/subdomain';
 	import type { HttpAssetDetail } from '$lib/types/http-asset';
 	import type { SubdomainCorrelation } from '$lib/utilities/scan-insights';
-	import {
-		certState,
-		daysUntilExpiry,
-		exactToken,
-		relationLabel
-	} from '$lib/utilities/scan-insights';
+	import { certState, daysUntilExpiry, exactToken } from '$lib/utilities/scan-insights';
 	import {
 		formatBytes,
 		formatResponseTime,
@@ -105,6 +88,7 @@
 		onOpenChange: (open: boolean) => void;
 		projectId: string;
 		scanId: string;
+		scopeScanId?: string;
 		index?: number;
 		pageOffset?: number;
 		total?: number;
@@ -121,6 +105,7 @@
 		onOpenChange,
 		projectId,
 		scanId,
+		scopeScanId,
 		index = 0,
 		pageOffset = 0,
 		total = 0,
@@ -163,7 +148,7 @@
 		corrErrored = false;
 		corrLoading = true;
 		subdomainsApi
-			.correlation(projectId, scanId, name)
+			.correlation(projectId, scopeScanId ?? scanId, name)
 			.then((c) => {
 				if (loadedFor === name) corr = c;
 			})
@@ -1056,7 +1041,6 @@
 							{@render corrState()}
 						{:else if related.length}
 							{#each related as r (r.kind + r.value)}
-								{@const dsl = relationDsl(r.kind, r.value)}
 								<section class="flex flex-col gap-2 rounded-md border border-border p-3">
 									<div class="flex items-start gap-2">
 										<Link2 class="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
@@ -1064,7 +1048,12 @@
 											<p class="text-xs font-medium">
 												{(r.total || r.hosts.length).toLocaleString()}
 												{(r.total || r.hosts.length) === 1 ? 'host' : 'hosts'}
-												{relationLabel(r)}
+												{r.reason}
+												{#if r.targets > 1}
+													<span class="text-muted-foreground">
+														· {r.targets} targets
+													</span>
+												{/if}
 											</p>
 											<Hint text={r.value}>
 												{#snippet child(props)}
@@ -1074,12 +1063,12 @@
 												{/snippet}
 											</Hint>
 										</div>
-										{#if dsl}
+										{#if r.query}
 											<Button
 												variant="outline"
 												size="sm"
 												class="h-7 shrink-0 text-xs"
-												onclick={() => onFilter?.(dsl)}
+												onclick={() => onFilter?.(r.query)}
 											>
 												<Filter data-icon="inline-start" /> Show in table
 											</Button>
@@ -1111,10 +1100,7 @@
 								</section>
 							{/each}
 						{:else}
-							{@render emptyNote(
-								'No correlated assets',
-								'No shared IP, certificate, favicon or CNAME.'
-							)}
+							{@render emptyNote('No correlated assets', null)}
 						{/if}
 					</Tabs.Content>
 

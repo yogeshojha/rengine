@@ -35,7 +35,10 @@ async def test_the_count_is_the_truth_not_the_length_of_the_list(estate, now):
     names = [f"h{i}.example.com" for i in range(_RELATION_CAP + 40)]
     await estate.hosts("run", names, at=now, cname="edge.example.net")
     await estate.hosts(
-        "run", [f"other{i}.example.com" for i in range(_RELATION_CAP * 3)], at=now
+        "run",
+        [f"other{i}.example.com" for i in range(_RELATION_CAP * 3)],
+        at=now,
+        cname="other.example.net",
     )
 
     rows = await _related(estate, "run", names[0])

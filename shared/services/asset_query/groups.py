@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from collections.abc import Callable
 from typing import Any
 
@@ -31,6 +30,8 @@ from shared.models.port import Port
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.vulnerability import Vulnerability
+from shared.services.asset_query.tokens import token as _token
+from shared.services.correlation.kinds import KINDS
 
 from . import predicates as preds
 from .renders import cluster
@@ -42,18 +43,6 @@ _STATUS_LABELS = {
     "4xx": "4xx Client",
     "5xx": "5xx Server",
 }
-_NEEDS_QUOTE = re.compile(r'[\s()"\[\]:=><~]')
-
-
-def _token(field: str, op: str, value: str) -> str:
-    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
-    quoted = f'"{escaped}"' if _NEEDS_QUOTE.search(value) or not value else value
-    return f"{field}{op}{quoted}"
-
-
-def group_token(field: str, op: str, value: str) -> str:
-    """The drill-down token a group's count is a promise for."""
-    return _token(field, op, value)
 
 
 def _target_value(column):
@@ -73,39 +62,9 @@ def _status_case():
     )
 
 
-_DIMENSIONS: dict[str, tuple[Callable[[], Any], str, str, bool]] = {
-    "ip": (
-        lambda: func.jsonb_array_elements_text(
-            cast(Subdomain.resolved_ips, JSONB)
-        ).column_valued("ip_value"),
-        "ip",
-        ":",
-        False,
-    ),
-    "tech": (
-        lambda: func.jsonb_array_elements_text(
-            cast(Subdomain.tech, JSONB)
-        ).column_valued("tech_value"),
-        "tech",
-        "=",
-        False,
-    ),
-    "favicon": (lambda: Subdomain.favicon_hash, "favicon", "=", False),
-    "title": (lambda: Subdomain.page_title, "title", "=", False),
-    "cname": (lambda: Subdomain.cname, "cname", "=", False),
-    "server": (lambda: Subdomain.webserver, "server", "=", False),
-    "cdn": (lambda: Subdomain.cdn_name, "cdn", "=", False),
+# the shared-identity kinds come from the correlation registry
+_EXTRA_DIMENSIONS: dict[str, tuple[Callable[[], Any], str, str, bool]] = {
     "status": (_status_case, "status", ":", False),
-    "content_hash": (lambda: HttpAsset.content_hash, "content_hash", "=", True),
-    "jarm": (lambda: HttpAsset.jarm, "jarm", "=", True),
-    "cert.fingerprint": (
-        lambda: HttpAsset.tls_fingerprint,
-        "cert.fingerprint",
-        "=",
-        True,
-    ),
-    "cert.issuer": (lambda: HttpAsset.tls_issuer, "cert.issuer", "=", True),
-    "header_hash": (lambda: HttpAsset.header_hash, "header_hash", "=", True),
     "target": (lambda: _target_value(Subdomain.target_id), "target", "=", False),
     "hygiene": (
         lambda: func.jsonb_array_elements_text(
@@ -116,6 +75,15 @@ _DIMENSIONS: dict[str, tuple[Callable[[], Any], str, str, bool]] = {
         False,
     ),
 }
+_DIMENSIONS: dict[str, tuple[Callable[[], Any], str, str, bool]] = {
+    **{
+        spec.kind: (spec.value, spec.kind, spec.operator, spec.asset)
+        for spec in KINDS.values()
+        if not spec.derived
+    },
+    **_EXTRA_DIMENSIONS,
+}
+_NUMERIC_DIMENSIONS = frozenset(spec.kind for spec in KINDS.values() if spec.numeric)
 
 
 def _group_label(key: str, raw: str) -> str:
@@ -206,7 +174,9 @@ async def build_groups(session: AsyncSession, base, key: str) -> QueryGroups:
                 HttpAsset.host == Subdomain.name,
             ),
         )
-    joined = joined.where(value.isnot(None), value != "")
+    joined = joined.where(value.isnot(None))
+    if key not in _NUMERIC_DIMENSIONS:
+        joined = joined.where(value != "")
     hosts = await session.scalar(select(func.count()).select_from(scoped))
     covered, total = (
         await session.execute(

@@ -302,6 +302,7 @@ class CorrelationHost(BaseModel):
     status: int | None = None
     title: str | None = None
     hubs: int = 0
+    target: str = ""
 
 
 class CorrelationHub(BaseModel):
@@ -312,6 +313,7 @@ class CorrelationHub(BaseModel):
     value: str
     label: str
     count: int
+    targets: int = 1
     share: float = 0.0
     common: bool = False
     platform: bool = False
@@ -326,9 +328,11 @@ class CorrelationKindStat(BaseModel):
     help: str
     default: bool = True
     hubs: int = 0
+    total: int = 0
     hosts: int = 0
     common: int = 0
     platform: int = 0
+    crossing: int = 0
 
 
 class CorrelationGraph(BaseModel):
@@ -338,4 +342,5 @@ class CorrelationGraph(BaseModel):
     total_hosts: int = 0
     estate_hosts: int = 0
     shared_hosts: int = 0
+    targets_total: int = 1
     truncated: bool = False

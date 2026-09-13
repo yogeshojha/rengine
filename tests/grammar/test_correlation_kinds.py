@@ -5,17 +5,16 @@ from pathlib import Path
 
 import pytest
 
-from app.services.correlation_graph import _ASSET_KINDS, _DERIVED_MEMBERS, _HOST_KINDS
 from shared.definitions.asset_query import HOST_QUERY
 from shared.definitions.correlation import (
     CORRELATION_KIND_HELP,
     CORRELATION_KIND_LABELS,
     CORRELATION_KIND_ORDER,
+    CORRELATION_RELATION_PHRASE,
     CorrelationKind,
 )
-from shared.models.http_asset import HttpAsset
-from shared.models.subdomain import Subdomain
 from shared.services.asset_query.groups import _DIMENSIONS, DERIVED_DIMENSIONS
+from shared.services.correlation.kinds import KINDS
 
 pytestmark = pytest.mark.grammar
 
@@ -26,11 +25,8 @@ MIRROR = Path("/app/frontend-config/correlation.ts")
 def test_every_kind_is_drawable_and_searchable(kind: str):
     assert kind in CORRELATION_KIND_LABELS, "the graph has no label for it"
     assert kind in CORRELATION_KIND_HELP, "the chip has nothing to say about it"
-    assert kind in {
-        *_HOST_KINDS,
-        *_ASSET_KINDS,
-        *_DERIVED_MEMBERS,
-    }, "the graph cannot build a hub"
+    assert kind in CORRELATION_RELATION_PHRASE, "Related has nothing to call it"
+    assert kind in KINDS, "the engine cannot build a hub"
     assert kind in {
         *_DIMENSIONS,
         *DERIVED_DIMENSIONS,
@@ -40,19 +36,25 @@ def test_every_kind_is_drawable_and_searchable(kind: str):
 
 @pytest.mark.parametrize("kind", list(CORRELATION_KIND_ORDER))
 def test_every_kind_reads_a_column_that_exists(kind: str):
-    if kind in _DERIVED_MEMBERS:
-        pytest.skip("derived from the rows, not read off a column")
-    source = _HOST_KINDS.get(kind) or _ASSET_KINDS[kind]
-    attr = source[0]
-    model = Subdomain if kind in _HOST_KINDS else HttpAsset
-    assert hasattr(model, attr), f"{model.__name__} has no {attr}"
+    spec = KINDS[kind]
+    assert hasattr(spec.model, spec.attr), f"{spec.model.__name__} has no {spec.attr}"
 
 
-def test_the_two_new_identities_are_wired():
-    assert CorrelationKind.CERT.value in _ASSET_KINDS
-    assert CorrelationKind.HEADERS.value in _ASSET_KINDS
-    assert _ASSET_KINDS[CorrelationKind.CERT.value][0] == "tls_fingerprint"
-    assert _ASSET_KINDS[CorrelationKind.HEADERS.value][0] == "header_hash"
+def test_the_grouping_dimensions_come_from_the_one_registry():
+    for kind, spec in KINDS.items():
+        if spec.derived:
+            continue
+        _build, field, operator, asset = _DIMENSIONS[kind]
+        assert field == kind
+        assert operator == spec.operator
+        assert asset == spec.asset
+
+
+def test_the_identities_read_off_the_http_asset():
+    assert KINDS[CorrelationKind.CERT.value].asset
+    assert KINDS[CorrelationKind.CERT.value].attr == "tls_fingerprint"
+    assert KINDS[CorrelationKind.HEADERS.value].asset
+    assert KINDS[CorrelationKind.HEADERS.value].attr == "header_hash"
 
 
 def test_the_frontend_mirror_carries_the_same_kinds():

@@ -38,9 +38,12 @@ export interface SubdomainRead {
 	ports?: number[];
 	endpoint_count?: number;
 	title_count?: number;
+	title_targets?: number;
 	favicon_count?: number;
+	favicon_targets?: number;
 	render_hash?: string | null;
 	render_count?: number;
+	render_targets?: number;
 	vuln_count?: number;
 	vuln_severity?: string | null;
 	vuln_kev?: boolean;

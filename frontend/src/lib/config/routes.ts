@@ -6,6 +6,7 @@ export const routeLabels: Record<string, string> = {
 	surface: 'Attack surface',
 	...Object.fromEntries(SURFACE_ORDER.map((spec) => [spec.tab, spec.label])),
 	exposures: 'Exposures',
+	correlation: 'Correlation',
 	cves: 'CVEs',
 	cve: 'CVEs',
 
@@ -82,6 +83,7 @@ export const ROUTES = {
 		return `/surface/${tab}${suffix ? `?${suffix}` : ''}`;
 	},
 	scan: (id: string) => `/scans/${id}`,
+	correlation: '/surface/correlation',
 	cves: '/surface/cve',
 	cve: (id: string) => `/surface/cve/${encodeURIComponent(id)}`,
 	compare: (current: string, baseline?: string | null, query?: Record<string, string>) => {

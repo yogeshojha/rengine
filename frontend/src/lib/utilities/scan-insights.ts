@@ -240,21 +240,11 @@ export interface SubdomainRelation {
 	kind: string;
 	reason: string;
 	value: string;
+	label: string;
+	query: string;
+	targets: number;
 	hosts: string[];
 	total: number;
-}
-
-export const RELATION_LABELS: Record<string, string> = {
-	ip: 'resolve to the same IP',
-	cname: 'share a CNAME target',
-	favicon: 'share a favicon',
-	asn: 'sit in the same network',
-	cert: 'share a TLS certificate'
-};
-
-export function relationLabel(r: SubdomainRelation): string {
-	const fallback = r.reason.replace(/\s*\(.*\)$/, '');
-	return RELATION_LABELS[r.kind] ?? fallback.charAt(0).toLowerCase() + fallback.slice(1);
 }
 
 export interface InsightStat {

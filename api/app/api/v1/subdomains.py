@@ -180,16 +180,16 @@ async def subdomain_correlation_graph(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
     project_id: Annotated[UUID, Query(description="Project ID")],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scope: WebAssetScope,
 ):
     """Identities shared by two or more web assets, as hubs."""
     return await lead_cache.cached(
         session,
         name="correlation_graph",
-        scans=(scan_id,),
+        scans=scope.ids,
         facets=str(project_id),
         model=CorrelationGraph,
-        build=lambda: CorrelationGraphService(session).build(project_id, scan_id),
+        build=lambda: CorrelationGraphService(session).build(scope),
     )
 
 
@@ -234,10 +234,10 @@ async def subdomain_related(
     _current_user: CurrentUser,
     service: Annotated[SubdomainService, Depends(get_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scope: WebAssetScope,
     name: Annotated[str, Query(description="Subdomain name")],
 ):
-    return await service.related(project_id=project_id, scan_id=scan_id, name=name)
+    return await service.related(project_id=project_id, scope=scope, name=name)
 
 
 @router.get("/tech", response_model=list[Facet])
@@ -291,10 +291,10 @@ async def subdomain_correlation(
     _current_user: CurrentUser,
     service: Annotated[SubdomainService, Depends(get_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scope: WebAssetScope,
     name: Annotated[str, Query(description="Subdomain name")],
 ):
-    return await service.correlation(project_id=project_id, scan_id=scan_id, name=name)
+    return await service.correlation(project_id=project_id, scope=scope, name=name)
 
 
 @router.get("/summary", response_model=SubdomainSummary)

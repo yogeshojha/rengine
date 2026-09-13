@@ -16,7 +16,6 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.dialects.postgresql import array as pg_array
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -50,8 +49,9 @@ from shared.definitions.asset_query import (
     RENDER_SAMPLE_HOSTS,
 )
 from shared.definitions.correlation import (
-    COMMON_SHARE,
-    MIN_ESTATE_FOR_COMMON,
+    CORRELATION_KIND_LABELS,
+    CORRELATION_KIND_ORDER,
+    CORRELATION_RELATION_PHRASE,
     SCREENSHOT_DISTANCE,
 )
 from shared.definitions.ports import SENSITIVE_PORTS, port_interest
@@ -95,14 +95,16 @@ from shared.models.subdomain import (
 from shared.models.vulnerability import Vulnerability
 from shared.services.asset_query import lead_cache
 from shared.services.asset_query.renders import cluster, is_identity
+from shared.services.correlation import CorrelationFinder, values_carried
 from shared.services.surface_query import web_assets as surface_hosts
 from shared.utils.datetime import utc_now
 from shared.utils.imagehash import distance, hex_digest
-from shared.utils.infra import shared_edge
+from shared.utils.infra import generic_page
 
 logger = get_logger(__name__)
 
 _NO_FINDINGS: tuple[int, str | None, bool] = (0, None, False)
+_NO_SHARE: tuple[int, int] = (0, 1)
 
 _TARGET_ROLLUP_CAP = 20000
 _FACET_LIMIT = 40
@@ -334,7 +336,10 @@ class SubdomainService:
                 ports_by_ip.setdefault(ip, set()).add(number)
 
         title_counts = await self._shared_counts(
-            scope, Subdomain.page_title, {s.page_title for s in rows if s.page_title}
+            scope,
+            Subdomain.page_title,
+            {s.page_title for s in rows if s.page_title},
+            pages=True,
         )
         favicon_counts = await self._shared_counts(
             scope,
@@ -360,14 +365,17 @@ class SubdomainService:
                     target_value=names.get(s.target_id),
                     ports=sorted(nums, key=lambda n: (port_interest(n), n)),
                     endpoint_count=endpoint_counts.get(s.name, 0),
-                    title_count=title_counts.get(s.page_title, 0),
-                    favicon_count=favicon_counts.get(s.favicon_hash, 0),
+                    title_count=title_counts.get(s.page_title, _NO_SHARE)[0],
+                    title_targets=title_counts.get(s.page_title, _NO_SHARE)[1],
+                    favicon_count=favicon_counts.get(s.favicon_hash, _NO_SHARE)[0],
+                    favicon_targets=favicon_counts.get(s.favicon_hash, _NO_SHARE)[1],
                     render_hash=(
                         hex_digest(s.screenshot_phash)
                         if s.screenshot_phash is not None
                         else None
                     ),
-                    render_count=render_counts.get(s.screenshot_phash, 0),
+                    render_count=render_counts.get(s.screenshot_phash, _NO_SHARE)[0],
+                    render_targets=render_counts.get(s.screenshot_phash, _NO_SHARE)[1],
                     vuln_count=findings.get(s.name, _NO_FINDINGS)[0],
                     vuln_severity=findings.get(s.name, _NO_FINDINGS)[1],
                     vuln_kev=findings.get(s.name, _NO_FINDINGS)[2],
@@ -613,19 +621,37 @@ class SubdomainService:
 
     async def _render_counts(
         self, scope: QueryScope, values: set[int]
-    ) -> dict[int, int]:
+    ) -> dict[int, tuple[int, int]]:
         """How many rows in scope render like each of the page's own hashes."""
         if not values:
             return {}
-        histogram = await self._render_histogram(scope)
-        return {
-            value: sum(
-                n
-                for other, n in histogram.items()
-                if distance(value, other) <= SCREENSHOT_DISTANCE
+        rows = await self.session.execute(
+            select(
+                Subdomain.screenshot_phash,
+                func.count(),
+                func.array_agg(distinct(Subdomain.target_id)),
             )
-            for value in values
+            .where(
+                scope.match(Subdomain.scan_id),
+                Subdomain.screenshot_phash.isnot(None),
+            )
+            .group_by(Subdomain.screenshot_phash)
+        )
+        histogram: dict[int, tuple[int, set]] = {
+            int(raw): (int(n), set(targets or [])) for raw, n, targets in rows.all()
         }
+        out: dict[int, tuple[int, int]] = {}
+        for value in values:
+            near = [
+                found
+                for other, found in histogram.items()
+                if distance(value, other) <= SCREENSHOT_DISTANCE
+            ]
+            out[value] = (
+                sum(n for n, _ in near),
+                len({t for _, targets in near for t in targets}),
+            )
+        return out
 
     async def _endpoint_counts(
         self, scope: QueryScope, hosts: list[str]
@@ -639,15 +665,27 @@ class SubdomainService:
         )
         return {host: int(n) for host, n in rows.all()}
 
-    async def _shared_counts(self, scope: QueryScope, col, values: set) -> dict:
+    async def _shared_counts(
+        self, scope: QueryScope, col, values: set, *, pages: bool = False
+    ) -> dict[object, tuple[int, int]]:
+        """How many rows in scope carry each value, and how many targets they sit under."""
         if not values:
             return {}
         rows = await self.session.execute(
-            select(col, func.count())
+            select(
+                col,
+                func.count(),
+                func.count(distinct(Subdomain.target_id)),
+                func.array_agg(distinct(Subdomain.http_status)),
+            )
             .where(scope.match(Subdomain.scan_id), col.in_(values))
             .group_by(col)
         )
-        return {value: int(n) for value, n in rows.all()}
+        return {
+            value: (int(n), int(targets))
+            for value, n, targets, statuses in rows.all()
+            if not (pages and generic_page(str(value), statuses or []))
+        }
 
     async def facets(self, project_id: UUID, scope: ScopeLike) -> SubdomainFacets:
         now = utc_now()
@@ -847,152 +885,69 @@ class SubdomainService:
             "tech", project_id, scan_id, limit=min(limit, _TECH_LIMIT), search=search
         )
 
-    async def _cdn_addresses(self, scan_id: UUID) -> set[str]:
-        """The scan's addresses cdncheck attributed to a CDN edge."""
-        rows = await self.session.execute(
-            select(IpAddress.ip).where(
-                IpAddress.scan_id == scan_id, IpAddress.is_cdn.is_(True)
-            )
-        )
-        return set(rows.scalars().all())
-
     async def related(
-        self, project_id: UUID, scan_id: UUID, name: str
+        self, project_id: UUID, scope: ScopeLike, name: str
     ) -> list[SubdomainRelation]:
-        target = await self.session.scalar(
-            select(Subdomain).where(
-                Subdomain.project_id == project_id,
-                Subdomain.scan_id == scan_id,
-                Subdomain.name == name,
+        """Every hub this host is a member of, over the scope the page is showing."""
+        scope = QueryScope.of(scope)
+        subject = (
+            (
+                await self.session.execute(
+                    select(Subdomain).where(
+                        Subdomain.project_id == project_id,
+                        scope.match(Subdomain.scan_id),
+                        Subdomain.name == name,
+                    )
+                )
             )
+            .scalars()
+            .all()
         )
-        if target is None:
+        if not subject:
             return []
-        out: list[SubdomainRelation] = []
-        others = select(Subdomain.name).where(
-            Subdomain.project_id == project_id,
-            Subdomain.scan_id == scan_id,
-            Subdomain.name != name,
+        assets = (
+            (
+                await self.session.execute(
+                    select(HttpAsset).where(
+                        scope.match(HttpAsset.scan_id), HttpAsset.host == name
+                    )
+                )
+            )
+            .scalars()
+            .all()
         )
-        estate = int(
-            await self.session.scalar(
-                select(func.count())
-                .select_from(Subdomain)
-                .where(
-                    Subdomain.project_id == project_id,
-                    Subdomain.scan_id == scan_id,
+        wanted = values_carried(subject, assets)
+        if not wanted:
+            return []
+        found = await CorrelationFinder(self.session).find(scope, values=wanted)
+        mine = {row.id for row in subject}
+        out = []
+        for hub in found.hubs:
+            if hub.platform or hub.common:
+                continue
+            if not any(m.id in mine for m in hub.members):
+                continue
+            peers = list(
+                dict.fromkeys(
+                    m.name for m in hub.members if m.id not in mine and m.name != name
                 )
             )
-            or 0
-        )
-        common = (
-            int(estate * COMMON_SHARE)
-            if estate >= MIN_ESTATE_FOR_COMMON
-            else estate + 1
-        )
-
-        async def hosts(stmt) -> tuple[list[str], int]:
-            """Hosts sharing a value, excluding what half the estate shares."""
-            counted = int(
-                await self.session.scalar(
-                    select(func.count()).select_from(stmt.limit(common + 1).subquery())
-                )
-                or 0
-            )
-            if counted > common:
-                return [], counted
-            res = await self.session.execute(stmt.limit(_RELATION_CAP))
-            return list(dict.fromkeys(res.scalars().all())), counted
-
-        edge = await self._cdn_addresses(scan_id)
-        own = [ip for ip in (target.resolved_ips or []) if ip not in edge]
-        if own:
-            h, seen = await hosts(
-                others.where(
-                    func.jsonb_exists_any(
-                        cast(Subdomain.resolved_ips, JSONB),
-                        pg_array(own),
-                    )
+            if not peers:
+                continue
+            out.append(
+                SubdomainRelation(
+                    kind=hub.kind,
+                    reason=CORRELATION_RELATION_PHRASE[hub.kind],
+                    value=hub.value,
+                    label=CORRELATION_KIND_LABELS[hub.kind],
+                    query=hub.query,
+                    targets=hub.targets,
+                    hosts=peers[:_RELATION_CAP],
+                    total=len(peers),
                 )
             )
-            if h:
-                out.append(
-                    SubdomainRelation(
-                        kind="ip",
-                        reason=f"Same IP {own[0]}",
-                        value=own[0],
-                        hosts=h,
-                        total=seen,
-                    )
-                )
-        if target.favicon_hash:
-            h, seen = await hosts(
-                others.where(Subdomain.favicon_hash == target.favicon_hash)
-            )
-            if h:
-                out.append(
-                    SubdomainRelation(
-                        kind="favicon",
-                        reason="Same favicon hash",
-                        value=target.favicon_hash,
-                        hosts=h,
-                        total=seen,
-                    )
-                )
-        if target.cname and not shared_edge(target.cname):
-            h, seen = await hosts(others.where(Subdomain.cname == target.cname))
-            if h:
-                out.append(
-                    SubdomainRelation(
-                        kind="cname",
-                        reason=f"Same CNAME {target.cname}",
-                        value=target.cname,
-                        hosts=h,
-                        total=seen,
-                    )
-                )
-        if target.asn and not target.is_cdn:
-            h, seen = await hosts(others.where(Subdomain.asn == target.asn))
-            if h:
-                out.append(
-                    SubdomainRelation(
-                        kind="asn",
-                        reason=f"Same network AS{target.asn}"
-                        + (f" · {target.asn_org}" if target.asn_org else ""),
-                        value=str(target.asn),
-                        hosts=h,
-                        total=seen,
-                    )
-                )
-        fp = await self.session.scalar(
-            select(HttpAsset.tls_fingerprint)
-            .where(
-                HttpAsset.scan_id == scan_id,
-                HttpAsset.host == name,
-                HttpAsset.tls_fingerprint.isnot(None),
-            )
-            .limit(1)
-        )
-        if fp:
-            h, seen = await hosts(
-                select(HttpAsset.host)
-                .where(
-                    HttpAsset.scan_id == scan_id,
-                    HttpAsset.tls_fingerprint == fp,
-                    HttpAsset.host != name,
-                )
-                .distinct()
-            )
-            if h:
-                out.append(
-                    SubdomainRelation(
-                        kind="cert",
-                        reason="Same TLS certificate",
-                        value=fp,
-                        hosts=h,
-                        total=seen,
-                    )
-                )
+        order = {kind: i for i, kind in enumerate(CORRELATION_KIND_ORDER)}
+        out.sort(key=lambda r: (order.get(r.kind, len(order)), -r.targets, -r.total))
         return out
 
     # ── overview insights (server-side aggregation) ────────────────────
@@ -1357,12 +1312,13 @@ class SubdomainService:
         return (a.scheme == "https", alive, a.port in (443, 80), -(a.port or 0))
 
     async def correlation(
-        self, project_id: UUID, scan_id: UUID, name: str
+        self, project_id: UUID, scope: ScopeLike, name: str
     ) -> SubdomainCorrelation:
+        scope = QueryScope.of(scope)
         sub = await self.session.scalar(
             select(Subdomain).where(
                 Subdomain.project_id == project_id,
-                Subdomain.scan_id == scan_id,
+                scope.match(Subdomain.scan_id),
                 Subdomain.name == name,
             )
         )
@@ -1372,7 +1328,7 @@ class SubdomainService:
             (
                 await self.session.execute(
                     select(HttpAsset)
-                    .where(HttpAsset.scan_id == scan_id, HttpAsset.host == name)
+                    .where(scope.match(HttpAsset.scan_id), HttpAsset.host == name)
                     .order_by(HttpAsset.port)
                 )
             )
@@ -1389,7 +1345,7 @@ class SubdomainService:
                 (
                     await self.session.execute(
                         select(Port)
-                        .where(Port.scan_id == scan_id, Port.ip.in_(ips))
+                        .where(scope.match(Port.scan_id), Port.ip.in_(ips))
                         .order_by(Port.number)
                     )
                 )
@@ -1402,7 +1358,7 @@ class SubdomainService:
                 (
                     await self.session.execute(
                         select(IpAddress).where(
-                            IpAddress.scan_id == scan_id, IpAddress.ip.in_(ips)
+                            scope.match(IpAddress.scan_id), IpAddress.ip.in_(ips)
                         )
                     )
                 )
@@ -1412,13 +1368,12 @@ class SubdomainService:
             isvc = IpAddressService(self.session)
             ip_metas = [isvc._to_read(i) for i in ip_rows]
 
-        related = await self.related(project_id, scan_id, name)
         return SubdomainCorrelation(
             primary_asset=ha._to_read(primary) if primary else None,
             services=services,
             ports=ports,
             ip_metas=ip_metas,
-            related=related,
+            related=await self.related(project_id, scope, name),
         )
 
     async def _fetch_target_rows(
