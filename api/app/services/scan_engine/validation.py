@@ -93,6 +93,11 @@ def _validate_tool_options(options: dict | None) -> dict[str, str]:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"{tool} options may not exceed {MAX_TOOL_OPTION_LEN} characters.",
             )
+        if MASK in value:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"{tool} options carry a masked value. Enter the value again.",
+            )
         _reject_ctrl(f"{tool} options", value)
         try:
             shlex.split(value)
@@ -137,6 +142,14 @@ def _validate_global_headers(headers: list) -> None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Each global header must be a 'Name: Value' string.",
+            )
+        if MASK in line:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"The header '{line.split(':', 1)[0].strip()}' carries a masked "
+                    "value. Enter the value again."
+                ),
             )
         name, value = line.split(":", 1)
         if not name.strip():

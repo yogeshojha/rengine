@@ -162,10 +162,11 @@ class ScanEngineService:
         if data.global_http_crawl is not None:
             engine.global_http_crawl = data.global_http_crawl
         if data.global_headers is not None:
-            _validate_global_headers(data.global_headers)
-            engine.global_headers = _unmask_global_headers(
+            restored = _unmask_global_headers(
                 data.global_headers, engine.global_headers or []
             )
+            _validate_global_headers(restored)
+            engine.global_headers = restored
         if data.stages is not None:
             engine.stages = _validate_stages(data.stages)
         if data.yaml_source is not None:
