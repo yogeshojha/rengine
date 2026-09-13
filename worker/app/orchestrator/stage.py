@@ -176,14 +176,15 @@ def run_stage(
     events.stage_started(activity_id=activity.id, stage=spec.name, title=spec.title)
 
     try:
+        resolved = load_resolved(scan.execution_config)
         recorder = ScanCommandRecorder(
             session_factory=session_factory,
             scan_id=scan.id,
             project_id=scan.project_id,
             activity_id=activity.id,
             events=events,
+            secrets=resolved.headers.values(),
         )
-        resolved = load_resolved(scan.execution_config)
 
         if resolved.target_type not in spec.applies_to:
             activity_svc.finish(

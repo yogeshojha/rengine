@@ -1,6 +1,6 @@
 import logging
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
@@ -11,7 +11,7 @@ from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
 from shared.models.scan_command import ScanCommand
 from shared.services.orchestrator.events import ScanEventPublisher
-from shared.services.scan_resolve import redact_command
+from shared.services.scan_resolve import redact_command, redact_recorded
 from shared.utils.datetime import utc_now
 from shared.utils.text import strip_control
 
@@ -102,12 +102,14 @@ class ScanCommandRecorder:
         project_id: uuid.UUID,
         activity_id: uuid.UUID | None = None,
         events: ScanEventPublisher | None = None,
+        secrets: Iterable[str] = (),
     ) -> None:
         self._session_factory = session_factory
         self._scan_id = scan_id
         self._project_id = project_id
         self._activity_id = activity_id
         self._events = events
+        self._secrets = [value for value in secrets if value]
 
     def start(self, tool: str, command: str) -> uuid.UUID:
         cmd = ScanCommand(
@@ -115,7 +117,7 @@ class ScanCommandRecorder:
             project_id=self._project_id,
             activity_id=self._activity_id,
             tool=tool,
-            command=redact_command(command),
+            command=redact_recorded(command, self._secrets),
             status=ScanActivityStatus.RUNNING.value,
             started_at=utc_now(),
         )
@@ -158,11 +160,13 @@ class ScanCommandRecorder:
                     return
                 cmd.status = status.value
                 cmd.return_code = return_code
-                cmd.output = strip_control(redact_command(output or ""))[
+                cmd.output = strip_control(redact_recorded(output, self._secrets))[
                     :MAX_COMMAND_OUTPUT
                 ]
                 cmd.error = (
-                    strip_control(redact_command(error))[:2000] if error else None
+                    strip_control(redact_recorded(error, self._secrets))[:2000]
+                    if error
+                    else None
                 )
                 cmd.duration_seconds = duration_seconds
                 cmd.completed_at = utc_now()

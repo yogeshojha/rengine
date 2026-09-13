@@ -33,9 +33,12 @@ _SENSITIVE_HEADER = re.compile(
 )
 
 PROXY_CREDS_RE = re.compile(r"(\w+://)[^/\s]*@")
+
+# httpx, katana and nuclei take -header; ffuf takes -H
+_HEADER_FLAG = r"-{1,2}(?:headers|header|H)"
 _HEADER_VALUE = re.compile(
-    r'(-H\s+["\']?(?:authorization|cookie|x-api-key|[\w-]*(?:token|secret)[\w-]*)'
-    r'\s*:\s*)([^"\'\n]+?)(?=["\']|\s+-|\s*$)',
+    rf'({_HEADER_FLAG}\s+["\']?[\w-]+\s*:\s*)([^"\'\n]+?)'
+    r'(?=["\']|\s+-{1,2}[A-Za-z]|\s*$)',
     re.IGNORECASE,
 )
 _CRED_FLAG = re.compile(
@@ -136,6 +139,11 @@ def redact_secrets(text: str | None, secrets: Iterable[str]) -> str | None:
         if secret and len(secret) >= MIN_SECRET_LENGTH:
             text = text.replace(secret, MASK)
     return text
+
+
+def redact_recorded(text: str | None, secrets: Iterable[str] = ()) -> str:
+    """Mask credential flags and header values, then the caller's own secrets."""
+    return redact_secrets(redact_command(text or ""), secrets) or ""
 
 
 def _auth_summary(auth: dict, extra_headers: list) -> str:  # noqa: PLR0911
