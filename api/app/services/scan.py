@@ -571,7 +571,7 @@ class ScanService:
     def _dispatch_scan(self, scan: Scan) -> None:
         from shared.services.celery_dispatch import dispatch_scan_run  # noqa: PLC0415
 
-        dispatch_scan_run(str(scan.id))
+        dispatch_scan_run(str(scan.id), scan.run_epoch)
 
     def _dispatch_each(self, scans: list[Scan]) -> list[Scan]:
         failed = []

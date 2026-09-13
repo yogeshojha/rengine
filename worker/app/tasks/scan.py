@@ -68,8 +68,6 @@ def run_scan(self, scan_id: str, epoch: int = 0) -> dict:
             scan.status = ScanStatus.RUNNING.value
             scan.started_at = utc_now()
             scan.error = None
-        scan.celery_task_ids = [self.request.id]
-        session.commit()
 
         try:
             result = build_canvas(scan_id, epoch).apply_async()

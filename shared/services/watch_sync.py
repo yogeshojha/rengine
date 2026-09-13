@@ -481,7 +481,7 @@ def dispatch_probe(
     session.commit()
     session.refresh(host)
     try:
-        dispatch_scan_run(str(scan.id))
+        dispatch_scan_run(str(scan.id), scan.run_epoch)
     except Exception as exc:
         logger.warning("watch probe not queued", scan=str(scan.id), error=str(exc))
         scan.status = ScanStatus.FAILED.value

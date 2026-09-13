@@ -58,11 +58,11 @@ def dispatch_dns_lookups(target_ids: list[str]) -> None:
     )
 
 
-def dispatch_scan_run(scan_id: str) -> None:
+def dispatch_scan_run(scan_id: str, epoch: int) -> None:
     logger.info("Dispatching scan run %s", scan_id)
     get_celery_client().send_task(
         "app.tasks.scan.run_scan",
-        kwargs={"scan_id": scan_id},
+        kwargs={"scan_id": scan_id, "epoch": epoch},
         queue=SCANS_QUEUE,
     )
 

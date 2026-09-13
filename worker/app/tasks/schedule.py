@@ -33,7 +33,7 @@ def _format_errors(errors: list[str]) -> str | None:
 
 def _fire_one(schedule_id: uuid.UUID) -> int:
     """Lock the schedule, advance it, build a PENDING scan per target."""
-    scan_ids: list[str] = []
+    queued: list[tuple[str, int]] = []
     with get_sync_session() as session:
         sched = session.execute(
             select(ScanSchedule)
@@ -64,7 +64,7 @@ def _fire_one(schedule_id: uuid.UUID) -> int:
                     schedule_type=sched.schedule_type,
                     intensity=sched.intensity,
                 )
-                scan_ids.append(str(scan.id))
+                queued.append((str(scan.id), scan.run_epoch))
             except Exception as exc:
                 errors.append(f"{tid}: {type(exc).__name__}: {exc}")
                 logger.warning(
@@ -78,17 +78,17 @@ def _fire_one(schedule_id: uuid.UUID) -> int:
         session.commit()
 
     dispatched = 0
-    for scan_id in scan_ids:
+    for scan_id, epoch in queued:
         try:
-            dispatch_scan_run(scan_id)
+            dispatch_scan_run(scan_id, epoch)
             dispatched += 1
         except Exception:
             logger.warning(
                 "scheduled scan dispatch failed (scan=%s)", scan_id, exc_info=True
             )
-    if scan_ids and dispatched == 0:
+    if queued and dispatched == 0:
         logger.error(
-            "schedule %s built %d scans but dispatched none", schedule_id, len(scan_ids)
+            "schedule %s built %d scans but dispatched none", schedule_id, len(queued)
         )
     return dispatched
 
