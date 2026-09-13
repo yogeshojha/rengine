@@ -252,7 +252,6 @@ RUN_FACETS: tuple[RunFacet, ...] = (
     RunFacet("intensity", "Intensity", "intensity"),
     RunFacet("proxy", "Proxy", "proxy_url", FacetKind.MASKED.value),
     RunFacet("http_protocol", "HTTP protocol", "http_protocol"),
-    RunFacet("crawl", "Crawl responses", "global_http_crawl", FacetKind.BOOL.value),
     RunFacet(
         "excluded_subdomains",
         "Excluded hosts",
@@ -278,7 +277,6 @@ RUN_FACETS: tuple[RunFacet, ...] = (
         "global_rate_limit_ceiling",
         material=False,
     ),
-    RunFacet("threads", "Threads", "global_threads", material=False),
     RunFacet(
         "thread_multiplier", "Thread multiplier", "thread_multiplier", material=False
     ),

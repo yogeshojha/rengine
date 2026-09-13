@@ -8,7 +8,6 @@ from sqlalchemy import Column
 from sqlalchemy.types import JSON, Text
 from sqlmodel import Field, SQLModel
 
-from shared.definitions.constants import DEFAULT_GLOBAL_THREADS
 from shared.models.scan_context import ScanContextCreate
 from shared.utils.datetime import utc_now
 from shared.utils.validation import clean_name, clean_optional_name
@@ -23,8 +22,6 @@ class ScanEngine(SQLModel, table=True):
     name: str = Field(max_length=200)
     description: str | None = Field(default=None, max_length=1000)
     intensity: str = Field(default="normal")
-    global_threads: int = Field(default=DEFAULT_GLOBAL_THREADS)
-    global_http_crawl: bool = Field(default=True)
     global_headers: list = Field(
         default_factory=list, sa_column=Column(JSON, nullable=False)
     )
@@ -42,8 +39,6 @@ class ScanEngineCreate(BaseModel):
     name: str
     description: str | None = None
     intensity: str = "normal"
-    global_threads: int = DEFAULT_GLOBAL_THREADS
-    global_http_crawl: bool = True
     global_headers: list[str] = PydanticField(default_factory=list)
     stages: dict[str, dict] = PydanticField(default_factory=dict)
     yaml_source: str | None = None
@@ -56,8 +51,6 @@ class ScanEngineUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
     intensity: str | None = None
-    global_threads: int | None = None
-    global_http_crawl: bool | None = None
     global_headers: list[str] | None = None
     stages: dict[str, dict] | None = None
     yaml_source: str | None = None
@@ -78,8 +71,6 @@ class ScanEngineRead(BaseModel):
     name: str
     description: str | None
     intensity: str
-    global_threads: int
-    global_http_crawl: bool
     global_headers: list[str]
     stages: dict[str, dict]
     yaml_source: str | None
@@ -159,7 +150,6 @@ class EngineCatalog(BaseModel):
 
 class PreviewResolved(BaseModel):
     header_names: list[str] = PydanticField(default_factory=list)
-    global_threads: int = DEFAULT_GLOBAL_THREADS
     global_rate_limit_ceiling: int | None = None
     per_tool_rate_limits: dict[str, int] = PydanticField(default_factory=dict)
     excluded_subdomains: list[str] = PydanticField(default_factory=list)
@@ -182,5 +172,4 @@ class EnginePreviewRequest(BaseModel):
     context_id: uuid.UUID | None = None
     context: ScanContextCreate | None = None
     intensity: str = "normal"
-    global_threads: int = DEFAULT_GLOBAL_THREADS
     stages: dict[str, dict] = PydanticField(default_factory=dict)

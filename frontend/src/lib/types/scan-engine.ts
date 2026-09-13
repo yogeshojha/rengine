@@ -29,8 +29,6 @@ export interface ScanEngine {
 	name: string;
 	description: string | null;
 	intensity: Intensity;
-	global_threads: number;
-	global_http_crawl: boolean;
 	global_headers: string[];
 	stages: Record<string, StageConfig>;
 	yaml_source: string | null;
@@ -45,8 +43,6 @@ export interface ScanEngineCreate {
 	name: string;
 	description?: string | null;
 	intensity?: Intensity;
-	global_threads?: number;
-	global_http_crawl?: boolean;
 	global_headers?: string[];
 	stages?: Record<string, StageConfig>;
 	yaml_source?: string | null;
@@ -127,7 +123,6 @@ export interface EngineCatalog {
 
 export interface PreviewResolved {
 	header_names: string[];
-	global_threads: number;
 	global_rate_limit_ceiling: number | null;
 	per_tool_rate_limits: Record<string, number>;
 	excluded_subdomains: string[];
@@ -150,7 +145,6 @@ export interface EnginePreviewRequest {
 	context_id?: string | null;
 	context?: import('./scan-context').ScanContextCreate | null;
 	intensity?: Intensity;
-	global_threads?: number;
 	stages?: Record<string, StageConfig>;
 }
 

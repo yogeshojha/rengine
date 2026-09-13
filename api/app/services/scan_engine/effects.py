@@ -3,7 +3,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.scan_engine.validation import (
-    _validate_global_threads,
     _validate_intensity,
     _validate_stages,
 )
@@ -107,8 +106,6 @@ def _stage_status(
 class _DraftEngine:
     def __init__(self, data) -> None:
         self.intensity = data.intensity
-        self.global_threads = data.global_threads
-        self.global_http_crawl = True
         self.global_headers = []
         self.tool_options = {}
         self.stages = _validate_stages(data.stages)
@@ -123,7 +120,6 @@ async def preview_engine(
             detail=f"Unknown target type '{data.target_type}'.",
         )
     _validate_intensity(data.intensity)
-    _validate_global_threads(data.global_threads)
     context: object | None = None
     if data.context is not None:
         context = data.context.model_dump()
@@ -146,7 +142,6 @@ async def preview_engine(
         resolved_stages=resolved.stages,
         resolved=PreviewResolved(
             header_names=list(resolved.headers),
-            global_threads=resolved.global_threads,
             global_rate_limit_ceiling=resolved.global_rate_limit_ceiling,
             per_tool_rate_limits=resolved.per_tool_rate_limits,
             excluded_subdomains=resolved.excluded_subdomains,

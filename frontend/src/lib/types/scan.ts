@@ -101,7 +101,6 @@ export interface ResolvedScanConfig {
 	headers: Record<string, string>;
 	per_tool_rate_limits: Record<string, number>;
 	global_rate_limit_ceiling: number | null;
-	global_threads: number;
 	resolved_threads: Record<string, number>;
 	resolved_timeouts: Record<string, number>;
 	thread_multiplier: number;
@@ -113,7 +112,6 @@ export interface ResolvedScanConfig {
 	included_subdomains: string[];
 	follow_redirects: boolean | null;
 	http_protocol: HttpProtocol;
-	global_http_crawl: boolean;
 	intensity: string;
 	seed_assets?: SeedAsset[];
 	overrides?: StageOverrides;

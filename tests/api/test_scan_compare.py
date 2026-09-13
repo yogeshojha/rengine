@@ -421,8 +421,8 @@ async def test_speed_settings_are_reported_but_not_material(estate, now):
     a, b, _ = await _pair(
         estate,
         now,
-        config_a={"global_threads": 30},
-        config_b={"global_threads": 60},
+        config_a={"thread_multiplier": 1.0},
+        config_b={"thread_multiplier": 2.0},
     )
     await estate.activity("first", RAN_WEB)
     await estate.activity("second", RAN_WEB)
@@ -431,8 +431,8 @@ async def test_speed_settings_are_reported_but_not_material(estate, now):
         a, b, estate.project_id
     )
 
-    threads = next(row for row in report.run_diff if row.key == "threads")
-    assert threads.material is False
+    multiplier = next(row for row in report.run_diff if row.key == "thread_multiplier")
+    assert multiplier.material is False
     assert report.comparability == Comparability.LIKE_FOR_LIKE.value
 
 

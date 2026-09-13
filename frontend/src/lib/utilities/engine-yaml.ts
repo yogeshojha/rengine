@@ -18,11 +18,10 @@ export interface EngineDraft {
 	name: string;
 	description: string | null;
 	intensity: string;
-	global_threads: number;
 	stages: Record<string, StageConfig>;
 }
 
-const TOP_LEVEL = ['name', 'description', 'intensity', 'global_threads', 'stages'] as const;
+const TOP_LEVEL = ['name', 'description', 'intensity', 'stages'] as const;
 
 export function overridesOf(config: StageConfig, defaults: StageConfig): StageConfig {
 	return Object.fromEntries(
@@ -48,7 +47,6 @@ export function engineToYaml(engine: ScanEngine, catalog: EngineCatalog | null):
 	const shape: Record<string, unknown> = { name: engine.name };
 	if (engine.description) shape.description = engine.description;
 	shape.intensity = engine.intensity;
-	shape.global_threads = engine.global_threads;
 	shape.stages = materializeStages(engine.stages ?? {}, catalog);
 	return stringify(shape, { indent: 2, lineWidth: 0, nullStr: '~' });
 }
@@ -87,7 +85,6 @@ export function draftFromDoc(doc: Document.Parsed): EngineDraft | null {
 		name: String(raw.name ?? ''),
 		description: (raw.description as string) ?? null,
 		intensity: String(raw.intensity ?? 'normal'),
-		global_threads: Number(raw.global_threads ?? 30),
 		stages: (raw.stages as Record<string, StageConfig>) ?? {}
 	};
 }

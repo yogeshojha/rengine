@@ -87,7 +87,6 @@
 			const body = {
 				target_type,
 				intensity: selected.intensity,
-				global_threads: selected.global_threads,
 				stages: selected.stages ?? {}
 			};
 			const [base, withContext] = await Promise.all([
@@ -147,14 +146,6 @@
 			});
 		}
 
-		if (after.global_threads !== before.global_threads) {
-			out.push({
-				group: 'Throughput',
-				label: 'Global threads',
-				from: String(before.global_threads),
-				to: String(after.global_threads)
-			});
-		}
 		for (const [stage, config] of Object.entries(merged.resolved_stages)) {
 			const base = plain.resolved_stages[stage] ?? {};
 			const title = engineCatalogStore.stage(stage)?.title ?? stage;

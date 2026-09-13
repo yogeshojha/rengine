@@ -130,7 +130,6 @@
 			name: parsed.name,
 			description: parsed.description,
 			intensity: parsed.intensity as Intensity,
-			global_threads: parsed.global_threads,
 			stages: parsed.stages
 		};
 	});
@@ -284,11 +283,10 @@
 	$effect(() => {
 		const stages = parsed?.stages;
 		const intensity = parsed?.intensity;
-		const threads = parsed?.global_threads;
 		const target = lensTargetType;
 		if (!stages || !engineCatalogStore.hasFetched) return;
 		const timer = setTimeout(
-			() => refreshPreview(target, intensity as Intensity, threads!, stages),
+			() => refreshPreview(target, intensity as Intensity, stages),
 			PREVIEW_DEBOUNCE_MS
 		);
 		return () => clearTimeout(timer);
@@ -298,7 +296,6 @@
 	async function refreshPreview(
 		target_type: string,
 		intensity: Intensity,
-		global_threads: number,
 		stages: Record<string, StageConfig>
 	) {
 		const token = ++previewToken;
@@ -308,7 +305,6 @@
 			const result = await scanEnginesApi.preview({
 				target_type,
 				intensity,
-				global_threads,
 				stages
 			});
 			if (token === previewToken) {
@@ -366,7 +362,6 @@
 				name: draft.name,
 				description: draft.description,
 				intensity: draft.intensity,
-				global_threads: draft.global_threads,
 				stages: draft.stages,
 				yaml_source: yamlSource,
 				tool_options: pendingToolOptions ?? draft.tool_options

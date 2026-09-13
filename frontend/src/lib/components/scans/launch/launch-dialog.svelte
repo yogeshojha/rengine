@@ -225,7 +225,6 @@
 				const result = await scanEnginesApi.preview({
 					target_type: catalog.target_types[0],
 					intensity: engine.intensity,
-					global_threads: engine.global_threads,
 					stages: engine.stages,
 					context_id: contextId === SELECT_NONE ? null : contextId
 				});

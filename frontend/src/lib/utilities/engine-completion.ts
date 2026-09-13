@@ -11,11 +11,6 @@ const TOP_LEVEL: { name: string; detail: string; info: string }[] = [
 		detail: 'passive | normal | aggressive',
 		info: 'Passive blocks every stage that sends traffic to the target.'
 	},
-	{
-		name: 'global_threads',
-		detail: 'integer',
-		info: 'Baseline concurrency, scaled by a scan context.'
-	},
 	{ name: 'stages', detail: 'mapping', info: 'Per-stage settings, keyed by stage name.' }
 ];
 

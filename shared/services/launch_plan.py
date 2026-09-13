@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 
-from shared.definitions.constants import DEFAULT_GLOBAL_THREADS
 from shared.definitions.launch import (
     DEFAULT_LAUNCH_INTENSITY,
     MAX_LABEL_STAGES,
@@ -18,8 +17,6 @@ class AdHocEngine:
 
     name: str = QUICK_SCAN_LABEL
     intensity: str = DEFAULT_LAUNCH_INTENSITY
-    global_threads: int = DEFAULT_GLOBAL_THREADS
-    global_http_crawl: bool = True
     global_headers: tuple[str, ...] = ()
     stages: Mapping[str, dict] = field(default_factory=dict)
     tool_options: Mapping[str, str] = field(default_factory=dict)

@@ -13,7 +13,6 @@ from app.services.scan_engine.validation import (
     _unmask_global_headers,
     _unmask_tool_options,
     _validate_global_headers,
-    _validate_global_threads,
     _validate_intensity,
     _validate_stages,
     _validate_tool_options,
@@ -32,13 +31,14 @@ from shared.models.scan_schedule import ScanSchedule
 from shared.utils.datetime import utc_now
 from shared.utils.yaml_safe import DocumentTooLargeError, load_document
 
+# documents exported before these settings were removed still import
+_RETIRED_KEYS = frozenset({"global_threads", "global_http_crawl"})
+
 _ENGINE_KEYS = frozenset(
     {
         "name",
         "description",
         "intensity",
-        "global_threads",
-        "global_http_crawl",
         "global_headers",
         "stages",
         "tool_options",
@@ -55,8 +55,6 @@ def _to_read(engine: ScanEngine, usage: EngineUsage | None = None) -> ScanEngine
         name=engine.name,
         description=engine.description,
         intensity=engine.intensity,
-        global_threads=engine.global_threads,
-        global_http_crawl=engine.global_http_crawl,
         global_headers=_mask_global_headers(engine.global_headers or []),
         stages=dict(engine.stages or {}),
         yaml_source=engine.yaml_source,
@@ -106,7 +104,6 @@ class ScanEngineService:
     ) -> ScanEngineRead:
         _validate_global_headers(data.global_headers)
         _validate_intensity(data.intensity)
-        _validate_global_threads(data.global_threads)
 
         engine = ScanEngine(
             project_id=project_id,
@@ -114,8 +111,6 @@ class ScanEngineService:
             name=data.name,
             description=data.description,
             intensity=data.intensity,
-            global_threads=data.global_threads,
-            global_http_crawl=data.global_http_crawl,
             global_headers=data.global_headers,
             stages=_validate_stages(data.stages),
             yaml_source=_validate_yaml_source(data.yaml_source),
@@ -156,11 +151,6 @@ class ScanEngineService:
         if data.intensity is not None:
             _validate_intensity(data.intensity)
             engine.intensity = data.intensity
-        if data.global_threads is not None:
-            _validate_global_threads(data.global_threads)
-            engine.global_threads = data.global_threads
-        if data.global_http_crawl is not None:
-            engine.global_http_crawl = data.global_http_crawl
         if data.global_headers is not None:
             restored = _unmask_global_headers(
                 data.global_headers, engine.global_headers or []
@@ -218,8 +208,6 @@ class ScanEngineService:
             name=copy_name,
             description=original.description,
             intensity=original.intensity,
-            global_threads=original.global_threads,
-            global_http_crawl=original.global_http_crawl,
             global_headers=list(original.global_headers or []),
             stages=dict(original.stages or {}),
             yaml_source=original.yaml_source,
@@ -236,8 +224,6 @@ class ScanEngineService:
             "name": engine.name,
             "description": engine.description,
             "intensity": engine.intensity,
-            "global_threads": engine.global_threads,
-            "global_http_crawl": engine.global_http_crawl,
             "global_headers": _mask_global_headers(engine.global_headers or []),
             "stages": _full_stages(engine.stages),
             "tool_options": _mask_tool_options(engine.tool_options),
@@ -276,7 +262,7 @@ class ScanEngineService:
                 detail="YAML must include a 'name' field",
             )
 
-        unknown = [k for k in data if k not in _ENGINE_KEYS]
+        unknown = [k for k in data if k not in _ENGINE_KEYS | _RETIRED_KEYS]
         if unknown:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -291,8 +277,6 @@ class ScanEngineService:
                 name=str(data["name"]),
                 description=data.get("description"),
                 intensity=data.get("intensity", "normal"),
-                global_threads=int(data.get("global_threads", 30)),
-                global_http_crawl=bool(data.get("global_http_crawl", True)),
                 global_headers=list(data.get("global_headers") or []),
                 stages=dict(data.get("stages") or {}),
                 yaml_source=yaml_str,

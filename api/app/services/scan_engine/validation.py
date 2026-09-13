@@ -20,7 +20,6 @@ _MAX_HEADERS = 1000
 _MAX_HEADER_LEN = 4096
 _MAX_YAML_LEN = 512 * 1024
 _INTENSITIES = set(INTENSITIES)
-_MAX_ENGINE_THREADS = 1000
 
 
 def _mask_tool_options(options: dict | None) -> dict[str, str]:
@@ -70,7 +69,6 @@ def _validate_yaml_source(source: str | None) -> str | None:
 
 
 _INTENSITIES = set(INTENSITIES)
-_MAX_ENGINE_THREADS = 1000
 
 
 def _validate_tool_options(options: dict | None) -> dict[str, str]:
@@ -115,14 +113,6 @@ def _validate_intensity(intensity: str | None) -> None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"intensity must be one of {sorted(_INTENSITIES)}.",
-        )
-
-
-def _validate_global_threads(threads: int | None) -> None:
-    if threads is not None and not (1 <= threads <= _MAX_ENGINE_THREADS):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"global_threads must be between 1 and {_MAX_ENGINE_THREADS}.",
         )
 
 

@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, ClassVar
 from pydantic import BaseModel, Field, PrivateAttr, ValidationError
 
 from shared.definitions.constants import (
-    DEFAULT_GLOBAL_THREADS,
     MAX_RATE,
     MAX_THREADS,
     MAX_TIMEOUT,
@@ -243,7 +242,6 @@ class ResolvedScanConfig(BaseModel):
     headers: dict[str, str] = Field(default_factory=dict)
     per_tool_rate_limits: dict[str, int] = Field(default_factory=dict)
     global_rate_limit_ceiling: int | None = None
-    global_threads: int = DEFAULT_GLOBAL_THREADS
     thread_multiplier: float = 1.0
     timeout_multiplier: float = 1.0
     stages: dict[str, dict] = Field(default_factory=dict)
@@ -253,7 +251,6 @@ class ResolvedScanConfig(BaseModel):
     included_subdomains: list[str] = Field(default_factory=list)
     follow_redirects: bool | None = None
     http_protocol: str = "both"
-    global_http_crawl: bool = True
     intensity: str = "normal"
     proxy_url: str | None = None
     tool_options: dict[str, str] = Field(default_factory=dict)
@@ -283,7 +280,6 @@ class ResolvedScanConfig(BaseModel):
             f"ResolvedScanConfig(target_value={self.target_value!r}, "
             f"target_type={self.target_type!r}, "
             f"headers=<{len(self.headers)} redacted>, "
-            f"global_threads={self.global_threads}, "
             f"http_protocol={self.http_protocol!r}, intensity={self.intensity!r}, "
             f"proxy={proxy})"
         )
@@ -414,7 +410,6 @@ def merge_engine_context(
     global_rate_limit_ceiling = _ctx_get(ctx, "global_rate_limit_override")
 
     headers, auth_header_names = _build_headers(engine, ctx)
-    global_threads = _clamp(round(engine.global_threads * thread_mult), 1, MAX_THREADS)
 
     stored = engine.stages or {}
     run_overrides = validate_overrides(overrides)
@@ -467,7 +462,6 @@ def merge_engine_context(
         headers=headers,
         per_tool_rate_limits=per_tool_rate_limits,
         global_rate_limit_ceiling=global_rate_limit_ceiling,
-        global_threads=global_threads,
         thread_multiplier=thread_mult,
         timeout_multiplier=timeout_mult,
         stages=stages,
@@ -477,7 +471,6 @@ def merge_engine_context(
         included_subdomains=included_subdomains,
         follow_redirects=follow_redirects,
         http_protocol=http_protocol,
-        global_http_crawl=engine.global_http_crawl,
         intensity=run_intensity,
         tool_options=dict(getattr(engine, "tool_options", None) or {}),
         overrides=run_overrides,
