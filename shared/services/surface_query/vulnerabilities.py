@@ -7,11 +7,14 @@ from typing import TYPE_CHECKING
 from sqlalchemy import case, cast, func, not_, or_, select
 from sqlalchemy.dialects.postgresql import JSONB
 
+from shared.definitions.asset_query import VULN_QUERY
 from shared.definitions.vulnerabilities import ACTIONABLE_SEVERITIES, SEVERITY_ORDER
 from shared.models.vulnerability import Vulnerability
 from shared.services.asset_query import (
     QueryScope,
     VulnQueryContext,
+    compile_vuln_query,
+    parse_query,
     vuln_corroborated,
     vuln_corroborated_ids,
     vuln_is_new,
@@ -112,3 +115,7 @@ def scoped(scope: QueryScope, f: VulnerabilityFilter, columns=None):
     base = select(Vulnerability) if columns is None else select(*columns)
     base = base.where(scope.match(Vulnerability.scan_id))
     return apply_filter(base, f, scope)
+
+
+def compiled(scope: QueryScope, f: VulnerabilityFilter, now: datetime):
+    return compile_vuln_query(parse_query(f.q, VULN_QUERY), context(scope, now))

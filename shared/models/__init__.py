@@ -69,6 +69,7 @@ from shared.models.endpoint import (
     EndpointTree,
     TreeNode,
 )
+from shared.models.export import Export, ExportCreate, ExportRead
 from shared.models.http_asset import (
     HttpAsset,
     HttpAssetRead,
@@ -313,6 +314,9 @@ __all__ = [
     "EndpointSummary",
     "EndpointTree",
     "EngineCatalog",
+    "Export",
+    "ExportCreate",
+    "ExportRead",
     "FindingRecorded",
     "FindingReport",
     "HostFacts",

@@ -40,6 +40,7 @@ class SurfaceQuery:
     filter_path: str
     needs_project: bool = False
     takes_source: bool = False
+    order_needs_scope: bool = False
 
     @property
     def filter_model(self) -> type[BaseModel]:
@@ -66,10 +67,34 @@ class SurfaceQuery:
             return Built(statement, source)
         return Built(self.module.scoped(scope, f, columns=columns), None)
 
-    def order(self, built: Built, f: BaseModel) -> Select:
+    def order(self, built: Built, f: BaseModel, scope: QueryScope) -> Select:
         if self.takes_source:
             return self.module.order(built.statement, built.source, f)
+        if self.order_needs_scope:
+            return self.module.order(built.statement, f, scope)
         return self.module.order(built.statement, f)
+
+    def compiled(self, built: Built, scope: QueryScope, f: BaseModel, now: datetime):
+        """The query language predicate, or None when the query is empty."""
+        if self.takes_source:
+            return self.module.compiled(scope, f, now, built.source)
+        return self.module.compiled(scope, f, now)
+
+    def filtered(
+        self,
+        scope: QueryScope,
+        f: BaseModel,
+        now: datetime,
+        *,
+        project_id: UUID | None = None,
+        columns=None,
+    ) -> Built:
+        """The statement the table shows: scope, facets and the typed query."""
+        built = self.build(scope, f, now, project_id=project_id, columns=columns)
+        predicate = self.compiled(built, scope, f, now)
+        if predicate is None:
+            return built
+        return Built(built.statement.where(predicate), built.source)
 
 
 QUERIES: tuple[SurfaceQuery, ...] = (
@@ -100,6 +125,7 @@ QUERIES: tuple[SurfaceQuery, ...] = (
         SurfaceDimension.VULNERABILITIES.value,
         vulnerabilities,
         "shared.models.vulnerability.VulnerabilityFilter",
+        order_needs_scope=True,
     ),
 )
 

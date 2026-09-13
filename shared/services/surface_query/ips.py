@@ -22,9 +22,15 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import ARRAY, INET, JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 
+from shared.definitions.asset_query import IP_QUERY
 from shared.definitions.ports import SENSITIVE_PORTS
 from shared.models.port import Port
-from shared.services.asset_query import IpQueryContext, QueryScope
+from shared.services.asset_query import (
+    IpQueryContext,
+    QueryScope,
+    compile_ip_query,
+    parse_query,
+)
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -184,3 +190,7 @@ def scoped(scope: QueryScope, f: IpGroupFilter, columns=None):
 
 def context(scope: QueryScope, d, now: datetime) -> IpQueryContext:
     return IpQueryContext(scope=scope, now=now, source=d)
+
+
+def compiled(scope: QueryScope, f: IpGroupFilter, now: datetime, source):
+    return compile_ip_query(parse_query(f.q, IP_QUERY), context(scope, source, now))

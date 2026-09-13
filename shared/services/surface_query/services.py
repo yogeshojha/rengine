@@ -18,10 +18,13 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import ARRAY, INET
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 
+from shared.definitions.asset_query import SERVICE_QUERY
 from shared.definitions.ports import SENSITIVE_PORTS
 from shared.services.asset_query import (
     QueryScope,
     ServiceQueryContext,
+    compile_service_query,
+    parse_query,
     service_is_new,
 )
 
@@ -202,3 +205,9 @@ def scoped(scope: QueryScope, f: ServiceFilter, columns=None):
 
 def context(scope: QueryScope, d, now: datetime) -> ServiceQueryContext:
     return ServiceQueryContext(scope=scope, now=now, source=d)
+
+
+def compiled(scope: QueryScope, f: ServiceFilter, now: datetime, source):
+    return compile_service_query(
+        parse_query(f.q, SERVICE_QUERY), context(scope, source, now)
+    )
