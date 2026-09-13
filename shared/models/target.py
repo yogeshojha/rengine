@@ -139,6 +139,7 @@ class TargetBulkCreate(BaseModel):
     )
     organization_names: list[str] = Field(default_factory=list)
     tag_names: list[str] = Field(default_factory=list)
+    seeds: list[str] = Field(default_factory=list, max_length=MAX_RUN_ASSETS)
 
     @field_validator("tag_names", "tags", check_fields=False)
     @classmethod
@@ -214,6 +215,7 @@ class TargetImportItem(BaseModel):
     tags: list[str] = Field(default_factory=list)
     organizations: list[str] = Field(default_factory=list)
     display_name: str | None = None
+    seeds: list[str] = Field(default_factory=list, max_length=MAX_RUN_ASSETS)
 
     @field_validator("tag_names", "tags", check_fields=False)
     @classmethod

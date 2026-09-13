@@ -395,3 +395,21 @@ def test_an_asn_takes_a_public_address():
 
     assert rejected == []
     assert [s.value for s in seeds] == ["203.0.113.10"]
+
+
+def test_a_scope_paste_only_keeps_what_falls_under_each_target():
+    """One pasted scope, sorted by apex: the bulk import relies on this."""
+    one = _target("one.example.com", TargetType.DOMAIN)
+    two = _target("two.example.com", TargetType.DOMAIN)
+    pasted = [
+        "www.one.example.com",
+        "api.one.example.com",
+        "shop.two.example.com",
+        "nope.other.com",
+    ]
+
+    kept_one, _ = target_seeds.parse(pasted, one)
+    kept_two, _ = target_seeds.parse(pasted, two)
+
+    assert [s.value for s in kept_one] == ["www.one.example.com", "api.one.example.com"]
+    assert [s.value for s in kept_two] == ["shop.two.example.com"]

@@ -11,6 +11,7 @@ from uuid import UUID
 from celery import shared_task
 from sqlalchemy import select
 
+from app.config import settings
 from app.database import get_sync_session
 from shared.definitions.exports import (
     BUNDLE,
@@ -21,11 +22,17 @@ from shared.definitions.exports import (
     STALE_AFTER_SECONDS,
     ExportStatus,
 )
-from shared.definitions.surface import SURFACE_ORDER, SurfaceDimension
+from shared.definitions.surface import (
+    SURFACE_LABELS,
+    SURFACE_ORDER,
+    SurfaceDimension,
+)
+from shared.enums.notification import NotificationSeverity, NotificationType
 from shared.logging import get_logger
 from shared.models.export import Export
 from shared.services.asset_export import runner
 from shared.services.asset_query import QueryScope
+from shared.services.notification_sync import SyncNotificationPublisher
 from shared.services.surface_scope_sync import project_scope, target_scope
 from shared.utils.datetime import utc_now
 from shared.utils.slug import generate_slug
@@ -108,6 +115,7 @@ def run_export(self, export_id: str) -> None:
         row.duration_seconds = round(time.monotonic() - started, 2)
         row.expires_at = utc_now() + timedelta(days=RETENTION_DAYS)
         session.commit()
+        _notify(session, row, ok=True)
     except Exception as exc:
         _fail(session, export_id, exc)
     finally:
@@ -167,6 +175,27 @@ def _dimension_scope(session, row: Export, dimension: str) -> QueryScope:
     return project_scope(session, row.project_id, dimension)
 
 
+def _notify(session, row: Export, *, ok: bool) -> None:
+    """An export outlives the page it was started from, so it says when it is ready."""
+    label = SURFACE_LABELS.get(row.dimension, "All dimensions")
+    body = (
+        f"{label} for {row.subject}: {row.row_count:,} rows ready to download."
+        if ok
+        else f"{label} for {row.subject} did not finish."
+    )
+    try:
+        SyncNotificationPublisher(settings.celery_broker_url).publish(
+            session,
+            NotificationType.SYSTEM,
+            NotificationSeverity.SUCCESS if ok else NotificationSeverity.ERROR,
+            "Export ready" if ok else "Export failed",
+            body,
+            project_id=row.project_id,
+        )
+    except Exception:
+        logger.debug("export notification skipped", exc_info=True)
+
+
 _FAILED_MESSAGE = "The export did not finish. Run it again."
 
 
@@ -182,6 +211,7 @@ def _fail(session, export_id: str, exc: Exception) -> None:
     row.step = "Failed"
     row.completed_at = utc_now()
     session.commit()
+    _notify(session, row, ok=False)
 
 
 @shared_task(name="app.tasks.export.cleanup")

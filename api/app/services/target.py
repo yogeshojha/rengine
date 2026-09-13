@@ -1,5 +1,7 @@
+import contextlib
 import csv
 import io
+import re
 from collections import Counter
 from dataclasses import dataclass
 from uuid import UUID, uuid4
@@ -99,6 +101,30 @@ DNS_ELIGIBLE_TYPES = {TargetType.DOMAIN, TargetType.URL}
 class BulkTargetResult:
     import_result: TargetImportResult
     target: Target | None = None
+
+
+def _csv_value(
+    row: dict, originals: list[str], lowered: list[str], keys: tuple[str, ...]
+) -> str:
+    """The first of these column names the sheet actually has."""
+    for key in keys:
+        if key in lowered:
+            return (row.get(originals[lowered.index(key)], "") or "").strip()
+    return ""
+
+
+def _csv_list(
+    row: dict,
+    originals: list[str],
+    lowered: list[str],
+    keys: tuple[str, ...],
+    pattern: str = ",",
+) -> list[str]:
+    value = _csv_value(row, originals, lowered, keys)
+    if not value:
+        return []
+    parts = re.split(pattern, value) if pattern != "," else value.split(",")
+    return [part.strip() for part in parts if part.strip()]
 
 
 class TargetService:
@@ -478,6 +504,14 @@ class TargetService:
         self._dispatch_post_target_creation(created)
         return [found[value] for value in wanted]
 
+    async def _seed_created(self, created: list[Target], lines: list[str]) -> None:
+        """Each target keeps only the lines that fall inside its own scope."""
+        if not lines or not created:
+            return
+        for target in created:
+            with contextlib.suppress(HTTPException):
+                await self._write_seeds(target, lines, replace=False)
+
     async def bulk_create_targets(
         self, bulk_in: TargetBulkCreate, user_id: str
     ) -> TargetBulkCreateResponse:
@@ -528,6 +562,7 @@ class TargetService:
                 failed_count += 1
 
         await self.session.commit()
+        await self._seed_created(created_targets, bulk_in.seeds)
 
         await self._activity.log_async(
             event=ActivityEvent.TARGET_BULK_IMPORTED,
@@ -823,6 +858,13 @@ class TargetService:
                 failed_count += 1
 
         await self.session.commit()
+        for item, result in zip(import_request.targets, results, strict=False):
+            if result.success and item.seeds:
+                created = next(
+                    (t for t in created_targets if t.id == result.target_id), None
+                )
+                if created is not None:
+                    await self._seed_created([created], item.seeds)
 
         total = imported_count + failed_count + skipped_duplicates
         await self._activity.log_async(
@@ -1546,35 +1588,28 @@ class TargetService:
                 if not target_value:
                     continue
 
-                tags = []
-                for key in ["tags", "tag"]:
-                    if key in fieldnames:
-                        idx = fieldnames.index(key)
-                        orig_key = csv_reader.fieldnames[idx]
-                        tags_str = row.get(orig_key, "").strip()
-                        if tags_str:
-                            tags = [t.strip() for t in tags_str.split(",") if t.strip()]
-                        break
-
-                organizations = []
-                for key in ["organizations", "organization", "orgs", "org"]:
-                    if key in fieldnames:
-                        idx = fieldnames.index(key)
-                        orig_key = csv_reader.fieldnames[idx]
-                        orgs_str = row.get(orig_key, "").strip()
-                        if orgs_str:
-                            organizations = [
-                                o.strip() for o in orgs_str.split(",") if o.strip()
-                            ]
-                        break
-
-                display_name = None
-                for key in ["display_name", "name"]:
-                    if key in fieldnames:
-                        idx = fieldnames.index(key)
-                        orig_key = csv_reader.fieldnames[idx]
-                        display_name = row.get(orig_key, "").strip() or None
-                        break
+                tags = _csv_list(
+                    row, csv_reader.fieldnames, fieldnames, ("tags", "tag")
+                )
+                organizations = _csv_list(
+                    row,
+                    csv_reader.fieldnames,
+                    fieldnames,
+                    ("organizations", "organization", "orgs", "org"),
+                )
+                display_name = (
+                    _csv_value(
+                        row, csv_reader.fieldnames, fieldnames, ("display_name", "name")
+                    )
+                    or None
+                )
+                seeds = _csv_list(
+                    row,
+                    csv_reader.fieldnames,
+                    fieldnames,
+                    ("seeds", "seed", "subdomains"),
+                    pattern=r"[;,\s]+",
+                )
 
                 targets_data.append(
                     TargetImportItem(
@@ -1582,6 +1617,7 @@ class TargetService:
                         tags=tags,
                         organizations=organizations,
                         display_name=display_name,
+                        seeds=seeds,
                     )
                 )
 
