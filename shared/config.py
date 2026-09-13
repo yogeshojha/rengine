@@ -1,4 +1,5 @@
 import re
+from functools import lru_cache
 from urllib.parse import quote
 
 from pydantic import field_validator
@@ -46,6 +47,13 @@ class BaseAppSettings(BaseSettings):
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
 
+    # every outbound call that is not scan traffic: intel feeds, RDAP, RIPEstat
+    EGRESS_PROXY_URL: str = ""
+    EGRESS_TIMEOUT: float = 30.0
+    EGRESS_USER_AGENT: str = (
+        "Mozilla/5.0 (compatible; reNgine/3.0; +https://github.com/yogeshojha/rengine)"
+    )
+
     REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
@@ -84,3 +92,8 @@ class BaseAppSettings(BaseSettings):
         env_file = ".env"
         case_sensitive = True
         extra = "ignore"
+
+
+@lru_cache(maxsize=1)
+def base_settings() -> BaseAppSettings:
+    return BaseAppSettings()

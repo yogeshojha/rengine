@@ -19,6 +19,7 @@ from shared.services.endpoint_inventory import EndpointObservation
 from shared.services.endpoint_noise import NoisePolicy
 from shared.services.wordlists import WordlistError, read_words
 from stages.base import ALL_TARGETS, Stage, StageResult
+from stages.config import share_rate
 from stages.content_discovery.config import ContentDiscoveryConfig
 from tools.ffuf.client import FfufClient, FfufError
 from tools.ffuf.parser import parse_ffuf_record
@@ -81,13 +82,15 @@ class ContentDiscoveryStage(Stage):
             return self._fuzz(cfg, hosts, word_file, tried, label)
 
     def _fuzz(self, cfg, hosts, word_file, tried, label) -> StageResult:
+        workers = min(_MAX_WORKERS, len(hosts))
+        net = self.net_options()
         args = {
             "wordlist": word_file,
             "threads": cfg.threads,
-            "rate": cfg.rate,
+            "rate": share_rate(cfg.rate, workers),
             "request_timeout": cfg.timeout,
-            "proxy_url": self.net_options().proxy_url,
-            "headers": self.net_options().headers,
+            "proxy_url": net.proxy_url,
+            "headers": net.headers,
             "recorder": self.ctx.recorder,
             "extra_args": self.ctx.resolved.tool_args("ffuf"),
         }
@@ -106,7 +109,6 @@ class ContentDiscoveryStage(Stage):
             SurfaceDimension.ENDPOINTS.value, self._write, rows=_SINK_ROWS
         )
         state = _Run()
-        workers = min(_MAX_WORKERS, len(hosts))
         with ThreadPoolExecutor(max_workers=workers) as pool:
             futures = {
                 pool.submit(self._one, args, host, word_file, per_host, tried)

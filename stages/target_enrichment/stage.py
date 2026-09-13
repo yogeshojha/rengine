@@ -77,7 +77,10 @@ class TargetEnrichmentStage(Stage):
             host = normalize_domain(self.ctx.target_value)
             try:
                 lookup = DnsxService(
-                    timeout=max(120, cfg.dns_timeout), threads=cfg.dns_threads
+                    timeout=max(120, cfg.dns_timeout),
+                    threads=cfg.dns_threads,
+                    recorder=self.ctx.recorder,
+                    extra_args=self.ctx.resolved.tool_args("dnsx"),
                 ).lookup_and_store(self.session, target.id, host)
                 target.dns_lookup_id = lookup.id
                 target.dns_status = TaskStatus.SUCCESS

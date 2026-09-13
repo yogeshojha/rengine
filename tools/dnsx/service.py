@@ -15,6 +15,7 @@ from shared.utils.infra import is_shared_nameserver
 from tools.dnsx.client import DnsxClient, DnsxError
 from tools.dnsx.models import DnsxReconResponse
 from tools.dnsx.parser import parse_dnsx_jsonl
+from tools.runner.models import CommandRecorder
 
 logger = get_logger(__name__)
 
@@ -39,11 +40,15 @@ class DnsxService:
         retry: int = 3,
         threads: int = 10,
         resolvers: list[str] | None = None,
+        recorder: CommandRecorder | None = None,
+        extra_args: list[str] | None = None,
     ) -> None:
         self._timeout = timeout
         self._retry = retry
         self._threads = threads
         self._resolvers = resolvers
+        self._recorder = recorder
+        self._extra_args = extra_args
         self._client: DnsxClient | None = None
 
     @property
@@ -56,6 +61,8 @@ class DnsxService:
                     retry=self._retry,
                     threads=self._threads,
                     resolvers=self._resolvers,
+                    recorder=self._recorder,
+                    extra_args=self._extra_args,
                 )
             except DnsxError as e:
                 raise DnsxServiceError(str(e)) from e

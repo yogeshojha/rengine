@@ -1,40 +1,19 @@
-import os
-
 import httpx
 
-# TODO: dummy user agents
+from shared.config import base_settings
 
-DEFAULT_TIMEOUT = 30
-DEFAULT_USER_AGENT = (
-    "Mozilla/5.0 (compatible; reNgine/3.0; +https://github.com/yogeshojha/rengine)"
-)
 MAX_RETRIES = 3
 
 
-def _get_proxy_url() -> str | None:
-    return os.environ.get("RENGINE_PROXY_URL")
-
-
-def _get_timeout() -> float:
-    try:
-        return float(os.environ.get("RENGINE_HTTP_TIMEOUT", DEFAULT_TIMEOUT))
-    except (ValueError, TypeError):
-        return DEFAULT_TIMEOUT
-
-
-def _get_user_agent() -> str:
-    return os.environ.get("RENGINE_USER_AGENT", DEFAULT_USER_AGENT)
-
-
 def _base_kwargs() -> dict:
+    settings = base_settings()
     kwargs: dict = {
-        "timeout": httpx.Timeout(_get_timeout()),
-        "headers": {"User-Agent": _get_user_agent()},
+        "timeout": httpx.Timeout(settings.EGRESS_TIMEOUT),
+        "headers": {"User-Agent": settings.EGRESS_USER_AGENT},
         "follow_redirects": True,
     }
-    proxy = _get_proxy_url()
-    if proxy:
-        kwargs["proxy"] = proxy
+    if settings.EGRESS_PROXY_URL:
+        kwargs["proxy"] = settings.EGRESS_PROXY_URL
     return kwargs
 
 

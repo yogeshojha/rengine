@@ -62,6 +62,12 @@ class WafDetectStage(Stage):
         self.emit_progress(f"flagged {len(updates)} WAF-protected services")
         skipped = max(0, len(live) - _MAX_URLS)
         warnings = []
+        if client.unreadable_headers:
+            names = ", ".join(client.unreadable_headers)
+            warnings.append(
+                f"wafw00f cannot read a header value holding a colon, so {names} "
+                "was not sent with these requests."
+            )
         if scan.unfinished:
             warnings.append(
                 f"wafw00f did not finish {scan.unfinished:,} of "

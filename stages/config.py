@@ -59,6 +59,11 @@ def rate(default: int, *, tool: str, title: str, description: str = "") -> Any:
     )
 
 
+def share_rate(rate: int, processes: int) -> int:
+    """One process's share of the stage's rate budget."""
+    return max(1, rate // max(1, processes))
+
+
 class StageConfig(BaseModel):
     model_config = ConfigDict(extra="ignore", validate_assignment=True)
 

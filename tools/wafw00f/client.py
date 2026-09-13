@@ -23,6 +23,13 @@ DEFAULT_TIMEOUT = 600
 
 # wafw00f reads custom headers from a file, one `Name: Value` per line
 HEADER_FLAG = "-H"
+
+
+def unreadable_headers(headers: dict[str, str] | None) -> list[str]:
+    """Names wafw00f drops: it splits a line on ':' and keeps only a two-part result."""
+    return sorted(name for name, value in (headers or {}).items() if ":" in value)
+
+
 DEFAULT_CONCURRENCY = 6
 SHARD_SIZE = 25
 
@@ -66,6 +73,7 @@ class Wafw00fClient:
     ) -> None:
         self.proxy_url = proxy_url
         self.headers = headers or {}
+        self.unreadable_headers = unreadable_headers(self.headers)
         self.concurrency = max(1, concurrency)
         self.recorder = recorder
         self.extra_args = extra_args or []

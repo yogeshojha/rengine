@@ -158,7 +158,7 @@ class NaabuClient:
         return [*args, *self._proxy_args]
 
     def passive(self, ips: list[str]) -> list[dict]:
-        """Ports already known to Shodan's internetdb."""
+        """Ports already known to Shodan's internetdb, fetched through the scan's proxy."""
         if not ips:
             return []
         return self._records(
