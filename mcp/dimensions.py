@@ -17,6 +17,8 @@ from shared.definitions.asset_query import (
     QueryRegistry,
 )
 from shared.definitions.surface import (
+    SURFACE_COLUMNS,
+    SURFACE_IDENTITY,
     SURFACE_LABELS,
     SURFACE_NOUN,
     SURFACE_ORDER,
@@ -39,12 +41,17 @@ class Dimension:
     tab: str
     filter_path: str
     service_path: str
-    fields: tuple[str, ...]
-    # the column a human reads first
-    identity: str
     needs_project: bool = False
     page_args: tuple[str, str] = ("limit", "offset")
     order_arg: str = "order"
+
+    @property
+    def fields(self) -> tuple[str, ...]:
+        return SURFACE_COLUMNS[self.key]
+
+    @property
+    def identity(self) -> str:
+        return SURFACE_IDENTITY[self.key]
 
     @property
     def label(self) -> str:
@@ -125,27 +132,6 @@ DIMENSIONS: tuple[Dimension, ...] = (
         tab="web-assets",
         filter_path="shared.models.subdomain.SubdomainFilter",
         service_path="app.services.subdomain.SubdomainService",
-        fields=(
-            "name",
-            "http_status",
-            "page_title",
-            "http_url",
-            "tech",
-            "webserver",
-            "resolved_ips",
-            "cname",
-            "is_cdn",
-            "cdn_name",
-            "waf",
-            "asn_org",
-            "ports",
-            "tls_expired",
-            "endpoint_count",
-            "vuln_count",
-            "vuln_severity",
-            "vuln_kev",
-        ),
-        identity="name",
         needs_project=True,
     ),
     Dimension(
@@ -154,23 +140,6 @@ DIMENSIONS: tuple[Dimension, ...] = (
         tab="ips",
         filter_path="shared.models.scan_correlation.IpGroupFilter",
         service_path="app.services.ip_address.IpAddressService",
-        fields=(
-            "ip",
-            "version",
-            "asn",
-            "asn_org",
-            "country",
-            "prefix",
-            "is_cdn",
-            "cdn_name",
-            "is_alive",
-            "ports",
-            "port_count",
-            "host_count",
-            "hosts",
-            "has_sensitive",
-        ),
-        identity="ip",
     ),
     Dimension(
         key=SurfaceDimension.SERVICES.value,
@@ -178,28 +147,6 @@ DIMENSIONS: tuple[Dimension, ...] = (
         tab="services",
         filter_path="shared.models.scan_correlation.ServiceFilter",
         service_path="app.services.port.PortService",
-        fields=(
-            "ip",
-            "port",
-            "protocol",
-            "service_name",
-            "service_class",
-            "product",
-            "version",
-            "is_http",
-            "tls",
-            "status_code",
-            "title",
-            "url",
-            "hosts",
-            "asn_org",
-            "country",
-            "is_cdn",
-            "is_sensitive",
-            "source",
-            "is_new",
-        ),
-        identity="ip",
     ),
     Dimension(
         key=SurfaceDimension.VULNERABILITIES.value,
@@ -207,25 +154,6 @@ DIMENSIONS: tuple[Dimension, ...] = (
         tab="vulnerabilities",
         filter_path="shared.models.vulnerability.VulnerabilityFilter",
         service_path="app.services.vulnerability.VulnerabilityService",
-        fields=(
-            "fingerprint",
-            "template_id",
-            "template_name",
-            "severity",
-            "scanner",
-            "matched_at",
-            "host",
-            "ip",
-            "port",
-            "cve_ids",
-            "cvss_score",
-            "epss_score",
-            "is_kev",
-            "state",
-            "is_new",
-            "tags",
-        ),
-        identity="template_name",
     ),
     Dimension(
         key=SurfaceDimension.ENDPOINTS.value,
@@ -233,23 +161,6 @@ DIMENSIONS: tuple[Dimension, ...] = (
         tab="endpoints",
         filter_path="shared.models.endpoint.EndpointFilter",
         service_path="app.services.endpoint.EndpointService",
-        fields=(
-            "url",
-            "host",
-            "path",
-            "status_code",
-            "content_type",
-            "content_length",
-            "title",
-            "methods",
-            "param_count",
-            "endpoint_class",
-            "interest",
-            "primary_source",
-            "is_probed",
-            "is_new",
-        ),
-        identity="url",
         page_args=("size", "page"),
         order_arg="direction",
     ),
