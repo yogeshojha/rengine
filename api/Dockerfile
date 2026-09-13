@@ -17,13 +17,6 @@ FROM base AS development
 
 COPY shared /app/shared
 COPY tools /app/tools
-COPY stages /app/stages
-COPY reports /app/reports
-COPY interest /app/interest
-COPY mcp /app/mcp
-COPY connectors /app/connectors
-COPY toolbox /app/toolbox
-COPY binaries /app/binaries
 
 COPY api/pyproject.toml api/uv.lock* ./
 
@@ -34,3 +27,7 @@ EXPOSE 8000
 COPY api/entrypoint.sh /app/entrypoint.sh
 
 CMD ["/app/entrypoint.sh"]
+
+
+# stages/, reports/, interest/, mcp/, connectors/, toolbox/ and binaries/ are mounted in
+# dev; a prod stage must COPY them and keep PYTHONPATH=/app

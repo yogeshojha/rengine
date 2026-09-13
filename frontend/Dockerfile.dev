@@ -8,9 +8,11 @@ COPY frontend/package*.json ./
 
 RUN npm ci
 
-COPY frontend/. .
+COPY frontend/scripts/fetch-tech-icons.mjs ./scripts/
 
 RUN node scripts/fetch-tech-icons.mjs
+
+COPY frontend/. .
 
 EXPOSE 5173
 

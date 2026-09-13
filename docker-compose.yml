@@ -101,6 +101,7 @@ services:
   # default workers for handling regular tasks like imports, whois etc
   worker-default:
     init: true
+    image: rengine-worker:latest
     build:
       context: .
       dockerfile: worker/Dockerfile
@@ -148,10 +149,8 @@ services:
   # beat scheduler: emits the schedule tick that fires due scan schedules
   worker-beat:
     init: true
-    build:
-      context: .
-      dockerfile: worker/Dockerfile
-      target: development
+    # built by worker-default
+    image: rengine-worker:latest
     volumes:
       - ./worker/app:/app/app
       - ./shared:/app/shared
@@ -185,10 +184,8 @@ services:
   # certificate transparency stream for watched programs
   ct-stream:
     init: true
-    build:
-      context: .
-      dockerfile: worker/Dockerfile
-      target: development
+    # built by worker-default
+    image: rengine-worker:latest
     volumes:
       - ./worker/app:/app/app
       - ./shared:/app/shared
@@ -213,10 +210,8 @@ services:
         condition: service_healthy
 
   flower:
-    build:
-      context: .
-      dockerfile: worker/Dockerfile
-      target: development
+    # built by worker-default
+    image: rengine-worker:latest
     volumes:
       - ./worker/app:/app/app
       - ./shared:/app/shared
