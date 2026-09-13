@@ -23,7 +23,7 @@ from shared.utils.datetime import utc_now
 pytestmark = pytest.mark.grammar
 
 
-async def _estate(estate, now):
+async def _seed(estate, now):
     old = now - timedelta(days=7)
     await estate.scan("example.com", "first", at=old)
     await estate.hosts("first", ["www.example.com"], at=old)
@@ -49,6 +49,7 @@ async def _estate(estate, now):
         "run", [("10.0.0.1", 443, "https"), ("10.0.0.2", 22, "ssh")], at=now
     )
     await estate.vulns("run", [("CVE-2021-1", "high")], at=now)
+    await estate.session.commit()
 
 
 async def _export_rows(estate, dimension: str, filters: dict) -> int:
@@ -83,9 +84,10 @@ async def _export_rows(estate, dimension: str, filters: dict) -> int:
     ],
 )
 async def test_an_export_writes_the_rows_the_table_shows(
-    estate, now, dimension, filters
+    durable_estate, now, dimension, filters
 ):
-    await _estate(estate, now)
+    estate = durable_estate
+    await _seed(estate, now)
     scope = QueryScope((estate.scans["run"],), project_id=estate.project_id)
 
     if dimension == SurfaceDimension.WEB_ASSETS.value:
@@ -110,7 +112,8 @@ async def test_an_export_writes_the_rows_the_table_shows(
     assert await _export_rows(estate, dimension, filters) == page.total
 
 
-async def test_a_filter_that_matches_nothing_exports_nothing(estate, now):
-    await _estate(estate, now)
+async def test_a_filter_that_matches_nothing_exports_nothing(durable_estate, now):
+    estate = durable_estate
+    await _seed(estate, now)
 
     assert await _export_rows(estate, "web_assets", {"q": "status:418"}) == 0

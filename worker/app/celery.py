@@ -91,6 +91,7 @@ celery_app.conf.task_routes = {
     "app.tasks.vuln_templates.*": {"queue": "default"},
     "app.tasks.endpoints.*": {"queue": "default"},
     "app.tasks.reports.*": {"queue": "default"},
+    "app.tasks.export.*": {"queue": "default"},
     "app.tasks.interest.*": {"queue": "default"},
     "app.tasks.threat_intel.*": {"queue": "default"},
     "app.tasks.freshness.*": {"queue": "default"},
@@ -115,6 +116,7 @@ celery_app.autodiscover_tasks(
         "app.tasks.freshness",
         "app.tasks.endpoints",
         "app.tasks.reports",
+        "app.tasks.export",
         "app.tasks.interest",
         "app.tasks.notifications",
         "app.tasks.threat_intel",
@@ -134,6 +136,8 @@ STALL_REAP_SECONDS = 300.0
 IP_RANGE_REFRESH_SECONDS = 7 * 24 * 60 * 60.0
 TEMPLATE_SYNC_SECONDS = 24 * 60 * 60.0
 REPORT_CLEANUP_SECONDS = 24 * 60 * 60.0
+EXPORT_CLEANUP_SECONDS = 24 * 60 * 60.0
+EXPORT_REAP_SECONDS = 10 * 60.0
 NOTIFICATION_CLEANUP_SECONDS = 6 * 60 * 60.0
 RETENTION_SECONDS = 24 * 60 * 60.0
 THREAT_INTEL_REFRESH_SECONDS = 24 * 60 * 60.0
@@ -175,6 +179,14 @@ celery_app.conf.beat_schedule = {
     "report-cleanup": {
         "task": "app.tasks.reports.cleanup",
         "schedule": REPORT_CLEANUP_SECONDS,
+    },
+    "export-cleanup": {
+        "task": "app.tasks.export.cleanup",
+        "schedule": EXPORT_CLEANUP_SECONDS,
+    },
+    "export-reap": {
+        "task": "app.tasks.export.reap",
+        "schedule": EXPORT_REAP_SECONDS,
     },
     "notification-cleanup": {
         "task": "app.tasks.notifications.cleanup",

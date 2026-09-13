@@ -73,6 +73,7 @@ services:
       - vuln_templates:/app/vuln-templates
       - wordlists:/app/wordlists
       - reports_out:/app/reports-out
+      - exports_out:/app/exports-out
       - report_fonts:/app/report-fonts
       - /app/shared/build
       - /app/shared/rengine_shared.egg-info
@@ -109,6 +110,7 @@ services:
       - vuln_templates:/app/vuln-templates
       - wordlists:/app/wordlists
       - reports_out:/app/reports-out
+      - exports_out:/app/exports-out
       - report_fonts:/app/report-fonts
       - /app/shared/build
       - /app/shared/rengine_shared.egg-info
@@ -156,6 +158,7 @@ services:
       - vuln_templates:/app/vuln-templates
       - wordlists:/app/wordlists
       - reports_out:/app/reports-out
+      - exports_out:/app/exports-out
       - report_fonts:/app/report-fonts
       - /app/shared/build
       - /app/shared/rengine_shared.egg-info
@@ -220,6 +223,7 @@ services:
       - vuln_templates:/app/vuln-templates
       - wordlists:/app/wordlists
       - reports_out:/app/reports-out
+      - exports_out:/app/exports-out
       - report_fonts:/app/report-fonts
       - /app/shared/build
       - /app/shared/rengine_shared.egg-info
@@ -261,5 +265,6 @@ volumes:
   celery_beat_data:
   vuln_templates:
   wordlists:
+  exports_out:
   reports_out:
   report_fonts:

@@ -139,6 +139,18 @@ def dispatch_report(report_id: str) -> bool:
     return True
 
 
+def dispatch_export(export_id: str) -> bool:
+    """Queue an export run."""
+    try:
+        get_celery_client().send_task(
+            "app.tasks.export.run", args=[export_id], queue="default"
+        )
+    except Exception:
+        logger.warning("export dispatch failed", exc_info=True)
+        return False
+    return True
+
+
 def dispatch_interest_evaluation(
     scan_id: str, *, include_ai: bool = True, notify: bool = True
 ) -> None:

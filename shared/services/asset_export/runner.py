@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from sqlalchemy import func, select, text
 
@@ -40,10 +41,17 @@ class ExportResult:
     bytes_written: int
 
 
-def _rows(session: Session, statement, chunk: int) -> Iterator[Any]:
-    """Stream the statement, so memory stays flat however many rows match."""
-    result = session.execute(statement.execution_options(yield_per=chunk))
-    yield from result.mappings()
+@contextmanager
+def _stream(session: Session, statement, chunk: int):
+    """A cursor of its own: a commit or a join on the session would invalidate it."""
+    connection = session.get_bind().connect()
+    try:
+        connection.execute(text(EXPORT_TIMEOUT))
+        connection.execute(text(NO_JIT))
+        result = connection.execute(statement.execution_options(yield_per=chunk))
+        yield result.mappings()
+    finally:
+        connection.close()
 
 
 def _ip_of(dimension: str, row: dict) -> list[str]:
@@ -104,22 +112,23 @@ def run(
     headers = cols.headers(dimension)
 
     def stream() -> Iterator[dict]:
-        chunk: list[dict] = []
-        seen = 0
-        for row in _rows(session, statement, EXPORT_CHUNK):
-            chunk.append(cols.project(row, headers))
-            if len(chunk) < EXPORT_CHUNK:
-                continue
-            _fill_joined(session, scope, dimension, chunk)
-            yield from chunk
-            seen += len(chunk)
-            chunk = []
-            if on_progress:
-                share = min(90, 10 + int(80 * seen / max(total, 1)))
-                on_progress(share, f"Wrote {seen} rows")
-        if chunk:
-            _fill_joined(session, scope, dimension, chunk)
-            yield from chunk
+        with _stream(session, statement, EXPORT_CHUNK) as rows:
+            chunk: list[dict] = []
+            seen = 0
+            for row in rows:
+                chunk.append(cols.project(row, headers))
+                if len(chunk) < EXPORT_CHUNK:
+                    continue
+                _fill_joined(session, scope, dimension, chunk)
+                yield from chunk
+                seen += len(chunk)
+                chunk = []
+                if on_progress:
+                    share = min(90, 10 + int(80 * seen / max(total, 1)))
+                    on_progress(share, f"Wrote {seen} rows")
+            if chunk:
+                _fill_joined(session, scope, dimension, chunk)
+                yield from chunk
 
     if export_format == ExportFormat.TXT.value:
         written = writer.write_txt(

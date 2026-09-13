@@ -12,6 +12,7 @@ from app.api.v1 import (
     dashboard,
     endpoints,
     events,
+    exports,
     http_assets,
     instance_settings,
     interest,
@@ -84,6 +85,7 @@ router.include_router(interest.router)
 router.include_router(bounty_programs.router)
 router.include_router(wordlists.router)
 router.include_router(media.router)
+router.include_router(exports.router)
 router.include_router(reports.router)
 router.include_router(software.router)
 router.include_router(cves.router)
