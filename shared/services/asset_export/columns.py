@@ -53,6 +53,11 @@ JOINED: dict[str, frozenset[str]] = {
     SurfaceDimension.VULNERABILITIES.value: frozenset(),
 }
 
+# the stored proof a scanner captured, written only when the export asks for it
+EVIDENCE: dict[str, tuple[str, ...]] = {
+    SurfaceDimension.VULNERABILITIES.value: ("curl_command", "request", "response"),
+}
+
 _MODELS = {
     SurfaceDimension.WEB_ASSETS.value: Subdomain,
     SurfaceDimension.ENDPOINTS.value: Endpoint,
@@ -73,23 +78,36 @@ def _expressions(
     return {}
 
 
-def headers(dimension: str) -> list[str]:
+def headers(dimension: str, *, evidence: bool = False) -> list[str]:
     """The export's columns, in the order a person reads them."""
     skip = UNAVAILABLE.get(dimension, frozenset())
-    return [name for name in SURFACE_COLUMNS[dimension] if name not in skip]
+    names = [name for name in SURFACE_COLUMNS[dimension] if name not in skip]
+    if evidence:
+        names.extend(EVIDENCE.get(dimension, ()))
+    return names
+
+
+def offers_evidence(dimension: str) -> bool:
+    return bool(EVIDENCE.get(dimension))
 
 
 def source_key(dimension: str, header: str) -> str:
     return RENAMED.get(dimension, {}).get(header, header)
 
 
-def selectables(dimension: str, scope: QueryScope, source: Any = None) -> list[Any]:
+def selectables(
+    dimension: str,
+    scope: QueryScope,
+    source: Any = None,
+    *,
+    evidence: bool = False,
+) -> list[Any]:
     """Exactly the columns the file needs, so no row carries a body it will not write."""
     joined = JOINED.get(dimension, frozenset())
     computed = _expressions(dimension, scope, source)
     model = _MODELS.get(dimension)
     picked: list[Any] = []
-    for name in headers(dimension):
+    for name in headers(dimension, evidence=evidence):
         if name in joined:
             continue
         if name in computed:
@@ -101,11 +119,11 @@ def selectables(dimension: str, scope: QueryScope, source: Any = None) -> list[A
     return picked
 
 
-def columns_for(dimension: str, scope: QueryScope):
+def columns_for(dimension: str, scope: QueryScope, *, evidence: bool = False):
     """The CTE dimensions only know their columns once built, so they come as a callable."""
     if dimension in _MODELS:
-        return selectables(dimension, scope)
-    return lambda d: selectables(dimension, scope, d)
+        return selectables(dimension, scope, evidence=evidence)
+    return lambda d: selectables(dimension, scope, d, evidence=evidence)
 
 
 def text_values(dimension: str, row: dict) -> str:

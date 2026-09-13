@@ -87,12 +87,17 @@ def run(
     export_format: str,
     path: Path,
     project_id: UUID | None = None,
+    include_evidence: bool = False,
     on_progress: Callable[[int, str], None] | None = None,
 ) -> ExportResult:
     query = for_dimension(dimension)
     f = query.filter_model.model_validate(filters or {})
     built = query.filtered(
-        scope, f, now, project_id=project_id, columns=cols.columns_for(dimension, scope)
+        scope,
+        f,
+        now,
+        project_id=project_id,
+        columns=cols.columns_for(dimension, scope, evidence=include_evidence),
     )
 
     session.execute(text(EXPORT_TIMEOUT))
@@ -109,7 +114,7 @@ def run(
         on_progress(10, f"Reading {min(total, MAX_EXPORT_ROWS)} rows")
 
     statement = query.order(built, f, scope).limit(MAX_EXPORT_ROWS)
-    headers = cols.headers(dimension)
+    headers = cols.headers(dimension, evidence=include_evidence)
 
     def stream() -> Iterator[dict]:
         with _stream(session, statement, EXPORT_CHUNK) as rows:

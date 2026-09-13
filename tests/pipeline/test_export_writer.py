@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-from shared.services.asset_export import writer
+from shared.services.asset_export import columns, writer
 
 pytestmark = pytest.mark.pipeline
 
@@ -95,3 +95,20 @@ def test_a_negative_number_stays_a_number():
 
 def test_a_status_code_is_not_quoted():
     assert writer.cell(200) == "200"
+
+
+def test_evidence_columns_are_absent_until_asked_for():
+    plain = columns.headers("vulnerabilities")
+    with_evidence = columns.headers("vulnerabilities", evidence=True)
+
+    assert "request" not in plain
+    assert "response" not in plain
+    assert with_evidence[: len(plain)] == plain
+    assert with_evidence[len(plain) :] == ["curl_command", "request", "response"]
+
+
+def test_only_findings_offer_evidence():
+    assert columns.offers_evidence("vulnerabilities") is True
+    for dimension in ("web_assets", "endpoints", "services", "ips"):
+        assert columns.offers_evidence(dimension) is False
+        assert columns.headers(dimension, evidence=True) == columns.headers(dimension)

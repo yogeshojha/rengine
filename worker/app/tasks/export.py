@@ -90,6 +90,7 @@ def run_export(self, export_id: str) -> None:
                 export_format=row.export_format,
                 path=path,
                 project_id=row.project_id,
+                include_evidence=row.include_evidence,
                 on_progress=progress,
             )
             filename = path.name

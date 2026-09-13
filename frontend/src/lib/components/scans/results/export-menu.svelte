@@ -30,6 +30,10 @@
 
 	let sheetOpen = $state(false);
 	let pending = $state(false);
+	let withEvidence = $state(false);
+
+	// only findings carry a stored request and response
+	let offersEvidence = $derived(dimension === 'vulnerabilities');
 
 	let live = $derived(exportsStore.rows.some((row) => isLive(row.status)));
 
@@ -54,6 +58,7 @@
 				scan_id: scanId || null,
 				target_id: targetId || null,
 				export_format: format,
+				include_evidence: offersEvidence && withEvidence,
 				filters: {
 					...filters,
 					limit: undefined,
@@ -100,6 +105,19 @@
 				{FORMAT_LABELS[format]}
 			</DropdownMenu.Item>
 		{/each}
+		{#if offersEvidence}
+			<DropdownMenu.Separator />
+			<DropdownMenu.CheckboxItem
+				checked={withEvidence}
+				onCheckedChange={(value) => (withEvidence = value)}
+				closeOnSelect={false}
+			>
+				Include request and response
+			</DropdownMenu.CheckboxItem>
+			<p class="px-2 pb-1 text-2xs text-muted-foreground">
+				Adds the stored request and response. Scan headers are masked; response bodies are not.
+			</p>
+		{/if}
 		<DropdownMenu.Separator />
 		<DropdownMenu.Item onclick={openHistory}>
 			<History class="size-3.5" />
