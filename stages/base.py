@@ -124,6 +124,11 @@ class Stage(ABC):
         if self.ctx.is_aborted is not None and self.ctx.is_aborted():
             raise StageAbortedError
 
+    def follow_redirects(self, default: bool) -> bool:
+        """The scan context's answer when it gave one, the stage's otherwise."""
+        override = self.ctx.resolved.follow_redirects
+        return default if override is None else override
+
     def net_options(self) -> NetOptions:
         """Proxy, headers and probe scheme from the resolved scan config."""
         return NetOptions(

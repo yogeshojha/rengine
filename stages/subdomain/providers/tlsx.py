@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from shared.enums.subdomain import SubdomainSource
-from shared.services.proxy_resolve import proxy_env
+from shared.services.proxy_resolve import is_socks5
 from stages.subdomain.providers.base import SubdomainProvider
 from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError
 
@@ -13,18 +13,29 @@ class TlsxProvider(SubdomainProvider):
     source = SubdomainSource.TLSX
     binary = "tlsx"
 
+    def availability(self) -> tuple[bool, str | None]:
+        ok, reason = super().availability()
+        if ok and self.ctx.proxy_url and not is_socks5(self.ctx.proxy_url):
+            return (
+                False,
+                "tlsx takes a socks5 proxy. This scan's proxy cannot carry it.",
+            )
+        return ok, reason
+
     def discover(self) -> set[str]:
         runner = CLIToolRunner(self.binary, default_timeout=self.ctx.timeout)
+        args = ["-san", "-resp-only"]
+        if self.ctx.proxy_url:
+            args += ["-proxy", self.ctx.proxy_url]
         try:
             result = runner.run(
-                args=["-san", "-resp-only"],
+                args=args,
                 input_data=[self.ctx.domain],
                 input_flag="-l",
                 output_format=OutputFormat.PLAIN,
                 silent=True,
                 silent_flag="-silent",
                 timeout=self.ctx.timeout,
-                env=proxy_env(self.ctx.proxy_url),
                 recorder=self.ctx.recorder,
                 tool=self.tool,
                 extra_args=self.extra_args,

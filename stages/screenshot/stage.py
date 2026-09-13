@@ -60,6 +60,7 @@ class ScreenshotStage(Stage):
         store_dir = str(Path(_MEDIA_ROOT) / str(self.ctx.scan_id))
         try:
             client = HttpxClient(
+                rate_limit=cfg.rate,
                 threads=cfg.threads,
                 timeout=cfg.timeout,
                 proxy_url=net.proxy_url,

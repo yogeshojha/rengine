@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import pytest
 
 from shared.enums.target import TargetType
-from shared.services.scan_resolve import ResolvedScanConfig
+from shared.services.scan_resolve import ResolvedScanConfig, resolve_headers
 from stages.registry import execution_plan, stage_by_name
 from stages.session_check.stage import SessionCheckStage, _Answer
 
@@ -183,3 +183,23 @@ def test_it_declares_that_it_may_not_be_deferred():
 
 def test_a_stage_may_be_deferred_by_default():
     assert stage_by_name()["waf_detect"].deferrable is True
+
+
+@pytest.mark.parametrize(
+    "auth_type", ["basic", "bearer", "header", "cookie", "api_key"]
+)
+def test_an_auth_type_with_nothing_filled_in_sends_no_credential(auth_type: str):
+    assert resolve_headers({"auth_type": auth_type}) == {}
+
+
+@pytest.mark.parametrize(
+    ("auth", "expected"),
+    [
+        ({"basic_username": "u"}, "Basic dTo="),
+        ({"basic_password": "p"}, "Basic OnA="),
+        ({"basic_username": "u", "basic_password": "p"}, "Basic dTpw"),
+    ],
+)
+def test_basic_auth_is_sent_as_soon_as_either_half_is_given(auth: dict, expected: str):
+    headers = resolve_headers({"auth_type": "basic", **auth})
+    assert headers == {"Authorization": expected}

@@ -4,8 +4,10 @@ from types import SimpleNamespace
 
 import pytest
 
+import tools.ffuf.client as ffuf_client
 import tools.httpx.client as httpx_client
 from shared.models.scan_context import HTTP_PROTOCOLS, PROBE_SCHEME
+from shared.services.proxy_resolve import is_socks5
 from stages.base import Stage
 
 pytestmark = pytest.mark.pipeline
@@ -59,3 +61,69 @@ def test_a_target_that_already_names_a_scheme_is_left_alone(client):
 @pytest.mark.parametrize("scheme", ["https", "http"])
 def test_a_restricted_run_stops_httpx_retrying_the_other_scheme(client, scheme: str):
     assert "-no-fallback-scheme" in client(probe_scheme=scheme)._capture_args()
+
+
+@pytest.fixture
+def ffuf(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(ffuf_client, "CLIToolRunner", lambda *a, **k: None)  # noqa: ARG005
+    return ffuf_client.FfufClient
+
+
+def _vhost_url(client) -> str:
+    args = []
+
+    def _run(**kwargs):
+        args.extend(kwargs["args"])
+        return SimpleNamespace(stdout="")
+
+    client._runner = SimpleNamespace(run=_run)
+    client.vhost("10.0.0.1", "example.com")
+    return args[args.index("-u") + 1]
+
+
+def test_a_vhost_sweep_defaults_to_http(ffuf):
+    assert _vhost_url(ffuf(wordlist="w.txt")) == "http://10.0.0.1/"
+
+
+@pytest.mark.parametrize("scheme", ["https", "http"])
+def test_a_vhost_sweep_follows_the_run_restriction(ffuf, scheme: str):
+    probe = ffuf(wordlist="w.txt", probe_scheme=scheme)
+    assert _vhost_url(probe) == f"{scheme}://10.0.0.1/"
+
+
+def _stage(follow_redirects: bool | None, proxy_url: str | None = None):
+    resolved = SimpleNamespace(
+        proxy_url=proxy_url,
+        headers={},
+        http_protocol="both",
+        follow_redirects=follow_redirects,
+    )
+    return SimpleNamespace(ctx=SimpleNamespace(resolved=resolved))
+
+
+@pytest.mark.parametrize("stage_default", [True, False])
+def test_no_override_leaves_the_stage_setting_alone(stage_default: bool):
+    assert Stage.follow_redirects(_stage(None), stage_default) is stage_default
+
+
+@pytest.mark.parametrize(("override", "stage_default"), [(True, False), (False, True)])
+def test_the_context_override_beats_the_stage_setting(
+    override: bool, stage_default: bool
+):
+    assert Stage.follow_redirects(_stage(override), stage_default) is override
+
+
+@pytest.mark.parametrize(
+    ("proxy_url", "usable"),
+    [
+        ("socks5://10.0.0.1:1080", True),
+        ("socks5h://u:p@10.0.0.1:1080", True),
+        ("http://10.0.0.1:8080", False),
+        ("https://10.0.0.1:8443", False),
+        (None, False),
+    ],
+)
+def test_a_socks5_only_tool_knows_which_proxies_it_can_carry(
+    proxy_url: str | None, usable: bool
+):
+    assert is_socks5(proxy_url) is usable

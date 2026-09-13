@@ -181,8 +181,9 @@ def resolve_headers(ctx_or_auth, extra_headers: list | None = None) -> dict[str,
     elif auth_type == "basic":
         user = _get("basic_username") or ""
         password = _get("basic_password") or ""
-        raw = f"{user}:{password}".encode()
-        headers["Authorization"] = "Basic " + base64.b64encode(raw).decode()
+        if user or password:
+            raw = f"{user}:{password}".encode()
+            headers["Authorization"] = "Basic " + base64.b64encode(raw).decode()
     elif auth_type == "header":
         name = _get("header_name")
         value = _get("header_value")

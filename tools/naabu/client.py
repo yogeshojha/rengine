@@ -13,7 +13,7 @@ from shared.definitions.ports import (
     profile_ports,
 )
 from shared.logging import get_logger
-from shared.services.proxy_resolve import proxy_env
+from shared.services.proxy_resolve import is_socks5, proxy_env
 from tools.runner import (
     CLIToolRunner,
     OutputFormat,
@@ -30,7 +30,6 @@ DEFAULT_TIMEOUT = 3600
 SCAN_TYPES = {"connect": "c", "syn": "s"}
 
 # naabu takes a socks5 address only, and its credentials in their own flag
-SOCKS_SCHEMES = frozenset({"socks5", "socks5h"})
 
 
 class NaabuError(Exception):
@@ -43,7 +42,7 @@ def proxy_args(proxy_url: str | None) -> tuple[list[str], str | None]:
         return [], None
     parts = urlsplit(proxy_url if "://" in proxy_url else f"socks5://{proxy_url}")
     scheme = (parts.scheme or "").lower()
-    if scheme not in SOCKS_SCHEMES:
+    if not is_socks5(proxy_url):
         return [], (
             f"naabu takes a socks5 proxy. The scan's {scheme} proxy did not carry "
             "the port scan."

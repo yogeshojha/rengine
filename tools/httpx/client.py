@@ -142,6 +142,8 @@ class HttpxClient:
             args += ["-store-response-dir", self.store_dir]
         if self.follow_redirects:
             args.append("-follow-redirects")
+        if self.rate_limit:
+            args += ["-rate-limit", str(self.rate_limit)]
         args += ["-threads", str(self.threads), "-timeout", str(max(self.timeout, 20))]
         if self.proxy_url:
             args += ["-proxy", self.proxy_url]

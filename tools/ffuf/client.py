@@ -21,6 +21,9 @@ DEFAULT_TIMEOUT = 1800
 
 # ffuf takes -H only
 HEADER_FLAG = "-H"
+
+# a vhost sweep names one scheme; the run restricts it when it names one
+DEFAULT_VHOST_SCHEME = "http"
 DEFAULT_MATCH_CODES = "200,204,301,302,307,401,403,405,500"
 DEFAULT_REQUEST_TIMEOUT = 8
 _BUDGET_SLACK = 60
@@ -41,6 +44,7 @@ class FfufClient:
         request_timeout: int = DEFAULT_REQUEST_TIMEOUT,
         proxy_url: str | None = None,
         headers: dict[str, str] | None = None,
+        probe_scheme: str | None = None,
         recorder=None,
         extra_args: list[str] | None = None,
     ) -> None:
@@ -51,6 +55,7 @@ class FfufClient:
         self.request_timeout = request_timeout
         self.proxy_url = proxy_url
         self.headers = headers or {}
+        self.probe_scheme = probe_scheme
         self.recorder = recorder
         self.extra_args = extra_args or []
 
@@ -105,8 +110,9 @@ class FfufClient:
         ) as stream:
             yield stream
 
-    def vhost(self, ip: str, base_host: str, scheme: str = "http") -> list[str]:
+    def vhost(self, ip: str, base_host: str) -> list[str]:
         """Bruteforce `Host: FUZZ.<base_host>` against an IP."""
+        scheme = self.probe_scheme or DEFAULT_VHOST_SCHEME
         args = [
             "-w",
             f"{self.wordlist}:FUZZ",
