@@ -21,11 +21,14 @@ from sqlalchemy.orm import Session
 
 from shared.definitions.vulnerabilities import (
     CUSTOM_ROOT,
+    DAST_ROOT,
+    EXCLUDED_TAGS,
     FORBIDDEN_TEMPLATE_KEYS,
     MAX_TEMPLATE_BYTES,
     OFFICIAL_ROOT,
     TEMPLATE_SET_BY_KEY,
     TEMPLATE_SETS,
+    WEAK_MATCHER_PATHS,
     Protocol,
     Severity,
     TemplateOrigin,
@@ -62,6 +65,8 @@ _PROTOCOL_KEYS: tuple[tuple[str, str], ...] = (
 )
 
 _SKIP_DIRS = frozenset({".github", ".git", "helpers", "profiles", "workflows"})
+_PAYLOAD_DIR = "helpers"
+_EXTRACT_SKIP_DIRS = _SKIP_DIRS - {_PAYLOAD_DIR}
 _clean = strip_control
 
 
@@ -292,12 +297,15 @@ def _extract(archive: Path, destination: Path) -> int:
     total = 0
     with zipfile.ZipFile(archive) as bundle:
         for entry in bundle.infolist():
-            if entry.is_dir() or not entry.filename.lower().endswith((".yaml", ".yml")):
+            if entry.is_dir():
                 continue
             parts = Path(entry.filename).parts[1:]
-            if not parts or any(
-                p in _SKIP_DIRS or p.startswith(".") for p in parts[:-1]
-            ):
+            if not parts:
+                continue
+            payload = parts[0] == _PAYLOAD_DIR
+            if not payload and not entry.filename.lower().endswith((".yaml", ".yml")):
+                continue
+            if any(p in _EXTRACT_SKIP_DIRS or p.startswith(".") for p in parts[:-1]):
                 continue
             total += entry.file_size
             if total > MAX_EXTRACTED_BYTES:
@@ -309,7 +317,7 @@ def _extract(archive: Path, destination: Path) -> int:
             target.parent.mkdir(parents=True, exist_ok=True)
             with bundle.open(entry) as source, target.open("wb") as handle:
                 shutil.copyfileobj(source, handle)
-            written += 1
+            written += 0 if payload else 1
     if not written:
         msg = "Template archive held no checks."
         raise ValueError(msg)
@@ -427,6 +435,11 @@ def selection_predicate(selection: TemplateSelection, *, official_only: bool = T
     if not selection.headless:
         clauses.append(VulnTemplate.protocol != Protocol.HEADLESS.value)
     clauses.append(VulnTemplate.protocol != Protocol.FILE.value)
+    clauses.append(~VulnTemplate.path.startswith(DAST_ROOT))
+    clauses.append(VulnTemplate.path.notin_(sorted(WEAK_MATCHER_PATHS)))
+    weak_tags = _tags_overlap(sorted(EXCLUDED_TAGS))
+    if weak_tags is not None:
+        clauses.append(~weak_tags)
     return and_(*clauses)
 
 

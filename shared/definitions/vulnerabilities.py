@@ -334,6 +334,33 @@ def reject_unknown(values: list[str], known, axis: str) -> list[str]:
 
 FORBIDDEN_TEMPLATE_KEYS: frozenset[str] = frozenset({"code"})
 
+# ---------- what nuclei will not run ----------
+
+DAST_ROOT = "dast/"
+
+# .nuclei-ignore
+EXCLUDED_TAGS: frozenset[str] = frozenset(
+    {"dos", "local", "fuzz", "bruteforce", "txt-service"}
+)
+WEAK_MATCHER_PATHS: frozenset[str] = frozenset(
+    {
+        "http/cves/2019/CVE-2019-14696.yaml",
+        "http/cves/2021/CVE-2021-28164.yaml",
+        "http/fuzzing/wordpress-themes-detect.yaml",
+        "http/fuzzing/mdb-database-file.yaml",
+        "http/fuzzing/iis-shortname.yaml",
+        "dns/soa-detect.yaml",
+        "javascript/enumeration/pop3/pop3-capabilities-enum.yaml",
+        "javascript/enumeration/redis/redis-require-auth.yaml",
+        "dast/vulnerabilities/sqli/time-based-sqli.yaml",
+        "javascript/enumeration/minecraft-enum.yaml",
+        "http/miscellaneous/crypto-address-detect.yaml",
+        "http/vulnerabilities/wp-functions-php-disclosure.yaml",
+        "dns/acme-challenge-detect.yaml",
+        "aaaa-fingerprint.yaml",
+    }
+)
+
 KEV_TAG = "kev"
 
 EPSS_HIGH = 0.5

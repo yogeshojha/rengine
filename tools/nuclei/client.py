@@ -31,6 +31,10 @@ _EVICTION_SLACK = 120
 _DROPPED = re.compile(
     r"Skipped\s+(?P<host>\S+)\s+from target list as found unresponsive.*?:\s*(?P<reason>.*)$"
 )
+_HONEYPOT = re.compile(
+    r"honeypot\s+detected[^:]*:\s*(?P<host>\S+).*?matched\s+(?P<count>\d+)",
+    re.IGNORECASE,
+)
 MAX_DROPPED = 500
 _ANSI = re.compile(r"\x1b\[[0-9;]*m")
 IDLE_SECONDS = 2.0
@@ -49,6 +53,24 @@ def _offer(inbox: queue.Queue, item: object, stop: threading.Event) -> None:
 
 class NucleiError(Exception):
     """Raised when nuclei cannot be started."""
+
+
+def _drop_record(line: str) -> dict | None:
+    """A host whose findings this run does not carry."""
+    honeypot = _HONEYPOT.search(line)
+    if honeypot is not None:
+        count = honeypot.group("count")
+        return {
+            "host": honeypot.group("host").rstrip(":"),
+            "reason": f"flagged as a honeypot, matching {count} distinct checks. Findings suppressed.",
+        }
+    dropped = _DROPPED.search(line)
+    if dropped is None:
+        return None
+    return {
+        "host": dropped.group("host"),
+        "reason": dropped.group("reason").strip()[:200],
+    }
 
 
 def _paced(
@@ -292,16 +314,13 @@ class NucleiClient:
                 if on_progress is not None:
                     on_progress(stats)
                 return
-            match = _DROPPED.search(clean)
-            if match is None or len(dropped) >= MAX_DROPPED:
+            if len(dropped) >= MAX_DROPPED:
                 return
-            host = match.group("host")
-            if host in seen_drops:
+            record = _drop_record(clean)
+            if record is None or record["host"] in seen_drops:
                 return
-            seen_drops.add(host)
-            dropped.append(
-                {"host": host, "reason": match.group("reason").strip()[:200]}
-            )
+            seen_drops.add(record["host"])
+            dropped.append(record)
 
         started = time.monotonic()
         run.started = True
