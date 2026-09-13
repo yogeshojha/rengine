@@ -9,10 +9,12 @@ from sqlalchemy.exc import DBAPIError
 
 from app.api.router import router as api_router
 from app.config import settings
+from app.core.crypto import SecretDecryptionError
 from app.core.database import check_capacity
 from app.core.db_errors import data_exception_handler
 from app.core.redis_sse_bridge import RedisSSEBridge
 from app.core.sanitize import RejectNulMiddleware
+from app.core.secret_errors import secret_decryption_handler
 from app.core.throttle import GlobalRateLimitMiddleware
 from app.core.validation_errors import validation_error_handler
 from app.utils.helpers import create_initial_admin
@@ -78,6 +80,7 @@ if "*" in settings.CORS_ORIGINS:
     raise ValueError(msg)
 
 app.add_exception_handler(DBAPIError, data_exception_handler)
+app.add_exception_handler(SecretDecryptionError, secret_decryption_handler)
 app.add_exception_handler(RequestValidationError, validation_error_handler)
 
 app.add_middleware(GlobalRateLimitMiddleware)

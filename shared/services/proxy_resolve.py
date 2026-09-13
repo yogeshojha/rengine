@@ -1,11 +1,11 @@
 import json
 
 from shared.models.proxy import Proxy, ProxyEndpoint
-from shared.utils.crypto import try_decrypt
+from shared.utils.crypto import decrypt_stored
 
 
 def load_proxy_endpoints(proxy: Proxy) -> list[ProxyEndpoint]:
-    raw = try_decrypt(proxy.endpoints_encrypted)
+    raw = decrypt_stored(proxy.endpoints_encrypted or "", label=f"Proxy {proxy.name!r}")
     if not raw:
         return []
     return [ProxyEndpoint(**e) for e in json.loads(raw)]

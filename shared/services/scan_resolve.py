@@ -113,12 +113,15 @@ def seal_headers(headers: dict[str, str] | None) -> dict[str, str]:
 
 def unseal_headers(headers: dict[str, str] | None) -> dict[str, str]:
     """Decrypt sealed header values."""
-    from shared.utils.crypto import try_decrypt  # noqa: PLC0415
+    from shared.utils.crypto import decrypt_stored  # noqa: PLC0415
 
     out: dict[str, str] = {}
     for name, value in (headers or {}).items():
-        plain = try_decrypt(value) if value else ""
-        out[name] = plain if plain is not None else value
+        out[name] = (
+            decrypt_stored(value, label=f"The {name} header on this run")
+            if value
+            else ""
+        )
     return out
 
 
