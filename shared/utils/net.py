@@ -57,3 +57,9 @@ def cert_covers(
         ):
             return True
     return False
+
+
+def host_port(host: str, port: int | str) -> str:
+    """An authority a tool can parse, with an IPv6 literal in brackets."""
+    literal = f"[{host}]" if ":" in host and not host.startswith("[") else host
+    return f"{literal}:{port}"

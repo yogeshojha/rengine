@@ -11,6 +11,17 @@ def load_proxy_endpoints(proxy: Proxy) -> list[ProxyEndpoint]:
     return [ProxyEndpoint(**e) for e in json.loads(raw)]
 
 
+def proxy_env(proxy_url: str | None) -> dict[str, str] | None:
+    """Proxy env vars honoured by Go HTTP clients that take no proxy flag."""
+    if not proxy_url:
+        return None
+    return {
+        "HTTP_PROXY": proxy_url,
+        "HTTPS_PROXY": proxy_url,
+        "ALL_PROXY": proxy_url,
+    }
+
+
 def build_proxy_url(ep: ProxyEndpoint) -> str:
     if ep.username:
         cred = f"{ep.username}:{ep.password}@" if ep.password else f"{ep.username}@"

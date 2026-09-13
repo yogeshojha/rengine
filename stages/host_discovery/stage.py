@@ -70,4 +70,7 @@ class HostDiscoveryStage(Stage):
                 alive += 1
         self.session.commit()
         self.emit_progress(f"{alive}/{len(rows)} hosts alive")
-        return StageResult(counts={"alive": alive})
+        warnings = [client.proxy_warning] if client.proxy_warning else []
+        return StageResult(
+            counts={"alive": alive}, warnings=warnings, partial=bool(warnings)
+        )

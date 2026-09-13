@@ -41,6 +41,7 @@ class WafDetectStage(Stage):
         try:
             client = Wafw00fClient(
                 proxy_url=net.proxy_url,
+                headers=net.headers,
                 recorder=self.ctx.recorder,
                 extra_args=self.ctx.resolved.tool_args("wafw00f"),
             )

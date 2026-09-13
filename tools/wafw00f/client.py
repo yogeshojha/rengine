@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
+import os
 import re
+import tempfile
+from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from shared.logging import get_logger
 from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError
@@ -15,6 +20,9 @@ logger = get_logger(__name__)
 
 WAFW00F_BINARY = "wafw00f"
 DEFAULT_TIMEOUT = 600
+
+# wafw00f reads custom headers from a file, one `Name: Value` per line
+HEADER_FLAG = "-H"
 DEFAULT_CONCURRENCY = 6
 SHARD_SIZE = 25
 
@@ -51,11 +59,13 @@ class Wafw00fClient:
         self,
         *,
         proxy_url: str | None = None,
+        headers: dict[str, str] | None = None,
         concurrency: int = DEFAULT_CONCURRENCY,
         recorder: CommandRecorder | None = None,
         extra_args: list[str] | None = None,
     ) -> None:
         self.proxy_url = proxy_url
+        self.headers = headers or {}
         self.concurrency = max(1, concurrency)
         self.recorder = recorder
         self.extra_args = extra_args or []
@@ -73,11 +83,16 @@ class Wafw00fClient:
         if not urls:
             return scan
         shards = _shard(urls)
-        runs = (
-            [self._detect_one(shards[0])]
-            if len(shards) == 1
-            else _run_all(self._detect_one, shards, self.concurrency)
-        )
+        with self._header_file() as header_path:
+            runs = (
+                [self._detect_one(shards[0], header_path)]
+                if len(shards) == 1
+                else _run_all(
+                    lambda shard: self._detect_one(shard, header_path),
+                    shards,
+                    self.concurrency,
+                )
+            )
         for shard, (found, complete) in zip(shards, runs, strict=True):
             if complete:
                 scan.found.update(found)
@@ -86,8 +101,29 @@ class Wafw00fClient:
                 scan.unfinished += len(shard)
         return scan
 
-    def _detect_one(self, urls: list[str]) -> tuple[dict[str, str], bool]:
+    @contextlib.contextmanager
+    def _header_file(self) -> Iterator[str | None]:
+        """The scan's headers on disk, since wafw00f takes a path and not a value."""
+        if not self.headers:
+            yield None
+            return
+        descriptor, name = tempfile.mkstemp(prefix="wafw00f_headers_", suffix=".txt")
+        try:
+            with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+                handle.writelines(
+                    f"{header}: {value}\n" for header, value in self.headers.items()
+                )
+            yield name
+        finally:
+            with contextlib.suppress(OSError):
+                Path(name).unlink(missing_ok=True)
+
+    def _detect_one(
+        self, urls: list[str], header_path: str | None = None
+    ) -> tuple[dict[str, str], bool]:
         args = ["-f", "json", "-a", "-o", "/dev/stdout"]
+        if header_path:
+            args += [HEADER_FLAG, header_path]
         if self.proxy_url:
             args += ["-p", self.proxy_url]
 

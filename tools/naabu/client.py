@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 from collections.abc import Iterator
 from dataclasses import dataclass, field
+from urllib.parse import unquote, urlsplit
 
 from shared.definitions.ports import (
     MAX_PORT,
@@ -12,6 +13,7 @@ from shared.definitions.ports import (
     profile_ports,
 )
 from shared.logging import get_logger
+from shared.services.proxy_resolve import proxy_env
 from tools.runner import (
     CLIToolRunner,
     OutputFormat,
@@ -27,9 +29,34 @@ NAABU_BINARY = "naabu"
 DEFAULT_TIMEOUT = 3600
 SCAN_TYPES = {"connect": "c", "syn": "s"}
 
+# naabu takes a socks5 address only, and its credentials in their own flag
+SOCKS_SCHEMES = frozenset({"socks5", "socks5h"})
+
 
 class NaabuError(Exception):
     """Raised when naabu execution fails."""
+
+
+def proxy_args(proxy_url: str | None) -> tuple[list[str], str | None]:
+    """naabu's proxy flags, or the reason this proxy cannot be expressed."""
+    if not proxy_url:
+        return [], None
+    parts = urlsplit(proxy_url if "://" in proxy_url else f"socks5://{proxy_url}")
+    scheme = (parts.scheme or "").lower()
+    if scheme not in SOCKS_SCHEMES:
+        return [], (
+            f"naabu takes a socks5 proxy. The scan's {scheme} proxy did not carry "
+            "the port scan."
+        )
+    if not parts.hostname:
+        return [], "The scan's proxy names no host. The port scan did not use it."
+    address = f"{parts.hostname}:{parts.port}" if parts.port else parts.hostname
+    args = ["-proxy", address]
+    if parts.username:
+        user = unquote(parts.username)
+        password = unquote(parts.password or "")
+        args += ["-proxy-auth", f"{user}:{password}"]
+    return args, None
 
 
 def port_args(profile: str, custom: str = "") -> list[str]:
@@ -69,6 +96,7 @@ class NaabuClient:
     ) -> None:
         self.options = options or NaabuOptions()
         self.recorder = recorder
+        self._proxy_args, self.proxy_warning = proxy_args(self.options.proxy_url)
         try:
             self._runner = CLIToolRunner(NAABU_BINARY, default_timeout=DEFAULT_TIMEOUT)
         except ToolNotFoundError as e:
@@ -128,15 +156,15 @@ class NaabuClient:
             args += ["-port-threshold", str(opt.port_threshold)]
         if opt.exclude_ports.strip():
             args += ["-exclude-ports", opt.exclude_ports.strip()]
-        if opt.proxy_url:
-            args += ["-proxy", opt.proxy_url]
-        return args
+        return [*args, *self._proxy_args]
 
     def passive(self, ips: list[str]) -> list[dict]:
         """Ports already known to Shodan's internetdb."""
         if not ips:
             return []
-        return self._records(self._run(ips, ["-passive"]))
+        return self._records(
+            self._run(ips, ["-passive"], env=proxy_env(self.options.proxy_url))
+        )
 
     @staticmethod
     def _records(result: ToolResult) -> list[dict]:
@@ -146,9 +174,12 @@ class NaabuClient:
             rec for rec in map(_port_record, result.json_records) if rec is not None
         ]
 
-    def _run(self, ips: list[str], args: list[str]) -> ToolResult:
+    def _run(
+        self, ips: list[str], args: list[str], env: dict[str, str] | None = None
+    ) -> ToolResult:
         return self._runner.run(
             args=[*args, "-duc"],
+            env=env,
             input_data=ips,
             input_flag="-l",
             use_output_file=False,

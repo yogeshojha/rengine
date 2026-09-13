@@ -17,17 +17,6 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-def proxy_env(proxy_url: str | None) -> dict[str, str] | None:
-    """Proxy env vars honored by Go HTTP tools that lack a proxy flag."""
-    if not proxy_url:
-        return None
-    return {
-        "HTTP_PROXY": proxy_url,
-        "HTTPS_PROXY": proxy_url,
-        "ALL_PROXY": proxy_url,
-    }
-
-
 @dataclass
 class ProviderContext:
     domain: str

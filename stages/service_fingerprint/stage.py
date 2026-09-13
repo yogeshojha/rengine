@@ -50,6 +50,14 @@ class ServiceFingerprintStage(Stage):
             concurrency=cfg.threads,
             proxy_url=self.net_options().proxy_url,
         )
+        if client.proxy_warning:
+            self.emit_progress(client.proxy_warning)
+            return StageResult(
+                counts={"fingerprinted": 0, "probed": 0},
+                warnings=[client.proxy_warning],
+                partial=True,
+            )
+
         self.emit_progress(f"reading banners on {len(endpoints)} ports")
         results = client.probe_all(endpoints)
         self._check_abort()

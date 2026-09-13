@@ -146,13 +146,16 @@ class PortScanStage(Stage):
         if failures:
             raise RuntimeError("; ".join(failures))
         self.emit_progress(f"{count} open ports across {scanned} addresses")
+        warnings = [client.proxy_warning] if client.proxy_warning else []
         return StageResult(
             counts={
                 "open_ports": count,
                 "scanned": scanned,
                 "edge_only": len(edge),
                 "skipped": skipped,
-            }
+            },
+            warnings=warnings,
+            partial=bool(warnings),
         )
 
     def _batch(

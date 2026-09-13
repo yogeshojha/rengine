@@ -51,6 +51,7 @@ class PassivePortsStage(Stage):
         try:
             client = NaabuClient(
                 options=NaabuOptions(
+                    proxy_url=self.net_options().proxy_url,
                     extra_args=self.ctx.resolved.tool_args("naabu"),
                 ),
                 recorder=self.ctx.recorder,

@@ -7,9 +7,14 @@ import socket
 import ssl
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from urllib.parse import urlsplit
 
 from shared.logging import get_logger
+from tools.banner.proxy import (
+    SUPPORTED_SCHEMES,
+    ProxyError,
+    open_tunnel,
+    split_proxy,
+)
 from tools.banner.signatures import (
     GENERIC_PAYLOAD,
     PAYLOADS,
@@ -20,17 +25,21 @@ from tools.banner.signatures import (
 
 logger = get_logger(__name__)
 
-_SOCKS_VERSION = 5
-_SOCKS_NO_AUTH = 0
-_SOCKS_USERPASS = 2
-_SOCKS_CONNECT = 1
-_SOCKS_DOMAIN = 3
-_SOCKS_IPV4 = 1
-_SOCKS_IPV6 = 4
-
 
 class BannerError(Exception):
     """The prober could not be configured for the requested transport."""
+
+
+def unusable_proxy(proxy_url: str | None) -> str | None:
+    """The reason this proxy cannot carry a banner probe, if it cannot."""
+    if not proxy_url:
+        return None
+    scheme = split_proxy(proxy_url).scheme.lower()
+    if scheme in SUPPORTED_SCHEMES:
+        return None
+    return (
+        f"A banner probe cannot go through a {scheme} proxy. No port was fingerprinted."
+    )
 
 
 @dataclass(frozen=True)
@@ -56,51 +65,6 @@ class Fingerprint:
         return bool(self.service or self.product or self.banner)
 
 
-def _socks5_connect(proxy: str, host: str, port: int, timeout: float) -> socket.socket:
-    parts = urlsplit(proxy if "://" in proxy else f"socks5://{proxy}")
-    if not parts.hostname:
-        msg = f"unusable proxy {proxy!r}"
-        raise BannerError(msg)
-    sock = socket.create_connection(
-        (parts.hostname, parts.port or 1080), timeout=timeout
-    )
-    try:
-        methods = [_SOCKS_NO_AUTH] + ([_SOCKS_USERPASS] if parts.username else [])
-        sock.sendall(bytes([_SOCKS_VERSION, len(methods), *methods]))
-        _, method = sock.recv(2)
-        if method == _SOCKS_USERPASS:
-            user = (parts.username or "").encode()
-            password = (parts.password or "").encode()
-            sock.sendall(
-                bytes([1, len(user)]) + user + bytes([len(password)]) + password
-            )
-            if sock.recv(2)[1] != 0:
-                msg = "proxy rejected the credentials"
-                raise BannerError(msg)
-        elif method != _SOCKS_NO_AUTH:
-            msg = "proxy offered no usable authentication method"
-            raise BannerError(msg)
-
-        target = host.encode()
-        sock.sendall(
-            bytes([_SOCKS_VERSION, _SOCKS_CONNECT, 0, _SOCKS_DOMAIN, len(target)])
-            + target
-            + port.to_bytes(2, "big")
-        )
-        reply = sock.recv(4)
-        if len(reply) < 4 or reply[1] != 0:  # noqa: PLR2004
-            msg = "proxy refused the connection"
-            raise BannerError(msg)
-        length = {_SOCKS_IPV4: 4, _SOCKS_IPV6: 16}.get(reply[3])
-        if length is None:
-            length = sock.recv(1)[0]
-        sock.recv(length + 2)
-    except Exception:
-        sock.close()
-        raise
-    return sock
-
-
 class BannerClient:
     """A bounded, thread-pooled TCP prober."""
 
@@ -114,9 +78,10 @@ class BannerClient:
         self.timeout = timeout
         self.concurrency = max(1, concurrency)
         self.proxy_url = proxy_url
+        self.proxy_warning = unusable_proxy(proxy_url)
 
     def probe_all(self, endpoints: list[Endpoint]) -> list[Fingerprint]:
-        if not endpoints:
+        if not endpoints or self.proxy_warning:
             return []
         with ThreadPoolExecutor(max_workers=self.concurrency) as pool:
             return [f for f in pool.map(self.probe, endpoints) if f is not None]
@@ -125,7 +90,7 @@ class BannerClient:
         result = Fingerprint(ip=endpoint.ip, port=endpoint.port, tls=endpoint.tls)
         try:
             data, tls = self._read(endpoint)
-        except (OSError, ssl.SSLError, BannerError, IndexError):
+        except (OSError, ssl.SSLError, BannerError, ProxyError, IndexError):
             return None
         result.tls = tls
         if not data:
@@ -137,9 +102,7 @@ class BannerClient:
 
     def _connect(self, endpoint: Endpoint) -> socket.socket:
         if self.proxy_url:
-            return _socks5_connect(
-                self.proxy_url, endpoint.ip, endpoint.port, self.timeout
-            )
+            return open_tunnel(self.proxy_url, endpoint.ip, endpoint.port, self.timeout)
         return socket.create_connection(
             (endpoint.ip, endpoint.port), timeout=self.timeout
         )

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from shared.enums.subdomain import SubdomainSource
-from stages.subdomain.providers.base import SubdomainProvider, proxy_env
+from shared.services.proxy_resolve import proxy_env
+from stages.subdomain.providers.base import SubdomainProvider
 from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError
 
 
