@@ -48,6 +48,7 @@ class EndpointProbeStage(Stage):
     def run(self) -> StageResult:
         self._check_abort()
         cfg = self.cfg
+        net = self.net_options()
         started = utc_now()
         budget = cfg.max_urls
         pending = self._pending(budget)
@@ -65,8 +66,9 @@ class EndpointProbeStage(Stage):
                 rate_limit=cfg.rate,
                 threads=cfg.threads,
                 timeout=cfg.timeout,
-                proxy_url=self.net_options().proxy_url,
-                headers=self.net_options().headers,
+                proxy_url=net.proxy_url,
+                headers=net.headers,
+                probe_scheme=net.probe_scheme,
                 follow_redirects=cfg.follow_redirects,
                 recorder=self.ctx.recorder,
                 extra_args=self.ctx.resolved.tool_args("httpx"),

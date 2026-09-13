@@ -14,6 +14,7 @@ from shared.enums.scan import Phase
 from shared.enums.target import TargetType
 from shared.logging import get_logger
 from shared.models.scan import Scan
+from shared.models.scan_context import PROBE_SCHEME
 from shared.services.celery_dispatch import dispatch_interest_live
 from shared.services.debounce import claim
 from shared.services.orchestrator.aggregate import derived_counts
@@ -62,7 +63,7 @@ class NetOptions:
 
     proxy_url: str | None = None
     headers: dict[str, str] = field(default_factory=dict)
-    user_agent: str | None = None
+    probe_scheme: str | None = None
 
 
 ALL_TARGETS: frozenset[str] = frozenset(t.value for t in TargetType)
@@ -124,15 +125,11 @@ class Stage(ABC):
             raise StageAbortedError
 
     def net_options(self) -> NetOptions:
-        """Proxy / headers / user-agent from the resolved scan config."""
-        headers = dict(self.ctx.resolved.headers or {})
-        user_agent = next(
-            (v for k, v in headers.items() if k.lower() == "user-agent"), None
-        )
+        """Proxy, headers and probe scheme from the resolved scan config."""
         return NetOptions(
             proxy_url=self.ctx.resolved.proxy_url,
-            headers=headers,
-            user_agent=user_agent,
+            headers=dict(self.ctx.resolved.headers or {}),
+            probe_scheme=PROBE_SCHEME.get(self.ctx.resolved.http_protocol),
         )
 
     def results_sink[T](

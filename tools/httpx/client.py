@@ -15,6 +15,9 @@ DEFAULT_TIMEOUT = 900
 # httpx spells it -H/-header
 HEADER_FLAG = "-header"
 
+# without this httpx retries the other scheme when the named one fails
+NO_FALLBACK_FLAG = "-no-fallback-scheme"
+
 _IDLE_FLOOR = 120
 _IDLE_TIMEOUT_FACTOR = 6
 _CAPTURE_IDLE_FLOOR = 300
@@ -64,6 +67,7 @@ class HttpxClient:
         headers: dict[str, str] | None = None,
         follow_redirects: bool = True,
         store_dir: str | None = None,
+        probe_scheme: str | None = None,
         recorder: CommandRecorder | None = None,
         extra_args: list[str] | None = None,
     ) -> None:
@@ -74,6 +78,7 @@ class HttpxClient:
         self.headers = headers or {}
         self.follow_redirects = follow_redirects
         self.store_dir = store_dir
+        self.probe_scheme = probe_scheme
         self.recorder = recorder
         self.extra_args = extra_args or []
 
@@ -81,6 +86,15 @@ class HttpxClient:
             self._runner = CLIToolRunner(HTTPX_BINARY, default_timeout=DEFAULT_TIMEOUT)
         except ToolNotFoundError as e:
             raise HttpxError(str(e)) from e
+
+    def _scoped(self, targets: list[str]) -> list[str]:
+        """Name the scheme on every bare target when the run allows only one."""
+        if not self.probe_scheme:
+            return targets
+        return [
+            target if "://" in target else f"{self.probe_scheme}://{target}"
+            for target in targets
+        ]
 
     @contextlib.contextmanager
     def stream_probe(self, targets: list[str]) -> Iterator[StreamOutcome]:
@@ -98,10 +112,12 @@ class HttpxClient:
             args += ["-proxy", self.proxy_url]
         for key, value in self.headers.items():
             args += [HEADER_FLAG, f"{key}: {value}"]
+        if self.probe_scheme:
+            args.append(NO_FALLBACK_FLAG)
 
         with self._runner.stream_json(
             args=args,
-            input_data=targets,
+            input_data=self._scoped(targets),
             input_flag="-l",
             json_flag="-json",
             silent=True,
@@ -131,6 +147,8 @@ class HttpxClient:
             args += ["-proxy", self.proxy_url]
         for key, value in self.headers.items():
             args += [HEADER_FLAG, f"{key}: {value}"]
+        if self.probe_scheme:
+            args.append(NO_FALLBACK_FLAG)
         return args
 
     @contextlib.contextmanager
@@ -145,7 +163,7 @@ class HttpxClient:
         )
         with self._runner.stream_json(
             args=self._capture_args(),
-            input_data=targets,
+            input_data=self._scoped(targets),
             input_flag="-l",
             json_flag="-json",
             silent=True,

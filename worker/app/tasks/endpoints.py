@@ -15,6 +15,7 @@ from shared.definitions.vulnerabilities import CoverageStatus
 from shared.logging import get_logger
 from shared.models.endpoint import Endpoint, EndpointCoverage
 from shared.models.scan import Scan
+from shared.models.scan_context import PROBE_SCHEME
 from shared.services import endpoint_inventory, endpoint_judge
 from shared.services.asset_query.lead_cache import bump_sync
 from shared.services.endpoint_inventory import EndpointObservation
@@ -85,6 +86,7 @@ def verify_branch(
                 timeout=cfg.timeout,
                 proxy_url=resolved.proxy_url,
                 headers=dict(resolved.headers or {}),
+                probe_scheme=PROBE_SCHEME.get(resolved.http_protocol),
                 follow_redirects=cfg.follow_redirects,
                 extra_args=resolved.tool_args("httpx"),
             )

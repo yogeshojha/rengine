@@ -111,6 +111,7 @@ class HttpProbeStage(Stage):
                 timeout=cfg.timeout,
                 proxy_url=net.proxy_url,
                 headers=net.headers,
+                probe_scheme=net.probe_scheme,
                 follow_redirects=cfg.follow_redirects,
                 recorder=self.ctx.recorder,
                 extra_args=self.ctx.resolved.tool_args("httpx"),

@@ -64,6 +64,7 @@ class ScreenshotStage(Stage):
                 timeout=cfg.timeout,
                 proxy_url=net.proxy_url,
                 headers=net.headers,
+                probe_scheme=net.probe_scheme,
                 store_dir=store_dir,
                 recorder=self.ctx.recorder,
                 extra_args=self.ctx.resolved.tool_args("httpx"),

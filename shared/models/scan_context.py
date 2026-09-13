@@ -14,6 +14,9 @@ from shared.utils.validation import clean_name, clean_optional_name
 AUTH_TYPES = ("none", "header", "bearer", "basic", "cookie", "api_key")
 HTTP_PROTOCOLS = ("both", "http_only", "https_only")
 
+# the scheme a probe is restricted to; "both" leaves the choice to the tool
+PROBE_SCHEME: dict[str, str] = {"http_only": "http", "https_only": "https"}
+
 
 def valid_rate_tools() -> tuple[str, ...]:
     from stages.registry import rate_tools  # noqa: PLC0415
