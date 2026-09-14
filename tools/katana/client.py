@@ -11,6 +11,7 @@ logger = get_logger(__name__)
 
 KATANA_BINARY = "katana"
 DEFAULT_TIMEOUT = 1800
+_KILL_SLACK_SECONDS = 120
 
 # katana spells it -H/-headers; httpx and nuclei spell it -header
 HEADER_FLAG = "-headers"
@@ -115,6 +116,7 @@ class KatanaClient:
             json_flag="-jsonl",
             silent=True,
             silent_flag="-silent",
+            timeout=self.kill_after(),
             recorder=self.recorder,
             tool=KATANA_BINARY,
             extra_args=self.extra_args,
@@ -122,3 +124,8 @@ class KatanaClient:
             stderr_sink=stderr_sink,
         ) as stream:
             yield stream.records
+
+    def kill_after(self) -> int:
+        """Seconds before the runner kills the crawl. 0 is no limit."""
+        minutes = self.max_duration_minutes or 0
+        return minutes * 60 + _KILL_SLACK_SECONDS if minutes > 0 else 0

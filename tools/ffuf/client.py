@@ -111,8 +111,8 @@ class FfufClient:
         ) as stream:
             yield stream
 
-    def vhost(self, ip: str, base_host: str) -> list[str]:
-        """Bruteforce `Host: FUZZ.<base_host>` against an IP."""
+    def vhost(self, ip: str, base_host: str, *, budget: int) -> list[str]:
+        """Bruteforce `Host: FUZZ.<base_host>` against an IP within a budget in seconds."""
         scheme = self.probe_scheme or DEFAULT_VHOST_SCHEME
         args = [
             "-w",
@@ -126,6 +126,10 @@ class FfufClient:
             self.match_codes,
             "-t",
             str(self.threads),
+            "-timeout",
+            str(self.request_timeout),
+            "-maxtime",
+            str(budget),
             "-of",
             "json",
             "-o",
@@ -144,6 +148,7 @@ class FfufClient:
             use_output_file=False,
             output_format=OutputFormat.PLAIN,
             silent=False,
+            timeout=budget + _BUDGET_SLACK,
             recorder=self.recorder,
             tool=FFUF_BINARY,
             extra_args=self.extra_args,

@@ -81,7 +81,7 @@ class NoisePolicy:
 
     @classmethod
     def off(cls) -> NoisePolicy:
-        return cls(enabled=False, drops=False)
+        return cls(enabled=False, drops=False, strip_params=False)
 
 
 @dataclass
