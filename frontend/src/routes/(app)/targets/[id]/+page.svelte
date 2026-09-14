@@ -70,7 +70,6 @@
 	import MonitoringCell from '$lib/components/targets/target-detail/overview/monitoring-cell.svelte';
 	import SeedsCell from '$lib/components/targets/target-detail/overview/seeds-cell.svelte';
 	import EstateTray from '$lib/components/targets/estate-tray.svelte';
-	import { ESTATE_REASON_LABELS } from '$lib/config/estate';
 	import ActivityCell from '$lib/components/targets/target-detail/overview/activity-cell.svelte';
 	import RunsCell from '$lib/components/targets/target-detail/overview/runs-cell.svelte';
 	import FunnelCell from '$lib/components/dashboard/funnel-cell.svelte';
@@ -295,14 +294,6 @@
 		].filter((k): k is string => !!k)
 	);
 	let compositionSpans = $derived(packed(compositionKeys.length));
-	let estateDetail = $derived(
-		Object.entries(estate?.counts.by_reason ?? {})
-			.filter(([, n]) => n > 0)
-			.sort((a, b) => b[1] - a[1])
-			.slice(0, 3)
-			.map(([k, n]) => `${ESTATE_REASON_LABELS[k] ?? k} ${n}`)
-			.join(' · ')
-	);
 	let showRuns = $derived(completedRuns >= 2);
 	let identityKeys = $derived(
 		[
@@ -973,7 +964,6 @@
 						<EstateTray
 							count={estate.counts.untracked}
 							subject={target.target_value}
-							detail={estateDetail}
 							domains={estate.domains}
 							providers={estate.providers}
 							neighbours={estate.neighbours}
