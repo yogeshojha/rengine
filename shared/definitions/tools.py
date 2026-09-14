@@ -96,6 +96,12 @@ SCAN_TOOLS: tuple[ToolSpec, ...] = (
         example="-etags intrusive -exclude-severity info",
     ),
     ToolSpec(
+        name="dalfox",
+        label="Dalfox",
+        phase="Fuzzing",
+        example="--skip-ast-analysis",
+    ),
+    ToolSpec(
         name="ffuf",
         label="ffuf",
         phase="URL Discovery",

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import secrets
+import time
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from shared.definitions.scan_surface import Tier
@@ -25,6 +26,7 @@ logger = get_logger(__name__)
 _MARKER_LEN = 12
 _PROBE_TIMEOUT = 8
 _PER_INVOCATION = 100
+_MIN_BATCH_SECONDS = 30
 
 
 def _marker() -> str:
@@ -117,7 +119,7 @@ class DalfoxScanner(VulnScanner):
                     reflecting.append(probes[url])
         return reflecting
 
-    def _fuzz(self, urls: list[str], coverage: Coverage) -> Coverage:
+    def _fuzz(self, urls: list[str], coverage: Coverage) -> Coverage:  # noqa: PLR0915
         ctx = self.ctx
         secrets_list = [v for v in (ctx.net.headers or {}).values() if v]
         options = DalfoxOptions(
@@ -141,7 +143,11 @@ class DalfoxScanner(VulnScanner):
             coverage.ended_at = utc_now()
             return coverage
 
+        wanted = set(ctx.cfg.severities)
+
         def _on_finding(finding) -> None:
+            if finding.severity not in wanted:
+                return
             if ctx.keep_evidence():
                 finding.request = redact_secrets(finding.request, secrets_list)
                 finding.response = redact_secrets(finding.response, secrets_list)
@@ -151,13 +157,32 @@ class DalfoxScanner(VulnScanner):
             stored = ctx.store([finding])
             coverage.findings += stored
 
+        budget = ctx.cfg.max_minutes * 60 if ctx.cfg.max_minutes else None
+        deadline = None if budget is None else time.monotonic() + budget
         total = 0
         errors = []
+        notes = []
+        if getattr(ctx.cfg, "interactsh", False):
+            notes.append("dalfox does not do out-of-band testing.")
         for start in range(0, len(urls), _PER_INVOCATION):
             if ctx.aborted():
                 break
+            timeout = None
+            if deadline is not None:
+                remaining = deadline - time.monotonic()
+                if remaining < _MIN_BATCH_SECONDS:
+                    left = len(urls) - start
+                    notes.append(
+                        f"{left} requests not fuzzed. The {ctx.cfg.max_minutes}-minute "
+                        "budget ran out."
+                    )
+                    coverage.status = CoverageStatus.PARTIAL.value
+                    break
+                timeout = int(remaining)
             batch = urls[start : start + _PER_INVOCATION]
-            run = client.scan(batch, on_finding=_on_finding, should_stop=ctx.aborted)
+            run = client.scan(
+                batch, on_finding=_on_finding, should_stop=ctx.aborted, timeout=timeout
+            )
             total += run.requests or 0
             if run.error:
                 errors.append(run.error)
@@ -166,7 +191,9 @@ class DalfoxScanner(VulnScanner):
         coverage.ended_at = utc_now()
         if errors:
             coverage.status = CoverageStatus.PARTIAL.value
-            coverage.error = errors[0][:2000]
+            notes.insert(0, errors[0][:1500])
+        if notes:
+            coverage.error = " ".join(notes)[:2000]
         return coverage
 
 

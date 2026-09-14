@@ -35,7 +35,7 @@ class DalfoxOptions:
     headers: dict[str, str] = field(default_factory=dict)
     blind_url: str | None = None
     follow_redirects: bool = False
-    only_poc: str = "v,r"
+    only_poc: str = "v,r,a"
     skip_mining: bool = True
     skip_discovery: bool = True
 

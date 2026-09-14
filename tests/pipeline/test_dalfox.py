@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from shared.definitions.tools import TOOL_NAMES
 from shared.definitions.vulnerabilities import Scanner, Severity
 from stages.dast_scan.scanners.dalfox import _mark_url, _marker
 from tools.dalfox import DalfoxClient, DalfoxOptions, parse_finding
@@ -83,6 +84,16 @@ def test_the_client_streams_jsonl_and_deduplicates_nothing():
     assert args[args.index("--dedup-urls") + 1] == "off"
     assert "--skip-mining" in args
     assert "--skip-discovery" in args
+
+
+def test_every_claim_type_the_parser_accepts_is_asked_for():
+    args = _args()
+    asked = set(args[args.index("--only-poc") + 1].split(","))
+    assert asked == {"v", "r", "a"}
+
+
+def test_dalfox_takes_tool_args():
+    assert "dalfox" in TOOL_NAMES
 
 
 def test_the_client_passes_the_blind_callback_when_set():
