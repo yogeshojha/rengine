@@ -548,6 +548,7 @@ class SubdomainStage(Stage):
             return DnsxClient(
                 timeout=max(120, tool_timeout(self.ctx.resolved.intensity)),
                 threads=threads,
+                query_timeout=self.transport.timeout,
                 recorder=self.ctx.recorder,
                 extra_args=self.ctx.resolved.tool_args("dnsx"),
             )

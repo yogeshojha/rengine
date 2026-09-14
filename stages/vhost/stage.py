@@ -11,7 +11,7 @@ from shared.services.scope_filter import matches_any
 from shared.services.wordlists import WordlistError, lookup, resolve_path
 from shared.utils.datetime import utc_now
 from stages.base import DOMAIN_TARGETS, Stage, StageResult
-from stages.vhost.config import VhostConfig
+from stages.vhost.config import BUDGET_SECONDS_PER_IP, VhostConfig
 from tools.ffuf.client import FfufClient, FfufError
 
 logger = get_logger(__name__)
@@ -71,6 +71,7 @@ class VhostStage(Stage):
                 wordlist=str(wordlist),
                 threads=self.transport.threads,
                 rate=self.transport.rate or 1,
+                request_timeout=self.transport.timeout,
                 proxy_url=net.proxy_url,
                 headers=net.headers,
                 probe_scheme=net.probe_scheme,
@@ -84,7 +85,7 @@ class VhostStage(Stage):
         found: dict[str, set[str]] = {}
         for ip in ips:
             self._check_abort()
-            for label in client.vhost(ip, apex):
+            for label in client.vhost(ip, apex, budget=BUDGET_SECONDS_PER_IP):
                 found.setdefault(f"{label}.{apex}", set()).add(ip)
 
         count = self._persist(found)

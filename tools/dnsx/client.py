@@ -34,6 +34,7 @@ class DnsxClient:
         retry: int = DEFAULT_RETRY,
         threads: int = DEFAULT_THREADS,
         resolvers: list[str] | None = None,
+        query_timeout: int | None = None,
         recorder: CommandRecorder | None = None,
         extra_args: list[str] | None = None,
     ) -> None:
@@ -41,6 +42,7 @@ class DnsxClient:
         self.retry = retry
         self.threads = threads
         self.resolvers = resolvers
+        self.query_timeout = query_timeout
         self.recorder = recorder
         self.extra_args = extra_args or []
 
@@ -56,6 +58,8 @@ class DnsxClient:
             "-t",
             str(self.threads),
         ]
+        if self.query_timeout:
+            args.extend(["-timeout", f"{self.query_timeout}s"])
         if self.resolvers:
             args.extend(["-r", ",".join(self.resolvers)])
         return args

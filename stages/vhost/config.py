@@ -17,3 +17,6 @@ class VhostConfig(StageConfig):
         title="Wordlist",
         description="List of host names to try. Custom lists are uploaded in the Arsenal.",
     )
+
+
+BUDGET_SECONDS_PER_IP = 600

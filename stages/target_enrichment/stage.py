@@ -85,6 +85,7 @@ class TargetEnrichmentStage(Stage):
                 lookup = DnsxService(
                     timeout=max(120, self.transport.timeout),
                     threads=self.transport.threads,
+                    query_timeout=self.transport.timeout,
                     recorder=self.ctx.recorder,
                     extra_args=self.ctx.resolved.tool_args("dnsx"),
                 ).lookup_and_store(self.session, target.id, host)

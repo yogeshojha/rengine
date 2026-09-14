@@ -35,6 +35,7 @@ class DnsxService:
         retry: int = 3,
         threads: int = 10,
         resolvers: list[str] | None = None,
+        query_timeout: int | None = None,
         recorder: CommandRecorder | None = None,
         extra_args: list[str] | None = None,
     ) -> None:
@@ -42,6 +43,7 @@ class DnsxService:
         self._retry = retry
         self._threads = threads
         self._resolvers = resolvers
+        self._query_timeout = query_timeout
         self._recorder = recorder
         self._extra_args = extra_args
         self._client: DnsxClient | None = None
@@ -56,6 +58,7 @@ class DnsxService:
                     retry=self._retry,
                     threads=self._threads,
                     resolvers=self._resolvers,
+                    query_timeout=self._query_timeout,
                     recorder=self._recorder,
                     extra_args=self._extra_args,
                 )
