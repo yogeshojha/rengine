@@ -34,6 +34,15 @@ _WRITE_BATCH = 500
 _DEFAULT_PORTS = {"http": 80, "https": 443}
 
 
+def _in_scheme(urls: list[str], scheme: str | None) -> tuple[list[str], int]:
+    """The URLs on the run's only scheme, and how many were not."""
+    if not scheme:
+        return urls, 0
+    prefix = f"{scheme}://"
+    kept = [url for url in urls if url.startswith(prefix)]
+    return kept, len(urls) - len(kept)
+
+
 class EndpointProbeStage(Stage):
     """Request discovered URLs, highest attack surface first, within a budget."""
 
@@ -64,9 +73,21 @@ class EndpointProbeStage(Stage):
             self.emit_progress("every endpoint carries an observed status")
             return StageResult(counts={"endpoints_probed": 0})
 
-        selected = pending
+        selected, off_scheme = _in_scheme(pending, net.probe_scheme)
         unverified = self._unverified()
         skipped = max(0, unverified - len(selected))
+        if not selected:
+            self._store(
+                started,
+                unverified,
+                0,
+                skipped,
+                CoverageStatus.COMPLETED.value,
+                None,
+                f"{off_scheme} endpoints outside the {net.probe_scheme} scope not requested.",
+            )
+            self.emit_progress("no endpoint inside the probe scope")
+            return StageResult(counts={"endpoints_probed": 0})
 
         try:
             client = HttpxClient(
@@ -149,11 +170,15 @@ class EndpointProbeStage(Stage):
             if skipped or stalled
             else CoverageStatus.COMPLETED.value
         )
-        reason = (
+        notes = [
             f"{skipped} endpoints not requested. Budget of {budget} reached."
             if skipped
-            else None
-        )
+            else "",
+            f"{off_scheme} endpoints outside the {net.probe_scheme} scope not requested."
+            if off_scheme
+            else "",
+        ]
+        reason = " ".join(n for n in notes if n) or None
         stall = (
             f"httpx stalled and was stopped. {answered:,} of {len(selected):,} "
             "endpoints answered."

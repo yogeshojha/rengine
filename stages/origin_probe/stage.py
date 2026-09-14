@@ -60,7 +60,7 @@ class OriginProbeStage(Stage):
                 proxy_url=net.proxy_url,
                 headers=net.headers,
                 probe_scheme=net.probe_scheme,
-                follow_redirects=False,
+                follow_redirects=self.follow_redirects(False),
                 recorder=self.ctx.recorder,
                 extra_args=self.ctx.resolved.tool_args("httpx"),
             )

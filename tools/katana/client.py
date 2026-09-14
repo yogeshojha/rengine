@@ -47,9 +47,11 @@ class KatanaClient:
         exclude_extensions: list[str] | None = None,
         proxy_url: str | None = None,
         headers: dict[str, str] | None = None,
+        scheme: str | None = None,
         recorder: CommandRecorder | None = None,
         extra_args: list[str] | None = None,
     ) -> None:
+        self.scheme = scheme
         self.depth = depth
         self.threads = threads
         self.timeout = timeout
@@ -77,6 +79,9 @@ class KatanaClient:
         args += ["-concurrency", str(self.threads)]
         args += ["-timeout", str(self.timeout)]
         args += ["-field-scope", self.crawl_scope]
+        scheme = getattr(self, "scheme", None)
+        if scheme:
+            args += ["-crawl-scope", f"^{scheme}://"]
         if self.max_duration_minutes:
             args += ["-crawl-duration", f"{self.max_duration_minutes}m"]
         if self.rate_limit:

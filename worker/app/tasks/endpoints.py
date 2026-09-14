@@ -84,6 +84,9 @@ def verify_branch(
                 or 0
             )
             selected = [r.url for r in session.execute(candidates.limit(cap)).all()]
+        scheme = PROBE_SCHEME.get(resolved.http_protocol)
+        if scheme:
+            selected = [url for url in selected if url.startswith(f"{scheme}://")]
         skipped = max(0, total - len(selected))
         where = f"{dir_path or '/'} on {host}"
         if not selected:

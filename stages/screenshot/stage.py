@@ -68,6 +68,7 @@ class ScreenshotStage(Stage):
                 proxy_url=net.proxy_url,
                 headers=net.headers,
                 probe_scheme=net.probe_scheme,
+                follow_redirects=self.follow_redirects(True),
                 store_dir=store_dir,
                 recorder=self.ctx.recorder,
                 extra_args=self.ctx.resolved.tool_args("httpx"),

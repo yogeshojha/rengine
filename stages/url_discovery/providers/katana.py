@@ -43,6 +43,7 @@ class KatanaProvider(UrlProvider):
                 exclude_extensions=list(cfg.static_extensions),
                 proxy_url=self.ctx.net.proxy_url,
                 headers=self.ctx.net.headers,
+                scheme=self.ctx.net.probe_scheme,
                 recorder=self.ctx.recorder,
                 extra_args=self.extra_args,
             )

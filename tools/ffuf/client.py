@@ -46,9 +46,11 @@ class FfufClient:
         proxy_url: str | None = None,
         headers: dict[str, str] | None = None,
         probe_scheme: str | None = None,
+        follow_redirects: bool = False,
         recorder=None,
         extra_args: list[str] | None = None,
     ) -> None:
+        self.follow_redirects = follow_redirects
         self.wordlist = wordlist
         self.threads = threads
         self.rate = rate
@@ -94,6 +96,8 @@ class FfufClient:
         ]
         if self.rate:
             args += ["-rate", str(self.rate)]
+        if getattr(self, "follow_redirects", False):
+            args.append("-r")
         if self.proxy_url:
             args += ["-x", self.proxy_url]
         for key, value in self.headers.items():

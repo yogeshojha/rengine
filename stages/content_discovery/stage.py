@@ -93,6 +93,7 @@ class ContentDiscoveryStage(Stage):
             "threads": self.transport.threads,
             "rate": share_rate(self.transport.rate or 1, workers),
             "request_timeout": self.transport.timeout,
+            "follow_redirects": self.follow_redirects(False),
             "proxy_url": net.proxy_url,
             "headers": net.headers,
             "recorder": self.ctx.recorder,
