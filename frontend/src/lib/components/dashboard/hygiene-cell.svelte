@@ -7,11 +7,12 @@
 
 	interface Props {
 		hygiene: HygieneSummary | null;
+		scanId?: string | null;
 		loading?: boolean;
 		class?: string;
 	}
 
-	let { hygiene, loading = false, class: className = '' }: Props = $props();
+	let { hygiene, scanId = null, loading = false, class: className = '' }: Props = $props();
 
 	const TOP = 7;
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
@@ -23,7 +24,7 @@
 				label: CHECK_BY_KEY[c.key]?.label ?? c.key.replace(/_/g, ' '),
 				share: Math.round((c.failing / c.applicable) * 100),
 				failing: c.failing,
-				href: ROUTES.surface(WEB.tab, { [WEB.queryParam]: c.query })
+				href: ROUTES.results(WEB.tab, scanId, { [WEB.queryParam]: c.query })
 			}))
 			.sort((a, b) => b.share - a.share)
 			.slice(0, TOP)
@@ -34,7 +35,7 @@
 	id="hygiene"
 	title="Web hygiene"
 	description="Failing share per check"
-	href={ROUTES.surface(WEB.tab, { [WEB.queryParam]: 'hygiene:any' })}
+	href={ROUTES.results(WEB.tab, scanId, { [WEB.queryParam]: 'hygiene:any' })}
 	hrefLabel="hygiene:any"
 	loading={loading && !hygiene}
 	class={className}

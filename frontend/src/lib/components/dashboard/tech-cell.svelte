@@ -9,11 +9,12 @@
 
 	interface Props {
 		tech: Facet[] | null;
+		scanId?: string | null;
 		loading?: boolean;
 		class?: string;
 	}
 
-	let { tech, loading = false, class: className = '' }: Props = $props();
+	let { tech, scanId = null, loading = false, class: className = '' }: Props = $props();
 
 	const TOP = 7;
 	const SPEC = SURFACE[SurfaceDimension.WEB_ASSETS];
@@ -22,7 +23,7 @@
 			key: f.value,
 			label: f.label,
 			count: f.count,
-			href: ROUTES.surface(SPEC.tab, { [SPEC.queryParam]: exactToken('tech', f.value) })
+			href: ROUTES.results(SPEC.tab, scanId, { [SPEC.queryParam]: exactToken('tech', f.value) })
 		}))
 	);
 </script>
@@ -31,7 +32,7 @@
 	id="tech"
 	title="Technology"
 	description="Web assets per technology"
-	href={ROUTES.surface(SPEC.tab)}
+	href={ROUTES.results(SPEC.tab, scanId)}
 	hrefLabel={SPEC.label}
 	loading={loading && !tech}
 	class={className}

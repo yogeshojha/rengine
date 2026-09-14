@@ -3,27 +3,28 @@
 	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { CERT_BUCKET_FILL } from '$lib/config/dashboard';
-	import type { DashboardCerts } from '$lib/types/dashboard';
+	import type { DashboardCertBucket } from '$lib/types/dashboard';
 
 	interface Props {
-		certs: DashboardCerts;
+		buckets: DashboardCertBucket[];
+		expiringQuery: string;
+		scanId?: string | null;
 		class?: string;
 	}
 
-	let { certs, class: className = '' }: Props = $props();
+	let { buckets, expiringQuery, scanId = null, class: className = '' }: Props = $props();
 
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
-	let buckets = $derived(certs.buckets);
 	let max = $derived(Math.max(1, ...buckets.map((b) => b.count)));
 	let total = $derived(buckets.reduce((n, b) => n + b.count, 0));
-	const link = (q: string) => ROUTES.surface(WEB.tab, { [WEB.queryParam]: q });
+	const link = (q: string) => ROUTES.results(WEB.tab, scanId, { [WEB.queryParam]: q });
 </script>
 
 <Cell
 	id="certs"
 	title="Certificates"
 	description="Live web assets by days to expiry"
-	href={link(certs.expiring.query)}
+	href={link(expiringQuery)}
 	hrefLabel="cert:expiring"
 	class={className}
 >

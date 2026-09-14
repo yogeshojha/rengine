@@ -12,6 +12,7 @@ from app.core.database import get_session
 from app.services.program_coverage import ProgramCoverageService
 from app.services.target import TargetService
 from app.services.target_assets import TargetAssetService
+from app.services.target_estate import TargetEstateService
 from app.services.target_filters import SignalName, SortDir, SortKey
 from app.services.target_relations import TargetRelationService
 from app.services.target_summary import TargetSummaryService
@@ -30,6 +31,7 @@ from shared.models import (
     TargetValidationRequest,
     TargetValidationResponse,
 )
+from shared.models.estate import ProjectEstate, TargetEstate
 from shared.models.relations import TargetPrograms, TargetRelations
 from shared.models.target_asset import TargetAssetFilter, TargetAssetPage
 from shared.models.target_summary import TargetSummaryRead
@@ -109,6 +111,16 @@ async def validate_bulk_target(
         results.append(await _validated(req.target_value, service))
 
     return results
+
+
+@router.get("/estate", response_model=ProjectEstate)
+async def get_project_estate(
+    _current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+):
+    """Domains the project's targets point at that are not targets."""
+    return await TargetEstateService(session).for_project(project_id)
 
 
 @router.get("/counts", response_model=dict[str, int])
@@ -402,6 +414,18 @@ async def get_target_relations(
 ):
     """Other targets in the project shown to be the same estate."""
     return await TargetRelationService(session).for_target(project_id, target_id)
+
+
+@router.get("/{target_id}/estate", response_model=TargetEstate)
+async def get_target_estate(
+    target_id: UUID,
+    _current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    scan_id: Annotated[UUID | None, Query(description="Scan ID")] = None,
+):
+    """Domains this target points at, providers it runs on, targets it shares with."""
+    return await TargetEstateService(session).for_target(project_id, target_id, scan_id)
 
 
 @router.get("/{target_id}/programs", response_model=TargetPrograms)

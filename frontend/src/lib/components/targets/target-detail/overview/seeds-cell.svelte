@@ -3,24 +3,25 @@
 	import X from '@lucide/svelte/icons/x';
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
+	import Cell from '$lib/components/cell.svelte';
 	import { Button } from '$lib/components/ui/button';
-	import { Switch } from '$lib/components/ui/switch';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Badge } from '$lib/components/ui/badge';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import LoadingButton from '$lib/components/loading-button.svelte';
-	import SectionHead from '$lib/components/section-head.svelte';
 	import { targetsApi } from '$lib/api/targets';
 	import type { TargetSeed, TargetSeedRejection } from '$lib/types/target';
 
 	interface Props {
 		targetId: string;
-		seedScans: boolean;
-		onToggle: (on: boolean) => void;
+		class?: string;
 	}
 
-	let { targetId, seedScans, onToggle }: Props = $props();
+	let { targetId, class: className = '' }: Props = $props();
+
+	const VISIBLE = 6;
 
 	let seeds = $state<TargetSeed[]>([]);
 	let loading = $state(true);
@@ -29,6 +30,7 @@
 	let draft = $state('');
 	let rejected = $state<TargetSeedRejection[]>([]);
 	let loadedFor = $state<string | null>(null);
+	let open = $state(false);
 
 	let lines = $derived(
 		draft
@@ -63,6 +65,7 @@
 			draft = '';
 			await load();
 			if (result.added > 0) toast.success(`${result.added} stored`);
+			if (!result.rejected.length) open = false;
 		} catch {
 			toast.error('Seeds not stored.');
 		} finally {
@@ -83,29 +86,23 @@
 	}
 </script>
 
-<section class="flex flex-col gap-3 border-t py-5">
-	<SectionHead title="Seed assets" count={loading ? null : seeds.length}>
-		<label class="flex items-center gap-2">
-			<Switch
-				checked={seedScans}
-				onCheckedChange={onToggle}
-				aria-label="Seed scans of this target"
-			/>
-			<span>Seed scans</span>
-		</label>
-	</SectionHead>
-
-	<p class="text-xs text-muted-foreground">
-		{seedScans ? 'Every scan of this target starts from these.' : 'Stored, and not used.'}
-	</p>
-
-	{#if loading}
-		<Skeleton class="h-10 w-2/3" />
-	{:else if seeds.length > 0}
-		<ScrollArea class={seeds.length > 8 ? 'h-64' : ''}>
-			<div class="flex flex-col">
+<Cell id="seeds" title="Seed assets" loading={loading && !seeds.length} class={className}>
+	{#snippet tools()}
+		<Button
+			variant="outline"
+			size="sm"
+			class="h-7 gap-1 px-2 text-xs"
+			onclick={() => (open = true)}
+		>
+			<Plus class="size-3.5" />
+			Add
+		</Button>
+	{/snippet}
+	{#if seeds.length}
+		<ScrollArea class={seeds.length > VISIBLE ? 'h-48' : ''}>
+			<ul class="flex flex-col">
 				{#each seeds as seed (seed.id)}
-					<div class="flex items-center gap-2 border-b py-1.5 last:border-b-0">
+					<li class="flex items-center gap-2 border-t py-1 first:border-t-0">
 						<span class="min-w-0 flex-1 font-mono text-xs break-all">{seed.value}</span>
 						{#if seed.kind !== 'host'}
 							<Badge variant="outline" class="font-normal">{seed.kind}</Badge>
@@ -120,31 +117,50 @@
 						>
 							<X class="size-3.5" />
 						</Button>
-					</div>
+					</li>
 				{/each}
-			</div>
+			</ul>
 		</ScrollArea>
+	{:else if loading}
+		<Skeleton class="h-4 w-2/3" />
+	{:else}
+		<span class="text-sm text-muted-foreground">No seed</span>
 	{/if}
+	{#snippet footer()}
+		<span>{seeds.length.toLocaleString()} stored</span>
+	{/snippet}
+</Cell>
 
-	<div class="flex flex-col gap-2">
-		<Textarea rows={3} placeholder="www.example.com" bind:value={draft} class="font-mono text-xs" />
-		<div class="flex items-center justify-between gap-3">
-			<span class="text-2xs text-muted-foreground"> One host name, address or URL per line. </span>
-			<LoadingButton size="sm" loading={adding} disabled={!lines.length} onclick={add}>
-				<Plus class="size-3.5" />
-				Store
-			</LoadingButton>
-		</div>
-	</div>
-
-	{#if rejected.length > 0}
-		<div class="flex flex-col gap-1 border-t pt-2">
-			{#each rejected as item, i (item.value + i)}
-				<div class="flex items-baseline gap-2 text-xs">
-					<span class="font-mono break-all text-muted-foreground">{item.value}</span>
-					<span class="text-destructive">{item.reason}</span>
+<Dialog.Root bind:open>
+	<Dialog.Content class="flex flex-col gap-0 p-0 sm:max-w-[480px]">
+		<Dialog.Header class="p-6 pb-4">
+			<Dialog.Title>Add seed assets</Dialog.Title>
+			<Dialog.Description>One host name, address or URL per line.</Dialog.Description>
+		</Dialog.Header>
+		<div class="flex flex-col gap-3 px-6 pb-6">
+			<Textarea
+				rows={6}
+				placeholder="www.example.com"
+				bind:value={draft}
+				class="font-mono text-xs"
+			/>
+			{#if rejected.length > 0}
+				<div class="flex flex-col gap-1">
+					{#each rejected as item, i (item.value + i)}
+						<div class="flex items-baseline gap-2 text-xs">
+							<span class="font-mono break-all text-muted-foreground">{item.value}</span>
+							<span class="text-destructive">{item.reason}</span>
+						</div>
+					{/each}
 				</div>
-			{/each}
+			{/if}
+			<div class="flex justify-end gap-2">
+				<Button variant="outline" size="sm" onclick={() => (open = false)}>Cancel</Button>
+				<LoadingButton size="sm" loading={adding} disabled={!lines.length} onclick={add}>
+					<Plus class="size-3.5" />
+					Store
+				</LoadingButton>
+			</div>
 		</div>
-	{/if}
-</section>
+	</Dialog.Content>
+</Dialog.Root>

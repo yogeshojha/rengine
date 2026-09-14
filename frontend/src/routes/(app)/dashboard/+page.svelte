@@ -335,7 +335,10 @@
 				class="grid grid-cols-[repeat(auto-fit,minmax(18rem,1fr))] overflow-hidden rounded-xl border bg-card"
 			>
 				{#if show('certs') && overview.certs.buckets.some((b) => b.count > 0)}
-					<CertsCell certs={overview.certs} />
+					<CertsCell
+						buckets={overview.certs.buckets}
+						expiringQuery={overview.certs.expiring.query}
+					/>
 				{/if}
 				{#if show('hygiene') && (dashboardStore.hygiene?.evaluated ?? 0) > 0}
 					<HygieneCell hygiene={dashboardStore.hygiene} loading={extras} />

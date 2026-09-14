@@ -9,16 +9,17 @@
 
 	interface Props {
 		exposure: DashboardExposure;
+		scanId?: string | null;
 		class?: string;
 	}
 
-	let { exposure, class: className = '' }: Props = $props();
+	let { exposure, scanId = null, class: className = '' }: Props = $props();
 
 	const SIZE = 96;
 	const RING = 11;
 	const SPEC = SURFACE[SurfaceDimension.SERVICES];
 	const TOP = 3;
-	const link = (q: string) => ROUTES.surface(SPEC.tab, { [SPEC.queryParam]: q });
+	const link = (q: string) => ROUTES.results(SPEC.tab, scanId, { [SPEC.queryParam]: q });
 
 	let slices = $derived(exposure.bands.filter((b) => b.count > 0));
 	let arcs = $derived.by(() => {
@@ -52,7 +53,7 @@
 	id="services"
 	title="Services"
 	description="By class"
-	href={ROUTES.surface(SPEC.tab)}
+	href={ROUTES.results(SPEC.tab, scanId)}
 	hrefLabel="{exposure.services.toLocaleString()} services"
 	class={className}
 >
@@ -116,8 +117,9 @@
 	{#snippet footer()}
 		{#if exposure.sensitive > 0}
 			<a href={link('is:sensitive')} class="font-medium text-foreground">
-				{exposure.sensitive.toLocaleString()} sensitive on {exposure.sensitive_targets}
-				{exposure.sensitive_targets === 1 ? 'target' : 'targets'}
+				{exposure.sensitive.toLocaleString()} sensitive{#if !scanId}
+					on {exposure.sensitive_targets}
+					{exposure.sensitive_targets === 1 ? 'target' : 'targets'}{/if}
 			</a>
 		{:else}
 			<span>No sensitive service</span>

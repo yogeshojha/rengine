@@ -31,8 +31,8 @@ from app.services.asset_query.predicates import (
     vuln_seen_earlier,
 )
 from app.services.dashboard import DashboardService
-from app.services.related_domains import RelatedDomainService
 from app.services.scan import ScanService
+from app.services.target_estate import TargetEstateService
 from shared.definitions.dashboard import (
     CERT_BUCKETS,
     CHANGES_LIMIT,
@@ -106,7 +106,6 @@ from shared.models.dashboard import (
     StaleTarget,
 )
 from shared.models.endpoint import Endpoint
-from shared.models.http_asset import HttpAsset
 from shared.models.ip_address import IpAddress
 from shared.models.port import Port
 from shared.models.scan import Scan
@@ -331,70 +330,28 @@ class DashboardOverviewService:
         return out
 
     async def discovery(self, project_id: UUID) -> DashboardDiscovery:
-        """Registrable domains the estate's certificates vouch for that are not targets."""
-        newest = (
-            select(
-                HttpAsset.target_id,
-                HttpAsset.scan_id,
-                HttpAsset.discovered_at,
-            )
-            .join(Target, Target.id == HttpAsset.target_id)
-            .where(
-                HttpAsset.project_id == project_id,
-                Target.target_type.in_(_DOMAIN_TYPES),
-            )
-            .distinct(HttpAsset.target_id)
-            .order_by(
-                HttpAsset.target_id,
-                HttpAsset.discovered_at.desc(),
-                HttpAsset.scan_id,
-            )
-        )
-        latest: dict[UUID, tuple[datetime, UUID]] = {
-            tid: (at, sid)
-            for tid, sid, at in (await self.session.execute(newest)).all()
-        }
-        out = DashboardDiscovery(targets_examined=len(latest))
-        if not latest:
-            return out
-        names = dict(
-            (
-                await self.session.execute(
-                    select(Target.id, Target.target_value).where(
-                        Target.id.in_(list(latest))
-                    )
+        """Registrable domains the estate vouches for that are not targets."""
+        estate = await TargetEstateService(self.session).for_project(project_id)
+        out = DashboardDiscovery(targets_examined=estate.targets_examined)
+        for d in estate.domains[:DISCOVERY_LIMIT]:
+            hosts = sorted({h for s in d.signals for h in s.hosts})
+            out.domains.append(
+                DashboardDiscoveredDomain(
+                    domain=d.domain,
+                    hostname_count=sum(s.count for s in d.signals),
+                    hostnames=hosts[:MAX_RELATED_HOSTNAMES],
+                    sources=[
+                        DashboardDiscoverySource(
+                            target_id=src.target_id,
+                            target_value=src.target_value,
+                            scan_id=src.scan_id,
+                            seen_on=hosts[0] if hosts else "",
+                            hostname_count=sum(s.count for s in d.signals),
+                        )
+                        for src in d.sources
+                    ],
                 )
-            ).all()
-        )
-        related = RelatedDomainService(self.session)
-        merged: dict[str, DashboardDiscoveredDomain] = {}
-        for tid, (_at, sid) in latest.items():
-            result = await related.for_scan(project_id, sid, names.get(tid))
-            for d in result.domains:
-                if d.is_target:
-                    continue
-                entry = merged.setdefault(
-                    d.domain, DashboardDiscoveredDomain(domain=d.domain)
-                )
-                entry.hostnames = sorted(set(entry.hostnames) | set(d.hostnames))[
-                    :MAX_RELATED_HOSTNAMES
-                ]
-                entry.hostname_count = max(entry.hostname_count, d.hostname_count)
-                entry.sources.append(
-                    DashboardDiscoverySource(
-                        target_id=tid,
-                        target_value=names.get(tid, ""),
-                        scan_id=sid,
-                        seen_on=d.evidence[0].seen_on if d.evidence else "",
-                        hostname_count=d.hostname_count,
-                    )
-                )
-        for entry in merged.values():
-            entry.sources.sort(key=lambda s: (-s.hostname_count, s.target_value))
-        out.domains = sorted(
-            merged.values(),
-            key=lambda d: (-len(d.sources), -d.hostname_count, d.domain),
-        )[:DISCOVERY_LIMIT]
+            )
         return out
 
     def _items(

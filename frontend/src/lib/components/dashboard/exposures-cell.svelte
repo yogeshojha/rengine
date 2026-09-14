@@ -4,16 +4,23 @@
 	import RankedBars, { type BarRow } from './ranked-bars.svelte';
 	import { interestCatalog } from '$lib/stores/interest-catalog.svelte';
 	import { ROUTES } from '$lib/config/routes';
-	import { BAND_RAIL } from '$lib/config/interest';
+	import { BAND_RAIL, INTEREST_TAB } from '$lib/config/interest';
 	import { INTEREST_BAND, type InterestPage } from '$lib/types/interest';
 
 	interface Props {
 		page: InterestPage | null;
+		scanId?: string | null;
 		loading?: boolean;
 		class?: string;
 	}
 
-	let { page, loading = false, class: className = '' }: Props = $props();
+	let { page, scanId = null, loading = false, class: className = '' }: Props = $props();
+
+	const link = (q?: string) =>
+		scanId
+			? ROUTES.scanTab(scanId, INTEREST_TAB)
+			: ROUTES.exposures(undefined, q ? { q } : undefined);
+	const rowLink = (q: string) => (scanId ? undefined : link(q));
 
 	const BANDS = [INTEREST_BAND.CRITICAL, INTEREST_BAND.HIGH, INTEREST_BAND.NOTABLE] as const;
 	const TOP = 6;
@@ -33,7 +40,7 @@
 				key: kind,
 				label: interestCatalog.kind(kind)?.label ?? kind.replace(/_/g, ' '),
 				count,
-				href: ROUTES.exposures(undefined, { q: `exposure:${kind}` })
+				href: rowLink(`exposure:${kind}`)
 			}))
 	);
 	let total = $derived(page?.summary.total ?? 0);
@@ -43,7 +50,7 @@
 	id="exposures"
 	title="Exposures"
 	description="Web assets flagged, by reason"
-	href={ROUTES.exposures()}
+	href={link()}
 	hrefLabel="{total.toLocaleString()} flagged"
 	loading={loading && !page}
 	class={className}
@@ -51,9 +58,12 @@
 	{#if bands.length}
 		<div class="grid grid-cols-3 gap-2">
 			{#each bands as b (b.key)}
-				<a
-					href={ROUTES.exposures(undefined, { q: `exposure_band:${b.key}` })}
-					class="flex flex-col gap-0.5 rounded-lg border bg-muted/20 px-2.5 py-2 transition-colors hover:bg-muted/50"
+				<svelte:element
+					this={scanId ? 'div' : 'a'}
+					href={rowLink(`exposure_band:${b.key}`)}
+					class="flex flex-col gap-0.5 rounded-lg border bg-muted/20 px-2.5 py-2 transition-colors {scanId
+						? ''
+						: 'hover:bg-muted/50'}"
 				>
 					<span class="flex items-center gap-1.5 text-2xs text-muted-foreground">
 						<span class="size-1.5 rounded-full {BAND_RAIL[b.key]}"></span>
@@ -62,7 +72,7 @@
 					<span class="text-lg leading-none font-semibold tracking-tight tabular-nums">
 						{b.count.toLocaleString()}
 					</span>
-				</a>
+				</svelte:element>
 			{/each}
 		</div>
 	{/if}

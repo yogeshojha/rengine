@@ -27,6 +27,7 @@
 	import TargetTypeTabs from '$lib/components/targets/target-type-tabs.svelte';
 	import TargetFilters from '$lib/components/targets/target-filters.svelte';
 	import TargetsKpiStrip from '$lib/components/targets/targets-kpi-strip.svelte';
+	import ProjectEstateTray from '$lib/components/targets/project-estate-tray.svelte';
 	import TargetViewControls from '$lib/components/targets/target-view-controls.svelte';
 	import TargetListItem from '$lib/components/targets/target-list-item.svelte';
 	import TargetListHeader from '$lib/components/targets/target-list-header.svelte';
@@ -583,6 +584,13 @@
 		activeTab={targetsStore.filters.activeTab}
 		onTabChange={handleTabChange}
 	/>
+
+	{#if projectsStore.activeProject}
+		<ProjectEstateTray
+			projectId={projectsStore.activeProject.id}
+			onAdded={() => targetsStore.refresh()}
+		/>
+	{/if}
 
 	{#if targetsStore.signalSummary.total > 0}
 		<TargetsKpiStrip

@@ -10,16 +10,17 @@
 
 	interface Props {
 		countries: Facet[] | null;
+		scanId?: string | null;
 		loading?: boolean;
 		class?: string;
 	}
 
-	let { countries, loading = false, class: className = '' }: Props = $props();
+	let { countries, scanId = null, loading = false, class: className = '' }: Props = $props();
 
 	const TOP = 5;
 	const SPEC = SURFACE[SurfaceDimension.IPS];
 	const link = (code: string) =>
-		ROUTES.surface(SPEC.tab, { [SPEC.queryParam]: `country:${code.toUpperCase()}` });
+		ROUTES.results(SPEC.tab, scanId, { [SPEC.queryParam]: `country:${code.toUpperCase()}` });
 
 	let entries = $derived((countries ?? []).map((f) => ({ code: f.value, count: f.count })));
 	let total = $derived(entries.reduce((n, e) => n + e.count, 0));
@@ -34,7 +35,7 @@
 	id="geo"
 	title="Geography"
 	description="IP addresses by country"
-	href={ROUTES.surface(SPEC.tab)}
+	href={ROUTES.results(SPEC.tab, scanId)}
 	hrefLabel={SPEC.label}
 	loading={loading && !countries}
 	class={className}

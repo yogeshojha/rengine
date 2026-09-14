@@ -7,11 +7,12 @@
 
 	interface Props {
 		software: { facets: SoftwareFacets; coverage: SoftwareCoverage } | null;
+		scanId?: string | null;
 		loading?: boolean;
 		class?: string;
 	}
 
-	let { software, loading = false, class: className = '' }: Props = $props();
+	let { software, scanId = null, loading = false, class: className = '' }: Props = $props();
 
 	const TOP = 6;
 	const SPEC = SURFACE[SurfaceDimension.SOFTWARE];
@@ -20,7 +21,7 @@
 			key: f.key,
 			label: f.label,
 			count: f.count,
-			href: ROUTES.surface(SPEC.tab, { [SPEC.queryParam]: `product="${f.key}"` })
+			href: ROUTES.results(SPEC.tab, scanId, { [SPEC.queryParam]: `product="${f.key}"` })
 		}))
 	);
 	let coverage = $derived(software?.coverage ?? null);
@@ -33,7 +34,7 @@
 	id="software"
 	title="Software CVEs"
 	description="By product"
-	href={ROUTES.surface(SPEC.tab)}
+	href={ROUTES.results(SPEC.tab, scanId)}
 	hrefLabel={SPEC.label}
 	loading={loading && !software}
 	class={className}

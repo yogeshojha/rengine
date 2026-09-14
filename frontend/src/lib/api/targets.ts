@@ -22,6 +22,7 @@ import type {
 import type { TargetSummaryRead } from '$lib/types/target-summary';
 import type { TargetAssetFilter, TargetAssetPage } from '$lib/types/target-asset';
 import type { TargetPrograms, TargetRelations } from '$lib/types/relations';
+import type { ProjectEstate, TargetEstate } from '$lib/types/estate';
 
 import type { PaginatedResponse, TargetCounts } from '$lib/types/pagination';
 import type { SignalFilter, SortDir, SortKey, TargetSummary } from '$lib/utilities/target-signals';
@@ -81,6 +82,20 @@ export const targetsApi = {
 
 	async getRelations(targetId: string, projectId: string): Promise<TargetRelations> {
 		return api.get<TargetRelations>(`/targets/${targetId}/relations?project_id=${projectId}`);
+	},
+
+	async getEstate(
+		targetId: string,
+		projectId: string,
+		scanId?: string | null
+	): Promise<TargetEstate> {
+		const params = new URLSearchParams({ project_id: projectId });
+		if (scanId) params.set('scan_id', scanId);
+		return api.get<TargetEstate>(`/targets/${targetId}/estate?${params.toString()}`);
+	},
+
+	async projectEstate(projectId: string): Promise<ProjectEstate> {
+		return api.get<ProjectEstate>(`/targets/estate?project_id=${projectId}`);
 	},
 
 	async getPrograms(targetId: string, projectId: string): Promise<TargetPrograms> {

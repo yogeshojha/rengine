@@ -16,13 +16,15 @@
 	import Network from '@lucide/svelte/icons/network';
 
 	import { targetsApi } from '$lib/api/targets';
-	import type { ProgramMatch, RelatedTarget } from '$lib/types/relations';
+	import type { ProgramMatch } from '$lib/types/relations';
+	import type { TargetEstate } from '$lib/types/estate';
 	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
 	import { Capability } from '$lib/config/capabilities';
 	import { scansApi } from '$lib/api/scans';
-	import { whoisApi } from '$lib/api/whois';
 	import { subdomainsApi } from '$lib/api/subdomains';
-	import { ipsApi } from '$lib/api/scan-results';
+	import { ipsApi, servicesApi, softwareApi } from '$lib/api/scan-results';
+	import { vulnerabilitiesApi } from '$lib/api/vulnerabilities';
+	import { interestApi } from '$lib/api/interest';
 	import { usersApi } from '$lib/api/users';
 	import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
@@ -35,10 +37,18 @@
 	import type { TargetDetailRead } from '$lib/types/target-detail';
 	import type { TargetSummaryRead } from '$lib/types/target-summary';
 	import type { ScanRead, ScanStatus } from '$lib/types/scan';
-	import type { WhoisCorrelationResult } from '$lib/types/whois';
-	import type { RelatedDomain } from '$lib/types/asset-query';
 	import type { HostingComposition } from '$lib/types/hosting';
-	import type { InsightTally } from '$lib/utilities/scan-insights';
+	import type { InterestPage } from '$lib/types/interest';
+	import type { SoftwareCoverage, SoftwareFacets } from '$lib/types/software';
+	import type {
+		DashboardCertBucket,
+		DashboardExposure,
+		DashboardFunnel
+	} from '$lib/types/dashboard';
+	import type { Facet, HygieneSummary } from '$lib/utilities/scan-insights';
+	import type { IpFacetSet } from '$lib/utilities/ip-groups';
+	import type { ScanExposure } from '$lib/utilities/services';
+	import type { ScanVulnerabilities } from '$lib/utilities/vulns';
 	import { Button } from '$lib/components/ui/button';
 	import * as Empty from '$lib/components/ui/empty';
 	import * as Tabs from '$lib/components/ui/tabs';
@@ -52,12 +62,29 @@
 	import GenerateReportDialog from '$lib/components/reports/generate-dialog.svelte';
 	import TargetHeaderSkeleton from '$lib/components/targets/target-detail/target-header-skeleton.svelte';
 	import SurfaceStrip from '$lib/components/targets/target-detail/overview/surface-strip.svelte';
-	import AttentionPanel from '$lib/components/targets/target-detail/overview/attention-panel.svelte';
-	import HostingSection from '$lib/components/targets/target-detail/overview/hosting-section.svelte';
-	import ActivityTimeline from '$lib/components/targets/target-detail/overview/activity-timeline.svelte';
-	import RelatedPanel from '$lib/components/targets/target-detail/overview/related-panel.svelte';
-	import SeedsPanel from '$lib/components/targets/target-detail/overview/seeds-panel.svelte';
-	import Rail from '$lib/components/targets/target-detail/overview/rail.svelte';
+	import FindingsCell from '$lib/components/targets/target-detail/overview/findings-cell.svelte';
+	import PostureCell from '$lib/components/targets/target-detail/overview/posture-cell.svelte';
+	import HostingCell from '$lib/components/targets/target-detail/overview/hosting-cell.svelte';
+	import IdentityCell from '$lib/components/targets/target-detail/overview/identity-cell.svelte';
+	import ProgramsCell from '$lib/components/targets/target-detail/overview/programs-cell.svelte';
+	import MonitoringCell from '$lib/components/targets/target-detail/overview/monitoring-cell.svelte';
+	import SeedsCell from '$lib/components/targets/target-detail/overview/seeds-cell.svelte';
+	import EstateTray from '$lib/components/targets/estate-tray.svelte';
+	import { ESTATE_REASON_LABELS } from '$lib/config/estate';
+	import ActivityCell from '$lib/components/targets/target-detail/overview/activity-cell.svelte';
+	import RunsCell from '$lib/components/targets/target-detail/overview/runs-cell.svelte';
+	import FunnelCell from '$lib/components/dashboard/funnel-cell.svelte';
+	import GeoCell from '$lib/components/dashboard/geo-cell.svelte';
+	import ServicesCell from '$lib/components/dashboard/services-cell.svelte';
+	import TechCell from '$lib/components/dashboard/tech-cell.svelte';
+	import HygieneCell from '$lib/components/dashboard/hygiene-cell.svelte';
+	import SoftwareCell from '$lib/components/dashboard/software-cell.svelte';
+	import CertsCell from '$lib/components/dashboard/certs-cell.svelte';
+	import ExposuresCell from '$lib/components/dashboard/exposures-cell.svelte';
+	import {
+		CERT_FILTER,
+		EXPIRING_FILTER
+	} from '$lib/components/scans/results/overview/posture-panel.svelte';
 	import { buildTargetIntel } from '$lib/components/targets/target-detail/overview/derive';
 	import TargetWebAssets from '$lib/components/targets/target-detail/target-web-assets.svelte';
 	import DnsTab from '$lib/components/targets/target-detail/dns/dns-tab.svelte';
@@ -65,6 +92,7 @@
 	import BgpTab from '$lib/components/targets/target-detail/bgp/bgp-tab.svelte';
 	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
+	import { FUNNEL_LABELS, FUNNEL_QUERY, FunnelStep } from '$lib/config/dashboard';
 	import type { IconComponent } from '$lib/config/icons';
 	import { NOW_TICK_MS } from '$lib/constants';
 	import { isLiveStatus } from '$lib/utilities/scan-status';
@@ -91,8 +119,23 @@
 	const ENRICHMENT_POLL_MS = 2500;
 	const MAX_ENRICHMENT_POLLS = 30;
 	const HISTORY_SIZE = 12;
+	const EXPOSURE_ROWS = 6;
 	const DNS_TYPES = [TargetType.DOMAIN, TargetType.URL];
 	const BGP_TYPES = [TargetType.IP, TargetType.IP_RANGE, TargetType.ASN];
+	const CERT_BUCKET_KEY: Record<string, string> = {
+		expired: 'expired',
+		d7: 'week',
+		d30: 'month',
+		d90: 'quarter',
+		ok: 'later'
+	};
+	const FUNNEL_STEPS = [
+		FunnelStep.Names,
+		FunnelStep.Resolved,
+		FunnelStep.Live,
+		FunnelStep.Findings
+	] as const;
+	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 
 	const targetId = $derived(page.params.id ?? '');
 
@@ -113,13 +156,20 @@
 	let summaryLoading = $state(true);
 	let history = $state<ScanRead[]>([]);
 	let historyLoaded = $state(false);
-	let correlations = $state<WhoisCorrelationResult[]>([]);
-	let relatedDomains = $state<RelatedDomain[]>([]);
-	let relations = $state<RelatedTarget[]>([]);
 	let programs = $state<ProgramMatch[]>([]);
-	let relatedLoading = $state(true);
-	let geography = $state<InsightTally[]>([]);
-	let geoReady = $state(false);
+	let estate = $state<TargetEstate | null>(null);
+	let programsLoaded = false;
+	let ipFacets = $state<IpFacetSet | null>(null);
+	let hosting = $state<HostingComposition | null>(null);
+	let tech = $state<Facet[] | null>(null);
+	let hygiene = $state<HygieneSummary | null>(null);
+	let certBuckets = $state<DashboardCertBucket[] | null>(null);
+	let funnel = $state<DashboardFunnel | null>(null);
+	let exposures = $state<InterestPage | null>(null);
+	let exposure = $state<ScanExposure | null>(null);
+	let vulns = $state<ScanVulnerabilities | null>(null);
+	let software = $state<{ facets: SoftwareFacets; coverage: SoftwareCoverage } | null>(null);
+	let extrasLoading = $state(false);
 	const notLoaded = new SvelteSet<string>();
 
 	function loaded(section: string) {
@@ -148,12 +198,13 @@
 	let dnsRecords = $derived(
 		(detail?.dns?.records ?? []).filter((r) => r.record_type !== 'CDN').length
 	);
-	let webScanId = $derived(
-		summary?.surface.find((m) => m.key === SurfaceDimension.WEB_ASSETS)?.scan_id ?? null
-	);
-	let ipsScanId = $derived(
-		summary?.surface.find((m) => m.key === SurfaceDimension.IPS)?.scan_id ?? null
-	);
+	const scanFor = (key: SurfaceDimension) =>
+		summary?.surface.find((m) => m.key === key && m.covered)?.scan_id ?? null;
+	let webScanId = $derived(scanFor(SurfaceDimension.WEB_ASSETS));
+	let ipsScanId = $derived(scanFor(SurfaceDimension.IPS));
+	let servicesScanId = $derived(scanFor(SurfaceDimension.SERVICES));
+	let vulnScanId = $derived(summary?.risk.scan_id ?? null);
+	let softwareScanId = $derived(scanFor(SurfaceDimension.SOFTWARE));
 	let notesTotal = $state<number | null>(null);
 	let tabCounts = $derived<Partial<Record<TabKey, number>>>({
 		'web-assets': summary?.inventory_total,
@@ -197,12 +248,103 @@
 		return times.length ? new Date(Math.max(...times)).toISOString() : null;
 	});
 
+	// cell visibility
+	const SPAN: Record<number, string> = {
+		12: 'xl:col-span-12',
+		6: 'xl:col-span-6',
+		4: 'xl:col-span-4',
+		3: 'xl:col-span-3'
+	};
+	function packed(n: number, perRow = 3): string[] {
+		const rows = Math.ceil(n / perRow);
+		const base = Math.floor(n / rows);
+		const extra = n % rows;
+		const out: string[] = [];
+		for (let r = 0; r < rows; r++) {
+			const k = base + (r < extra ? 1 : 0);
+			for (let i = 0; i < k; i++)
+				out.push(`col-span-12 ${k > 1 ? 'lg:col-span-6' : ''} ${SPAN[12 / k] ?? ''}`);
+		}
+		return out;
+	}
+	let completedRuns = $derived(
+		history.filter((s) => s.status === 'completed' && s.scope !== 'focused').length
+	);
+	let showFunnel = $derived(!!funnel);
+	let showGeo = $derived((ipFacets?.country.length ?? 0) > 0);
+	let showFindings = $derived(!!vulnScanId && !!summary);
+	let showPosture = $derived(
+		detailLoading || intel.checks.length > 0 || (summary?.sensitive_services ?? 0) > 0
+	);
+	let showHosting = $derived(!!hosting && hosting.resolving > 0 && !!webScanId);
+	let showServices = $derived(!!exposure && exposure.services > 0 && !!servicesScanId);
+	let showTech = $derived((tech?.length ?? 0) > 0);
+	let showHygiene = $derived((hygiene?.evaluated ?? 0) > 0);
+	let showSoftware = $derived((software?.facets.product.length ?? 0) > 0);
+	let showCerts = $derived(!!certBuckets && certBuckets.some((b) => b.count > 0));
+	let showExposures = $derived((exposures?.summary.total ?? 0) > 0);
+	let compositionKeys = $derived(
+		[
+			showHosting && 'hosting',
+			showServices && 'services',
+			showTech && 'tech',
+			showHygiene && 'hygiene',
+			showSoftware && 'software',
+			showCerts && 'certs',
+			showExposures && 'exposures'
+		].filter((k): k is string => !!k)
+	);
+	let compositionSpans = $derived(packed(compositionKeys.length));
+	let estateDetail = $derived(
+		Object.entries(estate?.counts.by_reason ?? {})
+			.filter(([, n]) => n > 0)
+			.sort((a, b) => b[1] - a[1])
+			.slice(0, 3)
+			.map(([k, n]) => `${ESTATE_REASON_LABELS[k] ?? k} ${n}`)
+			.join(' · ')
+	);
+	let showRuns = $derived(completedRuns >= 2);
+	let identityKeys = $derived(
+		[
+			...intel.rail.map((g) => g.key),
+			programs.length ? 'programs' : null,
+			summary ? 'monitoring' : null,
+			'seeds'
+		].filter((k): k is string => !!k)
+	);
+	let identitySpans = $derived(packed(identityKeys.length));
+	let servicesExposure = $derived.by<DashboardExposure | null>(() => {
+		const e = exposure;
+		if (!e) return null;
+		return {
+			services: e.services,
+			addresses: e.addresses,
+			targets: 1,
+			sensitive: e.sensitive,
+			sensitive_targets: e.sensitive ? 1 : 0,
+			non_web: e.non_web_services,
+			bands: e.bands.map((b) => ({
+				key: b.key,
+				label: b.label,
+				count: b.count,
+				targets: 1,
+				query: b.query
+			})),
+			top: []
+		};
+	});
+
 	function resolveTab(raw: string | null): TabKey {
 		if (!raw) return 'overview';
 		const key = (LEGACY_TABS[raw] ?? raw) as TabKey;
 		return (TABS as readonly string[]).includes(key) ? key : 'overview';
 	}
 	let activeTab = $state<TabKey>(resolveTab(page.url.searchParams.get('tab')));
+
+	$effect(() => {
+		const fromUrl = resolveTab(page.url.searchParams.get('tab'));
+		if (fromUrl !== untrack(() => activeTab)) activeTab = fromUrl;
+	});
 
 	$effect(() => {
 		if (target && !detailLoading && !summaryLoading && !tabs.includes(activeTab))
@@ -291,26 +433,6 @@
 		}
 	}
 
-	async function fetchCorrelations() {
-		try {
-			correlations = await whoisApi.getTargetCorrelations(targetId);
-			loaded('WHOIS correlations');
-		} catch {
-			notLoadedNow('WHOIS correlations');
-		}
-	}
-
-	async function fetchRelations() {
-		const project = projectsStore.activeProject;
-		if (!project) return;
-		try {
-			relations = (await targetsApi.getRelations(targetId, project.id)).items;
-			loaded('Related targets');
-		} catch {
-			notLoadedNow('Related targets');
-		}
-	}
-
 	async function fetchPrograms() {
 		const project = projectsStore.activeProject;
 		if (!project || !capabilitiesStore.has(Capability.BOUNTY_PROGRAMS)) return;
@@ -322,41 +444,84 @@
 		}
 	}
 
-	let relatedFor: string | null = null;
-	async function fetchRelated(scanId: string) {
-		const project = projectsStore.activeProject;
-		if (!project || relatedFor === scanId) return;
-		relatedFor = scanId;
+	async function settle<T>(section: string, work: Promise<T>, apply: (value: T) => void) {
 		try {
-			const res = await subdomainsApi.relatedDomains(project.id, scanId);
-			relatedDomains = res.domains;
-			loaded('Related domains');
+			apply(await work);
+			loaded(section);
 		} catch {
-			relatedFor = null;
-			notLoadedNow('Related domains');
-		} finally {
-			relatedLoading = false;
+			notLoadedNow(section);
 		}
 	}
 
-	let hosting = $state<HostingComposition | null>(null);
-	let hostingFor: string | null = null;
-	async function fetchHosting(scanId: string) {
-		const project = projectsStore.activeProject;
-		if (!project || hostingFor === scanId) return;
-		hostingFor = scanId;
-		try {
-			hosting = await subdomainsApi.hosting(project.id, scanId);
-			loaded('Hosting');
-		} catch {
-			hostingFor = null;
-			notLoadedNow('Hosting');
-		}
+	function certBucketsOf(buckets: { key: string; label: string; count: number }[]) {
+		return buckets.map((b) => ({
+			key: CERT_BUCKET_KEY[b.key] ?? b.key,
+			label: b.label,
+			count: b.count,
+			query: CERT_FILTER[b.key] ?? EXPIRING_FILTER
+		}));
 	}
-	function pickHosting(query: string) {
-		if (!webScanId) return;
-		const spec = SURFACE[SurfaceDimension.WEB_ASSETS];
-		goto(ROUTES.scanTab(webScanId, spec.tab, { [spec.queryParam]: query }));
+
+	function funnelOf(counts: Record<string, number>, names: number): DashboardFunnel {
+		return {
+			steps: FUNNEL_STEPS.map((key) => {
+				const query = FUNNEL_QUERY[key] ?? '';
+				return {
+					key,
+					label: FUNNEL_LABELS[key],
+					count: query ? (counts[query] ?? 0) : names,
+					new_in_window: null,
+					query,
+					tab: WEB.key
+				};
+			})
+		};
+	}
+
+	let estateFor: string | null = null;
+	async function fetchEstate(scanId: string | null) {
+		const project = projectsStore.activeProject;
+		const key = scanId ?? 'none';
+		if (!project || estateFor === key) return;
+		estateFor = key;
+		await settle('Estate', targetsApi.getEstate(targetId, project.id, scanId), (e) => {
+			estate = e;
+		});
+	}
+
+	let webFor: string | null = null;
+	async function fetchWebExtras(scanId: string) {
+		const project = projectsStore.activeProject;
+		if (!project || webFor === scanId) return;
+		webFor = scanId;
+		extrasLoading = true;
+		const names = summary?.surface.find((m) => m.key === SurfaceDimension.WEB_ASSETS)?.value ?? 0;
+		const funnelQueries = FUNNEL_STEPS.map((k) => FUNNEL_QUERY[k]).filter((q): q is string => !!q);
+		await Promise.all([
+			settle('Hosting', subdomainsApi.hosting(project.id, scanId), (h) => (hosting = h)),
+			settle(
+				'Technology',
+				subdomainsApi.facets(project.id, scanId).then((f) => f.tech),
+				(t) => (tech = t)
+			),
+			settle('Web hygiene', subdomainsApi.hygiene(project.id, scanId), (h) => (hygiene = h)),
+			settle(
+				'Certificates',
+				subdomainsApi.insights(project.id, scanId).then((i) => certBucketsOf(i.cert_buckets)),
+				(b) => (certBuckets = b)
+			),
+			settle(
+				'Attack surface funnel',
+				subdomainsApi.counts(project.id, scanId, funnelQueries),
+				(r) => (funnel = funnelOf(r.counts, names))
+			),
+			settle(
+				'Exposures',
+				interestApi.scan(scanId, { limit: EXPOSURE_ROWS }),
+				(p) => (exposures = p)
+			)
+		]);
+		if (webFor === scanId) extrasLoading = false;
 	}
 
 	let geoFor: string | null = null;
@@ -364,30 +529,43 @@
 		const project = projectsStore.activeProject;
 		if (!project || geoFor === scanId) return;
 		geoFor = scanId;
-		try {
-			const facets = await ipsApi.facets(project.id, scanId);
-			geography = facets.country
-				.filter((f) => f.value)
-				.map((f) => ({ name: f.value, count: f.count }));
-			loaded('Geography');
-		} catch {
-			geoFor = null;
-			notLoadedNow('Geography');
-		} finally {
-			geoReady = true;
-		}
+		await settle('Geography', ipsApi.facets(project.id, scanId), (f) => (ipFacets = f));
 	}
-	let geoTotal = $derived(geography.reduce((n, t) => n + t.count, 0));
-	function pickCountry(code: string) {
-		if (!ipsScanId) return;
-		const spec = SURFACE[SurfaceDimension.IPS];
-		goto(
-			ROUTES.scanTab(
-				ipsScanId,
-				spec.tab,
-				code ? { [spec.queryParam]: `country:${code}` } : undefined
-			)
+
+	let servicesFor: string | null = null;
+	async function fetchServices(scanId: string) {
+		const project = projectsStore.activeProject;
+		if (!project || servicesFor === scanId) return;
+		servicesFor = scanId;
+		await settle('Services', servicesApi.exposure(project.id, scanId), (e) => (exposure = e));
+	}
+
+	let vulnsFor: string | null = null;
+	async function fetchVulns(scanId: string) {
+		const project = projectsStore.activeProject;
+		if (!project || vulnsFor === scanId) return;
+		vulnsFor = scanId;
+		await settle('Findings', vulnerabilitiesApi.overview(project.id, scanId), (v) => (vulns = v));
+	}
+
+	let softwareFor: string | null = null;
+	async function fetchSoftware(scanId: string) {
+		const project = projectsStore.activeProject;
+		if (!project || softwareFor === scanId) return;
+		softwareFor = scanId;
+		await settle(
+			'Software CVEs',
+			Promise.all([
+				softwareApi.facets(project.id, scanId),
+				softwareApi.coverage(project.id, scanId)
+			]).then(([facets, coverage]) => ({ facets, coverage })),
+			(s) => (software = s)
 		);
+	}
+
+	function pickHosting(query: string) {
+		if (!webScanId) return;
+		goto(ROUTES.scanTab(webScanId, WEB.tab, { [WEB.queryParam]: query }));
 	}
 
 	function hasPendingEnrichment(): boolean {
@@ -412,8 +590,8 @@
 			await Promise.all([fetchDetail(true), fetchTarget()]);
 			if (!hasPendingEnrichment() || attempts >= MAX_ENRICHMENT_POLLS) {
 				stopPolling();
-				fetchCorrelations();
-				fetchRelations();
+				estateFor = null;
+				fetchEstate(webScanId);
 			}
 		}, ENRICHMENT_POLL_MS);
 	}
@@ -421,6 +599,10 @@
 	function refreshAll(silent = true) {
 		fetchSummary(silent);
 		fetchHistory();
+		if (!programsLoaded) {
+			programsLoaded = true;
+			fetchPrograms();
+		}
 	}
 
 	$effect(() => {
@@ -429,9 +611,6 @@
 			untrack(() => {
 				fetchTarget();
 				fetchDetail();
-				fetchCorrelations();
-				fetchRelations();
-				fetchPrograms();
 			});
 		}
 		activityScope.targetId = id;
@@ -463,32 +642,41 @@
 	});
 
 	function refreshSections() {
+		webFor = geoFor = servicesFor = vulnsFor = softwareFor = estateFor = null;
 		void fetchSummary();
 		void fetchHistory();
-		void fetchCorrelations();
-		void fetchRelations();
 		void fetchPrograms();
-		if (webScanId) {
-			void fetchRelated(webScanId);
-			void fetchHosting(webScanId);
-		}
+		void fetchEstate(webScanId);
+		if (webScanId) void fetchWebExtras(webScanId);
 		if (ipsScanId) void fetchGeography(ipsScanId);
+		if (servicesScanId) void fetchServices(servicesScanId);
+		if (vulnScanId) void fetchVulns(vulnScanId);
+		if (softwareScanId) void fetchSoftware(softwareScanId);
 	}
 
 	$effect(() => {
 		const scanId = webScanId;
-		if (scanId)
-			untrack(() => {
-				fetchRelated(scanId);
-				fetchHosting(scanId);
-			});
-		else if (!summaryLoading) relatedLoading = false;
+		if (scanId) untrack(() => fetchWebExtras(scanId));
 	});
-
+	$effect(() => {
+		const scanId = webScanId;
+		if (!summaryLoading) untrack(() => fetchEstate(scanId));
+	});
 	$effect(() => {
 		const scanId = ipsScanId;
 		if (scanId) untrack(() => fetchGeography(scanId));
-		else if (!summaryLoading) geoReady = true;
+	});
+	$effect(() => {
+		const scanId = servicesScanId;
+		if (scanId) untrack(() => fetchServices(scanId));
+	});
+	$effect(() => {
+		const scanId = vulnScanId;
+		if (scanId) untrack(() => fetchVulns(scanId));
+	});
+	$effect(() => {
+		const scanId = softwareScanId;
+		if (scanId) untrack(() => fetchSoftware(scanId));
 	});
 
 	$effect(() => {
@@ -592,7 +780,7 @@
 		if (!target) return;
 		downloadBlob(
 			fileName('json'),
-			JSON.stringify({ target, detail, summary, scans: history, correlations }, null, 2),
+			JSON.stringify({ target, detail, summary, scans: history, estate }, null, 2),
 			'application/json'
 		);
 		toast.success('Target exported as JSON');
@@ -711,6 +899,7 @@
 			<div
 				class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-dashed px-4 py-2.5 text-sm text-muted-foreground"
 			>
+				<TriangleAlert class="size-4 shrink-0 text-warning" strokeWidth={1.5} />
 				<span>{[...notLoaded].join(', ')} did not load.</span>
 				<Button variant="outline" size="sm" class="ml-auto" onclick={refreshSections}>Retry</Button>
 			</div>
@@ -769,17 +958,124 @@
 			</div>
 
 			<Tabs.Content value="overview" class="mt-4">
-				<div class="grid gap-x-8 gap-y-6 lg:grid-cols-[minmax(0,1fr)_18.5rem]">
-					<div class="flex min-w-0 flex-col">
-						<SurfaceStrip {summary} loading={summaryLoading} {history} onScan={handleScan} />
-						<AttentionPanel
-							{summary}
-							checks={intel.checks}
-							loading={detailLoading || summaryLoading}
-							onTab={setTab}
+				<div class="flex flex-col gap-6">
+					<SurfaceStrip
+						targetId={target.id}
+						{summary}
+						loading={summaryLoading}
+						{history}
+						{run}
+						onScan={handleScan}
+					/>
+
+					<!-- estate -->
+					{#if estate && estate.counts.untracked > 0}
+						<EstateTray
+							count={estate.counts.untracked}
+							subject={target.target_value}
+							detail={estateDetail}
+							domains={estate.domains}
+							providers={estate.providers}
+							neighbours={estate.neighbours}
+							sheetDescription="{estate.domains.length} domains · {estate.providers
+								.length} providers · {estate.considered_targets} targets considered"
 						/>
-						<HostingSection {hosting} onPick={pickHosting} />
-						<ActivityTimeline
+					{/if}
+
+					{#if showFunnel || showGeo || showFindings || showPosture}
+						<div class="grid grid-cols-12 overflow-hidden rounded-xl border bg-card">
+							{#if showFunnel && funnel}
+								<FunnelCell
+									{funnel}
+									scanId={webScanId}
+									class="col-span-12 {showGeo ? 'xl:col-span-8' : ''}"
+								/>
+							{/if}
+							{#if showGeo}
+								<GeoCell
+									countries={ipFacets?.country ?? null}
+									scanId={ipsScanId}
+									class="col-span-12 {showFunnel ? 'lg:col-span-6 xl:col-span-4' : ''}"
+								/>
+							{/if}
+							{#if showFindings && summary && vulnScanId}
+								<FindingsCell
+									risk={summary.risk}
+									{vulns}
+									scanId={vulnScanId}
+									loading={extrasLoading}
+									class="col-span-12 {showPosture ? 'xl:col-span-8' : ''}"
+								/>
+							{/if}
+							{#if showPosture}
+								<PostureCell
+									targetId={target.id}
+									checks={intel.checks}
+									sensitive={summary?.sensitive_services ?? 0}
+									{servicesScanId}
+									loading={detailLoading}
+									class="col-span-12 {showFindings ? 'lg:col-span-6 xl:col-span-4' : ''}"
+								/>
+							{/if}
+						</div>
+					{/if}
+
+					<!-- composition -->
+					{#if compositionKeys.length}
+						<div class="grid grid-cols-12 overflow-hidden rounded-xl border bg-card">
+							{#each compositionKeys as key, i (key)}
+								{@const cls = compositionSpans[i]}
+								{#if key === 'hosting' && hosting && webScanId}
+									<HostingCell {hosting} scanId={webScanId} onPick={pickHosting} class={cls} />
+								{:else if key === 'services' && servicesExposure}
+									<ServicesCell exposure={servicesExposure} scanId={servicesScanId} class={cls} />
+								{:else if key === 'tech'}
+									<TechCell {tech} scanId={webScanId} class={cls} />
+								{:else if key === 'hygiene'}
+									<HygieneCell {hygiene} scanId={webScanId} class={cls} />
+								{:else if key === 'software'}
+									<SoftwareCell {software} scanId={softwareScanId} class={cls} />
+								{:else if key === 'certs' && certBuckets}
+									<CertsCell
+										buckets={certBuckets}
+										expiringQuery={EXPIRING_FILTER}
+										scanId={webScanId}
+										class={cls}
+									/>
+								{:else if key === 'exposures'}
+									<ExposuresCell page={exposures} scanId={webScanId} class={cls} />
+								{/if}
+							{/each}
+						</div>
+					{/if}
+
+					<!-- identity -->
+					<div class="grid grid-cols-12 overflow-hidden rounded-xl border bg-card">
+						{#each identityKeys as key, i (key)}
+							{@const cls = identitySpans[i]}
+							{@const group = intel.rail.find((g) => g.key === key)}
+							{#if group}
+								<IdentityCell targetId={target.id} {group} loading={detailLoading} class={cls} />
+							{:else if key === 'programs'}
+								<ProgramsCell {programs} class={cls} />
+							{:else if key === 'monitoring' && summary}
+								<MonitoringCell
+									{summary}
+									{enrichedAt}
+									seedScans={target.seed_scans}
+									onToggleSeeds={setSeedScans}
+									onRefresh={handleRefreshEnrichment}
+									class={cls}
+								/>
+							{:else if key === 'seeds'}
+								<SeedsCell targetId={target.id} class={cls} />
+							{/if}
+						{/each}
+					</div>
+
+					<!-- activity -->
+					<div class="grid grid-cols-12 overflow-hidden rounded-xl border bg-card">
+						<ActivityCell
 							{target}
 							{creator}
 							{summary}
@@ -787,38 +1083,11 @@
 							loaded={historyLoaded}
 							{run}
 							{now}
+							class="col-span-12 {showRuns ? 'xl:col-span-7' : ''}"
 						/>
-						<RelatedPanel
-							groups={correlations}
-							related={relatedDomains}
-							{relations}
-							loading={relatedLoading}
-						/>
-						<SeedsPanel
-							targetId={target.id}
-							seedScans={target.seed_scans}
-							onToggle={setSeedScans}
-						/>
-					</div>
-					<div
-						class="border-t pt-5 lg:sticky lg:self-start lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6"
-						style="top: calc(var(--target-tabs-h, 0px) + 1rem)"
-					>
-						<Rail
-							{programs}
-							groups={intel.rail}
-							{summary}
-							loading={detailLoading || summaryLoading}
-							{enrichedAt}
-							{run}
-							{now}
-							{geography}
-							{geoTotal}
-							{geoReady}
-							onPickCountry={pickCountry}
-							onTab={setTab}
-							onRefresh={handleRefreshEnrichment}
-						/>
+						{#if showRuns}
+							<RunsCell {history} class="col-span-12 xl:col-span-5" />
+						{/if}
 					</div>
 				</div>
 			</Tabs.Content>

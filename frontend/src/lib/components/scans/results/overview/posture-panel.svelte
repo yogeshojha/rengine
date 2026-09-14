@@ -1,3 +1,14 @@
+<script lang="ts" module>
+	export const CERT_FILTER: Record<string, string> = {
+		expired: 'cert:expired',
+		d7: 'cert.expires:<7d and not cert:expired',
+		d30: 'cert.expires:<30d and not cert.expires:<7d',
+		d90: 'cert.expires:<90d and not cert.expires:<30d',
+		ok: 'cert.expires:>=90d'
+	};
+	export const EXPIRING_FILTER = 'cert.expires:<30d';
+</script>
+
 <script lang="ts">
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import * as Card from '$lib/components/ui/card';
@@ -27,15 +38,7 @@
 	};
 	const NO_HTTP_KEY = 'none';
 	const NO_HTTP_FILTER = 'status:none';
-	const CERT_FILTER: Record<string, string> = {
-		expired: 'cert:expired',
-		d7: 'cert.expires:<7d and not cert:expired',
-		d30: 'cert.expires:<30d and not cert.expires:<7d',
-		d90: 'cert.expires:<90d and not cert.expires:<30d',
-		ok: 'cert.expires:>=90d'
-	};
 	const EXPIRING_KEYS = new Set(['expired', 'd7', 'd30']);
-	const EXPIRING_FILTER = 'cert.expires:<30d';
 	const CNAME_KEY = 'cname';
 	const DNS_FILTER: Record<string, string> = {
 		resolved: 'is:resolved',

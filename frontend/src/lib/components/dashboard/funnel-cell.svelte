@@ -8,11 +8,12 @@
 
 	interface Props {
 		funnel: DashboardFunnel;
-		window: DashboardWindow;
+		window?: DashboardWindow | null;
+		scanId?: string | null;
 		class?: string;
 	}
 
-	let { funnel, window, class: className = '' }: Props = $props();
+	let { funnel, window = null, scanId = null, class: className = '' }: Props = $props();
 
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 	const W = 640;
@@ -21,7 +22,7 @@
 
 	let steps = $derived(funnel.steps);
 	let max = $derived(Math.max(1, steps[0]?.count ?? 1));
-	let days = $derived(windowDays(window));
+	let days = $derived(window ? windowDays(window) : 0);
 	let sw = $derived(W / Math.max(1, steps.length));
 	let ph = H - 2 * PAD;
 	const hh = (v: number) => Math.max(5, Math.sqrt(v / max) * ph);
@@ -58,8 +59,8 @@
 
 	function href(step: (typeof steps)[number]): string {
 		const spec = SURFACE[(step.tab ?? SurfaceDimension.WEB_ASSETS) as SurfaceDimension] ?? WEB;
-		if (!step.query) return ROUTES.surface(spec.tab);
-		return ROUTES.surface(spec.tab, { [spec.queryParam]: step.query });
+		if (!step.query) return ROUTES.results(spec.tab, scanId);
+		return ROUTES.results(spec.tab, scanId, { [spec.queryParam]: step.query });
 	}
 	const share = (i: number) =>
 		i === 0 || !steps[i - 1].count ? null : Math.round((steps[i].count / steps[i - 1].count) * 100);
@@ -79,11 +80,11 @@
 <Cell
 	id="funnel"
 	title="Attack surface funnel"
-	href={ROUTES.surface(WEB.tab)}
+	href={ROUTES.results(WEB.tab, scanId)}
 	hrefLabel={WEB.label}
 	class={className}
 >
-	<div class="grid grid-cols-5 gap-1">
+	<div class="grid gap-1" style="grid-template-columns:repeat({steps.length},minmax(0,1fr))">
 		{#each steps as s, i (s.key)}
 			<Hint text={hint(i)}>
 				{#snippet child(props)}
@@ -107,10 +108,12 @@
 						<span class="text-xs text-muted-foreground">
 							{s.label}{#if share(i) !== null}<span class="text-2xs"> · {share(i)}%</span>{/if}
 						</span>
-						<span class="h-4 text-2xs text-info tabular-nums">
-							{#if s.new_in_window !== null && s.new_in_window > 0}▲ {s.new_in_window.toLocaleString()}
-								in {days}d{/if}
-						</span>
+						{#if days}
+							<span class="h-4 text-2xs text-info tabular-nums">
+								{#if s.new_in_window !== null && s.new_in_window > 0}▲ {s.new_in_window.toLocaleString()}
+									in {days}d{/if}
+							</span>
+						{/if}
 					</a>
 				{/snippet}
 			</Hint>
@@ -138,7 +141,10 @@
 			/>
 		{/each}
 	</svg>
-	<div class="grid grid-cols-10 text-center text-2xs text-muted-foreground tabular-nums">
+	<div
+		class="grid text-center text-2xs text-muted-foreground tabular-nums"
+		style="grid-template-columns:repeat({steps.length * 2},minmax(0,1fr))"
+	>
 		{#each bands as b, i (b.key)}
 			<span
 				class="col-span-2 transition-opacity duration-200 {i === 0 ? 'col-start-2' : ''} {bandLit(b)
@@ -150,7 +156,10 @@
 			</span>
 		{/each}
 	</div>
-	<div class="grid grid-cols-5 text-center font-mono text-2xs text-muted-foreground">
+	<div
+		class="grid text-center font-mono text-2xs text-muted-foreground"
+		style="grid-template-columns:repeat({steps.length},minmax(0,1fr))"
+	>
 		{#each steps as s (s.key)}
 			<span class="truncate transition-opacity duration-200 {lit(s.key) ? '' : 'opacity-40'}">
 				{s.query === null ? 'coverage' : s.query || 'all'}

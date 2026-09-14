@@ -99,6 +99,8 @@ export const ROUTES = {
 		const params = new URLSearchParams({ tab, ...(query ?? {}) });
 		return `/scans/${id}?${params.toString()}`;
 	},
+	results: (tab: string, scanId?: string | null, query?: Record<string, string>) =>
+		scanId ? ROUTES.scanTab(scanId, tab, query) : ROUTES.surface(tab, query),
 	automation: '/automation',
 	engines: '/automation/engines',
 	engine: (id: string) => `/automation/engines/${id}`,
