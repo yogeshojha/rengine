@@ -15,7 +15,9 @@ from shared.definitions.scan_surface import (
     MAX_BASES_PER_ORIGIN,
     MAX_REQUESTS,
     MAX_REQUESTS_PER_ORIGIN,
+    DropReason,
     SurfaceClass,
+    SurfaceState,
     Tier,
 )
 from shared.models.endpoint import Endpoint
@@ -178,19 +180,27 @@ def build_requests(
         origin = known.get(_key(row.scheme, row.host, row.port))
         if origin is None:
             continue
-        if excluded_paths and matches_any(row.path or "/", excluded_paths):
-            continue
+        out_of_scope = bool(excluded_paths) and matches_any(
+            row.path or "/", excluded_paths
+        )
         status = int(row.status_code or 0)
         if (
             row.param_count > 0
             and status not in _GONE
             and row.endpoint_class in FUZZABLE_CLASSES
         ):
+            if out_of_scope:
+                plan.dropped.append(
+                    _dropped(_request_item(origin, row), DropReason.OUT_OF_SCOPE.value)
+                )
+                continue
             method = sorted(row.methods or ["GET"])[0]
             key = (origin.value, row.shape, tuple(sorted(row.params or [])), method)
             current = chosen.get(key)
             if _better(row, current[1] if current else None):
                 chosen[key] = (origin, row)
+        if out_of_scope:
+            continue
         if (
             bases
             and status in _LIVE_DIR
@@ -203,10 +213,11 @@ def build_requests(
     per_origin: dict[str, int] = {}
     ranked = sorted(chosen.values(), key=lambda pair: (-pair[0].item.rank, pair[1].url))
     for origin, row in ranked:
-        if len(plan.requests) >= max_total:
-            break
         taken = per_origin.get(origin.value, 0)
-        if taken >= max_per_origin:
+        if len(plan.requests) >= max_total or taken >= max_per_origin:
+            plan.dropped.append(
+                _dropped(_request_item(origin, row), DropReason.OVER_CAP.value)
+            )
             continue
         per_origin[origin.value] = taken + 1
         plan.requests.append(_request_item(origin, row))
@@ -215,27 +226,34 @@ def build_requests(
     for (origin_value, dir_path), origin in sorted(
         dirs.items(), key=lambda kv: (-kv[1].item.rank, kv[0])
     ):
+        path = dir_path if dir_path.endswith("/") else f"{dir_path}/"
+        item = SurfaceItem(
+            id=uuid.uuid4(),
+            class_=SurfaceClass.BASE.value,
+            value=f"{origin_value}{path}"[:2000],
+            host=origin.item.host,
+            port=origin.item.port,
+            scheme=origin.item.scheme,
+            asset_id=origin.item.asset_id,
+            cluster_id=origin.item.cluster_id,
+            rank=origin.item.rank,
+            guarded=origin.item.guarded,
+            tiers_planned=[Tier.BASES.value],
+        )
         taken = per_origin.get(origin_value, 0)
         if taken >= max_bases_per_origin:
+            plan.dropped.append(_dropped(item, DropReason.OVER_CAP.value))
             continue
         per_origin[origin_value] = taken + 1
-        path = dir_path if dir_path.endswith("/") else f"{dir_path}/"
-        plan.bases.append(
-            SurfaceItem(
-                id=uuid.uuid4(),
-                class_=SurfaceClass.BASE.value,
-                value=f"{origin_value}{path}"[:2000],
-                host=origin.item.host,
-                port=origin.item.port,
-                scheme=origin.item.scheme,
-                asset_id=origin.item.asset_id,
-                cluster_id=origin.item.cluster_id,
-                rank=origin.item.rank,
-                guarded=origin.item.guarded,
-                tiers_planned=[Tier.BASES.value],
-            )
-        )
+        plan.bases.append(item)
     return plan
+
+
+def _dropped(item: SurfaceItem, reason: str) -> SurfaceItem:
+    item.drop_reason = reason
+    item.state = SurfaceState.NOT_SCANNED.value
+    item.tiers_planned = []
+    return item
 
 
 def by_origin(items: Iterable[SurfaceItem]) -> list[list[SurfaceItem]]:
