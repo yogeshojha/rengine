@@ -22,7 +22,7 @@ from shared.services.asset_query.lead_cache import bump_sync
 from shared.services.endpoint_inventory import EndpointObservation
 from shared.services.scope_filter import matches_any
 from shared.utils.datetime import utc_now
-from stages.endpoint_probe.config import FOLLOW_REDIRECTS
+from stages.endpoint_probe.config import FOLLOW_REDIRECTS, URL_DISCOVERY_STAGE
 from stages.endpoint_probe.stage import EndpointProbeStage
 from tools.httpx.client import HttpxClient, HttpxError
 from tools.httpx.parser import parse_httpx_record
@@ -97,7 +97,11 @@ def verify_branch(
                 proxy_url=resolved.proxy_url,
                 headers=dict(resolved.headers or {}),
                 probe_scheme=PROBE_SCHEME.get(resolved.http_protocol),
-                follow_redirects=FOLLOW_REDIRECTS,
+                follow_redirects=(
+                    FOLLOW_REDIRECTS
+                    if resolved.follow_redirects is None
+                    else resolved.follow_redirects
+                ),
                 extra_args=resolved.tool_args("httpx"),
             )
         except HttpxError as e:
@@ -142,7 +146,12 @@ def verify_branch(
         written = endpoint_inventory.verify(
             session, scan_id=scan.id, observations=observations
         )
-        dropped = endpoint_judge.judge(session, scan.id, hosts=[host])
+        dropped = endpoint_judge.judge(
+            session,
+            scan.id,
+            hosts=[host],
+            enabled=bool(resolved.stage(URL_DISCOVERY_STAGE).get("drop_noise", True)),
+        )
         if dropped:
             bump_sync([scan.target_id])
         status = (

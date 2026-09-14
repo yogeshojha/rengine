@@ -110,7 +110,7 @@ class Sifter:
 
     def clean(self, url: str, default_scheme: str = "https") -> str:
         """The URL with tracking parameters, session paths and index files removed."""
-        if not self.policy.enabled:
+        if not self.policy.enabled and not self.policy.strip_params:
             return url
         value = url.strip()
         if "://" not in value:
@@ -119,7 +119,9 @@ class Sifter:
             parts = urlsplit(value)
         except ValueError:
             return url
-        path = fold_index_file(strip_session_path(parts.path or "/"))
+        path = parts.path or "/"
+        if self.policy.enabled:
+            path = fold_index_file(strip_session_path(path))
         pairs = [
             (n, v)
             for n, v in parse_qsl(parts.query, keep_blank_values=True)

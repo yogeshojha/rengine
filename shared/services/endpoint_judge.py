@@ -172,8 +172,11 @@ def judge(
     scan_id: uuid.UUID,
     *,
     hosts: Iterable[str] | None = None,
+    enabled: bool = True,
 ) -> Counter:
     """Delete probed rows the response proves are not endpoints. Returns counts per rule."""
+    if not enabled:
+        return Counter()
     rows = _load(session, scan_id, hosts)
     if not rows:
         return Counter()

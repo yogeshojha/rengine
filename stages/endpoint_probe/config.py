@@ -27,3 +27,4 @@ class EndpointProbeConfig(StageConfig):
 
 
 FOLLOW_REDIRECTS = False
+URL_DISCOVERY_STAGE = "url_discovery"

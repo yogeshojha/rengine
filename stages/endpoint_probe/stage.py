@@ -20,7 +20,11 @@ from shared.services.endpoint_judge import Fingerprint
 from shared.services.scope_filter import matches_any
 from shared.utils.datetime import utc_now
 from stages.base import ALL_TARGETS, Stage, StageResult
-from stages.endpoint_probe.config import FOLLOW_REDIRECTS, EndpointProbeConfig
+from stages.endpoint_probe.config import (
+    FOLLOW_REDIRECTS,
+    URL_DISCOVERY_STAGE,
+    EndpointProbeConfig,
+)
 from tools.httpx.client import HttpxClient, HttpxError
 from tools.httpx.parser import parse_httpx_record
 
@@ -131,7 +135,13 @@ class EndpointProbeStage(Stage):
         stalled = stream.timed_out
         answered = sink.written
         endpoint_judge.store_fingerprints(self.session, fingerprints)
-        dropped = endpoint_judge.judge(self.session, self.ctx.scan_id)
+        dropped = endpoint_judge.judge(
+            self.session,
+            self.ctx.scan_id,
+            enabled=bool(
+                self.ctx.resolved.stage(URL_DISCOVERY_STAGE).get("drop_noise", True)
+            ),
+        )
         if dropped:
             self.publish_results(SurfaceDimension.ENDPOINTS.value)
         status = (

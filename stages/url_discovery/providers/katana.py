@@ -40,9 +40,7 @@ class KatanaProvider(UrlProvider):
                 crawl_scope=cfg.crawl_scope,
                 include_js=True,
                 headless=cfg.headless,
-                exclude_extensions=list(cfg.static_extensions)
-                if cfg.drop_noise
-                else [],
+                exclude_extensions=list(cfg.static_extensions),
                 proxy_url=self.ctx.net.proxy_url,
                 headers=self.ctx.net.headers,
                 recorder=self.ctx.recorder,
