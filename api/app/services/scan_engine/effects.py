@@ -90,11 +90,12 @@ def _stage_status(
         )
 
     transport = (resolved.transports or {}).get(spec.name) or {}
+    quiet = resolved.intensity == Intensity.PASSIVE.value and spec.passive_capable
     return PreviewTool(
         capability=spec.name,
         label=spec.title,
         status=PreviewToolStatus.WILL_RUN,
-        rate=transport.get("rate"),
+        rate=None if quiet else transport.get("rate"),
         threads=transport.get("threads"),
         timeout=transport.get("timeout"),
     )

@@ -428,10 +428,15 @@ class ScanService:
             1 for p in phases for t in p.tools if t.status == PreviewToolStatus.WILL_RUN
         )
         est_seconds = will_run * _SECONDS_PER_MINUTE
-        rates = resolved.per_tool_rate_limits
-        rate_summary = ", ".join(f"{tool} {rates[tool]}/s" for tool in sorted(rates))
+        to_target = sum(
+            t.rate or 0
+            for p in phases
+            for t in p.tools
+            if t.status == PreviewToolStatus.WILL_RUN
+        )
+        rate_summary = f"~{to_target}/s to target" if to_target else "no target traffic"
         if resolved.global_rate_limit_ceiling is not None:
-            rate_summary += f" (ceiling {resolved.global_rate_limit_ceiling}/s)"
+            rate_summary += f", ceiling {resolved.global_rate_limit_ceiling}/s per tool"
 
         auth = context.auth if context is not None else {"auth_type": "none"}
         extra_headers = context.extra_headers if context is not None else []

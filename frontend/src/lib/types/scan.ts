@@ -95,17 +95,24 @@ export const SCAN_TIME_RANGES = [
 ] as const;
 export type ScanTimeRange = (typeof SCAN_TIME_RANGES)[number]['key'];
 
+export interface ResolvedTransport {
+	tool: string;
+	rate: number | null;
+	threads: number;
+	timeout: number;
+	retries: number;
+}
+
 export interface ResolvedScanConfig {
 	target_value: string;
 	target_type: string;
 	headers: Record<string, string>;
 	per_tool_rate_limits: Record<string, number>;
 	global_rate_limit_ceiling: number | null;
-	resolved_threads: Record<string, number>;
-	resolved_timeouts: Record<string, number>;
 	thread_multiplier: number;
 	timeout_multiplier: number;
 	stages: Record<string, StageConfig>;
+	transports: Record<string, ResolvedTransport>;
 	excluded_subdomains: string[];
 	excluded_paths: string[];
 	excluded_ips: string[];

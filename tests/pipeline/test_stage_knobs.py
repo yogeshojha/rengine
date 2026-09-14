@@ -23,7 +23,7 @@ from stages.registry import rate_tools, stages
 pytestmark = pytest.mark.pipeline
 
 _ROOT = Path(__file__).resolve().parents[2]
-_NO_TRANSPORT = {"waf_detect"}
+_NO_TRANSPORT: set[str] = set()
 _TRANSPORT_NAMES = {
     "rate",
     "threads",

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy import select, update
 
+from shared.definitions.intensity import TransportTool
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.logging import get_logger
 from shared.models.http_asset import HttpAsset
@@ -24,6 +25,8 @@ class WafDetectStage(Stage):
     role = StageRole.SUPPORT.value
     consumes = frozenset({AssetKind.HTTP_ASSETS.value})
     tools = ("wafw00f",)
+    transport_tool = TransportTool.HTTPX.value
+    thread_weight = 1 / 25
     config_model = WafDetectConfig
 
     def run(self) -> StageResult:
@@ -42,6 +45,7 @@ class WafDetectStage(Stage):
             client = Wafw00fClient(
                 proxy_url=net.proxy_url,
                 headers=net.headers,
+                concurrency=self.transport.threads,
                 recorder=self.ctx.recorder,
                 extra_args=self.ctx.resolved.tool_args("wafw00f"),
             )
