@@ -148,7 +148,8 @@ class SubdomainStage(Stage):
     tools = PASSIVE_TOOLS
     transport_tool = TransportTool.DNSX.value
     api_keys = tuple(p.value for p in _PREFETCH_KEYS)
-    touches_target = False
+    touches_target = True
+    passive_capable = True
     config_model = SubdomainConfig
 
     def should_run(self) -> bool:

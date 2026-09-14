@@ -60,4 +60,4 @@ def _enabled(preset: str, spec) -> bool:
         return True
     if preset == Preset.BLANK.value:
         return False
-    return not spec.touches_target
+    return not spec.touches_target or spec.passive_capable

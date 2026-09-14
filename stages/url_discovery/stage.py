@@ -62,7 +62,8 @@ class UrlDiscoveryStage(Stage):
     applies_to = ALL_TARGETS
     tools = ("katana", "urlfinder")
     transport_tool = TransportTool.KATANA.value
-    touches_target = False
+    touches_target = True
+    passive_capable = True
     config_model = UrlDiscoveryConfig
     launch_fields = ("enabled", "providers", "crawl_depth", "max_crawl_minutes")
 

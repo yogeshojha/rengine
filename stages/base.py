@@ -98,6 +98,7 @@ class Stage(ABC):
     api_keys: ClassVar[tuple[str, ...]] = ()
     requires_api_keys: ClassVar[bool] = False
     touches_target: ClassVar[bool] = True
+    passive_capable: ClassVar[bool] = False
     deferrable: ClassVar[bool] = True
     launch_fields: ClassVar[tuple[str, ...]] = ()
     catalog_hidden: ClassVar[bool] = False

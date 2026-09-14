@@ -118,6 +118,7 @@ class StageCatalogEntry(BaseModel):
     api_keys: list[str]
     requires_api_keys: bool = False
     touches_target: bool = True
+    passive_capable: bool = False
     always_on: bool = False
     launch_fields: list[str] = PydanticField(default_factory=list)
     group: str

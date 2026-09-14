@@ -126,7 +126,8 @@ export function resolvePlan(
 	seedKinds: readonly string[] = []
 ): PlanResolution {
 	const passive = intensity === 'passive';
-	const blocked = (stage: StageCatalogEntry) => passive && stage.touches_target;
+	const blocked = (stage: StageCatalogEntry) =>
+		passive && stage.touches_target && !stage.passive_capable;
 	const levels = levelsOf(catalog, targetType);
 	const applicable = levels.flat();
 	const selected = new Set(

@@ -62,7 +62,9 @@ def _stage_status(
     if not values.get("enabled", True):
         reason = (
             "Skipped at passive intensity."
-            if resolved.intensity == Intensity.PASSIVE.value and spec.touches_target
+            if resolved.intensity == Intensity.PASSIVE.value
+            and spec.touches_target
+            and not spec.passive_capable
             else "Disabled in engine."
         )
         return _skip(PreviewToolStatus.SKIPPED_DISABLED, reason)

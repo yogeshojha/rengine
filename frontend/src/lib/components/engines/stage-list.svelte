@@ -29,7 +29,9 @@
 	function stateOf(stage: StageCatalogEntry): StageState {
 		const enabled = Boolean(config?.[stage.name]?.enabled ?? stage.defaults.enabled);
 		if (!enabled) return 'off';
-		if (intensity === 'passive' && stage.touches_target) return 'blocked';
+		if (intensity === 'passive' && stage.touches_target && !stage.passive_capable) {
+			return 'blocked';
+		}
 		return 'on';
 	}
 

@@ -53,9 +53,11 @@ export function summarize(
 	const all = Array.isArray(catalog) ? catalog : (catalog?.stages ?? []);
 	const active = all.filter((s) => enabled(s, stages));
 	const passiveMode = intensity === 'passive';
-	const running = passiveMode ? active.filter((s) => !s.touches_target) : active;
+	const running = passiveMode
+		? active.filter((s) => !s.touches_target || s.passive_capable)
+		: active;
 
-	const loud = running.filter((s) => s.touches_target);
+	const loud = running.filter((s) => s.touches_target && !(passiveMode && s.passive_capable));
 	const requestsPerSecond = loud.reduce((n, s) => n + stageRate(s, intensity), 0);
 
 	const footprint = footprintFor(requestsPerSecond, loud.length > 0);

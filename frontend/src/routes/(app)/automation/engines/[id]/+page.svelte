@@ -197,7 +197,8 @@
 
 	function blockedByIntensity(stageName: string): boolean {
 		if (parsed?.intensity !== 'passive') return false;
-		return engineCatalogStore.stage(stageName)?.touches_target ?? false;
+		const stage = engineCatalogStore.stage(stageName);
+		return Boolean(stage?.touches_target && !stage?.passive_capable);
 	}
 
 	function editDoc(mutate: (d: ReturnType<typeof parse>) => void) {

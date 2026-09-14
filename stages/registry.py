@@ -28,6 +28,7 @@ class StageSpec:
     api_keys: tuple[str, ...]
     requires_api_keys: bool
     touches_target: bool
+    passive_capable: bool
     deferrable: bool
     launch_fields: tuple[str, ...]
     catalog_hidden: bool
@@ -139,6 +140,7 @@ def _spec(stage_cls: type[Stage], level: int) -> StageSpec:
         api_keys=tuple(stage_cls.api_keys),
         requires_api_keys=stage_cls.requires_api_keys,
         touches_target=stage_cls.touches_target,
+        passive_capable=stage_cls.passive_capable,
         deferrable=stage_cls.deferrable,
         launch_fields=tuple(stage_cls.launch_fields),
         catalog_hidden=stage_cls.catalog_hidden,

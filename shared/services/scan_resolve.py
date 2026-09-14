@@ -432,7 +432,7 @@ def merge_engine_context(
                 rate_override=_clamp(int(override), 1, MAX_RATE) if override else None,
                 ceiling=global_rate_limit_ceiling,
             ).as_dict()
-        if passive and spec.touches_target:
+        if passive and spec.touches_target and not spec.passive_capable:
             values["enabled"] = False
         stages[spec.name] = values
 
