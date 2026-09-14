@@ -7,9 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.api.scope import VulnScope
 from app.core.database import get_session
+from app.services.scan_surface import ScanSurfaceService
 from app.services.vulnerability import VulnerabilityService
 from shared.definitions.vulnerabilities import VULN_STATES
 from shared.models.asset_query import QueryGroups, QueryLeads
+from shared.models.scan_surface import SurfaceSummary
 from shared.models.vulnerability import (
     BulkTriageResult,
     BulkTriageUpdate,
@@ -131,6 +133,15 @@ async def vulnerability_coverage(
     scope: VulnScope,
 ):
     return await service.coverage(scope)
+
+
+@router.get("/surface", response_model=SurfaceSummary)
+async def vulnerability_surface(
+    _current_user: CurrentUser,
+    service: Annotated[VulnerabilityService, Depends(get_service)],
+    scope: VulnScope,
+):
+    return await ScanSurfaceService(service.session).summary(scope)
 
 
 @router.get("/{vulnerability_id}", response_model=VulnerabilityRead)

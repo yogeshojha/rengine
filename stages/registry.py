@@ -218,17 +218,24 @@ def execution_plan(
 
     steps: list[tuple[str, ...]] = []
     tail: list[str] = []
+    placed: dict[str, int] = {}
     for level in ordered_levels()[start_level:]:
         names = sorted(spec.name for spec in level if spec.name not in done)
         tail.extend(name for name in names if name in deferred)
         gating = tuple(name for name in names if name not in deferred)
         if gating:
             steps.append(gating)
-    if tail:
-        if steps:
-            steps[-1] = tuple(sorted(set(steps[-1]) | set(tail)))
-        else:
-            steps.append(tuple(sorted(tail)))
+            placed.update(dict.fromkeys(gating, len(steps) - 1))
+    last = len(steps) - 1
+    for name in tail:
+        after = max(
+            (placed[d] for d in specs[name].depends_on if d in placed), default=-1
+        )
+        index = max(last, after + 1)
+        while index >= len(steps):
+            steps.append(())
+        steps[index] = tuple(sorted({*steps[index], name}))
+        placed[name] = index
     return steps
 
 

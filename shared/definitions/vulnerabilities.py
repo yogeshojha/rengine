@@ -113,17 +113,23 @@ CORROBORATION_BASIS_LABELS: dict[str, str] = {
 
 class Scanner(StrEnum):
     NUCLEI = "nuclei"
+    DALFOX = "dalfox"
     RENGINE = "rengine"
     MANUAL = "manual"
 
 
 SCANNER_LABELS: dict[str, str] = {
     Scanner.NUCLEI.value: "Nuclei",
+    Scanner.DALFOX.value: "Dalfox",
     Scanner.RENGINE.value: "reNgine",
     Scanner.MANUAL.value: "Manual testing",
 }
 
 DEFAULT_SCANNERS: list[str] = [Scanner.NUCLEI.value]
+
+# scanners the census stage can run (dalfox is a fuzzer, it lives in dast_scan)
+CENSUS_SCANNERS: tuple[str, ...] = (Scanner.NUCLEI.value,)
+CENSUS_SCANNER_LABELS: dict[str, str] = {k: SCANNER_LABELS[k] for k in CENSUS_SCANNERS}
 
 
 class Protocol(StrEnum):

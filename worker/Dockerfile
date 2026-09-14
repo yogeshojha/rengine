@@ -59,6 +59,22 @@ RUN --mount=type=cache,target=/cache/build --mount=type=cache,target=/cache/mod 
 RUN --mount=type=cache,target=/cache/build --mount=type=cache,target=/cache/mod \
     go install -v software.sslmate.com/src/certspotter/cmd/certspotter@v0.24.2
 
+# dalfox v3 is a Rust binary, shipped as a release tarball rather than go install
+ARG DALFOX_VERSION=v3.2.2
+RUN set -eux; \
+    arch="$(dpkg --print-architecture)"; \
+    case "$arch" in \
+      amd64) slug="linux-x86_64" ;; \
+      arm64) slug="linux-aarch64" ;; \
+      *) echo "unsupported arch $arch" >&2; exit 1 ;; \
+    esac; \
+    curl -fsSL -o /tmp/dalfox.tar.gz "https://github.com/hahwul/dalfox/releases/download/${DALFOX_VERSION}/dalfox-${DALFOX_VERSION}-${slug}.tar.gz"; \
+    tar -xzf /tmp/dalfox.tar.gz -C /tmp; \
+    mv "/tmp/dalfox-${DALFOX_VERSION}-${slug}/dalfox" /out/bin/dalfox; \
+    rm -rf /tmp/dalfox.tar.gz "/tmp/dalfox-${DALFOX_VERSION}-${slug}"; \
+    chmod +x /out/bin/dalfox; \
+    /out/bin/dalfox --version
+
 
 ##################################################################
 # Development

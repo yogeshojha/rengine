@@ -46,10 +46,13 @@ def test_a_producer_runs_before_anything_that_consumes_it():
             )
 
 
+def _step_with(plan: list[tuple[str, ...]], name: str) -> set[str]:
+    return next(set(step) for step in plan if name in step)
+
+
 def test_vulnerability_scan_no_longer_holds_up_the_last_stages():
     plan = execution_plan()
-    last = set(plan[-1])
-    assert "vulnerability_scan" in last
+    last = _step_with(plan, "vulnerability_scan")
     assert {"screenshot", "endpoint_probe", "ip_enrichment"} <= last, (
         "they must run alongside it, not after it"
     )
@@ -109,6 +112,14 @@ def test_a_stage_that_sends_nothing_is_not_deferred():
 
 def test_the_deferred_stages_join_the_last_step_rather_than_follow_it():
     plan = execution_plan()
-    last = set(plan[-1])
+    last = _step_with(plan, "vulnerability_scan")
     assert {"vulnerability_scan", "ip_enrichment"} <= last
     assert len(plan) == len(ordered_levels()), "no extra step was appended"
+
+
+def test_a_deferred_stage_waits_for_the_deferred_stages_it_depends_on():
+    plan = execution_plan()
+    before = _before(plan)
+    assert "endpoint_probe" in before["dast_scan"]
+    assert "vulnerability_scan" in before["dast_scan"]
+    assert plan[-1] == ("dast_scan",)

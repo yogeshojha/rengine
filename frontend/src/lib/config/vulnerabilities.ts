@@ -153,6 +153,7 @@ export const PROTOCOL_ICONS: Record<string, IconComponent> = {
 
 export const SCANNER_LABELS: Record<string, string> = {
 	nuclei: 'Nuclei',
+	dalfox: 'Dalfox',
 	rengine: 'reNgine',
 	manual: 'Manual testing'
 };

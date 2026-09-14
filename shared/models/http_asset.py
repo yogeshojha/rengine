@@ -8,6 +8,7 @@ from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
+from shared.models.scan_surface import AssetSurface
 from shared.utils.datetime import utc_now
 
 HEADER_SEARCH_LIMIT = 20_000
@@ -200,6 +201,7 @@ class HttpAssetDetail(HttpAssetRead):
     response_body: str | None = None
     response_headers: dict = Field(default_factory=dict)
     hygiene: list[HygieneVerdict] = Field(default_factory=list)
+    surface: AssetSurface | None = None
 
 
 class HttpAssetSummary(BaseModel):

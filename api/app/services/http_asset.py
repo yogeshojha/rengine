@@ -6,6 +6,7 @@ from sqlalchemy import cast, func, select
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services.scan_surface import ScanSurfaceService
 from shared.models.http_asset import (
     HttpAsset,
     HttpAssetDetail,
@@ -13,6 +14,7 @@ from shared.models.http_asset import (
     HttpAssetSummary,
     HygieneVerdict,
 )
+from shared.models.scan_surface import AssetSurface
 from shared.services import web_hygiene
 
 
@@ -79,9 +81,12 @@ class HttpAssetService:
             discovered_at=asset.discovered_at,
         )
 
-    def _to_detail(self, asset: HttpAsset) -> HttpAssetDetail:
+    def _to_detail(
+        self, asset: HttpAsset, surface: AssetSurface | None = None
+    ) -> HttpAssetDetail:
         verdicts = web_hygiene.evaluate_asset(asset).verdicts
         return HttpAssetDetail(
+            surface=surface,
             **self._to_read(asset).model_dump(),
             tls_subject_dn=asset.tls_subject_dn,
             tls_issuer_cn=asset.tls_issuer_cn,
@@ -101,7 +106,12 @@ class HttpAssetService:
         )
         result = await self.session.execute(query)
         asset = result.scalar_one_or_none()
-        return self._to_detail(asset) if asset else None
+        if asset is None:
+            return None
+        surface = await ScanSurfaceService(self.session).for_asset(
+            asset.scan_id, asset.id
+        )
+        return self._to_detail(asset, surface)
 
     def _filters(
         self,

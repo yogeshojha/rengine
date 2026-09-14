@@ -181,22 +181,25 @@ def upsert(
         return 0
     resolved = index if index is not None else build_index(session, scan_id)
     now = utc_now()
+    sources = _source_ids(
+        session, scan_id, {f.replayed_from for f in findings if f.replayed_from}
+    )
     seen: set[str] = set()
     rows: list[dict] = []
     for finding in findings:
         if finding.fingerprint in seen:
             continue
         seen.add(finding.fingerprint)
-        rows.append(
-            to_row(
-                finding,
-                scan_id=scan_id,
-                target_id=target_id,
-                project_id=project_id,
-                index=resolved,
-                now=now,
-            )
+        row = to_row(
+            finding,
+            scan_id=scan_id,
+            target_id=target_id,
+            project_id=project_id,
+            index=resolved,
+            now=now,
         )
+        row["replayed_from_id"] = sources.get(finding.replayed_from or "")
+        rows.append(row)
     rows.sort(key=lambda row: row["fingerprint"])
 
     written = 0
@@ -211,6 +214,21 @@ def upsert(
         written += len(session.execute(statement).scalars().all())
     session.commit()
     return written
+
+
+def _source_ids(
+    session: Session, scan_id: uuid.UUID, fingerprints: set[str]
+) -> dict[str, uuid.UUID]:
+    """The finding each replay confirms, by fingerprint."""
+    if not fingerprints:
+        return {}
+    rows = session.execute(
+        select(Vulnerability.fingerprint, Vulnerability.id).where(
+            Vulnerability.scan_id == scan_id,
+            Vulnerability.fingerprint.in_(sorted(fingerprints)),
+        )
+    )
+    return dict(rows.all())
 
 
 def attach_evidence(

@@ -1,4 +1,4 @@
-"""Vulnerability scanners, discovered by module."""
+"""Fuzzers, discovered by module."""
 
 from __future__ import annotations
 
@@ -7,23 +7,18 @@ import importlib
 from functools import lru_cache
 from pathlib import Path
 
-from stages.vulnerability_scan.scanners.base import (
-    Coverage,
-    ScannerContext,
-    ScannerResult,
-    VulnScanner,
-)
+from stages.vulnerability_scan.scanners.base import VulnScanner
 
 
 @lru_cache(maxsize=1)
 def scanners() -> dict[str, type[VulnScanner]]:
     found: dict[str, type[VulnScanner]] = {}
     for module in sorted(Path(__file__).parent.glob("*.py")):
-        if module.stem in ("__init__", "base"):
+        if module.stem == "__init__":
             continue
         with contextlib.suppress(ModuleNotFoundError):
             namespace = importlib.import_module(
-                f"stages.vulnerability_scan.scanners.{module.stem}"
+                f"stages.dast_scan.scanners.{module.stem}"
             )
             for obj in vars(namespace).values():
                 if (
@@ -31,18 +26,10 @@ def scanners() -> dict[str, type[VulnScanner]]:
                     and issubclass(obj, VulnScanner)
                     and obj is not VulnScanner
                     and getattr(obj, "name", None)
+                    and obj.__module__ == namespace.__name__
                 ):
                     found.setdefault(obj.name, obj)
     return found
 
 
-SCANNER_NAMES: tuple[str, ...] = tuple(sorted(scanners()))
-
-__all__ = [
-    "SCANNER_NAMES",
-    "Coverage",
-    "ScannerContext",
-    "ScannerResult",
-    "VulnScanner",
-    "scanners",
-]
+__all__ = ["scanners"]

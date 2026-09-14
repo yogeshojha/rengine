@@ -75,6 +75,14 @@
 		STATUS_DOT
 	} from '$lib/utilities/scan-correlation';
 	import { isSensitivePort } from '$lib/config/service-classes';
+	import {
+		CLUSTER_SIGNAL_LABELS,
+		DROP_REASON_LABELS,
+		SURFACE_STATE_LABELS,
+		TIER_LABELS,
+		tierOutcome
+	} from '$lib/config/scan-surface';
+	import { COVERAGE_STATUS_LABELS } from '$lib/config/vulnerabilities';
 	import { formatShortDate, relativeTime } from '$lib/utilities/dates';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 
@@ -590,6 +598,62 @@
 											.filter(Boolean)
 											.join(' · ') || null
 									)}
+									{#if detail?.surface}
+										{@const surface = detail.surface}
+										<div class={SHEET_ROW_TIGHT}>
+											<dt class={SHEET_DT}>Vulnerability scan</dt>
+											<dd class="flex min-w-0 flex-col gap-1 text-sm">
+												{#if surface.state === 'covered' && surface.representative_value}
+													<span class="break-all">
+														Covered by
+														<button
+															type="button"
+															class="font-mono hover:underline"
+															onclick={() => {
+																const rep = surface.representative_value ?? '';
+																const host = rep.replace(/^https?:\/\//, '').replace(/:\d+$/, '');
+																onPivot?.(host);
+															}}>{surface.representative_value}</button
+														>
+													</span>
+													<span class="text-xs text-muted-foreground">
+														{surface.cluster_signals
+															.map((k) => CLUSTER_SIGNAL_LABELS[k] ?? k)
+															.join(' · ')}
+													</span>
+												{:else if surface.state === 'not_scanned'}
+													<span>
+														Not scanned{surface.drop_reason
+															? ` · ${DROP_REASON_LABELS[surface.drop_reason] ?? surface.drop_reason}`
+															: ''}
+													</span>
+												{:else}
+													<span>
+														{SURFACE_STATE_LABELS[surface.state] ?? surface.state}{surface.members >
+														1
+															? ` · stands for ${surface.members} web assets`
+															: ''}
+													</span>
+													{#if surface.tiers_planned.length}
+														<span class="text-xs text-muted-foreground">
+															{surface.tiers_planned
+																.map((t) => {
+																	const done = tierOutcome(surface.tiers_done[t]);
+																	const label = TIER_LABELS[t] ?? t;
+																	return done
+																		? `${label}: ${COVERAGE_STATUS_LABELS[done] ?? done}`
+																		: `${label}: not reached`;
+																})
+																.join(' · ')}
+														</span>
+													{/if}
+												{/if}
+												{#if surface.note}
+													<span class="text-xs text-warning">{surface.note}</span>
+												{/if}
+											</dd>
+										</div>
+									{/if}
 								</dl>
 							</section>
 						{:else}

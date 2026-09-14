@@ -112,6 +112,7 @@ class Finding:
     interaction: dict = field(default_factory=dict)
     extra: dict = field(default_factory=dict)
     observed_at: datetime | None = None
+    replayed_from: str | None = None
 
 
 def fingerprint(

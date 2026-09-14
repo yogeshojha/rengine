@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 
-from shared.definitions.scan_surface import ROOT_TIERS
+from shared.definitions.scan_surface import SurfaceClass
 from shared.definitions.surface import SurfaceDimension
 from shared.definitions.vulnerabilities import (
     SEVERITY_LABELS,
@@ -13,20 +13,12 @@ from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.logging import get_logger
 from shared.models.vulnerability import VulnerabilityCoverage
 from shared.services import scan_surface, vuln_inventory
-from shared.services.vuln_templates import (
-    library_ready,
-    reindex_official,
-    shape_indexed,
-    sync_official,
-)
+from shared.services.vuln_templates import library_ready
 from shared.utils.datetime import utc_now
 from stages.base import ALL_TARGETS, Stage, StageAbortedError, StageResult
-from stages.vulnerability_scan.config import VulnerabilityScanConfig
-from stages.vulnerability_scan.scanners import (
-    Coverage,
-    ScannerContext,
-    scanners,
-)
+from stages.dast_scan.config import DastScanConfig
+from stages.dast_scan.scanners import scanners
+from stages.vulnerability_scan.scanners import Coverage, ScannerContext
 
 logger = get_logger(__name__)
 
@@ -49,30 +41,23 @@ def _crashed(name: str, exc: Exception) -> Coverage:
     )
 
 
-class VulnerabilityScanStage(Stage):
-    name = "vulnerability_scan"
-    title = "Vulnerability Scan"
-    description = "Run the selected checks against every origin this scan found."
+class DastScanStage(Stage):
+    name = "dast_scan"
+    title = "Fuzzing"
+    description = (
+        "Send payloads to the parameters and directories this scan discovered."
+    )
     phase = Phase.DEPTH.value
-    depends_on = frozenset({"http_probe", "waf_detect", "port_scan"})
+    depends_on = frozenset({"endpoint_probe", "waf_detect", "vulnerability_scan"})
     group = StageGroup.VULNERABILITIES.value
     role = StageRole.CAPABILITY.value
-    consumes = frozenset({AssetKind.HTTP_ASSETS.value, AssetKind.PORTS.value})
+    consumes = frozenset({AssetKind.ENDPOINTS.value, AssetKind.HTTP_ASSETS.value})
     produces = frozenset({AssetKind.VULNERABILITIES.value})
     applies_to = ALL_TARGETS
     tools = ("nuclei",)
     touches_target = True
-    config_model = VulnerabilityScanConfig
-    launch_fields = (
-        "enabled",
-        "severities",
-        "template_sets",
-        "custom_templates",
-        "exclude_tags",
-        "surface",
-        "blind_sweep",
-        "max_minutes",
-    )
+    config_model = DastScanConfig
+    launch_fields = ("enabled", "severities", "directories", "headless", "max_minutes")
 
     def should_run(self) -> bool:
         return self.cfg.enabled and bool(self.cfg.scanners)
@@ -80,23 +65,41 @@ class VulnerabilityScanStage(Stage):
     def run(self) -> StageResult:
         self._check_abort()
         cfg = self.cfg
-        self._ensure_library()
+        if not library_ready(self.session):
+            msg = "The check library is empty. Run a vulnerability scan first or sync the library."
+            raise RuntimeError(msg)
 
-        plan = self._plan(cfg)
-        if plan.is_empty():
-            self.emit_progress("nothing in scope to test")
-            return StageResult(counts={"vulnerabilities": 0, "targets": 0})
+        plan = scan_surface.build_requests(
+            self.session,
+            scan_id=self.ctx.scan_id,
+            resolved=self.ctx.resolved,
+            max_per_origin=cfg.max_requests_per_origin,
+            max_total=cfg.max_requests,
+            bases=cfg.directories,
+            max_bases_per_origin=cfg.max_dirs_per_origin,
+            base_depth=cfg.dir_depth,
+        )
+        scan_surface.write(
+            self.session,
+            plan,
+            scan_id=self.ctx.scan_id,
+            target_id=self.ctx.target_id,
+            project_id=self.ctx.project_id,
+            classes=(SurfaceClass.REQUEST.value, SurfaceClass.BASE.value),
+        )
+        if not (plan.requests or plan.bases):
+            self.emit_progress("no request with parameters to fuzz")
+            return StageResult(counts={"vulnerabilities": 0, "requests": 0})
         self.emit_progress(
-            f"{len(plan.roots)} origins stand for {len(plan.every_root)} web assets"
+            f"{len(plan.requests)} requests and {len(plan.bases)} directories to fuzz"
         )
 
         index = vuln_inventory.build_index(self.session, self.ctx.scan_id)
         stored: list[str] = []
-        budget = cfg.max_findings
 
         def _store(findings: list) -> int:
             self._check_abort()
-            room = budget - len(stored)
+            room = cfg.max_findings - len(stored)
             if room <= 0:
                 return 0
             written = vuln_inventory.upsert(
@@ -137,7 +140,7 @@ class VulnerabilityScanStage(Stage):
             resolved=self.ctx.resolved,
             net=self.net_options(),
             surface=plan,
-            selection=cfg.selection(),
+            selection=None,
             recorder=self.ctx.recorder,
             on_findings=_store,
             on_marks=_mark,
@@ -148,94 +151,40 @@ class VulnerabilityScanStage(Stage):
 
         available = scanners()
         total = 0
-        coverage_rows: list[VulnerabilityCoverage] = []
+        rows: list[VulnerabilityCoverage] = []
         for name in cfg.scanners:
             self._check_abort()
             scanner_cls = available.get(name)
             if scanner_cls is None:
-                coverage_rows.extend(self._record(name, [_unavailable(name)]))
+                rows.extend(self._record(name, [_unavailable(name)]))
                 continue
             try:
                 result = scanner_cls(context).run()
             except StageAbortedError:
                 raise
             except Exception as exc:
-                logger.warning(
-                    "vulnerability scanner failed", scanner=name, exc_info=True
-                )
-                coverage_rows.extend(self._record(name, [_crashed(name, exc)]))
+                logger.warning("fuzzer failed", scanner=name, exc_info=True)
+                rows.extend(self._record(name, [_crashed(name, exc)]))
                 continue
             total += result.findings
-            coverage_rows.extend(self._record(name, result.coverage))
+            rows.extend(self._record(name, result.coverage))
 
         self.session.commit()
         scan_surface.settle(self.session, self.ctx.scan_id)
-        self._announce(total, coverage_rows)
-        self._raise_if_broken(coverage_rows)
+        _raise_if_broken(rows)
         return StageResult(
             counts={
                 "vulnerabilities": total,
-                "targets": len(plan.targets()),
-                "origins": len(plan.roots),
-                "covered": len(plan.members),
-                "checks": max(
-                    (row.templates_selected or 0 for row in coverage_rows), default=0
-                ),
+                "requests": len(plan.requests),
+                "directories": len(plan.bases),
             }
         )
 
-    def _plan(self, cfg: VulnerabilityScanConfig):
-        tiers = [t for t in ROOT_TIERS if cfg.blind_sweep or t != "blind"]
-        plan = scan_surface.build(
-            self.session,
-            scan_id=self.ctx.scan_id,
-            target_id=self.ctx.target_id,
-            resolved=self.ctx.resolved,
-            mode=cfg.surface,
-            max_targets=cfg.max_targets,
-            root_tiers=tiers,
-        )
-        scan_surface.write(
-            self.session,
-            plan,
-            scan_id=self.ctx.scan_id,
-            target_id=self.ctx.target_id,
-            project_id=self.ctx.project_id,
-        )
-        if plan.unmapped_tech:
-            names = ", ".join(name for name, _ in plan.unmapped_tech.most_common(5))
-            self.emit_progress(f"software with no check tag: {names}")
-        return plan
-
-    @staticmethod
-    def _raise_if_broken(coverage: list[VulnerabilityCoverage]) -> None:
-        """A scanner that tried and broke fails the stage."""
-        broken = [
-            f"{row.scanner}: {row.error or 'failed'}"
-            for row in coverage
-            if row.status == CoverageStatus.FAILED.value
-        ]
-        if broken:
-            raise RuntimeError("; ".join(broken)[:1000])
-
-    def _ensure_library(self) -> None:
-        if library_ready(self.session):
-            if not shape_indexed(self.session):
-                self.emit_progress("indexing the check library")
-                reindex_official(self.session)
-            return
-        self.emit_progress("downloading the check library")
-        try:
-            count = sync_official(self.session)
-            self.emit_progress(f"{count} checks indexed")
-        except Exception as exc:
-            logger.warning("template library sync failed", exc_info=True)
-            msg = f"The check library is empty and could not be downloaded: {exc}"
-            raise RuntimeError(msg) from exc
-
-    def _record(self, scanner: str, rows: list) -> list[VulnerabilityCoverage]:
+    def _record(
+        self, scanner: str, items: list[Coverage]
+    ) -> list[VulnerabilityCoverage]:
         stored = []
-        for item in rows:
+        for item in items:
             row = VulnerabilityCoverage(
                 scan_id=self.ctx.scan_id,
                 target_id=self.ctx.target_id,
@@ -270,13 +219,16 @@ class VulnerabilityScanStage(Stage):
             stored.append(row)
         return stored
 
-    def _announce(self, total: int, coverage: list[VulnerabilityCoverage]) -> None:
-        checks = max((row.templates_selected or 0 for row in coverage), default=0)
-        hosts = len({row.tier for row in coverage if row.tier})
-        if total == 0:
-            self.emit_progress(f"no findings. {checks} checks ran across {hosts} tiers")
-            return
-        self.emit_progress(f"{total} findings from {checks} checks")
+
+def _raise_if_broken(coverage: list[VulnerabilityCoverage]) -> None:
+    """A fuzzer that tried and broke fails the stage."""
+    broken = [
+        f"{row.scanner}: {row.error or 'failed'}"
+        for row in coverage
+        if row.status == CoverageStatus.FAILED.value
+    ]
+    if broken:
+        raise RuntimeError("; ".join(broken)[:1000])
 
 
-__all__ = ["VulnerabilityScanStage"]
+__all__ = ["DastScanStage"]

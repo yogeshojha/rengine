@@ -9,7 +9,7 @@ from shared.enums.api_key import APIProvider
 from shared.models.api_key import API_PROVIDER_META
 from shared.services.scan_resolve import MASK, redact_command
 from stages.vulnerability_scan.config import VulnerabilityScanConfig
-from stages.vulnerability_scan.scanners.nuclei import NucleiScanner, _oast_server
+from stages.vulnerability_scan.scanners.nuclei import Job, NucleiScanner, _oast_server
 from tools.nuclei.client import _EVICTION_SLACK, NucleiClient, NucleiOptions
 
 pytestmark = pytest.mark.pipeline
@@ -90,12 +90,17 @@ def test_the_token_is_not_even_read_when_oast_is_off():
             honeypot_threshold=0,
         ),
         net=SimpleNamespace(proxy_url=None, headers={}),
-        resolved=SimpleNamespace(follow_redirects=None, tool_args=lambda _t: []),
+        resolved=SimpleNamespace(
+            follow_redirects=None, tool_args=lambda _t: [], excluded_subdomains=[]
+        ),
         session=None,
     )
     scanner._oast_token = lambda _ctx: reads.append("read") or "t0k"
 
-    options = NucleiScanner._options(scanner, Path("t.txt"), 10)
+    job = Job(
+        tier="universal", lane="Standard rate", batch=1, items=[], templates=[], rate=10
+    )
+    options = NucleiScanner._options(scanner, job, Path("t.txt"), None)
 
     assert options.interactsh_token is None
     assert reads == [], "the key was fetched for a run that will not use it"

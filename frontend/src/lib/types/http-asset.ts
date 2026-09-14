@@ -62,6 +62,19 @@ export interface HygieneVerdict {
 	evidence: string | null;
 }
 
+export interface AssetSurface {
+	state: string;
+	representative_id: string | null;
+	representative_value: string | null;
+	cluster_signals: string[];
+	members: number;
+	drop_reason: string | null;
+	tiers_planned: string[];
+	tiers_done: Record<string, string>;
+	tags: string[];
+	note: string | null;
+}
+
 export interface HttpAssetDetail extends HttpAssetRead {
 	tls_subject_dn: string | null;
 	tls_issuer_cn: string | null;
@@ -70,4 +83,5 @@ export interface HttpAssetDetail extends HttpAssetRead {
 	response_body: string | null;
 	response_headers: Record<string, string | string[]>;
 	hygiene: HygieneVerdict[];
+	surface: AssetSurface | null;
 }

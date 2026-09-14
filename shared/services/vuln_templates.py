@@ -89,6 +89,8 @@ class ParsedTemplate:
     cwe_ids: list[str] = field(default_factory=list)
     cvss_score: float | None = None
     requests: int = 0
+    paths: list[str] = field(default_factory=list)
+    simple: bool = False
 
 
 def _as_list(value: Any) -> list[str]:
@@ -138,6 +140,61 @@ def _request_count(document: dict, info: dict) -> int:
     return 1
 
 
+_REQUEST_KEYS = ("http", "requests")
+_COMPLEX_KEYS = (
+    "raw",
+    "body",
+    "headers",
+    "payloads",
+    "fuzzing",
+    "attack",
+    "req-condition",
+    "unsafe",
+    "name",
+    "redirects",
+    "max-redirects",
+    "cookie-reuse",
+    "host-redirects",
+    "skip-variables-check",
+    "iterate-all",
+    "digest-username",
+    "disable-cookie",
+)
+_BASE_URL = "{{BaseURL}}"
+
+
+def _request_shape(document: dict) -> tuple[list[str], bool]:
+    """The paths one http check requests, and whether nuclei can fold it into one GET."""
+    block = None
+    for key in _REQUEST_KEYS:
+        if isinstance(document.get(key), list):
+            block = document[key]
+            break
+    if block is None:
+        return [], False
+    paths: list[str] = []
+    simple = len(block) == 1
+    for request in block:
+        if not isinstance(request, dict):
+            return [], False
+        listed = request.get("path")
+        if isinstance(listed, str):
+            listed = [listed]
+        if not isinstance(listed, list):
+            simple = False
+            listed = []
+        for path in listed:
+            text = _clean(str(path)).strip()
+            if text and text not in paths:
+                paths.append(text)
+        method = str(request.get("method") or "GET").upper()
+        if method != "GET" or any(request.get(key) for key in _COMPLEX_KEYS):
+            simple = False
+    if not paths or any(not p.startswith(_BASE_URL) for p in paths):
+        simple = False
+    return paths[:40], simple
+
+
 def parse_template(raw: str) -> ParsedTemplate:
     """Read one nuclei document into the library's row shape."""
     if len(raw.encode("utf-8", "ignore")) > MAX_TEMPLATE_BYTES:
@@ -181,6 +238,7 @@ def parse_template(raw: str) -> ParsedTemplate:
 
     classification = info.get("classification")
     classification = classification if isinstance(classification, dict) else {}
+    shape = _request_shape(document)
     return ParsedTemplate(
         template_id=template_id[:200],
         name=name[:500],
@@ -195,6 +253,8 @@ def parse_template(raw: str) -> ParsedTemplate:
         cwe_ids=[c.upper() for c in _as_list(classification.get("cwe-id"))][:20],
         cvss_score=_as_float(classification.get("cvss-score")),
         requests=_request_count(document, info),
+        paths=shape[0],
+        simple=shape[1],
     )
 
 
@@ -237,6 +297,8 @@ def _row(
         "cwe_ids": parsed.cwe_ids,
         "cvss_score": parsed.cvss_score,
         "requests": parsed.requests,
+        "paths": parsed.paths,
+        "simple": parsed.simple,
         "digest": hashlib.sha256((raw or path).encode("utf-8", "ignore")).hexdigest(),
         "raw": raw,
         "enabled": True,
@@ -252,6 +314,27 @@ def official_root() -> Path:
 
 def custom_root() -> Path:
     return Path(CUSTOM_ROOT)
+
+
+def shape_indexed(session: Session) -> bool:
+    """Whether every official row carries its request shape."""
+    missing = session.scalar(
+        select(func.count())
+        .select_from(VulnTemplate)
+        .where(
+            VulnTemplate.origin == TemplateOrigin.OFFICIAL.value,
+            VulnTemplate.simple.is_(None),
+        )
+    )
+    return not missing
+
+
+def reindex_official(session: Session) -> int:
+    """Re-read the templates already on disk."""
+    root = official_root()
+    if not root.exists():
+        return 0
+    return index_directory(session, root, TemplateOrigin.OFFICIAL.value)
 
 
 def library_ready(session: Session) -> bool:
@@ -487,10 +570,12 @@ __all__ = [
     "library_ready",
     "official_root",
     "parse_template",
+    "reindex_official",
     "selected_templates",
     "selection_predicate",
     "sets_for",
     "severity_of",
+    "shape_indexed",
     "store_custom",
     "sync_official",
 ]

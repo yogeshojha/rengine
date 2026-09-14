@@ -4,6 +4,7 @@ import type { QueryGroups, QueryLeads } from '$lib/types/asset-query';
 import type {
 	BulkTriageResult,
 	CoverageRead,
+	SurfaceSummary,
 	IssuePage,
 	ScanVulnerabilities,
 	TriageResult,
@@ -79,6 +80,9 @@ export const vulnerabilitiesApi = {
 		);
 	},
 
+	async surface(projectId: string, scanId: string): Promise<SurfaceSummary> {
+		return api.get<SurfaceSummary>(`/vulnerabilities/surface?${scopeQuery({ projectId, scanId })}`);
+	},
 	async coverage(projectId: string, scanId: string): Promise<CoverageRead[]> {
 		return api.get<CoverageRead[]>(
 			`/vulnerabilities/coverage?${scopeQuery({ projectId, scanId })}`

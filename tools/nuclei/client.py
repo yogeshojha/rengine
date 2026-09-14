@@ -185,6 +185,10 @@ class NucleiOptions:
     exclude_hosts: tuple[str, ...] = ()
     follow_redirects: bool | None = None
     store_resp_dir: str | None = None
+    scan_strategy: str | None = "host-spray"
+    protocol_types: tuple[str, ...] = ()
+    dast: bool = False
+    fuzz_param_frequency: int | None = None
     extra_args: list[str] = field(default_factory=list)
 
 
@@ -271,6 +275,14 @@ class NucleiClient:
         ]
         if opt.max_minutes > 0:
             args += ["-max-time", f"{opt.max_minutes}m"]
+        if opt.scan_strategy:
+            args += ["-scan-strategy", opt.scan_strategy]
+        if opt.protocol_types:
+            args += ["-type", ",".join(opt.protocol_types)]
+        if opt.dast:
+            args.append("-dast")
+            if opt.fuzz_param_frequency:
+                args += ["-fuzz-param-frequency", str(opt.fuzz_param_frequency)]
         if opt.headless:
             args += ["-headless", "-system-chrome"]
         args += _oast_args(opt)

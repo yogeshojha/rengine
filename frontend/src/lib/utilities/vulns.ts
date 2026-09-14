@@ -95,6 +95,8 @@ export interface VulnerabilityRead {
 	corroborated_by: Corroboration[];
 	colocated: number;
 	evidence: string;
+	replayed_from_id: string | null;
+	replays: number;
 	asset: AssetContext | null;
 }
 
@@ -250,6 +252,9 @@ export interface CoverageRead {
 	scanner: string;
 	group: string;
 	status: string;
+	tier: string | null;
+	batch: number | null;
+	hosts_covered: number;
 	severities: string[];
 	template_sets: string[];
 	templates_selected: number | null;
@@ -265,6 +270,28 @@ export interface CoverageRead {
 	rate_limit: number | null;
 	duration_seconds: number | null;
 	error: string | null;
+}
+
+export interface SurfaceTierCount {
+	tier: string;
+	label: string;
+	scanned: number;
+	partial: number;
+	not_scanned: number;
+}
+
+export interface SurfaceSummary {
+	planned: boolean;
+	roots: number;
+	origins: number;
+	covered: number;
+	dropped: Record<string, number>;
+	names: number;
+	services: number;
+	requests: number;
+	bases: number;
+	tiers: SurfaceTierCount[];
+	unmapped_tech: string[];
 }
 
 export interface RankedFinding {
@@ -309,6 +336,7 @@ export interface ScanVulnerabilities {
 	top_findings: RankedFinding[];
 	top_hosts: VulnHostRow[];
 	coverage: CoverageRead[];
+	surface: SurfaceSummary | null;
 	templates_run: number | null;
 	requests_sent: number | null;
 	duration_seconds: number | null;

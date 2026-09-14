@@ -184,6 +184,13 @@ from shared.models.scan_schedule import (
     ScanScheduleUpdate,
     ScheduleTargetRef,
 )
+from shared.models.scan_surface import (
+    AssetSurface,
+    ScanSurfaceItem,
+    SurfaceItemRead,
+    SurfaceSummary,
+    SurfaceTierCount,
+)
 from shared.models.software import (
     NvdCpeMatch,
     NvdCve,
@@ -276,6 +283,7 @@ __all__ = [
     "ActivityLogRead",
     "AddTargetRequest",
     "AiNarrative",
+    "AssetSurface",
     "AuthConfig",
     "AuthHeader",
     "CandidatePage",
@@ -420,6 +428,7 @@ __all__ = [
     "ScanScheduleCreate",
     "ScanScheduleRead",
     "ScanScheduleUpdate",
+    "ScanSurfaceItem",
     "ScanVulnerabilities",
     "ScheduleTargetRef",
     "ScreenshotPair",
@@ -436,6 +445,9 @@ __all__ = [
     "Subdomain",
     "SubdomainRead",
     "SubdomainSummary",
+    "SurfaceItemRead",
+    "SurfaceSummary",
+    "SurfaceTierCount",
     "Tag",
     "TagBase",
     "TagCreate",

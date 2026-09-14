@@ -52,6 +52,10 @@ class VulnTemplate(SQLModel, table=True):
     cwe_ids: list = _json_list()
     cvss_score: float | None = Field(default=None)
     requests: int = Field(default=0)
+    paths: list | None = Field(
+        default=None, sa_column=Column(JSON(none_as_null=True), nullable=True)
+    )
+    simple: bool | None = Field(default=None)
     digest: str = Field(default="", max_length=64)
     raw: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
     enabled: bool = Field(default=True, index=True)
