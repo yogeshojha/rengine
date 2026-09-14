@@ -82,8 +82,12 @@ class WhoisNotApplicableError(WhoisError):
 class WhoisService:
     """WHOIS lookup service with optional DB caching."""
 
-    def __init__(self, cache_ttl_days: int = DEFAULT_CACHE_TTL_DAYS) -> None:
-        self._provider = RDAPProvider()
+    def __init__(
+        self,
+        cache_ttl_days: int = DEFAULT_CACHE_TTL_DAYS,
+        proxy_url: str | None = None,
+    ) -> None:
+        self._provider = RDAPProvider(proxy_url=proxy_url)
         self.cache_ttl_days = cache_ttl_days
 
     # Core lookup (sync, no DB)

@@ -183,7 +183,7 @@ class SeedResolutionStage(Stage):
         return records, truncated
 
     def _asn_prefixes(self, value: str) -> list[str]:
-        svc = RIPEStatService()
+        svc = RIPEStatService(proxy_url=self.ctx.resolved.proxy_url)
         try:
             result = svc.announced_prefixes_sync(self.session, value, cached_only=True)
             if result is None:

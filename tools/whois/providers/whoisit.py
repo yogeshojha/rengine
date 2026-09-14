@@ -1,5 +1,7 @@
 """RDAP provider using the whoisit library."""
 
+import contextlib
+import os
 from typing import Any
 
 import whoisit
@@ -9,14 +11,35 @@ from shared.logging import get_logger
 
 logger = get_logger(__name__)
 
+_PROXY_ENV = ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy")
+
 
 class RDAPProviderError(Exception):
     """Raised when the RDAP provider encounters an error."""
 
 
 class RDAPProvider:
-    def __init__(self) -> None:
+    def __init__(self, proxy_url: str | None = None) -> None:
         self._bootstrap_data: str | None = None
+        self._proxy_url = proxy_url
+
+    @contextlib.contextmanager
+    def _proxied(self):
+        """whoisit rides on requests, which reads the proxy from the environment."""
+        if not self._proxy_url:
+            yield
+            return
+        previous = {name: os.environ.get(name) for name in _PROXY_ENV}
+        for name in _PROXY_ENV:
+            os.environ[name] = self._proxy_url
+        try:
+            yield
+        finally:
+            for name, value in previous.items():
+                if value is None:
+                    os.environ.pop(name, None)
+                else:
+                    os.environ[name] = value
 
     @property
     def is_bootstrapped(self) -> bool:
@@ -24,7 +47,8 @@ class RDAPProvider:
 
     def bootstrap(self, overrides: bool = True) -> None:
         try:
-            whoisit.bootstrap(overrides=overrides)
+            with self._proxied():
+                whoisit.bootstrap(overrides=overrides)
             self._bootstrap_data = whoisit.save_bootstrap_data()
             logger.info("RDAP bootstrap completed successfully")
         except BootstrapError as e:
@@ -67,7 +91,8 @@ class RDAPProvider:
         """Look up WHOIS data for a domain."""
         self.ensure_bootstrapped()
         try:
-            return whoisit.domain(domain, allow_insecure_ssl=True)
+            with self._proxied():
+                return whoisit.domain(domain, allow_insecure_ssl=True)
         except UnsupportedError as e:
             msg = f"TLD not supported for RDAP lookup: {domain}"
             raise RDAPProviderError(msg) from e
@@ -82,7 +107,8 @@ class RDAPProvider:
         """Look up WHOIS data for an IP address or CIDR."""
         self.ensure_bootstrapped()
         try:
-            return whoisit.ip(ip, allow_insecure_ssl=True)
+            with self._proxied():
+                return whoisit.ip(ip, allow_insecure_ssl=True)
         except QueryError as e:
             msg = f"RDAP query failed for IP {ip}: {e}"
             raise RDAPProviderError(msg) from e
@@ -94,7 +120,8 @@ class RDAPProvider:
         """Look up WHOIS data for an ASN."""
         self.ensure_bootstrapped()
         try:
-            return whoisit.asn(asn, allow_insecure_ssl=True)
+            with self._proxied():
+                return whoisit.asn(asn, allow_insecure_ssl=True)
         except QueryError as e:
             msg = f"RDAP query failed for ASN {asn}: {e}"
             raise RDAPProviderError(msg) from e

@@ -29,10 +29,19 @@ class RIPEStatInvalidResourceError(RIPEStatAPIError):
 class RIPEStatClient:
     """Low-level HTTP client for RIPEstat API."""
 
-    def __init__(self, source_app: str | None = None) -> None:
+    def __init__(
+        self, source_app: str | None = None, proxy_url: str | None = None
+    ) -> None:
         self._source_app = source_app or os.environ.get(
             "RIPESTAT_SOURCE_APP", DEFAULT_SOURCE_APP
         )
+        self._proxy_url = proxy_url
+
+    def _egress(self) -> httpx.Client:
+        """The scan's proxy when the run names one, the instance egress otherwise."""
+        if self._proxy_url:
+            return get_sync_client(proxy=self._proxy_url)
+        return get_sync_client()
 
     def _build_params(self, resource: str, **kwargs) -> dict[str, str]:
         params = {
@@ -131,7 +140,7 @@ class RIPEStatClient:
     # celery sync methods
 
     def announced_prefixes_sync(self, asn: str) -> dict[str, Any]:
-        with get_sync_client() as client:
+        with self._egress() as client:
             resp = client.get(
                 f"{BASE_URL}/announced-prefixes/data.json",
                 params=self._build_params(asn),
@@ -139,7 +148,7 @@ class RIPEStatClient:
         return self._handle_response(resp, "announced-prefixes")
 
     def asn_neighbours_sync(self, asn: str) -> dict[str, Any]:
-        with get_sync_client() as client:
+        with self._egress() as client:
             resp = client.get(
                 f"{BASE_URL}/asn-neighbours/data.json",
                 params=self._build_params(asn),
@@ -147,7 +156,7 @@ class RIPEStatClient:
         return self._handle_response(resp, "asn-neighbours")
 
     def as_overview_sync(self, asn: str) -> dict[str, Any]:
-        with get_sync_client() as client:
+        with self._egress() as client:
             resp = client.get(
                 f"{BASE_URL}/as-overview/data.json",
                 params=self._build_params(asn),
@@ -155,7 +164,7 @@ class RIPEStatClient:
         return self._handle_response(resp, "as-overview")
 
     def network_info_sync(self, ip: str) -> dict[str, Any]:
-        with get_sync_client() as client:
+        with self._egress() as client:
             resp = client.get(
                 f"{BASE_URL}/network-info/data.json",
                 params=self._build_params(ip),
@@ -163,7 +172,7 @@ class RIPEStatClient:
         return self._handle_response(resp, "network-info")
 
     def abuse_contact_sync(self, resource: str) -> dict[str, Any]:
-        with get_sync_client() as client:
+        with self._egress() as client:
             resp = client.get(
                 f"{BASE_URL}/abuse-contact-finder/data.json",
                 params=self._build_params(resource),
@@ -171,7 +180,7 @@ class RIPEStatClient:
         return self._handle_response(resp, "abuse-contact-finder")
 
     def prefix_overview_sync(self, prefix: str) -> dict[str, Any]:
-        with get_sync_client() as client:
+        with self._egress() as client:
             resp = client.get(
                 f"{BASE_URL}/prefix-overview/data.json",
                 params=self._build_params(prefix),
@@ -179,7 +188,7 @@ class RIPEStatClient:
         return self._handle_response(resp, "prefix-overview")
 
     def related_prefixes_sync(self, prefix: str) -> dict[str, Any]:
-        with get_sync_client() as client:
+        with self._egress() as client:
             resp = client.get(
                 f"{BASE_URL}/related-prefixes/data.json",
                 params=self._build_params(prefix),

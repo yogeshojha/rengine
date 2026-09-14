@@ -442,10 +442,11 @@ def build(
 
     kept = representatives[: max(0, max_targets)]
     for item in representatives[len(kept) :]:
-        item.drop_reason = DropReason.OVER_CAP.value
-        item.state = SurfaceState.NOT_SCANNED.value
-        item.tiers_planned = []
-        plan.dropped.append(item)
+        for row in (item, *item.members):
+            row.drop_reason = DropReason.OVER_CAP.value
+            row.state = SurfaceState.NOT_SCANNED.value
+            row.tiers_planned = []
+            plan.dropped.append(row)
     plan.roots = kept
 
     plan.services = _service_items(
@@ -594,6 +595,7 @@ def settle(session: Session, scan_id: uuid.UUID) -> None:
         ).where(
             ScanSurfaceItem.scan_id == scan_id,
             ScanSurfaceItem.drop_reason.is_(None),
+            ScanSurfaceItem.note.is_(None),
         )
     ).all()
     by_state: dict[str, list[uuid.UUID]] = {}

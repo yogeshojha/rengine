@@ -142,7 +142,7 @@ class NetblockSweepStage(Stage):
     def _owned_networks(self, ips: list[str]) -> tuple[list[Network], int]:
         """ASNs meeting the share and size thresholds."""
         rows = self.session.execute(_ASN_SQL, {"ips": ips}).all()
-        client = RIPEStatClient()
+        client = RIPEStatClient(proxy_url=self.ctx.resolved.proxy_url)
         owned: list[Network] = []
         rejected = 0
         for asn, as_name, hosts in rows:

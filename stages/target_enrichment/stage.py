@@ -105,7 +105,7 @@ class TargetEnrichmentStage(Stage):
             else None
         )
         if record is None or _is_stale(record.queried_at):
-            svc = WhoisService()
+            svc = WhoisService(proxy_url=self.ctx.resolved.proxy_url)
             ttype = TargetType(self.ctx.target_type)
             try:
                 response = svc.do_lookup(

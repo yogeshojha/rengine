@@ -69,9 +69,10 @@ class RIPEStatService:
         self,
         session: AsyncSession | None = None,
         cache_ttl_days: int = DEFAULT_CACHE_TTL_DAYS,
+        proxy_url: str | None = None,
     ) -> None:
         self._session = session
-        self._client = RIPEStatClient()
+        self._client = RIPEStatClient(proxy_url=proxy_url)
         self.cache_ttl_days = cache_ttl_days
 
     def _is_fresh(self, log: RIPEStatQueryLog) -> bool:
