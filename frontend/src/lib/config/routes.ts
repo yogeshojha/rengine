@@ -4,6 +4,10 @@ export const routeLabels: Record<string, string> = {
 	dashboard: 'Dashboard',
 
 	surface: 'Attack surface',
+	assets: 'Assets',
+	engineSetup: 'Engine',
+	reporting: 'Reporting',
+	toolkit: 'Toolkit',
 	...Object.fromEntries(SURFACE_ORDER.map((spec) => [spec.tab, spec.label])),
 	exposures: 'Exposures',
 	correlation: 'Correlation',

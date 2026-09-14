@@ -3,18 +3,17 @@
 	import TargetIcon from '@lucide/svelte/icons/target';
 	import RadarIcon from '@lucide/svelte/icons/radar';
 	import StickyNoteIcon from '@lucide/svelte/icons/sticky-note';
+	import LayersIcon from '@lucide/svelte/icons/layers';
 	import WorkflowIcon from '@lucide/svelte/icons/workflow';
 	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
-	import KeyRoundIcon from '@lucide/svelte/icons/key-round';
+	import AwardIcon from '@lucide/svelte/icons/award';
 	import LibraryIcon from '@lucide/svelte/icons/library';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import ScanEyeIcon from '@lucide/svelte/icons/scan-eye';
 	import Share2Icon from '@lucide/svelte/icons/share-2';
-	import CableIcon from '@lucide/svelte/icons/cable';
-	import AwardIcon from '@lucide/svelte/icons/award';
 	import Settings2Icon from '@lucide/svelte/icons/settings-2';
 	import NavMain, { type NavGroup } from './nav-main.svelte';
-	import { FINDINGS_ROOT, SIDEBAR_ORDER } from '$lib/config/surface';
+	import { ASSET_DIMENSIONS, FINDINGS_ROOT, SURFACE } from '$lib/config/surface';
 	import NavUser from './nav-user.svelte';
 	import ProjectSwitcher from './project-switcher.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
@@ -33,14 +32,10 @@
 		...restProps
 	}: ComponentProps<typeof Sidebar.Root> = $props();
 
-	const surfaceItems = $derived(
-		SIDEBAR_ORDER.map((spec) => ({
-			title: spec.label,
-			url: ROUTES.surface(spec.tab),
-			icon: spec.icon,
-			match: spec.key === FINDINGS_ROOT ? FINDINGS_PATHS : undefined
-		}))
+	const assetItems = $derived(
+		ASSET_DIMENSIONS.map((spec) => ({ title: spec.label, url: ROUTES.surface(spec.tab) }))
 	);
+	const findings = SURFACE[FINDINGS_ROOT];
 
 	const userData = $derived({
 		name: auth.user?.username ?? 'Unknown user',
@@ -51,24 +46,29 @@
 	const navGroups = $derived<NavGroup[]>([
 		{
 			label: null,
-			items: [{ title: routeLabels.dashboard, url: ROUTES.dashboard, icon: LayoutDashboardIcon }]
+			items: [
+				{ title: routeLabels.dashboard, url: ROUTES.dashboard, icon: LayoutDashboardIcon },
+				{ title: routeLabels.targets, url: ROUTES.targets, icon: TargetIcon },
+				{ title: routeLabels.notes, url: ROUTES.notes, icon: StickyNoteIcon }
+			]
 		},
 		{
 			label: routeLabels.surface,
 			items: [
-				...surfaceItems,
+				{
+					title: routeLabels.assets,
+					url: ROUTES.surface(ASSET_DIMENSIONS[0].tab),
+					icon: LayersIcon,
+					items: assetItems
+				},
+				{
+					title: findings.label,
+					url: ROUTES.surface(findings.tab),
+					icon: findings.icon,
+					match: FINDINGS_PATHS
+				},
 				{ title: routeLabels.exposures, url: ROUTES.exposures(), icon: ScanEyeIcon },
 				{ title: routeLabels.correlation, url: ROUTES.correlation, icon: Share2Icon }
-			]
-		},
-		{
-			label: 'Scope',
-			items: [
-				{ title: routeLabels.targets, url: ROUTES.targets, icon: TargetIcon },
-				...(capabilitiesStore.has(Capability.BOUNTY_PROGRAMS)
-					? [{ title: routeLabels['bounty-hub'], url: ROUTES.bountyHub(), icon: AwardIcon }]
-					: []),
-				{ title: routeLabels.connectors, url: ROUTES.connectors(), icon: CableIcon }
 			]
 		},
 		{
@@ -83,12 +83,19 @@
 						: null
 				},
 				{ title: routeLabels.schedules, url: ROUTES.schedules, icon: CalendarClockIcon },
-				{ title: routeLabels.engines, url: ROUTES.engines, icon: WorkflowIcon },
-				{ title: routeLabels.contexts, url: ROUTES.contexts, icon: KeyRoundIcon }
+				{
+					title: routeLabels.engineSetup,
+					url: ROUTES.engines,
+					icon: WorkflowIcon,
+					items: [
+						{ title: routeLabels.engines, url: ROUTES.engines },
+						{ title: routeLabels.contexts, url: ROUTES.contexts }
+					]
+				}
 			]
 		},
 		{
-			label: 'Output',
+			label: routeLabels.reporting,
 			items: [
 				{
 					title: routeLabels.reports,
@@ -97,9 +104,24 @@
 					badge: reports.liveCount
 						? { label: String(reports.liveCount), live: true, tone: 'info' as const }
 						: null
-				},
-				{ title: routeLabels.notes, url: ROUTES.notes, icon: StickyNoteIcon },
-				{ title: routeLabels.arsenal, url: ROUTES.arsenal(), icon: LibraryIcon }
+				}
+			]
+		},
+		{
+			label: null,
+			items: [
+				...(capabilitiesStore.has(Capability.BOUNTY_PROGRAMS)
+					? [{ title: routeLabels['bounty-hub'], url: ROUTES.bountyHub(), icon: AwardIcon }]
+					: []),
+				{
+					title: routeLabels.toolkit,
+					url: ROUTES.arsenal(),
+					icon: LibraryIcon,
+					items: [
+						{ title: routeLabels.arsenal, url: ROUTES.arsenal() },
+						{ title: routeLabels.connectors, url: ROUTES.connectors() }
+					]
+				}
 			]
 		}
 	]);

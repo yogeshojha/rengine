@@ -125,8 +125,8 @@ export const SURFACE_ORDER: SurfaceSpec[] = [
 	SURFACE[SurfaceDimension.SOFTWARE]
 ];
 
-export const SIDEBAR_ORDER: SurfaceSpec[] = SURFACE_ORDER.filter(
-	(spec) => spec.key !== SurfaceDimension.SOFTWARE
+export const ASSET_DIMENSIONS: SurfaceSpec[] = SURFACE_ORDER.filter(
+	(spec) => spec.key !== SurfaceDimension.VULNERABILITIES && spec.key !== SurfaceDimension.SOFTWARE
 );
 
 export function surfaceSpec(key: string): SurfaceSpec | undefined {
