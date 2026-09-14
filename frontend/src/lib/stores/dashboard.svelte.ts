@@ -1,32 +1,35 @@
 import { dashboardApi } from '$lib/api/dashboard';
 import { subdomainsApi } from '$lib/api/subdomains';
 import { interestApi } from '$lib/api/interest';
-import { endpointsApi, ipsApi, servicesApi } from '$lib/api/scan-results';
-import { vulnerabilitiesApi } from '$lib/api/vulnerabilities';
+import { ipsApi, softwareApi } from '$lib/api/scan-results';
 import { threatIntelApi } from '$lib/api/threat-intel';
-import { compileVulnQuery, emptyVulnQuery } from '$lib/utilities/vulns';
-import { compileServiceQuery, emptyServiceQuery } from '$lib/utilities/services';
+import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
+import { Capability } from '$lib/config/capabilities';
 import type { Facet } from '$lib/utilities/scan-insights';
 import type { IpFacetSet } from '$lib/utilities/ip-groups';
 import type { InterestPage } from '$lib/types/interest';
-import type { ThreatIntelStatus } from '$lib/types/threat-intel';
+import type { IntelChange, ThreatIntelStatus } from '$lib/types/threat-intel';
+import type { SoftwareCoverage, SoftwareFacets } from '$lib/types/software';
+import type { HygieneSummary } from '$lib/utilities/scan-insights';
+import type { CorrelationGraph } from '$lib/types/correlation';
 import { SvelteSet } from 'svelte/reactivity';
 import {
 	DASHBOARD_SLICES,
 	DEFAULT_DASHBOARD_WINDOW,
-	FEED_QUERIES,
 	HOSTING_QUERIES,
+	windowDays,
+	type DashboardActivity,
 	type DashboardSlice,
 	type DashboardDiscovery,
-	type DashboardFeed,
 	type DashboardOverview,
+	type DashboardPrograms,
 	type DashboardReadiness,
 	type DashboardWindow,
 	type HostingSplit
 } from '$lib/types/dashboard';
 
-const FEED_ROWS = 4;
-const EXPOSURE_ROWS = 8;
+const EXPOSURE_ROWS = 6;
+const CHANGE_ROWS = 200;
 
 function hostingCounts(projectId: string): Promise<HostingSplit> {
 	const queries = Object.values(HOSTING_QUERIES);
@@ -47,9 +50,14 @@ function createDashboardStore() {
 	let tech = $state<Facet[] | null>(null);
 	let ipFacets = $state<IpFacetSet | null>(null);
 	let intel = $state<ThreatIntelStatus | null>(null);
+	let changes = $state<IntelChange[] | null>(null);
 	let hosting = $state<HostingSplit | null>(null);
 	let exposures = $state<InterestPage | null>(null);
-	let feed = $state<DashboardFeed | null>(null);
+	let software = $state<{ facets: SoftwareFacets; coverage: SoftwareCoverage } | null>(null);
+	let hygiene = $state<HygieneSummary | null>(null);
+	let shared = $state<CorrelationGraph | null>(null);
+	let activity = $state<DashboardActivity | null>(null);
+	let programs = $state<DashboardPrograms | null>(null);
 	let extrasLoading = $state(false);
 	let changeWindow = $state<DashboardWindow>(DEFAULT_DASHBOARD_WINDOW);
 	let loading = $state(false);
@@ -77,7 +85,7 @@ function createDashboardStore() {
 			if (mySeq === seq) loading = false;
 		}
 		void loadDiscovery(pid, mySeq);
-		void loadExtras(pid, mySeq);
+		void loadExtras(pid, win, mySeq);
 		if (overview?.first_run) void loadReadiness(mySeq);
 	}
 
@@ -105,8 +113,8 @@ function createDashboardStore() {
 		}
 	}
 
-	// each widget reads its result page's own endpoint
-	async function loadExtras(pid: string, mySeq: number) {
+	// each cell reads its result page's own endpoint
+	async function loadExtras(pid: string, win: DashboardWindow, mySeq: number) {
 		extrasLoading = true;
 		const keep = () => mySeq === seq;
 		const settle = async <T>(
@@ -125,6 +133,7 @@ function createDashboardStore() {
 				failed.add(slice);
 			}
 		};
+		const bounty = capabilitiesStore.has(Capability.BOUNTY_PROGRAMS);
 		await Promise.all([
 			settle(
 				'tech',
@@ -133,6 +142,11 @@ function createDashboardStore() {
 			),
 			settle('ipFacets', ipsApi.facets(pid, ''), (v) => (ipFacets = v)),
 			settle('intel', threatIntelApi.status(pid), (v) => (intel = v)),
+			settle(
+				'changes',
+				threatIntelApi.changes(pid, windowDays(win), CHANGE_ROWS),
+				(v) => (changes = v)
+			),
 			settle('hosting', hostingCounts(pid), (v) => (hosting = v)),
 			settle(
 				'exposures',
@@ -140,50 +154,18 @@ function createDashboardStore() {
 				(v) => (exposures = v)
 			),
 			settle(
-				'feed',
-				Promise.all([
-					vulnerabilitiesApi.search(
-						pid,
-						'',
-						compileVulnQuery({ ...emptyVulnQuery(), newOnly: true }, 'risk', -1, 0, FEED_ROWS)
-					),
-					interestApi.project(pid, { q: FEED_QUERIES.exposures, limit: FEED_ROWS }),
-					servicesApi.search(
-						pid,
-						'',
-						compileServiceQuery(
-							{ ...emptyServiceQuery(), newOnly: true, sensitiveOnly: true },
-							'exposure',
-							-1,
-							0,
-							FEED_ROWS
-						)
-					),
-					endpointsApi.search(pid, '', {
-						q: FEED_QUERIES.endpoints,
-						host: null,
-						dir_path: null,
-						subtree: true,
-						endpoint_class: null,
-						source: null,
-						interest: null,
-						status_class: null,
-						probed: null,
-						new: false,
-						hide_static: true,
-						sort: 'relevance',
-						direction: 'desc',
-						page: 1,
-						size: FEED_ROWS
-					})
-				]).then(([vulns, fresh, services, endpoints]) => ({
-					vulns: { items: vulns.items, total: vulns.total },
-					exposures: { rows: fresh.rows, total: fresh.total },
-					services: { items: services.items, total: services.total },
-					endpoints: { items: endpoints.items, total: endpoints.total }
-				})),
-				(v) => (feed = v)
-			)
+				'software',
+				Promise.all([softwareApi.facets(pid, ''), softwareApi.coverage(pid, '')]).then(
+					([facets, coverage]) => ({ facets, coverage })
+				),
+				(v) => (software = v)
+			),
+			settle('hygiene', subdomainsApi.hygiene(pid, ''), (v) => (hygiene = v)),
+			settle('shared', subdomainsApi.correlationGraph(pid, ''), (v) => (shared = v)),
+			settle('activity', dashboardApi.activity(pid, win), (v) => (activity = v)),
+			bounty
+				? settle('programs', dashboardApi.programs(pid, win), (v) => (programs = v))
+				: Promise.resolve()
 		]);
 		if (keep()) extrasLoading = false;
 	}
@@ -195,9 +177,14 @@ function createDashboardStore() {
 		tech = null;
 		ipFacets = null;
 		intel = null;
+		changes = null;
 		hosting = null;
 		exposures = null;
-		feed = null;
+		software = null;
+		hygiene = null;
+		shared = null;
+		activity = null;
+		programs = null;
 		extrasLoading = false;
 		error = null;
 		hasFetched = false;
@@ -223,14 +210,29 @@ function createDashboardStore() {
 		get intel() {
 			return intel;
 		},
+		get changes() {
+			return changes;
+		},
 		get hosting() {
 			return hosting;
 		},
 		get exposures() {
 			return exposures;
 		},
-		get feed() {
-			return feed;
+		get software() {
+			return software;
+		},
+		get hygiene() {
+			return hygiene;
+		},
+		get shared() {
+			return shared;
+		},
+		get activity() {
+			return activity;
+		},
+		get programs() {
+			return programs;
 		},
 		get extrasLoading() {
 			return extrasLoading;

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Layers from '@lucide/svelte/icons/layers';
-	import Widget from './widget.svelte';
+	import Cell from './cell.svelte';
 	import RankedBars, { type BarRow } from './ranked-bars.svelte';
 	import TechIcon from '$lib/components/scans/results/tech-icon.svelte';
 	import { ROUTES } from '$lib/config/routes';
@@ -15,9 +15,8 @@
 
 	let { tech, loading = false, class: className = '' }: Props = $props();
 
-	const TOP = 8;
+	const TOP = 7;
 	const SPEC = SURFACE[SurfaceDimension.WEB_ASSETS];
-
 	let rows = $derived<BarRow[]>(
 		(tech ?? []).slice(0, TOP).map((f) => ({
 			key: f.value,
@@ -28,31 +27,27 @@
 	);
 </script>
 
-<Widget
+<Cell
+	id="tech"
 	title="Technology"
+	description="Web assets per technology"
 	href={ROUTES.surface(SPEC.tab)}
-	hrefLabel="Web assets"
+	hrefLabel={SPEC.label}
 	loading={loading && !tech}
 	class={className}
 >
-	<div class="px-5 py-4">
-		<RankedBars {rows}>
-			{#snippet icon(r)}
-				<TechIcon name={r.key} class="size-4">
-					{#snippet fallback()}
-						<Layers class="size-3.5 text-muted-foreground" />
-					{/snippet}
-				</TechIcon>
-			{/snippet}
-		</RankedBars>
-	</div>
+	<RankedBars {rows} dense>
+		{#snippet icon(r)}
+			<TechIcon name={r.key} class="size-4">
+				{#snippet fallback()}
+					<Layers class="size-3.5 text-muted-foreground" />
+				{/snippet}
+			</TechIcon>
+		{/snippet}
+	</RankedBars>
 	{#snippet footer()}
 		{#if tech && tech.length > TOP}
-			<a href={ROUTES.surface(SPEC.tab)} class="hover:text-foreground hover:underline">
-				{tech.length - TOP} more technologies in Web assets
-			</a>
-		{:else}
-			Counts are web assets with the technology
+			<span>{tech.length - TOP} more technologies</span>
 		{/if}
 	{/snippet}
-</Widget>
+</Cell>

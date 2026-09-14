@@ -1,27 +1,28 @@
 import type { ScanStatus } from './scan';
 import type { SeverityCount } from '$lib/utilities/vulns';
+import type { ActivityKind, FunnelStep, QueueTier } from '$lib/config/dashboard';
 
 export const DASHBOARD_WINDOWS = [
-	{ key: '24h', label: '24h', text: 'last 24 hours' },
-	{ key: '7d', label: '7d', text: 'last 7 days' },
-	{ key: '30d', label: '30d', text: 'last 30 days' }
+	{ key: '7d', label: '7d', text: 'last 7 days', days: 7 },
+	{ key: '14d', label: '14d', text: 'last 14 days', days: 14 },
+	{ key: '30d', label: '30d', text: 'last 30 days', days: 30 }
 ] as const;
 export type DashboardWindow = (typeof DASHBOARD_WINDOWS)[number]['key'];
 export const DEFAULT_DASHBOARD_WINDOW: DashboardWindow = '7d';
-
-// days of daily history a sparkline draws; 24h keeps a week of context rather than one point
-export const TREND_DAYS: Record<DashboardWindow, number> = {
-	'24h': 7,
-	'7d': 7,
-	'30d': 30
-};
+export const windowDays = (w: DashboardWindow) =>
+	DASHBOARD_WINDOWS.find((x) => x.key === w)?.days ?? 7;
 export const DASHBOARD_SLICES = [
 	'tech',
 	'ipFacets',
 	'intel',
+	'changes',
 	'hosting',
 	'exposures',
-	'feed',
+	'software',
+	'hygiene',
+	'shared',
+	'activity',
+	'programs',
 	'discovery'
 ] as const;
 export type DashboardSlice = (typeof DASHBOARD_SLICES)[number];
@@ -30,10 +31,15 @@ export const DASHBOARD_SLICE_LABELS: Record<DashboardSlice, string> = {
 	tech: 'Technology',
 	ipFacets: 'Geography and networks',
 	intel: 'Exploitation',
+	changes: 'Exploitation changes',
 	hosting: 'Hosting',
 	exposures: 'Exposures',
-	feed: 'Changes',
-	discovery: 'Hygiene'
+	software: 'Software CVEs',
+	hygiene: 'Web hygiene',
+	shared: 'Shared across targets',
+	activity: 'Activity',
+	programs: 'Programs',
+	discovery: 'Untracked domains'
 };
 
 export const windowText = (w: DashboardWindow) =>
@@ -112,6 +118,12 @@ export interface DashboardSurfaceMetric {
 	new_in_window: number;
 }
 
+export interface DashboardEvidenceCell {
+	severity: string;
+	evidence: string;
+	count: number;
+}
+
 export interface DashboardFinding {
 	id: string;
 	scan_id: string;
@@ -129,6 +141,9 @@ export interface DashboardFinding {
 	epss_score: number | null;
 	cvss_score: number | null;
 	discovered_at: string;
+	evidence: string | null;
+	tier: QueueTier;
+	replays: number;
 }
 
 export interface DashboardRisk {
@@ -143,7 +158,22 @@ export interface DashboardRisk {
 	targets_affected: number;
 	targets_scanned: number;
 	by_severity: SeverityCount[];
+	evidence: DashboardEvidenceCell[];
+	tiers: Record<QueueTier, number>;
 	queue: DashboardFinding[];
+}
+
+export interface DashboardFunnelStep {
+	key: FunnelStep;
+	label: string;
+	count: number;
+	new_in_window: number | null;
+	query: string | null;
+	tab: string | null;
+}
+
+export interface DashboardFunnel {
+	steps: DashboardFunnelStep[];
 }
 
 export interface DashboardGeo {
@@ -187,9 +217,17 @@ export interface DashboardCertSignal {
 	targets: DashboardTargetCount[];
 }
 
+export interface DashboardCertBucket {
+	key: string;
+	label: string;
+	count: number;
+	query: string;
+}
+
 export interface DashboardCerts {
 	expired: DashboardCertSignal;
 	expiring: DashboardCertSignal;
+	buckets: DashboardCertBucket[];
 }
 
 export interface DashboardChangeRow {
@@ -210,8 +248,11 @@ export interface DashboardDay {
 	date: string;
 	runs: number;
 	failed: number;
+	outcomes: Record<string, number>;
 	new: Record<string, number>;
+	retired: Record<string, number>;
 	total: Record<string, number>;
+	findings: Record<string, number>;
 }
 
 export interface DashboardTargetSurface {
@@ -266,6 +307,7 @@ export interface DashboardOverview {
 	failed_in_window: number;
 	last_completed_at: string | null;
 	surface: DashboardSurfaceMetric[];
+	funnel: DashboardFunnel;
 	risk: DashboardRisk;
 	signals: DashboardSignals;
 	never_scanned: StaleTarget[];
@@ -302,8 +344,6 @@ export interface DashboardDiscovery {
 	domains: DashboardDiscoveredDomain[];
 }
 
-export type QueueFilter = 'all' | 'kev' | 'critical' | 'high' | 'new';
-
 // fronting split of resolving web assets
 export const HOSTING_QUERIES = {
 	resolved: 'is:resolved',
@@ -320,15 +360,74 @@ export interface HostingSplit {
 	capped: Record<string, boolean>;
 }
 
-export const FEED_QUERIES = {
-	services: 'is:new and is:sensitive',
-	endpoints: 'is:new and is:param and is:live',
-	exposures: 'is:new'
-} as const;
+export interface DashboardEvent {
+	at: string;
+	kind: ActivityKind;
+	label: string;
+	title: string;
+	detail: string | null;
+	tone: 'neutral' | 'hot' | 'new';
+	scan_id: string | null;
+	target_id: string | null;
+	watch_id: string | null;
+	platform: string | null;
+	handle: string | null;
+	connector_id: string | null;
+}
 
-export interface DashboardFeed {
-	vulns: { items: import('$lib/utilities/vulns').VulnerabilityRead[]; total: number };
-	exposures: { rows: import('./interest').InterestRow[]; total: number };
-	services: { items: import('$lib/utilities/services').ServiceRead[]; total: number };
-	endpoints: { items: import('$lib/utilities/endpoints').EndpointRead[]; total: number };
+export interface DashboardActivity {
+	window: DashboardWindow;
+	events: DashboardEvent[];
+}
+
+export interface DashboardDayKinds {
+	date: string;
+	kinds: Record<string, number>;
+}
+
+export interface DashboardWatchAlert {
+	watch_id: string;
+	name: string;
+	program_name: string;
+	at: string;
+}
+
+export interface DashboardLadderStep {
+	state: string;
+	label: string;
+	count: number;
+}
+
+export interface DashboardWatches {
+	total: number;
+	active: number;
+	daily: DashboardDayKinds[];
+	ladder: DashboardLadderStep[];
+	latest_alert: DashboardWatchAlert | null;
+	stream_running: boolean;
+	stream_certificates: number;
+	last_certificate_at: string | null;
+}
+
+export interface DashboardBrowsing {
+	connectors: number;
+	live: number;
+	requests_seen: number;
+	browsed: number;
+	unseen: number;
+	new_params: number;
+	flagged: number;
+	last_seen_at: string | null;
+	daily: DashboardDayKinds[];
+}
+
+export interface DashboardPrograms {
+	window: DashboardWindow;
+	programs_total: number;
+	by_platform: Record<string, number>;
+	watched: number;
+	events_in_window: Record<string, number>;
+	events_daily: DashboardDayKinds[];
+	watches: DashboardWatches;
+	browsing: DashboardBrowsing;
 }

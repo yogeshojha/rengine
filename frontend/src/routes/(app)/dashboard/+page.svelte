@@ -12,39 +12,50 @@
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { dashboardStore } from '$lib/stores/dashboard.svelte';
+	import { dashboardLayout } from '$lib/stores/dashboard-layout.svelte';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
+	import { scanSchedulesStore } from '$lib/stores/scan-schedules.svelte';
 	import AddTargetModal from '$lib/components/modals/add-target-modal.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import ScheduleModal from '$lib/components/schedules/schedule-modal.svelte';
 	import FirstRunPanel from '$lib/components/dashboard/first-run/first-run-panel.svelte';
 	import Launcher from '$lib/components/dashboard/first-run/launcher.svelte';
-	import StatStrip from '$lib/components/dashboard/stat-strip.svelte';
-	import SurfaceTrend from '$lib/components/dashboard/surface-trend.svelte';
-	import CoverageWidget from '$lib/components/dashboard/coverage-widget.svelte';
-	import AttackQueue from '$lib/components/dashboard/attack-queue.svelte';
-	import ExploitationWidget from '$lib/components/dashboard/exploitation-widget.svelte';
-	import ExposuresWidget from '$lib/components/dashboard/exposures-widget.svelte';
-	import ChangesFeed from '$lib/components/dashboard/changes-feed.svelte';
-	import ServicesWidget from '$lib/components/dashboard/services-widget.svelte';
-	import TechWidget from '$lib/components/dashboard/tech-widget.svelte';
-	import HostingWidget from '$lib/components/dashboard/hosting-widget.svelte';
-	import GeoWidget from '$lib/components/dashboard/geo-widget.svelte';
-	import HygieneWidget from '$lib/components/dashboard/hygiene-widget.svelte';
-	import MovementHeatmap from '$lib/components/dashboard/movement-heatmap.svelte';
-	import SurfaceTreemap from '$lib/components/dashboard/surface-treemap.svelte';
-	import { relativeTime } from '$lib/utilities/dates';
+	import CountsStrip from '$lib/components/dashboard/counts-strip.svelte';
+	import FunnelCell from '$lib/components/dashboard/funnel-cell.svelte';
+	import InventoryCell from '$lib/components/dashboard/inventory-cell.svelte';
+	import ChangesCell from '$lib/components/dashboard/changes-cell.svelte';
+	import GeoCell from '$lib/components/dashboard/geo-cell.svelte';
+	import BoardCell from '$lib/components/dashboard/board-cell.svelte';
+	import SeverityTrendCell from '$lib/components/dashboard/severity-trend-cell.svelte';
+	import ExploitationCell from '$lib/components/dashboard/exploitation-cell.svelte';
+	import EvidenceCell from '$lib/components/dashboard/evidence-cell.svelte';
+	import ExposuresCell from '$lib/components/dashboard/exposures-cell.svelte';
+	import ProgramsCell from '$lib/components/dashboard/programs-cell.svelte';
+	import WatchesCell from '$lib/components/dashboard/watches-cell.svelte';
+	import BrowsingCell from '$lib/components/dashboard/browsing-cell.svelte';
+	import CertsCell from '$lib/components/dashboard/certs-cell.svelte';
+	import HygieneCell from '$lib/components/dashboard/hygiene-cell.svelte';
+	import OwnershipCell from '$lib/components/dashboard/ownership-cell.svelte';
+	import RunsCell from '$lib/components/dashboard/runs-cell.svelte';
+	import SoftwareCell from '$lib/components/dashboard/software-cell.svelte';
+	import ServicesCell from '$lib/components/dashboard/services-cell.svelte';
+	import TechCell from '$lib/components/dashboard/tech-cell.svelte';
+	import HostingCell from '$lib/components/dashboard/hosting-cell.svelte';
+	import SharedCell from '$lib/components/dashboard/shared-cell.svelte';
+	import ActivityCell from '$lib/components/dashboard/activity-cell.svelte';
+	import CustomizePopover from '$lib/components/dashboard/customize-popover.svelte';
+	import HiddenTray from '$lib/components/dashboard/hidden-tray.svelte';
 	import {
 		DASHBOARD_SLICE_LABELS,
 		DASHBOARD_WINDOWS,
-		type DashboardWindow,
-		type QueueFilter
+		windowDays,
+		type DashboardWindow
 	} from '$lib/types/dashboard';
 
 	const TICK_MS = 1000;
 
 	let activeProject = $derived(projectsStore.activeProject);
 	let overview = $derived(dashboardStore.overview);
-	// first-run surface until a scan completes
 	let firstRun = $derived(!!overview?.first_run && !overview.last_completed_at);
 	let emptyProject = $derived(!!overview && overview.targets_total === 0 && !liveScans.hasLive);
 	let addTargetOpen = $state(false);
@@ -53,43 +64,38 @@
 	let scheduleOpen = $state(false);
 	let scheduleTargetIds = $state<string[]>([]);
 	let now = $state(Date.now());
-	let queueFilter = $state<QueueFilter>('all');
 
-	let feed = $derived(dashboardStore.feed);
-	let feedHasRows = $derived(
-		!!feed &&
-			(feed.vulns.total > 0 ||
-				feed.exposures.total > 0 ||
-				feed.services.total > 0 ||
-				feed.endpoints.total > 0)
-	);
-	let hasServices = $derived((overview?.exposure.services ?? 0) > 0);
-	let hasTech = $derived((dashboardStore.tech?.length ?? 0) > 0);
-	let hasHosting = $derived((dashboardStore.hosting?.resolved ?? 0) > 0);
-	let hasGeo = $derived((dashboardStore.ipFacets?.country.length ?? 0) > 0);
-	let hasExposures = $derived((dashboardStore.exposures?.total ?? 0) > 0);
-	let hasMovement = $derived((overview?.changes.length ?? 0) > 0);
+	let win = $derived(dashboardStore.window);
+	let days = $derived(windowDays(win));
+	let extras = $derived(dashboardStore.extrasLoading);
+	let programs = $derived(dashboardStore.programs);
 	let notLoaded = $derived(
 		dashboardStore.failedSlices.map((slice) => DASHBOARD_SLICE_LABELS[slice])
 	);
-	let hasTreemap = $derived(
-		!!overview && overview.targets.some((t) => t.surface.some((s) => (s.value ?? 0) > 0))
-	);
-	let subline = $derived.by(() => {
-		if (!overview || !activeProject) return '';
-		const parts = [activeProject.name];
-		parts.push(
-			`${overview.targets_total.toLocaleString()} ${overview.targets_total === 1 ? 'target' : 'targets'}`
-		);
-		if (overview.last_completed_at)
-			parts.push(`last run completed ${relativeTime(overview.last_completed_at)}`);
-		return parts.join(' · ');
+	const show = (id: string) => dashboardLayout.visible(id);
+
+	let headline = $derived.by(() => {
+		if (!overview) return null;
+		const recent = overview.daily.slice(-days);
+		const sum = (pick: (d: (typeof recent)[number]) => number) =>
+			recent.reduce((n, d) => n + pick(d), 0);
+		const findings = sum((d) => Object.values(d.findings).reduce((a, b) => a + b, 0));
+		const critical = sum((d) => d.findings.critical ?? 0);
+		const web = sum((d) => d.new.web_assets ?? 0);
+		const targets = new Set(
+			overview.changes.filter((c) => (c.new.web_assets ?? 0) > 0).map((c) => c.target_id)
+		).size;
+		const firsts = overview.changes.filter((c) => c.first.length > 0).length;
+		return { findings, critical, web, targets, firsts, runs: overview.runs_in_window };
 	});
 
 	$effect(() => {
 		const pid = activeProject?.id;
 		untrack(() => {
-			if (pid) dashboardStore.init(pid);
+			if (pid) {
+				dashboardStore.init(pid);
+				void scanSchedulesStore.fetchSchedules(pid);
+			}
 		});
 	});
 
@@ -111,19 +117,47 @@
 		scheduleTargetIds = ids;
 		scheduleOpen = true;
 	}
+	const plural = (n: number, one: string, many: string) =>
+		`${n.toLocaleString()} ${n === 1 ? one : many}`;
 </script>
 
 <svelte:head><title>{routeLabels.dashboard} · reNgine</title></svelte:head>
 
-<div class="flex flex-col gap-4">
-	<div class="flex flex-wrap items-start justify-between gap-3">
+<div class="flex flex-col gap-6">
+	<div class="flex flex-wrap items-end justify-between gap-4">
 		<div class="flex min-w-0 flex-col gap-1.5">
-			<div class="flex items-baseline gap-2">
+			<span class="font-mono text-2xs tracking-[0.1em] text-muted-foreground uppercase">
+				{activeProject?.name ?? 'Dashboard'}{#if overview}
+					· {plural(overview.targets_total, 'target', 'targets')} · {days} days{/if}
+			</span>
+			{#if headline && !firstRun && !emptyProject && !headline.findings && !headline.web}
+				<h1 class="max-w-[34ch] text-2xl leading-tight font-semibold tracking-tight text-balance">
+					{plural(headline.runs, 'run', 'runs')} in {days} days.
+					<span class="font-medium text-muted-foreground">
+						{#if headline.firsts}
+							{plural(headline.firsts, 'first run', 'first runs')}.
+						{:else}
+							No change.
+						{/if}
+					</span>
+				</h1>
+			{:else if headline && !firstRun && !emptyProject}
+				<h1 class="max-w-[34ch] text-2xl leading-tight font-semibold tracking-tight text-balance">
+					{#if headline.critical}
+						<span class="text-destructive"
+							>{plural(headline.critical, 'critical finding', 'critical findings')}</span
+						>
+						and
+					{/if}
+					{plural(headline.findings, 'finding', 'findings')} in {days} days.
+					<span class="font-medium text-muted-foreground">
+						{plural(headline.web, 'new web asset', 'new web assets')}{#if headline.targets}
+							on {plural(headline.targets, 'target', 'targets')}{/if}.
+					</span>
+				</h1>
+			{:else}
 				<h1 class="text-lg font-semibold">Dashboard</h1>
-				<span class="truncate text-sm text-muted-foreground">
-					{subline || (activeProject?.name ?? 'Select a project')}
-				</span>
-			</div>
+			{/if}
 		</div>
 		{#if activeProject && !firstRun && !emptyProject}
 			<div class="flex flex-wrap items-center gap-2">
@@ -131,9 +165,9 @@
 					type="single"
 					variant="outline"
 					size="sm"
-					value={dashboardStore.window}
+					value={win}
 					onValueChange={(v) => v && dashboardStore.setWindow(v as DashboardWindow)}
-					aria-label="Change window"
+					aria-label="Window"
 				>
 					{#each DASHBOARD_WINDOWS as w (w.key)}
 						<ToggleGroup.Item value={w.key} class="px-2.5" aria-label={w.text}>
@@ -141,6 +175,7 @@
 						</ToggleGroup.Item>
 					{/each}
 				</ToggleGroup.Root>
+				<CustomizePopover />
 				<Button
 					variant="outline"
 					size="sm"
@@ -200,8 +235,8 @@
 				<Launcher heading="No targets in this project" sub="Add a target or start a scan." />
 			</div>
 		</Card.Root>
-	{:else}
-		<StatStrip {overview} window={dashboardStore.window} />
+	{:else if overview}
+		<CountsStrip {overview} window={win} onScan={scanTargets} />
 
 		{#if notLoaded.length}
 			<div
@@ -222,94 +257,135 @@
 			</div>
 		{/if}
 
-		{#if overview}
-			<div class="grid grid-cols-12 gap-4">
-				{#if overview.runs_total > 0}
-					<SurfaceTrend
-						{overview}
-						window={dashboardStore.window}
-						class="col-span-12 {hasGeo ? 'xl:col-span-8' : ''}"
-					/>
-				{/if}
-				{#if hasGeo}
-					<GeoWidget
-						countries={dashboardStore.ipFacets?.country ?? null}
-						loading={dashboardStore.extrasLoading}
-						class="col-span-12 lg:col-span-6 xl:col-span-4"
-					/>
-				{/if}
-
-				{#if overview.risk.targets_scanned > 0 || overview.risk.total > 0}
-					<AttackQueue
-						{overview}
-						window={dashboardStore.window}
-						filter={queueFilter}
-						onFilter={(f) => (queueFilter = f)}
-						class="col-span-12 xl:col-span-8"
-					/>
-				{/if}
-				<CoverageWidget
-					{overview}
-					window={dashboardStore.window}
-					liveCount={liveScans.count}
-					onScan={scanTargets}
-					onSchedule={scheduleTargets}
+		<!-- estate -->
+		<div class="grid grid-cols-12 overflow-hidden rounded-xl border bg-card">
+			{#if show('funnel')}
+				<FunnelCell funnel={overview.funnel} window={win} class="col-span-12 xl:col-span-8" />
+			{/if}
+			{#if show('geo') && (dashboardStore.ipFacets?.country.length ?? 0) > 0}
+				<GeoCell
+					countries={dashboardStore.ipFacets?.country ?? null}
+					loading={extras}
 					class="col-span-12 lg:col-span-6 xl:col-span-4"
 				/>
-
-				{#if dashboardStore.intel?.coverage?.findings}
-					<ExploitationWidget
-						intel={dashboardStore.intel}
-						projectId={projectsStore.activeProject?.id ?? null}
-						loading={dashboardStore.extrasLoading}
-						class="col-span-12 lg:col-span-6 xl:col-span-4"
-					/>
-				{/if}
-				{#if feedHasRows}
-					<ChangesFeed {feed} class="col-span-12 lg:col-span-6 xl:col-span-4" />
-				{/if}
-				{#if hasServices}
-					<ServicesWidget
-						exposure={overview.exposure}
-						class="col-span-12 lg:col-span-6 xl:col-span-4"
-					/>
-				{/if}
-				{#if hasExposures}
-					<ExposuresWidget
-						page={dashboardStore.exposures}
-						class="col-span-12 lg:col-span-6 xl:col-span-4"
-					/>
-				{/if}
-
-				{#if hasHosting}
-					<HostingWidget
-						hosting={dashboardStore.hosting}
-						networks={dashboardStore.ipFacets?.asn ?? null}
-						loading={dashboardStore.extrasLoading}
-						class="col-span-12 lg:col-span-6 xl:col-span-4"
-					/>
-				{/if}
-				{#if hasTech}
-					<TechWidget
-						tech={dashboardStore.tech}
-						loading={dashboardStore.extrasLoading}
-						class="col-span-12 lg:col-span-6 xl:col-span-4"
-					/>
-				{/if}
-				<HygieneWidget
+			{/if}
+			{#if show('changes')}
+				<ChangesCell {overview} window={win} class="col-span-12 xl:col-span-8" />
+			{/if}
+			{#if show('inventory')}
+				<InventoryCell
 					{overview}
-					discovery={dashboardStore.discovery}
+					intel={dashboardStore.intel}
+					{programs}
+					{now}
 					class="col-span-12 lg:col-span-6 xl:col-span-4"
 				/>
+			{/if}
+		</div>
 
-				{#if hasMovement}
-					<MovementHeatmap {overview} class="col-span-12 {hasTreemap ? 'xl:col-span-8' : ''}" />
+		<!-- findings -->
+		{#if overview.risk.total > 0 || overview.risk.targets_scanned > 0}
+			<div class="overflow-hidden rounded-xl border bg-card">
+				{#if show('board')}
+					<div class="grid"><BoardCell risk={overview.risk} /></div>
 				{/if}
-				{#if hasTreemap}
-					<SurfaceTreemap {overview} class="col-span-12 {hasMovement ? 'xl:col-span-4' : ''}" />
+				<div class="grid grid-cols-[repeat(auto-fit,minmax(16rem,1fr))]">
+					{#if show('findings-trend')}
+						<SeverityTrendCell {overview} window={win} class="xl:col-span-2" />
+					{/if}
+					{#if show('exploitation') && dashboardStore.intel?.coverage?.findings}
+						<ExploitationCell
+							intel={dashboardStore.intel}
+							changes={dashboardStore.changes}
+							projectId={activeProject.id}
+							window={win}
+							loading={extras}
+						/>
+					{/if}
+					{#if show('evidence') && overview.risk.evidence.length}
+						<EvidenceCell risk={overview.risk} />
+					{/if}
+				</div>
+				{#if show('exposures') && (dashboardStore.exposures?.summary.total ?? 0) > 0}
+					<div class="grid"><ExposuresCell page={dashboardStore.exposures} loading={extras} /></div>
 				{/if}
 			</div>
 		{/if}
+
+		<!-- programs (bug bounty) -->
+		{#if programs && (show('programs') || show('watches') || show('connectors'))}
+			<div
+				class="grid grid-cols-[repeat(auto-fit,minmax(20rem,1fr))] overflow-hidden rounded-xl border bg-card"
+			>
+				{#if show('programs') && programs.programs_total > 0}
+					<ProgramsCell {programs} window={win} />
+				{/if}
+				{#if show('watches') && programs.watches.total > 0}
+					<WatchesCell watches={programs.watches} window={win} />
+				{/if}
+				{#if show('connectors') && programs.browsing.connectors > 0}
+					<BrowsingCell browsing={programs.browsing} window={win} />
+				{/if}
+			</div>
+		{/if}
+
+		<!-- posture (corporate) -->
+		{#if show('certs') || show('hygiene') || show('ownership')}
+			<div
+				class="grid grid-cols-[repeat(auto-fit,minmax(18rem,1fr))] overflow-hidden rounded-xl border bg-card"
+			>
+				{#if show('certs') && overview.certs.buckets.some((b) => b.count > 0)}
+					<CertsCell certs={overview.certs} />
+				{/if}
+				{#if show('hygiene') && (dashboardStore.hygiene?.evaluated ?? 0) > 0}
+					<HygieneCell hygiene={dashboardStore.hygiene} loading={extras} />
+				{/if}
+				{#if show('ownership')}
+					<OwnershipCell
+						{overview}
+						discovery={dashboardStore.discovery}
+						onSchedule={scheduleTargets}
+					/>
+				{/if}
+			</div>
+		{/if}
+
+		<!-- scanning + composition -->
+		<div class="overflow-hidden rounded-xl border bg-card">
+			<div class="grid grid-cols-[repeat(auto-fit,minmax(22rem,1fr))]">
+				{#if show('runs') && overview.runs_total > 0}
+					<RunsCell {overview} window={win} />
+				{/if}
+				{#if show('software') && (dashboardStore.software?.facets.product.length ?? 0) > 0}
+					<SoftwareCell software={dashboardStore.software} loading={extras} />
+				{/if}
+			</div>
+			<div class="grid grid-cols-[repeat(auto-fit,minmax(16rem,1fr))]">
+				{#if show('services') && overview.exposure.services > 0}
+					<ServicesCell exposure={overview.exposure} />
+				{/if}
+				{#if show('tech') && (dashboardStore.tech?.length ?? 0) > 0}
+					<TechCell tech={dashboardStore.tech} loading={extras} />
+				{/if}
+				{#if show('hosting') && (dashboardStore.hosting?.resolved ?? 0) > 0}
+					<HostingCell
+						hosting={dashboardStore.hosting}
+						networks={dashboardStore.ipFacets?.asn ?? null}
+						loading={extras}
+					/>
+				{/if}
+				{#if show('shared') && (dashboardStore.shared?.hubs.length ?? 0) > 0}
+					<SharedCell graph={dashboardStore.shared} loading={extras} />
+				{/if}
+			</div>
+			{#if show('activity')}
+				<div class="grid">
+					<ActivityCell activity={dashboardStore.activity} loading={extras} />
+				</div>
+			{/if}
+		</div>
+
+		<HiddenTray />
 	{/if}
 </div>
 

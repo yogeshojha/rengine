@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import Widget from './widget.svelte';
+	import Cell from './cell.svelte';
 	import Globe from '$lib/components/scans/results/overview/globe.svelte';
 	import CountryFlag from '$lib/components/scans/results/country-flag.svelte';
 	import { ROUTES } from '$lib/config/routes';
@@ -30,19 +30,20 @@
 	let active = $state<string | null>(null);
 </script>
 
-<Widget
+<Cell
+	id="geo"
 	title="Geography"
 	description="IP addresses by country"
 	href={ROUTES.surface(SPEC.tab)}
-	hrefLabel="IP addresses"
+	hrefLabel={SPEC.label}
 	loading={loading && !countries}
 	class={className}
 >
-	<div class="flex flex-col items-center gap-3 px-5 py-4">
+	<div class="flex flex-col items-center gap-3">
 		<Globe
 			{entries}
-			size={176}
-			class="w-44"
+			size={160}
+			class="w-40"
 			activeCode={active}
 			onPick={(code) => goto(link(code))}
 			onHover={(code) => (active = code)}
@@ -66,9 +67,9 @@
 								{total ? Math.round((e.count / total) * 100) : 0}%
 							</span>
 						</span>
-						<span class="h-1 w-full overflow-hidden rounded-full bg-muted">
+						<span class="h-0.5 w-full overflow-hidden rounded-full bg-muted">
 							<span
-								class="block h-full rounded-full bg-series transition-opacity {active &&
+								class="block h-full rounded-full bg-chart-1 transition-opacity {active &&
 								active !== e.code
 									? 'opacity-40'
 									: ''}"
@@ -82,10 +83,11 @@
 	</div>
 	{#snippet footer()}
 		{#if rest > 0}
-			{restCount.toLocaleString()} more {restCount === 1 ? 'address' : 'addresses'} in {rest} other
-			{rest === 1 ? 'country' : 'countries'}
+			<span>
+				{restCount.toLocaleString()} more in {rest} other {rest === 1 ? 'country' : 'countries'}
+			</span>
 		{:else}
-			{total.toLocaleString()} {total === 1 ? 'address' : 'addresses'} with a resolved country
+			<span>{total.toLocaleString()} addresses with a country</span>
 		{/if}
 	{/snippet}
-</Widget>
+</Cell>

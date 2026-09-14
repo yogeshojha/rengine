@@ -79,6 +79,12 @@ class DashboardSurfaceMetric(BaseModel):
     new_in_window: int = 0
 
 
+class DashboardEvidenceCell(BaseModel):
+    severity: str
+    evidence: str
+    count: int = 0
+
+
 class DashboardFinding(BaseModel):
     id: uuid.UUID
     scan_id: uuid.UUID
@@ -96,6 +102,9 @@ class DashboardFinding(BaseModel):
     epss_score: float | None = None
     cvss_score: float | None = None
     discovered_at: datetime
+    evidence: str | None = None
+    tier: str = "track"
+    replays: int = 0
 
 
 class DashboardRisk(BaseModel):
@@ -110,6 +119,8 @@ class DashboardRisk(BaseModel):
     targets_affected: int = 0
     targets_scanned: int = 0
     by_severity: list[SeverityCount] = Field(default_factory=list)
+    evidence: list[DashboardEvidenceCell] = Field(default_factory=list)
+    tiers: dict[str, int] = Field(default_factory=dict)
     queue: list[DashboardFinding] = Field(default_factory=list)
 
 
@@ -148,6 +159,13 @@ class DashboardExposure(BaseModel):
     top: list[DashboardExposedService] = Field(default_factory=list)
 
 
+class DashboardCertBucket(BaseModel):
+    key: str
+    label: str
+    count: int = 0
+    query: str
+
+
 class DashboardCertSignal(BaseModel):
     count: int = 0
     query: str
@@ -157,6 +175,7 @@ class DashboardCertSignal(BaseModel):
 class DashboardCerts(BaseModel):
     expired: DashboardCertSignal
     expiring: DashboardCertSignal
+    buckets: list[DashboardCertBucket] = Field(default_factory=list)
 
 
 class DashboardChangeRow(BaseModel):
@@ -177,8 +196,24 @@ class DashboardDay(BaseModel):
     date: str
     runs: int = 0
     failed: int = 0
+    outcomes: dict[str, int] = Field(default_factory=dict)
     new: dict[str, int] = Field(default_factory=dict)
+    retired: dict[str, int] = Field(default_factory=dict)
     total: dict[str, int] = Field(default_factory=dict)
+    findings: dict[str, int] = Field(default_factory=dict)
+
+
+class DashboardFunnelStep(BaseModel):
+    key: str
+    label: str
+    count: int = 0
+    new_in_window: int | None = None
+    query: str | None = None
+    tab: str | None = None
+
+
+class DashboardFunnel(BaseModel):
+    steps: list[DashboardFunnelStep] = Field(default_factory=list)
 
 
 class DashboardTargetSurface(BaseModel):
@@ -233,6 +268,7 @@ class DashboardOverview(BaseModel):
     failed_in_window: int = 0
     last_completed_at: datetime | None = None
     surface: list[DashboardSurfaceMetric] = Field(default_factory=list)
+    funnel: DashboardFunnel = Field(default_factory=DashboardFunnel)
     risk: DashboardRisk = Field(default_factory=DashboardRisk)
     signals: DashboardSignals
     never_scanned: list[StaleTarget] = Field(default_factory=list)
@@ -267,3 +303,75 @@ class DashboardDiscoveredDomain(BaseModel):
 class DashboardDiscovery(BaseModel):
     targets_examined: int = 0
     domains: list[DashboardDiscoveredDomain] = Field(default_factory=list)
+
+
+class DashboardEvent(BaseModel):
+    at: datetime
+    kind: str
+    label: str
+    title: str
+    detail: str | None = None
+    tone: str = "neutral"
+    scan_id: uuid.UUID | None = None
+    target_id: uuid.UUID | None = None
+    watch_id: uuid.UUID | None = None
+    platform: str | None = None
+    handle: str | None = None
+    connector_id: uuid.UUID | None = None
+
+
+class DashboardActivity(BaseModel):
+    window: str
+    events: list[DashboardEvent] = Field(default_factory=list)
+
+
+class DashboardDayKinds(BaseModel):
+    date: str
+    kinds: dict[str, int] = Field(default_factory=dict)
+
+
+class DashboardWatchAlert(BaseModel):
+    watch_id: uuid.UUID
+    name: str
+    program_name: str
+    at: datetime
+
+
+class DashboardLadderStep(BaseModel):
+    state: str
+    label: str
+    count: int = 0
+
+
+class DashboardWatches(BaseModel):
+    total: int = 0
+    active: int = 0
+    daily: list[DashboardDayKinds] = Field(default_factory=list)
+    ladder: list[DashboardLadderStep] = Field(default_factory=list)
+    latest_alert: DashboardWatchAlert | None = None
+    stream_running: bool = False
+    stream_certificates: int = 0
+    last_certificate_at: datetime | None = None
+
+
+class DashboardBrowsing(BaseModel):
+    connectors: int = 0
+    live: int = 0
+    requests_seen: int = 0
+    browsed: int = 0
+    unseen: int = 0
+    new_params: int = 0
+    flagged: int = 0
+    last_seen_at: datetime | None = None
+    daily: list[DashboardDayKinds] = Field(default_factory=list)
+
+
+class DashboardPrograms(BaseModel):
+    window: str
+    programs_total: int = 0
+    by_platform: dict[str, int] = Field(default_factory=dict)
+    watched: int = 0
+    events_in_window: dict[str, int] = Field(default_factory=dict)
+    events_daily: list[DashboardDayKinds] = Field(default_factory=list)
+    watches: DashboardWatches = Field(default_factory=DashboardWatches)
+    browsing: DashboardBrowsing = Field(default_factory=DashboardBrowsing)

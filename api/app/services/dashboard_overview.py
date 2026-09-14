@@ -3,17 +3,38 @@ from __future__ import annotations
 import re
 from collections import defaultdict
 from datetime import UTC, date, datetime, time, timedelta
+from itertools import pairwise
 from uuid import UUID
 
-from sqlalchemy import Text, and_, case, cast, exists, func, not_, select, text
+from sqlalchemy import (
+    Text,
+    Uuid,
+    and_,
+    case,
+    cast,
+    column,
+    exists,
+    func,
+    not_,
+    or_,
+    select,
+    text,
+    values,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
-from app.services.asset_query.predicates import cert_state, live, vuln_seen_earlier
+from app.services.asset_query.predicates import (
+    cert_state,
+    live,
+    resolved,
+    vuln_seen_earlier,
+)
 from app.services.dashboard import DashboardService
 from app.services.related_domains import RelatedDomainService
 from app.services.scan import ScanService
 from shared.definitions.dashboard import (
+    CERT_BUCKETS,
     CHANGES_LIMIT,
     DEFAULT_WINDOW,
     DISCOVERY_LIMIT,
@@ -21,20 +42,30 @@ from shared.definitions.dashboard import (
     EXPIRING_CERT_QUERY,
     EXPIRING_DAYS,
     EXPOSURE_TOP,
+    FUNNEL_LABELS,
+    FUNNEL_QUERIES,
     ITEMS_CAP,
     QUEUE_LIMIT,
     RUNS_PER_TARGET,
     SERIES_DAYS,
     STALE_DAYS,
+    TIER_ACT_EPSS,
+    TIER_ATTEND_EPSS,
+    TIER_ORDER,
     WINDOW_DELTAS,
+    FunnelStep,
+    QueueTier,
+    cert_bucket_query,
 )
 from shared.definitions.domains import MAX_RELATED_HOSTNAMES
+from shared.definitions.evidence import EVIDENCE_ORDER, Evidence
 from shared.definitions.ports import (
     SENSITIVE_PORTS,
     SERVICE_CLASS_LABELS,
     ServiceClass,
     service_label,
 )
+from shared.definitions.scan_surface import SurfaceClass
 from shared.definitions.surface import SURFACE_LABELS, SURFACE_ORDER, SurfaceDimension
 from shared.definitions.vulnerabilities import (
     ACTIONABLE_SEVERITIES,
@@ -48,6 +79,7 @@ from shared.enums.scan import ScanActivityStatus, ScanStatus
 from shared.enums.scan_schedule import ScheduleStatus
 from shared.enums.target import TargetType
 from shared.models.dashboard import (
+    DashboardCertBucket,
     DashboardCerts,
     DashboardCertSignal,
     DashboardChangeRow,
@@ -55,10 +87,13 @@ from shared.models.dashboard import (
     DashboardDiscoveredDomain,
     DashboardDiscovery,
     DashboardDiscoverySource,
+    DashboardEvidenceCell,
     DashboardExposedService,
     DashboardExposure,
     DashboardExposureBand,
     DashboardFinding,
+    DashboardFunnel,
+    DashboardFunnelStep,
     DashboardGeo,
     DashboardOverview,
     DashboardRisk,
@@ -77,6 +112,7 @@ from shared.models.port import Port
 from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
 from shared.models.scan_schedule import ScanSchedule
+from shared.models.scan_surface import ScanSurfaceItem
 from shared.models.software import SoftwareCve
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
@@ -149,6 +185,46 @@ def _severity_rank():
     )
 
 
+def _act():
+    return or_(
+        Vulnerability.is_kev.is_(True),
+        Vulnerability.kev_ransomware.is_(True),
+        Vulnerability.evidence == Evidence.PROVEN.value,
+        func.coalesce(Vulnerability.epss_score, 0) >= TIER_ACT_EPSS,
+        Vulnerability.severity == Severity.CRITICAL.value,
+    )
+
+
+def _attend():
+    return or_(
+        Vulnerability.severity.in_((Severity.HIGH.value, Severity.MEDIUM.value)),
+        func.coalesce(Vulnerability.epss_score, 0) >= TIER_ATTEND_EPSS,
+        Vulnerability.evidence == Evidence.CORROBORATED.value,
+    )
+
+
+def _tier_of(row: Vulnerability) -> str:
+    if (
+        row.is_kev
+        or row.kev_ransomware
+        or row.evidence == Evidence.PROVEN.value
+        or (row.epss_score or 0) >= TIER_ACT_EPSS
+        or row.severity == Severity.CRITICAL.value
+    ):
+        return QueueTier.ACT.value
+    if (
+        row.severity in (Severity.HIGH.value, Severity.MEDIUM.value)
+        or (row.epss_score or 0) >= TIER_ATTEND_EPSS
+        or row.evidence == Evidence.CORROBORATED.value
+    ):
+        return QueueTier.ATTEND.value
+    return QueueTier.TRACK.value
+
+
+def _day_of(at: datetime) -> str:
+    return at.date().isoformat()
+
+
 class DashboardOverviewService:
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -205,6 +281,9 @@ class DashboardOverviewService:
             for key, per_target in covered.items()
         }
         out.surface = self._surface(counts, latest_cover, firsts, baselines, in_window)
+        out.funnel = await self._funnel(
+            out.surface, latest_cover, scans, baselines, in_window
+        )
 
         risk_ids = list(latest_cover[VULNS].values())
         out.risk = await self._risk(risk_ids, firsts, baselines, in_window, cutoff)
@@ -226,8 +305,18 @@ class DashboardOverviewService:
         out.changes = await self._changes(
             in_window, counts, firsts, baselines, names, targets
         )
+        retired = await self._retired(covered, scans, series_cutoff)
+        severity_firsts = await self._first_seen_by_severity(scans, baselines)
         out.daily = self._daily(
-            scans, firsts, baselines, series_cutoff, now, covered, counts
+            scans,
+            firsts,
+            baselines,
+            series_cutoff,
+            now,
+            covered,
+            counts,
+            retired,
+            severity_firsts,
         )
         out.targets = self._target_rows(
             targets,
@@ -650,6 +739,32 @@ class DashboardOverviewService:
             )
             or 0
         )
+        cells = await self.session.execute(
+            select(Vulnerability.severity, Vulnerability.evidence, func.count())
+            .where(live_rows, not_(_suppressed()))
+            .group_by(Vulnerability.severity, Vulnerability.evidence)
+        )
+        matrix: dict[tuple[str, str], int] = defaultdict(int)
+        for severity, evidence, n in cells.all():
+            matrix[(coerce_severity(severity), evidence)] += int(n)
+        risk.evidence = [
+            DashboardEvidenceCell(severity=sev, evidence=ev, count=matrix[(sev, ev)])
+            for sev in SEVERITY_ORDER
+            for ev in EVIDENCE_ORDER
+            if matrix.get((sev, ev))
+        ]
+        tiers = (
+            await self.session.execute(
+                select(
+                    func.count().filter(_act()),
+                    func.count().filter(and_(not_(_act()), _attend())),
+                    func.count().filter(and_(not_(_act()), not_(_attend()))),
+                ).where(live_rows, not_(_suppressed()))
+            )
+        ).one()
+        risk.tiers = {
+            tier: int(n or 0) for tier, n in zip(TIER_ORDER, tiers, strict=True)
+        }
         risk.queue = await self._queue(risk_ids, baselines)
         return risk
 
@@ -668,13 +783,16 @@ class DashboardOverviewService:
                 ).label("hosts"),
                 func.min(_severity_rank()).label("rank"),
                 func.min(Vulnerability.id.cast(Text)).label("sample"),
+                func.count()
+                .filter(Vulnerability.replayed_from_id.isnot(None))
+                .label("replays"),
             )
             .where(live_rows, not_(_suppressed()))
             .group_by(Vulnerability.target_id, Vulnerability.template_id)
             .subquery()
         )
         rows = await self.session.execute(
-            select(Vulnerability, spread.c.hosts, Target.target_value)
+            select(Vulnerability, spread.c.hosts, Target.target_value, spread.c.replays)
             .join(
                 spread, Vulnerability.id == cast(spread.c.sample, Vulnerability.id.type)
             )
@@ -704,7 +822,7 @@ class DashboardOverviewService:
             ).all()
         }
         out = []
-        for row, hosts, target_value in items:
+        for row, hosts, target_value, replays in items:
             out.append(
                 DashboardFinding(
                     id=row.id,
@@ -723,6 +841,9 @@ class DashboardOverviewService:
                     epss_score=row.epss_score,
                     cvss_score=row.cvss_score,
                     discovered_at=row.discovered_at,
+                    evidence=row.evidence,
+                    tier=_tier_of(row),
+                    replays=int(replays or 0),
                 )
             )
         return out
@@ -907,6 +1028,36 @@ class DashboardOverviewService:
                     )
         for signal in (certs.expired, certs.expiring):
             signal.targets.sort(key=lambda t: (-t.count, t.target_value))
+        not_after = Subdomain.tls_not_after
+        filters = []
+        for _key, _label, lower, upper in CERT_BUCKETS:
+            if upper == 0:
+                filters.append(expired)
+                continue
+            clauses = [live(), not_(cert_state("expired", now)), not_after.isnot(None)]
+            if lower:
+                clauses.append(not_after >= now + timedelta(days=lower))
+            if upper is not None:
+                clauses.append(not_after < now + timedelta(days=upper))
+            filters.append(and_(*clauses))
+        bucket_row = (
+            await self.session.execute(
+                select(*[func.count().filter(f) for f in filters]).where(
+                    Subdomain.scan_id.in_(web_ids)
+                )
+            )
+        ).one()
+        certs.buckets = [
+            DashboardCertBucket(
+                key=key,
+                label=label,
+                count=int(n or 0),
+                query=cert_bucket_query(lower, upper),
+            )
+            for (key, label, lower, upper), n in zip(
+                CERT_BUCKETS, bucket_row, strict=True
+            )
+        ]
 
     async def _geography(
         self, ip_ids: list[UUID], names: dict[UUID, str], scans: dict[UUID, Scan]
@@ -1048,6 +1199,8 @@ class DashboardOverviewService:
         now: datetime,
         covered: Covered,
         counts: Counts,
+        retired: dict[str, dict[UUID, int]],
+        severity_firsts: dict[UUID, dict[str, int]],
     ) -> list[DashboardDay]:
         days: dict[str, DashboardDay] = {}
         start = series_cutoff.date() + timedelta(days=1)
@@ -1056,7 +1209,9 @@ class DashboardOverviewService:
             days[key] = DashboardDay(
                 date=key,
                 new=dict.fromkeys(SURFACE_ORDER, 0),
+                retired=dict.fromkeys(SURFACE_ORDER, 0),
                 total=dict.fromkeys(SURFACE_ORDER, 0),
+                findings=dict.fromkeys(SEVERITY_ORDER, 0),
             )
         for key, per_target in covered.items():
             for ids in per_target.values():
@@ -1088,10 +1243,198 @@ class DashboardOverviewService:
             day.runs += 1
             if s.status in _TERMINAL_BAD:
                 day.failed += 1
+            day.outcomes[s.status] = day.outcomes.get(s.status, 0) + 1
             for dim in SURFACE_ORDER:
                 if s.id in baselines[dim]:
                     day.new[dim] += firsts[dim].get(s.id, 0)
+                day.retired[dim] += retired[dim].get(s.id, 0)
+            if s.id in baselines[VULNS]:
+                for severity, n in severity_firsts.get(s.id, {}).items():
+                    day.findings[severity] = day.findings.get(severity, 0) + n
         return list(days.values())
+
+    async def _retired(
+        self, covered: Covered, scans: dict[UUID, Scan], series_cutoff: datetime
+    ) -> dict[str, dict[UUID, int]]:
+        """Per dimension, rows the previous covering run held that a completed run lacks."""
+        out: dict[str, dict[UUID, int]] = {key: {} for key in _TABLES}
+        for key, model in _TABLES.items():
+            pairs: list[tuple[UUID, UUID]] = []
+            for ids in covered[key].values():
+                for newer, older in pairwise(ids):
+                    scan = scans.get(newer)
+                    if (
+                        scan is None
+                        or scan.status != ScanStatus.COMPLETED.value
+                        or _started(scan) < series_cutoff
+                    ):
+                        continue
+                    pairs.append((older, newer))
+            if not pairs:
+                continue
+            table = values(
+                column("prev_id", Uuid), column("next_id", Uuid), name="pairs"
+            ).data(pairs)
+            newer_rows = aliased(model)
+            still_there = exists(
+                select(1).where(
+                    newer_rows.scan_id == table.c.next_id,
+                    *[getattr(newer_rows, col.key) == col for col in _KEYS[key]],
+                )
+            )
+            stmt = (
+                select(table.c.next_id, func.count())
+                .select_from(table.join(model, model.scan_id == table.c.prev_id))
+                .where(not_(still_there))
+                .group_by(table.c.next_id)
+            )
+            for next_id, n in (await self.session.execute(stmt)).all():
+                out[key][next_id] = int(n)
+        return out
+
+    async def _first_seen_by_severity(
+        self, scans: dict[UUID, Scan], baselines: dict[str, set[UUID]]
+    ) -> dict[UUID, dict[str, int]]:
+        """Findings a scan was the first to report for its target, by severity."""
+        out: dict[UUID, dict[str, int]] = defaultdict(dict)
+        by_target: dict[UUID, list[UUID]] = defaultdict(list)
+        for sid in baselines.get(VULNS, ()):
+            scan = scans.get(sid)
+            if scan is not None:
+                by_target[scan.target_id].append(sid)
+        for target_id, sids in by_target.items():
+            earlier = aliased(Vulnerability)
+            seen_before = exists(
+                select(1).where(
+                    earlier.target_id == target_id,
+                    earlier.fingerprint == Vulnerability.fingerprint,
+                    earlier.scan_id != Vulnerability.scan_id,
+                    earlier.discovered_at < Vulnerability.discovered_at,
+                )
+            )
+            rows = await self.session.execute(
+                select(Vulnerability.scan_id, Vulnerability.severity, func.count())
+                .where(
+                    Vulnerability.scan_id.in_(sids),
+                    not_(seen_before),
+                    not_(_suppressed()),
+                )
+                .group_by(Vulnerability.scan_id, Vulnerability.severity)
+            )
+            for sid, severity, n in rows.all():
+                key = coerce_severity(severity)
+                out[sid][key] = out[sid].get(key, 0) + int(n)
+        return out
+
+    async def _funnel(
+        self,
+        surface: list[DashboardSurfaceMetric],
+        latest_cover: dict[str, dict[UUID, UUID]],
+        scans: dict[UUID, Scan],
+        baselines: dict[str, set[UUID]],
+        in_window: list[Scan],
+    ) -> DashboardFunnel:
+        """From every name found to the ones a scanner faulted."""
+        web_ids = list(latest_cover[WEB].values())
+        vuln_ids = list(latest_cover[VULNS].values())
+        names = next((m for m in surface if m.key == WEB), None)
+        counts = dict.fromkeys(FunnelStep, 0)
+        news: dict[FunnelStep, int | None] = dict.fromkeys(FunnelStep, None)
+        counts[FunnelStep.NAMES] = names.value if names else 0
+        news[FunnelStep.NAMES] = names.new_in_window if names else 0
+        if web_ids:
+            on_host = exists(
+                select(1).where(
+                    Vulnerability.scan_id.in_(vuln_ids),
+                    Vulnerability.host == Subdomain.name,
+                    not_(_suppressed()),
+                )
+            )
+            row = (
+                await self.session.execute(
+                    select(
+                        func.count().filter(resolved()),
+                        func.count().filter(live()),
+                        func.count().filter(on_host)
+                        if vuln_ids
+                        else func.count().filter(text("false")),
+                    ).where(Subdomain.scan_id.in_(web_ids))
+                )
+            ).one()
+            counts[FunnelStep.RESOLVED] = int(row[0] or 0)
+            counts[FunnelStep.LIVE] = int(row[1] or 0)
+            counts[FunnelStep.FINDINGS] = int(row[2] or 0)
+            window_ids = [
+                s.id for s in in_window if s.id in baselines[WEB] and s.id in web_ids
+            ]
+            fresh = await self._first_seen_hosts(window_ids, scans)
+            news[FunnelStep.RESOLVED] = fresh[0]
+            news[FunnelStep.LIVE] = fresh[1]
+        if vuln_ids:
+            counts[FunnelStep.ORIGINS] = int(
+                await self.session.scalar(
+                    select(func.count(func.distinct(ScanSurfaceItem.host)))
+                    .select_from(ScanSurfaceItem)
+                    .where(
+                        ScanSurfaceItem.scan_id.in_(vuln_ids),
+                        ScanSurfaceItem.class_ == SurfaceClass.ROOT.value,
+                        ScanSurfaceItem.drop_reason.is_(None),
+                    )
+                )
+                or 0
+            )
+        tabs = {
+            FunnelStep.NAMES: SurfaceDimension.WEB_ASSETS.value,
+            FunnelStep.RESOLVED: SurfaceDimension.WEB_ASSETS.value,
+            FunnelStep.LIVE: SurfaceDimension.WEB_ASSETS.value,
+            FunnelStep.ORIGINS: SurfaceDimension.VULNERABILITIES.value,
+            FunnelStep.FINDINGS: SurfaceDimension.WEB_ASSETS.value,
+        }
+        return DashboardFunnel(
+            steps=[
+                DashboardFunnelStep(
+                    key=step.value,
+                    label=FUNNEL_LABELS[step.value],
+                    count=counts[step],
+                    new_in_window=news[step],
+                    query=FUNNEL_QUERIES[step.value],
+                    tab=tabs[step],
+                )
+                for step in FunnelStep
+            ]
+        )
+
+    async def _first_seen_hosts(
+        self, scan_ids: list[UUID], scans: dict[UUID, Scan]
+    ) -> tuple[int, int]:
+        """Hosts the window's covering runs were the first to report, resolved and live."""
+        if not scan_ids:
+            return 0, 0
+        by_target: dict[UUID, list[UUID]] = defaultdict(list)
+        for sid in scan_ids:
+            by_target[scans[sid].target_id].append(sid)
+        n_resolved = n_live = 0
+        for target_id, sids in by_target.items():
+            earlier = aliased(Subdomain)
+            seen_before = exists(
+                select(1).where(
+                    earlier.target_id == target_id,
+                    earlier.name == Subdomain.name,
+                    earlier.scan_id != Subdomain.scan_id,
+                    earlier.discovered_at < Subdomain.discovered_at,
+                )
+            )
+            row = (
+                await self.session.execute(
+                    select(
+                        func.count().filter(resolved()),
+                        func.count().filter(live()),
+                    ).where(Subdomain.scan_id.in_(sids), not_(seen_before))
+                )
+            ).one()
+            n_resolved += int(row[0] or 0)
+            n_live += int(row[1] or 0)
+        return n_resolved, n_live
 
     def _target_rows(
         self,

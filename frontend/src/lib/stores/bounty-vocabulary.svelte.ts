@@ -23,6 +23,10 @@ class BountyVocabularyStore {
 		return this.platform(key)?.url ?? '';
 	}
 
+	eventLabel(kind: string): string {
+		return this.vocabulary?.events.find((e) => e.kind === kind)?.label ?? kind.replace(/_/g, ' ');
+	}
+
 	async load(): Promise<void> {
 		if (this.fetched || this.loading) return;
 		this.loading = true;

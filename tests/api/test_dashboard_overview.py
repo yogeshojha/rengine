@@ -78,3 +78,92 @@ async def test_newness_is_judged_per_target(estate, now):
     assert web.value == 4
     assert web.targets_covered == 2
     assert web.new_in_window == 1, "two.com has no baseline and contributes nothing"
+
+
+def _step(overview, key: str):
+    return next(s for s in overview.funnel.steps if s.key == key)
+
+
+async def test_funnel_counts_names_resolved_live_and_faulted(estate, now):
+    await estate.scan("example.com", "run", at=now)
+    await estate.hosts("run", ["dead.example.com"], at=now)
+    await estate.hosts("run", ["idle.example.com"], at=now, ips=["10.0.0.1"])
+    await estate.hosts("run", ["www.example.com"], at=now, ips=["10.0.0.2"], status=200)
+    await estate.vulns("run", [("xss", "high")], at=now, host="www.example.com")
+
+    out = await DashboardOverviewService(estate.session).overview(
+        estate.project_id, "7d"
+    )
+
+    assert _step(out, "names").count == 3
+    assert _step(out, "resolved").count == 2
+    assert _step(out, "live").count == 1
+    assert _step(out, "findings").count == 1
+    assert _step(out, "names").new_in_window == 0
+
+
+async def test_retired_counts_what_the_previous_run_held(estate, now):
+    old = now - timedelta(days=2)
+    await estate.scan("example.com", "first", at=old)
+    await estate.hosts("first", ["a.example.com", "b.example.com"], at=old)
+    await estate.scan("example.com", "second", at=now)
+    await estate.hosts("second", ["a.example.com"], at=now)
+
+    out = await DashboardOverviewService(estate.session).overview(
+        estate.project_id, "7d"
+    )
+
+    today = next(d for d in out.daily if d.date == now.date().isoformat())
+    assert today.retired[WEB] == 1, "b.example.com left between the runs"
+    earlier = next(d for d in out.daily if d.date == old.date().isoformat())
+    assert earlier.retired[WEB] == 0
+
+
+async def test_a_cancelled_run_retires_nothing(estate, now):
+    old = now - timedelta(days=2)
+    await estate.scan("example.com", "first", at=old)
+    await estate.hosts("first", ["a.example.com", "b.example.com"], at=old)
+    await estate.scan("example.com", "second", at=now, status="cancelled")
+    await estate.hosts("second", ["a.example.com"], at=now)
+
+    out = await DashboardOverviewService(estate.session).overview(
+        estate.project_id, "7d"
+    )
+
+    today = next(d for d in out.daily if d.date == now.date().isoformat())
+    assert today.retired[WEB] == 0
+    assert today.outcomes == {"cancelled": 1}
+
+
+async def test_queue_tiers_follow_exploitation_then_severity(estate, now):
+    await estate.scan("example.com", "run", at=now)
+    await estate.vulns("run", [("kev-low", "low")], at=now, kev=True)
+    await estate.vulns("run", [("plain-high", "high"), ("plain-low", "low")], at=now)
+
+    out = await DashboardOverviewService(estate.session).overview(
+        estate.project_id, "7d"
+    )
+
+    assert out.risk.tiers == {"act": 1, "attend": 1, "track": 1}
+    tiers = {f.template_id: f.tier for f in out.risk.queue}
+    assert tiers == {"kev-low": "act", "plain-high": "attend", "plain-low": "track"}
+    cells = {(c.severity, c.evidence): c.count for c in out.risk.evidence}
+    assert cells == {("high", "observed"): 1, ("low", "observed"): 2}
+
+
+async def test_findings_per_day_split_by_severity_need_a_baseline(estate, now):
+    old = now - timedelta(days=3)
+    await estate.scan("example.com", "first", at=old)
+    await estate.vulns("first", [("a", "high")], at=old)
+    await estate.scan("example.com", "second", at=now)
+    await estate.vulns("second", [("a", "high"), ("b", "critical")], at=now)
+
+    out = await DashboardOverviewService(estate.session).overview(
+        estate.project_id, "7d"
+    )
+
+    today = next(d for d in out.daily if d.date == now.date().isoformat())
+    assert today.findings["critical"] == 1
+    assert today.findings["high"] == 0, "a was reported by the first run"
+    earlier = next(d for d in out.daily if d.date == old.date().isoformat())
+    assert sum(earlier.findings.values()) == 0, "a first run has no baseline"
