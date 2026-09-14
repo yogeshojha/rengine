@@ -134,13 +134,16 @@
 <div
 	class="grid grid-cols-2 overflow-hidden rounded-xl border bg-card md:grid-cols-4 xl:grid-cols-7"
 >
-	{#each tiles as t (t.key)}
+	{#each tiles as t, i (t.key)}
 		<Hint text={hint(t)}>
 			{#snippet child(props)}
 				<button
 					{...props}
 					type="button"
-					class="group -mr-px -mb-px flex min-w-0 flex-col gap-1 border-r border-b px-4 py-3 text-left transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none"
+					class="group -mr-px -mb-px flex min-w-0 flex-col gap-1 border-r border-b px-4 py-3 text-left transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none {i ===
+					tiles.length - 1
+						? 'col-span-2 xl:col-span-1'
+						: ''}"
 					onclick={() => open(t)}
 				>
 					<span class="text-2xs font-medium tracking-wider text-muted-foreground uppercase">

@@ -97,7 +97,7 @@
 						onblur={() => (hovered = null)}
 					>
 						<span
-							class="text-xl leading-none font-semibold tracking-tight tabular-nums {s.key ===
+							class="text-base leading-none font-semibold tracking-tight tabular-nums sm:text-xl {s.key ===
 							FunnelStep.Findings
 								? 'text-destructive'
 								: ''}"

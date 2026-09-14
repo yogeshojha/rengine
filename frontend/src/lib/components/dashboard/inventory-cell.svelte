@@ -2,6 +2,7 @@
 	import { SvelteMap } from 'svelte/reactivity';
 	import Cell from './cell.svelte';
 	import Hint from '$lib/components/hint.svelte';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE_ORDER, SurfaceDimension } from '$lib/config/surface';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
@@ -79,7 +80,8 @@
 	});
 
 	let names = $derived(new SvelteMap(overview.targets.map((t) => [t.id, t.value])));
-	let running = $derived(liveScans.scans.slice(0, MAX_RUNS));
+	let running = $derived(liveScans.scans);
+	let overflow = $derived(running.length > MAX_RUNS);
 	let next = $derived.by(() => {
 		const upcoming = scanSchedulesStore.schedules
 			.filter((s) => s.next_run_at && s.status === 'active')
@@ -124,29 +126,44 @@
 	</div>
 
 	<div class="mt-1 flex flex-col gap-2">
-		<span class="text-2xs font-medium tracking-wider text-muted-foreground uppercase">
-			{running.length ? 'Running now' : 'Next run'}
+		<span
+			class="flex items-baseline justify-between text-2xs font-medium tracking-wider text-muted-foreground uppercase"
+		>
+			<span>{running.length ? 'Running now' : 'Next run'}</span>
+			{#if overflow}
+				<a href={ROUTES.scans} class="tracking-normal normal-case hover:text-foreground">
+					{running.length} running
+				</a>
+			{/if}
 		</span>
-		{#each running as scan (scan.id)}
-			{@const run = liveScans.runFor(scan.id)}
-			{@const elapsed = elapsedSeconds(scan, now)}
-			<a href={ROUTES.scan(scan.id)} class="flex flex-col gap-1">
-				<span class="flex items-center gap-2 text-sm">
-					<span
-						class="size-1.5 shrink-0 rounded-full bg-chart-1 shadow-[0_0_0_3px_color-mix(in_oklch,var(--chart-1)_22%,transparent)]"
-					></span>
-					<span class="min-w-0 flex-1 truncate">
-						<span class="font-medium">{names.get(scan.target_id) ?? scan.engine_name}</span>
-						{#if run?.stage}<span class="text-muted-foreground"> · {run.stage.title}</span>{/if}
-					</span>
-					{#if elapsed !== null}
-						<span class="shrink-0 text-xs text-muted-foreground tabular-nums">
-							{formatSeconds(elapsed)}
-						</span>
-					{/if}
-				</span>
-			</a>
-		{/each}
+		{#if running.length}
+			<ScrollArea class={overflow ? 'h-[5.25rem]' : ''}>
+				<ul class="flex flex-col gap-1.5">
+					{#each running as scan (scan.id)}
+						{@const run = liveScans.runFor(scan.id)}
+						{@const elapsed = elapsedSeconds(scan, now)}
+						<li>
+							<a href={ROUTES.scan(scan.id)} class="flex items-center gap-2 text-sm">
+								<span
+									class="size-1.5 shrink-0 rounded-full bg-chart-1 shadow-[0_0_0_3px_color-mix(in_oklch,var(--chart-1)_22%,transparent)]"
+								></span>
+								<span class="min-w-0 flex-1 truncate">
+									<span class="font-medium">{names.get(scan.target_id) ?? scan.engine_name}</span>
+									{#if run?.stage}<span class="text-muted-foreground">
+											· {run.stage.title}</span
+										>{/if}
+								</span>
+								{#if elapsed !== null}
+									<span class="shrink-0 text-xs text-muted-foreground tabular-nums">
+										{formatSeconds(elapsed)}
+									</span>
+								{/if}
+							</a>
+						</li>
+					{/each}
+				</ul>
+			</ScrollArea>
+		{/if}
 		{#if next}
 			<a href={ROUTES.schedules} class="flex items-center gap-2 text-sm">
 				<span class="size-1.5 shrink-0 rounded-full bg-muted-foreground/60"></span>

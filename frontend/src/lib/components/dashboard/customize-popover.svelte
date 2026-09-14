@@ -33,7 +33,7 @@
 		{/snippet}
 	</Popover.Trigger>
 	<Popover.Content align="end" class="w-80 p-0">
-		<ScrollArea class="max-h-[70vh]">
+		<ScrollArea class="max-h-[70vh] [&>[data-slot=scroll-area-viewport]]:max-h-[70vh]">
 			<div class="flex flex-col gap-1 px-3 py-2">
 				{#each rows as r (r.row)}
 					<span class="mt-2 font-mono text-2xs tracking-[0.1em] text-muted-foreground uppercase">

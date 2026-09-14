@@ -114,7 +114,8 @@
 										class="flex flex-wrap items-center gap-x-3 gap-y-1 border-t px-2.5 py-1.5 text-2xs text-muted-foreground"
 									>
 										<span>{severityLabel(f.severity)}</span>
-										{#if f.host}<span class="truncate font-mono">{f.host}</span>{/if}
+										{#if f.host}<span class="max-w-full min-w-0 truncate font-mono">{f.host}</span
+											>{/if}
 										{#if f.host_count > 1}
 											<span class="tabular-nums">{f.host_count} web assets</span>
 										{/if}
