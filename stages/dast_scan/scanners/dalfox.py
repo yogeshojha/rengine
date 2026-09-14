@@ -62,8 +62,8 @@ class DalfoxScanner(VulnScanner):
             severities=list(ctx.cfg.severities),
             hosts_total=len(plan.requests),
             hosts_covered=len(reflecting),
-            rate_limit=ctx.cfg.rate,
-            concurrency=ctx.cfg.threads,
+            rate_limit=ctx.transport.rate,
+            concurrency=ctx.transport.threads,
         )
         if not reflecting:
             coverage.status = CoverageStatus.COMPLETED.value
@@ -93,8 +93,8 @@ class DalfoxScanner(VulnScanner):
             return []
         try:
             client = HttpxClient(
-                rate_limit=ctx.cfg.rate,
-                threads=ctx.cfg.threads,
+                rate_limit=ctx.transport.rate,
+                threads=ctx.transport.threads,
                 timeout=_PROBE_TIMEOUT,
                 proxy_url=ctx.net.proxy_url,
                 headers=ctx.net.headers,
@@ -121,10 +121,10 @@ class DalfoxScanner(VulnScanner):
         ctx = self.ctx
         secrets_list = [v for v in (ctx.net.headers or {}).values() if v]
         options = DalfoxOptions(
-            workers=ctx.cfg.threads,
-            rate=ctx.cfg.rate,
-            timeout=ctx.cfg.timeout,
-            retries=ctx.cfg.retries,
+            workers=ctx.transport.threads,
+            rate=ctx.transport.rate or 1,
+            timeout=ctx.transport.timeout,
+            retries=ctx.transport.retries,
             proxy_url=ctx.net.proxy_url,
             headers=dict(ctx.net.headers or {}),
             follow_redirects=bool(ctx.resolved.follow_redirects),
@@ -142,7 +142,7 @@ class DalfoxScanner(VulnScanner):
             return coverage
 
         def _on_finding(finding) -> None:
-            if ctx.cfg.store_evidence:
+            if ctx.keep_evidence():
                 finding.request = redact_secrets(finding.request, secrets_list)
                 finding.response = redact_secrets(finding.response, secrets_list)
             else:

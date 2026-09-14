@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, ClassVar
 
 from sqlalchemy import update
 
+from shared.definitions.intensity import Transport, transport_for
 from shared.definitions.surface import SURFACE_COUNT_COLUMNS, SurfaceDimension
 from shared.enums.scan import Phase
 from shared.enums.target import TargetType
@@ -105,6 +106,10 @@ class Stage(ABC):
     produces: ClassVar[frozenset[str]] = frozenset()
     group: ClassVar[str] = ""
     role: ClassVar[str] = ""
+    transport_tool: ClassVar[str | None] = None
+    rate_weight: ClassVar[float] = 1.0
+    thread_weight: ClassVar[float] = 1.0
+    transport_timeout: ClassVar[int | None] = None
     config_model: ClassVar[type[StageConfig]] = StageConfig
 
     def __init__(self, session: Session, context: StageContext) -> None:
@@ -117,6 +122,28 @@ class Stage(ABC):
 
     def should_run(self) -> bool:
         return self.cfg.enabled
+
+    @cached_property
+    def transport(self) -> Transport:
+        """Rate, concurrency and timeout for this stage's tool under the run's intensity."""
+        stored = (self.ctx.resolved.transports or {}).get(self.name)
+        if stored:
+            return Transport(**stored)
+        return self.default_transport(self.ctx.resolved.intensity)
+
+    @classmethod
+    def default_transport(cls, intensity: str, **scaling) -> Transport:
+        if cls.transport_tool is None:
+            msg = f"{cls.name} declares no transport tool."
+            raise RuntimeError(msg)
+        return transport_for(
+            cls.transport_tool,
+            intensity,
+            rate_weight=cls.rate_weight,
+            thread_weight=cls.thread_weight,
+            timeout=cls.transport_timeout,
+            **scaling,
+        )
 
     @abstractmethod
     def run(self) -> StageResult: ...

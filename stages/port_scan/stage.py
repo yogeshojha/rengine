@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from sqlalchemy import select
 
+from shared.definitions.intensity import TransportTool
 from shared.definitions.ports import (
     CDN_EDGE_PORTS,
     PortProfile,
@@ -22,7 +23,7 @@ from shared.services.port_inventory import ServiceObservation
 from shared.services.scope_filter import ip_excluded
 from shared.utils.net import is_registry_routable
 from stages.base import ALL_TARGETS, Stage, StageResult
-from stages.port_scan.config import PortScanConfig
+from stages.port_scan.config import PORT_THRESHOLD, PortScanConfig
 from tools.naabu.client import NaabuClient, NaabuError, NaabuOptions, port_args
 
 logger = get_logger(__name__)
@@ -51,6 +52,7 @@ class PortScanStage(Stage):
     produces = frozenset({AssetKind.PORTS.value})
     applies_to = ALL_TARGETS
     tools = ("naabu",)
+    transport_tool = TransportTool.NAABU.value
     config_model = PortScanConfig
 
     def run(self) -> StageResult:
@@ -80,12 +82,12 @@ class PortScanStage(Stage):
         try:
             client = NaabuClient(
                 options=NaabuOptions(
-                    rate=cfg.rate,
-                    concurrency=cfg.threads,
-                    timeout=cfg.timeout,
-                    retries=cfg.retries,
+                    rate=self.transport.rate or 1,
+                    concurrency=self.transport.threads,
+                    timeout=self.transport.timeout,
+                    retries=self.transport.retries,
                     scan_type=cfg.scan_type,
-                    port_threshold=cfg.port_threshold,
+                    port_threshold=PORT_THRESHOLD,
                     exclude_ports=cfg.exclude_ports,
                     proxy_url=self.net_options().proxy_url,
                     extra_args=self.ctx.resolved.tool_args("naabu"),

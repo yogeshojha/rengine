@@ -10,9 +10,10 @@ export const INTENSITY_LABELS: Record<Intensity, string> = {
 };
 
 export const INTENSITY_HELP: Record<Intensity, string> = {
-	passive: 'Passive sources only. No traffic is sent to the target.',
-	normal: 'Active scanning at standard rate limits.',
-	aggressive: 'Active scanning at higher request rates. More likely to be detected.'
+	passive: 'Public sources only. No traffic is sent to the target.',
+	normal: '150 requests per second per tool, 1,000 packets per second for the port scan.',
+	aggressive:
+		'400 requests per second per tool, 3,000 packets per second for the port scan. Concurrency doubled.'
 };
 
 export type StageConfig = Record<string, unknown>;
@@ -34,6 +35,7 @@ export interface ScanEngine {
 	yaml_source: string | null;
 	tool_options: Record<string, string>;
 	usage: EngineUsage;
+	builtin: boolean;
 	created_at: string;
 	updated_at: string;
 	last_used_at: string | null;
@@ -52,7 +54,8 @@ export interface ScanEngineCreate {
 export type ScanEngineUpdate = Partial<Omit<ScanEngineCreate, 'name'>> & { name?: string };
 
 export type FieldType = 'boolean' | 'integer' | 'number' | 'string' | 'array';
-export type FieldScale = 'threads' | 'timeout' | 'rate';
+export type FieldTier = 'basic' | 'advanced';
+export const ADVANCED_TIER: FieldTier = 'advanced';
 
 export interface StageField {
 	name: string;
@@ -64,10 +67,17 @@ export interface StageField {
 	option_labels: Record<string, string> | null;
 	minimum: number | null;
 	maximum: number | null;
-	scale: FieldScale | null;
+	tier: FieldTier;
 	widget: string | null;
 	kind: string | null;
 	launch: boolean;
+}
+
+export interface StageTransport {
+	tool: string;
+	rates: Record<string, number | null>;
+	threads: Record<string, number>;
+	timeout: number;
 }
 
 export interface StageCatalogEntry {
@@ -87,6 +97,7 @@ export interface StageCatalogEntry {
 	role: string;
 	consumes: string[];
 	produces: string[];
+	transport?: StageTransport | null;
 	defaults: StageConfig;
 	fields: StageField[];
 }
@@ -148,11 +159,17 @@ export interface EnginePreviewRequest {
 	stages?: Record<string, StageConfig>;
 }
 
-export const SCALE_HELP: Record<FieldScale, string> = {
-	threads: 'A scan context can scale this.',
-	timeout: 'A scan context can scale this.',
-	rate: 'A scan context can cap this.'
-};
+export function basicFields(stage: StageCatalogEntry): StageField[] {
+	return stage.fields.filter((f) => f.name !== 'enabled' && f.tier !== ADVANCED_TIER);
+}
+
+export function advancedFields(stage: StageCatalogEntry): StageField[] {
+	return stage.fields.filter((f) => f.name !== 'enabled' && f.tier === ADVANCED_TIER);
+}
+
+export function stageRate(stage: StageCatalogEntry, intensity: string): number {
+	return stage.transport?.rates?.[intensity] ?? 0;
+}
 
 export const PHASE_LABELS: Record<string, string> = {
 	discovery: 'Discovery',

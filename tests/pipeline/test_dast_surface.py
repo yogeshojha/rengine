@@ -6,12 +6,13 @@ from types import SimpleNamespace
 
 import pytest
 
+from shared.definitions.intensity import Transport
 from shared.definitions.scan_surface import Tier
 from shared.services.scan_surface import SurfaceItem, SurfacePlan, by_origin
 from shared.services.scan_surface.requests import _better, _rewrite
 from stages.dast_scan.config import DastScanConfig
 from stages.dast_scan.scanners import scanners
-from stages.dast_scan.scanners.nuclei import NucleiDastScanner
+from stages.dast_scan.scanners.nuclei import FUZZ_PARAM_FREQUENCY, NucleiDastScanner
 from stages.registry import execution_plan, stage_by_name
 from stages.vulnerability_scan.scanners.base import ScannerContext
 from stages.vulnerability_scan.scanners.nuclei import Job, _Templates
@@ -42,6 +43,7 @@ def _scanner(**cfg) -> NucleiDastScanner:
         target_id=uuid.uuid4(),
         project_id=uuid.uuid4(),
         cfg=DastScanConfig(**cfg),
+        transport=Transport(tool="nuclei", rate=150, threads=25, timeout=10, retries=1),
         resolved=None,
         net=None,
         surface=SurfacePlan(),
@@ -156,7 +158,7 @@ def test_a_fuzzing_finding_replays_the_same_request_on_each_equivalent():
 
 
 def test_a_fuzzing_job_passes_dast_and_the_parameter_patience():
-    scanner = _scanner(fuzz_param_frequency=7)
+    scanner = _scanner()
     scanner.ctx.net = SimpleNamespace(proxy_url=None, headers={})
     scanner.ctx.resolved = SimpleNamespace(
         follow_redirects=None, tool_args=lambda _t: [], excluded_subdomains=[]
@@ -173,4 +175,4 @@ def test_a_fuzzing_job_passes_dast_and_the_parameter_patience():
     options = scanner._options(job, Path("t.txt"), None)
 
     assert options.dast is True
-    assert options.fuzz_param_frequency == 7
+    assert options.fuzz_param_frequency == FUZZ_PARAM_FREQUENCY

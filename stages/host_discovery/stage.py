@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from sqlalchemy import select
 
+from shared.definitions.intensity import TransportTool
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.logging import get_logger
 from shared.models.ip_address import IpAddress
+from shared.services.scope_filter import ip_excluded
 from stages.base import RANGE_TARGETS, Stage, StageResult
 from stages.host_discovery.config import HostDiscoveryConfig
 from tools.naabu.client import NaabuClient, NaabuError, NaabuOptions
@@ -25,11 +27,14 @@ class HostDiscoveryStage(Stage):
     produces = frozenset({AssetKind.ADDRESSES.value})
     applies_to = RANGE_TARGETS
     tools = ("naabu",)
+    transport_tool = TransportTool.NAABU.value
+    rate_weight = 0.15
+    thread_weight = 0.3
+    transport_timeout = 5
     config_model = HostDiscoveryConfig
 
     def run(self) -> StageResult:
         self._check_abort()
-        cfg = self.cfg
         net = self.net_options()
         rows = list(
             self.session.execute(
@@ -38,15 +43,19 @@ class HostDiscoveryStage(Stage):
             .scalars()
             .all()
         )
+        excluded = self.ctx.resolved.excluded_ips or []
+        if excluded:
+            rows = [row for row in rows if not ip_excluded(row.ip, excluded)]
         if not rows:
             return StageResult(counts={"alive": 0})
 
         try:
             client = NaabuClient(
                 options=NaabuOptions(
-                    rate=cfg.rate,
-                    concurrency=cfg.threads,
-                    timeout=cfg.timeout,
+                    rate=self.transport.rate or 1,
+                    concurrency=self.transport.threads,
+                    timeout=self.transport.timeout,
+                    retries=self.transport.retries,
                     proxy_url=net.proxy_url,
                     extra_args=self.ctx.resolved.tool_args("naabu"),
                 ),

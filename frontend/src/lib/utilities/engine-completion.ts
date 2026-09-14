@@ -63,9 +63,7 @@ function fieldDetail(field: StageField): string {
 }
 
 function fieldInfo(field: StageField): string | undefined {
-	const parts = [field.description ?? ''];
-	if (field.scale) parts.push('A scan context can scale this.');
-	const text = parts.filter(Boolean).join(' ');
+	const text = field.description ?? '';
 	return text || undefined;
 }
 

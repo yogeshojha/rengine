@@ -26,6 +26,7 @@ from shared.services.scan_surface import (
 from shared.services.vuln_templates import selection_predicate
 from stages.vulnerability_scan.scanners.base import ScannerResult
 from stages.vulnerability_scan.scanners.nuclei import (
+    WAF_RATE_DIVISOR,
     Job,
     NucleiScanner,
     _by_lane,
@@ -36,6 +37,7 @@ from tools.nuclei.parser import Finding
 
 _EXPOSURE_SET = "exposure"
 _REQUESTS_PER_INVOCATION = 100
+FUZZ_PARAM_FREQUENCY = 10
 _BASE_URL = "{{BaseURL}}"
 
 
@@ -72,6 +74,10 @@ def exposure_templates(session, cfg) -> list[VulnTemplate]:
 class NucleiDastScanner(NucleiScanner):
     """The same runner, handed request and directory items instead of roots."""
 
+    honeypot_threshold = 0
+    evidence_recovery = 0
+    fuzz_param_frequency = FUZZ_PARAM_FREQUENCY
+
     def run(self) -> ScannerResult:
         ctx = self.ctx
         ok, reason = self.availability()
@@ -106,7 +112,6 @@ class NucleiDastScanner(NucleiScanner):
     def _schedule_requests(
         self, plan: SurfacePlan, fuzz, exposure
     ) -> dict[str, list[Job]]:
-        cfg = self.ctx.cfg
         rates = self._rates(plan)
         lanes: dict[str, list[Job]] = {}
         counter: dict[str, int] = {}
@@ -118,7 +123,7 @@ class NucleiDastScanner(NucleiScanner):
 
         if fuzz.paths and plan.requests:
             files = fuzz.files(fuzz.rows)
-            for lane, wanted in _by_lane(plan.requests, cfg.waf_rate_divisor).items():
+            for lane, wanted in _by_lane(plan.requests, WAF_RATE_DIVISOR).items():
                 grouped: list[SurfaceItem] = [i for g in by_origin(wanted) for i in g]
                 for items in chunk(grouped, _REQUESTS_PER_INVOCATION):
                     _push(
@@ -136,7 +141,7 @@ class NucleiDastScanner(NucleiScanner):
         if exposure.paths and plan.bases:
             files = exposure.files(exposure.rows)
             per_host = cost(exposure.rows)
-            for lane, wanted in _by_lane(plan.bases, cfg.waf_rate_divisor).items():
+            for lane, wanted in _by_lane(plan.bases, WAF_RATE_DIVISOR).items():
                 for items in batches(wanted, per_host, rates[lane]):
                     _push(
                         Job(

@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from sqlalchemy import select
 
+from shared.definitions.intensity import TransportTool
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.enums.subdomain import SubdomainSource
 from shared.logging import get_logger
 from shared.models.subdomain import Subdomain
+from shared.services.scope_filter import matches_any
 from shared.services.wordlists import WordlistError, lookup, resolve_path
 from shared.utils.datetime import utc_now
 from stages.base import DOMAIN_TARGETS, Stage, StageResult
@@ -31,6 +33,7 @@ class VhostStage(Stage):
     produces = frozenset({AssetKind.HOSTS.value})
     applies_to = DOMAIN_TARGETS
     tools = ("ffuf",)
+    transport_tool = TransportTool.FFUF.value
     config_model = VhostConfig
 
     def run(self) -> StageResult:
@@ -66,8 +69,8 @@ class VhostStage(Stage):
         try:
             client = FfufClient(
                 wordlist=str(wordlist),
-                threads=cfg.threads,
-                rate=cfg.rate,
+                threads=self.transport.threads,
+                rate=self.transport.rate or 1,
                 proxy_url=net.proxy_url,
                 headers=net.headers,
                 probe_scheme=net.probe_scheme,
@@ -120,6 +123,7 @@ class VhostStage(Stage):
         )
         now = utc_now()
         added = 0
+        excluded = self.ctx.resolved.excluded_subdomains or []
         for name, ips in found.items():
             if name in existing:
                 continue
@@ -134,7 +138,7 @@ class VhostStage(Stage):
                     cname=None,
                     is_active=True,
                     is_wildcard=False,
-                    is_excluded=False,
+                    is_excluded=matches_any(name, excluded),
                     discovered_at=now,
                 )
             )

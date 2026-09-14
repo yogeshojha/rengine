@@ -47,6 +47,33 @@ def _terminate(proc: subprocess.Popen) -> None:
         proc.wait(timeout=_KILL_GRACE_SECONDS)
 
 
+def _flag_name(token: str) -> str:
+    return token.split("=", 1)[0]
+
+
+def merge_extra_args(
+    args: list[str], extra: list[str], reserved: tuple[str, ...] = ()
+) -> list[str]:
+    """Tool args, minus any flag the stage already set."""
+    taken = {_flag_name(a) for a in args if a.startswith("-")} | set(reserved)
+    out: list[str] = []
+    skip = False
+    for index, token in enumerate(extra):
+        if skip:
+            skip = False
+            continue
+        if token.startswith("-") and _flag_name(token) in taken:
+            following = extra[index + 1] if index + 1 < len(extra) else None
+            skip = (
+                "=" not in token
+                and following is not None
+                and not following.startswith("-")
+            )
+            continue
+        out.append(token)
+    return out
+
+
 def _drain(stream, into: list[str]) -> None:
     with contextlib.suppress(Exception):
         into.append(stream.read())
@@ -208,7 +235,13 @@ class CLIToolRunner:
         args = list(args) if args else []
         recorder = recorder if recorder is not None else self._recorder
         tool = tool if tool is not None else self._tool
-        args.extend(extra_args if extra_args is not None else self._extra_args)
+        args.extend(
+            merge_extra_args(
+                args,
+                extra_args if extra_args is not None else self._extra_args,
+                (input_flag, output_flag, json_flag, silent_flag),
+            )
+        )
 
         input_file: Path | None = None
         output_file: Path | None = None
@@ -366,7 +399,13 @@ class CLIToolRunner:
         args = list(args) if args else []
         recorder = recorder if recorder is not None else self._recorder
         tool = tool if tool is not None else self._tool
-        args.extend(extra_args if extra_args is not None else self._extra_args)
+        args.extend(
+            merge_extra_args(
+                args,
+                extra_args if extra_args is not None else self._extra_args,
+                (input_flag, json_flag, silent_flag),
+            )
+        )
 
         input_file: Path | None = None
         start_time = time.monotonic()

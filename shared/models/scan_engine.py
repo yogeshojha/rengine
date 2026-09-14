@@ -31,6 +31,7 @@ class ScanEngine(SQLModel, table=True):
     tool_options: dict = Field(
         default_factory=dict, sa_column=Column(JSON, nullable=False)
     )
+    builtin: bool = Field(default=False)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
     last_used_at: datetime | None = Field(default=None)
@@ -77,6 +78,7 @@ class ScanEngineRead(BaseModel):
     yaml_source: str | None
     tool_options: dict[str, str] = PydanticField(default_factory=dict)
     usage: EngineUsage = PydanticField(default_factory=EngineUsage)
+    builtin: bool = False
     created_at: datetime
     updated_at: datetime
     last_used_at: datetime | None
@@ -92,10 +94,17 @@ class StageField(BaseModel):
     option_labels: dict[str, str] | None = None
     minimum: int | None = None
     maximum: int | None = None
-    scale: str | None = None
+    tier: str = "basic"
     widget: str | None = None
     kind: str | None = None
     launch: bool = False
+
+
+class StageTransport(BaseModel):
+    tool: str
+    rates: dict[str, int | None]
+    threads: dict[str, int]
+    timeout: int
 
 
 class StageCatalogEntry(BaseModel):
@@ -115,6 +124,7 @@ class StageCatalogEntry(BaseModel):
     role: str
     consumes: list[str] = PydanticField(default_factory=list)
     produces: list[str] = PydanticField(default_factory=list)
+    transport: StageTransport | None = None
     defaults: dict
     fields: list[StageField] = PydanticField(default_factory=list)
 

@@ -9,7 +9,8 @@ from functools import lru_cache
 from pathlib import Path
 
 import stages as stages_pkg
-from shared.enums.scan import PHASE_ORDER, AssetKind, StageGroup, StageRole
+from shared.definitions.intensity import PROFILES, RATE_TOOLS
+from shared.enums.scan import PHASE_ORDER, AssetKind, Intensity, StageGroup, StageRole
 from stages.base import Stage
 from stages.config import StageConfig
 
@@ -35,6 +36,10 @@ class StageSpec:
     produces: frozenset[str]
     group: str
     role: str
+    transport_tool: str | None
+    rate_weight: float
+    thread_weight: float
+    transport_timeout: int | None
     stage_cls: type[Stage]
     config_model: type[StageConfig]
 
@@ -45,6 +50,12 @@ class StageSpec:
     @property
     def schema(self) -> dict:
         return self.config_model.model_json_schema()
+
+    def transport(self, intensity: str, **scaling):
+        """The stage's transport under this intensity, or None when it runs no tool."""
+        if self.transport_tool is None:
+            return None
+        return self.stage_cls.default_transport(intensity, **scaling)
 
 
 class StageRegistrationError(RuntimeError):
@@ -111,6 +122,10 @@ def _spec(stage_cls: type[Stage], level: int) -> StageSpec:
     if unknown:
         msg = f"{stage_cls.name}: unknown asset kind {sorted(unknown)[0]!r}."
         raise StageRegistrationError(msg)
+    tool = stage_cls.transport_tool
+    if tool is not None and tool not in PROFILES[Intensity.NORMAL.value]:
+        msg = f"{stage_cls.name}: no transport profile for {tool!r}."
+        raise StageRegistrationError(msg)
     return StageSpec(
         name=stage_cls.name,
         title=getattr(stage_cls, "title", None)
@@ -132,6 +147,10 @@ def _spec(stage_cls: type[Stage], level: int) -> StageSpec:
         produces=frozenset(stage_cls.produces),
         group=stage_cls.group,
         role=stage_cls.role,
+        transport_tool=stage_cls.transport_tool,
+        rate_weight=stage_cls.rate_weight,
+        thread_weight=stage_cls.thread_weight,
+        transport_timeout=stage_cls.transport_timeout,
         stage_cls=stage_cls,
         config_model=stage_cls.config_model,
     )
@@ -267,12 +286,8 @@ def phases() -> list[tuple[str, list[StageSpec]]]:
 
 
 def rate_tools() -> tuple[str, ...]:
-    tools: list[str] = []
-    for spec in stages():
-        for tool in sorted(spec.config_model.rate_tools()):
-            if tool not in tools:
-                tools.append(tool)
-    return tuple(tools)
+    used = {spec.transport_tool for spec in stages()}
+    return tuple(tool for tool in RATE_TOOLS if tool in used)
 
 
 __all__ = [

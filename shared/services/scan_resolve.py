@@ -7,11 +7,8 @@ from typing import TYPE_CHECKING, ClassVar
 
 from pydantic import BaseModel, Field, PrivateAttr, ValidationError
 
-from shared.definitions.constants import (
-    MAX_RATE,
-    MAX_THREADS,
-    MAX_TIMEOUT,
-)
+from shared.definitions.constants import MAX_RATE
+from shared.definitions.intensity import tool_rate
 from shared.definitions.tools import parse_tool_args
 
 if TYPE_CHECKING:
@@ -246,6 +243,7 @@ class ResolvedScanConfig(BaseModel):
     thread_multiplier: float = 1.0
     timeout_multiplier: float = 1.0
     stages: dict[str, dict] = Field(default_factory=dict)
+    transports: dict[str, dict] = Field(default_factory=dict)
     excluded_subdomains: list[str] = Field(default_factory=list)
     excluded_paths: list[str] = Field(default_factory=list)
     excluded_ips: list[str] = Field(default_factory=list)
@@ -326,22 +324,6 @@ def _build_headers(engine, ctx) -> tuple[dict[str, str], list[str]]:
     return headers, auth_header_names
 
 
-def _resolve_rate(
-    base: int, tool: str | None, overrides: dict, ceiling: int | None
-) -> int:
-    value = overrides.get(tool, base) if tool else base
-    if ceiling is not None:
-        value = min(value, ceiling)
-    return _clamp(int(value), 1, MAX_RATE)
-
-
-def _assert_flags_preserved(stage: str, original: dict, scaled: dict) -> None:
-    for key, value in original.items():
-        if isinstance(value, bool) and scaled[key] != value:
-            msg = f"Resolved enable flag {stage}.{key} diverged from engine."
-            raise RuntimeError(msg)
-
-
 def validate_overrides(overrides: dict | None) -> dict[str, dict]:
     """Keep only stage keys that exist and values their own config model accepts."""
     from stages.registry import stage_by_name  # noqa: PLC0415
@@ -394,7 +376,7 @@ def merge_engine_context(
     intensity: str | None = None,
 ) -> ResolvedScanConfig:
     from shared.enums.scan import INTENSITIES, Intensity  # noqa: PLC0415
-    from stages.config import Scale  # noqa: PLC0415
+    from stages.registry import rate_tools  # noqa: PLC0415
     from stages.registry import stages as stage_specs  # noqa: PLC0415
 
     run_intensity = intensity or engine.intensity
@@ -415,7 +397,18 @@ def merge_engine_context(
     stored = engine.stages or {}
     run_overrides = validate_overrides(overrides)
     stages: dict[str, dict] = {}
+    transports: dict[str, dict] = {}
     per_tool_rate_limits: dict[str, int] = {}
+    for tool in rate_tools():
+        override = rate_overrides.get(tool)
+        limit = tool_rate(
+            tool,
+            run_intensity,
+            rate_override=_clamp(int(override), 1, MAX_RATE) if override else None,
+            ceiling=global_rate_limit_ceiling,
+        )
+        if limit is not None:
+            per_tool_rate_limits[tool] = limit
 
     for spec in stage_specs():
         authored = (
@@ -430,18 +423,15 @@ def merge_engine_context(
             authored["enabled"] = True
         config = spec.config_model(**authored)
         values = config.model_dump()
-        for name, (scale, tool) in spec.config_model.scaled_fields().items():
-            base = values[name]
-            if scale is Scale.THREADS:
-                values[name] = _clamp(int(base * thread_mult) or 1, 1, MAX_THREADS)
-            elif scale is Scale.TIMEOUT:
-                values[name] = _clamp(int(base * timeout_mult) or 1, 1, MAX_TIMEOUT)
-            elif scale is Scale.RATE:
-                values[name] = _resolve_rate(
-                    base, tool, rate_overrides, global_rate_limit_ceiling
-                )
-                per_tool_rate_limits[tool] = values[name]
-        _assert_flags_preserved(spec.name, config.model_dump(), values)
+        if spec.transport_tool is not None:
+            override = rate_overrides.get(spec.transport_tool)
+            transports[spec.name] = spec.transport(
+                run_intensity,
+                thread_multiplier=thread_mult,
+                timeout_multiplier=timeout_mult,
+                rate_override=_clamp(int(override), 1, MAX_RATE) if override else None,
+                ceiling=global_rate_limit_ceiling,
+            ).as_dict()
         if passive and spec.touches_target:
             values["enabled"] = False
         stages[spec.name] = values
@@ -463,6 +453,7 @@ def merge_engine_context(
         thread_multiplier=thread_mult,
         timeout_multiplier=timeout_mult,
         stages=stages,
+        transports=transports,
         excluded_subdomains=excluded_subdomains,
         excluded_paths=excluded_paths,
         excluded_ips=excluded_ips,

@@ -189,7 +189,7 @@
 	}
 
 	function toggleSelectAll() {
-		const all = scanEnginesStore.engines;
+		const all = scanEnginesStore.engines.filter((e) => !e.builtin);
 		if (selectedIds.size >= all.length) selectedIds.clear();
 		else for (const e of all) selectedIds.add(e.id);
 	}
@@ -270,6 +270,7 @@
 
 	const stageCount = $derived(stages.length);
 	const total = $derived(scanEnginesStore.engines.length);
+	const selectable = $derived(scanEnginesStore.engines.filter((e) => !e.builtin).length);
 </script>
 
 <svelte:head><title>{routeLabels.engines} · reNgine</title></svelte:head>
@@ -471,7 +472,7 @@
 <SelectionActionBar selectedCount={selectedIds.size} noun="engine" onClear={clearSelection}>
 	<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={toggleSelectAll}>
 		<ListChecks class="h-3.5 w-3.5 text-muted-foreground" />
-		{selectedIds.size >= total ? 'Deselect all' : 'Select all'}
+		{selectedIds.size >= selectable ? 'Deselect all' : 'Select all'}
 	</Button>
 	<Button
 		variant="ghost"

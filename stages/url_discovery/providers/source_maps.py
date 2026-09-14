@@ -11,6 +11,7 @@ from sqlalchemy import select
 from shared.definitions.endpoints import EndpointSource
 from shared.models.endpoint import Endpoint
 from shared.services.endpoint_inventory import EndpointObservation
+from stages.url_discovery.config import MAX_SOURCE_MAPS
 from stages.url_discovery.providers import mine
 from stages.url_discovery.providers.base import ProviderResult, UrlProvider
 
@@ -36,11 +37,11 @@ class SourceMapProvider(UrlProvider):
             self.progress("no javascript bundle answered")
             return
 
-        limit = self.ctx.cfg.max_source_maps
+        limit = MAX_SOURCE_MAPS
         selected = bundles[:limit]
         client = self._client()
         try:
-            workers = min(_MAX_WORKERS, len(selected))
+            workers = min(self.workers(_MAX_WORKERS), len(selected))
             with ThreadPoolExecutor(max_workers=workers) as pool:
                 found = list(pool.map(lambda url: self._fetch(client, url), selected))
         finally:
@@ -78,10 +79,11 @@ class SourceMapProvider(UrlProvider):
             )
             .order_by(Endpoint.url)
         )
+        hosts = {h.host for h in self.ctx.hosts}
         seen: dict[str, None] = {}
         for url in rows:
             base = _strip(url)
-            if base:
+            if base and (urlsplit(base).hostname or "").lower() in hosts:
                 seen.setdefault(base, None)
         return list(seen)
 
@@ -89,8 +91,8 @@ class SourceMapProvider(UrlProvider):
         headers = dict(self.ctx.net.headers or {})
         headers.setdefault("User-Agent", "reNgine/3.0 (+https://rengine.wiki)")
         return httpx.Client(
-            timeout=self.ctx.cfg.timeout,
-            follow_redirects=True,
+            timeout=self.ctx.transport.timeout,
+            follow_redirects=self.follow_redirects(True),
             verify=False,  # noqa: S501
             proxy=self.ctx.net.proxy_url or None,
             headers=headers,
@@ -101,6 +103,9 @@ class SourceMapProvider(UrlProvider):
             return None
         url = f"{bundle}.map"
         outcome = _Outcome(bundle=bundle, url=url)
+        if self.path_excluded(url):
+            return outcome
+        self.throttle()
         try:
             with client.stream("GET", url) as response:
                 if response.status_code != _OK:

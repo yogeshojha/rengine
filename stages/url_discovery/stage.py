@@ -7,6 +7,7 @@ from sqlalchemy import func, select
 
 from shared.definitions.domains import registrable_domain
 from shared.definitions.endpoints import parse_url
+from shared.definitions.intensity import TransportTool
 from shared.definitions.surface import SurfaceDimension
 from shared.definitions.vulnerabilities import CoverageStatus
 from shared.enums.scan import AssetKind, Intensity, Phase, StageGroup, StageRole
@@ -60,6 +61,7 @@ class UrlDiscoveryStage(Stage):
     produces = frozenset({AssetKind.ENDPOINTS.value})
     applies_to = ALL_TARGETS
     tools = ("katana", "urlfinder")
+    transport_tool = TransportTool.KATANA.value
     touches_target = False
     config_model = UrlDiscoveryConfig
     launch_fields = ("enabled", "providers", "crawl_depth", "max_crawl_minutes")
@@ -97,6 +99,7 @@ class UrlDiscoveryStage(Stage):
             hosts=hosts,
             apex_domains=self._apex_domains(hosts),
             cfg=cfg,
+            transport=self.transport,
             resolved=self.ctx.resolved,
             net=self.net_options(),
             recorder=self.ctx.recorder,

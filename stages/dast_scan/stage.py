@@ -2,9 +2,15 @@ from __future__ import annotations
 
 import uuid
 
-from shared.definitions.scan_surface import SurfaceClass
+from shared.definitions.intensity import TransportTool
+from shared.definitions.scan_surface import (
+    BASE_MAX_DEPTH,
+    MAX_BASES_PER_ORIGIN,
+    SurfaceClass,
+)
 from shared.definitions.surface import SurfaceDimension
 from shared.definitions.vulnerabilities import (
+    MAX_FINDINGS_PER_SCAN,
     SEVERITY_LABELS,
     CoverageStatus,
     Severity,
@@ -55,6 +61,8 @@ class DastScanStage(Stage):
     produces = frozenset({AssetKind.VULNERABILITIES.value})
     applies_to = ALL_TARGETS
     tools = ("nuclei",)
+    transport_tool = TransportTool.NUCLEI.value
+    rate_weight = 1 / 3
     touches_target = True
     config_model = DastScanConfig
     launch_fields = ("enabled", "severities", "directories", "headless", "max_minutes")
@@ -76,8 +84,8 @@ class DastScanStage(Stage):
             max_per_origin=cfg.max_requests_per_origin,
             max_total=cfg.max_requests,
             bases=cfg.directories,
-            max_bases_per_origin=cfg.max_dirs_per_origin,
-            base_depth=cfg.dir_depth,
+            max_bases_per_origin=MAX_BASES_PER_ORIGIN,
+            base_depth=BASE_MAX_DEPTH,
         )
         scan_surface.write(
             self.session,
@@ -99,7 +107,7 @@ class DastScanStage(Stage):
 
         def _store(findings: list) -> int:
             self._check_abort()
-            room = cfg.max_findings - len(stored)
+            room = MAX_FINDINGS_PER_SCAN - len(stored)
             if room <= 0:
                 return 0
             written = vuln_inventory.upsert(
@@ -137,6 +145,7 @@ class DastScanStage(Stage):
             target_id=self.ctx.target_id,
             project_id=self.ctx.project_id,
             cfg=cfg,
+            transport=self.transport,
             resolved=self.ctx.resolved,
             net=self.net_options(),
             surface=plan,

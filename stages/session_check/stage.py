@@ -10,6 +10,8 @@ from shared.logging import get_logger
 from stages.base import ALL_TARGETS, Stage, StageResult
 from stages.session_check.config import SessionCheckConfig
 
+REQUEST_TIMEOUT = 15
+
 logger = get_logger(__name__)
 
 _UNAUTHORISED = (401, 403)
@@ -73,16 +75,18 @@ class SessionCheckStage(Stage):
         value = self.ctx.target_value.strip().rstrip("/")
         if not value:
             return []
+        scheme = self.net_options().probe_scheme
         if self.ctx.target_type == TargetType.URL.value:
-            return [value]
+            return [value] if scheme is None or value.startswith(f"{scheme}://") else []
         if self.ctx.target_type != TargetType.DOMAIN.value:
             return []
-        return [f"https://{value}", f"http://{value}"]
+        schemes = [scheme] if scheme else ["https", "http"]
+        return [f"{s}://{value}" for s in schemes]
 
     def _client(self) -> httpx.Client:
         return httpx.Client(
-            timeout=self.cfg.timeout,
-            follow_redirects=True,
+            timeout=REQUEST_TIMEOUT,
+            follow_redirects=self.follow_redirects(True),
             verify=False,  # noqa: S501
             proxy=self.ctx.resolved.proxy_url or None,
         )

@@ -7,6 +7,7 @@ from sqlalchemy import cast, func, select
 from sqlalchemy.dialects.postgresql import JSONB
 
 from shared.definitions.endpoints import PROBE_COVERAGE_SOURCE, STATIC_CLASSES
+from shared.definitions.intensity import TransportTool
 from shared.definitions.surface import SurfaceDimension
 from shared.definitions.vulnerabilities import CoverageStatus
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
@@ -19,7 +20,7 @@ from shared.services.endpoint_judge import Fingerprint
 from shared.services.scope_filter import matches_any
 from shared.utils.datetime import utc_now
 from stages.base import ALL_TARGETS, Stage, StageResult
-from stages.endpoint_probe.config import EndpointProbeConfig
+from stages.endpoint_probe.config import FOLLOW_REDIRECTS, EndpointProbeConfig
 from tools.httpx.client import HttpxClient, HttpxError
 from tools.httpx.parser import parse_httpx_record
 
@@ -42,6 +43,8 @@ class EndpointProbeStage(Stage):
     consumes = frozenset({AssetKind.ENDPOINTS.value})
     applies_to = ALL_TARGETS
     tools = ("httpx",)
+    transport_tool = TransportTool.HTTPX.value
+    thread_weight = 4 / 15
     config_model = EndpointProbeConfig
     launch_fields = ("enabled", "max_urls")
 
@@ -63,13 +66,13 @@ class EndpointProbeStage(Stage):
 
         try:
             client = HttpxClient(
-                rate_limit=cfg.rate,
-                threads=cfg.threads,
-                timeout=cfg.timeout,
+                rate_limit=self.transport.rate,
+                threads=self.transport.threads,
+                timeout=self.transport.timeout,
                 proxy_url=net.proxy_url,
                 headers=net.headers,
                 probe_scheme=net.probe_scheme,
-                follow_redirects=self.follow_redirects(cfg.follow_redirects),
+                follow_redirects=self.follow_redirects(FOLLOW_REDIRECTS),
                 recorder=self.ctx.recorder,
                 extra_args=self.ctx.resolved.tool_args("httpx"),
             )

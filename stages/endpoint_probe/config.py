@@ -3,7 +3,7 @@ from __future__ import annotations
 from pydantic import Field
 
 from shared.definitions.endpoints import DEFAULT_PROBE_CAP
-from stages.config import StageConfig, rate, threads, timeout
+from stages.config import StageConfig, advanced
 
 
 class EndpointProbeConfig(StageConfig):
@@ -12,23 +12,18 @@ class EndpointProbeConfig(StageConfig):
         title="Verify endpoints",
         description="Request the discovered URLs and record each status.",
     )
-    threads: int = threads(40, title="Threads")
-    timeout: int = timeout(10, title="Timeout (s)")
-    rate: int = rate(150, tool="httpx", title="Requests/s")
-    max_urls: int = Field(
-        default=DEFAULT_PROBE_CAP,
+    skip_static: bool = advanced(
+        True,
+        title="Skip images and media",
+        description="Skip images, stylesheets, fonts and other static files.",
+    )
+    max_urls: int = advanced(
+        DEFAULT_PROBE_CAP,
         ge=0,
         le=100000,
         title="URLs to verify",
         description="Endpoints requested. The rest stay unverified.",
     )
-    skip_static: bool = Field(
-        default=True,
-        title="Skip images and media",
-        description="Skip images, stylesheets, fonts and other static files.",
-    )
-    follow_redirects: bool = Field(
-        default=False,
-        title="Follow redirects",
-        description="Follow 3xx redirects.",
-    )
+
+
+FOLLOW_REDIRECTS = False

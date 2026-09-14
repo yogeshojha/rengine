@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pydantic import Field
 
-from stages.config import StageConfig, timeout
+from stages.config import StageConfig
 
 
 class SessionCheckConfig(StageConfig):
@@ -11,4 +11,3 @@ class SessionCheckConfig(StageConfig):
         title="Check the session before scanning",
         description="Request the target once with the scan context's credentials and once without. Runs only when the context carries credentials.",
     )
-    timeout: int = timeout(15, title="Timeout (s)")

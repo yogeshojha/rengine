@@ -15,6 +15,7 @@ from pathlib import Path
 from sqlalchemy import bindparam, cast, delete, not_, or_, update
 from sqlalchemy.dialects.postgresql import JSONB, insert
 
+from shared.definitions.intensity import TransportTool
 from shared.definitions.rescan import SEED_SOURCES
 from shared.definitions.surface import SurfaceDimension
 from shared.enums.activity import ActivityEvent, ActivityLevel
@@ -30,7 +31,16 @@ from shared.services.scope_filter import matches_any
 from shared.services.wordlists import WordlistError, read_words
 from shared.utils.datetime import utc_now
 from stages.base import DOMAIN_TARGETS, Stage, StageResult
-from stages.subdomain.config import PASSIVE_TOOLS, SubdomainConfig
+from stages.subdomain.config import (
+    DNS_BATCH_CONCURRENCY,
+    DNS_BATCH_SIZE,
+    DNS_IDLE_TIMEOUT,
+    PASSIVE_TOOLS,
+    PERMUTATION_LIMIT,
+    PERMUTATION_SEEDS,
+    SubdomainConfig,
+    tool_timeout,
+)
 from stages.subdomain.parser import in_scope, merge_and_filter
 from stages.subdomain.providers import (
     PASSIVE_PROVIDERS,
@@ -136,6 +146,7 @@ class SubdomainStage(Stage):
     produces = frozenset({AssetKind.HOSTS.value, AssetKind.ADDRESSES.value})
     applies_to = DOMAIN_TARGETS
     tools = PASSIVE_TOOLS
+    transport_tool = TransportTool.DNSX.value
     api_keys = tuple(p.value for p in _PREFETCH_KEYS)
     touches_target = False
     config_model = SubdomainConfig
@@ -145,6 +156,7 @@ class SubdomainStage(Stage):
         return cfg.enabled and bool(
             cfg.enabled_sources
             or cfg.tls_discovery
+            or cfg.zone_transfer
             or cfg.bruteforce
             or cfg.permutations
         )
@@ -162,8 +174,8 @@ class SubdomainStage(Stage):
         api_keys = self._prefetch_keys()
         pctx = ProviderContext(
             domain=domain,
-            timeout=cfg.tool_timeout(resolved.intensity),
-            threads=cfg.dns_threads,
+            timeout=tool_timeout(resolved.intensity),
+            threads=self.transport.threads,
             proxy_url=resolved.proxy_url,
             api_keys=api_keys,
             recorder=self.ctx.recorder,
@@ -182,7 +194,7 @@ class SubdomainStage(Stage):
         self._check_abort()
 
         merged = merge_and_filter(results, domain, resolved.included_subdomains)
-        wildcard_ips = self._wildcard_ips(domain, cfg)
+        wildcard_ips = self._wildcard_ips(domain)
         extra = self._expand(
             domain, cfg, sorted(merged, key=_seed_rank), wildcard_ips, activity
         )
@@ -205,7 +217,7 @@ class SubdomainStage(Stage):
 
         self._write_names(merged)
         to_resolve = [n for n in merged if n not in excluded]
-        state = self._resolve(to_resolve, cfg, wildcard_ips)
+        state = self._resolve(to_resolve, wildcard_ips)
 
         active, ips_seen = self._persist(merged, state.records, wildcard_ips, excluded)
         return StageResult(
@@ -233,11 +245,11 @@ class SubdomainStage(Stage):
         passive = self.ctx.resolved.intensity == Intensity.PASSIVE.value
         out: list[ProviderResult] = []
         if cfg.zone_transfer:
-            out.append(self._zone_transfer(domain, cfg, passive=passive))
+            out.append(self._zone_transfer(domain, passive=passive))
         if cfg.bruteforce:
             out.append(self._bruteforce(domain, cfg, wildcard_ips, passive=passive))
         if cfg.permutations:
-            out.append(self._permute(cfg, seeds, wildcard_ips, passive=passive))
+            out.append(self._permute(seeds, wildcard_ips, passive=passive))
         for result in out:
             self._check_abort()
             self._log_provider(activity, result)
@@ -270,7 +282,6 @@ class SubdomainStage(Stage):
     def _zone_transfer(
         self,
         domain: str,
-        cfg: SubdomainConfig,
         *,
         passive: bool,
     ) -> ProviderResult:
@@ -279,7 +290,7 @@ class SubdomainStage(Stage):
             return self._skipped(
                 source, "a passive scan does not query the target's nameservers"
             )
-        client = self._client(cfg)
+        client = self._client()
         if client is None:
             return self._skipped(source, "dnsx is not installed on this instance")
 
@@ -335,7 +346,7 @@ class SubdomainStage(Stage):
             return self._skipped(
                 source, "a passive scan does not query the target's nameservers"
             )
-        client = self._client(cfg)
+        client = self._client()
         if client is None:
             return self._skipped(source, "dnsx is not installed on this instance")
 
@@ -381,7 +392,6 @@ class SubdomainStage(Stage):
 
     def _permute(
         self,
-        cfg: SubdomainConfig,
         seeds: list[str],
         wildcard_ips: set[str],
         *,
@@ -398,7 +408,7 @@ class SubdomainStage(Stage):
             )
         try:
             client = AlterxClient(
-                limit=cfg.permutation_limit,
+                limit=PERMUTATION_LIMIT,
                 recorder=self.ctx.recorder,
                 extra_args=self.ctx.resolved.tool_args("alterx"),
             )
@@ -406,11 +416,11 @@ class SubdomainStage(Stage):
             return self._skipped(source, "alterx is not installed on this instance")
 
         start = time.monotonic()
-        candidates = client.permute(seeds[: cfg.permutation_seeds])
+        candidates = client.permute(seeds[:PERMUTATION_SEEDS])
         if not candidates:
             return ProviderResult(source=source, duration_seconds=0.0)
         self.emit_progress(f"resolving {len(candidates):,} name variants")
-        client = self._client(cfg)
+        client = self._client()
         if client is None:
             return self._skipped(source, "dnsx is not installed on this instance")
         found: set[str] = set()
@@ -438,9 +448,9 @@ class SubdomainStage(Stage):
             duration_seconds=round(time.monotonic() - start, 2),
         )
 
-    def _wildcard_ips(self, domain: str, cfg: SubdomainConfig) -> set[str]:
+    def _wildcard_ips(self, domain: str) -> set[str]:
         probe = f"{uuid.uuid4().hex[:12]}.{domain}"
-        info = self._resolve([probe], cfg).records.get(probe)
+        info = self._resolve([probe]).records.get(probe)
         return set(info["ips"]) if info and info.get("ips") else set()
 
     @staticmethod
@@ -530,11 +540,13 @@ class SubdomainStage(Stage):
         self.session.commit()
         self.emit_progress(message, source=source)
 
-    def _client(self, cfg: SubdomainConfig) -> DnsxClient | None:
-        threads = min(max(cfg.dns_threads, _MIN_RESOLVE_THREADS), _MAX_RESOLVE_THREADS)
+    def _client(self) -> DnsxClient | None:
+        threads = min(
+            max(self.transport.threads, _MIN_RESOLVE_THREADS), _MAX_RESOLVE_THREADS
+        )
         try:
             return DnsxClient(
-                timeout=max(120, cfg.tool_timeout(self.ctx.resolved.intensity)),
+                timeout=max(120, tool_timeout(self.ctx.resolved.intensity)),
                 threads=threads,
                 recorder=self.ctx.recorder,
                 extra_args=self.ctx.resolved.tool_args("dnsx"),
@@ -558,14 +570,14 @@ class SubdomainStage(Stage):
         }
 
     def _run_batch(
-        self, client: DnsxClient, names: list[str], cfg: SubdomainConfig
+        self, client: DnsxClient, names: list[str]
     ) -> tuple[dict[str, dict], bool]:
         """Resolve one batch."""
         out: dict[str, dict] = {}
         with client.stream_query(
             names,
             record_types=["a", "aaaa", "cname"],
-            idle_timeout=cfg.dns_idle_timeout,
+            idle_timeout=DNS_IDLE_TIMEOUT,
         ) as stream:
             for rec in stream.records:
                 parsed = self._record(rec)
@@ -577,28 +589,27 @@ class SubdomainStage(Stage):
     def _resolve(
         self,
         names: list[str],
-        cfg: SubdomainConfig,
         wildcard_ips: set[str] | None = None,
     ) -> _Resolution:
         """wildcard_ips is None for the wildcard probe itself, whose name is not stored."""
         state = _Resolution(submitted=len(names))
         if not names:
             return state
-        client = self._client(cfg)
+        client = self._client()
         if client is None:
             state.unavailable = True
             return state
 
         shuffled = list(names)
         random.Random(_SHUFFLE_SEED).shuffle(shuffled)  # noqa: S311
-        size = max(1, cfg.dns_batch_size)
+        size = DNS_BATCH_SIZE
         batches = [
             _Batch(names=shuffled[i : i + size]) for i in range(0, len(shuffled), size)
         ]
         state.batches = len(batches)
 
         for done, (batch, (records, stalled)) in enumerate(
-            self._resolve_batches(client, batches, cfg), start=1
+            self._resolve_batches(client, batches), start=1
         ):
             state.records.update(records)
             batch.answered = len(records)
@@ -618,26 +629,24 @@ class SubdomainStage(Stage):
                 note += ", stopped on silence"
             self.emit_progress(note)
 
-        self._retry_degraded(client, batches, state, cfg)
-        self._retry_silent(client, names, state, cfg, wildcard_ips)
+        self._retry_degraded(client, batches, state)
+        self._retry_silent(client, names, state, wildcard_ips)
         return state
 
-    def _resolve_batches(
-        self, client: DnsxClient, batches: list[_Batch], cfg: SubdomainConfig
-    ):
+    def _resolve_batches(self, client: DnsxClient, batches: list[_Batch]):
         """Batches are independent."""
-        workers = min(max(1, cfg.dns_batch_concurrency), len(batches))
+        workers = min(DNS_BATCH_CONCURRENCY, len(batches))
         if workers == 1:
             for batch in batches:
                 started = time.monotonic()
-                answered = self._run_batch(client, batch.names, cfg)
+                answered = self._run_batch(client, batch.names)
                 batch.seconds = time.monotonic() - started
                 yield batch, answered
             return
         with ThreadPoolExecutor(max_workers=workers) as pool:
             started = time.monotonic()
             futures = {
-                pool.submit(self._run_batch, client, batch.names, cfg): batch
+                pool.submit(self._run_batch, client, batch.names): batch
                 for batch in batches
             }
             for future in as_completed(futures):
@@ -650,7 +659,6 @@ class SubdomainStage(Stage):
         client: DnsxClient,
         batches: list[_Batch],
         state: _Resolution,
-        cfg: SubdomainConfig,
     ) -> None:
         """Resolve again any batch far below its peers."""
         healthy = [b.rate for b in batches if not b.stalled]
@@ -669,7 +677,7 @@ class SubdomainStage(Stage):
         ]
         retries = [(batch, pending) for batch, pending in retries if pending]
         state.retried += len(retries)
-        for batch, (records, stalled) in self._retry_batches(client, retries, cfg):
+        for batch, (records, stalled) in self._retry_batches(client, retries):
             batch.stalled = stalled
             state.records.update(records)
             batch.answered += len(records)
@@ -683,13 +691,10 @@ class SubdomainStage(Stage):
         client: DnsxClient,
         names: list[str],
         state: _Resolution,
-        cfg: SubdomainConfig,
         wildcard_ips: set[str] | None,
     ) -> None:
         """dnsx says nothing for a name it dropped and for a name that does not exist."""
-        if not cfg.dns_retry_silent:
-            return
-        size = max(1, cfg.dns_batch_size)
+        size = DNS_BATCH_SIZE
         for _ in range(_SILENCE_PASSES):
             pending = [n for n in names if n not in state.records]
             if not pending:
@@ -699,7 +704,7 @@ class SubdomainStage(Stage):
             for start in range(0, len(pending), size):
                 self._check_abort()
                 records, _stalled = self._run_batch(
-                    client, pending[start : start + size], cfg
+                    client, pending[start : start + size]
                 )
                 state.records.update(records)
                 found += len(records)
@@ -714,16 +719,15 @@ class SubdomainStage(Stage):
         self,
         client: DnsxClient,
         retries: list[tuple[_Batch, list[str]]],
-        cfg: SubdomainConfig,
     ):
-        workers = min(max(1, cfg.dns_batch_concurrency), len(retries) or 1)
+        workers = min(DNS_BATCH_CONCURRENCY, len(retries) or 1)
         if workers == 1:
             for batch, pending in retries:
-                yield batch, self._run_batch(client, pending, cfg)
+                yield batch, self._run_batch(client, pending)
             return
         with ThreadPoolExecutor(max_workers=workers) as pool:
             futures = {
-                pool.submit(self._run_batch, client, pending, cfg): batch
+                pool.submit(self._run_batch, client, pending): batch
                 for batch, pending in retries
             }
             for future in as_completed(futures):

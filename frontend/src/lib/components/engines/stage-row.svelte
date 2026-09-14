@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Collapsible from '$lib/components/ui/collapsible';
 	import { Switch } from '$lib/components/ui/switch';
+	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -10,21 +11,18 @@
 	import KeyRound from '@lucide/svelte/icons/key-round';
 	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 	import StageFieldRow from './stage-field.svelte';
-	import type { StageCatalogEntry, StageConfig } from '$lib/types/scan-engine';
-	import { targetTypeLabel } from '$lib/types/scan-engine';
-
-	type RailKind = 'none' | 'solid' | 'dotted';
+	import type { StageCatalogEntry, StageConfig, StageField } from '$lib/types/scan-engine';
+	import { advancedFields, basicFields, targetTypeLabel } from '$lib/types/scan-engine';
 
 	interface Props {
 		stage: StageCatalogEntry;
 		config: StageConfig;
 		open: boolean;
 		active: boolean;
-		railUp?: RailKind;
-		railDown?: RailKind;
 		applicable: boolean;
 		blockedByIntensity: boolean;
 		lensTargetType: string | null;
+		support?: boolean;
 		onToggleOpen: () => void;
 		onChange: (field: string, value: unknown) => void;
 		onReset: () => void;
@@ -35,22 +33,24 @@
 		config,
 		open,
 		active,
-		railUp = 'none',
-		railDown = 'none',
 		applicable,
 		blockedByIntensity,
 		lensTargetType,
+		support = false,
 		onToggleOpen,
 		onChange,
 		onReset
 	}: Props = $props();
+
+	let advancedOpen = $state(false);
 
 	const alwaysOn = $derived(Boolean(stage.always_on));
 	const enabled = $derived(alwaysOn || Boolean(config.enabled ?? stage.defaults.enabled));
 	const dimmed = $derived(!applicable || blockedByIntensity);
 	const nodeState = $derived(!enabled ? 'off' : dimmed ? 'dim' : 'on');
 
-	const settingFields = $derived(stage.fields.filter((f) => f.name !== 'enabled'));
+	const basic = $derived(basicFields(stage));
+	const advanced = $derived(advancedFields(stage));
 
 	const changed = $derived(
 		stage.fields.filter((f) => {
@@ -59,25 +59,23 @@
 			return JSON.stringify(current) !== JSON.stringify(stage.defaults[f.name]);
 		})
 	);
+	const advancedChanged = $derived(changed.filter((f) => f.tier === 'advanced').length);
+
+	function describe(field: StageField, value: unknown): string | null {
+		if (value === undefined || value === null || value === '') return null;
+		if (Array.isArray(value)) {
+			return value.length ? `${value.length} ${field.title.toLowerCase()}` : null;
+		}
+		if (typeof value === 'boolean') return value ? field.title.toLowerCase() : null;
+		if (typeof value === 'number') return `${field.title.toLowerCase()} ${value.toLocaleString()}`;
+		return field.option_labels?.[String(value)] ?? String(value);
+	}
 
 	const summary = $derived.by(() => {
 		const parts: string[] = [];
-		for (const field of settingFields.slice(0, 6)) {
-			const value = config[field.name] ?? stage.defaults[field.name];
-			if (value === undefined || value === null || value === '') continue;
-			if (Array.isArray(value)) {
-				if (value.length) parts.push(`${value.length} ${field.title.toLowerCase()}`);
-			} else if (typeof value === 'boolean') {
-				if (value) parts.push(field.title.toLowerCase());
-			} else if (field.scale === 'rate') {
-				parts.push(`${value}/s`);
-			} else if (field.scale === 'threads') {
-				parts.push(`${value} threads`);
-			} else if (field.scale === 'timeout') {
-				parts.push(`${value}s`);
-			} else {
-				parts.push(String(value));
-			}
+		for (const field of basic) {
+			const text = describe(field, config[field.name] ?? stage.defaults[field.name]);
+			if (text) parts.push(text);
 		}
 		return parts.slice(0, 3).join(' · ');
 	});
@@ -90,11 +88,28 @@
 	data-active={active}
 	data-dim={dimmed}
 	data-enabled={enabled}
+	data-support={support}
 >
-	<span class="rail up" data-kind={railUp} aria-hidden="true"></span>
-	<span class="rail down" data-kind={railDown} aria-hidden="true"></span>
 	<div class="head">
-		<span class="node" data-state={nodeState} aria-hidden="true"></span>
+		{#if support}
+			{#if alwaysOn}
+				<Hint text="Always on">
+					{#snippet child(props)}
+						<span {...props} class="inline-flex">
+							<Checkbox checked disabled aria-label="{stage.title} is always on" />
+						</span>
+					{/snippet}
+				</Hint>
+			{:else}
+				<Checkbox
+					checked={enabled}
+					onCheckedChange={(v) => onChange('enabled', Boolean(v))}
+					aria-label="Enable {stage.title}"
+				/>
+			{/if}
+		{:else}
+			<span class="node" data-state={nodeState} aria-hidden="true"></span>
+		{/if}
 
 		<Collapsible.Trigger class="disclose" aria-label="{open ? 'Collapse' : 'Expand'} {stage.title}">
 			<ChevronRight size={14} class="chev" />
@@ -114,9 +129,6 @@
 		</Collapsible.Trigger>
 
 		<div class="meta">
-			{#if alwaysOn}
-				<Badge variant="outline" class="tag">Always on</Badge>
-			{/if}
 			{#if blockedByIntensity}
 				<Badge variant="outline" class="tag">Skipped at passive</Badge>
 			{:else if !applicable && lensTargetType}
@@ -151,20 +163,22 @@
 				</Tooltip.Root>
 			{/if}
 
-			{#if alwaysOn}
-				<Hint text="Always on">
-					{#snippet child(props)}
-						<span {...props} class="inline-flex">
-							<Switch checked disabled aria-label="{stage.title} is always on" />
-						</span>
-					{/snippet}
-				</Hint>
-			{:else}
-				<Switch
-					checked={enabled}
-					onCheckedChange={(v) => onChange('enabled', v)}
-					aria-label="Enable {stage.title}"
-				/>
+			{#if !support}
+				{#if alwaysOn}
+					<Hint text="Always on">
+						{#snippet child(props)}
+							<span {...props} class="inline-flex">
+								<Switch checked disabled aria-label="{stage.title} is always on" />
+							</span>
+						{/snippet}
+					</Hint>
+				{:else}
+					<Switch
+						checked={enabled}
+						onCheckedChange={(v) => onChange('enabled', v)}
+						aria-label="Enable {stage.title}"
+					/>
+				{/if}
 			{/if}
 		</div>
 	</div>
@@ -180,9 +194,9 @@
 			</div>
 		{/if}
 
-		{#if settingFields.length}
+		{#if basic.length}
 			<div class="fields">
-				{#each settingFields as field (field.name)}
+				{#each basic as field (field.name)}
 					<StageFieldRow
 						{field}
 						stageName={stage.name}
@@ -191,8 +205,34 @@
 					/>
 				{/each}
 			</div>
-		{:else}
+		{:else if !advanced.length}
 			<p class="desc">No settings.</p>
+		{/if}
+
+		{#if advanced.length}
+			<Collapsible.Root bind:open={advancedOpen} class="advanced">
+				<Collapsible.Trigger class="advanced-head">
+					<ChevronRight size={12} class="chev" />
+					<span>Advanced</span>
+					<span class="advanced-count">
+						{advanced.length} setting{advanced.length === 1 ? '' : 's'}{advancedChanged
+							? ` · ${advancedChanged} changed`
+							: ''}
+					</span>
+				</Collapsible.Trigger>
+				<Collapsible.Content>
+					<div class="fields">
+						{#each advanced as field (field.name)}
+							<StageFieldRow
+								{field}
+								stageName={stage.name}
+								value={config[field.name]}
+								onChange={(v) => onChange(field.name, v)}
+							/>
+						{/each}
+					</div>
+				</Collapsible.Content>
+			</Collapsible.Root>
 		{/if}
 
 		{#if changed.length}
@@ -233,6 +273,12 @@
 	:global(.row[data-enabled='false']) .title {
 		color: var(--muted-foreground);
 	}
+	:global(.row[data-support='true']) {
+		background: color-mix(in oklch, var(--muted) 30%, transparent);
+	}
+	:global(.row[data-support='true']) .title {
+		font-weight: 450;
+	}
 
 	.head {
 		display: flex;
@@ -240,6 +286,9 @@
 		gap: 10px;
 		padding: 0 14px 0 12px;
 		min-height: 46px;
+	}
+	:global(.row[data-support='true']) .head {
+		min-height: 40px;
 	}
 
 	.node {
@@ -261,34 +310,6 @@
 		background: color-mix(in oklch, var(--muted-foreground) 35%, transparent);
 		border-color: transparent;
 	}
-	.rail {
-		position: absolute;
-		left: 15px;
-		width: 3px;
-		pointer-events: none;
-	}
-	.rail.up {
-		top: 0;
-		height: 23px;
-	}
-	.rail.down {
-		top: 23px;
-		bottom: 0;
-	}
-	.rail[data-kind='none'] {
-		display: none;
-	}
-	.rail[data-kind='solid'] {
-		background: linear-gradient(var(--border), var(--border)) center / 1px 100% no-repeat;
-	}
-	.rail[data-kind='dotted'] {
-		background: radial-gradient(
-				circle,
-				color-mix(in oklch, var(--muted-foreground) 65%, transparent) 1px,
-				transparent 1.6px
-			)
-			center / 3px 5px repeat-y;
-	}
 
 	:global(.row .disclose) {
 		display: flex;
@@ -308,7 +329,7 @@
 		color: var(--muted-foreground);
 		transition: transform 0.15s ease;
 	}
-	:global(.row[data-state='open'] .disclose .chev) {
+	:global(.row[data-state='open'] > .head .disclose .chev) {
 		transform: rotate(90deg);
 	}
 	.title {
@@ -339,7 +360,7 @@
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
-		max-width: 240px;
+		max-width: 260px;
 		font-variant-numeric: tabular-nums;
 	}
 	.meta :global(.tag) {
@@ -382,6 +403,30 @@
 	}
 	.fields > :global(* + *) {
 		border-top: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+	}
+	:global(.row .advanced) {
+		margin-top: 6px;
+		border-top: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+	}
+	:global(.row .advanced-head) {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		width: 100%;
+		padding: 10px 0 6px;
+		background: none;
+		border: none;
+		cursor: pointer;
+		color: var(--muted-foreground);
+		font-size: 12px;
+		font-weight: 500;
+	}
+	:global(.row .advanced[data-state='open'] .advanced-head .chev) {
+		transform: rotate(90deg);
+	}
+	.advanced-count {
+		font-weight: 400;
+		font-variant-numeric: tabular-nums;
 	}
 	.foot {
 		margin-top: 8px;

@@ -13,7 +13,6 @@ from shared.models.scan_context import ScanContext
 from shared.models.scan_engine import EnginePreviewResult, PreviewResolved
 from shared.models.scan_preview import PreviewPhase, PreviewTool, PreviewToolStatus
 from shared.services.scan_resolve import merge_engine_context
-from stages.config import Scale
 from stages.registry import ordered_levels, phases
 
 
@@ -88,18 +87,14 @@ def _stage_status(
             f"{spec.title}: no API key for {', '.join(missing)}. Reduced coverage."
         )
 
-    scaled = spec.config_model.scaled_fields()
-
-    def _scaled(kind: Scale):
-        return next((values[f] for f, (s, _) in scaled.items() if s is kind), None)
-
+    transport = (resolved.transports or {}).get(spec.name) or {}
     return PreviewTool(
         capability=spec.name,
         label=spec.title,
         status=PreviewToolStatus.WILL_RUN,
-        rate=_scaled(Scale.RATE),
-        threads=_scaled(Scale.THREADS),
-        timeout=_scaled(Scale.TIMEOUT),
+        rate=transport.get("rate"),
+        threads=transport.get("threads"),
+        timeout=transport.get("timeout"),
     )
 
 

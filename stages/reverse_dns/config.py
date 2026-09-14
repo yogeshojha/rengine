@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pydantic import Field
 
-from stages.config import StageConfig, threads, timeout
+from stages.config import StageConfig
 
 
 class ReverseDnsConfig(StageConfig):
@@ -11,5 +11,3 @@ class ReverseDnsConfig(StageConfig):
         title="Reverse DNS",
         description="Resolve PTR records for every discovered IP.",
     )
-    dns_threads: int = threads(30, title="DNS threads")
-    dns_timeout: int = timeout(5, title="DNS timeout (s)")

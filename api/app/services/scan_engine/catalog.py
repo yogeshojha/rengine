@@ -1,6 +1,6 @@
 from shared.definitions.launch import STAGE_GROUP_LABELS, seed_produces
 from shared.definitions.tools import SCAN_TOOLS
-from shared.enums.scan import StageGroup
+from shared.enums.scan import INTENSITIES, StageGroup
 from shared.enums.target import TargetType
 from shared.models.scan_engine import (
     EngineCatalog,
@@ -8,8 +8,10 @@ from shared.models.scan_engine import (
     StageCatalogEntry,
     StageField,
     StageGroupEntry,
+    StageTransport,
     ToolOption,
 )
+from stages.config import FieldTier
 from stages.presets import PRESETS, preset_stages
 from stages.registry import phases, rate_tools, stages
 
@@ -30,6 +32,7 @@ def _field_specs(spec) -> list[StageField]:
     defs = schema.get("$defs") or {}
     defaults = spec.defaults
     launch = set(spec.launch_fields)
+    tiers = spec.config_model.tiers()
     out: list[StageField] = []
     for name, raw in (schema.get("properties") or {}).items():
         prop = _resolve(raw, defs)
@@ -45,13 +48,25 @@ def _field_specs(spec) -> list[StageField]:
                 option_labels=prop.get("option_labels") or None,
                 minimum=prop.get("minimum"),
                 maximum=prop.get("maximum"),
-                scale=prop.get("scale"),
+                tier=tiers.get(name, FieldTier.BASIC.value),
                 widget=prop.get("widget"),
                 kind=prop.get("kind"),
                 launch=name in launch,
             )
         )
     return out
+
+
+def _transport(spec) -> StageTransport | None:
+    if spec.transport_tool is None:
+        return None
+    by_intensity = {level: spec.transport(level) for level in INTENSITIES}
+    return StageTransport(
+        tool=spec.transport_tool,
+        rates={level: t.rate for level, t in by_intensity.items()},
+        threads={level: t.threads for level, t in by_intensity.items()},
+        timeout=by_intensity[INTENSITIES[0]].timeout,
+    )
 
 
 def build_catalog() -> EngineCatalog:
@@ -75,6 +90,7 @@ def build_catalog() -> EngineCatalog:
                 role=spec.role,
                 consumes=sorted(spec.consumes),
                 produces=sorted(spec.produces),
+                transport=_transport(spec),
                 defaults=spec.defaults,
                 fields=_field_specs(spec),
             )

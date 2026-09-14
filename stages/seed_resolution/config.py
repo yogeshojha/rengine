@@ -12,18 +12,13 @@ _MAX_HOSTS = {"smart": 4096, "full": 65536}
 class SeedResolutionConfig(StageConfig):
     enabled: bool = Field(
         default=True,
-        title="Enabled",
+        title="Seed resolution",
         description="Expand an IP, netblock, ASN or URL seed into individual addresses.",
     )
     asn_scan_mode: Literal["smart", "full"] = Field(
         default="smart",
         title="ASN / CIDR expansion",
         description="Smart samples large netblocks. Full enumerates every host.",
-    )
-    cidr_skip_rfc1918: bool = Field(
-        default=True,
-        title="Skip private ranges in ASN prefixes",
-        description="Drop RFC1918 addresses when expanding an ASN's prefixes. A netblock target is expanded in full.",
     )
 
     @property

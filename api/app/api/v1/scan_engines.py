@@ -49,11 +49,11 @@ async def preview_engine_stages(
 
 @router.get("", response_model=list[ScanEngineRead])
 async def list_engines(
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
     service: Annotated[ScanEngineService, Depends(get_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
-    return await service.list(project_id)
+    return await service.list(project_id, created_by=current_user.id)
 
 
 @router.post("", response_model=ScanEngineRead, status_code=status.HTTP_201_CREATED)

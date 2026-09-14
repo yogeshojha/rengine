@@ -50,7 +50,7 @@
 	import type { IconComponent } from '$lib/config/icons';
 	import { downloadBlob } from '$lib/utilities/download';
 	import { writeClipboard } from '$lib/utilities/clipboard';
-	import { phaseLabel } from '$lib/types/scan-engine';
+	import { CAPABILITY, SUPPORT } from '$lib/utilities/launch-plan';
 	import type {
 		Intensity,
 		ScanEngine,
@@ -156,59 +156,40 @@
 		).length
 	);
 
-	const stagesByPhase = $derived.by(() => {
+	function matches(stage: StageCatalogEntry): boolean {
 		const term = filter.trim().toLowerCase();
-		return engineCatalogStore.byPhase().map((group) => ({
-			phase: group.phase,
-			stages: group.stages.filter((stage) => {
-				if (
-					modifiedOnly &&
-					!Object.keys(overridesOf(parsed?.stages?.[stage.name] ?? {}, stage.defaults)).length
-				) {
-					return false;
-				}
-				if (!term) return true;
-				return (
-					stage.title.toLowerCase().includes(term) ||
-					stage.name.includes(term) ||
-					stage.tools.some((t) => t.includes(term)) ||
-					stage.fields.some((f) => f.name.includes(term) || f.title.toLowerCase().includes(term))
-				);
-			})
-		}));
-	});
-
-	const visibleGroups = $derived(stagesByPhase.filter((g) => g.stages.length > 0));
-
-	function levelsOf(stages: StageCatalogEntry[]): StageCatalogEntry[][] {
-		const out: StageCatalogEntry[][] = [];
-		for (const stage of stages) {
-			const last = out[out.length - 1];
-			if (last && last[0].level === stage.level) last.push(stage);
-			else out.push([stage]);
+		if (
+			modifiedOnly &&
+			!Object.keys(overridesOf(parsed?.stages?.[stage.name] ?? {}, stage.defaults)).length
+		) {
+			return false;
 		}
-		return out;
+		if (!term) return true;
+		return (
+			stage.title.toLowerCase().includes(term) ||
+			stage.name.includes(term) ||
+			stage.tools.some((t) => t.includes(term)) ||
+			stage.fields.some((f) => f.name.includes(term) || f.title.toLowerCase().includes(term))
+		);
 	}
 
-	type RailKind = 'none' | 'solid' | 'dotted';
+	const stagesByGroup = $derived.by(() =>
+		engineCatalogStore.byGroup().map((group) => {
+			const capabilities = group.stages.filter((s) => s.role === CAPABILITY && matches(s));
+			const support = group.stages.filter((s) => s.role === SUPPORT && matches(s));
+			return {
+				key: group.key,
+				label: group.label,
+				capabilities,
+				active: support.filter((s) => s.touches_target && !s.always_on),
+				automatic: support.filter((s) => !s.touches_target || s.always_on)
+			};
+		})
+	);
 
-	function railKinds(
-		si: number,
-		level: StageCatalogEntry[],
-		li: number,
-		levels: StageCatalogEntry[][],
-		gi: number,
-		groups: number
-	): { up: RailKind; down: RailKind } {
-		const up = si > 0 ? 'solid' : li > 0 || gi > 0 ? 'dotted' : 'none';
-		const down =
-			si < level.length - 1
-				? 'solid'
-				: li < levels.length - 1 || gi < groups - 1
-					? 'dotted'
-					: 'none';
-		return { up, down };
-	}
+	const visibleGroups = $derived(
+		stagesByGroup.filter((g) => g.capabilities.length || g.active.length || g.automatic.length)
+	);
 
 	function stageConfig(name: string): StageConfig {
 		return parsed?.stages?.[name] ?? {};
@@ -499,6 +480,25 @@
 
 <svelte:head><title>{engine?.name ?? routeLabels.engines} · reNgine</title></svelte:head>
 
+{#snippet stageRow(stage: StageCatalogEntry, support: boolean)}
+	<StageRow
+		{stage}
+		config={stageConfig(stage.name)}
+		open={openStages[stage.name] ?? false}
+		active={activeStage === stage.name}
+		applicable={stage.applies_to.includes(lensTargetType)}
+		blockedByIntensity={blockedByIntensity(stage.name)}
+		{lensTargetType}
+		{support}
+		onToggleOpen={() => {
+			openStages = { ...openStages, [stage.name]: !openStages[stage.name] };
+			flashStage(stage.name);
+		}}
+		onChange={(field, value) => setStageField(stage.name, field, value)}
+		onReset={() => resetStage(stage.name)}
+	/>
+{/snippet}
+
 {#snippet controls()}
 	<section class="controls">
 		<div class="toolbar">
@@ -561,57 +561,27 @@
 				{/if}
 
 				{#if parsed}
-					{#each visibleGroups as group, gi (group.phase)}
-						{@const levels = levelsOf(group.stages)}
-						<div class="phase" class:linked={gi > 0}>
-							<header class="phase-head">
-								{#if gi > 0}
-									<span class="dotted phase-link" aria-hidden="true"></span>
+					{#each visibleGroups as group (group.key)}
+						{@const on = group.capabilities.filter((s) => stageStates[s.name]).length}
+						<div class="group">
+							<header class="group-head">
+								<h2>{group.label}</h2>
+								{#if group.capabilities.length}
+									<span class="group-count">{on}/{group.capabilities.length} on</span>
 								{/if}
-								<h2>{phaseLabel(group.phase)}</h2>
-								<span class="phase-count">
-									{group.stages.filter((s) => stageStates[s.name]).length}/{group.stages.length} on
-								</span>
 							</header>
-							<div class="phase-body">
-								{#each levels as level, li (level[0].level)}
-									{#if li > 0}
-										<Tooltip.Root>
-											<Tooltip.Trigger>
-												{#snippet child({ props })}
-													<div {...props} class="level-gap">
-														<span class="dotted" aria-hidden="true"></span>
-													</div>
-												{/snippet}
-											</Tooltip.Trigger>
-											<Tooltip.Content side="right" class="text-xs">
-												Waits for the stages above to finish
-											</Tooltip.Content>
-										</Tooltip.Root>
-									{/if}
-									<div class="level">
-										{#each level as stage, si (stage.name)}
-											{@const rails = railKinds(si, level, li, levels, gi, visibleGroups.length)}
-											<StageRow
-												{stage}
-												config={stageConfig(stage.name)}
-												open={openStages[stage.name] ?? false}
-												active={activeStage === stage.name}
-												railUp={rails.up}
-												railDown={rails.down}
-												applicable={stage.applies_to.includes(lensTargetType)}
-												blockedByIntensity={blockedByIntensity(stage.name)}
-												{lensTargetType}
-												onToggleOpen={() => {
-													openStages = { ...openStages, [stage.name]: !openStages[stage.name] };
-													flashStage(stage.name);
-												}}
-												onChange={(field, value) => setStageField(stage.name, field, value)}
-												onReset={() => resetStage(stage.name)}
-											/>
-										{/each}
-									</div>
+							<div class="group-body">
+								{#each group.capabilities as stage (stage.name)}
+									{@render stageRow(stage, false)}
 								{/each}
+								{#each group.active as stage (stage.name)}
+									{@render stageRow(stage, true)}
+								{/each}
+								{#if group.automatic.length}
+									<p class="automatic">
+										Runs automatically: {group.automatic.map((s) => s.title).join(', ')}
+									</p>
+								{/if}
 							</div>
 						</div>
 					{/each}
@@ -998,67 +968,40 @@
 		padding: 8px 2px;
 	}
 
-	.dotted {
-		display: block;
-		width: 3px;
-		background: radial-gradient(
-				circle,
-				color-mix(in oklch, var(--muted-foreground) 65%, transparent) 1px,
-				transparent 1.6px
-			)
-			center / 3px 5px repeat-y;
+	.group + .group {
+		margin-top: 14px;
 	}
-	.phase.linked {
-		margin-top: 12px;
-	}
-	.phase-head {
-		position: relative;
+	.group-head {
 		display: flex;
 		align-items: baseline;
 		justify-content: space-between;
 		gap: 10px;
-		padding: 2px 2px 8px 32px;
+		padding: 2px 2px 8px 12px;
 	}
-	.phase-head .phase-link {
-		position: absolute;
-		left: 15px;
-		top: -12px;
-		bottom: 0;
-	}
-	.phase-head h2 {
+	.group-head h2 {
 		font-size: 11px;
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.06em;
 		color: var(--muted-foreground);
 	}
-	.phase-count {
+	.group-count {
 		font-size: 11px;
 		color: var(--muted-foreground);
 		font-variant-numeric: tabular-nums;
 	}
-	.phase-body {
+	.group-body {
 		position: relative;
 		border: 1px solid var(--border);
 		border-radius: 0.7rem;
 		background: var(--card);
 		overflow: hidden;
 	}
-	.level {
-		position: relative;
-	}
-	.level-gap {
-		position: relative;
-		height: 14px;
-		border-top: 1px solid var(--border);
-		border-bottom: 1px solid var(--border);
-		background: color-mix(in oklch, var(--muted) 35%, transparent);
-	}
-	.level-gap .dotted {
-		position: absolute;
-		left: 15px;
-		top: 0;
-		bottom: 0;
+	.automatic {
+		padding: 8px 14px 9px 32px;
+		font-size: 11px;
+		color: var(--muted-foreground);
+		background: color-mix(in oklch, var(--muted) 30%, transparent);
 	}
 
 	.side {

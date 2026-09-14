@@ -8,7 +8,7 @@ from shared.definitions.ports import (
     PortProfile,
     ScanPolicy,
 )
-from stages.config import StageConfig, rate, threads, timeout
+from stages.config import StageConfig, advanced
 
 _PROFILE_LABELS = {spec.key: spec.label for spec in PORT_PROFILES}
 _SCAN_TYPES = {"connect": "Connect", "syn": "SYN"}
@@ -32,59 +32,41 @@ class PortScanConfig(StageConfig):
         title="Custom ports",
         description="Used only when the port set is Custom. A list or range like 80,443,8000-8100.",
     )
-    exclude_ports: str = Field(
-        default="",
+    exclude_ports: str = advanced(
+        "",
         max_length=2000,
         title="Exclude ports",
         description="Ports excluded from every scan, as a list or range.",
     )
-    scan_type: str = Field(
-        default="connect",
+    scan_type: str = advanced(
+        "connect",
         title="Scan type",
-        description="Connect completes the TCP handshake. SYN needs raw sockets.",
+        description="Connect completes the TCP handshake. SYN needs raw sockets on the worker.",
         json_schema_extra={"options": list(_SCAN_TYPES), "option_labels": _SCAN_TYPES},
     )
-    rate: int = rate(1000, tool="naabu", title="Packet rate (pps)")
-    threads: int = threads(
-        100,
-        title="Concurrency",
-        description="Sockets in flight.",
-    )
-    timeout: int = timeout(3, title="Timeout (s)")
-    retries: int = Field(
-        default=1,
-        ge=0,
-        le=5,
-        title="Retries",
-        description="Extra attempts per port.",
-    )
-    cdn_policy: ScanPolicy = Field(
-        default=ScanPolicy.WEB,
+    cdn_policy: ScanPolicy = advanced(
+        ScanPolicy.WEB,
         title="CDN-fronted addresses",
         description="Port set for addresses attributed to a CDN or WAF.",
         json_schema_extra={"option_labels": SCAN_POLICY_LABELS},
     )
-    scan_cloud: bool = Field(
-        default=True,
+    scan_cloud: bool = advanced(
+        True,
         title="Scan cloud addresses in full",
         description="Scan addresses attributed to a cloud provider with the full port set.",
     )
-    skip_private: bool = Field(
-        default=True,
+    skip_private: bool = advanced(
+        True,
         title="Skip private addresses",
         description="Skip loopback, link-local and RFC1918 addresses. An address or netblock named as the target is scanned.",
     )
-    port_threshold: int = Field(
-        default=500,
-        ge=0,
-        le=65535,
-        title="Open-port threshold",
-        description="Discard a host reporting more open ports than this. 0 disables.",
-    )
-    max_addresses: int = Field(
-        default=8192,
+    max_addresses: int = advanced(
+        8192,
         ge=1,
         le=100000,
         title="Address budget",
         description="Stop after this many addresses.",
     )
+
+
+PORT_THRESHOLD = 500

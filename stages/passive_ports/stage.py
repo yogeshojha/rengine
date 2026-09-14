@@ -13,7 +13,7 @@ from shared.services import ip_inventory, port_inventory
 from shared.services.port_inventory import ServiceObservation
 from shared.services.scope_filter import ip_excluded
 from stages.base import ALL_TARGETS, Stage, StageResult
-from stages.passive_ports.config import PassivePortsConfig
+from stages.passive_ports.config import MAX_ADDRESSES, PassivePortsConfig
 from tools.naabu.client import NaabuClient, NaabuError, NaabuOptions
 
 logger = get_logger(__name__)
@@ -36,7 +36,6 @@ class PassivePortsStage(Stage):
 
     def run(self) -> StageResult:
         self._check_abort()
-        cfg = self.cfg
         ip_inventory.ensure(
             self.session,
             scan_id=self.ctx.scan_id,
@@ -44,7 +43,7 @@ class PassivePortsStage(Stage):
             project_id=self.ctx.project_id,
         )
         self.publish_results(SurfaceDimension.IPS.value)
-        addresses = self._candidates(cfg.max_addresses)
+        addresses = self._candidates(MAX_ADDRESSES)
         if not addresses:
             return StageResult(counts={"known_ports": 0, "addresses": 0})
 

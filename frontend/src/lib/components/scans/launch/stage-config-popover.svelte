@@ -1,12 +1,14 @@
 <script lang="ts">
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 	import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
+	import * as Collapsible from '$lib/components/ui/collapsible';
 	import * as Popover from '$lib/components/ui/popover';
 	import { Button } from '$lib/components/ui/button';
 	import StageFieldRow from '$lib/components/engines/stage-field.svelte';
 	import VulnPlan from '$lib/components/scans/vuln-plan.svelte';
 	import { VULN_STAGE } from '$lib/config/vulnerabilities';
-	import type { StageCatalogEntry } from '$lib/types/scan-engine';
+	import { advancedFields, basicFields, type StageCatalogEntry } from '$lib/types/scan-engine';
 	import type { LaunchState } from './launch-state.svelte';
 
 	interface Props {
@@ -18,15 +20,17 @@
 
 	const VULN_PLAN_FIELDS = ['severities', 'template_sets'];
 
+	let advancedOpen = $state(false);
+
 	let isVuln = $derived(stage.name === VULN_STAGE);
-	let fields = $derived(
-		stage.fields.filter(
-			(f) => f.name !== 'enabled' && !(isVuln && VULN_PLAN_FIELDS.includes(f.name))
-		)
+	let basic = $derived(
+		basicFields(stage).filter((f) => !(isVuln && VULN_PLAN_FIELDS.includes(f.name)))
 	);
+	let advanced = $derived(advancedFields(stage));
 	let changedFields = $derived(
 		Object.keys(launch.patch[stage.name] ?? {}).filter((f) => f !== 'enabled')
 	);
+	let advancedChanged = $derived(advanced.filter((f) => changedFields.includes(f.name)).length);
 	function applyVulnPlan(overrides: Record<string, Record<string, unknown>>) {
 		const next = overrides[stage.name] ?? {};
 		for (const field of VULN_PLAN_FIELDS) {
@@ -81,9 +85,9 @@
 				onChange={applyVulnPlan}
 			/>
 		{/if}
-		{#if fields.length}
+		{#if basic.length}
 			<div class="divide-y divide-border {isVuln ? 'mt-3 border-t' : ''}">
-				{#each fields as field (field.name)}
+				{#each basic as field (field.name)}
 					<StageFieldRow
 						{field}
 						stageName={stage.name}
@@ -92,6 +96,33 @@
 					/>
 				{/each}
 			</div>
+		{/if}
+		{#if advanced.length}
+			<Collapsible.Root bind:open={advancedOpen} class="mt-2 border-t border-border pt-1">
+				<Collapsible.Trigger
+					class="flex w-full items-center gap-1.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+				>
+					<ChevronRight class="size-3 transition-transform {advancedOpen ? 'rotate-90' : ''}" />
+					Advanced
+					<span class="font-normal tabular-nums">
+						{advanced.length} setting{advanced.length === 1 ? '' : 's'}{advancedChanged
+							? ` · ${advancedChanged} changed`
+							: ''}
+					</span>
+				</Collapsible.Trigger>
+				<Collapsible.Content>
+					<div class="divide-y divide-border">
+						{#each advanced as field (field.name)}
+							<StageFieldRow
+								{field}
+								stageName={stage.name}
+								value={launch.effective[stage.name]?.[field.name]}
+								onChange={(value) => launch.setStageField(stage.name, field.name, value)}
+							/>
+						{/each}
+					</div>
+				</Collapsible.Content>
+			</Collapsible.Root>
 		{/if}
 	</Popover.Content>
 </Popover.Root>

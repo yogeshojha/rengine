@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pydantic import Field
 
-from stages.config import StageConfig, threads, timeout
+from stages.config import StageConfig, advanced
 
 
 class ServiceFingerprintConfig(StageConfig):
@@ -11,17 +11,10 @@ class ServiceFingerprintConfig(StageConfig):
         title="Fingerprint services",
         description="Identify the software behind every non-web port from its service banner.",
     )
-    threads: int = threads(32, title="Concurrency")
-    timeout: int = timeout(4, title="Timeout (s)")
-    max_services: int = Field(
-        default=2000,
+    max_services: int = advanced(
+        2000,
         ge=1,
         le=50000,
         title="Service budget",
         description="Stop after this many ports.",
-    )
-    include_unknown: bool = Field(
-        default=True,
-        title="Include unrecognised ports",
-        description="Also probe ports with no well-known service.",
     )

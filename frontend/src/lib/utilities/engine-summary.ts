@@ -1,4 +1,9 @@
-import type { EngineCatalog, StageCatalogEntry, StageConfig } from '$lib/types/scan-engine';
+import {
+	stageRate,
+	type EngineCatalog,
+	type StageCatalogEntry,
+	type StageConfig
+} from '$lib/types/scan-engine';
 
 export type Footprint = 'none' | 'quiet' | 'moderate' | 'loud';
 
@@ -40,16 +45,6 @@ function enabled(stage: StageCatalogEntry, stages: Record<string, StageConfig>):
 	return Boolean(stages?.[stage.name]?.enabled ?? stage.defaults.enabled);
 }
 
-function rateOf(stage: StageCatalogEntry, config: StageConfig): number {
-	let total = 0;
-	for (const field of stage.fields) {
-		if (field.scale !== 'rate') continue;
-		const value = config?.[field.name] ?? stage.defaults[field.name];
-		if (typeof value === 'number') total += value;
-	}
-	return total;
-}
-
 export function summarize(
 	stages: Record<string, StageConfig>,
 	catalog: EngineCatalog | StageCatalogEntry[] | null,
@@ -61,7 +56,7 @@ export function summarize(
 	const running = passiveMode ? active.filter((s) => !s.touches_target) : active;
 
 	const loud = running.filter((s) => s.touches_target);
-	const requestsPerSecond = loud.reduce((n, s) => n + rateOf(s, stages?.[s.name] ?? {}), 0);
+	const requestsPerSecond = loud.reduce((n, s) => n + stageRate(s, intensity), 0);
 
 	const footprint = footprintFor(requestsPerSecond, loud.length > 0);
 

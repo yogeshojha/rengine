@@ -11,6 +11,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from app.database import get_sync_session
 from app.orchestrator.stage import load_resolved
 from shared.definitions.endpoints import PROBE_COVERAGE_SOURCE, STATIC_CLASSES
+from shared.definitions.intensity import Transport
 from shared.definitions.vulnerabilities import CoverageStatus
 from shared.logging import get_logger
 from shared.models.endpoint import Endpoint, EndpointCoverage
@@ -21,7 +22,8 @@ from shared.services.asset_query.lead_cache import bump_sync
 from shared.services.endpoint_inventory import EndpointObservation
 from shared.services.scope_filter import matches_any
 from shared.utils.datetime import utc_now
-from stages.endpoint_probe.config import EndpointProbeConfig
+from stages.endpoint_probe.config import FOLLOW_REDIRECTS
+from stages.endpoint_probe.stage import EndpointProbeStage
 from tools.httpx.client import HttpxClient, HttpxError
 from tools.httpx.parser import parse_httpx_record
 
@@ -66,7 +68,12 @@ def verify_branch(
         if scan is None:
             return {"error": "scan not found"}
         resolved = load_resolved(scan.execution_config)
-        cfg = EndpointProbeConfig()
+        stored = (resolved.transports or {}).get(EndpointProbeStage.name)
+        transport = (
+            Transport(**stored)
+            if stored
+            else EndpointProbeStage.default_transport(resolved.intensity)
+        )
         candidates = branch_candidates(scan.id, host, dir_path)
         excluded = resolved.excluded_paths or []
         if excluded:
@@ -84,13 +91,13 @@ def verify_branch(
 
         try:
             client = HttpxClient(
-                rate_limit=cfg.rate,
-                threads=cfg.threads,
-                timeout=cfg.timeout,
+                rate_limit=transport.rate,
+                threads=transport.threads,
+                timeout=transport.timeout,
                 proxy_url=resolved.proxy_url,
                 headers=dict(resolved.headers or {}),
                 probe_scheme=PROBE_SCHEME.get(resolved.http_protocol),
-                follow_redirects=cfg.follow_redirects,
+                follow_redirects=FOLLOW_REDIRECTS,
                 extra_args=resolved.tool_args("httpx"),
             )
         except HttpxError as e:

@@ -5,11 +5,16 @@ from types import SimpleNamespace
 
 import pytest
 
+from shared.definitions.intensity import Transport
 from shared.enums.api_key import APIProvider
 from shared.models.api_key import API_PROVIDER_META
 from shared.services.scan_resolve import MASK, redact_command
-from stages.vulnerability_scan.config import VulnerabilityScanConfig
-from stages.vulnerability_scan.scanners.nuclei import Job, NucleiScanner, _oast_server
+from stages.vulnerability_scan.scanners.nuclei import (
+    OAST_WAIT_SECONDS,
+    Job,
+    NucleiScanner,
+    _oast_server,
+)
 from tools.nuclei.client import _EVICTION_SLACK, NucleiClient, NucleiOptions
 
 pytestmark = pytest.mark.pipeline
@@ -49,7 +54,7 @@ def test_no_window_leaves_nuclei_on_its_own_defaults():
 
 
 def test_the_default_waits_minutes_not_seconds():
-    assert VulnerabilityScanConfig().oast_wait_minutes >= 1
+    assert OAST_WAIT_SECONDS >= 60
 
 
 def test_the_token_reaches_nuclei():
@@ -77,18 +82,12 @@ def test_the_token_is_not_even_read_when_oast_is_off():
     scanner = NucleiScanner.__new__(NucleiScanner)
     scanner.ctx = SimpleNamespace(
         cfg=SimpleNamespace(
-            threads=1,
-            bulk_size=1,
-            timeout=1,
-            retries=0,
-            max_host_error=1,
             max_minutes=0,
             headless=False,
             interactsh=False,
             interactsh_server="",
-            oast_wait_minutes=5,
-            honeypot_threshold=0,
         ),
+        transport=Transport(tool="nuclei", rate=150, threads=25, timeout=10, retries=1),
         net=SimpleNamespace(proxy_url=None, headers={}),
         resolved=SimpleNamespace(
             follow_redirects=None, tool_args=lambda _t: [], excluded_subdomains=[]

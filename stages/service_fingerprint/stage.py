@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from sqlalchemy import select
 
+from shared.definitions.intensity import TransportTool
 from shared.definitions.ports import (
     CDN_EDGE_PORTS,
     PortSource,
     ScanPolicy,
-    ServiceClass,
     likely_tls,
 )
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
@@ -36,6 +36,7 @@ class ServiceFingerprintStage(Stage):
     consumes = frozenset({AssetKind.PORTS.value})
     applies_to = ALL_TARGETS
     tools = ()
+    transport_tool = TransportTool.BANNER.value
     config_model = ServiceFingerprintConfig
 
     def run(self) -> StageResult:
@@ -46,8 +47,8 @@ class ServiceFingerprintStage(Stage):
             return StageResult(counts={"fingerprinted": 0, "probed": 0})
 
         client = BannerClient(
-            timeout=float(cfg.timeout),
-            concurrency=cfg.threads,
+            timeout=float(self.transport.timeout),
+            concurrency=self.transport.threads,
             proxy_url=self.net_options().proxy_url,
         )
         if client.proxy_warning:
@@ -112,8 +113,6 @@ class ServiceFingerprintStage(Stage):
                 Port.protocol == "tcp",
             )
         )
-        if not cfg.include_unknown:
-            query = query.where(Port.service_class != ServiceClass.OTHER.value)
         rows = self.session.execute(
             query.order_by(Port.ip, Port.number).limit(cfg.max_services)
         ).all()

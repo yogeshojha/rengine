@@ -8,7 +8,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 	import type { StageField } from '$lib/types/scan-engine';
-	import { SCALE_HELP } from '$lib/types/scan-engine';
 	import { parseCsv } from '$lib/utilities/parse';
 	import CustomTemplatesField from './custom-templates-field.svelte';
 	import WordlistField from './wordlist-field.svelte';
@@ -71,11 +70,6 @@
 		</span>
 		{#if field.description}
 			<Field.Description class="text-2xs leading-snug">{field.description}</Field.Description>
-		{/if}
-		{#if field.scale}
-			<Field.Description class="text-2xs leading-snug opacity-75">
-				{SCALE_HELP[field.scale]}
-			</Field.Description>
 		{/if}
 	</Field.Content>
 

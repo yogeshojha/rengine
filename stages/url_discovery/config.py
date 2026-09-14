@@ -13,7 +13,7 @@ from shared.definitions.endpoints import (
     CrawlScope,
     EndpointSource,
 )
-from stages.config import StageConfig, rate, threads, timeout
+from stages.config import StageConfig, advanced
 
 DEFAULT_PROVIDERS: list[str] = [
     EndpointSource.RESPONSE_MINING.value,
@@ -44,26 +44,12 @@ class UrlDiscoveryConfig(StageConfig):
         description="Sources URLs are collected from. Response mining reads stored response bodies and sends no request.",
         json_schema_extra={"options": list(_PROVIDER_LABELS)},
     )
-    threads: int = threads(50, title="Threads")
-    timeout: int = timeout(15, title="Timeout (s)")
-    rate: int = rate(150, tool="katana", title="Requests/s")
     crawl_depth: int = Field(
         default=3,
         ge=1,
         le=10,
         title="Crawl depth",
         description="Link depth followed from each site root.",
-    )
-    crawl_scope: str = Field(
-        default=CrawlScope.RDN.value,
-        title="Crawl scope",
-        description="Which hosts the crawler may follow links to.",
-        json_schema_extra={"options": list(CRAWL_SCOPES)},
-    )
-    crawl_javascript: bool = Field(
-        default=True,
-        title="Parse JavaScript",
-        description="Read URLs out of the JavaScript each page loads.",
     )
     headless: bool = Field(
         default=False,
@@ -77,68 +63,47 @@ class UrlDiscoveryConfig(StageConfig):
         title="Crawl budget (min)",
         description="Stop crawling after this long. 0 means no limit.",
     )
-    max_urls: int = Field(
-        default=50000,
-        ge=100,
-        le=200000,
-        title="URLs per source",
-        description="Cap the URLs any one source may contribute.",
+    crawl_scope: str = advanced(
+        CrawlScope.RDN.value,
+        title="Crawl scope",
+        description="Which hosts the crawler may follow links to.",
+        json_schema_extra={"options": list(CRAWL_SCOPES)},
     )
-    max_known_file_hosts: int = Field(
-        default=200,
-        ge=1,
-        le=5000,
-        title="Hosts for robots and sitemaps",
-        description="Cap the hosts whose robots.txt and sitemap are fetched.",
-    )
-    max_source_maps: int = Field(
-        default=200,
-        ge=1,
-        le=5_000,
-        title="Bundles to ask for a map",
-        description="JavaScript bundles asked for the .map beside them.",
-    )
-    max_archive_domains: int = Field(
-        default=10,
-        ge=1,
-        le=200,
-        title="Domains to query archives for",
-        description="Registrable domains queried in public archives.",
-    )
-    max_hosts: int = Field(
-        default=500,
+    max_hosts: int = advanced(
+        500,
         ge=1,
         le=10000,
         title="Hosts to crawl",
         description="Cap the live web assets handed to the crawler.",
     )
-
-    drop_noise: bool = Field(
-        default=True,
+    drop_noise: bool = advanced(
+        True,
         title="Drop noise",
         description="Static files, crawler artifacts, platform noise and URLs past the family and sibling caps are not stored. Every drop is counted.",
     )
-    static_extensions: list[str] = Field(
+    static_extensions: list[str] = advanced(
+        None,
         default_factory=lambda: list(NOISE_STATIC_EXTENSIONS),
         max_length=200,
         title="Static extensions",
         description="File extensions dropped as static.",
     )
-    ignored_params: list[str] = Field(
+    ignored_params: list[str] = advanced(
+        None,
         default_factory=lambda: list(NOISE_IGNORED_PARAMS),
         max_length=400,
         title="Ignored parameters",
         description="Query parameters removed from every URL. Tracking and cache-busting names by default.",
     )
-    keep_per_family: int = Field(
-        default=NOISE_KEEP_PER_FAMILY,
+    keep_per_family: int = advanced(
+        NOISE_KEEP_PER_FAMILY,
         ge=1,
         le=MAX_NOISE_KEEP_PER_FAMILY,
         title="URLs kept per family",
         description="URLs stored for one path shape and parameter set. The rest are dropped.",
     )
-    sibling_cap: int = Field(
-        default=NOISE_SIBLING_CAP,
+    sibling_cap: int = advanced(
+        NOISE_SIBLING_CAP,
         ge=1,
         le=MAX_NOISE_SIBLING_CAP,
         title="Sibling cap",
@@ -163,3 +128,9 @@ class UrlDiscoveryConfig(StageConfig):
     @classmethod
     def _known_scope(cls, value: str) -> str:
         return value if value in CRAWL_SCOPES else CrawlScope.RDN.value
+
+
+MAX_URLS = 50_000
+MAX_KNOWN_FILE_HOSTS = 200
+MAX_SOURCE_MAPS = 200
+MAX_ARCHIVE_DOMAINS = 10

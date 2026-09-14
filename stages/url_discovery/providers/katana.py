@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 
 from shared.definitions.endpoints import EndpointSource
 from shared.services.endpoint_inventory import EndpointObservation
+from stages.url_discovery.config import MAX_URLS
 from stages.url_discovery.providers.base import ProviderResult, UrlProvider
 from tools.katana.client import KatanaClient, KatanaError
 from tools.katana.parser import parse_katana_record
@@ -32,12 +33,12 @@ class KatanaProvider(UrlProvider):
         try:
             return KatanaClient(
                 depth=cfg.crawl_depth,
-                threads=cfg.threads,
-                timeout=cfg.timeout,
+                threads=self.ctx.transport.threads,
+                timeout=self.ctx.transport.timeout,
                 max_duration_minutes=cfg.max_crawl_minutes,
-                rate_limit=cfg.rate,
+                rate_limit=self.ctx.transport.rate,
                 crawl_scope=cfg.crawl_scope,
-                include_js=cfg.crawl_javascript,
+                include_js=True,
                 headless=cfg.headless,
                 exclude_extensions=list(cfg.static_extensions)
                 if cfg.drop_noise
@@ -73,7 +74,7 @@ class KatanaProvider(UrlProvider):
         with client.stream_crawl(
             targets, should_stop=self.ctx.is_aborted, stderr_sink=_stderr
         ) as records:
-            self._ingest(records, state, result, cfg.max_urls)
+            self._ingest(records, state, result, MAX_URLS)
 
         if fatal:
             msg = f"katana could not run: {fatal[0]}"

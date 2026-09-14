@@ -73,7 +73,7 @@
 	data-selected={isSelected}
 >
 	<div class="flex items-start gap-3 px-4 pt-4">
-		{#if onSelect}
+		{#if onSelect && !engine.builtin}
 			<div
 				class="relative z-10 flex h-5 items-center opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 data-[on=true]:opacity-100 [@media(hover:none)]:opacity-100"
 				data-on={isSelected}
@@ -98,6 +98,9 @@
 				<Badge variant={INTENSITY_VARIANT[engine.intensity] ?? 'secondary'} class="text-2xs">
 					{INTENSITY_LABELS[engine.intensity] ?? engine.intensity}
 				</Badge>
+				{#if engine.builtin}
+					<Badge variant="outline" class="text-2xs">Built in</Badge>
+				{/if}
 			</div>
 			{#if engine.description}
 				<p class="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{engine.description}</p>
@@ -128,11 +131,13 @@
 						<Download size={13} />
 						Export YAML
 					</DropdownMenu.Item>
-					<DropdownMenu.Separator />
-					<DropdownMenu.Item variant="destructive" onclick={() => onDelete?.()}>
-						<Trash2 size={13} />
-						Delete
-					</DropdownMenu.Item>
+					{#if !engine.builtin}
+						<DropdownMenu.Separator />
+						<DropdownMenu.Item variant="destructive" onclick={() => onDelete?.()}>
+							<Trash2 size={13} />
+							Delete
+						</DropdownMenu.Item>
+					{/if}
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>
 		</div>

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy import select
 
+from shared.definitions.intensity import TransportTool
 from shared.definitions.ports import DEFAULT_WEB_PORTS, ServiceClass
 from shared.definitions.surface import SurfaceDimension
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
@@ -14,7 +15,7 @@ from shared.services.scope_filter import ip_excluded
 from shared.utils.datetime import utc_now
 from shared.utils.net import host_port
 from stages.base import ALL_TARGETS, Stage, StageResult
-from stages.origin_probe.config import OriginProbeConfig
+from stages.origin_probe.config import MAX_PORTS_PER_ADDRESS, OriginProbeConfig
 from stages.origin_probe.finding import origin_finding
 from tools.httpx.client import HttpxClient, HttpxError
 from tools.httpx.parser import parse_httpx_record
@@ -39,6 +40,8 @@ class OriginProbeStage(Stage):
     consumes = frozenset({AssetKind.PORTS.value})
     applies_to = ALL_TARGETS
     tools = ("httpx",)
+    transport_tool = TransportTool.HTTPX.value
+    thread_weight = 0.2
     config_model = OriginProbeConfig
 
     def run(self) -> StageResult:
@@ -51,9 +54,9 @@ class OriginProbeStage(Stage):
 
         try:
             client = HttpxClient(
-                rate_limit=cfg.rate,
-                threads=cfg.threads,
-                timeout=cfg.timeout,
+                rate_limit=self.transport.rate,
+                threads=self.transport.threads,
+                timeout=self.transport.timeout,
                 proxy_url=net.proxy_url,
                 headers=net.headers,
                 probe_scheme=net.probe_scheme,
@@ -129,7 +132,7 @@ class OriginProbeStage(Stage):
         targets: list[str] = []
         for ip in list(by_ip)[: cfg.max_addresses]:
             ports = sorted(by_ip[ip], key=lambda p: (p not in DEFAULT_WEB_PORTS, p))[
-                : cfg.max_ports_per_address
+                :MAX_PORTS_PER_ADDRESS
             ]
             targets.extend(host_port(ip, port) for port in ports)
         return targets

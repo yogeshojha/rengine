@@ -11,6 +11,7 @@ import httpx
 from shared.definitions.endpoints import EndpointSource
 from shared.services.endpoint_inventory import EndpointObservation
 from shared.utils.net import host_port
+from stages.url_discovery.config import MAX_KNOWN_FILE_HOSTS
 from stages.url_discovery.providers.base import ProviderResult, UrlProvider
 
 _ROBOTS = "/robots.txt"
@@ -38,12 +39,12 @@ class KnownFilesProvider(UrlProvider):
         roots = _roots(self.ctx.hosts)
         if not roots:
             return
-        limit = self.ctx.cfg.max_known_file_hosts
+        limit = MAX_KNOWN_FILE_HOSTS
         selected = roots[:limit]
         state = _State()
         client = self._client()
         try:
-            workers = min(_MAX_WORKERS, len(selected))
+            workers = min(self.workers(_MAX_WORKERS), len(selected))
             with ThreadPoolExecutor(max_workers=workers) as pool:
                 for found in pool.map(lambda root: self._mine(client, root), selected):
                     if found is None:
@@ -71,8 +72,8 @@ class KnownFilesProvider(UrlProvider):
         headers = dict(self.ctx.net.headers or {})
         headers.setdefault("User-Agent", "reNgine/3.0 (+https://rengine.wiki)")
         return httpx.Client(
-            timeout=self.ctx.cfg.timeout,
-            follow_redirects=True,
+            timeout=self.ctx.transport.timeout,
+            follow_redirects=self.follow_redirects(True),
             verify=False,  # noqa: S501
             proxy=self.ctx.net.proxy_url or None,
             headers=headers,
@@ -117,6 +118,10 @@ class KnownFilesProvider(UrlProvider):
         return state
 
     def _get(self, client: httpx.Client, url: str, state: _State) -> str | None:
+        if self.path_excluded(url):
+            state.refused += 1
+            return None
+        self.throttle()
         state.fetched += 1
         body = bytearray()
         try:

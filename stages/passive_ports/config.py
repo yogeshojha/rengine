@@ -11,10 +11,6 @@ class PassivePortsConfig(StageConfig):
         title="Look up indexed ports",
         description="Read ports indexed for each address by internet-wide scanners.",
     )
-    max_addresses: int = Field(
-        default=1024,
-        ge=1,
-        le=65536,
-        title="Address budget",
-        description="Stop after this many addresses.",
-    )
+
+
+MAX_ADDRESSES = 1024

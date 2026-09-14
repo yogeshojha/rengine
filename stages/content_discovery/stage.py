@@ -10,6 +10,7 @@ from pathlib import Path
 from sqlalchemy import select
 
 from shared.definitions.endpoints import EndpointSource
+from shared.definitions.intensity import TransportTool
 from shared.definitions.surface import SurfaceDimension
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.logging import get_logger
@@ -17,6 +18,7 @@ from shared.models.http_asset import HttpAsset
 from shared.services import endpoint_inventory
 from shared.services.endpoint_inventory import EndpointObservation
 from shared.services.endpoint_noise import NoisePolicy
+from shared.services.scope_filter import matches_any
 from shared.services.wordlists import WordlistError, read_words
 from stages.base import ALL_TARGETS, Stage, StageResult
 from stages.config import share_rate
@@ -49,6 +51,8 @@ class ContentDiscoveryStage(Stage):
     produces = frozenset({AssetKind.ENDPOINTS.value})
     applies_to = ALL_TARGETS
     tools = ("ffuf",)
+    transport_tool = TransportTool.FFUF.value
+    rate_weight = 1 / 3
     touches_target = True
     config_model = ContentDiscoveryConfig
     launch_fields = (
@@ -86,9 +90,9 @@ class ContentDiscoveryStage(Stage):
         net = self.net_options()
         args = {
             "wordlist": word_file,
-            "threads": cfg.threads,
-            "rate": share_rate(cfg.rate, workers),
-            "request_timeout": cfg.timeout,
+            "threads": self.transport.threads,
+            "rate": share_rate(self.transport.rate or 1, workers),
+            "request_timeout": self.transport.timeout,
             "proxy_url": net.proxy_url,
             "headers": net.headers,
             "recorder": self.ctx.recorder,
@@ -202,6 +206,9 @@ class ContentDiscoveryStage(Stage):
         except WordlistError as exc:
             yield None, str(exc)
             return
+        excluded = self.ctx.resolved.excluded_paths or []
+        if excluded:
+            words = [w for w in words if not matches_any(f"/{w.lstrip('/')}", excluded)]
         if not words:
             yield None, f"{label} has no usable words"
             return

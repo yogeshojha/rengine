@@ -5,6 +5,7 @@ from collections.abc import Iterable
 from sqlalchemy import bindparam, delete, select, update
 from sqlalchemy.orm import defer
 
+from shared.definitions.intensity import TransportTool
 from shared.definitions.ports import (
     DEFAULT_WEB_PORTS,
     PortSource,
@@ -25,7 +26,11 @@ from shared.utils.datetime import utc_now
 from shared.utils.net import host_port
 from shared.utils.software import parse_banner
 from stages.base import Stage, StageResult
-from stages.http_probe.config import HttpProbeConfig
+from stages.http_probe.config import (
+    FOLLOW_REDIRECTS,
+    MAX_PORTS_PER_HOST,
+    HttpProbeConfig,
+)
 from tools.httpx.client import HttpxClient, HttpxError
 from tools.httpx.parser import parse_httpx_record
 
@@ -93,11 +98,11 @@ class HttpProbeStage(Stage):
     consumes = frozenset({AssetKind.HOSTS.value, AssetKind.ADDRESSES.value})
     produces = frozenset({AssetKind.HTTP_ASSETS.value})
     tools = ("httpx",)
+    transport_tool = TransportTool.HTTPX.value
     config_model = HttpProbeConfig
 
     def run(self) -> StageResult:
         self._check_abort()
-        cfg = self.cfg
         net = self.net_options()
         targets = self._build_targets()
         if not targets:
@@ -105,13 +110,13 @@ class HttpProbeStage(Stage):
 
         try:
             client = HttpxClient(
-                rate_limit=cfg.rate,
-                threads=cfg.threads,
-                timeout=cfg.timeout,
+                rate_limit=self.transport.rate,
+                threads=self.transport.threads,
+                timeout=self.transport.timeout,
                 proxy_url=net.proxy_url,
                 headers=net.headers,
                 probe_scheme=net.probe_scheme,
-                follow_redirects=self.follow_redirects(cfg.follow_redirects),
+                follow_redirects=self.follow_redirects(FOLLOW_REDIRECTS),
                 recorder=self.ctx.recorder,
                 extra_args=self.ctx.resolved.tool_args("httpx"),
             )
@@ -146,8 +151,6 @@ class HttpProbeStage(Stage):
 
     def _port_map(self) -> dict[str, set[int]]:
         """Open ports per address, filtered to what can plausibly answer HTTP."""
-        if not self.cfg.probe_open_ports:
-            return {}
         rows = self.session.execute(
             select(Port.ip, Port.number, Port.service_name, Port.service_class).where(
                 Port.scan_id == self.ctx.scan_id
@@ -167,7 +170,7 @@ class HttpProbeStage(Stage):
         for ip in ips or []:
             ports |= port_map.get(ip, set())
         ordered = sorted(ports, key=lambda p: (p not in DEFAULT_WEB_PORTS, p))
-        return ordered[: self.cfg.max_ports_per_host]
+        return ordered[:MAX_PORTS_PER_HOST]
 
     def _build_targets(self) -> list[str]:
         target_type = self.ctx.target_type

@@ -3,6 +3,7 @@ from uuid import UUID
 import yaml
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.scan_engine.validation import (
@@ -17,6 +18,12 @@ from app.services.scan_engine.validation import (
     _validate_stages,
     _validate_tool_options,
     _validate_yaml_source,
+)
+from shared.definitions.default_engine import (
+    DEFAULT_ENGINE_DESCRIPTION,
+    DEFAULT_ENGINE_INTENSITY,
+    DEFAULT_ENGINE_NAME,
+    default_engine_stages,
 )
 from shared.enums.scan import SCAN_OPEN_STATUSES
 from shared.models.scan import Scan
@@ -59,6 +66,7 @@ def _to_read(engine: ScanEngine, usage: EngineUsage | None = None) -> ScanEngine
         stages=dict(engine.stages or {}),
         yaml_source=engine.yaml_source,
         tool_options=_mask_tool_options(engine.tool_options),
+        builtin=bool(engine.builtin),
         created_at=engine.created_at,
         updated_at=engine.updated_at,
         last_used_at=engine.last_used_at,
@@ -121,7 +129,45 @@ class ScanEngineService:
         await self.session.refresh(engine)
         return _to_read(engine)
 
-    async def list(self, project_id: UUID) -> list[ScanEngineRead]:
+    async def ensure_builtin(self, project_id: UUID, created_by: UUID) -> ScanEngine:
+        """The project's built-in engine, created on first sight."""
+        existing = await self._builtin_for(project_id)
+        if existing is not None:
+            return existing
+        engine = ScanEngine(
+            project_id=project_id,
+            created_by=created_by,
+            name=DEFAULT_ENGINE_NAME,
+            description=DEFAULT_ENGINE_DESCRIPTION,
+            intensity=DEFAULT_ENGINE_INTENSITY,
+            stages=_validate_stages(default_engine_stages()),
+            builtin=True,
+        )
+        try:
+            async with self.session.begin_nested():
+                self.session.add(engine)
+                await self.session.flush()
+        except IntegrityError:
+            raced = await self._builtin_for(project_id)
+            if raced is None:
+                raise
+            return raced
+        return engine
+
+    async def _builtin_for(self, project_id: UUID) -> ScanEngine | None:
+        result = await self.session.execute(
+            select(ScanEngine).where(
+                ScanEngine.project_id == project_id, ScanEngine.builtin.is_(True)
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def list(
+        self, project_id: UUID, created_by: UUID | None = None
+    ) -> list[ScanEngineRead]:
+        if created_by is not None:
+            await self.ensure_builtin(project_id, created_by)
+            await self.session.commit()
         result = await self.session.execute(
             select(ScanEngine)
             .where(ScanEngine.project_id == project_id)
@@ -173,6 +219,11 @@ class ScanEngineService:
 
     async def delete(self, id: UUID, project_id: UUID) -> bool:
         engine = await self._get_or_404(id, project_id)
+        if engine.builtin:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"{engine.name} is built in and is not deleted.",
+            )
         running = await _running_scans_for(self.session, engine.id)
         if running:
             raise HTTPException(

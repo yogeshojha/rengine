@@ -161,9 +161,16 @@
 					Duplicate
 				</DropdownMenu.Item>
 				<DropdownMenu.Separator />
-				<DropdownMenu.Item variant="destructive" disabled={!onDelete} onclick={() => onDelete?.()}>
+				<DropdownMenu.Item
+					variant="destructive"
+					disabled={!onDelete || engine.builtin}
+					onclick={() => onDelete?.()}
+				>
 					<Trash2 size={13} />
 					Delete
+					{#if engine.builtin}
+						<span class="ml-auto text-2xs text-muted-foreground">Built in</span>
+					{/if}
 				</DropdownMenu.Item>
 			</DropdownMenu.Content>
 		</DropdownMenu.Root>

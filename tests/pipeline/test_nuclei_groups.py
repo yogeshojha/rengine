@@ -7,10 +7,12 @@ from types import SimpleNamespace
 
 import pytest
 
+from shared.definitions.intensity import Transport
 from shared.definitions.scan_surface import Tier
 from shared.definitions.vulnerabilities import Scanner
 from shared.services.scan_surface import SurfaceItem, SurfacePlan, split
 from stages.vulnerability_scan.config import VulnerabilityScanConfig
+from stages.vulnerability_scan.scanners import nuclei as nuclei_scanner
 from stages.vulnerability_scan.scanners.base import (
     Coverage,
     ScannerContext,
@@ -63,6 +65,7 @@ def _scanner(writes: _Writes, **cfg) -> NucleiScanner:
         target_id=uuid.uuid4(),
         project_id=uuid.uuid4(),
         cfg=VulnerabilityScanConfig(**cfg),
+        transport=Transport(tool="nuclei", rate=150, threads=25, timeout=10, retries=1),
         resolved=None,
         net=None,
         surface=SurfacePlan(),
@@ -202,9 +205,10 @@ def test_guarded_items_take_the_reduced_lane_only_with_a_divisor():
     assert len(single[STANDARD]) == 2
 
 
-def test_the_schedule_spends_the_budget_in_tier_order():
+def test_the_schedule_spends_the_budget_in_tier_order(monkeypatch):
     writes = _Writes()
-    scanner = _scanner(writes, waf_rate_divisor=1)
+    monkeypatch.setattr(nuclei_scanner, "WAF_RATE_DIVISOR", 1)
+    scanner = _scanner(writes)
     rep = _item("https://rep.example", members=2)
     rep.tags = ["geoserver"]
     plan = SurfacePlan(roots=[rep])

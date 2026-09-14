@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from sqlalchemy import select
 
+from shared.definitions.intensity import TransportTool
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.logging import get_logger
 from shared.models.ip_address import IpAddress
+from shared.services.scope_filter import ip_excluded
 from stages.base import ALL_TARGETS, Stage, StageResult
 from stages.reverse_dns.config import ReverseDnsConfig
 from tools.dnsx.client import DnsxClient, DnsxError
@@ -27,12 +29,12 @@ class ReverseDnsStage(Stage):
     produces = frozenset({AssetKind.HOSTS.value})
     applies_to = ALL_TARGETS
     tools = ("dnsx",)
+    transport_tool = TransportTool.DNSX.value
     touches_target = False
     config_model = ReverseDnsConfig
 
     def run(self) -> StageResult:
         self._check_abort()
-        cfg = self.cfg
         rows = list(
             self.session.execute(
                 select(IpAddress).where(IpAddress.scan_id == self.ctx.scan_id)
@@ -40,12 +42,15 @@ class ReverseDnsStage(Stage):
             .scalars()
             .all()
         )
+        excluded = self.ctx.resolved.excluded_ips or []
+        if excluded:
+            rows = [row for row in rows if not ip_excluded(row.ip, excluded)]
         if not rows:
             return StageResult(counts={"ptr": 0})
 
         by_ip = {row.ip: row for row in rows}
         ips = list(by_ip.keys())[:_MAX_PTR]
-        ptr_map, note = self._lookup_ptr(ips, cfg)
+        ptr_map, note = self._lookup_ptr(ips)
 
         resolved = 0
         for ip, names in ptr_map.items():
@@ -62,15 +67,13 @@ class ReverseDnsStage(Stage):
             partial=bool(note),
         )
 
-    def _lookup_ptr(
-        self, ips: list[str], cfg: ReverseDnsConfig
-    ) -> tuple[dict[str, list], str | None]:
+    def _lookup_ptr(self, ips: list[str]) -> tuple[dict[str, list], str | None]:
         if not ips:
             return {}, None
         try:
             client = DnsxClient(
-                timeout=max(120, cfg.dns_timeout),
-                threads=cfg.dns_threads,
+                timeout=max(120, self.transport.timeout),
+                threads=self.transport.threads,
                 recorder=self.ctx.recorder,
                 extra_args=self.ctx.resolved.tool_args("dnsx"),
             )

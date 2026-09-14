@@ -9,6 +9,7 @@ from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.enums.target import TargetType
 from shared.logging import get_logger
 from shared.models.ip_address import IpAddress
+from shared.services.scope_filter import ip_excluded
 from shared.utils.cidr import expand_network, parse_network
 from shared.utils.datetime import utc_now
 from shared.utils.validation import normalize_domain
@@ -166,7 +167,7 @@ class SeedResolutionStage(Stage):
             if net is None:
                 continue
             ips, was_truncated = expand_network(
-                prefix, max_hosts=per_prefix, skip_private=cfg.cidr_skip_rfc1918
+                prefix, max_hosts=per_prefix, skip_private=True
             )
             truncated = truncated or was_truncated
             records.extend(
@@ -202,9 +203,10 @@ class SeedResolutionStage(Stage):
         )
         now = utc_now()
         seen: set[str] = set()
+        excluded = self.ctx.resolved.excluded_ips or []
         for rec in records:
             ip = rec["ip"]
-            if ip in seen:
+            if ip in seen or (excluded and ip_excluded(ip, excluded)):
                 continue
             seen.add(ip)
             self.session.add(

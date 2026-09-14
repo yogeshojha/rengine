@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from shared.definitions.endpoints import EndpointSource
 from shared.services.endpoint_inventory import EndpointObservation
+from stages.url_discovery.config import MAX_ARCHIVE_DOMAINS, MAX_URLS
 from stages.url_discovery.providers.base import ProviderResult, UrlProvider
 from tools.urlfinder.client import UrlfinderClient, UrlfinderError
 
@@ -15,13 +16,12 @@ class ArchiveProvider(UrlProvider):
     touches_target = False
 
     def discover(self, result: ProviderResult) -> None:
-        cfg = self.ctx.cfg
-        domains = self.ctx.apex_domains[: cfg.max_archive_domains]
+        domains = self.ctx.apex_domains[:MAX_ARCHIVE_DOMAINS]
         if not domains:
             return
         try:
             client = UrlfinderClient(
-                timeout=cfg.timeout,
+                timeout=self.ctx.transport.timeout,
                 proxy_url=self.ctx.net.proxy_url,
                 recorder=self.ctx.recorder,
                 extra_args=self.extra_args,
@@ -32,7 +32,7 @@ class ArchiveProvider(UrlProvider):
         found = 0
         seen: set[str] = set()
         observations: list[EndpointObservation] = []
-        cap = cfg.max_urls
+        cap = MAX_URLS
         scanned = 0
 
         for domain in domains:
@@ -69,7 +69,7 @@ class ArchiveProvider(UrlProvider):
             result.capped = True
             result.cap_reason = (
                 f"{dropped} registrable domains not queried. Limit is "
-                f"{cfg.max_archive_domains} domains."
+                f"{MAX_ARCHIVE_DOMAINS} domains."
             )
         result.urls_found = found
         result.hosts_scanned = scanned

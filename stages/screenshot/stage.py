@@ -4,6 +4,7 @@ from pathlib import Path
 
 from sqlalchemy import select, update
 
+from shared.definitions.intensity import TransportTool
 from shared.definitions.surface import SurfaceDimension
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.enums.target import TargetType
@@ -42,11 +43,12 @@ class ScreenshotStage(Stage):
     role = StageRole.CAPABILITY.value
     consumes = frozenset({AssetKind.HTTP_ASSETS.value})
     tools = ("httpx",)
+    transport_tool = TransportTool.HTTPX.value
+    thread_weight = 4 / 15
     config_model = ScreenshotConfig
 
     def run(self) -> StageResult:
         self._check_abort()
-        cfg = self.cfg
         net = self.net_options()
         live = self.session.execute(
             select(HttpAsset.id, HttpAsset.url).where(
@@ -60,9 +62,9 @@ class ScreenshotStage(Stage):
         store_dir = str(Path(_MEDIA_ROOT) / str(self.ctx.scan_id))
         try:
             client = HttpxClient(
-                rate_limit=cfg.rate,
-                threads=cfg.threads,
-                timeout=cfg.timeout,
+                rate_limit=self.transport.rate,
+                threads=self.transport.threads,
+                timeout=self.transport.timeout,
                 proxy_url=net.proxy_url,
                 headers=net.headers,
                 probe_scheme=net.probe_scheme,

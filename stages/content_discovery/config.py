@@ -3,7 +3,7 @@ from __future__ import annotations
 from pydantic import Field
 
 from shared.definitions.wordlists import WordlistKind
-from stages.config import StageConfig, rate, threads, timeout, wordlist
+from stages.config import StageConfig, advanced, wordlist
 
 
 class ContentDiscoveryConfig(StageConfig):
@@ -24,13 +24,6 @@ class ContentDiscoveryConfig(StageConfig):
         title="Words to try",
         description="Words tried per site, from the top of the list.",
     )
-    max_hosts: int = Field(
-        default=25,
-        ge=1,
-        le=1_000,
-        title="Sites to guess against",
-        description="Sites tried. Sites that answered are picked first.",
-    )
     max_minutes: int = Field(
         default=20,
         ge=1,
@@ -38,6 +31,10 @@ class ContentDiscoveryConfig(StageConfig):
         title="Time budget (minutes)",
         description="The run stops after this many minutes and reports partial coverage.",
     )
-    threads: int = threads(40, title="Threads")
-    rate: int = rate(50, tool="ffuf", title="Requests/s")
-    timeout: int = timeout(8, title="Request timeout (s)")
+    max_hosts: int = advanced(
+        25,
+        ge=1,
+        le=1_000,
+        title="Sites to guess against",
+        description="Sites tried. Sites that answered are picked first.",
+    )

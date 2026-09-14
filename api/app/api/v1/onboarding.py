@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentSuperuser, CurrentUser
 from app.core.database import get_session
 from app.services.instance_settings import InstanceSettingsService
+from app.services.scan_engine import ScanEngineService
 from shared.models.api_key import APIKey
 from shared.models.notification_channel import NotificationChannel
 from shared.models.project import Project, ProjectCreate, ProjectRead
@@ -128,6 +129,7 @@ async def create_first_project(
         created_by=current_user.id,
     )
     await add_with_unique_slug(session, project, data.name)
+    await ScanEngineService(session).ensure_builtin(project.id, current_user.id)
     await session.commit()
     await session.refresh(project)
     return project

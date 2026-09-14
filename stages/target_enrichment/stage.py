@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 
 from sqlalchemy import select
 
+from shared.definitions.intensity import TransportTool
 from shared.enums.scan import Phase, StageGroup, StageRole
 from shared.enums.target import TargetType
 from shared.enums.task_status import TaskStatus
@@ -39,19 +40,19 @@ class TargetEnrichmentStage(Stage):
     group = StageGroup.HOSTS.value
     role = StageRole.SUPPORT.value
     tools = ("dnsx", "whois")
+    transport_tool = TransportTool.DNSX.value
     touches_target = False
     config_model = TargetEnrichmentConfig
     _notes: list[str]
 
     def run(self) -> StageResult:
         self._check_abort()
-        cfg = self.cfg
         target = self.session.get(Target, self.ctx.target_id)
         if target is None:
             return StageResult(counts={})
 
         self._notes = []
-        dns_records = self._ensure_dns(target, cfg)
+        dns_records = self._ensure_dns(target)
         whois_present = self._ensure_whois(target)
         bgp_present = self._read_bgp()
 
@@ -70,7 +71,7 @@ class TargetEnrichmentStage(Stage):
             partial=bool(self._notes),
         )
 
-    def _ensure_dns(self, target: Target, cfg: TargetEnrichmentConfig) -> int:
+    def _ensure_dns(self, target: Target) -> int:
         if self.ctx.target_type not in _DNS_TYPES:
             return 0
         lookup = (
@@ -82,8 +83,8 @@ class TargetEnrichmentStage(Stage):
             host = normalize_domain(self.ctx.target_value)
             try:
                 lookup = DnsxService(
-                    timeout=max(120, cfg.dns_timeout),
-                    threads=cfg.dns_threads,
+                    timeout=max(120, self.transport.timeout),
+                    threads=self.transport.threads,
                     recorder=self.ctx.recorder,
                     extra_args=self.ctx.resolved.tool_args("dnsx"),
                 ).lookup_and_store(self.session, target.id, host)

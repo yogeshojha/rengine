@@ -37,6 +37,15 @@ function createEngineCatalogStore() {
 			return catalog?.stages.find((s) => s.name === name);
 		},
 
+		byGroup(): { key: string; label: string; stages: StageCatalogEntry[] }[] {
+			if (!catalog) return [];
+			return catalog.groups.map((group) => ({
+				key: group.key,
+				label: group.label,
+				stages: catalog!.stages.filter((s) => s.group === group.key)
+			}));
+		},
+
 		byPhase(): { phase: string; stages: StageCatalogEntry[] }[] {
 			if (!catalog) return [];
 			return catalog.phases.map((phase) => ({

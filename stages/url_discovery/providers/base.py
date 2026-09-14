@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import shutil
+import threading
 import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable
@@ -9,9 +10,11 @@ from functools import cached_property
 from typing import TYPE_CHECKING, ClassVar
 from urllib.parse import urlsplit
 
+from shared.definitions.intensity import Transport
 from shared.definitions.vulnerabilities import CoverageStatus
 from shared.logging import get_logger
 from shared.services.endpoint_inventory import EndpointObservation
+from shared.services.scope_filter import matches_any
 from shared.utils.datetime import utc_now
 from tools.runner import tool_path
 
@@ -50,6 +53,7 @@ class ProviderContext:
     hosts: list[Host]
     apex_domains: list[str]
     cfg: object
+    transport: Transport
     resolved: ResolvedScanConfig
     net: NetOptions
     recorder: CommandRecorder | None = None
@@ -142,6 +146,41 @@ class UrlProvider(ABC):
 
     def aborted(self) -> bool:
         return self.ctx.is_aborted is not None and self.ctx.is_aborted()
+
+    def follow_redirects(self, default: bool) -> bool:
+        override = self.ctx.resolved.follow_redirects
+        return default if override is None else override
+
+    def path_excluded(self, url: str) -> bool:
+        excluded = self.ctx.resolved.excluded_paths or []
+        if not excluded:
+            return False
+        try:
+            path = urlsplit(url).path or "/"
+        except ValueError:
+            return True
+        return matches_any(path, excluded)
+
+    def workers(self, cap: int) -> int:
+        return max(1, min(cap, self.ctx.transport.threads))
+
+    def throttle(self) -> None:
+        """One request per 1/rate seconds across the provider's workers."""
+        rate = self.ctx.transport.rate
+        if not rate:
+            return
+        with self._gate:
+            now = time.monotonic()
+            wait = self._next_slot - now
+            if wait > 0:
+                time.sleep(wait)
+                now = time.monotonic()
+            self._next_slot = max(now, self._next_slot) + 1.0 / rate
+
+    @cached_property
+    def _gate(self) -> threading.Lock:
+        self._next_slot = 0.0
+        return threading.Lock()
 
     @abstractmethod
     def discover(self, result: ProviderResult) -> None:

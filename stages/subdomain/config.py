@@ -4,7 +4,7 @@ from pydantic import Field
 
 from shared.definitions.wordlists import WordlistKind
 from shared.enums.scan import Intensity
-from stages.config import StageConfig, threads, timeout, wordlist
+from stages.config import StageConfig, wordlist
 from stages.subdomain.providers import PASSIVE_PROVIDERS
 
 PASSIVE_TOOLS: tuple[str, ...] = tuple(
@@ -24,10 +24,15 @@ _TOOL_TIMEOUTS = {
 }
 
 
+def tool_timeout(intensity: str) -> int:
+    """Seconds a passive source may run under this intensity."""
+    return _TOOL_TIMEOUTS.get(intensity, _TOOL_TIMEOUTS[Intensity.NORMAL.value])
+
+
 class SubdomainConfig(StageConfig):
     enabled: bool = Field(
         default=True,
-        title="Enabled",
+        title="Subdomain discovery",
         description="Enumerate subdomains from passive sources, certificates, wordlists and permutations.",
     )
     passive_tools: list[str] = Field(
@@ -68,49 +73,14 @@ class SubdomainConfig(StageConfig):
         title="Permute discovered names",
         description="Resolve variants of discovered names, such as api-dev and api2.",
     )
-    permutation_seeds: int = Field(
-        default=250,
-        ge=1,
-        le=10_000,
-        title="Names to permute",
-        description="Discovered names to build variants from.",
-    )
-    permutation_limit: int = Field(
-        default=20_000,
-        ge=100,
-        le=500_000,
-        title="Variants to resolve",
-        description="Cap on generated variants.",
-    )
-    dns_threads: int = threads(30, title="Resolver threads")
-    dns_batch_size: int = Field(
-        default=1000,
-        ge=100,
-        le=20000,
-        title="Resolver batch size",
-        description="Names sent to the resolver per invocation.",
-    )
-    dns_batch_concurrency: int = Field(
-        default=1,
-        ge=1,
-        le=8,
-        title="Resolver batches in parallel",
-        description="Resolver invocations in flight at once. Above 1 only with dedicated resolvers.",
-    )
-    dns_idle_timeout: int = timeout(
-        90,
-        title="Resolver stall timeout",
-        description="Abandon a resolver batch after this many seconds with no answer.",
-    )
-    dns_retry_silent: bool = Field(
-        default=True,
-        title="Re-query unanswered names",
-        description="Ask the resolver a second time for names that returned nothing.",
-    )
 
     @property
     def enabled_sources(self) -> list[str]:
         return [tool for tool in self.passive_tools if tool in PASSIVE_PROVIDERS]
 
-    def tool_timeout(self, intensity: str) -> int:
-        return _TOOL_TIMEOUTS.get(intensity, _TOOL_TIMEOUTS[Intensity.NORMAL.value])
+
+PERMUTATION_SEEDS = 250
+PERMUTATION_LIMIT = 20_000
+DNS_BATCH_SIZE = 1000
+DNS_BATCH_CONCURRENCY = 1
+DNS_IDLE_TIMEOUT = 90

@@ -5,16 +5,22 @@ from dataclasses import dataclass, field
 
 from sqlalchemy import select, text
 
+from shared.definitions.intensity import TransportTool
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.enums.subdomain import SubdomainSource
 from shared.logging import get_logger
 from shared.models.subdomain import Subdomain
 from shared.services.ip_asn import ranges_ready
 from shared.services.ip_inventory import collect_ips
-from shared.services.scope_filter import ip_excluded
+from shared.services.scope_filter import ip_excluded, matches_any
 from shared.utils.datetime import utc_now
 from stages.base import DOMAIN_TARGETS, Stage, StageResult
-from stages.netblock_sweep.config import NetblockSweepConfig
+from stages.netblock_sweep.config import (
+    MAX_ASN_ADDRESSES,
+    MIN_ADDRESSES,
+    MIN_SHARE,
+    NetblockSweepConfig,
+)
 from stages.subdomain.parser import in_scope, normalize_host, passes_included
 from tools.dnsx.client import DnsxClient, DnsxError
 from tools.dnsx.parser import parse_dnsx_jsonl
@@ -65,6 +71,8 @@ class NetblockSweepStage(Stage):
     produces = frozenset({AssetKind.HOSTS.value})
     applies_to = DOMAIN_TARGETS
     tools = ("dnsx",)
+    transport_tool = TransportTool.DNSX.value
+    thread_weight = 5 / 3
     touches_target = False
     config_model = NetblockSweepConfig
 
@@ -83,7 +91,7 @@ class NetblockSweepStage(Stage):
         if not ips:
             return StageResult(counts={"hosts": 0})
 
-        owned, rejected = self._owned_networks(ips, cfg)
+        owned, rejected = self._owned_networks(ips)
         if not owned:
             note = (
                 f"No network attributed. {rejected} candidate networks were too "
@@ -100,7 +108,7 @@ class NetblockSweepStage(Stage):
         label = ", ".join(f"AS{n.asn}" for n in owned)
         self.emit_progress(f"sweeping {len(addresses):,} addresses in {label}")
 
-        names, note = self._sweep(addresses, cfg)
+        names, note = self._sweep(addresses)
         in_scope_names, foreign = self._scope(names)
         added = self._persist(in_scope_names)
 
@@ -131,16 +139,14 @@ class NetblockSweepStage(Stage):
             partial=bool(note) or truncated,
         )
 
-    def _owned_networks(
-        self, ips: list[str], cfg: NetblockSweepConfig
-    ) -> tuple[list[Network], int]:
+    def _owned_networks(self, ips: list[str]) -> tuple[list[Network], int]:
         """ASNs meeting the share and size thresholds."""
         rows = self.session.execute(_ASN_SQL, {"ips": ips}).all()
         client = RIPEStatClient()
         owned: list[Network] = []
         rejected = 0
         for asn, as_name, hosts in rows:
-            if hosts < cfg.min_addresses or hosts * 100 < len(ips) * cfg.min_share:
+            if hosts < MIN_ADDRESSES or hosts * 100 < len(ips) * MIN_SHARE:
                 continue
             self._check_abort()
             net = Network(asn=int(asn), name=as_name or "", hosts=int(hosts))
@@ -159,7 +165,7 @@ class NetblockSweepStage(Stage):
                     continue
                 net.prefixes.append(str(block))
                 net.addresses += block.num_addresses
-            if not net.prefixes or net.addresses > cfg.max_asn_addresses:
+            if not net.prefixes or net.addresses > MAX_ASN_ADDRESSES:
                 rejected += 1
                 continue
             owned.append(net)
@@ -184,11 +190,11 @@ class NetblockSweepStage(Stage):
                         return out, True
         return out, False
 
-    def _client(self, cfg: NetblockSweepConfig, count: int) -> DnsxClient | None:
+    def _client(self, count: int) -> DnsxClient | None:
         try:
             return DnsxClient(
                 timeout=max(_MIN_BUDGET, count // _FLOOR_RATE),
-                threads=cfg.dns_threads,
+                threads=self.transport.threads,
                 recorder=self.ctx.recorder,
                 extra_args=self.ctx.resolved.tool_args("dnsx"),
             )
@@ -196,11 +202,9 @@ class NetblockSweepStage(Stage):
             logger.warning("dnsx unavailable, skipping netblock sweep")
             return None
 
-    def _sweep(
-        self, addresses: list[str], cfg: NetblockSweepConfig
-    ) -> tuple[dict[str, str], str | None]:
+    def _sweep(self, addresses: list[str]) -> tuple[dict[str, str], str | None]:
         """PTR across the range, then forward-confirm each name resolves back into it."""
-        client = self._client(cfg, len(addresses))
+        client = self._client(len(addresses))
         if client is None:
             return {}, f"dnsx unavailable. {len(addresses):,} addresses were not swept."
 
@@ -218,15 +222,13 @@ class NetblockSweepStage(Stage):
             note = f"dnsx {kind}. {len(addresses):,} addresses were only partly swept."
 
         if found:
-            confirmed = self._forward_confirm(list(found), set(addresses), cfg)
+            confirmed = self._forward_confirm(list(found), set(addresses))
             found = {name: ip for name, ip in found.items() if name in confirmed}
         return found, note
 
-    def _forward_confirm(
-        self, names: list[str], swept: set[str], cfg: NetblockSweepConfig
-    ) -> set[str]:
+    def _forward_confirm(self, names: list[str], swept: set[str]) -> set[str]:
         """Names whose forward record points back into the swept range."""
-        client = self._client(cfg, len(names))
+        client = self._client(len(names))
         if client is None:
             return set(names)
         result = client.query(names, record_types=["a"])
@@ -268,6 +270,7 @@ class NetblockSweepStage(Stage):
         source = SubdomainSource.NETBLOCK.value
         now = utc_now()
         added = 0
+        excluded = self.ctx.resolved.excluded_subdomains or []
         for name, ip in sorted(names.items()):
             row = existing.get(name)
             if row is not None:
@@ -284,6 +287,7 @@ class NetblockSweepStage(Stage):
                     sources=[source],
                     resolved_ips=[ip],
                     is_active=True,
+                    is_excluded=matches_any(name, excluded),
                     discovered_at=now,
                 )
             )

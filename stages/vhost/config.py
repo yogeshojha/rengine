@@ -3,7 +3,7 @@ from __future__ import annotations
 from pydantic import Field
 
 from shared.definitions.wordlists import WordlistKind
-from stages.config import StageConfig, rate, threads, wordlist
+from stages.config import StageConfig, wordlist
 
 
 class VhostConfig(StageConfig):
@@ -17,5 +17,3 @@ class VhostConfig(StageConfig):
         title="Wordlist",
         description="List of host names to try. Custom lists are uploaded in the Arsenal.",
     )
-    threads: int = threads(30, title="Threads")
-    rate: int = rate(150, tool="ffuf", title="Requests/s")
