@@ -47,6 +47,11 @@ export const ESTATE_REASON_FILL: Record<string, string> = {
 	[EstateReason.ADDRESS]: 'var(--chart-5)'
 };
 
+export const ESTATE_STRENGTH_LABELS: Record<string, string> = {
+	[EstateStrength.DIRECT]: 'Direct',
+	[EstateStrength.SHARED]: 'Shared'
+};
+
 export const PROVIDER_KIND_LABELS: Record<string, string> = {
 	[ProviderKind.EDGE]: 'edge',
 	[ProviderKind.HOSTING]: 'hosting',

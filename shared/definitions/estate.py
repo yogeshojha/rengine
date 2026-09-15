@@ -46,6 +46,11 @@ ESTATE_REASON_ORDER: tuple[str, ...] = (
     EstateReason.ADDRESS.value,
 )
 
+ESTATE_STRENGTH_LABELS: dict[str, str] = {
+    EstateStrength.DIRECT.value: "Direct",
+    EstateStrength.SHARED.value: "Shared",
+}
+
 PROVIDER_KIND_LABELS: dict[str, str] = {
     ProviderKind.EDGE.value: "edge",
     ProviderKind.HOSTING.value: "hosting",

@@ -5,7 +5,7 @@
 	import { targetsApi } from '$lib/api/targets';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { ROUTES } from '$lib/config/routes';
-	import { PROVIDER_KIND_LABELS } from '$lib/config/estate';
+	import { ESTATE_STRENGTH_LABELS, EstateStrength, PROVIDER_KIND_LABELS } from '$lib/config/estate';
 	import type { EstateDomain, EstateNeighbourCert, EstateProvider } from '$lib/types/estate';
 
 	interface Props {
@@ -83,7 +83,7 @@
 				key: d.domain,
 				primary: d.domain,
 				secondary: `${evidence(d)}${sources}`,
-				meta: d.strength ? `${d.strength} direct` : 'shared',
+				meta: ESTATE_STRENGTH_LABELS[d.strength ? EstateStrength.DIRECT : EstateStrength.SHARED],
 				group: tracked ? 'Targets' : 'Not a target',
 				href: tracked ? ROUTES.target(d.target_id!) : undefined,
 				action: tracked
