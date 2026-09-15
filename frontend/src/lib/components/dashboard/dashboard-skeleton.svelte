@@ -24,19 +24,6 @@
 {/snippet}
 
 <div class="flex flex-col gap-4" aria-busy="true">
-	<div
-		class="grid grid-cols-2 overflow-hidden rounded-xl border bg-card md:grid-cols-4 xl:grid-cols-7"
-	>
-		{#each Array(7) as _, i (i)}
-			<div class="-mr-px -mb-px flex min-w-0 flex-col gap-1 border-r border-b px-4 py-3">
-				<Skeleton class="h-3 w-16" />
-				<Skeleton class="h-6 w-12" />
-				<Skeleton class="h-4 w-20" />
-				<Skeleton class="mt-1 h-5 w-full" />
-			</div>
-		{/each}
-	</div>
-
 	<div class="grid grid-cols-12 overflow-hidden rounded-xl border bg-card">
 		{#if show('funnel')}{@render cell('funnel', 'col-span-12 xl:col-span-8')}{/if}
 		{#if show('geo')}{@render cell('geo', 'col-span-12 lg:col-span-6 xl:col-span-4')}{/if}

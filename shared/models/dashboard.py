@@ -218,33 +218,9 @@ class DashboardFunnel(BaseModel):
     steps: list[DashboardFunnelStep] = Field(default_factory=list)
 
 
-class DashboardTargetSurface(BaseModel):
-    key: str
-    covered: bool = False
-    value: int | None = None
-    previous: int | None = None
-    delta: int | None = None
-    scan_id: uuid.UUID | None = None
-    scan_status: str | None = None
-    observed_at: datetime | None = None
-
-
 class DashboardTargetRow(BaseModel):
     id: uuid.UUID
     value: str
-    type: str
-    scans_total: int = 0
-    last_scan_id: uuid.UUID | None = None
-    last_scan_status: str | None = None
-    last_scan_at: datetime | None = None
-    surface: list[DashboardTargetSurface] = Field(default_factory=list)
-    findings: int = 0
-    actionable: int = 0
-    kev: int = 0
-    worst_severity: str | None = None
-    risk_scan_id: uuid.UUID | None = None
-    sensitive_services: int = 0
-    services_scan_id: uuid.UUID | None = None
     monitored: bool = False
 
 

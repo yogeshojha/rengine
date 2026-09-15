@@ -259,33 +259,9 @@ export interface DashboardDay {
 	findings: Record<string, number>;
 }
 
-export interface DashboardTargetSurface {
-	key: string;
-	covered: boolean;
-	value: number | null;
-	previous: number | null;
-	delta: number | null;
-	scan_id: string | null;
-	scan_status: ScanStatus | null;
-	observed_at: string | null;
-}
-
 export interface DashboardTargetRow {
 	id: string;
 	value: string;
-	type: string;
-	scans_total: number;
-	last_scan_id: string | null;
-	last_scan_status: ScanStatus | null;
-	last_scan_at: string | null;
-	surface: DashboardTargetSurface[];
-	findings: number;
-	actionable: number;
-	kev: number;
-	worst_severity: string | null;
-	risk_scan_id: string | null;
-	sensitive_services: number;
-	services_scan_id: string | null;
 	monitored: boolean;
 }
 

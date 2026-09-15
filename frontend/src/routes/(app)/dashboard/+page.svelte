@@ -20,7 +20,6 @@
 	import ScheduleModal from '$lib/components/schedules/schedule-modal.svelte';
 	import FirstRunPanel from '$lib/components/dashboard/first-run/first-run-panel.svelte';
 	import Launcher from '$lib/components/dashboard/first-run/launcher.svelte';
-	import CountsStrip from '$lib/components/dashboard/counts-strip.svelte';
 	import FunnelCell from '$lib/components/dashboard/funnel-cell.svelte';
 	import InventoryCell from '$lib/components/dashboard/inventory-cell.svelte';
 	import ChangesCell from '$lib/components/dashboard/changes-cell.svelte';
@@ -238,8 +237,6 @@
 			</div>
 		</Card.Root>
 	{:else if overview}
-		<CountsStrip {overview} window={win} onScan={scanTargets} />
-
 		{#if notLoaded.length}
 			<div
 				class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-dashed px-4 py-2.5 text-sm text-muted-foreground"

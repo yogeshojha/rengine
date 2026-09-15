@@ -100,7 +100,6 @@ from shared.models.dashboard import (
     DashboardSurfaceMetric,
     DashboardTargetCount,
     DashboardTargetRow,
-    DashboardTargetSurface,
     ExpiringTarget,
     FailedRun,
     StaleTarget,
@@ -290,7 +289,6 @@ class DashboardOverviewService:
 
         risk_ids = list(latest_cover[VULNS].values())
         out.risk = await self._risk(risk_ids, firsts, baselines, in_window, cutoff)
-        risk_by_target = await self._risk_by_target(risk_ids)
 
         service_ids = list(latest_cover[SERVICES].values())
         sensitive = await self._sensitive(service_ids)
@@ -321,16 +319,12 @@ class DashboardOverviewService:
             retired,
             severity_firsts,
         )
-        out.targets = self._target_rows(
-            targets,
-            runs_by_target,
-            counts,
-            covered,
-            risk_by_target,
-            sensitive,
-            latest_cover,
-            monitored,
-        )
+        out.targets = [
+            DashboardTargetRow(
+                id=t.id, value=t.target_value, monitored=t.id in monitored
+            )
+            for t in targets
+        ]
         return out
 
     async def discovery(self, project_id: UUID) -> DashboardDiscovery:
@@ -807,31 +801,6 @@ class DashboardOverviewService:
                     replays=int(replays or 0),
                 )
             )
-        return out
-
-    async def _risk_by_target(
-        self, risk_ids: list[UUID]
-    ) -> dict[UUID, tuple[int, int, int, str | None]]:
-        """Per target: findings, actionable, KEV and the worst severity, from its risk scan."""
-        if not risk_ids:
-            return {}
-        rank = _severity_rank()
-        rows = await self.session.execute(
-            select(
-                Vulnerability.target_id,
-                func.count(),
-                func.count().filter(Vulnerability.severity.in_(ACTIONABLE_SEVERITIES)),
-                func.count().filter(Vulnerability.is_kev.is_(True)),
-                func.min(rank),
-            )
-            .where(Vulnerability.scan_id.in_(risk_ids), not_(_suppressed()))
-            .group_by(Vulnerability.target_id)
-        )
-        out = {}
-        for tid, total, actionable, kev, worst in rows.all():
-            index = int(worst) if worst is not None else len(SEVERITY_ORDER)
-            worst_name = SEVERITY_ORDER[index] if index < len(SEVERITY_ORDER) else None
-            out[tid] = (int(total), int(actionable), int(kev), worst_name)
         return out
 
     async def _sensitive(self, service_ids: list[UUID]) -> dict[UUID, int]:
@@ -1396,57 +1365,6 @@ class DashboardOverviewService:
             n_resolved += int(row[0] or 0)
             n_live += int(row[1] or 0)
         return n_resolved, n_live
-
-    def _target_rows(
-        self,
-        targets: list[Target],
-        runs_by_target: dict[UUID, list[Scan]],
-        counts: Counts,
-        covered: Covered,
-        risk_by_target: dict[UUID, tuple[int, int, int, str | None]],
-        sensitive: dict[UUID, int],
-        latest_cover: dict[str, dict[UUID, UUID]],
-        monitored: set[UUID],
-    ) -> list[DashboardTargetRow]:
-        out = []
-        for t in targets:
-            runs = runs_by_target.get(t.id, [])
-            row = DashboardTargetRow(
-                id=t.id,
-                value=t.target_value,
-                type=t.target_type.value,
-                scans_total=len(runs),
-                monitored=t.id in monitored,
-            )
-            by_id = {r.id: r for r in runs}
-            if runs:
-                row.last_scan_id = runs[0].id
-                row.last_scan_status = runs[0].status
-                row.last_scan_at = _started(runs[0])
-            for key in SURFACE_ORDER:
-                metric = DashboardTargetSurface(key=key)
-                ids = covered[key].get(t.id, [])[:2]
-                if ids:
-                    scan = by_id[ids[0]]
-                    metric.covered = True
-                    metric.value = counts[key].get(scan.id, (0, None))[0]
-                    metric.scan_id = scan.id
-                    metric.scan_status = scan.status
-                    metric.observed_at = _started(scan)
-                    if len(ids) > 1:
-                        metric.previous = counts[key].get(ids[1], (0, None))[0]
-                        metric.delta = metric.value - metric.previous
-                row.surface.append(metric)
-            risk = risk_by_target.get(t.id)
-            if risk:
-                row.findings, row.actionable, row.kev, row.worst_severity = risk
-            row.risk_scan_id = latest_cover[VULNS].get(t.id)
-            services_scan = latest_cover[SERVICES].get(t.id)
-            row.services_scan_id = services_scan
-            if services_scan:
-                row.sensitive_services = sensitive.get(services_scan, 0)
-            out.append(row)
-        return out
 
 
 def _stale_row(target: Target, last: datetime | None) -> StaleTarget:
