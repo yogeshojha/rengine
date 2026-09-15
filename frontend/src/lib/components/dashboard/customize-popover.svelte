@@ -7,11 +7,9 @@
 	import {
 		DASHBOARD_ROW_LABELS,
 		DASHBOARD_ROWS,
-		DASHBOARD_WIDGETS,
-		widgetDefaultOn
+		DASHBOARD_WIDGETS
 	} from '$lib/config/dashboard-widgets';
 	import { dashboardLayout } from '$lib/stores/dashboard-layout.svelte';
-	import { MODE_LABELS } from '$lib/config/capabilities';
 
 	let open = $state(false);
 	let rows = $derived(
@@ -41,12 +39,7 @@
 					</span>
 					{#each r.widgets as w (w.id)}
 						<label class="flex cursor-pointer items-center justify-between gap-3 py-1 text-sm">
-							<span class="flex min-w-0 items-center gap-2">
-								<span class="truncate">{w.label}</span>
-								{#if !widgetDefaultOn(w, dashboardLayout.mode)}
-									<span class="text-2xs text-muted-foreground">off by default</span>
-								{/if}
-							</span>
+							<span class="min-w-0 truncate">{w.label}</span>
 							<Switch
 								checked={dashboardLayout.visible(w.id)}
 								onCheckedChange={(v) =>
@@ -58,8 +51,7 @@
 				{/each}
 			</div>
 		</ScrollArea>
-		<div class="flex items-center justify-between border-t px-3 py-2 text-xs text-muted-foreground">
-			<span>{MODE_LABELS[dashboardLayout.mode]} layout</span>
+		<div class="flex items-center justify-end border-t px-3 py-2 text-xs text-muted-foreground">
 			<Button
 				variant="ghost"
 				size="sm"
