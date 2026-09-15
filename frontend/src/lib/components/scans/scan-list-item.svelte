@@ -22,6 +22,7 @@
 	import ScanStatusBadge from '@/components/scan-status-badge.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
 	import { stopProp } from '$lib/utilities';
+	import { clipped } from '$lib/utilities/clipped';
 	import { SCHEDULE_TYPE_BADGE, type ScheduleType } from '$lib/types/scan-schedule';
 	import { isLiveStatus, durationLabel, scanCountPills } from '$lib/utilities/scan-status';
 	import { STAGE_STEP_CLASS, plannedStages, stageProgress } from '$lib/utilities/scan-progress';
@@ -58,6 +59,9 @@
 		onResume,
 		onDelete
 	}: Props = $props();
+
+	let errorClipped = $state(false);
+	let engineClipped = $state(false);
 
 	let live = $derived(isLiveStatus(scan.status));
 	let paused = $derived(scan.status === 'paused');
@@ -155,15 +159,22 @@
 
 			{#if failedOrCancelled}
 				{#if scan.error}
-					<Tooltip.Root>
-						<Tooltip.Trigger
-							class="inline-flex max-w-[200px] shrink-0 items-center gap-0.5 rounded border border-destructive/30 px-1 font-medium text-destructive"
-						>
-							<TriangleAlert class="h-3 w-3 shrink-0" />
-							<span class="truncate">{scan.error}</span>
-						</Tooltip.Trigger>
-						<Tooltip.Content>{scan.error}</Tooltip.Content>
-					</Tooltip.Root>
+					<Hint text={errorClipped ? scan.error : null}>
+						{#snippet child(props)}
+							<span
+								{...props}
+								class="inline-flex max-w-[200px] shrink-0 items-center gap-0.5 rounded border border-destructive/30 px-1 font-medium text-destructive"
+							>
+								<TriangleAlert class="h-3 w-3 shrink-0" />
+								<span
+									class="truncate"
+									use:clipped={{ value: scan.error, onChange: (v) => (errorClipped = v) }}
+								>
+									{scan.error}
+								</span>
+							</span>
+						{/snippet}
+					</Hint>
 				{/if}
 			{:else if completed}
 				{#if isFirst}
@@ -228,9 +239,15 @@
 
 	{#if !targetId}
 		<div class="hidden w-[150px] shrink-0 lg:block">
-			<Hint text={scan.engine_name}>
+			<Hint text={engineClipped ? scan.engine_name : null}>
 				{#snippet child(props)}
-					<div {...props} class="truncate text-sm">{scan.engine_name}</div>
+					<div
+						{...props}
+						class="truncate text-sm"
+						use:clipped={{ value: scan.engine_name, onChange: (v) => (engineClipped = v) }}
+					>
+						{scan.engine_name}
+					</div>
 				{/snippet}
 			</Hint>
 			<div class="mt-0.5 truncate text-xs text-muted-foreground">
