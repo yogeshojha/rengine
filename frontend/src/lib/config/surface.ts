@@ -4,6 +4,7 @@ import ServerCog from '@lucide/svelte/icons/server-cog';
 import Network from '@lucide/svelte/icons/network';
 import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 import Package from '@lucide/svelte/icons/package';
+import KeyRound from '@lucide/svelte/icons/key-round';
 import type { IconComponent } from './icons';
 import type { ScanRead } from '$lib/types/scan';
 
@@ -13,7 +14,8 @@ export enum SurfaceDimension {
 	SERVICES = 'services',
 	IPS = 'ips',
 	VULNERABILITIES = 'vulnerabilities',
-	SOFTWARE = 'software'
+	SOFTWARE = 'software',
+	SECRETS = 'secrets'
 }
 
 export const RESULT_TABS = [
@@ -22,7 +24,8 @@ export const RESULT_TABS = [
 	'services',
 	'ips',
 	'vulnerabilities',
-	'software'
+	'software',
+	'secrets'
 ] as const;
 export type ResultTab = (typeof RESULT_TABS)[number];
 
@@ -104,6 +107,17 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		queryParam: 'sw_q',
 		kinds: ['http_assets', 'ports'],
 		countColumns: []
+	},
+	[SurfaceDimension.SECRETS]: {
+		key: SurfaceDimension.SECRETS,
+		label: 'Secrets',
+		noun: 'secret',
+		nounPlural: 'secrets',
+		icon: KeyRound,
+		tab: 'secrets',
+		queryParam: 'sec_q',
+		kinds: ['secrets'],
+		countColumns: ['secrets_found']
 	}
 };
 
@@ -112,6 +126,7 @@ export const FINDINGS_ROOT = SurfaceDimension.VULNERABILITIES;
 export const FINDINGS_TABS = [
 	{ key: SurfaceDimension.VULNERABILITIES, label: 'Findings' },
 	{ key: SurfaceDimension.SOFTWARE, label: SURFACE[SurfaceDimension.SOFTWARE].label },
+	{ key: SurfaceDimension.SECRETS, label: 'Secrets' },
 	{ key: 'cve', label: 'CVEs' }
 ] as const;
 export type FindingsTab = (typeof FINDINGS_TABS)[number]['key'];
@@ -122,11 +137,15 @@ export const SURFACE_ORDER: SurfaceSpec[] = [
 	SURFACE[SurfaceDimension.SERVICES],
 	SURFACE[SurfaceDimension.IPS],
 	SURFACE[SurfaceDimension.VULNERABILITIES],
-	SURFACE[SurfaceDimension.SOFTWARE]
+	SURFACE[SurfaceDimension.SOFTWARE],
+	SURFACE[SurfaceDimension.SECRETS]
 ];
 
 export const ASSET_DIMENSIONS: SurfaceSpec[] = SURFACE_ORDER.filter(
-	(spec) => spec.key !== SurfaceDimension.VULNERABILITIES && spec.key !== SurfaceDimension.SOFTWARE
+	(spec) =>
+		spec.key !== SurfaceDimension.VULNERABILITIES &&
+		spec.key !== SurfaceDimension.SOFTWARE &&
+		spec.key !== SurfaceDimension.SECRETS
 );
 
 export function surfaceSpec(key: string): SurfaceSpec | undefined {

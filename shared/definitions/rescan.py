@@ -28,6 +28,7 @@ DIMENSION_SEED: dict[str, str] = {
     SurfaceDimension.SERVICES.value: SeedKind.ADDRESS.value,
     SurfaceDimension.IPS.value: SeedKind.ADDRESS.value,
     SurfaceDimension.VULNERABILITIES.value: SeedKind.HOST.value,
+    SurfaceDimension.SECRETS.value: SeedKind.HOST.value,
 }
 
 DIMENSION_STAGES: dict[str, tuple[str, ...]] = {
@@ -36,6 +37,7 @@ DIMENSION_STAGES: dict[str, tuple[str, ...]] = {
     SurfaceDimension.SERVICES.value: ("port_scan",),
     SurfaceDimension.IPS.value: ("port_scan",),
     SurfaceDimension.VULNERABILITIES.value: ("http_probe", "vulnerability_scan"),
+    SurfaceDimension.SECRETS.value: ("http_probe", "secret_mining"),
 }
 
 RESCANNABLE_STAGES: frozenset[str] = frozenset(
@@ -44,6 +46,7 @@ RESCANNABLE_STAGES: frozenset[str] = frozenset(
         "port_scan",
         "url_discovery",
         "vulnerability_scan",
+        "secret_mining",
         "screenshot",
         "vhost",
     }

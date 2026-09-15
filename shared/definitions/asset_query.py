@@ -24,6 +24,18 @@ from shared.definitions.ports import (
     PORT_SOURCE_LABELS,
     SERVICE_CLASS_LABELS,
 )
+from shared.definitions.secrets import (
+    DETECTOR_KEYS as SECRET_DETECTOR_KEYS,
+)
+from shared.definitions.secrets import (
+    GROUP_ORDER as SECRET_GROUP_KEYS,
+)
+from shared.definitions.secrets import (
+    STATE_ORDER as SECRET_STATE_KEYS,
+)
+from shared.definitions.secrets import (
+    SecretSource as _SecretSource,
+)
 from shared.definitions.software import (
     CAVEAT_ORDER as CAVEAT_KEYS,
 )
@@ -41,6 +53,8 @@ from shared.definitions.vulnerabilities import (
     SEVERITY_ORDER,
     VULN_STATES,
 )
+
+SECRET_SOURCE_KEYS: tuple[str, ...] = tuple(v.value for v in _SecretSource)
 
 MAX_QUERY_LENGTH = 2000
 MAX_QUERY_NODES = 40
@@ -3043,4 +3057,215 @@ SOFTWARE_QUERY = QueryRegistry(
     dimensions=SOFTWARE_GROUP_DIMENSIONS,
     examples=SOFTWARE_EXAMPLES,
     example_groups=SOFTWARE_EXAMPLE_GROUPS,
+)
+
+
+# ---------- secrets ----------
+
+SECRET_GROUPS: tuple[str, ...] = (
+    "Secret",
+    "State",
+    "Asset",
+    "Flags",
+)
+
+SECRET_FLAGS: dict[str, str] = {
+    "new": "Not read by an earlier scan of this target",
+    "exposed": "A private value readable in a stored response",
+    "public": "A value meant to be in the page",
+    "expired": "A token whose expiry is in the past",
+    "secret": "A private value, not a public identifier",
+    "shared": "Read on more than one host",
+}
+
+SECRET_FIELDS: tuple[QueryField, ...] = (
+    QueryField(
+        name="secret",
+        type=FieldType.ENUM,
+        group="Secret",
+        description="Kind of value the detector matched.",
+        example="secret:aws_access_key",
+        aliases=("kind",),
+        values=SECRET_DETECTOR_KEYS,
+        facet="kind",
+    ),
+    QueryField(
+        name="group",
+        type=FieldType.ENUM,
+        group="Secret",
+        description="Family the detector belongs to.",
+        example="group:cloud",
+        values=SECRET_GROUP_KEYS,
+        facet="group",
+    ),
+    QueryField(
+        name="vendor",
+        type=FieldType.STRING,
+        group="Secret",
+        description="Provider the value belongs to.",
+        example="vendor:stripe",
+        facet="vendor",
+    ),
+    QueryField(
+        name="subject",
+        type=FieldType.STRING,
+        group="Secret",
+        description="Who or what the value names, such as an email domain or DSN host.",
+        example="subject:acme.com",
+        free_text=True,
+        evidence="subject",
+        facet="subject",
+    ),
+    QueryField(
+        name="fingerprint",
+        type=FieldType.STRING,
+        group="Secret",
+        description="Identity of one value across scans and targets.",
+        example="fingerprint=3a9f…",
+    ),
+    QueryField(
+        name="state",
+        type=FieldType.ENUM,
+        group="State",
+        description="Whether the value is exposed, public by design or expired.",
+        example="state:exposed",
+        values=SECRET_STATE_KEYS,
+        facet="state",
+    ),
+    QueryField(
+        name="source",
+        type=FieldType.ENUM,
+        group="State",
+        description="Where in the response it was read.",
+        example="source:body",
+        values=SECRET_SOURCE_KEYS,
+        facet="source",
+    ),
+    QueryField(
+        name="target",
+        type=FieldType.STRING,
+        group="Asset",
+        description="Target the value belongs to.",
+        example="target:example.com",
+    ),
+    QueryField(
+        name="host",
+        type=FieldType.STRING,
+        group="Asset",
+        description="Hostname the value was read on.",
+        example="host:www.example.com",
+        free_text=True,
+        evidence="host",
+    ),
+    QueryField(
+        name="url",
+        type=FieldType.STRING,
+        group="Asset",
+        description="URL the value was read from.",
+        example="url:/config.json",
+        free_text=True,
+        evidence="url",
+    ),
+    QueryField(
+        name="seen",
+        type=FieldType.DATE,
+        group="Asset",
+        description="When this scan read it.",
+        example="seen:<24h",
+        aliases=("discovered", "age"),
+    ),
+    QueryField(
+        name="is",
+        type=FieldType.FLAG,
+        group="Flags",
+        description="Property of the value.",
+        example="is:exposed",
+        aliases=("has",),
+        values=tuple(SECRET_FLAGS),
+    ),
+)
+
+SECRET_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
+    GroupDimension(
+        key="value",
+        label="Value",
+        description="One row per distinct value, however many places carry it",
+    ),
+    GroupDimension(
+        key="target", label="Target", description="Values belonging to the same target"
+    ),
+    GroupDimension(key="secret", label="Kind", description="Values of the same kind"),
+    GroupDimension(
+        key="group", label="Family", description="Values in the same family"
+    ),
+    GroupDimension(
+        key="vendor", label="Provider", description="Values from the same provider"
+    ),
+    GroupDimension(key="state", label="State", description="Values in the same state"),
+    GroupDimension(key="host", label="Host", description="Values read on one host"),
+    GroupDimension(
+        key="subject",
+        label="Subject",
+        description="Values naming the same subject",
+    ),
+)
+
+SECRET_EXAMPLE_GROUPS: tuple[str, ...] = (
+    "Priority",
+    "Change",
+    "Kind",
+    "Contacts",
+)
+
+SECRET_EXAMPLES: tuple[QueryExample, ...] = (
+    QueryExample(
+        query="is:exposed",
+        description="Private values readable in a response",
+        group="Priority",
+        generic=True,
+    ),
+    QueryExample(
+        query="group:cloud and is:exposed",
+        description="Exposed cloud provider credentials",
+        group="Priority",
+    ),
+    QueryExample(
+        query="is:exposed and is:new",
+        description="Exposed values absent from the previous scan",
+        group="Change",
+    ),
+    QueryExample(
+        query="secret:jwt and is:expired",
+        description="Expired JSON web tokens",
+        group="Kind",
+    ),
+    QueryExample(
+        query="secret:aws_access_key",
+        description="AWS access keys",
+        group="Kind",
+        generic=True,
+    ),
+    QueryExample(
+        query="secret:email",
+        description="Email addresses printed in responses",
+        group="Contacts",
+        generic=True,
+    ),
+    QueryExample(
+        query="secret:email and subject:example.com",
+        description="Addresses on one email domain",
+        group="Contacts",
+    ),
+)
+
+SECRET_QUERY = QueryRegistry(
+    key="secrets",
+    noun=SURFACE_NOUN[SurfaceDimension.SECRETS.value][0],
+    noun_plural=SURFACE_NOUN[SurfaceDimension.SECRETS.value][1],
+    fields=SECRET_FIELDS,
+    flags=SECRET_FLAGS,
+    groups=SECRET_GROUPS,
+    dimensions=SECRET_GROUP_DIMENSIONS,
+    examples=SECRET_EXAMPLES,
+    example_groups=SECRET_EXAMPLE_GROUPS,
 )

@@ -11,6 +11,7 @@
 	import IpsTable from '$lib/components/scans/results/ips-table.svelte';
 	import VulnerabilitiesTable from '$lib/components/scans/results/vulnerabilities-table.svelte';
 	import SoftwareTable from '$lib/components/scans/results/software-table.svelte';
+	import SecretsTable from '$lib/components/scans/results/secrets-table.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { surfaceStore } from '$lib/stores/surface.svelte';
 	import {
@@ -79,6 +80,8 @@
 				<IpsTable scanId="" projectWide {projectId} />
 			{:else if spec.key === SurfaceDimension.VULNERABILITIES}
 				<VulnerabilitiesTable scanId="" projectWide />
+			{:else if spec.key === SurfaceDimension.SECRETS}
+				<SecretsTable scanId="" projectWide {projectId} />
 			{:else}
 				<SoftwareTable scanId="" projectWide {projectId} />
 			{/if}

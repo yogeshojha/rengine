@@ -7,6 +7,7 @@ from .groups import (
     build_endpoint_groups,
     build_groups,
     build_ip_groups,
+    build_secret_groups,
     build_service_groups,
     build_vuln_groups,
 )
@@ -19,6 +20,8 @@ from .predicates import (
     endpoint_source,
     endpoint_status_class,
     resolved,
+    secret_has_baseline,
+    secret_is_new,
     service_has_baseline,
     service_is_new,
     software_has_baseline,
@@ -33,6 +36,7 @@ from .predicates import (
 )
 from .schema import build_schema
 from .scope import QueryScope, ScopeLike, scan_filter, scope_of
+from .secret_compiler import SecretQueryContext, compile_secret_query
 from .service_compiler import ServiceQueryContext, compile_service_query
 from .software_compiler import SoftwareQueryContext, compile_software_query
 from .vuln_compiler import VulnQueryContext, compile_vuln_query
@@ -48,6 +52,7 @@ __all__ = [
     "QueryScope",
     "QuerySyntaxError",
     "ScopeLike",
+    "SecretQueryContext",
     "ServiceQueryContext",
     "SoftwareQueryContext",
     "VulnQueryContext",
@@ -56,12 +61,14 @@ __all__ = [
     "build_ip_groups",
     "build_leads",
     "build_schema",
+    "build_secret_groups",
     "build_service_groups",
     "build_vuln_groups",
     "collect_evidence",
     "compile_endpoint_query",
     "compile_ip_query",
     "compile_query",
+    "compile_secret_query",
     "compile_service_query",
     "compile_software_query",
     "compile_vuln_query",
@@ -75,6 +82,8 @@ __all__ = [
     "resolved",
     "scan_filter",
     "scope_of",
+    "secret_has_baseline",
+    "secret_is_new",
     "service_has_baseline",
     "service_is_new",
     "software_has_baseline",

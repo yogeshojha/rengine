@@ -16,11 +16,18 @@ if TYPE_CHECKING:
 BOUNTY_SYNC = 0x624F0001
 BOUNTY_FEED = 0x624F0002
 IP_RANGES = 0x624E0001
+# secret_mining() spans SECRET_MINING .. SECRET_MINING + 0xFFFF
+SECRET_MINING = 0x53450001
 
 
 def bounty_platform(platform: str) -> int:
     """One lock per platform."""
     return BOUNTY_SYNC + (zlib.crc32(platform.encode()) & 0xFFFF)
+
+
+def secret_mining(scan_id: object) -> int:
+    """One lock per scan: the stage, the backfill and a re-mine never overlap."""
+    return SECRET_MINING + (zlib.crc32(str(scan_id).encode()) & 0xFFFF)
 
 
 @contextmanager

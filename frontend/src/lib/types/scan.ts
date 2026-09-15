@@ -37,7 +37,8 @@ export const SCAN_COUNT_COLUMNS = {
 	open_ports: 'open_ports_found',
 	http_assets: 'http_assets_found',
 	vulnerabilities: 'vulnerabilities_found',
-	endpoints: 'endpoints_found'
+	endpoints: 'endpoints_found',
+	secrets: 'secrets_found'
 } as const satisfies Record<string, keyof ScanRead>;
 
 export const scanFoundNothing = (scan: ScanRead) =>
@@ -155,6 +156,7 @@ export interface ScanRead {
 	http_assets_found: number;
 	vulnerabilities_found: number;
 	endpoints_found: number;
+	secrets_found: number;
 	error: string | null;
 	created_by: string;
 	created_at: string;

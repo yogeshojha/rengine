@@ -73,6 +73,7 @@ class AssetKind(Enum):
     HTTP_ASSETS = "http_assets"
     ENDPOINTS = "endpoints"
     VULNERABILITIES = "vulnerabilities"
+    SECRETS = "secrets"
 
 
 class StageRole(Enum):
@@ -87,6 +88,7 @@ class StageGroup(Enum):
     WEB = "web"
     ENDPOINTS = "endpoints"
     VULNERABILITIES = "vulnerabilities"
+    ANALYSIS = "analysis"
 
 
 class ScanEventKind(Enum):

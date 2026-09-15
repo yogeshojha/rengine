@@ -30,6 +30,8 @@ export const STORAGE_KEYS = {
 	softwareRecentQueries: 'rengine:software:recentQueries',
 	softwareDensity: 'rengine:software:density',
 	softwarePageSize: 'rengine:software:pageSize',
+	secretRecentQueries: 'rengine:secrets:recentQueries',
+	secretPageSize: 'rengine:secrets:pageSize',
 	endpointsColumns: 'rengine:endpoints:columns',
 	endpointsRecentQueries: 'rengine:endpoints:recentQueries',
 	endpointsDensity: 'rengine:endpoints:density',

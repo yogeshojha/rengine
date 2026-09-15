@@ -14,6 +14,7 @@ class SurfaceDimension(StrEnum):
     IPS = "ips"
     VULNERABILITIES = "vulnerabilities"
     SOFTWARE = "software"
+    SECRETS = "secrets"
 
 
 SURFACE_ORDER: tuple[str, ...] = tuple(d.value for d in SurfaceDimension)
@@ -25,6 +26,7 @@ SURFACE_LABELS: dict[str, str] = {
     SurfaceDimension.IPS.value: "IP addresses",
     SurfaceDimension.VULNERABILITIES.value: "Vulnerabilities",
     SurfaceDimension.SOFTWARE.value: "Software",
+    SurfaceDimension.SECRETS.value: "Secrets",
 }
 
 SURFACE_NOUN: dict[str, tuple[str, str]] = {
@@ -34,6 +36,7 @@ SURFACE_NOUN: dict[str, tuple[str, str]] = {
     SurfaceDimension.IPS.value: ("address", "addresses"),
     SurfaceDimension.VULNERABILITIES.value: ("finding", "findings"),
     SurfaceDimension.SOFTWARE.value: ("software CVE", "software CVEs"),
+    SurfaceDimension.SECRETS.value: ("secret", "secrets"),
 }
 
 SURFACE_KINDS: dict[str, frozenset[str]] = {
@@ -50,6 +53,7 @@ SURFACE_KINDS: dict[str, frozenset[str]] = {
     SurfaceDimension.SOFTWARE.value: frozenset(
         {AssetKind.HTTP_ASSETS.value, AssetKind.PORTS.value}
     ),
+    SurfaceDimension.SECRETS.value: frozenset({AssetKind.SECRETS.value}),
 }
 
 SURFACE_COUNT_COLUMNS: dict[str, tuple[str, ...]] = {
@@ -58,6 +62,7 @@ SURFACE_COUNT_COLUMNS: dict[str, tuple[str, ...]] = {
     SurfaceDimension.SERVICES.value: ("open_ports_found",),
     SurfaceDimension.IPS.value: ("ips_found",),
     SurfaceDimension.VULNERABILITIES.value: ("vulnerabilities_found",),
+    SurfaceDimension.SECRETS.value: ("secrets_found",),
 }
 
 # the columns a person reads, in the order an export writes them

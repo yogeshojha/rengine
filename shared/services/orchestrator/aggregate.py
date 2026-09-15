@@ -21,6 +21,7 @@ DERIVED_COUNTS: dict[str, str] = {
     "http_assets_found": "SELECT count(*) FROM http_assets WHERE scan_id = :sid",
     "endpoints_found": "SELECT count(*) FROM endpoints WHERE scan_id = :sid",
     "vulnerabilities_found": "SELECT count(*) FROM vulnerabilities WHERE scan_id = :sid",
+    "secrets_found": "SELECT count(*) FROM secrets WHERE scan_id = :sid",
 }
 
 

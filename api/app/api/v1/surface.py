@@ -12,6 +12,7 @@ from shared.definitions.asset_query import (
     ENDPOINT_QUERY,
     HOST_QUERY,
     IP_QUERY,
+    SECRET_QUERY,
     SERVICE_QUERY,
     SOFTWARE_QUERY,
     VULN_QUERY,
@@ -38,6 +39,7 @@ async def surface_schemas(_current_user: CurrentUser) -> dict[str, QuerySchema]:
         SurfaceDimension.IPS.value: build_schema(IP_QUERY),
         SurfaceDimension.VULNERABILITIES.value: build_schema(VULN_QUERY),
         SurfaceDimension.SOFTWARE.value: build_schema(SOFTWARE_QUERY),
+        SurfaceDimension.SECRETS.value: build_schema(SECRET_QUERY),
     }
 
 

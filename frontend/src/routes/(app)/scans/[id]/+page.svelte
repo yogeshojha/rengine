@@ -50,6 +50,7 @@
 	import EndpointsTable from '$lib/components/scans/results/endpoints-table.svelte';
 	import VulnerabilitiesTable from '$lib/components/scans/results/vulnerabilities-table.svelte';
 	import SoftwareTable from '$lib/components/scans/results/software-table.svelte';
+	import SecretsTable from '$lib/components/scans/results/secrets-table.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import {
@@ -311,6 +312,8 @@
 	let notesTotal = $state<number | null>(null);
 	let softwareTotal = $state<number | null>(null);
 	let softwareSearch = $state('');
+	let secretsTotal = $state<number | null>(null);
+	let secretSearch = $state('');
 	let tabCounts = $derived<Record<TabKey, number | null>>({
 		overview: null,
 		[INTEREST_TAB]: interestTotal,
@@ -320,6 +323,7 @@
 		ips: ipsTotal ?? scan?.ips_found ?? 0,
 		vulnerabilities: vulnsTotal ?? scan?.vulnerabilities_found ?? 0,
 		software: softwareTotal,
+		secrets: secretsTotal,
 		[CORRELATION_TAB]: correlationTotal,
 		[NOTES_TAB]: notesTotal
 	});
@@ -331,6 +335,7 @@
 			if (t.key === 'overview' || t.key === NOTES_TAB) return true;
 			if (t.key === CORRELATION_TAB) return (scan?.subdomains_found ?? 0) >= 2;
 			if (t.key === SurfaceDimension.SOFTWARE) return softwareTotal === null || softwareTotal > 0;
+			if (t.key === SurfaceDimension.SECRETS) return secretsTotal === null || secretsTotal > 0;
 			if ((tabCounts[t.key] ?? 0) > 0) return true;
 			if (t.key === INTEREST_TAB) return false;
 			const spec = SURFACE_ORDER.find((sp) => sp.tab === t.key);
@@ -349,7 +354,8 @@
 			[SurfaceDimension.SERVICES]: serviceQuery.search,
 			[SurfaceDimension.IPS]: ipQuery.search,
 			[SurfaceDimension.VULNERABILITIES]: vulnQuery.search,
-			[SurfaceDimension.SOFTWARE]: softwareSearch
+			[SurfaceDimension.SOFTWARE]: softwareSearch,
+			[SurfaceDimension.SECRETS]: secretSearch
 		}[spec.key];
 		return ROUTES.surface(spec.tab, search ? { [spec.queryParam]: search } : undefined);
 	});
@@ -980,6 +986,20 @@
 							active={activeTab === 'software'}
 							revision={resultTicks[SurfaceDimension.SOFTWARE] ?? 0}
 							onScanTotal={(n) => (softwareTotal = n)}
+						/>
+					{/key}
+				</svelte:boundary>
+			</Tabs.Content>
+
+			<Tabs.Content value="secrets" class="mt-6">
+				<svelte:boundary failed={tabFailed}>
+					{#key scan.id}
+						<SecretsTable
+							scanId={scan.id}
+							projectId={scan.project_id}
+							active={activeTab === 'secrets'}
+							revision={resultTicks[SurfaceDimension.SECRETS] ?? 0}
+							onScanTotal={(n) => (secretsTotal = n)}
 						/>
 					{/key}
 				</svelte:boundary>

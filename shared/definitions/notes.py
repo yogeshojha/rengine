@@ -28,6 +28,7 @@ ASSET_IDENTITY: dict[str, str] = {
     SurfaceDimension.IPS.value: "ip",
     SurfaceDimension.VULNERABILITIES.value: "fingerprint",
     SurfaceDimension.SOFTWARE.value: "fingerprint",
+    SurfaceDimension.SECRETS.value: "fingerprint",
 }
 
 STATUS_LABELS: dict[str, str] = {

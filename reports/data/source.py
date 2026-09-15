@@ -40,6 +40,7 @@ from shared.models.http_asset import HttpAsset
 from shared.models.ip_address import IpAddress
 from shared.models.port import Port
 from shared.models.scan import Scan
+from shared.models.secret import Secret
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.vulnerability import (
@@ -60,6 +61,7 @@ _TABLE = {
     _DIM.SERVICES.value: Port,
     _DIM.ENDPOINTS.value: Endpoint,
     _DIM.VULNERABILITIES.value: Vulnerability,
+    _DIM.SECRETS.value: Secret,
 }
 _KEY = {
     _DIM.WEB_ASSETS.value: (Subdomain.name,),
@@ -67,6 +69,7 @@ _KEY = {
     _DIM.SERVICES.value: (Port.ip, Port.number, Port.protocol),
     _DIM.ENDPOINTS.value: (Endpoint.signature,),
     _DIM.VULNERABILITIES.value: (Vulnerability.fingerprint,),
+    _DIM.SECRETS.value: (Secret.fingerprint,),
 }
 _LABEL = {
     _DIM.WEB_ASSETS.value: Subdomain.name,
@@ -74,6 +77,7 @@ _LABEL = {
     _DIM.SERVICES.value: Port.ip,
     _DIM.ENDPOINTS.value: Endpoint.url,
     _DIM.VULNERABILITIES.value: Vulnerability.matched_at,
+    _DIM.SECRETS.value: Secret.value,
 }
 
 # the dimensions a report counts: those with a per-scan table above

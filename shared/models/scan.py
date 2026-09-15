@@ -145,6 +145,7 @@ class Scan(SQLModel, table=True):
     http_assets_found: int = Field(default=0)
     vulnerabilities_found: int = Field(default=0)
     endpoints_found: int = Field(default=0)
+    secrets_found: int = Field(default=0)
     error: str | None = Field(default=None, max_length=2000)
     interest_signature: str | None = Field(default=None, max_length=64)
     interest_judged_at: datetime | None = Field(default=None)
@@ -297,6 +298,7 @@ class ScanRead(BaseModel):
     http_assets_found: int
     vulnerabilities_found: int
     endpoints_found: int
+    secrets_found: int = 0
     error: str | None
     created_by: uuid.UUID
     created_at: datetime

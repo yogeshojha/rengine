@@ -191,6 +191,11 @@ from shared.models.scan_surface import (
     SurfaceSummary,
     SurfaceTierCount,
 )
+from shared.models.secret import (
+    Secret,
+    SecretCoverage,
+    SecretSighting,
+)
 from shared.models.software import (
     NvdCpeMatch,
     NvdCve,
@@ -432,6 +437,9 @@ __all__ = [
     "ScanVulnerabilities",
     "ScheduleTargetRef",
     "ScreenshotPair",
+    "Secret",
+    "SecretCoverage",
+    "SecretSighting",
     "SettingDiff",
     "SoftwareComponentRead",
     "SoftwareCoverage",

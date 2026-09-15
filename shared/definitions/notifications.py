@@ -108,6 +108,7 @@ _SCAN_COUNT_LABELS: dict[str, tuple[str, str]] = {
     "http_assets_found": HTTP_SERVICE_NOUN,
     "vulnerabilities_found": _noun(SurfaceDimension.VULNERABILITIES),
     "endpoints_found": _noun(SurfaceDimension.ENDPOINTS),
+    "secrets_found": _noun(SurfaceDimension.SECRETS),
 }
 
 
@@ -146,6 +147,8 @@ _STAGE_COUNT_LABELS: dict[str, tuple[str, str]] = {
     "ptr": ("PTR record", "PTR records"),
     "scanned": _noun(SurfaceDimension.IPS, after="scanned"),
     "screenshots": ("screenshot", "screenshots"),
+    "secrets": _noun(SurfaceDimension.SECRETS),
+    "documents": ("response read", "responses read"),
     "skipped": ("skipped", "skipped"),
     "subdomains": _noun(SurfaceDimension.WEB_ASSETS),
     "targets": ("target", "targets"),

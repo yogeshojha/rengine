@@ -9,3 +9,6 @@ CRITICAL_QUEUE = "critical"
 MAX_RATE = 10000
 MAX_THREADS = 1000
 MAX_TIMEOUT = 3600
+
+# bytes of a response body httpx keeps
+HTTPX_RESPONSE_CAP = 131072

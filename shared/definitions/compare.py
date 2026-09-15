@@ -122,6 +122,11 @@ _SOFTWARE_FIELDS: tuple[WatchedField, ...] = (
     WatchedField("caveats", "Caveats", FieldKind.LIST.value),
 )
 
+_SECRET_FIELDS: tuple[WatchedField, ...] = (
+    WatchedField("state", "State"),
+    WatchedField("hosts", "Web assets"),
+)
+
 WATCHED_FIELDS: dict[str, tuple[WatchedField, ...]] = {
     SurfaceDimension.WEB_ASSETS.value: _HOST_FIELDS,
     SurfaceDimension.ENDPOINTS.value: _ENDPOINT_FIELDS,
@@ -129,6 +134,7 @@ WATCHED_FIELDS: dict[str, tuple[WatchedField, ...]] = {
     SurfaceDimension.IPS.value: _ADDRESS_FIELDS,
     SurfaceDimension.VULNERABILITIES.value: _VULN_FIELDS,
     SurfaceDimension.SOFTWARE.value: _SOFTWARE_FIELDS,
+    SurfaceDimension.SECRETS.value: _SECRET_FIELDS,
 }
 
 # Class D: moves without a scan
@@ -153,6 +159,7 @@ COMPARE_KEYS: dict[str, tuple[str, ...]] = {
     SurfaceDimension.IPS.value: ("ip",),
     SurfaceDimension.VULNERABILITIES.value: ("fingerprint",),
     SurfaceDimension.SOFTWARE.value: ("fingerprint",),
+    SurfaceDimension.SECRETS.value: ("fingerprint",),
 }
 
 

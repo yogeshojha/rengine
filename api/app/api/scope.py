@@ -38,3 +38,4 @@ ServiceScope = Annotated[QueryScope, Depends(scope_for(SurfaceDimension.SERVICES
 IpScope = Annotated[QueryScope, Depends(scope_for(SurfaceDimension.IPS))]
 VulnScope = Annotated[QueryScope, Depends(scope_for(SurfaceDimension.VULNERABILITIES))]
 SoftwareScope = Annotated[QueryScope, Depends(scope_for(SurfaceDimension.SOFTWARE))]
+SecretScope = Annotated[QueryScope, Depends(scope_for(SurfaceDimension.SECRETS))]

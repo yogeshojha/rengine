@@ -24,6 +24,7 @@ from shared.models.endpoint import Endpoint
 from shared.models.ip_address import IpAddress
 from shared.models.port import Port
 from shared.models.scan import Scan
+from shared.models.secret import Secret
 from shared.models.software import SoftwareCve
 from shared.models.subdomain import Subdomain
 from shared.models.surface import SurfaceCoverage, SurfaceOverview, SurfaceTargetRead
@@ -45,10 +46,13 @@ TABLES = {
     SurfaceDimension.IPS.value: IpAddress,
     SurfaceDimension.VULNERABILITIES.value: Vulnerability,
     SurfaceDimension.SOFTWARE.value: SoftwareCve,
+    SurfaceDimension.SECRETS.value: Secret,
 }
 
 # dimensions whose page headlines a true total, not a paged one
-EXACT_COUNT = frozenset({SurfaceDimension.SOFTWARE.value})
+EXACT_COUNT = frozenset(
+    {SurfaceDimension.SOFTWARE.value, SurfaceDimension.SECRETS.value}
+)
 
 
 async def baselined_targets(

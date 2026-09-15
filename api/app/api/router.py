@@ -33,6 +33,7 @@ from app.api.v1 import (
     scan_engines,
     scan_schedules,
     scans,
+    secrets,
     software,
     subdomains,
     surface,
@@ -88,6 +89,7 @@ router.include_router(media.router)
 router.include_router(exports.router)
 router.include_router(reports.router)
 router.include_router(software.router)
+router.include_router(secrets.router)
 router.include_router(cves.router)
 router.include_router(ai.router)
 router.include_router(dashboard.router)

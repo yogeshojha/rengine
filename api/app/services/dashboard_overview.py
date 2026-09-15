@@ -112,6 +112,7 @@ from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
 from shared.models.scan_schedule import ScanSchedule
 from shared.models.scan_surface import ScanSurfaceItem
+from shared.models.secret import Secret
 from shared.models.software import SoftwareCve
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
@@ -130,6 +131,7 @@ SERVICES = SurfaceDimension.SERVICES.value
 IPS = SurfaceDimension.IPS.value
 VULNS = SurfaceDimension.VULNERABILITIES.value
 SOFTWARE = SurfaceDimension.SOFTWARE.value
+SECRETS = SurfaceDimension.SECRETS.value
 
 _TABLES = {
     WEB: Subdomain,
@@ -138,6 +140,7 @@ _TABLES = {
     IPS: IpAddress,
     VULNS: Vulnerability,
     SOFTWARE: SoftwareCve,
+    SECRETS: Secret,
 }
 _KEYS = {
     WEB: (Subdomain.name,),
@@ -146,6 +149,7 @@ _KEYS = {
     IPS: (IpAddress.ip,),
     VULNS: (Vulnerability.fingerprint,),
     SOFTWARE: (SoftwareCve.fingerprint,),
+    SECRETS: (Secret.fingerprint,),
 }
 _TERMINAL_BAD = (ScanStatus.FAILED.value, ScanStatus.CANCELLED.value)
 _DOMAIN_TYPES = (TargetType.DOMAIN, TargetType.URL)

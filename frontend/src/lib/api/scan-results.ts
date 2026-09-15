@@ -5,6 +5,13 @@ import type {
 	SoftwareFilter,
 	SoftwarePage
 } from '$lib/types/software';
+import type {
+	SecretCoverage,
+	SecretDetail,
+	SecretFacets,
+	SecretFilter,
+	SecretPage
+} from '$lib/types/secret';
 import { scopeQuery } from '$lib/utilities/surface-scope';
 import type {
 	EndpointCoverageRead,
@@ -228,6 +235,36 @@ export const softwareApi = {
 		return api.post<Record<string, number>>(
 			`/software/search/counts?${scopeQuery({ projectId, scanId })}`,
 			{ queries }
+		);
+	}
+};
+
+export const secretsApi = {
+	async search(projectId: string, scanId: string, filter: SecretFilter): Promise<SecretPage> {
+		return api.post<SecretPage>(`/secrets/search?${scopeQuery({ projectId, scanId })}`, filter);
+	},
+
+	async facets(projectId: string, scanId: string): Promise<SecretFacets> {
+		return api.get<SecretFacets>(`/secrets/facets?${scopeQuery({ projectId, scanId })}`);
+	},
+
+	async coverage(projectId: string, scanId: string): Promise<SecretCoverage> {
+		return api.get<SecretCoverage>(`/secrets/coverage?${scopeQuery({ projectId, scanId })}`);
+	},
+
+	async detail(projectId: string, scanId: string, id: string): Promise<SecretDetail> {
+		return api.get<SecretDetail>(`/secrets/${id}?${scopeQuery({ projectId, scanId })}`);
+	},
+
+	async groups(
+		projectId: string,
+		scanId: string,
+		groupBy: string,
+		filter: SecretFilter
+	): Promise<QueryGroups> {
+		return api.post<QueryGroups>(
+			`/secrets/search/groups?${scopeQuery({ projectId, scanId })}&group_by=${encodeURIComponent(groupBy)}`,
+			filter
 		);
 	}
 };

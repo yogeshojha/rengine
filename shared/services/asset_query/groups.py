@@ -17,6 +17,9 @@ from shared.definitions.endpoints import (
 from shared.definitions.evidence import EVIDENCE_LABELS, Evidence
 from shared.definitions.hygiene import CHECK_BY_KEY
 from shared.definitions.ports import PORT_SOURCE_LABELS, SERVICE_CLASS_LABELS
+from shared.definitions.secrets import DETECTOR_LABELS as SECRET_DETECTOR_LABELS
+from shared.definitions.secrets import GROUP_LABELS as SECRET_GROUP_LABELS
+from shared.definitions.secrets import STATE_LABELS as SECRET_STATE_LABELS
 from shared.definitions.vulnerabilities import (
     PROTOCOL_LABELS,
     SCANNER_LABELS,
@@ -27,6 +30,7 @@ from shared.models.asset_query import QueryGroup, QueryGroups
 from shared.models.endpoint import Endpoint
 from shared.models.http_asset import HttpAsset
 from shared.models.port import Port
+from shared.models.secret import Secret
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.vulnerability import Vulnerability
@@ -510,6 +514,70 @@ async def build_endpoint_groups(session: AsyncSession, base, key: str) -> QueryG
         )
         for raw, n in rows.all()
     ]
+    counted = int(total or 0)
+    return QueryGroups(
+        dimension=key,
+        groups=groups,
+        total_groups=counted,
+        truncated=counted > len(groups),
+        rows=int(rows_in_scope or 0),
+        covered=int(covered or 0),
+    )
+
+
+_SECRET_COLUMNS: dict[str, tuple[Any, str, str]] = {
+    "secret": (Secret.kind, "secret", "="),
+    "group": (Secret.group, "group", "="),
+    "vendor": (Secret.vendor, "vendor", "="),
+    "state": (Secret.state, "state", "="),
+    "host": (Secret.host, "host", "="),
+    "subject": (Secret.subject, "subject", "="),
+    "target": (_target_value(Secret.target_id), "target", "="),
+    "value": (Secret.fingerprint, "fingerprint", "="),
+}
+_SECRET_LABELS: dict[str, dict[str, str]] = {
+    "secret": SECRET_DETECTOR_LABELS,
+    "group": SECRET_GROUP_LABELS,
+    "state": SECRET_STATE_LABELS,
+}
+
+
+async def build_secret_groups(session: AsyncSession, base, key: str) -> QueryGroups:
+    """One row per secret; a value group is labelled by its mask."""
+    found = _SECRET_COLUMNS.get(key)
+    if found is None:
+        return QueryGroups(dimension=key)
+    column, field, op = found
+    scoped = base.subquery()
+    value = column.label("value")
+    rows_count = func.count(func.distinct(Secret.id))
+    joined = (
+        select(value, rows_count.label("n"))
+        .select_from(Secret)
+        .join(scoped, Secret.id == scoped.c.id)
+        .where(value.isnot(None), cast(value, Text) != "")
+    )
+    rows_in_scope = await session.scalar(select(func.count()).select_from(scoped))
+    covered, total = (
+        await session.execute(
+            joined.with_only_columns(rows_count, func.count(func.distinct(value)))
+        )
+    ).one()
+    ordered = joined.group_by(value).order_by(desc("n"), value).limit(MAX_GROUPS)
+    if key == "value":
+        ordered = ordered.add_columns(func.min(Secret.value).label("value"))
+    result = await session.execute(ordered)
+
+    labels = _SECRET_LABELS.get(key, {})
+    groups = []
+    for row in result.all():
+        raw = str(row[0])
+        label = row[2] if key == "value" else (labels.get(raw) or raw)
+        groups.append(
+            QueryGroup(
+                value=raw, label=label, count=int(row[1]), query=_token(field, op, raw)
+            )
+        )
     counted = int(total or 0)
     return QueryGroups(
         dimension=key,

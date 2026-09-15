@@ -89,6 +89,7 @@ from shared.models.ip_address import IpAddress
 from shared.models.port import Port
 from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
+from shared.models.secret import Secret
 from shared.models.software import SoftwareCve
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
@@ -164,6 +165,14 @@ SPECS: dict[str, DimSpec] = {
         title="cve",
         subtitle=("host",),
         display=("name", "version", "severity", "confidence", "is_kev"),
+    ),
+    SurfaceDimension.SECRETS.value: DimSpec(
+        dimension=SurfaceDimension.SECRETS.value,
+        model=Secret,
+        keys=COMPARE_KEYS[SurfaceDimension.SECRETS.value],
+        title="value",
+        subtitle=("host",),
+        display=("kind", "state", "hosts", "is_secret"),
     ),
 }
 
@@ -369,6 +378,12 @@ def _rules(spec: DimSpec, a, b, appeared, gone, both):
                 ),
             ),
             (ChangeSignal.ADDRESS_APPEARED, appeared),
+            (ChangeSignal.ATTRIBUTES_CHANGED, both),
+            (ChangeSignal.ASSET_GONE, gone),
+        )
+    if d == SurfaceDimension.SECRETS.value:
+        return (
+            (ChangeSignal.FINDING_APPEARED, and_(appeared, b.c.is_secret.is_(True))),
             (ChangeSignal.ATTRIBUTES_CHANGED, both),
             (ChangeSignal.ASSET_GONE, gone),
         )

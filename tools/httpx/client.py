@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 from collections.abc import Iterator
 
+from shared.definitions.constants import HTTPX_RESPONSE_CAP
 from shared.logging import get_logger
 from tools.runner import CLIToolRunner, StreamOutcome, ToolNotFoundError
 from tools.runner.models import CommandRecorder
@@ -24,7 +25,7 @@ _CAPTURE_IDLE_FLOOR = 300
 CAPTURE_SECONDS_PER_TARGET = 6
 MAX_CAPTURE_SECONDS = 7200
 
-_RESPONSE_SIZE_CAP = 131072  # 128 KiB
+_RESPONSE_SIZE_CAP = HTTPX_RESPONSE_CAP
 
 _ENRICH_FLAGS = [
     "-status-code",

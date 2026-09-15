@@ -12,6 +12,7 @@ STAGE_GROUP_LABELS: dict[str, str] = {
     StageGroup.WEB.value: "Web",
     StageGroup.ENDPOINTS.value: "Endpoints",
     StageGroup.VULNERABILITIES.value: "Vulnerabilities",
+    StageGroup.ANALYSIS.value: "Analysis",
 }
 
 ASSET_KIND_LABELS: dict[str, str] = {
@@ -21,6 +22,7 @@ ASSET_KIND_LABELS: dict[str, str] = {
     AssetKind.HTTP_ASSETS.value: "HTTP assets",
     AssetKind.ENDPOINTS.value: "endpoints",
     AssetKind.VULNERABILITIES.value: "findings",
+    AssetKind.SECRETS.value: "secrets",
 }
 
 SEED_PRODUCES: dict[str, frozenset[str]] = {

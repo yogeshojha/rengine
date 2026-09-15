@@ -11,6 +11,7 @@ from shared.definitions.asset_query import (
     ENDPOINT_QUERY,
     HOST_QUERY,
     IP_QUERY,
+    SECRET_QUERY,
     SERVICE_QUERY,
     VULN_QUERY,
     QueryRegistry,
@@ -153,6 +154,13 @@ DIMENSIONS: tuple[Dimension, ...] = (
         filter_path="shared.models.endpoint.EndpointFilter",
         service_path="app.services.endpoint.EndpointService",
         page_args=("size", "page"),
+    ),
+    Dimension(
+        key=SurfaceDimension.SECRETS.value,
+        registry=SECRET_QUERY,
+        tab="secrets",
+        filter_path="shared.models.secret.SecretFilter",
+        service_path="app.services.secret.SecretService",
     ),
 )
 

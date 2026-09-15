@@ -97,6 +97,7 @@ celery_app.conf.task_routes = {
     "app.tasks.hygiene.*": {"queue": "default"},
     "app.tasks.screenshots.*": {"queue": "default"},
     "app.tasks.software.*": {"queue": "default"},
+    "app.tasks.secrets.*": {"queue": "default"},
     "app.tasks.bounty_programs.*": {"queue": "default"},
     "app.tasks.toolbox.*": {"queue": CRITICAL_QUEUE},
 }
@@ -124,6 +125,7 @@ celery_app.autodiscover_tasks(
         "app.tasks.hygiene",
         "app.tasks.screenshots",
         "app.tasks.software",
+        "app.tasks.secrets",
         "app.tasks.watch",
     ]
 )
@@ -141,6 +143,7 @@ RETENTION_SECONDS = 24 * 60 * 60.0
 THREAT_INTEL_REFRESH_SECONDS = 24 * 60 * 60.0
 CERT_RECHECK_SECONDS = 4 * 60 * 60.0
 SOFTWARE_BACKFILL_SECONDS = 5 * 60.0
+SECRET_BACKFILL_SECONDS = 5 * 60.0
 HYGIENE_BACKFILL_SECONDS = 5 * 60.0
 WATCH_RECHECK_SECONDS = 10 * 60.0
 
@@ -217,6 +220,10 @@ celery_app.conf.beat_schedule = {
     "software-backfill": {
         "task": "app.tasks.software.backfill",
         "schedule": SOFTWARE_BACKFILL_SECONDS,
+    },
+    "secret-backfill": {
+        "task": "app.tasks.secrets.backfill",
+        "schedule": SECRET_BACKFILL_SECONDS,
     },
     "watch-recheck": {
         "task": "app.tasks.watch.recheck",
