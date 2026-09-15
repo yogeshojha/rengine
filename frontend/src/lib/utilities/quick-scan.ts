@@ -7,7 +7,6 @@ export type QuickScanSelection =
 	| { kind: 'engine'; engineId: string };
 
 export interface QuickScanPrefs {
-	enabled: boolean;
 	selection: QuickScanSelection | null;
 	contextId: string | null;
 }
@@ -47,20 +46,13 @@ function selectionFromStored(
 	return preset ? { kind: 'recipe', preset: preset.name } : null;
 }
 
-export function readQuickScanPrefs(storageKey: string, presets: EnginePreset[]): QuickScanPrefs {
-	if (typeof localStorage === 'undefined')
-		return { enabled: false, selection: null, contextId: null };
+export function readQuickScanPrefs(presets: EnginePreset[]): QuickScanPrefs {
+	if (typeof localStorage === 'undefined') return { selection: null, contextId: null };
 	const stored = readLastPlan();
 	return {
-		enabled: localStorage.getItem(storageKey) === '1',
 		selection: stored ? selectionFromStored(stored, presets) : null,
 		contextId: stored?.contextId ?? null
 	};
-}
-
-export function rememberQuickScanToggle(storageKey: string, enabled: boolean) {
-	if (typeof localStorage === 'undefined') return;
-	localStorage.setItem(storageKey, enabled ? '1' : '0');
 }
 
 export function rememberQuickScanChoice(

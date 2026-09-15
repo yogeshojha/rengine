@@ -25,7 +25,6 @@
 	import { TargetType, formatTargetType } from '$lib/types/target';
 	import { getTargetTypeIcon } from '$lib/config/icons';
 	import { ROUTES } from '$lib/config/routes';
-	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import { SELECT_NONE } from '$lib/constants';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 	import {
@@ -422,7 +421,6 @@
 				title="Scan after adding"
 				description="Queues a scan after the target is added."
 				fallbackNote="The target is added without a scan."
-				storageKey={STORAGE_KEYS.addTargetScanAfter}
 				bind:enabled={scanAfterAdd}
 				bind:selection
 				bind:contextId

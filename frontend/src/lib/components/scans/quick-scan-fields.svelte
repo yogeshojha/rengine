@@ -15,7 +15,6 @@
 		defaultSelection,
 		encodeSelection,
 		readQuickScanPrefs,
-		rememberQuickScanToggle,
 		type QuickScanSelection
 	} from '$lib/utilities/quick-scan';
 
@@ -24,7 +23,6 @@
 		title: string;
 		description: string;
 		fallbackNote: string;
-		storageKey: string;
 		enabled: boolean;
 		selection: QuickScanSelection | null;
 		contextId: string;
@@ -38,7 +36,6 @@
 		title,
 		description,
 		fallbackNote,
-		storageKey,
 		enabled = $bindable(),
 		selection = $bindable(),
 		contextId = $bindable(),
@@ -106,15 +103,6 @@
 		});
 	});
 
-	let restored = false;
-	$effect(() => {
-		if (restored) return;
-		restored = true;
-		untrack(() => {
-			enabled = readQuickScanPrefs(storageKey, []).enabled;
-		});
-	});
-
 	$effect(() => {
 		if (!enabled || !ready) return;
 		const currentPresets = presets;
@@ -122,7 +110,7 @@
 		const contexts = scanContextsStore.contexts;
 		untrack(() => {
 			if (!selectionValid) {
-				const prefs = readQuickScanPrefs(storageKey, currentPresets);
+				const prefs = readQuickScanPrefs(currentPresets);
 				const stored = prefs.selection;
 				const storedValid =
 					!!stored &&
@@ -142,7 +130,6 @@
 
 	function toggle(value: boolean) {
 		enabled = value;
-		rememberQuickScanToggle(storageKey, value);
 	}
 </script>
 

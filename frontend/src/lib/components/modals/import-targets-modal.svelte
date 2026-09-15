@@ -31,7 +31,6 @@
 	import QuickScanFields from '$lib/components/scans/quick-scan-fields.svelte';
 	import { MAX_SCAN_BATCH } from '$lib/types/scan';
 	import { ROUTES } from '$lib/config/routes';
-	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import { SELECT_NONE } from '$lib/constants';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 	import {
@@ -699,7 +698,6 @@ https://app.example.com"
 				title="Scan after importing"
 				description="Queues one scan per imported target."
 				fallbackNote="Targets are imported without a scan."
-				storageKey={STORAGE_KEYS.importTargetsScanAfter}
 				bind:enabled={scanAfterImport}
 				bind:selection
 				bind:contextId
