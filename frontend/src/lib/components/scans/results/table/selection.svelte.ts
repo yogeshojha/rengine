@@ -1,5 +1,4 @@
 import { SvelteMap } from 'svelte/reactivity';
-import type { SeedPick } from '$lib/types/recheck';
 
 interface Row {
 	id: string;
@@ -7,7 +6,7 @@ interface Row {
 
 /** Selection state, independent of the current page. */
 export class RowSelection<T extends Row> {
-	private picked = new SvelteMap<string, SeedPick>();
+	private picked = new SvelteMap<string, T>();
 
 	readonly size = $derived(this.picked.size);
 
@@ -15,12 +14,12 @@ export class RowSelection<T extends Row> {
 		return this.picked.has(id);
 	}
 
-	picks(): SeedPick[] {
+	rows(): T[] {
 		return [...this.picked.values()];
 	}
 
-	values(): string[] {
-		return this.picks().map((p) => p.value);
+	ids(): string[] {
+		return [...this.picked.keys()];
 	}
 
 	countOn(items: T[]): number {
@@ -31,14 +30,14 @@ export class RowSelection<T extends Row> {
 		return items.length > 0 && this.countOn(items) === items.length;
 	}
 
-	toggle(item: T, pick: SeedPick): void {
+	toggle(item: T): void {
 		if (this.picked.has(item.id)) this.picked.delete(item.id);
-		else this.picked.set(item.id, pick);
+		else this.picked.set(item.id, item);
 	}
 
-	toggleAll(items: T[], pick: (item: T) => SeedPick): void {
+	toggleAll(items: T[]): void {
 		if (this.allOn(items)) for (const item of items) this.picked.delete(item.id);
-		else for (const item of items) this.picked.set(item.id, pick(item));
+		else for (const item of items) this.picked.set(item.id, item);
 	}
 
 	clear(): void {

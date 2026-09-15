@@ -53,6 +53,10 @@ function createProxiesStore() {
 			}
 		},
 
+		drop(id: string): void {
+			proxies = proxies.filter((p) => p.id !== id);
+		},
+
 		async remove(id: string): Promise<boolean> {
 			try {
 				await proxiesApi.remove(id);

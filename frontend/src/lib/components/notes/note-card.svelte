@@ -5,6 +5,7 @@
 	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
+	import { Checkbox } from '$lib/components/ui/checkbox';
 	import Hint from '$lib/components/hint.svelte';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import { toast } from 'svelte-sonner';
@@ -19,10 +20,12 @@
 	interface Props {
 		note: Note;
 		showAnchor?: boolean;
+		checked?: boolean;
+		onCheck?: (id: string) => void;
 		onChanged?: () => void;
 	}
 
-	let { note, showAnchor = true, onChanged }: Props = $props();
+	let { note, showAnchor = true, checked = false, onCheck, onChanged }: Props = $props();
 
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
 	let editing = $state(false);
@@ -81,6 +84,11 @@
 		/>
 	{:else}
 		<div class="flex items-start gap-2">
+			{#if onCheck}
+				<div class="flex h-5 shrink-0 items-center">
+					<Checkbox {checked} onCheckedChange={() => onCheck(note.id)} aria-label="Select note" />
+				</div>
+			{/if}
 			<div class="flex min-w-0 flex-1 flex-col gap-1">
 				{#if note.title}
 					<h4 class="text-sm font-semibold {resolved ? 'line-through' : ''}">{note.title}</h4>

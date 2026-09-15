@@ -3,6 +3,7 @@
 	import Sparkle from '@lucide/svelte/icons/sparkle';
 	import X from '@lucide/svelte/icons/x';
 	import { Button } from '$lib/components/ui/button';
+	import { Checkbox } from '$lib/components/ui/checkbox';
 	import Hint from '$lib/components/hint.svelte';
 	import TechIcon from '$lib/components/scans/results/tech-icon.svelte';
 	import CopyButton from '$lib/components/copy-button.svelte';
@@ -14,13 +15,15 @@
 	interface Props {
 		row: InterestRow;
 		rank: number;
+		checked?: boolean;
+		onCheck?: (row: InterestRow) => void;
 		onOpen: (row: InterestRow) => void;
 		onKind: (kind: string) => void;
 		onDismiss: (row: InterestRow) => void;
 		onHost: (host: string) => void;
 	}
 
-	let { row, rank, onOpen, onKind, onDismiss, onHost }: Props = $props();
+	let { row, rank, checked = false, onCheck, onOpen, onKind, onDismiss, onHost }: Props = $props();
 
 	const MAX_CHIPS = 4;
 	let lead = $derived(row.signals.find((s) => s.reason) ?? null);
@@ -50,6 +53,21 @@
 		}
 	}}
 >
+	{#if onCheck}
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<span class="hidden h-5 shrink-0 items-center sm:flex" onclick={stopProp}>
+			<Checkbox
+				{checked}
+				onCheckedChange={() => onCheck(row)}
+				aria-label="Select {row.host}"
+				class="transition-opacity {checked
+					? 'opacity-100'
+					: 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'}"
+			/>
+		</span>
+	{/if}
+
 	<span class="flex h-5 shrink-0 items-center gap-2">
 		<span class="h-4 w-0.5 rounded-full {BAND_RAIL[row.band] ?? 'bg-border'}"></span>
 		<span class="w-5 text-right text-xs tabular-nums text-muted-foreground group-hover:hidden"

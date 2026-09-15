@@ -15,19 +15,28 @@ from shared.definitions.surface import SurfaceDimension
 _MISSING = "Pass scan_id for one run, or project_id for the whole project."
 
 
+async def resolve_scope(
+    session: AsyncSession,
+    dimension: str,
+    scan_id: UUID | None,
+    project_id: UUID | None,
+) -> QueryScope:
+    if scan_id is not None:
+        return QueryScope((scan_id,), project_id=project_id)
+    if project_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=_MISSING
+        )
+    return await SurfaceScopeService(session).scope(project_id, dimension)
+
+
 def scope_for(dimension: SurfaceDimension) -> Callable:
     async def resolve(
         session: Annotated[AsyncSession, Depends(get_session)],
         scan_id: Annotated[UUID | None, Query(description="Scan ID")] = None,
         project_id: Annotated[UUID | None, Query(description="Project ID")] = None,
     ) -> QueryScope:
-        if scan_id is not None:
-            return QueryScope((scan_id,), project_id=project_id)
-        if project_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=_MISSING
-            )
-        return await SurfaceScopeService(session).scope(project_id, dimension.value)
+        return await resolve_scope(session, dimension.value, scan_id, project_id)
 
     return resolve
 

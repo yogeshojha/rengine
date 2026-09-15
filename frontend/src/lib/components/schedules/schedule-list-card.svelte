@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Badge } from '$lib/components/ui/badge';
+	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
@@ -15,13 +16,23 @@
 
 	interface Props {
 		schedule: ScanScheduleRead;
+		checked?: boolean;
+		onCheck?: (id: string) => void;
 		onEdit?: () => void;
 		onRunNow?: () => void;
 		onTogglePause?: () => void;
 		onDelete?: () => void;
 	}
 
-	let { schedule, onEdit, onRunNow, onTogglePause, onDelete }: Props = $props();
+	let {
+		schedule,
+		checked = false,
+		onCheck,
+		onEdit,
+		onRunNow,
+		onTogglePause,
+		onDelete
+	}: Props = $props();
 
 	let isPaused = $derived(schedule.status === 'paused');
 	let isCompleted = $derived(schedule.status === 'completed');
@@ -44,6 +55,14 @@
 >
 	<div class="mb-2 flex items-start justify-between gap-2">
 		<div class="flex min-w-0 flex-1 items-center gap-2">
+			{#if onCheck}
+				<Checkbox
+					{checked}
+					onCheckedChange={() => onCheck(schedule.id)}
+					aria-label="Select {schedule.name}"
+					class="shrink-0"
+				/>
+			{/if}
 			<h3 class="truncate text-sm font-bold text-foreground">{schedule.name}</h3>
 			<Badge
 				variant={isPaused ? 'outline' : 'secondary'}

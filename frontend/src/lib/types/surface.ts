@@ -32,3 +32,15 @@ export interface SurfaceOverview {
 	dimensions: SurfaceCoverage[];
 	generated_at: string;
 }
+
+export interface SurfaceDelete {
+	dimension: string;
+	ids: string[];
+	key?: string | null;
+}
+
+export interface SurfaceDeleteResult {
+	dimension: string;
+	deleted: number;
+	related: Record<string, number>;
+}

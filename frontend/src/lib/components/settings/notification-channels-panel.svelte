@@ -34,6 +34,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
+	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import FormField from '$lib/components/form-field.svelte';
 	import { toast } from 'svelte-sonner';
@@ -75,6 +76,12 @@
 	let isDeleting = $state(false);
 
 	let channels = $derived(notificationChannelsStore.channels);
+	const picked = new SvelteSet<string>();
+
+	function toggleCheck(id: string) {
+		if (picked.has(id)) picked.delete(id);
+		else picked.add(id);
+	}
 	let formMeta = $derived(metaFor(formProvider));
 	let severityLabel = $derived(
 		NOTIF_SEVERITIES.find((s) => s.value === formPref.min_severity)?.label ?? 'Everything'
@@ -369,6 +376,13 @@
 					<Card.Content class="p-5">
 						<div class="flex items-start justify-between gap-3">
 							<div class="flex min-w-0 items-start gap-3">
+								<div class="flex h-10 shrink-0 items-center">
+									<Checkbox
+										checked={picked.has(channel.id)}
+										onCheckedChange={() => toggleCheck(channel.id)}
+										aria-label="Select {channel.name}"
+									/>
+								</div>
 								<div class="shrink-0 rounded-lg border bg-muted p-2.5">
 									<Icon class="size-[18px] text-muted-foreground" />
 								</div>
@@ -761,4 +775,15 @@
 	{isDeleting}
 	onOpenChange={(o) => (deleteOpen = o)}
 	onConfirm={handleDelete}
+/>
+
+<SelectionDeleteBar
+	ids={[...picked]}
+	noun="channel"
+	remove={async (id) => {
+		await notificationChannelsApi.remove(id);
+		notificationChannelsStore.drop(id);
+	}}
+	onDone={() => picked.clear()}
+	onClear={() => picked.clear()}
 />

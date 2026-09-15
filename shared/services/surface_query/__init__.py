@@ -10,7 +10,9 @@ from shared.definitions.surface import SurfaceDimension
 from shared.services.surface_query import (
     endpoints,
     ips,
+    secrets,
     services,
+    software,
     vulnerabilities,
     web_assets,
 )
@@ -127,6 +129,16 @@ QUERIES: tuple[SurfaceQuery, ...] = (
         "shared.models.vulnerability.VulnerabilityFilter",
         order_needs_scope=True,
     ),
+    SurfaceQuery(
+        SurfaceDimension.SOFTWARE.value,
+        software,
+        "shared.models.software.SoftwareFilter",
+    ),
+    SurfaceQuery(
+        SurfaceDimension.SECRETS.value,
+        secrets,
+        "shared.models.secret.SecretFilter",
+    ),
 )
 
 
@@ -151,7 +163,9 @@ __all__ = [
     "endpoints",
     "for_dimension",
     "ips",
+    "secrets",
     "services",
+    "software",
     "vulnerabilities",
     "web_assets",
 ]

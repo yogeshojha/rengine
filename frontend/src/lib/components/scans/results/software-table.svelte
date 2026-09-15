@@ -22,7 +22,17 @@
 	import QueryBar from './query-bar/query-bar.svelte';
 	import ListHeader from './table/list-header.svelte';
 	import ResultsPagination from './table/results-pagination.svelte';
-	import { readPref, rowPadding, TARGET_COLUMN, withTarget, writePref } from './table/columns';
+	import {
+		readPref,
+		rowPadding,
+		selectAllState,
+		TARGET_COLUMN,
+		withTarget,
+		writePref
+	} from './table/columns';
+	import RowSelectionBar from './table/row-selection-bar.svelte';
+	import { RowSelection } from './table/selection.svelte';
+	import ExportMenu from './export-menu.svelte';
 	import SoftwareRow from './software/software-row.svelte';
 	import SoftwareDetailSheet from './software/software-detail-sheet.svelte';
 	import {
@@ -114,6 +124,7 @@
 	];
 	let selected = $state<SoftwareCve | null>(null);
 	let drawerOpen = $state(false);
+	const selection = new RowSelection<SoftwareCve>();
 
 	let ready = $derived(Boolean(projectId) && (projectWide || Boolean(scanId)));
 	let seen = $state(false);
@@ -127,6 +138,13 @@
 		allColumns.filter((c) => visible.includes(c.key) || c.key === 'target')
 	);
 	let pageCount = $derived(Math.max(1, Math.ceil(total / pageSize)));
+	let checkedCount = $derived(selection.countOn(items));
+	let selectAllChecked = $derived(selectAllState(checkedCount, items.length));
+	let exportFilters = $derived({
+		q: search.trim() || null,
+		sort: sort.key,
+		direction: sort.dir === -1 ? 'desc' : 'asc'
+	} as unknown as Record<string, unknown>);
 	let rowPad = $derived(rowPadding(density));
 	let term = $derived(search.trim().includes(':') ? '' : search.trim());
 	let filtered = $derived(Boolean(search.trim()));
@@ -284,6 +302,15 @@
 		onQuery(appendToken(search, token));
 	}
 
+	function toggleCheck(id: string) {
+		const row = items.find((r) => r.id === id);
+		if (row) selection.toggle(row);
+	}
+
+	function toggleSelectAll() {
+		selection.toggleAll(items);
+	}
+
 	function onSort(key: string) {
 		sort = sort.key === key ? { key, dir: sort.dir === 1 ? -1 : 1 } : { key, dir: -1 };
 		pageIndex = 0;
@@ -365,6 +392,12 @@
 		{/each}
 		<div class="ml-auto flex items-center gap-1.5">
 			<SortMenu sorts={SOFTWARE_SORTS} sortKey={sort.key} sortDir={sort.dir} {onSort} />
+			<ExportMenu
+				dimension={SurfaceDimension.SOFTWARE}
+				{projectId}
+				{scanId}
+				filters={exportFilters}
+			/>
 			<Button
 				variant="ghost"
 				size="icon"
@@ -409,6 +442,9 @@
 					columns={shownColumns.filter((c) => c.key !== 'target')}
 					sortKey={sort.key}
 					sortDir={sort.dir}
+					{selectAllChecked}
+					selectAllLabel="Select every software CVE on this page"
+					onSelectAll={toggleSelectAll}
 					{onSort}
 				/>
 				<div class="divide-y divide-border/50 transition-opacity {refreshing ? 'opacity-60' : ''}">
@@ -419,8 +455,10 @@
 							columns={shownColumns}
 							selected={selected?.id === row.id}
 							focused={false}
+							checked={selection.has(row.id)}
 							{projectWide}
 							pad={rowPad}
+							onCheck={toggleCheck}
 							onOpen={openRow}
 							{onToken}
 						/>
@@ -445,6 +483,35 @@
 		/>
 	{/if}
 </Card.Root>
+
+<RowSelectionBar
+	count={selection.size}
+	dimension={SurfaceDimension.SOFTWARE}
+	{projectId}
+	{scanId}
+	copy={[
+		{ label: 'CVEs', values: () => [...new Set(selection.rows().map((r) => r.cve))] },
+		{
+			label: 'web assets',
+			values: () => [
+				...new Set(
+					selection
+						.rows()
+						.map((r) => r.host ?? r.ip ?? '')
+						.filter(Boolean)
+				)
+			]
+		}
+	]}
+	ids={() => selection.ids()}
+	{exportFilters}
+	onDeleted={() => {
+		selection.clear();
+		void runSearch();
+		void loadSide();
+	}}
+	onClear={() => selection.clear()}
+/>
 
 <SoftwareDetailSheet
 	row={selected}

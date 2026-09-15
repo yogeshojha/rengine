@@ -3,6 +3,7 @@ import uuid
 from pydantic import BaseModel, ConfigDict, Field
 
 from shared.definitions.asset_query import MAX_QUERY_LENGTH
+from shared.definitions.surface import MAX_SELECTED_ROWS
 from shared.models.asset_query import QueryError
 from shared.models.http_asset import HttpAssetRead
 from shared.models.ip_address import IpAddressRead
@@ -98,6 +99,7 @@ class IpGroupPage(BaseModel):
 class IpGroupFilter(BaseModel):
     model_config = ConfigDict(extra="forbid")
     q: str | None = Field(default=None, max_length=MAX_QUERY_LENGTH)
+    ids: list[str] = Field(default_factory=list, max_length=MAX_SELECTED_ROWS)
     exposure: list[str] = Field(default_factory=list, max_length=4)
     asns: list[int] = Field(default_factory=list, max_length=100)
     countries: list[str] = Field(default_factory=list, max_length=100)
@@ -185,6 +187,7 @@ class ServicePage(BaseModel):
 class ServiceFilter(BaseModel):
     model_config = ConfigDict(extra="forbid")
     q: str | None = Field(default=None, max_length=MAX_QUERY_LENGTH)
+    ids: list[uuid.UUID] = Field(default_factory=list, max_length=MAX_SELECTED_ROWS)
     classes: list[str] = Field(default_factory=list, max_length=10)
     ports: list[int] = Field(default_factory=list, max_length=200)
     services: list[str] = Field(default_factory=list, max_length=200)

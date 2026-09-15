@@ -144,6 +144,8 @@ def derived(scope: QueryScope):
 
 
 def apply_filter(query, d, f: ServiceFilter, scope: QueryScope):
+    if f.ids:
+        query = query.where(d.c.id.in_(f.ids))
     if f.classes:
         query = query.where(d.c.service_class.in_(f.classes))
     if f.ports:

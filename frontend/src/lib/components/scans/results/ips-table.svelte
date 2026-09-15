@@ -9,6 +9,7 @@
 	import SearchX from '@lucide/svelte/icons/search-x';
 	import Network from '@lucide/svelte/icons/network';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import Settings2 from '@lucide/svelte/icons/settings-2';
 
 	import * as Card from '$lib/components/ui/card';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -24,6 +25,8 @@
 	import { readPref, rowPadding, selectAllState, withTarget, writePref } from './table/columns';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import SelectionBar from './table/selection-bar.svelte';
+	import RowSelectionBar from './table/row-selection-bar.svelte';
+	import LoadingButton from '$lib/components/loading-button.svelte';
 	import type { SeedPick, SeedSelection } from '$lib/types/recheck';
 	import GroupList from './table/group-list.svelte';
 	import FilterBar from './ips/filter-bar.svelte';
@@ -172,11 +175,6 @@
 	});
 	$effect(() => writePref(STORAGE_KEYS.ipsDensity, density));
 	$effect(() => writePref(STORAGE_KEYS.ipsPageSize, pageSize));
-	$effect(() => {
-		const ips = new Set(items.map((g) => g.ip));
-		for (const ip of checkedIps) if (!ips.has(ip)) checkedIps.delete(ip);
-	});
-
 	let reqId = 0;
 	let timer: ReturnType<typeof setTimeout> | null = null;
 	let lastSig = '';
@@ -639,7 +637,6 @@
 
 	{#if !groupBy}
 		<SelectionBar
-			count={checkedIps.size}
 			noun={IP.noun}
 			nounPlural={IP.nounPlural}
 			{total}
@@ -647,11 +644,8 @@
 			maxAssets={rechecks.schema?.max_assets ?? 0}
 			queryActive={Boolean(query.search.trim()) || chips.length > 0}
 			busy={rescanBusy}
-			onRescan={rescanSelection}
-			onOptions={openRescanOptions}
 			onRescanAll={rescanAllMatching}
 			onRescanAllOptions={openRescanAllOptions}
-			onClear={() => checkedIps.clear()}
 		/>
 	{/if}
 
@@ -757,8 +751,6 @@
 			{pageSize}
 			noun={IP.noun}
 			plural={IP.nounPlural}
-			selectedCount={checkedCount}
-			onClearSelection={() => checkedIps.clear()}
 			onPage={(p) => (pageIndex = p)}
 			onPageSize={(s) => {
 				pageSize = s;
@@ -767,6 +759,39 @@
 		/>
 	{/if}
 </Card.Root>
+
+<RowSelectionBar
+	count={checkedIps.size}
+	dimension={SurfaceDimension.IPS}
+	{projectId}
+	{scanId}
+	copy={[{ label: 'addresses', values: () => [...checkedIps] }]}
+	ids={() => [...checkedIps]}
+	{exportFilters}
+	onDeleted={() => {
+		checkedIps.clear();
+		void refresh();
+	}}
+	onClear={() => checkedIps.clear()}
+>
+	{#snippet actions()}
+		<LoadingButton
+			variant="ghost"
+			size="sm"
+			class="gap-2 font-medium"
+			loading={rescanBusy}
+			loadingLabel="Starting"
+			onclick={rescanSelection}
+		>
+			<RefreshCw class="h-3.5 w-3.5 text-muted-foreground" />
+			Rescan
+		</LoadingButton>
+		<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={openRescanOptions}>
+			<Settings2 class="h-3.5 w-3.5 text-muted-foreground" />
+			Options
+		</Button>
+	{/snippet}
+</RowSelectionBar>
 
 <IpDetailSheet
 	group={selected}

@@ -18,6 +18,8 @@
 		targetId?: string;
 		filters: Record<string, unknown>;
 		disabled?: boolean;
+		ids?: string[];
+		compact?: boolean;
 	}
 
 	let {
@@ -26,7 +28,9 @@
 		scanId = '',
 		targetId = '',
 		filters,
-		disabled = false
+		disabled = false,
+		ids = [],
+		compact = false
 	}: Props = $props();
 
 	let sheetOpen = $state(false);
@@ -63,6 +67,7 @@
 					include_evidence: offersEvidence && withEvidence,
 					filters: {
 						...filters,
+						ids: ids.length ? ids : undefined,
 						limit: undefined,
 						offset: undefined,
 						page: undefined,
@@ -87,22 +92,22 @@
 		{#snippet child({ props })}
 			<Button
 				{...props}
-				variant="outline"
+				variant={compact ? 'ghost' : 'outline'}
 				size="sm"
-				class="h-9 gap-2"
+				class={compact ? 'gap-2 font-medium' : 'h-9 gap-2'}
 				disabled={disabled || !projectId}
 			>
 				{#if pending || live}
-					<Spinner class="size-4" />
+					<Spinner class={compact ? 'size-3.5' : 'size-4'} />
 				{:else}
-					<Download class="size-4" />
+					<Download class={compact ? 'size-3.5 text-muted-foreground' : 'size-4'} />
 				{/if}
-				<span class="hidden sm:inline">Export</span>
+				<span class={compact ? '' : 'hidden sm:inline'}>Export</span>
 			</Button>
 		{/snippet}
 	</DropdownMenu.Trigger>
-	<DropdownMenu.Content align="end" class="w-48">
-		<DropdownMenu.Label>Export this view</DropdownMenu.Label>
+	<DropdownMenu.Content align={compact ? 'center' : 'end'} class="w-48">
+		<DropdownMenu.Label>{compact ? 'Export selection' : 'Export this view'}</DropdownMenu.Label>
 		<DropdownMenu.Separator />
 		{#each EXPORT_FORMATS as format (format)}
 			<DropdownMenu.Item onclick={() => start(format)}>
@@ -122,12 +127,16 @@
 				Adds the stored request and response. Scan headers are masked. Response bodies are not.
 			</p>
 		{/if}
-		<DropdownMenu.Separator />
-		<DropdownMenu.Item onclick={openHistory}>
-			<History class="size-3.5" />
-			Past exports
-		</DropdownMenu.Item>
+		{#if !compact}
+			<DropdownMenu.Separator />
+			<DropdownMenu.Item onclick={openHistory}>
+				<History class="size-3.5" />
+				Past exports
+			</DropdownMenu.Item>
+		{/if}
 	</DropdownMenu.Content>
 </DropdownMenu.Root>
 
-<ExportsSheet bind:open={sheetOpen} {projectId} {scanId} {targetId} />
+{#if !compact}
+	<ExportsSheet bind:open={sheetOpen} {projectId} {scanId} {targetId} />
+{/if}

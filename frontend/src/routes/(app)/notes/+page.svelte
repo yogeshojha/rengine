@@ -10,6 +10,9 @@
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import NoteCard from '$lib/components/notes/note-card.svelte';
+	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
+	import { notesApi } from '$lib/api/notes';
+	import { SvelteSet } from 'svelte/reactivity';
 	import { notes } from '$lib/stores/notes.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { SURFACE_ORDER } from '$lib/config/surface';
@@ -29,6 +32,7 @@
 	let counts = $state<Record<string, number>>({ all: 0, open: 0, resolved: 0 });
 	let reqId = 0;
 	let timer: ReturnType<typeof setTimeout> | null = null;
+	const picked = new SvelteSet<string>();
 
 	const STATUS_TABS = [
 		...NOTE_STATUSES.map((status) => ({ key: status, label: NOTE_STATUS_LABELS[status] })),
@@ -96,6 +100,11 @@
 			timer = setTimeout(() => void loadPage(), search ? 250 : 0);
 		});
 	});
+
+	function toggleCheck(id: string) {
+		if (picked.has(id)) picked.delete(id);
+		else picked.add(id);
+	}
 
 	function toggleTag(id: string) {
 		tagIds = tagIds.includes(id) ? tagIds.filter((t) => t !== id) : [...tagIds, id];
@@ -199,7 +208,7 @@
 		{:else}
 			<div class="transition-opacity {loading ? 'opacity-60' : ''}">
 				{#each items as note (note.id)}
-					<NoteCard {note} onChanged={reload} />
+					<NoteCard {note} checked={picked.has(note.id)} onCheck={toggleCheck} onChanged={reload} />
 				{/each}
 			</div>
 			{#if total > items.length}
@@ -210,3 +219,14 @@
 		{/if}
 	</Card.Root>
 </div>
+
+<SelectionDeleteBar
+	ids={[...picked]}
+	noun="note"
+	remove={(id) => notesApi.remove(projectId, id)}
+	onDone={() => {
+		picked.clear();
+		reload();
+	}}
+	onClear={() => picked.clear()}
+/>

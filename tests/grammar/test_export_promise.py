@@ -5,6 +5,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import pytest
+import sqlalchemy as sa
 
 from app.services.endpoint import EndpointService
 from app.services.ip_address import IpAddressService
@@ -14,7 +15,7 @@ from app.services.vulnerability import VulnerabilityService
 from shared.definitions.surface import SurfaceDimension
 from shared.models.endpoint import EndpointFilter
 from shared.models.scan_correlation import IpGroupFilter, ServiceFilter
-from shared.models.subdomain import SubdomainFilter
+from shared.models.subdomain import Subdomain, SubdomainFilter
 from shared.models.vulnerability import VulnerabilityFilter
 from shared.services.asset_export import runner
 from shared.services.asset_query import QueryScope
@@ -110,6 +111,25 @@ async def test_an_export_writes_the_rows_the_table_shows(
         )
 
     assert await _export_rows(estate, dimension, filters) == page.total
+
+
+async def test_an_export_of_a_selection_writes_only_the_chosen_rows(
+    durable_estate, now
+):
+    estate = durable_estate
+    await _seed(estate, now)
+    chosen = (
+        await estate.session.scalars(
+            sa.select(Subdomain.id)
+            .where(Subdomain.scan_id == estate.scans["run"])
+            .order_by(Subdomain.name)
+            .limit(2)
+        )
+    ).all()
+
+    assert (
+        await _export_rows(estate, "web_assets", {"ids": [str(i) for i in chosen]}) == 2
+    )
 
 
 async def test_a_filter_that_matches_nothing_exports_nothing(durable_estate, now):

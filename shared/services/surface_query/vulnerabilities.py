@@ -41,6 +41,8 @@ def context(scope: QueryScope, now: datetime) -> VulnQueryContext:
 
 
 def apply_filter(query, f: VulnerabilityFilter, scope: QueryScope):
+    if f.ids:
+        query = query.where(Vulnerability.id.in_(f.ids))
     if f.severities:
         query = query.where(Vulnerability.severity.in_(f.severities))
     elif not f.include_info:

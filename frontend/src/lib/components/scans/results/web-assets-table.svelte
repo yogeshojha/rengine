@@ -10,6 +10,7 @@
 	import Globe from '@lucide/svelte/icons/globe';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import PanelRight from '@lucide/svelte/icons/panel-right';
+	import Settings2 from '@lucide/svelte/icons/settings-2';
 
 	import * as Card from '$lib/components/ui/card';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -30,6 +31,8 @@
 	import HygieneRail from './web-assets/hygiene-rail.svelte';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import SelectionBar from './table/selection-bar.svelte';
+	import RowSelectionBar from './table/row-selection-bar.svelte';
+	import LoadingButton from '$lib/components/loading-button.svelte';
 	import { RowSelection } from './table/selection.svelte';
 	import GroupList from './table/group-list.svelte';
 	import WebAssetDetailSheet from './web-asset-detail-sheet.svelte';
@@ -541,10 +544,10 @@
 	}
 	function toggleCheck(id: string) {
 		const row = items.find((s) => s.id === id);
-		if (row) selection.toggle(row, pickOf(row));
+		if (row) selection.toggle(row);
 	}
 	function toggleSelectAll() {
-		selection.toggleAll(items, pickOf);
+		selection.toggleAll(items);
 	}
 	function toggleCol(key: string) {
 		visiblePref = visible.includes(key) ? visible.filter((k) => k !== key) : [...visible, key];
@@ -652,7 +655,7 @@
 	}
 
 	function rescanSelection() {
-		const picks = selection.picks();
+		const picks = selection.rows().map(pickOf);
 		if (picks.length) return void rescan(selectionOf(picks));
 		const row = cursor >= 0 ? items[cursor] : null;
 		if (row) void rescan(selectionOf([pickOf(row)]));
@@ -697,7 +700,7 @@
 	let rescanOptionsFor = $state<SeedSelection | null>(null);
 
 	function openRescanOptions() {
-		const picks = selection.picks();
+		const picks = selection.rows().map(pickOf);
 		if (picks.length) rescanOptionsFor = selectionOf(picks);
 	}
 
@@ -828,7 +831,6 @@
 
 	{#if !groupBy}
 		<SelectionBar
-			count={pickedCount}
 			noun={WEB.noun}
 			nounPlural={WEB.nounPlural}
 			{total}
@@ -836,11 +838,8 @@
 			maxAssets={rechecks.schema?.max_assets ?? 0}
 			queryActive={Boolean(query.search.trim()) || chips.length > 0}
 			busy={rescanBusy}
-			onRescan={rescanSelection}
-			onOptions={openRescanOptions}
 			onRescanAll={rescanAllMatching}
 			onRescanAllOptions={openRescanAllOptions}
-			onClear={() => selection.clear()}
 		/>
 	{/if}
 
@@ -979,8 +978,6 @@
 					{pageSize}
 					noun={WEB.noun}
 					plural={WEB.nounPlural}
-					selectedCount={pickedCount}
-					onClearSelection={() => selection.clear()}
 					onPage={(p) => (pageIndex = p)}
 					onPageSize={(s) => {
 						pageSize = s;
@@ -999,6 +996,49 @@
 		{/if}
 	</div>
 </Card.Root>
+
+<RowSelectionBar
+	count={pickedCount}
+	dimension={SurfaceDimension.WEB_ASSETS}
+	{projectId}
+	{scanId}
+	copy={[
+		{ label: 'names', values: () => selection.rows().map((s) => s.name) },
+		{
+			label: 'URLs',
+			values: () =>
+				selection
+					.rows()
+					.map((s) => s.http_url ?? '')
+					.filter(Boolean)
+		}
+	]}
+	ids={() => selection.ids()}
+	{exportFilters}
+	onDeleted={() => {
+		selection.clear();
+		void refresh();
+	}}
+	onClear={() => selection.clear()}
+>
+	{#snippet actions()}
+		<LoadingButton
+			variant="ghost"
+			size="sm"
+			class="gap-2 font-medium"
+			loading={rescanBusy}
+			loadingLabel="Starting"
+			onclick={rescanSelection}
+		>
+			<RefreshCw class="h-3.5 w-3.5 text-muted-foreground" />
+			Rescan
+		</LoadingButton>
+		<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={openRescanOptions}>
+			<Settings2 class="h-3.5 w-3.5 text-muted-foreground" />
+			Options
+		</Button>
+	{/snippet}
+</RowSelectionBar>
 
 <WebAssetDetailSheet
 	sub={selected}

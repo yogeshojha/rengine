@@ -48,6 +48,7 @@ from shared.models.software import (
 )
 from shared.models.threat_intel import ThreatFeed
 from shared.services.asset_query import lead_cache
+from shared.services.surface_query import software as surface_software
 from shared.utils.datetime import utc_now
 from shared.utils.software import normalize_product
 
@@ -55,19 +56,6 @@ logger = get_logger(__name__)
 
 _FACET_LIMIT = 20
 _UNMAPPED_SHOWN = 25
-_SORTS = {
-    "rank": SoftwareCve.exploit_score,
-    "cvss": SoftwareCve.cvss_score,
-    "epss": SoftwareCve.epss_score,
-    "cve": SoftwareCve.cve,
-    "software": SoftwareCve.name,
-    "host": SoftwareCve.host,
-    "seen": SoftwareCve.discovered_at,
-}
-
-
-def _severity_rank():
-    return func.coalesce(SoftwareCve.cvss_score, 0.0)
 
 
 class SoftwareService:
@@ -78,20 +66,10 @@ class SoftwareService:
         return SoftwareQueryContext(scope=scope, now=now)
 
     def _scoped(self, scope: QueryScope):
-        return select(SoftwareCve).where(scope.match(SoftwareCve.scan_id))
+        return surface_software.scoped(scope, SoftwareFilter())
 
     def _order(self, base, f: SoftwareFilter):
-        column = _SORTS.get((f.sort or "").lower())
-        descending = (f.direction or "desc").lower() != "asc"
-        if column is None:
-            return base.order_by(
-                SoftwareCve.exploit_score.desc(),
-                _severity_rank().desc(),
-                SoftwareCve.cve.desc(),
-                SoftwareCve.id,
-            )
-        ordered = column.desc() if descending else column.asc()
-        return base.order_by(ordered, SoftwareCve.cve, SoftwareCve.id)
+        return surface_software.order(base, f)
 
     async def search(self, scope: ScopeLike, f: SoftwareFilter) -> SoftwarePage:
         scope = QueryScope.of(scope)

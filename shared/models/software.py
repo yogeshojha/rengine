@@ -13,6 +13,7 @@ from shared.definitions.software import (
     Confidence,
     VersionSource,
 )
+from shared.definitions.surface import MAX_SELECTED_ROWS
 from shared.definitions.vulnerabilities import Severity
 from shared.models.asset_query import QueryError
 from shared.utils.datetime import utc_now
@@ -203,6 +204,7 @@ class SoftwarePage(BaseModel):
 class SoftwareFilter(BaseModel):
     model_config = ConfigDict(extra="forbid")
     q: str | None = None
+    ids: list[uuid.UUID] = Field(default_factory=list, max_length=MAX_SELECTED_ROWS)
     limit: int = 50
     offset: int = 0
     sort: str | None = None

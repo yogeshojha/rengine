@@ -139,6 +139,8 @@ def exposure_bucket(d, bucket: str):
 
 
 def apply_filter(q, d, f: IpGroupFilter, scope: QueryScope):
+    if f.ids:
+        q = q.where(d.c.ip.in_(f.ids))
     if f.exposure:
         buckets = [exposure_bucket(d, b) for b in f.exposure]
         q = q.where(or_(*[b for b in buckets if b is not None]))

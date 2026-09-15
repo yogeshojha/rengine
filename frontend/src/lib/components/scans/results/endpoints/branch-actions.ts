@@ -1,7 +1,7 @@
 import { toast } from 'svelte-sonner';
 import { endpointsApi } from '$lib/api/scan-results';
 import { writeClipboard } from '$lib/utilities/clipboard';
-import type { EndpointFilter, TreeNode } from '$lib/utilities/endpoints';
+import type { EndpointFilter, EndpointRead, TreeNode } from '$lib/utilities/endpoints';
 
 export const COPY_CAP = 5000;
 const COPY_PAGE = 200;
@@ -26,18 +26,26 @@ export function branchFilter(scope: BranchScope, node: TreeNode): EndpointFilter
 	};
 }
 
+export async function collectRows(
+	scope: BranchScope,
+	node: TreeNode
+): Promise<{ rows: EndpointRead[]; capped: boolean }> {
+	const base = branchFilter(scope, node);
+	const rows: EndpointRead[] = [];
+	for (let page = 1; rows.length < COPY_CAP; page++) {
+		const res = await endpointsApi.search(scope.projectId, scope.scanId, { ...base, page });
+		rows.push(...res.items);
+		if (res.items.length < COPY_PAGE || rows.length >= res.total) break;
+	}
+	return { rows: rows.slice(0, COPY_CAP), capped: rows.length >= COPY_CAP };
+}
+
 export async function collectUrls(
 	scope: BranchScope,
 	node: TreeNode
 ): Promise<{ urls: string[]; capped: boolean }> {
-	const base = branchFilter(scope, node);
-	const urls: string[] = [];
-	for (let page = 1; urls.length < COPY_CAP; page++) {
-		const res = await endpointsApi.search(scope.projectId, scope.scanId, { ...base, page });
-		urls.push(...res.items.map((e) => e.url));
-		if (res.items.length < COPY_PAGE || urls.length >= res.total) break;
-	}
-	return { urls: [...new Set(urls)].slice(0, COPY_CAP), capped: urls.length >= COPY_CAP };
+	const { rows, capped } = await collectRows(scope, node);
+	return { urls: [...new Set(rows.map((e) => e.url))].slice(0, COPY_CAP), capped };
 }
 
 export async function copyBranch(scope: BranchScope, node: TreeNode) {

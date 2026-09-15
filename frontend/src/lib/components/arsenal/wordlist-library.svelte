@@ -13,8 +13,12 @@
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
+	import { Checkbox } from '$lib/components/ui/checkbox';
+	import { SvelteSet } from 'svelte/reactivity';
 	import WordlistSheet from './wordlist-sheet.svelte';
 	import { wordlists as store } from '$lib/stores/wordlists.svelte';
+	import { wordlistsApi } from '$lib/api/wordlists';
 	import { relativeTime } from '$lib/utilities/dates';
 	import {
 		WORDLIST_KINDS,
@@ -31,6 +35,7 @@
 	let fileInput = $state<HTMLInputElement | null>(null);
 	let removing = $state<Wordlist | null>(null);
 	let viewing = $state<Wordlist | null>(null);
+	const picked = new SvelteSet<string>();
 
 	$effect(() => {
 		store.fetch();
@@ -44,6 +49,11 @@
 			WORDLIST_KINDS.map((k) => [k, store.wordlists.filter((w) => w.kind === k).length])
 		) as Record<WordlistKind, number>
 	);
+
+	function toggleCheck(id: string) {
+		if (picked.has(id)) picked.delete(id);
+		else picked.add(id);
+	}
 
 	function size(bytes: number): string {
 		if (bytes < 1024) return `${bytes} B`;
@@ -165,7 +175,20 @@
 				</div>
 			{:else}
 				{#each items as item (item.id)}
-					<div class="flex items-start gap-4 border-b px-6 py-4 last:border-b-0 hover:bg-muted/40">
+					<div
+						class="group flex items-start gap-4 border-b px-6 py-4 last:border-b-0 hover:bg-muted/40"
+					>
+						{#if item.origin !== 'builtin'}
+							<div class="flex h-6 shrink-0 items-center">
+								<Checkbox
+									checked={picked.has(item.id)}
+									onCheckedChange={() => toggleCheck(item.id)}
+									aria-label="Select {item.name}"
+								/>
+							</div>
+						{:else}
+							<div class="w-4 shrink-0"></div>
+						{/if}
 						<div class="min-w-0 flex-1 space-y-1">
 							<div class="flex flex-wrap items-center gap-2">
 								<span class="font-medium">{item.name}</span>
@@ -231,6 +254,18 @@
 		</Card.Content>
 	</Card.Root>
 </div>
+
+<SelectionDeleteBar
+	ids={[...picked]}
+	noun="wordlist"
+	removes="files"
+	remove={(id) => wordlistsApi.remove(id)}
+	onDone={async () => {
+		picked.clear();
+		await store.fetch(true);
+	}}
+	onClear={() => picked.clear()}
+/>
 
 <WordlistSheet
 	wordlist={viewing}

@@ -10,6 +10,8 @@ from shared.definitions.surface import (
     SurfaceDimension,
 )
 from shared.models.endpoint import Endpoint
+from shared.models.secret import Secret
+from shared.models.software import SoftwareCve
 from shared.models.subdomain import Subdomain
 from shared.models.vulnerability import Vulnerability
 from shared.services.asset_query import (
@@ -34,6 +36,8 @@ UNAVAILABLE: dict[str, frozenset[str]] = {
     SurfaceDimension.SERVICES.value: frozenset(),
     SurfaceDimension.IPS.value: frozenset(),
     SurfaceDimension.VULNERABILITIES.value: frozenset(),
+    SurfaceDimension.SOFTWARE.value: frozenset(),
+    SurfaceDimension.SECRETS.value: frozenset(),
 }
 
 # a display column the row carries under another name
@@ -52,6 +56,8 @@ JOINED: dict[str, frozenset[str]] = {
     SurfaceDimension.IPS.value: frozenset({"ports", "hosts"}),
     SurfaceDimension.ENDPOINTS.value: frozenset(),
     SurfaceDimension.VULNERABILITIES.value: frozenset(),
+    SurfaceDimension.SOFTWARE.value: frozenset(),
+    SurfaceDimension.SECRETS.value: frozenset(),
 }
 
 # the stored proof a scanner captured, written only when the export asks for it
@@ -63,6 +69,8 @@ _MODELS = {
     SurfaceDimension.WEB_ASSETS.value: Subdomain,
     SurfaceDimension.ENDPOINTS.value: Endpoint,
     SurfaceDimension.VULNERABILITIES.value: Vulnerability,
+    SurfaceDimension.SOFTWARE.value: SoftwareCve,
+    SurfaceDimension.SECRETS.value: Secret,
 }
 
 

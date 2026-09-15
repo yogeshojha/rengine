@@ -6,6 +6,8 @@
 	import Sparkle from '@lucide/svelte/icons/sparkle';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import Eye from '@lucide/svelte/icons/eye';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
+	import Copy from '@lucide/svelte/icons/copy';
 	import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
 	import { toast } from 'svelte-sonner';
 	import * as Card from '$lib/components/ui/card';
@@ -25,6 +27,9 @@
 	import { ROUTES } from '$lib/config/routes';
 	import { relativeTime } from '$lib/utilities/dates';
 	import type { InterestPage, InterestRow, RuleSuggestion } from '$lib/types/interest';
+	import SelectionActionBar from '$lib/components/selection-action-bar.svelte';
+	import { writeClipboard } from '$lib/utilities/clipboard';
+	import { SvelteMap } from 'svelte/reactivity';
 	import InterestRowItem from './interest-row.svelte';
 	import InterestDetailSheet from './interest-detail-sheet.svelte';
 	import SuggestionRow from './suggestion-row.svelte';
@@ -72,6 +77,8 @@
 	let askedFor = '';
 	let selected = $state<InterestRow | null>(null);
 	let loaded = false;
+	const picked = new SvelteMap<string, InterestRow>();
+	let dismissing = $state(false);
 
 	let summary = $derived(data?.summary ?? null);
 	let bandTabs = $derived([
@@ -183,6 +190,39 @@
 		} catch {
 			toast.error(`${row.host} not dismissed`);
 		}
+	}
+
+	function toggleCheck(row: InterestRow): void {
+		if (picked.has(row.subdomain_id)) picked.delete(row.subdomain_id);
+		else picked.set(row.subdomain_id, row);
+	}
+
+	async function dismissPicked(): Promise<void> {
+		const rows = [...picked.values()];
+		if (!rows.length) return;
+		dismissing = true;
+		try {
+			const result = await interestApi.dismissMany(
+				rows.map((row) => ({ host: row.host, target_id: row.target_id || targetId }))
+			);
+			picked.clear();
+			toast.success(
+				`${result.dismissed.toLocaleString()} ${result.dismissed === 1 ? 'exposure' : 'exposures'} dismissed`
+			);
+			await run();
+		} catch {
+			toast.error('Exposures not dismissed.');
+		} finally {
+			dismissing = false;
+		}
+	}
+
+	async function copyPicked(): Promise<void> {
+		const names = [...picked.values()].map((row) => row.host);
+		if (!names.length) return;
+		if (await writeClipboard(names.join('\n')))
+			toast.success(`${names.length.toLocaleString()} web assets copied`);
+		else toast.error('Clipboard not available.');
 	}
 
 	function pickKind(kind: string): void {
@@ -417,6 +457,8 @@
 					<InterestRowItem
 						{row}
 						rank={(page - 1) * PAGE_SIZE + i + 1}
+						checked={picked.has(row.subdomain_id)}
+						onCheck={toggleCheck}
 						onOpen={(r) => (selected = r)}
 						onKind={pickKind}
 						onDismiss={dismiss}
@@ -454,6 +496,24 @@
 		{/if}
 	</Card.Root>
 </div>
+
+<SelectionActionBar selectedCount={picked.size} noun="exposure" onClear={() => picked.clear()}>
+	<LoadingButton
+		variant="ghost"
+		size="sm"
+		class="gap-2 font-medium"
+		loading={dismissing}
+		loadingLabel="Dismissing"
+		onclick={dismissPicked}
+	>
+		<EyeOff class="h-3.5 w-3.5 text-muted-foreground" />
+		Dismiss
+	</LoadingButton>
+	<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={copyPicked}>
+		<Copy class="h-3.5 w-3.5 text-muted-foreground" />
+		Copy web assets
+	</Button>
+</SelectionActionBar>
 
 <InterestDetailSheet
 	row={selected}

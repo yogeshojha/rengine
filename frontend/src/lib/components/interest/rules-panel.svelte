@@ -17,6 +17,9 @@
 	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
 	import PanelHead from '$lib/components/panel-head.svelte';
 	import { interestApi } from '$lib/api/interest';
+	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
+	import { Checkbox } from '$lib/components/ui/checkbox';
+	import { SvelteSet } from 'svelte/reactivity';
 	import { interestCatalog } from '$lib/stores/interest-catalog.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { kindIcon } from '$lib/config/interest';
@@ -76,6 +79,13 @@
 		} catch {
 			toast.error(`${rule.name} not updated`);
 		}
+	}
+
+	const picked = new SvelteSet<string>();
+
+	function toggleCheck(id: string) {
+		if (picked.has(id)) picked.delete(id);
+		else picked.add(id);
 	}
 
 	async function remove(): Promise<void> {
@@ -184,6 +194,16 @@
 				{#each queryRules as rule (rule.id)}
 					{@const Icon = kindIcon(rule.kind)}
 					<div class="group flex items-center gap-3 px-5 py-3 hover:bg-accent/40">
+						{#if rule.builtin}
+							<span class="w-4 shrink-0"></span>
+						{:else}
+							<Checkbox
+								checked={picked.has(rule.id)}
+								onCheckedChange={() => toggleCheck(rule.id)}
+								aria-label="Select {rule.name}"
+								class="shrink-0"
+							/>
+						{/if}
 						<Icon class="size-4 shrink-0 text-muted-foreground" />
 						<div class="flex min-w-0 flex-1 flex-col gap-0.5">
 							<span class="flex flex-wrap items-center gap-2 text-xs font-medium">
@@ -263,4 +283,16 @@
 	title="Delete {removing?.name ?? 'rule'}"
 	description="The rule and its labels on flagged assets are removed."
 	onConfirm={remove}
+/>
+
+<SelectionDeleteBar
+	ids={[...picked]}
+	noun="rule"
+	removes="labels on flagged assets"
+	remove={(id) => interestApi.deleteRule(projectId, id)}
+	onDone={async () => {
+		picked.clear();
+		await load(projectId);
+	}}
+	onClear={() => picked.clear()}
 />

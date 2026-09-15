@@ -1,5 +1,10 @@
 import { api } from './client';
-import type { SurfaceCoverage, SurfaceOverview } from '$lib/types/surface';
+import type {
+	SurfaceCoverage,
+	SurfaceDelete,
+	SurfaceDeleteResult,
+	SurfaceOverview
+} from '$lib/types/surface';
 
 export const surfaceApi = {
 	async overview(projectId: string): Promise<SurfaceOverview> {
@@ -10,5 +15,14 @@ export const surfaceApi = {
 		return api.get<SurfaceCoverage>(
 			`/surface/coverage?project_id=${projectId}&dimension=${encodeURIComponent(dimension)}`
 		);
+	},
+
+	async remove(
+		body: SurfaceDelete,
+		scope: { projectId: string; scanId?: string }
+	): Promise<SurfaceDeleteResult> {
+		const params = new URLSearchParams({ project_id: scope.projectId });
+		if (scope.scanId) params.set('scan_id', scope.scanId);
+		return api.post<SurfaceDeleteResult>(`/surface/delete?${params}`, body);
 	}
 };

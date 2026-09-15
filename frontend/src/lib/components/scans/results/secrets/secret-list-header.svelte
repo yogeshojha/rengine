@@ -1,16 +1,26 @@
 <script lang="ts">
 	import ArrowDown from '@lucide/svelte/icons/arrow-down';
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
+	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { SECRET_WIDTHS, type SecretSortKey } from './columns';
 
 	interface Props {
 		projectWide?: boolean;
 		sortKey: string;
 		sortDir: 1 | -1;
+		selectAllChecked?: boolean | 'indeterminate';
+		onSelectAll?: () => void;
 		onSort: (key: SecretSortKey) => void;
 	}
 
-	let { projectWide = false, sortKey, sortDir, onSort }: Props = $props();
+	let {
+		projectWide = false,
+		sortKey,
+		sortDir,
+		selectAllChecked,
+		onSelectAll,
+		onSort
+	}: Props = $props();
 </script>
 
 {#snippet arrow(key: SecretSortKey)}
@@ -22,6 +32,16 @@
 <div
 	class="flex items-center gap-3 border-b border-border bg-muted/30 px-4 py-2 text-xs font-medium tracking-wider text-muted-foreground uppercase"
 >
+	{#if onSelectAll}
+		<div class="hidden shrink-0 sm:flex">
+			<Checkbox
+				checked={selectAllChecked === true}
+				indeterminate={selectAllChecked === 'indeterminate'}
+				onCheckedChange={onSelectAll}
+				aria-label="Select every secret on this page"
+			/>
+		</div>
+	{/if}
 	<div class="min-w-0 flex-1">Secret</div>
 
 	{#if projectWide}

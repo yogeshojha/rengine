@@ -18,7 +18,9 @@
 	import ResultsPagination from './table/results-pagination.svelte';
 	import ViewControls from './table/view-controls.svelte';
 	import GroupList from './table/group-list.svelte';
-	import { readPref, writePref } from './table/columns';
+	import { readPref, selectAllState, writePref } from './table/columns';
+	import RowSelectionBar from './table/row-selection-bar.svelte';
+	import { RowSelection } from './table/selection.svelte';
 	import SecretListHeader from './secrets/secret-list-header.svelte';
 	import SecretRow from './secrets/secret-row.svelte';
 	import SecretDetailSheet from './secrets/secret-detail-sheet.svelte';
@@ -110,6 +112,7 @@
 
 	let selected = $state<SecretDetail | null>(null);
 	let drawerOpen = $state(false);
+	const selection = new RowSelection<SecretRead>();
 
 	let ready = $derived(Boolean(projectId) && (projectWide || Boolean(scanId)));
 	let seen = $state(false);
@@ -118,6 +121,8 @@
 	});
 
 	let pageCount = $derived(Math.max(1, Math.ceil(total / pageSize)));
+	let checkedCount = $derived(selection.countOn(items));
+	let selectAllChecked = $derived(selectAllState(checkedCount, items.length));
 	let term = $derived(search.trim().includes(':') ? '' : search.trim());
 	let filtered = $derived(Boolean(search.trim()));
 	let stateCounts = $derived.by(() => {
@@ -130,6 +135,11 @@
 		const m = search.match(/(?:^|\s)state:([a-z]+)(?:\s|$)/);
 		return m ? m[1] : 'all';
 	});
+	let exportFilters = $derived({
+		q: search.trim() || null,
+		sort: sort.key,
+		direction: sort.dir === -1 ? 'desc' : 'asc'
+	} as unknown as Record<string, unknown>);
 	let barFacets = $derived<Record<string, Facet[]>>({
 		state: facets.state.map((f) => ({ value: f.key, label: f.label, count: f.count })),
 		group: facets.group.map((f) => ({ value: f.key, label: f.label, count: f.count })),
@@ -313,6 +323,15 @@
 		onQuery(search.replace(new RegExp(`(?:^|\\s)${escapeRe(token)}`, 'g'), '').trim());
 	}
 
+	function toggleCheck(id: string) {
+		const row = items.find((r) => r.id === id);
+		if (row) selection.toggle(row);
+	}
+
+	function toggleSelectAll() {
+		selection.toggleAll(items);
+	}
+
 	function onSort(key: string) {
 		sort = sort.key === key ? { key, dir: sort.dir === 1 ? -1 : 1 } : { key, dir: -1 };
 		pageIndex = 0;
@@ -397,7 +416,7 @@
 				}}
 				{projectId}
 				{scanId}
-				showExport={false}
+				{exportFilters}
 			/>
 		</div>
 	</div>
@@ -435,10 +454,25 @@
 			{/if}
 		</EmptyState>
 	{:else}
-		<SecretListHeader {projectWide} sortKey={sort.key} sortDir={sort.dir} {onSort} />
+		<SecretListHeader
+			{projectWide}
+			sortKey={sort.key}
+			sortDir={sort.dir}
+			{selectAllChecked}
+			onSelectAll={toggleSelectAll}
+			{onSort}
+		/>
 		<div class="divide-y divide-border transition-opacity {refreshing ? 'opacity-60' : ''}">
 			{#each items as row (row.id)}
-				<SecretRow {row} {term} selected={selected?.id === row.id} {projectWide} onOpen={openRow} />
+				<SecretRow
+					{row}
+					{term}
+					selected={selected?.id === row.id}
+					checked={selection.has(row.id)}
+					{projectWide}
+					onCheck={toggleCheck}
+					onOpen={openRow}
+				/>
 			{/each}
 		</div>
 
@@ -458,6 +492,25 @@
 		/>
 	{/if}
 </Card.Root>
+
+<RowSelectionBar
+	count={selection.size}
+	dimension={SurfaceDimension.SECRETS}
+	{projectId}
+	{scanId}
+	copy={[
+		{ label: 'values', values: () => selection.rows().map((r) => r.value) },
+		{ label: 'URLs', values: () => [...new Set(selection.rows().map((r) => r.url))] }
+	]}
+	ids={() => selection.ids()}
+	{exportFilters}
+	onDeleted={() => {
+		selection.clear();
+		void runSearch();
+		void loadSide();
+	}}
+	onClear={() => selection.clear()}
+/>
 
 <SecretDetailSheet
 	{scanId}

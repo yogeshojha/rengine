@@ -37,6 +37,8 @@ def context(scope: QueryScope, now: datetime) -> EndpointQueryContext:
 
 
 def apply_filter(query, f: EndpointFilter, scope: QueryScope):
+    if f.ids:
+        query = query.where(Endpoint.id.in_(f.ids))
     if f.host:
         query = query.where(Endpoint.host == f.host)
     if f.dir_path:

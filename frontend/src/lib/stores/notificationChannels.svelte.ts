@@ -60,6 +60,10 @@ function createNotificationChannelsStore() {
 			}
 		},
 
+		drop(id: string): void {
+			channels = channels.filter((c) => c.id !== id);
+		},
+
 		async remove(id: string): Promise<boolean> {
 			try {
 				await notificationChannelsApi.remove(id);

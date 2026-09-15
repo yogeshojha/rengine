@@ -19,6 +19,9 @@ class SurfaceDimension(StrEnum):
 
 SURFACE_ORDER: tuple[str, ...] = tuple(d.value for d in SurfaceDimension)
 
+# the most rows one selection may address
+MAX_SELECTED_ROWS = 1_000
+
 SURFACE_LABELS: dict[str, str] = {
     SurfaceDimension.WEB_ASSETS.value: "Web assets",
     SurfaceDimension.ENDPOINTS.value: "Endpoints",
@@ -158,6 +161,41 @@ SURFACE_COLUMNS: dict[str, tuple[str, ...]] = {
         "is_new",
         "tags",
     ),
+    SurfaceDimension.SOFTWARE.value: (
+        "cve",
+        "name",
+        "version",
+        "product",
+        "vendor",
+        "cpe",
+        "severity",
+        "cvss_score",
+        "epss_score",
+        "is_kev",
+        "exploit_score",
+        "evidence",
+        "confidence",
+        "caveats",
+        "version_source",
+        "host",
+        "ip",
+        "port",
+        "url",
+    ),
+    SurfaceDimension.SECRETS.value: (
+        "value",
+        "kind",
+        "group",
+        "vendor",
+        "state",
+        "subject",
+        "host",
+        "url",
+        "source",
+        "sightings",
+        "hosts",
+        "is_secret",
+    ),
 }
 
 # the column a human reads first
@@ -167,6 +205,8 @@ SURFACE_IDENTITY: dict[str, str] = {
     SurfaceDimension.SERVICES.value: "ip",
     SurfaceDimension.IPS.value: "ip",
     SurfaceDimension.VULNERABILITIES.value: "template_name",
+    SurfaceDimension.SOFTWARE.value: "cve",
+    SurfaceDimension.SECRETS.value: "value",
 }
 
 # the one value a plain text export writes per line, for piping into the next tool
@@ -176,14 +216,13 @@ SURFACE_TEXT_VALUE: dict[str, tuple[str, ...]] = {
     SurfaceDimension.SERVICES.value: ("ip", "port"),
     SurfaceDimension.IPS.value: ("ip",),
     SurfaceDimension.VULNERABILITIES.value: ("matched_at",),
+    SurfaceDimension.SOFTWARE.value: ("cve",),
+    SurfaceDimension.SECRETS.value: ("value",),
 }
 
 # a dimension an export can write: every map an export run reads has an entry for it
 EXPORTABLE_DIMENSIONS: tuple[str, ...] = tuple(
     d
     for d in SURFACE_ORDER
-    if d in SURFACE_COLUMNS
-    and d in SURFACE_IDENTITY
-    and d in SURFACE_TEXT_VALUE
-    and d in SURFACE_COUNT_COLUMNS
+    if d in SURFACE_COLUMNS and d in SURFACE_IDENTITY and d in SURFACE_TEXT_VALUE
 )

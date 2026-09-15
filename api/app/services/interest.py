@@ -615,6 +615,22 @@ class InterestReadService(InterestService):
         await self.session.commit()
         await lead_cache.bump((target_id,))
 
+    async def dismiss_many(
+        self,
+        rows: list[tuple[uuid.UUID, uuid.UUID, str, str]],
+        user_id: uuid.UUID,
+    ) -> int:
+        for target_id, project_id, host, kind in rows:
+            await self.dismiss(
+                target_id=target_id,
+                project_id=project_id,
+                host=host,
+                kind=kind,
+                note=None,
+                user_id=user_id,
+            )
+        return len(rows)
+
     async def restore(self, dismissal_id: uuid.UUID) -> bool:
         row = await self.session.get(InterestDismissal, dismissal_id)
         if row is None:

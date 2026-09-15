@@ -7,6 +7,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
+	import { Checkbox } from '$lib/components/ui/checkbox';
 	import Hint from '$lib/components/hint.svelte';
 	import EvidenceMark from '$lib/components/evidence-mark.svelte';
 	import TargetCell from '../table/target-cell.svelte';
@@ -29,8 +30,10 @@
 		columns: TableColumn[];
 		selected: boolean;
 		focused: boolean;
+		checked?: boolean;
 		projectWide?: boolean;
 		pad: string;
+		onCheck?: (id: string) => void;
 		onOpen: (row: SoftwareCve) => void;
 		onToken: (token: string) => void;
 	}
@@ -41,8 +44,10 @@
 		columns,
 		selected,
 		focused,
+		checked = false,
 		projectWide = false,
 		pad,
+		onCheck,
 		onOpen,
 		onToken
 	}: Props = $props();
@@ -82,6 +87,21 @@
 >
 	<span class="absolute inset-y-0 left-0 w-[3px]" style="background:{fill}" aria-hidden="true"
 	></span>
+
+	{#if onCheck}
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="hidden shrink-0 items-center sm:flex {pad}" onclick={stopProp}>
+			<Checkbox
+				{checked}
+				onCheckedChange={() => onCheck(row.id)}
+				aria-label="Select {row.cve}"
+				class="transition-opacity {checked
+					? 'opacity-100'
+					: 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'}"
+			/>
+		</div>
+	{/if}
 
 	{#if projectWide}
 		<div class="flex shrink-0 items-center {width.get('target')} {pad}">

@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import case, func, select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,7 +32,6 @@ from shared.definitions.secrets import (
     SOURCE_LABELS,
     STATE_LABELS,
     STATE_ORDER,
-    SecretState,
 )
 from shared.definitions.vulnerabilities import CoverageStatus
 from shared.logging import get_logger
@@ -52,27 +51,12 @@ from shared.models.secret import (
     SecretSightingRead,
 )
 from shared.services.asset_query import lead_cache
+from shared.services.surface_query import secrets as surface_secrets
 from shared.utils.datetime import utc_now
 
 logger = get_logger(__name__)
 
 _FACET_LIMIT = 20
-_SORTS = {
-    "kind": Secret.kind,
-    "hosts": Secret.hosts,
-    "sightings": Secret.sightings,
-    "seen": Secret.discovered_at,
-}
-# exposed, expired, public
-_STATE_RANK = case(
-    {
-        SecretState.EXPOSED.value: 3,
-        SecretState.EXPIRED.value: 2,
-        SecretState.PUBLIC.value: 1,
-    },
-    value=Secret.state,
-    else_=0,
-)
 
 
 class SecretService:
@@ -83,26 +67,10 @@ class SecretService:
         return SecretQueryContext(scope=scope, now=now)
 
     def _scoped(self, scope: QueryScope):
-        return select(Secret).where(scope.match(Secret.scan_id))
+        return surface_secrets.scoped(scope, SecretFilter())
 
     def _order(self, base, f: SecretFilter):
-        key = (f.sort or "state").lower()
-        descending = (f.direction or "desc").lower() != "asc"
-        if key == "state":
-            rank = _STATE_RANK.desc() if descending else _STATE_RANK.asc()
-            return base.order_by(
-                rank, Secret.hosts.desc(), Secret.discovered_at.desc(), Secret.id
-            )
-        column = _SORTS.get(key)
-        if column is None:
-            return base.order_by(
-                _STATE_RANK.desc(),
-                Secret.hosts.desc(),
-                Secret.discovered_at.desc(),
-                Secret.id,
-            )
-        ordered = column.desc() if descending else column.asc()
-        return base.order_by(ordered, Secret.discovered_at.desc(), Secret.id)
+        return surface_secrets.order(base, f)
 
     async def search(self, scope: ScopeLike, f: SecretFilter) -> SecretPage:
         scope = QueryScope.of(scope)

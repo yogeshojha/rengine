@@ -21,11 +21,13 @@
 	import CountTabs from '$lib/components/count-tabs.svelte';
 
 	import QueryBar from './query-bar/query-bar.svelte';
-	import { readPref, rowPadding, writePref } from './table/columns';
+	import { readPref, rowPadding, selectAllState, writePref } from './table/columns';
 	import ListHeader from './table/list-header.svelte';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import GroupList from './table/group-list.svelte';
 	import SelectionBar from './table/selection-bar.svelte';
+	import RowSelectionBar from './table/row-selection-bar.svelte';
+	import { RowSelection } from './table/selection.svelte';
 	import FilterBar from './endpoints/filter-bar.svelte';
 	import EndpointRow from './endpoints/endpoint-row.svelte';
 	import Outline from './endpoints/outline.svelte';
@@ -34,7 +36,7 @@
 	import HostHeader from './endpoints/host-header.svelte';
 	import CoverageStrip from './endpoints/coverage-strip.svelte';
 	import EndpointDetailSheet from './endpoint-detail-sheet.svelte';
-	import { copyBranch, copyWordlist, hostNode } from './endpoints/branch-actions';
+	import { collectRows, copyBranch, copyWordlist, hostNode } from './endpoints/branch-actions';
 	import { proxyLabel } from './endpoints/proxy';
 	import {
 		ENDPOINT_COLUMNS,
@@ -492,6 +494,34 @@
 	let exportFilters = $derived(
 		compiled(query, sort.key, sort.dir, 1, 1) as unknown as Record<string, unknown>
 	);
+	const selection = new RowSelection<Endpoint>();
+	let checkedCount = $derived(selection.countOn(items));
+	let selectAllChecked = $derived(selectAllState(checkedCount, items.length));
+
+	function toggleCheck(e: Endpoint) {
+		selection.toggle(e);
+	}
+
+	function toggleSelectAll() {
+		selection.toggleAll(items);
+	}
+
+	async function selectBranch(node: TreeNode) {
+		try {
+			const { rows, capped } = await collectRows(
+				{ projectId, scanId, filter: treeFilter, merged: isMerged },
+				node
+			);
+			for (const row of rows) if (!selection.has(row.id)) selection.toggle(row);
+			toast.success(
+				capped
+					? `First ${rows.length.toLocaleString()} endpoints selected`
+					: `${rows.length.toLocaleString()} ${rows.length === 1 ? 'endpoint' : 'endpoints'} selected`
+			);
+		} catch {
+			toast.error('Branch not selected.');
+		}
+	}
 	let leadFilter = $derived(compiled({ ...query, search: '' }, 'path', 1, 1, 1));
 	let leadSig = $derived(JSON.stringify(leadFilter));
 	let leadFilterWithQuery = $derived({ ...leadFilter, q: treeFilter.q });
@@ -1116,7 +1146,6 @@
 	</div>
 
 	<SelectionBar
-		count={0}
 		noun="host"
 		nounPlural="hosts"
 		{total}
@@ -1394,6 +1423,9 @@
 				onExpandedChange={(n) => (expandedCount = n)}
 				onVerify={projectWide ? undefined : verifyBranch}
 				onSend={proxies.length ? sendBranch : undefined}
+				checked={(id) => selection.has(id)}
+				onCheck={toggleCheck}
+				onSelectBranch={selectBranch}
 				edgeEl={headEl}
 				onCrumbs={(c) => (crumbs = c)}
 			/>
@@ -1432,6 +1464,9 @@
 						columns={shownColumns}
 						sortKey={sort.key}
 						sortDir={sort.dir}
+						{selectAllChecked}
+						selectAllLabel="Select every endpoint on this page"
+						onSelectAll={toggleSelectAll}
 						onSort={toggleSort}
 					/>
 					<div class="divide-y divide-border/50 transition-opacity {loading ? 'opacity-60' : ''}">
@@ -1444,6 +1479,8 @@
 									active={drawerOpen && selected?.id === e.id}
 									focused={cursor === i}
 									pad={rowPad}
+									checked={selection.has(e.id)}
+									onCheck={toggleCheck}
 									onOpen={open}
 									onFilter={applyDsl}
 								/>
@@ -1488,6 +1525,25 @@
 	connectors={proxies}
 	{catalog}
 	onSend={proxies.length ? sendEndpoint : undefined}
+/>
+
+<RowSelectionBar
+	count={selection.size}
+	dimension={SurfaceDimension.ENDPOINTS}
+	{projectId}
+	{scanId}
+	copy={[
+		{ label: 'URLs', values: () => selection.rows().map((e) => e.url) },
+		{ label: 'paths', values: () => [...new Set(selection.rows().map((e) => e.path))] },
+		{ label: 'web assets', values: () => [...new Set(selection.rows().map((e) => e.host))] }
+	]}
+	ids={() => selection.ids()}
+	{exportFilters}
+	onDeleted={() => {
+		selection.clear();
+		void refresh();
+	}}
+	onClear={() => selection.clear()}
 />
 
 <LaunchDialog

@@ -9,6 +9,7 @@
 	import ListOrdered from '@lucide/svelte/icons/list-ordered';
 	import ShieldCheck from '@lucide/svelte/icons/shield-check';
 	import Send from '@lucide/svelte/icons/send';
+	import SquareCheck from '@lucide/svelte/icons/square-check';
 
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
@@ -55,6 +56,7 @@
 		onList: () => void;
 		onVerify?: () => void;
 		onSend?: (connectorId: string) => void;
+		onSelectBranch?: () => void;
 	}
 
 	let {
@@ -77,7 +79,8 @@
 		onOnly,
 		onList,
 		onVerify,
-		onSend
+		onSend,
+		onSelectBranch
 	}: Props = $props();
 
 	let isGroup = $derived(node.kind === 'group');
@@ -253,6 +256,12 @@
 					{/snippet}
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content align="end" class="w-60">
+					{#if onSelectBranch}
+						<DropdownMenu.Item onclick={onSelectBranch}>
+							<SquareCheck class="size-3.5" /> Select this {noun}
+						</DropdownMenu.Item>
+						<DropdownMenu.Separator />
+					{/if}
 					<DropdownMenu.Item onclick={onOnly}>
 						<Filter class="size-3.5" /> Only this {noun}
 					</DropdownMenu.Item>

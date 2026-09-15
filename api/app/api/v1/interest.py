@@ -2,6 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
@@ -11,6 +12,8 @@ from app.services.interest import InterestError, InterestReadService, catalog
 from app.services.surface_scope import SurfaceScopeService
 from shared.definitions.surface import SurfaceDimension
 from shared.models.interest import (
+    BulkDismissRequest,
+    BulkDismissResult,
     DismissRequest,
     InterestCatalog,
     InterestFilter,
@@ -183,6 +186,32 @@ async def dismiss(
         note=payload.note,
         user_id=user.id,
     )
+
+
+@router.post("/dismiss/bulk", response_model=BulkDismissResult)
+async def dismiss_many(
+    session: SessionDep,
+    user: CurrentUser,
+    payload: BulkDismissRequest,
+) -> BulkDismissResult:
+    wanted = {row.target_id for row in payload.rows}
+    targets = dict(
+        (
+            await session.execute(
+                select(Target.id, Target.project_id).where(Target.id.in_(wanted))
+            )
+        ).all()
+    )
+    if wanted - targets.keys():
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Target not found")
+    count = await InterestReadService(session).dismiss_many(
+        [
+            (row.target_id, targets[row.target_id], row.host, row.kind or "")
+            for row in payload.rows
+        ],
+        user.id,
+    )
+    return BulkDismissResult(dismissed=count)
 
 
 @router.get("/dismissals", response_model=list[dict])

@@ -26,6 +26,9 @@
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
+	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
+	import { proxiesApi } from '$lib/api/proxies';
+	import { Checkbox } from '$lib/components/ui/checkbox';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import FormField from '$lib/components/form-field.svelte';
 	import { toast } from 'svelte-sonner';
@@ -182,6 +185,12 @@
 
 	// `reachable` is on the test result, not on the stored row, so the middle state lives here
 	const reachedOnly = new SvelteSet<string>();
+	const picked = new SvelteSet<string>();
+
+	function toggleCheck(id: string) {
+		if (picked.has(id)) picked.delete(id);
+		else picked.add(id);
+	}
 
 	async function handleTest(id: string) {
 		testingId = id;
@@ -293,6 +302,13 @@
 					<Card.Content class="p-5">
 						<div class="flex items-start justify-between gap-3">
 							<div class="flex min-w-0 items-start gap-3">
+								<div class="flex h-10 shrink-0 items-center">
+									<Checkbox
+										checked={picked.has(proxy.id)}
+										onCheckedChange={() => toggleCheck(proxy.id)}
+										aria-label="Select {proxy.name}"
+									/>
+								</div>
 								<div class="shrink-0 rounded-lg bg-muted p-2.5">
 									<RouteIcon class="size-5 text-foreground" />
 								</div>
@@ -648,4 +664,16 @@
 	{isDeleting}
 	onOpenChange={(o) => (deleteOpen = o)}
 	onConfirm={handleDelete}
+/>
+
+<SelectionDeleteBar
+	ids={[...picked]}
+	noun="proxy"
+	nounPlural="proxies"
+	remove={async (id) => {
+		await proxiesApi.remove(id);
+		proxiesStore.drop(id);
+	}}
+	onDone={() => picked.clear()}
+	onClear={() => picked.clear()}
 />

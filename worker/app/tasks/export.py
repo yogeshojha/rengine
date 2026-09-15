@@ -23,8 +23,8 @@ from shared.definitions.exports import (
     ExportStatus,
 )
 from shared.definitions.surface import (
+    EXPORTABLE_DIMENSIONS,
     SURFACE_LABELS,
-    SURFACE_ORDER,
     SurfaceDimension,
 )
 from shared.enums.notification import NotificationSeverity, NotificationType
@@ -40,9 +40,7 @@ from shared.utils.slug import generate_slug
 logger = get_logger(__name__)
 
 _CLEANUP_BATCH = 500
-_BUNDLE_DIMENSIONS = tuple(
-    d for d in SURFACE_ORDER if d != SurfaceDimension.SOFTWARE.value
-)
+_BUNDLE_DIMENSIONS = EXPORTABLE_DIMENSIONS
 
 
 def _root(export_id: UUID) -> Path:

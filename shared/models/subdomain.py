@@ -7,6 +7,7 @@ from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
 from shared.definitions.asset_query import MAX_QUERY_LENGTH
+from shared.definitions.surface import MAX_SELECTED_ROWS
 from shared.models.asset_query import MatchEvidence, QueryError
 from shared.models.crosslink import CrossLink
 from shared.utils.datetime import utc_now
@@ -148,6 +149,7 @@ class Facet(BaseModel):
 class SubdomainFilter(BaseModel):
     model_config = ConfigDict(extra="forbid")
     q: str | None = Field(default=None, max_length=MAX_QUERY_LENGTH)
+    ids: list[uuid.UUID] = Field(default_factory=list, max_length=MAX_SELECTED_ROWS)
     statuses: list[str] = Field(default_factory=list, max_length=10)
     tech: list[str] = Field(default_factory=list, max_length=200)
     services: list[str] = Field(default_factory=list, max_length=200)

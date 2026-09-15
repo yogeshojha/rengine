@@ -39,6 +39,8 @@ export interface SurfaceSpec {
 	queryParam: string;
 	kinds: string[];
 	countColumns: (keyof ScanRead)[];
+	// what a deleted row takes with it
+	children?: string;
 }
 
 export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
@@ -51,7 +53,8 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		tab: 'web-assets',
 		queryParam: 'q',
 		kinds: ['hosts', 'http_assets'],
-		countColumns: ['subdomains_found', 'http_assets_found']
+		countColumns: ['subdomains_found', 'http_assets_found'],
+		children: 'stored responses'
 	},
 	[SurfaceDimension.ENDPOINTS]: {
 		key: SurfaceDimension.ENDPOINTS,
@@ -117,7 +120,8 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		tab: 'secrets',
 		queryParam: 'sec_q',
 		kinds: ['secrets'],
-		countColumns: ['secrets_found']
+		countColumns: ['secrets_found'],
+		children: 'sightings'
 	}
 };
 

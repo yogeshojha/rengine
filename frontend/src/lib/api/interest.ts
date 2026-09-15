@@ -62,6 +62,12 @@ export const interestApi = {
 		return api.post<void>('/interest/dismiss', body);
 	},
 
+	dismissMany(rows: { host: string; target_id: string; kind?: string }[]): Promise<{
+		dismissed: number;
+	}> {
+		return api.post<{ dismissed: number }>('/interest/dismiss/bulk', { rows });
+	},
+
 	dismissals(projectId: string): Promise<InterestDismissal[]> {
 		return api.get<InterestDismissal[]>(`/interest/dismissals?project_id=${projectId}`);
 	},

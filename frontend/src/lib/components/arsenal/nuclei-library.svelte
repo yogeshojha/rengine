@@ -27,6 +27,9 @@
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import TemplateSheet from './template-sheet.svelte';
 	import { vulnTemplatesApi } from '$lib/api/vulnerabilities';
+	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
+	import { Checkbox } from '$lib/components/ui/checkbox';
+	import { SvelteSet } from 'svelte/reactivity';
 	import { relativeTime } from '$lib/utilities/dates';
 	import {
 		MAX_TEMPLATE_UPLOAD,
@@ -202,6 +205,13 @@
 		} catch {
 			toast.error('Check not updated');
 		}
+	}
+
+	const picked = new SvelteSet<string>();
+
+	function toggleCheck(id: string) {
+		if (picked.has(id)) picked.delete(id);
+		else picked.add(id);
 	}
 
 	async function remove() {
@@ -479,6 +489,17 @@
 								{@const custom = template.origin === 'custom'}
 								{@const SetIcon = TEMPLATE_SET_ICONS[template.sets[0] ?? ''] ?? FileCode}
 								<div class="flex items-start gap-3 px-4 py-3">
+									{#if custom}
+										<span class="flex h-5 shrink-0 items-center">
+											<Checkbox
+												checked={picked.has(template.id)}
+												onCheckedChange={() => toggleCheck(template.id)}
+												aria-label="Select {template.name}"
+											/>
+										</span>
+									{:else}
+										<span class="w-4 shrink-0"></span>
+									{/if}
 									<span class="flex h-5 shrink-0 items-center">
 										<span
 											class="flex size-7 items-center justify-center rounded-md"
@@ -644,4 +665,16 @@
 	description={`Check ${removing?.name ?? ''} and its file are removed.`}
 	confirmLabel="Remove"
 	onConfirm={remove}
+/>
+
+<SelectionDeleteBar
+	ids={[...picked]}
+	noun="check"
+	removes="files"
+	remove={(id) => vulnTemplatesApi.remove(id)}
+	onDone={async () => {
+		picked.clear();
+		await Promise.all([loadStats(), loadList()]);
+	}}
+	onClear={() => picked.clear()}
 />

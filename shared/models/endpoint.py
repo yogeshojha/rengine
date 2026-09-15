@@ -17,6 +17,7 @@ from shared.definitions.endpoints import (
     EndpointSource,
     FolderGlyph,
 )
+from shared.definitions.surface import MAX_SELECTED_ROWS
 from shared.definitions.vulnerabilities import CoverageStatus
 from shared.models.asset_query import MatchEvidence, QueryError
 from shared.utils.datetime import utc_now
@@ -208,6 +209,9 @@ class EndpointDetail(EndpointRead):
 class EndpointFilter(BaseModel):
     model_config = ConfigDict(extra="forbid")
     q: str | None = PydanticField(default=None, max_length=MAX_QUERY_LENGTH)
+    ids: list[uuid.UUID] = PydanticField(
+        default_factory=list, max_length=MAX_SELECTED_ROWS
+    )
     host: str | None = None
     dir_path: str | None = None
     subtree: bool = True

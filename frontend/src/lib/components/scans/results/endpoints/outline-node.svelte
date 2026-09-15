@@ -199,6 +199,7 @@
 		onSend={ctx.sendBranch && node.kind !== 'group' && !ctx.merged
 			? (id) => ctx.sendBranch?.(node, id)
 			: undefined}
+		onSelectBranch={ctx.selectBranch && !ctx.merged ? () => ctx.selectBranch?.(node) : undefined}
 	/>
 {/if}
 
@@ -241,6 +242,8 @@
 				pad={ctx.pad}
 				active={ctx.selectedId === row.endpoint.id}
 				focused={ctx.focusedKey === row.key}
+				checked={ctx.checked?.(row.endpoint.id) ?? false}
+				onCheck={ctx.onCheck}
 				onOpen={row.kind === 'node' ? () => ctx.openById(row.endpoint.id) : ctx.openEndpoint}
 				onFilter={ctx.onFilter}
 			/>

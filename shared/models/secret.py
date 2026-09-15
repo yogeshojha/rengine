@@ -14,6 +14,7 @@ from shared.definitions.secrets import (
     SecretSource,
     SecretState,
 )
+from shared.definitions.surface import MAX_SELECTED_ROWS
 from shared.definitions.vulnerabilities import CoverageStatus
 from shared.models.asset_query import MatchEvidence, QueryError
 from shared.utils.datetime import utc_now
@@ -239,6 +240,9 @@ class SecretPage(BaseModel):
 class SecretFilter(BaseModel):
     model_config = ConfigDict(extra="forbid")
     q: str | None = PydanticField(default=None, max_length=MAX_QUERY_LENGTH)
+    ids: list[uuid.UUID] = PydanticField(
+        default_factory=list, max_length=MAX_SELECTED_ROWS
+    )
     limit: int = PydanticField(default=50, ge=1, le=500)
     offset: int = PydanticField(default=0, ge=0)
     sort: str | None = None

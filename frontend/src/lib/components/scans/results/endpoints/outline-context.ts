@@ -33,6 +33,9 @@ export interface OutlineContext {
 	budget: OpenBudget;
 	focusedKey: string;
 	selectedId: string | null;
+	checked?: (id: string) => boolean;
+	onCheck?: (e: EndpointRead) => void;
+	selectBranch?: (node: TreeNode) => void;
 	connectors: Connector[];
 	catalog: ConnectorSpec[];
 	toggle: (key: string) => void;

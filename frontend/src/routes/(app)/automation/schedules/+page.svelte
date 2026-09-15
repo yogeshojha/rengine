@@ -14,6 +14,16 @@
 	import EmptyState from '@/components/empty-state.svelte';
 	import ScheduleListCard from '$lib/components/schedules/schedule-list-card.svelte';
 	import ScheduleModal from '$lib/components/schedules/schedule-modal.svelte';
+	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
+	import { scanSchedulesApi } from '$lib/api/scan-schedules';
+	import { SvelteSet } from 'svelte/reactivity';
+
+	const picked = new SvelteSet<string>();
+
+	function toggleCheck(id: string) {
+		if (picked.has(id)) picked.delete(id);
+		else picked.add(id);
+	}
 	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
 	import type { ScanScheduleRead } from '$lib/types/scan-schedule';
 
@@ -170,6 +180,8 @@
 			{#each scanSchedulesStore.schedules as schedule (schedule.id)}
 				<ScheduleListCard
 					{schedule}
+					checked={picked.has(schedule.id)}
+					onCheck={toggleCheck}
 					onEdit={() => handleEdit(schedule)}
 					onRunNow={() => handleRunNow(schedule)}
 					onTogglePause={() => handleTogglePause(schedule)}
@@ -201,3 +213,15 @@
 		onConfirm={confirmDelete}
 	/>
 {/if}
+
+<SelectionDeleteBar
+	ids={[...picked]}
+	noun="schedule"
+	remove={(id) => scanSchedulesApi.remove(id, projectsStore.activeProject?.id ?? '')}
+	onDone={() => {
+		picked.clear();
+		const project = projectsStore.activeProject;
+		if (project) void scanSchedulesStore.fetchSchedules(project.id);
+	}}
+	onClear={() => picked.clear()}
+/>

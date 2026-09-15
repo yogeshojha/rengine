@@ -11,6 +11,7 @@
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import ListTreeIcon from '@lucide/svelte/icons/list-tree';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
+	import CopyIcon from '@lucide/svelte/icons/copy';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -22,6 +23,8 @@
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import Hint from '$lib/components/hint.svelte';
+	import SelectionActionBar from '$lib/components/selection-action-bar.svelte';
+	import { writeClipboard } from '$lib/utilities/clipboard';
 	import CodeBlock from '$lib/components/code-block.svelte';
 	import ResultsPagination from '$lib/components/scans/results/table/results-pagination.svelte';
 	import { connectorsApi } from '$lib/api/connectors';
@@ -175,6 +178,14 @@
 		}
 	}
 
+	async function copyPicked() {
+		const urls = rows.filter((row) => picked.has(row.id)).map((row) => row.url);
+		if (!urls.length) return;
+		if (await writeClipboard(urls.join('\n')))
+			toast.success(`${urls.length.toLocaleString()} URLs copied`);
+		else toast.error('Clipboard not available.');
+	}
+
 	async function ignore() {
 		acting = true;
 		try {
@@ -269,32 +280,6 @@
 			</Select.Root>
 		{/if}
 	</div>
-
-	{#if picked.size > 0}
-		<div class="bg-muted/40 flex flex-wrap items-center gap-3 border-b px-4 py-2.5">
-			<span class="text-sm font-medium tabular-nums">{picked.size} selected</span>
-			<div class="ml-auto flex items-center gap-2">
-				<Button variant="ghost" size="sm" disabled={acting} onclick={() => ignore()}>
-					<EyeOffIcon class="size-3.5" />
-					Ignore
-				</Button>
-				<LoadingButton
-					loading={sending}
-					variant="outline"
-					size="sm"
-					onclick={sendToProxy}
-					disabled={connector.paused}
-				>
-					<SendIcon class="size-3.5" />
-					{ACTION_KIND_LABELS[ActionKind.REPEATER]}
-				</LoadingButton>
-				<LoadingButton loading={scanning} size="sm" onclick={scan}>
-					<RadarIcon class="size-3.5" />
-					Scan {picked.size}
-				</LoadingButton>
-			</div>
-		</div>
-	{/if}
 
 	{#if error}
 		<p class="text-destructive border-b px-4 py-2 text-xs">{error}</p>
@@ -493,10 +478,48 @@
 				pageSize={PAGE_SIZE}
 				noun="shape"
 				plural="shapes"
-				selectedCount={picked.size}
-				onClearSelection={() => picked.clear()}
 				onPage={(next) => (pageNumber = next)}
 			/>
 		</div>
 	{/if}
 </Card.Root>
+
+<SelectionActionBar selectedCount={picked.size} noun="request" onClear={() => picked.clear()}>
+	<LoadingButton
+		loading={scanning}
+		variant="ghost"
+		size="sm"
+		class="gap-2 font-medium"
+		loadingLabel="Starting"
+		onclick={scan}
+	>
+		<RadarIcon class="h-3.5 w-3.5 text-muted-foreground" />
+		Scan {picked.size}
+	</LoadingButton>
+	<LoadingButton
+		loading={sending}
+		variant="ghost"
+		size="sm"
+		class="gap-2 font-medium"
+		loadingLabel="Sending"
+		onclick={sendToProxy}
+		disabled={connector.paused}
+	>
+		<SendIcon class="h-3.5 w-3.5 text-muted-foreground" />
+		{ACTION_KIND_LABELS[ActionKind.REPEATER]}
+	</LoadingButton>
+	<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={copyPicked}>
+		<CopyIcon class="h-3.5 w-3.5 text-muted-foreground" />
+		Copy URLs
+	</Button>
+	<Button
+		variant="ghost"
+		size="sm"
+		class="gap-2 font-medium"
+		disabled={acting}
+		onclick={() => ignore()}
+	>
+		<EyeOffIcon class="h-3.5 w-3.5 text-muted-foreground" />
+		Ignore
+	</Button>
+</SelectionActionBar>

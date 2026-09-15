@@ -1,7 +1,5 @@
 <script lang="ts">
 	import * as Pagination from '$lib/components/ui/pagination';
-	import X from '@lucide/svelte/icons/x';
-	import { Button } from '$lib/components/ui/button';
 	import PageSizeSelector from '$lib/components/targets/page-size-selector.svelte';
 
 	interface Props {
@@ -11,8 +9,6 @@
 		capped?: boolean;
 		noun?: string;
 		plural?: string;
-		selectedCount?: number;
-		onClearSelection?: () => void;
 		onPage: (page: number) => void;
 		onPageSize?: (size: number) => void;
 	}
@@ -24,8 +20,6 @@
 		capped = false,
 		noun = 'host',
 		plural = '',
-		selectedCount = 0,
-		onClearSelection,
 		onPage,
 		onPageSize
 	}: Props = $props();
@@ -46,20 +40,6 @@
 		</span>
 		{#if onPageSize}
 			<PageSizeSelector {pageSize} options={SIZES} onPageSizeChange={onPageSize} />
-		{/if}
-		{#if selectedCount > 0}
-			<span class="flex items-center gap-1 text-xs text-muted-foreground tabular-nums">
-				{selectedCount} selected
-				<Button
-					variant="ghost"
-					size="icon-sm"
-					class="size-6"
-					aria-label="Clear selection"
-					onclick={onClearSelection}
-				>
-					<X class="size-3" />
-				</Button>
-			</span>
 		{/if}
 	</div>
 	{#if total > pageSize}

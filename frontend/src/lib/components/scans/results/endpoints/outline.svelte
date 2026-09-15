@@ -57,6 +57,9 @@
 		onExpandedChange?: (count: number) => void;
 		onVerify?: (node: TreeNode) => void;
 		onSend?: (node: TreeNode, connectorId: string) => void;
+		checked?: (id: string) => boolean;
+		onCheck?: (e: EndpointRead) => void;
+		onSelectBranch?: (node: TreeNode) => void;
 		edgeEl?: HTMLElement | null;
 		onCrumbs?: (crumbs: Crumb[]) => void;
 	}
@@ -90,6 +93,9 @@
 		onExpandedChange,
 		onVerify,
 		onSend,
+		checked,
+		onCheck,
+		onSelectBranch,
 		edgeEl = null,
 		onCrumbs
 	}: Props = $props();
@@ -221,7 +227,10 @@
 		copyBranch: (node) => copyBranch(branchScope, node),
 		copyWordlist: (node) => copyWordlist(branchScope, node),
 		verifyBranch: onVerify,
-		sendBranch: onSend
+		sendBranch: onSend,
+		checked,
+		onCheck,
+		selectBranch: onSelectBranch
 	});
 
 	function rows(): HTMLElement[] {

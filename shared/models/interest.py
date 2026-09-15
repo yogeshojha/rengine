@@ -14,6 +14,7 @@ from shared.definitions.interest import (
     MAX_RULE_NAME,
     RuleMode,
 )
+from shared.definitions.surface import MAX_SELECTED_ROWS
 from shared.utils.datetime import utc_now
 
 
@@ -267,3 +268,11 @@ class DismissRequest(BaseModel):
     target_id: uuid.UUID
     kind: str = ""
     note: str | None = None
+
+
+class BulkDismissRequest(BaseModel):
+    rows: list[DismissRequest] = PField(min_length=1, max_length=MAX_SELECTED_ROWS)
+
+
+class BulkDismissResult(BaseModel):
+    dismissed: int = 0

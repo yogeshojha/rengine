@@ -11,6 +11,8 @@
 	import { SvelteSet, SvelteURLSearchParams } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import Settings2 from '@lucide/svelte/icons/settings-2';
+	import Tags from '@lucide/svelte/icons/tags';
 	import SearchX from '@lucide/svelte/icons/search-x';
 	import ShieldCheck from '@lucide/svelte/icons/shield-check';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
@@ -36,6 +38,8 @@
 	import FilterBar from './vulnerabilities/filter-bar.svelte';
 	import IssueInstances from './vulnerabilities/issue-instances.svelte';
 	import SelectionBar from './table/selection-bar.svelte';
+	import RowSelectionBar from './table/row-selection-bar.svelte';
+	import LoadingButton from '$lib/components/loading-button.svelte';
 	import type { SeedPick, SeedSelection } from '$lib/types/recheck';
 	import IssueRow from './vulnerabilities/issue-row.svelte';
 	import VulnRow from './vulnerabilities/vuln-row.svelte';
@@ -887,42 +891,8 @@
 		</div>
 	{/if}
 
-	{#if checkedCount > 0 && !groupBy}
-		<div
-			class="flex flex-wrap items-center gap-3 border-b border-primary/20 bg-primary/5 px-4 py-2"
-		>
-			<span class="text-xs font-medium tabular-nums">
-				{checkedCount}
-				{checkedCount === 1 ? noun : nounPlural} selected
-			</span>
-			<DropdownMenu.Root>
-				<DropdownMenu.Trigger>
-					{#snippet child({ props })}
-						<Button {...props} variant="outline" size="sm" class="h-7 gap-1.5" disabled={bulkBusy}>
-							Mark as
-						</Button>
-					{/snippet}
-				</DropdownMenu.Trigger>
-				<DropdownMenu.Content align="start" class="w-48">
-					{#each Object.entries(VULN_STATE_LABELS) as [value, label] (value)}
-						<DropdownMenu.Item onclick={() => triageChecked(value)}>{label}</DropdownMenu.Item>
-					{/each}
-				</DropdownMenu.Content>
-			</DropdownMenu.Root>
-			<Button
-				variant="ghost"
-				size="sm"
-				class="ml-auto h-7 text-xs"
-				onclick={() => checkedIds.clear()}
-			>
-				Clear selection
-			</Button>
-		</div>
-	{/if}
-
 	{#if !groupBy}
 		<SelectionBar
-			count={checkedCount}
 			noun={VULN.noun}
 			nounPlural={VULN.nounPlural}
 			{total}
@@ -930,11 +900,8 @@
 			maxAssets={rechecks.schema?.max_assets ?? 0}
 			queryActive={Boolean(query.search.trim()) || chips.length > 0}
 			busy={rescanBusy}
-			onRescan={rescanSelection}
-			onOptions={openRescanOptions}
 			onRescanAll={rescanAllMatching}
 			onRescanAllOptions={openRescanAllOptions}
-			onClear={() => checkedIds.clear()}
 		/>
 	{/if}
 
@@ -1106,8 +1073,6 @@
 			{pageSize}
 			{noun}
 			plural={nounPlural}
-			selectedCount={checkedCount}
-			onClearSelection={() => checkedIds.clear()}
 			onPage={(p) => (pageIndex = p)}
 			onPageSize={(s) => {
 				pageSize = s;
@@ -1141,6 +1106,78 @@
 		: undefined}
 	onTriage={triage}
 />
+
+<RowSelectionBar
+	count={checkedCount}
+	dimension={SurfaceDimension.VULNERABILITIES}
+	{projectId}
+	{scanId}
+	{noun}
+	{nounPlural}
+	removes={isIssues ? 'findings' : undefined}
+	copy={isIssues
+		? [{ label: 'template IDs', values: () => [...checkedIds] }]
+		: [
+				{
+					label: 'locations',
+					values: () => items.filter((v) => checkedIds.has(v.id)).map((v) => v.matched_at)
+				},
+				{
+					label: 'template IDs',
+					values: () => [
+						...new Set(items.filter((v) => checkedIds.has(v.id)).map((v) => v.template_id))
+					]
+				}
+			]}
+	ids={() => [...checkedIds]}
+	deleteKey={isIssues ? 'template_id' : 'id'}
+	exportIds={() => (isIssues ? [] : [...checkedIds])}
+	exportFilters={isIssues ? { ...exportFilters, templates: [...checkedIds] } : exportFilters}
+	onDeleted={() => {
+		checkedIds.clear();
+		void refresh();
+	}}
+	onClear={() => checkedIds.clear()}
+>
+	{#snippet actions()}
+		<DropdownMenu.Root>
+			<DropdownMenu.Trigger>
+				{#snippet child({ props })}
+					<Button
+						{...props}
+						variant="ghost"
+						size="sm"
+						class="gap-2 font-medium"
+						disabled={bulkBusy}
+					>
+						<Tags class="h-3.5 w-3.5 text-muted-foreground" />
+						Mark as
+					</Button>
+				{/snippet}
+			</DropdownMenu.Trigger>
+			<DropdownMenu.Content align="center" class="w-48">
+				{#each Object.entries(VULN_STATE_LABELS) as [value, label] (value)}
+					<DropdownMenu.Item onclick={() => triageChecked(value)}>{label}</DropdownMenu.Item>
+				{/each}
+			</DropdownMenu.Content>
+		</DropdownMenu.Root>
+		<LoadingButton
+			variant="ghost"
+			size="sm"
+			class="gap-2 font-medium"
+			loading={rescanBusy}
+			loadingLabel="Starting"
+			onclick={rescanSelection}
+		>
+			<RefreshCw class="h-3.5 w-3.5 text-muted-foreground" />
+			Rescan
+		</LoadingButton>
+		<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={openRescanOptions}>
+			<Settings2 class="h-3.5 w-3.5 text-muted-foreground" />
+			Options
+		</Button>
+	{/snippet}
+</RowSelectionBar>
 
 <LaunchDialog
 	open={rescanOptionsFor !== null}

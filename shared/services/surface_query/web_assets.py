@@ -34,6 +34,8 @@ def context(scope: QueryScope, now: datetime) -> QueryContext:
 
 
 def apply_filter(query, f: SubdomainFilter, now: datetime, scope: ScopeLike):
+    if f.ids:
+        query = query.where(Subdomain.id.in_(f.ids))
     if f.statuses:
         query = query.where(or_(*[preds.status_class(s) for s in f.statuses]))
     if f.tech:

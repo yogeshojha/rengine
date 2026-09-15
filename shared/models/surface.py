@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+from shared.definitions.surface import MAX_SELECTED_ROWS
 
 
 class SurfaceTargetRead(BaseModel):
@@ -41,3 +43,19 @@ class SurfaceOverview(BaseModel):
     cves: int = 0
     dimensions: list[SurfaceCoverage] = Field(default_factory=list)
     generated_at: datetime
+
+
+class SurfaceDelete(BaseModel):
+    """The rows a table asked to remove, addressed the way that table addresses them."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    dimension: str = Field(max_length=32)
+    ids: list[str] = Field(min_length=1, max_length=MAX_SELECTED_ROWS)
+    key: str | None = Field(default=None, max_length=32)
+
+
+class SurfaceDeleteResult(BaseModel):
+    dimension: str
+    deleted: int = 0
+    related: dict[str, int] = Field(default_factory=dict)

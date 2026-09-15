@@ -8,6 +8,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import CopyButton from '$lib/components/copy-button.svelte';
+	import { Checkbox } from '$lib/components/ui/checkbox';
 	import Hint from '$lib/components/hint.svelte';
 	import HighlightText from '../table/highlight-text.svelte';
 	import { writeClipboard } from '$lib/utilities/clipboard';
@@ -23,11 +24,21 @@
 		row: SecretRead;
 		term?: string;
 		selected: boolean;
+		checked?: boolean;
 		projectWide?: boolean;
+		onCheck?: (id: string) => void;
 		onOpen: (row: SecretRead) => void;
 	}
 
-	let { row, term = '', selected, projectWide = false, onOpen }: Props = $props();
+	let {
+		row,
+		term = '',
+		selected,
+		checked = false,
+		projectWide = false,
+		onCheck,
+		onOpen
+	}: Props = $props();
 
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 
@@ -58,6 +69,21 @@
 	tabindex="0"
 	aria-label="Open {row.kind_label}"
 >
+	{#if onCheck}
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="hidden shrink-0 sm:flex" onclick={stopProp}>
+			<Checkbox
+				{checked}
+				onCheckedChange={() => onCheck(row.id)}
+				aria-label="Select {row.kind_label}"
+				class="transition-opacity {checked
+					? 'opacity-100'
+					: 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'}"
+			/>
+		</div>
+	{/if}
+
 	<div class="min-w-0 flex-1">
 		<div class="flex min-w-0 items-center gap-2">
 			<span class="truncate font-mono text-sm">{firstLine}</span>

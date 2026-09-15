@@ -7,6 +7,7 @@
 
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
+	import { Checkbox } from '$lib/components/ui/checkbox';
 	import Hint from '$lib/components/hint.svelte';
 	import HighlightText from '../table/highlight-text.svelte';
 	import TechIcon from '../tech-icon.svelte';
@@ -25,6 +26,7 @@
 		STATIC_CLASSES
 	} from '$lib/config/endpoints';
 	import { writeClipboard } from '$lib/utilities/clipboard';
+	import { stopProp } from '$lib/utilities';
 	import { formatShortDate } from '$lib/utilities/dates';
 	import type { EndpointRead } from '$lib/utilities/endpoints';
 
@@ -41,6 +43,8 @@
 		rowKey?: string;
 		gone?: boolean;
 		parentKey?: string;
+		checked?: boolean;
+		onCheck?: (e: EndpointRead) => void;
 		onOpen?: (e: EndpointRead) => void;
 		onFilter?: (token: string) => void;
 	}
@@ -58,6 +62,8 @@
 		rowKey,
 		gone = false,
 		parentKey = '',
+		checked = false,
+		onCheck,
 		onOpen,
 		onFilter
 	}: Props = $props();
@@ -145,6 +151,21 @@
 		}
 	}}
 >
+	{#if onCheck}
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="hidden h-5 shrink-0 items-center sm:flex" onclick={stopProp}>
+			<Checkbox
+				{checked}
+				onCheckedChange={() => onCheck(endpoint)}
+				aria-label="Select {endpoint.url}"
+				class="transition-opacity {checked
+					? 'opacity-100'
+					: 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'}"
+			/>
+		</div>
+	{/if}
+
 	{#if outline}
 		<div class="min-w-0 flex-1 {OUTLINE_LEAD_COLUMNS[0].width}">
 			<div class="flex items-start gap-x-1.5 leading-5">
