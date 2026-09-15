@@ -77,7 +77,7 @@ def _vhost_url(client) -> str:
         return SimpleNamespace(stdout="")
 
     client._runner = SimpleNamespace(run=_run)
-    client.vhost("10.0.0.1", "example.com")
+    client.vhost("10.0.0.1", "example.com", budget=60)
     return args[args.index("-u") + 1]
 
 
