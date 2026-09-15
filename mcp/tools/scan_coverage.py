@@ -71,9 +71,7 @@ class ScanCoverage(Tool):
             if r.get("templates_loaded") is not None
         )
         if shortfall:
-            caveats.append(
-                f"{counted(shortfall, 'selected check')} were not loaded and did not run."
-            )
+            caveats.append(f"{counted(shortfall, 'selected check')} did not load.")
         if not runs:
             caveats.append("No coverage rows exist.")
 

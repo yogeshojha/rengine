@@ -95,10 +95,10 @@ export const TIER_LABELS: Record<string, string> = {
 };
 
 export const TIER_HELP: Record<string, string> = {
-	[Tier.ONE_REQUEST]: 'Checks that read the root page. Every web asset, ten requests at most.',
-	[Tier.UNIVERSAL]: 'Checks that apply to any web server. One web asset per origin.',
+	[Tier.ONE_REQUEST]: 'Root-page checks on every web asset. At most ten requests each.',
+	[Tier.UNIVERSAL]: 'Checks for any web server. One web asset per origin.',
 	[Tier.MATCHED]: 'Checks for the software the web asset was seen running.',
-	[Tier.BLIND]: 'Software-specific checks for software not detected. Runs last.',
+	[Tier.BLIND]: 'Checks for software not detected on the web asset. Runs last.',
 	[Tier.SERVICES]: 'Certificate and protocol checks on open ports.',
 	[Tier.NAMES]: 'Record-level checks on resolved names.',
 	[Tier.REPLAY]: 'A finding re-run against each web asset the origin stands for.',

@@ -24,15 +24,10 @@ EVIDENCE_LABELS: dict[str, str] = {
 }
 
 EVIDENCE_HELP: dict[str, str] = {
-    Evidence.INFERRED.value: (
-        "A reported version falls inside the affected range. Nothing was sent to the asset."
-    ),
-    Evidence.OBSERVED.value: "A check sent a request and its matcher fired.",
+    Evidence.INFERRED.value: "The reported version falls inside the affected range.",
+    Evidence.OBSERVED.value: "A check matched the response it received.",
     Evidence.CORROBORATED.value: "Two independent signals agree at the same location.",
-    Evidence.PROVEN.value: (
-        "The asset returned an artifact only a vulnerable one returns, "
-        "such as an out-of-band callback."
-    ),
+    Evidence.PROVEN.value: "The asset produced an out-of-band interaction.",
 }
 
 

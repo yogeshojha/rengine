@@ -20,12 +20,10 @@ export const EVIDENCE_LABELS: Record<string, string> = {
 };
 
 export const EVIDENCE_HELP: Record<string, string> = {
-	[Evidence.INFERRED]:
-		'A reported version falls inside the affected range. Nothing was sent to the asset.',
-	[Evidence.OBSERVED]: 'A check sent a request and its matcher fired.',
+	[Evidence.INFERRED]: 'The reported version falls inside the affected range.',
+	[Evidence.OBSERVED]: 'A check matched the response it received.',
 	[Evidence.CORROBORATED]: 'Two independent signals agree at the same location.',
-	[Evidence.PROVEN]:
-		'The asset returned an artifact only a vulnerable one returns, such as an out-of-band callback.'
+	[Evidence.PROVEN]: 'The asset produced an out-of-band interaction.'
 };
 
 export function evidenceRank(value: string | null | undefined): number {

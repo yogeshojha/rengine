@@ -114,10 +114,10 @@ TIER_LABELS: dict[str, str] = {
 }
 
 TIER_HELP: dict[str, str] = {
-    Tier.ONE_REQUEST.value: "Checks that read the root page. Every web asset, ten requests at most.",
-    Tier.UNIVERSAL.value: "Checks that apply to any web server. One web asset per origin.",
+    Tier.ONE_REQUEST.value: "Root-page checks on every web asset. At most ten requests each.",
+    Tier.UNIVERSAL.value: "Checks for any web server. One web asset per origin.",
     Tier.MATCHED.value: "Checks for the software the web asset was seen running.",
-    Tier.BLIND.value: "Software-specific checks for software not detected. Runs last.",
+    Tier.BLIND.value: "Checks for software not detected on the web asset. Runs last.",
     Tier.SERVICES.value: "Certificate and protocol checks on open ports.",
     Tier.NAMES.value: "Record-level checks on resolved names.",
     Tier.REPLAY.value: "A finding re-run against each web asset the origin stands for.",

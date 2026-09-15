@@ -37,12 +37,12 @@
 		if (!coverage) return 'Loading coverage';
 		if (!covered.length) return 'Not scanned';
 		const parts = [
-			`Last reading from ${covered.length} of ${coverage.targets_total} ${
+			`${covered.length} of ${coverage.targets_total} ${
 				coverage.targets_total === 1 ? 'target' : 'targets'
-			}`
+			} scanned`
 		];
 		if (oldest) parts.push(`oldest ${relativeTime(oldest)}`);
-		if (live.length) parts.push(`${live.length} scanning now`);
+		if (live.length) parts.push(`${live.length} running`);
 		return parts.join(' · ');
 	});
 </script>
@@ -145,7 +145,7 @@
 	{#if stale.length}
 		<span class="text-warning">
 			{stale.length}
-			{stale.length === 1 ? 'reading is' : 'readings are'} over a month old
+			{stale.length === 1 ? 'target' : 'targets'} last scanned over a month ago
 		</span>
 	{/if}
 </div>

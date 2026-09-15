@@ -106,13 +106,12 @@
 		!ran ? 'text-muted-foreground' : partial ? 'text-warning' : 'text-muted-foreground'
 	);
 	let summary = $derived.by(() => {
-		if (!ran) return projectWide ? 'No vulnerability scan has run.' : 'No vulnerability scan ran.';
+		if (!ran) return projectWide ? 'No vulnerability scan has run' : 'No vulnerability scan ran';
 		const parts = [
-			`${n(checks)} ${checks === 1 ? 'check' : 'checks'} against ${n(targets)} ${
-				targets === 1 ? 'target' : 'targets'
-			}`
+			`${n(checks)} ${checks === 1 ? 'check' : 'checks'}`,
+			`${n(targets)} ${targets === 1 ? 'target' : 'targets'}`
 		];
-		if (covered) parts.push(`${n(covered)} covered by an equivalent`);
+		if (covered) parts.push(`${n(covered)} covered by an equivalent web asset`);
 		if (requests !== null) parts.push(`${n(requests)} ${requests === 1 ? 'request' : 'requests'}`);
 		if (dropped) parts.push(`${n(dropped)} ${dropped === 1 ? 'target' : 'targets'} dropped`);
 		else if (errors) parts.push(`${n(errors)} request ${errors === 1 ? 'error' : 'errors'}`);
@@ -144,9 +143,7 @@
 			<Popover.Content class="w-96 p-0" align="start">
 				<div class="border-b px-3 py-2">
 					<p class="text-sm font-medium">Scanner coverage</p>
-					<p class="text-xs text-muted-foreground">
-						Checks and targets per tier. Blank counts were not reported.
-					</p>
+					<p class="text-xs text-muted-foreground">A dash is a count the scanner did not report.</p>
 				</div>
 				<ScrollArea class="max-h-96">
 					<div class="divide-y">
@@ -195,15 +192,15 @@
 								</dl>
 								{#if row.unloaded}
 									<p class="text-2xs text-warning">
-										{n(row.unloaded)} selected checks not loaded.
+										{n(row.unloaded)} selected {row.unloaded === 1 ? 'check' : 'checks'} did not load.
 									</p>
 								{/if}
 								{#if row.dropped && row.sample}
 									<p class="text-2xs text-warning">
-										Stopped testing {row.dropped}
-										{row.dropped === 1 ? 'target' : 'targets'} after repeated errors:
+										{n(row.dropped)}
+										{row.dropped === 1 ? 'target' : 'targets'} dropped after repeated errors:
 										<span class="font-mono">{row.sample}</span>
-										{#if row.dropped > 1}and {row.dropped - 1} more{/if}
+										{#if row.dropped > 1}and {n(row.dropped - 1)} more{/if}
 									</p>
 								{/if}
 								{#if row.error}

@@ -250,10 +250,7 @@
 					<div class="flex flex-col gap-4 px-5 py-4">
 						<div class="flex items-center gap-3">
 							<ExploitMark score={report.exploit_score} size={44} />
-							<div class="flex flex-col">
-								<span class="text-sm font-medium">Rank {report.exploit_score} of 100</span>
-								<span class="text-xs text-muted-foreground">From the exploitation feeds</span>
-							</div>
+							<span class="text-sm font-medium">Rank {report.exploit_score} of 100</span>
 						</div>
 						{#if report.intel_kinds.length}
 							<div class="flex flex-wrap gap-1">
