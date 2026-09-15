@@ -399,15 +399,20 @@
 					exportDisabled={pagination.totalItems === 0 || exporting}
 				/>
 			{/if}
-			<Button
-				variant="outline"
-				size="icon"
-				class="h-9 w-9"
-				aria-label="Refresh"
-				onclick={() => scansStore.refresh()}
-			>
-				<RefreshCw class="h-4 w-4 {scansStore.refreshing ? 'animate-spin' : ''}" />
-			</Button>
+			<Hint text="Refresh">
+				{#snippet child(props)}
+					<Button
+						{...props}
+						variant="outline"
+						size="icon"
+						class="h-9 w-9"
+						aria-label="Refresh"
+						onclick={() => scansStore.refresh()}
+					>
+						<RefreshCw class="h-4 w-4 {scansStore.refreshing ? 'animate-spin' : ''}" />
+					</Button>
+				{/snippet}
+			</Hint>
 			<Hint text={canCancelAll ? null : 'No unfinished scans.'}>
 				{#snippet child(props)}
 					<span {...props} class="inline-flex">

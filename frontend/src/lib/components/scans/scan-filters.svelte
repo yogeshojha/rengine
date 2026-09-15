@@ -67,15 +67,20 @@
 			oninput={(e) => onSearchChange(e.currentTarget.value)}
 		/>
 		{#if search}
-			<Button
-				variant="ghost"
-				size="icon"
-				class="absolute top-1/2 right-1 h-6 w-6 -translate-y-1/2"
-				aria-label="Clear search"
-				onclick={() => onSearchChange('')}
-			>
-				<X class="h-3 w-3" />
-			</Button>
+			<Hint text="Clear search">
+				{#snippet child(props)}
+					<Button
+						{...props}
+						variant="ghost"
+						size="icon"
+						class="absolute top-1/2 right-1 h-6 w-6 -translate-y-1/2"
+						aria-label="Clear search"
+						onclick={() => onSearchChange('')}
+					>
+						<X class="h-3 w-3" />
+					</Button>
+				{/snippet}
+			</Hint>
 		{/if}
 	</div>
 

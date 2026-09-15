@@ -101,14 +101,19 @@
 		</Button>
 
 		<Separator orientation="vertical" class="h-4 self-center mx-0.5" />
-		<Button
-			variant="ghost"
-			size="icon-sm"
-			class="text-muted-foreground"
-			aria-label="Clear selection"
-			onclick={onClear}
-		>
-			<X class="h-3.5 w-3.5" />
-		</Button>
+		<Hint text="Clear selection">
+			{#snippet child(props)}
+				<Button
+					{...props}
+					variant="ghost"
+					size="icon-sm"
+					class="text-muted-foreground"
+					aria-label="Clear selection"
+					onclick={onClear}
+				>
+					<X class="h-3.5 w-3.5" />
+				</Button>
+			{/snippet}
+		</Hint>
 	</div>
 </div>
