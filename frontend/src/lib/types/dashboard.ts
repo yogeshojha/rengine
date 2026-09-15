@@ -24,7 +24,8 @@ export const DASHBOARD_SLICES = [
 	'shared',
 	'activity',
 	'programs',
-	'discovery'
+	'discovery',
+	'surfaceRisk'
 ] as const;
 export type DashboardSlice = (typeof DASHBOARD_SLICES)[number];
 
@@ -41,7 +42,8 @@ export const DASHBOARD_SLICE_LABELS: Record<DashboardSlice, string> = {
 	shared: 'Shared across targets',
 	activity: 'Activity',
 	programs: 'Programs',
-	discovery: 'Untracked domains'
+	discovery: 'Untracked domains',
+	surfaceRisk: 'Surface against risk'
 };
 
 export const windowText = (w: DashboardWindow) =>
@@ -302,6 +304,39 @@ export interface DashboardOverview {
 	changes: DashboardChangeRow[];
 	daily: DashboardDay[];
 	targets: DashboardTargetRow[];
+}
+
+export interface SurfaceRiskTarget {
+	target_id: string;
+	target_value: string;
+	target_type: string;
+	names: number;
+	live: number;
+	findings: number;
+	actionable: number;
+	act: number;
+	kev: number;
+	by_severity: Record<string, number>;
+	scan_id: string | null;
+	scan_status: ScanStatus | null;
+	last_at: string | null;
+	organizations: string[];
+	tags: string[];
+}
+
+export interface DashboardSurfaceRisk {
+	targets_total: number;
+	scanned: number;
+	live: number;
+	findings: number;
+	actionable: number;
+	act: number;
+	rows: SurfaceRiskTarget[];
+}
+
+export interface SurfaceRiskFilters {
+	organizationId?: string | null;
+	tagId?: string | null;
 }
 
 export interface DashboardDiscoverySource {

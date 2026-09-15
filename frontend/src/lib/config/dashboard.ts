@@ -80,3 +80,5 @@ export const CERT_BUCKET_FILL: Record<string, string> = {
 	quarter: 'var(--series)',
 	later: 'var(--series)'
 };
+
+export const SURFACE_RISK_ROWS = 6;

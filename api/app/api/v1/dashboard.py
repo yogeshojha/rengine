@@ -9,6 +9,7 @@ from app.core.database import get_session
 from app.services.dashboard import DashboardService
 from app.services.dashboard_activity import DashboardActivityService
 from app.services.dashboard_overview import DashboardOverviewService
+from app.services.dashboard_surface_risk import SurfaceRiskService
 from app.services.instance_settings import InstanceSettingsService
 from app.services.readiness import ReadinessService
 from shared.definitions.dashboard import DEFAULT_WINDOW
@@ -20,6 +21,7 @@ from shared.models.dashboard import (
     DashboardPrograms,
     DashboardReadiness,
     DashboardSignals,
+    DashboardSurfaceRisk,
 )
 
 router = APIRouter(
@@ -57,6 +59,19 @@ async def dashboard_overview(
     window: Annotated[str, Query(description="Change window")] = DEFAULT_WINDOW,
 ):
     return await service.overview(project_id=project_id, window=window)
+
+
+@router.get("/surface-risk", response_model=DashboardSurfaceRisk)
+async def dashboard_surface_risk(
+    _current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    organization_id: Annotated[UUID | None, Query(description="Organization")] = None,
+    tag_id: Annotated[UUID | None, Query(description="Tag")] = None,
+):
+    return await SurfaceRiskService(session).rows(
+        project_id=project_id, organization_id=organization_id, tag_id=tag_id
+    )
 
 
 @router.get("/discovery", response_model=DashboardDiscovery)

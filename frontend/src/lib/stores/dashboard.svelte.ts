@@ -26,6 +26,7 @@ import {
 	type DashboardOverview,
 	type DashboardPrograms,
 	type DashboardReadiness,
+	type DashboardSurfaceRisk,
 	type DashboardWindow,
 	type HostingSplit
 } from '$lib/types/dashboard';
@@ -62,6 +63,7 @@ function createDashboardStore() {
 	let shared = $state<CorrelationGraph | null>(null);
 	let activity = $state<DashboardActivity | null>(null);
 	let programs = $state<DashboardPrograms | null>(null);
+	let surfaceRisk = $state<DashboardSurfaceRisk | null>(null);
 	let extrasLoading = $state(false);
 	let changeWindow = $state<DashboardWindow>(DEFAULT_DASHBOARD_WINDOW);
 	let loading = $state(false);
@@ -169,6 +171,7 @@ function createDashboardStore() {
 			settle('posture', subdomainsApi.posture(pid, ''), (v) => (postureHosts = v)),
 			settle('shared', subdomainsApi.correlationGraph(pid, ''), (v) => (shared = v)),
 			settle('activity', dashboardApi.activity(pid, win), (v) => (activity = v)),
+			settle('surfaceRisk', dashboardApi.surfaceRisk(pid), (v) => (surfaceRisk = v)),
 			bounty
 				? settle('programs', dashboardApi.programs(pid, win), (v) => (programs = v))
 				: Promise.resolve()
@@ -193,6 +196,7 @@ function createDashboardStore() {
 		shared = null;
 		activity = null;
 		programs = null;
+		surfaceRisk = null;
 		extrasLoading = false;
 		error = null;
 		hasFetched = false;
@@ -247,6 +251,9 @@ function createDashboardStore() {
 		},
 		get programs() {
 			return programs;
+		},
+		get surfaceRisk() {
+			return surfaceRisk;
 		},
 		get extrasLoading() {
 			return extrasLoading;

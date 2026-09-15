@@ -34,7 +34,13 @@ const BB = [InstanceMode.BugBounty];
 const CORP = [InstanceMode.Corporate];
 
 export const DASHBOARD_WIDGETS: DashboardWidgetSpec[] = [
-	{ id: 'funnel', label: 'Attack surface funnel', row: 'estate', modes: BOTH, skeleton: 'bars' },
+	{
+		id: 'surface-risk',
+		label: 'Surface against risk',
+		row: 'estate',
+		modes: BOTH,
+		skeleton: 'bars'
+	},
 	{ id: 'inventory', label: 'Inventory', row: 'estate', modes: BOTH, skeleton: 'list' },
 	{ id: 'changes', label: 'Attack surface changes', row: 'estate', modes: BOTH, skeleton: 'bars' },
 	{ id: 'geo', label: 'Geography', row: 'estate', modes: BOTH, skeleton: 'map' },

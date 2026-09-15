@@ -5,7 +5,9 @@ import type {
 	DashboardOverview,
 	DashboardPrograms,
 	DashboardReadiness,
-	DashboardWindow
+	DashboardSurfaceRisk,
+	DashboardWindow,
+	SurfaceRiskFilters
 } from '$lib/types/dashboard';
 
 export const dashboardApi = {
@@ -24,6 +26,15 @@ export const dashboardApi = {
 		return api.get<DashboardActivity>(
 			`/dashboard/activity?project_id=${projectId}&window=${window}`
 		);
+	},
+	async surfaceRisk(
+		projectId: string,
+		filters: SurfaceRiskFilters = {}
+	): Promise<DashboardSurfaceRisk> {
+		const params = new URLSearchParams({ project_id: projectId });
+		if (filters.organizationId) params.set('organization_id', filters.organizationId);
+		if (filters.tagId) params.set('tag_id', filters.tagId);
+		return api.get<DashboardSurfaceRisk>(`/dashboard/surface-risk?${params.toString()}`);
 	},
 	async programs(projectId: string, window: DashboardWindow): Promise<DashboardPrograms> {
 		return api.get<DashboardPrograms>(

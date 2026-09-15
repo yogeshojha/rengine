@@ -353,3 +353,31 @@ class DashboardPrograms(BaseModel):
     events_daily: list[DashboardDayKinds] = Field(default_factory=list)
     watches: DashboardWatches = Field(default_factory=DashboardWatches)
     browsing: DashboardBrowsing = Field(default_factory=DashboardBrowsing)
+
+
+class SurfaceRiskTarget(BaseModel):
+    target_id: uuid.UUID
+    target_value: str
+    target_type: str
+    names: int = 0
+    live: int = 0
+    findings: int = 0
+    actionable: int = 0
+    act: int = 0
+    kev: int = 0
+    by_severity: dict[str, int] = Field(default_factory=dict)
+    scan_id: uuid.UUID | None = None
+    scan_status: str | None = None
+    last_at: datetime | None = None
+    organizations: list[uuid.UUID] = Field(default_factory=list)
+    tags: list[uuid.UUID] = Field(default_factory=list)
+
+
+class DashboardSurfaceRisk(BaseModel):
+    targets_total: int = 0
+    scanned: int = 0
+    live: int = 0
+    findings: int = 0
+    actionable: int = 0
+    act: int = 0
+    rows: list[SurfaceRiskTarget] = Field(default_factory=list)

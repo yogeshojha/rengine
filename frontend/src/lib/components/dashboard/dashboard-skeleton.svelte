@@ -25,7 +25,7 @@
 
 <div class="flex flex-col gap-4" aria-busy="true">
 	<div class="grid grid-cols-12 overflow-hidden rounded-xl border bg-card">
-		{#if show('funnel')}{@render cell('funnel', 'col-span-12 xl:col-span-8')}{/if}
+		{#if show('surface-risk')}{@render cell('surface-risk', 'col-span-12 xl:col-span-8')}{/if}
 		{#if show('geo')}{@render cell('geo', 'col-span-12 lg:col-span-6 xl:col-span-4')}{/if}
 		{#if show('changes')}{@render cell('changes', 'col-span-12 xl:col-span-8')}{/if}
 		{#if show('inventory')}{@render cell(

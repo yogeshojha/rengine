@@ -20,7 +20,7 @@
 	import ScheduleModal from '$lib/components/schedules/schedule-modal.svelte';
 	import FirstRunPanel from '$lib/components/dashboard/first-run/first-run-panel.svelte';
 	import Launcher from '$lib/components/dashboard/first-run/launcher.svelte';
-	import FunnelCell from '$lib/components/dashboard/funnel-cell.svelte';
+	import SurfaceRiskCell from '$lib/components/dashboard/surface-risk-cell.svelte';
 	import InventoryCell from '$lib/components/dashboard/inventory-cell.svelte';
 	import ChangesCell from '$lib/components/dashboard/changes-cell.svelte';
 	import GeoCell from '$lib/components/dashboard/geo-cell.svelte';
@@ -152,8 +152,9 @@
 					{/if}
 					{plural(headline.findings, 'finding', 'findings')} in {days} days.
 					<span class="font-medium text-muted-foreground">
-						{plural(headline.web, 'new web asset', 'new web assets')}{#if headline.targets}
-							on {plural(headline.targets, 'target', 'targets')}{/if}.
+						{plural(headline.web, 'new web asset', 'new web assets')}{headline.targets
+							? ` on ${plural(headline.targets, 'target', 'targets')}`
+							: ''}.
 					</span>
 				</h1>
 			{:else}
@@ -258,8 +259,12 @@
 
 		<!-- estate -->
 		<div class="grid grid-cols-12 overflow-hidden rounded-xl border bg-card">
-			{#if show('funnel')}
-				<FunnelCell funnel={overview.funnel} window={win} class="col-span-12 xl:col-span-8" />
+			{#if show('surface-risk')}
+				<SurfaceRiskCell
+					data={dashboardStore.surfaceRisk}
+					loading={extras}
+					class="col-span-12 xl:col-span-8"
+				/>
 			{/if}
 			{#if show('geo') && (extras || (dashboardStore.ipFacets?.country.length ?? 0) > 0)}
 				<GeoCell
