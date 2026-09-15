@@ -275,9 +275,18 @@ class ScanBatchCreate(BaseModel):
         return self
 
 
+class RecheckFieldCount(BaseModel):
+    field: str
+    label: str
+    dimension: str
+    up: int = 0
+    down: int = 0
+
+
 class RecheckTally(BaseModel):
     assets: int
     changed: int = 0
+    fields: list[RecheckFieldCount] = Field(default_factory=list)
 
 
 class RescanSummary(BaseModel):

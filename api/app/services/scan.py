@@ -12,14 +12,18 @@ from sqlalchemy import (
     Select,
     and_,
     case,
+    cast,
+    column,
     exists,
     func,
     not_,
     nullslast,
     or_,
     select,
+    true,
     update,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
@@ -28,7 +32,8 @@ from app.services.scan_context import ScanContextService
 from app.services.scan_engine import ScanEngineService, stage_effects
 from app.services.target import TargetService
 from shared.config import BaseAppSettings
-from shared.definitions.rescan import rescan_label
+from shared.definitions.compare import Tone
+from shared.definitions.rescan import change_dimension, rescan_label
 from shared.definitions.watch import WATCH_HOST_KEY
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.api_key import APIProvider
@@ -43,6 +48,7 @@ from shared.models.api_key import APIKey
 from shared.models.recheck import AssetRecheck
 from shared.models.scan import (
     SCAN_STATUSES,
+    RecheckFieldCount,
     RecheckTally,
     RescanSummary,
     Scan,
@@ -1132,7 +1138,7 @@ class ScanService:
             i.recheck = rechecks.get(i.id)
 
     async def recheck_tallies(self, scan_ids: list[UUID]) -> dict[UUID, RecheckTally]:
-        """Per focused run, the assets it rechecked and how many moved."""
+        """Per focused run, the assets it rechecked and which fields moved."""
         if not scan_ids:
             return {}
         rows = (
@@ -1146,9 +1152,62 @@ class ScanService:
                 .group_by(AssetRecheck.scan_id)
             )
         ).all()
-        return {
+        tallies = {
             scan_id: RecheckTally(assets=assets, changed=changed)
             for scan_id, assets, changed in rows
+        }
+        for scan_id, fields in (await self._recheck_fields(scan_ids)).items():
+            if scan_id in tallies:
+                tallies[scan_id].fields = fields
+        return tallies
+
+    async def _recheck_fields(
+        self, scan_ids: list[UUID]
+    ) -> dict[UUID, list[RecheckFieldCount]]:
+        """Fold every asset's change list into one count per field and direction."""
+        change = (
+            func.jsonb_array_elements(cast(AssetRecheck.changes, JSONB))
+            .table_valued(column("value", JSONB))
+            .lateral()
+        )
+        value = change.c.value
+        rows = (
+            await self.session.execute(
+                select(
+                    AssetRecheck.scan_id,
+                    value["field"].astext.label("field"),
+                    value["label"].astext.label("label"),
+                    value["tone"].astext.label("tone"),
+                    func.count(),
+                )
+                .select_from(AssetRecheck)
+                .join(change, true())
+                .where(AssetRecheck.scan_id.in_(scan_ids))
+                .group_by(AssetRecheck.scan_id, "field", "label", "tone")
+            )
+        ).all()
+        out: dict[UUID, dict[str, RecheckFieldCount]] = {}
+        for scan_id, field, label, tone, count in rows:
+            if not field:
+                continue
+            by_field = out.setdefault(scan_id, {})
+            entry = by_field.setdefault(
+                field,
+                RecheckFieldCount(
+                    field=field,
+                    label=label or field,
+                    dimension=change_dimension(field),
+                ),
+            )
+            if tone == Tone.DOWN.value:
+                entry.down += count
+            else:
+                entry.up += count
+        return {
+            scan_id: sorted(
+                by_field.values(), key=lambda f: (-(f.up + f.down), f.label)
+            )
+            for scan_id, by_field in out.items()
         }
 
     async def rescan_summaries(

@@ -52,6 +52,19 @@ RESCANNABLE_STAGES: frozenset[str] = frozenset(
     }
 )
 
+# the dimension a recheck change belongs to; anything else is the web asset itself
+CHANGE_DIMENSION: dict[str, str] = {
+    "ports": SurfaceDimension.SERVICES.value,
+    "findings": SurfaceDimension.VULNERABILITIES.value,
+    "endpoints": SurfaceDimension.ENDPOINTS.value,
+    "resolved_ips": SurfaceDimension.IPS.value,
+}
+
+
+def change_dimension(field: str) -> str:
+    return CHANGE_DIMENSION.get(field, SurfaceDimension.WEB_ASSETS.value)
+
+
 SEED_KIND_NOUN: dict[str, tuple[str, str]] = {
     SeedKind.HOST.value: ("host", "hosts"),
     SeedKind.ADDRESS.value: ("address", "addresses"),

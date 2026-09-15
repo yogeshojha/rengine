@@ -34,9 +34,11 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 	import { ROUTES } from '$lib/config/routes';
+	import { SURFACE, type SurfaceDimension } from '$lib/config/surface';
 	import type { ScanRead } from '$lib/types/scan';
 
 	const RESCAN_PAGE = 10;
+	const MOVED_SHOWN = 3;
 
 	interface Props {
 		scan: ScanRead;
@@ -77,6 +79,7 @@
 	let rescanTotal = $state(0);
 
 	let rescans = $derived(nested ? null : scan.rescans);
+	let moved = $derived(scan.recheck?.fields ?? []);
 
 	async function loadRescans(size: number) {
 		rescansLoading = true;
@@ -359,19 +362,49 @@
 					</span>
 				</div>
 			{:else if nested}
-				{#if scan.recheck}
-					<Badge
-						variant="outline"
-						class="gap-1 font-normal tabular-nums {scan.recheck.changed > 0
-							? 'border-warning/40 text-warning'
-							: 'text-muted-foreground'}"
-					>
-						{#if scan.recheck.changed > 0}
-							{scan.recheck.changed} of {scan.recheck.assets} changed
-						{:else}
-							No change
+				{#if moved.length > 0}
+					<div class="flex flex-wrap gap-1">
+						{#each moved.slice(0, MOVED_SHOWN) as field (field.field)}
+							{@const FieldIcon = SURFACE[field.dimension as SurfaceDimension]?.icon}
+							<Hint text={field.label}>
+								{#snippet child(props)}
+									<Badge
+										{...props}
+										variant="outline"
+										class="gap-0.5 font-normal tabular-nums text-muted-foreground"
+									>
+										{#if FieldIcon}<FieldIcon class="h-3 w-3" />{/if}
+										{#if field.up > 0}
+											<TrendingUp class="h-3 w-3" />{field.up}
+										{/if}
+										{#if field.down > 0}
+											<TrendingDown class="h-3 w-3" />{field.down}
+										{/if}
+									</Badge>
+								{/snippet}
+							</Hint>
+						{/each}
+						{#if moved.length > MOVED_SHOWN}
+							<Hint
+								text={moved
+									.slice(MOVED_SHOWN)
+									.map((f) => f.label)
+									.join(', ')}
+							>
+								{#snippet child(props)}
+									<Badge
+										{...props}
+										variant="outline"
+										class="font-normal tabular-nums text-muted-foreground"
+									>
+										+{moved.length - MOVED_SHOWN}
+									</Badge>
+								{/snippet}
+							</Hint>
 						{/if}
-					</Badge>
+					</div>
+				{:else if scan.recheck}
+					<Badge variant="outline" class="font-normal text-muted-foreground">No change</Badge>
 				{/if}
 			{:else}
 				<div class="flex flex-wrap gap-1">

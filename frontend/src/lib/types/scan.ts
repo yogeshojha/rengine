@@ -282,9 +282,18 @@ export interface ScanExportRow {
 	created_at: string;
 }
 
+export interface RecheckFieldCount {
+	field: string;
+	label: string;
+	dimension: string;
+	up: number;
+	down: number;
+}
+
 export interface RecheckTally {
 	assets: number;
 	changed: number;
+	fields: RecheckFieldCount[];
 }
 
 export interface RescanSummary {
