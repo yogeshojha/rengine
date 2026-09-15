@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import { onDestroy, untrack } from 'svelte';
-	import { SvelteURLSearchParams } from 'svelte/reactivity';
+	import { SvelteSet, SvelteURLSearchParams } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
@@ -16,7 +16,6 @@
 	import FileDown from '@lucide/svelte/icons/file-down';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
-	import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
 	import GitCompareArrows from '@lucide/svelte/icons/git-compare-arrows';
 
 	import { scansApi } from '$lib/api/scans';
@@ -35,12 +34,14 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Empty from '$lib/components/ui/empty';
 	import * as Tabs from '$lib/components/ui/tabs';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Kbd } from '$lib/components/ui/kbd';
 	import ScanStatusBadge from '@/components/scan-status-badge.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import ConfirmDialog from '@/components/confirm-dialog.svelte';
+	import EmptyState from '@/components/empty-state.svelte';
 	import LoadingButton from '@/components/loading-button.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import ScanOverview from '$lib/components/scans/results/scan-overview.svelte';
@@ -67,16 +68,16 @@
 	import { emptyEndpointQuery, type EndpointQuery } from '$lib/utilities/endpoints';
 	import { emptyVulnQuery, type VulnQuery } from '$lib/utilities/vulns';
 	import { targetTypeLabel } from '$lib/types/scan-engine';
-	import { TARGET_TYPE_ICONS, type IconComponent } from '$lib/config/icons';
-	import { RESULT_TABS, SURFACE_ORDER, SurfaceDimension } from '$lib/config/surface';
+	import { TARGET_TYPE_ICONS } from '$lib/config/icons';
+	import { SURFACE, SURFACE_ORDER, SurfaceDimension, type SurfaceSpec } from '$lib/config/surface';
+	import { NOTES_TAB, SCAN_TABS, SCAN_TAB_DEFS, type ScanTab } from '$lib/config/scan-tabs';
+	import { scanTabs } from '$lib/stores/scan-tabs.svelte';
+	import TabMenu from '$lib/components/scans/results/tab-menu.svelte';
 	import { INTEREST_TAB } from '$lib/config/interest';
 	import { CORRELATION_TAB } from '$lib/config/correlation';
 	import CorrelationTab from '$lib/components/scans/results/correlation/correlation-tab.svelte';
-	import Share2 from '@lucide/svelte/icons/share-2';
-	import StickyNote from '@lucide/svelte/icons/sticky-note';
 	import NotePanel from '$lib/components/notes/note-panel.svelte';
 	import InterestingTable from '$lib/components/scans/results/interesting/interesting-table.svelte';
-	import ScanEye from '@lucide/svelte/icons/scan-eye';
 	import { plannedStages } from '$lib/utilities/scan-progress';
 	import type { TargetType } from '$lib/types/target';
 	import { SCAN_COUNT_COLUMNS } from '$lib/types/scan';
@@ -86,16 +87,6 @@
 	import GenerateReportDialog from '$lib/components/reports/generate-dialog.svelte';
 	import { NOW_TICK_MS } from '$lib/constants';
 
-	const NOTES_TAB = 'notes';
-	const TABS = ['overview', INTEREST_TAB, ...RESULT_TABS, CORRELATION_TAB, NOTES_TAB] as const;
-	type TabKey = (typeof TABS)[number];
-	const TAB_DEFS: { key: TabKey; label: string; icon: IconComponent }[] = [
-		{ key: 'overview', label: 'Overview', icon: LayoutDashboard },
-		{ key: INTEREST_TAB as TabKey, label: 'Exposures', icon: ScanEye },
-		...SURFACE_ORDER.map((s) => ({ key: s.tab as TabKey, label: s.label, icon: s.icon })),
-		{ key: CORRELATION_TAB as TabKey, label: 'Correlation', icon: Share2 },
-		{ key: NOTES_TAB as TabKey, label: 'Notes', icon: StickyNote }
-	];
 	const HISTORY_SIZE = 12;
 	const STATUS_TEXT: Record<string, string> = {
 		running: 'text-info',
@@ -165,14 +156,14 @@
 	}
 
 	const initialTab = page.url.searchParams.get('tab');
-	let activeTab = $state<TabKey>(
-		initialTab && (TABS as readonly string[]).includes(initialTab)
-			? (initialTab as TabKey)
+	let activeTab = $state<ScanTab>(
+		initialTab && (SCAN_TABS as readonly string[]).includes(initialTab)
+			? (initialTab as ScanTab)
 			: 'overview'
 	);
 
 	function setTab(v: string) {
-		activeTab = v as TabKey;
+		activeTab = v as ScanTab;
 		try {
 			const sp = new SvelteURLSearchParams(location.search);
 			sp.set('tab', v);
@@ -314,7 +305,7 @@
 	let softwareSearch = $state('');
 	let secretsTotal = $state<number | null>(null);
 	let secretSearch = $state('');
-	let tabCounts = $derived<Record<TabKey, number | null>>({
+	let tabCounts = $derived<Record<ScanTab, number | null>>({
 		overview: null,
 		[INTEREST_TAB]: interestTotal,
 		'web-assets': scan?.subdomains_found ?? 0,
@@ -330,21 +321,58 @@
 	let plannedKinds = $derived(
 		new Set(scan ? plannedStages(scan, engineCatalogStore.stages).flatMap((st) => st.produces) : [])
 	);
-	let visibleTabs = $derived(
-		TAB_DEFS.filter((t) => {
-			if (t.key === 'overview' || t.key === NOTES_TAB) return true;
-			if (t.key === CORRELATION_TAB) return (scan?.subdomains_found ?? 0) >= 2;
-			if (t.key === SurfaceDimension.SOFTWARE) return softwareTotal === null || softwareTotal > 0;
-			if (t.key === SurfaceDimension.SECRETS) return secretsTotal === null || secretsTotal > 0;
-			if ((tabCounts[t.key] ?? 0) > 0) return true;
-			if (t.key === INTEREST_TAB) return false;
-			const spec = SURFACE_ORDER.find((sp) => sp.tab === t.key);
-			return unfinished && !!spec && spec.kinds.some((k) => plannedKinds.has(k));
-		})
+	function dimensionOn(spec: SurfaceSpec): boolean {
+		if (spec.countColumns.some((c) => ((scan?.[c] as number) ?? 0) > 0)) return true;
+		return spec.kinds.some((k) => plannedKinds.has(k));
+	}
+	let defaultTabs = $derived(
+		new Set(
+			SCAN_TAB_DEFS.filter((t) => {
+				if (t.key === 'overview' || t.key === NOTES_TAB) return true;
+				if (t.key === CORRELATION_TAB) return (scan?.subdomains_found ?? 0) >= 2;
+				if (t.key === INTEREST_TAB) return dimensionOn(SURFACE[SurfaceDimension.WEB_ASSETS]);
+				const spec = SURFACE_ORDER.find((sp) => sp.tab === t.key);
+				return !!spec && dimensionOn(spec);
+			}).map((t) => t.key)
+		)
 	);
+	// a tab offered once stays offered
+	let offered = new SvelteSet<string>();
+	let offeredFor = $state('');
 	$effect(() => {
-		if (scan && !loading && !visibleTabs.some((t) => t.key === activeTab)) setTab('overview');
+		const id = scanId;
+		const keys = [...defaultTabs];
+		untrack(() => {
+			if (offeredFor !== id) {
+				offered.clear();
+				offeredFor = id;
+			}
+			for (const k of keys) offered.add(k);
+		});
 	});
+	function tabOn(key: ScanTab): boolean {
+		return scanTabs.visible(key, defaultTabs.has(key) || offered.has(key));
+	}
+	let visibleTabs = $derived(SCAN_TAB_DEFS.filter((t) => t.key === activeTab || tabOn(t.key)));
+	let tabMenuRows = $derived(
+		SCAN_TAB_DEFS.map((t) => ({
+			...t,
+			defaultOn: defaultTabs.has(t.key) || offered.has(t.key),
+			count: tabCounts[t.key]
+		}))
+	);
+	function onTabToggle(key: ScanTab, visible: boolean) {
+		if (!visible && key === activeTab) setTab('overview');
+	}
+	function tabSpec(tab: string): SurfaceSpec | undefined {
+		if (tab === INTEREST_TAB || tab === CORRELATION_TAB)
+			return SURFACE[SurfaceDimension.WEB_ASSETS];
+		return SURFACE_ORDER.find((sp) => sp.tab === tab);
+	}
+	function notScanned(tab: string): boolean {
+		const spec = tabSpec(tab);
+		return !!spec && !dimensionOn(spec);
+	}
 	let surfaceLink = $derived.by(() => {
 		const spec = SURFACE_ORDER.find((sp) => sp.tab === activeTab);
 		if (!spec) return '';
@@ -752,6 +780,11 @@
 			</p>
 		{/if}
 
+		{#snippet unscanned(tab: string)}
+			{@const spec = tabSpec(tab)}
+			<EmptyState icon={spec?.icon} title="Not scanned" class="mt-6" />
+		{/snippet}
+
 		{#snippet tabFailed(err: unknown, reset: () => void)}
 			<Empty.Root class="rounded-lg border border-dashed py-20">
 				<Empty.Header>
@@ -769,7 +802,7 @@
 				bind:clientHeight={tabsHeight}
 				class="sticky top-0 z-30 -mx-4 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:-mx-6 md:px-6"
 			>
-				<div class="flex items-center gap-4">
+				<div class="flex items-center gap-2">
 					{#if condensed}
 						<div
 							class="hidden shrink-0 items-center gap-2 border-r border-border py-2 pr-4 sm:flex"
@@ -782,40 +815,43 @@
 							/>
 						</div>
 					{/if}
-					<Tabs.List class="h-auto w-full justify-start gap-0 rounded-none bg-transparent p-0">
-						{#each visibleTabs as t, i (t.key)}
-							{@const n = tabCounts[t.key]}
-							<Tooltip.Root>
-								<Tooltip.Trigger>
-									{#snippet child({ props })}
-										<Tabs.Trigger
-											{...props}
-											value={t.key}
-											class="flex-none gap-1.5 rounded-none border-0 border-b-2 border-transparent px-3 py-2.5 text-sm font-medium text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:border-primary dark:data-[state=active]:bg-transparent"
-										>
-											<t.icon class="size-3.5" />
-											{t.label}
-											{#if n != null}
-												<span
-													class="text-xs tabular-nums {n === 0
-														? 'text-muted-foreground/50'
-														: 'text-muted-foreground'}">{n.toLocaleString()}</span
-												>
-											{/if}
-										</Tabs.Trigger>
-									{/snippet}
-								</Tooltip.Trigger>
-								<Tooltip.Content side="bottom" class="flex items-center gap-1.5">
-									{t.label}
-									<Kbd>{i + 1}</Kbd>
-								</Tooltip.Content>
-							</Tooltip.Root>
-						{/each}
-					</Tabs.List>
+					<ScrollArea orientation="horizontal" class="min-w-0 flex-1" scrollbarXClasses="h-1">
+						<Tabs.List class="h-auto w-max justify-start gap-0 rounded-none bg-transparent p-0">
+							{#each visibleTabs as t, i (t.key)}
+								{@const n = tabCounts[t.key]}
+								<Tooltip.Root>
+									<Tooltip.Trigger>
+										{#snippet child({ props })}
+											<Tabs.Trigger
+												{...props}
+												value={t.key}
+												class="flex-none gap-1.5 rounded-none border-0 border-b-2 border-transparent px-3 py-2.5 text-sm font-medium text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:border-primary dark:data-[state=active]:bg-transparent"
+											>
+												<t.icon class="size-3.5" />
+												{t.label}
+												{#if n != null}
+													<span
+														class="text-xs tabular-nums {n === 0
+															? 'text-muted-foreground/50'
+															: 'text-muted-foreground'}">{n.toLocaleString()}</span
+													>
+												{/if}
+											</Tabs.Trigger>
+										{/snippet}
+									</Tooltip.Trigger>
+									<Tooltip.Content side="bottom" class="flex items-center gap-1.5">
+										{t.label}
+										<Kbd>{i + 1}</Kbd>
+									</Tooltip.Content>
+								</Tooltip.Root>
+							{/each}
+						</Tabs.List>
+					</ScrollArea>
+					<TabMenu rows={tabMenuRows} onToggle={onTabToggle} />
 					{#if surfaceLink}
 						<a
 							href={surfaceLink}
-							class="ml-auto hidden shrink-0 items-center gap-1 py-2.5 pl-4 text-xs whitespace-nowrap text-muted-foreground hover:text-foreground hover:underline sm:flex"
+							class="hidden shrink-0 items-center gap-1 py-2.5 pl-2 text-xs whitespace-nowrap text-muted-foreground hover:text-foreground hover:underline sm:flex"
 						>
 							Across all targets
 							<ArrowUpRight class="size-3.5" />
@@ -849,100 +885,124 @@
 			</Tabs.Content>
 
 			<Tabs.Content value={INTEREST_TAB} class="mt-6">
-				<svelte:boundary failed={tabFailed}>
-					{#key scan.id}
-						<InterestingTable
-							scanId={scan.id}
-							{projectId}
-							active={activeTab === INTEREST_TAB}
-							revision={resultTicks[INTEREST_TAB] ?? 0}
-							onTab={openTab}
-							onTotal={(n) => (interestTotal = n)}
-						/>
-					{/key}
-				</svelte:boundary>
+				{#if notScanned(INTEREST_TAB)}
+					{@render unscanned(INTEREST_TAB)}
+				{:else}
+					<svelte:boundary failed={tabFailed}>
+						{#key scan.id}
+							<InterestingTable
+								scanId={scan.id}
+								{projectId}
+								active={activeTab === INTEREST_TAB}
+								revision={resultTicks[INTEREST_TAB] ?? 0}
+								onTab={openTab}
+								onTotal={(n) => (interestTotal = n)}
+							/>
+						{/key}
+					</svelte:boundary>
+				{/if}
 			</Tabs.Content>
 
 			<Tabs.Content value={CORRELATION_TAB} class="mt-6">
-				<svelte:boundary failed={tabFailed}>
-					{#key scan.id}
-						<CorrelationTab
-							scanId={scan.id}
-							{projectId}
-							active={activeTab === CORRELATION_TAB}
-							revision={resultTicks[SurfaceDimension.WEB_ASSETS] ?? 0}
-							onTab={openTab}
-							onTotal={(n) => (correlationTotal = n)}
-						/>
-					{/key}
-				</svelte:boundary>
+				{#if notScanned(CORRELATION_TAB)}
+					{@render unscanned(CORRELATION_TAB)}
+				{:else}
+					<svelte:boundary failed={tabFailed}>
+						{#key scan.id}
+							<CorrelationTab
+								scanId={scan.id}
+								{projectId}
+								active={activeTab === CORRELATION_TAB}
+								revision={resultTicks[SurfaceDimension.WEB_ASSETS] ?? 0}
+								onTab={openTab}
+								onTotal={(n) => (correlationTotal = n)}
+							/>
+						{/key}
+					</svelte:boundary>
+				{/if}
 			</Tabs.Content>
 
 			<Tabs.Content value="web-assets" class="mt-6">
-				<svelte:boundary failed={tabFailed}>
-					{#key scan.id}
-						<WebAssetsTable
-							scanId={scan.id}
-							targetType={scan.execution_config.target_type}
-							{projectId}
-							apex={scan.execution_config.target_value}
-							active={activeTab === 'web-assets'}
-							revision={resultTicks[SurfaceDimension.WEB_ASSETS] ?? 0}
-							onTab={openTab}
-							bind:query={webQuery}
-						/>
-					{/key}
-				</svelte:boundary>
+				{#if notScanned('web-assets')}
+					{@render unscanned('web-assets')}
+				{:else}
+					<svelte:boundary failed={tabFailed}>
+						{#key scan.id}
+							<WebAssetsTable
+								scanId={scan.id}
+								targetType={scan.execution_config.target_type}
+								{projectId}
+								apex={scan.execution_config.target_value}
+								active={activeTab === 'web-assets'}
+								revision={resultTicks[SurfaceDimension.WEB_ASSETS] ?? 0}
+								onTab={openTab}
+								bind:query={webQuery}
+							/>
+						{/key}
+					</svelte:boundary>
+				{/if}
 			</Tabs.Content>
 
 			<Tabs.Content value="endpoints" class="mt-6">
-				<svelte:boundary failed={tabFailed}>
-					{#key scan.id}
-						<EndpointsTable
-							scanId={scan.id}
-							{projectId}
-							active={activeTab === 'endpoints'}
-							revision={resultTicks[SurfaceDimension.ENDPOINTS] ?? 0}
-							onTab={openTab}
-							onScanTotal={(n) => (endpointsTotal = n)}
-							bind:query={endpointQuery}
-						/>
-					{/key}
-				</svelte:boundary>
+				{#if notScanned('endpoints')}
+					{@render unscanned('endpoints')}
+				{:else}
+					<svelte:boundary failed={tabFailed}>
+						{#key scan.id}
+							<EndpointsTable
+								scanId={scan.id}
+								{projectId}
+								active={activeTab === 'endpoints'}
+								revision={resultTicks[SurfaceDimension.ENDPOINTS] ?? 0}
+								onTab={openTab}
+								onScanTotal={(n) => (endpointsTotal = n)}
+								bind:query={endpointQuery}
+							/>
+						{/key}
+					</svelte:boundary>
+				{/if}
 			</Tabs.Content>
 
 			<Tabs.Content value="services" class="mt-6">
-				<svelte:boundary failed={tabFailed}>
-					{#key scan.id}
-						<ServicesTable
-							scanId={scan.id}
-							targetType={scan.execution_config.target_type}
-							{projectId}
-							active={activeTab === 'services'}
-							revision={resultTicks[SurfaceDimension.SERVICES] ?? 0}
-							onTab={openTab}
-							onScanTotal={(n) => (servicesTotal = n)}
-							bind:query={serviceQuery}
-						/>
-					{/key}
-				</svelte:boundary>
+				{#if notScanned('services')}
+					{@render unscanned('services')}
+				{:else}
+					<svelte:boundary failed={tabFailed}>
+						{#key scan.id}
+							<ServicesTable
+								scanId={scan.id}
+								targetType={scan.execution_config.target_type}
+								{projectId}
+								active={activeTab === 'services'}
+								revision={resultTicks[SurfaceDimension.SERVICES] ?? 0}
+								onTab={openTab}
+								onScanTotal={(n) => (servicesTotal = n)}
+								bind:query={serviceQuery}
+							/>
+						{/key}
+					</svelte:boundary>
+				{/if}
 			</Tabs.Content>
 
 			<Tabs.Content value="ips" class="mt-6">
-				<svelte:boundary failed={tabFailed}>
-					{#key scan.id}
-						<IpsTable
-							scanId={scan.id}
-							targetType={scan.execution_config.target_type}
-							{projectId}
-							active={activeTab === 'ips'}
-							revision={resultTicks[SurfaceDimension.IPS] ?? 0}
-							onTab={openTab}
-							onScanTotal={(n) => (ipsTotal = n)}
-							bind:query={ipQuery}
-						/>
-					{/key}
-				</svelte:boundary>
+				{#if notScanned('ips')}
+					{@render unscanned('ips')}
+				{:else}
+					<svelte:boundary failed={tabFailed}>
+						{#key scan.id}
+							<IpsTable
+								scanId={scan.id}
+								targetType={scan.execution_config.target_type}
+								{projectId}
+								active={activeTab === 'ips'}
+								revision={resultTicks[SurfaceDimension.IPS] ?? 0}
+								onTab={openTab}
+								onScanTotal={(n) => (ipsTotal = n)}
+								bind:query={ipQuery}
+							/>
+						{/key}
+					</svelte:boundary>
+				{/if}
 			</Tabs.Content>
 
 			<Tabs.Content value={NOTES_TAB} class="mt-6">
@@ -962,47 +1022,59 @@
 			</Tabs.Content>
 
 			<Tabs.Content value="vulnerabilities" class="mt-6">
-				<svelte:boundary failed={tabFailed}>
-					{#key scan.id}
-						<VulnerabilitiesTable
-							scanId={scan.id}
-							targetType={scan.execution_config.target_type}
-							active={activeTab === 'vulnerabilities'}
-							revision={resultTicks[SurfaceDimension.VULNERABILITIES] ?? 0}
-							onTab={openTab}
-							onScanTotal={(n) => (vulnsTotal = n)}
-							bind:query={vulnQuery}
-						/>
-					{/key}
-				</svelte:boundary>
+				{#if notScanned('vulnerabilities')}
+					{@render unscanned('vulnerabilities')}
+				{:else}
+					<svelte:boundary failed={tabFailed}>
+						{#key scan.id}
+							<VulnerabilitiesTable
+								scanId={scan.id}
+								targetType={scan.execution_config.target_type}
+								active={activeTab === 'vulnerabilities'}
+								revision={resultTicks[SurfaceDimension.VULNERABILITIES] ?? 0}
+								onTab={openTab}
+								onScanTotal={(n) => (vulnsTotal = n)}
+								bind:query={vulnQuery}
+							/>
+						{/key}
+					</svelte:boundary>
+				{/if}
 			</Tabs.Content>
 
 			<Tabs.Content value="software" class="mt-6">
-				<svelte:boundary failed={tabFailed}>
-					{#key scan.id}
-						<SoftwareTable
-							scanId={scan.id}
-							projectId={scan.project_id}
-							active={activeTab === 'software'}
-							revision={resultTicks[SurfaceDimension.SOFTWARE] ?? 0}
-							onScanTotal={(n) => (softwareTotal = n)}
-						/>
-					{/key}
-				</svelte:boundary>
+				{#if notScanned('software')}
+					{@render unscanned('software')}
+				{:else}
+					<svelte:boundary failed={tabFailed}>
+						{#key scan.id}
+							<SoftwareTable
+								scanId={scan.id}
+								projectId={scan.project_id}
+								active={activeTab === 'software'}
+								revision={resultTicks[SurfaceDimension.SOFTWARE] ?? 0}
+								onScanTotal={(n) => (softwareTotal = n)}
+							/>
+						{/key}
+					</svelte:boundary>
+				{/if}
 			</Tabs.Content>
 
 			<Tabs.Content value="secrets" class="mt-6">
-				<svelte:boundary failed={tabFailed}>
-					{#key scan.id}
-						<SecretsTable
-							scanId={scan.id}
-							projectId={scan.project_id}
-							active={activeTab === 'secrets'}
-							revision={resultTicks[SurfaceDimension.SECRETS] ?? 0}
-							onScanTotal={(n) => (secretsTotal = n)}
-						/>
-					{/key}
-				</svelte:boundary>
+				{#if notScanned('secrets')}
+					{@render unscanned('secrets')}
+				{:else}
+					<svelte:boundary failed={tabFailed}>
+						{#key scan.id}
+							<SecretsTable
+								scanId={scan.id}
+								projectId={scan.project_id}
+								active={activeTab === 'secrets'}
+								revision={resultTicks[SurfaceDimension.SECRETS] ?? 0}
+								onScanTotal={(n) => (secretsTotal = n)}
+							/>
+						{/key}
+					</svelte:boundary>
+				{/if}
 			</Tabs.Content>
 		</Tabs.Root>
 	{/if}
