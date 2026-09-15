@@ -326,18 +326,6 @@ class ScanCancelAll(BaseModel):
     cancelled: int
 
 
-class ScanDailyCount(BaseModel):
-    date: str
-    count: int
-    completed: int = 0
-    failed: int = 0
-    cancelled: int = 0
-    running: int = 0
-    paused: int = 0
-    pending: int = 0
-    new_subdomains: int = 0
-
-
 class ScanFacet(BaseModel):
     name: str
     count: int
@@ -387,7 +375,6 @@ class ScanStats(BaseModel):
     last_scan_at: datetime | None
     avg_duration_seconds: float | None
     success_rate: float | None
-    daily: list[ScanDailyCount]
     engines: list[ScanFacet] = []
     contexts: list[ScanFacet] = []
 

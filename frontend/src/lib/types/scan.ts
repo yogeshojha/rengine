@@ -248,18 +248,6 @@ export interface ScanStatusCounts {
 	cancelled: number;
 }
 
-export interface ScanDailyCount {
-	date: string;
-	count: number;
-	completed: number;
-	failed: number;
-	cancelled: number;
-	running: number;
-	paused: number;
-	pending: number;
-	new_subdomains: number;
-}
-
 export interface ScanTargetGroup {
 	target_id: string;
 	target_value: string;
@@ -303,7 +291,6 @@ export interface ScanStats {
 	last_scan_at: string | null;
 	avg_duration_seconds: number | null;
 	success_rate: number | null;
-	daily: ScanDailyCount[];
 	engines: ScanFacet[];
 	contexts: ScanFacet[];
 }

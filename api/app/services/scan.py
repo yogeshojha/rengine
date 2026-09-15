@@ -46,7 +46,6 @@ from shared.models.scan import (
     ScanCancelAll,
     ScanChanges,
     ScanCreate,
-    ScanDailyCount,
     ScanExportRow,
     ScanFacet,
     ScanRead,
@@ -1058,53 +1057,6 @@ class ScanService:
             counts[ScanStatus.COMPLETED.value] / finished if finished else None
         )
 
-        start = (utc_now() - timedelta(days=29)).date()
-        status_day_rows = (
-            await self.session.execute(
-                select(func.date(Scan.created_at), Scan.status, func.count())
-                .where(*conds, func.date(Scan.created_at) >= start)
-                .group_by(func.date(Scan.created_at), Scan.status)
-            )
-        ).all()
-
-        by_day_status: dict[str, dict[str, int]] = {}
-        for d, st, n in status_day_rows:
-            by_day_status.setdefault(str(d), {})[st] = n
-
-        first_day = func.date(Subdomain.discovered_at)
-        new_day_rows = (
-            await self.session.execute(
-                select(first_day, func.count())
-                .where(
-                    Subdomain.scan_id.in_(
-                        _scans_writing_since(project_id, start, target_id)
-                    ),
-                    first_day >= start,
-                    not_(_host_seen_before()),
-                )
-                .group_by(first_day)
-            )
-        ).all()
-        new_by_day = {str(d): n for d, n in new_day_rows}
-
-        daily = []
-        for i in range(30):
-            d = (start + timedelta(days=i)).isoformat()
-            s = by_day_status.get(d, {})
-            daily.append(
-                ScanDailyCount(
-                    date=d,
-                    count=sum(s.values()),
-                    completed=s.get(ScanStatus.COMPLETED.value, 0),
-                    failed=s.get(ScanStatus.FAILED.value, 0),
-                    cancelled=s.get(ScanStatus.CANCELLED.value, 0),
-                    running=s.get(ScanStatus.RUNNING.value, 0),
-                    paused=s.get(ScanStatus.PAUSED.value, 0),
-                    pending=s.get(ScanStatus.PENDING.value, 0),
-                    new_subdomains=new_by_day.get(d, 0),
-                )
-            )
-
         engine_rows = (
             await self.session.execute(
                 select(Scan.engine_name, func.count())
@@ -1134,7 +1086,6 @@ class ScanService:
                 round(avg_duration, 1) if avg_duration is not None else None
             ),
             success_rate=round(success_rate, 3) if success_rate is not None else None,
-            daily=daily,
             engines=engines,
             contexts=contexts,
         )

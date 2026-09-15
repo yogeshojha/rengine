@@ -5,7 +5,6 @@
 
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { scansStore } from '$lib/stores/scans.svelte';
-	import ScanActivityChart from '$lib/components/scans/scan-activity-chart.svelte';
 	import ScanHistoryTable from '$lib/components/scans/scan-history-table.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import type { ScanRead } from '$lib/types/scan';
@@ -55,7 +54,6 @@
 
 <div class="flex flex-col gap-4">
 	<h1 class="sr-only">Scans</h1>
-	<ScanActivityChart stats={scansStore.stats} />
 	<ScanHistoryTable
 		targetId={targetFilter}
 		onLaunch={newScan}
