@@ -109,6 +109,8 @@ class DomainPostureSummary(BaseModel):
     observed_at: datetime | None = None
     zones: list[DomainPostureRead] = Field(default_factory=list)
     evaluated: int = 0
+    zone_count: int = 0
+    mail_hosts: int = 0
     clean: int = 0
     warning: int = 0
     info: int = 0

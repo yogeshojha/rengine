@@ -389,3 +389,39 @@ def test_a_mail_host_with_its_own_record_is_judged_on_it():
     assert found["mail.example.com"].dmarc_inherited is False
     assert mail.dmarc_policy == "reject"
     assert C.DMARC_NONE not in mail.issues
+
+
+def test_a_mail_row_skips_the_zone_checks_and_a_stray_txt_does_not_block_inheritance():
+    lookup = _Fake(
+        {
+            "example.com": {"soa": ["x"], "caa": ["letsencrypt.org"]},
+            "_dmarc.example.com": {"txt": ["v=DMARC1; p=reject; rua=mailto:a@e.com"]},
+            "mail.example.com": {"mx": ["10 mx.example.com"], "soa": ["x"]},
+            "_dmarc.mail.example.com": {"txt": ["MS=ms12345"]},
+        }
+    )
+    found = gather(
+        {"example.com": None, "mail.example.com": "example.com"},
+        lookup,
+        selectors=[],
+        fetch_policy=False,
+    )
+    mail = found["mail.example.com"]
+    assert mail.dmarc_inherited is True
+    posture = evaluate(mail)
+    assert C.DMARC_MISSING not in posture.issues
+    assert C.CAA_MISSING not in posture.checked
+    assert C.DNSSEC_MISSING not in posture.checked
+
+
+def test_a_mail_row_whose_parent_never_answered_leaves_dmarc_unjudged():
+    lookup = _Fake({"mail.example.com": {"mx": ["10 mx.example.com"], "soa": ["x"]}})
+    found = gather(
+        {"example.com": None, "mail.example.com": "example.com"},
+        lookup,
+        selectors=[],
+        fetch_policy=False,
+    )
+    posture = evaluate(found["mail.example.com"])
+    assert found["mail.example.com"].dmarc_unknown is True
+    assert C.DMARC_MISSING not in posture.checked

@@ -51,6 +51,8 @@ class DomainPostureSection(Section):
         zones = posture.zones[: cfg.max_zones] if cfg.show_zones else []
         return {
             "evaluated": posture.evaluated,
+            "zone_count": posture.zone_count,
+            "mail_hosts": posture.mail_hosts,
             "warning": posture.warning,
             "info": posture.info,
             "clean": posture.clean,
@@ -59,6 +61,7 @@ class DomainPostureSection(Section):
             "zones": [
                 {
                     "zone": z.zone,
+                    "parent": z.parent,
                     "hosts": z.hosts,
                     "spf": SPF_ALL_LABELS.get(z.spf_all or "", "none"),
                     "dmarc": z.dmarc_policy or "none",

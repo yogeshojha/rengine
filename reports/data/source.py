@@ -855,6 +855,7 @@ class ReportSource:
             zones.append(
                 PostureZone(
                     zone=r.zone,
+                    parent=r.parent,
                     hosts=r.hosts,
                     spf_all=r.spf_all,
                     dmarc_policy=r.dmarc_policy,
@@ -867,6 +868,8 @@ class ReportSource:
             )
         return PostureRollup(
             evaluated=len(rows),
+            zone_count=sum(1 for r in rows if r.parent is None),
+            mail_hosts=sum(1 for r in rows if r.parent is not None),
             clean=clean,
             warning=warning,
             info=info,

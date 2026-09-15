@@ -145,6 +145,8 @@ def _sender(rec: ZoneRecords, out: Posture, add) -> None:
             if over or not rec.spf_lookups_capped:
                 add(Verdict(C.SPF_LOOKUP_LIMIT, over, shown))
 
+    if rec.dmarc_unknown:
+        return
     dmarc = [v for v in rec.dmarc if is_dmarc(v)]
     add(Verdict(C.DMARC_MISSING, not dmarc))
     if dmarc:
@@ -230,5 +232,6 @@ def evaluate(rec: ZoneRecords) -> Posture:
     add = out.verdicts.append
     _sender(rec, out, add)
     _mail(rec, out, add)
-    _zone(rec, add)
+    if rec.parent is None:
+        _zone(rec, add)
     return out

@@ -132,7 +132,8 @@
 			<span>{plural(zone.hosts, 'web asset', 'web assets')}</span>
 		{:else if summary}
 			<span>
-				{plural(summary.evaluated, 'zone', 'zones')} checked{#if summary.spoofable}
+				{plural(summary.zone_count, 'zone', 'zones')}{#if summary.mail_hosts}
+					· {plural(summary.mail_hosts, 'mail host', 'mail hosts')}{/if}{#if summary.spoofable}
 					· {summary.spoofable.toLocaleString()} spoofable{/if}
 			</span>
 			{#if hosts}

@@ -15,6 +15,22 @@ MAX_EVIDENCE = 200
 MAX_ZONES_PER_SCAN = 200
 MAX_MAIL_HOSTS_PER_SCAN = 100
 MX_BATCH_SIZE = 1000
+MX_SWEEP_CAP = 5000
+# names asked for MX first
+MAIL_PREFIXES: tuple[str, ...] = (
+    "mail",
+    "smtp",
+    "mx",
+    "exchange",
+    "webmail",
+    "imap",
+    "pop",
+    "relay",
+    "autodiscover",
+    "mta",
+    "post",
+    "email",
+)
 MAX_ZONE_LENGTH = 253
 POLICY_FETCH_TIMEOUT = 8
 POLICY_MAX_BYTES = 64 * 1024

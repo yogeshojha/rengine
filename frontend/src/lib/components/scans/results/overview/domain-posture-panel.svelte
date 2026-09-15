@@ -41,7 +41,10 @@
 			description="SPF, DMARC, DKIM, MTA-STS, DNSSEC and CAA per zone"
 		>
 			{#if summary}
-				<span class="tabular-nums">{plural(summary.evaluated, 'zone', 'zones')}</span>
+				<span class="tabular-nums">{plural(summary.zone_count, 'zone', 'zones')}</span>
+				{#if summary.mail_hosts > 0}
+					<span class="tabular-nums">{plural(summary.mail_hosts, 'mail host', 'mail hosts')}</span>
+				{/if}
 				{#if summary.warning > 0}
 					<span class="flex items-center gap-1.5 tabular-nums">
 						<span class="size-1.5 rounded-full {TONE_DOT.warning}" aria-hidden="true"></span>

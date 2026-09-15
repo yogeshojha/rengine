@@ -1,4 +1,4 @@
-<p class="block muted small">{{ evaluated|num }} zones were checked. {{ warning|num }} fail a warning-level check, {{ info|num }} fail an informational check and {{ clean|num }} pass every applicable check.{% if spoofable %} {{ spoofable|num }} can be forged as a sender.{% endif %}</p>
+<p class="block muted small">{{ zone_count|num }} zones{% if mail_hosts %} and {{ mail_hosts|num }} mail hosts{% endif %} were checked. {{ warning|num }} fail a warning-level check, {{ info|num }} fail an informational check and {{ clean|num }} pass every applicable check.{% if spoofable %} {{ spoofable|num }} can be forged as a sender.{% endif %}</p>
 <table class="table table--fixed">
   <thead><tr><th>Check</th><th style="width:30mm">Group</th><th class="num" style="width:18mm">Failing</th><th class="num" style="width:20mm">Applicable</th><th style="width:30mm">Share</th></tr></thead>
   <tbody>
@@ -22,7 +22,7 @@
     <tbody>
       {% for z in zones %}
       <tr>
-        <td class="micro mono-break wrap">{{ z.zone }}</td>
+        <td class="micro mono-break wrap">{{ z.zone }}{% if z.parent %}<div class="micro muted">under {{ z.parent }}</div>{% endif %}</td>
         <td class="num micro muted">{{ z.hosts|num }}</td>
         <td class="micro">{{ z.spf }}</td>
         <td class="micro">{{ z.dmarc }}</td>

@@ -43,6 +43,8 @@ export interface DomainPostureSummary {
 	observed_at: string | null;
 	zones: DomainPostureRead[];
 	evaluated: number;
+	zone_count: number;
+	mail_hosts: number;
 	clean: number;
 	warning: number;
 	info: number;

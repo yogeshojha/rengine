@@ -409,6 +409,7 @@ export function zoneFacts(z: DomainPostureRead): ZoneFact[] {
 					}
 				: { key: 'mta_sts', label: 'MTA-STS', value: 'none', tone: 'info' }
 		);
+	if (z.parent) return out;
 	out.push({
 		key: 'dnssec',
 		label: 'DNSSEC',

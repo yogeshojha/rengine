@@ -202,7 +202,7 @@
 		hygieneTone === HygieneTone.WARNING ? (hygiene?.warning ?? 0) : (hygiene?.info ?? 0)
 	);
 	let postureTone = $derived<PostureTone | null>(
-		!posture || posture.evaluated === 0
+		!posture || (posture.evaluated === 0 && posture.pending === 0)
 			? null
 			: posture.warning > 0
 				? PostureTone.WARNING
@@ -451,6 +451,7 @@
 		if (!seen) return;
 		untrack(loadFacets);
 		untrack(loadHygiene);
+		untrack(loadPosture);
 	});
 
 	$effect(() => {

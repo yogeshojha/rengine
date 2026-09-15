@@ -84,6 +84,7 @@ def _summarise(rows: list[DomainPosture]) -> DomainPostureSummary:
     ordered = sorted(
         rows,
         key=lambda r: (
+            r.parent is not None,
             -len(set(r.posture_issues or []) & warning_keys),
             -r.hosts,
             r.zone,
@@ -93,6 +94,8 @@ def _summarise(rows: list[DomainPosture]) -> DomainPostureSummary:
         covered=bool(rows),
         zones=[_read(r) for r in ordered[:MAX_ZONES]],
         evaluated=len(rows),
+        zone_count=sum(1 for r in rows if r.parent is None),
+        mail_hosts=sum(1 for r in rows if r.parent is not None),
         clean=clean,
         warning=warning,
         info=info,

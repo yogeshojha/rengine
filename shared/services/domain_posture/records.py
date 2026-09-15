@@ -42,6 +42,10 @@ class Lookup(Protocol):
     def policy(self, zone: str) -> PolicyFetch: ...
 
 
+def dmarc_records(txt: Iterable[str]) -> list[str]:
+    return [v for v in txt if v.strip().lower().startswith("v=dmarc1")]
+
+
 def mx_host(value: str) -> str:
     """The exchange name without its preference."""
     parts = value.split()
@@ -57,6 +61,7 @@ class ZoneRecords:
     parent: str | None = None
     answered: bool = False
     dmarc_inherited: bool = False
+    dmarc_unknown: bool = False
     txt: list[str] = field(default_factory=list)
     mx: list[str] = field(default_factory=list)
     caa: list[str] = field(default_factory=list)
@@ -101,6 +106,9 @@ def gather(
     selectors = list(selectors)
 
     apex = lookup.records(names, APEX_TYPES)
+    silent = [zone for zone in names if zone not in apex]
+    if silent:
+        apex.update(lookup.records(silent, APEX_TYPES))
     for zone, rec in out.items():
         found = apex.get(zone)
         rec.answered = found is not None
@@ -126,8 +134,12 @@ def gather(
         setattr(out[zone], attr, list(found.get(name, {}).get("txt", [])))
     for zone in live:
         rec = out[zone]
-        parent = out.get(rec.parent) if rec.parent else None
-        if not rec.dmarc and parent is not None and parent.dmarc:
+        if rec.parent is None or dmarc_records(rec.dmarc):
+            continue
+        parent = out.get(rec.parent)
+        if parent is None or not parent.answered:
+            rec.dmarc_unknown = True
+        elif dmarc_records(parent.dmarc):
             rec.dmarc = list(parent.dmarc)
             rec.dmarc_inherited = True
 

@@ -76,10 +76,13 @@ class DomainPosture(Tool):
             for z in zones[:MAX_ZONES]
         ]
 
+        checked = counted(summary.zone_count, "zone")
+        if summary.mail_hosts:
+            checked += f" and {counted(summary.mail_hosts, 'mail host')}"
         line = (
-            f"{counted(summary.evaluated, 'zone')} checked for "
-            f"{scope.target.target_value}: {summary.warning} with a warning, "
-            f"{summary.spoofable} spoofable, {summary.clean} clean"
+            f"{checked} checked for {scope.target.target_value}: "
+            f"{summary.warning} with a warning, {summary.spoofable} spoofable, "
+            f"{summary.clean} clean"
         )
         caveats = [
             f"Observed {summary.observed_at} by scan {summary.scan_id}.",
@@ -92,7 +95,8 @@ class DomainPosture(Tool):
             data={
                 "target": scope.target.target_value,
                 "scan_id": str(summary.scan_id),
-                "zones_checked": summary.evaluated,
+                "zones_checked": summary.zone_count,
+                "mail_hosts_checked": summary.mail_hosts,
                 "warning": summary.warning,
                 "info": summary.info,
                 "clean": summary.clean,

@@ -222,6 +222,7 @@ class HygieneRollup:
 @dataclass
 class PostureZone:
     zone: str
+    parent: str | None = None
     hosts: int = 0
     spf_all: str | None = None
     dmarc_policy: str | None = None
@@ -232,6 +233,8 @@ class PostureZone:
 @dataclass
 class PostureRollup:
     evaluated: int = 0
+    zone_count: int = 0
+    mail_hosts: int = 0
     clean: int = 0
     warning: int = 0
     info: int = 0
