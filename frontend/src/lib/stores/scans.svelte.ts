@@ -24,7 +24,6 @@ interface ScanFilters {
 	sortKey: ScanSortKey;
 	sortDir: ScanSortDir;
 	scheduled: boolean | null;
-	includeFocused: boolean;
 }
 
 export type ScheduleMode = 'all' | 'scheduled' | 'manual';
@@ -45,8 +44,7 @@ function defaultFilters(): ScanFilters {
 		timeRange: 'all',
 		sortKey: 'started',
 		sortDir: 'desc',
-		scheduled: null,
-		includeFocused: false
+		scheduled: null
 	};
 }
 
@@ -97,8 +95,7 @@ function createScansStore() {
 			time_range: filters.timeRange,
 			sort_by: filters.sortKey,
 			sort_dir: filters.sortDir,
-			scheduled: filters.scheduled ?? undefined,
-			include_focused: filters.includeFocused || undefined
+			scheduled: filters.scheduled ?? undefined
 		};
 	}
 
@@ -242,6 +239,12 @@ function createScansStore() {
 			fetchAll(1, false);
 		},
 
+		loadRescans(parentId: string, size: number): Promise<PaginatedResponse<ScanRead>> {
+			const projectId = filters.projectId;
+			if (!projectId) return Promise.resolve({ items: [], total: 0, page: 1, size, pages: 0 });
+			return scansApi.list(projectId, { parent_id: parentId, size, sort_by: 'started' });
+		},
+
 		loadTargetScans(targetId: string): Promise<ScanRead[]> {
 			const projectId = filters.projectId;
 			if (!projectId) return Promise.resolve([]);
@@ -295,14 +298,6 @@ function createScansStore() {
 			filters.scheduled = mode === 'all' ? null : mode === 'scheduled';
 			reload();
 		},
-		get includeFocused() {
-			return filters.includeFocused;
-		},
-		setIncludeFocused(value: boolean) {
-			filters.includeFocused = value;
-			reload();
-		},
-
 		setSort(key: ScanSortKey, dir?: ScanSortDir) {
 			if (dir) {
 				filters.sortKey = key;

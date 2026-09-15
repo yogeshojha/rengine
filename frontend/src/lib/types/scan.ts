@@ -169,6 +169,7 @@ export interface ScanRead {
 	gone_subdomains: number | null;
 	prev_subdomains_found: number | null;
 	is_first_scan: boolean | null;
+	rescans: RescanSummary | null;
 }
 
 export type StageOverrides = Record<string, Record<string, unknown>>;
@@ -278,6 +279,12 @@ export interface ScanExportRow {
 	started_at: string | null;
 	completed_at: string | null;
 	created_at: string;
+}
+
+export interface RescanSummary {
+	total: number;
+	running: number;
+	failed: number;
 }
 
 export interface ScanCancelAll {

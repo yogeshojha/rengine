@@ -41,6 +41,7 @@ from shared.enums.scan import (
 from shared.models.api_key import APIKey
 from shared.models.scan import (
     SCAN_STATUSES,
+    RescanSummary,
     Scan,
     ScanBatchCreate,
     ScanCancelAll,
@@ -649,13 +650,21 @@ class ScanService:
         schedule_id: UUID | None = None,
         scheduled: bool | None = None,
         include_focused: bool = False,
+        parent_id: UUID | None = None,
     ) -> Select:
         query = select(Scan).where(
             Scan.project_id == project_id,
             *self._filter_conditions(
-                Scan, statuses, engines, contexts, time_range, include_focused
+                Scan,
+                statuses,
+                engines,
+                contexts,
+                time_range,
+                include_focused or parent_id is not None,
             ),
         )
+        if parent_id is not None:
+            query = query.where(Scan.parent_scan_id == parent_id)
         if target_id is not None:
             query = query.where(Scan.target_id == target_id)
         if schedule_id is not None:
@@ -1105,11 +1114,35 @@ class ScanService:
         gone_counts = await self.gone_subdomain_counts(scan_ids, target_ids)
         prev_counts = await self.prev_completed_counts(scan_ids, target_ids)
         first_ids = await self.first_scan_ids(target_ids)
+        rescans = await self.rescan_summaries(scan_ids)
         for i in items:
             i.new_subdomains = new_counts.get(i.id, 0)
             i.gone_subdomains = gone_counts.get(i.id, 0)
             i.prev_subdomains_found = prev_counts.get(i.id)
             i.is_first_scan = i.id in first_ids
+            i.rescans = rescans.get(i.id)
+
+    async def rescan_summaries(
+        self, parent_ids: list[UUID]
+    ) -> dict[UUID, RescanSummary]:
+        if not parent_ids:
+            return {}
+        rows = (
+            await self.session.execute(
+                select(Scan.parent_scan_id, Scan.status, func.count())
+                .where(Scan.parent_scan_id.in_(parent_ids))
+                .group_by(Scan.parent_scan_id, Scan.status)
+            )
+        ).all()
+        out: dict[UUID, RescanSummary] = {}
+        for parent_id, status_value, count in rows:
+            summary = out.setdefault(parent_id, RescanSummary(total=0))
+            summary.total += count
+            if status_value in SCAN_LIVE_STATUSES:
+                summary.running += count
+            elif status_value == ScanStatus.FAILED.value:
+                summary.failed += count
+        return out
 
     async def _get_scan(self, id: UUID, project_id: UUID, lock: bool = False) -> Scan:
         statement = select(Scan).where(Scan.id == id, Scan.project_id == project_id)

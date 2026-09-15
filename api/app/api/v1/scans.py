@@ -168,10 +168,12 @@ async def list_scans(
     include_focused: Annotated[
         bool, Query(description="Include focused rescans")
     ] = False,
+    parent_id: Annotated[UUID | None, Query(description="Rescans of this scan")] = None,
 ):
     query = service.build_list_query(
         project_id=project_id,
         target_id=target_id,
+        parent_id=parent_id,
         statuses=[s.value for s in status] if status else None,
         engines=engine,
         contexts=context,

@@ -79,7 +79,8 @@ function createLiveScansStore() {
 				status: LIVE_STATUSES,
 				size: LIVE_PAGE_SIZE,
 				sort_by: 'started',
-				sort_dir: 'desc'
+				sort_dir: 'desc',
+				include_focused: true
 			});
 			if (mySeq !== seq || pid !== projectId) return;
 			scans = live.items;

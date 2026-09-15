@@ -27,6 +27,7 @@ import type {
 
 interface ScanFilterParams {
 	target_id?: string;
+	parent_id?: string;
 	status?: ScanStatus[];
 	engine?: string[];
 	context?: string[];
@@ -46,6 +47,7 @@ interface ListScansParams extends ScanFilterParams {
 function buildScanQuery(projectId: string, params: ScanFilterParams): URLSearchParams {
 	const sp = new URLSearchParams({ project_id: projectId });
 	if (params.target_id) sp.append('target_id', params.target_id);
+	if (params.parent_id) sp.append('parent_id', params.parent_id);
 	for (const s of params.status ?? []) sp.append('status', s);
 	for (const e of params.engine ?? []) sp.append('engine', e);
 	for (const c of params.context ?? []) sp.append('context', c);

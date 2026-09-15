@@ -275,6 +275,12 @@ class ScanBatchCreate(BaseModel):
         return self
 
 
+class RescanSummary(BaseModel):
+    total: int
+    running: int = 0
+    failed: int = 0
+
+
 class ScanRead(BaseModel):
     id: uuid.UUID
     project_id: uuid.UUID
@@ -311,6 +317,7 @@ class ScanRead(BaseModel):
     gone_subdomains: int | None = None
     prev_subdomains_found: int | None = None
     is_first_scan: bool | None = None
+    rescans: RescanSummary | None = None
 
 
 class ScanStatusCounts(BaseModel):
