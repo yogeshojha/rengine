@@ -338,3 +338,54 @@ def test_include_chains_are_resolved_in_batches_not_per_name():
         n for n in lookup.batches if n and not n[0].startswith(("example.com", "_"))
     ]
     assert batches == [["a.example", "b.example"], ["c.example"]]
+
+
+def test_a_mail_host_inherits_the_parent_dmarc_through_sp():
+    lookup = _Fake(
+        {
+            "example.com": {"txt": ["v=spf1 -all"], "soa": ["x"]},
+            "_dmarc.example.com": {
+                "txt": ["v=DMARC1; p=reject; sp=none; rua=mailto:a@e.com"]
+            },
+            "mail.example.com": {"mx": ["10 mx.example.com"], "soa": ["x"]},
+        }
+    )
+    found = gather(
+        {"example.com": None, "mail.example.com": "example.com"},
+        lookup,
+        selectors=[],
+        fetch_policy=False,
+    )
+    mail = found["mail.example.com"]
+    assert mail.parent == "example.com"
+    assert mail.dmarc_inherited is True
+    posture = evaluate(mail)
+    assert posture.dmarc_policy == "none"
+    assert C.DMARC_NONE in posture.issues
+    assert C.DMARC_SUBDOMAINS_OPEN not in posture.checked
+    assert "inherited from example.com" in posture.evidence[C.DMARC_NONE]
+    parent = evaluate(found["example.com"])
+    assert C.DMARC_SUBDOMAINS_OPEN in parent.issues
+
+
+def test_a_mail_host_with_its_own_record_is_judged_on_it():
+    lookup = _Fake(
+        {
+            "example.com": {"soa": ["x"]},
+            "_dmarc.example.com": {"txt": ["v=DMARC1; p=none"]},
+            "mail.example.com": {"mx": ["10 mx.example.com"], "soa": ["x"]},
+            "_dmarc.mail.example.com": {
+                "txt": ["v=DMARC1; p=reject; rua=mailto:a@e.com"]
+            },
+        }
+    )
+    found = gather(
+        {"example.com": None, "mail.example.com": "example.com"},
+        lookup,
+        selectors=[],
+        fetch_policy=False,
+    )
+    mail = evaluate(found["mail.example.com"])
+    assert found["mail.example.com"].dmarc_inherited is False
+    assert mail.dmarc_policy == "reject"
+    assert C.DMARC_NONE not in mail.issues

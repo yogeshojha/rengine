@@ -375,7 +375,11 @@ export function zoneFacts(z: DomainPostureRead): ZoneFact[] {
 			label: 'DMARC',
 			value: `p=${z.dmarc_policy}`,
 			tone: enforcing ? 'good' : 'warning',
-			hint: z.dmarc_subdomain_policy ? `sp=${z.dmarc_subdomain_policy}` : undefined
+			hint: z.dmarc_inherited
+				? `inherited from ${z.parent}`
+				: z.dmarc_subdomain_policy
+					? `sp=${z.dmarc_subdomain_policy}`
+					: undefined
 		});
 	} else out.push({ key: 'dmarc', label: 'DMARC', value: 'none', tone: 'warning' });
 	if (checked.has('dkim_none_probed'))
@@ -446,6 +450,23 @@ export function hostRows(summary: HygieneSummary | null): PostureRow[] {
 			? { spec, failing: c.failing, applicable: c.applicable, query: c.query }
 			: { spec, failing: 0, applicable: 0, query: postureQuery(spec.key) };
 	}).filter((r) => r.failing > 0);
+}
+
+export interface HostBreakdown {
+	warnings: PostureRow[];
+	infos: PostureRow[];
+	evaluated: number;
+	pending: number;
+}
+
+export function hostBreakdown(summary: HygieneSummary | null): HostBreakdown {
+	const failing = hostRows(summary).sort((a, b) => share(b) - share(a));
+	return {
+		warnings: failing.filter((r) => r.spec.tone === PostureTone.WARNING),
+		infos: failing.filter((r) => r.spec.tone === PostureTone.INFO),
+		evaluated: summary?.evaluated ?? 0,
+		pending: summary?.pending ?? 0
+	};
 }
 
 export function share(row: PostureRow): number {

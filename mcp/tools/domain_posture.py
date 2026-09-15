@@ -56,11 +56,13 @@ class DomainPosture(Tool):
         rows = [
             {
                 "zone": z.zone,
+                "under": z.parent,
                 "web_assets": z.hosts,
                 "spf": SPF_ALL_LABELS.get(z.spf_all or "", "none") if z.spf else "none",
                 "spf_lookups": z.spf_lookups,
                 "dmarc": z.dmarc_policy or "none",
                 "dmarc_subdomains": z.dmarc_subdomain_policy,
+                "dmarc_inherited": z.dmarc_inherited,
                 "dkim_selectors": z.dkim_selectors,
                 "dkim_key_bits": z.dkim_key_bits,
                 "mail": "null MX" if z.null_mx else ("receives" if z.mx else "none"),

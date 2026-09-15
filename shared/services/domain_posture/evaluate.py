@@ -152,6 +152,9 @@ def _sender(rec: ZoneRecords, out: Posture, add) -> None:
         tags = dmarc_tags(record)
         policy = tags.get("p", "").lower() or None
         sub = tags.get("sp", "").lower() or None
+        if rec.dmarc_inherited:
+            policy = sub or policy
+            sub = None
         out.dmarc = record
         out.dmarc_policy = policy
         out.dmarc_subdomain_policy = sub
@@ -160,9 +163,12 @@ def _sender(rec: ZoneRecords, out: Posture, add) -> None:
             out.dmarc_pct = int(tags["pct"]) if "pct" in tags else None
         except ValueError:
             out.dmarc_pct = None
-        add(Verdict(C.DMARC_NONE, policy not in _ENFORCING, _clip(record)))
-        add(Verdict(C.DMARC_NO_REPORTING, not out.dmarc_rua, _clip(record)))
-        if policy in _ENFORCING:
+        shown = _clip(
+            f"inherited from {rec.parent}: {record}" if rec.dmarc_inherited else record
+        )
+        add(Verdict(C.DMARC_NONE, policy not in _ENFORCING, shown))
+        add(Verdict(C.DMARC_NO_REPORTING, not out.dmarc_rua, shown))
+        if policy in _ENFORCING and not rec.dmarc_inherited:
             add(
                 Verdict(
                     C.DMARC_SUBDOMAINS_OPEN,
@@ -170,6 +176,7 @@ def _sender(rec: ZoneRecords, out: Posture, add) -> None:
                     _clip(f"p={policy}; sp={sub}"),
                 )
             )
+        if policy in _ENFORCING:
             add(
                 Verdict(
                     C.DMARC_PARTIAL,

@@ -54,7 +54,9 @@ def mx_host(value: str) -> str:
 @dataclass
 class ZoneRecords:
     zone: str
+    parent: str | None = None
     answered: bool = False
+    dmarc_inherited: bool = False
     txt: list[str] = field(default_factory=list)
     mx: list[str] = field(default_factory=list)
     caa: list[str] = field(default_factory=list)
@@ -79,7 +81,7 @@ class ZoneRecords:
 
 
 def gather(
-    zones: Iterable[str],
+    zones: Iterable[str] | dict[str, str | None],
     lookup: Lookup,
     *,
     selectors: Iterable[str],
@@ -89,7 +91,10 @@ def gather(
     workers: int = 8,
 ) -> dict[str, ZoneRecords]:
     """Every record the checks read, for every zone."""
-    out = {zone: ZoneRecords(zone=zone) for zone in zones}
+    parents = zones if isinstance(zones, dict) else dict.fromkeys(zones)
+    out = {
+        zone: ZoneRecords(zone=zone, parent=parent) for zone, parent in parents.items()
+    }
     names = list(out)
     if not names:
         return out
@@ -119,6 +124,12 @@ def gather(
     found = lookup.records(list(labels), TXT)
     for name, (zone, attr) in labels.items():
         setattr(out[zone], attr, list(found.get(name, {}).get("txt", [])))
+    for zone in live:
+        rec = out[zone]
+        parent = out.get(rec.parent) if rec.parent else None
+        if not rec.dmarc and parent is not None and parent.dmarc:
+            rec.dmarc = list(parent.dmarc)
+            rec.dmarc_inherited = True
 
     _dkim(out, live, lookup, selectors)
     _spf_lookups(out, live, lookup)

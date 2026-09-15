@@ -3,6 +3,7 @@ export interface DomainPostureRead {
 	scan_id: string;
 	target_id: string;
 	zone: string;
+	parent: string | null;
 	hosts: number;
 	spf: string | null;
 	spf_all: string | null;
@@ -12,6 +13,7 @@ export interface DomainPostureRead {
 	dmarc_subdomain_policy: string | null;
 	dmarc_pct: number | null;
 	dmarc_rua: boolean | null;
+	dmarc_inherited: boolean;
 	dkim_selectors: string[];
 	dkim_key_bits: number | null;
 	mx: string[];

@@ -75,6 +75,9 @@
 						<li class="flex flex-col gap-2 px-5 py-3">
 							<div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
 								<span class="font-mono text-sm">{z.zone}</span>
+								{#if z.parent}
+									<span class="text-xs text-muted-foreground">mail host under {z.parent}</span>
+								{/if}
 								<span class="text-xs text-muted-foreground tabular-nums">
 									{plural(z.hosts, 'web asset', 'web assets')}
 								</span>

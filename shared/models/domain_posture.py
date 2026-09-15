@@ -24,6 +24,7 @@ class DomainPosture(SQLModel, table=True):
     project_id: uuid.UUID = SQLField(foreign_key="projects.id", index=True)
 
     zone: str = SQLField(max_length=MAX_ZONE_LENGTH, index=True)
+    parent: str | None = SQLField(default=None, max_length=MAX_ZONE_LENGTH)
     hosts: int = SQLField(default=0)
 
     spf: str | None = SQLField(default=None, sa_column=Column(Text, nullable=True))
@@ -34,6 +35,7 @@ class DomainPosture(SQLModel, table=True):
     dmarc_subdomain_policy: str | None = SQLField(default=None, max_length=16)
     dmarc_pct: int | None = SQLField(default=None)
     dmarc_rua: bool | None = SQLField(default=None)
+    dmarc_inherited: bool = SQLField(default=False)
     dkim_selectors: list = SQLField(
         default_factory=list, sa_column=Column(JSON, nullable=False)
     )
@@ -65,6 +67,7 @@ class DomainPostureRead(BaseModel):
     scan_id: uuid.UUID
     target_id: uuid.UUID
     zone: str
+    parent: str | None = None
     hosts: int = 0
     spf: str | None = None
     spf_all: str | None = None
@@ -74,6 +77,7 @@ class DomainPostureRead(BaseModel):
     dmarc_subdomain_policy: str | None = None
     dmarc_pct: int | None = None
     dmarc_rua: bool | None = None
+    dmarc_inherited: bool = False
     dkim_selectors: list[str] = Field(default_factory=list)
     dkim_key_bits: int | None = None
     mx: list[str] = Field(default_factory=list)

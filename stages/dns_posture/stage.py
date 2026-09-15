@@ -6,7 +6,11 @@ from collections import Counter
 from sqlalchemy import select
 from sqlalchemy.exc import OperationalError
 
-from shared.definitions.domain_posture import MAX_ZONES_PER_SCAN
+from shared.definitions.domain_posture import (
+    MAX_MAIL_HOSTS_PER_SCAN,
+    MAX_ZONES_PER_SCAN,
+    MX_BATCH_SIZE,
+)
 from shared.definitions.domains import registrable_domain
 from shared.definitions.intensity import TransportTool
 from shared.enums.scan import AssetKind, Intensity, Phase, StageGroup, StageRole
@@ -20,6 +24,8 @@ from shared.services.domain_posture import (
     replace_rows,
     row_for,
 )
+from shared.services.domain_posture.records import NULL_MX, mx_host
+from shared.services.domain_posture.write import zone_of
 from shared.utils.text import counted
 from shared.utils.validation import normalize_domain
 from stages.base import Stage, StageResult
@@ -34,6 +40,10 @@ _FOLD_ATTEMPTS = 3
 _FOLD_RETRY_SECONDS = 2
 _MIN_THREADS = 10
 _NAMED_ZONES = 5
+
+
+def _exchanges(record: dict[str, list[str]]) -> set[str]:
+    return {mx_host(v) for v in record.get("mx", [])}
 
 
 class DnsPostureStage(Stage):
@@ -54,8 +64,9 @@ class DnsPostureStage(Stage):
 
     def run(self) -> StageResult:
         self._check_abort()
-        hosts_per_zone = self._zones()
-        if not hosts_per_zone:
+        names = self._names()
+        zones = self._zones(names)
+        if not zones:
             return StageResult(counts={"zones": 0})
         try:
             client = DnsxClient(
@@ -70,8 +81,13 @@ class DnsPostureStage(Stage):
 
         passive = self.ctx.resolved.intensity == Intensity.PASSIVE.value
         lookup = DnsxLookup(client, self.net_options())
+        parents = dict.fromkeys(zones)
+        for host in self._mail_hosts(lookup, names, zones):
+            parents[host] = zone_of(host, zones)
+        self._check_abort()
+        hosts_per_zone = self._hosts_per_zone(names, parents)
         records = gather(
-            hosts_per_zone,
+            parents,
             lookup,
             selectors=self.cfg.dkim_selectors,
             fetch_policy=not passive,
@@ -134,14 +150,18 @@ class DnsPostureStage(Stage):
     def _aborted(self) -> bool:
         return self.ctx.is_aborted is not None and self.ctx.is_aborted()
 
-    def _zones(self) -> dict[str, int]:
-        """Registrable domains in the scan, with the hosts each one carries."""
-        names = self.session.scalars(
-            select(Subdomain.name).where(
-                Subdomain.scan_id == self.ctx.scan_id,
-                Subdomain.is_excluded.is_(False),
-            )
-        ).all()
+    def _names(self) -> list[str]:
+        return list(
+            self.session.scalars(
+                select(Subdomain.name).where(
+                    Subdomain.scan_id == self.ctx.scan_id,
+                    Subdomain.is_excluded.is_(False),
+                )
+            ).all()
+        )
+
+    def _zones(self, names: list[str]) -> list[str]:
+        """Registrable domains in the scan, most hosts first."""
         counts: Counter[str] = Counter()
         for name in names:
             zone = registrable_domain(name)
@@ -151,4 +171,44 @@ class DnsPostureStage(Stage):
         if apex and registrable_domain(f"_.{apex}") == apex:
             counts.setdefault(apex, 0)
         ranked = sorted(counts.items(), key=lambda item: (-item[1], item[0]))
-        return dict(ranked[:MAX_ZONES_PER_SCAN])
+        return [zone for zone, _ in ranked[:MAX_ZONES_PER_SCAN]]
+
+    def _mail_hosts(
+        self, lookup: DnsxLookup, names: list[str], zones: list[str]
+    ) -> list[str]:
+        """Names below a zone that publish their own MX."""
+        zone_set = set(zones)
+        candidates = sorted(n for n in names if n not in zone_set and zone_of(n, zones))
+        if not candidates:
+            return []
+        self.emit_progress(f"asking {len(candidates)} names for MX records")
+        zone_mx = {
+            zone: _exchanges(rec)
+            for zone, rec in lookup.records(zones, ("mx",)).items()
+        }
+        found: list[str] = []
+        for start in range(0, len(candidates), MX_BATCH_SIZE):
+            self._check_abort()
+            batch = candidates[start : start + MX_BATCH_SIZE]
+            answers = lookup.records(batch, ("mx",))
+            for name in batch:
+                exchanges = _exchanges(answers.get(name, {}))
+                if not exchanges or exchanges == {NULL_MX}:
+                    continue
+                if exchanges == zone_mx.get(zone_of(name, zones) or "", set()):
+                    continue
+                found.append(name)
+            if len(found) >= MAX_MAIL_HOSTS_PER_SCAN:
+                break
+        return found[:MAX_MAIL_HOSTS_PER_SCAN]
+
+    @staticmethod
+    def _hosts_per_zone(
+        names: list[str], parents: dict[str, str | None]
+    ) -> dict[str, int]:
+        counts: Counter[str] = Counter()
+        for name in names:
+            zone = zone_of(name, parents)
+            if zone is not None:
+                counts[zone] += 1
+        return {zone: counts.get(zone, 0) for zone in parents}

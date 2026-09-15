@@ -29,6 +29,7 @@
 	import AssetGallery from './web-assets/asset-gallery.svelte';
 	import RenderGallery from './web-assets/render-gallery.svelte';
 	import HygieneRail from './web-assets/hygiene-rail.svelte';
+	import PostureRail from './web-assets/posture-rail.svelte';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import SelectionBar from './table/selection-bar.svelte';
 	import RowSelectionBar from './table/row-selection-bar.svelte';
@@ -51,6 +52,7 @@
 	import { SURFACE, SurfaceDimension, type ResultTab } from '$lib/config/surface';
 	import { querySchema } from '$lib/stores/query-schema.svelte';
 	import { HygieneTone, TONE_DOT } from '$lib/config/hygiene';
+	import { PostureTone, TONE_DOT as POSTURE_DOT } from '$lib/config/domain-posture';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import type { RenderGroups, SubdomainRead } from '$lib/types/subdomain';
 	import type { SeedPick, SeedSelection } from '$lib/types/recheck';
@@ -146,7 +148,9 @@
 	let facets = $state<SubdomainFacetSet>(EMPTY_FACETS);
 	let facetsLoaded = $state(false);
 	let hygiene = $state<HygieneSummary | null>(null);
+	let posture = $state<HygieneSummary | null>(null);
 	let insightsOpen = $state(false);
+	let postureOpen = $state(false);
 	let leadSet = $state<QueryLeads | null>(null);
 	let groupBy = $state<string>(initial.get('group') ?? '');
 	let groupSet = $state<QueryGroups | null>(null);
@@ -196,6 +200,16 @@
 	);
 	let hygieneHeadline = $derived(
 		hygieneTone === HygieneTone.WARNING ? (hygiene?.warning ?? 0) : (hygiene?.info ?? 0)
+	);
+	let postureTone = $derived<PostureTone | null>(
+		!posture || posture.evaluated === 0
+			? null
+			: posture.warning > 0
+				? PostureTone.WARNING
+				: PostureTone.INFO
+	);
+	let postureHeadline = $derived(
+		postureTone === PostureTone.WARNING ? (posture?.warning ?? 0) : (posture?.info ?? 0)
 	);
 	let statusCounts = $derived.by(() => {
 		if (!facetsLoaded) return null;
@@ -381,11 +395,20 @@
 		}
 	}
 
+	async function loadPosture() {
+		if (!ready) return;
+		try {
+			posture = await subdomainsApi.posture(projectId, scanId);
+		} catch {
+			posture = null;
+		}
+	}
+
 	async function refresh(quiet = false) {
 		refreshing = !quiet;
 		try {
 			if (!quiet) loadedLeadSig = '';
-			await Promise.all([runSearch(), loadFacets(), loadHygiene(), loadGroups()]);
+			await Promise.all([runSearch(), loadFacets(), loadHygiene(), loadPosture(), loadGroups()]);
 		} finally {
 			if (!quiet) refreshing = false;
 		}
@@ -560,6 +583,19 @@
 	function toggleHygiene(key: string) {
 		const on = query.hygiene.includes(key);
 		setQuery({ ...query, hygiene: on ? query.hygiene.filter((k) => k !== key) : [key] });
+	}
+	function togglePosture(key: string) {
+		const on = query.posture.includes(key);
+		setQuery({ ...query, posture: on ? query.posture.filter((k) => k !== key) : [key] });
+	}
+	function openRail(rail: 'hygiene' | 'posture') {
+		if (rail === 'hygiene') {
+			insightsOpen = !insightsOpen;
+			if (insightsOpen) postureOpen = false;
+		} else {
+			postureOpen = !postureOpen;
+			if (postureOpen) insightsOpen = false;
+		}
 	}
 	function setStatusTab(key: string) {
 		setQuery({ ...query, status: key === 'all' ? [] : [key] });
@@ -740,13 +776,33 @@
 						: 'text-muted-foreground hover:text-foreground'}"
 					aria-label="Web hygiene"
 					aria-pressed={insightsOpen}
-					onclick={() => (insightsOpen = !insightsOpen)}
+					onclick={() => openRail('hygiene')}
 				>
 					<PanelRight class="size-4" />
 					<span class="max-sm:hidden">Hygiene</span>
 					{#if hygieneHeadline > 0}
 						<span class="size-1.5 rounded-full {TONE_DOT[hygieneTone]}" aria-hidden="true"></span>
 						<span class="tabular-nums">{hygieneHeadline.toLocaleString()}</span>
+					{/if}
+				</Button>
+			{/if}
+			{#if postureTone}
+				<Button
+					variant="ghost"
+					size="sm"
+					class="h-8 gap-1.5 px-2 {postureOpen
+						? 'bg-muted text-foreground'
+						: 'text-muted-foreground hover:text-foreground'}"
+					aria-label="Domain posture"
+					aria-pressed={postureOpen}
+					onclick={() => openRail('posture')}
+				>
+					<PanelRight class="size-4" />
+					<span class="max-sm:hidden">Posture</span>
+					{#if postureHeadline > 0}
+						<span class="size-1.5 rounded-full {POSTURE_DOT[postureTone]}" aria-hidden="true"
+						></span>
+						<span class="tabular-nums">{postureHeadline.toLocaleString()}</span>
 					{/if}
 				</Button>
 			{/if}
@@ -993,6 +1049,14 @@
 				selected={query.hygiene}
 				onToggle={toggleHygiene}
 				onClose={() => (insightsOpen = false)}
+			/>
+		{/if}
+		{#if postureOpen}
+			<PostureRail
+				summary={posture}
+				selected={query.posture}
+				onToggle={togglePosture}
+				onClose={() => (postureOpen = false)}
 			/>
 		{/if}
 	</div>
