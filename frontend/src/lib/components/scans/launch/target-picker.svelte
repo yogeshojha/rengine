@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import Plus from '@lucide/svelte/icons/plus';
 	import Search from '@lucide/svelte/icons/search';
 	import X from '@lucide/svelte/icons/x';
@@ -211,8 +212,13 @@
 			interactOutsideBehavior="ignore"
 		>
 			{#if visible.length === 0}
-				<div class="flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground">
-					<Spinner class="size-3" /> Searching targets
+				<div class="flex flex-col gap-1" aria-busy="true">
+					{#each Array(4) as _, i (i)}
+						<div class="flex h-8 items-center gap-2 px-2">
+							<Skeleton class="size-3.5 shrink-0 rounded" />
+							<Skeleton class="h-3.5 {i % 2 ? 'w-32' : 'w-44'} max-w-full" />
+						</div>
+					{/each}
 				</div>
 			{:else}
 				<ul role="listbox" aria-label="Matching targets">

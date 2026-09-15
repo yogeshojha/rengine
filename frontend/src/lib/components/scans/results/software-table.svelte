@@ -11,7 +11,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-	import { Skeleton } from '$lib/components/ui/skeleton';
+	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
@@ -414,11 +414,16 @@
 	</div>
 
 	{#if loading}
-		<div class="flex flex-col gap-2 px-4 py-4">
-			{#each Array(6) as _, i (i)}
-				<Skeleton class="h-10 w-full" />
-			{/each}
-		</div>
+		<ScrollArea orientation="horizontal" class="min-h-0">
+			<div class="min-w-max">
+				<TableSkeleton
+					lead={projectWide ? [TARGET_COLUMN, ...SOFTWARE_LEAD_COLUMNS] : SOFTWARE_LEAD_COLUMNS}
+					columns={shownColumns.filter((c) => c.key !== 'target')}
+					{density}
+					selectable
+				/>
+			</div>
+		</ScrollArea>
 	{:else if errored}
 		<EmptyState icon={TriangleAlert} title="Software CVEs not loaded">
 			<Button variant="outline" size="sm" onclick={() => void runSearch()}>Retry</Button>

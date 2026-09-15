@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Spinner } from '$lib/components/ui/spinner';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { stringify } from 'yaml';
 	import YamlPane from '$lib/components/yaml-editor.svelte';
@@ -42,7 +42,11 @@
 		{#if error}
 			<p class="err">{error}</p>
 		{:else if isLoading && !text}
-			<div class="center"><Spinner size={14} class="text-muted-foreground" /></div>
+			<div class="flex flex-col gap-2 p-3">
+				{#each Array(12) as _, i (i)}
+					<Skeleton class="h-3 {i % 3 === 0 ? 'w-1/2' : i % 3 === 1 ? 'w-3/4' : 'w-2/3'}" />
+				{/each}
+			</div>
 		{:else}
 			<YamlPane value={text} readonly chrome={false} {stageStates} />
 		{/if}
@@ -81,12 +85,6 @@
 	.editor {
 		flex: 1;
 		min-height: 0;
-	}
-	.center {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		height: 100%;
 	}
 	.err {
 		padding: 12px 14px;

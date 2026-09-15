@@ -1,8 +1,8 @@
 <script lang="ts">
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Command from '$lib/components/ui/command/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import Crosshair from '@lucide/svelte/icons/crosshair';
 	import Cog from '@lucide/svelte/icons/cog';
 	import Layers from '@lucide/svelte/icons/layers';
@@ -99,8 +99,13 @@
 			<Command.List>
 				{#if searchQuery.trim().length >= 2}
 					{#if searching}
-						<div class="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
-							<Spinner class="size-4" /> Searching
+						<div class="flex flex-col gap-2 p-2" aria-busy="true">
+							{#each Array(4) as _, i (i)}
+								<div class="flex items-center gap-2 px-2 py-1.5">
+									<Skeleton class="size-4 shrink-0 rounded" />
+									<Skeleton class="h-3.5 {i % 2 ? 'w-40' : 'w-56'} max-w-full" />
+								</div>
+							{/each}
 						</div>
 					{:else}
 						{#if scanCandidate}

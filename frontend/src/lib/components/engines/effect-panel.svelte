@@ -1,6 +1,6 @@
 <script lang="ts">
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
-	import { Spinner } from '$lib/components/ui/spinner';
 	import Check from '@lucide/svelte/icons/check';
 	import Minus from '@lucide/svelte/icons/minus';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
@@ -45,7 +45,11 @@
 			{#if error}
 				<p class="error">{error}</p>
 			{:else if isLoading && !phases.length}
-				<Spinner size={14} class="text-muted-foreground" />
+				<div class="flex flex-col gap-2">
+					{#each Array(8) as _, i (i)}
+						<Skeleton class="h-3.5 {i % 2 ? 'w-2/3' : 'w-full'}" />
+					{/each}
+				</div>
 			{/if}
 
 			{#each visible as phase, pi (phase.phase)}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { page as appPage } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import { onDestroy, untrack } from 'svelte';
@@ -15,7 +16,7 @@
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Skeleton } from '$lib/components/ui/skeleton';
+	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import CountTabs from '$lib/components/count-tabs.svelte';
@@ -1281,7 +1282,7 @@
 					not found in this scan.
 				</span>
 			{:else}
-				<span>Loading the previous scan</span>
+				<Skeleton class="h-3.5 w-52" />
 			{/if}
 			<button
 				type="button"
@@ -1292,14 +1293,16 @@
 			</button>
 		</div>
 		{#if goneLoading && !gonePage}
-			<div class="divide-y divide-border/50">
-				{#each Array(5) as _, i (i)}
-					<div class="flex items-center gap-3 px-4 py-3">
-						<Skeleton class="h-9 flex-1" />
-						<Skeleton class="hidden h-5 w-40 sm:block" />
-					</div>
-				{/each}
-			</div>
+			<ScrollArea orientation="horizontal">
+				<TableSkeleton
+					lead={ENDPOINT_LEAD_COLUMNS}
+					columns={ENDPOINT_COLUMNS.filter((c) =>
+						(listColumnsPref ?? DEFAULT_VISIBLE_ENDPOINT_COLUMNS).includes(c.key)
+					)}
+					{density}
+					rows={5}
+				/>
+			</ScrollArea>
 		{:else if gonePage && gonePage.items.length === 0}
 			<EmptyState
 				icon={History}
@@ -1433,15 +1436,9 @@
 	{:else}
 		<div class="flex min-w-0 flex-1 flex-col">
 			{#if loading && items.length === 0 && !groupBy}
-				<div class="divide-y divide-border/50">
-					{#each Array(8) as _, i (i)}
-						<div class="flex items-center gap-3 px-4 py-3">
-							<Skeleton class="h-9 flex-1" />
-							<Skeleton class="hidden h-5 w-40 sm:block" />
-							<Skeleton class="hidden h-6 w-44 sm:block" />
-						</div>
-					{/each}
-				</div>
+				<ScrollArea orientation="horizontal">
+					<TableSkeleton lead={ENDPOINT_LEAD_COLUMNS} columns={shownColumns} {density} selectable />
+				</ScrollArea>
 			{:else if errored}
 				{@render retryState()}
 			{:else if groupBy}

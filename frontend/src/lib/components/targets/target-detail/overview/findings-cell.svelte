@@ -68,6 +68,7 @@
 </script>
 
 <Cell
+	skeleton="meters"
 	id="findings"
 	title="Findings"
 	description={risk.observed_at ? `From the ${formatShortDate(risk.observed_at)} run` : undefined}

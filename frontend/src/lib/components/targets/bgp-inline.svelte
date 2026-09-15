@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { TargetType, type BgpSummaryData } from '$lib/types/target';
 	import { TaskStatus } from '@/types/task-status';
 	import { formatShortDate } from '$lib/utilities/dates';
@@ -14,7 +15,6 @@
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
 	import CircleX from '@lucide/svelte/icons/circle-x';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
-	import { Spinner } from '$lib/components/ui/spinner';
 
 	interface Props {
 		status: string;
@@ -78,9 +78,9 @@
 </script>
 
 {#if isApplicable && (status === TaskStatus.PENDING || status === TaskStatus.QUERYING)}
-	<div class="flex items-center gap-1.5 text-xs text-muted-foreground">
-		<Spinner class="h-3 w-3" />
-		<span class="animate-pulse">BGP…</span>
+	<div class="flex h-4 items-center gap-1.5" aria-busy="true">
+		<Skeleton class="size-3 shrink-0 rounded-full" />
+		<Skeleton class="h-3 w-28" />
 	</div>
 {:else if isApplicable && status === TaskStatus.FAILED}
 	<div class="flex items-center gap-1.5 text-xs text-destructive/70">

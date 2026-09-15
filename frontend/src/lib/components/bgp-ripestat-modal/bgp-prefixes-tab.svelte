@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PanelSkeleton from '$lib/components/skeleton/panel-skeleton.svelte';
 	import type { AnnouncedPrefixRead } from '$lib/types/ripestat';
 	import { formatShortDate, MS_PER_DAY } from '$lib/utilities/dates';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -7,7 +8,6 @@
 	import SearchX from '@lucide/svelte/icons/search-x';
 	import Network from '@lucide/svelte/icons/network';
 	import CirclePlus from '@lucide/svelte/icons/circle-plus';
-	import { Spinner } from '$lib/components/ui/spinner';
 
 	interface Props {
 		prefixes: AnnouncedPrefixRead[];
@@ -39,14 +39,7 @@
 </script>
 
 {#if isLoading}
-	<Empty.Root>
-		<Empty.Header>
-			<Empty.Media variant="icon">
-				<Spinner />
-			</Empty.Media>
-			<Empty.Title>Loading announced prefixes</Empty.Title>
-		</Empty.Header>
-	</Empty.Root>
+	<PanelSkeleton stats />
 {:else if error}
 	<Empty.Root>
 		<Empty.Header>

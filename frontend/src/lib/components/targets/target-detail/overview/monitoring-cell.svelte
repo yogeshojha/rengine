@@ -27,6 +27,7 @@
 </script>
 
 <Cell
+	skeleton="list"
 	id="monitoring"
 	title="Monitoring"
 	href={ROUTES.schedules}

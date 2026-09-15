@@ -20,7 +20,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import ConfirmDialog from '@/components/confirm-dialog.svelte';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Skeleton } from '$lib/components/ui/skeleton';
+	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
+	import { scanSkeletonColumns } from './scan-columns';
 
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { scansStore } from '$lib/stores/scans.svelte';
@@ -426,15 +427,7 @@
 	{/if}
 
 	{#if scansStore.isLoading && rowCount === 0}
-		<div class="divide-y divide-border/50">
-			{#each Array(8) as _, i (i)}
-				<div class="flex items-center gap-3 px-4 py-3">
-					<Skeleton class="h-9 flex-1" />
-					<Skeleton class="hidden h-6 w-[120px] sm:block" />
-					<Skeleton class="hidden h-6 w-[120px] sm:block" />
-				</div>
-			{/each}
-		</div>
+		<TableSkeleton lead={scanSkeletonColumns(targetId)} actions={false} selectable />
 	{:else if scansStore.error && rowCount === 0}
 		<Empty.Root class="py-16">
 			<Empty.Header>

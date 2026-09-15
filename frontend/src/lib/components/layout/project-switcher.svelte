@@ -1,11 +1,11 @@
 <script lang="ts">
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { useSidebar } from '$lib/components/ui/sidebar/index.js';
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
 	import PlusIcon from '@lucide/svelte/icons/plus';
-	import FolderIcon from '@lucide/svelte/icons/folder';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
@@ -46,14 +46,11 @@
 <Sidebar.Menu>
 	<Sidebar.MenuItem>
 		{#if isLoading}
-			<Sidebar.MenuButton size="lg" disabled>
-				<div
-					class="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg"
-				>
-					<FolderIcon class="size-4 animate-pulse" />
-				</div>
-				<div class="grid flex-1 text-start text-sm leading-tight">
-					<span class="truncate font-medium">Loading projects</span>
+			<Sidebar.MenuButton size="lg" disabled aria-busy="true">
+				<Skeleton class="aspect-square size-8 shrink-0 rounded-lg" />
+				<div class="grid flex-1 gap-1.5 text-start">
+					<Skeleton class="h-3.5 w-24" />
+					<Skeleton class="h-3 w-16" />
 				</div>
 			</Sidebar.MenuButton>
 		{:else if !activeProject}

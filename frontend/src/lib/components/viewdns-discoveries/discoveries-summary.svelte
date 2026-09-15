@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PanelSkeleton from '$lib/components/skeleton/panel-skeleton.svelte';
 	import { viewdnsApi } from '$lib/api/viewdns';
 	import { targetsStore } from '$lib/stores/targets.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
@@ -346,14 +347,7 @@
 </script>
 
 {#if isLoading}
-	<Empty.Root>
-		<Empty.Header>
-			<Empty.Media variant="icon">
-				<Spinner />
-			</Empty.Media>
-			<Empty.Title>Loading discoveries</Empty.Title>
-		</Empty.Header>
-	</Empty.Root>
+	<PanelSkeleton stats rows={5} />
 {:else if error}
 	<Empty.Root>
 		<Empty.Header>

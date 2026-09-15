@@ -3,6 +3,7 @@
 	import Check from '@lucide/svelte/icons/check';
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
+	import CellSkeleton from '$lib/components/skeleton/cell-skeleton.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import Hint from '$lib/components/hint.svelte';
 	import PanelHead from '$lib/components/panel-head.svelte';
@@ -67,9 +68,7 @@
 				{#each Array(2) as _, i (i)}
 					<div class="flex flex-col gap-3 p-5 {i > 0 ? 'border-t md:border-t-0 md:border-l' : ''}">
 						<Skeleton class="h-4 w-24" />
-						<Skeleton class="h-10 w-full" />
-						<Skeleton class="h-10 w-full" />
-						<Skeleton class="h-10 w-full" />
+						<CellSkeleton shape="meters" rows={3} />
 					</div>
 				{/each}
 			</div>

@@ -16,7 +16,7 @@
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Skeleton } from '$lib/components/ui/skeleton';
+	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import CountTabs from '$lib/components/count-tabs.svelte';
@@ -904,16 +904,14 @@
 	<div class="flex min-w-0 flex-col md:flex-row">
 		<div class="min-w-0 flex-1">
 			{#if loading && items.length === 0 && !groupBy}
-				<div class="divide-y divide-border/50">
-					{#each Array(8) as _, i (i)}
-						<div class="flex items-center gap-3 px-4 py-3">
-							<Skeleton class="h-9 flex-1" />
-							<Skeleton class="h-5 w-12" />
-							<Skeleton class="hidden h-6 w-56 sm:block" />
-							<Skeleton class="hidden h-5 w-36 sm:block" />
-						</div>
-					{/each}
-				</div>
+				<ScrollArea orientation="horizontal">
+					<TableSkeleton
+						lead={WEB_ASSET_LEAD_COLUMNS}
+						columns={shownColumns}
+						{density}
+						selectable
+					/>
+				</ScrollArea>
 			{:else if errored}
 				<EmptyState
 					icon={TriangleAlert}

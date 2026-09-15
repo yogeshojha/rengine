@@ -1,10 +1,10 @@
 <script lang="ts">
+	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import ArrowUpRightIcon from '@lucide/svelte/icons/arrow-up-right';
 	import BellOffIcon from '@lucide/svelte/icons/bell-off';
 	import { toast } from 'svelte-sonner';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Card from '$lib/components/ui/card';
-	import { Spinner } from '$lib/components/ui/spinner';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import ResultsPagination from '$lib/components/scans/results/table/results-pagination.svelte';
@@ -79,10 +79,7 @@
 
 	<Card.Root class="gap-0 overflow-hidden py-0">
 		{#if loading}
-			<div class="flex items-center justify-center gap-2 p-12 text-sm text-muted-foreground">
-				<Spinner class="size-4" />
-				Loading updates
-			</div>
+			<RowSkeleton rows={6} avatar="size-7 rounded-md" trailing="h-3.5 w-20" />
 		{:else if events.length === 0}
 			<EmptyState icon={BellOffIcon} title="No changes" class="p-12" />
 		{:else}

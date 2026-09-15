@@ -45,6 +45,7 @@
 	import SharedCell from '$lib/components/dashboard/shared-cell.svelte';
 	import ActivityCell from '$lib/components/dashboard/activity-cell.svelte';
 	import CustomizePopover from '$lib/components/dashboard/customize-popover.svelte';
+	import DashboardSkeleton from '$lib/components/dashboard/dashboard-skeleton.svelte';
 	import HiddenTray from '$lib/components/dashboard/hidden-tray.svelte';
 	import {
 		DASHBOARD_SLICE_LABELS,
@@ -198,7 +199,7 @@
 		{/if}
 	</div>
 
-	{#if !activeProject}
+	{#if !activeProject && projectsStore.hasFetched}
 		<Empty.Root class="rounded-lg border border-dashed border-border py-16">
 			<Empty.Header>
 				<Empty.Media class="rounded-full bg-muted/30 p-3">
@@ -263,7 +264,7 @@
 			{#if show('funnel')}
 				<FunnelCell funnel={overview.funnel} window={win} class="col-span-12 xl:col-span-8" />
 			{/if}
-			{#if show('geo') && (dashboardStore.ipFacets?.country.length ?? 0) > 0}
+			{#if show('geo') && (extras || (dashboardStore.ipFacets?.country.length ?? 0) > 0)}
 				<GeoCell
 					countries={dashboardStore.ipFacets?.country ?? null}
 					loading={extras}
@@ -294,11 +295,11 @@
 					{#if show('findings-trend')}
 						<SeverityTrendCell {overview} window={win} class="xl:col-span-2" />
 					{/if}
-					{#if show('exploitation') && dashboardStore.intel?.coverage?.findings}
+					{#if show('exploitation') && (extras || dashboardStore.intel?.coverage?.findings)}
 						<ExploitationCell
 							intel={dashboardStore.intel}
 							changes={dashboardStore.changes}
-							projectId={activeProject.id}
+							projectId={activeProject?.id ?? null}
 							window={win}
 							loading={extras}
 						/>
@@ -307,7 +308,7 @@
 						<EvidenceCell risk={overview.risk} />
 					{/if}
 				</div>
-				{#if show('exposures') && (dashboardStore.exposures?.summary.total ?? 0) > 0}
+				{#if show('exposures') && (extras || (dashboardStore.exposures?.summary.total ?? 0) > 0)}
 					<div class="grid"><ExposuresCell page={dashboardStore.exposures} loading={extras} /></div>
 				{/if}
 			</div>
@@ -341,10 +342,10 @@
 						expiringQuery={overview.certs.expiring.query}
 					/>
 				{/if}
-				{#if show('hygiene') && (dashboardStore.hygiene?.evaluated ?? 0) > 0}
+				{#if show('hygiene') && (extras || (dashboardStore.hygiene?.evaluated ?? 0) > 0)}
 					<HygieneCell hygiene={dashboardStore.hygiene} loading={extras} />
 				{/if}
-				{#if show('domain-posture') && (dashboardStore.posture?.evaluated ?? 0) > 0}
+				{#if show('domain-posture') && (extras || (dashboardStore.posture?.evaluated ?? 0) > 0)}
 					<DomainPostureCell
 						summary={dashboardStore.posture}
 						hosts={dashboardStore.postureHosts}
@@ -367,7 +368,7 @@
 				{#if show('runs') && overview.runs_total > 0}
 					<RunsCell {overview} window={win} />
 				{/if}
-				{#if show('software') && (dashboardStore.software?.facets.product.length ?? 0) > 0}
+				{#if show('software') && (extras || (dashboardStore.software?.facets.product.length ?? 0) > 0)}
 					<SoftwareCell software={dashboardStore.software} loading={extras} />
 				{/if}
 			</div>
@@ -375,17 +376,17 @@
 				{#if show('services') && overview.exposure.services > 0}
 					<ServicesCell exposure={overview.exposure} />
 				{/if}
-				{#if show('tech') && (dashboardStore.tech?.length ?? 0) > 0}
+				{#if show('tech') && (extras || (dashboardStore.tech?.length ?? 0) > 0)}
 					<TechCell tech={dashboardStore.tech} loading={extras} />
 				{/if}
-				{#if show('hosting') && (dashboardStore.hosting?.resolved ?? 0) > 0}
+				{#if show('hosting') && (extras || (dashboardStore.hosting?.resolved ?? 0) > 0)}
 					<HostingCell
 						hosting={dashboardStore.hosting}
 						networks={dashboardStore.ipFacets?.asn ?? null}
 						loading={extras}
 					/>
 				{/if}
-				{#if show('shared') && (dashboardStore.shared?.hubs.length ?? 0) > 0}
+				{#if show('shared') && (extras || (dashboardStore.shared?.hubs.length ?? 0) > 0)}
 					<SharedCell graph={dashboardStore.shared} loading={extras} />
 				{/if}
 			</div>
@@ -397,6 +398,8 @@
 		</div>
 
 		<HiddenTray />
+	{:else}
+		<DashboardSkeleton />
 	{/if}
 </div>
 

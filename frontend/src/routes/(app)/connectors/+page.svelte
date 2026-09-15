@@ -8,7 +8,7 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import ConnectorList from '$lib/components/connectors/connector-list.svelte';
@@ -121,7 +121,9 @@
 	</header>
 
 	{#if connectors.isLoading && connectors.items.length === 0}
-		<Skeleton class="h-64 w-full" />
+		<Card.Root class="gap-0 overflow-hidden py-0">
+			<RowSkeleton rows={3} avatar="size-9 rounded-md" trailing="h-5 w-24 rounded-full" />
+		</Card.Root>
 	{:else if connectors.items.length === 0}
 		<Card.Root class="gap-0 overflow-hidden py-0">
 			<div class="px-4 py-14">

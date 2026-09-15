@@ -22,6 +22,7 @@
 </script>
 
 <Cell
+	skeleton="ranked"
 	id="hosting"
 	title="Hosting"
 	description="By fronting and network"

@@ -15,7 +15,8 @@
 	import * as ScrollArea from '$lib/components/ui/scroll-area';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
-	import { Skeleton } from '$lib/components/ui/skeleton';
+	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
+	import type { TableColumn } from '../table/columns';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
@@ -57,6 +58,11 @@
 	}: Props = $props();
 
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
+
+	const INTEREST_SKELETON_COLUMNS: TableColumn[] = [
+		{ key: 'asset', label: '', width: 'min-w-0 flex-1' },
+		{ key: 'signals', label: '', width: 'hidden w-48 shrink-0 sm:flex' }
+	];
 
 	const PAGE_SIZE = 25;
 	const ALL = 'all';
@@ -436,11 +442,7 @@
 		{/if}
 
 		{#if loading && !data}
-			<div class="flex flex-col gap-3 p-4">
-				{#each Array(6) as _, i (i)}
-					<Skeleton class="h-14 w-full" />
-				{/each}
-			</div>
+			<TableSkeleton lead={INTEREST_SKELETON_COLUMNS} header={false} actions={false} rows={6} />
 		{:else if error}
 			<EmptyState icon={Eye} title="Exposures not loaded" description={error} class="py-12">
 				<Button variant="outline" size="sm" onclick={() => run()}>Retry</Button>

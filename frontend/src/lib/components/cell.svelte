@@ -3,6 +3,8 @@
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
 	import X from '@lucide/svelte/icons/x';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import CellSkeleton from '$lib/components/skeleton/cell-skeleton.svelte';
+	import type { SkeletonShape } from '$lib/components/skeleton/shapes';
 	import Hint from '$lib/components/hint.svelte';
 
 	interface Props {
@@ -12,6 +14,8 @@
 		href?: string;
 		hrefLabel?: string;
 		loading?: boolean;
+		skeleton?: SkeletonShape;
+		skeletonRows?: number;
 		class?: string;
 		bodyClass?: string;
 		onHide?: () => void;
@@ -27,6 +31,8 @@
 		href,
 		hrefLabel = 'Open',
 		loading = false,
+		skeleton = 'text',
+		skeletonRows = 5,
 		class: className = '',
 		bodyClass = '',
 		onHide,
@@ -76,21 +82,23 @@
 		</div>
 	</div>
 	{#if loading}
-		<div class="flex flex-col gap-3 px-4 py-4">
-			<Skeleton class="h-5 w-2/3" />
-			<Skeleton class="h-24 w-full" />
-			<Skeleton class="h-5 w-1/2" />
+		<div class="flex min-h-0 flex-1 flex-col px-4 pt-3 pb-4 {bodyClass}">
+			<CellSkeleton shape={skeleton} rows={skeletonRows} />
 		</div>
 	{:else}
 		<div class="flex min-h-0 flex-1 flex-col gap-3 px-4 pt-3 pb-4 {bodyClass}">
 			{@render children()}
 		</div>
 	{/if}
-	{#if footer && !loading}
+	{#if footer}
 		<div
 			class="mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t px-4 py-2 text-xs text-muted-foreground"
 		>
-			{@render footer()}
+			{#if loading}
+				<Skeleton class="h-3 w-24" />
+			{:else}
+				{@render footer()}
+			{/if}
 		</div>
 	{/if}
 </section>

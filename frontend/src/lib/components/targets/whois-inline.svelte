@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import type { WhoisSummaryData } from '$lib/types/target';
 	import { TaskStatus } from '$lib/types/task-status';
 	import { goto } from '$app/navigation';
@@ -21,7 +22,6 @@
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import Flag from '@lucide/svelte/icons/flag';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
-	import { Spinner } from '$lib/components/ui/spinner';
 	import Hint from '$lib/components/hint.svelte';
 	import { getLookupTypeIcon } from '$lib/config/icons';
 	import { whoisLookupLabel } from '$lib/types/whois';
@@ -107,9 +107,9 @@
 </script>
 
 {#if status === TaskStatus.PENDING || status === TaskStatus.QUERYING}
-	<div class="flex items-center gap-1.5 text-xs text-muted-foreground">
-		<Spinner class="h-3 w-3" />
-		<span class="animate-pulse">Fetching WHOIS…</span>
+	<div class="flex h-4 items-center gap-1.5" aria-busy="true">
+		<Skeleton class="size-3 shrink-0 rounded-full" />
+		<Skeleton class="h-3 w-32" />
 	</div>
 {:else if status === TaskStatus.FAILED}
 	<Hint text={error}>

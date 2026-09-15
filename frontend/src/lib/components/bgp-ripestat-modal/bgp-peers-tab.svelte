@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PanelSkeleton from '$lib/components/skeleton/panel-skeleton.svelte';
 	import { type ASNNeighbourRead, PEER_RELATIONSHIP_LABELS } from '$lib/types/ripestat';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as Empty from '$lib/components/ui/empty';
@@ -10,7 +11,6 @@
 	import Info from '@lucide/svelte/icons/info';
 	import CirclePlus from '@lucide/svelte/icons/circle-plus';
 	import Zap from '@lucide/svelte/icons/zap';
-	import { Spinner } from '$lib/components/ui/spinner';
 	import type { IconComponent } from '$lib/config/icons';
 
 	interface Props {
@@ -80,14 +80,7 @@
 </script>
 
 {#if isLoading}
-	<Empty.Root>
-		<Empty.Header>
-			<Empty.Media variant="icon">
-				<Spinner />
-			</Empty.Media>
-			<Empty.Title>Loading BGP peers</Empty.Title>
-		</Empty.Header>
-	</Empty.Root>
+	<PanelSkeleton stats meter />
 {:else if error}
 	<Empty.Root>
 		<Empty.Header>

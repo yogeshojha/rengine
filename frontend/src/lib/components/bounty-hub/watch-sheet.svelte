@@ -10,7 +10,6 @@
 	import { Input } from '$lib/components/ui/input';
 	import * as ScrollArea from '$lib/components/ui/scroll-area';
 	import * as Sheet from '$lib/components/ui/sheet';
-	import { Spinner } from '$lib/components/ui/spinner';
 	import { Switch } from '$lib/components/ui/switch';
 	import { Toggle } from '$lib/components/ui/toggle';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
@@ -18,6 +17,7 @@
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import ResultsPagination from '$lib/components/scans/results/table/results-pagination.svelte';
+	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import WatchDialog from './watch-dialog.svelte';
 	import WatchHostRow from './watch-host-row.svelte';
 	import { watchesApi } from '$lib/api/watches';
@@ -355,10 +355,7 @@
 				</div>
 				<ScrollArea.Root class="min-h-0 flex-1">
 					{#if loading && hosts.length === 0}
-						<div class="flex items-center justify-center gap-2 p-10 text-sm text-muted-foreground">
-							<Spinner class="size-4" />
-							Loading hosts
-						</div>
+						<RowSkeleton rows={6} avatar="size-4 rounded" trailing="h-5 w-20 rounded-full" />
 					{:else if hosts.length === 0}
 						<EmptyState
 							title={counts?.all === 0 ? 'No certificates yet' : 'No hosts match'}

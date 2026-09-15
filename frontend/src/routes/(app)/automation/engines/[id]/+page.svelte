@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { onMount, untrack } from 'svelte';
 	import { page } from '$app/state';
 	import { goto, beforeNavigate } from '$app/navigation';
@@ -19,7 +20,6 @@
 
 	import { Button } from '$lib/components/ui/button';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
-	import { Spinner } from '$lib/components/ui/spinner';
 	import { Toggle } from '$lib/components/ui/toggle';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import * as Empty from '$lib/components/ui/empty';
@@ -710,9 +710,33 @@
 
 <div class="editor">
 	{#if isLoading && !engine}
-		<div class="state">
-			<Spinner size={20} class="text-muted-foreground" />
-			<span class="text-sm text-muted-foreground">Loading engine…</span>
+		<div class="flex flex-col gap-4 p-4" aria-busy="true">
+			<div class="flex items-center justify-between gap-3">
+				<div class="flex items-center gap-3">
+					<Skeleton class="size-8 rounded-md" />
+					<Skeleton class="h-6 w-56" />
+				</div>
+				<div class="flex gap-2">
+					<Skeleton class="h-8 w-24" />
+					<Skeleton class="h-8 w-20" />
+				</div>
+			</div>
+			<Skeleton class="h-10 w-full" />
+			<div class="flex min-h-0 flex-1 gap-4">
+				<div class="flex min-w-0 flex-1 flex-col gap-3">
+					{#each Array(7) as _, i (i)}
+						<div class="flex flex-col gap-2 rounded-md border p-3">
+							<Skeleton class="h-4 w-40" />
+							<Skeleton class="h-3 w-full" />
+						</div>
+					{/each}
+				</div>
+				<div class="hidden min-w-0 flex-1 flex-col gap-2 lg:flex">
+					{#each Array(16) as _, i (i)}
+						<Skeleton class="h-3 {i % 3 === 0 ? 'w-2/3' : i % 3 === 1 ? 'w-5/6' : 'w-1/2'}" />
+					{/each}
+				</div>
+			</div>
 		</div>
 	{:else if loadError}
 		<Empty.Root class="flex-1">
@@ -874,17 +898,6 @@
 		height: 100%;
 		min-height: 0;
 		overflow: hidden;
-	}
-
-	.state {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		gap: 14px;
-		padding: 40px;
-		text-align: center;
 	}
 
 	.save-error {

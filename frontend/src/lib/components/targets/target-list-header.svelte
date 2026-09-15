@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { TARGET_WIDTHS } from './target-columns';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import ArrowDown from '@lucide/svelte/icons/arrow-down';
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
@@ -36,7 +37,7 @@
 
 	<button
 		type="button"
-		class="flex min-w-0 flex-1 items-center gap-1 uppercase tracking-wider hover:text-foreground"
+		class="{TARGET_WIDTHS.name} items-center gap-1 uppercase tracking-wider hover:text-foreground"
 		onclick={() => onSort('name')}
 	>
 		Target
@@ -45,19 +46,19 @@
 
 	<button
 		type="button"
-		class="hidden w-[84px] shrink-0 items-center gap-1 uppercase tracking-wider hover:text-foreground sm:flex"
+		class="{TARGET_WIDTHS.type} items-center gap-1 uppercase tracking-wider hover:text-foreground"
 		onclick={() => onSort('type')}
 	>
 		Type
 		{@render arrow('type')}
 	</button>
 
-	<div class="hidden w-[170px] shrink-0 md:block">Organizations</div>
-	<div class="hidden w-[170px] shrink-0 lg:block">Tags</div>
+	<div class={TARGET_WIDTHS.organizations}>Organizations</div>
+	<div class={TARGET_WIDTHS.tags}>Tags</div>
 
 	<button
 		type="button"
-		class="hidden w-[92px] shrink-0 items-center justify-end gap-1 uppercase tracking-wider hover:text-foreground sm:flex"
+		class="{TARGET_WIDTHS.updated} items-center gap-1 uppercase tracking-wider hover:text-foreground"
 		onclick={() => onSort('updated')}
 	>
 		Updated

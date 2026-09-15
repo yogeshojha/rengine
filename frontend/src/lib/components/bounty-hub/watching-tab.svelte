@@ -1,9 +1,9 @@
 <script lang="ts">
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import RadarIcon from '@lucide/svelte/icons/radar';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
-	import { Spinner } from '$lib/components/ui/spinner';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import { CADENCE_LABELS } from '$lib/config/watch';
 	import { SUBMISSION_STATE_LABELS } from '$lib/config/bounty-programs';
@@ -97,9 +97,30 @@
 
 	<Card.Root class="gap-0 overflow-hidden py-0">
 		{#if loading && watches.length === 0}
-			<div class="flex items-center justify-center gap-2 p-12 text-sm text-muted-foreground">
-				<Spinner class="size-4" />
-				Loading watches
+			<div aria-busy="true">
+				<div
+					class="hidden grid-cols-[minmax(0,1.8fr)_repeat(3,minmax(0,1fr))_auto] gap-3 border-b px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase sm:grid"
+				>
+					<span>Program</span>
+					<span>New hosts</span>
+					<span>Alerts</span>
+					<span>Scope changes</span>
+					<span class="w-32">Last certificate</span>
+				</div>
+				{#each Array(5) as _, i (i)}
+					<div
+						class="grid grid-cols-1 items-center gap-3 border-b px-4 py-3 last:border-b-0 sm:grid-cols-[minmax(0,1.8fr)_repeat(3,minmax(0,1fr))_auto]"
+					>
+						<div class="flex flex-col gap-1.5">
+							<Skeleton class="h-4 w-48 max-w-full" />
+							<Skeleton class="h-3 w-28" />
+						</div>
+						<Skeleton class="hidden h-4 w-10 sm:block" />
+						<Skeleton class="hidden h-4 w-10 sm:block" />
+						<Skeleton class="hidden h-4 w-10 sm:block" />
+						<Skeleton class="hidden h-4 w-32 sm:block" />
+					</div>
+				{/each}
 			</div>
 		{:else if watches.length === 0}
 			<EmptyState

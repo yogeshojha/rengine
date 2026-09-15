@@ -10,7 +10,7 @@
 
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
-	import { Skeleton } from '$lib/components/ui/skeleton';
+	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import { Toggle } from '$lib/components/ui/toggle';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import CountTabs from '$lib/components/count-tabs.svelte';
@@ -25,7 +25,7 @@
 	import SecretRow from './secrets/secret-row.svelte';
 	import SecretDetailSheet from './secrets/secret-detail-sheet.svelte';
 	import CoverageStrip from './secrets/coverage-strip.svelte';
-	import { SECRET_SORTS } from './secrets/columns';
+	import { SECRET_SORTS, secretSkeletonColumns } from './secrets/columns';
 
 	import { secretsApi } from '$lib/api/scan-results';
 	import { secretQuerySchema } from '$lib/stores/query-schema.svelte';
@@ -433,11 +433,7 @@
 			onPick={drillGroup}
 		/>
 	{:else if loading}
-		<div class="flex flex-col gap-2 px-4 py-4">
-			{#each Array(6) as _, i (i)}
-				<Skeleton class="h-10 w-full" />
-			{/each}
-		</div>
+		<TableSkeleton lead={secretSkeletonColumns(projectWide)} actions={false} selectable />
 	{:else if errored}
 		<EmptyState icon={TriangleAlert} title="Secrets not loaded">
 			<Button variant="outline" size="sm" onclick={() => void runSearch()}>Retry</Button>

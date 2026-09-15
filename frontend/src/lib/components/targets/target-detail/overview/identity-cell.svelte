@@ -26,6 +26,7 @@
 </script>
 
 <Cell
+	skeleton="list"
 	id={group.key}
 	title={group.title}
 	href={group.link ? ROUTES.target(targetId, group.link.tab) : undefined}

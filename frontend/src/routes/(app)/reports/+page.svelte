@@ -9,7 +9,7 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
-	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import UploadIcon from '@lucide/svelte/icons/upload';
@@ -254,9 +254,9 @@
 
 		<Tabs.Content value="reports" class="mt-5">
 			{#if reportsStore.isLoading && !reportsStore.reports.length}
-				<div class="space-y-2">
-					{#each [1, 2, 3] as n (n)}<Skeleton class="h-16 w-full" />{/each}
-				</div>
+				<Card.Root class="gap-0 py-0">
+					<RowSkeleton rows={4} avatar="size-8 rounded-md" trailing="h-5 w-20 rounded-full" />
+				</Card.Root>
 			{:else if !visibleReports.length}
 				<EmptyState
 					icon={FileTextIcon}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
@@ -104,7 +105,11 @@
 							<Command.List class="max-h-none overflow-visible">
 								<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-80">
 									{#if searching}
-										<Command.Loading>Searching…</Command.Loading>
+										<div class="flex flex-col gap-1 p-2" aria-busy="true">
+											{#each Array(4) as _, i (i)}
+												<Skeleton class="h-6 {i % 2 ? 'w-40' : 'w-56'} max-w-full" />
+											{/each}
+										</div>
 									{:else if options.length === 0}
 										<Command.Empty>No host matches.</Command.Empty>
 									{/if}

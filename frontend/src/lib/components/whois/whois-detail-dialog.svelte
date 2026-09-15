@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { whoisApi } from '$lib/api/whois';
 	import type { WhoisRecordRead, WhoisCorrelationResult } from '$lib/types/whois';
 	import { TargetType } from '$lib/types/target';
@@ -191,8 +192,10 @@
 						<Dialog.Title class="text-lg font-semibold truncate">
 							{#if displayRecord}
 								{displayRecord.name || displayRecord.query_value}
+							{:else if isLoadingRecord && targetValue}
+								{targetValue}
 							{:else if isLoadingRecord}
-								Loading
+								<Skeleton class="h-5 w-48" />
 							{:else}
 								WHOIS record
 							{/if}
@@ -227,14 +230,19 @@
 		</div>
 
 		{#if isLoadingRecord && !displayRecord}
-			<Empty.Root>
-				<Empty.Header>
-					<Empty.Media variant="icon">
-						<Spinner />
-					</Empty.Media>
-					<Empty.Title>Loading WHOIS record</Empty.Title>
-				</Empty.Header>
-			</Empty.Root>
+			<div class="flex flex-col gap-5 px-6 py-5" aria-busy="true">
+				<div class="flex gap-2">
+					{#each Array(3) as _, i (i)}
+						<Skeleton class="h-9 flex-1" />
+					{/each}
+				</div>
+				{#each Array(6) as _, i (i)}
+					<div class="flex flex-col gap-2">
+						<Skeleton class="h-3 w-24" />
+						<Skeleton class="h-4 {i % 2 ? 'w-2/3' : 'w-1/2'}" />
+					</div>
+				{/each}
+			</div>
 		{:else if recordError}
 			<Empty.Root>
 				<Empty.Header>

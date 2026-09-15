@@ -1,10 +1,10 @@
 <script lang="ts">
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
-	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import Hint from '$lib/components/hint.svelte';
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
@@ -237,8 +237,7 @@
 							Download PDF
 						</Button>
 					{:else if loading}
-						<Spinner class="size-5" />
-						<p class="text-muted-foreground text-sm">Loading report</p>
+						<Skeleton class="h-4 w-32" />
 					{/if}
 				</div>
 			{/if}

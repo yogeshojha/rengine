@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Skeleton } from '$lib/components/ui/skeleton';
+	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import ListHeader from '../table/list-header.svelte';
 	import ResultsPagination from '../table/results-pagination.svelte';
@@ -69,15 +69,7 @@
 	<ListHeader {lead} {columns} {sortKey} {sortDir} {onSort} />
 	<div class="transition-opacity {loading && !pending ? 'opacity-60' : ''}">
 		{#if pending}
-			<div class="divide-y divide-border/50">
-				{#each Array(8) as _, i (i)}
-					<div class="flex items-center gap-3 px-4 py-3">
-						<Skeleton class="h-9 flex-1" />
-						<Skeleton class="hidden h-5 w-24 sm:block" />
-						<Skeleton class="hidden h-5 w-40 sm:block" />
-					</div>
-				{/each}
-			</div>
+			<TableSkeleton {lead} {columns} header={false} />
 		{:else if page}
 			{#each page.items as node, i (node.key)}
 				<div data-host-row-index={i}>

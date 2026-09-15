@@ -25,7 +25,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
-	import { Skeleton } from '$lib/components/ui/skeleton';
+	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import CountTabs from '@/components/count-tabs.svelte';
 	import EmptyState from '@/components/empty-state.svelte';
 
@@ -906,16 +906,14 @@
 	{/if}
 
 	{#if loading && rowCount === 0 && !groupBy}
-		<div class="divide-y divide-border/50">
-			{#each Array(8) as _, i (i)}
-				<div class="flex items-center gap-3 px-4 py-3">
-					<Skeleton class="h-9 flex-1" />
-					<Skeleton class="hidden h-5 w-52 sm:block" />
-					<Skeleton class="hidden h-6 w-44 sm:block" />
-					<Skeleton class="hidden h-5 w-24 sm:block" />
-				</div>
-			{/each}
-		</div>
+		<ScrollArea orientation="horizontal">
+			<TableSkeleton
+				lead={isIssues ? ISSUE_LEAD_COLUMNS : VULN_LEAD_COLUMNS}
+				columns={isIssues ? ISSUE_COLUMNS : shownColumns}
+				{density}
+				selectable
+			/>
+		</ScrollArea>
 	{:else if errored}
 		<EmptyState
 			icon={TriangleAlert}

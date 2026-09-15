@@ -86,7 +86,13 @@
 	}
 </script>
 
-<Cell id="seeds" title="Seed assets" loading={loading && !seeds.length} class={className}>
+<Cell
+	skeleton="list"
+	id="seeds"
+	title="Seed assets"
+	loading={loading && !seeds.length}
+	class={className}
+>
 	{#snippet tools()}
 		<Button
 			variant="outline"

@@ -1,11 +1,11 @@
 <script lang="ts">
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { toast } from 'svelte-sonner';
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import * as Select from '$lib/components/ui/select';
-	import { Spinner } from '$lib/components/ui/spinner';
 	import { Switch } from '$lib/components/ui/switch';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import SectionHead from '$lib/components/section-head.svelte';
@@ -82,9 +82,21 @@
 </script>
 
 {#if loading}
-	<div class="flex items-center justify-center gap-2 p-12 text-sm text-muted-foreground">
-		<Spinner class="size-4" />
-		Loading settings
+	<div class="flex flex-col gap-6" aria-busy="true">
+		{#each Array(3) as _, i (i)}
+			<div class="flex flex-col gap-3 rounded-xl border p-4">
+				<Skeleton class="h-4 w-40" />
+				<Skeleton class="h-3 w-64 max-w-full" />
+				<div class="flex flex-col gap-2 pt-1">
+					{#each Array(3) as _, j (j)}
+						<div class="flex items-center justify-between gap-3">
+							<Skeleton class="h-4 w-48 max-w-full" />
+							<Skeleton class="h-5 w-9 rounded-full" />
+						</div>
+					{/each}
+				</div>
+			</div>
+		{/each}
 	</div>
 {:else if settings}
 	<div class="flex flex-col gap-6">

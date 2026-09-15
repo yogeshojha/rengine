@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PanelSkeleton from '$lib/components/skeleton/panel-skeleton.svelte';
 	import {
 		type WhoisCorrelationResult,
 		type WhoisRecordSummary,
@@ -12,7 +13,6 @@
 	import Link2 from '@lucide/svelte/icons/link-2';
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 	import GitBranch from '@lucide/svelte/icons/git-branch';
-	import { Spinner } from '$lib/components/ui/spinner';
 	import { SvelteMap } from 'svelte/reactivity';
 
 	interface Props {
@@ -93,14 +93,7 @@
 </script>
 
 {#if isLoading}
-	<Empty.Root>
-		<Empty.Header>
-			<Empty.Media variant="icon">
-				<Spinner />
-			</Empty.Media>
-			<Empty.Title>Loading related targets</Empty.Title>
-		</Empty.Header>
-	</Empty.Root>
+	<PanelSkeleton rows={5} />
 {:else if error}
 	<Empty.Root>
 		<Empty.Header>

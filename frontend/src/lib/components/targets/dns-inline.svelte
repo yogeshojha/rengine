@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { TargetType } from '$lib/types/target';
 	import type { DnsSummaryData } from '$lib/types/target';
 	import { DnsRecordType, DNS_RECORD_DISPLAY_ORDER } from '$lib/types/dns';
@@ -19,7 +20,6 @@
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import ShieldCheck from '@lucide/svelte/icons/shield-check';
 	import Waypoints from '@lucide/svelte/icons/waypoints';
-	import { Spinner } from '$lib/components/ui/spinner';
 
 	interface Props {
 		status: string;
@@ -83,9 +83,9 @@
 </script>
 
 {#if !isApplicable}{:else if status === TaskStatus.PENDING || status === TaskStatus.QUERYING}
-	<div class="flex items-center gap-1.5 text-xs text-muted-foreground">
-		<Spinner class="h-3 w-3" />
-		<span class="animate-pulse">DNS…</span>
+	<div class="flex h-4 items-center gap-1.5" aria-busy="true">
+		<Skeleton class="size-3 shrink-0 rounded-full" />
+		<Skeleton class="h-3 w-24" />
 	</div>
 {:else if status === TaskStatus.FAILED}
 	<div class="flex items-center gap-1.5 text-xs text-destructive/70">

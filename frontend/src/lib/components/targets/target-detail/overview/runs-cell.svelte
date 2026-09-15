@@ -55,6 +55,7 @@
 </script>
 
 <Cell
+	skeleton="bars"
 	id="runs"
 	title="Surface by run"
 	description="{spec.label} each completed run"

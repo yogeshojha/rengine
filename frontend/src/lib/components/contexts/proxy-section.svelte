@@ -1,10 +1,10 @@
 <script lang="ts">
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { onMount } from 'svelte';
 	import { Label } from '$lib/components/ui/label';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Select from '$lib/components/ui/select';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
-	import { Spinner } from '$lib/components/ui/spinner';
 	import { proxiesStore } from '$lib/stores/proxies.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { SELECT_NONE } from '$lib/constants';
@@ -62,9 +62,9 @@
 	</div>
 
 	{#if proxiesStore.isLoading && !proxiesStore.hasFetched}
-		<div class="flex items-center gap-2 text-xs text-muted-foreground">
-			<Spinner class="h-3.5 w-3.5" />
-			Loading proxies…
+		<div class="flex h-4 items-center gap-2" aria-busy="true">
+			<Skeleton class="size-3.5 shrink-0 rounded-full" />
+			<Skeleton class="h-3 w-28" />
 		</div>
 	{:else if selected}
 		<div class="rounded-md border border-dashed border-border bg-muted/40 px-3 py-2">

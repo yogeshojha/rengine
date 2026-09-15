@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import Circle from '@lucide/svelte/icons/circle';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -206,7 +207,17 @@
 												aria-label="{c.tool} output"
 											>
 												{#if loadingId === c.id}
-													<p class="p-3 text-xs text-muted-foreground">Loading output</p>
+													<div class="flex flex-col gap-1.5 p-3" aria-busy="true">
+														{#each Array(6) as _, i (i)}
+															<Skeleton
+																class="h-3 {i % 3 === 0
+																	? 'w-1/2'
+																	: i % 3 === 1
+																		? 'w-5/6'
+																		: 'w-2/3'}"
+															/>
+														{/each}
+													</div>
 												{:else if outputs[c.id] === null}
 													<p class="p-3 text-xs text-destructive">Output not loaded.</p>
 												{:else if outputs[c.id]}

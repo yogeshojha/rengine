@@ -15,6 +15,7 @@
 </script>
 
 <Cell
+	skeleton="list"
 	id="programs"
 	title="Programs"
 	description="Bounty programs naming this target"

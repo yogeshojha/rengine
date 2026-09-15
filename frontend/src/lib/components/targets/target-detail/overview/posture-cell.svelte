@@ -74,7 +74,13 @@
 	let pass = $derived(rows.filter((r) => r.status === 'pass').length);
 </script>
 
-<Cell id="posture" title="Posture" loading={loading && !rows.length} class={className}>
+<Cell
+	skeleton="list"
+	id="posture"
+	title="Posture"
+	loading={loading && !rows.length}
+	class={className}
+>
 	{#if rows.length}
 		<ul class="flex flex-col">
 			{#each rows as r (r.key)}

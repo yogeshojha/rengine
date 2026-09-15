@@ -10,11 +10,11 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as ScrollArea from '$lib/components/ui/scroll-area';
 	import * as Sheet from '$lib/components/ui/sheet';
-	import { Spinner } from '$lib/components/ui/spinner';
 	import { Switch } from '$lib/components/ui/switch';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import ImportDialog from './import-dialog.svelte';
 	import WatchDialog from './watch-dialog.svelte';
 	import ScopeRow from './scope-row.svelte';
@@ -278,10 +278,7 @@
 
 			<ScrollArea.Root class="min-h-0 flex-1">
 				{#if loading}
-					<div class="flex items-center justify-center gap-2 p-10 text-sm text-muted-foreground">
-						<Spinner class="size-4" />
-						Loading scope
-					</div>
+					<RowSkeleton rows={6} avatar={null} trailing="h-5 w-16 rounded-full" />
 				{:else if scopes.length === 0 && detail?.scopes_synced_at}
 					<EmptyState
 						title="No structured scope"

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PanelSkeleton from '$lib/components/skeleton/panel-skeleton.svelte';
 	import { whoisApi } from '$lib/api/whois';
 	import { goto } from '$app/navigation';
 	import { SvelteSet } from 'svelte/reactivity';
@@ -23,7 +24,6 @@
 	import Globe from '@lucide/svelte/icons/globe';
 	import Cable from '@lucide/svelte/icons/cable';
 	import SearchX from '@lucide/svelte/icons/search-x';
-	import { Spinner } from '$lib/components/ui/spinner';
 
 	interface Props {
 		open: boolean;
@@ -162,14 +162,7 @@
 			<ScrollArea style="height: {scrollHeight}px">
 				<div class="px-6 pb-6">
 					{#if isLoading}
-						<Empty.Root>
-							<Empty.Header>
-								<Empty.Media variant="icon">
-									<Spinner />
-								</Empty.Media>
-								<Empty.Title>Searching targets</Empty.Title>
-							</Empty.Header>
-						</Empty.Root>
+						<PanelSkeleton rows={5} />
 					{:else if error}
 						<Empty.Root>
 							<Empty.Header>

@@ -6,9 +6,9 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import * as Card from '$lib/components/ui/card';
-	import { Spinner } from '$lib/components/ui/spinner';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import ResultsPagination from '$lib/components/scans/results/table/results-pagination.svelte';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import FilterBar from '$lib/components/bounty-hub/filter-bar.svelte';
@@ -330,10 +330,7 @@
 
 			<Card.Root class="gap-0 overflow-hidden py-0">
 				{#if loading}
-					<div class="flex items-center justify-center gap-2 p-12 text-sm text-muted-foreground">
-						<Spinner class="size-4" />
-						Loading programs
-					</div>
+					<RowSkeleton />
 				{:else if programs.length === 0}
 					<EmptyState
 						icon={TargetIcon}

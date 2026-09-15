@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { untrack } from 'svelte';
 	import * as Select from '$lib/components/ui/select';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
@@ -246,7 +247,11 @@
 					Scan engines <ArrowRight size={13} />
 				</Button>
 			{:else if !plain || !merged}
-				<div class="center"><Spinner size={14} class="text-muted-foreground" /></div>
+				<div class="flex flex-col gap-2">
+					{#each Array(6) as _, i (i)}
+						<Skeleton class="h-3.5 {i % 2 ? 'w-2/3' : 'w-full'}" />
+					{/each}
+				</div>
 			{:else if !changes.length}
 				<p class="count">No overrides</p>
 			{:else}
@@ -296,11 +301,6 @@
 	}
 	.body {
 		padding: 12px 14px 20px;
-	}
-	.center {
-		display: flex;
-		justify-content: center;
-		padding: 24px 0;
 	}
 	.empty,
 	.err {

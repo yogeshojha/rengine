@@ -6,7 +6,7 @@
 	import X from '@lucide/svelte/icons/x';
 	import * as Card from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
-	import { Skeleton } from '$lib/components/ui/skeleton';
+	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import NoteCard from '$lib/components/notes/note-card.svelte';
@@ -186,11 +186,7 @@
 		{/if}
 
 		{#if loading && items.length === 0}
-			<div class="flex flex-col gap-2 px-4 py-4">
-				{#each Array(4) as _, i (i)}
-					<Skeleton class="h-16 w-full" />
-				{/each}
-			</div>
+			<RowSkeleton rows={5} avatar="size-8 rounded-md" trailing="h-3.5 w-20" />
 		{:else if error}
 			<EmptyState
 				icon={StickyNote}

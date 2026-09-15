@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SCAN_WIDTHS } from './scan-columns';
 	import ArrowDown from '@lucide/svelte/icons/arrow-down';
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
 	import { Checkbox } from '$lib/components/ui/checkbox';
@@ -46,12 +47,12 @@
 	<div class="min-w-0 flex-1">{targetId ? 'Engine' : 'Target'}</div>
 
 	{#if !targetId}
-		<div class="hidden w-[150px] shrink-0 lg:block">Engine</div>
+		<div class={SCAN_WIDTHS.engine}>Engine</div>
 	{/if}
 
 	<button
 		type="button"
-		class="flex w-[120px] shrink-0 items-center gap-1 uppercase tracking-wider hover:text-foreground"
+		class="{SCAN_WIDTHS.status} items-center gap-1 uppercase tracking-wider hover:text-foreground"
 		onclick={() => onSort('status')}
 	>
 		Status
@@ -60,7 +61,7 @@
 
 	<button
 		type="button"
-		class="hidden w-[220px] shrink-0 items-center gap-1 uppercase tracking-wider hover:text-foreground xl:flex"
+		class="{SCAN_WIDTHS.results} items-center gap-1 uppercase tracking-wider hover:text-foreground"
 		onclick={() => onSort('subdomains')}
 	>
 		Results
@@ -69,7 +70,7 @@
 
 	<button
 		type="button"
-		class="hidden w-[80px] shrink-0 items-center justify-end gap-1 uppercase tracking-wider hover:text-foreground sm:flex"
+		class="{SCAN_WIDTHS.duration} items-center gap-1 uppercase tracking-wider hover:text-foreground"
 		onclick={() => onSort('duration')}
 	>
 		Duration
@@ -78,12 +79,12 @@
 
 	<button
 		type="button"
-		class="hidden w-[120px] shrink-0 items-center justify-end gap-1 uppercase tracking-wider hover:text-foreground sm:flex"
+		class="{SCAN_WIDTHS.started} items-center gap-1 uppercase tracking-wider hover:text-foreground"
 		onclick={() => onSort('started')}
 	>
 		Started
 		{@render arrow('started')}
 	</button>
 
-	<div class="w-8 shrink-0"></div>
+	<div class={SCAN_WIDTHS.actions}></div>
 </div>

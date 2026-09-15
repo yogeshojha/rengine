@@ -1,4 +1,5 @@
 import { Capability, InstanceMode, type CapabilityKey } from '$lib/config/capabilities';
+import type { SkeletonShape } from '$lib/components/skeleton/shapes';
 
 export const DASHBOARD_ROWS = [
 	'estate',
@@ -25,6 +26,7 @@ export interface DashboardWidgetSpec {
 	row: DashboardRow;
 	modes: InstanceMode[];
 	capability?: CapabilityKey;
+	skeleton: SkeletonShape;
 }
 
 const BOTH = [InstanceMode.BugBounty, InstanceMode.Corporate];
@@ -32,41 +34,61 @@ const BB = [InstanceMode.BugBounty];
 const CORP = [InstanceMode.Corporate];
 
 export const DASHBOARD_WIDGETS: DashboardWidgetSpec[] = [
-	{ id: 'funnel', label: 'Attack surface funnel', row: 'estate', modes: BOTH },
-	{ id: 'inventory', label: 'Inventory', row: 'estate', modes: BOTH },
-	{ id: 'changes', label: 'Attack surface changes', row: 'estate', modes: BOTH },
-	{ id: 'geo', label: 'Geography', row: 'estate', modes: BOTH },
-	{ id: 'board', label: 'Board', row: 'findings', modes: BOTH },
-	{ id: 'findings-trend', label: 'Findings by severity', row: 'findings', modes: BOTH },
-	{ id: 'exploitation', label: 'Exploitation', row: 'findings', modes: BOTH },
-	{ id: 'evidence', label: 'Evidence', row: 'findings', modes: BOTH },
-	{ id: 'exposures', label: 'Exposures', row: 'findings', modes: BOTH },
+	{ id: 'funnel', label: 'Attack surface funnel', row: 'estate', modes: BOTH, skeleton: 'bars' },
+	{ id: 'inventory', label: 'Inventory', row: 'estate', modes: BOTH, skeleton: 'list' },
+	{ id: 'changes', label: 'Attack surface changes', row: 'estate', modes: BOTH, skeleton: 'bars' },
+	{ id: 'geo', label: 'Geography', row: 'estate', modes: BOTH, skeleton: 'map' },
+	{ id: 'board', label: 'Board', row: 'findings', modes: BOTH, skeleton: 'board' },
+	{
+		id: 'findings-trend',
+		label: 'Findings by severity',
+		row: 'findings',
+		modes: BOTH,
+		skeleton: 'bars'
+	},
+	{ id: 'exploitation', label: 'Exploitation', row: 'findings', modes: BOTH, skeleton: 'bars' },
+	{ id: 'evidence', label: 'Evidence', row: 'findings', modes: BOTH, skeleton: 'list' },
+	{ id: 'exposures', label: 'Exposures', row: 'findings', modes: BOTH, skeleton: 'ranked' },
 	{
 		id: 'programs',
 		label: 'Platform events',
 		row: 'programs',
 		modes: BB,
-		capability: Capability.BOUNTY_PROGRAMS
+		capability: Capability.BOUNTY_PROGRAMS,
+		skeleton: 'bars'
 	},
 	{
 		id: 'watches',
 		label: 'Watched programs',
 		row: 'programs',
 		modes: BB,
-		capability: Capability.PROGRAM_WATCHES
+		capability: Capability.PROGRAM_WATCHES,
+		skeleton: 'bars'
 	},
-	{ id: 'connectors', label: 'Browsing', row: 'programs', modes: BB },
-	{ id: 'certs', label: 'Certificates', row: 'posture', modes: CORP },
-	{ id: 'hygiene', label: 'Web hygiene', row: 'posture', modes: CORP },
-	{ id: 'domain-posture', label: 'Domain posture', row: 'posture', modes: CORP },
-	{ id: 'ownership', label: 'Ownership', row: 'posture', modes: CORP },
-	{ id: 'runs', label: 'Scan activity', row: 'scanning', modes: BOTH },
-	{ id: 'software', label: 'Software CVEs', row: 'scanning', modes: BOTH },
-	{ id: 'services', label: 'Services', row: 'composition', modes: BOTH },
-	{ id: 'tech', label: 'Technology', row: 'composition', modes: BOTH },
-	{ id: 'hosting', label: 'Hosting', row: 'composition', modes: BOTH },
-	{ id: 'shared', label: 'Shared across targets', row: 'composition', modes: BOTH },
-	{ id: 'activity', label: 'Activity', row: 'composition', modes: BOTH }
+	{ id: 'connectors', label: 'Browsing', row: 'programs', modes: BB, skeleton: 'bars' },
+	{ id: 'certs', label: 'Certificates', row: 'posture', modes: CORP, skeleton: 'meters' },
+	{ id: 'hygiene', label: 'Web hygiene', row: 'posture', modes: CORP, skeleton: 'meters' },
+	{
+		id: 'domain-posture',
+		label: 'Domain posture',
+		row: 'posture',
+		modes: CORP,
+		skeleton: 'meters'
+	},
+	{ id: 'ownership', label: 'Ownership', row: 'posture', modes: CORP, skeleton: 'list' },
+	{ id: 'runs', label: 'Scan activity', row: 'scanning', modes: BOTH, skeleton: 'bars' },
+	{ id: 'software', label: 'Software CVEs', row: 'scanning', modes: BOTH, skeleton: 'ranked' },
+	{ id: 'services', label: 'Services', row: 'composition', modes: BOTH, skeleton: 'donut' },
+	{ id: 'tech', label: 'Technology', row: 'composition', modes: BOTH, skeleton: 'ranked' },
+	{ id: 'hosting', label: 'Hosting', row: 'composition', modes: BOTH, skeleton: 'ranked' },
+	{
+		id: 'shared',
+		label: 'Shared across targets',
+		row: 'composition',
+		modes: BOTH,
+		skeleton: 'ranked'
+	},
+	{ id: 'activity', label: 'Activity', row: 'composition', modes: BOTH, skeleton: 'list' }
 ];
 
 export type DashboardWidgetId = (typeof DASHBOARD_WIDGETS)[number]['id'];

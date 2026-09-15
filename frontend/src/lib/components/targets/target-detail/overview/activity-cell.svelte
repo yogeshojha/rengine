@@ -138,6 +138,7 @@
 </script>
 
 <Cell
+	skeleton="list"
 	id="activity"
 	title="Activity"
 	href={ROUTES.scansForTarget(target.id)}
