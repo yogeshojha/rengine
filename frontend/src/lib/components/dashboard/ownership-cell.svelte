@@ -113,16 +113,18 @@
 				key: 'spoofable',
 				label: 'Spoofable',
 				count: spoof.count,
-				detail: 'no SPF or DMARC',
+				detail: 'zones open to forgery',
 				tone: 'var(--sev-medium)',
 				open: () =>
 					show({
 						title: 'Spoofable domains',
 						rows: spoof.items.map((d) => ({
-							key: d.target_id,
-							primary: d.target_value,
+							key: `${d.target_id}:${d.zone}`,
+							primary: d.zone || d.target_value,
+							secondary: d.zone && d.zone !== d.target_value ? d.target_value : undefined,
 							meta: d.reason,
-							href: ROUTES.target(d.target_id, 'dns')
+							tone: 'warn' as const,
+							href: ROUTES.target(d.target_id)
 						}))
 					})
 			});

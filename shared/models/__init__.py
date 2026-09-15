@@ -57,6 +57,12 @@ from shared.models.dns import (
     DnsRecord,
     DnsRecordRead,
 )
+from shared.models.domain_posture import (
+    DomainPosture,
+    DomainPostureRead,
+    DomainPostureSummary,
+    PostureCheckCount,
+)
 from shared.models.endpoint import (
     Endpoint,
     EndpointCoverage,
@@ -317,6 +323,9 @@ __all__ = [
     "DnsLookupSummary",
     "DnsRecord",
     "DnsRecordRead",
+    "DomainPosture",
+    "DomainPostureRead",
+    "DomainPostureSummary",
     "Endpoint",
     "EndpointCoverage",
     "EndpointDetail",
@@ -384,6 +393,7 @@ __all__ = [
     "Port",
     "PortRead",
     "PortSummary",
+    "PostureCheckCount",
     "ProgramWatch",
     "Project",
     "ProjectBase",

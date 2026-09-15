@@ -4,6 +4,9 @@ from dataclasses import dataclass
 from dataclasses import field as dc_field
 from enum import StrEnum
 
+from shared.definitions.domain_posture import (
+    QUERY_VALUES as POSTURE_VALUES,
+)
 from shared.definitions.endpoints import (
     ENDPOINT_CLASSES,
     INTEREST_KEYS,
@@ -462,6 +465,19 @@ FIELDS: tuple[QueryField, ...] = (
         facet="hygiene",
     ),
     QueryField(
+        name="posture",
+        type=FieldType.ENUM,
+        group="Hygiene",
+        description=(
+            "A domain posture check the host's zone fails: SPF, DMARC, DKIM, "
+            "MTA-STS, DNSSEC or CAA. Also takes warning, info, any or none."
+        ),
+        example="posture:dmarc_missing",
+        aliases=("dns_posture", "mail"),
+        values=POSTURE_VALUES,
+        facet="posture",
+    ),
+    QueryField(
         name="cert",
         type=FieldType.ENUM,
         group="Certificates",
@@ -706,6 +722,11 @@ GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
         key="hygiene",
         label="Hygiene check",
         description="Names failing the same hardening check",
+    ),
+    GroupDimension(
+        key="posture",
+        label="Posture check",
+        description="Names whose zone fails the same posture check",
     ),
 )
 

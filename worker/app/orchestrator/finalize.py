@@ -4,6 +4,7 @@ from sqlalchemy import Integer, String, bindparam, select, text
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Session
 
+from shared.definitions.domain_posture import SPOOFABLE_KEYS
 from shared.definitions.notifications import (
     ScanDeltas,
     scan_count_summary,
@@ -32,6 +33,7 @@ from shared.services.celery_dispatch import (
     dispatch_threat_intel,
     dispatch_watch_settle,
 )
+from shared.services.domain_posture import fold_onto_hosts
 from shared.services.notification_sync import SyncNotificationPublisher
 from shared.services.orchestrator import (
     aggregate_status,
@@ -201,6 +203,27 @@ GROUP BY v.severity
 """
 
 
+_POSTURE_REGRESSIONS_SQL = """
+WITH prev AS (
+    SELECT DISTINCT ON (b.zone) b.zone, b.posture_issues
+    FROM domain_posture b
+    JOIN scans bs ON bs.id = b.scan_id AND bs.scope = 'full'
+                 AND bs.id <> :sid AND bs.started_at < :started
+    WHERE b.target_id = :tid
+    ORDER BY b.zone, bs.started_at DESC
+)
+SELECT count(*) AS total
+FROM domain_posture p
+JOIN prev ON prev.zone = p.zone
+WHERE p.scan_id = :sid
+  AND EXISTS (
+      SELECT 1 FROM jsonb_array_elements_text(p.posture_issues::jsonb) k
+      WHERE k.value = ANY(:keys)
+        AND NOT (prev.posture_issues::jsonb ? k.value)
+  )
+"""
+
+
 def _has_baseline(session: Session, scan: Scan, sql: str) -> bool:
     return bool(session.execute(text(sql).bindparams(*_scope(scan))).scalar_one())
 
@@ -242,6 +265,18 @@ def _count_new_vulnerabilities(session: Session, scan: Scan) -> tuple[dict, int,
     counts = {row.severity: int(row.total) for row in rows}
     kev = sum(int(row.kev or 0) for row in rows)
     return counts, kev, sum(counts.values())
+
+
+def _posture_regressions(session: Session, scan: Scan) -> int:
+    return int(
+        session.execute(
+            text(_POSTURE_REGRESSIONS_SQL).bindparams(
+                *_scope(scan),
+                bindparam("keys", list(SPOOFABLE_KEYS), type_=ARRAY(String)),
+            )
+        ).scalar_one()
+        or 0
+    )
 
 
 def _dropped_hosts(session: Session, scan: Scan) -> int:
@@ -287,8 +322,14 @@ def _guard(session: Session, fn, fallback):
         return fallback
 
 
+def _refold_posture(session: Session, scan: Scan) -> None:
+    fold_onto_hosts(session, scan.id)
+    session.commit()
+
+
 def _settled_counts(session: Session, scan: Scan) -> dict:
     _guard(session, lambda: _match_software(session, scan), None)
+    _guard(session, lambda: _refold_posture(session, scan), None)
     _guard(session, lambda: analyze_result_tables(session), None)
     return derived_counts(session, scan.id)
 
@@ -320,6 +361,9 @@ def _measure(session: Session, scan: Scan) -> ScanDeltas:
         vulnerability_counts=vuln_counts,
         kev=kev,
         dropped_hosts=_guard(session, lambda: _dropped_hosts(session, scan), 0),
+        posture_regressions=_guard(
+            session, lambda: _posture_regressions(session, scan), 0
+        ),
     )
 
 

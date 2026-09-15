@@ -33,6 +33,16 @@ def context(scope: QueryScope, now: datetime) -> QueryContext:
     return QueryContext(scope=scope, now=now)
 
 
+_CDN = {
+    "yes": lambda: Subdomain.is_cdn.is_(True),
+    "no": lambda: Subdomain.is_cdn.is_(False),
+}
+_WAF = {
+    "present": lambda: Subdomain.waf.isnot(None),
+    "none": lambda: Subdomain.waf.is_(None),
+}
+
+
 def apply_filter(query, f: SubdomainFilter, now: datetime, scope: ScopeLike):
     if f.ids:
         query = query.where(Subdomain.id.in_(f.ids))
@@ -48,18 +58,14 @@ def apply_filter(query, f: SubdomainFilter, now: datetime, scope: ScopeLike):
         )
     if f.cert:
         query = query.where(or_(*[preds.cert_state(c, now) for c in f.cert]))
-    if f.hygiene:
-        query = query.where(preds.hygiene(f.hygiene))
+    for values, checks in ((f.hygiene, preds.hygiene), (f.posture, preds.posture)):
+        if values:
+            query = query.where(checks(values))
     if f.services:
         query = query.where(preds.port_match(Port.service_name.in_(f.services), scope))
-    if f.cdn == "yes":
-        query = query.where(Subdomain.is_cdn.is_(True))
-    elif f.cdn == "no":
-        query = query.where(Subdomain.is_cdn.is_(False))
-    if f.waf == "present":
-        query = query.where(Subdomain.waf.isnot(None))
-    elif f.waf == "none":
-        query = query.where(Subdomain.waf.is_(None))
+    for chosen, table in ((f.cdn, _CDN), (f.waf, _WAF)):
+        if chosen in table:
+            query = query.where(table[chosen]())
     if f.live:
         query = query.where(preds.live())
     if f.screenshot:

@@ -4,11 +4,11 @@ from uuid import UUID
 from sqlalchemy import Row, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services.domain_posture import DomainPostureService
+from shared.definitions import domain_posture as posture_defs
 from shared.definitions.domains import takeover_provider
-from shared.enums.dns import DnsRecordType
 from shared.enums.scan import ScanStatus
 from shared.enums.target import TargetType
-from shared.enums.task_status import TaskStatus
 from shared.logging import get_logger
 from shared.models.dashboard import (
     DashboardSignals,
@@ -19,7 +19,6 @@ from shared.models.dashboard import (
     TakeoverCandidate,
     TakeoverSignal,
 )
-from shared.models.dns import DnsRecord
 from shared.models.scan import Scan
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
@@ -32,16 +31,6 @@ _ITEMS_CAP = 100
 _STALE_DAYS = 30
 
 _DOMAIN_TYPES = (TargetType.DOMAIN, TargetType.URL)
-
-
-def _spf_reason(spf: str | None) -> str | None:
-    if spf is None:
-        return "No SPF record"
-    if "+all" in spf:
-        return "SPF +all"
-    if "?all" in spf:
-        return "SPF ?all"
-    return None
 
 
 class DashboardService:
@@ -102,51 +91,31 @@ class DashboardService:
         return TakeoverSignal(count=len(candidates), items=candidates[:_ITEMS_CAP])
 
     async def _spoofable_domains(self, project_id: UUID) -> SpoofableSignal:
-        targets = (
-            await self.session.execute(
-                select(Target.id, Target.target_value).where(
-                    Target.project_id == project_id,
-                    Target.target_type.in_(_DOMAIN_TYPES),
-                    Target.dns_status == TaskStatus.SUCCESS,
-                )
-            )
-        ).all()
-        if not targets:
+        """Zones whose newest run fails a sender check."""
+        hits = await DomainPostureService(self.session).spoofable(project_id)
+        if not hits:
             return SpoofableSignal(count=0, items=[])
-        names = dict(targets)
-
-        records = (
-            await self.session.execute(
-                select(
-                    DnsRecord.target_id, DnsRecord.record_type, DnsRecord.value
-                ).where(
-                    DnsRecord.target_id.in_(list(names.keys())),
-                    DnsRecord.record_type.in_([DnsRecordType.MX, DnsRecordType.TXT]),
+        names = dict(
+            (
+                await self.session.execute(
+                    select(Target.id, Target.target_value).where(
+                        Target.id.in_({tid for tid, *_ in hits})
+                    )
                 )
+            ).all()
+        )
+        items = [
+            SpoofableDomain(
+                target_id=tid,
+                target_value=names.get(tid, zone),
+                zone=zone,
+                reason=posture_defs.CHECK_BY_KEY[key].label,
+                check=key,
             )
-        ).all()
-        has_mx: set[UUID] = set()
-        spf: dict[UUID, str] = {}
-        for tid, rtype, value in records:
-            rt = getattr(rtype, "value", rtype)
-            if rt == DnsRecordType.MX.value:
-                has_mx.add(tid)
-            elif (
-                rt == DnsRecordType.TXT.value
-                and value
-                and value.lower().startswith("v=spf1")
-            ):
-                spf[tid] = value.lower()
-
-        items: list[SpoofableDomain] = []
-        for tid in has_mx:
-            reason = _spf_reason(spf.get(tid))
-            if reason is None:
-                continue
-            items.append(
-                SpoofableDomain(target_id=tid, target_value=names[tid], reason=reason)
-            )
-        items.sort(key=lambda d: d.target_value)
+            for tid, zone, key, _at in hits
+            if tid in names
+        ]
+        items.sort(key=lambda d: (d.zone, d.target_value))
         return SpoofableSignal(count=len(items), items=items[:_ITEMS_CAP])
 
     async def _stale_targets(self, project_id: UUID) -> StaleSignal:

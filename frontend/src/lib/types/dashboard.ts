@@ -20,6 +20,7 @@ export const DASHBOARD_SLICES = [
 	'exposures',
 	'software',
 	'hygiene',
+	'posture',
 	'shared',
 	'activity',
 	'programs',
@@ -36,6 +37,7 @@ export const DASHBOARD_SLICE_LABELS: Record<DashboardSlice, string> = {
 	exposures: 'Exposures',
 	software: 'Software CVEs',
 	hygiene: 'Web hygiene',
+	posture: 'Domain posture',
 	shared: 'Shared across targets',
 	activity: 'Activity',
 	programs: 'Programs',
@@ -61,7 +63,9 @@ export interface TakeoverSignal {
 export interface SpoofableDomain {
 	target_id: string;
 	target_value: string;
+	zone: string;
 	reason: string;
+	check: string;
 }
 
 export interface SpoofableSignal {

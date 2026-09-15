@@ -91,4 +91,5 @@ markers = [
     "pipeline: scan orchestration and stage behaviour",
     "api: exercised through the HTTP surface",
     "hygiene: hardening checks read off stored responses",
+    "posture: sender, mail and zone checks read from DNS",
 ]

@@ -1,4 +1,5 @@
 import { checkLabel } from '$lib/config/hygiene';
+import { checkLabel as postureLabel } from '$lib/config/domain-posture';
 import { STATUS_CLASSES, statusClassLabel } from '$lib/config/endpoints';
 import type { SubdomainRead } from '$lib/types/subdomain';
 import type { HttpAssetRead } from '$lib/types/http-asset';
@@ -35,6 +36,7 @@ export interface WebAssetQuery {
 	service: string[];
 	cert: string[];
 	hygiene: string[];
+	posture: string[];
 	source: string[];
 	cdn: 'any' | 'yes' | 'no';
 	waf: 'any' | 'present' | 'none';
@@ -52,6 +54,7 @@ export function emptyQuery(): WebAssetQuery {
 		service: [],
 		cert: [],
 		hygiene: [],
+		posture: [],
 		source: [],
 		cdn: 'any',
 		waf: 'any',
@@ -69,6 +72,7 @@ export function activeFacetCount(q: WebAssetQuery): number {
 		q.service.length +
 		q.cert.length +
 		q.hygiene.length +
+		q.posture.length +
 		q.source.length +
 		(q.cdn !== 'any' ? 1 : 0) +
 		(q.waf !== 'any' ? 1 : 0) +
@@ -108,7 +112,7 @@ const CERT_CHIP: Record<string, string> = {
 	valid: 'Cert valid'
 };
 
-type ListKey = 'tech' | 'service' | 'cert' | 'hygiene' | 'source';
+type ListKey = 'tech' | 'service' | 'cert' | 'hygiene' | 'posture' | 'source';
 
 export function queryChips(q: WebAssetQuery): FilterChip[] {
 	const chips: FilterChip[] = [];
@@ -124,6 +128,7 @@ export function queryChips(q: WebAssetQuery): FilterChip[] {
 	list('service', (v) => `Service ${v}`);
 	list('cert', (v) => CERT_CHIP[v] ?? v);
 	list('hygiene', (v) => checkLabel(v));
+	list('posture', (v) => postureLabel(v));
 	list('source', (v) => `Source ${v}`);
 	if (q.cdn !== 'any')
 		chips.push({
@@ -187,6 +192,7 @@ export interface SubdomainFilter {
 	services: string[];
 	cert: string[];
 	hygiene: string[];
+	posture: string[];
 	sources: string[];
 	cdn: 'any' | 'yes' | 'no';
 	waf: 'any' | 'present' | 'none';
@@ -214,6 +220,7 @@ export interface SubdomainFacetSet {
 	source: Facet[];
 	cert: Facet[];
 	hygiene: Facet[];
+	posture: Facet[];
 }
 
 export interface HygieneCheckCount {
@@ -336,6 +343,7 @@ export function compileQuery(
 		services: [...q.service],
 		cert: [...q.cert],
 		hygiene: [...q.hygiene],
+		posture: [...q.posture],
 		sources: [...q.source],
 		cdn: q.cdn,
 		waf: q.waf,

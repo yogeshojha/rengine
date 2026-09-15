@@ -143,6 +143,7 @@ _STAGE_COUNT_LABELS: dict[str, tuple[str, str]] = {
     "known_ports": _noun(SurfaceDimension.SERVICES, before="known"),
     "new": ("new", "new"),
     "open_ports": _noun(SurfaceDimension.SERVICES, before="open"),
+    "posture_issues": ("posture check failing", "posture checks failing"),
     "probed": _noun(SurfaceDimension.WEB_ASSETS, after="probed"),
     "ptr": ("PTR record", "PTR records"),
     "scanned": _noun(SurfaceDimension.IPS, after="scanned"),
@@ -156,6 +157,7 @@ _STAGE_COUNT_LABELS: dict[str, tuple[str, str]] = {
     "waf": ("firewall identified", "firewalls identified"),
     "web_services": _noun(SurfaceDimension.SERVICES, before="web"),
     "whois": ("WHOIS record", "WHOIS records"),
+    "zones": ("zone checked", "zones checked"),
 }
 
 
@@ -179,6 +181,7 @@ class ScanDeltas:
     vulnerability_counts: dict[str, int] = field(default_factory=dict)
     kev: int = 0
     dropped_hosts: int = 0
+    posture_regressions: int = 0
 
     @property
     def critical(self) -> int:
@@ -196,6 +199,7 @@ class ScanDeltas:
             or self.new_services
             or self.new_vulnerabilities
             or self.dropped_hosts
+            or self.posture_regressions
         )
 
 
@@ -225,6 +229,8 @@ def _digest_title(target: str, deltas: ScanDeltas) -> str:
             deltas.new_vulnerabilities,
             *_noun(SurfaceDimension.VULNERABILITIES, before="new"),
         )
+    elif deltas.posture_regressions:
+        head = "Sender policy weakened"
     elif deltas.new_hosts or deltas.new_services:
         head = "New assets"
     else:
@@ -280,6 +286,11 @@ def _digest_body(counts: dict, deltas: ScanDeltas) -> str:
             f" {deltas.kev} {'is' if deltas.kev == 1 else 'are'} "
             f"known to be exploited in the wild."
         )
+    if deltas.posture_regressions:
+        body += (
+            f" {_count(deltas.posture_regressions, 'zone', 'zones')} lost SPF or "
+            "DMARC protection since the previous run."
+        )
     if deltas.dropped_hosts:
         body += (
             " Testing stopped on "
@@ -298,7 +309,12 @@ def scan_digest(
 
     if deltas.critical or deltas.kev:
         severity = NotificationSeverity.ERROR
-    elif deltas.severe or deltas.sensitive_services or deltas.dropped_hosts:
+    elif (
+        deltas.severe
+        or deltas.sensitive_services
+        or deltas.dropped_hosts
+        or deltas.posture_regressions
+    ):
         severity = NotificationSeverity.WARNING
     else:
         severity = NotificationSeverity.SUCCESS

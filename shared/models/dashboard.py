@@ -22,7 +22,9 @@ class TakeoverSignal(BaseModel):
 class SpoofableDomain(BaseModel):
     target_id: uuid.UUID
     target_value: str
+    zone: str = ""
     reason: str
+    check: str = ""
 
 
 class SpoofableSignal(BaseModel):

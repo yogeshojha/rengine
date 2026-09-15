@@ -58,6 +58,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetSpec[] = [
 	{ id: 'connectors', label: 'Browsing', row: 'programs', modes: BB },
 	{ id: 'certs', label: 'Certificates', row: 'posture', modes: CORP },
 	{ id: 'hygiene', label: 'Web hygiene', row: 'posture', modes: CORP },
+	{ id: 'domain-posture', label: 'Domain posture', row: 'posture', modes: CORP },
 	{ id: 'ownership', label: 'Ownership', row: 'posture', modes: CORP },
 	{ id: 'runs', label: 'Scan activity', row: 'scanning', modes: BOTH },
 	{ id: 'software', label: 'Software CVEs', row: 'scanning', modes: BOTH },

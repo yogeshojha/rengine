@@ -72,6 +72,7 @@ _HOST_FIELDS: tuple[WatchedField, ...] = (
     WatchedField("tls_not_after", "Certificate expiry", FieldKind.DATE.value),
     WatchedField("tech", "Technology", FieldKind.LIST.value),
     WatchedField("hygiene_issues", "Hygiene", FieldKind.LIST.value),
+    WatchedField("posture_issues", "Domain posture", FieldKind.LIST.value),
     WatchedField("resolved_ips", "Addresses", FieldKind.LIST.value),
 )
 
@@ -175,6 +176,7 @@ class ChangeSignal(StrEnum):
     AUTH_DROPPED = "auth_dropped"
     SERVICE_OPENED = "service_opened"
     CERT_EXPIRED = "cert_expired"
+    POSTURE_WEAKENED = "posture_weakened"
     WAF_GONE = "waf_gone"
     CDN_GONE = "cdn_gone"
     HOSTING_MOVED = "hosting_moved"
@@ -192,30 +194,32 @@ class ChangeSignal(StrEnum):
 
 
 # lower ranks first
-SIGNAL_RANK: dict[str, int] = {
-    ChangeSignal.KEV_APPEARED.value: 0,
-    ChangeSignal.CRITICAL_APPEARED.value: 1,
-    ChangeSignal.SENSITIVE_SERVICE_OPENED.value: 2,
-    ChangeSignal.AUTH_DROPPED.value: 3,
-    ChangeSignal.FINDING_APPEARED.value: 4,
-    ChangeSignal.SEVERITY_RAISED.value: 5,
-    ChangeSignal.CERT_EXPIRED.value: 6,
-    ChangeSignal.WAF_GONE.value: 7,
-    ChangeSignal.EXPOSED_HOST_APPEARED.value: 8,
-    ChangeSignal.HOSTING_MOVED.value: 9,
-    ChangeSignal.HOST_WOKE.value: 10,
-    ChangeSignal.CDN_GONE.value: 11,
-    ChangeSignal.SERVICE_OPENED.value: 12,
-    ChangeSignal.BODY_CHANGED.value: 13,
-    ChangeSignal.HOST_APPEARED.value: 14,
-    ChangeSignal.ADDRESS_APPEARED.value: 15,
-    ChangeSignal.ENDPOINT_APPEARED.value: 16,
-    ChangeSignal.ATTRIBUTES_CHANGED.value: 17,
-    ChangeSignal.FINDING_GONE.value: 18,
-    ChangeSignal.SERVICE_CLOSED.value: 19,
-    ChangeSignal.HOST_GONE.value: 20,
-    ChangeSignal.ASSET_GONE.value: 21,
-}
+_SIGNAL_ORDER: tuple[str, ...] = (
+    ChangeSignal.KEV_APPEARED.value,
+    ChangeSignal.CRITICAL_APPEARED.value,
+    ChangeSignal.SENSITIVE_SERVICE_OPENED.value,
+    ChangeSignal.AUTH_DROPPED.value,
+    ChangeSignal.FINDING_APPEARED.value,
+    ChangeSignal.SEVERITY_RAISED.value,
+    ChangeSignal.CERT_EXPIRED.value,
+    ChangeSignal.POSTURE_WEAKENED.value,
+    ChangeSignal.WAF_GONE.value,
+    ChangeSignal.EXPOSED_HOST_APPEARED.value,
+    ChangeSignal.HOSTING_MOVED.value,
+    ChangeSignal.HOST_WOKE.value,
+    ChangeSignal.CDN_GONE.value,
+    ChangeSignal.SERVICE_OPENED.value,
+    ChangeSignal.BODY_CHANGED.value,
+    ChangeSignal.HOST_APPEARED.value,
+    ChangeSignal.ADDRESS_APPEARED.value,
+    ChangeSignal.ENDPOINT_APPEARED.value,
+    ChangeSignal.ATTRIBUTES_CHANGED.value,
+    ChangeSignal.FINDING_GONE.value,
+    ChangeSignal.SERVICE_CLOSED.value,
+    ChangeSignal.HOST_GONE.value,
+    ChangeSignal.ASSET_GONE.value,
+)
+SIGNAL_RANK: dict[str, int] = {name: i for i, name in enumerate(_SIGNAL_ORDER)}
 
 # ---------- run-level facets ----------
 

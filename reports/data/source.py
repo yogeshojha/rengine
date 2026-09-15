@@ -23,8 +23,11 @@ from reports.data.models import (
     HygieneCount,
     HygieneHost,
     HygieneRollup,
+    PostureRollup,
+    PostureZone,
     Service,
 )
+from shared.definitions import domain_posture as posture_defs
 from shared.definitions import hygiene as hygiene_defs
 from shared.definitions.ports import SENSITIVE_PORTS, ServiceClass
 from shared.definitions.reports import MAX_REPORT_ROWS, ReportScope
@@ -35,6 +38,7 @@ from shared.definitions.vulnerabilities import (
     severity_rank,
 )
 from shared.enums.scan import ScanStatus
+from shared.models.domain_posture import DomainPosture
 from shared.models.endpoint import Endpoint
 from shared.models.http_asset import HttpAsset
 from shared.models.ip_address import IpAddress
@@ -794,6 +798,84 @@ class ReportSource:
                 )
                 for name, keys in host_rows
             ],
+        )
+
+    # ---------- domain posture ----------
+
+    @cached_property
+    def domain_posture(self) -> PostureRollup | None:
+        scan_id = self.scan.id if self.is_scan_scope and self.scan else None
+        if scan_id is None:
+            row = self.session.execute(
+                select(DomainPosture.scan_id)
+                .join(Scan, Scan.id == DomainPosture.scan_id)
+                .where(DomainPosture.target_id == self.target.id)
+                .group_by(DomainPosture.scan_id)
+                .order_by(func.max(Scan.created_at).desc())
+                .limit(1)
+            ).first()
+            scan_id = row[0] if row else None
+        if scan_id is None:
+            return None
+        rows = (
+            self.session.execute(
+                select(DomainPosture)
+                .where(DomainPosture.scan_id == scan_id)
+                .order_by(DomainPosture.hosts.desc(), DomainPosture.zone)
+            )
+            .scalars()
+            .all()
+        )
+        if not rows:
+            return None
+        warning_keys = set(posture_defs.WARNING_KEYS)
+        spoof_keys = set(posture_defs.SPOOFABLE_KEYS)
+        failing: dict[str, int] = dict.fromkeys(posture_defs.CHECK_KEYS, 0)
+        applicable: dict[str, int] = dict.fromkeys(posture_defs.CHECK_KEYS, 0)
+        warning = info = clean = spoofable = 0
+        labels = {c.key: c.label for c in posture_defs.CHECKS}
+        order = posture_defs.CHECK_ORDER
+        zones: list[PostureZone] = []
+        for r in rows:
+            issues = set(r.posture_issues or [])
+            for key in r.posture_checked or []:
+                if key in applicable:
+                    applicable[key] += 1
+            for key in issues:
+                if key in failing:
+                    failing[key] += 1
+            if issues & warning_keys:
+                warning += 1
+            elif issues:
+                info += 1
+            else:
+                clean += 1
+            if issues & spoof_keys:
+                spoofable += 1
+            zones.append(
+                PostureZone(
+                    zone=r.zone,
+                    hosts=r.hosts,
+                    spf_all=r.spf_all,
+                    dmarc_policy=r.dmarc_policy,
+                    dnssec=r.dnssec,
+                    checks=[
+                        labels.get(k, k)
+                        for k in sorted(issues, key=lambda k: order.get(k, 99))
+                    ],
+                )
+            )
+        return PostureRollup(
+            evaluated=len(rows),
+            clean=clean,
+            warning=warning,
+            info=info,
+            spoofable=spoofable,
+            checks=[
+                HygieneCount(key=key, failing=failing[key], applicable=applicable[key])
+                for key in posture_defs.CHECK_KEYS
+            ],
+            zones=zones[:MAX_REPORT_ROWS],
         )
 
     # ---------- certificates ----------

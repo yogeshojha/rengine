@@ -1,0 +1,37 @@
+<p class="block muted small">{{ evaluated|num }} zones were checked. {{ warning|num }} fail a warning-level check, {{ info|num }} fail an informational check and {{ clean|num }} pass every applicable check.{% if spoofable %} {{ spoofable|num }} can be forged as a sender.{% endif %}</p>
+<table class="table table--fixed">
+  <thead><tr><th>Check</th><th style="width:30mm">Group</th><th class="num" style="width:18mm">Failing</th><th class="num" style="width:20mm">Applicable</th><th style="width:30mm">Share</th></tr></thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td class="micro wrap"><span class="badge badge--{{ 'medium' if row.tone == 'warning' else 'info' }}">{{ row.label }}</span><div class="micro muted" style="margin-top:0.6mm">{{ row.help }}</div></td>
+      <td class="micro muted">{{ row.group }}</td>
+      <td class="num micro">{% if row.failing %}{{ row.failing|num }}{% else %}<span class="faint">0</span>{% endif %}</td>
+      <td class="num micro muted">{{ row.applicable|num }}</td>
+      <td class="micro"><div class="meter"><div class="meter__track"><div class="meter__fill" style="width:{{ row.share }}%"></div></div><div class="meter__value">{{ row.share }}%</div></div></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if zones %}
+<div class="sub">
+  <div class="label block">Zones</div>
+  <table class="table table--fixed">
+    <thead><tr><th>Zone</th><th class="num" style="width:16mm">Hosts</th><th style="width:16mm">SPF</th><th style="width:20mm">DMARC</th><th style="width:18mm">DNSSEC</th><th style="width:70mm">Failing checks</th></tr></thead>
+    <tbody>
+      {% for z in zones %}
+      <tr>
+        <td class="micro mono-break wrap">{{ z.zone }}</td>
+        <td class="num micro muted">{{ z.hosts|num }}</td>
+        <td class="micro">{{ z.spf }}</td>
+        <td class="micro">{{ z.dmarc }}</td>
+        <td class="micro">{{ z.dnssec }}</td>
+        <td class="micro wrap">{{ z.checks|join(', ') if z.checks else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if hidden %}<p class="micro faint" style="margin-top:1.4mm">{{ hidden|num }} further zones are not listed.</p>{% endif %}
+</div>
+{% endif %}

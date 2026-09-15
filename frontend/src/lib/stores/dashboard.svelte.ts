@@ -1,5 +1,6 @@
 import { dashboardApi } from '$lib/api/dashboard';
 import { subdomainsApi } from '$lib/api/subdomains';
+import { domainPostureApi } from '$lib/api/domain-posture';
 import { interestApi } from '$lib/api/interest';
 import { ipsApi, softwareApi } from '$lib/api/scan-results';
 import { threatIntelApi } from '$lib/api/threat-intel';
@@ -11,6 +12,7 @@ import type { InterestPage } from '$lib/types/interest';
 import type { IntelChange, ThreatIntelStatus } from '$lib/types/threat-intel';
 import type { SoftwareCoverage, SoftwareFacets } from '$lib/types/software';
 import type { HygieneSummary } from '$lib/utilities/scan-insights';
+import type { DomainPostureSummary } from '$lib/types/domain-posture';
 import type { CorrelationGraph } from '$lib/types/correlation';
 import { SvelteSet } from 'svelte/reactivity';
 import {
@@ -55,6 +57,8 @@ function createDashboardStore() {
 	let exposures = $state<InterestPage | null>(null);
 	let software = $state<{ facets: SoftwareFacets; coverage: SoftwareCoverage } | null>(null);
 	let hygiene = $state<HygieneSummary | null>(null);
+	let posture = $state<DomainPostureSummary | null>(null);
+	let postureHosts = $state<HygieneSummary | null>(null);
 	let shared = $state<CorrelationGraph | null>(null);
 	let activity = $state<DashboardActivity | null>(null);
 	let programs = $state<DashboardPrograms | null>(null);
@@ -161,6 +165,8 @@ function createDashboardStore() {
 				(v) => (software = v)
 			),
 			settle('hygiene', subdomainsApi.hygiene(pid, ''), (v) => (hygiene = v)),
+			settle('posture', domainPostureApi.project(pid), (v) => (posture = v)),
+			settle('posture', subdomainsApi.posture(pid, ''), (v) => (postureHosts = v)),
 			settle('shared', subdomainsApi.correlationGraph(pid, ''), (v) => (shared = v)),
 			settle('activity', dashboardApi.activity(pid, win), (v) => (activity = v)),
 			bounty
@@ -182,6 +188,8 @@ function createDashboardStore() {
 		exposures = null;
 		software = null;
 		hygiene = null;
+		posture = null;
+		postureHosts = null;
 		shared = null;
 		activity = null;
 		programs = null;
@@ -224,6 +232,12 @@ function createDashboardStore() {
 		},
 		get hygiene() {
 			return hygiene;
+		},
+		get posture() {
+			return posture;
+		},
+		get postureHosts() {
+			return postureHosts;
 		},
 		get shared() {
 			return shared;

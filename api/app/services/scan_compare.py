@@ -55,6 +55,7 @@ from shared.definitions.compare import (
     Refusal,
     Tone,
 )
+from shared.definitions.domain_posture import SPOOFABLE_KEYS
 from shared.definitions.ports import SENSITIVE_PORTS
 from shared.definitions.surface import (
     SURFACE_LABELS,
@@ -308,8 +309,7 @@ def _differs(a, b, names: list[str]):
         if isinstance(ca.type, JSON):
             ja, jb = cast(ca, JSONB), cast(cb, JSONB)
             same = and_(ja.contains(jb), jb.contains(ja))
-            both_null = and_(ca.is_(None), cb.is_(None))
-            parts.append(not_(or_(both_null, func.coalesce(same, false()))))
+            parts.append(and_(ca.isnot(None), cb.isnot(None), not_(same)))
         else:
             parts.append(_blank(ca).is_distinct_from(_blank(cb)))
     return or_(*parts) if parts else false()
@@ -417,6 +417,28 @@ def _rules(spec: DimSpec, a, b, appeared, gone, both):
         (
             ChangeSignal.CERT_EXPIRED,
             and_(both, b.c.tls_expired.is_(True), a.c.tls_expired.isnot(True)),
+        ),
+        (
+            ChangeSignal.POSTURE_WEAKENED,
+            and_(
+                both,
+                or_(
+                    *[
+                        and_(
+                            func.jsonb_exists(cast(b.c.posture_issues, JSONB), key),
+                            not_(
+                                func.coalesce(
+                                    func.jsonb_exists(
+                                        cast(a.c.posture_issues, JSONB), key
+                                    ),
+                                    false(),
+                                )
+                            ),
+                        )
+                        for key in SPOOFABLE_KEYS
+                    ]
+                ),
+            ),
         ),
         (
             ChangeSignal.WAF_GONE,

@@ -22,6 +22,7 @@
 	import { Capability } from '$lib/config/capabilities';
 	import { scansApi } from '$lib/api/scans';
 	import { subdomainsApi } from '$lib/api/subdomains';
+	import { domainPostureApi } from '$lib/api/domain-posture';
 	import { ipsApi, servicesApi, softwareApi } from '$lib/api/scan-results';
 	import { vulnerabilitiesApi } from '$lib/api/vulnerabilities';
 	import { interestApi } from '$lib/api/interest';
@@ -46,6 +47,7 @@
 		DashboardFunnel
 	} from '$lib/types/dashboard';
 	import type { Facet, HygieneSummary } from '$lib/utilities/scan-insights';
+	import type { DomainPostureSummary } from '$lib/types/domain-posture';
 	import type { IpFacetSet } from '$lib/utilities/ip-groups';
 	import type { ScanExposure } from '$lib/utilities/services';
 	import type { ScanVulnerabilities } from '$lib/utilities/vulns';
@@ -77,6 +79,7 @@
 	import ServicesCell from '$lib/components/dashboard/services-cell.svelte';
 	import TechCell from '$lib/components/dashboard/tech-cell.svelte';
 	import HygieneCell from '$lib/components/dashboard/hygiene-cell.svelte';
+	import DomainPostureCell from '$lib/components/dashboard/domain-posture-cell.svelte';
 	import SoftwareCell from '$lib/components/dashboard/software-cell.svelte';
 	import CertsCell from '$lib/components/dashboard/certs-cell.svelte';
 	import ExposuresCell from '$lib/components/dashboard/exposures-cell.svelte';
@@ -162,6 +165,8 @@
 	let hosting = $state<HostingComposition | null>(null);
 	let tech = $state<Facet[] | null>(null);
 	let hygiene = $state<HygieneSummary | null>(null);
+	let posture = $state<DomainPostureSummary | null>(null);
+	let postureHosts = $state<HygieneSummary | null>(null);
 	let certBuckets = $state<DashboardCertBucket[] | null>(null);
 	let funnel = $state<DashboardFunnel | null>(null);
 	let exposures = $state<InterestPage | null>(null);
@@ -279,6 +284,7 @@
 	let showServices = $derived(!!exposure && exposure.services > 0 && !!servicesScanId);
 	let showTech = $derived((tech?.length ?? 0) > 0);
 	let showHygiene = $derived((hygiene?.evaluated ?? 0) > 0);
+	let showPostureZones = $derived((posture?.evaluated ?? 0) > 0);
 	let showSoftware = $derived((software?.facets.product.length ?? 0) > 0);
 	let showCerts = $derived(!!certBuckets && certBuckets.some((b) => b.count > 0));
 	let showExposures = $derived((exposures?.summary.total ?? 0) > 0);
@@ -288,6 +294,7 @@
 			showServices && 'services',
 			showTech && 'tech',
 			showHygiene && 'hygiene',
+			showPostureZones && 'domain-posture',
 			showSoftware && 'software',
 			showCerts && 'certs',
 			showExposures && 'exposures'
@@ -496,6 +503,12 @@
 				(t) => (tech = t)
 			),
 			settle('Web hygiene', subdomainsApi.hygiene(project.id, scanId), (h) => (hygiene = h)),
+			settle('Domain posture', domainPostureApi.target(project.id, targetId), (p) => (posture = p)),
+			settle(
+				'Domain posture',
+				subdomainsApi.posture(project.id, scanId),
+				(p) => (postureHosts = p)
+			),
 			settle(
 				'Certificates',
 				subdomainsApi.insights(project.id, scanId).then((i) => certBucketsOf(i.cert_buckets)),
@@ -1023,6 +1036,13 @@
 									<TechCell {tech} scanId={webScanId} class={cls} />
 								{:else if key === 'hygiene'}
 									<HygieneCell {hygiene} scanId={webScanId} class={cls} />
+								{:else if key === 'domain-posture'}
+									<DomainPostureCell
+										summary={posture}
+										hosts={postureHosts}
+										scanId={posture?.scan_id}
+										class={cls}
+									/>
 								{:else if key === 'software'}
 									<SoftwareCell {software} scanId={softwareScanId} class={cls} />
 								{:else if key === 'certs' && certBuckets}

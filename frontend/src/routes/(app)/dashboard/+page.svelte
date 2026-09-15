@@ -35,6 +35,7 @@
 	import BrowsingCell from '$lib/components/dashboard/browsing-cell.svelte';
 	import CertsCell from '$lib/components/dashboard/certs-cell.svelte';
 	import HygieneCell from '$lib/components/dashboard/hygiene-cell.svelte';
+	import DomainPostureCell from '$lib/components/dashboard/domain-posture-cell.svelte';
 	import OwnershipCell from '$lib/components/dashboard/ownership-cell.svelte';
 	import RunsCell from '$lib/components/dashboard/runs-cell.svelte';
 	import SoftwareCell from '$lib/components/dashboard/software-cell.svelte';
@@ -330,7 +331,7 @@
 		{/if}
 
 		<!-- posture (corporate) -->
-		{#if show('certs') || show('hygiene') || show('ownership')}
+		{#if show('certs') || show('hygiene') || show('domain-posture') || show('ownership')}
 			<div
 				class="grid grid-cols-[repeat(auto-fit,minmax(18rem,1fr))] overflow-hidden rounded-xl border bg-card"
 			>
@@ -342,6 +343,13 @@
 				{/if}
 				{#if show('hygiene') && (dashboardStore.hygiene?.evaluated ?? 0) > 0}
 					<HygieneCell hygiene={dashboardStore.hygiene} loading={extras} />
+				{/if}
+				{#if show('domain-posture') && (dashboardStore.posture?.evaluated ?? 0) > 0}
+					<DomainPostureCell
+						summary={dashboardStore.posture}
+						hosts={dashboardStore.postureHosts}
+						loading={extras}
+					/>
 				{/if}
 				{#if show('ownership')}
 					<OwnershipCell

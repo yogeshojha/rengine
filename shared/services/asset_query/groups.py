@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.definitions.asset_query import MAX_GROUPS
 from shared.definitions.correlation import CorrelationKind
+from shared.definitions.domain_posture import CHECK_BY_KEY as POSTURE_BY_KEY
 from shared.definitions.endpoints import (
     CLASS_LABELS,
     INTEREST_LABELS,
@@ -78,6 +79,14 @@ _EXTRA_DIMENSIONS: dict[str, tuple[Callable[[], Any], str, str, bool]] = {
         ":",
         False,
     ),
+    "posture": (
+        lambda: func.jsonb_array_elements_text(
+            cast(Subdomain.posture_issues, JSONB)
+        ).column_valued("posture_value"),
+        "posture",
+        ":",
+        False,
+    ),
 }
 _DIMENSIONS: dict[str, tuple[Callable[[], Any], str, str, bool]] = {
     **{
@@ -95,6 +104,9 @@ def _group_label(key: str, raw: str) -> str:
         return _STATUS_LABELS.get(raw, raw)
     if key == "hygiene":
         spec = CHECK_BY_KEY.get(raw)
+        return spec.label if spec else raw
+    if key == "posture":
+        spec = POSTURE_BY_KEY.get(raw)
         return spec.label if spec else raw
     return raw
 

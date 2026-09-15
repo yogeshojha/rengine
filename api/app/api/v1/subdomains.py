@@ -279,6 +279,24 @@ async def subdomain_hygiene(
     )
 
 
+@router.get("/posture", response_model=HygieneSummary)
+async def subdomain_posture(
+    _current_user: CurrentUser,
+    service: Annotated[SubdomainService, Depends(get_service)],
+    scope: WebAssetScope,
+    project_id: Annotated[UUID, Query(description="Project ID")],
+):
+    """Hosts whose zone fails each domain posture check."""
+    return await lead_cache.cached(
+        service.session,
+        name="posture_hosts",
+        scans=scope.ids,
+        facets=str(project_id),
+        model=HygieneSummary,
+        build=lambda: service.posture(project_id=project_id, scope=scope),
+    )
+
+
 @router.get("/correlation", response_model=SubdomainCorrelation)
 async def subdomain_correlation(
     _current_user: CurrentUser,

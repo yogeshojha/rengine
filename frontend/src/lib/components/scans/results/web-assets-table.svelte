@@ -110,7 +110,8 @@
 		service: [],
 		source: [],
 		cert: [],
-		hygiene: []
+		hygiene: [],
+		posture: []
 	};
 
 	const initial = appPage.url.searchParams;

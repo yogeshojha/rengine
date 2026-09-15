@@ -35,6 +35,8 @@ export interface SubdomainRead {
 	screenshot_path: string | null;
 	hygiene_issues: string[];
 	hygiene_checked: string[];
+	posture_issues: string[];
+	posture_checked: string[];
 	ports?: number[];
 	endpoint_count?: number;
 	title_count?: number;

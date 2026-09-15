@@ -10,6 +10,7 @@ from app.api.v1 import (
     connectors,
     cves,
     dashboard,
+    domain_posture,
     endpoints,
     events,
     exports,
@@ -71,6 +72,7 @@ router.include_router(scan_contexts.router)
 router.include_router(scan_schedules.router)
 router.include_router(scans.router)
 router.include_router(subdomains.router)
+router.include_router(domain_posture.router)
 router.include_router(surface.router)
 router.include_router(mcp.router)
 router.include_router(connectors.router)

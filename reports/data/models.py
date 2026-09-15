@@ -220,6 +220,27 @@ class HygieneRollup:
 
 
 @dataclass
+class PostureZone:
+    zone: str
+    hosts: int = 0
+    spf_all: str | None = None
+    dmarc_policy: str | None = None
+    dnssec: str = "unknown"
+    checks: list[str] = field(default_factory=list)
+
+
+@dataclass
+class PostureRollup:
+    evaluated: int = 0
+    clean: int = 0
+    warning: int = 0
+    info: int = 0
+    spoofable: int = 0
+    checks: list[HygieneCount] = field(default_factory=list)
+    zones: list[PostureZone] = field(default_factory=list)
+
+
+@dataclass
 class Certificate:
     host: str
     subject: str | None = None

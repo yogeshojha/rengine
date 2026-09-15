@@ -66,6 +66,12 @@ class Subdomain(SQLModel, table=True):
     hygiene_checked: list | None = Field(
         default=None, sa_column=Column(JSON(none_as_null=True), nullable=True)
     )
+    posture_issues: list | None = Field(
+        default=None, sa_column=Column(JSON(none_as_null=True), nullable=True)
+    )
+    posture_checked: list | None = Field(
+        default=None, sa_column=Column(JSON(none_as_null=True), nullable=True)
+    )
 
     interest_score: int = Field(default=0, index=True)
     interest_band: str | None = Field(default=None, max_length=16, index=True)
@@ -110,6 +116,8 @@ class SubdomainRead(BaseModel):
     screenshot_path: str | None = None
     hygiene_issues: list[str] = Field(default_factory=list)
     hygiene_checked: list[str] = Field(default_factory=list)
+    posture_issues: list[str] = Field(default_factory=list)
+    posture_checked: list[str] = Field(default_factory=list)
     interest_score: int = 0
     interest_band: str | None = None
     interest_kinds: list[str] = Field(default_factory=list)
@@ -155,6 +163,7 @@ class SubdomainFilter(BaseModel):
     services: list[str] = Field(default_factory=list, max_length=200)
     cert: list[str] = Field(default_factory=list, max_length=10)
     hygiene: list[str] = Field(default_factory=list, max_length=40)
+    posture: list[str] = Field(default_factory=list, max_length=40)
     sources: list[str] = Field(default_factory=list, max_length=200)
     cdn: str = Field(default="any", max_length=10)
     waf: str = Field(default="any", max_length=20)
@@ -174,6 +183,7 @@ class SubdomainFilter(BaseModel):
             or self.services
             or self.cert
             or self.hygiene
+            or self.posture
             or self.sources
             or self.cdn != "any"
             or self.waf != "any"
@@ -219,6 +229,7 @@ class SubdomainFacets(BaseModel):
     source: list[Facet] = Field(default_factory=list)
     cert: list[Facet] = Field(default_factory=list)
     hygiene: list[Facet] = Field(default_factory=list)
+    posture: list[Facet] = Field(default_factory=list)
 
 
 class HygieneCheckCount(BaseModel):

@@ -41,6 +41,7 @@ from app.services.http_asset import HttpAssetService
 from app.services.ip_address import IpAddressService
 from app.services.port import PortService
 from app.services.target_names import target_names
+from shared.definitions import domain_posture as posture_defs
 from shared.definitions import hygiene as hygiene_defs
 from shared.definitions.asset_query import (
     COUNT_CAP,
@@ -54,6 +55,7 @@ from shared.definitions.correlation import (
     CORRELATION_RELATION_PHRASE,
     SCREENSHOT_DISTANCE,
 )
+from shared.definitions.interest import TONE_INFO, TONE_WARNING
 from shared.definitions.ports import SENSITIVE_PORTS, port_interest
 from shared.definitions.vulnerabilities import SEVERITY_ORDER
 from shared.logging import get_logger
@@ -219,6 +221,8 @@ class SubdomainService:
             screenshot_path=sub.screenshot_path,
             hygiene_issues=list(sub.hygiene_issues or []),
             hygiene_checked=list(sub.hygiene_checked or []),
+            posture_issues=list(sub.posture_issues or []),
+            posture_checked=list(sub.posture_checked or []),
             discovered_at=sub.discovered_at,
         )
 
@@ -791,6 +795,27 @@ class SubdomainService:
             if hygiene_counts[spec.key] > 0
         ]
 
+        posture_rows = await self.session.execute(
+            select(
+                *[
+                    func.count().filter(preds.posture_check(key)).label(key)
+                    for key in posture_defs.CHECK_KEYS
+                ]
+            )
+            .select_from(Subdomain)
+            .where(*reach)
+        )
+        posture_counts = posture_rows.one()._mapping
+        posture = [
+            Facet(
+                value=spec.key,
+                label=spec.label,
+                count=int(posture_counts[spec.key]),
+            )
+            for spec in posture_defs.CHECKS
+            if posture_counts[spec.key] > 0
+        ]
+
         service_rows = await self.session.execute(
             select(Port.service_name, func.count())
             .where(
@@ -814,6 +839,7 @@ class SubdomainService:
             source=source,
             cert=cert,
             hygiene=hygiene,
+            posture=posture,
         )
 
     async def hygiene(self, project_id: UUID, scope: ScopeLike) -> HygieneSummary:
@@ -879,6 +905,63 @@ class SubdomainService:
                     query=spec.query,
                 )
                 for spec in hygiene_defs.CHECKS
+            ],
+        )
+
+    async def posture(self, project_id: UUID, scope: ScopeLike) -> HygieneSummary:
+        """Hosts whose zone fails each check, over the hosts it applied to."""
+        scope = QueryScope.of(scope)
+        reach = (Subdomain.project_id == project_id, scope.match(Subdomain.scan_id))
+        issues = cast(Subdomain.posture_issues, JSONB)
+        checked = cast(Subdomain.posture_checked, JSONB)
+        columns = [
+            func.count().label("hosts"),
+            func.count()
+            .filter(Subdomain.posture_checked.isnot(None))
+            .label("evaluated"),
+            func.count().filter(Subdomain.posture_checked.is_(None)).label("pending"),
+            func.count()
+            .filter(
+                and_(
+                    func.jsonb_array_length(checked) > 0,
+                    func.jsonb_array_length(issues) == 0,
+                )
+            )
+            .label("clean"),
+            func.count().filter(preds.posture([TONE_WARNING])).label("warning"),
+            func.count().filter(preds.posture([TONE_INFO])).label("info"),
+        ]
+        for key in posture_defs.CHECK_KEYS:
+            columns.append(
+                func.count().filter(preds.posture_check(key)).label(f"f_{key}")
+            )
+            columns.append(
+                func.count().filter(preds.posture_applies(key)).label(f"a_{key}")
+            )
+        row = (
+            (
+                await self.session.execute(
+                    select(*columns).select_from(Subdomain).where(*reach)
+                )
+            )
+            .one()
+            ._mapping
+        )
+        return HygieneSummary(
+            hosts=int(row["hosts"]),
+            evaluated=int(row["evaluated"]),
+            pending=int(row["pending"]),
+            clean=int(row["clean"]),
+            warning=int(row["warning"]),
+            info=int(row["info"]),
+            checks=[
+                HygieneCheckCount(
+                    key=spec.key,
+                    failing=int(row[f"f_{spec.key}"]),
+                    applicable=int(row[f"a_{spec.key}"]),
+                    query=spec.query,
+                )
+                for spec in posture_defs.CHECKS
             ],
         )
 

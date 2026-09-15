@@ -23,6 +23,7 @@ from sqlalchemy.dialects.postgresql import BIT, JSONB
 from sqlalchemy.dialects.postgresql import array as pg_array
 from sqlalchemy.orm import aliased
 
+from shared.definitions import domain_posture as posture_defs
 from shared.definitions import hygiene as hygiene_defs
 from shared.definitions.correlation import SCREENSHOT_DISTANCE
 from shared.definitions.endpoints import ARCHIVE_SOURCES, LINKED_SOURCES
@@ -773,3 +774,41 @@ def hygiene_check(key: str):
 
 def hygiene_applies(key: str):
     return func.jsonb_exists(cast(Subdomain.hygiene_checked, JSONB), key)
+
+
+# ---------- domain posture ----------
+
+
+def posture_clean():
+    return and_(
+        hygiene_length(Subdomain.posture_checked) > 0,
+        hygiene_length(Subdomain.posture_issues) == 0,
+    )
+
+
+def posture(values: list[str]):
+    """Hosts whose zone fails any of the checks."""
+    keys: set[str] = set()
+    parts = []
+    issues = cast(Subdomain.posture_issues, JSONB)
+    for raw in values:
+        value = raw.lower()
+        if value == posture_defs.ANY:
+            parts.append(hygiene_length(Subdomain.posture_issues) > 0)
+        elif value == posture_defs.NONE:
+            parts.append(posture_clean())
+        elif value in posture_defs.KEYS_BY_TONE:
+            keys.update(posture_defs.KEYS_BY_TONE[value])
+        else:
+            keys.add(value)
+    if keys:
+        parts.append(func.jsonb_exists_any(issues, pg_array(sorted(keys))))
+    return or_(*parts) if parts else false()
+
+
+def posture_check(key: str):
+    return func.jsonb_exists(cast(Subdomain.posture_issues, JSONB), key)
+
+
+def posture_applies(key: str):
+    return func.jsonb_exists(cast(Subdomain.posture_checked, JSONB), key)

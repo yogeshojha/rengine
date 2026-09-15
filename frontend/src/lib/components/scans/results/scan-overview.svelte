@@ -14,7 +14,9 @@
 	import VulnerabilityPanel from './overview/vulnerability-panel.svelte';
 	import HostingPanel from './overview/hosting-panel.svelte';
 	import HygienePanel from './overview/hygiene-panel.svelte';
+	import DomainPosturePanel from './overview/domain-posture-panel.svelte';
 	import { subdomainsApi } from '$lib/api/subdomains';
+	import { domainPostureApi } from '$lib/api/domain-posture';
 	import { endpointsApi, servicesApi } from '$lib/api/scan-results';
 	import { vulnerabilitiesApi } from '$lib/api/vulnerabilities';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
@@ -31,6 +33,7 @@
 	import type { ScanVulnerabilities } from '$lib/utilities/vulns';
 	import type { OriginExposure } from '$lib/utilities/origins';
 	import type { HostingComposition } from '$lib/types/hosting';
+	import type { DomainPostureSummary } from '$lib/types/domain-posture';
 
 	interface Props {
 		scan: ScanRead;
@@ -149,6 +152,15 @@
 			.catch(() => (hygiene = null));
 	}
 
+	let posture = $state<DomainPostureSummary | null>(null);
+	function loadPosture() {
+		if (!scanId || !projectId) return;
+		domainPostureApi
+			.scan(projectId, scanId)
+			.then((d) => (posture = d))
+			.catch(() => (posture = null));
+	}
+
 	let hosting = $state<HostingComposition | null>(null);
 	function loadHosting() {
 		if (!scanId || !projectId) return;
@@ -171,6 +183,7 @@
 		loadRelated();
 		loadHosting();
 		loadHygiene();
+		loadPosture();
 		loadExposure();
 		loadStructure();
 		loadVulns();
@@ -267,6 +280,7 @@
 			<HostingPanel {hosting} onPick={(q) => onTab(WEB.tab, q)} />
 			<PosturePanel {insights} {loading} {isDomain} {nounPlural} {onFilter} />
 			<HygienePanel summary={hygiene} loading={loading && !hygiene} {onFilter} />
+			<DomainPosturePanel summary={posture} loading={loading && !posture} {onFilter} />
 			<ExposurePanel {exposure} {loading} {onTab} />
 			<StructurePanel {structure} {loading} {onTab} />
 			<CompositionPanel {insights} {loading} {scan} {scanId} {projectId} {onFilter} />

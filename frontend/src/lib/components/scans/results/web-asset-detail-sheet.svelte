@@ -17,6 +17,8 @@
 	import Filter from '@lucide/svelte/icons/filter';
 	import ImageOff from '@lucide/svelte/icons/image-off';
 	import Layers from '@lucide/svelte/icons/layers';
+	import MailWarning from '@lucide/svelte/icons/mail-warning';
+	import MailCheck from '@lucide/svelte/icons/mail-check';
 	import CrossLinks from '$lib/components/cross-links.svelte';
 	import Fingerprint from '@lucide/svelte/icons/fingerprint';
 	import CornerDownRight from '@lucide/svelte/icons/corner-down-right';
@@ -24,6 +26,12 @@
 	import Check from '@lucide/svelte/icons/check';
 	import X from '@lucide/svelte/icons/x';
 	import type { IconComponent } from '$lib/config/icons';
+	import {
+		CHECK_BY_KEY as POSTURE_BY_KEY,
+		TONE_DOT as POSTURE_DOT,
+		postureQuery,
+		sortChecks as sortPosture
+	} from '$lib/config/domain-posture';
 	import {
 		CHECK_BY_KEY,
 		GROUP_ICONS,
@@ -212,6 +220,8 @@
 	let headerEntries = $derived(detail ? Object.entries(detail.response_headers ?? {}) : []);
 	let hygieneIssues = $derived(sortChecks(sub?.hygiene_issues ?? []));
 	let hygieneChecked = $derived(sub?.hygiene_checked ?? []);
+	let postureIssues = $derived(sortPosture(sub?.posture_issues ?? []));
+	let postureChecked = $derived(sub?.posture_checked ?? []);
 	let verdicts = $derived(detail?.hygiene ?? []);
 	let verdictFailing = $derived(verdicts.filter((v) => v.failed).length);
 	let evidenceByKey = $derived<Record<string, string>>(
@@ -729,6 +739,57 @@
 								{#if hostAssets.length > 1}
 									<p class="text-xs text-muted-foreground">
 										Across {hostAssets.length} web services on this host.
+									</p>
+								{/if}
+							</section>
+						{/if}
+
+						{#if postureChecked.length}
+							<section class="flex flex-col gap-2">
+								{@render heading(postureIssues.length ? MailWarning : MailCheck, 'Domain posture')}
+								{#if postureIssues.length}
+									<ul class="flex flex-col divide-y divide-border/60">
+										{#each postureIssues as key (key)}
+											{@const spec = POSTURE_BY_KEY[key]}
+											<li class="flex items-start gap-2 py-2">
+												<span class="flex h-5 shrink-0 items-center">
+													<span
+														class="size-1.5 rounded-full {spec
+															? POSTURE_DOT[spec.tone]
+															: 'bg-muted'}"
+														aria-hidden="true"
+													></span>
+												</span>
+												<div class="min-w-0 flex-1">
+													<Tooltip.Root>
+														<Tooltip.Trigger>
+															{#snippet child({ props })}
+																<button
+																	{...props}
+																	type="button"
+																	class="text-left text-sm leading-5 hover:underline"
+																	onclick={() => onFilter?.(postureQuery(key))}
+																>
+																	{spec?.label ?? key}
+																</button>
+															{/snippet}
+														</Tooltip.Trigger>
+														<Tooltip.Content class="flex max-w-xs items-center gap-1.5">
+															{spec?.help ?? 'Filter table'}
+															<Fingerprint class="size-3 opacity-60" />
+															<span class="font-mono">{postureQuery(key)}</span>
+														</Tooltip.Content>
+													</Tooltip.Root>
+													{#if spec}
+														<p class="text-xs text-muted-foreground">{spec.fix}</p>
+													{/if}
+												</div>
+											</li>
+										{/each}
+									</ul>
+								{:else}
+									<p class="text-xs text-muted-foreground">
+										The zone passes all {postureChecked.length} checks that apply.
 									</p>
 								{/if}
 							</section>

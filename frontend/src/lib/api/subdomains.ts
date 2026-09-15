@@ -130,6 +130,10 @@ export const subdomainsApi = {
 		return api.get<HygieneSummary>(`/subdomains/hygiene?${scopeQuery({ projectId, scanId })}`);
 	},
 
+	async posture(projectId: string, scanId: string): Promise<HygieneSummary> {
+		return api.get<HygieneSummary>(`/subdomains/posture?${scopeQuery({ projectId, scanId })}`);
+	},
+
 	async insights(projectId: string, scanId: string): Promise<SubdomainInsights> {
 		return api.get<SubdomainInsights>(`/subdomains/insights?${scopeQuery({ projectId, scanId })}`);
 	},

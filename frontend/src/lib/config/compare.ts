@@ -5,6 +5,7 @@ import LockOpen from '@lucide/svelte/icons/lock-open';
 import Bug from '@lucide/svelte/icons/bug';
 import TrendingUp from '@lucide/svelte/icons/trending-up';
 import FileBadge from '@lucide/svelte/icons/file-badge';
+import MailWarning from '@lucide/svelte/icons/mail-warning';
 import ShieldOff from '@lucide/svelte/icons/shield-off';
 import Eye from '@lucide/svelte/icons/eye';
 import Move from '@lucide/svelte/icons/move';
@@ -75,6 +76,7 @@ export const SIGNAL: Record<string, SignalSpec> = {
 	auth_dropped: { label: 'Authentication dropped', icon: LockOpen, tone: 'critical' },
 	service_opened: { label: 'Service opened', icon: DoorOpen, tone: 'notice' },
 	cert_expired: { label: 'Certificate expired', icon: FileBadge, tone: 'warning' },
+	posture_weakened: { label: 'Sender policy weakened', icon: MailWarning, tone: 'warning' },
 	waf_gone: { label: 'WAF no longer answering', icon: ShieldOff, tone: 'warning' },
 	cdn_gone: { label: 'No longer behind a CDN', icon: CloudOff, tone: 'notice' },
 	hosting_moved: { label: 'Hosting moved', icon: Move, tone: 'notice' },
