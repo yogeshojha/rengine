@@ -4,25 +4,19 @@ from enum import StrEnum
 
 
 class RelatedReason(StrEnum):
-    CERT_SAN = "cert_san"
     PROXY_TRAFFIC = "proxy_traffic"
 
 
 RELATED_REASON_LABELS: dict[str, str] = {
-    RelatedReason.CERT_SAN.value: "Named on a certificate",
     RelatedReason.PROXY_TRAFFIC.value: "Reached through a proxy",
 }
 
 RELATED_REASON_DETAIL: dict[str, str] = {
-    RelatedReason.CERT_SAN.value: (
-        "A certificate served by this scan lists hostnames on this domain."
-    ),
     RelatedReason.PROXY_TRAFFIC.value: (
         "A connected proxy reached this domain while testing a target."
     ),
 }
 
-MAX_RELATED_DOMAINS = 25
 MAX_RELATED_HOSTNAMES = 12
 
 PUBLIC_SECOND_LEVEL: frozenset[str] = frozenset(

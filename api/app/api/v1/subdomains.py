@@ -9,7 +9,6 @@ from app.api.scope import WebAssetScope
 from app.core.database import get_session
 from app.services.correlation_graph import CorrelationGraphService
 from app.services.hosting import HostingService
-from app.services.related_domains import RelatedDomainService
 from app.services.subdomain import SubdomainService
 from shared.models.asset_query import (
     QueryCountRequest,
@@ -18,7 +17,6 @@ from shared.models.asset_query import (
     QueryLeads,
 )
 from shared.models.hosting import HostingComposition
-from shared.models.related import RelatedDomains
 from shared.models.scan_correlation import (
     CorrelationGraph,
     SubdomainCorrelation,
@@ -183,25 +181,6 @@ async def subdomain_correlation_graph(
         facets=str(project_id),
         model=CorrelationGraph,
         build=lambda: CorrelationGraphService(session).build(scope),
-    )
-
-
-@router.get("/related-domains", response_model=RelatedDomains)
-async def subdomain_related_domains(
-    _current_user: CurrentUser,
-    session: Annotated[AsyncSession, Depends(get_session)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
-):
-    return await lead_cache.cached(
-        session,
-        name="related_domains",
-        scans=(scan_id,),
-        facets=str(project_id),
-        model=RelatedDomains,
-        build=lambda: RelatedDomainService(session).for_scan(
-            project_id=project_id, scan_id=scan_id
-        ),
     )
 
 

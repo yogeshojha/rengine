@@ -15,7 +15,9 @@
 	import HostingPanel from './overview/hosting-panel.svelte';
 	import HygienePanel from './overview/hygiene-panel.svelte';
 	import DomainPosturePanel from './overview/domain-posture-panel.svelte';
+	import EstateTray from '$lib/components/targets/estate-tray.svelte';
 	import { subdomainsApi } from '$lib/api/subdomains';
+	import { targetsApi } from '$lib/api/targets';
 	import { domainPostureApi } from '$lib/api/domain-posture';
 	import { endpointsApi, servicesApi } from '$lib/api/scan-results';
 	import { vulnerabilitiesApi } from '$lib/api/vulnerabilities';
@@ -24,7 +26,6 @@
 	import { isLiveStatus } from '$lib/utilities/scan-status';
 	import { LiveRefresh, LIVE_OVERVIEW_MS } from '$lib/utilities/live-results';
 	import { targetAssetNoun, TargetType } from '$lib/types/target';
-	import type { RelatedDomains } from '$lib/types/asset-query';
 	import { scanFoundNothing } from '$lib/types/scan';
 	import type { ScanActivityRead, ScanCommandRead, ScanRead } from '$lib/types/scan';
 	import type { HygieneSummary, SubdomainInsights } from '$lib/utilities/scan-insights';
@@ -34,6 +35,7 @@
 	import type { OriginExposure } from '$lib/utilities/origins';
 	import type { HostingComposition } from '$lib/types/hosting';
 	import type { DomainPostureSummary } from '$lib/types/domain-posture';
+	import type { TargetEstate } from '$lib/types/estate';
 
 	interface Props {
 		scan: ScanRead;
@@ -79,7 +81,7 @@
 	});
 
 	let insights = $state<SubdomainInsights | null>(null);
-	let relatedDomains = $state<RelatedDomains | null>(null);
+	let estate = $state<TargetEstate | null>(null);
 	let exposure = $state<ScanExposure | null>(null);
 	let structure = $state<ScanStructure | null>(null);
 	let vulns = $state<ScanVulnerabilities | null>(null);
@@ -170,17 +172,17 @@
 			.catch(() => (hosting = null));
 	}
 
-	function loadRelated() {
+	function loadEstate() {
 		if (!scanId || !projectId) return;
-		subdomainsApi
-			.relatedDomains(projectId, scanId)
-			.then((d) => (relatedDomains = d))
-			.catch(() => (relatedDomains = null));
+		targetsApi
+			.getEstate(scan.target_id, projectId, scanId)
+			.then((e) => (estate = e))
+			.catch(() => (estate = null));
 	}
 
 	function reload() {
 		loadInsights();
-		loadRelated();
+		loadEstate();
 		loadHosting();
 		loadHygiene();
 		loadPosture();
@@ -260,10 +262,21 @@
 			</EmptyState>
 		{/if}
 	{:else}
+		{#if estate && estate.counts.untracked > 0}
+			<EstateTray
+				count={estate.counts.untracked}
+				subject={scan.execution_config.target_value}
+				domains={estate.domains}
+				providers={estate.providers}
+				neighbours={estate.neighbours}
+				sheetDescription="{estate.domains.length} domains · {estate.providers
+					.length} providers · {estate.considered_targets} targets considered"
+			/>
+		{/if}
+
 		<AttentionPanel
 			attention={insights?.attention ?? []}
 			clusters={insights?.clusters ?? []}
-			related={relatedDomains?.domains ?? []}
 			{origins}
 			loading={loading && !insights}
 			errored={insightsFailed}

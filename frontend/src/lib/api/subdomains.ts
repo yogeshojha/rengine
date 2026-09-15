@@ -3,7 +3,7 @@ import { scopeQuery } from '$lib/utilities/surface-scope';
 import type { HostingComposition } from '$lib/types/hosting';
 import type { CorrelationGraph } from '$lib/types/correlation';
 import type { RenderGroups, SubdomainSummary, TargetSubdomainRead } from '$lib/types/subdomain';
-import type { QueryCounts, QueryGroups, QueryLeads, RelatedDomains } from '$lib/types/asset-query';
+import type { QueryCounts, QueryGroups, QueryLeads } from '$lib/types/asset-query';
 import type {
 	Facet,
 	SubdomainFilter,
@@ -87,12 +87,6 @@ export const subdomainsApi = {
 		return api.post<RenderGroups>(
 			`/subdomains/search/renders?${scopeQuery({ projectId, scanId })}`,
 			filter
-		);
-	},
-
-	async relatedDomains(projectId: string, scanId: string): Promise<RelatedDomains> {
-		return api.get<RelatedDomains>(
-			`/subdomains/related-domains?${scopeQuery({ projectId, scanId })}`
 		);
 	},
 
