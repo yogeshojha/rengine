@@ -36,11 +36,14 @@ from shared.enums.scan import (
     SCAN_LIVE_STATUSES,
     SCAN_OPEN_STATUSES,
     ScanActivityStatus,
+    ScanScope,
     ScanStatus,
 )
 from shared.models.api_key import APIKey
+from shared.models.recheck import AssetRecheck
 from shared.models.scan import (
     SCAN_STATUSES,
+    RecheckTally,
     RescanSummary,
     Scan,
     ScanBatchCreate,
@@ -832,6 +835,7 @@ class ScanService:
             .where(
                 Scan.target_id.in_(target_ids),
                 Scan.status == ScanStatus.COMPLETED.value,
+                census_only(),
             )
             .subquery()
         )
@@ -859,7 +863,7 @@ class ScanService:
         )
         sub = (
             select(Scan.id.label("id"), rn)
-            .where(Scan.target_id.in_(target_ids))
+            .where(Scan.target_id.in_(target_ids), census_only())
             .subquery()
         )
         rows = (await self.session.execute(select(sub.c.id).where(sub.c.rn == 1))).all()
@@ -882,6 +886,7 @@ class ScanService:
             .where(
                 Scan.target_id.in_(target_ids),
                 Scan.status == ScanStatus.COMPLETED.value,
+                census_only(),
             )
             .subquery()
         )
@@ -1115,12 +1120,36 @@ class ScanService:
         prev_counts = await self.prev_completed_counts(scan_ids, target_ids)
         first_ids = await self.first_scan_ids(target_ids)
         rescans = await self.rescan_summaries(scan_ids)
+        rechecks = await self.recheck_tallies(
+            [i.id for i in items if i.scope == ScanScope.FOCUSED.value]
+        )
         for i in items:
             i.new_subdomains = new_counts.get(i.id, 0)
             i.gone_subdomains = gone_counts.get(i.id, 0)
             i.prev_subdomains_found = prev_counts.get(i.id)
             i.is_first_scan = i.id in first_ids
             i.rescans = rescans.get(i.id)
+            i.recheck = rechecks.get(i.id)
+
+    async def recheck_tallies(self, scan_ids: list[UUID]) -> dict[UUID, RecheckTally]:
+        """Per focused run, the assets it rechecked and how many moved."""
+        if not scan_ids:
+            return {}
+        rows = (
+            await self.session.execute(
+                select(
+                    AssetRecheck.scan_id,
+                    func.count(),
+                    func.count().filter(AssetRecheck.changed.is_(True)),
+                )
+                .where(AssetRecheck.scan_id.in_(scan_ids))
+                .group_by(AssetRecheck.scan_id)
+            )
+        ).all()
+        return {
+            scan_id: RecheckTally(assets=assets, changed=changed)
+            for scan_id, assets, changed in rows
+        }
 
     async def rescan_summaries(
         self, parent_ids: list[UUID]

@@ -170,6 +170,7 @@ export interface ScanRead {
 	prev_subdomains_found: number | null;
 	is_first_scan: boolean | null;
 	rescans: RescanSummary | null;
+	recheck: RecheckTally | null;
 }
 
 export type StageOverrides = Record<string, Record<string, unknown>>;
@@ -279,6 +280,11 @@ export interface ScanExportRow {
 	started_at: string | null;
 	completed_at: string | null;
 	created_at: string;
+}
+
+export interface RecheckTally {
+	assets: number;
+	changed: number;
 }
 
 export interface RescanSummary {

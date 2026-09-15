@@ -168,10 +168,12 @@
 			</div>
 			<div class="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
 				{#if nested}
-					<span class="shrink-0 tabular-nums">
-						{scan.seed_count}
-						{scan.seed_count === 1 ? 'asset' : 'assets'}
-					</span>
+					{#if !scan.recheck}
+						<span class="shrink-0 tabular-nums">
+							{scan.seed_count}
+							{scan.seed_count === 1 ? 'asset' : 'assets'}
+						</span>
+					{/if}
 				{:else if targetId}
 					<span class="truncate">{scan.context_name ?? 'No context'}</span>
 				{:else}
@@ -246,7 +248,7 @@
 							{/snippet}
 						</Hint>
 					{/if}
-				{:else if completed}
+				{:else if completed && !nested}
 					{#if isFirst}
 						<span
 							class="inline-flex shrink-0 items-center gap-0.5 rounded border border-border px-1 font-medium"
@@ -356,6 +358,21 @@
 							<span class="font-mono"> · {run.tool}</span>{/if}
 					</span>
 				</div>
+			{:else if nested}
+				{#if scan.recheck}
+					<Badge
+						variant="outline"
+						class="gap-1 font-normal tabular-nums {scan.recheck.changed > 0
+							? 'border-warning/40 text-warning'
+							: 'text-muted-foreground'}"
+					>
+						{#if scan.recheck.changed > 0}
+							{scan.recheck.changed} of {scan.recheck.assets} changed
+						{:else}
+							No change
+						{/if}
+					</Badge>
+				{/if}
 			{:else}
 				<div class="flex flex-wrap gap-1">
 					{#each scanCountPills(scan) as pill (pill.key)}

@@ -275,6 +275,11 @@ class ScanBatchCreate(BaseModel):
         return self
 
 
+class RecheckTally(BaseModel):
+    assets: int
+    changed: int = 0
+
+
 class RescanSummary(BaseModel):
     total: int
     running: int = 0
@@ -318,6 +323,7 @@ class ScanRead(BaseModel):
     prev_subdomains_found: int | None = None
     is_first_scan: bool | None = None
     rescans: RescanSummary | None = None
+    recheck: RecheckTally | None = None
 
 
 class ScanStatusCounts(BaseModel):
