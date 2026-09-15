@@ -68,6 +68,7 @@ class HttpAsset(SQLModel, table=True):
     # fingerprint
     tech: list = _json_list()
     cpe: list = _json_list()
+    software: list | None = _json_optional_list()
     favicon_hash: str | None = Field(default=None, max_length=64)
     favicon_path: str | None = Field(default=None, max_length=2000)
     content_hash: str | None = Field(default=None, max_length=80)

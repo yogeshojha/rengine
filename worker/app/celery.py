@@ -212,18 +212,22 @@ celery_app.conf.beat_schedule = {
     "hygiene-backfill": {
         "task": "app.tasks.hygiene.backfill",
         "schedule": HYGIENE_BACKFILL_SECONDS,
+        "options": {"expires": HYGIENE_BACKFILL_SECONDS},
     },
     "screenshot-backfill": {
         "task": "app.tasks.screenshots.backfill",
         "schedule": HYGIENE_BACKFILL_SECONDS,
+        "options": {"expires": HYGIENE_BACKFILL_SECONDS},
     },
     "software-backfill": {
         "task": "app.tasks.software.backfill",
         "schedule": SOFTWARE_BACKFILL_SECONDS,
+        "options": {"expires": SOFTWARE_BACKFILL_SECONDS},
     },
     "secret-backfill": {
         "task": "app.tasks.secrets.backfill",
         "schedule": SECRET_BACKFILL_SECONDS,
+        "options": {"expires": SECRET_BACKFILL_SECONDS},
     },
     "watch-recheck": {
         "task": "app.tasks.watch.recheck",

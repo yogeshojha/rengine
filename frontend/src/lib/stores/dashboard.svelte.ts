@@ -76,6 +76,8 @@ function createDashboardStore() {
 		if (!pid) return;
 		const mySeq = ++seq;
 		loading = true;
+		void loadDiscovery(pid, mySeq);
+		void loadExtras(pid, win, mySeq);
 		try {
 			const data = await dashboardApi.overview(pid, win);
 			if (mySeq !== seq) return;
@@ -88,8 +90,6 @@ function createDashboardStore() {
 		} finally {
 			if (mySeq === seq) loading = false;
 		}
-		void loadDiscovery(pid, mySeq);
-		void loadExtras(pid, win, mySeq);
 		if (overview?.first_run) void loadReadiness(mySeq);
 	}
 

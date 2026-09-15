@@ -1,4 +1,4 @@
-"""Software components read from responses stored before the column existed."""
+"""Evaluate the software of web assets whose components were never read."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from sqlalchemy import select
 from app.database import get_sync_session
 from shared.logging import get_logger
 from shared.models.scan import Scan
-from shared.services import software_match
+from shared.services import locks, software_match
 from shared.services.asset_query.lead_cache import bump_sync
 
 logger = get_logger(__name__)
@@ -18,10 +18,20 @@ logger = get_logger(__name__)
 def backfill(limit: int = software_match.BACKFILL_SCANS_PER_TICK) -> dict:
     scans = 0
     rows = 0
-    with get_sync_session() as session:
+    matched = 0
+    with (
+        get_sync_session() as session,
+        locks.sync_lock(session, locks.SOFTWARE_BACKFILL) as held,
+    ):
+        if not held:
+            return {"scans": 0, "rows": 0, "more": False, "skipped": "running"}
         pending = software_match.pending_scans(session, limit=limit)
         for scan_id in pending:
-            rows += software_match.backfill_scan(session, scan_id)
+            filled = software_match.backfill_scan(session, scan_id)
+            rows += filled.rows
+            scans += 1
+            if not filled.components:
+                continue
             scan = session.execute(
                 select(Scan.target_id, Scan.project_id).where(Scan.id == scan_id)
             ).one_or_none()
@@ -34,7 +44,7 @@ def backfill(limit: int = software_match.BACKFILL_SCANS_PER_TICK) -> dict:
                 project_id=scan.project_id,
             )
             bump_sync([scan.target_id])
-            scans += 1
+            matched += 1
     if scans:
-        logger.info("software backfill", scans=scans, rows=rows)
+        logger.info("software backfill", scans=scans, rows=rows, matched=matched)
     return {"scans": scans, "rows": rows, "more": len(pending) >= limit}

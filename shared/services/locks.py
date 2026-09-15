@@ -18,6 +18,9 @@ BOUNTY_FEED = 0x624F0002
 IP_RANGES = 0x624E0001
 # secret_mining() spans SECRET_MINING .. SECRET_MINING + 0xFFFF
 SECRET_MINING = 0x53450001
+SOFTWARE_BACKFILL = 0x53570001
+# software_match() spans SOFTWARE_MATCH .. SOFTWARE_MATCH + 0xFFFF
+SOFTWARE_MATCH = 0x53580001
 
 
 def bounty_platform(platform: str) -> int:
@@ -28,6 +31,11 @@ def bounty_platform(platform: str) -> int:
 def secret_mining(scan_id: object) -> int:
     """One lock per scan: the stage, the backfill and a re-mine never overlap."""
     return SECRET_MINING + (zlib.crc32(str(scan_id).encode()) & 0xFFFF)
+
+
+def software_match(scan_id: object) -> int:
+    """One lock per scan."""
+    return SOFTWARE_MATCH + (zlib.crc32(str(scan_id).encode()) & 0xFFFF)
 
 
 @contextmanager

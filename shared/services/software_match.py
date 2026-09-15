@@ -29,6 +29,7 @@ from shared.definitions.vulnerabilities import SUPPRESSED_STATES, Severity
 from shared.enums.scan import ScanScope, ScanStatus
 from shared.logging import get_logger
 from shared.models.software import SoftwareComponentRead, SoftwareCoverage
+from shared.services import locks
 from shared.services.asset_query.lead_cache import bump_sync
 from shared.utils.datetime import utc_now
 from shared.utils.software import (
@@ -45,22 +46,12 @@ _BACKFILL_CHUNK = 2000
 _MAX_UNMAPPED_SHOWN = 25
 MAX_EXPOSURES_REPORTED = 200
 
-_PREVIOUS = """
-CREATE TEMP TABLE software_previous ON COMMIT DROP AS
-SELECT fingerprint, discovered_at FROM software_cves WHERE scan_id = :scan_id
-"""
-
-_CARRY_FORWARD = """
-UPDATE software_cves s SET discovered_at = p.discovered_at
-  FROM software_previous p
- WHERE s.scan_id = :scan_id AND p.fingerprint = s.fingerprint
-"""
+_HAD_PREVIOUS = "SELECT EXISTS (SELECT 1 FROM software_cves WHERE scan_id = :scan_id)"
 
 _CORROBORATE = """
-UPDATE software_cves s SET evidence = :corroborated
+UPDATE software_new s SET evidence = :corroborated
   FROM vulnerabilities v
- WHERE s.scan_id = :scan_id
-   AND v.scan_id = :scan_id
+ WHERE v.scan_id = :scan_id
    AND v.severity <> :info
    AND s.host IS NOT NULL AND v.host = s.host
    AND jsonb_exists(v.cve_ids::jsonb, s.cve)
@@ -70,21 +61,82 @@ UPDATE software_cves s SET evidence = :corroborated
           AND t.state = ANY(:suppressed))
 """
 
-_NEWLY_EXPOSED = """
-SELECT s.cve, s.host, s.ip, s.port, s.name, s.version, s.severity, s.is_kev,
-       s.kev_ransomware, s.exploit_score, s.evidence
-  FROM software_cves s
- WHERE s.scan_id = :scan_id
-   AND NOT EXISTS (SELECT 1 FROM software_previous p WHERE p.fingerprint = s.fingerprint)
- ORDER BY s.is_kev DESC, s.exploit_score DESC, s.cvss_score DESC NULLS LAST, s.cve, s.host
- LIMIT :limit
+_NOT_STORED = """
+NOT EXISTS (SELECT 1 FROM software_cves s
+             WHERE s.scan_id = :scan_id AND s.fingerprint = n.fingerprint)
 """
 
-_NEWLY_EXPOSED_COUNT = """
-SELECT count(*) FROM software_cves s
+_NEWLY_EXPOSED = f"""
+SELECT n.cve, n.host, n.ip, n.port, n.name, n.version, n.severity, n.is_kev,
+       n.kev_ransomware, n.exploit_score, n.evidence
+  FROM software_new n
+ WHERE {_NOT_STORED}
+ ORDER BY n.is_kev DESC, n.exploit_score DESC, n.cvss_score DESC NULLS LAST, n.cve, n.host
+ LIMIT :limit
+"""  # noqa: S608
+
+_NEWLY_EXPOSED_COUNT = f"SELECT count(*) FROM software_new n WHERE {_NOT_STORED}"  # noqa: S608
+
+# ---------- merge ----------
+_KEY_COLUMNS = ("id", "scan_id", "target_id", "project_id", "fingerprint", "cve")
+_JSON_COLUMNS = ("intel_kinds", "caveats")
+_MUTABLE_COLUMNS = (
+    "name",
+    "version",
+    "vendor",
+    "product",
+    "cpe",
+    "version_source",
+    "severity",
+    "cvss_score",
+    "epss_score",
+    "epss_percentile",
+    "is_kev",
+    "kev_ransomware",
+    "kev_due_date",
+    "exploit_score",
+    "intel_kinds",
+    "confidence",
+    "caveats",
+    "evidence",
+    "host",
+    "ip",
+    "port",
+    "url",
+    "http_asset_id",
+    "port_id",
+)
+_ROW_COLUMNS = (*_KEY_COLUMNS, *_MUTABLE_COLUMNS, "discovered_at", "created_at")
+
+
+def _compared(column: str, alias: str) -> str:
+    cast = "::jsonb" if column in _JSON_COLUMNS else ""
+    return f"{alias}.{column}{cast}"
+
+
+_MERGE_DELETE = """
+DELETE FROM software_cves s
  WHERE s.scan_id = :scan_id
-   AND NOT EXISTS (SELECT 1 FROM software_previous p WHERE p.fingerprint = s.fingerprint)
+   AND NOT EXISTS (SELECT 1 FROM software_new n WHERE n.fingerprint = s.fingerprint)
 """
+
+_MERGE_UPDATE = f"""
+UPDATE software_cves s
+   SET {", ".join(f"{c} = n.{c}" for c in _MUTABLE_COLUMNS)}
+  FROM software_new n
+ WHERE s.scan_id = :scan_id
+   AND s.fingerprint = n.fingerprint
+   AND ({", ".join(_compared(c, "s") for c in _MUTABLE_COLUMNS)})
+       IS DISTINCT FROM
+       ({", ".join(_compared(c, "n") for c in _MUTABLE_COLUMNS)})
+"""  # noqa: S608
+
+_MERGE_INSERT = f"""
+INSERT INTO software_cves ({", ".join(_ROW_COLUMNS)})
+SELECT {", ".join(f"n.{c}" for c in _ROW_COLUMNS)}
+  FROM software_new n
+ WHERE {_NOT_STORED}
+"""  # noqa: S608
 
 _TEMP = """
 CREATE TEMP TABLE software_components (
@@ -107,15 +159,13 @@ CREATE TEMP TABLE software_components (
 ) ON COMMIT DROP
 """
 
-_INSERT = """
-INSERT INTO software_cves (
-    id, scan_id, target_id, project_id, fingerprint, cve,
-    name, version, vendor, product, cpe, version_source,
-    severity, cvss_score, epss_score, epss_percentile,
-    is_kev, kev_ransomware, kev_due_date, exploit_score, intel_kinds,
-    confidence, caveats, host, ip, port, url,
-    http_asset_id, port_id, discovered_at, created_at
-)
+_BUILD = """
+CREATE TEMP TABLE software_new ON COMMIT DROP AS
+SELECT matched.*,
+       CASE WHEN json_array_length(matched.caveats) >= :low_caveats THEN cast(:low AS varchar)
+            WHEN json_array_length(matched.caveats) >= :medium_caveats THEN cast(:medium AS varchar)
+            ELSE cast(:high AS varchar) END AS confidence
+  FROM (
 SELECT DISTINCT ON (fingerprint) * FROM (
     SELECT
         gen_random_uuid() AS id,
@@ -143,7 +193,7 @@ SELECT DISTINCT ON (fingerprint) * FROM (
         k.due_date AS kev_due_date,
         0 AS exploit_score,
         '[]'::json AS intel_kinds,
-        cast(:high AS varchar) AS confidence,
+        cast(:inferred AS varchar) AS evidence,
         (
             SELECT coalesce(json_agg(x), '[]'::json) FROM (
                 SELECT :conditional AS x WHERE m.conditional
@@ -179,7 +229,7 @@ SELECT DISTINCT ON (fingerprint) * FROM (
 ) rows
 ORDER BY fingerprint
 LIMIT :cap
-ON CONFLICT (scan_id, fingerprint) DO NOTHING
+) matched
 """
 
 _COMPONENTS = """
@@ -352,14 +402,13 @@ def _signals(
     return [k for k in kinds if k in SIGNALS_BY_KIND]
 
 
-def _rank(session: Session, scan_id: uuid.UUID) -> None:
+def _rank(session: Session) -> None:
     """One rank per CVE, applied to every row that carries it."""
     rows = session.execute(
         text(
             "SELECT DISTINCT cve, is_kev, kev_ransomware, kev_due_date, epss_score "
-            "FROM software_cves WHERE scan_id = :scan_id"
-        ),
-        {"scan_id": str(scan_id)},
+            "FROM software_new"
+        )
     ).all()
     if not rows:
         return
@@ -375,33 +424,19 @@ def _rank(session: Session, scan_id: uuid.UUID) -> None:
     ]
     session.execute(
         text(
-            "UPDATE software_cves s SET exploit_score = v.score, "
+            "UPDATE software_new s SET exploit_score = v.score, "
             "intel_kinds = v.kinds "
-            "FROM (SELECT unnest(:cves)::varchar AS cve, unnest(:scores)::int AS score, "
-            "unnest(:kinds)::json AS kinds) v "
-            "WHERE s.scan_id = :scan_id AND s.cve = v.cve"
+            "FROM (SELECT unnest(cast(:cves AS varchar[])) AS cve, "
+            "unnest(cast(:scores AS int[])) AS score, "
+            "unnest(cast(:kinds AS json[])) AS kinds) v "
+            "WHERE s.cve = v.cve"
         ),
         {
-            "scan_id": str(scan_id),
             "cves": [p["cve"] for p in payload],
             "scores": [p["score"] for p in payload],
             "kinds": [json.dumps(p["kinds"]) for p in payload],
         },
     )
-
-
-def _confidence(session: Session, scan_id: uuid.UUID) -> None:
-    for value, count in (
-        (Confidence.MEDIUM.value, MEDIUM_CAVEATS),
-        (Confidence.LOW.value, LOW_CAVEATS),
-    ):
-        session.execute(
-            text(
-                "UPDATE software_cves SET confidence = :value "
-                "WHERE scan_id = :scan_id AND json_array_length(caveats) >= :count"
-            ),
-            {"value": value, "scan_id": str(scan_id), "count": count},
-        )
 
 
 def match_scan(
@@ -412,15 +447,13 @@ def match_scan(
     project_id: uuid.UUID,
 ) -> MatchResult:
     """Rebuild this scan's inferred CVEs from the software its assets reported."""
-    components, unmapped = _gather(session, scan_id)
     params = {"scan_id": str(scan_id)}
-    session.execute(text(_PREVIOUS), params)
-    had_previous = bool(
-        session.execute(
-            text("SELECT EXISTS (SELECT 1 FROM software_previous)")
-        ).scalar()
+    session.execute(
+        text("SELECT pg_advisory_xact_lock(:key)"),
+        {"key": locks.software_match(scan_id)},
     )
-    session.execute(text("DELETE FROM software_cves WHERE scan_id = :scan_id"), params)
+    components, unmapped = _gather(session, scan_id)
+    had_previous = bool(session.execute(text(_HAD_PREVIOUS), params).scalar())
     coverage = SoftwareCoverage(
         components=len(components) + len(unmapped),
         mapped=len(components),
@@ -428,6 +461,9 @@ def match_scan(
         unmapped_names=_unmapped_read(unmapped),
     )
     if not components:
+        session.execute(
+            text("DELETE FROM software_cves WHERE scan_id = :scan_id"), params
+        )
         session.commit()
         return MatchResult(coverage=coverage)
 
@@ -461,15 +497,20 @@ def match_scan(
             for c in components
         ],
     )
-    result = session.execute(
-        text(_INSERT),
+    session.execute(
+        text(_BUILD),
         {
             "scan_id": str(scan_id),
             "target_id": str(target_id),
             "project_id": str(project_id),
             "now": utc_now(),
             "unknown": Severity.UNKNOWN.value,
+            "inferred": Evidence.INFERRED.value,
             "high": Confidence.HIGH.value,
+            "medium": Confidence.MEDIUM.value,
+            "low": Confidence.LOW.value,
+            "medium_caveats": MEDIUM_CAVEATS,
+            "low_caveats": LOW_CAVEATS,
             "conditional": Caveat.CONDITIONAL.value,
             "backport": Caveat.BACKPORT.value,
             "fingerprint": Caveat.FINGERPRINT.value,
@@ -478,10 +519,10 @@ def match_scan(
             "cap": MAX_MATCHES_PER_SCAN,
         },
     )
-    coverage.findings = result.rowcount or 0
-    _confidence(session, scan_id)
-    _rank(session, scan_id)
-    session.execute(text(_CARRY_FORWARD), params)
+    coverage.findings = int(
+        session.execute(text("SELECT count(*) FROM software_new")).scalar_one()
+    )
+    _rank(session)
     session.execute(
         text(_CORROBORATE),
         {
@@ -517,6 +558,9 @@ def match_scan(
                 )
                 for r in rows
             ]
+    session.execute(text(_MERGE_DELETE), params)
+    session.execute(text(_MERGE_UPDATE), params)
+    session.execute(text(_MERGE_INSERT), params)
     session.commit()
 
     coverage.matched = session.execute(
@@ -598,11 +642,11 @@ def rematch_latest(session: Session) -> RematchResult:
 
 BACKFILL_SCANS_PER_TICK = 5
 
+# NULL: not evaluated yet
 _PENDING_SCANS = """
 SELECT DISTINCT scan_id
   FROM http_assets
- WHERE json_array_length(software) = 0
-   AND (json_array_length(tech) > 0 OR webserver IS NOT NULL)
+ WHERE software IS NULL
  LIMIT :limit
 """
 
@@ -610,9 +654,14 @@ _ASSETS_TO_FILL = """
 SELECT id, tech, webserver
   FROM http_assets
  WHERE scan_id = :scan_id
-   AND json_array_length(software) = 0
-   AND (json_array_length(tech) > 0 OR webserver IS NOT NULL)
+   AND software IS NULL
 """
+
+
+@dataclass
+class BackfillResult:
+    rows: int = 0
+    components: int = 0
 
 
 def pending_scans(
@@ -622,20 +671,22 @@ def pending_scans(
     return [row[0] for row in rows]
 
 
-def backfill_scan(session: Session, scan_id: uuid.UUID) -> int:
-    """Fill software for rows httpx wrote before the column existed."""
+def backfill_scan(session: Session, scan_id: uuid.UUID) -> BackfillResult:
+    """Read the components of every web asset in the scan that has none."""
     rows = session.execute(text(_ASSETS_TO_FILL), {"scan_id": str(scan_id)}).all()
-    filled = 0
+    out = BackfillResult()
     payload = []
     for row in rows:
         entries = components_of(list(row.tech or []), row.webserver)
         payload.append({"id": str(row.id), "software": json.dumps(entries)})
-        filled += 1
+        out.rows += 1
+        out.components += len(entries)
     for start in range(0, len(payload), _BACKFILL_CHUNK):
         session.execute(
             text(
-                "UPDATE http_assets SET software = v.software::json "
-                "FROM (SELECT unnest(:ids)::uuid AS id, unnest(:software)::text AS software) v "
+                "UPDATE http_assets SET software = v.software "
+                "FROM (SELECT unnest(cast(:ids AS uuid[])) AS id, "
+                "unnest(cast(:software AS json[])) AS software) v "
                 "WHERE http_assets.id = v.id"
             ),
             {
@@ -649,4 +700,4 @@ def backfill_scan(session: Session, scan_id: uuid.UUID) -> int:
             },
         )
     session.commit()
-    return filled
+    return out
