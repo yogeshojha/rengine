@@ -6,6 +6,7 @@ import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 import Package from '@lucide/svelte/icons/package';
 import KeyRound from '@lucide/svelte/icons/key-round';
 import type { IconComponent } from './icons';
+import { STORAGE_KEYS } from './storage-keys';
 import type { ScanRead } from '$lib/types/scan';
 
 export enum SurfaceDimension {
@@ -37,6 +38,7 @@ export interface SurfaceSpec {
 	icon: IconComponent;
 	tab: ResultTab;
 	queryParam: string;
+	recentsKey: string;
 	kinds: string[];
 	countColumns: (keyof ScanRead)[];
 	// what a deleted row takes with it
@@ -52,6 +54,7 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		icon: Globe,
 		tab: 'web-assets',
 		queryParam: 'q',
+		recentsKey: STORAGE_KEYS.webAssetsRecentQueries,
 		kinds: ['hosts', 'http_assets'],
 		countColumns: ['subdomains_found', 'http_assets_found'],
 		children: 'stored responses'
@@ -64,6 +67,7 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		icon: Waypoints,
 		tab: 'endpoints',
 		queryParam: 'ep_q',
+		recentsKey: STORAGE_KEYS.endpointsRecentQueries,
 		kinds: ['endpoints'],
 		countColumns: ['endpoints_found']
 	},
@@ -75,6 +79,7 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		icon: ServerCog,
 		tab: 'services',
 		queryParam: 'svc_q',
+		recentsKey: STORAGE_KEYS.servicesRecentQueries,
 		kinds: ['ports'],
 		countColumns: ['open_ports_found']
 	},
@@ -86,6 +91,7 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		icon: Network,
 		tab: 'ips',
 		queryParam: 'ip_q',
+		recentsKey: STORAGE_KEYS.ipsRecentQueries,
 		kinds: ['addresses'],
 		countColumns: ['ips_found']
 	},
@@ -97,6 +103,7 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		icon: ShieldAlert,
 		tab: 'vulnerabilities',
 		queryParam: 'vuln_q',
+		recentsKey: STORAGE_KEYS.vulnsRecentQueries,
 		kinds: ['vulnerabilities'],
 		countColumns: ['vulnerabilities_found']
 	},
@@ -108,6 +115,7 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		icon: Package,
 		tab: 'software',
 		queryParam: 'sw_q',
+		recentsKey: STORAGE_KEYS.softwareRecentQueries,
 		kinds: ['http_assets', 'ports'],
 		countColumns: []
 	},
@@ -119,6 +127,7 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		icon: KeyRound,
 		tab: 'secrets',
 		queryParam: 'sec_q',
+		recentsKey: STORAGE_KEYS.secretRecentQueries,
 		kinds: ['secrets'],
 		countColumns: ['secrets_found'],
 		children: 'sightings'

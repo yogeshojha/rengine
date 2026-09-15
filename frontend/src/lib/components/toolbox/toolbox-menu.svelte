@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import Hint from '$lib/components/hint.svelte';
-	import ToolboxDialog from './toolbox-dialog.svelte';
 	import { TOOLBOX_ICON } from '$lib/config/toolbox';
 
-	let open = $state(false);
+	let { open = $bindable(false) }: { open?: boolean } = $props();
 
 	function onKeydown(event: KeyboardEvent) {
 		if (event.key.toLowerCase() !== 'k' || !(event.metaKey || event.ctrlKey)) return;
@@ -26,5 +25,3 @@
 		</span>
 	{/snippet}
 </Hint>
-
-<ToolboxDialog bind:open />

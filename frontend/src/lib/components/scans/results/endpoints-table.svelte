@@ -1046,7 +1046,7 @@
 		bind:this={queryBar}
 		bind:ref={searchRef}
 		store={endpointQuerySchema}
-		recentsKey={STORAGE_KEYS.endpointsRecentQueries}
+		recentsKey={SURFACE[SurfaceDimension.ENDPOINTS].recentsKey}
 		hint={inHost ? 'path:/api or is:param' : 'is:param and is:live'}
 		value={query.search}
 		facets={facets as unknown as Record<string, Facet[]>}

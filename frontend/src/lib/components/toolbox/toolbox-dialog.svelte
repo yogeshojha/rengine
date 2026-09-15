@@ -19,7 +19,12 @@
 	import { untrack } from 'svelte';
 	import type { ToolRun } from '$lib/types/toolbox';
 
-	let { open = $bindable(false) }: { open?: boolean } = $props();
+	interface Props {
+		open?: boolean;
+		launch?: { value: string; tool?: string | null; run?: boolean } | null;
+	}
+
+	let { open = $bindable(false), launch = $bindable(null) }: Props = $props();
 
 	let selected = $state<string | null>(null);
 	let values = $state<Record<string, Record<string, unknown>>>({});
@@ -53,6 +58,16 @@
 		untrack(() => queueMicrotask(() => form?.focus()));
 	});
 
+	$effect(() => {
+		const pending = launch;
+		if (!open || !pending || !toolbox.tools.length) return;
+		launch = null;
+		untrack(() => {
+			if (pending.run) chase(pending.value, pending.tool ?? null);
+			else if (prefill(pending.value, pending.tool ?? null)) queueMicrotask(() => form?.focus());
+		});
+	});
+
 	function change(name: string, value: unknown) {
 		if (!selected) return;
 		values = { ...values, [selected]: { ...(values[selected] ?? {}), [name]: value } };
@@ -79,17 +94,22 @@
 		}
 	}
 
-	/** Opens the tool that answers the value, prefilled. */
-	function chase(value: string, name: string | null) {
+	function prefill(value: string, name: string | null): string | null {
 		const target = name ?? selected;
 		const spec = target ? toolbox.tool(target) : undefined;
-		if (!spec) return;
+		if (!spec) return null;
 		selected = spec.name;
 		values = {
 			...values,
 			[spec.name]: { ...(values[spec.name] ?? {}), [spec.value_field]: value }
 		};
-		void start(spec.name);
+		return spec.name;
+	}
+
+	/** Opens the tool that answers the value, prefilled. */
+	function chase(value: string, name: string | null) {
+		const ready = prefill(value, name);
+		if (ready) void start(ready);
 	}
 
 	function replay(previous: ToolRun) {

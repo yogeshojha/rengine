@@ -559,7 +559,7 @@
 		bind:this={queryBar}
 		bind:ref={searchRef}
 		store={ipQuerySchema}
-		recentsKey={STORAGE_KEYS.ipsRecentQueries}
+		recentsKey={SURFACE[SurfaceDimension.IPS].recentsKey}
 		hint="is:sensitive not cdn:yes"
 		value={query.search}
 		facets={facets as unknown as Record<string, Facet[]>}

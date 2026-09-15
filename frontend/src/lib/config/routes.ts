@@ -135,6 +135,18 @@ export const ROUTES = {
 	settings: (section?: SettingsSection) => (section ? `/settings/${section}` : '/settings')
 } as const;
 
+/** A detail page belongs to one project; switching projects returns to its list. */
+const PROJECT_SWITCH_REDIRECTS: { match: RegExp; list: string }[] = [
+	{ match: /^\/targets\/[^/]+/, list: ROUTES.targets },
+	{ match: /^\/scans\/[^/]+/, list: ROUTES.scans },
+	{ match: /^\/automation\/engines\/[^/]+/, list: ROUTES.engines },
+	{ match: /^\/automation\/contexts\/[^/]+/, list: ROUTES.contexts }
+];
+
+export function projectSwitchRedirect(path: string): string | null {
+	return PROJECT_SWITCH_REDIRECTS.find((r) => r.match.test(path))?.list ?? null;
+}
+
 export const findingsHref = (key: FindingsTab): string =>
 	key === 'cve' ? ROUTES.cves : ROUTES.surface(SURFACE[key].tab);
 

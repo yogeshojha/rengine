@@ -532,7 +532,7 @@
 		bind:this={queryBar}
 		bind:ref={searchRef}
 		store={serviceQuerySchema}
-		recentsKey={STORAGE_KEYS.servicesRecentQueries}
+		recentsKey={SURFACE[SurfaceDimension.SERVICES].recentsKey}
 		hint="class:database not is:cdn"
 		value={query.search}
 		facets={facets as unknown as Record<string, Facet[]>}

@@ -67,3 +67,18 @@ export const vulnQuerySchema = new QuerySchemaStore(SurfaceDimension.VULNERABILI
 export const endpointQuerySchema = new QuerySchemaStore(SurfaceDimension.ENDPOINTS);
 export const softwareQuerySchema = new QuerySchemaStore(SurfaceDimension.SOFTWARE);
 export const secretQuerySchema = new QuerySchemaStore(SurfaceDimension.SECRETS);
+
+export const QUERY_SCHEMAS: Record<SurfaceDimension, QuerySchemaStore> = {
+	[SurfaceDimension.WEB_ASSETS]: querySchema,
+	[SurfaceDimension.ENDPOINTS]: endpointQuerySchema,
+	[SurfaceDimension.SERVICES]: serviceQuerySchema,
+	[SurfaceDimension.IPS]: ipQuerySchema,
+	[SurfaceDimension.VULNERABILITIES]: vulnQuerySchema,
+	[SurfaceDimension.SOFTWARE]: softwareQuerySchema,
+	[SurfaceDimension.SECRETS]: secretQuerySchema
+};
+
+/** One request fills every dimension. */
+export async function loadAllSchemas(): Promise<void> {
+	await Promise.all(Object.values(QUERY_SCHEMAS).map((store) => store.load()));
+}

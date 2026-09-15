@@ -334,7 +334,7 @@
 	<QueryBar
 		bind:this={queryBar}
 		store={softwareQuerySchema}
-		recentsKey={STORAGE_KEYS.softwareRecentQueries}
+		recentsKey={SURFACE[SurfaceDimension.SOFTWARE].recentsKey}
 		hint="severity:critical and is:stated"
 		value={search}
 		facets={barFacets}

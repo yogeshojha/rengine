@@ -360,7 +360,7 @@
 	<QueryBar
 		bind:this={queryBar}
 		store={secretQuerySchema}
-		recentsKey={STORAGE_KEYS.secretRecentQueries}
+		recentsKey={SURFACE[SurfaceDimension.SECRETS].recentsKey}
 		hint="group:cloud and is:exposed"
 		value={search}
 		facets={barFacets}

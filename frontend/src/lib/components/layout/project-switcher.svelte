@@ -14,7 +14,7 @@
 	import ProjectIcon from '../project-icons.svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { ROUTES } from '$lib/config/routes';
+	import { projectSwitchRedirect } from '$lib/config/routes';
 
 	const sidebar = useSidebar();
 
@@ -25,19 +25,12 @@
 
 	let showAddModal = $state(false);
 
-	const DETAIL_LIST_REDIRECTS: { match: RegExp; list: string }[] = [
-		{ match: /^\/targets\/[^/]+/, list: ROUTES.targets },
-		{ match: /^\/automation\/engines\/[^/]+/, list: ROUTES.engines },
-		{ match: /^\/automation\/contexts\/[^/]+/, list: ROUTES.contexts }
-	];
-
 	function handleProjectSelect(project: (typeof projects)[0]) {
 		if (project.id === activeProject?.id) return;
 		projectsStore.setActiveProject(project);
 
-		const path = page.url.pathname;
-		const redirect = DETAIL_LIST_REDIRECTS.find((r) => r.match.test(path));
-		if (redirect) goto(redirect.list);
+		const redirect = projectSwitchRedirect(page.url.pathname);
+		if (redirect) goto(redirect);
 	}
 </script>
 

@@ -42,11 +42,11 @@
 					</DropdownMenu.Item>
 					<DropdownMenu.Separator />
 					<DropdownMenu.Label class="text-xs text-muted-foreground">Automation</DropdownMenu.Label>
-					<DropdownMenu.Item onclick={() => goto(ROUTES.engines)}>
+					<DropdownMenu.Item onclick={() => goto(ROUTES.engine('new'))}>
 						<Cog class="mr-2 h-4 w-4" />
 						New scan engine
 					</DropdownMenu.Item>
-					<DropdownMenu.Item onclick={() => goto(ROUTES.contexts)}>
+					<DropdownMenu.Item onclick={() => goto(ROUTES.newContext())}>
 						<Layers class="mr-2 h-4 w-4" />
 						New scan context
 					</DropdownMenu.Item>

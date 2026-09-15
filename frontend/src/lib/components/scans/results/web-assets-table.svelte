@@ -754,7 +754,7 @@
 		bind:this={queryBar}
 		bind:ref={searchRef}
 		store={querySchema}
-		recentsKey={STORAGE_KEYS.webAssetsRecentQueries}
+		recentsKey={SURFACE[SurfaceDimension.WEB_ASSETS].recentsKey}
 		hint="status:>=500 is:live"
 		value={query.search}
 		facets={facets as unknown as Record<string, Facet[]>}

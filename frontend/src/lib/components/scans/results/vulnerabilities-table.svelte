@@ -793,7 +793,7 @@
 		bind:this={queryBar}
 		bind:ref={searchRef}
 		store={vulnQuerySchema}
-		recentsKey={STORAGE_KEYS.vulnsRecentQueries}
+		recentsKey={SURFACE[SurfaceDimension.VULNERABILITIES].recentsKey}
 		hint="severity:critical and not is:cdn"
 		value={query.search}
 		facets={facetsAsRecord(facets) as unknown as Record<string, Facet[]>}
