@@ -406,6 +406,20 @@ function createScansStore() {
 			return { ok, failed: ids.length - ok };
 		},
 
+		async cancelAll(): Promise<number | null> {
+			const projectId = filters.projectId;
+			if (!projectId) return null;
+			error = null;
+			try {
+				const { cancelled } = await scansApi.cancelAll(projectId, filters.targetId);
+				this.refresh();
+				return cancelled;
+			} catch (e) {
+				error = e instanceof Error ? e.message : 'Scans not cancelled';
+				return null;
+			}
+		},
+
 		exportAll(): Promise<ScanExportRow[]> {
 			const projectId = filters.projectId;
 			if (!projectId) return Promise.resolve([]);

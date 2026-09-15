@@ -2,6 +2,7 @@ import { api } from './client';
 import type {
 	ScanActivityRead,
 	ScanBatchCreate,
+	ScanCancelAll,
 	ScanCommandDetail,
 	ScanCommandRead,
 	ScanCreate,
@@ -120,6 +121,12 @@ export const scansApi = {
 
 	async cancel(id: string, projectId: string): Promise<ScanRead> {
 		return api.post<ScanRead>(`/scans/${id}/cancel?project_id=${projectId}`);
+	},
+
+	async cancelAll(projectId: string, targetId?: string): Promise<ScanCancelAll> {
+		const sp = new URLSearchParams({ project_id: projectId });
+		if (targetId) sp.append('target_id', targetId);
+		return api.post<ScanCancelAll>(`/scans/cancel-all?${sp.toString()}`);
 	},
 
 	async pause(id: string, projectId: string): Promise<ScanRead> {

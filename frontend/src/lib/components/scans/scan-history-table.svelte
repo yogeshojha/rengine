@@ -7,6 +7,7 @@
 	import Plus from '@lucide/svelte/icons/plus';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import X from '@lucide/svelte/icons/x';
+	import Ban from '@lucide/svelte/icons/ban';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import History from '@lucide/svelte/icons/history';
 	import Layers from '@lucide/svelte/icons/layers';
@@ -19,6 +20,7 @@
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import { Button } from '$lib/components/ui/button';
 	import ConfirmDialog from '@/components/confirm-dialog.svelte';
+	import LoadingButton from '$lib/components/loading-button.svelte';
 	import { Badge } from '$lib/components/ui/badge';
 	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import { scanSkeletonColumns } from './scan-columns';
@@ -62,6 +64,8 @@
 	let deleteTarget = $state<ScanRead | null>(null);
 	let bulkDeleteOpen = $state(false);
 	let bulkCancelOpen = $state(false);
+	let cancelAllOpen = $state(false);
+	let cancellingAll = $state(false);
 	let now = $state(Date.now());
 
 	const selectedScanIds = new SvelteSet<string>();
@@ -99,6 +103,11 @@
 	let pagination = $derived(scansStore.pagination);
 	let showPagination = $derived(pagination.pageSize !== -1 && pagination.totalPages > 1);
 	let statusTab = $derived(scanStatusTab(scansStore.filters.statuses));
+	let openCount = $derived.by(() => {
+		const counts = scansStore.stats?.by_status;
+		return counts ? counts.running + counts.pending + counts.paused : 0;
+	});
+	let canCancelAll = $derived(openCount > 0 || scansStore.hasLive);
 
 	let selectedScans = $derived(scans.filter((s) => selectedScanIds.has(s.id)));
 	let selectedLiveCount = $derived(selectedScans.filter((s) => isOpenStatus(s.status)).length);
@@ -160,6 +169,15 @@
 		const { ok, failed } = await scansStore.cancelMany(ids);
 		if (ok > 0) toast.success(`Cancelled ${ok} scan${ok !== 1 ? 's' : ''}`);
 		if (failed > 0) toast.error(`${failed} scan${failed !== 1 ? 's' : ''} not cancelled`);
+	}
+
+	async function confirmCancelAll() {
+		cancelAllOpen = false;
+		cancellingAll = true;
+		const n = await scansStore.cancelAll();
+		cancellingAll = false;
+		if (n === null) toast.error(scansStore.error ?? 'Scans not cancelled');
+		else toast.success(`Cancelled ${n} scan${n !== 1 ? 's' : ''}`);
 	}
 
 	let activeChips = $derived.by(() => {
@@ -390,6 +408,23 @@
 			>
 				<RefreshCw class="h-4 w-4 {scansStore.refreshing ? 'animate-spin' : ''}" />
 			</Button>
+			<Hint text={canCancelAll ? null : 'No unfinished scans.'}>
+				{#snippet child(props)}
+					<span {...props} class="inline-flex">
+						<LoadingButton
+							variant="outline"
+							class="h-9 gap-2"
+							disabled={!canCancelAll}
+							loading={cancellingAll}
+							loadingLabel="Cancelling"
+							aria-label={canCancelAll ? undefined : 'Cancel all. No unfinished scans.'}
+							onclick={() => (cancelAllOpen = true)}
+						>
+							<Ban class="h-4 w-4" /> Cancel all
+						</LoadingButton>
+					</span>
+				{/snippet}
+			</Hint>
 			{#if onLaunch}
 				<Button class="h-9 gap-2" onclick={onLaunch}>
 					<Plus class="h-4 w-4" /> New scan
@@ -569,6 +604,16 @@
 	destructive
 	onOpenChange={(o) => (bulkDeleteOpen = o)}
 	onConfirm={confirmBulkDelete}
+/>
+
+<ConfirmDialog
+	open={cancelAllOpen}
+	title="Cancel all unfinished scans"
+	description="Running, queued and paused scans stop and are marked cancelled."
+	confirmLabel="Cancel scans"
+	cancelLabel="Keep"
+	onOpenChange={(o) => (cancelAllOpen = o)}
+	onConfirm={confirmCancelAll}
 />
 
 <ConfirmDialog

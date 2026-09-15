@@ -27,6 +27,7 @@ from shared.models.scan import (
     RescanSchema,
     RunPreview,
     ScanBatchCreate,
+    ScanCancelAll,
     ScanChanges,
     ScanCreate,
     ScanExportRow,
@@ -356,6 +357,16 @@ async def compare_scan_diff(
         dimension=dimension,
         verbs=[v.value for v in verb or []],
     )
+
+
+@router.post("/cancel-all", response_model=ScanCancelAll)
+async def cancel_all_scans(
+    _current_user: CurrentUser,
+    service: Annotated[ScanService, Depends(get_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    target_id: Annotated[UUID | None, Query(description="Target ID")] = None,
+):
+    return await service.cancel_all(project_id=project_id, target_id=target_id)
 
 
 @router.get("/{id}/comparable", response_model=list[ComparableRun])

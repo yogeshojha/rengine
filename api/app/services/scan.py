@@ -43,6 +43,7 @@ from shared.models.scan import (
     SCAN_STATUSES,
     Scan,
     ScanBatchCreate,
+    ScanCancelAll,
     ScanChanges,
     ScanCreate,
     ScanDailyCount,
@@ -1198,6 +1199,22 @@ class ScanService:
             await self._announce_cancelled(scan)
             await self.session.refresh(scan)
         return self._to_read(scan)
+
+    async def cancel_all(
+        self, project_id: UUID, target_id: UUID | None = None
+    ) -> ScanCancelAll:
+        conds = [Scan.project_id == project_id, Scan.status.in_(SCAN_OPEN_STATUSES)]
+        if target_id is not None:
+            conds.append(Scan.target_id == target_id)
+        ids = (
+            (await self.session.execute(select(Scan.id).where(*conds))).scalars().all()
+        )
+        cancelled = 0
+        for scan_id in ids:
+            read = await self.cancel(id=scan_id, project_id=project_id)
+            if read.status == ScanStatus.CANCELLED.value:
+                cancelled += 1
+        return ScanCancelAll(cancelled=cancelled)
 
     async def pause(self, id: UUID, project_id: UUID) -> ScanRead:
         """Stop the run where it stands."""

@@ -322,6 +322,10 @@ class ScanStatusCounts(BaseModel):
     cancelled: int = 0
 
 
+class ScanCancelAll(BaseModel):
+    cancelled: int
+
+
 class ScanDailyCount(BaseModel):
     date: str
     count: int

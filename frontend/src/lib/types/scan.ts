@@ -292,6 +292,10 @@ export interface ScanExportRow {
 	created_at: string;
 }
 
+export interface ScanCancelAll {
+	cancelled: number;
+}
+
 export interface ScanStats {
 	total: number;
 	running: number;
