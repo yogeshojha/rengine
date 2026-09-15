@@ -179,9 +179,16 @@ export const targetsApi = {
 		return api.post<TargetBulkCreateResponse>('/targets/import/json', data);
 	},
 
-	async importCsv(projectSlug: string, file: File): Promise<TargetBulkCreateResponse> {
+	async importCsv(
+		projectSlug: string,
+		file: File,
+		organizationNames: string[] = [],
+		tagNames: string[] = []
+	): Promise<TargetBulkCreateResponse> {
 		const formData = new FormData();
 		formData.append('file', file);
+		for (const name of organizationNames) formData.append('organization_names', name);
+		for (const name of tagNames) formData.append('tag_names', name);
 
 		const response = await fetch(`${API_PREFIX}/targets/import/csv?project_slug=${projectSlug}`, {
 			method: 'POST',

@@ -1,7 +1,16 @@
 from typing import Annotated, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    UploadFile,
+    status,
+)
 from fastapi_pagination.ext.sqlalchemy import paginate
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -353,8 +362,17 @@ async def import_targets_csv(
     file: Annotated[UploadFile, File(...)],
     current_user: CurrentUser,
     service: Annotated[TargetService, Depends(get_target_service)],
+    organization_names: Annotated[
+        list[str] | None,
+        Form(description="Organizations added to every imported target."),
+    ] = None,
+    tag_names: Annotated[
+        list[str] | None, Form(description="Tags added to every imported target.")
+    ] = None,
 ):
-    return await service.import_targets_csv(project_slug, file, current_user.id)
+    return await service.import_targets_csv(
+        project_slug, file, current_user.id, organization_names, tag_names
+    )
 
 
 @router.get("/{target_id}/detail", response_model=TargetDetailRead)

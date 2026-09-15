@@ -236,3 +236,21 @@ class TargetImportRequest(BaseModel):
         max_length=500,
         description="Targets to import. At most 500.",
     )
+    organization_names: list[str] = Field(
+        default_factory=list,
+        description="Organizations added to every imported target.",
+    )
+    tag_names: list[str] = Field(
+        default_factory=list,
+        description="Tags added to every imported target.",
+    )
+
+    @field_validator("tag_names", "tags", check_fields=False)
+    @classmethod
+    def _clean_tags(cls, v):
+        return _clean_labels(v, MAX_TAG_LEN)
+
+    @field_validator("organization_names", "organizations", check_fields=False)
+    @classmethod
+    def _clean_orgs(cls, v):
+        return _clean_labels(v, MAX_ORG_LEN)

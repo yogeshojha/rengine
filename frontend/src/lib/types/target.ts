@@ -152,6 +152,8 @@ export interface TargetImportItem {
 export interface TargetImportRequest {
 	project_slug: string;
 	targets: TargetImportItem[];
+	organization_names?: string[];
+	tag_names?: string[];
 }
 
 export interface TargetImportResult {

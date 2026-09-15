@@ -126,6 +126,17 @@ def _rejected(
     )
 
 
+def _unique_by_id[T: (Organization, Tag)](rows: list[T]) -> list[T]:
+    seen: set[UUID] = set()
+    out: list[T] = []
+    for row in rows:
+        if row.id in seen:
+            continue
+        seen.add(row.id)
+        out.append(row)
+    return out
+
+
 def _csv_value(
     row: dict, originals: list[str], lowered: list[str], keys: tuple[str, ...]
 ) -> str:
@@ -793,7 +804,12 @@ class TargetService:
         await self.session.commit()
 
     async def import_targets_csv(
-        self, project_slug: str, file: UploadFile, user_id: str
+        self,
+        project_slug: str,
+        file: UploadFile,
+        user_id: str,
+        organization_names: list[str] | None = None,
+        tag_names: list[str] | None = None,
     ) -> TargetBulkCreateResponse:
         if not file.filename or not file.filename.lower().endswith(".csv"):
             raise HTTPException(
@@ -827,6 +843,8 @@ class TargetService:
         import_request = TargetImportRequest(
             project_slug=project_slug,
             targets=targets_data,
+            organization_names=organization_names or [],
+            tag_names=tag_names or [],
         )
 
         return await self.import_targets_structured(import_request, user_id)
@@ -853,6 +871,13 @@ class TargetService:
         seen_in_batch: set[str] = set()
         created_targets: list[Target] = []
 
+        shared_organizations = await self._get_or_create_organizations(
+            import_request.organization_names, project.id, user_id
+        )
+        shared_tags = await self._get_or_create_tags(
+            import_request.tag_names, project.id, user_id
+        )
+
         for item in import_request.targets:
             result = await self._process_import_item(
                 item=item,
@@ -860,6 +885,8 @@ class TargetService:
                 user_id=user_id,
                 existing_target_values=existing_target_values,
                 seen_in_batch=seen_in_batch,
+                shared_organizations=shared_organizations,
+                shared_tags=shared_tags,
             )
 
             results.append(result.import_result)
@@ -885,7 +912,7 @@ class TargetService:
         total = imported_count + failed_count + skipped_duplicates
         await self._activity.log_async(
             event=ActivityEvent.TARGET_BULK_IMPORTED,
-            title=f"Imported {imported_count} targets from CSV",
+            title=f"Imported {imported_count} targets",
             description=f"{imported_count}/{total} imported"
             + (f", {failed_count} failed" if failed_count else "")
             + (f", {skipped_duplicates} skipped" if skipped_duplicates else ""),
@@ -1179,6 +1206,8 @@ class TargetService:
         user_id: str,
         existing_target_values: set[str],
         seen_in_batch: set[str],
+        shared_organizations: list[Organization] | None = None,
+        shared_tags: list[Tag] | None = None,
     ) -> "BulkTargetResult":
         target_value = normalize_target_value(item.target_value)
         rejected = _rejected(target_value, seen_in_batch, existing_target_values)
@@ -1186,7 +1215,7 @@ class TargetService:
             return rejected
         target_type = validate_target(target_value)
 
-        organizations = []
+        organizations = list(shared_organizations or [])
         for org_name in item.organizations:
             if org_name.strip():
                 org = await get_or_create_organization(
@@ -1194,13 +1223,16 @@ class TargetService:
                 )
                 organizations.append(org)
 
-        tags = []
+        tags = list(shared_tags or [])
         for tag_name in item.tags:
             if tag_name.strip():
                 tag = await get_or_create_tag(
                     tag_name.strip(), project_id, user_id, self.session
                 )
                 tags.append(tag)
+
+        organizations = _unique_by_id(organizations)
+        tags = _unique_by_id(tags)
 
         target = Target(
             target_value=target_value,

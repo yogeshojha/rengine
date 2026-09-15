@@ -18,11 +18,15 @@
 	import ImportPreview from '$lib/components/targets/import-preview.svelte';
 	import ImportResults from '$lib/components/targets/import-results.svelte';
 	import { targetsApi } from '$lib/api/targets';
+	import { organizationsApi } from '$lib/api/organizations';
+	import { tagsApi } from '$lib/api/tags';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { targetsStore } from '$lib/stores/targets.svelte';
 	import { scansStore } from '$lib/stores/scans.svelte';
 	import { toast } from 'svelte-sonner';
 	import ImportHelpText from '$lib/components/targets/import-helper.svelte';
+	import MultiSelectCombobox from '$lib/components/multi-select-combobox.svelte';
+	import TagMultiSelect from '$lib/components/tag-multi-select.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import QuickScanFields from '$lib/components/scans/quick-scan-fields.svelte';
 	import { MAX_SCAN_BATCH } from '$lib/types/scan';
@@ -66,6 +70,9 @@
 
 	let previewItems = $state<TargetPreviewItem[]>([]);
 
+	let selectedOrganizations = $state<Array<{ id: string; label: string }>>([]);
+	let selectedTags = $state<Array<{ id: string; label: string; color: string }>>([]);
+
 	let importResults = $state<TargetBulkCreateResponse | null>(null);
 
 	let isProcessing = $state(false);
@@ -87,6 +94,65 @@
 
 	let busy = $derived(isProcessing || isImporting);
 
+	let organizationItems = $derived(
+		targetsStore.organizations.map((org) => ({ id: org.id, label: org.name }))
+	);
+
+	let tagItems = $derived(
+		targetsStore.tags.map((tag) => ({ id: tag.id, label: tag.name, color: tag.color }))
+	);
+
+	let appliedOrganizations = $derived(selectedOrganizations.map((o) => o.label));
+	let appliedTags = $derived(selectedTags.map((t) => t.label));
+
+	function handleSelectOrganization(item: { id: string; label: string }) {
+		selectedOrganizations = [...selectedOrganizations, item];
+	}
+
+	function handleRemoveOrganization(item: { id: string; label: string }) {
+		selectedOrganizations = selectedOrganizations.filter((o) => o.id !== item.id);
+	}
+
+	async function handleCreateOrganization(name: string) {
+		const projectSlug = projectsStore.activeProject?.slug;
+		if (!projectSlug) return;
+
+		try {
+			const newOrg = await organizationsApi.create({ name, project_slug: projectSlug });
+			selectedOrganizations = [...selectedOrganizations, { id: newOrg.id, label: newOrg.name }];
+			await targetsStore.fetchOrganizations();
+			toast.success(`Organization "${name}" created`);
+		} catch {
+			toast.error('Organization not created');
+		}
+	}
+
+	function handleSelectTag(item: { id: string; label: string; color: string }) {
+		selectedTags = [...selectedTags, item];
+	}
+
+	function handleRemoveTag(item: { id: string; label: string; color: string }) {
+		selectedTags = selectedTags.filter((t) => t.id !== item.id);
+	}
+
+	async function handleCreateTag(name: string, color: string) {
+		const projectSlug = projectsStore.activeProject?.slug;
+		if (!projectSlug) return;
+
+		try {
+			const newTag = await tagsApi.create({ name, color, project_slug: projectSlug });
+			selectedTags = [...selectedTags, { id: newTag.id, label: newTag.name, color: newTag.color }];
+			await targetsStore.fetchTags();
+			toast.success(`Tag "${name}" created`);
+		} catch {
+			toast.error('Tag not created');
+		}
+	}
+
+	function merge(existing: string[] | undefined, applied: string[]) {
+		return [...new Set([...applied, ...(existing ?? [])])];
+	}
+
 	function resetForm() {
 		manualText = '';
 		manualFile = null;
@@ -101,6 +167,8 @@
 	function resetModal() {
 		mode = 'input';
 		resetForm();
+		selectedOrganizations = [];
+		selectedTags = [];
 		importResults = null;
 		isProcessing = false;
 		isImporting = false;
@@ -270,15 +338,21 @@
 	}
 
 	async function validateItem(item: TargetImportItem): Promise<TargetPreviewItem> {
+		const withApplied = {
+			...item,
+			organizations: merge(item.organizations, appliedOrganizations),
+			tags: merge(item.tags, appliedTags)
+		};
+
 		try {
 			const result = await targetsApi.validate({ target_value: item.target_value });
 			return {
-				...item,
+				...withApplied,
 				target_type: result.valid ? result.target_type : null,
 				error: result.valid ? undefined : result.error || 'Invalid target'
 			};
 		} catch {
-			return { ...item, error: 'Validation failed' };
+			return { ...withApplied, error: 'Validation failed' };
 		}
 	}
 
@@ -356,7 +430,12 @@
 			let response;
 
 			if (activeTab === 'csv' && csvFile) {
-				response = await targetsApi.importCsv(projectSlug, csvFile);
+				response = await targetsApi.importCsv(
+					projectSlug,
+					csvFile,
+					appliedOrganizations,
+					appliedTags
+				);
 			} else {
 				const targets = items.map((item) => ({
 					target_value: item.target_value,
@@ -367,7 +446,9 @@
 
 				response = await targetsApi.importJson({
 					project_slug: projectSlug,
-					targets
+					targets,
+					organization_names: appliedOrganizations,
+					tag_names: appliedTags
 				});
 			}
 
@@ -553,6 +634,46 @@ https://app.example.com"
 						</Tabs.Content>
 					</div>
 				</Tabs.Root>
+
+				<Separator />
+
+				<div class="space-y-4 p-6">
+					<div class="space-y-0.5">
+						<Label>Applied to every target</Label>
+						{#if activeTab !== 'manual'}
+							<p class="text-xs text-muted-foreground">
+								Tags and organizations named in a row are added to these.
+							</p>
+						{/if}
+					</div>
+
+					<div class="grid gap-4 sm:grid-cols-2">
+						<div class="space-y-2">
+							<Label class="text-xs text-muted-foreground">Organizations</Label>
+							<MultiSelectCombobox
+								items={organizationItems}
+								selected={selectedOrganizations}
+								onSelect={handleSelectOrganization}
+								onRemove={handleRemoveOrganization}
+								onCreate={handleCreateOrganization}
+								placeholder="Search or create organizations"
+								emptyText="No organizations"
+							/>
+						</div>
+
+						<div class="space-y-2">
+							<Label class="text-xs text-muted-foreground">Tags</Label>
+							<TagMultiSelect
+								items={tagItems}
+								selected={selectedTags}
+								onSelect={handleSelectTag}
+								onRemove={handleRemoveTag}
+								onCreate={handleCreateTag}
+								placeholder="Search or create tags"
+							/>
+						</div>
+					</div>
+				</div>
 			{:else if mode === 'preview'}
 				<div class="p-6 space-y-4">
 					<ImportPreview items={previewItems} maxHeight="400px" />
