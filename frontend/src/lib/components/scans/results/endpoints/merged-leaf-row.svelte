@@ -267,7 +267,7 @@
 						aria-label="Copy a sample URL"
 						variant="ghost"
 						size="icon"
-						class="size-7"
+						class="hidden size-7 sm:inline-flex"
 						onclick={(e) => {
 							e.stopPropagation();
 							void writeClipboard(leaf.sample_url);

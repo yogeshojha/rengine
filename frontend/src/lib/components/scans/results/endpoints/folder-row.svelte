@@ -240,7 +240,7 @@
 						aria-label="Copy every URL in this branch"
 						variant="ghost"
 						size="icon"
-						class="size-7"
+						class="hidden size-7 sm:inline-flex"
 						onclick={onCopy}
 					>
 						<Copy class="size-3.5" />
