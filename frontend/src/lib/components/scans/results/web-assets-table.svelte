@@ -57,6 +57,9 @@
 	import type { RenderGroups, SubdomainRead } from '$lib/types/subdomain';
 	import type { SeedPick, SeedSelection } from '$lib/types/recheck';
 	import {
+		hideLabel,
+		excludeToken,
+		appendTokens,
 		appendToken,
 		exactToken,
 		activeFacetCount,
@@ -576,6 +579,16 @@
 	function toggleCol(key: string) {
 		visiblePref = visible.includes(key) ? visible.filter((k) => k !== key) : [...visible, key];
 	}
+	let hideOptions = $derived([
+		{
+			label: hideLabel(
+				selection.rows().map((s) => s.name),
+				'web assets'
+			),
+			tokens: () => selection.rows().map((s) => excludeToken('host', s.name))
+		}
+	]);
+
 	function setQuery(q: WebAssetQuery) {
 		query = q;
 		pageIndex = 0;
@@ -1086,6 +1099,11 @@
 					.filter(Boolean)
 		}
 	]}
+	hide={hideOptions}
+	onHide={(tokens) => {
+		setQuery({ ...query, search: appendTokens(query.search, tokens) });
+		selection.clear();
+	}}
 	ids={() => selection.ids()}
 	{exportFilters}
 	onDeleted={() => {

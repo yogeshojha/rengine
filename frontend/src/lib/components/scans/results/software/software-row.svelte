@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import Globe from '@lucide/svelte/icons/globe';
 	import Server from '@lucide/svelte/icons/server';
@@ -15,7 +16,7 @@
 	import TechIcon from '../tech-icon.svelte';
 	import { stopProp } from '$lib/utilities';
 	import { writeClipboard } from '$lib/utilities/clipboard';
-	import { exactToken } from '$lib/utilities/scan-insights';
+	import { excludeToken, exactToken } from '$lib/utilities/scan-insights';
 	import { relativeTime } from '$lib/utilities/dates';
 	import { ROUTES } from '$lib/config/routes';
 	import { SEVERITY_FILL, SEVERITY_TEXT, severityLabel } from '$lib/config/vulnerabilities';
@@ -208,6 +209,23 @@
 
 	<div class="{ACTIONS_PIN} {pinTone(selected, focused)}">
 		<div class={ACTIONS_BODY}>
+			<Hint text="Hide all {row.name}">
+				{#snippet child(props)}
+					<Button
+						{...props}
+						variant="ghost"
+						size="icon"
+						class="hidden size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
+						aria-label="Hide all {row.name}"
+						onclick={(e) => {
+							e.stopPropagation();
+							onToken(excludeToken('software', row.name));
+						}}
+					>
+						<EyeOff class="size-3.5" />
+					</Button>
+				{/snippet}
+			</Hint>
 			<!-- svelte-ignore a11y_click_events_have_key_events -->
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div onclick={stopProp}>
@@ -232,6 +250,14 @@
 						</DropdownMenu.Item>
 						<DropdownMenu.Item onclick={() => onToken(exactToken('software', row.name))}>
 							Filter to {row.name}
+						</DropdownMenu.Item>
+						<DropdownMenu.Separator />
+						<DropdownMenu.Item onclick={() => onToken(excludeToken('software', row.name))}>
+							<EyeOff class="size-3.5" />
+							<span class="truncate">Hide all {row.name}</span>
+						</DropdownMenu.Item>
+						<DropdownMenu.Item onclick={() => onToken(excludeToken('cve', row.cve))}>
+							<EyeOff class="size-3.5" /> Hide all {row.cve}
 						</DropdownMenu.Item>
 						<DropdownMenu.Separator />
 						<DropdownMenu.Item onclick={() => copy(row.cve, 'CVE')}>Copy CVE</DropdownMenu.Item>

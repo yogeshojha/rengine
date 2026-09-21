@@ -30,7 +30,13 @@
 	import { secretsApi } from '$lib/api/scan-results';
 	import { secretQuerySchema } from '$lib/stores/query-schema.svelte';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
-	import { appendToken, type Facet } from '$lib/utilities/scan-insights';
+	import {
+		hideLabel,
+		excludeToken,
+		appendTokens,
+		appendToken,
+		type Facet
+	} from '$lib/utilities/scan-insights';
 	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 	import { LiveRefresh } from '$lib/utilities/live-results';
 	import { STATE_TABS } from '$lib/config/secrets';
@@ -290,6 +296,19 @@
 		replaceState(next, appPage.state);
 	}
 
+	let hideOptions = $derived([
+		{
+			label: hideLabel([...new Set(selection.rows().map((r) => r.value.split('\n')[0]))], 'values'),
+			tokens: () => [
+				...new Set(selection.rows().map((r) => excludeToken('fingerprint', r.fingerprint)))
+			]
+		},
+		{
+			label: hideLabel([...new Set(selection.rows().map((r) => r.host))], 'web assets'),
+			tokens: () => [...new Set(selection.rows().map((r) => excludeToken('host', r.host)))]
+		}
+	]);
+
 	function onQuery(value: string) {
 		search = value;
 		pageIndex = 0;
@@ -300,6 +319,10 @@
 	function drillGroup(query: string) {
 		groupBy = '';
 		onQuery(appendToken(search, query));
+	}
+
+	function onToken(token: string) {
+		onQuery(appendToken(search, token));
 	}
 
 	function setStateTab(key: string) {
@@ -468,6 +491,7 @@
 					{projectWide}
 					onCheck={toggleCheck}
 					onOpen={openRow}
+					onFilter={onToken}
 				/>
 			{/each}
 		</div>
@@ -498,6 +522,11 @@
 		{ label: 'values', values: () => selection.rows().map((r) => r.value) },
 		{ label: 'URLs', values: () => [...new Set(selection.rows().map((r) => r.url))] }
 	]}
+	hide={hideOptions}
+	onHide={(tokens) => {
+		onQuery(appendTokens(search, tokens));
+		selection.clear();
+	}}
 	ids={() => selection.ids()}
 	{exportFilters}
 	onDeleted={() => {

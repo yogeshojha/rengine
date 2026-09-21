@@ -30,6 +30,7 @@
 		onList: (node: TreeNode) => void;
 		onVerify?: (node: TreeNode) => void;
 		onSend?: (node: TreeNode, connectorId: string) => void;
+		onFilter?: (token: string) => void;
 		onShowRootOnly?: () => void;
 	}
 
@@ -54,6 +55,7 @@
 		onList,
 		onVerify,
 		onSend,
+		onFilter,
 		onShowRootOnly
 	}: Props = $props();
 
@@ -89,6 +91,7 @@
 						{onList}
 						{onVerify}
 						{onSend}
+						{onFilter}
 					/>
 				</div>
 			{/each}

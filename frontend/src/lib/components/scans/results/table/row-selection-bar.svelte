@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import Copy from '@lucide/svelte/icons/copy';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import { toast } from 'svelte-sonner';
 	import { Button } from '$lib/components/ui/button';
@@ -18,6 +19,11 @@
 		values: () => string[];
 	}
 
+	export interface HideOption {
+		label: string;
+		tokens: () => string[];
+	}
+
 	interface Props {
 		count: number;
 		dimension: SurfaceDimension;
@@ -27,6 +33,8 @@
 		nounPlural?: string;
 		removes?: string;
 		copy: CopyOption[];
+		hide?: HideOption[];
+		onHide?: (tokens: string[]) => void;
 		ids: () => string[];
 		deleteKey?: string;
 		exportIds?: () => string[];
@@ -47,6 +55,8 @@
 		nounPlural,
 		removes,
 		copy,
+		hide = [],
+		onHide,
 		ids,
 		deleteKey,
 		exportIds,
@@ -80,6 +90,12 @@
 		if (await writeClipboard(values.join('\n')))
 			toast.success(`${values.length.toLocaleString()} ${option.label} copied`);
 		else toast.error('Clipboard not available.');
+	}
+
+	function hideValues(option: HideOption) {
+		const tokens = option.tokens();
+		if (!tokens.length) return;
+		onHide?.(tokens);
 	}
 
 	function openConfirm() {
@@ -129,6 +145,31 @@
 				{#each copy as option (option.label)}
 					<DropdownMenu.Item onclick={() => copyValues(option)}>
 						Copy {option.label}
+					</DropdownMenu.Item>
+				{/each}
+			</DropdownMenu.Content>
+		</DropdownMenu.Root>
+	{/if}
+
+	{#if onHide && hide.length === 1}
+		<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={() => hideValues(hide[0])}>
+			<EyeOff class="h-3.5 w-3.5 text-muted-foreground" />
+			Hide all {hide[0].label}
+		</Button>
+	{:else if onHide && hide.length > 1}
+		<DropdownMenu.Root>
+			<DropdownMenu.Trigger>
+				{#snippet child({ props })}
+					<Button {...props} variant="ghost" size="sm" class="gap-2 font-medium">
+						<EyeOff class="h-3.5 w-3.5 text-muted-foreground" />
+						Hide
+					</Button>
+				{/snippet}
+			</DropdownMenu.Trigger>
+			<DropdownMenu.Content align="center" class="w-64">
+				{#each hide as option (option.label)}
+					<DropdownMenu.Item onclick={() => hideValues(option)}>
+						<span class="truncate">Hide all {option.label}</span>
 					</DropdownMenu.Item>
 				{/each}
 			</DropdownMenu.Content>

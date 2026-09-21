@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { toast } from 'svelte-sonner';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import Copy from '@lucide/svelte/icons/copy';
 	import Filter from '@lucide/svelte/icons/filter';
 	import Globe from '@lucide/svelte/icons/globe';
@@ -24,7 +25,7 @@
 	import { stopProp } from '$lib/utilities';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { httpStatusTextClass } from '$lib/utilities/scan-correlation';
-	import { exactToken, filterToken } from '$lib/utilities/scan-insights';
+	import { excludeToken, exactToken, filterToken } from '$lib/utilities/scan-insights';
 	import { productBrand } from '$lib/utilities/services';
 	import {
 		PORT_SOURCE_HELP,
@@ -452,6 +453,23 @@
 					<Tooltip.Content>Open in a new tab</Tooltip.Content>
 				</Tooltip.Root>
 			{/if}
+			<Hint text="Hide all port {s.port}">
+				{#snippet child(props)}
+					<Button
+						{...props}
+						variant="ghost"
+						size="icon-sm"
+						class="hidden size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
+						aria-label="Hide all port {s.port}"
+						onclick={(e) => {
+							e.stopPropagation();
+							onFilter(excludeToken('port', String(s.port)));
+						}}
+					>
+						<EyeOff />
+					</Button>
+				{/snippet}
+			</Hint>
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger onclick={stopProp} onkeydown={stopProp}>
 					{#snippet child({ props })}
@@ -479,6 +497,12 @@
 								<Globe /> Hosts in Web assets
 							</DropdownMenu.Item>
 						{/if}
+						<DropdownMenu.Item onclick={() => onFilter(excludeToken('port', String(s.port)))}>
+							<EyeOff /> Hide all port {s.port}
+						</DropdownMenu.Item>
+						<DropdownMenu.Item onclick={() => onFilter(excludeToken('ip', s.ip))}>
+							<EyeOff /> Hide all {s.ip}
+						</DropdownMenu.Item>
 					</DropdownMenu.Group>
 					<DropdownMenu.Separator />
 					<DropdownMenu.Group>

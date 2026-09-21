@@ -59,7 +59,14 @@
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import { SURFACE, SurfaceDimension, type ResultTab } from '$lib/config/surface';
 	import { STATIC_CLASSES } from '$lib/config/endpoints';
-	import { appendToken, exactToken, type Facet } from '$lib/utilities/scan-insights';
+	import {
+		hideLabel,
+		excludeToken,
+		appendTokens,
+		appendToken,
+		exactToken,
+		type Facet
+	} from '$lib/utilities/scan-insights';
 	import {
 		compileEndpointQuery,
 		emptyEndpointQuery,
@@ -878,6 +885,17 @@
 		hideStaticPref = { ...hideStaticPref, [view]: value };
 		pageIndex = 0;
 	}
+	let hideOptions = $derived([
+		{
+			label: hideLabel([...new Set(selection.rows().map((e) => e.path))], 'paths'),
+			tokens: () => [...new Set(selection.rows().map((e) => excludeToken('path', e.path)))]
+		},
+		{
+			label: hideLabel([...new Set(selection.rows().map((e) => e.host))], 'web assets'),
+			tokens: () => [...new Set(selection.rows().map((e) => excludeToken('host', e.host)))]
+		}
+	]);
+
 	function setQuery(q: EndpointQuery) {
 		query = q;
 		pageIndex = 0;
@@ -1386,6 +1404,7 @@
 				onList={(node) => showInList(node.query)}
 				onVerify={projectWide ? undefined : verifyBranch}
 				onSend={proxies.length ? sendBranch : undefined}
+				onFilter={applyDsl}
 				onShowRootOnly={() => (hideRootOnly = false)}
 			/>
 		{/if}
@@ -1542,6 +1561,11 @@
 		{ label: 'paths', values: () => [...new Set(selection.rows().map((e) => e.path))] },
 		{ label: 'web assets', values: () => [...new Set(selection.rows().map((e) => e.host))] }
 	]}
+	hide={hideOptions}
+	onHide={(tokens) => {
+		setQuery({ ...query, search: appendTokens(query.search, tokens) });
+		selection.clear();
+	}}
 	ids={() => selection.ids()}
 	{exportFilters}
 	onDeleted={() => {

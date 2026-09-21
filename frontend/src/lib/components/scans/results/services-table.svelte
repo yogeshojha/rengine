@@ -42,7 +42,13 @@
 	import { servicesApi } from '$lib/api/scan-results';
 	import { serviceQuerySchema } from '$lib/stores/query-schema.svelte';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
-	import { appendToken, type Facet } from '$lib/utilities/scan-insights';
+	import {
+		hideLabel,
+		excludeToken,
+		appendTokens,
+		appendToken,
+		type Facet
+	} from '$lib/utilities/scan-insights';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import { seedKindFor, selectionLabel } from '$lib/utilities/rechecks';
 	import { rechecks } from '$lib/stores/rechecks.svelte';
@@ -406,6 +412,17 @@
 	function toggleCol(key: string) {
 		visiblePref = visible.includes(key) ? visible.filter((k) => k !== key) : [...visible, key];
 	}
+	let hideOptions = $derived([
+		{
+			label: hideLabel([...new Set(selection.rows().map((s) => `port ${s.port}`))], 'ports'),
+			tokens: () => [...new Set(selection.rows().map((s) => excludeToken('port', String(s.port))))]
+		},
+		{
+			label: hideLabel([...new Set(selection.rows().map((s) => s.ip))], 'addresses'),
+			tokens: () => [...new Set(selection.rows().map((s) => excludeToken('ip', s.ip)))]
+		}
+	]);
+
 	function setQuery(q: ServiceQuery) {
 		query = q;
 		pageIndex = 0;
@@ -749,6 +766,11 @@
 		{ label: 'endpoints', values: () => selection.rows().map((s) => hostPort(s.ip, s.port)) },
 		{ label: 'addresses', values: () => [...new Set(selection.rows().map((s) => s.ip))] }
 	]}
+	hide={hideOptions}
+	onHide={(tokens) => {
+		setQuery({ ...query, search: appendTokens(query.search, tokens) });
+		selection.clear();
+	}}
 	ids={() => selection.ids()}
 	{exportFilters}
 	onDeleted={() => {

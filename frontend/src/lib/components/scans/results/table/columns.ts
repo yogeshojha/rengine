@@ -24,7 +24,7 @@ export interface SortOption {
 
 export const ACTIONS_PIN = 'sticky right-0 z-10 ml-auto shrink-0 self-stretch bg-card';
 export const ACTIONS_BODY =
-	'flex h-full w-8 items-center justify-end gap-0.5 transition-colors sm:w-[3.75rem]';
+	'flex h-full w-8 items-center justify-end gap-0.5 transition-colors sm:w-[5.75rem]';
 
 export function rowTone(active: boolean, focused: boolean): string {
 	if (active) return 'bg-primary/5 hover:bg-primary/10';

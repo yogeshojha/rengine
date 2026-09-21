@@ -3,6 +3,7 @@
 	import Star from '@lucide/svelte/icons/star';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import Copy from '@lucide/svelte/icons/copy';
 	import Link from '@lucide/svelte/icons/link';
 	import Filter from '@lucide/svelte/icons/filter';
@@ -53,6 +54,7 @@
 	} from '$lib/utilities/scan-correlation';
 	import { isSensitivePort } from '$lib/config/service-classes';
 	import {
+		excludeToken,
 		certState,
 		daysUntilExpiry,
 		exactToken,
@@ -794,6 +796,23 @@
 					<ExternalLink class="h-4 w-4" />
 				</Button>
 			{/if}
+			<Hint text="Hide all {s.name}">
+				{#snippet child(props)}
+					<Button
+						{...props}
+						variant="ghost"
+						size="icon"
+						class="hidden size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
+						aria-label="Hide all {s.name}"
+						onclick={(e) => {
+							e.stopPropagation();
+							onFilter(excludeToken('host', s.name));
+						}}
+					>
+						<EyeOff class="h-4 w-4" />
+					</Button>
+				{/snippet}
+			</Hint>
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger>
 					{#snippet child({ props })}
@@ -840,6 +859,10 @@
 								<Link class="h-4 w-4" /> Copy URL
 							</DropdownMenu.Item>
 						{/if}
+						<DropdownMenu.Item onclick={() => onFilter(excludeToken('host', s.name))} class="gap-2">
+							<EyeOff class="h-4 w-4" />
+							<span class="truncate">Hide all {s.name}</span>
+						</DropdownMenu.Item>
 					</DropdownMenu.Group>
 					{#if ips[0] || s.cname || s.favicon_hash}
 						<DropdownMenu.Separator />

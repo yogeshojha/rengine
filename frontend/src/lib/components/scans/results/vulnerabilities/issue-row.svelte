@@ -4,6 +4,7 @@
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import Copy from '@lucide/svelte/icons/copy';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import Filter from '@lucide/svelte/icons/filter';
 	import CheckCheck from '@lucide/svelte/icons/check-check';
@@ -22,7 +23,7 @@
 	import { stopProp } from '$lib/utilities';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { formatShortDate } from '$lib/utilities/dates';
-	import { exactToken } from '$lib/utilities/scan-insights';
+	import { excludeToken, exactToken } from '$lib/utilities/scan-insights';
 	import { epssPercent, type IssueRead } from '$lib/utilities/vulns';
 	import {
 		EPSS_HIGH,
@@ -404,6 +405,23 @@
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class={ACTIONS_PIN} onclick={stopProp}>
 		<div class="{ACTIONS_BODY} {pin}">
+			<Hint text="Hide all {it.template_name}">
+				{#snippet child(props)}
+					<Button
+						{...props}
+						variant="ghost"
+						size="icon"
+						class="hidden size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
+						aria-label="Hide all {it.template_name}"
+						onclick={(e) => {
+							e.stopPropagation();
+							onFilter(excludeToken('template', it.template_id));
+						}}
+					>
+						<EyeOff class="size-3.5" />
+					</Button>
+				{/snippet}
+			</Hint>
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger>
 					{#snippet child({ props })}
@@ -425,6 +443,10 @@
 							<Globe class="mr-2 size-3.5" /> Open affected web assets
 						</DropdownMenu.Item>
 					{/if}
+					<DropdownMenu.Item onclick={() => onFilter(excludeToken('template', it.template_id))}>
+						<EyeOff class="mr-2 size-3.5" />
+						<span class="truncate">Hide all {it.template_name}</span>
+					</DropdownMenu.Item>
 					<DropdownMenu.Separator />
 					<DropdownMenu.Item onclick={() => copy(it.template_id)}>
 						<Copy class="mr-2 size-3.5" /> Copy check identifier

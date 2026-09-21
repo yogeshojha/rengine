@@ -44,6 +44,9 @@
 	import { ipQuerySchema } from '$lib/stores/query-schema.svelte';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import {
+		hideLabel,
+		excludeToken,
+		appendTokens,
 		appendToken,
 		filterToken,
 		type Facet,
@@ -433,6 +436,13 @@
 	function toggleCol(key: string) {
 		visiblePref = visible.includes(key) ? visible.filter((k) => k !== key) : [...visible, key];
 	}
+	let hideOptions = $derived([
+		{
+			label: hideLabel([...checkedIps], 'addresses'),
+			tokens: () => [...checkedIps].map((ip) => excludeToken('ip', ip))
+		}
+	]);
+
 	function setQuery(q: IpQuery) {
 		query = q;
 		pageIndex = 0;
@@ -769,6 +779,11 @@
 	{projectId}
 	{scanId}
 	copy={[{ label: 'addresses', values: () => [...checkedIps] }]}
+	hide={hideOptions}
+	onHide={(tokens) => {
+		setQuery({ ...query, search: appendTokens(query.search, tokens) });
+		checkedIps.clear();
+	}}
 	ids={() => [...checkedIps]}
 	{exportFilters}
 	onDeleted={() => {

@@ -45,7 +45,13 @@
 	import { softwareApi } from '$lib/api/scan-results';
 	import { softwareQuerySchema } from '$lib/stores/query-schema.svelte';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
-	import { appendToken, type Facet } from '$lib/utilities/scan-insights';
+	import {
+		hideLabel,
+		excludeToken,
+		appendTokens,
+		appendToken,
+		type Facet
+	} from '$lib/utilities/scan-insights';
 	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 	import { LiveRefresh } from '$lib/utilities/live-results';
 	import { SEVERITY_TABS } from '$lib/utilities/vulns';
@@ -273,6 +279,17 @@
 		const next = `${appPage.url.pathname}${params.size ? `?${params}` : ''}`;
 		replaceState(next, appPage.state);
 	}
+
+	let hideOptions = $derived([
+		{
+			label: hideLabel([...new Set(selection.rows().map((r) => r.name))], 'products'),
+			tokens: () => [...new Set(selection.rows().map((r) => excludeToken('software', r.name)))]
+		},
+		{
+			label: hideLabel([...new Set(selection.rows().map((r) => r.cve))], 'CVEs'),
+			tokens: () => [...new Set(selection.rows().map((r) => excludeToken('cve', r.cve)))]
+		}
+	]);
 
 	function onQuery(value: string) {
 		search = value;
@@ -517,6 +534,11 @@
 			]
 		}
 	]}
+	hide={hideOptions}
+	onHide={(tokens) => {
+		onQuery(appendTokens(search, tokens));
+		selection.clear();
+	}}
 	ids={() => selection.ids()}
 	{exportFilters}
 	onDeleted={() => {

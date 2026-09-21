@@ -56,7 +56,14 @@
 	import { vulnQuerySchema } from '$lib/stores/query-schema.svelte';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import { VULN_STATE_LABELS, VULN_STATE_KEYS } from '$lib/config/vulnerabilities';
-	import { appendToken, exactToken, type Facet } from '$lib/utilities/scan-insights';
+	import {
+		hideLabel,
+		excludeToken,
+		appendTokens,
+		appendToken,
+		exactToken,
+		type Facet
+	} from '$lib/utilities/scan-insights';
 	import {
 		compileVulnQuery,
 		emptyVulnQuery,
@@ -567,6 +574,38 @@
 	function toggleCol(key: string) {
 		visiblePref = visible.includes(key) ? visible.filter((k) => k !== key) : [...visible, key];
 	}
+	let hideOptions = $derived.by(() => {
+		if (isIssues) {
+			const rows = issues.filter((i) => checkedIds.has(i.template_id));
+			return [
+				{
+					label: hideLabel(
+						rows.map((i) => i.template_name),
+						'checks'
+					),
+					tokens: () => [...checkedIds].map((id) => excludeToken('template', id))
+				}
+			];
+		}
+		const rows = items.filter((v) => checkedIds.has(v.id));
+		const names = [...new Set(rows.map((v) => v.template_name))];
+		const hosts = [...new Set(rows.filter((v) => v.host).map((v) => v.host ?? ''))];
+		return [
+			{
+				label: hideLabel(names, 'checks'),
+				tokens: () => [...new Set(rows.map((v) => excludeToken('template', v.template_id)))]
+			},
+			...(hosts.length
+				? [
+						{
+							label: hideLabel(hosts, 'web assets'),
+							tokens: () => hosts.map((host) => excludeToken('host', host))
+						}
+					]
+				: [])
+		];
+	});
+
 	function setQuery(q: VulnQuery) {
 		query = q;
 		pageIndex = 0;
@@ -1189,6 +1228,11 @@
 					]
 				}
 			]}
+	hide={hideOptions}
+	onHide={(tokens) => {
+		setQuery({ ...query, search: appendTokens(query.search, tokens) });
+		checkedIds.clear();
+	}}
 	ids={() => [...checkedIds]}
 	deleteKey={isIssues ? 'template_id' : 'id'}
 	exportIds={() => (isIssues ? [] : [...checkedIds])}

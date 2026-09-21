@@ -2,6 +2,7 @@
 	import { toast } from 'svelte-sonner';
 	import Copy from '@lucide/svelte/icons/copy';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import Filter from '@lucide/svelte/icons/filter';
 	import Flame from '@lucide/svelte/icons/flame';
@@ -29,7 +30,7 @@
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { formatShortDate } from '$lib/utilities/dates';
 	import { httpStatusTextClass } from '$lib/utilities/scan-correlation';
-	import { exactToken, filterToken } from '$lib/utilities/scan-insights';
+	import { excludeToken, exactToken, filterToken } from '$lib/utilities/scan-insights';
 	import { epssPercent, locationLabel, originLabel } from '$lib/utilities/vulns';
 	import type { VulnerabilityRead } from '$lib/utilities/vulns';
 	import { BAND_FILL, bandFor, ExploitSignal } from '$lib/config/threat-intel';
@@ -550,6 +551,23 @@
 					{/snippet}
 				</Hint>
 			{/if}
+			<Hint text="Hide all {v.template_name}">
+				{#snippet child(props)}
+					<Button
+						{...props}
+						variant="ghost"
+						size="icon"
+						class="hidden size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
+						aria-label="Hide all {v.template_name}"
+						onclick={(e) => {
+							e.stopPropagation();
+							onFilter(excludeToken('template', v.template_id));
+						}}
+					>
+						<EyeOff class="size-3.5" />
+					</Button>
+				{/snippet}
+			</Hint>
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger>
 					{#snippet child({ props })}
@@ -576,6 +594,17 @@
 					{#if v.host}
 						<DropdownMenu.Item onclick={() => onHost(exactToken('host', v.host ?? ''))}>
 							<Globe class="mr-2 size-3.5" /> Open in Web assets
+						</DropdownMenu.Item>
+					{/if}
+					<DropdownMenu.Separator />
+					<DropdownMenu.Item onclick={() => onFilter(excludeToken('template', v.template_id))}>
+						<EyeOff class="mr-2 size-3.5" />
+						<span class="truncate">Hide all {v.template_name}</span>
+					</DropdownMenu.Item>
+					{#if v.host}
+						<DropdownMenu.Item onclick={() => onFilter(excludeToken('host', v.host ?? ''))}>
+							<EyeOff class="mr-2 size-3.5" />
+							<span class="truncate">Hide all {v.host}</span>
 						</DropdownMenu.Item>
 					{/if}
 					<DropdownMenu.Separator />

@@ -1,7 +1,9 @@
 <script lang="ts">
+	import { excludeToken } from '$lib/utilities/scan-insights';
 	import Globe from '@lucide/svelte/icons/globe';
 	import Copy from '@lucide/svelte/icons/copy';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 	import Rows3 from '@lucide/svelte/icons/rows-3';
@@ -46,6 +48,7 @@
 		onList: (node: TreeNode) => void;
 		onVerify?: (node: TreeNode) => void;
 		onSend?: (node: TreeNode, connectorId: string) => void;
+		onFilter?: (token: string) => void;
 	}
 
 	let {
@@ -63,7 +66,8 @@
 		onWordlist,
 		onList,
 		onVerify,
-		onSend
+		onSend,
+		onFilter
 	}: Props = $props();
 
 	const CHIP_TONE: Record<string, string> = {
@@ -238,6 +242,25 @@
 
 	<div class="{ACTIONS_PIN} {pinTone(false, focused)}">
 		<div class={ACTIONS_BODY}>
+			{#if onFilter}
+				<Hint text="Hide all {node.name}">
+					{#snippet child(props)}
+						<Button
+							{...props}
+							variant="ghost"
+							size="icon"
+							class="hidden size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
+							aria-label="Hide all {node.name}"
+							onclick={(e) => {
+								e.stopPropagation();
+								onFilter?.(excludeToken('host', node.name));
+							}}
+						>
+							<EyeOff class="size-3.5" />
+						</Button>
+					{/snippet}
+				</Hint>
+			{/if}
 			<Hint text="Copy every URL on this host">
 				{#snippet child(props)}
 					<Button
@@ -245,7 +268,7 @@
 						aria-label="Copy every URL on this host"
 						variant="ghost"
 						size="icon"
-						class="size-7"
+						class="hidden size-7 sm:inline-flex"
 						onclick={(e) => {
 							stop(e);
 							onCopy(node);
@@ -277,6 +300,12 @@
 					<DropdownMenu.Item onclick={() => onList(node)}>
 						<Rows3 class="size-3.5" /> Show in list
 					</DropdownMenu.Item>
+					{#if onFilter}
+						<DropdownMenu.Item onclick={() => onFilter?.(excludeToken('host', node.name))}>
+							<EyeOff class="size-3.5" />
+							<span class="truncate">Hide all {node.name}</span>
+						</DropdownMenu.Item>
+					{/if}
 					<DropdownMenu.Item>
 						{#snippet child({ props })}
 							<a {...props} href={openUrl} target="_blank" rel="noopener noreferrer">

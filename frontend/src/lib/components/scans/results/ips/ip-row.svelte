@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { toast } from 'svelte-sonner';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import Copy from '@lucide/svelte/icons/copy';
 	import Filter from '@lucide/svelte/icons/filter';
 	import Globe from '@lucide/svelte/icons/globe';
@@ -27,7 +28,12 @@
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { isPrivateIp } from '$lib/utilities/scan-correlation';
 	import { isSensitivePort } from '$lib/config/service-classes';
-	import { exactToken, filterToken, type IpGroupRead } from '$lib/utilities/scan-insights';
+	import {
+		excludeToken,
+		exactToken,
+		filterToken,
+		type IpGroupRead
+	} from '$lib/utilities/scan-insights';
 	import type { ServiceRead } from '$lib/utilities/services';
 	import {
 		ACTIONS_BODY,
@@ -390,6 +396,23 @@
 					<Tooltip.Content>Hosts in Web assets</Tooltip.Content>
 				</Tooltip.Root>
 			{/if}
+			<Hint text="Hide all {g.ip}">
+				{#snippet child(props)}
+					<Button
+						{...props}
+						variant="ghost"
+						size="icon-sm"
+						class="hidden size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
+						aria-label="Hide all {g.ip}"
+						onclick={(e) => {
+							e.stopPropagation();
+							onFilter(excludeToken('ip', g.ip));
+						}}
+					>
+						<EyeOff />
+					</Button>
+				{/snippet}
+			</Hint>
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger onclick={stopProp} onkeydown={stopProp}>
 					{#snippet child({ props })}
@@ -419,6 +442,9 @@
 								<Plug /> Services on this address
 							</DropdownMenu.Item>
 						{/if}
+						<DropdownMenu.Item onclick={() => onFilter(excludeToken('ip', g.ip))}>
+							<EyeOff /> Hide all {g.ip}
+						</DropdownMenu.Item>
 					</DropdownMenu.Group>
 					<DropdownMenu.Separator />
 					<DropdownMenu.Group>

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import ExternalLink from '@lucide/svelte/icons/external-link';
-	import { filterToken } from '$lib/utilities/scan-insights';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
+	import { excludeToken, filterToken } from '$lib/utilities/scan-insights';
 	import { formatBytes } from '$lib/utilities/scan-correlation';
 	import Copy from '@lucide/svelte/icons/copy';
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
@@ -318,7 +319,7 @@
 						aria-label="Copy URL"
 						variant="ghost"
 						size="icon"
-						class="size-7"
+						class="hidden size-7 sm:inline-flex"
 						onclick={(e) => {
 							e.stopPropagation();
 							void writeClipboard(endpoint.url);
@@ -345,6 +346,25 @@
 					</Button>
 				{/snippet}
 			</Hint>
+			{#if onFilter}
+				<Hint text="Hide all {endpoint.path}">
+					{#snippet child(props)}
+						<Button
+							{...props}
+							variant="ghost"
+							size="icon"
+							class="hidden size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
+							aria-label="Hide all {endpoint.path}"
+							onclick={(e) => {
+								e.stopPropagation();
+								onFilter?.(excludeToken('path', endpoint.path));
+							}}
+						>
+							<EyeOff class="size-3.5" />
+						</Button>
+					{/snippet}
+				</Hint>
+			{/if}
 		</div>
 	</div>
 </div>

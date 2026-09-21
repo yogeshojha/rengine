@@ -15,7 +15,7 @@ export const SECRET_WIDTHS = {
 	state: 'flex w-[100px] shrink-0',
 	asset: 'hidden w-[220px] shrink-0 lg:flex',
 	seen: 'hidden w-[90px] shrink-0 justify-end sm:flex',
-	actions: 'flex w-8 shrink-0 justify-end'
+	actions: 'flex w-8 shrink-0 justify-end gap-0.5 sm:w-[3.75rem]'
 } as const;
 
 export function secretSkeletonColumns(projectWide: boolean): TableColumn[] {

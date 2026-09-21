@@ -173,10 +173,24 @@ export function exactToken(key: string, value: string): string {
 	return `${key}=${quoteValue(value)}`;
 }
 
+export function excludeToken(key: string, value: string): string {
+	return `${key}!=${quoteValue(value)}`;
+}
+
 export function appendToken(search: string, token: string): string {
 	const parts = tokenize(search);
 	if (parts.includes(token)) return search;
 	return [...parts, token].join(' ');
+}
+
+export function hideLabel(values: string[], nounPlural: string): string {
+	if (values.length !== 1) return `${values.length.toLocaleString()} ${nounPlural}`;
+	const value = values[0];
+	return value.length > 32 ? `${value.slice(0, 31)}…` : value;
+}
+
+export function appendTokens(search: string, tokens: string[]): string {
+	return tokens.reduce(appendToken, search);
 }
 
 export interface Facet {

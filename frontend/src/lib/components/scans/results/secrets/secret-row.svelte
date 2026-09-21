@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { excludeToken } from '$lib/utilities/scan-insights';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import Copy from '@lucide/svelte/icons/copy';
 	import Globe from '@lucide/svelte/icons/globe';
@@ -13,6 +15,7 @@
 	import HighlightText from '../table/highlight-text.svelte';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { relativeTime } from '$lib/utilities/dates';
+	import { pluralLabel } from '$lib/utilities/strings';
 	import { stopProp } from '$lib/utilities';
 	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
@@ -28,6 +31,7 @@
 		projectWide?: boolean;
 		onCheck?: (id: string) => void;
 		onOpen: (row: SecretRead) => void;
+		onFilter?: (token: string) => void;
 	}
 
 	let {
@@ -37,7 +41,8 @@
 		checked = false,
 		projectWide = false,
 		onCheck,
-		onOpen
+		onOpen,
+		onFilter
 	}: Props = $props();
 
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
@@ -152,6 +157,25 @@
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="{SECRET_WIDTHS.actions} items-center" onclick={stopProp}>
+		{#if onFilter}
+			<Hint text="Hide all {firstLine}">
+				{#snippet child(props)}
+					<Button
+						{...props}
+						variant="ghost"
+						size="icon"
+						class="hidden size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
+						aria-label="Hide all {firstLine}"
+						onclick={(e) => {
+							e.stopPropagation();
+							onFilter?.(excludeToken('fingerprint', row.fingerprint));
+						}}
+					>
+						<EyeOff class="h-4 w-4" />
+					</Button>
+				{/snippet}
+			</Hint>
+		{/if}
 		<DropdownMenu.Root>
 			<DropdownMenu.Trigger>
 				{#snippet child({ props })}
@@ -159,7 +183,7 @@
 						{...props}
 						variant="ghost"
 						size="icon"
-						class="h-8 w-8"
+						class="size-7"
 						aria-label="Actions for {row.kind_label}"
 					>
 						<Ellipsis class="h-4 w-4" />
@@ -173,6 +197,22 @@
 				<DropdownMenu.Item onclick={copyValue} class="gap-2">
 					<Copy class="h-4 w-4" /> Copy value
 				</DropdownMenu.Item>
+				{#if onFilter}
+					<DropdownMenu.Separator />
+					<DropdownMenu.Item
+						onclick={() => onFilter?.(excludeToken('fingerprint', row.fingerprint))}
+						class="gap-2"
+					>
+						<EyeOff class="h-4 w-4" />
+						<span class="truncate">Hide all {firstLine}</span>
+					</DropdownMenu.Item>
+					<DropdownMenu.Item
+						onclick={() => onFilter?.(excludeToken('secret', row.kind))}
+						class="gap-2"
+					>
+						<EyeOff class="h-4 w-4" /> Hide all {pluralLabel(row.kind_label)}
+					</DropdownMenu.Item>
+				{/if}
 				<DropdownMenu.Separator />
 				<DropdownMenu.Item class="gap-2">
 					{#snippet child({ props })}
