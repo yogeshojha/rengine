@@ -11,6 +11,7 @@ from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.logging import get_logger
 from shared.models.http_asset import HttpAsset
 from shared.models.port import Port
+from shared.models.scan_correlation import OriginExposure, OriginFinding
 from shared.services import vuln_inventory
 from shared.services.origin_exposure import OriginExposureService
 from shared.services.scope_filter import ip_excluded
@@ -18,6 +19,7 @@ from shared.utils.datetime import utc_now
 from shared.utils.net import host_port
 from stages.base import ALL_TARGETS, Stage, StageResult
 from stages.origin_probe.config import MAX_PORTS_PER_ADDRESS, OriginProbeConfig
+from stages.origin_probe.confirm import OriginConfirmer
 from stages.origin_probe.finding import origin_finding
 from tools.httpx.client import HttpxClient, HttpxError
 from tools.httpx.parser import parse_httpx_record
@@ -104,9 +106,9 @@ class OriginProbeStage(Stage):
         )
 
     def _record_exposure(self) -> int:
-        """The correlation the read model already computes, written down as findings."""
+        """Candidates the correlation found, kept only where the address served the site."""
         exposure = OriginExposureService(self.session).run(self.ctx.scan_id)
-        findings = [origin_finding(found) for found in exposure.findings]
+        findings = [origin_finding(found) for found in self._confirmed(exposure)]
         stored = vuln_inventory.upsert(
             self.session,
             scan_id=self.ctx.scan_id,
@@ -122,6 +124,25 @@ class OriginProbeStage(Stage):
                 "application as a name behind the CDN"
             )
         return stored
+
+    def _confirmed(self, exposure: OriginExposure) -> list[OriginFinding]:
+        if not exposure.findings:
+            return []
+        net = self.net_options()
+        kept: list[OriginFinding] = []
+        with OriginConfirmer(
+            timeout=self.transport.timeout,
+            proxy_url=net.proxy_url,
+            headers=net.headers,
+        ) as confirmer:
+            for found in exposure.findings:
+                self._check_abort()
+                if confirmer.confirms(found):
+                    kept.append(found)
+        refused = len(exposure.findings) - len(kept)
+        if refused:
+            self.emit_progress(f"{refused} of {len(exposure.findings)} not reproduced")
+        return kept
 
     def _targets(self, cfg: OriginProbeConfig) -> list[str]:
         rows = self.session.execute(

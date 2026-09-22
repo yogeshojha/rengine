@@ -7,6 +7,7 @@ from shared.services.origin_exposure import (
     OriginExposureService,
     _Asset,
 )
+from stages.origin_probe.confirm import Page, same_site
 
 pytestmark = pytest.mark.pipeline
 
@@ -68,3 +69,32 @@ def test_a_certificate_corroborates_a_body_it_shares():
     assert len(found) == 1
     assert found[0].confidence == "high"
     assert {item.kind for item in found[0].evidence} == set(prints)
+
+
+def _page(digest="d", title="Acme Portal", length=4096, status=200) -> Page:
+    return Page(status=status, length=length, digest=digest, title=title)
+
+
+def test_the_same_body_from_the_address_confirms_the_site():
+    assert same_site(_page(), _page()) is True
+
+
+def test_a_page_the_server_wrote_confirms_nothing():
+    assert (
+        same_site(_page(title="Welcome to nginx!"), _page(title="Welcome to nginx!"))
+        is False
+    )
+
+
+def test_a_different_site_on_the_address_is_not_a_confirmation():
+    assert same_site(_page(digest="a"), _page(digest="b", title="Other")) is False
+
+
+def test_the_same_title_at_a_similar_length_confirms():
+    assert same_site(_page(digest="a"), _page(digest="b", length=4200)) is True
+    assert same_site(_page(digest="a"), _page(digest="b", length=40000)) is False
+
+
+def test_an_address_that_did_not_answer_confirms_nothing():
+    assert same_site(_page(), None) is False
+    assert same_site(None, _page()) is False
