@@ -158,20 +158,24 @@ celery_app.conf.beat_schedule = {
     "scan-schedule-tick": {
         "task": "app.tasks.schedule.tick",
         "schedule": SCHEDULE_TICK_SECONDS,
+        "options": {"expires": SCHEDULE_TICK_SECONDS},
     },
     "scan-stall-reap": {
         "task": "app.tasks.scan.reap_stalled",
         "schedule": STALL_REAP_SECONDS,
+        "options": {"expires": STALL_REAP_SECONDS},
     },
     "bounty-program-sync": {
         "task": "app.tasks.bounty_programs.sync",
         "schedule": BOUNTY_SYNC_TICK_SECONDS,
         "kwargs": {"force": False},
+        "options": {"expires": BOUNTY_SYNC_TICK_SECONDS},
     },
     "bounty-feed-sync": {
         "task": "app.tasks.bounty_programs.sync_feed",
         "schedule": BOUNTY_SYNC_TICK_SECONDS,
         "kwargs": {"force": False},
+        "options": {"expires": BOUNTY_SYNC_TICK_SECONDS},
     },
     "ip-range-refresh": {
         "task": "app.tasks.ip_asn.refresh",
@@ -180,6 +184,7 @@ celery_app.conf.beat_schedule = {
     "ip-range-backfill": {
         "task": "app.tasks.ip_asn.backfill",
         "schedule": HYGIENE_BACKFILL_SECONDS,
+        "options": {"expires": HYGIENE_BACKFILL_SECONDS},
     },
     "daily-jobs": {
         "task": "app.tasks.daily.run",
@@ -197,6 +202,7 @@ celery_app.conf.beat_schedule = {
     "export-reap": {
         "task": "app.tasks.export.reap",
         "schedule": EXPORT_REAP_SECONDS,
+        "options": {"expires": EXPORT_REAP_SECONDS},
     },
     "notification-cleanup": {
         "task": "app.tasks.notifications.cleanup",
@@ -237,6 +243,7 @@ celery_app.conf.beat_schedule = {
     "watch-recheck": {
         "task": "app.tasks.watch.recheck",
         "schedule": WATCH_RECHECK_SECONDS,
+        "options": {"expires": WATCH_RECHECK_SECONDS},
     },
 }
 
@@ -244,11 +251,7 @@ celery_app.conf.beat_schedule = {
 @setup_logging.connect
 def configure_logging(loglevel: int, **kwargs) -> None:  # noqa: ARG001
     """Configure logging for Celery workers."""
-    setup_rengine_logging(
-        name="rengine.worker",
-        level=settings.LOG_LEVEL,
-        colored=True,
-    )
+    setup_rengine_logging(name="", level=settings.LOG_LEVEL, colored=True)
 
 
 @worker_process_init.connect
@@ -262,11 +265,7 @@ def on_process_init(**_) -> None:
 @worker_ready.connect
 def on_worker_ready(sender, **kwargs) -> None:  # noqa: ARG001
     """Log when worker is ready."""
-    logger.info(
-        "Worker ready: %s (concurrency: %s)",
-        sender.hostname,
-        sender.concurrency,
-    )
+    logger.info("Worker ready: %s", sender.hostname)
     _warm_ip_ranges()
     _warm_threat_intel()
 

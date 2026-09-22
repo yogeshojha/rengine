@@ -24,6 +24,9 @@ class ColoredFormatter(logging.Formatter):
             record.levelname = plain
 
 
+QUIET_LOGGERS = ("httpx", "httpcore", "hpack", "urllib3", "asyncio", "kombu", "amqp")
+
+
 def setup_logging(
     name: str = "rengine",
     level: str = "INFO",
@@ -50,6 +53,8 @@ def setup_logging(
 
     console_handler.setFormatter(console_format)
     logger.addHandler(console_handler)
+    for noisy in QUIET_LOGGERS:
+        logging.getLogger(noisy).setLevel(logging.WARNING)
 
     return logger
 

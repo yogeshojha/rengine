@@ -70,7 +70,10 @@ def _lower_host(netloc: str) -> str:
 
 
 def _normalize_url(value: str) -> str:
-    parts = urlsplit(value)
+    try:
+        parts = urlsplit(value)
+    except ValueError:
+        return value
     return urlunsplit(
         parts._replace(scheme=parts.scheme.lower(), netloc=_lower_host(parts.netloc))
     )

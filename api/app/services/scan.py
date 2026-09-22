@@ -542,7 +542,7 @@ class ScanService:
         if context is not None:
             await self.context_service.touch(context.id, project_id, scan_id=scan.id)
 
-        self._dispatch_scan(scan)
+        await self._dispatch_batch([scan])
         return self._to_read(scan)
 
     async def create_batch(
@@ -1265,14 +1265,12 @@ class ScanService:
     async def cancel(self, id: UUID, project_id: UUID) -> ScanRead:
         scan = await self._get_scan(id, project_id, lock=True)
         if scan.status in SCAN_OPEN_STATUSES:
-            was_paused = scan.status == ScanStatus.PAUSED.value
             scan.status = ScanStatus.CANCELLED.value
             scan.completed_at = utc_now()
             fold_pause(scan, scan.completed_at)
             scan.error = "Cancelled by user."
             await self.session.commit()
 
-            revoke_scan_tasks(scan.celery_task_ids or [])
             now = utc_now()
             for model in (ScanActivity, ScanCommand):
                 await self.session.execute(
@@ -1284,8 +1282,10 @@ class ScanService:
                     .values(status=ScanActivityStatus.ABORTED.value, completed_at=now)
                 )
             await self.session.commit()
-            if was_paused:
-                dispatch_scan_finalize(str(scan.id))
+            try:
+                await asyncio.to_thread(dispatch_scan_finalize, str(scan.id))
+            except Exception:
+                logger.warning("cancel finalize dispatch failed", exc_info=True)
             await self._announce_cancelled(scan)
             await self.session.refresh(scan)
         return self._to_read(scan)

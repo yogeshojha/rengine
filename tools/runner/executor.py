@@ -154,10 +154,13 @@ def _run_process(
     for reader in readers:
         reader.start()
 
-    stopped = _wait(proc, timeout=timeout, should_stop=should_stop)
-    timed_out = proc.poll() is None and not stopped
-    if proc.poll() is None:
-        _terminate(proc)
+    try:
+        stopped = _wait(proc, timeout=timeout, should_stop=should_stop)
+    finally:
+        timed_out = proc.poll() is None
+        if timed_out:
+            _terminate(proc)
+    timed_out = timed_out and not stopped
     for reader in readers:
         reader.join(timeout=_KILL_GRACE_SECONDS)
     if stopped:

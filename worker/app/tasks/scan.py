@@ -1,6 +1,9 @@
-"""Scan orchestrator celery tasks: run_scan, run_scan_stage, resume_scan, finalize_scan."""
+"""Scan orchestrator celery tasks: run_scan, run_scan_step, run_scan_stage, resume_scan, finalize_scan."""
 
+import json
+import re
 import uuid
+from datetime import timedelta
 
 import redis
 from celery import shared_task
@@ -10,7 +13,13 @@ from sqlalchemy.orm import Session
 from app.celery import celery_app
 from app.config import settings
 from app.database import get_sync_session
-from app.orchestrator import apply_counts, build_canvas, finalize_scan_run, run_stage
+from app.orchestrator import (
+    apply_counts,
+    build_canvas,
+    build_step,
+    finalize_scan_run,
+    run_stage,
+)
 from shared.definitions.constants import SCANS_QUEUE
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.scan import (
@@ -23,6 +32,7 @@ from shared.logging import get_logger
 from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
 from shared.services.activity_log import ActivityLogService
+from shared.services.celery_dispatch import dispatch_scan_run
 from shared.services.orchestrator import superseded
 from shared.services.orchestrator.events import ScanEventPublisher
 from shared.utils.datetime import utc_now
@@ -34,9 +44,11 @@ _DISPATCHED_TASK_IDS = 2
 _LAUNCH_SKIPPED = (*SCAN_TERMINAL_STATUSES, ScanStatus.PAUSED.value)
 
 STALL_GRACE_SECONDS = 600
+PENDING_GRACE_SECONDS = 300
 STALL_ABANDON_SECONDS = settings.TASK_HARD_TIME_LIMIT
 _INSPECT_TIMEOUT = 5.0
 _ABANDON_REASON = "The worker never came back to this stage."
+_SCAN_ID_RE = re.compile(r"'scan_id': '([0-9a-f-]{36})'")
 
 _broker_client: redis.Redis | None = None
 
@@ -100,6 +112,32 @@ def run_scan(self, scan_id: str, epoch: int = 0) -> dict:
             session.commit()
             events.scan_started(status=scan.status, engine=scan.engine_name)
         return {"dispatched": True, "task_id": result.id}
+
+
+@shared_task(name="app.tasks.scan.run_scan_step", max_retries=0)
+def run_scan_step(scan_id: str, epoch: int, steps: list[list[str]], index: int) -> dict:
+    """Dispatch one step of the canvas once the step before it has settled."""
+    with get_sync_session() as session:
+        scan = session.get(Scan, uuid.UUID(scan_id), with_for_update=True)
+        if scan is None:
+            return {"error": "scan not found"}
+        if superseded(scan.run_epoch, epoch):
+            logger.info(
+                "step %s belongs to a superseded canvas of scan %s", index, scan_id
+            )
+            return {"skipped": "superseded canvas", "step": index}
+        if scan.status == ScanStatus.CANCELLED.value:
+            index = len(steps)
+        elif scan.status != ScanStatus.RUNNING.value:
+            logger.info(
+                "step %s not dispatched, scan %s is %s", index, scan_id, scan.status
+            )
+            return {"skipped": scan.status, "step": index}
+        result = build_step(scan_id, epoch, steps, index).apply_async()
+        scan.celery_task_ids = [*(scan.celery_task_ids or []), result.id]
+        session.commit()
+    logger.info("scan %s step %s dispatched (%s)", scan_id, index, result.id)
+    return {"step": index, "task_id": result.id}
 
 
 @shared_task(bind=True, name="app.tasks.scan.run_scan_stage", max_retries=0)
@@ -187,20 +225,24 @@ def resume_scan(self, scan_id: str, epoch: int) -> dict:
 @shared_task(bind=True, name="app.tasks.scan.reap_stalled", max_retries=0)
 def reap_stalled(self) -> dict:  # noqa: ARG001
     """Resume a RUNNING scan whose canvas died, and settle one that never comes back."""
-    if _scans_queued():
-        return {"skipped": "queue busy"}
+    queued = _queued_scan_ids()
+    if queued is None:
+        return {"skipped": "queue unreadable"}
     active = _active_task_ids()
     if active is None:
         return {"skipped": "no worker replied"}
     resumed = []
     abandoned = []
     with get_sync_session() as session:
+        requeued = _requeue_pending(session, queued)
         scans = (
             session.execute(select(Scan).where(Scan.status == ScanStatus.RUNNING.value))
             .scalars()
             .all()
         )
         for scan in scans:
+            if str(scan.id) in queued:
+                continue
             resume = _resume_level(session, scan, active)
             if resume is None:
                 continue
@@ -225,7 +267,35 @@ def reap_stalled(self) -> dict:  # noqa: ARG001
                 str(scan.id), epoch, start_level=level, done=done
             ).apply_async()
             resumed.append(str(scan.id))
-    return {"resumed": resumed, "abandoned": abandoned}
+    return {"resumed": resumed, "abandoned": abandoned, "requeued": requeued}
+
+
+def _requeue_pending(session: Session, queued: set[str]) -> list[str]:
+    """Send the launch again for a PENDING scan whose launch is nowhere in the queue."""
+    cutoff = utc_now() - timedelta(seconds=PENDING_GRACE_SECONDS)
+    scans = (
+        session.execute(
+            select(Scan).where(
+                Scan.status == ScanStatus.PENDING.value, Scan.created_at < cutoff
+            )
+        )
+        .scalars()
+        .all()
+    )
+    requeued = []
+    for scan in scans:
+        if str(scan.id) in queued:
+            continue
+        try:
+            dispatch_scan_run(str(scan.id), scan.run_epoch or 0)
+        except Exception:
+            logger.warning(
+                "pending scan %s could not be queued again", scan.id, exc_info=True
+            )
+            continue
+        logger.warning("pending scan %s had no launch queued, queued again", scan.id)
+        requeued.append(str(scan.id))
+    return requeued
 
 
 def _abandon(session: Session, scan: Scan) -> None:
@@ -267,12 +337,29 @@ def _broker() -> redis.Redis:
     return _broker_client
 
 
-def _scans_queued() -> bool:
+def _queued_scan_ids() -> set[str] | None:
+    """The scans with a task still waiting in the queue."""
     try:
-        return bool(_broker().llen(SCANS_QUEUE))
+        client = _broker()
+        raw = [
+            m
+            for key in client.keys(f"{SCANS_QUEUE}*")
+            if client.type(key) == b"list"
+            for m in client.lrange(key, 0, -1)
+        ]
     except Exception:
         logger.warning("stall check could not read the scans queue", exc_info=True)
-        return True
+        return None
+    ids: set[str] = set()
+    for message in raw:
+        try:
+            kwargs = json.loads(message)["headers"]["kwargsrepr"]
+        except (ValueError, KeyError, TypeError):
+            continue
+        match = _SCAN_ID_RE.search(kwargs)
+        if match:
+            ids.add(match.group(1))
+    return ids
 
 
 def _active_task_ids() -> set[str] | None:

@@ -141,6 +141,7 @@ services:
       --queues=critical,default,scans
       --hostname=worker-default@%h
       --max-tasks-per-child=100
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
@@ -165,6 +166,7 @@ services:
       uv run celery -A app.celery beat
       --loglevel=INFO
       --schedule=/tmp/celerybeat-schedule
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
