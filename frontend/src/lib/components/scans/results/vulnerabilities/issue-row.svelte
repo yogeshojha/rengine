@@ -404,6 +404,13 @@
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class={ACTIONS_PIN} onclick={stopProp}>
+		{#if emphasised}
+			<span
+				class="pointer-events-none absolute inset-0 -z-10"
+				style="background:color-mix(in oklch, {fill} 6%, transparent)"
+				aria-hidden="true"
+			></span>
+		{/if}
 		<div class="{ACTIONS_BODY} {pin}">
 			<Hint text="Hide all {it.template_name}">
 				{#snippet child(props)}
