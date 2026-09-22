@@ -146,14 +146,11 @@ fi
 naabu && subfinder && amass
 nuclei
 
-if [ ! -d "/root/nuclei-templates/geeknik_nuclei_templates" ];
+# geeknik/the-nuclei-templates produces false positives (#1521), drop copies left by older installs
+if [ -d "/root/nuclei-templates/geeknik_nuclei_templates" ];
 then
-  echo "Installing Geeknik Nuclei templates"
-  git clone https://github.com/geeknik/the-nuclei-templates.git ~/nuclei-templates/geeknik_nuclei_templates
-else
-  echo "Removing old Geeknik Nuclei templates and updating new one"
-  rm -rf ~/nuclei-templates/geeknik_nuclei_templates
-  git clone https://github.com/geeknik/the-nuclei-templates.git ~/nuclei-templates/geeknik_nuclei_templates
+  echo "Removing Geeknik Nuclei templates"
+  rm -rf /root/nuclei-templates/geeknik_nuclei_templates
 fi
 
 if [ ! -f ~/nuclei-templates/ssrf_nagli.yaml ];
