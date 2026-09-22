@@ -20,6 +20,7 @@ from shared.models.scan_correlation import (
     OriginFinding,
     OriginSample,
 )
+from shared.models.subdomain import Subdomain
 
 FINGERPRINTS: tuple[tuple[str, str, int], ...] = (
     ("tls_fingerprint", "TLS certificate", 3),
@@ -27,6 +28,7 @@ FINGERPRINTS: tuple[tuple[str, str, int], ...] = (
     ("favicon_hash", "Favicon", 2),
     ("header_hash", "Response headers", 1),
 )
+MINTING = frozenset({"content_hash", "favicon_hash"})
 HIGH_CONFIDENCE = 3
 MEDIUM_CONFIDENCE = 2
 MAX_SHARED_HOSTS = 60
@@ -125,7 +127,7 @@ class OriginExposureService:
             return OriginExposure()
         ports = self._ports(scan_id)
         fronted = [a for a in assets if a.is_cdn]
-        findings = self._origins(assets, fronted, ports)
+        findings = self._origins(assets, fronted, ports, self._resolved(scan_id))
         findings += self._default_vhosts(assets, ports)
         findings = _merge(findings)
         findings.sort(key=lambda f: (f.confidence != "high", -len(f.evidence)))
@@ -178,6 +180,21 @@ class OriginExposureService:
             out[ip].append(int(number))
         return out
 
+    def _resolved(self, scan_id: UUID) -> dict[str, set[str]]:
+        """Every address each hostname resolves to, not just the one httpx used."""
+        rows = (
+            self.session.execute(
+                select(Subdomain.name, Subdomain.resolved_ips).where(
+                    Subdomain.scan_id == scan_id
+                )
+            )
+        ).all()
+        out: dict[str, set[str]] = defaultdict(set)
+        for name, ips in rows:
+            if name:
+                out[name.lower()].update(str(ip) for ip in (ips or []))
+        return out
+
     def _index(self, fronted: list[_Asset]) -> dict[tuple[str, str], list[_Asset]]:
         index: dict[tuple[str, str], list[_Asset]] = defaultdict(list)
         for asset in fronted:
@@ -188,7 +205,11 @@ class OriginExposureService:
         }
 
     def _origins(
-        self, assets: list[_Asset], fronted: list[_Asset], ports: dict[str, list[int]]
+        self,
+        assets: list[_Asset],
+        fronted: list[_Asset],
+        ports: dict[str, list[int]],
+        resolved: dict[str, set[str]],
     ) -> list[OriginFinding]:
         index = self._index(fronted)
         findings: list[OriginFinding] = []
@@ -212,6 +233,7 @@ class OriginExposureService:
                     other
                     for other in index.get((kind, value), ())
                     if other.ip != asset.ip
+                    and asset.ip not in resolved.get(other.host.lower(), ())
                 ]
                 if not group:
                     continue
@@ -232,6 +254,8 @@ class OriginExposureService:
                         weight, reach
                     )
             if score < MEDIUM_CONFIDENCE or not matched:
+                continue
+            if not any(item.kind in MINTING for item in evidence):
                 continue
             findings.append(
                 self._finding(
