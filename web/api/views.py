@@ -524,7 +524,7 @@ class QueryInterestingSubdomains(APIView):
 		return Response(InterestingSubdomainSerializer(queryset, many=True).data)
 
 
-class ListTargetsDatatableViewSet(viewsets.ModelViewSet):
+class ListTargetsDatatableViewSet(viewsets.ReadOnlyModelViewSet):
 	queryset = Domain.objects.all()
 	serializer_class = DomainSerializer
 
