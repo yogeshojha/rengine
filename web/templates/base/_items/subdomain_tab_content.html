@@ -23,7 +23,7 @@
 			<div class="card-body">
 				<div class="row">
 					<div class="col-6 float-start">
-						{% if user|can:'initiate_scans' %}
+						{% if user|can:'initiate_scans_subscans' %}
 						<a class="disabled btn btn-soft-primary ms-2" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="Initiate Multiple Subscans" onclick="initiateMultipleSubscan()">
 							<i class="fe-zap"></i>
 							Initiate Subscan
@@ -33,7 +33,7 @@
 							<i class="fe-download"></i>
 							Download Selected Subdomains
 						</a>
-						{% if user|can:'initiate_scans' %}
+						{% if user|can:'modify_scan_results' %}
 						<a class="disabled btn btn-soft-danger" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="Delete Multiple Subdomains" onclick="deleteMultipleSubdomains()">
 							<i class="fe-trash"></i>
 							Delete Multiple Subdomains
