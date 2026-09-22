@@ -4,12 +4,13 @@ import pytest
 
 from shared.definitions.vulnerabilities import Scanner, Severity
 from shared.models.scan_correlation import OriginEvidence, OriginFinding, OriginSample
-from stages.origin_probe.finding import origin_finding
+from shared.services.origin_exposure import DEFAULT_VHOST, ORIGIN_EXPOSED
+from stages.origin_probe.finding import _TEMPLATE, _TITLE, origin_finding
 
 pytestmark = pytest.mark.pipeline
 
 
-def _found(kind="origin", confidence="high", evidence=2) -> OriginFinding:
+def _found(kind=ORIGIN_EXPOSED, confidence="high", evidence=2) -> OriginFinding:
     return OriginFinding(
         kind=kind,
         confidence=confidence,
@@ -45,7 +46,7 @@ def test_it_names_both_sides_and_the_evidence():
 
 
 def test_the_default_vhost_case_reads_differently():
-    found = origin_finding(_found(kind="vhost"))
+    found = origin_finding(_found(kind=DEFAULT_VHOST))
     assert found.template_id == "rengine-default-vhost"
     assert "serves a different site" in found.description
 
@@ -68,3 +69,8 @@ def test_an_unknown_kind_still_produces_a_finding():
 def test_it_says_so_when_no_identity_was_recorded():
     found = origin_finding(_found(evidence=0))
     assert "no shared identity recorded" in found.description
+
+
+def test_every_kind_the_service_emits_has_a_template():
+    assert set(_TEMPLATE) == {ORIGIN_EXPOSED, DEFAULT_VHOST}
+    assert set(_TITLE) == {ORIGIN_EXPOSED, DEFAULT_VHOST}

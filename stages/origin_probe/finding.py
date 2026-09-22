@@ -4,16 +4,17 @@ import hashlib
 
 from shared.definitions.vulnerabilities import Protocol, Scanner, Severity
 from shared.models.scan_correlation import OriginFinding
+from shared.services.origin_exposure import DEFAULT_VHOST, ORIGIN_EXPOSED
 from shared.utils.datetime import utc_now
 from tools.nuclei.parser import Finding
 
 _TEMPLATE = {
-    "origin": "rengine-origin-exposed",
-    "vhost": "rengine-default-vhost",
+    ORIGIN_EXPOSED: "rengine-origin-exposed",
+    DEFAULT_VHOST: "rengine-default-vhost",
 }
 _TITLE = {
-    "origin": "Origin reachable outside the CDN",
-    "vhost": "Address serves a different site by default",
+    ORIGIN_EXPOSED: "Origin reachable outside the CDN",
+    DEFAULT_VHOST: "Address serves a different site by default",
 }
 _SEVERITY = {"high": Severity.MEDIUM.value, "medium": Severity.LOW.value}
 
@@ -28,14 +29,14 @@ def _evidence(found: OriginFinding) -> str:
 def origin_finding(found: OriginFinding) -> Finding:
     """One origin-exposure correlation as a finding."""
     address = found.exposed.host or found.exposed.ip or ""
-    kind = found.kind if found.kind in _TEMPLATE else "origin"
+    kind = found.kind if found.kind in _TEMPLATE else ORIGIN_EXPOSED
     names = [sample.host for sample in found.fronted if sample.host]
     behind = names[0] if names else "a name behind the CDN"
     digest = hashlib.sha256(
         f"{Scanner.RENGINE.value}|{_TEMPLATE[kind]}|{address}|{behind}".encode()
     ).hexdigest()
 
-    if kind == "origin":
+    if kind == ORIGIN_EXPOSED:
         description = (
             f"{address} answers directly and serves the same application as {behind} "
             f"behind its CDN. Shared: {_evidence(found)}."
