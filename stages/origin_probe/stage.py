@@ -45,6 +45,7 @@ class OriginProbeStage(Stage):
     group = StageGroup.SERVICES.value
     role = StageRole.SUPPORT.value
     consumes = frozenset({AssetKind.PORTS.value})
+    produces = frozenset({AssetKind.VULNERABILITIES.value})
     applies_to = ALL_TARGETS
     tools = ("httpx",)
     transport_tool = TransportTool.HTTPX.value
