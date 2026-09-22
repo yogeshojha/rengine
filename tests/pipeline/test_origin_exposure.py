@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import pytest
 
+from shared.models.scan_correlation import OriginFinding, OriginSample
 from shared.services.origin_exposure import (
+    DEFAULT_VHOST,
     ORIGIN_EXPOSED,
     OriginExposureService,
     _Asset,
 )
-from stages.origin_probe.confirm import Page, same_site
+from stages.origin_probe.confirm import OriginConfirmer, Page, Verdict, same_site
 
 pytestmark = pytest.mark.pipeline
 
@@ -98,3 +100,48 @@ def test_the_same_title_at_a_similar_length_confirms():
 def test_an_address_that_did_not_answer_confirms_nothing():
     assert same_site(_page(), None) is False
     assert same_site(None, _page()) is False
+
+
+def _candidate(kind=ORIGIN_EXPOSED, name="www.example.com") -> OriginFinding:
+    return OriginFinding(
+        kind=kind,
+        confidence="medium",
+        exposed=OriginSample(
+            host="2.2.2.2", url="https://2.2.2.2", ip="2.2.2.2", port=443
+        ),
+        fronted=[OriginSample(host=name, url=f"https://{name}")] if name else [],
+    )
+
+
+class _Confirmer(OriginConfirmer):
+    def __init__(self, pages):
+        self._pages = pages
+        self._headers = {}
+
+    def _fetch(self, url, *, host=None):  # noqa: ARG002
+        return self._pages.pop(0)
+
+
+def test_an_address_that_served_the_site_is_confirmed():
+    verdict = _Confirmer([_page(), _page()]).check(_candidate())
+    assert verdict is Verdict.CONFIRMED
+
+
+def test_an_address_that_served_something_else_is_refuted():
+    verdict = _Confirmer([_page(digest="a"), _page(digest="b", title="Other")]).check(
+        _candidate()
+    )
+    assert verdict is Verdict.REFUTED
+
+
+def test_a_name_that_could_not_be_reached_is_not_a_refutation():
+    assert _Confirmer([None, _page()]).check(_candidate()) is Verdict.UNCHECKED
+    assert _Confirmer([_page(), None]).check(_candidate()) is Verdict.UNCHECKED
+
+
+def test_a_candidate_with_no_name_cannot_be_checked():
+    assert _Confirmer([]).check(_candidate(name="")) is Verdict.UNCHECKED
+
+
+def test_the_default_vhost_case_carries_no_bypass_claim_to_check():
+    assert _Confirmer([]).check(_candidate(kind=DEFAULT_VHOST)) is Verdict.CONFIRMED

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import re
 from dataclasses import dataclass
+from enum import StrEnum
 
 import httpx
 
@@ -19,6 +20,12 @@ BODY_CAP = 200_000
 LENGTH_TOLERANCE = 1.25
 _TITLE = re.compile(rb"<title[^>]*>(.{0,200}?)</title>", re.I | re.S)
 _TLS_PORTS = frozenset({HTTPS_PORT, 8443, 2083, 2087})
+
+
+class Verdict(StrEnum):
+    CONFIRMED = "confirmed"
+    REFUTED = "refuted"
+    UNCHECKED = "unchecked"
 
 
 @dataclass(frozen=True)
@@ -81,20 +88,20 @@ class OriginConfirmer:
     def __exit__(self, *_exc: object) -> None:
         self.close()
 
-    def confirms(self, found: OriginFinding) -> bool:
+    def check(self, found: OriginFinding) -> Verdict:
+        """Whether the address served the fronted site, refused it, or could not be asked."""
         if found.kind != ORIGIN_EXPOSED:
-            return True
+            return Verdict.CONFIRMED
         address, port = found.exposed.ip, found.exposed.port or HTTPS_PORT
         name = next((s.host for s in found.fronted if s.host), "")
         if not address or not name or name == address:
-            return False
+            return Verdict.UNCHECKED
         scheme = "https" if port in _TLS_PORTS else "http"
         named = self._fetch(f"{scheme}://{name}:{port}/")
-        origin = self._fetch(
-            f"{scheme}://{address}:{port}/",
-            host=name,
-        )
-        return same_site(named, origin)
+        origin = self._fetch(f"{scheme}://{address}:{port}/", host=name)
+        if named is None or origin is None:
+            return Verdict.UNCHECKED
+        return Verdict.CONFIRMED if same_site(named, origin) else Verdict.REFUTED
 
     def _fetch(self, url: str, *, host: str | None = None) -> Page | None:
         headers = dict(self._headers)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import random
+from collections import Counter
 
 from sqlalchemy import select
 
@@ -19,7 +20,7 @@ from shared.utils.datetime import utc_now
 from shared.utils.net import host_port
 from stages.base import ALL_TARGETS, Stage, StageResult
 from stages.origin_probe.config import MAX_PORTS_PER_ADDRESS, OriginProbeConfig
-from stages.origin_probe.confirm import OriginConfirmer
+from stages.origin_probe.confirm import OriginConfirmer, Verdict
 from stages.origin_probe.finding import origin_finding
 from tools.httpx.client import HttpxClient, HttpxError
 from tools.httpx.parser import parse_httpx_record
@@ -87,7 +88,7 @@ class OriginProbeStage(Stage):
 
         answered, rejected = self._persist(_chunked())
         self.emit_progress(f"{answered} of {len(targets)} answered by address alone")
-        exposed = self._record_exposure()
+        exposed, unchecked = self._record_exposure()
         warnings = []
         if stalled[0]:
             warnings.append(
@@ -95,6 +96,8 @@ class OriginProbeStage(Stage):
             )
         if rejected:
             warnings.append(f"{rejected:,} responses could not be stored")
+        if unchecked:
+            warnings.append(f"{unchecked:,} origin candidates were not rechecked")
         return StageResult(
             counts={
                 "probed": len(targets),
@@ -105,10 +108,11 @@ class OriginProbeStage(Stage):
             partial=bool(warnings),
         )
 
-    def _record_exposure(self) -> int:
+    def _record_exposure(self) -> tuple[int, int]:
         """Candidates the correlation found, kept only where the address served the site."""
         exposure = OriginExposureService(self.session).run(self.ctx.scan_id)
-        findings = [origin_finding(found) for found in self._confirmed(exposure)]
+        confirmed, seen = self._confirmed(exposure)
+        findings = [origin_finding(found) for found in confirmed]
         stored = vuln_inventory.upsert(
             self.session,
             scan_id=self.ctx.scan_id,
@@ -123,11 +127,14 @@ class OriginProbeStage(Stage):
                 f"{stored} address{'' if stored == 1 else 'es'} answer the same "
                 "application as a name behind the CDN"
             )
-        return stored
+        return stored, seen[Verdict.UNCHECKED.value]
 
-    def _confirmed(self, exposure: OriginExposure) -> list[OriginFinding]:
+    def _confirmed(
+        self, exposure: OriginExposure
+    ) -> tuple[list[OriginFinding], Counter[str]]:
+        seen: Counter[str] = Counter()
         if not exposure.findings:
-            return []
+            return [], seen
         net = self.net_options()
         kept: list[OriginFinding] = []
         with OriginConfirmer(
@@ -137,12 +144,14 @@ class OriginProbeStage(Stage):
         ) as confirmer:
             for found in exposure.findings:
                 self._check_abort()
-                if confirmer.confirms(found):
+                verdict = confirmer.check(found)
+                seen[verdict.value] += 1
+                if verdict is Verdict.CONFIRMED:
                     kept.append(found)
-        refused = len(exposure.findings) - len(kept)
-        if refused:
-            self.emit_progress(f"{refused} of {len(exposure.findings)} not reproduced")
-        return kept
+        refuted = seen[Verdict.REFUTED.value]
+        if refuted:
+            self.emit_progress(f"{refuted} of {len(exposure.findings)} not reproduced")
+        return kept, seen
 
     def _targets(self, cfg: OriginProbeConfig) -> list[str]:
         rows = self.session.execute(
