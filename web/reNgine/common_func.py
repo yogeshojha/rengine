@@ -593,8 +593,11 @@ def send_telegram_message(message):
 		return
 	telegram_bot_token = notif.telegram_bot_token
 	telegram_bot_chat_id = notif.telegram_bot_chat_id
-	send_url = f'https://api.telegram.org/bot{telegram_bot_token}/sendMessage?chat_id={telegram_bot_chat_id}&parse_mode=Markdown&text={message}'
-	requests.get(send_url)
+	send_url = f'https://api.telegram.org/bot{telegram_bot_token}/sendMessage'
+	requests.get(send_url, params={
+		'chat_id': telegram_bot_chat_id,
+		'parse_mode': 'Markdown',
+		'text': message})
 
 
 def send_slack_message(message):
