@@ -302,6 +302,7 @@ class ScanFindings(BaseModel):
     high: int = 0
     medium: int = 0
     covered: bool = False
+    scan_id: uuid.UUID | None = None
 
 
 class ScanRead(BaseModel):

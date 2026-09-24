@@ -15,7 +15,8 @@
 
 	const FINDINGS: { signal: SignalFilter; sev: string }[] = [
 		{ signal: 'critical', sev: Severity.CRITICAL },
-		{ signal: 'high', sev: Severity.HIGH }
+		{ signal: 'high', sev: Severity.HIGH },
+		{ signal: 'medium', sev: Severity.MEDIUM }
 	];
 	const ENRICHMENT: { signal: SignalFilter; label: string; tone: string }[] = [
 		{ signal: 'attention', label: 'Needs attention', tone: 'text-destructive' },
@@ -58,6 +59,7 @@
 			<div class="flex gap-1.5">
 				<Skeleton class="h-8 w-20 rounded-md" />
 				<Skeleton class="h-8 w-16 rounded-md" />
+				<Skeleton class="h-8 w-20 rounded-md" />
 			</div>
 		</div>
 		<div class="flex flex-col gap-1.5 lg:ml-auto">

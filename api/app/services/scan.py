@@ -106,7 +106,7 @@ from shared.services.scan_resolve import (
     merge_engine_context,
     redact_command,
 )
-from shared.services.scan_scope import census_only, covering_stages
+from shared.services.scan_scope import census_only, covering_stages, covers
 from shared.utils.datetime import utc_now
 from shared.utils.validation import unrecognised_target, validate_target
 from stages.registry import resume_point
@@ -1257,7 +1257,40 @@ class ScanService:
         items = [self.to_read(s) for s in rows]
         await self.attach_deltas(items)
         await self.attach_target_runs(items)
+        await self._attach_covering_findings(project_id, items)
         return items
+
+    async def _attach_covering_findings(
+        self, project_id: UUID, items: list[ScanRead]
+    ) -> None:
+        """Replace each row's findings with its target's vulnerability covering scan."""
+        if not items:
+            return
+        covering = dict(
+            (
+                await self.session.execute(
+                    select(Scan.target_id, Scan.id)
+                    .where(
+                        Scan.project_id == project_id,
+                        Scan.target_id.in_([i.target_id for i in items]),
+                        census_only(),
+                        covers(Vulnerability, SurfaceDimension.VULNERABILITIES.value),
+                    )
+                    .distinct(Scan.target_id)
+                    .order_by(
+                        Scan.target_id,
+                        func.coalesce(Scan.started_at, Scan.created_at).desc(),
+                    )
+                )
+            ).all()
+        )
+        moved = [i for i in items if covering.get(i.target_id) not in (None, i.id)]
+        counts = await self.finding_counts([covering[i.target_id] for i in moved])
+        for i in moved:
+            sid = covering[i.target_id]
+            i.findings = counts.get(sid, ScanFindings()).model_copy(
+                update={"scan_id": sid}
+            )
 
     async def finding_trends(
         self, project_id: UUID, target_ids: list[UUID], limit: int = TREND_POINTS

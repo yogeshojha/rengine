@@ -286,6 +286,7 @@ class TargetService:
             "stale": row.stale,
             "critical": row.critical,
             "high": row.high,
+            "medium": row.medium,
         }
 
     async def get_matching_target_ids(

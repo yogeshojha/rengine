@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy import Select, and_, case, exists, func, or_, select
 from sqlalchemy.sql.elements import ColumnElement
 
+from shared.definitions.surface import SurfaceDimension
 from shared.definitions.vulnerabilities import SUPPRESSED_STATES, Severity
 from shared.enums.target import TargetType
 from shared.enums.task_status import TaskStatus
@@ -14,7 +15,7 @@ from shared.models.tag import TargetTag
 from shared.models.target import TargetOrganization
 from shared.models.vulnerability import Vulnerability, VulnerabilityTriage
 from shared.models.whois import WhoisRecord
-from shared.services.scan_scope import census_only
+from shared.services.scan_scope import census_only, covers
 from shared.utils.datetime import utc_now
 
 SignalName = Literal[
@@ -27,6 +28,7 @@ SignalName = Literal[
     "stale",
     "critical",
     "high",
+    "medium",
 ]
 SortKey = Literal["updated", "created", "name", "type", "expiry", "enrichment"]
 SortDir = Literal["asc", "desc"]
@@ -110,10 +112,14 @@ def stale_expr() -> ColumnElement[bool]:
     return last < utc_now() - timedelta(days=STALE_DAYS)
 
 
-def _latest_run():
+def _findings_run():
     return (
         select(Scan.id)
-        .where(Scan.target_id == Target.id, census_only())
+        .where(
+            Scan.target_id == Target.id,
+            census_only(),
+            covers(Vulnerability, SurfaceDimension.VULNERABILITIES.value),
+        )
         .order_by(_started().desc())
         .limit(1)
         .correlate(Target)
@@ -131,7 +137,7 @@ def severity_expr(severity: str) -> ColumnElement[bool]:
     )
     return exists(
         select(1).where(
-            Vulnerability.scan_id == _latest_run(),
+            Vulnerability.scan_id == _findings_run(),
             Vulnerability.severity == severity,
             ~suppressed,
         )
@@ -148,6 +154,7 @@ _SIGNAL_EXPR = {
     "stale": stale_expr,
     "critical": lambda: severity_expr(Severity.CRITICAL.value),
     "high": lambda: severity_expr(Severity.HIGH.value),
+    "medium": lambda: severity_expr(Severity.MEDIUM.value),
 }
 
 
@@ -277,4 +284,7 @@ def signal_count_columns() -> list:
         func.coalesce(
             func.sum(case((severity_expr(Severity.HIGH.value), 1), else_=0)), 0
         ).label("high"),
+        func.coalesce(
+            func.sum(case((severity_expr(Severity.MEDIUM.value), 1), else_=0)), 0
+        ).label("medium"),
     ]

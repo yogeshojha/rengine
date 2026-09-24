@@ -95,7 +95,7 @@ from shared.models.software import SoftwareCve
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.vulnerability import Vulnerability, VulnerabilityCoverage
-from shared.services.scan_scope import covering_stages
+from shared.services.scan_scope import covering_stages, producing_stages
 from shared.utils.datetime import utc_now
 from shared.utils.net import host_port
 from stages.registry import stage_by_name
@@ -1064,7 +1064,7 @@ class ScanCompareService:
     def _dimension_settings(
         self, dimension: str, settings: list[SettingDiff]
     ) -> list[SettingDiff]:
-        names = covering_stages()[dimension]
+        names = producing_stages()[dimension]
         return [row for row in settings if row.stage in names]
 
     def _run_diff(self, baseline: Scan, current: Scan) -> list[RunDifference]:

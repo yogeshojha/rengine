@@ -259,7 +259,8 @@
 		unscanned: 'Not scanned',
 		stale: 'Stale · 30 days',
 		critical: 'Critical findings',
-		high: 'High findings'
+		high: 'High findings',
+		medium: 'Medium findings'
 	};
 
 	const TYPE_TABS = [

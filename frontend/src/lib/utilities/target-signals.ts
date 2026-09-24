@@ -9,7 +9,8 @@ export type SignalFilter =
 	| 'unscanned'
 	| 'stale'
 	| 'critical'
-	| 'high';
+	| 'high'
+	| 'medium';
 
 export interface TargetSummary {
 	total: number;
@@ -22,6 +23,7 @@ export interface TargetSummary {
 	stale: number;
 	critical: number;
 	high: number;
+	medium: number;
 }
 
 export const EMPTY_TARGET_SUMMARY: TargetSummary = {
@@ -34,5 +36,6 @@ export const EMPTY_TARGET_SUMMARY: TargetSummary = {
 	unscanned: 0,
 	stale: 0,
 	critical: 0,
-	high: 0
+	high: 0,
+	medium: 0
 };

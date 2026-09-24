@@ -181,6 +181,7 @@ export interface ScanFindings {
 	high: number;
 	medium: number;
 	covered: boolean;
+	scan_id?: string | null;
 }
 
 export interface ScanTrendPoint {

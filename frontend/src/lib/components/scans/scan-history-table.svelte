@@ -60,6 +60,7 @@
 		BRIEF_TABS,
 		HISTORY_COLUMNS,
 		HISTORY_COLUMN_LABELS,
+		STRIP_SEVERITIES,
 		historyPrefs
 	} from './history/prefs.svelte';
 
@@ -137,7 +138,7 @@
 	let openCount = $derived(byStatus ? byStatus.running + byStatus.pending + byStatus.paused : 0);
 	let canCancelAll = $derived(openCount > 0 || scansStore.hasLive);
 	let sevRuns = $derived(
-		historyPrefs.severities.map((s) => ({
+		STRIP_SEVERITIES.map((s) => ({
 			sev: s,
 			n: days.reduce((a, d) => a + (d[s as 'critical' | 'high' | 'medium'] ?? 0), 0),
 			active: hasToken(scansStore.filters.query, `severity:${s}`)

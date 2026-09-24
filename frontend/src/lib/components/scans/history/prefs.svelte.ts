@@ -22,6 +22,7 @@ export const BRIEF_TAB_LABELS: Record<BriefTab, string> = {
 export type Density = 'comfortable' | 'compact';
 
 const SIGNAL = [Severity.CRITICAL, Severity.HIGH] as const;
+export const STRIP_SEVERITIES: string[] = [...SIGNAL, Severity.MEDIUM];
 
 function read(key: string): string | null {
 	try {

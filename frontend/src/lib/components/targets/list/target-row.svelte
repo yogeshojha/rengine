@@ -104,6 +104,8 @@
 
 	let compact = $derived(targetPrefs.density === 'compact');
 	let open = $derived(run ? isOpenStatus(run.status) : false);
+	let findingsScan = $derived(run?.findings?.scan_id ?? run?.id ?? '');
+	let findingsLive = $derived(open && findingsScan === run?.id);
 	let started = $derived(run ? (run.started_at ?? run.created_at) : null);
 	let canDns = $derived(
 		target.target_type === TargetType.DOMAIN || target.target_type === TargetType.URL
@@ -249,7 +251,12 @@
 				{/if}
 				{#if run?.findings?.covered}
 					<div class="mt-1 {TNARROW.findings}">
-						<SeverityChips {projectId} scanId={run.id} findings={run.findings} live={open} />
+						<SeverityChips
+							{projectId}
+							scanId={findingsScan}
+							findings={run.findings}
+							live={findingsLive}
+						/>
 					</div>
 				{/if}
 			</div>
@@ -291,9 +298,9 @@
 				{#if run}
 					<SeverityChips
 						{projectId}
-						scanId={run.id}
+						scanId={findingsScan}
 						findings={run.findings}
-						live={open}
+						live={findingsLive}
 						{highlight}
 					/>
 				{:else if loaded}
