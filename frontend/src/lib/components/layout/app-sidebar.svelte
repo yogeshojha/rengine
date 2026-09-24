@@ -7,7 +7,7 @@
 	import LayersIcon from '@lucide/svelte/icons/layers';
 	import WorkflowIcon from '@lucide/svelte/icons/workflow';
 	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
-	import HatGlassesIcon from '@lucide/svelte/icons/hat-glasses';
+	import NinjaIcon from '$lib/components/icons/ninja.svelte';
 	import LibraryIcon from '@lucide/svelte/icons/library';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import ScanEyeIcon from '@lucide/svelte/icons/scan-eye';
@@ -132,7 +132,7 @@
 							{
 								title: routeLabels['bounty-hub'],
 								url: ROUTES.bountyHub(),
-								icon: HatGlassesIcon,
+								icon: NinjaIcon,
 								items: reportPlatforms.length
 									? [
 											{ title: routeLabels.programs, url: ROUTES.bountyHub(), exact: true },
