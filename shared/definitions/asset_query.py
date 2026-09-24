@@ -809,6 +809,11 @@ EXAMPLES: tuple[QueryExample, ...] = (
         group="Exposed services",
     ),
     QueryExample(
+        query="port:[3306,5432,1433,27017,6379,9200,11211,5984] and hosts:>10",
+        description="Database ports on addresses shared by more than ten hostnames",
+        group="Exposed services",
+    ),
+    QueryExample(
         query="port:[22,23,3389,5900]",
         description="Remote administration ports reachable",
         group="Exposed services",
