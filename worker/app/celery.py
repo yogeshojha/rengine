@@ -15,6 +15,7 @@ from shared.definitions.constants import (
     CRITICAL_QUEUE,
     DEFAULT_QUEUE,
     SCAN_CONTROL_QUEUE,
+    SCAN_QUEUES,
     SCANS_QUEUE,
 )
 from shared.logging import get_logger
@@ -283,7 +284,15 @@ def on_process_init(**_) -> None:
 def on_worker_ready(sender, **kwargs) -> None:  # noqa: ARG001
     """Log when worker is ready."""
     logger.info("Worker ready: %s", sender.hostname)
-    if DEFAULT_QUEUE not in celery_app.amqp.queues.consume_from:
+    consumed = celery_app.amqp.queues.consume_from
+    if consumed.keys() & set(SCAN_QUEUES):
+        from app import presence  # noqa: PLC0415
+
+        presence.announce(sender.hostname)
+        sender.timer.call_repeatedly(
+            presence.ANNOUNCE_SECONDS, presence.announce, (sender.hostname,)
+        )
+    if DEFAULT_QUEUE not in consumed:
         return
     _warm_ip_ranges()
     _warm_threat_intel()
@@ -326,6 +335,9 @@ def _warm_threat_intel() -> None:
 def on_worker_shutdown(sender, **kwargs) -> None:  # noqa: ARG001
     """Log when worker shuts down."""
     logger.info("Worker shutting down: %s", sender.hostname)
+    from app import presence  # noqa: PLC0415
+
+    presence.withdraw(sender.hostname)
 
 
 @task_prerun.connect

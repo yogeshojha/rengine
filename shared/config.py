@@ -36,7 +36,7 @@ class BaseAppSettings(BaseSettings):
     WORKER_DB_MAX_OVERFLOW: int = 3
     WORKER_DB_POOL_TIMEOUT: int = 30
     CELERY_SCAN_CONCURRENCY: int = 16
-    CELERY_CONTROL_CONCURRENCY: int = 4
+    CELERY_CONTROL_CONCURRENCY: int = 8
     CELERY_DEFAULT_CONCURRENCY: int = 4
 
     @property

@@ -10,6 +10,7 @@ from celery import shared_task
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
+from app import presence
 from app.celery import celery_app
 from app.config import settings
 from app.database import get_sync_session
@@ -370,6 +371,15 @@ def _active_task_ids() -> set[str] | None:
         logger.warning("stall check could not inspect the workers", exc_info=True)
         return None
     if not replies:
+        return None
+    live = presence.live_workers()
+    if live is None:
+        return None
+    silent = live - replies.keys()
+    if silent:
+        logger.warning(
+            "stall check skipped, scan workers did not reply: %s", sorted(silent)
+        )
         return None
     return {t.get("id") for tasks in replies.values() for t in tasks}
 

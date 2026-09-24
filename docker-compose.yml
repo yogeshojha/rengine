@@ -192,7 +192,7 @@ services:
     command: >
       uv run celery -A app.celery worker
       --loglevel=DEBUG
-      --concurrency=${CELERY_CONTROL_CONCURRENCY:-4}
+      --concurrency=${CELERY_CONTROL_CONCURRENCY:-8}
       --queues=scan_control
       --hostname=worker-control@%h
       --max-tasks-per-child=100
