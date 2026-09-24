@@ -13,7 +13,6 @@ import {
 	SERVICE_LEAD_COLUMNS
 } from '$lib/components/scans/results/services/columns';
 import {
-	VULN_COLUMNS,
 	VULN_LEAD_COLUMNS,
 	ISSUE_COLUMNS,
 	ISSUE_LEAD_COLUMNS
@@ -31,7 +30,7 @@ const TABLES: [string, TableColumn[], TableColumn[]][] = [
 	['web assets', WEB_ASSET_LEAD_COLUMNS, WEB_ASSET_COLUMNS],
 	['addresses', IP_LEAD_COLUMNS, IP_COLUMNS],
 	['services', SERVICE_LEAD_COLUMNS, SERVICE_COLUMNS],
-	['findings', VULN_LEAD_COLUMNS, VULN_COLUMNS],
+	['findings', VULN_LEAD_COLUMNS, []],
 	['weaknesses', ISSUE_LEAD_COLUMNS, ISSUE_COLUMNS],
 	['endpoints', ENDPOINT_LEAD_COLUMNS, ENDPOINT_COLUMNS],
 	['software', SOFTWARE_LEAD_COLUMNS, SOFTWARE_COLUMNS]

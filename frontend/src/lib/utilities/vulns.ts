@@ -26,6 +26,9 @@ export interface AssetContext {
 	waf: string | null;
 	open_ports: number;
 	service_name: string | null;
+	names_on_ip: number;
+	endpoints: number;
+	software_cves: number;
 }
 
 export interface Corroboration {
@@ -98,6 +101,7 @@ export interface VulnerabilityRead {
 	replayed_from_id: string | null;
 	replays: number;
 	asset: AssetContext | null;
+	host_findings: Record<string, number>;
 }
 
 export interface IssueRead {

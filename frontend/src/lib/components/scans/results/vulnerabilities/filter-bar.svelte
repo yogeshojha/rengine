@@ -1,5 +1,4 @@
 <script lang="ts">
-	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import FacetedFilter from '../faceted-filter.svelte';
 	import { SurfaceDimension } from '$lib/config/surface';
 	import ViewControls from '../table/view-controls.svelte';
@@ -61,8 +60,7 @@
 		{ value: 'kev', label: 'Known exploited' },
 		{ value: 'cve', label: 'Has a CVE' },
 		{ value: 'corroborated', label: 'Confirmed' },
-		{ value: 'noinfo', label: 'Hide info' },
-		{ value: 'reviewed', label: 'Show reviewed' }
+		{ value: 'noinfo', label: 'Hide info' }
 	];
 
 	let quick = $derived(
@@ -71,8 +69,7 @@
 			query.kevOnly && 'kev',
 			query.cveOnly && 'cve',
 			query.corroboratedOnly && 'corroborated',
-			!query.includeInfo && 'noinfo',
-			query.includeSuppressed && 'reviewed'
+			!query.includeInfo && 'noinfo'
 		].filter((v): v is string => !!v)
 	);
 
@@ -83,16 +80,19 @@
 			kevOnly: values.includes('kev'),
 			cveOnly: values.includes('cve'),
 			corroboratedOnly: values.includes('corroborated'),
-			includeInfo: !values.includes('noinfo'),
-			includeSuppressed: values.includes('reviewed')
+			includeInfo: !values.includes('noinfo')
 		});
+	}
+
+	function flip(value: string) {
+		setQuick(quick.includes(value) ? quick.filter((v) => v !== value) : [...quick, value]);
 	}
 
 	function options(list: VulnFacetSet[keyof VulnFacetSet]): Facet[] {
 		return list.map((f) => ({ value: f.name, label: f.label ?? f.name, count: f.count }));
 	}
 
-	function setList<K extends 'templates' | 'tags' | 'hosts' | 'protocols' | 'states' | 'scanners'>(
+	function setList<K extends 'templates' | 'tags' | 'hosts' | 'protocols' | 'scanners'>(
 		key: K,
 		value: string[]
 	) {
@@ -142,27 +142,21 @@
 				onChange={(v) => setList('scanners', v)}
 			/>
 		{/if}
-		{#if facets.state.length > 1}
-			<FacetedFilter
-				title="Review"
-				options={options(facets.state)}
-				selected={query.states}
-				onChange={(v) => setList('states', v)}
-			/>
-		{/if}
-		<ToggleGroup.Root
-			type="multiple"
-			value={quick}
-			onValueChange={setQuick}
-			variant="outline"
-			aria-label="Filters"
-		>
+		<div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filters">
 			{#each QUICK as q (q.value)}
-				<ToggleGroup.Item value={q.value} class="h-9 px-3 text-sm font-normal">
+				{@const on = quick.includes(q.value)}
+				<button
+					type="button"
+					class="rounded-full border px-2.5 py-0.5 text-xs transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {on
+						? 'border-foreground/40 bg-foreground text-background'
+						: 'border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground'}"
+					aria-pressed={on}
+					onclick={() => flip(q.value)}
+				>
 					{q.label}
-				</ToggleGroup.Item>
+				</button>
 			{/each}
-		</ToggleGroup.Root>
+		</div>
 	</div>
 
 	<div class="flex items-center gap-2">

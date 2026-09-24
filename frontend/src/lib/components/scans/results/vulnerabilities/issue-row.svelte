@@ -136,11 +136,6 @@
 		}
 	}}
 >
-	<span
-		class="absolute inset-y-0 left-0 w-1 {allReviewed ? 'opacity-30' : ''}"
-		style="background:{fill}"
-		aria-hidden="true"
-	></span>
 	{#if emphasised}
 		<span
 			class="pointer-events-none absolute inset-0 -z-10"

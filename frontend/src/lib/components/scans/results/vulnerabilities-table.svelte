@@ -17,11 +17,18 @@
 	import ShieldCheck from '@lucide/svelte/icons/shield-check';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import X from '@lucide/svelte/icons/x';
+	import ArrowDown from '@lucide/svelte/icons/arrow-down';
+	import ArrowUp from '@lucide/svelte/icons/arrow-up';
+	import Keyboard from '@lucide/svelte/icons/keyboard';
 
 	import * as Card from '$lib/components/ui/card';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import * as Tooltip from '$lib/components/ui/tooltip';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import { Checkbox } from '$lib/components/ui/checkbox';
+	import { Kbd } from '$lib/components/ui/kbd';
+	import Hint from '$lib/components/hint.svelte';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
@@ -32,7 +39,13 @@
 	import QueryBar from './query-bar/query-bar.svelte';
 	import GroupList from './table/group-list.svelte';
 	import ListHeader from './table/list-header.svelte';
-	import { readPref, rowPadding, selectAllState, withTarget, writePref } from './table/columns';
+	import {
+		readPref,
+		rowPadding,
+		selectAllState,
+		writePref,
+		type TableColumn
+	} from './table/columns';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import CoverageStrip from './vulnerabilities/coverage-strip.svelte';
 	import FilterBar from './vulnerabilities/filter-bar.svelte';
@@ -42,20 +55,29 @@
 	import RescanAction from './table/rescan-action.svelte';
 	import type { SeedPick, SeedSelection } from '$lib/types/recheck';
 	import IssueRow from './vulnerabilities/issue-row.svelte';
-	import VulnRow from './vulnerabilities/vuln-row.svelte';
-	import VulnerabilityDetailSheet from './vulnerability-detail-sheet.svelte';
+	import FindingRow from './vulnerabilities/findings/finding-row.svelte';
+	import FindingsStrip from './vulnerabilities/findings/findings-strip.svelte';
+	import { FCOL } from './vulnerabilities/findings/columns';
+	import { forgetPeeks } from './vulnerabilities/findings/peek';
 	import {
-		DEFAULT_VISIBLE_VULN_COLUMNS,
-		ISSUE_COLUMNS,
-		ISSUE_LEAD_COLUMNS,
-		VULN_COLUMNS,
-		VULN_LEAD_COLUMNS
-	} from './vulnerabilities/columns';
+		BRIEF_TABS,
+		FINDING_COLUMNS,
+		FINDING_COLUMN_LABELS,
+		findingPrefs,
+		type FindingColumn
+	} from './vulnerabilities/findings/prefs.svelte';
+	import VulnerabilityDetailSheet from './vulnerability-detail-sheet.svelte';
+	import { ISSUE_COLUMNS, ISSUE_LEAD_COLUMNS, VULN_LEAD_COLUMNS } from './vulnerabilities/columns';
 
 	import { vulnerabilitiesApi } from '$lib/api/vulnerabilities';
 	import { vulnQuerySchema } from '$lib/stores/query-schema.svelte';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
-	import { VULN_STATE_LABELS, VULN_STATE_KEYS } from '$lib/config/vulnerabilities';
+	import {
+		SUPPRESSED_STATES,
+		VULN_STATE_LABELS,
+		VULN_STATE_KEYS,
+		VulnState
+	} from '$lib/config/vulnerabilities';
 	import {
 		hideLabel,
 		excludeToken,
@@ -73,11 +95,11 @@
 		DEFAULT_VULN_VIEW,
 		EMPTY_VULN_FACETS,
 		ISSUE_SORTS,
-		SEVERITY_TABS,
 		VULN_SORTS,
 		VULN_VIEWS,
 		type CoverageRead,
 		type IssueRead,
+		type ScanVulnerabilities,
 		type VulnFacetSet,
 		type VulnQuery,
 		type VulnView,
@@ -135,7 +157,6 @@
 			? (initialView as VulnView)
 			: readPref<VulnView>(STORAGE_KEYS.vulnsView, DEFAULT_VULN_VIEW)
 	);
-	let visiblePref = $state<string[] | null>(readPref(STORAGE_KEYS.vulnsColumns, null));
 	let density = $state<string>(readPref(STORAGE_KEYS.vulnsDensity, 'cozy'));
 	let pageSize = $state<number>(readPref(STORAGE_KEYS.vulnsPageSize, RESULTS_PAGE_SIZE));
 	let sort = $state<{ key: string; dir: 1 | -1 }>(
@@ -157,6 +178,9 @@
 	let facets = $state<VulnFacetSet>(EMPTY_VULN_FACETS);
 	let facetsLoaded = $state(false);
 	let coverage = $state<CoverageRead[]>([]);
+	let overview = $state<ScanVulnerabilities | null>(null);
+	const expanded = new SvelteSet<string>();
+	let shortcutsOpen = $state(false);
 	let leadSet = $state<QueryLeads | null>(null);
 	let groupBy = $state<string>(initial.get('vuln_group') ?? '');
 	let groupSet = $state<QueryGroups | null>(null);
@@ -193,11 +217,10 @@
 	let sheetItems = $derived(isIssues ? instances : items);
 	let selectedIndex = $derived(selected ? sheetItems.findIndex((v) => v.id === selected?.id) : -1);
 	let sheetTotal = $derived(isIssues ? instancesTotal : total);
-	let visible = $derived(visiblePref ?? DEFAULT_VISIBLE_VULN_COLUMNS);
-	let allColumns = $derived(withTarget(VULN_COLUMNS, projectWide));
-	let shownColumns = $derived(
-		allColumns.filter((c) => visible.includes(c.key) || c.key === 'target')
+	let findingColumns = $derived<TableColumn[]>(
+		FINDING_COLUMNS.map((key) => ({ key, label: FINDING_COLUMN_LABELS[key], width: '' }))
 	);
+	let findingVisible = $derived(FINDING_COLUMNS.filter((c) => findingPrefs.shows(c)));
 	let checkedCount = $derived(
 		isIssues
 			? issues.filter((i) => checkedIds.has(i.template_id)).length
@@ -208,14 +231,39 @@
 	let chips = $derived(vulnQueryChips(query, facets));
 	let rowPad = $derived(rowPadding(density));
 	let term = $derived(query.search.trim().includes(':') ? '' : query.search.trim());
-	let severityTab = $derived(
-		query.severities.length === 0 ? 'all' : query.severities.length === 1 ? query.severities[0] : ''
-	);
 	let severityCounts = $derived.by(() => {
-		if (!facetsLoaded) return null;
-		const source = isIssues ? facets.issue_severity : facets.severity;
-		const m: Record<string, number> = { all: source.reduce((n, f) => n + f.count, 0) };
-		for (const f of source) m[f.name] = f.count;
+		if (isIssues) {
+			if (!facetsLoaded) return null;
+			return Object.fromEntries(facets.issue_severity.map((f) => [f.name, f.count]));
+		}
+		if (!overview) return null;
+		return Object.fromEntries(overview.by_severity.map((c) => [c.severity, c.count]));
+	});
+	const REVIEW_TABS = [
+		{ key: 'active', label: 'Active' },
+		{ key: VulnState.OPEN, label: 'Not reviewed' },
+		{ key: VulnState.CONFIRMED, label: VULN_STATE_LABELS[VulnState.CONFIRMED] },
+		{ key: VulnState.FALSE_POSITIVE, label: VULN_STATE_LABELS[VulnState.FALSE_POSITIVE] },
+		{ key: VulnState.ACCEPTED, label: VULN_STATE_LABELS[VulnState.ACCEPTED] },
+		{ key: 'all', label: 'All' }
+	];
+	let reviewTab = $derived(
+		query.states.length === 1
+			? query.states[0]
+			: query.states.length === 0
+				? query.includeSuppressed
+					? 'all'
+					: 'active'
+				: ''
+	);
+	let reviewCounts = $derived.by(() => {
+		if (isIssues || !facetsLoaded) return null;
+		const m: Record<string, number> = {};
+		for (const f of facets.state) m[f.name] = f.count;
+		m.all = facets.state.reduce((n, f) => n + f.count, 0);
+		m.active = facets.state
+			.filter((f) => !SUPPRESSED_STATES.includes(f.name))
+			.reduce((n, f) => n + f.count, 0);
 		return m;
 	});
 	let coverageLoaded = $state(false);
@@ -223,15 +271,13 @@
 	let noun = $derived(isIssues ? 'weakness' : VULN.noun);
 	let nounPlural = $derived(isIssues ? 'weaknesses' : VULN.nounPlural);
 
-	$effect(() => {
-		if (visiblePref) writePref(STORAGE_KEYS.vulnsColumns, visiblePref);
-	});
 	$effect(() => writePref(STORAGE_KEYS.vulnsDensity, density));
 	$effect(() => writePref(STORAGE_KEYS.vulnsPageSize, pageSize));
 	$effect(() => writePref(STORAGE_KEYS.vulnsView, view));
 	$effect(() => {
 		const ids = new Set(isIssues ? issues.map((i) => i.template_id) : items.map((v) => v.id));
 		for (const id of checkedIds) if (!ids.has(id)) checkedIds.delete(id);
+		for (const id of expanded) if (!ids.has(id)) expanded.delete(id);
 	});
 
 	let reqId = 0;
@@ -374,6 +420,15 @@
 		}
 	}
 
+	async function loadOverview() {
+		if (!ready) return;
+		try {
+			overview = await vulnerabilitiesApi.overview(projectId, scanId);
+		} catch {
+			overview = null;
+		}
+	}
+
 	async function loadCoverage() {
 		if (!ready) return;
 		try {
@@ -433,7 +488,8 @@
 		refreshing = !quiet;
 		try {
 			if (!quiet) loadedLeadSig = '';
-			await Promise.all([runSearch(), loadFacets(), loadCoverage(), loadGroups()]);
+			forgetPeeks();
+			await Promise.all([runSearch(), loadFacets(), loadCoverage(), loadGroups(), loadOverview()]);
 			if (expandedId) await loadInstances(expandedId, instanceLimit);
 		} finally {
 			if (!quiet) refreshing = false;
@@ -472,6 +528,7 @@
 		untrack(() => {
 			void loadFacets();
 			void loadCoverage();
+			void loadOverview();
 		});
 	});
 
@@ -572,7 +629,11 @@
 		else for (const v of items) checkedIds.add(v.id);
 	}
 	function toggleCol(key: string) {
-		visiblePref = visible.includes(key) ? visible.filter((k) => k !== key) : [...visible, key];
+		findingPrefs.toggle(key as FindingColumn);
+	}
+	function toggleExpand(id: string) {
+		if (expanded.has(id)) expanded.delete(id);
+		else expanded.add(id);
 	}
 	let hideOptions = $derived.by(() => {
 		if (isIssues) {
@@ -610,8 +671,31 @@
 		query = q;
 		pageIndex = 0;
 	}
-	function setSeverityTab(key: string) {
-		setQuery({ ...query, severities: key === 'all' ? [] : [key] });
+	function toggleSeverity(sev: string) {
+		setQuery({
+			...query,
+			severities: query.severities.includes(sev)
+				? query.severities.filter((s) => s !== sev)
+				: [...query.severities, sev]
+		});
+	}
+	function toggleHost(host: string) {
+		setQuery({
+			...query,
+			hosts: query.hosts.includes(host)
+				? query.hosts.filter((h) => h !== host)
+				: [...query.hosts, host]
+		});
+	}
+	function setReviewTab(key: string) {
+		if (key === 'active') setQuery({ ...query, states: [], includeSuppressed: false });
+		else if (key === 'all') setQuery({ ...query, states: [], includeSuppressed: true });
+		else
+			setQuery({
+				...query,
+				states: [key],
+				includeSuppressed: SUPPRESSED_STATES.includes(key)
+			});
 	}
 	function drillGroup(token: string) {
 		setQuery({ ...query, search: appendToken(query.search, token) });
@@ -649,7 +733,9 @@
 	}
 
 	function afterTriage() {
+		forgetPeeks();
 		void loadFacets();
+		void loadOverview();
 		if (!query.includeSuppressed) {
 			void runSearch();
 			if (expandedId) void loadInstances(expandedId, instanceLimit);
@@ -761,7 +847,23 @@
 			if (id) toggleCheck(id);
 			return;
 		}
+		if (e.key === '?' && !drawerOpen) {
+			shortcutsOpen = true;
+			return;
+		}
 		if (drawerOpen || !rowCount) return;
+		const row = !isIssues ? items[cursor] : null;
+		if (row && (e.key === 'e' || e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
+			e.preventDefault();
+			if (e.key === 'ArrowLeft') expanded.delete(row.id);
+			else if (e.key === 'ArrowRight') expanded.add(row.id);
+			else toggleExpand(row.id);
+			return;
+		}
+		if (row && expanded.has(row.id) && /^[1-5]$/.test(e.key)) {
+			findingPrefs.tab = BRIEF_TABS[Number(e.key) - 1];
+			return;
+		}
 		if (e.key === 'j' || e.key === 'ArrowDown') {
 			e.preventDefault();
 			cursor = Math.min(cursor + 1, rowCount - 1);
@@ -774,6 +876,10 @@
 			if (isIssues && issues[cursor]) toggleIssue(issues[cursor]);
 			else if (!isIssues && items[cursor]) open(items[cursor]);
 		} else if (e.key === 'Escape') {
+			if (row && expanded.has(row.id)) {
+				expanded.delete(row.id);
+				return;
+			}
 			cursor = -1;
 			if (isIssues) collapse();
 		}
@@ -853,6 +959,23 @@
 		}
 	}
 
+	async function rescanOne(v: VulnerabilityRead) {
+		const picks = picksOf([v]);
+		if (picks.length)
+			await run({ dimension: SurfaceDimension.VULNERABILITIES, picks }, [v.template_id]);
+	}
+
+	const SHORTCUTS: [string, string][] = [
+		['j / k', 'Move between findings'],
+		['e', 'Expand or collapse the brief'],
+		['1 to 5', 'Switch brief tab'],
+		['Enter', 'Open finding'],
+		['x', 'Select finding'],
+		[Object.values(VULN_STATE_KEYS).join(' / '), Object.values(VULN_STATE_LABELS).join(', ')],
+		['/', 'Search'],
+		['Esc', 'Collapse or clear']
+	];
+
 	async function rescanAllMatching() {
 		await run(querySelection(), []);
 	}
@@ -878,6 +1001,38 @@
 </script>
 
 <svelte:window onkeydown={onKey} />
+
+{#snippet sortHead(label: string, key: string, cls: string)}
+	<button
+		type="button"
+		class="{cls} items-center gap-1 text-left tracking-wide uppercase hover:text-foreground {sort.key ===
+		key
+			? 'text-foreground'
+			: ''}"
+		onclick={() => toggleSort(key)}
+	>
+		{label}
+		{#if sort.key === key}
+			{#if sort.dir === -1}<ArrowDown class="size-3" />{:else}<ArrowUp class="size-3" />{/if}
+		{/if}
+	</button>
+{/snippet}
+
+<div class="mb-3">
+	<FindingsStrip
+		{overview}
+		counts={severityCounts}
+		unit={isIssues ? 'Checks' : 'Findings'}
+		severities={query.severities}
+		newOn={query.newOnly}
+		kevOn={query.kevOnly}
+		hostOn={(h) => query.hosts.includes(h)}
+		onSeverity={toggleSeverity}
+		onNew={() => setQuery({ ...query, newOnly: !query.newOnly })}
+		onKev={() => setQuery({ ...query, kevOnly: !query.kevOnly })}
+		onHost={toggleHost}
+	/>
+</div>
 
 <div
 	class="z-20 bg-background md:sticky md:top-[var(--scan-tabs-h,0px)] md:pt-2"
@@ -906,12 +1061,26 @@
 	<div class="flex items-center gap-3 border-b pr-3 pl-2">
 		<div class="min-w-0 flex-1">
 			<CountTabs
-				tabs={SEVERITY_TABS}
-				value={severityTab}
-				counts={severityCounts}
-				onChange={setSeverityTab}
+				tabs={REVIEW_TABS}
+				value={reviewTab}
+				counts={reviewCounts}
+				onChange={setReviewTab}
 			/>
 		</div>
+		<Hint text="Keyboard shortcuts">
+			{#snippet child(props)}
+				<Button
+					{...props}
+					variant="ghost"
+					size="icon"
+					class="hidden size-7 sm:inline-flex"
+					aria-label="Keyboard shortcuts"
+					onclick={() => (shortcutsOpen = true)}
+				>
+					<Keyboard class="size-4" />
+				</Button>
+			{/snippet}
+		</Hint>
 		<ToggleGroup.Root
 			type="single"
 			value={view}
@@ -938,8 +1107,8 @@
 		{facets}
 		onQuery={setQuery}
 		dimensions={vulnQuerySchema.schema.group_dimensions}
-		columns={isIssues ? ISSUE_COLUMNS : VULN_COLUMNS}
-		visible={isIssues ? ISSUE_COLUMNS.map((c) => c.key) : visible}
+		columns={isIssues ? ISSUE_COLUMNS : findingColumns}
+		visible={isIssues ? ISSUE_COLUMNS.map((c) => c.key) : findingVisible}
 		columnsLocked={isIssues}
 		onToggleColumn={toggleCol}
 		{density}
@@ -1004,7 +1173,7 @@
 		<ScrollArea orientation="horizontal">
 			<TableSkeleton
 				lead={isIssues ? ISSUE_LEAD_COLUMNS : VULN_LEAD_COLUMNS}
-				columns={isIssues ? ISSUE_COLUMNS : shownColumns}
+				columns={isIssues ? ISSUE_COLUMNS : []}
 				{density}
 				selectable
 			/>
@@ -1128,40 +1297,60 @@
 			</div>
 		</ScrollArea>
 	{:else}
-		<ListHeader
-			sticky
-			top={barH}
-			follow={scrollRef}
-			lead={VULN_LEAD_COLUMNS}
-			columns={shownColumns}
-			{selectAllChecked}
-			selectAllLabel="Select all findings on this page"
-			onSelectAll={toggleSelectAll}
-			sortKey={sort.key}
-			sortDir={sort.dir}
-			onSort={toggleSort}
-		/>
-		<ScrollArea orientation="horizontal" bind:ref={scrollRef}>
-			<div class="divide-y divide-border/50 transition-opacity {loading ? 'opacity-60' : ''}">
+		<div class="@container/findings w-full" role="table" aria-label="Findings">
+			<div
+				class="flex items-center gap-3 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
+				role="row"
+			>
+				<div class={FCOL.select}>
+					<Checkbox
+						checked={selectAllChecked === true}
+						indeterminate={selectAllChecked === 'indeterminate'}
+						onCheckedChange={toggleSelectAll}
+						aria-label="Select all findings on this page"
+					/>
+				</div>
+				{@render sortHead('Severity', 'severity', `${FCOL.severity} flex`)}
+				{@render sortHead('Finding', 'name', `${FCOL.finding} flex`)}
+				{#if projectWide}<div class={FCOL.target}>Target</div>{/if}
+				{#if findingPrefs.shows('asset')}{@render sortHead('Web asset', 'host', FCOL.asset)}{/if}
+				{#if findingPrefs.shows('related')}<div class={FCOL.related}>Correlation</div>{/if}
+				{#if findingPrefs.shows('risk')}{@render sortHead('Risk', 'exploit', FCOL.risk)}{/if}
+				{#if findingPrefs.shows('evidence')}<div class={FCOL.evidence}>Evidence</div>{/if}
+				{#if findingPrefs.shows('review')}<div class={FCOL.review}>Review</div>{/if}
+				{#if findingPrefs.shows('seen')}{@render sortHead('Seen', 'seen', FCOL.seen)}{/if}
+				<div class={FCOL.actions}></div>
+			</div>
+			<div class="transition-opacity {loading ? 'opacity-60' : ''}">
 				{#each items as v, i (v.id)}
-					<VulnRow
-						vuln={v}
+					<FindingRow
+						{v}
 						index={i}
+						{projectId}
+						{scanId}
+						{projectWide}
 						{term}
-						columns={shownColumns}
-						checked={checkedIds.has(v.id)}
-						onCheck={toggleCheck}
-						selected={drawerOpen && selected?.id === v.id}
+						compact={density === 'compact'}
+						expanded={expanded.has(v.id)}
 						focused={cursor === i}
-						pad={rowPad}
+						selected={drawerOpen && selected?.id === v.id}
+						checked={checkedIds.has(v.id)}
+						onToggle={() => toggleExpand(v.id)}
+						onCheck={() => toggleCheck(v.id)}
+						onFocus={() => (cursor = i)}
 						onOpen={open}
 						onFilter={applyDsl}
-						onHost={showHost}
+						onTab={(tab, filter) => {
+							drawerOpen = false;
+							syncUrl();
+							onTab?.(tab, filter);
+						}}
 						onTriage={(item, state) => triage(item, state)}
+						onRescan={rescanOne}
 					/>
 				{/each}
 			</div>
-		</ScrollArea>
+		</div>
 	{/if}
 
 	{#if !errored && total > 0 && !groupBy}
@@ -1180,6 +1369,18 @@
 		/>
 	{/if}
 </Card.Root>
+
+<Dialog.Root bind:open={shortcutsOpen}>
+	<Dialog.Content class="sm:max-w-md">
+		<Dialog.Header><Dialog.Title>Keyboard shortcuts</Dialog.Title></Dialog.Header>
+		<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+			{#each SHORTCUTS as [k, label] (k)}
+				<dt><Kbd>{k}</Kbd></dt>
+				<dd class="text-muted-foreground">{label}</dd>
+			{/each}
+		</dl>
+	</Dialog.Content>
+</Dialog.Root>
 
 <VulnerabilityDetailSheet
 	vuln={selected}

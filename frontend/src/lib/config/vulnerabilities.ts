@@ -73,6 +73,39 @@ export const SEVERITY_TEXT: Record<string, string> = {
 	[Severity.UNKNOWN]: 'text-[var(--sev-info-ink)]'
 };
 
+export const SEVERITY_CHIP: Record<string, { chip: string; edge: string; ink: string }> = {
+	[Severity.CRITICAL]: {
+		chip: 'bg-sev-critical-wash text-sev-critical-ink',
+		edge: 'bg-sev-critical',
+		ink: 'text-sev-critical-ink'
+	},
+	[Severity.HIGH]: {
+		chip: 'bg-sev-high-wash text-sev-high-ink',
+		edge: 'bg-sev-high',
+		ink: 'text-sev-high-ink'
+	},
+	[Severity.MEDIUM]: {
+		chip: 'bg-sev-medium-wash text-sev-medium-ink',
+		edge: 'bg-sev-medium',
+		ink: 'text-sev-medium-ink'
+	},
+	[Severity.LOW]: {
+		chip: 'bg-sev-low-wash text-sev-low-ink',
+		edge: 'bg-sev-low',
+		ink: 'text-sev-low-ink'
+	},
+	[Severity.INFO]: {
+		chip: 'bg-sev-info-wash text-sev-info-ink',
+		edge: 'bg-sev-info',
+		ink: 'text-sev-info-ink'
+	},
+	[Severity.UNKNOWN]: {
+		chip: 'bg-sev-info-wash text-sev-info-ink',
+		edge: 'bg-sev-info',
+		ink: 'text-sev-info-ink'
+	}
+};
+
 export const ACTIONABLE_SEVERITIES: string[] = [Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM];
 
 export enum CorroborationBasis {

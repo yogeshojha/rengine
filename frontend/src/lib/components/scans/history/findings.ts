@@ -1,28 +1,12 @@
 import { vulnerabilitiesApi } from '$lib/api/vulnerabilities';
 import { ROUTES } from '$lib/config/routes';
 import { SURFACE, SurfaceDimension } from '$lib/config/surface';
-import { Severity } from '$lib/config/vulnerabilities';
+import { SEVERITY_CHIP } from '$lib/config/vulnerabilities';
 import type { VulnFilter, VulnSearchResult } from '$lib/utilities/vulns';
 
 const VULN = SURFACE[SurfaceDimension.VULNERABILITIES];
 
-export const SEV_CHIP: Record<string, { chip: string; edge: string; ink: string }> = {
-	[Severity.CRITICAL]: {
-		chip: 'bg-sev-critical-wash text-sev-critical-ink',
-		edge: 'bg-sev-critical',
-		ink: 'text-sev-critical-ink'
-	},
-	[Severity.HIGH]: {
-		chip: 'bg-sev-high-wash text-sev-high-ink',
-		edge: 'bg-sev-high',
-		ink: 'text-sev-high-ink'
-	},
-	[Severity.MEDIUM]: {
-		chip: 'bg-sev-medium-wash text-sev-medium-ink',
-		edge: 'bg-sev-medium',
-		ink: 'text-sev-medium-ink'
-	}
-};
+export const SEV_CHIP = SEVERITY_CHIP;
 
 export function findingsFilter(severities: string[], limit: number): VulnFilter {
 	return {
