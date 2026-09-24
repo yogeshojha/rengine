@@ -1,4 +1,5 @@
 import Wrench from '@lucide/svelte/icons/wrench';
+import ToolCase from '@lucide/svelte/icons/tool-case';
 import Server from '@lucide/svelte/icons/server';
 import Route from '@lucide/svelte/icons/route';
 import ScrollText from '@lucide/svelte/icons/scroll-text';
@@ -19,7 +20,7 @@ export const TOOL_ICONS: Record<string, IconComponent> = {
 	'shield-alert': ShieldAlert
 };
 
-export const TOOLBOX_ICON = Wrench;
+export const TOOLBOX_ICON = ToolCase;
 
 export function toolIcon(slug: string): IconComponent {
 	return TOOL_ICONS[slug] ?? Wrench;
