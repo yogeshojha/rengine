@@ -2,10 +2,10 @@
 	import { untrack } from 'svelte';
 	import { beforeNavigate, goto } from '$app/navigation';
 	import * as Card from '$lib/components/ui/card/index.js';
-	import * as Alert from '$lib/components/ui/alert/index.js';
+	import * as Select from '$lib/components/ui/select/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
-	import InfoIcon from '@lucide/svelte/icons/info';
+	import { SELECT_NONE } from '$lib/constants';
 	import PanelHead from '$lib/components/panel-head.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import BrandingPanel from '$lib/components/reports/builder/branding-panel.svelte';
@@ -30,6 +30,7 @@
 	let loading = $state(true);
 
 	const isAdmin = $derived(auth.user?.is_superuser ?? false);
+	const selectedTheme = $derived(reportCatalog.themes.find((t) => t.slug === theme));
 	const dirty = $derived(Boolean(branding) && JSON.stringify({ branding, theme }) !== snapshot);
 
 	$effect(() => onDirtyChange?.(dirty));
@@ -77,7 +78,7 @@
 					theme = value.theme;
 					snapshot = JSON.stringify({ branding, theme });
 				})
-				.catch((e) => toast.error(e instanceof Error ? e.message : 'Defaults not loaded'))
+				.catch((e) => toast.error(e instanceof Error ? e.message : 'Branding not loaded'))
 				.finally(() => (loading = false));
 		});
 	});
@@ -93,9 +94,9 @@
 			});
 			defaults = saved;
 			snapshot = JSON.stringify({ branding, theme });
-			toast.success('Defaults saved');
+			toast.success('Branding saved');
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Defaults not saved');
+			toast.error(e instanceof Error ? e.message : 'Branding not saved');
 		} finally {
 			saving = false;
 		}
@@ -106,50 +107,48 @@
 	<Skeleton class="h-64 w-full" />
 {:else if branding}
 	<div class="space-y-5">
-		<Alert.Root>
-			<InfoIcon />
-			<Alert.Title>Defaults fill what a template leaves empty</Alert.Title>
-		</Alert.Root>
-
 		<Card.Root class="gap-0 py-0">
-			<PanelHead title="Default theme" description="Used when a template does not name one">
-				{#if !isAdmin}Read only{/if}
+			<PanelHead title="Theme" description="Applied when a template sets none">
+				{#if !isAdmin}Read-only{/if}
 			</PanelHead>
 			<div class="px-5 py-4">
-				<div class="flex flex-wrap gap-2">
-					<button
-						type="button"
-						class="rounded-md border px-2.5 py-1.5 text-xs transition-colors data-[active=true]:border-primary data-[active=true]:bg-muted"
-						data-active={theme === ''}
-						disabled={!isAdmin}
-						onclick={() => (theme = '')}
-					>
-						No default
-					</button>
-					{#each reportCatalog.themes as option (option.slug)}
-						<button
-							type="button"
-							class="flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs transition-colors data-[active=true]:border-primary data-[active=true]:bg-muted"
-							data-active={theme === option.slug}
-							disabled={!isAdmin}
-							onclick={() => (theme = option.slug)}
-						>
-							<span class="size-3.5 rounded-full border" style="background:{option.accent}"></span>
-							{option.name}
-						</button>
-					{/each}
-				</div>
+				<Select.Root
+					type="single"
+					value={theme || SELECT_NONE}
+					onValueChange={(v) => (theme = v === SELECT_NONE ? '' : v)}
+					disabled={!isAdmin}
+				>
+					<Select.Trigger class="w-full sm:w-72" aria-label="Theme">
+						{#if selectedTheme}
+							<span class="flex items-center gap-2">
+								<span class="size-3 rounded-full border" style="background:{selectedTheme.accent}"
+								></span>
+								{selectedTheme.name}
+							</span>
+						{:else}
+							None
+						{/if}
+					</Select.Trigger>
+					<Select.Content class="max-h-72">
+						<Select.Item value={SELECT_NONE} label="None">None</Select.Item>
+						{#each reportCatalog.themes as option (option.slug)}
+							<Select.Item value={option.slug} label={option.name}>
+								<span class="size-3 rounded-full border" style="background:{option.accent}"></span>
+								{option.name}
+							</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
 			</div>
 		</Card.Root>
 
 		<Card.Root class="gap-0 py-0">
-			<PanelHead
-				title="Default branding"
-				description="Applied to every report that leaves a field empty"
-			/>
-			<div class="px-5 py-5" class:pointer-events-none={!isAdmin} class:opacity-70={!isAdmin}>
+			<PanelHead title="Branding" description="Applied to fields a template leaves empty">
+				{#if !isAdmin}Read-only{/if}
+			</PanelHead>
+			<fieldset class="px-5 py-5" disabled={!isAdmin}>
 				<BrandingPanel bind:branding />
-			</div>
+			</fieldset>
 		</Card.Root>
 
 		<div class="flex items-center justify-end gap-3">

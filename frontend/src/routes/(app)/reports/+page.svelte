@@ -143,7 +143,7 @@
 	let pendingTab = $state<ReportTab | null>(null);
 
 	function requestTab(tab: ReportTab) {
-		if (activeTab === 'defaults' && tab !== 'defaults' && defaultsDirty) {
+		if (activeTab === 'branding' && tab !== 'branding' && defaultsDirty) {
 			pendingTab = tab;
 			leaveTabOpen = true;
 			return;
@@ -241,7 +241,7 @@
 						<span class="ml-1.5 text-muted-foreground">{reportCatalog.catalog.fonts.length}</span>
 					{/if}
 				</Tabs.Trigger>
-				<Tabs.Trigger value="defaults">Defaults</Tabs.Trigger>
+				<Tabs.Trigger value="branding">Branding</Tabs.Trigger>
 			</Tabs.List>
 
 			{#if activeTab === 'reports'}
@@ -333,7 +333,7 @@
 			/>
 		</Tabs.Content>
 
-		<Tabs.Content value="defaults" class="mt-5">
+		<Tabs.Content value="branding" class="mt-5">
 			<DefaultsPanel onDirtyChange={(v) => (defaultsDirty = v)} />
 		</Tabs.Content>
 	</Tabs.Root>
