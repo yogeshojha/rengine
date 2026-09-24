@@ -12,6 +12,7 @@
 	import { ROUTES } from '$lib/config/routes';
 	import TechIcon from '../tech-icon.svelte';
 	import { relativeTimeLong } from '$lib/utilities/dates';
+	import { plural } from '$lib/utilities/strings';
 	import { SEVERITY_TEXT, severityLabel } from '$lib/config/vulnerabilities';
 	import { CAVEAT_HELP, CONFIDENCE_HELP, CONFIDENCE_VARIANT } from '$lib/config/software';
 	import type { SoftwareCve } from '$lib/types/software';
@@ -93,6 +94,18 @@
 							</dd>
 							<dt class={DT}>Version from</dt>
 							<dd>{row.version_source_label}</dd>
+							{#if row.fixed_in}
+								<dt class={DT}>Fixed in</dt>
+								<dd>
+									{row.name}
+									{row.fixed_in}
+									{#if row.fixed_in_assets}
+										<span class="text-muted-foreground">
+											on {plural(row.fixed_in_assets, 'asset')} in this scan
+										</span>
+									{/if}
+								</dd>
+							{/if}
 						</dl>
 					</section>
 

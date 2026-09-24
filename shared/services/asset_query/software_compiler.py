@@ -99,6 +99,7 @@ _FLAG_BUILDERS = {
     "web": lambda _ctx: SoftwareCve.http_asset_id.isnot(None),
     "service": lambda _ctx: SoftwareCve.port_id.isnot(None),
     "corroborated": lambda _ctx: SoftwareCve.evidence == Evidence.CORROBORATED.value,
+    "fixable": lambda _ctx: SoftwareCve.fixed_in.is_not(None),
 }
 
 

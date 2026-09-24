@@ -97,6 +97,8 @@ class SoftwareCve(SQLModel, table=True):
     confidence: str = Field(default=Confidence.HIGH.value, max_length=16, index=True)
     caveats: list = _json_list()
     evidence: str = Field(default=Evidence.INFERRED.value, max_length=16, index=True)
+    fixed_in: str | None = Field(default=None, max_length=MAX_VERSION)
+    fixed_in_assets: int | None = Field(default=None)
 
     # where it is
     host: str | None = Field(default=None, max_length=500, index=True)
@@ -141,6 +143,8 @@ class SoftwareCveRead(BaseModel):
     caveats: list[dict] = []
     evidence: str = Evidence.INFERRED.value
     evidence_label: str = ""
+    fixed_in: str | None = None
+    fixed_in_assets: int | None = None
     description: str | None = None
     host: str | None = None
     ip: str | None = None

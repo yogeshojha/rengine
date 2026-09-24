@@ -33,6 +33,8 @@ export interface SoftwareCve {
 	caveats: SoftwareCaveat[];
 	evidence: string;
 	evidence_label: string;
+	fixed_in: string | null;
+	fixed_in_assets: number | null;
 	description: string | null;
 	host: string | null;
 	ip: string | null;

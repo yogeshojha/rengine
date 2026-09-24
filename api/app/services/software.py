@@ -172,6 +172,8 @@ class SoftwareService:
             ],
             evidence=row.evidence,
             evidence_label=EVIDENCE_LABELS.get(row.evidence, ""),
+            fixed_in=row.fixed_in,
+            fixed_in_assets=row.fixed_in_assets,
             description=description,
             host=row.host,
             ip=row.ip,

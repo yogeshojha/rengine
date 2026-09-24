@@ -77,6 +77,10 @@ CONFIDENCE_HELP: dict[str, str] = {
 
 CONFIDENCE_ORDER: tuple[str, ...] = tuple(c.value for c in Confidence)
 
+# a version whose leading number is this far above the product's median is a misread
+OUTLIER_FACTOR = 5
+OUTLIER_SPAN = 5
+
 MEDIUM_CAVEATS = 1
 LOW_CAVEATS = 2
 

@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import json
+import re
+import statistics
 import uuid
+from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import date
 
@@ -15,6 +18,8 @@ from shared.definitions.software import (
     LOW_CAVEATS,
     MAX_MATCHES_PER_SCAN,
     MEDIUM_CAVEATS,
+    OUTLIER_FACTOR,
+    OUTLIER_SPAN,
     PRODUCTS_BY_KEY,
     Caveat,
     Confidence,
@@ -232,6 +237,50 @@ LIMIT :cap
 ) matched
 """
 
+_CARRIED = """
+SELECT DISTINCT c.product, c.version, m.cve
+  FROM (SELECT DISTINCT product, vendor, version, version_key, version_kind
+          FROM software_components WHERE NOT coarse) c
+  JOIN nvd_cpe_matches m
+    ON m.product = c.product
+   AND (c.vendor IS NULL OR m.vendor = c.vendor)
+   AND m.version_kind = c.version_kind
+   AND (m.exact_key IS NULL OR m.exact_key = c.version_key)
+   AND (m.start_key IS NULL OR c.version_key > m.start_key
+        OR (m.start_incl AND c.version_key = m.start_key))
+   AND (m.end_key IS NULL OR c.version_key < m.end_key
+        OR (m.end_incl AND c.version_key = m.end_key))
+"""
+
+_FIXED_TEMP = """
+CREATE TEMP TABLE software_fixed (
+    product varchar(200),
+    version varchar(64),
+    cve varchar(30),
+    fixed_in varchar(64),
+    fixed_in_assets integer
+) ON COMMIT DROP
+"""
+
+_FIXED_SET = """
+UPDATE software_cves s
+   SET fixed_in = f.fixed_in, fixed_in_assets = f.fixed_in_assets
+  FROM software_fixed f
+ WHERE s.scan_id = :scan_id
+   AND s.product = f.product AND s.version = f.version AND s.cve = f.cve
+   AND (s.fixed_in IS DISTINCT FROM f.fixed_in
+        OR s.fixed_in_assets IS DISTINCT FROM f.fixed_in_assets)
+"""
+
+_FIXED_CLEAR = """
+UPDATE software_cves s
+   SET fixed_in = NULL, fixed_in_assets = NULL
+ WHERE s.scan_id = :scan_id AND s.fixed_in IS NOT NULL
+   AND NOT EXISTS (SELECT 1 FROM software_fixed f
+                    WHERE f.product = s.product AND f.version = s.version
+                      AND f.cve = s.cve)
+"""
+
 _COMPONENTS = """
 SELECT id, host, ip, port, url, software
   FROM http_assets
@@ -385,6 +434,90 @@ def _gather(
             )
         )
     return found, unmapped
+
+
+_LEADING = re.compile(r"\d+")
+
+
+def _leading(version: str) -> int | None:
+    found = _LEADING.match(version)
+    return int(found.group()) if found else None
+
+
+def _plausible(releases: dict[str, str]) -> list[str]:
+    """Release keys in order, without a leading number far above the product's median."""
+    leads = [n for n in (_leading(v) for v in releases.values()) if n is not None]
+    median = statistics.median(leads) if leads else 0
+    kept = []
+    for key, version in releases.items():
+        lead = _leading(version)
+        if (
+            lead is not None
+            and median
+            and lead > median * OUTLIER_FACTOR
+            and lead - median > OUTLIER_SPAN
+        ):
+            continue
+        kept.append(key)
+    return sorted(kept)
+
+
+def fixed_releases(
+    components: list[_Component], carried: dict[tuple[str, str], set[str]]
+) -> dict[tuple[str, str, str], tuple[str, int]]:
+    """The nearest newer release in the scan that does not carry each CVE, and its asset count."""
+    versions: dict[str, dict[str, str]] = defaultdict(dict)
+    assets: dict[tuple[str, str], set] = defaultdict(set)
+    for c in components:
+        if c.coarse or c.version_kind != "n":
+            continue
+        versions[c.product].setdefault(c.version_key, c.version)
+        assets[(c.product, c.version_key)].add(c.http_asset_id or c.port_id or c.ref)
+    out: dict[tuple[str, str, str], tuple[str, int]] = {}
+    for product, releases in versions.items():
+        keys = _plausible(releases)
+        for index, key in enumerate(keys):
+            version = releases[key]
+            for cve in carried.get((product, version), ()):
+                for newer in keys[index + 1 :]:
+                    candidate = releases[newer]
+                    if cve not in carried.get((product, candidate), ()):
+                        out[(product, version, cve)] = (
+                            candidate,
+                            len(assets[(product, newer)]),
+                        )
+                        break
+    return out
+
+
+def _mark_fixed(
+    session: Session, scan_id: uuid.UUID, components: list[_Component]
+) -> None:
+    carried: dict[tuple[str, str], set[str]] = defaultdict(set)
+    for product, version, cve in session.execute(text(_CARRIED)):
+        carried[(product, version)].add(cve)
+    fixed = fixed_releases(components, carried)
+    session.execute(text(_FIXED_TEMP))
+    if fixed:
+        session.execute(
+            text(
+                "INSERT INTO software_fixed (product, version, cve, fixed_in, "
+                "fixed_in_assets) VALUES (:product, :version, :cve, :fixed_in, :assets)"
+            ),
+            [
+                {
+                    "product": product,
+                    "version": version,
+                    "cve": cve,
+                    "fixed_in": fixed_in,
+                    "assets": count,
+                }
+                for (product, version, cve), (fixed_in, count) in fixed.items()
+            ],
+        )
+    params = {"scan_id": str(scan_id)}
+    session.execute(text(_FIXED_SET), params)
+    session.execute(text(_FIXED_CLEAR), params)
 
 
 def _signals(
@@ -561,6 +694,7 @@ def match_scan(
     session.execute(text(_MERGE_DELETE), params)
     session.execute(text(_MERGE_UPDATE), params)
     session.execute(text(_MERGE_INSERT), params)
+    _mark_fixed(session, scan_id, components)
     session.commit()
 
     coverage.matched = session.execute(

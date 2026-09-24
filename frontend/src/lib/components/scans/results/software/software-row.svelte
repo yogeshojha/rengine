@@ -15,6 +15,7 @@
 	import HighlightText from '../table/highlight-text.svelte';
 	import TechIcon from '../tech-icon.svelte';
 	import { stopProp } from '$lib/utilities';
+	import { plural } from '$lib/utilities/strings';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { excludeToken, exactToken } from '$lib/utilities/scan-insights';
 	import { relativeTime } from '$lib/utilities/dates';
@@ -69,6 +70,12 @@
 	async function copy(value: string, label: string) {
 		if (await writeClipboard(value)) toast.success(`${label} copied`);
 	}
+
+	const fixedHint = $derived(
+		row.fixed_in && row.fixed_in_assets
+			? `${row.name} ${row.fixed_in} runs on ${plural(row.fixed_in_assets, 'asset')} in this scan without ${row.cve}.`
+			: null
+	);
 </script>
 
 <div
@@ -125,8 +132,17 @@
 				<Badge variant="destructive" class="h-4 px-1 text-2xs">Ransomware</Badge>
 			{/if}
 		</span>
-		{#if row.caveats.length}
+		{#if row.caveats.length || row.fixed_in}
 			<span class="flex flex-wrap items-center gap-1">
+				{#if row.fixed_in}
+					<Hint text={fixedHint}>
+						{#snippet child(props)}
+							<span {...props} class="rounded-sm bg-muted px-1 text-2xs text-foreground">
+								Fixed in {row.fixed_in}
+							</span>
+						{/snippet}
+					</Hint>
+				{/if}
 				{#each row.caveats as caveat (caveat.kind)}
 					<Hint text={CAVEAT_HELP[caveat.kind] ?? ''}>
 						{#snippet child(props)}

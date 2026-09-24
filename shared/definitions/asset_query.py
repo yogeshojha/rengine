@@ -2795,6 +2795,7 @@ SOFTWARE_FLAGS: dict[str, str] = {
     "web": "Inferred from a web asset",
     "service": "Inferred from a service banner",
     "corroborated": "A check at the same host names the same CVE",
+    "fixable": "A newer release in the same scan does not carry the CVE",
 }
 
 SOFTWARE_FIELDS: tuple[QueryField, ...] = (
@@ -3017,6 +3018,12 @@ SOFTWARE_EXAMPLES: tuple[QueryExample, ...] = (
         query="epss>=0.5",
         description="EPSS probability of 0.5 or above",
         group="Priority",
+    ),
+    QueryExample(
+        query="is:kev and is:fixable",
+        description="Exploited CVEs a newer release in the same scan does not carry",
+        group="Priority",
+        generic=True,
     ),
     QueryExample(
         query="is:new",
