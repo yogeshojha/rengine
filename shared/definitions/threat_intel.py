@@ -24,9 +24,9 @@ class FeedStatus(StrEnum):
 
 FEED_STATUS_LABELS: dict[str, str] = {
     FeedStatus.EMPTY.value: "Not downloaded",
-    FeedStatus.READY.value: "Up to date",
-    FeedStatus.STALE.value: "Out of date",
-    FeedStatus.FAILED.value: "Last refresh failed",
+    FeedStatus.READY.value: "Current",
+    FeedStatus.STALE.value: "Stale",
+    FeedStatus.FAILED.value: "Failed",
     FeedStatus.SYNCING.value: "Downloading",
 }
 
@@ -51,7 +51,7 @@ FEEDS: tuple[FeedSpec, ...] = (
     FeedSpec(
         kind=FeedKind.EPSS.value,
         label="EPSS",
-        tagline="Probability of exploitation",
+        tagline="Exploit probability score",
         description=(
             "Modelled probability that a CVE is exploited in the wild within 30 days. "
             "Recomputed daily."
@@ -59,14 +59,14 @@ FEEDS: tuple[FeedSpec, ...] = (
         url="https://epss.empiricalsecurity.com/epss_scores-current.csv.gz",
         source="FIRST.org",
         source_url="https://www.first.org/epss/",
-        license="Free to use, no account",
+        license="Free use with attribution",
         rows_table="epss_scores",
         rows_noun="scored CVEs",
     ),
     FeedSpec(
         kind=FeedKind.KEV.value,
         label="CISA KEV",
-        tagline="Confirmed exploited in the wild",
+        tagline="Known exploited vulnerabilities",
         description=(
             "CVEs with confirmed exploitation in the wild, each with a remediation "
             "deadline."
@@ -74,22 +74,22 @@ FEEDS: tuple[FeedSpec, ...] = (
         url="https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
         source="CISA",
         source_url="https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
-        license="Public domain (US Government)",
+        license="US Government public domain",
         rows_table="kev_entries",
         rows_noun="catalogued CVEs",
     ),
     FeedSpec(
         kind=FeedKind.NVD.value,
         label="NVD",
-        tagline="Which versions a CVE affects",
+        tagline="Affected versions per CVE",
         description=(
             "Every published CVE with the software versions it applies to. Matched "
             "against reported versions without sending a request."
         ),
         url=f"{NVD_RELEASE}/CVE-<year>.json.xz",
-        source="NIST NVD, mirrored by fkie-cad",
+        source="NIST NVD via fkie-cad",
         source_url="https://github.com/fkie-cad/nvd-json-data-feeds",
-        license="Public domain (US Government)",
+        license="US Government public domain",
         rows_table="nvd_cves",
         rows_noun="published CVEs",
     ),
@@ -97,6 +97,28 @@ FEEDS: tuple[FeedSpec, ...] = (
 
 
 FEEDS_BY_KIND: dict[str, FeedSpec] = {spec.kind: spec for spec in FEEDS}
+
+
+@dataclass(frozen=True)
+class ProviderSpec:
+    kind: str
+    label: str
+    tagline: str
+    source: str
+    source_url: str
+    rows_noun: str
+    unkeyed_rate: str
+
+
+VULNX_PROVIDER = ProviderSpec(
+    kind="vulnx",
+    label="vulnx",
+    tagline="Exploit, template and exposure data per CVE",
+    source="ProjectDiscovery",
+    source_url="https://github.com/projectdiscovery/vulnx",
+    rows_noun="cached CVEs",
+    unkeyed_rate="10 requests per minute",
+)
 
 STALE_AFTER_HOURS = 48
 

@@ -19,6 +19,19 @@ export interface ThreatFeedRead {
 	age_hours: number | null;
 }
 
+export interface ThreatProviderRead {
+	kind: string;
+	label: string;
+	tagline: string;
+	source: string;
+	source_url: string;
+	rows_noun: string;
+	rows: number;
+	keyed: boolean;
+	unkeyed_rate: string;
+	last_fetched_at: string | null;
+}
+
 export interface IntelCoverage {
 	findings: number;
 	with_cve: number;
@@ -69,8 +82,7 @@ export interface ThreatIntelStatus {
 	coverage: IntelCoverage;
 	ready: boolean;
 	syncing: boolean;
-	provider_enabled: boolean;
-	provider_cached: number;
+	providers: ThreatProviderRead[];
 	last_applied_at: string | null;
 	recent_changes: IntelChange[];
 }

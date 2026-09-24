@@ -127,6 +127,19 @@ class ThreatFeedRead(BaseModel):
     age_hours: float | None = None
 
 
+class ThreatProviderRead(BaseModel):
+    kind: str
+    label: str
+    tagline: str
+    source: str
+    source_url: str
+    rows_noun: str
+    rows: int
+    keyed: bool
+    unkeyed_rate: str
+    last_fetched_at: datetime | None = None
+
+
 class IntelCoverage(BaseModel):
     """Findings reached by the intelligence."""
 
@@ -187,8 +200,7 @@ class ThreatIntelStatus(BaseModel):
     coverage: IntelCoverage
     ready: bool
     syncing: bool
-    provider_enabled: bool = False
-    provider_cached: int = 0
+    providers: list[ThreatProviderRead] = []
     last_applied_at: datetime | None = None
     recent_changes: list[IntelChange] = []
 

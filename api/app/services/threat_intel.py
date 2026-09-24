@@ -14,6 +14,7 @@ from shared.definitions.threat_intel import (
     FEED_STATUS_LABELS,
     FEEDS,
     SIGNALS_BY_KIND,
+    VULNX_PROVIDER,
     ExploitSignal,
     FeedStatus,
     exploit_band,
@@ -32,6 +33,7 @@ from shared.models.threat_intel import (
     SignalRead,
     ThreatFeedRead,
     ThreatIntelStatus,
+    ThreatProviderRead,
 )
 from shared.services.threat_intel import feed_age_hours, feed_status
 from shared.utils.datetime import utc_now
@@ -266,12 +268,11 @@ class ThreatIntelService:
     ) -> ThreatIntelStatus:
         feeds = await self.feeds()
         coverage = await self.coverage(project_id, targets)
-        cached = int(
-            (
-                await self.session.execute(text("SELECT count(*) FROM cve_intel"))
-            ).scalar()
-            or 0
-        )
+        cached, fetched = (
+            await self.session.execute(
+                text("SELECT count(*), max(fetched_at) FROM cve_intel")
+            )
+        ).one()
         has_key = bool(
             await self.session.scalar(
                 select(APIKey.id)
@@ -301,8 +302,20 @@ class ThreatIntelService:
                 for f in feeds
             ),
             syncing=any(f.status == FeedStatus.SYNCING.value for f in feeds),
-            provider_enabled=cached > 0 or has_key,
-            provider_cached=cached,
+            providers=[
+                ThreatProviderRead(
+                    kind=VULNX_PROVIDER.kind,
+                    label=VULNX_PROVIDER.label,
+                    tagline=VULNX_PROVIDER.tagline,
+                    source=VULNX_PROVIDER.source,
+                    source_url=VULNX_PROVIDER.source_url,
+                    rows_noun=VULNX_PROVIDER.rows_noun,
+                    rows=int(cached or 0),
+                    keyed=has_key,
+                    unkeyed_rate=VULNX_PROVIDER.unkeyed_rate,
+                    last_fetched_at=fetched,
+                )
+            ],
             last_applied_at=last_applied,
             recent_changes=await self.changes(project_id, targets=targets),
         )

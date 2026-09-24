@@ -3,21 +3,22 @@
 	import { toast } from 'svelte-sonner';
 	import Flame from '@lucide/svelte/icons/flame';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import * as Card from '$lib/components/ui/card';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Switch } from '$lib/components/ui/switch';
 	import Hint from '$lib/components/hint.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
-	import PanelHead from '$lib/components/panel-head.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
-	import FeedCard from '$lib/components/threat-intel/feed-card.svelte';
+	import { FEED_STATUS_DOT, FEED_STATUS_TONE, FeedStatus } from '$lib/config/threat-intel';
 	import { threatIntelApi } from '$lib/api/threat-intel';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { ROUTES } from '$lib/config/routes';
-	import type { ThreatIntelStatus } from '$lib/types/threat-intel';
+	import type { ThreatFeedRead, ThreatIntelStatus } from '$lib/types/threat-intel';
 
 	const POLL_MS = 4000;
+	const COLUMNS = 'md:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)_7.5rem_minmax(0,0.8fr)_6rem_8.5rem]';
 
 	let status = $state<ThreatIntelStatus | null>(null);
 	let loading = $state(true);
@@ -26,10 +27,20 @@
 	let togglingAuto = $state(false);
 
 	let projectId = $derived(projectsStore.activeProject?.id ?? null);
-
 	let feeds = $derived(status?.feeds ?? []);
-
+	let providers = $derived(status?.providers ?? []);
 	let autoSync = $derived(status?.auto_sync ?? true);
+
+	function version(feed: ThreatFeedRead): string {
+		const v = feed.version?.replace('model_version:', '').split(',')[0] ?? '';
+		return /^\d{4}-\d{2}-\d{2}T/.test(v) ? v.slice(0, 10) : v;
+	}
+
+	function transfer(feed: ThreatFeedRead): string {
+		if (!feed.bytes) return '';
+		const mb = `${(feed.bytes / 1e6).toFixed(1)} MB`;
+		return feed.duration_ms ? `${mb} in ${(feed.duration_ms / 1000).toFixed(1)}s` : mb;
+	}
 
 	async function load(id: string | null) {
 		try {
@@ -46,9 +57,9 @@
 		togglingAuto = true;
 		try {
 			status = await threatIntelApi.setAutoSync(enabled, fetchedProjectId ?? undefined);
-			toast.success(enabled ? 'Nightly download on' : 'Nightly download off');
+			toast.success(enabled ? 'Nightly sync enabled' : 'Nightly sync disabled');
 		} catch {
-			toast.error('Download setting not saved');
+			toast.error('Sync setting not saved');
 		} finally {
 			togglingAuto = false;
 		}
@@ -59,13 +70,13 @@
 		try {
 			const res = await threatIntelApi.sync();
 			if (res.queued) {
-				toast.success('Refresh started');
+				toast.success('Sync started');
 				setTimeout(() => load(fetchedProjectId), 2500);
 			} else {
-				toast.error(res.detail ?? 'Refresh not started');
+				toast.error(res.detail ?? 'Sync not started');
 			}
 		} catch {
-			toast.error('Refresh not started');
+			toast.error('Sync not started');
 		} finally {
 			syncing = false;
 		}
@@ -84,82 +95,203 @@
 	});
 </script>
 
-{#if loading}
-	<div class="grid gap-4 sm:grid-cols-2">
-		<Skeleton class="h-56" />
-		<Skeleton class="h-56" />
+{#snippet cell(label: string)}
+	<span class="text-2xs text-muted-foreground md:hidden">{label}</span>
+{/snippet}
+
+{#snippet source(name: string, url: string, hint: string)}
+	<Hint text={hint}>
+		{#snippet child(props)}
+			<a
+				{...props}
+				class="inline-flex min-w-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+				href={url}
+				target="_blank"
+				rel="noopener noreferrer"
+			>
+				<span class="truncate">{name}</span>
+				<ExternalLink class="size-3 shrink-0" />
+			</a>
+		{/snippet}
+	</Hint>
+{/snippet}
+
+{#snippet group(label: string)}
+	<div class="border-b bg-muted/30 px-6 py-2 text-2xs font-medium text-muted-foreground uppercase">
+		{label}
 	</div>
+{/snippet}
+
+{#if loading}
+	<Card.Root class="gap-0 py-0">
+		<div class="space-y-3 p-6">
+			<Skeleton class="h-6 w-48" />
+			<Skeleton class="h-14 w-full" />
+			<Skeleton class="h-14 w-full" />
+			<Skeleton class="h-14 w-full" />
+		</div>
+	</Card.Root>
 {:else if !status}
 	<EmptyState
 		icon={Flame}
-		title="Exploitation intelligence unavailable"
+		title="Threat intel not loaded"
 		description="The API did not respond. Check that the api service is running."
 	/>
 {:else}
-	<div class="flex flex-col gap-6">
-		<!-- feeds -->
-		<Card.Root class="gap-0 py-0">
-			<PanelHead
-				title="Exploitation feeds"
-				description={status.auto_sync
-					? 'Downloaded nightly. No API key required.'
-					: 'Automatic download is off.'}
-			>
-				{#if status.last_applied_at}
-					<span>Last applied {relativeTime(status.last_applied_at)}</span>
-				{/if}
-				<Hint
-					text={status.auto_sync
-						? 'EPSS and the KEV catalog are downloaded once a day'
-						: 'No scheduled download'}
-				>
-					{#snippet child(props)}
-						<label {...props} class="flex cursor-pointer items-center gap-2">
-							<Switch
-								checked={autoSync}
-								disabled={togglingAuto}
-								onCheckedChange={toggleAuto}
-								aria-label="Download feeds automatically"
-							/>
-							<span class="whitespace-nowrap">Nightly download</span>
-						</label>
-					{/snippet}
-				</Hint>
+	<Card.Root class="gap-0 py-0">
+		<Card.Header class="border-b py-5">
+			<Card.Title>Sources</Card.Title>
+			{#if status.last_applied_at}
+				<Card.Description>
+					Applied to findings {relativeTime(status.last_applied_at)}
+				</Card.Description>
+			{/if}
+			<Card.Action class="flex flex-wrap items-center justify-end gap-4">
+				<label class="flex cursor-pointer items-center gap-2 text-sm">
+					<Switch
+						checked={autoSync}
+						disabled={togglingAuto}
+						onCheckedChange={toggleAuto}
+						aria-label="Nightly sync"
+					/>
+					<span class="whitespace-nowrap">Nightly sync</span>
+				</label>
 				<LoadingButton
 					loading={syncing || status.syncing}
-					loadingLabel="Refreshing"
+					loadingLabel="Syncing"
 					variant="outline"
 					size="sm"
 					onclick={sync}
 				>
 					<RefreshCw class="mr-1.5 size-3.5" />
-					Refresh now
+					Sync now
 				</LoadingButton>
-			</PanelHead>
-			<div class="grid sm:grid-cols-2 sm:divide-x">
-				{#each feeds as feed (feed.kind)}
-					<div class="border-b last:border-b-0 sm:border-b-0">
-						<FeedCard {feed} />
-					</div>
-				{/each}
-			</div>
-		</Card.Root>
+			</Card.Action>
+		</Card.Header>
 
-		<!-- the provider -->
-		<Card.Root class="gap-0 py-0">
-			<PanelHead
-				title="vulnx"
-				description="ProjectDiscovery vulnerability index. Fetched per CVE and cached."
-			>
-				<span class="tabular-nums">{status.provider_cached} CVEs cached</span>
-			</PanelHead>
-			<div class="px-5 py-4 text-xs leading-relaxed text-muted-foreground">
-				<p>
-					Adds exploit references, template availability, exposed host counts and HackerOne reports.
-					Without an API key: 10 requests per minute.
-					<a class="underline hover:text-foreground" href={ROUTES.settings('api-keys')}>API keys</a>
-				</p>
+		<div
+			class="hidden gap-4 border-b px-6 py-2.5 text-2xs font-medium text-muted-foreground md:grid {COLUMNS}"
+		>
+			<span>Source</span>
+			<span>Publisher</span>
+			<span class="text-right">Records</span>
+			<span>Version</span>
+			<span>Updated</span>
+			<span>Status</span>
+		</div>
+
+		{@render group('Feeds')}
+		{#each feeds as feed (feed.kind)}
+			{@const live = feed.status === FeedStatus.SYNCING}
+			<div class="border-b px-6 py-4">
+				<div class="grid grid-cols-2 items-center gap-x-4 gap-y-3 {COLUMNS}">
+					<div class="col-span-2 flex min-w-0 items-start gap-3 md:col-span-1">
+						<span class="flex h-5 shrink-0 items-center">
+							<span
+								class="size-2 rounded-full {FEED_STATUS_DOT[feed.status]} {live
+									? 'animate-pulse'
+									: ''}"
+							></span>
+						</span>
+						<div class="flex min-w-0 flex-col">
+							<span class="text-sm leading-5 font-medium">{feed.label}</span>
+							<span class="text-xs text-muted-foreground">{feed.tagline}</span>
+						</div>
+					</div>
+					<div class="flex min-w-0 flex-col">
+						{@render cell('Publisher')}
+						{@render source(feed.source, feed.source_url, feed.license)}
+					</div>
+					<div class="flex flex-col md:items-end">
+						{@render cell('Records')}
+						<span class="font-mono text-sm tabular-nums">{feed.rows.toLocaleString()}</span>
+						<span class="text-2xs text-muted-foreground">{feed.rows_noun}</span>
+					</div>
+					<div class="flex min-w-0 flex-col">
+						{@render cell('Version')}
+						<Hint text={transfer(feed)}>
+							{#snippet child(props)}
+								<span {...props} class="truncate font-mono text-xs text-muted-foreground">
+									{version(feed) || '—'}
+								</span>
+							{/snippet}
+						</Hint>
+					</div>
+					<div class="flex flex-col">
+						{@render cell('Updated')}
+						<span class="text-xs text-muted-foreground tabular-nums">
+							{feed.last_synced_at ? relativeTime(feed.last_synced_at) : 'Never'}
+						</span>
+					</div>
+					<div class="flex flex-col">
+						{@render cell('Status')}
+						<span class="text-xs {FEED_STATUS_TONE[feed.status]}">{feed.status_label}</span>
+					</div>
+				</div>
+				{#if feed.error}
+					<p class="mt-2 pl-5 font-mono text-xs break-all text-destructive">{feed.error}</p>
+				{/if}
 			</div>
-		</Card.Root>
-	</div>
+		{/each}
+
+		{#if providers.length}
+			{@render group('Lookup APIs')}
+			{#each providers as provider (provider.kind)}
+				<div class="border-b px-6 py-4 last:border-b-0">
+					<div class="grid grid-cols-2 items-center gap-x-4 gap-y-3 {COLUMNS}">
+						<div class="col-span-2 flex min-w-0 items-start gap-3 md:col-span-1">
+							<span class="flex h-5 shrink-0 items-center">
+								<span
+									class="size-2 rounded-full {provider.keyed
+										? 'bg-success'
+										: 'bg-muted-foreground'}"
+								></span>
+							</span>
+							<div class="flex min-w-0 flex-col">
+								<span class="text-sm leading-5 font-medium">{provider.label}</span>
+								<span class="text-xs text-muted-foreground">{provider.tagline}</span>
+							</div>
+						</div>
+						<div class="flex min-w-0 flex-col">
+							{@render cell('Publisher')}
+							{@render source(provider.source, provider.source_url, '')}
+						</div>
+						<div class="flex flex-col md:items-end">
+							{@render cell('Records')}
+							<span class="font-mono text-sm tabular-nums">{provider.rows.toLocaleString()}</span>
+							<span class="text-2xs text-muted-foreground">{provider.rows_noun}</span>
+						</div>
+						<div class="flex flex-col">
+							{@render cell('Version')}
+							<span class="font-mono text-xs text-muted-foreground">—</span>
+						</div>
+						<div class="flex flex-col">
+							{@render cell('Updated')}
+							<span class="text-xs text-muted-foreground tabular-nums">
+								{provider.last_fetched_at ? relativeTime(provider.last_fetched_at) : 'Never'}
+							</span>
+						</div>
+						<div class="flex flex-col">
+							{@render cell('Status')}
+							{#if provider.keyed}
+								<span class="text-xs text-success">API key set</span>
+							{:else}
+								<Hint text={`Limit without a key: ${provider.unkeyed_rate}`}>
+									{#snippet child(props)}
+										<a
+											{...props}
+											class="w-fit text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+											href={ROUTES.settings('api-keys')}
+										>
+											No API key
+										</a>
+									{/snippet}
+								</Hint>
+							{/if}
+						</div>
+					</div>
+				</div>
+			{/each}
+		{/if}
+	</Card.Root>
 {/if}
