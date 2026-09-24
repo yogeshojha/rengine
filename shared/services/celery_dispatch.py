@@ -1,7 +1,7 @@
 from celery import Celery
 
 from shared.config import BaseAppSettings
-from shared.definitions.constants import CRITICAL_QUEUE, SCANS_QUEUE
+from shared.definitions.constants import CRITICAL_QUEUE, SCAN_CONTROL_QUEUE
 from shared.logging import get_logger
 
 logger = get_logger(__name__)
@@ -63,7 +63,7 @@ def dispatch_scan_run(scan_id: str, epoch: int) -> None:
     get_celery_client().send_task(
         "app.tasks.scan.run_scan",
         kwargs={"scan_id": scan_id, "epoch": epoch},
-        queue=SCANS_QUEUE,
+        queue=SCAN_CONTROL_QUEUE,
     )
 
 
@@ -72,7 +72,7 @@ def dispatch_scan_resume(scan_id: str, epoch: int) -> None:
     get_celery_client().send_task(
         "app.tasks.scan.resume_scan",
         kwargs={"scan_id": scan_id, "epoch": epoch},
-        queue=SCANS_QUEUE,
+        queue=SCAN_CONTROL_QUEUE,
     )
 
 
@@ -81,7 +81,7 @@ def dispatch_scan_finalize(scan_id: str) -> None:
     get_celery_client().send_task(
         "app.tasks.scan.finalize_scan",
         kwargs={"scan_id": scan_id},
-        queue=SCANS_QUEUE,
+        queue=SCAN_CONTROL_QUEUE,
     )
 
 

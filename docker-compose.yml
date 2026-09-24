@@ -40,7 +40,7 @@ services:
       -c effective_io_concurrency=200
       -c max_parallel_workers_per_gather=4
       -c jit=off
-      -c max_connections=${POSTGRES_MAX_CONNECTIONS:-150}
+      -c max_connections=${POSTGRES_MAX_CONNECTIONS:-250}
       -c shared_preload_libraries=pg_stat_statements
       -c pg_stat_statements.max=5000
       -c pg_stat_statements.track=top
@@ -122,7 +122,7 @@ services:
       redis:
         condition: service_healthy
 
-  # default workers for handling regular tasks like imports, whois etc
+  # background jobs and toolbox runs
   worker-default:
     init: true
     image: rengine-worker:latest
@@ -133,12 +133,11 @@ services:
     volumes: *worker-volumes
     env_file:
       - .env
-    # the widest level holds 5 stages
     command: >
       uv run celery -A app.celery worker
       --loglevel=DEBUG
-      --concurrency=${CELERY_SCAN_CONCURRENCY:-12}
-      --queues=critical,default,scans
+      --concurrency=${CELERY_DEFAULT_CONCURRENCY:-4}
+      --queues=critical,default
       --hostname=worker-default@%h
       --max-tasks-per-child=100
     restart: unless-stopped
@@ -149,6 +148,62 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "/app/.venv/bin/celery -A app.celery inspect ping -d worker-default@$$HOSTNAME || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # scan stages, one slot per running stage; scale with --scale worker-scans=N
+  worker-scans:
+    init: true
+    # built by worker-default
+    image: rengine-worker:latest
+    volumes: *worker-volumes
+    env_file:
+      - .env
+    command: >
+      uv run celery -A app.celery worker
+      --loglevel=DEBUG
+      --concurrency=${CELERY_SCAN_CONCURRENCY:-16}
+      --queues=scans
+      --hostname=worker-scans@%h
+      --max-tasks-per-child=100
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "/app/.venv/bin/celery -A app.celery inspect ping -d worker-scans@$$HOSTNAME || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # scan launch, step hand-over, resume and finalize
+  worker-control:
+    init: true
+    # built by worker-default
+    image: rengine-worker:latest
+    volumes: *worker-volumes
+    env_file:
+      - .env
+    command: >
+      uv run celery -A app.celery worker
+      --loglevel=DEBUG
+      --concurrency=${CELERY_CONTROL_CONCURRENCY:-4}
+      --queues=scan_control
+      --hostname=worker-control@%h
+      --max-tasks-per-child=100
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "/app/.venv/bin/celery -A app.celery inspect ping -d worker-control@$$HOSTNAME || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

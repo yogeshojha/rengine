@@ -99,7 +99,7 @@
 					Worker
 				</span>
 				<span class="text-sm font-medium text-destructive">Unreachable</span>
-				<span class="text-xs text-muted-foreground"> Start the worker-default service. </span>
+				<span class="text-xs text-muted-foreground"> Start the worker services. </span>
 			</div>
 		{/if}
 		{#if workerReady}

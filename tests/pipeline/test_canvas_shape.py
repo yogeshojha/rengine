@@ -5,6 +5,7 @@ import json
 import pytest
 from celery import Celery, chord
 
+from shared.definitions.constants import SCAN_CONTROL_QUEUE, SCANS_QUEUE
 from shared.services.orchestrator import canvas
 
 pytestmark = pytest.mark.pipeline
@@ -78,3 +79,16 @@ def test_every_stage_carries_finalize_as_its_error_link(app: Celery):
         (link,) = sig.options["link_error"]
         assert link.task == canvas.FINALIZE_TASK
         assert set(sig.options) == {"queue", "link_error"}
+
+
+def test_stages_queue_for_a_stage_slot_and_hand_overs_do_not(app: Celery):
+    steps = canvas.plan_steps()
+    for index in range(len(steps)):
+        step = canvas.build_step(app, "s1", 0, steps, index)
+        stages = step.tasks if isinstance(step, chord) else step.tasks[:-1]
+        after = step.body if isinstance(step, chord) else step.tasks[-1]
+        for sig in stages:
+            assert sig.options["queue"] == SCANS_QUEUE
+            (link,) = sig.options["link_error"]
+            assert link.options["queue"] == SCAN_CONTROL_QUEUE
+        assert after.options["queue"] == SCAN_CONTROL_QUEUE

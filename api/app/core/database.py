@@ -54,7 +54,7 @@ def pool_demand() -> int:
     return (
         settings.DB_POOL_SIZE
         + settings.DB_MAX_OVERFLOW
-        + settings.CELERY_SCAN_CONCURRENCY * per_child
+        + settings.worker_children * per_child
         + per_child
     )
 

@@ -5,6 +5,7 @@ from typing import Any
 import pytest
 
 import shared.services.celery_dispatch as dispatch
+from shared.definitions.constants import SCAN_CONTROL_QUEUE
 from shared.services.orchestrator import superseded
 
 pytestmark = pytest.mark.pipeline
@@ -13,9 +14,11 @@ pytestmark = pytest.mark.pipeline
 class _Client:
     def __init__(self) -> None:
         self.sent: list[tuple[str, dict[str, Any]]] = []
+        self.queues: list[str] = []
 
-    def send_task(self, name: str, *, kwargs: dict[str, Any], queue: str) -> None:  # noqa: ARG002
+    def send_task(self, name: str, *, kwargs: dict[str, Any], queue: str) -> None:
         self.sent.append((name, kwargs))
+        self.queues.append(queue)
 
 
 @pytest.fixture
@@ -54,3 +57,10 @@ def test_finalize_carries_no_epoch_so_the_reaper_can_settle_any_canvas(client: _
     _, queued = client.sent[0]
     assert "epoch" not in queued
     assert not superseded(7, queued.get("epoch"))
+
+
+def test_launch_resume_and_finalize_never_wait_behind_a_stage(client: _Client):
+    dispatch.dispatch_scan_run("s1", 0)
+    dispatch.dispatch_scan_resume("s1", 1)
+    dispatch.dispatch_scan_finalize("s1")
+    assert client.queues == [SCAN_CONTROL_QUEUE] * 3

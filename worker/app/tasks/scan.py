@@ -20,7 +20,7 @@ from app.orchestrator import (
     finalize_scan_run,
     run_stage,
 )
-from shared.definitions.constants import SCANS_QUEUE
+from shared.definitions.constants import SCAN_QUEUES
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.scan import (
     ACTIVITY_TERMINAL_STATUSES,
@@ -338,17 +338,18 @@ def _broker() -> redis.Redis:
 
 
 def _queued_scan_ids() -> set[str] | None:
-    """The scans with a task still waiting in the queue."""
+    """The scans with a task still waiting in a scan queue."""
     try:
         client = _broker()
+        keys = {key for queue in SCAN_QUEUES for key in client.keys(f"{queue}*")}
         raw = [
             m
-            for key in client.keys(f"{SCANS_QUEUE}*")
+            for key in keys
             if client.type(key) == b"list"
             for m in client.lrange(key, 0, -1)
         ]
     except Exception:
-        logger.warning("stall check could not read the scans queue", exc_info=True)
+        logger.warning("stall check could not read the scan queues", exc_info=True)
         return None
     ids: set[str] = set()
     for message in raw:

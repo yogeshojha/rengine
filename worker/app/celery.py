@@ -11,7 +11,12 @@ from celery.signals import (
 from kombu import Exchange, Queue
 
 from app.config import settings
-from shared.definitions.constants import CRITICAL_QUEUE, SCANS_QUEUE
+from shared.definitions.constants import (
+    CRITICAL_QUEUE,
+    DEFAULT_QUEUE,
+    SCAN_CONTROL_QUEUE,
+    SCANS_QUEUE,
+)
 from shared.logging import get_logger
 from shared.logging import setup_logging as setup_rengine_logging
 
@@ -73,6 +78,11 @@ celery_app.conf.task_queues = (
         routing_key="scans",
         queue_arguments={"x-max-priority": 5},
     ),
+    Queue(
+        SCAN_CONTROL_QUEUE,
+        exchange=Exchange(SCAN_CONTROL_QUEUE, type="direct"),
+        routing_key=SCAN_CONTROL_QUEUE,
+    ),
 )
 
 celery_app.conf.task_default_queue = "default"
@@ -81,26 +91,27 @@ celery_app.conf.task_default_routing_key = "default"
 
 
 celery_app.conf.task_routes = {
-    "app.tasks.scan.reap_stalled": {"queue": "default"},
-    "app.tasks.scan.*": {"queue": SCANS_QUEUE},
-    "app.tasks.whois.*": {"queue": "default"},
-    "app.tasks.ripestat.*": {"queue": "default"},
-    "app.tasks.dns.*": {"queue": "default"},
-    "app.tasks.schedule.*": {"queue": "default"},
-    "app.tasks.vuln_templates.*": {"queue": "default"},
-    "app.tasks.daily.*": {"queue": "default"},
-    "app.tasks.new_checks.*": {"queue": "default"},
-    "app.tasks.endpoints.*": {"queue": "default"},
-    "app.tasks.reports.*": {"queue": "default"},
-    "app.tasks.export.*": {"queue": "default"},
-    "app.tasks.interest.*": {"queue": "default"},
-    "app.tasks.threat_intel.*": {"queue": "default"},
-    "app.tasks.freshness.*": {"queue": "default"},
-    "app.tasks.hygiene.*": {"queue": "default"},
-    "app.tasks.screenshots.*": {"queue": "default"},
-    "app.tasks.software.*": {"queue": "default"},
-    "app.tasks.secrets.*": {"queue": "default"},
-    "app.tasks.bounty_programs.*": {"queue": "default"},
+    "app.tasks.scan.reap_stalled": {"queue": DEFAULT_QUEUE},
+    "app.tasks.scan.run_scan_stage": {"queue": SCANS_QUEUE},
+    "app.tasks.scan.*": {"queue": SCAN_CONTROL_QUEUE},
+    "app.tasks.whois.*": {"queue": DEFAULT_QUEUE},
+    "app.tasks.ripestat.*": {"queue": DEFAULT_QUEUE},
+    "app.tasks.dns.*": {"queue": DEFAULT_QUEUE},
+    "app.tasks.schedule.*": {"queue": DEFAULT_QUEUE},
+    "app.tasks.vuln_templates.*": {"queue": DEFAULT_QUEUE},
+    "app.tasks.daily.*": {"queue": DEFAULT_QUEUE},
+    "app.tasks.new_checks.*": {"queue": DEFAULT_QUEUE},
+    "app.tasks.endpoints.*": {"queue": DEFAULT_QUEUE},
+    "app.tasks.reports.*": {"queue": DEFAULT_QUEUE},
+    "app.tasks.export.*": {"queue": DEFAULT_QUEUE},
+    "app.tasks.interest.*": {"queue": DEFAULT_QUEUE},
+    "app.tasks.threat_intel.*": {"queue": DEFAULT_QUEUE},
+    "app.tasks.freshness.*": {"queue": DEFAULT_QUEUE},
+    "app.tasks.hygiene.*": {"queue": DEFAULT_QUEUE},
+    "app.tasks.screenshots.*": {"queue": DEFAULT_QUEUE},
+    "app.tasks.software.*": {"queue": DEFAULT_QUEUE},
+    "app.tasks.secrets.*": {"queue": DEFAULT_QUEUE},
+    "app.tasks.bounty_programs.*": {"queue": DEFAULT_QUEUE},
     "app.tasks.toolbox.*": {"queue": CRITICAL_QUEUE},
 }
 
@@ -272,6 +283,8 @@ def on_process_init(**_) -> None:
 def on_worker_ready(sender, **kwargs) -> None:  # noqa: ARG001
     """Log when worker is ready."""
     logger.info("Worker ready: %s", sender.hostname)
+    if DEFAULT_QUEUE not in celery_app.amqp.queues.consume_from:
+        return
     _warm_ip_ranges()
     _warm_threat_intel()
 

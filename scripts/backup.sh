@@ -90,7 +90,7 @@ restore() {
   tar -xf "$archive" -C "$work"
 
   say "stopping the workers so nothing writes during the restore"
-  docker compose stop api worker-default worker-beat >/dev/null
+  docker compose stop api worker-default worker-scans worker-control worker-beat >/dev/null
 
   say "database"
   docker compose exec -T db psql -U "$DB_USER" -d postgres -c \
@@ -113,7 +113,7 @@ restore() {
   done
 
   say "starting"
-  docker compose start api worker-default worker-beat >/dev/null
+  docker compose start api worker-default worker-scans worker-control worker-beat >/dev/null
   say "restored. If SECRET_KEY differs from the archive's, stored secrets will not decrypt:"
   grep -E '^SECRET_KEY=' "$work/env" | sed 's/=.*/=<in the archive>/'
 }

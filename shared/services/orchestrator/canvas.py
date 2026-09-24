@@ -2,7 +2,7 @@
 
 from celery import Celery, chain, chord, group, signature
 
-from shared.definitions.constants import SCANS_QUEUE
+from shared.definitions.constants import SCAN_CONTROL_QUEUE, SCANS_QUEUE
 from stages.registry import execution_plan
 
 Steps = list[list[str]]
@@ -12,12 +12,19 @@ STEP_TASK = "app.tasks.scan.run_scan_step"
 FINALIZE_TASK = "app.tasks.scan.finalize_scan"
 
 
-def _sig(app: Celery, task: str, **kwargs):
-    return signature(task, kwargs=kwargs, queue=SCANS_QUEUE, immutable=True, app=app)
+def _sig(app: Celery, task: str, queue: str = SCAN_CONTROL_QUEUE, **kwargs):
+    return signature(task, kwargs=kwargs, queue=queue, immutable=True, app=app)
 
 
 def _stage_sig(app: Celery, scan_id: str, stage_name: str, epoch: int):
-    sig = _sig(app, STAGE_TASK, scan_id=scan_id, stage_name=stage_name, epoch=epoch)
+    sig = _sig(
+        app,
+        STAGE_TASK,
+        queue=SCANS_QUEUE,
+        scan_id=scan_id,
+        stage_name=stage_name,
+        epoch=epoch,
+    )
     sig.options["link_error"] = [_finalize_sig(app, scan_id, epoch)]
     return sig
 

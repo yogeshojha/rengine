@@ -49,7 +49,7 @@ logs-api:
 	docker compose logs -f api
 
 logs-worker:
-	docker compose logs -f worker-default
+	docker compose logs -f worker-default worker-scans worker-control
 
 # Checks: the same commands CI runs
 lint:

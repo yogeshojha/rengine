@@ -52,7 +52,7 @@ async def celery_health_check(_current_user: CurrentSuperuser) -> dict:
         return {
             "status": "unhealthy",
             "error": str(e),
-            "message": "Celery workers did not respond. Check that the worker-default service is running.",
+            "message": "Celery workers did not respond. Check that the worker services are running.",
         }
 
 

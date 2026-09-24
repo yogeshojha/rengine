@@ -35,7 +35,17 @@ class BaseAppSettings(BaseSettings):
     WORKER_DB_POOL_SIZE: int = 2
     WORKER_DB_MAX_OVERFLOW: int = 3
     WORKER_DB_POOL_TIMEOUT: int = 30
-    CELERY_SCAN_CONCURRENCY: int = 12
+    CELERY_SCAN_CONCURRENCY: int = 16
+    CELERY_CONTROL_CONCURRENCY: int = 4
+    CELERY_DEFAULT_CONCURRENCY: int = 4
+
+    @property
+    def worker_children(self) -> int:
+        return (
+            self.CELERY_SCAN_CONCURRENCY
+            + self.CELERY_CONTROL_CONCURRENCY
+            + self.CELERY_DEFAULT_CONCURRENCY
+        )
 
     @property
     def database_url_async(self) -> str:
