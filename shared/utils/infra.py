@@ -237,6 +237,9 @@ GENERIC_TITLE_PHRASES: dict[str, str] = {
     "service unavailable": "the server",
     "gateway timeout": "the server",
     "are you a robot": "an edge",
+    "bot verification": "an edge",
+    "index of /": "the server",
+    "host welcome page": "the server",
     "request rejected": "an edge",
 }
 

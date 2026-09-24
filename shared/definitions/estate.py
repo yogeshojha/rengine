@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from enum import StrEnum
 
+from shared.definitions.domains import (
+    VENDOR_DOMAINS,
+    registrable_domain,
+    takeover_provider,
+)
 from shared.definitions.relations import RELATION_LABELS
+from shared.utils.infra import is_shared_nameserver, shared_edge
 
 
 class EstateReason(StrEnum):
@@ -153,3 +159,24 @@ PROVIDER_SUFFIXES: dict[str, str] = {
     "cpanel.net": "cPanel",
     "plesk.page": "Plesk",
 }
+
+
+def provider_of(host: str) -> str | None:
+    """The platform a host belongs to, or None when it is an estate's own."""
+    name = (host or "").strip().lower().rstrip(".").removeprefix("*.")
+    if "." not in name or " " in name:
+        return None
+    labels = name.split(".")
+    for i in range(len(labels) - 1):
+        suffix = ".".join(labels[i:])
+        if suffix in PROVIDER_SUFFIXES:
+            return PROVIDER_SUFFIXES[suffix]
+    edge = shared_edge(name)
+    if edge:
+        return edge
+    apex = registrable_domain(name)
+    if apex in VENDOR_DOMAINS:
+        return apex
+    if is_shared_nameserver(name):
+        return apex
+    return takeover_provider(name)

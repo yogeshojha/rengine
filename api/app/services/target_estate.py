@@ -17,9 +17,7 @@ from app.services.target_relations import TargetRelationService
 from shared.definitions.domains import (
     IGNORED_DOMAINS,
     PRIVATE_TLDS,
-    VENDOR_DOMAINS,
     registrable_domain,
-    takeover_provider,
 )
 from shared.definitions.estate import (
     ESTATE_REASON_LABELS,
@@ -32,7 +30,9 @@ from shared.definitions.estate import (
     EstateReason,
     EstateStrength,
     ProviderKind,
+    provider_of,
 )
+from shared.definitions.name_ownership import CLAIM_TEMPLATES
 from shared.definitions.relations import TargetRelation
 from shared.definitions.surface import SurfaceDimension
 from shared.enums.dns import DnsRecordType
@@ -51,8 +51,8 @@ from shared.models.estate import (
 from shared.models.http_asset import HttpAsset
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
+from shared.models.vulnerability import Vulnerability
 from shared.services.asset_query import lead_cache
-from shared.utils.infra import is_shared_nameserver, shared_edge
 from shared.utils.net import cert_covers
 
 _EDGE_PROVIDERS = frozenset(
@@ -131,27 +131,6 @@ def _url_host(url: str | None) -> str:
         return ""
 
 
-def provider_of(host: str) -> str | None:
-    """The platform a host belongs to, or None when it is an estate's own."""
-    name = _clean(host)
-    if not name:
-        return None
-    labels = name.split(".")
-    for i in range(len(labels) - 1):
-        suffix = ".".join(labels[i:])
-        if suffix in PROVIDER_SUFFIXES:
-            return PROVIDER_SUFFIXES[suffix]
-    edge = shared_edge(name)
-    if edge:
-        return edge
-    apex = registrable_domain(name)
-    if apex in VENDOR_DOMAINS:
-        return apex
-    if is_shared_nameserver(name):
-        return apex
-    return takeover_provider(name)
-
-
 class TargetEstateService:
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -191,6 +170,7 @@ class TargetEstateService:
         if scan_id is not None:
             await self._assets(scan_id, root, signals, providers, neighbours)
             await self._cnames(scan_id, root, signals, providers)
+            await self._drop_claimed(scan_id, signals)
         if TargetType(target.target_type) in _DOMAIN_TYPES:
             await self._dns(target_id, root, providers, own)
         if relations:
@@ -279,6 +259,22 @@ class TargetEstateService:
         )
 
     # ---------- readers ----------
+
+    async def _drop_claimed(
+        self, scan_id: UUID, signals: dict[str, dict[str, _Signal]]
+    ) -> None:
+        claimed = (
+            await self.session.execute(
+                select(Vulnerability.matcher_name)
+                .where(
+                    Vulnerability.scan_id == scan_id,
+                    Vulnerability.template_id.in_(list(CLAIM_TEMPLATES.values())),
+                )
+                .distinct()
+            )
+        ).scalars()
+        for domain in claimed:
+            signals.pop(domain or "", None)
 
     async def _targets(self, project_id: UUID) -> dict[UUID, Target]:
         rows = await self.session.execute(
