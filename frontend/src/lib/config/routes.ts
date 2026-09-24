@@ -8,7 +8,7 @@ export const routeLabels: Record<string, string> = {
 	assets: 'Assets',
 	engineSetup: 'Engine',
 	reporting: 'Reporting',
-	toolkit: 'Toolkit',
+	integrations: 'Integrations',
 	...Object.fromEntries(SURFACE_ORDER.map((spec) => [spec.tab, spec.label])),
 	exposures: 'Exposures',
 	correlation: 'Correlation',
@@ -21,8 +21,10 @@ export const routeLabels: Record<string, string> = {
 	compare: 'Compare runs',
 	connectors: 'Connectors',
 	'remote-control': 'Remote control',
+	mcp: 'MCP',
 	notes: 'Notes',
 	'whats-new': "What's new",
+	bounty: 'Bounty',
 	'bounty-hub': 'Bounty Hub',
 	programs: 'Programs',
 
@@ -43,7 +45,6 @@ export const routeLabels: Record<string, string> = {
 	oast: 'Out-of-band testing',
 	notifications: 'Notifications',
 	ai: 'AI',
-	mcp: 'MCP',
 
 	profile: 'Profile'
 };
@@ -55,8 +56,7 @@ export const SETTINGS_SECTIONS = [
 	'oast',
 	'notifications',
 	'bounty-hub',
-	'ai',
-	'mcp'
+	'ai'
 ] as const;
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
 
@@ -148,7 +148,7 @@ export const ROUTES = {
 	reportsForScan: (scanId: string) => `/reports?scan=${scanId}`,
 	reportsForTarget: (targetId: string) => `/reports?target=${targetId}`,
 	ai: (section?: AiSection) => (section ? `/settings/ai#ai-${section}` : '/settings/ai'),
-	mcp: (tab?: McpTab) => (tab ? `/settings/mcp?tab=${tab}` : '/settings/mcp'),
+	mcp: (tab?: McpTab) => (tab ? `/mcp?tab=${tab}` : '/mcp'),
 	connectors: (tab?: ConnectorTab) => (tab ? `/connectors?tab=${tab}` : '/connectors'),
 	remoteControl: (tab?: RemoteControlTab) =>
 		tab ? `/remote-control?tab=${tab}` : '/remote-control',

@@ -115,7 +115,7 @@
 <div class="space-y-6">
 	<div class="flex flex-wrap items-start justify-between gap-3">
 		<div class="min-w-0">
-			<h2 class="text-lg font-semibold tracking-tight">{routeLabels.mcp}</h2>
+			<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.mcp}</h1>
 			<p class="mt-1 max-w-2xl text-sm text-muted-foreground">
 				Model Context Protocol access for agents, scoped by service token
 			</p>

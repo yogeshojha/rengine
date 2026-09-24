@@ -17,6 +17,7 @@ import CalendarClock from '@lucide/svelte/icons/calendar-clock';
 import FileText from '@lucide/svelte/icons/file-text';
 import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
 import Plug from '@lucide/svelte/icons/plug';
+import Bot from '@lucide/svelte/icons/bot';
 import ScanEye from '@lucide/svelte/icons/scan-eye';
 import Settings2 from '@lucide/svelte/icons/settings-2';
 import Share2 from '@lucide/svelte/icons/share-2';
@@ -317,6 +318,13 @@ function destinations(): Destination[] {
 			href: ROUTES.connectors(),
 			icon: Plug,
 			keywords: 'burp proxy browsing'
+		},
+		{
+			id: 'page:mcp',
+			label: routeLabels.mcp,
+			href: ROUTES.mcp(),
+			icon: Bot,
+			keywords: 'model context protocol agent tokens'
 		},
 		{
 			id: 'page:whats-new',

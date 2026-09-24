@@ -8,7 +8,6 @@
 	import BellIcon from '@lucide/svelte/icons/bell';
 	import AwardIcon from '@lucide/svelte/icons/award';
 	import CpuIcon from '@lucide/svelte/icons/cpu';
-	import BotIcon from '@lucide/svelte/icons/bot';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { ROUTES, routeLabels, SETTINGS_SECTIONS, type SettingsSection } from '$lib/config/routes';
@@ -25,8 +24,7 @@
 		oast: SatelliteDishIcon,
 		notifications: BellIcon,
 		'bounty-hub': AwardIcon,
-		ai: CpuIcon,
-		mcp: BotIcon
+		ai: CpuIcon
 	};
 
 	const sections = $derived(

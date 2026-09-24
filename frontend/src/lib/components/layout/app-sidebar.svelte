@@ -7,11 +7,14 @@
 	import LayersIcon from '@lucide/svelte/icons/layers';
 	import WorkflowIcon from '@lucide/svelte/icons/workflow';
 	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
-	import AwardIcon from '@lucide/svelte/icons/award';
+	import HatGlassesIcon from '@lucide/svelte/icons/hat-glasses';
 	import LibraryIcon from '@lucide/svelte/icons/library';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import ScanEyeIcon from '@lucide/svelte/icons/scan-eye';
 	import Share2Icon from '@lucide/svelte/icons/share-2';
+	import CableIcon from '@lucide/svelte/icons/cable';
+	import MessageSquareIcon from '@lucide/svelte/icons/message-square';
+	import BotIcon from '@lucide/svelte/icons/bot';
 	import Settings2Icon from '@lucide/svelte/icons/settings-2';
 	import NavMain, { type NavGroup } from './nav-main.svelte';
 	import { ASSET_DIMENSIONS, FINDINGS_ROOT, SURFACE } from '$lib/config/surface';
@@ -121,6 +124,33 @@
 				}
 			]
 		},
+		...(bountyOn
+			? [
+					{
+						label: routeLabels.bounty,
+						items: [
+							{
+								title: routeLabels['bounty-hub'],
+								url: ROUTES.bountyHub(),
+								icon: HatGlassesIcon,
+								items: reportPlatforms.length
+									? [
+											{ title: routeLabels.programs, url: ROUTES.bountyHub(), exact: true },
+											...reportPlatforms.map((p) => ({
+												title: p.label,
+												url: ROUTES.bountyReports(p.key)
+											}))
+										]
+									: undefined
+							}
+						]
+					}
+				]
+			: []),
+		{
+			label: routeLabels.arsenal,
+			items: [{ title: routeLabels.arsenal, url: ROUTES.arsenal(), icon: LibraryIcon }]
+		},
 		{
 			label: routeLabels.reporting,
 			items: [
@@ -135,36 +165,15 @@
 			]
 		},
 		{
-			label: null,
+			label: routeLabels.integrations,
 			items: [
-				...(bountyOn
-					? [
-							{
-								title: routeLabels['bounty-hub'],
-								url: ROUTES.bountyHub(),
-								icon: AwardIcon,
-								items: reportPlatforms.length
-									? [
-											{ title: routeLabels.programs, url: ROUTES.bountyHub(), exact: true },
-											...reportPlatforms.map((p) => ({
-												title: p.label,
-												url: ROUTES.bountyReports(p.key)
-											}))
-										]
-									: undefined
-							}
-						]
-					: []),
+				{ title: routeLabels.connectors, url: ROUTES.connectors(), icon: CableIcon },
 				{
-					title: routeLabels.toolkit,
-					url: ROUTES.arsenal(),
-					icon: LibraryIcon,
-					items: [
-						{ title: routeLabels.arsenal, url: ROUTES.arsenal() },
-						{ title: routeLabels.connectors, url: ROUTES.connectors() },
-						{ title: routeLabels['remote-control'], url: ROUTES.remoteControl() }
-					]
-				}
+					title: routeLabels['remote-control'],
+					url: ROUTES.remoteControl(),
+					icon: MessageSquareIcon
+				},
+				{ title: routeLabels.mcp, url: ROUTES.mcp(), icon: BotIcon }
 			]
 		}
 	]);
