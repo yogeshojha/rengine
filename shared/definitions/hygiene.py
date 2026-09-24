@@ -11,6 +11,8 @@ HSTS_MIN_MAX_AGE = 31_536_000
 MAX_EVIDENCE = 200
 BACKFILL_SCANS_PER_TICK = 25
 BACKFILL_BATCH = 2_000
+BODY_SCAN_BYTES = 65_536
+MAX_INTERNAL_SHOWN = 3
 
 
 class HygieneCheck(StrEnum):
@@ -31,6 +33,7 @@ class HygieneCheck(StrEnum):
     SERVER_VERSION = "server_version"
     RUNTIME_DISCLOSED = "runtime_disclosed"
     NO_REFERRER_POLICY = "no_referrer_policy"
+    INTERNAL_ADDRESS = "internal_address"
 
 
 class HygieneGroup(StrEnum):
@@ -159,6 +162,19 @@ CHECKS: tuple[CheckSpec, ...] = (
         "List the script origins the page uses.",
         "Content-Security-Policy",
         HygieneGroup.CONTENT.value,
+        TONE_WARNING,
+    ),
+    CheckSpec(
+        HygieneCheck.INTERNAL_ADDRESS.value,
+        "Internal address disclosed",
+        "Internal addresses",
+        "A header, a load balancer cookie or a link in the page names a private "
+        "address or an internal host name.",
+        "Every response.",
+        "Serve public addresses to the internet and strip backend addresses from "
+        "headers and cookies.",
+        "Content-Security-Policy",
+        HygieneGroup.DISCLOSURE.value,
         TONE_WARNING,
     ),
     CheckSpec(

@@ -2,18 +2,21 @@
 
 from __future__ import annotations
 
+import ipaddress
 import re
 from dataclasses import dataclass, field
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import bindparam, select, text, update
+from sqlalchemy import bindparam, func, select, text, update
 from sqlalchemy.orm import Session
 
 from shared.definitions.hygiene import (
     BACKFILL_BATCH,
+    BODY_SCAN_BYTES,
     HSTS_MIN_MAX_AGE,
     MAX_EVIDENCE,
+    MAX_INTERNAL_SHOWN,
     HygieneCheck,
 )
 from shared.logging import get_logger
@@ -43,6 +46,27 @@ _FRAME_VALUES = ("deny", "sameorigin")
 _CACHE_PRIVATE = ("no-store", "private")
 _SCRIPT_WILDCARDS = ("*", "https:", "http:", "data:")
 _KEYED_SOURCES = ("'nonce-", "'sha256-", "'sha384-", "'sha512-")
+_IPV4 = r"(?:\d{1,3}\.){3}\d{1,3}"
+_INTERNAL_TLDS = r"(?:local|internal|corp|lan|intranet|localdomain)"
+_HEADER_ADDRESS = re.compile(rf"(?<![\d.]){_IPV4}(?![\d.])")
+_HEADER_NAME = re.compile(
+    rf"(?<![a-z0-9.-])(?:[a-z0-9-]+\.)+{_INTERNAL_TLDS}(?![a-z0-9.-])", re.IGNORECASE
+)
+_BODY_URL = re.compile(
+    rf"(?:https?|wss?|ftp)://({_IPV4}|(?:[a-z0-9-]+\.)+{_INTERNAL_TLDS})"
+    r"(?::\d{1,5})?(?=[/\"'\s?#<]|$)",
+    re.IGNORECASE,
+)
+_BODY_QUOTED = re.compile(rf"[\"']({_IPV4})[\"']")
+_BIGIP = re.compile(
+    r"^set-cookie\s*:\s*(BIGipServer[^=\s]*)=(\d+)\.(\d+)\.0000",
+    re.IGNORECASE | re.MULTILINE,
+)
+_PRIVATE_NETS = tuple(
+    ipaddress.ip_network(n)
+    for n in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "100.64.0.0/10")
+)
+_SKIPPED_HEADERS = ("set-cookie",)
 
 
 @dataclass(frozen=True)
@@ -265,6 +289,58 @@ def _cross_origin(h: dict[str, str], add) -> None:
     add(Verdict(C.CORS_ANY_ORIGIN, origin == "*", _clip(acao)))
 
 
+def _private(value: str) -> bool:
+    try:
+        address = ipaddress.ip_address(value)
+    except ValueError:
+        return False
+    return any(address in net for net in _PRIVATE_NETS)
+
+
+def bigip_backend(encoded_ip: str, encoded_port: str) -> str | None:
+    """The pool member a BIG-IP persistence cookie encodes, as address:port."""
+    try:
+        address = ipaddress.IPv4Address(int(encoded_ip).to_bytes(4, "little"))
+        port = int.from_bytes(int(encoded_port).to_bytes(2, "little"), "big")
+    except (OverflowError, ValueError):
+        return None
+    return f"{address}:{port}"
+
+
+def internal_addresses(raw_header: str | None, body: str | None) -> list[str]:
+    """Private addresses and internal names a response hands out, with where they appear."""
+    found: dict[str, str] = {}
+    for line in (raw_header or "").splitlines():
+        name, _sep, value = line.partition(":")
+        header = name.strip()
+        if not value or header.lower() in _SKIPPED_HEADERS:
+            continue
+        for match in _HEADER_ADDRESS.findall(value):
+            if _private(match):
+                found.setdefault(match, header)
+        for match in _HEADER_NAME.findall(value):
+            found.setdefault(match.lower(), header)
+    for cookie, encoded_ip, encoded_port in _BIGIP.findall(raw_header or ""):
+        backend = bigip_backend(encoded_ip, encoded_port)
+        if backend and _private(backend.rsplit(":", 1)[0]):
+            found.setdefault(backend, cookie)
+    text_body = (body or "")[:BODY_SCAN_BYTES]
+    for match in _BODY_URL.findall(text_body):
+        host = match.lower()
+        if not _HEADER_ADDRESS.fullmatch(host) or _private(host):
+            found.setdefault(host, "page")
+    for match in _BODY_QUOTED.findall(text_body):
+        if _private(match):
+            found.setdefault(match, "page")
+    return [f"{where}: {value}" for value, where in found.items()]
+
+
+def _internal(raw_header: str | None, body: str | None, add) -> None:
+    leaks = internal_addresses(raw_header, body)
+    shown = "; ".join(leaks[:MAX_INTERNAL_SHOWN])
+    add(Verdict(C.INTERNAL_ADDRESS, bool(leaks), _clip(shown) if leaks else None))
+
+
 def _disclosure(h: dict[str, str], add) -> None:
     server = h.get("server")
     if server:
@@ -284,6 +360,7 @@ def evaluate(
     scheme: str | None,
     status_code: int | None,
     content_type: str | None,
+    body: str | None = None,
 ) -> Hygiene:
     """Every check that applies to the response, with its outcome."""
     result = Hygiene()
@@ -297,6 +374,7 @@ def evaluate(
     _cookie_checks(h, cookies_of(h, raw_header), scheme == "https", add)
     _cross_origin(h, add)
     _disclosure(h, add)
+    _internal(raw_header, body, add)
     return result
 
 
@@ -307,6 +385,7 @@ def evaluate_asset(asset: HttpAsset) -> Hygiene:
         scheme=asset.scheme,
         status_code=asset.status_code,
         content_type=asset.content_type,
+        body=asset.response_body,
     )
 
 
@@ -367,6 +446,7 @@ def backfill_scan(session: Session, scan_id: UUID) -> int:
             HttpAsset.content_type,
             HttpAsset.response_headers,
             HttpAsset.raw_response_header,
+            func.left(HttpAsset.response_body, BODY_SCAN_BYTES).label("body"),
         )
         .where(HttpAsset.scan_id == scan_id, HttpAsset.hygiene_checked.is_(None))
         .execution_options(yield_per=BACKFILL_BATCH)
@@ -380,6 +460,7 @@ def backfill_scan(session: Session, scan_id: UUID) -> int:
             scheme=row.scheme,
             status_code=row.status_code,
             content_type=row.content_type,
+            body=row.body,
         )
         batch.append({"b_id": row.id, "issues": found.issues, "checked": found.checked})
         if len(batch) >= BACKFILL_BATCH:

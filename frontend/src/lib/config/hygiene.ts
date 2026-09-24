@@ -24,7 +24,8 @@ export const HygieneCheck = {
 	CORS_ANY_ORIGIN: 'cors_any_origin',
 	SERVER_VERSION: 'server_version',
 	RUNTIME_DISCLOSED: 'runtime_disclosed',
-	NO_REFERRER_POLICY: 'no_referrer_policy'
+	NO_REFERRER_POLICY: 'no_referrer_policy',
+	INTERNAL_ADDRESS: 'internal_address'
 } as const;
 export type HygieneCheck = (typeof HygieneCheck)[keyof typeof HygieneCheck];
 
@@ -159,6 +160,17 @@ export const CHECKS: CheckSpec[] = [
 		fix: 'List the script origins the page uses.',
 		header: 'Content-Security-Policy',
 		group: 'content',
+		tone: 'warning'
+	},
+	{
+		key: 'internal_address',
+		label: 'Internal address disclosed',
+		control: 'Internal addresses',
+		help: 'A header, a load balancer cookie or a link in the page names a private address or an internal host name.',
+		applies: 'Every response.',
+		fix: 'Serve public addresses to the internet and strip backend addresses from headers and cookies.',
+		header: 'Content-Security-Policy',
+		group: 'disclosure',
 		tone: 'warning'
 	},
 	{

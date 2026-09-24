@@ -164,6 +164,7 @@ def parse_httpx_record(record: dict) -> dict[str, Any]:
         scheme=fields.get("scheme"),
         status_code=fields.get("status_code"),
         content_type=fields.get("content_type"),
+        body=fields.get("response_body"),
     )
     fields["hygiene_issues"] = hygiene.issues
     fields["hygiene_checked"] = hygiene.checked
