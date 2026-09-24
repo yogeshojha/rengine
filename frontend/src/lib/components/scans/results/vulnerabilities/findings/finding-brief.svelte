@@ -20,7 +20,7 @@
 		VULN_STATE_LABELS,
 		VulnState
 	} from '$lib/config/vulnerabilities';
-	import { formatDate } from '$lib/utilities/dates';
+	import { formatShortDate } from '$lib/utilities/dates';
 	import { httpStatusTextClass } from '$lib/utilities/scan-correlation';
 	import { exactToken } from '$lib/utilities/scan-insights';
 	import { epssPercent, locationLabel, type VulnerabilityRead } from '$lib/utilities/vulns';
@@ -247,18 +247,22 @@
 				{/each}
 			</div>
 		{/if}
-		<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-80">
-			<FindingList
-				{projectId}
-				{scanId}
-				q={templateToken}
-				exclude={v.id}
-				sort="host"
-				main={(f) => f.host ?? locationLabel(f)}
-				{onOpen}
-				onTotal={(n) => (checkTotal = n)}
-			/>
-		</ScrollArea>
+		{#if v.host_count <= 1}
+			<p class="px-3 py-4 text-xs text-muted-foreground">Only on this {WEB.noun}</p>
+		{:else}
+			<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-80">
+				<FindingList
+					{projectId}
+					{scanId}
+					q={templateToken}
+					exclude={v.id}
+					sort="host"
+					main={(f) => f.host ?? locationLabel(f)}
+					{onOpen}
+					onTotal={(n) => (checkTotal = n)}
+				/>
+			</ScrollArea>
+		{/if}
 	</Tabs.Content>
 
 	<Tabs.Content value="evidence" class="flex flex-col gap-3 rounded-md border bg-card p-3">
@@ -322,12 +326,13 @@
 				{/if}
 				{#if v.epss_score != null}
 					<dt class="text-muted-foreground">EPSS</dt>
-					<dd class="font-mono">
-						{epssPercent(v.epss_score)}{#if v.epss_percentile != null}<span
-								class="text-muted-foreground"
+					<dd class="flex items-baseline gap-1.5 font-mono">
+						<span>{epssPercent(v.epss_score)}</span>
+						{#if v.epss_percentile != null}
+							<span class="text-muted-foreground"
+								>· percentile {Math.round(v.epss_percentile * 100)}</span
 							>
-								· percentile {Math.round(v.epss_percentile * 100)}</span
-							>{/if}
+						{/if}
 					</dd>
 				{/if}
 				{#if v.is_kev}
@@ -337,7 +342,7 @@
 							><Flame class="size-3" /> Exploited in the wild</span
 						>
 						{#if v.kev_due_date}<span class="text-muted-foreground"
-								>Due {formatDate(v.kev_due_date)}</span
+								>Due {formatShortDate(v.kev_due_date)}</span
 							>{/if}
 						{#if v.kev_ransomware}<span>Ransomware</span>{/if}
 					</dd>
@@ -348,7 +353,7 @@
 				{/if}
 				{#if v.exploit_score > 0}
 					<dt class="text-muted-foreground">Rank</dt>
-					<dd class="font-mono">{v.exploit_score} of 100</dd>
+					<dd class="font-mono">{v.exploit_score} / 100</dd>
 				{/if}
 				{#if !v.cve_ids.length && v.cvss_score == null && v.epss_score == null && !v.is_kev}
 					<dt class="text-muted-foreground">CVE</dt>

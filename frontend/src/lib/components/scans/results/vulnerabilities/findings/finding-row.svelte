@@ -222,6 +222,15 @@
 				/>
 			</div>
 			<div class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-2xs">
+				{#if projectWide && v.target_value}
+					<button
+						type="button"
+						class="font-medium text-foreground/80 hover:underline {NARROW.target}"
+						onclick={(e) => pivot(e, exactToken('target', v.target_value ?? ''))}
+						>{v.target_value}</button
+					>
+					<span class="text-muted-foreground/50 {NARROW.target}">·</span>
+				{/if}
 				<button
 					type="button"
 					class="font-mono text-muted-foreground hover:text-foreground hover:underline"

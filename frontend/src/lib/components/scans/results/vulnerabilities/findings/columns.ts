@@ -15,5 +15,6 @@ export const FCOL = {
 export const NARROW = {
 	origin: '@4xl/findings:hidden',
 	related: '@6xl/findings:hidden',
-	review: '@5xl/findings:hidden'
+	review: '@5xl/findings:hidden',
+	target: '@min-[88rem]/findings:hidden'
 } as const;

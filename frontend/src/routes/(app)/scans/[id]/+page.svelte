@@ -288,8 +288,12 @@
 		if (e.metaKey || e.ctrlKey || e.altKey) return;
 		const t = e.target as HTMLElement | null;
 		if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+		if (document.querySelector('[role=dialog]')) return;
 		const n = Number(e.key);
-		if (n >= 1 && n <= visibleTabs.length) setTab(visibleTabs[n - 1].key);
+		if (!(n >= 1 && n <= visibleTabs.length)) return;
+		setTimeout(() => {
+			if (!e.defaultPrevented) setTab(visibleTabs[n - 1].key);
+		});
 	}
 
 	async function copyTarget() {

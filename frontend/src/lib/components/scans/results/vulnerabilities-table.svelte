@@ -861,6 +861,7 @@
 			return;
 		}
 		if (row && expanded.has(row.id) && /^[1-5]$/.test(e.key)) {
+			e.preventDefault();
 			findingPrefs.tab = BRIEF_TABS[Number(e.key) - 1];
 			return;
 		}
