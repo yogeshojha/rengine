@@ -1,4 +1,4 @@
-import { SvelteMap } from 'svelte/reactivity';
+import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { scansApi } from '$lib/api/scans';
 import type { ScanRead, ScanTargetTrend } from '$lib/types/scan';
 
@@ -13,6 +13,7 @@ function chunks<T>(list: T[]): T[][] {
 export class TargetRuns {
 	runs = new SvelteMap<string, ScanRead>();
 	trends = new SvelteMap<string, ScanTargetTrend>();
+	known = new SvelteSet<string>();
 	loaded = $state(false);
 	failed = $state(false);
 	#seq = 0;
@@ -22,6 +23,7 @@ export class TargetRuns {
 		if (!projectId || targetIds.length === 0) {
 			this.runs.clear();
 			this.trends.clear();
+			this.known.clear();
 			this.loaded = true;
 			return;
 		}
@@ -36,9 +38,13 @@ export class TargetRuns {
 			for (const r of runs.flat()) this.runs.set(r.target_id, r);
 			this.trends.clear();
 			for (const t of trends.flat()) this.trends.set(t.target_id, t);
+			this.known.clear();
+			for (const id of targetIds) this.known.add(id);
 			this.failed = false;
 		} catch {
-			if (mine === this.#seq) this.failed = true;
+			if (mine !== this.#seq) return;
+			this.failed = true;
+			for (const id of targetIds) this.known.add(id);
 		} finally {
 			if (mine === this.#seq) this.loaded = true;
 		}

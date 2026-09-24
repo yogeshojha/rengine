@@ -39,7 +39,7 @@
 </script>
 
 <div class="flex flex-wrap items-center gap-3 gap-y-2">
-	<div class="relative min-w-0 flex-1 basis-full sm:max-w-sm sm:basis-auto">
+	<div class="relative min-w-0 flex-1 basis-full sm:max-w-sm sm:basis-0">
 		<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 		<Input
 			id="target-search"

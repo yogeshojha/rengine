@@ -3,6 +3,7 @@
 	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import type { ScanRead } from '$lib/types/scan';
+	import { compactCount } from '$lib/utilities/numbers';
 
 	const LEAD = [SurfaceDimension.WEB_ASSETS, SurfaceDimension.ENDPOINTS, SurfaceDimension.SERVICES];
 
@@ -36,7 +37,7 @@
 					aria-label="{n} {spec.nounPlural}"
 				>
 					<Icon class="size-3 text-muted-foreground" />
-					{n.toLocaleString()}
+					{compactCount(n)}
 				</a>
 			{/snippet}
 		</Hint>

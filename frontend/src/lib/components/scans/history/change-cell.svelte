@@ -7,6 +7,7 @@
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { isOpenStatus } from '$lib/utilities/scan-status';
 	import type { ScanRead } from '$lib/types/scan';
+	import { compactCount } from '$lib/utilities/numbers';
 
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 	const PREVIEW = 6;
@@ -67,12 +68,12 @@
 		>
 			{#if added}
 				<span class="inline-flex items-center gap-0.5 font-semibold text-success">
-					<TrendingUp class="size-3.5" />{added.toLocaleString()}
+					<TrendingUp class="size-3.5" />{compactCount(added)}
 				</span>
 			{/if}
 			{#if gone}
 				<span class="inline-flex items-center gap-0.5 font-semibold text-destructive">
-					<TrendingDown class="size-3.5" />{gone.toLocaleString()}
+					<TrendingDown class="size-3.5" />{compactCount(gone)}
 				</span>
 			{/if}
 		</HoverCard.Trigger>

@@ -14,6 +14,7 @@
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { Input } from '$lib/components/ui/input';
 	import { Spinner } from '$lib/components/ui/spinner';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import Hint from '$lib/components/hint.svelte';
@@ -204,6 +205,8 @@
 							<span class={TNARROW.run}>Run {relativeTime(started)}</span>
 						{:else if loaded}
 							<span class={TNARROW.run}>Not scanned</span>
+						{:else}
+							<Skeleton class="h-3 w-16 {TNARROW.run}" />
 						{/if}
 						<!-- svelte-ignore a11y_click_events_have_key_events -->
 						<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -276,6 +279,9 @@
 					</Hint>
 				{:else if loaded}
 					<span class="text-xs leading-6 text-muted-foreground">Not scanned</span>
+				{:else}
+					<Skeleton class="h-6 w-24 rounded-md" />
+					<Skeleton class="h-3 w-12" />
 				{/if}
 			</div>
 		{/if}
@@ -292,13 +298,19 @@
 					/>
 				{:else if loaded}
 					<span class="text-xs text-muted-foreground">—</span>
+				{:else}
+					<Skeleton class="h-6 w-28 rounded-md" />
 				{/if}
 			</div>
 		{/if}
 
 		{#if targetPrefs.shows('assets')}
 			<div class="{TCOL.assets} h-6 items-center">
-				{#if run}<AssetsCell scan={run} />{/if}
+				{#if run}
+					<AssetsCell scan={run} />
+				{:else if !loaded}
+					<Skeleton class="h-6 w-40 rounded-md" />
+				{/if}
 			</div>
 		{/if}
 
@@ -306,6 +318,8 @@
 			<div class="{TCOL.change} h-6 items-center">
 				{#if run}
 					<ChangeCell {projectId} scan={run} onCompare={() => onCompare(run)} />
+				{:else if !loaded}
+					<Skeleton class="h-4 w-14" />
 				{/if}
 			</div>
 		{/if}

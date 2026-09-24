@@ -27,7 +27,7 @@
 	import TargetFilters from '$lib/components/targets/target-filters.svelte';
 	import ProjectEstateTray from '$lib/components/targets/project-estate-tray.svelte';
 	import TargetViewControls from '$lib/components/targets/target-view-controls.svelte';
-	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
+	import TargetsSkeleton from '$lib/components/targets/list/targets-skeleton.svelte';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import CompareSheet from '$lib/components/scans/history/compare-sheet.svelte';
@@ -706,6 +706,7 @@
 
 	<Card.Root class="gap-0 overflow-hidden py-0">
 		<TargetsStrip
+			loading={!targetsStore.hasFetched}
 			summary={targetsStore.signalSummary}
 			live={liveCount}
 			active={targetsStore.filters.signalFilter}
@@ -852,13 +853,8 @@
 			</div>
 		{/if}
 
-		{#if targetsStore.isLoading}
-			<TableSkeleton
-				lead={[{ key: 'name', label: 'Target', width: 'min-w-0 flex-1' }]}
-				rows={8}
-				actions={false}
-				selectable
-			/>
+		{#if targetsStore.isLoading || !targetsStore.hasFetched}
+			<TargetsSkeleton />
 		{:else if targetsStore.error && rows.length === 0}
 			<Empty.Root class="py-16">
 				<Empty.Header>
@@ -911,7 +907,7 @@
 						{target}
 						run={runs.runs.get(target.id)}
 						trend={runs.trends.get(target.id)}
-						loaded={runs.loaded}
+						loaded={runs.known.has(target.id)}
 						{now}
 						index={i}
 						expanded={expanded.has(target.id)}
