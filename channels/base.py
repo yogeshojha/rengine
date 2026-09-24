@@ -1,4 +1,4 @@
-"""The channel contract: what arrives, and how a reply leaves."""
+"""Inbound message and channel interface."""
 
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ class Channel(ABC):
 
     @abstractmethod
     async def send(self, external_id: str, message: Message) -> str | None:
-        """Deliver one message; returns its id when the channel has one."""
+        """Send one message and return its id."""
 
     async def edit(
         self,

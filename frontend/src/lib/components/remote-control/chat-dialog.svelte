@@ -8,7 +8,7 @@
 	import { remoteControl } from '$lib/stores/remote-control.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
-	import type { ChannelChat, ChannelStatus } from '$lib/types/remote-control';
+	import { allowedKeys, type ChannelChat, type ChannelStatus } from '$lib/types/remote-control';
 
 	interface Props {
 		status: ChannelStatus;
@@ -40,7 +40,7 @@
 		saving = true;
 		const ok = await remoteControl.updateChat(chat.id, {
 			project_id: projectId || undefined,
-			capabilities: [...granted]
+			capabilities: [...granted].filter((c) => allowedKeys(status).has(c))
 		});
 		saving = false;
 		if (ok) onOpenChange(false);

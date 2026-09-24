@@ -117,6 +117,7 @@ function createRemoteControlStore() {
 			isSaving = true;
 			try {
 				apply(await remoteControlApi.update(channel, body));
+				if (body.ceiling) void this.loadAdmin(true);
 				if (success) toast.success(success);
 				return true;
 			} catch (e) {

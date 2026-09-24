@@ -77,7 +77,7 @@ def code(text: str) -> Span:
 
 
 def linkable(url: str) -> bool:
-    """A chat client refuses a link it cannot resolve: localhost, an address, no dot."""
+    """True for an http or https URL on a dotted hostname."""
     try:
         parts = urlsplit(url)
         host = (parts.hostname or "").rstrip(".").lower()
@@ -93,7 +93,7 @@ def linkable(url: str) -> bool:
 
 
 def link(text: str, url: str) -> Span:
-    """An unlinkable URL is sent as copyable text."""
+    """A link span, or code when the URL is not linkable."""
     return Span(text, LINK, url) if linkable(url) else code(url)
 
 

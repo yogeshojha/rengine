@@ -150,3 +150,9 @@ export function chatName(tokenName: string): string {
 	const [, ...rest] = tokenName.split(':');
 	return rest.length ? rest.join(':') : tokenName;
 }
+
+export function allowedKeys(status: ChannelStatus): Set<string> {
+	return new Set(
+		status.capabilities.filter((c) => c.always || status.ceiling[c.key]).map((c) => c.key)
+	);
+}

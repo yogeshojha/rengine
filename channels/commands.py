@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import shlex
 from dataclasses import dataclass, field, replace
 from functools import lru_cache
@@ -40,6 +41,7 @@ _BOOLEAN = "boolean"
 _STRING = "string"
 _TRUE = frozenset({"true", "yes", "on", "1"})
 _FALSE = frozenset({"false", "no", "off", "0"})
+_APOSTROPHE = re.compile(r"(?<=\w)'(?=\w)")
 
 
 @dataclass(frozen=True)
@@ -235,7 +237,7 @@ def by_tool() -> dict[str, CommandSpec]:
 
 
 def by_group() -> list[tuple[str, list[CommandSpec]]]:
-    """Groups in declared order; commands in the order the group lists them."""
+    """Commands grouped in declared group and command order."""
     grouped: dict[str, list[CommandSpec]] = {}
     for spec in catalog().values():
         grouped.setdefault(spec.group, []).append(spec)
@@ -269,7 +271,7 @@ def parse(text: str) -> Parsed | None:
     if not raw.startswith("/"):
         return None
     try:
-        tokens = shlex.split(raw, posix=True)
+        tokens = _split(raw)
     except ValueError as exc:
         msg = "Unbalanced quote."
         raise CommandError(msg) from exc
@@ -288,6 +290,13 @@ def parse(text: str) -> Parsed | None:
         else:
             bare.append(token)
     return Parsed(name=name, bare=bare, kwargs=kwargs, raw=raw)
+
+
+def _split(raw: str) -> list[str]:
+    try:
+        return shlex.split(raw, posix=True)
+    except ValueError:
+        return shlex.split(_APOSTROPHE.sub(r"\\'", raw), posix=True)
 
 
 def bind(spec: CommandSpec, parsed: Parsed) -> dict[str, Any]:

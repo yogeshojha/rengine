@@ -1,4 +1,4 @@
-"""Everything the API layer needs: settings, pairing requests, paired chats, commands."""
+"""Channel settings, pairing requests, paired chats and commands."""
 
 from __future__ import annotations
 
@@ -56,7 +56,7 @@ logger = get_logger(__name__)
 
 DRIVERS: dict[str, ModuleType] = {ChannelKind.TELEGRAM.value: telegram_driver}
 PAIRED_MESSAGE = "Paired. Send /help for the command list."
-REVOKED_MESSAGE = "This chat's access was revoked."
+REVOKED_MESSAGE = "Chat access revoked."
 
 
 class ChannelConfigError(ValueError):
@@ -68,13 +68,13 @@ class ChannelNotFoundError(LookupError):
 
 
 def _granted(wanted: list[str], ceiling: dict[str, bool]) -> list[str]:
-    """The capabilities the ceiling allows, with anything above it refused by name."""
+    """The requested capabilities, refused by name when above the ceiling."""
     asked = normalize(wanted)
     granted = within_ceiling(asked, ceiling)
     refused = [c for c in asked if c not in granted]
     if refused:
         names = ", ".join(CAPABILITY_LABELS[c] for c in refused)
-        msg = f"{names} is switched off for this channel. Raise the ceiling first."
+        msg = f"{names} is off in the channel ceiling. Raise the ceiling first."
         raise ChannelConfigError(msg)
     return granted
 

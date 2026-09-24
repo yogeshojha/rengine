@@ -56,13 +56,13 @@ def write(row: ChannelConfig, settings: ChannelSettings) -> None:
 
 
 async def bot_token(session, channel: str) -> str | None:
-    """The channel's API key, shared with notifications."""
+    """The channel's API key."""
     provider = CHANNEL_PROVIDERS[channel]
     return await APIKeyService(session).get_key_for_provider(provider)
 
 
 def mask_secret(secret: str | None) -> str | None:
-    """The bot id before the colon is public; everything after it is not."""
+    """Mask the token after the bot id."""
     if not secret:
         return None
     head, sep, _ = secret.partition(":")
@@ -70,7 +70,7 @@ def mask_secret(secret: str | None) -> str | None:
 
 
 def redact(text: str, secret: str | None) -> str:
-    """Strip a bot token from any string that might be logged or shown."""
+    """Replace the bot token in text with the mask."""
     if not secret:
         return text
     return text.replace(secret, MASK)

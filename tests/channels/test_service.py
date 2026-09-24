@@ -61,7 +61,9 @@ async def test_approve_pairs_the_chat_to_an_account(estate, quiet):
 
 async def test_approve_refuses_a_capability_above_the_ceiling(estate, quiet):
     service = ChannelService(estate.session, CHANNEL)
-    with pytest.raises(ChannelConfigError, match="Launch is switched off"):
+    with pytest.raises(
+        ChannelConfigError, match="Launch is off in the channel ceiling"
+    ):
         await service.approve(
             "H7K2-Q9XZ",
             PairingApprove(

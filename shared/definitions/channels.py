@@ -19,7 +19,7 @@ CHANNEL_LABELS: dict[str, str] = {
     ChannelKind.TELEGRAM.value: "Telegram",
 }
 
-# the API key a channel signs in with, shared with notifications
+# API key provider per channel
 CHANNEL_PROVIDERS: dict[str, APIProvider] = {
     ChannelKind.TELEGRAM.value: APIProvider.TELEGRAM,
 }
@@ -80,7 +80,7 @@ COMMAND_PRESETS: tuple[CommandPreset, ...] = (
         name="scans",
         tool="scan_status",
         title="Running scans",
-        description="Scans running now. /progress reads one scan.",
+        description="Scans running now.",
         takes_args=False,
     ),
 )
@@ -104,7 +104,7 @@ CHAT_GROUP_LABELS: dict[str, str] = {
     ChatGroup.CHAT.value: "Chat",
 }
 
-# every chat command sits in exactly one group; a lookup lands in LOOKUPS by source
+# chat group per command, toolbox lookups fall in LOOKUPS
 COMMAND_GROUPS: dict[str, tuple[str, ...]] = {
     ChatGroup.TARGETS.value: ("targets", "target", "add"),
     ChatGroup.SCANS.value: ("scan", "scans", "progress", "pause", "resume", "cancel"),

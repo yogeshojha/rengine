@@ -1,4 +1,4 @@
-"""Bot API client. The token never leaves this module in a log line or an error."""
+"""Telegram Bot API client."""
 
 from __future__ import annotations
 

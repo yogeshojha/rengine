@@ -29,12 +29,7 @@
 			<ExternalLinkIcon class="size-3" />
 		</a>
 	</SectionHead>
-	<EmptyState
-		compact
-		icon={KeyRoundIcon}
-		title="No {meta.apiKeyLabel}"
-		description="The bot token is stored under API keys and shared with notifications."
-	>
+	<EmptyState compact icon={KeyRoundIcon} title="No {meta.apiKeyLabel}">
 		{#if canAdmin}
 			<Button size="sm" href={ROUTES.settings('api-keys')}>Add API key</Button>
 		{/if}

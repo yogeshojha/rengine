@@ -28,6 +28,7 @@ logger = get_logger(__name__)
 CONFIG_REFRESH_SECONDS = 5.0
 MAX_BACKOFF_SECONDS = 120
 UNAUTHORIZED_PAUSE_SECONDS = 60
+DISPATCH_SLOTS = 8
 PRIVATE = "private"
 
 
@@ -96,6 +97,7 @@ class TelegramListener:
         self._failures = 0
         self._tasks: set[asyncio.Task] = set()
         self._chats = ChatLocks()
+        self._slots = asyncio.Semaphore(DISPATCH_SLOTS)
 
     # ---------- config ----------
 
@@ -122,7 +124,12 @@ class TelegramListener:
             return False
         self._api = api
         self._token = token
-        self._dispatcher = Dispatcher(TelegramChannel(api), self.sessions, self.ui_base)
+        if self._dispatcher is None:
+            self._dispatcher = Dispatcher(
+                TelegramChannel(api), self.sessions, self.ui_base
+            )
+        else:
+            self._dispatcher.channel = TelegramChannel(api)
         self._offset = await status.load_offset(self.kind)
         self._started_at = utc_now()
         self._failures = 0
@@ -136,8 +143,12 @@ class TelegramListener:
             await self._api.close()
         self._api = None
         self._token = None
-        self._dispatcher = None
         self._started_at = None
+
+    async def _release(self) -> None:
+        if self._dispatcher is not None:
+            await self._dispatcher.close()
+        self._dispatcher = None
 
     def _note_error(self, message: str) -> None:
         self._last_error = message[:300]
@@ -174,6 +185,7 @@ class TelegramListener:
                         logger.info("telegram listener stopped by configuration")
                     await self._cancel(poll)
                     poll = None
+                    await self._release()
                     await self._disconnect()
                     await self._publish(False)
                     await self._sleep(stop, CONFIG_REFRESH_SECONDS)
@@ -205,10 +217,11 @@ class TelegramListener:
             await self._cancel(poll)
             stopper.cancel()
             await self._drain()
+            await self._release()
             await self._disconnect()
 
     async def _poll_once(self) -> float:
-        """One long poll; returns how long to pause before the next."""
+        """Run one long poll and return the pause before the next."""
         api = self._api
         if api is None:
             return CONFIG_REFRESH_SECONDS
@@ -249,9 +262,9 @@ class TelegramListener:
 
     async def _dispatch(self, inbound: Inbound) -> None:
         dispatcher = self._dispatcher
-        if dispatcher is None:
+        if dispatcher is None or self._api is None:
             return
-        async with self._chats.hold(inbound.external_id):
+        async with self._chats.hold(inbound.external_id), self._slots:
             try:
                 await dispatcher.handle(inbound)
             except TelegramError as exc:

@@ -8,12 +8,12 @@ import signal
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from channels.telegram.listener import TelegramListener
+from channels.telegram.listener import DISPATCH_SLOTS, TelegramListener
 from shared.logging import get_logger
 
 logger = get_logger(__name__)
 
-POOL_SIZE = 2
+POOL_SIZE = DISPATCH_SLOTS + 2
 POOL_OVERFLOW = 2
 
 

@@ -1,4 +1,4 @@
-"""A paired chat acts as the person it was approved for."""
+"""Capabilities and token identity of a paired chat."""
 
 from __future__ import annotations
 

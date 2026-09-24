@@ -1,4 +1,4 @@
-"""Step-up for anything above read: the authenticator code already enrolled on the account."""
+"""Authenticator step-up for commands above read."""
 
 from __future__ import annotations
 
@@ -69,7 +69,7 @@ async def clear_grace(channel: str, external_id: str) -> None:
 
 
 async def attempts_exhausted(channel: str, external_id: str) -> int:
-    """Seconds until the next attempt is allowed; 0 when one is allowed now."""
+    """Seconds until the next attempt is allowed, 0 when allowed now."""
     redis = async_client()
     key = ATTEMPT_KEY.format(channel=channel, external_id=external_id)
     raw = await redis.get(key)

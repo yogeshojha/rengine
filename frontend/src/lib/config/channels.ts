@@ -81,10 +81,6 @@ export const CHANNEL_VIEW_LABELS: Record<ChannelView, string> = {
 	activity: 'Activity'
 };
 
-export const PAIRING_CODE_TTL_MINUTES = 10;
-export const STEP_UP_GRACE_MINUTES = 15;
-export const MAX_CHATS = 50;
-
 export type ListenerState = 'listening' | 'stopped' | 'unconfigured' | 'unreachable' | 'faulted';
 
 export const LISTENER_STATE_LABELS: Record<ListenerState, string> = {

@@ -1,4 +1,4 @@
-"""What the API needs from Telegram without running the listener: verify, notify, menu."""
+"""Telegram calls made from the API: verify, notify and the command menu."""
 
 from __future__ import annotations
 

@@ -34,9 +34,7 @@
 </script>
 
 <section class="flex flex-col gap-3 py-5">
-	<SectionHead title="Pairing requests" count={requests.length}>
-		<span>Approved chats act as the account they are bound to.</span>
-	</SectionHead>
+	<SectionHead title="Pairing requests" count={requests.length} />
 	<div class="divide-y rounded-md border">
 		{#each requests as request (request.code)}
 			<div class="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">

@@ -1,4 +1,4 @@
-"""Listener state in Redis: the heartbeat under a TTL, and the update cursor without one."""
+"""Listener heartbeat and update offset in Redis."""
 
 from __future__ import annotations
 

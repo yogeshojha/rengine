@@ -11,8 +11,9 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import { usersApi, type UserAccount } from '$lib/api/users';
 	import { SvelteSet } from 'svelte/reactivity';
+	import { untrack } from 'svelte';
 	import { MCP_DEFAULT_GRANTS, type McpCapability } from '$lib/types/mcp';
-	import type { ChannelStatus, PairingRequest } from '$lib/types/remote-control';
+	import { allowedKeys, type ChannelStatus, type PairingRequest } from '$lib/types/remote-control';
 
 	interface Props {
 		status: ChannelStatus;
@@ -41,8 +42,9 @@
 		if (!open) return;
 		userId = auth.user?.id ?? '';
 		projectId = projectsStore.activeProject?.id ?? '';
+		const allowed = untrack(() => allowedKeys(status));
 		granted.clear();
-		for (const key of MCP_DEFAULT_GRANTS) granted.add(key);
+		for (const key of MCP_DEFAULT_GRANTS) if (allowed.has(key)) granted.add(key);
 		void usersApi
 			.list()
 			.then((rows) => (accounts = rows.filter((r) => r.is_active)))
@@ -55,7 +57,7 @@
 		const chat = await remoteControl.approve(request.code, {
 			user_id: userId,
 			project_id: projectId,
-			capabilities: [...granted] as McpCapability[]
+			capabilities: [...granted].filter((c) => allowedKeys(status).has(c)) as McpCapability[]
 		});
 		approving = false;
 		if (chat) onOpenChange(false);

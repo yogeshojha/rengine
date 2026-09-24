@@ -24,7 +24,7 @@
 </script>
 
 <div class="flex flex-col gap-2">
-	<span class="text-sm font-medium">May</span>
+	<span class="text-sm font-medium">Capabilities</span>
 	<div class="flex flex-col gap-1.5">
 		{#each capabilities as capability (capability.key)}
 			{@const locked = capability.always}
@@ -38,7 +38,7 @@
 			>
 				<Checkbox
 					class="mt-0.5"
-					checked={locked || granted.has(capability.key)}
+					checked={locked || (!blocked && granted.has(capability.key))}
 					disabled={locked || blocked}
 					onCheckedChange={(v) => toggle(capability.key, Boolean(v))}
 				/>
@@ -48,7 +48,7 @@
 						{#if locked}
 							<Badge variant="secondary" class="text-2xs">Required</Badge>
 						{:else}
-							<Badge variant="outline" class="text-2xs">Confirmed</Badge>
+							<Badge variant="outline" class="text-2xs">Authenticator</Badge>
 							{#if touches}
 								<Badge variant="warning" class="gap-1 text-2xs">
 									<TriangleAlertIcon class="size-3" />
@@ -57,7 +57,7 @@
 							{/if}
 						{/if}
 						{#if blocked}
-							<Badge variant="outline" class="text-2xs">Off for this channel</Badge>
+							<Badge variant="outline" class="text-2xs">Off in ceiling</Badge>
 						{/if}
 					</span>
 					<span class="mt-0.5 block text-xs text-muted-foreground">{capability.help}</span>

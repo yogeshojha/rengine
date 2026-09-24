@@ -1,4 +1,4 @@
-"""The pairing gate: an unknown chat gets a code, an administrator approves it."""
+"""Pairing codes for unknown chats."""
 
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ async def request(
     username: str | None,
     first_name: str | None,
 ) -> tuple[str | None, bool]:
-    """(code, created). A live code is returned again; a full queue returns None."""
+    """Return (code, created). The code is None when the queue is full."""
     redis = async_client()
     chat_key = CHAT_KEY.format(channel=channel, external_id=external_id)
     existing = await redis.get(chat_key)
@@ -106,7 +106,7 @@ async def take(channel: str, code: str) -> dict | None:
     """Remove a pending request and return it."""
     redis = async_client()
     key = CODE_KEY.format(channel=channel, code=normalise(code))
-    raw = await redis.get(key)
+    raw = await redis.getdel(key)
     if raw is None:
         return None
     try:
@@ -114,7 +114,6 @@ async def take(channel: str, code: str) -> dict | None:
     except ValueError:
         payload = None
     pipe = redis.pipeline(transaction=True)
-    pipe.delete(key)
     pipe.srem(INDEX_KEY.format(channel=channel), normalise(code))
     if payload:
         pipe.delete(

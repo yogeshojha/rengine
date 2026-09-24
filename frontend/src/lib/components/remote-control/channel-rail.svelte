@@ -14,7 +14,7 @@
 		LISTENER_STATE_LABELS,
 		type ChannelKind
 	} from '$lib/config/channels';
-	import { listenerState, type ChannelStatus } from '$lib/types/remote-control';
+	import { allowedKeys, listenerState, type ChannelStatus } from '$lib/types/remote-control';
 	import type { McpCapability } from '$lib/types/mcp';
 
 	interface Props {
@@ -35,9 +35,7 @@
 
 	const meta = $derived(CHANNEL_META[channel]);
 	const listener = $derived(listenerState(status));
-	const grantable = $derived(
-		status.capabilities.filter((c) => c.always || status.ceiling[c.key]).length
-	);
+	const grantable = $derived(allowedKeys(status).size);
 	const rate = $derived(rateDraft ?? String(status.rate_limit_per_minute));
 
 	async function setCeiling(key: McpCapability, value: boolean) {
@@ -210,7 +208,7 @@
 			Capabilities above read are confirmed with the account's authenticator code.
 		</p>
 		{#if !canAdmin}
-			<p class="text-xs text-muted-foreground">Only an administrator can change the ceiling.</p>
+			<p class="text-xs text-muted-foreground">The ceiling is read-only.</p>
 		{/if}
 	</div>
 

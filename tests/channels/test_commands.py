@@ -214,3 +214,12 @@ def test_usage_reads_off_the_schema():
     assert commands.get("scan").usage == "/scan <target> [key=value]"
     assert commands.get("whois").usage == "/whois <query>"
     assert commands.get("scans").usage == "/scans"
+
+
+def test_parse_keeps_an_apostrophe_inside_a_word():
+    parsed = parse("/project Bob's lab")
+    assert parsed is not None
+    assert parsed.bare == ["Bob's", "lab"]
+    quoted = parse('/project "Bob\'s lab"')
+    assert quoted is not None
+    assert quoted.bare == ["Bob's lab"]

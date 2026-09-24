@@ -245,8 +245,8 @@
 	bind:open={confirmStop}
 	title="Stop listener"
 	description="{activeChats} paired chat{activeChats === 1
-		? ' stops'
-		: 's stop'} receiving replies until the listener is started again."
+		? ' receives'
+		: 's receive'} no replies while the listener is stopped."
 	confirmLabel="Stop listener"
 	destructive
 	loading={remoteControl.isSaving}

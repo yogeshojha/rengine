@@ -14,9 +14,6 @@
 
 	let { calls, commands }: Props = $props();
 
-	const SHOWN = 30;
-
-	const shown = $derived(calls.slice(0, SHOWN));
 	const failed = $derived(calls.filter((c) => !c.ok).length);
 </script>
 
@@ -35,7 +32,7 @@
 			{/if}
 		</SectionHead>
 		<ul class="divide-y rounded-md border">
-			{#each shown as call, i (call.at + call.tool + i)}
+			{#each calls as call, i (call.at + call.tool + i)}
 				<li class="flex items-start gap-3 px-4 py-2.5">
 					<span class="flex h-5 shrink-0 items-center">
 						<span

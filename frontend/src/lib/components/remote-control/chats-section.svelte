@@ -7,6 +7,7 @@
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import Hint from '$lib/components/hint.svelte';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import CapabilityChips from '$lib/components/mcp/capability-chips.svelte';
 	import ChatDialog from './chat-dialog.svelte';
 	import { remoteControl } from '$lib/stores/remote-control.svelte';
@@ -63,7 +64,7 @@
 		<div
 			class="flex flex-wrap items-center justify-between gap-3 rounded-md border border-dashed px-4 py-3"
 		>
-			<span class="text-sm text-muted-foreground">The listener is stopped.</span>
+			<span class="text-sm text-muted-foreground">Listener stopped</span>
 			{#if canAdmin}
 				<Button size="sm" onclick={onStart}>Start listener</Button>
 			{/if}
@@ -71,9 +72,9 @@
 	{/if}
 
 	{#if !canAdmin}
-		<p class="text-sm text-muted-foreground">Paired chats are visible to administrators only.</p>
+		<p class="text-sm text-muted-foreground">Paired chats are visible to administrators.</p>
 	{:else if chats.length}
-		<div class="overflow-x-auto rounded-md border">
+		<ScrollArea orientation="horizontal" class="rounded-md border">
 			<table class="w-full min-w-[56rem] text-sm">
 				<thead>
 					<tr class="border-b bg-muted/40">
@@ -172,13 +173,13 @@
 					{/each}
 				</tbody>
 			</table>
-		</div>
+		</ScrollArea>
 	{:else}
 		<EmptyState
 			compact
 			icon={MessageSquareIcon}
 			title="No paired chats"
-			description="A chat that messages the bot receives a pairing code to approve."
+			description="A chat that messages the bot appears under pairing requests."
 		/>
 	{/if}
 </section>
@@ -200,9 +201,9 @@
 			: 'Delete chat'}
 	description={pending
 		? pending.action === 'revoke'
-			? `Chat ${pending.chat.display} loses access on its next message.`
+			? `Chat ${pending.chat.display} loses access. Its next message starts pairing again.`
 			: pending.chat.state === ChatState.BLOCKED
-				? `Chat ${pending.chat.display} may request pairing again.`
+				? `Chat ${pending.chat.display} can request pairing again.`
 				: `Chat ${pending.chat.display} is removed. Its next message starts pairing again.`
 		: ''}
 	confirmLabel={pending?.action === 'revoke'

@@ -23,6 +23,8 @@ from mcp.errors import McpError
 from mcp.phrasing import short_id
 from shared.definitions.channels import (
     CHAT_GROUP_LABELS,
+    PAIRING_CODE_TTL,
+    STEP_UP_PENDING_SECONDS,
     ChatState,
     CommandSource,
 )
@@ -54,14 +56,15 @@ _STAMP_IN_TEXT = re.compile(
 
 HELP_HINT = "Send /help for the command list."
 STEP_UP_PROMPT = (
-    "Confirm with the 6-digit code from your authenticator. "
-    "The request expires in 2 minutes."
+    "Send the 6-digit authenticator code to confirm. "
+    f"The request expires in {STEP_UP_PENDING_SECONDS // 60} minutes."
 )
-INACTIVE_ACCOUNT = "This chat's account is inactive. An administrator re-pairs it."
+INACTIVE_ACCOUNT = "The account bound to this chat is inactive."
 PAIRING_HOW = (
-    "An administrator approves it in reNgine under Toolkit, Remote control. "
-    "The code expires in 10 minutes."
+    "An administrator approves it under Toolkit, Remote control. "
+    f"The code expires in {PAIRING_CODE_TTL // 60} minutes."
 )
+QUEUE_FULL = "Pairing queue is full. Try again later."
 
 
 class Dispatcher:
@@ -70,6 +73,11 @@ class Dispatcher:
         self.sessions = sessions
         self.ui_base = ui_base
         self._followers: set[asyncio.Task] = set()
+
+    async def close(self) -> None:
+        for task in list(self._followers):
+            task.cancel()
+        await asyncio.gather(*self._followers, return_exceptions=True)
 
     # ---------- entry ----------
 
@@ -122,10 +130,7 @@ class Dispatcher:
             first_name=inbound.first_name,
         )
         if code_value is None:
-            await self._say(
-                inbound.external_id,
-                "Pairing is not available right now. Try again later.",
-            )
+            await self._say(inbound.external_id, QUEUE_FULL)
             return
         if not created:
             return
@@ -345,7 +350,7 @@ class Dispatcher:
             await self._observe(identity, tool.name, False, started, "timeout")
             await self._say(
                 external_id,
-                f"The lookup did not answer within {INLINE_TIMEOUT} seconds.",
+                f"Lookup timed out after {INLINE_TIMEOUT} seconds.",
             )
             return
         except LookupError as exc:
@@ -355,14 +360,22 @@ class Dispatcher:
         except Exception as exc:
             logger.warning("lookup failed", tool=tool.name, error=str(exc))
             await self._observe(identity, tool.name, False, started, str(exc))
-            await self._say(external_id, "The lookup failed.")
+            await self._say(external_id, "Lookup failed.")
             return
         await self._observe(identity, tool.name, True, started, None)
         await self.channel.reply(
             external_id, render.outcome_lines(outcome, self.ui_base)
         )
 
-    async def _follow(
+    async def _follow(self, *args: Any) -> None:
+        try:
+            await self._follow_run(*args)
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            logger.warning("run result not delivered", error=type(exc).__name__)
+
+    async def _follow_run(
         self,
         user_id: uuid.UUID,
         run_id: str,
@@ -569,7 +582,7 @@ class Dispatcher:
 
     @staticmethod
     def _chat_text(text: str) -> str:
-        """Tool names become commands, ids and stamps get short."""
+        """Rewrite tool names as commands and shorten ids and timestamps."""
         for name, spec in commands.by_tool().items():
             text = re.sub(rf"\b{re.escape(name)}\b", f"/{spec.name}", text)
         text = _UUID_IN_TEXT.sub(lambda m: short_id(m.group(0)), text)
@@ -601,17 +614,17 @@ class Dispatcher:
         capability = spec.capability
         label = CAPABILITY_LABELS.get(capability, capability).lower()
         if not ceiling.get(capability, False):
-            reason = "The instance ceiling does not allow it."
+            reason = "It is off in the channel ceiling."
         elif capability not in (chat.capabilities or []):
             reason = "This chat was not granted it."
         elif not user.totp_enabled:
-            reason = "Enrol an authenticator on your reNgine account to use it."
+            reason = "The account has no authenticator enrolled."
         else:
             reason = "It is not available to this chat."
         return [line(f"/{spec.name} needs the {label} capability. {reason}")]
 
     async def _expand_ids(self, session: Any, chat: ChannelChat, args: dict) -> dict:
-        """A scan id prefix stands for the scan; on a target field, for its target."""
+        """Resolve a scan id prefix to the scan, or to its target on a target field."""
         for key, value in list(args.items()):
             if not isinstance(value, str) or not value:
                 continue
