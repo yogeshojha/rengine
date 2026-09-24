@@ -27,7 +27,7 @@
 		<div class={TCOL.actions}></div>
 	</div>
 	{#each { length: rows } as _, i (i)}
-		<div class="flex items-start gap-3 border-b border-border/60 px-4 py-2.5">
+		<div class="flex items-center gap-3 border-b border-border/60 px-4 py-2.5">
 			<div class="{TCOL.select} h-6"><Skeleton class="size-4 rounded-[4px]" /></div>
 			<div class="{TCOL.target} flex flex-col gap-1.5">
 				<Skeleton class="h-4 {NAME[i % NAME.length]}" />
