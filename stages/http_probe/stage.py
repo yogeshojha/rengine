@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import random
 from collections.abc import Iterable
+from dataclasses import dataclass
 
 from sqlalchemy import bindparam, delete, select, update
 from sqlalchemy.orm import defer
@@ -21,23 +22,31 @@ from shared.models.http_asset import HttpAsset
 from shared.models.ip_address import IpAddress
 from shared.models.port import Port
 from shared.models.subdomain import Subdomain
-from shared.services import port_inventory, web_hygiene
+from shared.services import port_inventory, response_names, web_hygiene
 from shared.services.port_inventory import ServiceObservation
+from shared.services.scope_filter import matches_any
 from shared.utils.datetime import utc_now
 from shared.utils.net import host_port
 from shared.utils.software import parse_banner
 from stages.base import Stage, StageResult
 from stages.http_probe.config import (
     FOLLOW_REDIRECTS,
+    MAX_MENTIONED,
     MAX_PORTS_PER_HOST,
+    MENTION_RESOLVE_THREADS,
+    MENTION_ROUNDS,
     HttpProbeConfig,
 )
+from stages.subdomain.config import DNS_BATCH_SIZE, DNS_IDLE_TIMEOUT
+from stages.subdomain.parser import passes_included
+from tools.dnsx.client import DnsxClient, DnsxError
 from tools.httpx.client import HttpxClient, HttpxError
 from tools.httpx.parser import parse_httpx_record
 
 logger = get_logger(__name__)
 
 _PORT_SCAN = "port_scan"
+_DISCOVERY = "subdomain_discovery"
 _IP_FAMILY = {TargetType.IP.value, TargetType.IP_RANGE.value, TargetType.ASN.value}
 _MAX_TARGETS = 50000
 _SHUFFLE_SEED = 1
@@ -89,6 +98,15 @@ def _rank(asset: HttpAsset) -> tuple:
     return _rank_of(asset.scheme, asset.status_code, asset.port)
 
 
+@dataclass
+class _Mentions:
+    added: int = 0
+    answered: int = 0
+    rejected: int = 0
+    skipped: int = 0
+    unresolved: bool = False
+
+
 class HttpProbeStage(Stage):
     name = "http_probe"
     title = "HTTP Probe"
@@ -131,15 +149,20 @@ class HttpProbeStage(Stage):
 
         stalled = [False]
 
-        def _chunked() -> Iterable[dict]:
-            for start in range(0, len(targets), _PROBE_CHUNK):
+        def _chunked(queue: list[str]) -> Iterable[dict]:
+            for start in range(0, len(queue), _PROBE_CHUNK):
                 self._check_abort()
-                chunk = targets[start : start + _PROBE_CHUNK]
+                chunk = queue[start : start + _PROBE_CHUNK]
                 with client.stream_probe(chunk) as stream:
                     yield from stream.records
                     stalled[0] = stalled[0] or stream.timed_out
 
-        count, rejected = self._persist(_chunked())
+        count, rejected = self._persist(_chunked(targets))
+        mention = _Mentions()
+        if self._follows_mentions():
+            mention = self._follow_mentions(_chunked)
+            count += mention.answered
+            rejected += mention.rejected
         services = self._record_services()
         if self.ctx.target_type == TargetType.DOMAIN.value:
             self._denormalize_to_subdomains()
@@ -156,11 +179,162 @@ class HttpProbeStage(Stage):
             )
         if rejected:
             warnings.append(f"{rejected:,} responses could not be stored")
+        if mention.skipped:
+            warnings.append(
+                f"{mention.skipped:,} names mentioned in responses were not resolved. "
+                f"The first {MAX_MENTIONED:,} of each round were."
+            )
+        if mention.unresolved:
+            warnings.append(
+                "dnsx unavailable. Names mentioned in responses were not followed."
+            )
         return StageResult(
-            counts={"http_assets": count, "web_services": services},
+            counts={
+                "http_assets": count,
+                "web_services": services,
+                "mentioned_names": mention.added,
+            },
             warnings=warnings,
             partial=bool(warnings),
         )
+
+    def _follows_mentions(self) -> bool:
+        resolved = self.ctx.resolved
+        return (
+            self.ctx.target_type == TargetType.DOMAIN.value
+            and not resolved.seed_only
+            and bool((resolved.stages.get(_DISCOVERY) or {}).get("enabled"))
+        )
+
+    def _follow_mentions(self, probe) -> _Mentions:
+        """Resolve and probe the names under the target that responses mention."""
+        out = _Mentions()
+        root = self.ctx.target_value.strip().lower()
+        resolved = self.ctx.resolved
+        included = [x.strip().lower() for x in resolved.included_subdomains or []]
+        excluded = resolved.excluded_subdomains or []
+        rows = self.session.execute(
+            select(Subdomain.name, Subdomain.is_wildcard, Subdomain.resolved_ips).where(
+                Subdomain.scan_id == self.ctx.scan_id
+            )
+        ).all()
+        known = {name for name, _w, _ips in rows}
+        wildcard = {str(ip) for _n, w, ips in rows if w for ip in ips or []}
+        port_map = self._port_map()
+        hosts: set[str] | None = None
+        for _ in range(MENTION_ROUNDS):
+            self._check_abort()
+            mentions = response_names.mentioned(
+                self.session, self.ctx.scan_id, root, hosts
+            )
+            fresh = {
+                name: sources
+                for name, sources in mentions.items()
+                if name not in known and passes_included(name, included)
+            }
+            if not fresh:
+                break
+            names = sorted(fresh, key=lambda n: (-len(fresh[n]), n))
+            out.skipped += max(0, len(names) - MAX_MENTIONED)
+            names = names[:MAX_MENTIONED]
+            known.update(names)
+            self.emit_progress(f"resolving {len(names):,} names mentioned in responses")
+            answers = self._resolve_mentions(names)
+            if answers is None:
+                out.unresolved = True
+                break
+            live = self._write_mentions(fresh, answers, wildcard, excluded)
+            out.added += len(live)
+            if not live:
+                break
+            queue = list(
+                dict.fromkeys(
+                    host_port(name, port)
+                    for name in live
+                    for port in self._ports_for(answers[name]["ips"], port_map)
+                )
+            )
+            self.emit_progress(
+                f"probing {len(live):,} names mentioned in responses, "
+                f"{len(queue):,} host and port pairs"
+            )
+            answered, rejected = self._persist(probe(queue), clear=False)
+            out.answered += answered
+            out.rejected += rejected
+            hosts = set(live)
+        return out
+
+    def _resolve_mentions(self, names: list[str]) -> dict[str, dict] | None:
+        try:
+            client = DnsxClient(
+                threads=MENTION_RESOLVE_THREADS,
+                recorder=self.ctx.recorder,
+                extra_args=self.ctx.resolved.tool_args("dnsx"),
+            )
+        except DnsxError:
+            logger.warning("dnsx unavailable, mentioned names not followed")
+            return None
+        answers: dict[str, dict] = {}
+        pending = list(names)
+        for _ in range(2):
+            for start in range(0, len(pending), DNS_BATCH_SIZE):
+                self._check_abort()
+                batch = pending[start : start + DNS_BATCH_SIZE]
+                with client.stream_query(
+                    batch,
+                    record_types=["a", "aaaa", "cname"],
+                    idle_timeout=DNS_IDLE_TIMEOUT,
+                ) as stream:
+                    for rec in stream.records:
+                        host = (rec.get("host") or "").strip().lower().rstrip(".")
+                        ips = [
+                            str(x)
+                            for x in [*(rec.get("a") or []), *(rec.get("aaaa") or [])]
+                        ]
+                        cnames = rec.get("cname") or []
+                        if host and (ips or cnames):
+                            answers[host] = {
+                                "ips": ips,
+                                "cname": str(cnames[0]) if cnames else None,
+                            }
+            pending = [n for n in pending if n not in answers]
+            if not pending:
+                break
+        return answers
+
+    def _write_mentions(
+        self,
+        fresh: dict[str, set[str]],
+        answers: dict[str, dict],
+        wildcard: set[str],
+        excluded: list[str],
+    ) -> list[str]:
+        now = utc_now()
+        live: list[str] = []
+        for name in sorted(answers):
+            if name not in fresh:
+                continue
+            ips = answers[name]["ips"]
+            skip = matches_any(name, excluded)
+            self.session.add(
+                Subdomain(
+                    scan_id=self.ctx.scan_id,
+                    target_id=self.ctx.target_id,
+                    project_id=self.ctx.project_id,
+                    name=name,
+                    sources=sorted(fresh[name]),
+                    resolved_ips=ips,
+                    cname=answers[name]["cname"],
+                    is_active=True,
+                    is_wildcard=bool(ips) and set(ips) <= wildcard,
+                    is_excluded=skip,
+                    discovered_at=now,
+                )
+            )
+            if not skip:
+                live.append(name)
+        self.session.commit()
+        return live
 
     def _port_map(self) -> dict[str, set[int]]:
         """Open ports per address, filtered to what can plausibly answer HTTP."""
@@ -283,7 +457,9 @@ class HttpProbeStage(Stage):
         ).all()
         return {name: list(ips or []) for name, ips in rows}
 
-    def _persist(self, records: Iterable[dict]) -> tuple[int, int]:
+    def _persist(
+        self, records: Iterable[dict], *, clear: bool = True
+    ) -> tuple[int, int]:
         """Store every answer as it lands."""
         now = utc_now()
         ip_asn = {
@@ -296,7 +472,7 @@ class HttpProbeStage(Stage):
         }
         seen: set[str] = set()
         rejected = 0
-        cleared = False
+        cleared = not clear
         best: dict[str, tuple] = {}
         summaries: dict[str, dict] = {}
 
