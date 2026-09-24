@@ -1,9 +1,11 @@
 <script lang="ts">
+	import { useScopedRoutes } from './scope-links';
 	import Cell from './cell.svelte';
-	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { CERT_BUCKET_FILL } from '$lib/config/dashboard';
 	import type { DashboardCertBucket } from '$lib/types/dashboard';
+
+	const routes = useScopedRoutes();
 
 	interface Props {
 		buckets: DashboardCertBucket[];
@@ -17,7 +19,7 @@
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 	let max = $derived(Math.max(1, ...buckets.map((b) => b.count)));
 	let total = $derived(buckets.reduce((n, b) => n + b.count, 0));
-	const link = (q: string) => ROUTES.results(WEB.tab, scanId, { [WEB.queryParam]: q });
+	const link = (q: string) => routes.results(WEB.tab, scanId, { [WEB.queryParam]: q });
 </script>
 
 <Cell

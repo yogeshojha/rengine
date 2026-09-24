@@ -9,11 +9,19 @@ import type {
 	DashboardWindow,
 	SurfaceRiskFilters
 } from '$lib/types/dashboard';
+import { appendTargetScope, type TargetScope } from '$lib/utilities/surface-scope';
+
+const scoped = (projectId: string, scope: TargetScope, extra: Record<string, string> = {}) =>
+	appendTargetScope(new URLSearchParams({ project_id: projectId, ...extra }), scope).toString();
 
 export const dashboardApi = {
-	async overview(projectId: string, window: DashboardWindow): Promise<DashboardOverview> {
+	async overview(
+		projectId: string,
+		window: DashboardWindow,
+		scope: TargetScope = {}
+	): Promise<DashboardOverview> {
 		return api.get<DashboardOverview>(
-			`/dashboard/overview?project_id=${projectId}&window=${window}`
+			`/dashboard/overview?${scoped(projectId, scope, { window })}`
 		);
 	},
 	async discovery(projectId: string): Promise<DashboardDiscovery> {
@@ -22,19 +30,25 @@ export const dashboardApi = {
 	async readiness(): Promise<DashboardReadiness> {
 		return api.get<DashboardReadiness>('/dashboard/readiness');
 	},
-	async activity(projectId: string, window: DashboardWindow): Promise<DashboardActivity> {
+	async activity(
+		projectId: string,
+		window: DashboardWindow,
+		scope: TargetScope = {}
+	): Promise<DashboardActivity> {
 		return api.get<DashboardActivity>(
-			`/dashboard/activity?project_id=${projectId}&window=${window}`
+			`/dashboard/activity?${scoped(projectId, scope, { window })}`
 		);
 	},
 	async surfaceRisk(
 		projectId: string,
 		filters: SurfaceRiskFilters = {}
 	): Promise<DashboardSurfaceRisk> {
-		const params = new URLSearchParams({ project_id: projectId });
-		if (filters.organizationId) params.set('organization_id', filters.organizationId);
-		if (filters.tagId) params.set('tag_id', filters.tagId);
-		return api.get<DashboardSurfaceRisk>(`/dashboard/surface-risk?${params.toString()}`);
+		const scope: TargetScope = {
+			targetIds: filters.targetIds,
+			organizationId: filters.organizationId ?? undefined,
+			tagId: filters.tagId ?? undefined
+		};
+		return api.get<DashboardSurfaceRisk>(`/dashboard/surface-risk?${scoped(projectId, scope)}`);
 	},
 	async programs(projectId: string, window: DashboardWindow): Promise<DashboardPrograms> {
 		return api.get<DashboardPrograms>(

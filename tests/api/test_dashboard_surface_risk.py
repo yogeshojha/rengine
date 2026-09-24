@@ -6,6 +6,7 @@ import pytest
 import sqlalchemy as sa
 
 from app.services.dashboard_surface_risk import SurfaceRiskService
+from app.services.target_scope import TargetFilter, resolve_targets
 from shared.models.tag import Tag, TargetTag
 
 pytestmark = pytest.mark.api
@@ -81,9 +82,10 @@ async def test_a_tag_filter_narrows_the_rows(estate, now):
     estate.session.add(TargetTag(target_id=never, tag_id=tag.id))
     await estate.session.flush()
 
-    out = await SurfaceRiskService(estate.session).rows(
-        estate.project_id, tag_id=tag.id
+    targets = await resolve_targets(
+        estate.session, estate.project_id, TargetFilter(tag_id=tag.id)
     )
+    out = await SurfaceRiskService(estate.session).rows(estate.project_id, targets)
 
     assert out.targets_total == 2
     assert [r.target_value for r in out.rows] == ["tagged.example"]

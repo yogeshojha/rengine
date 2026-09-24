@@ -1,10 +1,13 @@
 <script lang="ts">
+	import { useScopedRoutes } from './scope-links';
 	import { SvelteMap } from 'svelte/reactivity';
 	import Cell from './cell.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import type { CorrelationGraph } from '$lib/types/correlation';
+
+	const routes = useScopedRoutes();
 
 	interface Props {
 		graph: CorrelationGraph | null;
@@ -39,7 +42,7 @@
 			{#each hubs as h (h.id)}
 				<li>
 					<a
-						href={ROUTES.surface(WEB.tab, { [WEB.queryParam]: h.query })}
+						href={routes.surface(WEB.tab, { [WEB.queryParam]: h.query })}
 						class="grid grid-cols-[4.5rem_minmax(0,1fr)_auto] items-baseline gap-2.5 text-xs hover:text-foreground"
 					>
 						<span class="truncate text-2xs text-muted-foreground"

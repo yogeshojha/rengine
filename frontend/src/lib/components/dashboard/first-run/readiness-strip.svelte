@@ -71,9 +71,6 @@
 				</span>
 				{#if downloading}
 					<span class="text-sm font-medium">Syncing</span>
-					<span class="text-xs text-muted-foreground">
-						Scans started now run without these checks.
-					</span>
 				{:else}
 					<span class="text-sm font-medium text-warning">Not indexed</span>
 					<div>
@@ -102,9 +99,7 @@
 					Worker
 				</span>
 				<span class="text-sm font-medium text-destructive">Unreachable</span>
-				<span class="text-xs text-muted-foreground">
-					Scans remain queued until a worker is available.
-				</span>
+				<span class="text-xs text-muted-foreground"> Start the worker-default service. </span>
 			</div>
 		{/if}
 		{#if workerReady}

@@ -1,5 +1,5 @@
 import { api } from './client';
-import { scopeQuery } from '$lib/utilities/surface-scope';
+import { scopeQuery, type TargetScope } from '$lib/utilities/surface-scope';
 import type { HostingComposition } from '$lib/types/hosting';
 import type { CorrelationGraph } from '$lib/types/correlation';
 import type { RenderGroups, SubdomainSummary, TargetSubdomainRead } from '$lib/types/subdomain';
@@ -58,10 +58,18 @@ export const subdomainsApi = {
 		);
 	},
 
-	async counts(projectId: string, scanId: string, queries: string[]): Promise<QueryCounts> {
-		return api.post<QueryCounts>(`/subdomains/search/counts?${scopeQuery({ projectId, scanId })}`, {
-			queries
-		});
+	async counts(
+		projectId: string,
+		scanId: string,
+		queries: string[],
+		scope: TargetScope = {}
+	): Promise<QueryCounts> {
+		return api.post<QueryCounts>(
+			`/subdomains/search/counts?${scopeQuery({ projectId, scanId, ...scope })}`,
+			{
+				queries
+			}
+		);
 	},
 
 	async leads(projectId: string, scanId: string, filter: SubdomainFilter): Promise<QueryLeads> {
@@ -90,9 +98,13 @@ export const subdomainsApi = {
 		);
 	},
 
-	async correlationGraph(projectId: string, scanId: string): Promise<CorrelationGraph> {
+	async correlationGraph(
+		projectId: string,
+		scanId: string,
+		scope: TargetScope = {}
+	): Promise<CorrelationGraph> {
 		return api.get<CorrelationGraph>(
-			`/subdomains/correlation-graph?${scopeQuery({ projectId, scanId })}`
+			`/subdomains/correlation-graph?${scopeQuery({ projectId, scanId, ...scope })}`
 		);
 	},
 
@@ -100,8 +112,14 @@ export const subdomainsApi = {
 		return api.get<HostingComposition>(`/subdomains/hosting?${scopeQuery({ projectId, scanId })}`);
 	},
 
-	async facets(projectId: string, scanId: string): Promise<SubdomainFacetSet> {
-		return api.get<SubdomainFacetSet>(`/subdomains/facets?${scopeQuery({ projectId, scanId })}`);
+	async facets(
+		projectId: string,
+		scanId: string,
+		scope: TargetScope = {}
+	): Promise<SubdomainFacetSet> {
+		return api.get<SubdomainFacetSet>(
+			`/subdomains/facets?${scopeQuery({ projectId, scanId, ...scope })}`
+		);
 	},
 
 	async related(projectId: string, scanId: string, name: string): Promise<SubdomainRelation[]> {
@@ -120,12 +138,24 @@ export const subdomainsApi = {
 		return api.get<Facet[]>(`/subdomains/tech?${sp.toString()}`);
 	},
 
-	async hygiene(projectId: string, scanId: string): Promise<HygieneSummary> {
-		return api.get<HygieneSummary>(`/subdomains/hygiene?${scopeQuery({ projectId, scanId })}`);
+	async hygiene(
+		projectId: string,
+		scanId: string,
+		scope: TargetScope = {}
+	): Promise<HygieneSummary> {
+		return api.get<HygieneSummary>(
+			`/subdomains/hygiene?${scopeQuery({ projectId, scanId, ...scope })}`
+		);
 	},
 
-	async posture(projectId: string, scanId: string): Promise<HygieneSummary> {
-		return api.get<HygieneSummary>(`/subdomains/posture?${scopeQuery({ projectId, scanId })}`);
+	async posture(
+		projectId: string,
+		scanId: string,
+		scope: TargetScope = {}
+	): Promise<HygieneSummary> {
+		return api.get<HygieneSummary>(
+			`/subdomains/posture?${scopeQuery({ projectId, scanId, ...scope })}`
+		);
 	},
 
 	async insights(projectId: string, scanId: string): Promise<SubdomainInsights> {

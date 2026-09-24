@@ -10,6 +10,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import array as pg_array
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services.target_scope import Targets
 from shared.definitions import domain_posture as defs
 from shared.enums.scan import SCAN_TERMINAL_STATUSES
 from shared.models.domain_posture import (
@@ -166,12 +167,16 @@ class DomainPostureService:
         summary.scan_id = latest[0]
         return summary
 
-    async def _latest_scan_ids(self, project_id: UUID) -> list[UUID]:
+    async def _latest_scan_ids(
+        self, project_id: UUID, targets: Targets = None
+    ) -> list[UUID]:
         """Each target's newest settled census run that holds posture rows."""
+        scoped = [] if targets is None else [DomainPosture.target_id.in_(targets)]
         runs = (
             select(DomainPosture.scan_id, DomainPosture.target_id, Scan.started_at)
             .join(Scan, Scan.id == DomainPosture.scan_id)
             .where(
+                *scoped,
                 DomainPosture.project_id == project_id,
                 Scan.status.in_(SCAN_TERMINAL_STATUSES),
                 census_only(),
@@ -195,9 +200,11 @@ class DomainPostureService:
             .all()
         )
 
-    async def for_project(self, project_id: UUID) -> DomainPostureSummary:
+    async def for_project(
+        self, project_id: UUID, targets: Targets = None
+    ) -> DomainPostureSummary:
         """Every target's newest settled run, folded into one estate view."""
-        scan_ids = await self._latest_scan_ids(project_id)
+        scan_ids = await self._latest_scan_ids(project_id, targets)
         if not scan_ids:
             return DomainPostureSummary()
         return await self.summary(project_id, QueryScope(tuple(scan_ids)))

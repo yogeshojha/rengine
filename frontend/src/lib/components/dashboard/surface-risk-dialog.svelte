@@ -13,8 +13,18 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { SEVERITY_FILL, SEVERITY_ORDER, severityLabel } from '$lib/config/vulnerabilities';
 	import type { DashboardSurfaceRisk, SurfaceRiskTarget } from '$lib/types/dashboard';
+	import type { TargetScope } from '$lib/utilities/surface-scope';
+	import { Button } from '$lib/components/ui/button';
 
-	let { open = $bindable(false) }: { open: boolean } = $props();
+	let {
+		open = $bindable(false),
+		onScope
+	}: { open: boolean; onScope?: (scope: TargetScope) => void } = $props();
+
+	function scopeTo(scope: TargetScope) {
+		open = false;
+		onScope?.(scope);
+	}
 
 	const SORTS = [
 		{ value: 'findings', label: 'Sort by findings' },
@@ -117,9 +127,7 @@
 	>
 		<Dialog.Header class="border-b px-5 pt-4 pb-3 text-left">
 			<Dialog.Title>Surface against risk</Dialog.Title>
-			<Dialog.Description
-				>Live web assets against open findings, every target in the project</Dialog.Description
-			>
+			<Dialog.Description>Live web assets against open findings, per target</Dialog.Description>
 		</Dialog.Header>
 
 		<div class="flex flex-wrap items-center gap-2 border-b px-5 py-3">
@@ -190,6 +198,16 @@
 					{/each}
 				</Select.Content>
 			</Select.Root>
+			{#if onScope && (organizationId || tagId)}
+				<Button
+					size="sm"
+					class="ml-auto h-8 text-xs"
+					onclick={() =>
+						scopeTo({ organizationId: organizationId || undefined, tagId: tagId || undefined })}
+				>
+					Scope dashboard
+				</Button>
+			{/if}
 		</div>
 
 		{#if data}
@@ -231,14 +249,19 @@
 					</div>
 				{:else if failed && !data}
 					<p class="py-8 text-center text-sm text-muted-foreground">
-						Surface against risk did not load.
+						Surface against risk not loaded.
 					</p>
 				{:else if rows.length}
 					{#key data}
-						<SurfaceRiskRows {rows} {severities} wide />
+						<SurfaceRiskRows
+							{rows}
+							{severities}
+							wide
+							onScope={onScope && ((id) => scopeTo({ targetIds: [id] }))}
+						/>
 					{/key}
 				{:else}
-					<p class="py-8 text-center text-sm text-muted-foreground">No scanned target matches.</p>
+					<p class="py-8 text-center text-sm text-muted-foreground">No matching target</p>
 				{/if}
 			</div>
 		</ScrollArea>

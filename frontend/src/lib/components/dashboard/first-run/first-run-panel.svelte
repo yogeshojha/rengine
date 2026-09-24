@@ -13,10 +13,7 @@
 
 <Card.Root class="gap-0 overflow-hidden py-0">
 	<div class="px-5 py-5">
-		<Launcher
-			heading="No targets in this project"
-			sub="Add a domain, IP address, IP range, URL or ASN."
-		/>
+		<Launcher heading="No targets" />
 	</div>
 	<ReadinessStrip {readiness} />
 </Card.Root>

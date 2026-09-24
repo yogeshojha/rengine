@@ -1,12 +1,14 @@
 <script lang="ts">
+	import { useScopedRoutes } from './scope-links';
 	import { goto } from '$app/navigation';
 	import Cell from './cell.svelte';
 	import Globe from '$lib/components/scans/results/overview/globe.svelte';
 	import CountryFlag from '$lib/components/scans/results/country-flag.svelte';
-	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { countryName } from '$lib/config/country-geo';
 	import type { Facet } from '$lib/utilities/scan-insights';
+
+	const routes = useScopedRoutes();
 
 	interface Props {
 		countries: Facet[] | null;
@@ -20,7 +22,7 @@
 	const TOP = 5;
 	const SPEC = SURFACE[SurfaceDimension.IPS];
 	const link = (code: string) =>
-		ROUTES.results(SPEC.tab, scanId, { [SPEC.queryParam]: `country:${code.toUpperCase()}` });
+		routes.results(SPEC.tab, scanId, { [SPEC.queryParam]: `country:${code.toUpperCase()}` });
 
 	let entries = $derived((countries ?? []).map((f) => ({ code: f.value, count: f.count })));
 	let total = $derived(entries.reduce((n, e) => n + e.count, 0));
@@ -35,7 +37,7 @@
 	id="geo"
 	title="Geography"
 	description="IP addresses by country"
-	href={ROUTES.results(SPEC.tab, scanId)}
+	href={routes.results(SPEC.tab, scanId)}
 	hrefLabel={SPEC.label}
 	loading={loading && !countries}
 	class={className}

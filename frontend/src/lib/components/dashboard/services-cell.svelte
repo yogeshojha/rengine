@@ -1,11 +1,13 @@
 <script lang="ts">
+	import { useScopedRoutes } from './scope-links';
 	import { arc, pie } from 'd3-shape';
 	import Cell from './cell.svelte';
 	import RankedBars, { type BarRow } from './ranked-bars.svelte';
-	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { SERVICE_CLASS_FILL, SERVICE_CLASS_LABELS } from '$lib/config/service-classes';
 	import type { DashboardExposure } from '$lib/types/dashboard';
+
+	const routes = useScopedRoutes();
 
 	interface Props {
 		exposure: DashboardExposure;
@@ -19,7 +21,7 @@
 	const RING = 11;
 	const SPEC = SURFACE[SurfaceDimension.SERVICES];
 	const TOP = 3;
-	const link = (q: string) => ROUTES.results(SPEC.tab, scanId, { [SPEC.queryParam]: q });
+	const link = (q: string) => routes.results(SPEC.tab, scanId, { [SPEC.queryParam]: q });
 
 	let slices = $derived(exposure.bands.filter((b) => b.count > 0));
 	let arcs = $derived.by(() => {
@@ -53,7 +55,7 @@
 	id="services"
 	title="Services"
 	description="By class"
-	href={ROUTES.results(SPEC.tab, scanId)}
+	href={routes.results(SPEC.tab, scanId)}
 	hrefLabel="{exposure.services.toLocaleString()} services"
 	class={className}
 >

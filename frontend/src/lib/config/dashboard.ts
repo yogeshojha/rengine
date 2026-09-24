@@ -55,3 +55,9 @@ export const CERT_BUCKET_FILL: Record<string, string> = {
 };
 
 export const SURFACE_RISK_ROWS = 6;
+
+export const DASHBOARD_SCOPE_PARAMS = {
+	target: 'target',
+	organization: 'org',
+	tag: 'tag'
+} as const;

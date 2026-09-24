@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
 from app.services.asset_query import QueryScope, vuln_suppressed
+from app.services.target_scope import Targets
 from shared.definitions.asset_query import COUNT_CAP
 from shared.definitions.dashboard import STALE_DAYS
 from shared.definitions.new_checks import NEW_CHECKS_KEY
@@ -95,8 +96,12 @@ class SurfaceScopeService:
         self._picked: dict[tuple[UUID, str], list] = {}
         self._targets_by_project: dict[UUID, dict[UUID, Target]] = {}
 
-    async def scope(self, project_id: UUID, dimension: str) -> QueryScope:
+    async def scope(
+        self, project_id: UUID, dimension: str, targets: Targets = None
+    ) -> QueryScope:
         picks = await self._picks(project_id, dimension)
+        if targets is not None:
+            picks = [row for row in picks if row.target_id in targets]
         ids = [row.id for row in picks]
         if dimension == SurfaceDimension.VULNERABILITIES.value:
             ids.extend(await self._follow_ups(project_id, picks))

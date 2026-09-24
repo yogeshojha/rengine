@@ -34,6 +34,7 @@
 
 <Cell
 	id="watches"
+	projectWide
 	title="Watched programs"
 	description="Certificate names per day"
 	href={ROUTES.bountyHubTab('watching')}

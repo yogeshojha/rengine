@@ -1,12 +1,14 @@
 <script lang="ts">
+	import { useScopedRoutes } from './scope-links';
 	import { SvelteMap } from 'svelte/reactivity';
 	import Cell from './cell.svelte';
 	import Hint from '$lib/components/hint.svelte';
-	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { EVIDENCE_LABELS, EVIDENCE_ORDER } from '$lib/config/evidence';
 	import { SEVERITY_LABELS, SEVERITY_ORDER } from '$lib/config/vulnerabilities';
 	import type { DashboardRisk } from '$lib/types/dashboard';
+
+	const routes = useScopedRoutes();
 
 	interface Props {
 		risk: DashboardRisk;
@@ -33,14 +35,14 @@
 			? `color-mix(in oklch, var(--series) ${8 + Math.round(Math.sqrt(n / max) * 58)}%, var(--muted))`
 			: 'var(--muted)';
 	const link = (sev: string, rung: string) =>
-		ROUTES.surface(VULN.tab, { [VULN.queryParam]: `severity:${sev} and evidence:${rung}` });
+		routes.surface(VULN.tab, { [VULN.queryParam]: `severity:${sev} and evidence:${rung}` });
 </script>
 
 <Cell
 	id="evidence"
 	title="Evidence"
 	description="Findings by severity and rung"
-	href={ROUTES.surface(VULN.tab, { [VULN.queryParam]: 'evidence:proven' })}
+	href={routes.surface(VULN.tab, { [VULN.queryParam]: 'evidence:proven' })}
 	hrefLabel="evidence:proven"
 	class={className}
 >

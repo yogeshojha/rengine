@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
+from app.api.scope import TargetFilterDep
 from app.core.database import get_session
 from app.services.dashboard import DashboardService
 from app.services.dashboard_activity import DashboardActivityService
@@ -12,6 +13,7 @@ from app.services.dashboard_overview import DashboardOverviewService
 from app.services.dashboard_surface_risk import SurfaceRiskService
 from app.services.instance_settings import InstanceSettingsService
 from app.services.readiness import ReadinessService
+from app.services.target_scope import resolve_targets
 from shared.definitions.dashboard import DEFAULT_WINDOW
 from shared.definitions.mode_features import CAP_BOUNTY_PROGRAMS, has_capability
 from shared.models.dashboard import (
@@ -40,9 +42,11 @@ def get_service(
 async def dashboard_signals(
     _current_user: CurrentUser,
     service: Annotated[DashboardService, Depends(get_service)],
+    spec: TargetFilterDep,
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
-    return await service.signals(project_id=project_id)
+    targets = await resolve_targets(service.session, project_id, spec)
+    return await service.signals(project_id=project_id, targets=targets)
 
 
 def get_overview_service(
@@ -55,23 +59,23 @@ def get_overview_service(
 async def dashboard_overview(
     _current_user: CurrentUser,
     service: Annotated[DashboardOverviewService, Depends(get_overview_service)],
+    spec: TargetFilterDep,
     project_id: Annotated[UUID, Query(description="Project ID")],
     window: Annotated[str, Query(description="Change window")] = DEFAULT_WINDOW,
 ):
-    return await service.overview(project_id=project_id, window=window)
+    targets = await resolve_targets(service.session, project_id, spec)
+    return await service.overview(project_id=project_id, window=window, targets=targets)
 
 
 @router.get("/surface-risk", response_model=DashboardSurfaceRisk)
 async def dashboard_surface_risk(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
+    spec: TargetFilterDep,
     project_id: Annotated[UUID, Query(description="Project ID")],
-    organization_id: Annotated[UUID | None, Query(description="Organization")] = None,
-    tag_id: Annotated[UUID | None, Query(description="Tag")] = None,
 ):
-    return await SurfaceRiskService(session).rows(
-        project_id=project_id, organization_id=organization_id, tag_id=tag_id
-    )
+    targets = await resolve_targets(session, project_id, spec)
+    return await SurfaceRiskService(session).rows(project_id, targets)
 
 
 @router.get("/discovery", response_model=DashboardDiscovery)
@@ -100,12 +104,14 @@ async def _programs_enabled(session: AsyncSession) -> bool:
 async def dashboard_activity(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
+    spec: TargetFilterDep,
     project_id: Annotated[UUID, Query(description="Project ID")],
     window: Annotated[str, Query(description="Change window")] = DEFAULT_WINDOW,
 ):
     programs = await _programs_enabled(session)
+    targets = await resolve_targets(session, project_id, spec)
     return await DashboardActivityService(session).activity(
-        project_id, window, programs=programs
+        project_id, window, programs=programs, targets=targets
     )
 
 

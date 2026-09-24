@@ -319,6 +319,7 @@ export interface DashboardSurfaceRisk {
 }
 
 export interface SurfaceRiskFilters {
+	targetIds?: string[];
 	organizationId?: string | null;
 	tagId?: string | null;
 }

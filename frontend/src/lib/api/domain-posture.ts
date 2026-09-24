@@ -1,5 +1,5 @@
 import { api } from './client';
-import { scopeQuery } from '$lib/utilities/surface-scope';
+import { scopeQuery, type TargetScope } from '$lib/utilities/surface-scope';
 import type { DomainPostureSummary } from '$lib/types/domain-posture';
 
 export const domainPostureApi = {
@@ -7,9 +7,10 @@ export const domainPostureApi = {
 		return api.get<DomainPostureSummary>(`/domain-posture?${scopeQuery({ projectId, scanId })}`);
 	},
 
-	async project(projectId: string): Promise<DomainPostureSummary> {
-		const sp = new URLSearchParams({ project_id: projectId });
-		return api.get<DomainPostureSummary>(`/domain-posture/project?${sp.toString()}`);
+	async project(projectId: string, scope: TargetScope = {}): Promise<DomainPostureSummary> {
+		return api.get<DomainPostureSummary>(
+			`/domain-posture/project?${scopeQuery({ projectId, ...scope })}`
+		);
 	},
 
 	async target(projectId: string, targetId: string): Promise<DomainPostureSummary> {

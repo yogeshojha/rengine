@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import Cell from './cell.svelte';
+	import { useScopedRoutes } from './scope-links';
 	import RankedBars, { type BarRow } from './ranked-bars.svelte';
 	import { interestCatalog } from '$lib/stores/interest-catalog.svelte';
 	import { ROUTES } from '$lib/config/routes';
@@ -16,10 +17,12 @@
 
 	let { page, scanId = null, loading = false, class: className = '' }: Props = $props();
 
-	const link = (q?: string) =>
-		scanId
-			? ROUTES.scanTab(scanId, INTEREST_TAB)
-			: ROUTES.exposures(undefined, q ? { q } : undefined);
+	const routes = useScopedRoutes();
+	const link = (q = '') => {
+		if (scanId) return ROUTES.scanTab(scanId, INTEREST_TAB);
+		const scoped = routes.query(q);
+		return ROUTES.exposures(undefined, scoped ? { q: scoped } : undefined);
+	};
 	const rowLink = (q: string) => (scanId ? undefined : link(q));
 
 	const BANDS = [INTEREST_BAND.CRITICAL, INTEREST_BAND.HIGH, INTEREST_BAND.NOTABLE] as const;

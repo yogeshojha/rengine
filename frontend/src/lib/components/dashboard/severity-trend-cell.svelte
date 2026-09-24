@@ -1,10 +1,12 @@
 <script lang="ts">
+	import { useScopedRoutes } from './scope-links';
 	import Cell from './cell.svelte';
 	import DailyBars, { type DailyPoint } from './daily-bars.svelte';
-	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { SEVERITY_FILL, SEVERITY_LABELS, SEVERITY_ORDER } from '$lib/config/vulnerabilities';
 	import { windowDays, type DashboardOverview, type DashboardWindow } from '$lib/types/dashboard';
+
+	const routes = useScopedRoutes();
 
 	interface Props {
 		overview: DashboardOverview;
@@ -46,7 +48,7 @@
 	id="findings-trend"
 	title="Findings by severity"
 	description="First reported per day"
-	href={ROUTES.surface(VULN.tab, { [VULN.queryParam]: 'is:new' })}
+	href={routes.surface(VULN.tab, { [VULN.queryParam]: 'is:new' })}
 	hrefLabel="is:new"
 	class={className}
 >
@@ -56,7 +58,7 @@
 	<div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
 		{#each totals as t (t.key)}
 			<a
-				href={ROUTES.surface(VULN.tab, { [VULN.queryParam]: `severity:${t.key}` })}
+				href={routes.surface(VULN.tab, { [VULN.queryParam]: `severity:${t.key}` })}
 				class="flex items-center gap-1.5 hover:text-foreground"
 			>
 				<span class="size-2.5 rounded-full" style="background:{t.color}"></span>

@@ -6,10 +6,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
+from app.api.scope import TargetFilterDep
 from app.core.database import get_session
 from app.services.asset_query import QueryScope
 from app.services.interest import InterestError, InterestReadService, catalog
 from app.services.surface_scope import SurfaceScopeService
+from app.services.target_scope import resolve_targets
 from shared.definitions.surface import SurfaceDimension
 from shared.models.interest import (
     BulkDismissRequest,
@@ -140,10 +142,12 @@ async def project_interest(
     _user: CurrentUser,
     project_id: Annotated[UUID, Query(description="Project ID")],
     body: InterestFilter,
+    spec: TargetFilterDep,
 ) -> InterestPage:
     """Flagged assets across each target's latest covering scan."""
+    targets = await resolve_targets(session, project_id, spec)
     scope = await SurfaceScopeService(session).scope(
-        project_id, SurfaceDimension.WEB_ASSETS.value
+        project_id, SurfaceDimension.WEB_ASSETS.value, targets=targets
     )
     return await InterestReadService(session).page(scope, body)
 

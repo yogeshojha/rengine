@@ -1,9 +1,11 @@
 <script lang="ts">
+	import { useScopedRoutes } from './scope-links';
 	import Cell from './cell.svelte';
-	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { CHECK_BY_KEY } from '$lib/config/hygiene';
 	import type { HygieneSummary } from '$lib/utilities/scan-insights';
+
+	const routes = useScopedRoutes();
 
 	interface Props {
 		hygiene: HygieneSummary | null;
@@ -24,7 +26,7 @@
 				label: CHECK_BY_KEY[c.key]?.label ?? c.key.replace(/_/g, ' '),
 				share: Math.round((c.failing / c.applicable) * 100),
 				failing: c.failing,
-				href: ROUTES.results(WEB.tab, scanId, { [WEB.queryParam]: c.query })
+				href: routes.results(WEB.tab, scanId, { [WEB.queryParam]: c.query })
 			}))
 			.sort((a, b) => b.share - a.share)
 			.slice(0, TOP)
@@ -35,7 +37,7 @@
 	id="hygiene"
 	title="Web hygiene"
 	description="Failing share per check"
-	href={ROUTES.results(WEB.tab, scanId, { [WEB.queryParam]: 'hygiene:any' })}
+	href={routes.results(WEB.tab, scanId, { [WEB.queryParam]: 'hygiene:any' })}
 	hrefLabel="hygiene:any"
 	loading={loading && !hygiene}
 	class={className}

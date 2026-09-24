@@ -12,7 +12,7 @@ import type {
 	SecretFilter,
 	SecretPage
 } from '$lib/types/secret';
-import { scopeQuery } from '$lib/utilities/surface-scope';
+import { scopeQuery, type TargetScope } from '$lib/utilities/surface-scope';
 import type {
 	EndpointCoverageRead,
 	EndpointDetail,
@@ -65,8 +65,8 @@ export const ipsApi = {
 		);
 	},
 
-	async facets(projectId: string, scanId: string): Promise<IpFacetSet> {
-		return api.get<IpFacetSet>(`/ips/facets?${scopeQuery({ projectId, scanId })}`);
+	async facets(projectId: string, scanId: string, scope: TargetScope = {}): Promise<IpFacetSet> {
+		return api.get<IpFacetSet>(`/ips/facets?${scopeQuery({ projectId, scanId, ...scope })}`);
 	}
 };
 
@@ -219,12 +219,24 @@ export const softwareApi = {
 		return api.post<SoftwarePage>(`/software/search?${scopeQuery({ projectId, scanId })}`, filter);
 	},
 
-	async facets(projectId: string, scanId: string): Promise<SoftwareFacets> {
-		return api.get<SoftwareFacets>(`/software/facets?${scopeQuery({ projectId, scanId })}`);
+	async facets(
+		projectId: string,
+		scanId: string,
+		scope: TargetScope = {}
+	): Promise<SoftwareFacets> {
+		return api.get<SoftwareFacets>(
+			`/software/facets?${scopeQuery({ projectId, scanId, ...scope })}`
+		);
 	},
 
-	async coverage(projectId: string, scanId: string): Promise<SoftwareCoverage> {
-		return api.get<SoftwareCoverage>(`/software/coverage?${scopeQuery({ projectId, scanId })}`);
+	async coverage(
+		projectId: string,
+		scanId: string,
+		scope: TargetScope = {}
+	): Promise<SoftwareCoverage> {
+		return api.get<SoftwareCoverage>(
+			`/software/coverage?${scopeQuery({ projectId, scanId, ...scope })}`
+		);
 	},
 
 	async counts(

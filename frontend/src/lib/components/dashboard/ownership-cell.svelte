@@ -55,8 +55,12 @@
 			pending = null;
 		}
 	}
+	let inScope = $derived(new Set(overview.targets.map((t) => t.id)));
+	let domains = $derived(
+		(discovery?.domains ?? []).filter((d) => d.sources.some((s) => inScope.has(s.target_id)))
+	);
 	let discoveryRows = $derived.by<SheetRow[]>(() =>
-		(discovery?.domains ?? []).map((d) => {
+		domains.map((d) => {
 			const source = d.sources[0];
 			const on =
 				d.sources.length > 1 ? plural(d.sources.length, 'target', 'targets') : source?.target_value;
@@ -93,7 +97,7 @@
 				key: 'takeover',
 				label: 'Takeover candidates',
 				count: takeover.count,
-				detail: 'dangling records',
+				detail: 'dangling CNAMEs',
 				tone: 'var(--sev-high)',
 				open: () =>
 					show({
@@ -113,7 +117,7 @@
 				key: 'spoofable',
 				label: 'Spoofable',
 				count: spoof.count,
-				detail: 'zones open to forgery',
+				detail: 'zones failing sender checks',
 				tone: 'var(--sev-medium)',
 				open: () =>
 					show({
@@ -146,7 +150,7 @@
 						}))
 					})
 			});
-		const leads = discovery?.domains.length ?? 0;
+		const leads = domains.length;
 		if (leads > 0)
 			out.push({
 				key: 'leads',
@@ -174,7 +178,7 @@
 				tone: null,
 				open: () =>
 					show({
-						title: 'Targets older than 30 days',
+						title: 'Targets not scanned in 30 days',
 						rows: overview.stale.map((t) => ({
 							key: t.target_id,
 							primary: t.target_value,

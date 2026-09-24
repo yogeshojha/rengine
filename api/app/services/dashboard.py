@@ -5,6 +5,7 @@ from sqlalchemy import Row, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.domain_posture import DomainPostureService
+from app.services.target_scope import Targets, keeps
 from shared.definitions import domain_posture as posture_defs
 from shared.definitions.domains import takeover_provider
 from shared.enums.scan import ScanStatus
@@ -37,14 +38,18 @@ class DashboardService:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def signals(self, project_id: UUID) -> DashboardSignals:
+    async def signals(
+        self, project_id: UUID, targets: Targets = None
+    ) -> DashboardSignals:
         return DashboardSignals(
-            takeover=await self._takeover_candidates(project_id),
-            spoofable=await self._spoofable_domains(project_id),
-            stale=await self._stale_targets(project_id),
+            takeover=await self._takeover_candidates(project_id, targets),
+            spoofable=await self._spoofable_domains(project_id, targets),
+            stale=await self._stale_targets(project_id, targets),
         )
 
-    async def _takeover_candidates(self, project_id: UUID) -> TakeoverSignal:
+    async def _takeover_candidates(
+        self, project_id: UUID, targets: Targets = None
+    ) -> TakeoverSignal:
         query = (
             select(
                 Subdomain.target_id,
@@ -62,6 +67,8 @@ class DashboardService:
             .order_by(Subdomain.discovered_at.desc(), Subdomain.scan_id.desc())
             .limit(_CNAME_SCAN_CAP + 1)
         )
+        if targets is not None:
+            query = query.where(Subdomain.target_id.in_(targets))
         rows = list((await self.session.execute(query)).all())
         if len(rows) > _CNAME_SCAN_CAP:
             logger.warning("takeover scan capped at %d cname rows", _CNAME_SCAN_CAP)
@@ -90,9 +97,15 @@ class DashboardService:
         candidates.sort(key=lambda c: c.last_seen, reverse=True)
         return TakeoverSignal(count=len(candidates), items=candidates[:_ITEMS_CAP])
 
-    async def _spoofable_domains(self, project_id: UUID) -> SpoofableSignal:
+    async def _spoofable_domains(
+        self, project_id: UUID, targets: Targets = None
+    ) -> SpoofableSignal:
         """Zones whose newest run fails a sender check."""
-        hits = await DomainPostureService(self.session).spoofable(project_id)
+        hits = [
+            hit
+            for hit in await DomainPostureService(self.session).spoofable(project_id)
+            if keeps(targets, hit[0])
+        ]
         if not hits:
             return SpoofableSignal(count=0, items=[])
         names = dict(
@@ -118,7 +131,9 @@ class DashboardService:
         items.sort(key=lambda d: (d.zone, d.target_value))
         return SpoofableSignal(count=len(items), items=items[:_ITEMS_CAP])
 
-    async def _stale_targets(self, project_id: UUID) -> StaleSignal:
+    async def _stale_targets(
+        self, project_id: UUID, targets: Targets = None
+    ) -> StaleSignal:
         cutoff = utc_now() - timedelta(days=_STALE_DAYS)
         last_completed = (
             select(
@@ -150,6 +165,8 @@ class DashboardService:
         never: list[StaleTarget] = []
         stale: list[StaleTarget] = []
         for tid, value, ttype, last in rows:
+            if not keeps(targets, tid):
+                continue
             tt = getattr(ttype, "value", ttype)
             if last is None:
                 never.append(

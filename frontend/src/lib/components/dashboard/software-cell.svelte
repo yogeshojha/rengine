@@ -1,9 +1,11 @@
 <script lang="ts">
+	import { useScopedRoutes } from './scope-links';
 	import Cell from './cell.svelte';
 	import RankedBars, { type BarRow } from './ranked-bars.svelte';
-	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import type { SoftwareCoverage, SoftwareFacets } from '$lib/types/software';
+
+	const routes = useScopedRoutes();
 
 	interface Props {
 		software: { facets: SoftwareFacets; coverage: SoftwareCoverage } | null;
@@ -21,7 +23,7 @@
 			key: f.key,
 			label: f.label,
 			count: f.count,
-			href: ROUTES.results(SPEC.tab, scanId, { [SPEC.queryParam]: `product="${f.key}"` })
+			href: routes.results(SPEC.tab, scanId, { [SPEC.queryParam]: `product="${f.key}"` })
 		}))
 	);
 	let coverage = $derived(software?.coverage ?? null);
@@ -34,7 +36,7 @@
 	id="software"
 	title="Software CVEs"
 	description="By product"
-	href={ROUTES.results(SPEC.tab, scanId)}
+	href={routes.results(SPEC.tab, scanId)}
 	hrefLabel={SPEC.label}
 	loading={loading && !software}
 	class={className}

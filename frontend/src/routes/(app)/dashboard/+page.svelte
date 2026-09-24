@@ -2,6 +2,8 @@
 	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { untrack } from 'svelte';
+	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import FolderOpen from '@lucide/svelte/icons/folder-open';
 	import Plus from '@lucide/svelte/icons/plus';
 	import Play from '@lucide/svelte/icons/play';
@@ -45,6 +47,14 @@
 	import CustomizePopover from '$lib/components/dashboard/customize-popover.svelte';
 	import DashboardSkeleton from '$lib/components/dashboard/dashboard-skeleton.svelte';
 	import HiddenTray from '$lib/components/dashboard/hidden-tray.svelte';
+	import ScopeBar from '$lib/components/dashboard/scope-bar.svelte';
+	import {
+		provideScopeLinks,
+		scopeClause,
+		withClause
+	} from '$lib/components/dashboard/scope-links';
+	import { scopeFromParams, scopeToParams } from '$lib/utilities/dashboard-scope';
+	import { isScoped, type TargetScope } from '$lib/utilities/surface-scope';
 	import { plural } from '$lib/utilities/strings';
 	import {
 		DASHBOARD_SLICE_LABELS,
@@ -66,6 +76,20 @@
 	let scheduleTargetIds = $state<string[]>([]);
 	let now = $state(Date.now());
 
+	let urlScope = $derived(scopeFromParams(page.url.searchParams));
+	let scope = $derived(dashboardStore.scope);
+	let scoped = $derived(isScoped(scope));
+	let clause = $derived(
+		scoped && overview ? scopeClause(overview.targets.map((t) => t.value)) : ''
+	);
+	provideScopeLinks({
+		get clause() {
+			return clause;
+		},
+		get scope() {
+			return scope;
+		}
+	});
 	let win = $derived(dashboardStore.window);
 	let days = $derived(windowDays(win));
 	let extras = $derived(dashboardStore.extrasLoading);
@@ -94,17 +118,30 @@
 	const VULNS = SURFACE[SurfaceDimension.VULNERABILITIES];
 	let NEW_IN_WINDOW = $derived(`is:new and seen:<${days}d`);
 	const headlineHref = (spec: typeof WEB, q: string) =>
-		ROUTES.results(spec.tab, undefined, { [spec.queryParam]: q });
+		ROUTES.results(spec.tab, undefined, { [spec.queryParam]: withClause(clause, q) });
 
+	let lastProject: string | undefined;
 	$effect(() => {
 		const pid = activeProject?.id;
+		const next = urlScope;
 		untrack(() => {
-			if (pid) {
-				dashboardStore.init(pid);
-				void scanSchedulesStore.fetchSchedules(pid);
+			if (!pid) return;
+			if (lastProject && lastProject !== pid && isScoped(next)) {
+				lastProject = pid;
+				setScope({});
+				return;
 			}
+			if (lastProject !== pid) void scanSchedulesStore.fetchSchedules(pid);
+			lastProject = pid;
+			dashboardStore.init(pid, next);
 		});
 	});
+
+	function setScope(next: TargetScope) {
+		const params = scopeToParams(page.url.searchParams, next);
+		const qs = params.toString();
+		void goto(qs ? `?${qs}` : page.url.pathname, { keepFocus: true, noScroll: true });
+	}
 
 	$effect(() => {
 		if (liveScans.completedTick > 0) untrack(() => dashboardStore.refresh());
@@ -204,13 +241,25 @@
 					<Plus class="size-4" />
 					Add target
 				</Button>
-				<Button size="sm" onclick={() => scanTargets()}>
+				<Button
+					size="sm"
+					onclick={() => scanTargets(scoped ? overview?.targets.map((t) => t.id) : undefined)}
+				>
 					<Play class="size-4" />
 					Start scan
 				</Button>
 			</div>
 		{/if}
 	</div>
+
+	{#if activeProject && overview && !firstRun}
+		<ScopeBar
+			projectSlug={activeProject.slug}
+			{scope}
+			known={overview.targets}
+			onChange={setScope}
+		/>
+	{/if}
 
 	{#if !activeProject && projectsStore.hasFetched}
 		<Empty.Root class="rounded-lg border border-dashed border-border py-16">
@@ -250,7 +299,7 @@
 				class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-dashed px-4 py-2.5 text-sm text-muted-foreground"
 			>
 				<TriangleAlert class="size-4 shrink-0 text-warning" strokeWidth={1.5} />
-				<span>{notLoaded.join(', ')} did not load.</span>
+				<span>{notLoaded.join(', ')} not loaded.</span>
 				<Button
 					variant="outline"
 					size="sm"
@@ -270,6 +319,7 @@
 				<SurfaceRiskCell
 					data={dashboardStore.surfaceRisk}
 					loading={extras}
+					onScope={setScope}
 					class="col-span-12 xl:col-span-8"
 				/>
 			{/if}

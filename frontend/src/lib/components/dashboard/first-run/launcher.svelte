@@ -24,7 +24,7 @@
 
 	interface Props {
 		heading: string;
-		sub: string;
+		sub?: string;
 		onStarted?: () => void;
 	}
 
@@ -98,7 +98,7 @@
 <div class="flex flex-col gap-4">
 	<div class="flex flex-col gap-1">
 		<h2 class="text-xl font-semibold tracking-tight sm:text-2xl">{heading}</h2>
-		<p class="text-sm text-muted-foreground">{sub}</p>
+		{#if sub}<p class="text-sm text-muted-foreground">{sub}</p>{/if}
 	</div>
 
 	<div class="flex flex-wrap items-center gap-2">

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { useScopedRoutes } from './scope-links';
 	import { onMount } from 'svelte';
 	import * as HoverCard from '$lib/components/ui/hover-card';
 	import { ROUTES } from '$lib/config/routes';
@@ -8,13 +9,16 @@
 	import { relativeTime } from '$lib/utilities/dates';
 	import type { SurfaceRiskTarget } from '$lib/types/dashboard';
 
+	const routes = useScopedRoutes();
+
 	interface Props {
 		rows: SurfaceRiskTarget[];
 		severities?: string[];
 		wide?: boolean;
+		onScope?: (targetId: string) => void;
 	}
 
-	let { rows, severities = SEVERITY_ORDER, wide = false }: Props = $props();
+	let { rows, severities = SEVERITY_ORDER, wide = false, onScope }: Props = $props();
 
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 	const VULNS = SURFACE[SurfaceDimension.VULNERABILITIES];
@@ -32,11 +36,11 @@
 	let maxShown = $derived(Math.max(1, ...rows.map(shown)));
 	const pct = (n: number, max: number) => (ready ? Math.max(MIN, (n / max) * 100) : 0);
 	const liveQuery = (r: SurfaceRiskTarget) =>
-		ROUTES.results(WEB.tab, undefined, {
-			[WEB.queryParam]: `target:${r.target_value} and is:live`
+		routes.results(WEB.tab, undefined, {
+			[WEB.queryParam]: `target=${r.target_value} and is:live`
 		});
 	const findingsQuery = (r: SurfaceRiskTarget) =>
-		ROUTES.results(VULNS.tab, undefined, { [VULNS.queryParam]: `target:${r.target_value}` });
+		routes.results(VULNS.tab, undefined, { [VULNS.queryParam]: `target=${r.target_value}` });
 	let cols = $derived(
 		wide
 			? 'grid-cols-[minmax(0,1fr)_13.75rem_minmax(0,1fr)]'
@@ -56,10 +60,14 @@
 		<HoverCard.Root openDelay={150} closeDelay={80}>
 			<HoverCard.Trigger>
 				{#snippet child({ props })}
-					<a
+					<svelte:element
+						this={onScope ? 'button' : 'a'}
 						{...props}
-						href={ROUTES.target(r.target_id)}
-						class="grid {cols} h-9 items-center rounded-md transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+						type={onScope ? 'button' : undefined}
+						href={onScope ? undefined : ROUTES.target(r.target_id)}
+						onclick={onScope ? () => onScope(r.target_id) : undefined}
+						aria-label={onScope ? `Scope to ${r.target_value}` : undefined}
+						class="grid w-full {cols} h-9 items-center rounded-md text-left transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 					>
 						<span class="flex items-center justify-end gap-2 pl-2">
 							<span class="text-xs text-muted-foreground tabular-nums"
@@ -116,13 +124,16 @@
 								</span>
 							{/if}
 						</span>
-					</a>
+					</svelte:element>
 				{/snippet}
 			</HoverCard.Trigger>
 			<HoverCard.Content class="w-64 p-3" side="top" align="center">
 				<div class="flex flex-col gap-2.5 text-xs">
 					<div class="flex items-baseline justify-between gap-2">
-						<span class="truncate text-sm font-semibold">{r.target_value}</span>
+						<a
+							href={ROUTES.target(r.target_id)}
+							class="truncate text-sm font-semibold hover:underline">{r.target_value}</a
+						>
 						<span class="shrink-0 text-2xs text-muted-foreground">
 							{#if r.last_at}{relativeTime(r.last_at)}{/if}{#if !settled && r.scan_status}
 								· {SCAN_STATUS_LABEL[r.scan_status]}{/if}

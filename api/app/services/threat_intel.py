@@ -7,6 +7,7 @@ import uuid
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services.target_scope import Targets
 from shared.definitions.threat_intel import (
     BANDS_BY_KEY,
     EXPLOIT_BANDS,
@@ -100,17 +101,28 @@ class ThreatIntelService:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def _scope(self, project_id: uuid.UUID | None) -> tuple[str, dict]:
-        if project_id is None:
-            return "", {}
-        return "WHERE project_id = :project_id", {"project_id": project_id}
+    @staticmethod
+    def _scope(
+        project_id: uuid.UUID | None, targets: Targets, alias: str = ""
+    ) -> tuple[str, dict]:
+        """`AND …` clauses for the project and the target filter."""
+        clauses, params = [], {}
+        if project_id:
+            clauses.append(f"{alias}project_id = :project_id")
+            params["project_id"] = project_id
+        if targets is not None:
+            clauses.append(f"{alias}target_id = ANY(:target_ids)")
+            params["target_ids"] = list(targets)
+        return "".join(f" AND {c}" for c in clauses), params
 
-    async def coverage(self, project_id: uuid.UUID | None = None) -> IntelCoverage:
-        scope, params = await self._scope(project_id)
+    async def coverage(
+        self, project_id: uuid.UUID | None = None, targets: Targets = None
+    ) -> IntelCoverage:
+        and_scope, params = self._scope(project_id, targets)
+        where = f"WHERE TRUE{and_scope}" if and_scope else ""
         row = (
-            await self.session.execute(text(_COVERAGE_SQL.format(scope=scope)), params)
+            await self.session.execute(text(_COVERAGE_SQL.format(scope=where)), params)
         ).one()
-        and_scope = "AND project_id = :project_id" if project_id else ""
         bands = {
             r.band: int(r.n)
             for r in await self.session.execute(
@@ -176,9 +188,14 @@ class ThreatIntelService:
         return out
 
     async def changes(
-        self, project_id: uuid.UUID | None, *, days: int = 7, limit: int = 20
+        self,
+        project_id: uuid.UUID | None,
+        *,
+        days: int = 7,
+        limit: int = 20,
+        targets: Targets = None,
     ) -> list[IntelChange]:
-        and_scope = "AND v.project_id = :project_id" if project_id else ""
+        and_scope, scoped = self._scope(project_id, targets, "v.")
         params: dict = {
             "kinds": [
                 ExploitSignal.KEV.value,
@@ -188,9 +205,8 @@ class ThreatIntelService:
             ],
             "days": days,
             "limit": limit,
+            **scoped,
         }
-        if project_id:
-            params["project_id"] = project_id
         rows = await self.session.execute(
             text(_CHANGES_SQL.format(and_scope=and_scope)), params
         )
@@ -213,14 +229,17 @@ class ThreatIntelService:
         ]
 
     async def signal_findings(
-        self, kind: str, project_id: uuid.UUID | None, *, limit: int = 100
+        self,
+        kind: str,
+        project_id: uuid.UUID | None,
+        *,
+        limit: int = 100,
+        targets: Targets = None,
     ) -> list[SignalFinding]:
         """`kind` may name several signals."""
         kinds = [k.strip() for k in kind.split(",") if k.strip()]
-        and_scope = "AND v.project_id = :project_id" if project_id else ""
-        params: dict = {"kinds": kinds, "limit": limit}
-        if project_id:
-            params["project_id"] = project_id
+        and_scope, scoped = self._scope(project_id, targets, "v.")
+        params: dict = {"kinds": kinds, "limit": limit, **scoped}
         rows = await self.session.execute(
             text(_SIGNAL_FINDINGS_SQL.format(and_scope=and_scope)), params
         )
@@ -242,9 +261,11 @@ class ThreatIntelService:
             for r in rows
         ]
 
-    async def status(self, project_id: uuid.UUID | None = None) -> ThreatIntelStatus:
+    async def status(
+        self, project_id: uuid.UUID | None = None, targets: Targets = None
+    ) -> ThreatIntelStatus:
         feeds = await self.feeds()
-        coverage = await self.coverage(project_id)
+        coverage = await self.coverage(project_id, targets)
         cached = int(
             (
                 await self.session.execute(text("SELECT count(*) FROM cve_intel"))
@@ -283,7 +304,7 @@ class ThreatIntelService:
             provider_enabled=cached > 0 or has_key,
             provider_cached=cached,
             last_applied_at=last_applied,
-            recent_changes=await self.changes(project_id),
+            recent_changes=await self.changes(project_id, targets=targets),
         )
 
     async def set_auto_sync(self, enabled: bool) -> bool:

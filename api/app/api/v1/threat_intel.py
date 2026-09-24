@@ -5,7 +5,9 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentSuperuser, CurrentUser
+from app.api.scope import TargetFilterDep
 from app.core.database import get_session
+from app.services.target_scope import resolve_targets
 from app.services.threat_intel import ThreatIntelService
 from shared.definitions.threat_intel import (
     EXPLOIT_BANDS,
@@ -81,20 +83,24 @@ async def vocabulary(_current_user: CurrentUser) -> dict:
 async def status(
     _current_user: CurrentUser,
     service: Annotated[ThreatIntelService, Depends(get_service)],
+    spec: TargetFilterDep,
     project_id: Annotated[UUID | None, Query()] = None,
 ) -> ThreatIntelStatus:
-    return await service.status(project_id)
+    targets = await resolve_targets(service.session, project_id, spec)
+    return await service.status(project_id, targets)
 
 
 @router.get("/changes", response_model=list[IntelChange])
 async def changes(
     _current_user: CurrentUser,
     service: Annotated[ThreatIntelService, Depends(get_service)],
+    spec: TargetFilterDep,
     project_id: Annotated[UUID | None, Query()] = None,
     days: Annotated[int, Query(ge=1, le=90)] = 7,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ) -> list[IntelChange]:
-    return await service.changes(project_id, days=days, limit=limit)
+    targets = await resolve_targets(service.session, project_id, spec)
+    return await service.changes(project_id, days=days, limit=limit, targets=targets)
 
 
 @router.put("/auto-sync", response_model=ThreatIntelStatus)
@@ -164,8 +170,10 @@ async def signal_findings(
     _current_user: CurrentUser,
     service: Annotated[ThreatIntelService, Depends(get_service)],
     kind: Annotated[str, Path(max_length=32)],
+    spec: TargetFilterDep,
     project_id: Annotated[UUID | None, Query()] = None,
     limit: Annotated[int, Query(ge=1, le=500)] = 100,
 ) -> list[SignalFinding]:
     """Findings behind one signal count."""
-    return await service.signal_findings(kind, project_id, limit=limit)
+    targets = await resolve_targets(service.session, project_id, spec)
+    return await service.signal_findings(kind, project_id, limit=limit, targets=targets)

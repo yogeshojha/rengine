@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { useScopedRoutes } from './scope-links';
 	import Cell from './cell.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import { Badge } from '$lib/components/ui/badge';
@@ -10,6 +11,8 @@
 	import { evidenceLabel } from '$lib/config/evidence';
 	import { relativeTime } from '$lib/utilities/dates';
 	import type { DashboardFinding, DashboardRisk } from '$lib/types/dashboard';
+
+	const routes = useScopedRoutes();
 
 	interface Props {
 		risk: DashboardRisk;
@@ -33,7 +36,7 @@
 			help: TIER_HELP[tier],
 			count: risk.tiers[tier] ?? 0,
 			cards: risk.queue.filter((f) => f.tier === tier).slice(0, PER_COLUMN),
-			href: ROUTES.surface(
+			href: routes.surface(
 				VULN.tab,
 				TIER_QUERY[tier] ? { [VULN.queryParam]: TIER_QUERY[tier] } : undefined
 			)
@@ -50,7 +53,7 @@
 <Cell
 	id="board"
 	title="Findings"
-	href={ROUTES.surface(VULN.tab)}
+	href={routes.surface(VULN.tab)}
 	hrefLabel="{risk.total.toLocaleString()} open"
 	class={className}
 	bodyClass="pt-2"

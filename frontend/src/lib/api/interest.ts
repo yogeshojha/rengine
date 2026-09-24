@@ -1,4 +1,5 @@
 import { api } from './client';
+import { scopeQuery, type TargetScope } from '$lib/utilities/surface-scope';
 import type {
 	InterestCatalog,
 	InterestDismissal,
@@ -37,8 +38,15 @@ export const interestApi = {
 		return api.post<RulePreview>(`/interest/rules/preview${suffix}`, { query });
 	},
 
-	project(projectId: string, filter: InterestFilter): Promise<InterestPage> {
-		return api.post<InterestPage>(`/interest/project?project_id=${projectId}`, filter);
+	project(
+		projectId: string,
+		filter: InterestFilter,
+		scope: TargetScope = {}
+	): Promise<InterestPage> {
+		return api.post<InterestPage>(
+			`/interest/project?${scopeQuery({ projectId, ...scope })}`,
+			filter
+		);
 	},
 
 	scan(scanId: string, filter: InterestFilter): Promise<InterestPage> {

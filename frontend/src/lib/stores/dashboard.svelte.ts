@@ -15,6 +15,7 @@ import type { HygieneSummary } from '$lib/utilities/scan-insights';
 import type { DomainPostureSummary } from '$lib/types/domain-posture';
 import type { CorrelationGraph } from '$lib/types/correlation';
 import { SvelteSet } from 'svelte/reactivity';
+import { sameTargetScope, type TargetScope } from '$lib/utilities/surface-scope';
 import {
 	DASHBOARD_SLICES,
 	DEFAULT_DASHBOARD_WINDOW,
@@ -34,9 +35,9 @@ import {
 const EXPOSURE_ROWS = 6;
 const CHANGE_ROWS = 200;
 
-function hostingCounts(projectId: string): Promise<HostingSplit> {
+function hostingCounts(projectId: string, scope: TargetScope): Promise<HostingSplit> {
 	const queries = Object.values(HOSTING_QUERIES);
-	return subdomainsApi.counts(projectId, '', queries).then((r) => ({
+	return subdomainsApi.counts(projectId, '', queries, scope).then((r) => ({
 		resolved: r.counts[HOSTING_QUERIES.resolved] ?? 0,
 		edge: r.counts[HOSTING_QUERIES.edge] ?? 0,
 		cloud: r.counts[HOSTING_QUERIES.cloud] ?? 0,
@@ -66,6 +67,7 @@ function createDashboardStore() {
 	let surfaceRisk = $state<DashboardSurfaceRisk | null>(null);
 	let extrasLoading = $state(false);
 	let changeWindow = $state<DashboardWindow>(DEFAULT_DASHBOARD_WINDOW);
+	let scope = $state<TargetScope>({});
 	let loading = $state(false);
 	let error = $state<string | null>(null);
 	let hasFetched = $state(false);
@@ -75,13 +77,14 @@ function createDashboardStore() {
 	async function load() {
 		const pid = projectId;
 		const win = changeWindow;
+		const sc = $state.snapshot(scope);
 		if (!pid) return;
 		const mySeq = ++seq;
 		loading = true;
 		void loadDiscovery(pid, mySeq);
-		void loadExtras(pid, win, mySeq);
+		void loadExtras(pid, win, sc, mySeq);
 		try {
-			const data = await dashboardApi.overview(pid, win);
+			const data = await dashboardApi.overview(pid, win, sc);
 			if (mySeq !== seq) return;
 			overview = data;
 			error = null;
@@ -120,7 +123,7 @@ function createDashboardStore() {
 	}
 
 	// each cell reads its result page's own endpoint
-	async function loadExtras(pid: string, win: DashboardWindow, mySeq: number) {
+	async function loadExtras(pid: string, win: DashboardWindow, sc: TargetScope, mySeq: number) {
 		extrasLoading = true;
 		const keep = () => mySeq === seq;
 		const settle = async <T>(
@@ -143,35 +146,35 @@ function createDashboardStore() {
 		await Promise.all([
 			settle(
 				'tech',
-				subdomainsApi.facets(pid, '').then((f) => f.tech),
+				subdomainsApi.facets(pid, '', sc).then((f) => f.tech),
 				(v) => (tech = v)
 			),
-			settle('ipFacets', ipsApi.facets(pid, ''), (v) => (ipFacets = v)),
-			settle('intel', threatIntelApi.status(pid), (v) => (intel = v)),
+			settle('ipFacets', ipsApi.facets(pid, '', sc), (v) => (ipFacets = v)),
+			settle('intel', threatIntelApi.status(pid, sc), (v) => (intel = v)),
 			settle(
 				'changes',
-				threatIntelApi.changes(pid, windowDays(win), CHANGE_ROWS),
+				threatIntelApi.changes(pid, windowDays(win), CHANGE_ROWS, sc),
 				(v) => (changes = v)
 			),
-			settle('hosting', hostingCounts(pid), (v) => (hosting = v)),
+			settle('hosting', hostingCounts(pid, sc), (v) => (hosting = v)),
 			settle(
 				'exposures',
-				interestApi.project(pid, { limit: EXPOSURE_ROWS }),
+				interestApi.project(pid, { limit: EXPOSURE_ROWS }, sc),
 				(v) => (exposures = v)
 			),
 			settle(
 				'software',
-				Promise.all([softwareApi.facets(pid, ''), softwareApi.coverage(pid, '')]).then(
+				Promise.all([softwareApi.facets(pid, '', sc), softwareApi.coverage(pid, '', sc)]).then(
 					([facets, coverage]) => ({ facets, coverage })
 				),
 				(v) => (software = v)
 			),
-			settle('hygiene', subdomainsApi.hygiene(pid, ''), (v) => (hygiene = v)),
-			settle('posture', domainPostureApi.project(pid), (v) => (posture = v)),
-			settle('posture', subdomainsApi.posture(pid, ''), (v) => (postureHosts = v)),
-			settle('shared', subdomainsApi.correlationGraph(pid, ''), (v) => (shared = v)),
-			settle('activity', dashboardApi.activity(pid, win), (v) => (activity = v)),
-			settle('surfaceRisk', dashboardApi.surfaceRisk(pid), (v) => (surfaceRisk = v)),
+			settle('hygiene', subdomainsApi.hygiene(pid, '', sc), (v) => (hygiene = v)),
+			settle('posture', domainPostureApi.project(pid, sc), (v) => (posture = v)),
+			settle('posture', subdomainsApi.posture(pid, '', sc), (v) => (postureHosts = v)),
+			settle('shared', subdomainsApi.correlationGraph(pid, '', sc), (v) => (shared = v)),
+			settle('activity', dashboardApi.activity(pid, win, sc), (v) => (activity = v)),
+			settle('surfaceRisk', dashboardApi.surfaceRisk(pid, sc), (v) => (surfaceRisk = v)),
 			bounty
 				? settle('programs', dashboardApi.programs(pid, win), (v) => (programs = v))
 				: Promise.resolve()
@@ -261,6 +264,9 @@ function createDashboardStore() {
 		get window() {
 			return changeWindow;
 		},
+		get scope(): TargetScope {
+			return scope;
+		},
 		get loading() {
 			return loading;
 		},
@@ -274,12 +280,16 @@ function createDashboardStore() {
 			return DASHBOARD_SLICES.filter((slice) => failed.has(slice));
 		},
 
-		init(pid: string) {
+		init(pid: string, next: TargetScope = {}) {
 			if (pid === projectId) {
-				if (!hasFetched && !loading) void load();
+				if (!sameTargetScope(scope, next)) {
+					scope = next;
+					void load();
+				} else if (!hasFetched && !loading) void load();
 				return;
 			}
 			projectId = pid;
+			scope = next;
 			resetData();
 			void load();
 		},
@@ -303,6 +313,7 @@ function createDashboardStore() {
 			projectId = undefined;
 			resetData();
 			changeWindow = DEFAULT_DASHBOARD_WINDOW;
+			scope = {};
 			loading = false;
 		}
 	};

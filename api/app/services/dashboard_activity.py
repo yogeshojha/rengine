@@ -8,6 +8,7 @@ from sqlalchemy import cast, func, select
 from sqlalchemy.dialects.postgresql import JSONB, array
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services.target_scope import Targets
 from app.services.threat_intel import ThreatIntelService
 from app.services.watch import WatchService
 from shared.definitions.bounty_programs import event_spec
@@ -100,25 +101,35 @@ class DashboardActivityService:
         self.session = session
 
     async def activity(
-        self, project_id: UUID, window: str, *, programs: bool
+        self,
+        project_id: UUID,
+        window: str,
+        *,
+        programs: bool,
+        targets: Targets = None,
     ) -> DashboardActivity:
         window, cutoff = _window(window)
         events: list[DashboardEvent] = []
-        events += await self._runs(project_id, cutoff)
-        events += await self._feeds(cutoff)
-        events += await self._intel(project_id, window)
-        events += await self._connectors(project_id, cutoff)
-        if programs:
+        events += await self._runs(project_id, cutoff, targets)
+        events += await self._intel(project_id, window, targets)
+        if targets is None:
+            events += await self._feeds(cutoff)
+            events += await self._connectors(project_id, cutoff)
+        if programs and targets is None:
             events += await self._watch_events(project_id, cutoff)
             events += await self._bounty_events(cutoff)
         events.sort(key=lambda e: e.at, reverse=True)
         return DashboardActivity(window=window, events=events[:ACTIVITY_LIMIT])
 
-    async def _runs(self, project_id: UUID, cutoff: datetime) -> list[DashboardEvent]:
+    async def _runs(
+        self, project_id: UUID, cutoff: datetime, targets: Targets = None
+    ) -> list[DashboardEvent]:
+        scoped = [] if targets is None else [Scan.target_id.in_(targets)]
         rows = await self.session.execute(
             select(Scan, Target.target_value)
             .join(Target, Target.id == Scan.target_id)
             .where(
+                *scoped,
                 Scan.project_id == project_id,
                 census_only(),
                 Scan.completed_at.isnot(None),
@@ -180,9 +191,14 @@ class DashboardActivityService:
             )
         return out
 
-    async def _intel(self, project_id: UUID, window: str) -> list[DashboardEvent]:
+    async def _intel(
+        self, project_id: UUID, window: str, targets: Targets = None
+    ) -> list[DashboardEvent]:
         changes = await ThreatIntelService(self.session).changes(
-            project_id, days=WINDOW_DAYS[window], limit=ACTIVITY_LIMIT * 4
+            project_id,
+            days=WINDOW_DAYS[window],
+            limit=ACTIVITY_LIMIT * 4,
+            targets=targets,
         )
         grouped: dict[tuple, list] = defaultdict(list)
         for c in changes:

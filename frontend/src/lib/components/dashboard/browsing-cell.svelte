@@ -55,6 +55,7 @@
 
 <Cell
 	id="connectors"
+	projectWide
 	title="Browsing"
 	description="Proxy traffic"
 	href={ROUTES.connectors()}

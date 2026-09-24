@@ -1,12 +1,14 @@
 <script lang="ts">
+	import { useScopedRoutes } from './scope-links';
 	import Cell from './cell.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import RankedBars, { type BarRow } from './ranked-bars.svelte';
-	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import type { Facet } from '$lib/utilities/scan-insights';
 	import { HOSTING_QUERIES, type HostingSplit } from '$lib/types/dashboard';
 	import { FRONTING_FILL } from '$lib/config/hosting';
+
+	const routes = useScopedRoutes();
 
 	interface Props {
 		hosting: HostingSplit | null;
@@ -57,7 +59,7 @@
 			label: f.label,
 			sub: `AS${f.value}`,
 			count: f.count,
-			href: ROUTES.surface(IPS.tab, { [IPS.queryParam]: `asn:${f.value}` })
+			href: routes.surface(IPS.tab, { [IPS.queryParam]: `asn:${f.value}` })
 		}))
 	);
 </script>
@@ -66,7 +68,7 @@
 	id="hosting"
 	title="Hosting"
 	description="By fronting and network"
-	href={ROUTES.surface(WEB.tab, { [WEB.queryParam]: HOSTING_QUERIES.resolved })}
+	href={routes.surface(WEB.tab, { [WEB.queryParam]: HOSTING_QUERIES.resolved })}
 	hrefLabel="is:resolved"
 	loading={loading && !hosting}
 	class={className}
@@ -78,7 +80,7 @@
 					{#snippet child(props)}
 						<a
 							{...props}
-							href={ROUTES.surface(WEB.tab, { [WEB.queryParam]: s.q })}
+							href={routes.surface(WEB.tab, { [WEB.queryParam]: s.q })}
 							class="block h-full transition-opacity hover:opacity-80"
 							style="width:{(s.n / Math.max(1, resolved)) * 100}%;background:{s.color}"
 							aria-label="{s.label}: {s.n}"
@@ -90,7 +92,7 @@
 		<div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
 			{#each segments as s (s.key)}
 				<a
-					href={ROUTES.surface(WEB.tab, { [WEB.queryParam]: s.q })}
+					href={routes.surface(WEB.tab, { [WEB.queryParam]: s.q })}
 					class="flex items-center gap-1.5 hover:text-foreground"
 				>
 					<span class="size-2.5 rounded-[2px]" style="background:{s.color}"></span>

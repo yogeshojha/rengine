@@ -5,9 +5,10 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
-from app.api.scope import WebAssetScope
+from app.api.scope import TargetFilterDep, WebAssetScope
 from app.core.database import get_session
 from app.services.domain_posture import DomainPostureService
+from app.services.target_scope import resolve_targets
 from shared.models.domain_posture import DomainPostureSummary
 from shared.services.asset_query import lead_cache
 
@@ -42,10 +43,12 @@ async def domain_posture(
 async def project_domain_posture(
     _current_user: CurrentUser,
     service: Annotated[DomainPostureService, Depends(get_service)],
+    spec: TargetFilterDep,
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
     """Every target's newest settled run."""
-    return await service.for_project(project_id)
+    targets = await resolve_targets(service.session, project_id, spec)
+    return await service.for_project(project_id, targets)
 
 
 @router.get("/target/{target_id}", response_model=DomainPostureSummary)

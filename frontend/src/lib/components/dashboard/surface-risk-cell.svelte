@@ -1,21 +1,25 @@
 <script lang="ts">
+	import { useScopedRoutes } from './scope-links';
 	import Cell from './cell.svelte';
 	import SurfaceRiskRows from './surface-risk-rows.svelte';
 	import SurfaceRiskDialog from './surface-risk-dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { SEVERITY_FILL, SEVERITY_ORDER, severityLabel } from '$lib/config/vulnerabilities';
 	import { ACT_QUERY, SURFACE_RISK_ROWS } from '$lib/config/dashboard';
-	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import type { DashboardSurfaceRisk } from '$lib/types/dashboard';
+	import type { TargetScope } from '$lib/utilities/surface-scope';
+
+	const routes = useScopedRoutes();
 
 	interface Props {
 		data: DashboardSurfaceRisk | null;
 		loading?: boolean;
 		class?: string;
+		onScope?: (scope: TargetScope) => void;
 	}
 
-	let { data, loading = false, class: className = '' }: Props = $props();
+	let { data, loading = false, class: className = '', onScope }: Props = $props();
 
 	let open = $state(false);
 	let rows = $derived((data?.rows ?? []).slice(0, SURFACE_RISK_ROWS));
@@ -26,12 +30,14 @@
 
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 	const VULNS = SURFACE[SurfaceDimension.VULNERABILITIES];
-	const liveHref = ROUTES.results(WEB.tab, undefined, { [WEB.queryParam]: 'is:live' });
-	const findingsHref = ROUTES.results(VULNS.tab);
-	const actionableHref = ROUTES.results(VULNS.tab, undefined, {
-		[VULNS.queryParam]: 'severity:[critical,high,medium]'
-	});
-	const actHref = ROUTES.results(VULNS.tab, undefined, { [VULNS.queryParam]: ACT_QUERY });
+	let liveHref = $derived(routes.results(WEB.tab, undefined, { [WEB.queryParam]: 'is:live' }));
+	let findingsHref = $derived(routes.results(VULNS.tab));
+	let actionableHref = $derived(
+		routes.results(VULNS.tab, undefined, {
+			[VULNS.queryParam]: 'severity:[critical,high,medium]'
+		})
+	);
+	let actHref = $derived(routes.results(VULNS.tab, undefined, { [VULNS.queryParam]: ACT_QUERY }));
 	const STAT = 'flex min-w-0 flex-col rounded-md bg-muted/60 px-2.5 py-1.5';
 	const STAT_LINK = `${STAT} hover:bg-muted`;
 </script>
@@ -83,12 +89,12 @@
 			</div>
 		</div>
 		{#if rows.length}
-			<SurfaceRiskRows {rows} />
+			<SurfaceRiskRows {rows} onScope={onScope && ((id) => onScope({ targetIds: [id] }))} />
 		{:else}
 			<p class="py-6 text-center text-sm text-muted-foreground">Not scanned</p>
 		{/if}
 	{:else}
-		<p class="py-6 text-center text-sm text-muted-foreground">Surface against risk did not load.</p>
+		<p class="py-6 text-center text-sm text-muted-foreground">Surface against risk not loaded.</p>
 	{/if}
 	{#snippet footer()}
 		<div class="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -109,4 +115,4 @@
 	{/snippet}
 </Cell>
 
-<SurfaceRiskDialog bind:open />
+<SurfaceRiskDialog bind:open {onScope} />

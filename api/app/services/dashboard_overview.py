@@ -33,6 +33,7 @@ from app.services.asset_query.predicates import (
 from app.services.dashboard import DashboardService
 from app.services.scan import ScanService
 from app.services.target_estate import TargetEstateService
+from app.services.target_scope import Targets
 from shared.definitions.dashboard import (
     CERT_BUCKETS,
     CHANGES_LIMIT,
@@ -226,15 +227,18 @@ class DashboardOverviewService:
         self.signals = DashboardService(session)
         self.scans = ScanService(session)
 
-    async def overview(self, project_id: UUID, window: str) -> DashboardOverview:
+    async def overview(
+        self, project_id: UUID, window: str, targets: Targets = None
+    ) -> DashboardOverview:
         if window not in WINDOW_DELTAS:
             window = DEFAULT_WINDOW
         now = utc_now()
         cutoff = now - WINDOW_DELTAS[window]
         series_cutoff = now - timedelta(days=SERIES_DAYS)
 
-        targets, expires = await self._targets(project_id)
-        runs_by_target, runs_total = await self._runs(project_id, series_cutoff)
+        scoped = targets
+        targets, expires = await self._targets(project_id, scoped)
+        runs_by_target, runs_total = await self._runs(project_id, series_cutoff, scoped)
         scans: dict[UUID, Scan] = {
             s.id: s for runs in runs_by_target.values() for s in runs
         }
@@ -245,7 +249,7 @@ class DashboardOverviewService:
         firsts = await self._first_seen(scans, baselines)
         names = {t.id: t.target_value for t in targets}
 
-        signals = await self.signals.signals(project_id)
+        signals = await self.signals.signals(project_id, scoped)
         out = DashboardOverview(
             generated_at=now,
             window=window,
@@ -257,7 +261,7 @@ class DashboardOverviewService:
             ),
         )
         out.targets_total = len(targets)
-        out.first_run = not targets and not runs_total
+        out.first_run = scoped is None and not targets and not runs_total
         out.targets_scanned = sum(1 for t in targets if runs_by_target.get(t.id))
         by_type: dict[str, int] = defaultdict(int)
         for t in targets:
@@ -319,7 +323,7 @@ class DashboardOverviewService:
         return out
 
     async def discovery(self, project_id: UUID) -> DashboardDiscovery:
-        """Registrable domains the estate vouches for that are not targets."""
+        """Registrable domains the estate names that are not targets."""
         estate = await TargetEstateService(self.session).for_project(project_id)
         out = DashboardDiscovery(targets_examined=estate.targets_examined)
         for d in estate.domains[:DISCOVERY_LIMIT]:
@@ -407,14 +411,17 @@ class DashboardOverviewService:
         ][:ITEMS_CAP]
 
     async def _targets(
-        self, project_id: UUID
+        self, project_id: UUID, scoped: Targets = None
     ) -> tuple[list[Target], dict[UUID, datetime | None]]:
-        result = await self.session.execute(
+        query = (
             select(Target, WhoisRecord.expiration_date)
             .join(WhoisRecord, WhoisRecord.id == Target.whois_record_id, isouter=True)
             .where(Target.project_id == project_id)
             .order_by(Target.target_value.asc())
         )
+        if scoped is not None:
+            query = query.where(Target.id.in_(scoped))
+        result = await self.session.execute(query)
         targets = []
         expires: dict[UUID, datetime | None] = {}
         for target, expires_at in result.all():
@@ -423,9 +430,12 @@ class DashboardOverviewService:
         return targets, expires
 
     async def _runs(
-        self, project_id: UUID, series_cutoff: datetime
+        self, project_id: UUID, series_cutoff: datetime, scoped: Targets = None
     ) -> tuple[dict[UUID, list[Scan]], int]:
         """The latest runs per target plus everything inside the series window."""
+        in_scope = [Scan.project_id == project_id, census_only()]
+        if scoped is not None:
+            in_scope.append(Scan.target_id.in_(scoped))
         ordering = func.coalesce(Scan.started_at, Scan.created_at)
         rn = (
             func.row_number()
@@ -437,7 +447,7 @@ class DashboardOverviewService:
         )
         ranked = (
             select(Scan.id.label("id"), rn, ordering.label("at"))
-            .where(Scan.project_id == project_id, census_only())
+            .where(*in_scope)
             .subquery()
         )
         result = await self.session.execute(
@@ -450,9 +460,7 @@ class DashboardOverviewService:
         for scan in result.scalars().all():
             by_target[scan.target_id].append(scan)
         total = await self.session.scalar(
-            select(func.count())
-            .select_from(Scan)
-            .where(Scan.project_id == project_id, census_only())
+            select(func.count()).select_from(Scan).where(*in_scope)
         )
         return by_target, int(total or 0)
 

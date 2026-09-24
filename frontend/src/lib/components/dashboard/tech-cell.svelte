@@ -1,11 +1,13 @@
 <script lang="ts">
+	import { useScopedRoutes } from './scope-links';
 	import Layers from '@lucide/svelte/icons/layers';
 	import Cell from './cell.svelte';
 	import RankedBars, { type BarRow } from './ranked-bars.svelte';
 	import TechIcon from '$lib/components/scans/results/tech-icon.svelte';
-	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { exactToken, type Facet } from '$lib/utilities/scan-insights';
+
+	const routes = useScopedRoutes();
 
 	interface Props {
 		tech: Facet[] | null;
@@ -23,7 +25,7 @@
 			key: f.value,
 			label: f.label,
 			count: f.count,
-			href: ROUTES.results(SPEC.tab, scanId, { [SPEC.queryParam]: exactToken('tech', f.value) })
+			href: routes.results(SPEC.tab, scanId, { [SPEC.queryParam]: exactToken('tech', f.value) })
 		}))
 	);
 </script>
@@ -32,7 +34,7 @@
 	id="tech"
 	title="Technology"
 	description="Web assets per technology"
-	href={ROUTES.results(SPEC.tab, scanId)}
+	href={routes.results(SPEC.tab, scanId)}
 	hrefLabel={SPEC.label}
 	loading={loading && !tech}
 	class={className}

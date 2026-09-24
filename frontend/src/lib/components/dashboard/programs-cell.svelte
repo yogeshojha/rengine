@@ -50,6 +50,7 @@
 
 <Cell
 	id="programs"
+	projectWide
 	title="Platform events"
 	description="Programs and scope changes per day"
 	href={ROUTES.bountyHubTab('updates')}

@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { useScopedRoutes } from './scope-links';
 	import Cell from './cell.svelte';
 	import Hint from '$lib/components/hint.svelte';
-	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import {
 		CHECK_BY_KEY,
@@ -17,6 +17,8 @@
 	import type { DomainPostureSummary } from '$lib/types/domain-posture';
 	import type { HygieneSummary } from '$lib/utilities/scan-insights';
 
+	const routes = useScopedRoutes();
+
 	interface Props {
 		summary: DomainPostureSummary | null;
 		hosts: HygieneSummary | null;
@@ -31,7 +33,7 @@
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 	const plural = (n: number, one: string, many: string) =>
 		`${n.toLocaleString()} ${n === 1 ? one : many}`;
-	const link = (query: string) => ROUTES.results(WEB.tab, scanId, { [WEB.queryParam]: query });
+	const link = (query: string) => routes.results(WEB.tab, scanId, { [WEB.queryParam]: query });
 
 	let zone = $derived(summary && summary.zones.length === 1 ? summary.zones[0] : null);
 	let issues = $derived(zone ? sortChecks(zone.posture_issues) : []);
@@ -101,7 +103,7 @@
 				{/each}
 			</ul>
 		{:else}
-			<span class="text-sm text-muted-foreground">Passes every applicable check</span>
+			<span class="text-sm text-muted-foreground">No failing check</span>
 		{/if}
 	{:else if rows.length}
 		<ul class="flex flex-col gap-1.5">

@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { useScopedRoutes } from './scope-links';
 	import { SvelteMap } from 'svelte/reactivity';
 	import Cell from './cell.svelte';
-	import Hint from '$lib/components/hint.svelte';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE_ORDER, SurfaceDimension } from '$lib/config/surface';
@@ -11,6 +11,8 @@
 	import { relativeTime } from '$lib/utilities/dates';
 	import type { DashboardOverview, DashboardPrograms } from '$lib/types/dashboard';
 	import type { ThreatIntelStatus } from '$lib/types/threat-intel';
+
+	const routes = useScopedRoutes();
 
 	interface Props {
 		overview: DashboardOverview;
@@ -71,7 +73,7 @@
 				label: spec.label,
 				value: metric.value,
 				sub,
-				href: ROUTES.surface(spec.tab),
+				href: routes.surface(spec.tab),
 				fill: FILL[key] ?? 'var(--series)',
 				ring: key === SurfaceDimension.VULNERABILITIES
 			});
@@ -98,30 +100,25 @@
 <Cell id="inventory" title="Inventory" class={className}>
 	<div class="grid grid-cols-2 gap-x-4 gap-y-2.5">
 		{#each rows as r (r.key)}
-			<Hint text="Open {r.label}">
-				{#snippet child(props)}
-					<a
-						{...props}
-						href={r.href}
-						class="group flex min-w-0 flex-col gap-0.5 rounded-md transition-colors hover:bg-muted/40 -mx-1.5 px-1.5 py-0.5"
-					>
-						<span class="flex items-center gap-1.5 text-xs text-muted-foreground">
-							{#if r.ring}
-								<span class="size-2 shrink-0 rounded-full border-[1.5px] border-destructive"></span>
-							{:else}
-								<span class="size-2 shrink-0 rounded-full" style="background:{r.fill}"></span>
-							{/if}
-							<span class="truncate group-hover:text-foreground">{r.label}</span>
-						</span>
-						<span class="flex items-baseline gap-1.5">
-							<span class="text-lg leading-none font-semibold tracking-tight tabular-nums">
-								{r.value.toLocaleString()}
-							</span>
-							{#if r.sub}<span class="truncate text-2xs text-muted-foreground">{r.sub}</span>{/if}
-						</span>
-					</a>
-				{/snippet}
-			</Hint>
+			<a
+				href={r.href}
+				class="group flex min-w-0 flex-col gap-0.5 rounded-md transition-colors hover:bg-muted/40 -mx-1.5 px-1.5 py-0.5"
+			>
+				<span class="flex items-center gap-1.5 text-xs text-muted-foreground">
+					{#if r.ring}
+						<span class="size-2 shrink-0 rounded-full border-[1.5px] border-destructive"></span>
+					{:else}
+						<span class="size-2 shrink-0 rounded-full" style="background:{r.fill}"></span>
+					{/if}
+					<span class="truncate group-hover:text-foreground">{r.label}</span>
+				</span>
+				<span class="flex items-baseline gap-1.5">
+					<span class="text-lg leading-none font-semibold tracking-tight tabular-nums">
+						{r.value.toLocaleString()}
+					</span>
+					{#if r.sub}<span class="truncate text-2xs text-muted-foreground">{r.sub}</span>{/if}
+				</span>
+			</a>
 		{/each}
 	</div>
 

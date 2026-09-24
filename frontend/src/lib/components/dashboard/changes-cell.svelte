@@ -1,10 +1,12 @@
 <script lang="ts">
+	import { useScopedRoutes } from './scope-links';
 	import Cell from './cell.svelte';
 	import DailyArea, { type DailyLevel } from './daily-area.svelte';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
-	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SURFACE_ORDER, SurfaceDimension } from '$lib/config/surface';
 	import { windowDays, type DashboardOverview, type DashboardWindow } from '$lib/types/dashboard';
+
+	const routes = useScopedRoutes();
 
 	interface Props {
 		overview: DashboardOverview;
@@ -43,8 +45,8 @@
 <Cell
 	id="changes"
 	title="Attack surface changes"
-	description="Rows held after each run, per day"
-	href={ROUTES.surface(spec.tab, { [spec.queryParam]: 'is:new' })}
+	description="Rows per day"
+	href={routes.surface(spec.tab, { [spec.queryParam]: 'is:new' })}
 	hrefLabel="{spec.label} is:new"
 	class={className}
 >

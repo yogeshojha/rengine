@@ -14,6 +14,7 @@ from app.services.dashboard_overview import (
     _act,
     _suppressed,
 )
+from app.services.target_scope import Targets
 from shared.definitions.vulnerabilities import (
     ACTIONABLE_SEVERITIES,
     coerce_severity,
@@ -22,7 +23,7 @@ from shared.models.dashboard import DashboardSurfaceRisk, SurfaceRiskTarget
 from shared.models.scan import Scan
 from shared.models.subdomain import Subdomain
 from shared.models.tag import TargetTag
-from shared.models.target import Target, TargetOrganization
+from shared.models.target import TargetOrganization
 from shared.models.vulnerability import Vulnerability
 from shared.utils.datetime import utc_now
 
@@ -35,18 +36,14 @@ class SurfaceRiskService:
         self.overview = DashboardOverviewService(session)
 
     async def rows(
-        self,
-        project_id: UUID,
-        organization_id: UUID | None = None,
-        tag_id: UUID | None = None,
+        self, project_id: UUID, scoped: Targets = None
     ) -> DashboardSurfaceRisk:
-        targets = await self._targets(project_id, organization_id, tag_id)
+        targets, _ = await self.overview._targets(project_id, scoped)
         out = DashboardSurfaceRisk(targets_total=len(targets))
         if not targets:
             return out
         ids = {t.id for t in targets}
-        runs_by_target, _ = await self.overview._runs(project_id, utc_now())
-        runs_by_target = {k: v for k, v in runs_by_target.items() if k in ids}
+        runs_by_target, _ = await self.overview._runs(project_id, utc_now(), scoped)
         scans: dict[UUID, Scan] = {
             s.id: s for runs in runs_by_target.values() for s in runs
         }
@@ -94,30 +91,6 @@ class SurfaceRiskService:
         out.actionable = sum(r.actionable for r in out.rows)
         out.act = sum(r.act for r in out.rows)
         return out
-
-    async def _targets(
-        self, project_id: UUID, organization_id: UUID | None, tag_id: UUID | None
-    ) -> list[Target]:
-        query = (
-            select(Target)
-            .where(Target.project_id == project_id)
-            .order_by(Target.target_value.asc())
-        )
-        if organization_id:
-            query = query.join(
-                TargetOrganization,
-                and_(
-                    TargetOrganization.target_id == Target.id,
-                    TargetOrganization.organization_id == organization_id,
-                ),
-            )
-        if tag_id:
-            query = query.join(
-                TargetTag,
-                and_(TargetTag.target_id == Target.id, TargetTag.tag_id == tag_id),
-            )
-        result = await self.session.execute(query)
-        return list(result.scalars().all())
 
     async def _live(self, scan_ids: list[UUID]) -> dict[UUID, int]:
         if not scan_ids:
