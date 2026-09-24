@@ -151,9 +151,7 @@
 			/>
 		</Collapsible.Trigger>
 		<Collapsible.Content class="space-y-4 pt-4">
-			<p class="text-xs text-muted-foreground">
-				The administrator password is the shipped default.
-			</p>
+			<p class="text-xs text-muted-foreground">The administrator password is the default one.</p>
 			<div class="space-y-1.5">
 				<Label for="current-pw" class="text-xs">Current password</Label>
 				<div class="relative">

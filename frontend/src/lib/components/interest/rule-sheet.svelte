@@ -102,7 +102,7 @@
 			<Sheet.Title>{isEdit ? rule?.name : 'New rule'}</Sheet.Title>
 			<Sheet.Description>
 				{locked
-					? 'Shipped rule. The query is read-only.'
+					? 'Default rule. The query is read-only.'
 					: 'A saved query. Matches are flagged as exposures.'}
 			</Sheet.Description>
 		</Sheet.Header>

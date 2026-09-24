@@ -1,4 +1,4 @@
-"""Shipped documents."""
+"""Default report templates."""
 
 from __future__ import annotations
 
@@ -70,7 +70,7 @@ PRESETS: tuple[Preset, ...] = (
     Preset(
         slug="executive",
         name="Executive brief",
-        description="Posture, attack paths and remediation priority.",
+        description="Posture, attack paths and remediation priorities.",
         scope=ReportScope.SCAN.value,
         theme="editorial",
         title="Security Posture Brief",
@@ -90,7 +90,7 @@ PRESETS: tuple[Preset, ...] = (
     Preset(
         slug="attack_surface",
         name="Attack surface report",
-        description="The discovered surface and its hosting. No findings sections.",
+        description="Discovered assets and hosting. Excludes findings.",
         scope=ReportScope.SCAN.value,
         theme="midnight",
         title="External Attack Surface Report",
@@ -219,7 +219,7 @@ PRESETS: tuple[Preset, ...] = (
     Preset(
         slug="inventory",
         name="Asset inventory",
-        description="Every web asset, address, service and endpoint. Tables only.",
+        description="Web assets, IP addresses, services and endpoints as tables.",
         scope=ReportScope.TARGET.value,
         theme="blueprint",
         title="Asset Inventory",

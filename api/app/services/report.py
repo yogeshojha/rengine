@@ -283,7 +283,7 @@ class ReportService:
         if existing is not None and existing.origin == ThemeOrigin.BUILTIN.value:
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST,
-                f"'{tokens.key}' is a shipped theme. Choose a different key.",
+                f"'{tokens.key}' is a default theme. Choose a different key.",
             )
         values = {
             "name": tokens.name,
@@ -322,7 +322,7 @@ class ReportService:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Theme not found")
         if row.origin == ThemeOrigin.BUILTIN.value:
             raise HTTPException(
-                status.HTTP_400_BAD_REQUEST, "Shipped themes are read-only."
+                status.HTTP_400_BAD_REQUEST, "Default themes are read-only."
             )
         await self.session.delete(row)
         await self.session.commit()
@@ -374,7 +374,7 @@ class ReportService:
         if slug in {f.slug for f in vendored()}:
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST,
-                f"'{slug}' is a shipped typeface. Choose a different name.",
+                f"'{slug}' is a default typeface. Choose a different name.",
             )
 
         faces: list[dict] = []
@@ -567,7 +567,7 @@ class ReportService:
         if row.is_builtin:
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST,
-                "Shipped templates are read-only. Duplicate it and edit the copy.",
+                "Default templates are read-only. Duplicate the template to edit it.",
             )
         payload = data.model_dump(exclude_unset=True)
         if data.sections is not None:

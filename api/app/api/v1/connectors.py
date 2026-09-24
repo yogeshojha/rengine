@@ -193,7 +193,7 @@ async def download_client(kind: str, _current_user: CurrentUser, service: Servic
     if path is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="No client is shipped for this connector.",
+            detail="No client is available for this connector.",
         )
     return FileResponse(path, media_type="application/java-archive", filename=path.name)
 

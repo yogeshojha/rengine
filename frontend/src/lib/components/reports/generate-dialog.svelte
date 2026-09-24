@@ -43,13 +43,15 @@
 		projectId,
 		scanId = null,
 		targetId = null,
-		subject = ''
+		subject = '',
+		template = ''
 	}: {
 		open?: boolean;
 		projectId: string;
 		scanId?: string | null;
 		targetId?: string | null;
 		subject?: string;
+		template?: string;
 	} = $props();
 
 	const plan = new ReportPlan();
@@ -126,8 +128,12 @@
 	});
 
 	$effect(() => {
-		if (!open || templateId || !templates.length) return;
-		templateId = (templates.find((t) => t.is_default) ?? templates[0]).id;
+		if (!open || !templates.length) return;
+		const wanted = template;
+		untrack(() => {
+			if (wanted) templateId = wanted;
+			else if (!templateId) templateId = (templates.find((t) => t.is_default) ?? templates[0]).id;
+		});
 	});
 
 	$effect(() => {

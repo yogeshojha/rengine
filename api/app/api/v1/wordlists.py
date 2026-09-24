@@ -211,7 +211,7 @@ async def update_wordlist(
     if row.origin == WordlistOrigin.BUILTIN.value:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Shipped wordlists are read-only.",
+            detail="Default wordlists are read-only.",
         )
     for key, value in data.model_dump(exclude_unset=True).items():
         if value is not None:

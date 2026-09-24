@@ -104,7 +104,7 @@ async def delete_rule(
     if not await InterestReadService(session).delete(rule_id, project_id):
         raise HTTPException(
             status.HTTP_404_NOT_FOUND,
-            "Rule not found. Shipped rules cannot be deleted.",
+            "Rule not found. Default rules cannot be deleted.",
         )
     dispatch_interest_refresh(str(project_id))
 

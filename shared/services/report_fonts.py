@@ -126,7 +126,7 @@ def face_path(slug: str, filename: str) -> Path | None:
 
 def delete_family(slug: str, origin: str) -> None:
     if origin != FontOrigin.CUSTOM.value:
-        msg = "A shipped typeface cannot be deleted."
+        msg = "A default typeface cannot be deleted."
         raise FontError(msg)
     directory = family_dir(slug)
     if not directory.is_dir():

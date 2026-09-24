@@ -210,7 +210,7 @@
 								{rule.name}
 								<span
 									class="rounded border border-border px-1 py-px text-2xs font-normal tracking-[0.04em] text-muted-foreground uppercase"
-									>{rule.builtin ? 'Shipped' : 'Custom'}</span
+									>{rule.builtin ? 'Default' : 'Custom'}</span
 								>
 								<span class="text-2xs font-normal text-muted-foreground">{rule.kind_label}</span>
 								{#if rule.notify}

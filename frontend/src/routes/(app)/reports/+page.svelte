@@ -19,7 +19,7 @@
 	import SelectionActionBar from '$lib/components/selection-action-bar.svelte';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import ReportRow from '$lib/components/reports/report-row.svelte';
-	import TemplateCard from '$lib/components/reports/template-card.svelte';
+	import TemplatesPanel from '$lib/components/reports/templates-panel.svelte';
 	import ThemeCard from '$lib/components/reports/theme-card.svelte';
 	import ThemeUploadDialog from '$lib/components/reports/theme-upload-dialog.svelte';
 	import FontUploadDialog from '$lib/components/reports/font-upload-dialog.svelte';
@@ -42,6 +42,7 @@
 	let activeTab = $state<ReportTab>(valid.has(initial) ? (initial as ReportTab) : DEFAULT_TAB);
 	let search = $state('');
 	let generateOpen = $state(false);
+	let generateTemplate = $state('');
 	let uploadOpen = $state(false);
 	let fontUploadOpen = $state(false);
 	let pendingDelete = $state<{
@@ -201,7 +202,13 @@
 		<div>
 			<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.reports}</h1>
 		</div>
-		<Button onclick={() => (generateOpen = true)} disabled={!projectId}>
+		<Button
+			onclick={() => {
+				generateTemplate = '';
+				generateOpen = true;
+			}}
+			disabled={!projectId}
+		>
 			<PlusIcon class="mr-1.5 size-4" />
 			Generate report
 		</Button>
@@ -296,16 +303,15 @@
 		</Tabs.Content>
 
 		<Tabs.Content value="templates" class="mt-5">
-			<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-				{#each reportsStore.templates as template (template.id)}
-					<TemplateCard
-						{template}
-						onDuplicate={duplicate}
-						onDelete={(t) => (pendingDelete = { kind: 'template', id: t.id, name: t.name })}
-						onGenerate={() => (generateOpen = true)}
-					/>
-				{/each}
-			</div>
+			<TemplatesPanel
+				templates={reportsStore.templates}
+				onDuplicate={duplicate}
+				onDelete={(t) => (pendingDelete = { kind: 'template', id: t.id, name: t.name })}
+				onGenerate={(t) => {
+					generateTemplate = t.id;
+					generateOpen = true;
+				}}
+			/>
 		</Tabs.Content>
 
 		<Tabs.Content value="themes" class="mt-5">
@@ -369,7 +375,7 @@
 	onConfirm={confirmBulkDelete}
 />
 
-<GenerateDialog bind:open={generateOpen} {projectId} />
+<GenerateDialog bind:open={generateOpen} {projectId} template={generateTemplate} />
 <ThemeUploadDialog bind:open={uploadOpen} />
 <FontUploadDialog bind:open={fontUploadOpen} />
 <DeleteConfirmationDialog

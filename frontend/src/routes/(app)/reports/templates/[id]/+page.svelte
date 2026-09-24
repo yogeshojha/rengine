@@ -120,7 +120,7 @@
 	async function save() {
 		if (!template || !style || !branding || !narrative) return;
 		if (!formats.length) {
-			toast.error('Choose at least one output format.');
+			toast.error('Select at least one format');
 			return;
 		}
 		saving = true;
@@ -184,17 +184,17 @@
 				</Button>
 				<div class="flex flex-wrap items-center gap-2">
 					<h1 class="text-2xl font-semibold tracking-tight">{name}</h1>
-					{#if template.is_builtin}<Badge variant="outline">Shipped</Badge>{/if}
+					{#if template.is_builtin}<Badge variant="outline">Default</Badge>{/if}
 				</div>
 				<p class="text-sm text-muted-foreground">{description}</p>
 			</div>
 			<div class="flex items-center gap-2">
 				<Button variant="outline" onclick={() => (generateOpen = true)}>
 					<PlayIcon class="mr-1.5 size-3.5" />
-					Generate
+					Generate report
 				</Button>
 				{#if template.is_builtin}
-					<Button onclick={saveAsCopy}>Duplicate</Button>
+					<Button onclick={saveAsCopy}>Duplicate template</Button>
 				{:else}
 					<LoadingButton loading={saving} disabled={!dirty} onclick={save}>Save</LoadingButton>
 				{/if}
@@ -203,7 +203,7 @@
 
 		{#if template.is_builtin}
 			<Card.Root class="border-dashed py-3">
-				<div class="px-4 text-sm text-muted-foreground">Shipped templates are read-only.</div>
+				<div class="px-4 text-sm text-muted-foreground">Default templates are read-only.</div>
 			</Card.Root>
 		{/if}
 
@@ -244,7 +244,7 @@
 							<Input bind:value={subtitle} class="h-9" />
 						</div>
 						<div class="space-y-1.5">
-							<Label class="text-xs">Formats produced</Label>
+							<Label class="text-xs">Formats</Label>
 							<div class="flex flex-wrap gap-2">
 								{#each Object.entries(FORMAT_LABELS) as [value, label] (value)}
 									<button
@@ -264,7 +264,7 @@
 		</Tabs.Root>
 	</div>
 
-	<GenerateDialog bind:open={generateOpen} {projectId} />
+	<GenerateDialog bind:open={generateOpen} {projectId} template={template.id} />
 	<UnsavedChangesDialog
 		open={leaveTo !== null}
 		onOpenChange={(v) => {
