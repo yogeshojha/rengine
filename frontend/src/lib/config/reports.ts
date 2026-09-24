@@ -85,6 +85,33 @@ export function fontStack(slug: string, fonts: { slug: string; name: string; rol
 	return font ? `"${font.name}", ${fallback}` : fallback;
 }
 
+export const LibraryOrigin = {
+	BUILTIN: 'builtin',
+	CUSTOM: 'custom'
+} as const;
+
+export const LibraryTab = {
+	ALL: 'all',
+	DEFAULT: 'default',
+	CUSTOM: 'custom'
+} as const;
+export type LibraryTabValue = (typeof LibraryTab)[keyof typeof LibraryTab];
+
+export const LIBRARY_TABS = [
+	{ key: LibraryTab.ALL, label: 'All' },
+	{ key: LibraryTab.DEFAULT, label: 'Default' },
+	{ key: LibraryTab.CUSTOM, label: 'Custom' }
+];
+
+export function libraryCounts(builtin: boolean[]): Record<LibraryTabValue, number> {
+	const n = builtin.filter(Boolean).length;
+	return { all: builtin.length, default: n, custom: builtin.length - n };
+}
+
+export function inLibraryTab(tab: string, builtin: boolean): boolean {
+	return tab === LibraryTab.ALL || builtin === (tab === LibraryTab.DEFAULT);
+}
+
 export const SectionRole = {
 	CONTENT: 'content',
 	FURNITURE: 'furniture'

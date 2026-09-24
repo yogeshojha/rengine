@@ -1,16 +1,15 @@
 <script lang="ts">
-	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { SEVERITY_ORDER } from '$lib/config/vulnerabilities';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import * as Card from '$lib/components/ui/card/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import DownloadIcon from '@lucide/svelte/icons/download';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import MoreHorizontalIcon from '@lucide/svelte/icons/more-horizontal';
 	import ThemePreview from './theme-preview.svelte';
+	import OriginBadge from './origin-badge.svelte';
 	import { reportsApi } from '$lib/api/reports';
 	import { downloadBlob } from '$lib/utilities/download';
-	import { fontStack } from '$lib/config/reports';
+	import { LibraryOrigin, fontStack } from '$lib/config/reports';
 	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
 	import { toast } from 'svelte-sonner';
 	import type { ThemeSummary } from '$lib/types/report';
@@ -34,57 +33,67 @@
 	}
 </script>
 
-<Card.Root class="group gap-0 overflow-hidden py-0">
-	<div class="grid grid-cols-2 gap-1.5 bg-muted/40 p-1.5">
-		<ThemePreview {theme} variant="cover" class="shadow-sm" />
-		<ThemePreview {theme} variant="page" class="shadow-sm" />
-	</div>
-
-	<div class="flex items-start gap-2 border-t px-3.5 pt-3">
-		<div class="min-w-0 flex-1">
-			<div class="flex items-center gap-2">
-				<span class="truncate font-medium">{theme.name}</span>
-				{#if theme.origin === 'custom'}
-					<Badge variant="outline" class="text-2xs">Custom</Badge>
-				{/if}
-			</div>
-			<p class="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{theme.description}</p>
+<article class="flex flex-col overflow-hidden rounded-lg border bg-card">
+	<div class="flex justify-center gap-2 border-b bg-muted/40 px-4 pt-4">
+		<div class="w-20 translate-y-1">
+			<ThemePreview {theme} variant="cover" class="rounded-b-none shadow-sm" />
 		</div>
-		<DropdownMenu.Root>
-			<DropdownMenu.Trigger>
-				{#snippet child({ props })}
-					<Button variant="ghost" size="icon" class="-mr-1 size-7" {...props} aria-label="Actions">
-						<MoreHorizontalIcon class="size-4" />
-					</Button>
-				{/snippet}
-			</DropdownMenu.Trigger>
-			<DropdownMenu.Content align="end">
-				<DropdownMenu.Item onSelect={exportTheme}>
-					<DownloadIcon class="size-4" />
-					Export as YAML
-				</DropdownMenu.Item>
-				{#if theme.origin === 'custom'}
-					<DropdownMenu.Separator />
-					<DropdownMenu.Item variant="destructive" onSelect={() => onDelete(theme.slug)}>
-						<Trash2Icon class="size-4" />
-						Delete
-					</DropdownMenu.Item>
-				{/if}
-			</DropdownMenu.Content>
-		</DropdownMenu.Root>
+		<div class="w-20 translate-y-1">
+			<ThemePreview {theme} variant="page" class="rounded-b-none shadow-sm" />
+		</div>
 	</div>
 
-	<div class="mt-2.5 flex items-center justify-between gap-2 border-t px-3.5 py-2">
-		<span
-			class="truncate text-xs text-muted-foreground"
-			style="font-family:{fontStack(theme.heading_font, fonts)}"
-		>
-			{faces}
-		</span>
-		<span class="flex shrink-0 gap-1" aria-hidden="true">
-			{#each SEVERITY_ORDER as key (key)}
-				<span class="size-2 rounded-full" style="background:{theme.severity[key]}"></span>
-			{/each}
-		</span>
+	<div class="flex flex-1 flex-col gap-2 p-3">
+		<div class="flex items-start justify-between gap-2">
+			<div class="min-w-0">
+				<div class="flex items-center gap-2">
+					<span class="truncate text-sm font-medium">{theme.name}</span>
+					<OriginBadge builtin={theme.origin === LibraryOrigin.BUILTIN} />
+				</div>
+				<p class="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{theme.description}</p>
+			</div>
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger>
+					{#snippet child({ props })}
+						<Button
+							variant="ghost"
+							size="icon"
+							class="-mt-1 -mr-1.5 size-7 shrink-0"
+							{...props}
+							aria-label="Actions"
+						>
+							<MoreHorizontalIcon class="size-4" />
+						</Button>
+					{/snippet}
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content align="end">
+					<DropdownMenu.Item onSelect={exportTheme}>
+						<DownloadIcon class="size-4" />
+						Export as YAML
+					</DropdownMenu.Item>
+					{#if theme.origin === LibraryOrigin.CUSTOM}
+						<DropdownMenu.Separator />
+						<DropdownMenu.Item variant="destructive" onSelect={() => onDelete(theme.slug)}>
+							<Trash2Icon class="size-4" />
+							Delete
+						</DropdownMenu.Item>
+					{/if}
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
+		</div>
+
+		<div class="mt-auto flex items-center justify-between gap-2 border-t pt-2">
+			<span
+				class="truncate text-xs text-muted-foreground"
+				style="font-family:{fontStack(theme.heading_font, fonts)}"
+			>
+				{faces}
+			</span>
+			<span class="flex shrink-0 gap-1" aria-hidden="true">
+				{#each SEVERITY_ORDER as key (key)}
+					<span class="size-2 rounded-full" style="background:{theme.severity[key]}"></span>
+				{/each}
+			</span>
+		</div>
 	</div>
-</Card.Root>
+</article>

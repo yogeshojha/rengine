@@ -20,10 +20,10 @@
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import ReportRow from '$lib/components/reports/report-row.svelte';
 	import TemplatesPanel from '$lib/components/reports/templates-panel.svelte';
-	import ThemeCard from '$lib/components/reports/theme-card.svelte';
+	import ThemesPanel from '$lib/components/reports/themes-panel.svelte';
+	import TypefacesPanel from '$lib/components/reports/typefaces-panel.svelte';
 	import ThemeUploadDialog from '$lib/components/reports/theme-upload-dialog.svelte';
 	import FontUploadDialog from '$lib/components/reports/font-upload-dialog.svelte';
-	import FontRow from '$lib/components/reports/font-row.svelte';
 	import DefaultsPanel from '$lib/components/reports/defaults-panel.svelte';
 	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import GenerateDialog from '$lib/components/reports/generate-dialog.svelte';
@@ -235,6 +235,12 @@
 						<span class="ml-1.5 text-muted-foreground">{reportCatalog.themes.length}</span>
 					{/if}
 				</Tabs.Trigger>
+				<Tabs.Trigger value="typefaces">
+					Typefaces
+					{#if reportCatalog.catalog?.fonts.length}
+						<span class="ml-1.5 text-muted-foreground">{reportCatalog.catalog.fonts.length}</span>
+					{/if}
+				</Tabs.Trigger>
 				<Tabs.Trigger value="defaults">Defaults</Tabs.Trigger>
 			</Tabs.List>
 
@@ -246,16 +252,15 @@
 					<Input bind:value={search} placeholder="Search reports…" class="h-9 pl-8" />
 				</div>
 			{:else if activeTab === 'themes'}
-				<div class="flex gap-2">
-					<Button variant="outline" size="sm" onclick={() => (fontUploadOpen = true)}>
-						<UploadIcon class="mr-1.5 size-3.5" />
-						Upload typeface
-					</Button>
-					<Button variant="outline" size="sm" onclick={() => (uploadOpen = true)}>
-						<UploadIcon class="mr-1.5 size-3.5" />
-						Upload theme
-					</Button>
-				</div>
+				<Button variant="outline" size="sm" onclick={() => (uploadOpen = true)}>
+					<UploadIcon class="mr-1.5 size-3.5" />
+					Upload theme
+				</Button>
+			{:else if activeTab === 'typefaces'}
+				<Button variant="outline" size="sm" onclick={() => (fontUploadOpen = true)}>
+					<UploadIcon class="mr-1.5 size-3.5" />
+					Upload typeface
+				</Button>
 			{/if}
 		</div>
 
@@ -315,34 +320,17 @@
 		</Tabs.Content>
 
 		<Tabs.Content value="themes" class="mt-5">
-			<div class="space-y-6">
-				<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-					{#each reportCatalog.themes as theme (theme.slug)}
-						<ThemeCard
-							{theme}
-							onDelete={(slug) => (pendingDelete = { kind: 'theme', id: slug, name: theme.name })}
-						/>
-					{/each}
-				</div>
+			<ThemesPanel
+				themes={reportCatalog.themes}
+				onDelete={(t) => (pendingDelete = { kind: 'theme', id: t.slug, name: t.name })}
+			/>
+		</Tabs.Content>
 
-				<div class="space-y-2">
-					<div>
-						<h2 class="text-base font-semibold">Typefaces</h2>
-						<p class="text-xs text-muted-foreground">
-							Typefaces a theme can name for headings, body and code.
-						</p>
-					</div>
-					<Card.Root class="gap-0 py-0">
-						{#each reportCatalog.catalog?.fonts ?? [] as font (font.slug)}
-							<FontRow
-								{font}
-								onDelete={(slug) =>
-									(pendingDelete = { kind: 'typeface', id: slug, name: font.name })}
-							/>
-						{/each}
-					</Card.Root>
-				</div>
-			</div>
+		<Tabs.Content value="typefaces" class="mt-5">
+			<TypefacesPanel
+				fonts={reportCatalog.catalog?.fonts ?? []}
+				onDelete={(f) => (pendingDelete = { kind: 'typeface', id: f.slug, name: f.name })}
+			/>
 		</Tabs.Content>
 
 		<Tabs.Content value="defaults" class="mt-5">

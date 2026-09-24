@@ -66,7 +66,7 @@ export type BountyHubTab = (typeof BOUNTY_HUB_TABS)[number];
 export const ARSENAL_TABS = ['nuclei', 'wordlists', 'threat-intel'] as const;
 export const EXPOSURE_TABS = ['exposures', 'rules', 'dismissed'] as const;
 export type ExposureTab = (typeof EXPOSURE_TABS)[number];
-export const REPORT_TABS = ['reports', 'templates', 'themes', 'defaults'] as const;
+export const REPORT_TABS = ['reports', 'templates', 'themes', 'typefaces', 'defaults'] as const;
 export type ReportTab = (typeof REPORT_TABS)[number];
 
 export const AI_SECTIONS = ['connection', 'features', 'usage'] as const;

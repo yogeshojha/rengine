@@ -8,6 +8,7 @@
 	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import ThemePreview from './theme-preview.svelte';
+	import OriginBadge from './origin-badge.svelte';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as HoverCard from '$lib/components/ui/hover-card';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
@@ -69,11 +70,7 @@
 	<div class="min-w-0">
 		<div class="flex items-center gap-2">
 			<a {href} class="truncate text-sm font-medium hover:underline">{template.name}</a>
-			{#if template.is_builtin}
-				<Badge variant="secondary" class="text-2xs font-normal">Default</Badge>
-			{:else}
-				<Badge variant="info" class="text-2xs font-normal">Custom</Badge>
-			{/if}
+			<OriginBadge builtin={template.is_builtin} />
 		</div>
 		<p class="line-clamp-1 text-xs text-muted-foreground">{template.description}</p>
 	</div>

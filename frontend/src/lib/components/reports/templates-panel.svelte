@@ -1,15 +1,12 @@
 <script lang="ts">
-	import Search from '@lucide/svelte/icons/search';
-	import X from '@lucide/svelte/icons/x';
-	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import * as Card from '$lib/components/ui/card';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { Button } from '$lib/components/ui/button';
-	import CountTabs from '$lib/components/count-tabs.svelte';
-	import EmptyState from '$lib/components/empty-state.svelte';
+	import LibraryToolbar from './library-toolbar.svelte';
+	import FacetFilter from './facet-filter.svelte';
+	import LibraryEmpty from './library-empty.svelte';
 	import TemplateRow from './template-row.svelte';
 	import { TEMPLATE_COLUMNS } from './template-columns';
 	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
+	import { LibraryTab, inLibraryTab, libraryCounts } from '$lib/config/reports';
 	import type { ReportTemplate } from '$lib/types/report';
 
 	let {
@@ -24,22 +21,12 @@
 		onGenerate: (t: ReportTemplate) => void;
 	} = $props();
 
-	const TABS = [
-		{ key: 'all', label: 'All' },
-		{ key: 'default', label: 'Default' },
-		{ key: 'custom', label: 'Custom' }
-	];
-
-	let tab = $state('all');
+	let tab = $state<string>(LibraryTab.ALL);
 	let search = $state('');
 	let audiences = $state<string[]>([]);
 	let scopes = $state<string[]>([]);
 
-	const counts = $derived({
-		all: templates.length,
-		default: templates.filter((t) => t.is_builtin).length,
-		custom: templates.filter((t) => !t.is_builtin).length
-	});
+	const counts = $derived(libraryCounts(templates.map((t) => t.is_builtin)));
 
 	function facet(key: (t: ReportTemplate) => string, options: { key: string; label: string }[]) {
 		return options
@@ -56,7 +43,7 @@
 		const q = search.trim().toLowerCase();
 		return templates.filter(
 			(t) =>
-				(tab === 'all' || t.is_builtin === (tab === 'default')) &&
+				inLibraryTab(tab, t.is_builtin) &&
 				(!audiences.length || audiences.includes(t.narrative.audience)) &&
 				(!scopes.length || scopes.includes(t.scope)) &&
 				(!q || `${t.name} ${t.description}`.toLowerCase().includes(q))
@@ -65,10 +52,6 @@
 
 	const filtered = $derived(Boolean(search || audiences.length || scopes.length));
 
-	function toggle(list: string[], key: string): string[] {
-		return list.includes(key) ? list.filter((k) => k !== key) : [...list, key];
-	}
-
 	function clear() {
 		search = '';
 		audiences = [];
@@ -76,75 +59,11 @@
 	}
 </script>
 
-{#snippet filter(
-	label: string,
-	options: { key: string; label: string; count: number }[],
-	selected: string[],
-	set: (next: string[]) => void
-)}
-	<DropdownMenu.Root>
-		<DropdownMenu.Trigger>
-			{#snippet child({ props })}
-				<Button
-					{...props}
-					variant="outline"
-					class="h-9 gap-1.5 {selected.length ? 'border-primary/50 bg-primary/5' : ''}"
-				>
-					{label}
-					{#if selected.length}
-						<span class="text-xs text-muted-foreground tabular-nums">{selected.length}</span>
-					{/if}
-				</Button>
-			{/snippet}
-		</DropdownMenu.Trigger>
-		<DropdownMenu.Content align="end" class="w-48">
-			{#each options as o (o.key)}
-				<DropdownMenu.CheckboxItem
-					checked={selected.includes(o.key)}
-					onCheckedChange={() => set(toggle(selected, o.key))}
-				>
-					<span class="flex-1 truncate">{o.label}</span>
-					<span class="font-mono text-2xs text-muted-foreground">{o.count}</span>
-				</DropdownMenu.CheckboxItem>
-			{/each}
-		</DropdownMenu.Content>
-	</DropdownMenu.Root>
-{/snippet}
-
 <Card.Root class="gap-0 py-0">
-	<div class="border-b px-2">
-		<CountTabs tabs={TABS} value={tab} {counts} onChange={(k) => (tab = k)} />
-	</div>
-
-	<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-		<div
-			class="flex h-9 min-w-[240px] flex-1 items-center gap-2 rounded-md border bg-background px-2.5 focus-within:ring-2 focus-within:ring-ring/50"
-		>
-			<Search class="size-4 shrink-0 text-muted-foreground" />
-			<input
-				class="h-full min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-				placeholder="Search templates"
-				bind:value={search}
-				aria-label="Search templates"
-			/>
-			{#if search}
-				<button
-					type="button"
-					class="rounded text-muted-foreground hover:text-foreground"
-					aria-label="Clear search"
-					onclick={() => (search = '')}><X class="size-3.5" /></button
-				>
-			{/if}
-		</div>
-		<div class="flex flex-wrap items-center gap-2">
-			{#if audienceOptions.length > 1}
-				{@render filter('Audience', audienceOptions, audiences, (v) => (audiences = v))}
-			{/if}
-			{#if scopeOptions.length > 1}
-				{@render filter('Scope', scopeOptions, scopes, (v) => (scopes = v))}
-			{/if}
-		</div>
-	</div>
+	<LibraryToolbar bind:tab bind:search {counts} placeholder="Search templates">
+		<FacetFilter label="Audience" options={audienceOptions} bind:selected={audiences} />
+		<FacetFilter label="Scope" options={scopeOptions} bind:selected={scopes} />
+	</LibraryToolbar>
 
 	{#if visible.length}
 		<div
@@ -163,12 +82,6 @@
 			<TemplateRow {template} {onDuplicate} {onDelete} {onGenerate} />
 		{/each}
 	{:else}
-		<div class="p-6">
-			<EmptyState icon={FileTextIcon} title="No matching templates">
-				{#if filtered}
-					<Button variant="outline" size="sm" onclick={clear}>Clear filters</Button>
-				{/if}
-			</EmptyState>
-		</div>
+		<LibraryEmpty title="No matching templates" onClear={filtered ? clear : undefined} />
 	{/if}
 </Card.Root>

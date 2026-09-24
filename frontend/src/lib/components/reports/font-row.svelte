@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
-	import { formatBytes } from '$lib/config/reports';
+	import OriginBadge from './origin-badge.svelte';
+	import { TYPEFACE_COLUMNS } from './typeface-columns';
+	import { LibraryOrigin, formatBytes } from '$lib/config/reports';
 	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
 	import type { ReportFont } from '$lib/types/report';
 
@@ -13,34 +14,59 @@
 	);
 </script>
 
-<div class="flex items-center gap-3 border-b px-4 py-3 last:border-b-0">
-	<div class="min-w-0 flex-1">
-		<div class="flex flex-wrap items-center gap-2">
-			<span class="truncate font-medium">{font.name}</span>
-			<Badge variant="outline" class="text-2xs">{roleLabel}</Badge>
-			{#if font.origin === 'custom'}<Badge variant="secondary" class="text-2xs">Custom</Badge>{/if}
+{#snippet cell(label: string)}
+	<span class="text-2xs text-muted-foreground lg:hidden">{label}</span>
+{/snippet}
+
+<div
+	class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 border-b px-4 py-3 last:border-b-0 {TYPEFACE_COLUMNS}"
+>
+	<div class="min-w-0">
+		<div class="flex items-center gap-2">
+			<span class="truncate text-sm font-medium">{font.name}</span>
+			<OriginBadge builtin={font.origin === LibraryOrigin.BUILTIN} />
 		</div>
-		<div class="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-			<span class="font-mono">{font.slug}</span>
-			{#if font.weights.length}
-				<span>{font.weights.join(', ')}</span>
-			{/if}
-			{#if font.faces.length}
-				<span>{font.faces.length} {font.faces.length === 1 ? 'face' : 'faces'}</span>
-			{/if}
-			{#if font.bytes}<span>{formatBytes(font.bytes)}</span>{/if}
-			{#if font.note}<span>{font.note}</span>{/if}
+		<span class="font-mono text-2xs text-muted-foreground">{font.slug}</span>
+	</div>
+
+	<div class="col-span-2 row-start-2 flex flex-wrap gap-x-5 gap-y-1 text-xs lg:contents lg:text-sm">
+		<div class="flex flex-col">
+			{@render cell('Role')}
+			<span>{roleLabel}</span>
+		</div>
+		<div class="flex flex-col">
+			{@render cell('Weights')}
+			<span class="font-mono text-xs text-muted-foreground tabular-nums">
+				{font.weights.length ? font.weights.join(', ') : '—'}
+			</span>
+		</div>
+		<div class="flex flex-col lg:items-end">
+			{@render cell('Faces')}
+			<span class="font-mono text-xs tabular-nums">{font.faces.length || '—'}</span>
+		</div>
+		<div class="flex flex-col lg:items-end">
+			{@render cell('Size')}
+			<span class="font-mono text-xs text-muted-foreground tabular-nums">
+				{font.bytes ? formatBytes(font.bytes) : '—'}
+			</span>
+		</div>
+		<div class="flex min-w-0 flex-col">
+			{@render cell('Note')}
+			<span class="text-xs text-muted-foreground">{font.note || '—'}</span>
 		</div>
 	</div>
-	{#if font.origin === 'custom'}
-		<Button
-			variant="ghost"
-			size="icon"
-			class="size-8 shrink-0 text-destructive"
-			onclick={() => onDelete(font.slug)}
-			aria-label="Delete"
-		>
-			<Trash2Icon class="size-3.5" />
-		</Button>
-	{/if}
+
+	<div class="col-start-2 row-start-1 flex justify-end lg:col-start-auto lg:row-start-auto">
+		{#if font.origin === LibraryOrigin.CUSTOM}
+			<Button
+				variant="ghost"
+				size="icon"
+				class="size-8 text-muted-foreground hover:text-destructive"
+				onclick={() => onDelete(font.slug)}
+				aria-label="Delete {font.name}"
+			>
+				<Trash2Icon class="size-3.5" />
+			</Button>
+		{/if}
+	</div>
 </div>
