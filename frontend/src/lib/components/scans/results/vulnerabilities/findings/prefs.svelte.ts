@@ -11,6 +11,16 @@ export const FINDING_COLUMN_LABELS: Record<FindingColumn, string> = {
 	seen: 'Seen'
 };
 
+export const SHEET_TABS = ['overview', 'evidence', 'related', 'intel', 'notes'] as const;
+export type SheetTab = (typeof SHEET_TABS)[number];
+export const SHEET_TAB_LABELS: Record<SheetTab, string> = {
+	overview: 'Overview',
+	evidence: 'Evidence',
+	related: 'Same check',
+	intel: 'Intel',
+	notes: 'Notes'
+};
+
 export const BRIEF_TABS = ['asset', 'host', 'check', 'evidence', 'intel'] as const;
 export type BriefTab = (typeof BRIEF_TABS)[number];
 export const BRIEF_TAB_LABELS: Record<BriefTab, string> = {
@@ -49,9 +59,21 @@ function createFindingPrefs() {
 			: 'asset'
 	);
 
+	let sheetTab = $state<SheetTab>(
+		(SHEET_TABS as readonly string[]).includes(read(STORAGE_KEYS.vulnsSheetTab) ?? '')
+			? (read(STORAGE_KEYS.vulnsSheetTab) as SheetTab)
+			: 'overview'
+	);
 	let summary = $state(read(STORAGE_KEYS.vulnsSummary) !== 'collapsed');
 
 	return {
+		get sheetTab() {
+			return sheetTab;
+		},
+		set sheetTab(v: SheetTab) {
+			sheetTab = v;
+			write(STORAGE_KEYS.vulnsSheetTab, v);
+		},
 		get summary() {
 			return summary;
 		},

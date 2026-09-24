@@ -234,7 +234,7 @@ export function epssLabel(score: number | null | undefined): string {
 
 export function percentileLabel(pct: number | null | undefined): string {
 	if (pct === null || pct === undefined) return '';
-	return `worse than ${Math.floor(pct * 100)}% of all CVEs`;
+	return `above ${Math.floor(pct * 100)}% of CVEs`;
 }
 
 export function hostsLabel(hosts: number | null | undefined): string {

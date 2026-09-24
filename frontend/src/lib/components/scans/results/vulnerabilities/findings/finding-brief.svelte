@@ -16,7 +16,6 @@
 	import {
 		CORROBORATION_BASIS_LABELS,
 		SEVERITY_CHIP,
-		SEVERITY_LABELS,
 		SEVERITY_ORDER,
 		VULN_STATE_LABELS,
 		VulnState
@@ -26,14 +25,11 @@
 	import { exactToken } from '$lib/utilities/scan-insights';
 	import { epssPercent, locationLabel, type VulnerabilityRead } from '$lib/utilities/vulns';
 	import { BRIEF_TABS, BRIEF_TAB_LABELS, findingPrefs, type BriefTab } from './prefs.svelte';
-	import { peek } from './peek';
+	import AssetTiles from './asset-tiles.svelte';
+	import FindingList from './finding-list.svelte';
 
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 	const IPS = SURFACE[SurfaceDimension.IPS];
-	const SVC = SURFACE[SurfaceDimension.SERVICES];
-	const EP = SURFACE[SurfaceDimension.ENDPOINTS];
-	const SW = SURFACE[SurfaceDimension.SOFTWARE];
-	const LIST = 25;
 
 	interface Props {
 		v: VulnerabilityRead;
@@ -54,113 +50,8 @@
 	let templateToken = $derived(exactToken('template', v.template_id));
 	let hostTotal = $derived(Object.values(v.host_findings ?? {}).reduce((a, n) => a + n, 0));
 
-	let tiles = $derived(
-		[
-			{
-				spec: SURFACE[SurfaceDimension.VULNERABILITIES],
-				n: hostTotal,
-				label: `open on this ${WEB.noun}`,
-				go: () => onFilter(hostToken)
-			},
-			{
-				spec: SVC,
-				n: asset?.open_ports ?? 0,
-				label: `open ports on ${v.ip}`,
-				go: () => onTab(SVC.tab, ipToken)
-			},
-			{
-				spec: WEB,
-				n: asset?.names_on_ip ?? 0,
-				label: `names on ${v.ip}`,
-				go: () => onTab(WEB.tab, ipToken)
-			},
-			{
-				spec: EP,
-				n: asset?.endpoints ?? 0,
-				label: EP.nounPlural,
-				go: () => onTab(EP.tab, hostToken)
-			},
-			{
-				spec: SW,
-				n: asset?.software_cves ?? 0,
-				label: 'inferred CVEs',
-				go: () => onTab(SW.tab, hostToken)
-			}
-		].filter((t) => t.n > 0)
-	);
-
-	let hostRows = $state<VulnerabilityRead[] | null>(null);
-	let checkRows = $state<VulnerabilityRead[] | null>(null);
 	let checkTotal = $state(0);
-	let failed = $state<Record<string, boolean>>({});
-
-	$effect(() => {
-		const tab = findingPrefs.tab;
-		if (tab === 'host' && hostRows === null && v.host) {
-			peek(projectId, scanId, hostToken, LIST + 1)
-				.then((r) => (hostRows = r.items.filter((f) => f.id !== v.id)))
-				.catch(() => (failed = { ...failed, host: true }));
-		}
-		if (tab === 'check' && checkRows === null) {
-			peek(projectId, scanId, templateToken, LIST + 1, 'host')
-				.then((r) => {
-					checkRows = r.items.filter((f) => f.id !== v.id);
-					checkTotal = r.total;
-				})
-				.catch(() => (failed = { ...failed, check: true }));
-		}
-	});
 </script>
-
-{#snippet findingList(
-	rows: VulnerabilityRead[] | null,
-	key: string,
-	main: (f: VulnerabilityRead) => string
-)}
-	{#if failed[key]}
-		<p class="px-3 py-4 text-xs text-muted-foreground">Findings not loaded.</p>
-	{:else if rows === null}
-		<div class="space-y-2 p-3">
-			{#each { length: 3 } as _, i (i)}
-				<div class="h-8 animate-pulse rounded bg-muted/60"></div>
-			{/each}
-		</div>
-	{:else if rows.length === 0}
-		<p class="px-3 py-4 text-xs text-muted-foreground">None</p>
-	{:else}
-		<ul class="divide-y divide-border/60">
-			{#each rows as f (f.id)}
-				<li>
-					<button
-						type="button"
-						class="flex w-full items-center gap-3 px-3 py-1.5 text-left hover:bg-muted/40"
-						onclick={() => onOpen(f)}
-					>
-						<span
-							class="inline-flex h-5 w-16 shrink-0 items-center justify-center rounded text-2xs font-semibold uppercase {(
-								SEVERITY_CHIP[f.severity] ?? SEVERITY_CHIP.unknown
-							).chip}"
-						>
-							{SEVERITY_LABELS[f.severity] ?? f.severity}
-						</span>
-						<span class="min-w-0 flex-1">
-							<span class="block truncate text-sm">{main(f)}</span>
-							<span class="block truncate font-mono text-2xs text-muted-foreground"
-								>{f.matched_at}</span
-							>
-						</span>
-						<span class="hidden shrink-0 sm:inline-flex">
-							<EvidenceMark evidence={f.evidence} showLabel hint={false} />
-						</span>
-						<span class="hidden w-24 shrink-0 text-right text-2xs text-muted-foreground sm:block">
-							{VULN_STATE_LABELS[f.state] ?? f.state}
-						</span>
-					</button>
-				</li>
-			{/each}
-		</ul>
-	{/if}
-{/snippet}
 
 <Tabs.Root
 	value={findingPrefs.tab}
@@ -274,24 +165,7 @@
 					{/if}
 				</dl>
 			</div>
-			{#if tiles.length}
-				<div class="mt-3 flex flex-wrap gap-2 border-t pt-3">
-					{#each tiles as t (t.label)}
-						{@const Icon = t.spec.icon}
-						<button
-							type="button"
-							class="inline-flex items-center gap-2 rounded-md border border-border/70 px-2.5 py-1.5 text-left transition-colors hover:border-foreground/30 hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-							onclick={t.go}
-						>
-							<Icon class="size-3.5 text-muted-foreground" />
-							<span class="font-mono text-sm font-semibold tabular-nums"
-								>{t.n.toLocaleString()}</span
-							>
-							<span class="text-xs text-muted-foreground">{t.label}</span>
-						</button>
-					{/each}
-				</div>
-			{/if}
+			<AssetTiles {v} {onFilter} {onTab} class="mt-3 border-t pt-3" />
 		{/if}
 	</Tabs.Content>
 
@@ -319,7 +193,14 @@
 				</button>
 			</div>
 			<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-80">
-				{@render findingList(hostRows, 'host', (f) => f.template_name)}
+				<FindingList
+					{projectId}
+					{scanId}
+					q={hostToken}
+					exclude={v.id}
+					main={(f) => f.template_name}
+					{onOpen}
+				/>
 			</ScrollArea>
 		{:else}
 			<p class="px-3 py-4 text-xs text-muted-foreground">
@@ -367,7 +248,16 @@
 			</div>
 		{/if}
 		<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-80">
-			{@render findingList(checkRows, 'check', (f) => f.host ?? locationLabel(f))}
+			<FindingList
+				{projectId}
+				{scanId}
+				q={templateToken}
+				exclude={v.id}
+				sort="host"
+				main={(f) => f.host ?? locationLabel(f)}
+				{onOpen}
+				onTotal={(n) => (checkTotal = n)}
+			/>
 		</ScrollArea>
 	</Tabs.Content>
 

@@ -94,3 +94,9 @@ async def test_findings_on_the_same_web_asset_equal_the_host_search(
     other = next(r for r in (await _search(estate, "host=api.example.com")).items)
     assert other.host_findings == {Severity.HIGH.value: 1}
     assert other.host_count == 2
+
+    detail = await VulnerabilityService(estate.session).get(estate.scans["run"], row.id)
+    assert detail is not None
+    assert detail.host_findings == row.host_findings
+    assert detail.asset is not None
+    assert detail.asset.software_cves == 1

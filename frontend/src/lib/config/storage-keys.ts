@@ -47,6 +47,7 @@ export const STORAGE_KEYS = {
 	vulnsHidden: 'rengine:vulns:hidden',
 	vulnsBriefTab: 'rengine:vulns:briefTab',
 	vulnsSummary: 'rengine:vulns:summary',
+	vulnsSheetTab: 'rengine:vulns:sheetTab',
 	launchLastPlan: 'rengine:launch:lastPlan',
 	bountyConnectDismissed: 'rengine:bountyhub:connectDismissed',
 	dashboardWidgets: 'rengine:dashboard:widgets',

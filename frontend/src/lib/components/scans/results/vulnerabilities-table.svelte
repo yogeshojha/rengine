@@ -1405,6 +1405,15 @@
 			}
 		: undefined}
 	onTriage={triage}
+	onTab={onTab
+		? (tab, filter) => {
+				drawerOpen = false;
+				syncUrl();
+				onTab(tab, filter);
+			}
+		: undefined}
+	onOpenFinding={open}
+	onRescan={rescanOne}
 />
 
 <RowSelectionBar
