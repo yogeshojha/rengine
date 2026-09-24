@@ -85,6 +85,8 @@ class PlatformSpec:
     api_provider: str | None = None
     credential: str = ""
     follow_label: str = ""
+    tracks_reports: bool = False
+    report_url: str = ""
 
 
 PLATFORMS: tuple[PlatformSpec, ...] = (
@@ -100,6 +102,8 @@ PLATFORMS: tuple[PlatformSpec, ...] = (
         api_provider=APIProvider.HACKERONE.value,
         credential="API username and token",
         follow_label="Bookmarked on HackerOne",
+        tracks_reports=True,
+        report_url="https://hackerone.com/reports/{id}",
     ),
     PlatformSpec(
         key=BountyPlatform.BUGCROWD.value,

@@ -49,11 +49,12 @@ export function uptime(timestamp: string | Date | null | undefined): string {
 	return e.count ? `${e.count}${e.short}` : 'under a minute';
 }
 
-export function formatShortDate(date: string | Date): string {
+export function formatShortDate(date: string | Date, utc = false): string {
 	return new Date(date).toLocaleDateString('en-US', {
 		year: 'numeric',
 		month: 'short',
-		day: 'numeric'
+		day: 'numeric',
+		...(utc ? { timeZone: 'UTC' } : {})
 	});
 }
 
@@ -66,10 +67,11 @@ export function formatDateTime(date: string | Date): string {
 	});
 }
 
-export function formatMonthYear(date: string | Date): string {
+export function formatMonthYear(date: string | Date, utc = false): string {
 	return new Date(date).toLocaleDateString('en-US', {
 		year: 'numeric',
-		month: 'short'
+		month: 'short',
+		...(utc ? { timeZone: 'UTC' } : {})
 	});
 }
 

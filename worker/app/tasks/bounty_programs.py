@@ -8,6 +8,7 @@ from app.config import settings
 from app.database import get_sync_session
 from shared.definitions.bounty_feed import FEEDS_BY_PLATFORM
 from shared.definitions.bounty_programs import (
+    PLATFORMS_BY_KEY,
     BountyPlatform,
     ProgramSource,
     ScopeAccess,
@@ -37,8 +38,15 @@ from shared.services.bounty_providers import (
     configured_providers,
     provider_for,
 )
+from shared.services.bounty_reports import reports_enabled
+from shared.services.bounty_reports import sync_reports as store_reports
 from shared.services.celery_dispatch import dispatch_watch_reconcile
-from shared.services.locks import BOUNTY_FEED, bounty_platform, sync_lock
+from shared.services.locks import (
+    BOUNTY_FEED,
+    bounty_platform,
+    bounty_reports,
+    sync_lock,
+)
 from shared.services.notification_sync import SyncNotificationPublisher
 from shared.utils.datetime import utc_now
 
@@ -178,6 +186,38 @@ def sync(scopes: bool = True, force: bool = True, platform: str | None = None) -
         if scopes:
             dispatch_watch_reconcile()
         return {"platforms": results, "alerted": alerted}
+
+
+def _reports(session, provider: BountyProvider) -> dict:
+    with sync_lock(session, bounty_reports(provider.platform)) as held:
+        if not held:
+            return {"platform": provider.platform, "skipped": "already_running"}
+        try:
+            result = store_reports(session, provider)
+        except Exception as exc:
+            session.rollback()
+            logger.warning(
+                "bounty report sync failed", platform=provider.platform, error=str(exc)
+            )
+            return {"platform": provider.platform, "error": str(exc)}
+        return {"platform": provider.platform, **(result or {"skipped": "unsupported"})}
+
+
+@shared_task(name="app.tasks.bounty_programs.sync_reports")
+def sync_reports(platform: str | None = None, force: bool = True) -> dict:
+    """The account's own reports and bounties on every connected platform that has them."""
+    with get_sync_session() as session:
+        if not force and not reports_enabled(session):
+            return {"skipped": "not_due"}
+        providers = (
+            [p for p in [provider_for(session, platform)] if p]
+            if platform
+            else configured_providers(session)
+        )
+        tracked = [p for p in providers if PLATFORMS_BY_KEY[p.platform].tracks_reports]
+        if not tracked:
+            return {"skipped": "not_configured"}
+        return {"platforms": [_reports(session, p) for p in tracked]}
 
 
 @shared_task(name="app.tasks.bounty_programs.sync_program")

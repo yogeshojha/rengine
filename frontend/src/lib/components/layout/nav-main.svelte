@@ -14,6 +14,8 @@
 		url: string;
 		/** sibling routes this item stays lit for */
 		match?: string[];
+		/** lit on its own path only */
+		exact?: boolean;
 	}
 
 	export interface NavItem extends NavChild {
@@ -41,13 +43,14 @@
 
 	const sidebar = useSidebar();
 
-	const isActive = (url: string) => {
+	const isActive = (url: string, exact = false) => {
 		const path = page.url.pathname;
 		const base = url.split('?')[0];
-		return path === base || path.startsWith(base + '/');
+		return path === base || (!exact && path.startsWith(base + '/'));
 	};
 
-	const childActive = (item: NavChild) => isActive(item.url) || (item.match ?? []).some(isActive);
+	const childActive = (item: NavChild) =>
+		isActive(item.url, item.exact) || (item.match ?? []).some((m) => isActive(m));
 	const branchActive = (item: NavItem) => item.items?.some(childActive) ?? false;
 
 	// chevron overrides, dropped on every navigation

@@ -28,6 +28,7 @@
 	import { FINDINGS_PATHS, ROUTES, routeLabels } from '$lib/config/routes';
 	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
 	import { Capability } from '$lib/config/capabilities';
+	import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
 
 	let {
 		ref = $bindable(null),
@@ -48,6 +49,12 @@
 		const id = projectsStore.activeProject?.id;
 		if (id) untrack(() => void whatsNewStore.fetch(id));
 	});
+
+	const bountyOn = $derived(capabilitiesStore.has(Capability.BOUNTY_PROGRAMS));
+	$effect(() => {
+		if (bountyOn) untrack(() => void bountyVocabulary.load());
+	});
+	const reportPlatforms = $derived(bountyVocabulary.platforms.filter((p) => p.tracks_reports));
 
 	const userData = $derived({
 		name: auth.user?.username ?? 'Unknown user',
@@ -130,8 +137,23 @@
 		{
 			label: null,
 			items: [
-				...(capabilitiesStore.has(Capability.BOUNTY_PROGRAMS)
-					? [{ title: routeLabels['bounty-hub'], url: ROUTES.bountyHub(), icon: AwardIcon }]
+				...(bountyOn
+					? [
+							{
+								title: routeLabels['bounty-hub'],
+								url: ROUTES.bountyHub(),
+								icon: AwardIcon,
+								items: reportPlatforms.length
+									? [
+											{ title: routeLabels.programs, url: ROUTES.bountyHub(), exact: true },
+											...reportPlatforms.map((p) => ({
+												title: p.label,
+												url: ROUTES.bountyReports(p.key)
+											}))
+										]
+									: undefined
+							}
+						]
 					: []),
 				{
 					title: routeLabels.toolkit,

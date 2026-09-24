@@ -293,6 +293,7 @@ class BountyProgramService:
                 credential=spec.credential,
                 note=spec.note,
                 configured=bool(spec.api_provider and spec.api_provider in connected),
+                tracks_reports=spec.tracks_reports,
             )
             for spec in PLATFORMS
         ]

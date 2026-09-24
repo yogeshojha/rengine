@@ -54,6 +54,15 @@ class ScopeFetch:
     program_updates: dict = field(default_factory=dict)
 
 
+@dataclass
+class ReportFetch:
+    """The account's own reports, the bounties paid on them and the account's standing."""
+
+    reports: list[dict]
+    awards: list[dict]
+    account: dict = field(default_factory=dict)
+
+
 def api_key_row(session: Session, provider: APIProvider) -> APIKey | None:
     return session.execute(
         select(APIKey).where(
@@ -178,6 +187,10 @@ class BountyProvider(ABC):
 
     def account(self) -> str | None:
         """The account name, when the platform states one."""
+        return None
+
+    def own_reports(self) -> ReportFetch | None:
+        """The account's reports and bounties. None when the platform has no such read."""
         return None
 
 

@@ -15,12 +15,19 @@ from shared.definitions.bounty_programs import (
     submission_state,
     target_for_scope,
 )
+from shared.definitions.bounty_reports import (
+    MAX_CURRENCY,
+    MAX_REPORT_TITLE,
+    MAX_WEAKNESS,
+    report_severity,
+)
 from shared.enums.api_key import APIProvider
 from shared.models.bounty_program import BountyProgram
 from shared.services.bounty_providers.base import (
     MAX_INSTRUCTION,
     BountyProvider,
     JsonClient,
+    ReportFetch,
     ScopeFetch,
     api_key_row,
     as_datetime,
@@ -35,6 +42,7 @@ from shared.utils.text import strip_control
 BASE_URL = "https://api.hackerone.com/v1/hackers"
 PAGE_SIZE = 100
 MAX_PAGES = 200
+PAYOUT_CURRENCY = "USD"
 
 
 class HackerOneProvider(BountyProvider):
@@ -81,6 +89,15 @@ class HackerOneProvider(BountyProvider):
         quoted = urllib.parse.quote(program.handle, safe="")
         entries = self._paged(f"/programs/{quoted}/structured_scopes")
         return ScopeFetch(entries=[r for r in (_scope_row(e) for e in entries) if r])
+
+    def own_reports(self) -> ReportFetch:
+        entries = self._paged("/me/reports")
+        earnings = self._paged("/payments/earnings")
+        return ReportFetch(
+            reports=[r for r in (_report_row(e) for e in entries) if r],
+            awards=[a for a in (_award_row(e) for e in earnings) if a],
+            account=_account(entries),
+        )
 
     def verify(self) -> dict:
         payload = self.client.get(f"{BASE_URL}/programs", {"page[size]": 1})
@@ -156,3 +173,83 @@ def _scope_row(entry: dict) -> dict | None:
         "target_type": resolved[1] if resolved else None,
         "synced_at": utc_now(),
     }
+
+
+def _related(entry: dict, name: str) -> dict:
+    data = ((entry.get("relationships") or {}).get(name) or {}).get("data")
+    return data if isinstance(data, dict) else {}
+
+
+def _attr(entry: dict, name: str) -> dict:
+    return _related(entry, name).get("attributes") or {}
+
+
+def _text(raw: object, limit: int) -> str | None:
+    value = strip_control(str(raw or "")).strip()
+    return value[:limit] or None
+
+
+def _report_row(entry: dict) -> dict | None:
+    attrs = entry.get("attributes") or {}
+    if not entry.get("id"):
+        return None
+    severity = _attr(entry, "severity")
+    scope = _attr(entry, "structured_scope")
+    return {
+        "external_id": str(entry["id"])[:100],
+        "program_handle": _text(_attr(entry, "program").get("handle"), 200),
+        "title": _text(attrs.get("title"), MAX_REPORT_TITLE) or f"#{entry['id']}",
+        "state": str(attrs.get("state") or "")[:32],
+        "severity": report_severity(severity.get("rating")),
+        "severity_score": as_float(severity.get("score")),
+        "weakness": _text(_attr(entry, "weakness").get("name"), MAX_WEAKNESS),
+        "asset_type": _text(scope.get("asset_type"), 48),
+        "asset_identifier": _text(scope.get("asset_identifier"), 1000),
+        "submitted_at": as_datetime(attrs.get("submitted_at")),
+        "triaged_at": as_datetime(attrs.get("triaged_at")),
+        "closed_at": as_datetime(attrs.get("closed_at")),
+        "bounty_awarded_at": as_datetime(attrs.get("bounty_awarded_at")),
+        "disclosed_at": as_datetime(attrs.get("disclosed_at")),
+        "last_program_activity_at": as_datetime(attrs.get("last_program_activity_at")),
+    }
+
+
+def _award_row(entry: dict) -> dict | None:
+    if not entry.get("id"):
+        return None
+    attrs = entry.get("attributes") or {}
+    bounty = _related(entry, "bounty")
+    paid = bounty.get("attributes") or {}
+    program = _attr(entry, "program")
+    amount = as_float(paid.get("awarded_amount"))
+    if amount is None:
+        amount = as_float(attrs.get("amount"))
+    if amount is None:
+        return None
+    currency = (
+        paid.get("awarded_currency") or program.get("currency") or PAYOUT_CURRENCY
+    )
+    return {
+        "external_id": str(entry["id"])[:100],
+        "report_external_id": _text(_related(bounty, "report").get("id"), 100),
+        "program_handle": _text(program.get("handle"), 200),
+        "program_name": _text(program.get("name"), 300),
+        "amount": amount,
+        "bonus": as_float(paid.get("awarded_bonus_amount")) or 0.0,
+        "currency": str(currency).upper()[:MAX_CURRENCY],
+        "awarded_at": as_datetime(paid.get("created_at") or attrs.get("created_at")),
+    }
+
+
+def _account(entries: list[dict]) -> dict:
+    """The reporter record every report carries."""
+    for entry in entries:
+        reporter = _attr(entry, "reporter")
+        if reporter:
+            return {
+                "username": _text(reporter.get("username"), 200),
+                "reputation": as_int(reporter.get("reputation")),
+                "signal": as_float(reporter.get("signal")),
+                "impact": as_float(reporter.get("impact")),
+            }
+    return {}

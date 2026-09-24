@@ -230,6 +230,20 @@ def dispatch_bounty_sync(*, scopes: bool = True, platform: str | None = None) ->
     return True
 
 
+def dispatch_bounty_report_sync(platform: str) -> bool:
+    """Refresh the account's own reports and bounties."""
+    try:
+        get_celery_client().send_task(
+            "app.tasks.bounty_programs.sync_reports",
+            kwargs={"platform": platform},
+            queue="default",
+        )
+    except Exception:
+        logger.warning("bounty report sync dispatch failed", exc_info=True)
+        return False
+    return True
+
+
 def dispatch_bounty_program_sync(handle: str, platform: str = "hackerone") -> bool:
     """Refresh one program's scope."""
     try:

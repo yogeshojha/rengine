@@ -26,6 +26,7 @@ from shared.definitions.bounty_programs import (
     SubmissionState,
     SyncInterval,
 )
+from shared.definitions.bounty_reports import REPORT_STAGE_LABELS, REPORT_STATES
 from shared.definitions.mode_features import (
     CAP_BOUNTY_PROGRAMS,
     CAP_PROGRAM_WATCHES,
@@ -104,6 +105,7 @@ async def vocabulary(_current_user: CurrentUser) -> dict:
                 "source": p.source,
                 "api_provider": p.api_provider,
                 "credential": p.credential,
+                "tracks_reports": p.tracks_reports,
             }
             for p in PLATFORMS
         ],
@@ -136,6 +138,13 @@ async def vocabulary(_current_user: CurrentUser) -> dict:
             for e in EVENTS
         ],
         "sync_intervals": [i.value for i in SyncInterval],
+        "report_states": [
+            {"key": r.key, "label": r.label, "stage": r.stage.value}
+            for r in REPORT_STATES
+        ],
+        "report_stages": [
+            {"key": k, "label": v} for k, v in REPORT_STAGE_LABELS.items()
+        ],
     }
 
 

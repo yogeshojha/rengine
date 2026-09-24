@@ -214,6 +214,7 @@ class PlatformCount(BaseModel):
     credential: str = ""
     note: str = ""
     configured: bool = False
+    tracks_reports: bool = False
 
 
 class BountyStatus(BaseModel):

@@ -171,6 +171,12 @@ celery_app.conf.beat_schedule = {
         "kwargs": {"force": False},
         "options": {"expires": BOUNTY_SYNC_TICK_SECONDS},
     },
+    "bounty-report-sync": {
+        "task": "app.tasks.bounty_programs.sync_reports",
+        "schedule": BOUNTY_SYNC_TICK_SECONDS,
+        "kwargs": {"force": False},
+        "options": {"expires": BOUNTY_SYNC_TICK_SECONDS},
+    },
     "bounty-feed-sync": {
         "task": "app.tasks.bounty_programs.sync_feed",
         "schedule": BOUNTY_SYNC_TICK_SECONDS,

@@ -47,6 +47,13 @@ export interface PlatformSpec {
 	source: ProgramSource;
 	api_provider: string | null;
 	credential: string;
+	tracks_reports: boolean;
+}
+
+export interface ReportStateSpec {
+	key: string;
+	label: string;
+	stage: string;
 }
 
 export interface AssetTypeSpec {
@@ -69,6 +76,8 @@ export interface BountyVocabulary {
 	max_severities: string[];
 	events: BountyEventSpec[];
 	sync_intervals: SyncInterval[];
+	report_states: ReportStateSpec[];
+	report_stages: { key: string; label: string }[];
 }
 
 export interface BountyScope {
@@ -157,6 +166,7 @@ export interface PlatformCount {
 	credential: string;
 	note: string;
 	configured: boolean;
+	tracks_reports: boolean;
 }
 
 export interface BountyEventSpec {

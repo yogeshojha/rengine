@@ -24,6 +24,7 @@ export const routeLabels: Record<string, string> = {
 	notes: 'Notes',
 	'whats-new': "What's new",
 	'bounty-hub': 'Bounty Hub',
+	programs: 'Programs',
 
 	reports: 'Reports',
 	arsenal: 'Arsenal',
@@ -131,6 +132,10 @@ export const ROUTES = {
 	bountyHub: (handle?: string, platform?: string) =>
 		handle ? `/bounty-hub?program=${handle}&platform=${platform ?? 'hackerone'}` : '/bounty-hub',
 	bountyHubTab: (tab: BountyHubTab) => `/bounty-hub?tab=${tab}`,
+	bountyReports: (platform: string, program?: string) =>
+		program
+			? `/bounty-hub/${platform}?program=${encodeURIComponent(program)}`
+			: `/bounty-hub/${platform}`,
 	bountyWatch: (id: string) => `/bounty-hub?tab=watching&watch=${id}`,
 	exposures: (tab?: ExposureTab, query?: Record<string, string>) => {
 		const params = new URLSearchParams(query ?? {});

@@ -15,6 +15,8 @@ if TYPE_CHECKING:
 # bounty_platform() spans BOUNTY_SYNC .. BOUNTY_SYNC + 0xFFFF
 BOUNTY_SYNC = 0x624F0001
 BOUNTY_FEED = 0x624F0002
+# bounty_reports() spans BOUNTY_REPORTS .. BOUNTY_REPORTS + 0xFFFF
+BOUNTY_REPORTS = 0x62520001
 IP_RANGES = 0x624E0001
 # secret_mining() spans SECRET_MINING .. SECRET_MINING + 0xFFFF
 SECRET_MINING = 0x53450001
@@ -27,6 +29,11 @@ NEW_CHECKS_SWEEP = 0x4E430001
 def bounty_platform(platform: str) -> int:
     """One lock per platform."""
     return BOUNTY_SYNC + (zlib.crc32(platform.encode()) & 0xFFFF)
+
+
+def bounty_reports(platform: str) -> int:
+    """One lock per platform."""
+    return BOUNTY_REPORTS + (zlib.crc32(platform.encode()) & 0xFFFF)
 
 
 def secret_mining(scan_id: object) -> int:

@@ -23,6 +23,10 @@ class BountyVocabularyStore {
 		return this.platform(key)?.url ?? '';
 	}
 
+	stageLabel(key: string): string {
+		return this.vocabulary?.report_stages.find((s) => s.key === key)?.label ?? key;
+	}
+
 	eventLabel(kind: string): string {
 		return this.vocabulary?.events.find((e) => e.kind === kind)?.label ?? kind.replace(/_/g, ' ');
 	}

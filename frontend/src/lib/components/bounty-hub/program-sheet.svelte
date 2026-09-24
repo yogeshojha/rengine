@@ -26,6 +26,9 @@
 		formatPayout
 	} from '$lib/config/bounty-programs';
 	import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
+	import { ROUTES } from '$lib/config/routes';
+	import { formatMoney } from '$lib/config/bounty-reports';
+	import { REFRESH_POLLS, REFRESH_POLL_MS } from '$lib/config/bounty-programs';
 	import { formatShortDate } from '$lib/utilities/dates';
 	import type { Watch } from '$lib/types/watch';
 	import {
@@ -55,24 +58,44 @@
 	let loading = $state(false);
 	let loadError = $state<string | null>(null);
 	let importing = $state(false);
-	let syncing = $state(false);
+	let syncingKey = $state<string | null>(null);
+	const syncing = $derived(!!program && syncingKey === `${program.platform}:${program.handle}`);
+	let fetchFailed = $state<string | null>(null);
+	const autoFetched = new SvelteSet<string>();
 	let tab = $state<string>('all');
 	let selected = new SvelteSet<string>();
 	let showOutOfScope = $state(false);
 	let importOpen = $state(false);
 
+	const unfetched = (d: BountyProgramDetail) =>
+		!d.scopes_synced_at && d.scope_access !== ScopeAccess.Denied;
+	const isCurrent = (handle: string, platform: string) =>
+		open && program?.handle === handle && program?.platform === platform;
+
+	function apply(d: BountyProgramDetail) {
+		detail = d;
+		loadError = null;
+		selected.clear();
+		for (const s of d.scopes) {
+			if (s.importable && !s.already_target && s.scope_state === ScopeState.InScope) {
+				selected.add(s.id);
+			}
+		}
+	}
+
 	async function load(handle: string, platform: string) {
 		loading = true;
 		try {
-			detail = await bountyProgramsApi.detail(handle, projectId, null, platform);
-			loadError = null;
-			selected.clear();
-			for (const s of detail.scopes) {
-				if (s.importable && !s.already_target && s.scope_state === ScopeState.InScope) {
-					selected.add(s.id);
-				}
+			const d = await bountyProgramsApi.detail(handle, projectId, null, platform);
+			if (!isCurrent(handle, platform)) return;
+			apply(d);
+			const key = `${platform}:${handle}`;
+			if (unfetched(d) && !autoFetched.has(key)) {
+				autoFetched.add(key);
+				void fetchScope(handle, platform);
 			}
 		} catch (error) {
+			if (!isCurrent(handle, platform)) return;
 			loadError = error instanceof Error ? error.message : 'Request failed.';
 			toast.error(error instanceof Error ? error.message : 'Program not loaded');
 			detail = null;
@@ -92,6 +115,7 @@
 		tab = 'all';
 		showOutOfScope = false;
 		loadError = null;
+		fetchFailed = null;
 		void load(handle, platform);
 	});
 
@@ -172,17 +196,37 @@
 		}
 	}
 
-	async function refreshScope() {
-		if (!program) return;
-		syncing = true;
+	async function fetchScope(handle: string, platform: string) {
+		const before = detail?.scopes_synced_at ?? null;
+		const key = `${platform}:${handle}`;
+		syncingKey = key;
+		fetchFailed = null;
 		try {
-			await bountyProgramsApi.syncProgram(program.handle, program.platform);
-			toast.success('Scope refresh started');
+			await bountyProgramsApi.syncProgram(handle, platform);
+			for (let i = 0; i < REFRESH_POLLS; i++) {
+				await new Promise((r) => setTimeout(r, REFRESH_POLL_MS));
+				if (!isCurrent(handle, platform)) return;
+				const d = await bountyProgramsApi
+					.detail(handle, projectId, null, platform)
+					.catch(() => null);
+				if (!d) continue;
+				if (d.scopes_synced_at !== before || d.scope_access === ScopeAccess.Denied) {
+					apply(d);
+					onImported();
+					return;
+				}
+			}
+			fetchFailed = 'Scope refresh running.';
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Scope not refreshed');
+			if (isCurrent(handle, platform))
+				fetchFailed = error instanceof Error ? error.message : 'Scope not refreshed';
 		} finally {
-			syncing = false;
+			if (syncingKey === key) syncingKey = null;
 		}
+	}
+
+	function refreshScope() {
+		if (program) void fetchScope(program.handle, program.platform);
 	}
 </script>
 
@@ -220,7 +264,19 @@
 						<ExternalLinkIcon class="size-3" />
 					</a>
 					{#if program.reports_for_user}
-						<span class="text-xs">{program.reports_for_user} reports from this account</span>
+						{#if bountyVocabulary.platform(program.platform)?.tracks_reports}
+							<a
+								href={ROUTES.bountyReports(program.platform, program.handle)}
+								class="text-xs text-foreground underline-offset-4 hover:underline"
+							>
+								{program.reports_for_user}
+								{program.reports_for_user === 1 ? 'report' : 'reports'}{program.earnings_for_user
+									? ` · ${formatMoney(program.earnings_for_user, program.currency?.toUpperCase() || 'USD')} earned`
+									: ''}
+							</a>
+						{:else}
+							<span class="text-xs">{program.reports_for_user} reports from this account</span>
+						{/if}
 					{/if}
 					{#if detail?.scopes_synced_at}
 						<span class="text-xs">Scope read {formatShortDate(detail.scopes_synced_at)}</span>
@@ -311,19 +367,29 @@
 							Retry
 						</Button>
 					</EmptyState>
-				{:else if scopes.length === 0 && program.scope_access === ScopeAccess.Denied}
+				{:else if scopes.length === 0 && (detail?.scope_access ?? program.scope_access) === ScopeAccess.Denied}
 					<EmptyState
 						title="Scope not shared"
 						description={`${program.platform_label} did not return this program's scope.`}
 						class="p-10"
 					/>
 				{:else if scopes.length === 0}
-					<EmptyState title="Scope not fetched" class="p-10">
-						<LoadingButton loading={syncing} variant="outline" size="sm" onclick={refreshScope}>
-							<RefreshCwIcon class="mr-2 size-3.5" />
-							Fetch scope
-						</LoadingButton>
-					</EmptyState>
+					{#if syncing}
+						<div aria-busy="true">
+							<p class="flex items-center gap-2 border-b px-4 py-2.5 text-xs text-muted-foreground">
+								<RefreshCwIcon class="size-3.5 animate-spin" />
+								Fetching scope from {program.platform_label}
+							</p>
+							<RowSkeleton rows={4} avatar={null} trailing="h-5 w-16 rounded-full" />
+						</div>
+					{:else}
+						<EmptyState title="Scope not fetched" description={fetchFailed ?? ''} class="p-10">
+							<LoadingButton loading={syncing} variant="outline" size="sm" onclick={refreshScope}>
+								<RefreshCwIcon class="mr-2 size-3.5" />
+								Fetch scope
+							</LoadingButton>
+						</EmptyState>
+					{/if}
 				{:else}
 					{#if tab !== ScopeState.OutOfScope && unreachableTotal > 0}
 						<div class="border-b bg-muted/30 px-4 py-2.5 text-xs text-muted-foreground">

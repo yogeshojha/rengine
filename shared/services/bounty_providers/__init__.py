@@ -9,6 +9,7 @@ from shared.services.bounty_providers.base import (
     BountyProvider,
     BountyProviderError,
     CredentialsError,
+    ReportFetch,
     ScopeFetch,
 )
 from shared.services.bounty_providers.hackerone import HackerOneProvider
@@ -47,6 +48,7 @@ __all__ = [
     "CredentialsError",
     "HackerOneProvider",
     "IntigritiProvider",
+    "ReportFetch",
     "ScopeFetch",
     "configured_platforms",
     "configured_providers",
