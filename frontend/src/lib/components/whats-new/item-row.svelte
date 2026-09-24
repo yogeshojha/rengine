@@ -11,23 +11,17 @@
 	import Hint from '$lib/components/hint.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import ScreenshotThumb from '$lib/components/scans/results/screenshot-thumb.svelte';
-	import SeverityMark from '$lib/components/scans/results/vulnerabilities/severity-mark.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { NewKind, TERMS_KINDS } from '$lib/config/whats-new';
 	import { rowHref } from '$lib/utilities/whats-new';
-	import { relativeTime } from '$lib/utilities/dates';
 	import type { NewItem } from '$lib/types/whats-new';
 
 	interface Props {
 		item: NewItem;
-		index: number;
-		cursor?: boolean;
 		checked?: boolean;
 		selectable?: boolean;
 		busy?: boolean;
-		showTime?: boolean;
 		sheet?: boolean;
-		onPick?: (index: number) => void;
 		onOpen?: (item: NewItem) => void;
 		onCheck?: (item: NewItem, shift: boolean) => void;
 		onAddTarget?: (item: NewItem) => void;
@@ -39,14 +33,10 @@
 
 	let {
 		item,
-		index,
-		cursor = false,
 		checked = false,
 		selectable = false,
 		busy = false,
-		showTime = true,
 		sheet = false,
-		onPick,
 		onOpen,
 		onCheck,
 		onAddTarget,
@@ -74,13 +64,8 @@
 	);
 </script>
 
-<!-- svelte-ignore a11y_no_static_element_interactions, a11y_click_events_have_key_events -->
 <div
-	data-new-row={index}
-	onclick={() => onPick?.(index)}
-	class="group/row grid grid-cols-[1.25rem_minmax(0,1fr)_auto] items-center gap-x-3 px-3 py-1.5 transition-colors hover:bg-muted/50 {cursor
-		? 'bg-muted/50'
-		: ''} max-sm:grid-cols-[1.25rem_minmax(0,1fr)]"
+	class="group/row grid grid-cols-[1.25rem_minmax(0,1fr)_auto] items-center gap-x-3 px-3 py-1.5 transition-colors hover:bg-muted/50 max-sm:grid-cols-[1.25rem_minmax(0,1fr)]"
 >
 	<div class="flex h-5 items-center">
 		{#if selectable}
@@ -104,14 +89,12 @@
 				class="h-7 w-11 shrink-0"
 				preview
 			/>
-		{:else if item.kind === NewKind.FINDING}
-			<SeverityMark severity={item.severity ?? ''} class="w-20 shrink-0" />
 		{/if}
 		<div class="flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
 			{#if sheet}
 				<button
 					type="button"
-					class="min-w-0 text-left text-sm wrap-anywhere hover:underline {mono
+					class="min-w-0 text-left text-sm wrap-anywhere hover:text-primary {mono
 						? 'font-mono text-sm'
 						: 'font-medium'}"
 					onclick={(e) => {
@@ -133,7 +116,7 @@
 			{:else if link}
 				<a
 					href={link}
-					class="inline-flex min-w-0 items-center gap-1 text-sm wrap-anywhere hover:underline {mono
+					class="inline-flex min-w-0 items-center gap-1 text-sm wrap-anywhere hover:text-primary {mono
 						? 'font-mono text-sm'
 						: 'font-medium'}"
 				>
@@ -148,11 +131,7 @@
 				</span>
 			{/if}
 
-			{#if item.kind === NewKind.FINDING}
-				{#if item.is_kev}<Badge variant="destructive">KEV</Badge>{/if}
-				{#if item.detail}<span class="font-mono text-xs text-muted-foreground">{item.detail}</span
-					>{/if}
-			{:else if TERMS_KINDS.has(item.kind)}
+			{#if TERMS_KINDS.has(item.kind)}
 				{#if item.asset_type}<span class="text-xs text-muted-foreground">{item.asset_type}</span
 					>{/if}
 				{#if item.detail}<span class="text-xs wrap-anywhere">{item.detail}</span>{/if}
@@ -181,7 +160,7 @@
 				{#if item.watch_id}<Badge variant="info">Watched</Badge>{/if}
 			{:else if item.kind === NewKind.TARGET}
 				{#if item.detail && programHref}
-					<a href={programHref} class="text-xs text-muted-foreground hover:underline"
+					<a href={programHref} class="text-xs text-muted-foreground hover:text-foreground"
 						>{item.detail}</a
 					>
 				{/if}
@@ -192,9 +171,7 @@
 	</div>
 
 	<div
-		class="flex items-center justify-end gap-0.5 opacity-40 transition-opacity group-hover/row:opacity-100 focus-within:opacity-100 max-sm:col-start-2 max-sm:justify-start max-sm:opacity-100 {cursor
-			? 'opacity-100'
-			: ''}"
+		class="flex items-center justify-end gap-0.5 opacity-40 transition-opacity group-hover/row:opacity-100 focus-within:opacity-100 max-sm:col-start-2 max-sm:justify-start max-sm:opacity-100"
 	>
 		{#if mono}
 			<CopyButton
@@ -277,7 +254,7 @@
 			</Hint>
 		{:else if item.kind === NewKind.TARGET}
 			<Button
-				size={item.scanned ? 'sm' : 'sm'}
+				size="sm"
 				variant={item.scanned ? 'ghost' : 'default'}
 				class="h-7 px-2.5 text-xs"
 				onclick={() => onScan?.(item)}
@@ -297,11 +274,6 @@
 					Remove target
 				</LoadingButton>
 			{/if}
-		{/if}
-		{#if showTime}
-			<span class="pl-2 text-2xs text-muted-foreground tabular-nums whitespace-nowrap"
-				>{relativeTime(item.at)}</span
-			>
 		{/if}
 	</div>
 </div>

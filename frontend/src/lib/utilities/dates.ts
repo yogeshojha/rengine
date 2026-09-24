@@ -206,3 +206,11 @@ export function getColorsForTimestamp(
 ): FreshnessColors {
 	return getFreshnessColors(getFreshnessLevel(timestamp, thresholds));
 }
+
+export function viewerZone(): string {
+	try {
+		return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+	} catch {
+		return 'UTC';
+	}
+}

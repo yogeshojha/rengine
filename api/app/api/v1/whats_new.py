@@ -1,6 +1,7 @@
 from datetime import date, datetime
 from typing import Annotated
 from uuid import UUID
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,6 +12,7 @@ from app.services.instance_settings import InstanceSettingsService
 from app.services.whats_new import WhatsNewService
 from shared.definitions.mode_features import CAP_BOUNTY_PROGRAMS, has_capability
 from shared.definitions.whats_new import (
+    DEFAULT_ZONE,
     KIND_ORDER,
     MAX_TEXT_FILTER,
     NEW_WINDOWS,
@@ -30,6 +32,16 @@ def get_service(
 ServiceDep = Annotated[WhatsNewService, Depends(get_service)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 RINGS = {r.value for r in ProgramRing}
+
+
+def _zone(tz: str) -> None:
+    try:
+        ZoneInfo(tz)
+    except (ZoneInfoNotFoundError, ValueError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Unknown time zone {tz}.",
+        ) from exc
 
 
 async def _bounty(session: AsyncSession) -> bool:
@@ -53,7 +65,9 @@ async def whats_new(
     kinds: Annotated[str | None, Query(max_length=160)] = None,
     ring: Annotated[str, Query(max_length=16)] = ProgramRing.ENGAGED.value,
     q: Annotated[str | None, Query(max_length=MAX_TEXT_FILTER)] = None,
+    tz: Annotated[str, Query(max_length=64)] = DEFAULT_ZONE,
 ) -> NewFeed:
+    _zone(tz)
     if window is not None and window not in NEW_WINDOWS:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -88,6 +102,7 @@ async def whats_new(
         kinds=wanted,
         ring=ring,
         q=q,
+        tz=tz,
         bounty=await _bounty(session),
     )
 
@@ -103,7 +118,9 @@ async def whats_new_visual(
     day_to: date | None = None,
     target_id: UUID | None = None,
     q: Annotated[str | None, Query(max_length=MAX_TEXT_FILTER)] = None,
+    tz: Annotated[str, Query(max_length=64)] = DEFAULT_ZONE,
 ) -> VisualFeed:
+    _zone(tz)
     if window is not None and window not in NEW_WINDOWS:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -123,6 +140,7 @@ async def whats_new_visual(
         day_to=day_to,
         target_id=target_id,
         q=q,
+        tz=tz,
     )
 
 
@@ -132,9 +150,11 @@ async def whats_new_unseen(
     service: ServiceDep,
     session: SessionDep,
     project_id: Annotated[UUID, Query(description="Project ID")],
+    tz: Annotated[str, Query(max_length=64)] = DEFAULT_ZONE,
 ) -> NewUnseen:
+    _zone(tz)
     count = await service.unseen(
-        project_id, current_user.id, bounty=await _bounty(session)
+        project_id, current_user.id, bounty=await _bounty(session), tz=tz
     )
     return NewUnseen(count=count, since=await service.mark(current_user.id, project_id))
 

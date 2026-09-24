@@ -86,7 +86,7 @@ async def test_a_rescan_reports_new_critical_and_high_findings(estate, now):
     ]
     today = now.date().isoformat()
     assert [d.counts for d in out.daily if d.date == today] == [
-        {NewKind.FINDING.value: 2}
+        {NewKind.FINDING.value: 2, "critical": 1, "high": 1}
     ]
 
 
@@ -100,7 +100,6 @@ async def test_a_first_scan_is_not_an_event(estate, now):
 
     assert out.groups == []
     assert out.counts[NewKind.FINDING.value] == 0
-    assert out.first_runs == 1
 
 
 async def test_a_rescan_with_only_lower_severities_is_not_an_event(estate, now):
@@ -132,14 +131,79 @@ async def test_a_day_range_bounds_the_feed(estate, now):
     assert [g.scan_id for g in out.groups] == [estate.scans["mid"]]
 
 
-async def test_text_filter_narrows_findings(estate, now):
+async def test_text_filter_picks_runs_and_keeps_their_whole_count(estate, now):
     await _rescan(estate, now, [("solr-rce", "critical"), ("info-leak", "high")])
 
-    out = await _service(estate).feed(
+    service = _service(estate)
+    hit = await service.feed(
         estate.project_id, estate.user_id, since=now - timedelta(hours=1), q="solr"
     )
+    miss = await service.feed(
+        estate.project_id, estate.user_id, since=now - timedelta(hours=1), q="zimbra"
+    )
 
-    assert out.counts[NewKind.FINDING.value] == 1
+    assert hit.counts[NewKind.FINDING.value] == 2
+    assert miss.groups == []
+
+
+async def test_a_period_starting_mid_run_counts_the_whole_run(estate, now):
+    await estate.scan("example.com", "older", at=now - timedelta(days=2))
+    await estate.vulns("older", [("old-check", "low")], at=now - timedelta(days=2))
+    await estate.scan("example.com", "fresh", at=now)
+    await estate.vulns(
+        "fresh", [("early-rce", "critical")], at=now - timedelta(hours=3)
+    )
+    await estate.vulns("fresh", [("late-rce", "high")], at=now)
+
+    out = await _service(estate).feed(
+        estate.project_id, estate.user_id, since=now - timedelta(hours=1)
+    )
+
+    assert out.groups[0].severities == {"critical": 1, "high": 1}
+    assert out.events == 1
+
+
+async def test_bounty_days_follow_the_viewer_zone(estate, now):
+    program = _program("acme", "Acme")
+    estate.session.add(program)
+    await estate.session.flush()
+    late = now.replace(hour=17, minute=0, second=0, microsecond=0) - timedelta(days=1)
+    for at in (late, late + timedelta(hours=2)):
+        estate.session.add(
+            BountyEventRow(
+                platform=program.platform,
+                program_id=program.id,
+                handle=program.handle,
+                program_name=program.name,
+                kind=BountyEvent.PROGRAM_ADDED.value,
+                created_at=at,
+            )
+        )
+    await estate.session.flush()
+
+    service = _service(estate)
+    utc = await service.feed(estate.project_id, estate.user_id, window="7d")
+    nepal = await service.feed(
+        estate.project_id, estate.user_id, window="7d", tz="Asia/Kathmandu"
+    )
+
+    assert len(utc.groups) == 1
+    assert len(nepal.groups) == 2
+
+
+async def test_an_unknown_program_filter_shows_nothing(estate, now):
+    await _rescan(estate, now, [("solr-rce", "critical")])
+
+    out = await _service(estate).feed(
+        estate.project_id,
+        estate.user_id,
+        since=now - timedelta(hours=1),
+        platform="hackerone",
+        handle="missing",
+    )
+
+    assert out.groups == []
+    assert out.counts[NewKind.FINDING.value] == 0
 
 
 async def test_a_kind_filter_leaves_no_empty_run(estate, now):

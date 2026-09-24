@@ -1,127 +1,62 @@
 <script lang="ts">
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import * as ScrollArea from '$lib/components/ui/scroll-area';
-	import ActivityGrid from './activity-grid.svelte';
+	import ActivityLanes from './activity-lanes.svelte';
 	import { SEVERITY_CHIP, SEVERITY_LABELS, Severity } from '$lib/config/vulnerabilities';
-	import {
-		Fact,
-		KIND_LABELS,
-		NewKind,
-		Signal,
-		type NewKindKey,
-		type SignalKey
-	} from '$lib/config/whats-new';
+	import { Fact, NewKind, Signal, type NewKindKey, type SignalKey } from '$lib/config/whats-new';
 	import type { NewFeed } from '$lib/types/whats-new';
 
 	interface Props {
 		feed: NewFeed | null;
-		kinds: readonly string[];
-		since: string;
+		kinds: NewKindKey[];
+		period: string;
 		active: SignalKey | null;
-		gridKinds: NewKindKey[];
 		from: string | null;
 		to: string | null;
 		onSignal: (signal: SignalKey | null) => void;
 		onPick: (from: string | null, to: string | null) => void;
 	}
 
-	let { feed, kinds, since, active, gridKinds, from, to, onSignal, onPick }: Props = $props();
+	let { feed, kinds, period, active, from, to, onSignal, onPick }: Props = $props();
 
 	const FINDINGS = [
 		{ signal: Signal.CRITICAL, sev: Severity.CRITICAL },
 		{ signal: Signal.HIGH, sev: Severity.HIGH }
 	];
 
-	let counts = $derived(feed?.counts ?? {});
-	let facts = $derived(feed?.facts ?? {});
-	function fact(kind: string, key: string): number {
-		return facts[kind]?.[key] ?? 0;
-	}
-	function shows(kind: string): boolean {
-		return kinds.includes(kind);
-	}
-	const BOUNTY_STATS: NewKindKey[] = [
-		NewKind.PROGRAM,
-		NewKind.SCOPE,
-		NewKind.OUT_OF_SCOPE,
-		NewKind.BOUNTY_TABLE,
-		NewKind.RULES,
-		NewKind.CERT_HOST,
-		NewKind.TARGET
-	];
-	let bountyStats = $derived(
-		BOUNTY_STATS.filter((k) => shows(k) && (counts[k] ?? 0) > 0).map((kind) => ({
-			kind,
-			sub:
-				kind === NewKind.SCOPE && fact(kind, Fact.NOT_TARGET)
-					? `${fact(kind, Fact.NOT_TARGET).toLocaleString()} not targets`
-					: kind === NewKind.CERT_HOST && fact(kind, Fact.ANSWERING)
-						? `${fact(kind, Fact.ANSWERING).toLocaleString()} answering`
-						: kind === NewKind.TARGET && fact(kind, Fact.NOT_SCANNED)
-							? `${fact(kind, Fact.NOT_SCANNED).toLocaleString()} not scanned`
-							: ''
-		}))
-	);
+	let facts = $derived(feed?.facts[NewKind.FINDING] ?? {});
+	let kev = $derived(facts[Fact.KEV] ?? 0);
 </script>
-
-{#snippet stat(label: string, signal: SignalKey | null, n: number, sub = '', prefix = '')}
-	{@const on = signal !== null && active === signal}
-	<button
-		type="button"
-		class="group/s flex flex-col items-start gap-0.5 rounded-md text-left focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-		aria-pressed={on}
-		disabled={signal === null}
-		onclick={() => onSignal(on ? null : signal)}
-	>
-		<span class="text-2xs tracking-wide text-muted-foreground uppercase">{label}</span>
-		<span
-			class="font-mono text-2xl font-semibold tabular-nums underline-offset-4 {signal
-				? 'group-hover/s:underline'
-				: ''} {n ? 'text-foreground' : 'text-muted-foreground/60'} {on
-				? 'underline decoration-2'
-				: ''}"
-		>
-			{n ? prefix : ''}{n.toLocaleString()}
-		</span>
-		{#if sub}<span class="text-2xs text-muted-foreground">{sub}</span>{/if}
-	</button>
-{/snippet}
 
 {#if !feed}
 	<div class="flex flex-wrap items-start gap-x-8 gap-y-4 border-b px-4 py-4" aria-busy="true">
-		{#each ['w-14', 'w-24', 'w-28', 'w-16', 'w-20'] as w (w)}
-			<div class="flex flex-col gap-1.5">
-				<Skeleton class="h-3 {w}" />
-				<Skeleton class="h-7 w-12" />
-				<Skeleton class="h-3 w-20" />
-			</div>
-		{/each}
-		<Skeleton class="h-[7.5rem] w-full max-w-[42rem] rounded-md lg:ml-auto lg:w-[36rem]" />
+		<div class="flex w-56 flex-col gap-2">
+			<Skeleton class="h-3 w-32" />
+			<Skeleton class="h-9 w-24" />
+			<div class="flex gap-1.5"><Skeleton class="h-8 w-24" /><Skeleton class="h-8 w-20" /></div>
+		</div>
+		<div class="flex min-w-0 flex-1 flex-col gap-2 pt-1">
+			{#each { length: 3 } as _, i (i)}
+				<Skeleton class="h-4 w-full rounded-full" />
+			{/each}
+		</div>
 	</div>
 {:else}
-	<div class="flex flex-wrap items-start gap-x-8 gap-y-4 border-b px-4 py-4">
-		<div class="flex flex-col gap-0.5">
-			<span class="text-2xs tracking-wide text-muted-foreground uppercase">Since</span>
-			<span class="text-lg leading-8 font-semibold">{since}</span>
-		</div>
-
-		{#if shows(NewKind.FINDING)}
-			<div class="flex flex-col gap-1">
-				<button
-					type="button"
-					class="w-fit text-left text-2xs tracking-wide text-muted-foreground uppercase hover:text-foreground {active ===
-					NewKind.FINDING
-						? 'text-foreground underline decoration-2 underline-offset-4'
-						: ''}"
-					aria-pressed={active === NewKind.FINDING}
-					onclick={() => onSignal(active === NewKind.FINDING ? null : NewKind.FINDING)}
-				>
-					New findings
-				</button>
-				<div class="flex items-center gap-1.5">
+	<div class="flex flex-col gap-4 border-b px-4 py-4 md:flex-row md:items-start md:gap-8">
+		<div class="flex shrink-0 flex-col gap-2 md:w-56">
+			<span class="text-2xs tracking-wide text-muted-foreground uppercase">{period}</span>
+			<div class="flex items-baseline gap-2">
+				<span class="font-mono text-4xl leading-none font-semibold tabular-nums">
+					{feed.events.toLocaleString()}
+				</span>
+				<span class="text-sm text-muted-foreground">
+					{feed.events === 1 ? 'event' : 'events'}
+				</span>
+			</div>
+			{#if kinds.includes(NewKind.FINDING)}
+				<div class="flex flex-wrap items-center gap-1.5">
 					{#each FINDINGS as f (f.signal)}
 						{@const on = active === f.signal}
-						{@const n = fact(NewKind.FINDING, f.signal)}
+						{@const n = facts[f.signal] ?? 0}
 						<button
 							type="button"
 							class="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 font-mono text-sm font-semibold tabular-nums transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {SEVERITY_CHIP[
@@ -136,27 +71,24 @@
 						</button>
 					{/each}
 				</div>
-				{#if fact(NewKind.FINDING, Fact.KEV)}
-					<span class="text-2xs text-muted-foreground">
-						{fact(NewKind.FINDING, Fact.KEV).toLocaleString()} known exploited
-					</span>
+				{#if kev}
+					<span class="text-2xs text-muted-foreground">{kev.toLocaleString()} known exploited</span>
 				{/if}
-			</div>
-		{/if}
+			{/if}
+		</div>
 
-		{#each bountyStats as b (b.kind)}
-			{@render stat(KIND_LABELS[b.kind], b.kind, counts[b.kind] ?? 0, b.sub)}
-		{/each}
-
-		{#if feed.daily.length}
-			<div class="flex max-w-full min-w-0 flex-col gap-1 lg:ml-auto">
-				<span class="text-2xs tracking-wide text-muted-foreground uppercase">Last 13 weeks</span>
-				<ScrollArea.Root orientation="horizontal" class="max-w-full">
-					<div class="pb-2">
-						<ActivityGrid days={feed.daily} kinds={gridKinds} {from} {to} {onPick} />
-					</div>
-				</ScrollArea.Root>
-			</div>
-		{/if}
+		<ActivityLanes
+			days={feed.daily}
+			{kinds}
+			counts={feed.counts}
+			periodStart={from ? null : feed.since}
+			periodEnd={feed.until}
+			markedAt={feed.marked_at}
+			{from}
+			{to}
+			{active}
+			{onPick}
+			{onSignal}
+		/>
 	</div>
 {/if}

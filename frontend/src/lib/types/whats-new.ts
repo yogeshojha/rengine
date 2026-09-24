@@ -12,9 +12,6 @@ export interface NewItem {
 	source: string | null;
 	source_label: string | null;
 	screenshot_path: string | null;
-	severity: string | null;
-	is_kev: boolean;
-	sensitive: boolean;
 	asset_type: string | null;
 	query: string | null;
 	target_id: string | null;
@@ -93,8 +90,8 @@ export interface NewFeed {
 	facts: Record<string, Record<string, number>>;
 	daily: NewDay[];
 	groups: NewGroup[];
+	events: number;
 	truncated: boolean;
-	first_runs: number;
 	visual: number;
 }
 

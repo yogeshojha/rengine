@@ -22,9 +22,6 @@ class NewItem(BaseModel):
     source: str | None = None
     source_label: str | None = None
     screenshot_path: str | None = None
-    severity: str | None = None
-    is_kev: bool = False
-    sensitive: bool = False
     asset_type: str | None = None
     query: str | None = None
     target_id: uuid.UUID | None = None
@@ -103,8 +100,8 @@ class NewFeed(BaseModel):
     facts: dict[str, dict[str, int]] = Field(default_factory=dict)
     daily: list[NewDay] = Field(default_factory=list)
     groups: list[NewGroup] = Field(default_factory=list)
+    events: int = 0
     truncated: bool = False
-    first_runs: int = 0
     visual: int = 0
 
 

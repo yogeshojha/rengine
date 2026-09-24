@@ -1,13 +1,4 @@
 // mirrors shared/definitions/whats_new.py
-import Bug from '@lucide/svelte/icons/bug';
-import ShieldCheck from '@lucide/svelte/icons/shield-check';
-import Award from '@lucide/svelte/icons/award';
-import Radar from '@lucide/svelte/icons/radar';
-import Target from '@lucide/svelte/icons/target';
-import CircleMinus from '@lucide/svelte/icons/circle-minus';
-import Banknote from '@lucide/svelte/icons/banknote';
-import ScrollText from '@lucide/svelte/icons/scroll-text';
-import type { IconComponent } from './icons';
 import { SurfaceDimension } from './surface';
 import { Severity } from './vulnerabilities';
 import type { ScanStatus } from '$lib/types/scan';
@@ -46,17 +37,6 @@ export const KIND_NOUN: Record<NewKindKey, [string, string]> = {
 	[NewKind.RULES]: ['rule change', 'rule changes'],
 	[NewKind.CERT_HOST]: ['certificate host', 'certificate hosts'],
 	[NewKind.TARGET]: ['target', 'targets']
-};
-
-export const KIND_ICONS: Record<NewKindKey, IconComponent> = {
-	[NewKind.FINDING]: Bug,
-	[NewKind.PROGRAM]: Award,
-	[NewKind.SCOPE]: ShieldCheck,
-	[NewKind.OUT_OF_SCOPE]: CircleMinus,
-	[NewKind.BOUNTY_TABLE]: Banknote,
-	[NewKind.RULES]: ScrollText,
-	[NewKind.CERT_HOST]: Radar,
-	[NewKind.TARGET]: Target
 };
 
 export const SCAN_KINDS: ReadonlySet<string> = new Set([NewKind.FINDING]);
@@ -160,12 +140,10 @@ export const VISUAL_FIELD_LABELS: Record<string, string> = {
 };
 export const VISUAL_MAX_DISTANCE = 64;
 
-export const GRID_STEPS = 4;
-
 export const NEW_KEYS: [string, string][] = [
 	['j / k', 'Move between events'],
-	['o', 'Show or hide the rows of an event'],
-	['Enter', 'Open the run or program'],
+	['Enter or o', 'Expand or collapse the event'],
+	['g', 'Go to the run or program'],
 	['s', 'Scan the target'],
 	['1 2', 'Switch tab'],
 	['/', 'Filter'],

@@ -317,7 +317,7 @@ EVENTS: tuple[EventSpec, ...] = (
     EventSpec(
         BountyEvent.PAYOUT_CHANGED.value,
         "Payout changed",
-        "The program changed its bounty range",
+        "Minimum and maximum payout",
         "banknote",
         "info",
         actionable=False,
@@ -341,7 +341,7 @@ EVENTS: tuple[EventSpec, ...] = (
     EventSpec(
         BountyEvent.ASSET_RULES_CHANGED.value,
         "Asset rules changed",
-        "The program rewrote an asset's instructions",
+        "Testing instructions on one asset",
         "file-pen",
         "info",
         actionable=False,

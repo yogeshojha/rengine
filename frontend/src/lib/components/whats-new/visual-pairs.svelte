@@ -58,7 +58,7 @@
 			<div class="flex items-center gap-2 border-b px-3 py-2">
 				<button
 					type="button"
-					class="min-w-0 flex-1 truncate text-left font-mono text-sm hover:underline"
+					class="min-w-0 flex-1 truncate text-left font-mono text-sm hover:text-primary"
 					onclick={() => onOpen(pair)}
 				>
 					{pair.host}
@@ -69,7 +69,7 @@
 				/>
 				<a
 					href={ROUTES.target(pair.target_id)}
-					class="truncate text-2xs text-muted-foreground hover:underline"
+					class="truncate text-2xs text-muted-foreground hover:text-foreground"
 				>
 					{pair.target_value}
 				</a>

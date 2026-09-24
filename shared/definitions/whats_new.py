@@ -43,6 +43,10 @@ KIND_DIMENSION: dict[str, str] = {
     NewKind.FINDING.value: SurfaceDimension.VULNERABILITIES.value,
 }
 
+TERMS_KINDS: frozenset[str] = frozenset(
+    {NewKind.BOUNTY_TABLE.value, NewKind.RULES.value}
+)
+
 ALERT_SEVERITIES: tuple[str, ...] = (Severity.CRITICAL.value, Severity.HIGH.value)
 
 
@@ -67,7 +71,6 @@ class ProgramRing(StrEnum):
 class NewTone(StrEnum):
     NEW = "new"
     HOT = "hot"
-    NEUTRAL = "neutral"
 
 
 NEW_WINDOWS: dict[str, timedelta] = {
@@ -81,6 +84,9 @@ BOUNTY_ROWS_PER_SECTION = 50
 GROUP_LIMIT = 80
 EVIDENCE_FINDINGS = 4
 MAX_TEXT_FILTER = 200
+DEFAULT_ZONE = "UTC"
+WATCH_SOURCE = "watch"
+SCOPE_SOURCE = "scope"
 
 SOURCE_LABELS: dict[str, str] = {
     "ct_log": "Certificate log",

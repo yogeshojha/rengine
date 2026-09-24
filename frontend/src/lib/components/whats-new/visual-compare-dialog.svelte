@@ -125,7 +125,7 @@
 					<Dialog.Title class="font-mono text-sm font-medium">{pair.host}</Dialog.Title>
 					<a
 						href={ROUTES.target(pair.target_id)}
-						class="text-xs text-muted-foreground hover:underline">{pair.target_value}</a
+						class="text-xs text-muted-foreground hover:text-foreground">{pair.target_value}</a
 					>
 					<span class="text-xs text-muted-foreground tabular-nums">Distance {pair.distance}</span>
 					{#if pair.silent}

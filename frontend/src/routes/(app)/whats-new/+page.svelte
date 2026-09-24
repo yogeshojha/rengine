@@ -49,6 +49,8 @@
 	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { subdomainsApi } from '$lib/api/subdomains';
 	import WebAssetDetailSheet from '$lib/components/scans/results/web-asset-detail-sheet.svelte';
+	import VulnerabilityDetailSheet from '$lib/components/scans/results/vulnerability-detail-sheet.svelte';
+	import type { VulnerabilityRead } from '$lib/utilities/vulns';
 	import { compileQuery, emptyQuery, exactToken } from '$lib/utilities/scan-insights';
 	import { SURFACE } from '$lib/config/surface';
 	import { ROUTES, routeLabels } from '$lib/config/routes';
@@ -57,7 +59,6 @@
 	import { SurfaceDimension } from '$lib/config/surface';
 	import {
 		BOUNTY_KINDS,
-		GONE_KINDS,
 		KIND_ORDER,
 		NEW_KEYS,
 		NEW_TABS,
@@ -156,6 +157,7 @@
 	let addingAll = $state<string | null>(null);
 	let lastChecked = $state<string | null>(null);
 	let sheetSub = $state<SubdomainRead | null>(null);
+	let sheetVuln = $state<VulnerabilityRead | null>(null);
 	let sheetScan = $state('');
 	let sheetOpen = $state(false);
 	let opening = $state<string | null>(null);
@@ -169,18 +171,11 @@
 		KIND_ORDER.filter((k) => (bounty || !BOUNTY_KINDS.has(k)) && SOURCE_KINDS[sourceOn].has(k))
 	);
 	let wantedKinds = $derived<string[] | null>(sourceOn === NewSource.ALL ? null : visibleKinds);
-	let gridKinds = $derived<NewKindKey[]>(visibleKinds.filter((k) => !GONE_KINDS.has(k)));
 
 	const splitProgram = (v: string): [string, string] => {
 		const i = v.indexOf(':');
 		return i < 0 ? ['', ''] : [v.slice(0, i), v.slice(i + 1)];
 	};
-
-	let total = $derived(
-		feed
-			? visibleKinds.reduce((n, k) => (GONE_KINDS.has(k) ? n : n + (feed?.counts[k] ?? 0)), 0)
-			: 0
-	);
 
 	const dayLabel = (d: string) =>
 		new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', {
@@ -209,14 +204,13 @@
 		if (feed.basis === NewBasis.MARK) return 'since caught up';
 		return feed.window ? `in the last ${WINDOW_WORDS[feed.window] ?? feed.window}` : '';
 	});
+	let stripPeriod = $derived.by(() => {
+		if (!feed) return '';
+		if (feed.basis === NewBasis.DAYS) return sinceLabel;
+		if (feed.basis === NewBasis.MARK) return `Since caught up · ${sinceLabel}`;
+		return feed.window ? `Last ${WINDOW_WORDS[feed.window] ?? feed.window}` : '';
+	});
 	let emptyTitle = $derived(feed ? `Nothing new ${periodLabel}` : '');
-	let emptyDescription = $derived(
-		feed?.first_runs
-			? feed.first_runs === 1
-				? 'One first scan set a baseline. New rows appear from the next run of that target.'
-				: `${feed.first_runs} first scans set a baseline. New rows appear from the next run of each target.`
-			: undefined
-	);
 	let filtered = $derived(
 		!!(targetId || program || qApplied || signal || sourceOn !== NewSource.ALL || dayFrom)
 	);
@@ -277,7 +271,11 @@
 	});
 
 	let rowCount = $derived(tab === NewTab.TIMELINE ? entries.length : 0);
-	let briefItems = $derived(entries.flatMap((e) => e.group.sections.flatMap((s) => s.items)));
+	let briefItems = $derived(
+		entries
+			.filter((e) => expanded.has(e.id))
+			.flatMap((e) => e.group.sections.flatMap((s) => s.items))
+	);
 
 	// ---------- pickers ----------
 
@@ -339,13 +337,15 @@
 				remove: () => pickDays(null, null)
 			});
 		}
-		if (signal) {
+		if (signal && tab !== NewTab.VISUAL) {
 			out.push({ key: 'signal', label: SIGNAL_LABELS[signal], remove: () => (signal = null) });
 		}
 		if (targetId) {
 			out.push({ key: 'target', label: targetLabel || 'Target', remove: () => (targetId = '') });
 		}
-		if (program) out.push({ key: 'program', label: programLabel, remove: () => (program = '') });
+		if (program && tab !== NewTab.VISUAL) {
+			out.push({ key: 'program', label: programLabel, remove: () => (program = '') });
+		}
 		if (qApplied) {
 			out.push({
 				key: 'q',
@@ -485,6 +485,7 @@
 				expanded.clear();
 				cursor = -1;
 			}
+			selection.clear();
 			syncUrl();
 			void load();
 			if (onVisual) void loadVisual();
@@ -497,6 +498,7 @@
 		untrack(() => {
 			syncUrl();
 			cursor = -1;
+			selection.clear();
 		});
 	});
 
@@ -707,6 +709,7 @@
 		sheetOpen = open;
 		if (!open) {
 			sheetSub = null;
+			sheetVuln = null;
 		}
 	}
 
@@ -750,6 +753,12 @@
 		} finally {
 			opening = null;
 		}
+	}
+
+	function openFinding(vuln: VulnerabilityRead, scanId: string) {
+		sheetScan = scanId;
+		sheetVuln = vuln;
+		sheetOpen = true;
 	}
 
 	async function openPair(pair: VisualPair) {
@@ -841,6 +850,8 @@
 			shortcutsOpen = true;
 			return;
 		}
+		const control = !!t?.closest('a, button, [role=button], [role=checkbox]');
+		if (control && (e.key === 'Enter' || e.key === ' ')) return;
 		const tabIndex = ['1', '2'].indexOf(e.key);
 		if (tabIndex >= 0 && NEW_TABS[tabIndex]) {
 			setTab(NEW_TABS[tabIndex].key);
@@ -879,6 +890,8 @@
 			toggle(entry.id);
 		} else if (e.key === 'Enter' && entry) {
 			e.preventDefault();
+			toggle(entry.id);
+		} else if (e.key === 'g' && entry) {
 			void goto(eventHref(entry.group));
 		} else if (e.key === 's' && entry?.group.subject.target_id && entry.group.scan_id) {
 			launchFor = entry.group.subject.target_id;
@@ -897,13 +910,12 @@
 <div class="flex flex-col gap-4">
 	<h1 class="sr-only">{routeLabels['whats-new']}</h1>
 
-	<Card.Root class="gap-0 overflow-hidden py-0">
+	<Card.Root class="gap-0 overflow-clip py-0">
 		<NewStrip
 			{feed}
 			kinds={visibleKinds}
-			since={sinceLabel}
+			period={stripPeriod}
 			active={signal}
-			{gridKinds}
 			from={dayFrom}
 			to={dayTo}
 			onSignal={(s) => (signal = s)}
@@ -916,7 +928,7 @@
 				value={tab}
 				counts={feed
 					? {
-							[NewTab.TIMELINE]: total,
+							[NewTab.TIMELINE]: feed.events,
 							[NewTab.VISUAL]: feed.visual
 						}
 					: null}
@@ -1122,58 +1134,62 @@
 				{/each}
 			</div>
 		{:else if entries.length === 0}
-			<EmptyState icon={Sparkles} title={emptyTitle} description={emptyDescription} />
+			<EmptyState icon={Sparkles} title={emptyTitle} />
 		{:else}
 			<div class="flex flex-col pb-2 transition-opacity {loading ? 'opacity-60' : ''}">
 				{#each days as day (day.key)}
-					<h2
-						class="sticky top-0 z-10 border-b bg-card/95 px-4 py-2 text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase backdrop-blur"
-					>
-						{day.label}
-					</h2>
-					<ol>
-						{#each day.rows as { entry, index } (entry.id)}
-							{#if index === markIndex}
-								<li
-									class="grid grid-cols-[3rem_1rem_minmax(0,1fr)] items-center gap-x-3 px-4 py-1.5"
-								>
-									<span></span>
-									<span class="flex justify-center"
-										><span class="h-4 border-l border-dashed border-muted-foreground/60"
-										></span></span
+					<section>
+						<h2
+							class="sticky top-0 z-10 border-b bg-card/95 px-4 py-2 text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase backdrop-blur"
+						>
+							{day.label}
+						</h2>
+						<ol>
+							{#each day.rows as { entry, index } (entry.id)}
+								{#if index === markIndex}
+									<li
+										class="grid grid-cols-[1rem_minmax(0,1fr)] sm:grid-cols-[3rem_1rem_minmax(0,1fr)] items-center gap-x-3 px-4 py-1.5"
 									>
-									<span class="flex items-center gap-2 text-2xs text-muted-foreground">
-										<span class="h-px flex-1 border-t border-dashed border-muted-foreground/40"
-										></span>
-										Caught up {markLabel}
-										<span class="h-px flex-1 border-t border-dashed border-muted-foreground/40"
-										></span>
-									</span>
-								</li>
-							{/if}
-							<EventRow
-								group={entry.group}
-								{index}
-								cursor={cursor === index}
-								unseen={markedAt === null || new Date(entry.group.at).getTime() > markedAt}
-								expanded={expanded.has(entry.id)}
-								isChecked={(id) => selection.has(id)}
-								isBusy={(id) => busy.has(id)}
-								addingAll={addingAll === entry.id}
-								onToggle={() => toggle(entry.id)}
-								onPick={(i) => (cursor = i)}
-								onCompare={(current, baseline) => (runCompare = { current, baseline })}
-								onAddTargets={(items) => addAll(entry.id, items)}
-								onOpen={(item) => openRow(item)}
-								onCheck={check}
-								onAddTarget={(item) => addTargets([item])}
-								onWatch={(item) => (watchFor = item)}
-								onMute={(item) => muteHosts([item])}
-								onScan={scan}
-								onRemoveTarget={(item) => (removeFor = item)}
-							/>
-						{/each}
-					</ol>
+										<span class="hidden sm:block"></span>
+										<span class="flex justify-center"
+											><span class="h-4 border-l border-dashed border-muted-foreground/60"
+											></span></span
+										>
+										<span class="flex items-center gap-2 text-2xs text-muted-foreground">
+											<span class="h-px flex-1 border-t border-dashed border-muted-foreground/40"
+											></span>
+											Caught up {markLabel}
+											<span class="h-px flex-1 border-t border-dashed border-muted-foreground/40"
+											></span>
+										</span>
+									</li>
+								{/if}
+								<EventRow
+									group={entry.group}
+									{projectId}
+									{index}
+									cursor={cursor === index}
+									unseen={markedAt === null || new Date(entry.group.at).getTime() > markedAt}
+									expanded={expanded.has(entry.id)}
+									isChecked={(id) => selection.has(id)}
+									isBusy={(id) => busy.has(id)}
+									addingAll={addingAll === entry.id}
+									onToggle={() => toggle(entry.id)}
+									onPick={(i) => (cursor = i)}
+									onCompare={(current, baseline) => (runCompare = { current, baseline })}
+									onFinding={openFinding}
+									onAddTargets={(items) => addAll(entry.id, items)}
+									onOpen={(item) => openRow(item)}
+									onCheck={check}
+									onAddTarget={(item) => addTargets([item])}
+									onWatch={(item) => (watchFor = item)}
+									onMute={(item) => muteHosts([item])}
+									onScan={scan}
+									onRemoveTarget={(item) => (removeFor = item)}
+								/>
+							{/each}
+						</ol>
+					</section>
 				{/each}
 				{#if feed.truncated}
 					<p class="px-4 py-3 text-xs text-muted-foreground">
@@ -1269,6 +1285,15 @@
 		{projectId}
 		scanId={sheetScan}
 		onFilter={(dsl) => scanTab(SurfaceDimension.WEB_ASSETS, dsl)}
+	/>
+	<VulnerabilityDetailSheet
+		vuln={sheetVuln}
+		{projectId}
+		scanId={sheetScan}
+		open={sheetOpen && sheetVuln !== null}
+		onOpenChange={closeSheet}
+		onFilter={(dsl) => scanTab(SurfaceDimension.VULNERABILITIES, dsl)}
+		onHost={(dsl) => scanTab(SurfaceDimension.WEB_ASSETS, dsl)}
 	/>
 {/if}
 

@@ -3,17 +3,18 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import UTC, date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import (
     DateTime,
     Uuid,
-    case,
     cast,
     column,
     exists,
     func,
+    literal,
     not_,
     or_,
     select,
@@ -32,26 +33,28 @@ from shared.definitions.bounty_programs import (
 )
 from shared.definitions.vulnerabilities import (
     SEVERITY_RANK,
-    SUPPRESSED_STATES,
 )
 from shared.definitions.watch import ARRIVED_STATES, CT_SOURCE, WatchHostState
 from shared.definitions.whats_new import (
     ALERT_SEVERITIES,
     BOUNTY_ROWS_PER_SECTION,
     DEFAULT_NEW_WINDOW,
+    DEFAULT_ZONE,
     ENGAGED_EVENTS,
     EVENT_KIND,
     EVIDENCE_FINDINGS,
-    GONE_KINDS,
     GRID_DAYS,
     GROUP_LIMIT,
     KIND_ORDER,
     NEW_WINDOWS,
     PROGRAM_EVENTS,
+    SCOPE_SOURCE,
     SOURCE_LABELS,
+    TERMS_KINDS,
     VISUAL_DISTANCE,
     VISUAL_FIELDS,
     VISUAL_LIMIT,
+    WATCH_SOURCE,
     Fact,
     NewBasis,
     NewKind,
@@ -65,7 +68,7 @@ from shared.models.bounty_program import BountyEventRow, BountyProgram, BountySc
 from shared.models.scan import Scan
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target, TargetOrganization
-from shared.models.vulnerability import Vulnerability, VulnerabilityTriage
+from shared.models.vulnerability import Vulnerability
 from shared.models.watch import ProgramWatch, UserMark, WatchHost
 from shared.models.whats_new import (
     NewDay,
@@ -78,27 +81,10 @@ from shared.models.whats_new import (
     VisualFeed,
     VisualPair,
 )
+from shared.services.asset_query import vuln_suppressed
 from shared.services.asset_query.tokens import token
 from shared.services.scan_scope import census_only
 from shared.utils.datetime import utc_now
-
-TERMS_KINDS = frozenset({NewKind.BOUNTY_TABLE.value, NewKind.RULES.value})
-WATCH_SOURCE = "watch"
-SCOPE_SOURCE = "scope"
-
-
-def _severity_rank():
-    return case(SEVERITY_RANK, value=Vulnerability.severity, else_=len(SEVERITY_RANK))
-
-
-def _suppressed():
-    return exists(
-        select(1).where(
-            VulnerabilityTriage.target_id == Vulnerability.target_id,
-            VulnerabilityTriage.fingerprint == Vulnerability.fingerprint,
-            VulnerabilityTriage.state.in_(SUPPRESSED_STATES),
-        )
-    )
 
 
 def _seen_earlier():
@@ -113,25 +99,20 @@ def _seen_earlier():
     )
 
 
-def _new_conds(baseline: list[UUID], q: str | None) -> list:
-    base = [
+def _new_conds(baseline: list[UUID]) -> list:
+    return [
         Vulnerability.scan_id.in_(baseline),
         Vulnerability.severity.in_(ALERT_SEVERITIES),
         not_(_seen_earlier()),
-        not_(_suppressed()),
+        not_(vuln_suppressed(tuple(baseline))),
     ]
-    if q:
-        base.append(
-            _text_match(
-                (
-                    Vulnerability.template_name,
-                    Vulnerability.template_id,
-                    Vulnerability.host,
-                ),
-                q,
-            )
-        )
-    return base
+
+
+def _finding_text(q: str):
+    return _text_match(
+        (Vulnerability.template_name, Vulnerability.template_id, Vulnerability.host),
+        q,
+    )
 
 
 def _text_match(columns, q: str):
@@ -159,8 +140,16 @@ def _visual_value(value):
     return value or None
 
 
-def _day_start(d: date) -> datetime:
-    return datetime.combine(d, time.min, tzinfo=UTC)
+def _day_start(d: date, zone: ZoneInfo) -> datetime:
+    return datetime.combine(d, time.min, tzinfo=zone)
+
+
+def _day_of(at: datetime, zone: ZoneInfo) -> str:
+    return at.astimezone(zone).date().isoformat()
+
+
+def _local_date(column, zone: ZoneInfo):
+    return func.date(func.timezone(literal(zone.key, literal_execute=True), column))
 
 
 class _Check:
@@ -170,6 +159,7 @@ class _Check:
         self.kev = 0
         self.severities: dict[str, int] = defaultdict(int)
         self.runs: dict[UUID, int] = defaultdict(int)
+        self.kev_runs: dict[UUID, int] = defaultdict(int)
 
     def rank(self):
         worst = min(
@@ -180,12 +170,12 @@ class _Check:
 
 
 class _Groups:
-    def __init__(self):
+    def __init__(self, zone: ZoneInfo):
+        self.zone = zone
         self.by_id: dict[str, NewGroup] = {}
         self.counts: dict[str, int] = dict.fromkeys(KIND_ORDER, 0)
         self.facts: dict[str, dict[str, int]] = defaultdict(dict)
         self.daily: dict[str, dict[str, int]] = defaultdict(dict)
-        self.first_runs = 0
         self.visual = 0
         self.checks: dict[str, _Check] = {}
 
@@ -268,22 +258,37 @@ class WhatsNewService:
         bounty: bool = True,
         rows: bool = True,
         grid: bool = True,
+        visual: bool = True,
+        tz: str = DEFAULT_ZONE,
     ) -> NewFeed:
         now = utc_now()
+        zone = ZoneInfo(tz)
         marked_at = await self.mark(user_id, project_id)
         basis, cutoff, until, window = self._period(
-            now, marked_at, since, window, day_from, day_to
+            now, marked_at, since, window, day_from, day_to, zone
         )
 
-        grid_start = _day_start(now.date() - timedelta(days=GRID_DAYS - 1))
+        grid_start = _day_start(
+            now.astimezone(zone).date() - timedelta(days=GRID_DAYS - 1), zone
+        )
         range_start = min(cutoff, grid_start) if grid else cutoff
         wanted = set(kinds) if kinds else set(KIND_ORDER)
         q = (q or "").strip() or None
 
         program = await self._program(platform, handle) if bounty else None
+        out = _Groups(zone)
+        if platform and handle and program is None:
+            return NewFeed(
+                since=cutoff,
+                until=until,
+                basis=basis,
+                marked_at=marked_at,
+                window=window if basis == NewBasis.WINDOW.value else None,
+                counts=out.counts,
+                daily=self._days(grid_start, now, out.daily, zone) if grid else [],
+            )
         target_ids = await self._target_ids(project_id, target_id, program)
         target_value = await self._target_value(project_id, target_id)
-        out = _Groups()
 
         await self._runs(
             out,
@@ -297,7 +302,10 @@ class WhatsNewService:
             q,
             rows,
         )
-        out.visual = await self._visual_count(project_id, cutoff, until, target_ids, q)
+        if visual:
+            out.visual = await self._visual_count(
+                project_id, cutoff, until, target_ids, q
+            )
         if bounty:
             await self._bounty(
                 out,
@@ -330,20 +338,20 @@ class WhatsNewService:
             window=window if basis == NewBasis.WINDOW.value else None,
             counts=out.counts,
             facts=dict(out.facts),
-            daily=self._days(grid_start, now, out.daily) if grid else [],
+            daily=self._days(grid_start, now, out.daily, zone) if grid else [],
             groups=groups[:GROUP_LIMIT],
+            events=len(groups),
             truncated=truncated,
-            first_runs=out.first_runs,
             visual=out.visual,
         )
 
     @staticmethod
-    def _period(now, marked_at, since, window, day_from, day_to):
+    def _period(now, marked_at, since, window, day_from, day_to, zone: ZoneInfo):
         until: datetime | None = None
         if day_from is not None:
             basis = NewBasis.DAYS.value
-            cutoff = _day_start(day_from)
-            until = _day_start((day_to or day_from) + timedelta(days=1))
+            cutoff = _day_start(day_from, zone)
+            until = _day_start((day_to or day_from) + timedelta(days=1), zone)
         elif since is not None:
             basis, cutoff = NewBasis.MARK.value, since
         elif window:
@@ -355,16 +363,18 @@ class WhatsNewService:
             basis, cutoff = NewBasis.WINDOW.value, now - NEW_WINDOWS[window]
         return basis, cutoff, until, window
 
-    async def unseen(self, project_id: UUID, user_id: UUID, *, bounty: bool) -> int:
+    async def unseen(
+        self, project_id: UUID, user_id: UUID, *, bounty: bool, tz: str = DEFAULT_ZONE
+    ) -> int:
         feed = await self.feed(
-            project_id, user_id, bounty=bounty, rows=False, grid=False
+            project_id, user_id, bounty=bounty, grid=False, visual=False, tz=tz
         )
-        return sum(feed.counts.get(k, 0) for k in KIND_ORDER if k not in GONE_KINDS)
+        return feed.events
 
     @staticmethod
-    def _days(start: datetime, now: datetime, daily) -> list[NewDay]:
-        day = start.date()
-        end = now.date()
+    def _days(start: datetime, now: datetime, daily, zone: ZoneInfo) -> list[NewDay]:
+        day = start.astimezone(zone).date()
+        end = now.astimezone(zone).date()
         out: list[NewDay] = []
         while day <= end:
             key = day.isoformat()
@@ -483,28 +493,11 @@ class WhatsNewService:
         }
         if not scans:
             return
-        holding, baseline = await self._baseline_scans(scans)
-        for sid in holding - set(baseline):
-            at = scans[sid].started_at or scans[sid].created_at
-            if at >= since and (until is None or at < until):
-                out.first_runs += 1
+        baseline = await self._baseline_scans(scans)
         if not baseline:
             return
         kind = NewKind.FINDING.value
-        base = _new_conds(baseline, q)
-
-        if grid_start is not None:
-            daily = await self.session.execute(
-                select(func.date(Vulnerability.discovered_at), func.count())
-                .where(*base, Vulnerability.discovered_at >= grid_start)
-                .group_by(func.date(Vulnerability.discovered_at))
-            )
-            for d, n in daily.all():
-                out.day(kind, d, n)
-
-        window = [*base, Vulnerability.discovered_at >= since]
-        if until is not None:
-            window.append(Vulnerability.discovered_at < until)
+        base = _new_conds(baseline)
         stmt = (
             select(
                 Vulnerability.scan_id,
@@ -513,23 +506,37 @@ class WhatsNewService:
                 func.max(Vulnerability.template_name),
                 func.count(),
                 func.count().filter(Vulnerability.is_kev),
+                func.max(Vulnerability.discovered_at),
             )
-            .where(*window)
+            .where(*base)
             .group_by(
                 Vulnerability.scan_id,
                 Vulnerability.template_id,
                 Vulnerability.severity,
             )
         )
-        found = (await self.session.execute(stmt)).all()
-        if not found:
+        by_run: dict[UUID, list] = defaultdict(list)
+        for row in (await self.session.execute(stmt)).all():
+            by_run[row[0]].append(row)
+        if q and by_run:
+            matched = set(
+                (
+                    await self.session.execute(
+                        select(Vulnerability.scan_id)
+                        .where(*base, _finding_text(q))
+                        .distinct()
+                    )
+                ).scalars()
+            )
+            by_run = {sid: r for sid, r in by_run.items() if sid in matched}
+        if not by_run:
             return
         targets = {
             t.id: t
             for t in (
                 await self.session.execute(
                     select(Target).where(
-                        Target.id.in_({scans[r[0]].target_id for r in found})
+                        Target.id.in_({scans[sid].target_id for sid in by_run})
                     )
                 )
             )
@@ -537,25 +544,38 @@ class WhatsNewService:
             .all()
         }
         show = rows and kind in wanted
-        for sid, template_id, severity, name, n, kev in found:
+        for sid, found in by_run.items():
             scan = scans[sid]
-            out.count(kind, n)
-            out.fact(kind, severity, n)
-            out.fact(kind, Fact.KEV.value, kev)
-            if not show:
+            at = scan.completed_at or max(r[6] for r in found)
+            total = sum(r[4] for r in found)
+            if grid_start is not None and at >= grid_start:
+                day = _day_of(at, out.zone)
+                out.day(kind, day, total)
+                for r in found:
+                    out.day(r[2], day, r[4])
+            if at < since or (until is not None and at >= until):
                 continue
-            g = self._run_group(out, scan, targets[scan.target_id])
-            g.severities[severity] = g.severities.get(severity, 0) + n
-            c = out.check(template_id)
-            c.name = name
-            c.kev += kev
-            c.severities[severity] += n
-            c.runs[sid] += n
+            out.count(kind, total)
+            g = (
+                self._run_group(out, scan, targets[scan.target_id], at)
+                if show
+                else None
+            )
+            for _, template_id, severity, name, n, kev, _last in found:
+                out.fact(kind, severity, n)
+                out.fact(kind, Fact.KEV.value, kev)
+                if g is None:
+                    continue
+                g.severities[severity] = g.severities.get(severity, 0) + n
+                c = out.check(template_id)
+                c.name = name
+                c.kev += kev
+                c.kev_runs[sid] += kev
+                c.severities[severity] += n
+                c.runs[sid] += n
+            if g is not None:
+                out.section(g, kind, total, [])
         if show:
-            for g in out.by_id.values():
-                if g.scan_id is not None:
-                    total = sum(g.severities.values())
-                    out.section(g, kind, total, [])
             await self._previous_runs(out, scans)
 
     async def _visual_count(self, project_id, since, until, target_ids, q) -> int:
@@ -636,11 +656,12 @@ class WhatsNewService:
         target_id: UUID | None = None,
         q: str | None = None,
         limit: int = VISUAL_LIMIT,
+        tz: str = DEFAULT_ZONE,
     ) -> VisualFeed:
         now = utc_now()
         marked_at = await self.mark(user_id, project_id)
         basis, cutoff, until, window = self._period(
-            now, marked_at, since, window, day_from, day_to
+            now, marked_at, since, window, day_from, day_to, ZoneInfo(tz)
         )
         q = (q or "").strip() or None
         target_ids = [target_id] if target_id is not None else None
@@ -719,9 +740,7 @@ class WhatsNewService:
         feed.total = len(feed.pairs)
         return feed
 
-    async def _baseline_scans(
-        self, scans: dict[UUID, Scan]
-    ) -> tuple[set[UUID], list[UUID]]:
+    async def _baseline_scans(self, scans: dict[UUID, Scan]) -> list[UUID]:
         """Scans holding findings, and those of them with an earlier scan that held findings."""
         firsts = (
             await self.session.execute(
@@ -731,7 +750,7 @@ class WhatsNewService:
             )
         ).all()
         if not firsts:
-            return set(), []
+            return []
         table = values(
             column("id", Uuid),
             column("target_id", Uuid),
@@ -750,7 +769,7 @@ class WhatsNewService:
                 )
             )
         )
-        return {sid for sid, _ in firsts}, [r[0] for r in rows.all()]
+        return [r[0] for r in rows.all()]
 
     @staticmethod
     def _evidence(out: _Groups, groups: list[NewGroup]) -> None:
@@ -774,14 +793,15 @@ class WhatsNewService:
                         key=lambda sev: SEVERITY_RANK.get(sev, len(SEVERITY_RANK)),
                         default=None,
                     ),
-                    kev=c.kev,
+                    kev=c.kev_runs[g.scan_id],
                     query=f"is:new {token('template', '=', c.template_id)}",
                 )
                 for c in picked
             ]
 
-    def _run_group(self, out: _Groups, scan: Scan, target: Target) -> NewGroup:
-        at = scan.completed_at or scan.started_at or scan.created_at
+    def _run_group(
+        self, out: _Groups, scan: Scan, target: Target, at: datetime
+    ) -> NewGroup:
         g = out.group(
             f"run:{scan.id}",
             NewSubject(
@@ -939,11 +959,14 @@ class WhatsNewService:
             daily = await self.session.execute(
                 select(
                     BountyEventRow.kind,
-                    func.date(BountyEventRow.created_at),
+                    _local_date(BountyEventRow.created_at, out.zone),
                     func.count(),
                 )
                 .where(*base, BountyEventRow.created_at >= grid_start)
-                .group_by(BountyEventRow.kind, func.date(BountyEventRow.created_at))
+                .group_by(
+                    BountyEventRow.kind,
+                    _local_date(BountyEventRow.created_at, out.zone),
+                )
             )
             for kind, d, n in daily.all():
                 out.day(EVENT_KIND[kind], d, n)
@@ -994,7 +1017,7 @@ class WhatsNewService:
             if kind not in wanted:
                 continue
             watch_id = watches.get(e.program_id)
-            day = e.created_at.date().isoformat()
+            day = _day_of(e.created_at, out.zone)
             if kind == NewKind.PROGRAM.value:
                 gid = f"library:programs:{day}"
                 subjects[gid] = NewSubject(
@@ -1174,11 +1197,11 @@ class WhatsNewService:
 
         if grid_start is not None:
             daily = await self.session.execute(
-                select(func.date(WatchHost.first_seen_at), func.count())
+                select(_local_date(WatchHost.first_seen_at, out.zone), func.count())
                 .select_from(WatchHost)
                 .join(*join)
                 .where(*base, WatchHost.first_seen_at >= grid_start)
-                .group_by(func.date(WatchHost.first_seen_at))
+                .group_by(_local_date(WatchHost.first_seen_at, out.zone))
             )
             for d, n in daily.all():
                 out.day(kind, d, n)
@@ -1214,7 +1237,7 @@ class WhatsNewService:
         subjects: dict[str, NewSubject] = {}
         latest: dict[str, datetime] = {}
         for h, w, p, t in (await self.session.execute(stmt)).all():
-            gid = f"program:{p.id}:{h.first_seen_at.date().isoformat()}"
+            gid = f"program:{p.id}:{_day_of(h.first_seen_at, out.zone)}"
             subjects[gid] = NewSubject(
                 kind=SubjectKind.PROGRAM.value,
                 id=str(p.id),
@@ -1284,9 +1307,9 @@ class WhatsNewService:
 
         if grid_start is not None:
             daily = await self.session.execute(
-                select(func.date(Target.created_at), func.count())
+                select(_local_date(Target.created_at, out.zone), func.count())
                 .where(*base, Target.created_at >= grid_start)
-                .group_by(func.date(Target.created_at))
+                .group_by(_local_date(Target.created_at, out.zone))
             )
             for d, n in daily.all():
                 out.day(kind, d, n)
@@ -1361,7 +1384,7 @@ class WhatsNewService:
             )
         by_day: dict[str, list[NewItem]] = defaultdict(list)
         for item in items:
-            by_day[item.at.date().isoformat()].append(item)
+            by_day[_day_of(item.at, out.zone)].append(item)
         for day, listed in by_day.items():
             g = out.group(
                 f"targets:{day}",
