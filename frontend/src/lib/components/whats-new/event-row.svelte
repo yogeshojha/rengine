@@ -168,7 +168,7 @@
 		{time}
 	</span>
 
-	<span class="relative flex justify-center">
+	<span class="relative row-span-3 flex justify-center">
 		<span class="absolute inset-y-0 w-px bg-border"></span>
 		<span class="relative mt-3 flex h-6 items-center">
 			<span
@@ -215,41 +215,6 @@
 				<span class="pl-[1.375rem] text-xs text-muted-foreground wrap-anywhere">{summary}</span>
 			{/if}
 		</button>
-
-		{#if expanded}
-			{#if isRun && group.scan_id}
-				<RunFindings
-					{projectId}
-					scanId={group.scan_id}
-					count={found}
-					onOpen={(v) => onFinding(v, group.scan_id ?? '')}
-				/>
-			{:else if items.length}
-				<div class="divide-y divide-border/50 overflow-clip rounded-md border bg-card">
-					{#each items as item (item.id)}
-						<ItemRow
-							{item}
-							checked={isChecked(item.id)}
-							selectable={SELECTABLE_KINDS.has(item.kind)}
-							busy={isBusy(item.id)}
-							sheet={SHEET_KINDS.has(item.kind) && !!item.scan_id}
-							{onOpen}
-							{onCheck}
-							{onAddTarget}
-							{onWatch}
-							{onMute}
-							{onScan}
-							{onRemoveTarget}
-						/>
-					{/each}
-				</div>
-				{#if total > items.length}
-					<span class="text-xs text-muted-foreground">
-						{items.length} of {total.toLocaleString()} shown
-					</span>
-				{/if}
-			{/if}
-		{/if}
 	</div>
 
 	<!-- svelte-ignore a11y_no_static_element_interactions, a11y_click_events_have_key_events -->
@@ -304,4 +269,40 @@
 			</Button>
 		{/if}
 	</div>
+	{#if expanded}
+		<div class="col-start-2 min-w-0 pb-3 sm:col-start-3 sm:col-end-5 flex flex-col gap-2">
+			{#if isRun && group.scan_id}
+				<RunFindings
+					{projectId}
+					scanId={group.scan_id}
+					count={found}
+					onOpen={(v) => onFinding(v, group.scan_id ?? '')}
+				/>
+			{:else if items.length}
+				<div class="divide-y divide-border/50 overflow-clip rounded-md border bg-card">
+					{#each items as item (item.id)}
+						<ItemRow
+							{item}
+							checked={isChecked(item.id)}
+							selectable={SELECTABLE_KINDS.has(item.kind)}
+							busy={isBusy(item.id)}
+							sheet={SHEET_KINDS.has(item.kind) && !!item.scan_id}
+							{onOpen}
+							{onCheck}
+							{onAddTarget}
+							{onWatch}
+							{onMute}
+							{onScan}
+							{onRemoveTarget}
+						/>
+					{/each}
+				</div>
+				{#if total > items.length}
+					<span class="text-xs text-muted-foreground">
+						{items.length} of {total.toLocaleString()} shown
+					</span>
+				{/if}
+			{/if}
+		</div>
+	{/if}
 </li>
