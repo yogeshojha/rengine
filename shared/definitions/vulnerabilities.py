@@ -175,8 +175,8 @@ class TemplateOrigin(StrEnum):
 
 
 TEMPLATE_ORIGIN_LABELS: dict[str, str] = {
-    TemplateOrigin.OFFICIAL.value: "Project templates",
-    TemplateOrigin.CUSTOM.value: "Custom templates",
+    TemplateOrigin.OFFICIAL.value: "Default checks",
+    TemplateOrigin.CUSTOM.value: "Custom checks",
 }
 
 

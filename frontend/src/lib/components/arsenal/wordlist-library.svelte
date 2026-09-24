@@ -88,7 +88,7 @@
 				toast.error(`${rejection.filename} not added`, { description: rejection.reason });
 			}
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Upload failed');
+			toast.error(e instanceof Error ? e.message : 'Wordlists not uploaded');
 		} finally {
 			uploading = false;
 		}
@@ -100,13 +100,22 @@
 		if (await store.remove(target.id)) toast.success(`${target.name} removed`);
 		removing = null;
 	}
+
+	let lastChanged = $derived(
+		store.wordlists
+			.map((w) => w.updated_at)
+			.sort()
+			.at(-1) ?? null
+	);
 </script>
 
 <div class="space-y-6">
 	<Card.Root class="gap-0 py-0">
 		<Card.Header class="border-b py-5">
 			<Card.Title>Wordlists</Card.Title>
-			<Card.Description>Shipped and uploaded wordlists.</Card.Description>
+			{#if lastChanged}
+				<Card.Description>Updated {relativeTime(lastChanged)}</Card.Description>
+			{/if}
 			<Card.Action class="flex items-center gap-2">
 				<Select.Root type="single" bind:value={uploadKind}>
 					<Select.Trigger class="w-[190px]" aria-label="Wordlist kind">
@@ -133,7 +142,7 @@
 					loadingLabel="Uploading"
 					onclick={() => fileInput?.click()}
 				>
-					<Upload class="size-4" /> Upload wordlist
+					<Upload class="size-4" /> Upload wordlists
 				</LoadingButton>
 			</Card.Action>
 		</Card.Header>
@@ -193,7 +202,7 @@
 							<div class="flex flex-wrap items-center gap-2">
 								<span class="font-medium">{item.name}</span>
 								<Badge variant={item.origin === 'builtin' ? 'secondary' : 'info'}>
-									{item.origin === 'builtin' ? 'Shipped' : 'Uploaded'}
+									{item.origin === 'builtin' ? 'Default' : 'Custom'}
 								</Badge>
 								<Badge variant="outline">{WORDLIST_KIND_LABELS[item.kind]}</Badge>
 							</div>
@@ -231,7 +240,7 @@
 									</Button>
 								{/snippet}
 							</Hint>
-							<Hint text={item.origin === 'builtin' ? 'Shipped list is read-only' : 'Remove'}>
+							<Hint text={item.origin === 'builtin' ? 'Default wordlists are read-only' : 'Remove'}>
 								{#snippet child(props)}
 									<span class="inline-flex">
 										<Button

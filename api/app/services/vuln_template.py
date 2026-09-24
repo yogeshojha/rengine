@@ -499,7 +499,7 @@ class VulnTemplateService:
         if row is None:
             return None
         if row.origin != TemplateOrigin.CUSTOM.value:
-            msg = "Project templates are read-only. Copy the source into a custom template to edit it."
+            msg = "Default checks are read-only. Copy the source into a custom check to edit it."
             raise TemplateError(msg)
         parsed = parse_template(content)
         destination = _resolve(custom_root(), row.path)
@@ -546,7 +546,7 @@ class VulnTemplateService:
             started=ok,
             message="Downloading and indexing the check library."
             if ok
-            else "The scanner queue is unavailable. Sync not started.",
+            else "The task queue did not accept the sync. Check the worker.",
         )
 
 

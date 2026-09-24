@@ -29,6 +29,13 @@
 	let projectId = $derived(projectsStore.activeProject?.id ?? null);
 	let feeds = $derived(status?.feeds ?? []);
 	let providers = $derived(status?.providers ?? []);
+	let lastSynced = $derived(
+		feeds
+			.map((f) => f.last_synced_at)
+			.filter((at): at is string => !!at)
+			.sort()
+			.at(-1) ?? null
+	);
 	let autoSync = $derived(status?.auto_sync ?? true);
 
 	function version(feed: ThreatFeedRead): string {
@@ -70,13 +77,13 @@
 		try {
 			const res = await threatIntelApi.sync();
 			if (res.queued) {
-				toast.success('Sync started');
+				toast.success('Feed sync started');
 				setTimeout(() => load(fetchedProjectId), 2500);
 			} else {
-				toast.error(res.detail ?? 'Sync not started');
+				toast.error(res.detail ?? 'Feed sync not started');
 			}
 		} catch {
-			toast.error('Sync not started');
+			toast.error('Feed sync not started');
 		} finally {
 			syncing = false;
 		}
@@ -134,17 +141,15 @@
 {:else if !status}
 	<EmptyState
 		icon={Flame}
-		title="Threat intel not loaded"
+		title="Exploit intel not loaded"
 		description="The API did not respond. Check that the api service is running."
 	/>
 {:else}
 	<Card.Root class="gap-0 py-0">
 		<Card.Header class="border-b py-5">
 			<Card.Title>Sources</Card.Title>
-			{#if status.last_applied_at}
-				<Card.Description>
-					Applied to findings {relativeTime(status.last_applied_at)}
-				</Card.Description>
+			{#if lastSynced}
+				<Card.Description>Synced {relativeTime(lastSynced)}</Card.Description>
 			{/if}
 			<Card.Action class="flex flex-wrap items-center justify-end gap-4">
 				<label class="flex cursor-pointer items-center gap-2 text-sm">
@@ -164,7 +169,7 @@
 					onclick={sync}
 				>
 					<RefreshCw class="mr-1.5 size-3.5" />
-					Sync now
+					Sync feeds
 				</LoadingButton>
 			</Card.Action>
 		</Card.Header>

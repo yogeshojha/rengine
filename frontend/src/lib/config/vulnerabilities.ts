@@ -236,8 +236,8 @@ export const SURFACE_LABELS: Record<string, string> = {
 };
 
 export const TEMPLATE_ORIGIN_LABELS: Record<string, string> = {
-	official: 'Project templates',
-	custom: 'Custom templates'
+	official: 'Default checks',
+	custom: 'Custom checks'
 };
 
 export const COVERAGE_STATUS_LABELS: Record<string, string> = {

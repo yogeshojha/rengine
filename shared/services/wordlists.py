@@ -87,7 +87,7 @@ def store_custom(filename: str, raw: str) -> tuple[str, list[str]]:
 def delete_custom(row: Wordlist) -> None:
     """Unlink a custom list."""
     if row.origin != WordlistOrigin.CUSTOM.value:
-        msg = "A shipped wordlist cannot be deleted."
+        msg = "Default wordlists are read-only."
         raise WordlistError(msg)
     path = resolve_path(row)
     path.unlink(missing_ok=True)

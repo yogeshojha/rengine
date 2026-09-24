@@ -16,7 +16,7 @@
 	const TAB_META: Record<ArsenalTab, { label: string; icon: IconComponent; panel: Component }> = {
 		nuclei: { label: 'Nuclei', icon: ShieldAlertIcon, panel: NucleiLibrary },
 		wordlists: { label: 'Wordlists', icon: WholeWordIcon, panel: WordlistLibrary },
-		'threat-intel': { label: 'Exploit intel', icon: FlameIcon, panel: ThreatIntelLibrary }
+		'threat-intel': { label: 'Threat intel', icon: FlameIcon, panel: ThreatIntelLibrary }
 	};
 
 	const DEFAULT_TAB = ARSENAL_TABS[0];
@@ -47,7 +47,7 @@
 <div class="space-y-6">
 	<div>
 		<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.arsenal}</h1>
-		<p class="mt-1 text-sm text-muted-foreground">Scanners, checks, wordlists and feeds</p>
+		<p class="mt-1 text-sm text-muted-foreground">Checks, wordlists and feeds</p>
 	</div>
 
 	<Tabs.Root

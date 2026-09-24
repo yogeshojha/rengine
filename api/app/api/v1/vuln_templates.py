@@ -142,7 +142,7 @@ async def get_template(
     found = await service.get(template_id)
     if found is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Template not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Check not found"
         )
     return found
 
@@ -157,7 +157,7 @@ async def update_template(
     updated = await service.update(template_id, body)
     if updated is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Template not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Check not found"
         )
     return updated
 
@@ -172,7 +172,7 @@ async def read_source(
     found = await service.source(template_id)
     if found is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Template not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Check not found"
         )
     return found
 
@@ -192,7 +192,7 @@ async def write_source(
         ) from exc
     if updated is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Template not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Check not found"
         )
     return updated
 

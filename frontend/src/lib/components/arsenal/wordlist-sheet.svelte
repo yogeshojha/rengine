@@ -52,7 +52,7 @@
 				<Sheet.Description>{wordlist.description || 'No description'}</Sheet.Description>
 				<div class="flex flex-wrap items-center gap-2 pt-1">
 					<Badge variant={wordlist.origin === 'builtin' ? 'secondary' : 'info'}>
-						{wordlist.origin === 'builtin' ? 'Shipped' : 'Uploaded'}
+						{wordlist.origin === 'builtin' ? 'Default' : 'Custom'}
 					</Badge>
 					<Badge variant="outline">{WORDLIST_KIND_LABELS[wordlist.kind]}</Badge>
 					<span class="font-mono text-xs tabular-nums text-muted-foreground">
@@ -100,7 +100,7 @@
 						</ol>
 						{#if wordlist.words > words.length}
 							<p class="px-6 py-3 text-xs text-muted-foreground">
-								First {words.length} of {wordlist.words.toLocaleString()}.
+								First {words.length} of {wordlist.words.toLocaleString()}
 							</p>
 						{/if}
 					</ScrollArea>

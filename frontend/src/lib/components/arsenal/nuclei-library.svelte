@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import CircleCheck from '@lucide/svelte/icons/circle-check';
+	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import Download from '@lucide/svelte/icons/download';
 	import FilePlus from '@lucide/svelte/icons/file-plus';
 	import FileCode from '@lucide/svelte/icons/file-code';
+	import Plus from '@lucide/svelte/icons/plus';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import SearchX from '@lucide/svelte/icons/search-x';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
@@ -15,7 +16,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Switch } from '$lib/components/ui/switch';
 	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
@@ -70,7 +71,6 @@
 	let severity = $state(ALL);
 	let origin = $state(ALL);
 	let set = $state(ALL);
-	let fired = $state(false);
 	let onlyNew = $state(false);
 	let seenAt = $state<string | null>(null);
 	let reqId = 0;
@@ -95,7 +95,6 @@
 			count: part.count
 		}))
 	);
-	let maxSet = $derived(Math.max(1, ...sets.map((spec) => spec.count)));
 
 	function tileStyle(severity: string) {
 		const fill = SEVERITY_FILL[severity] ?? SEVERITY_FILL.unknown;
@@ -159,7 +158,6 @@
 		const sev = severity === ALL ? [] : [severity];
 		const org = origin === ALL ? [] : [origin];
 		const chosen = set === ALL ? [] : [set];
-		const onlyFired = fired;
 		const newSince = onlyNew ? seenAt : null;
 		untrack(() => {
 			filter = {
@@ -168,7 +166,6 @@
 				severities: sev,
 				origins: org,
 				sets: chosen,
-				fired: onlyFired,
 				new_since: newSince,
 				offset: 0
 			};
@@ -203,16 +200,18 @@
 				toast.success(
 					`${accepted} ${accepted === 1 ? 'check' : 'checks'} added`,
 					res.replaced
-						? { description: `${res.replaced} replaced an existing template.` }
+						? {
+								description: `${res.replaced} existing ${res.replaced === 1 ? 'check' : 'checks'} replaced`
+							}
 						: undefined
 				);
 			}
 			for (const rejection of res.rejected) {
-				toast.error(rejection.filename, { description: rejection.reason });
+				toast.error(`${rejection.filename} not added`, { description: rejection.reason });
 			}
 			await Promise.all([loadStats(), loadList()]);
 		} catch {
-			toast.error('Upload failed');
+			toast.error('Checks not uploaded');
 		} finally {
 			uploading = false;
 			input.value = '';
@@ -253,436 +252,332 @@
 	}
 </script>
 
-<div class="space-y-6">
-	<Card.Root>
-		<Card.Header>
-			<Card.Title>Check library</Card.Title>
-			<Card.Description>Nuclei project templates and uploaded checks.</Card.Description>
-			<Card.Action class="flex items-center gap-2">
-				<Button variant="outline" size="sm" class="gap-2" onclick={() => (creating = true)}>
-					<FilePlus class="size-4" /> New check
-				</Button>
-				<input
-					bind:this={fileInput}
-					type="file"
-					accept=".yaml,.yml"
-					multiple
-					class="hidden"
-					onchange={upload}
-				/>
-				<LoadingButton
-					variant="outline"
-					size="sm"
-					class="gap-2"
-					loading={uploading}
-					loadingLabel="Uploading"
-					onclick={() => fileInput?.click()}
-				>
-					<Upload class="size-4" /> Upload templates
-				</LoadingButton>
-				<LoadingButton
-					size="sm"
-					class="gap-2"
-					loading={syncing}
-					loadingLabel="Starting"
-					onclick={sync}
-				>
-					<Download class="size-4" /> Sync library
-				</LoadingButton>
-			</Card.Action>
-		</Card.Header>
-		<Card.Content class="space-y-4">
-			{#if statsLoading}
-				<Skeleton class="h-20 w-full" />
-			{:else if statsError}
-				<div
-					class="flex items-start gap-3 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3"
-				>
-					<TriangleAlert class="mt-0.5 size-4 shrink-0 text-destructive" />
-					<div class="space-y-1">
-						<p class="text-sm font-medium">Library not loaded</p>
-						<p class="text-sm text-muted-foreground">{statsError}</p>
-					</div>
-				</div>
-			{:else if !stats?.ready}
-				<div
-					class="flex items-start gap-3 rounded-md border border-warning/40 bg-warning/5 px-4 py-3"
-				>
-					<TriangleAlert class="mt-0.5 size-4 shrink-0 text-warning" />
-					<div class="space-y-1">
-						<p class="text-sm font-medium">No checks</p>
-						<p class="text-sm text-muted-foreground">Sync the library.</p>
-					</div>
-				</div>
-			{:else}
-				<div class="flex flex-wrap items-center gap-x-8 gap-y-3">
-					<div class="flex flex-col">
-						<span class="text-2xl leading-8 font-semibold tabular-nums">
-							{stats.total.toLocaleString()}
-						</span>
-						<span class="text-xs text-muted-foreground">checks indexed</span>
-					</div>
-					<button
-						type="button"
-						class="flex flex-col text-left hover:opacity-80"
-						onclick={() => (fired = !fired)}
-						aria-pressed={fired}
-					>
-						<span class="text-sm font-medium tabular-nums">{stats.fired.toLocaleString()}</span>
-						<span class="text-xs text-muted-foreground">with findings</span>
-					</button>
-					{#if newCount > 0}
-						<button
-							type="button"
-							class="flex flex-col text-left hover:opacity-80"
-							onclick={() => (onlyNew = !onlyNew)}
-							aria-pressed={onlyNew}
+<Card.Root class="gap-0 py-0">
+	<Card.Header class="border-b py-5">
+		<Card.Title>Check library</Card.Title>
+		{#if stats?.last_synced_at}
+			<Card.Description>Synced {relativeTime(stats.last_synced_at)}</Card.Description>
+		{/if}
+		<Card.Action class="flex items-center gap-2">
+			<input
+				bind:this={fileInput}
+				type="file"
+				accept=".yaml,.yml"
+				multiple
+				class="hidden"
+				onchange={upload}
+			/>
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger>
+					{#snippet child({ props })}
+						<LoadingButton
+							{...props}
+							variant="outline"
+							size="sm"
+							class="gap-2"
+							loading={uploading}
+							loadingLabel="Uploading"
 						>
-							<span class="text-sm font-medium text-info tabular-nums"
-								>{newCount.toLocaleString()}</span
-							>
-							<span class="text-xs text-muted-foreground">new since last visit</span>
-						</button>
-					{/if}
-					<div class="flex flex-col">
-						<span class="text-sm font-medium tabular-nums">
-							{stats.official.toLocaleString()}
-						</span>
-						<span class="text-xs text-muted-foreground">
-							{TEMPLATE_ORIGIN_LABELS.official}
-						</span>
-					</div>
-					<div class="flex flex-col">
-						<span class="text-sm font-medium tabular-nums">{stats.custom.toLocaleString()}</span>
-						<span class="text-xs text-muted-foreground">{TEMPLATE_ORIGIN_LABELS.custom}</span>
-					</div>
-					<div class="flex min-w-64 flex-1 flex-col gap-1.5">
-						<SeverityBar
-							counts={severityCounts}
-							height="h-1.5"
-							onPick={(s) => (severity = severity === s ? ALL : s)}
-						/>
-						<div class="flex flex-wrap gap-x-4 gap-y-1">
-							{#each stats.by_severity as part (part.key)}
-								<button
-									type="button"
-									class="flex items-center gap-1.5 text-xs hover:underline"
-									onclick={() => (severity = severity === part.key ? ALL : part.key)}
-								>
-									<SeverityMark severity={part.key} showLabel={false} />
-									<span class="text-muted-foreground">{part.label}</span>
-									<span class="font-medium tabular-nums">{part.count.toLocaleString()}</span>
-								</button>
-							{/each}
-						</div>
-					</div>
-					{#if stats.last_synced_at}
-						<span class="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
-							<CircleCheck class="size-3.5 text-success" />
-							Updated {relativeTime(stats.last_synced_at)}
-						</span>
-					{/if}
-				</div>
-			{/if}
+							<Plus class="size-4" /> Add check
+							<ChevronDown class="size-3.5 text-muted-foreground" />
+						</LoadingButton>
+					{/snippet}
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content align="end">
+					<DropdownMenu.Item onclick={() => (creating = true)}>
+						<FilePlus class="size-4" /> New check
+					</DropdownMenu.Item>
+					<DropdownMenu.Item onclick={() => fileInput?.click()}>
+						<Upload class="size-4" /> Upload checks
+					</DropdownMenu.Item>
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
+			<LoadingButton
+				size="sm"
+				class="gap-2"
+				loading={syncing}
+				loadingLabel="Syncing"
+				onclick={sync}
+			>
+				<Download class="size-4" /> Sync library
+			</LoadingButton>
+		</Card.Action>
+	</Card.Header>
 
-			{#if sets.length}
-				<div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
-					{#each sets as spec (spec.key)}
-						{@const Icon = TEMPLATE_SET_ICONS[spec.key]}
-						{@const active = set === spec.key}
-						<Hint text={spec.description}>
-							{#snippet child(props)}
-								<button
-									{...props}
-									type="button"
-									class="flex flex-col gap-2 rounded-md border p-3 text-left transition-colors hover:bg-muted/40 {active
-										? 'border-primary/50 bg-primary/5'
-										: ''}"
-									aria-pressed={active}
-									onclick={() => (set = active ? ALL : spec.key)}
-								>
-									<span class="flex items-center gap-2">
-										<span class="flex size-6 items-center justify-center rounded-md bg-muted">
-											{#if Icon}<Icon class="size-3.5" />{/if}
-										</span>
-										<span class="min-w-0 truncate text-xs font-medium">{spec.label}</span>
-									</span>
-									<span class="text-lg leading-6 font-semibold tabular-nums">
-										{spec.count.toLocaleString()}
-									</span>
-									<span class="flex h-1 w-full overflow-hidden rounded-full bg-muted">
-										<span
-											class="h-full rounded-full bg-series"
-											style="width:{(spec.count / maxSet) * 100}%"
-										></span>
-									</span>
-								</button>
-							{/snippet}
-						</Hint>
-					{/each}
+	<div class="border-b px-6 py-4">
+		{#if statsLoading}
+			<Skeleton class="h-12 w-full" />
+		{:else if statsError}
+			<div class="flex items-start gap-3">
+				<TriangleAlert class="mt-0.5 size-4 shrink-0 text-destructive" />
+				<div class="flex flex-col gap-0.5">
+					<p class="text-sm font-medium">Library not loaded</p>
+					<p class="text-xs text-muted-foreground">{statsError}</p>
 				</div>
-			{/if}
-
-			<div class="rounded-md border">
-				<div class="flex flex-wrap items-center gap-2 border-b p-3">
-					<Input
-						bind:value={search}
-						placeholder="Search checks by name or identifier"
-						class="h-9 max-w-xs"
-					/>
-					<Select.Root type="single" bind:value={severity}>
-						<Select.Trigger class="h-9 w-36">
-							{severity === ALL ? 'Any severity' : SEVERITY_LABELS[severity]}
-						</Select.Trigger>
-						<Select.Content>
-							<Select.Item value={ALL} label="Any severity">Any severity</Select.Item>
-							{#each SEVERITY_ORDER as value (value)}
-								<Select.Item {value} label={SEVERITY_LABELS[value]}>
-									{SEVERITY_LABELS[value]}
-								</Select.Item>
-							{/each}
-						</Select.Content>
-					</Select.Root>
-					<Select.Root type="single" bind:value={set}>
-						<Select.Trigger class="h-9 w-44">
-							{set === ALL ? 'Any check set' : (sets.find((s) => s.key === set)?.label ?? set)}
-						</Select.Trigger>
-						<Select.Content>
-							<Select.Item value={ALL} label="Any check set">Any check set</Select.Item>
-							{#each sets as spec (spec.key)}
-								<Select.Item value={spec.key} label={spec.label}>
-									{spec.label}
-									<span class="ml-auto text-xs text-muted-foreground tabular-nums">
-										{spec.count.toLocaleString()}
-									</span>
-								</Select.Item>
-							{/each}
-						</Select.Content>
-					</Select.Root>
-					<Select.Root type="single" bind:value={origin}>
-						<Select.Trigger class="h-9 w-40">
-							{origin === ALL ? 'All sources' : TEMPLATE_ORIGIN_LABELS[origin]}
-						</Select.Trigger>
-						<Select.Content>
-							<Select.Item value={ALL} label="All sources">All sources</Select.Item>
-							{#each Object.entries(TEMPLATE_ORIGIN_LABELS) as [value, label] (value)}
-								<Select.Item {value} {label}>{label}</Select.Item>
-							{/each}
-						</Select.Content>
-					</Select.Root>
-					<ToggleGroup.Root
-						type="single"
-						value={fired ? 'fired' : ''}
-						onValueChange={(v) => (fired = v === 'fired')}
-						variant="outline"
-						aria-label="Findings"
-					>
-						<ToggleGroup.Item value="fired" class="h-9 px-3 text-sm font-normal">
-							Has findings
-						</ToggleGroup.Item>
-					</ToggleGroup.Root>
-					<Button
-						variant="outline"
-						size="icon"
-						class="ml-auto h-9 w-9"
-						aria-label="Refresh"
-						onclick={() => {
-							void loadStats();
-							void loadList();
-						}}
-					>
-						<RefreshCw class="size-4 {listLoading ? 'animate-spin' : ''}" />
-					</Button>
+			</div>
+		{:else if !stats?.ready}
+			<div class="flex items-start gap-3">
+				<TriangleAlert class="mt-0.5 size-4 shrink-0 text-warning" />
+				<div class="flex flex-col gap-0.5">
+					<p class="text-sm font-medium">No checks</p>
+					<p class="text-xs text-muted-foreground">Sync the library.</p>
 				</div>
-
-				{#if listLoading && items.length === 0}
-					<div class="divide-y">
-						{#each Array(6) as _, i (i)}
-							<div class="px-4 py-3"><Skeleton class="h-9 w-full" /></div>
+			</div>
+		{:else}
+			<div class="flex flex-wrap items-end gap-x-10 gap-y-4">
+				<div class="flex flex-col">
+					<span class="font-mono text-2xl leading-8 font-semibold tabular-nums">
+						{stats.total.toLocaleString()}
+					</span>
+					<span class="text-xs text-muted-foreground">checks</span>
+				</div>
+				<div class="flex flex-col">
+					<span class="font-mono text-sm leading-6 tabular-nums">
+						{stats.official.toLocaleString()}
+					</span>
+					<span class="text-xs text-muted-foreground">{TEMPLATE_ORIGIN_LABELS.official}</span>
+				</div>
+				<div class="flex flex-col">
+					<span class="font-mono text-sm leading-6 tabular-nums">
+						{stats.custom.toLocaleString()}
+					</span>
+					<span class="text-xs text-muted-foreground">{TEMPLATE_ORIGIN_LABELS.custom}</span>
+				</div>
+				<div class="flex min-w-64 flex-1 flex-col gap-2">
+					<SeverityBar counts={severityCounts} height="h-1.5" />
+					<div class="flex flex-wrap gap-x-4 gap-y-1">
+						{#each stats.by_severity as part (part.key)}
+							<span class="flex items-center gap-1.5 text-xs">
+								<SeverityMark severity={part.key} showLabel={false} />
+								<span class="text-muted-foreground">{part.label}</span>
+								<span class="font-mono tabular-nums">{part.count.toLocaleString()}</span>
+							</span>
 						{/each}
 					</div>
-				{:else if listError}
-					<EmptyState
-						icon={TriangleAlert}
-						title="Checks not loaded"
-						description={listError}
-						class="rounded-none border-0 bg-transparent py-12"
-					>
-						<Button variant="outline" size="sm" onclick={() => void loadList()}>Retry</Button>
-					</EmptyState>
-				{:else if items.length === 0}
-					<EmptyState
-						icon={SearchX}
-						title="No checks match"
-						class="rounded-none border-0 bg-transparent py-12"
-					/>
-				{:else}
-					<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-[32rem]">
-						<div class="divide-y">
-							{#each items as template (template.id)}
-								{@const custom = template.origin === 'custom'}
-								{@const SetIcon = TEMPLATE_SET_ICONS[template.sets[0] ?? ''] ?? FileCode}
-								<div class="flex items-start gap-3 px-4 py-3">
-									{#if custom}
-										<span class="flex h-5 shrink-0 items-center">
-											<Checkbox
-												checked={picked.has(template.id)}
-												onCheckedChange={() => toggleCheck(template.id)}
-												aria-label="Select {template.name}"
-											/>
-										</span>
-									{:else}
-										<span class="w-4 shrink-0"></span>
-									{/if}
-									<span class="flex h-5 shrink-0 items-center">
-										<span
-											class="flex size-7 items-center justify-center rounded-md"
-											style={tileStyle(template.severity)}
-										>
-											<SetIcon class="size-4" />
-										</span>
-									</span>
-									<div class="flex min-w-0 flex-1 flex-col gap-1">
-										<div class="flex flex-wrap items-center gap-2">
-											<span class="text-sm leading-5 font-medium wrap-anywhere">
-												{template.name}
-											</span>
-											{#if custom}
-												<Badge variant="info" class="text-2xs font-normal">Custom</Badge>
-											{/if}
-											{#if isNew(template)}
-												<Hint text={`Added ${relativeTime(template.created_at)}`}>
-													{#snippet child(props)}
-														<span {...props} class="flex h-5 items-center">
-															<Badge variant="info" class="px-1.5 text-2xs font-normal">New</Badge>
-														</span>
-													{/snippet}
-												</Hint>
-											{/if}
-											{#if template.findings > 0}
-												<Hint text="Findings from this check across every scan">
-													{#snippet child(props)}
-														<span {...props} class="flex h-5 items-center">
-															<Badge
-																variant="warning"
-																class="px-1.5 text-2xs font-normal tabular-nums"
-															>
-																{template.findings.toLocaleString()}
-																{template.findings === 1 ? 'finding' : 'findings'}
-															</Badge>
-														</span>
-													{/snippet}
-												</Hint>
-											{/if}
-										</div>
-										<div
-											class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground"
-										>
-											<SeverityMark severity={template.severity} />
-											<span class="font-mono">{template.template_id}</span>
-											{#each template.sets.slice(0, 2) as key (key)}
-												<span>{TEMPLATE_SET_LABELS[key] ?? key}</span>
-											{/each}
-											<span>{PROTOCOL_LABELS[template.protocol] ?? template.protocol}</span>
-											{#each template.cve_ids.slice(0, 1) as cve (cve)}
-												<span class="font-mono">{cve}</span>
-											{/each}
-											{#if template.requests}
-												<span>
-													{template.requests}
-													{template.requests === 1 ? 'request' : 'requests'}
-												</span>
-											{/if}
-										</div>
-									</div>
-									<div class="flex shrink-0 items-center gap-2">
-										<Hint text={custom ? 'View and edit the source' : 'View the source'}>
-											{#snippet child(props)}
-												<Button
-													{...props}
-													variant="ghost"
-													size="icon"
-													class="size-8 text-muted-foreground hover:text-foreground"
-													aria-label="{custom ? 'Edit' : 'View'} {template.name}"
-													onclick={() => (viewing = template)}
-												>
-													<FileCode class="size-4" />
-												</Button>
-											{/snippet}
-										</Hint>
-										<Hint
-											text={template.enabled
-												? 'Runs when a scan selects it'
-												: 'Excluded from every scan'}
-										>
-											{#snippet child(props)}
-												<span {...props} class="inline-flex">
-													<Switch
-														checked={template.enabled}
-														onCheckedChange={(value) => toggle(template, value)}
-														aria-label="Enable {template.name}"
-													/>
-												</span>
-											{/snippet}
-										</Hint>
-										{#if custom}
-											<Button
-												variant="ghost"
-												size="icon"
-												class="size-8 text-muted-foreground hover:text-destructive"
-												aria-label="Remove {template.name}"
-												onclick={() => (removing = template)}
-											>
-												<Trash2 class="size-4" />
-											</Button>
-										{/if}
-									</div>
-								</div>
-							{/each}
-						</div>
-					</ScrollArea>
-				{/if}
+				</div>
+			</div>
+		{/if}
+	</div>
 
-				{#if total > PAGE_SIZE}
-					<div class="flex items-center justify-between border-t px-4 py-2.5 text-xs">
-						<span class="text-muted-foreground tabular-nums">
-							{(pageIndex * PAGE_SIZE + 1).toLocaleString()}–{Math.min(
-								(pageIndex + 1) * PAGE_SIZE,
-								total
-							).toLocaleString()} of {total.toLocaleString()}
+	<div class="flex flex-wrap items-center gap-2 border-b px-6 py-3">
+		<Input
+			bind:value={search}
+			placeholder="Search checks by name or identifier"
+			class="h-9 w-full sm:max-w-xs"
+		/>
+		<Select.Root type="single" bind:value={severity}>
+			<Select.Trigger class="h-9 w-36">
+				{severity === ALL ? 'Any severity' : SEVERITY_LABELS[severity]}
+			</Select.Trigger>
+			<Select.Content>
+				<Select.Item value={ALL} label="Any severity">Any severity</Select.Item>
+				{#each SEVERITY_ORDER as value (value)}
+					<Select.Item {value} label={SEVERITY_LABELS[value]}>
+						{SEVERITY_LABELS[value]}
+					</Select.Item>
+				{/each}
+			</Select.Content>
+		</Select.Root>
+		<Select.Root type="single" bind:value={set}>
+			<Select.Trigger class="h-9 w-44">
+				{set === ALL ? 'Any check set' : (sets.find((s) => s.key === set)?.label ?? set)}
+			</Select.Trigger>
+			<Select.Content>
+				<Select.Item value={ALL} label="Any check set">Any check set</Select.Item>
+				{#each sets as spec (spec.key)}
+					<Select.Item value={spec.key} label={spec.label}>
+						{spec.label}
+						<span class="ml-auto text-xs text-muted-foreground tabular-nums">
+							{spec.count.toLocaleString()}
 						</span>
-						<div class="flex items-center gap-2">
-							<Button
-								variant="outline"
-								size="sm"
-								class="h-7"
-								disabled={pageIndex === 0}
-								onclick={() => page(pageIndex - 1)}
-							>
-								Previous
-							</Button>
-							<Button
-								variant="outline"
-								size="sm"
-								class="h-7"
-								disabled={pageIndex >= pageCount - 1}
-								onclick={() => page(pageIndex + 1)}
-							>
-								Next
-							</Button>
+					</Select.Item>
+				{/each}
+			</Select.Content>
+		</Select.Root>
+		<Select.Root type="single" bind:value={origin}>
+			<Select.Trigger class="h-9 w-40">
+				{origin === ALL ? 'Any origin' : TEMPLATE_ORIGIN_LABELS[origin]}
+			</Select.Trigger>
+			<Select.Content>
+				<Select.Item value={ALL} label="Any origin">Any origin</Select.Item>
+				{#each Object.entries(TEMPLATE_ORIGIN_LABELS) as [value, label] (value)}
+					<Select.Item {value} {label}>{label}</Select.Item>
+				{/each}
+			</Select.Content>
+		</Select.Root>
+		{#if newCount > 0}
+			<ToggleGroup.Root
+				type="single"
+				value={onlyNew ? 'new' : ''}
+				onValueChange={(v) => (onlyNew = v === 'new')}
+				variant="outline"
+				aria-label="New checks"
+			>
+				<ToggleGroup.Item value="new" class="h-9 gap-1.5 px-3 text-sm font-normal">
+					New
+					<span class="text-info tabular-nums">{newCount.toLocaleString()}</span>
+				</ToggleGroup.Item>
+			</ToggleGroup.Root>
+		{/if}
+		<Button
+			variant="outline"
+			size="icon"
+			class="ml-auto h-9 w-9"
+			aria-label="Refresh"
+			onclick={() => {
+				void loadStats();
+				void loadList();
+			}}
+		>
+			<RefreshCw class="size-4 {listLoading ? 'animate-spin' : ''}" />
+		</Button>
+	</div>
+
+	{#if listLoading && items.length === 0}
+		<div class="divide-y">
+			{#each Array(6) as _, i (i)}
+				<div class="px-6 py-3"><Skeleton class="h-9 w-full" /></div>
+			{/each}
+		</div>
+	{:else if listError}
+		<EmptyState
+			icon={TriangleAlert}
+			title="Checks not loaded"
+			description={listError}
+			class="rounded-none border-0 bg-transparent py-12"
+		>
+			<Button variant="outline" size="sm" onclick={() => void loadList()}>Retry</Button>
+		</EmptyState>
+	{:else if items.length === 0}
+		<EmptyState
+			icon={SearchX}
+			title="No checks match"
+			class="rounded-none border-0 bg-transparent py-12"
+		/>
+	{:else}
+		<div class="divide-y">
+			{#each items as template (template.id)}
+				{@const custom = template.origin === 'custom'}
+				{@const SetIcon = TEMPLATE_SET_ICONS[template.sets[0] ?? ''] ?? FileCode}
+				<div class="flex items-start gap-3 px-6 py-3 hover:bg-muted/40">
+					{#if custom}
+						<span class="flex h-7 shrink-0 items-center">
+							<Checkbox
+								checked={picked.has(template.id)}
+								onCheckedChange={() => toggleCheck(template.id)}
+								aria-label="Select {template.name}"
+							/>
+						</span>
+					{:else}
+						<span class="w-4 shrink-0"></span>
+					{/if}
+					<span
+						class="flex size-7 shrink-0 items-center justify-center rounded-md"
+						style={tileStyle(template.severity)}
+					>
+						<SetIcon class="size-4" />
+					</span>
+					<div class="flex min-w-0 flex-1 flex-col gap-1">
+						<div class="flex flex-wrap items-center gap-2">
+							<span class="text-sm leading-5 font-medium wrap-anywhere">
+								{template.name}
+							</span>
+							{#if custom}
+								<Badge variant="info" class="text-2xs font-normal">Custom</Badge>
+							{/if}
+							{#if isNew(template)}
+								<Hint text={`Added ${relativeTime(template.created_at)}`}>
+									{#snippet child(props)}
+										<span {...props} class="flex h-5 items-center">
+											<Badge variant="info" class="px-1.5 text-2xs font-normal">New</Badge>
+										</span>
+									{/snippet}
+								</Hint>
+							{/if}
+						</div>
+						<div
+							class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground"
+						>
+							<SeverityMark severity={template.severity} />
+							<span class="font-mono">{template.template_id}</span>
+							{#each template.sets.slice(0, 2) as key (key)}
+								<span>{TEMPLATE_SET_LABELS[key] ?? key}</span>
+							{/each}
+							<span>{PROTOCOL_LABELS[template.protocol] ?? template.protocol}</span>
+							{#each template.cve_ids.slice(0, 1) as cve (cve)}
+								<span class="font-mono">{cve}</span>
+							{/each}
+							{#if template.requests}
+								<span>
+									{template.requests}
+									{template.requests === 1 ? 'request' : 'requests'}
+								</span>
+							{/if}
 						</div>
 					</div>
-				{/if}
-			</div>
+					<div class="flex shrink-0 items-center gap-2">
+						<Button
+							variant="ghost"
+							size="icon"
+							class="size-8 text-muted-foreground hover:text-foreground"
+							aria-label="{custom ? 'Edit' : 'View'} {template.name}"
+							onclick={() => (viewing = template)}
+						>
+							<FileCode class="size-4" />
+						</Button>
+						<Switch
+							checked={template.enabled}
+							onCheckedChange={(value) => toggle(template, value)}
+							aria-label="Enable {template.name}"
+						/>
+						{#if custom}
+							<Button
+								variant="ghost"
+								size="icon"
+								class="size-8 text-muted-foreground hover:text-destructive"
+								aria-label="Remove {template.name}"
+								onclick={() => (removing = template)}
+							>
+								<Trash2 class="size-4" />
+							</Button>
+						{/if}
+					</div>
+				</div>
+			{/each}
+		</div>
+	{/if}
 
-			<p class="text-xs text-muted-foreground">
-				An uploaded template must be a nuclei document with an <code class="font-mono">id</code> and
-				an <code class="font-mono">info.name</code>. Templates using the
-				<code class="font-mono">code</code> protocol are rejected.
-			</p>
-		</Card.Content>
-	</Card.Root>
-</div>
+	{#if total > PAGE_SIZE}
+		<div class="flex items-center justify-between border-t px-6 py-2.5 text-xs">
+			<span class="text-muted-foreground tabular-nums">
+				{(pageIndex * PAGE_SIZE + 1).toLocaleString()}–{Math.min(
+					(pageIndex + 1) * PAGE_SIZE,
+					total
+				).toLocaleString()} of {total.toLocaleString()}
+			</span>
+			<div class="flex items-center gap-2">
+				<Button
+					variant="outline"
+					size="sm"
+					class="h-7"
+					disabled={pageIndex === 0}
+					onclick={() => page(pageIndex - 1)}
+				>
+					Previous
+				</Button>
+				<Button
+					variant="outline"
+					size="sm"
+					class="h-7"
+					disabled={pageIndex >= pageCount - 1}
+					onclick={() => page(pageIndex + 1)}
+				>
+					Next
+				</Button>
+			</div>
+		</div>
+	{/if}
+</Card.Root>
 
 <TemplateSheet
 	template={viewing}
