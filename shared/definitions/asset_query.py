@@ -1827,15 +1827,15 @@ VULN_GROUPS: tuple[str, ...] = (
 
 VULN_FLAGS: dict[str, str] = {
     "new": "Not reported by an earlier scan of this target",
-    "kev": "Listed as exploited in the wild",
-    "ransomware": "Recorded in known ransomware campaigns",
+    "kev": "Listed in CISA KEV",
+    "ransomware": "Listed in CISA ransomware campaigns",
     "overdue": "Past the CISA remediation deadline",
     "weaponised": "A public exploit is published",
     "untestable": "No scanner template covers this CVE",
     "cve": "Carries a published vulnerability identifier",
     "exploitable": "Known exploited, or above the EPSS threshold",
     "corroborated": "A second signal at the same location names the same CVE or weakness class",
-    "proven": "The asset returned an artifact only a vulnerable one returns",
+    "proven": "The asset produced an out-of-band interaction",
     "recorded": "The request and response that produced it were stored",
     "extracted": "The check pulled a value out of the response",
     "web": "Found on an HTTP asset",
@@ -2783,8 +2783,8 @@ SOFTWARE_GROUPS: tuple[str, ...] = (
 
 SOFTWARE_FLAGS: dict[str, str] = {
     "new": "Not inferred by an earlier scan of this target",
-    "kev": "Listed as exploited in the wild",
-    "ransomware": "Recorded in known ransomware campaigns",
+    "kev": "Listed in CISA KEV",
+    "ransomware": "Listed in CISA ransomware campaigns",
     "overdue": "Past the CISA remediation deadline",
     "likely": "EPSS score of 0.088 or above",
     "firm": "Every part of the match is verified",

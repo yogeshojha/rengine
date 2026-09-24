@@ -68,29 +68,28 @@ export const SIGNAL_LABELS: Record<string, string> = {
 	[ExploitSignal.KEV]: 'Known exploited',
 	[ExploitSignal.RANSOM_PATH]: 'Ransomware path',
 	[ExploitSignal.RANSOMWARE]: 'Used by ransomware',
-	[ExploitSignal.FRESH_EXPLOIT]: 'Exploit published since the last scan',
+	[ExploitSignal.FRESH_EXPLOIT]: 'Exploit published after the scan',
 	[ExploitSignal.OVERDUE]: 'Past the CISA deadline',
 	[ExploitSignal.WEAPONISED]: 'Public exploit available',
 	[ExploitSignal.LIKELY]: 'Likely to be exploited',
 	[ExploitSignal.REACHABLE]: 'Directly reachable',
-	[ExploitSignal.BYPASSED]: 'Confirmed through a WAF',
-	[ExploitSignal.CROWD]: 'Mass-scanned software',
-	[ExploitSignal.UNTESTABLE]: 'No check exists'
+	[ExploitSignal.BYPASSED]: 'Matched through a WAF',
+	[ExploitSignal.CROWD]: 'Widely deployed software',
+	[ExploitSignal.UNTESTABLE]: 'No scanner template'
 };
 
 export const SIGNAL_HELP: Record<string, string> = {
-	[ExploitSignal.KEV]: 'CISA lists this CVE as exploited in the wild.',
+	[ExploitSignal.KEV]: 'Listed in CISA KEV.',
 	[ExploitSignal.RANSOM_PATH]:
-		'Used in ransomware campaigns, and the host exposes a remote access or database service.',
-	[ExploitSignal.RANSOMWARE]: 'CISA records this CVE in known ransomware campaigns.',
+		'Used in ransomware campaigns. The host exposes a remote access or database service.',
+	[ExploitSignal.RANSOMWARE]: 'Listed in CISA ransomware campaigns.',
 	[ExploitSignal.FRESH_EXPLOIT]:
 		'A public exploit was published after the scan that recorded this finding.',
-	[ExploitSignal.OVERDUE]: 'The federal remediation deadline for this CVE has passed.',
+	[ExploitSignal.OVERDUE]: 'The CISA remediation deadline has passed.',
 	[ExploitSignal.WEAPONISED]: 'Working exploit code is published.',
 	[ExploitSignal.LIKELY]: 'EPSS 8.8% or above.',
-	[ExploitSignal.REACHABLE]:
-		'The host answers from the internet with no CDN or WAF in front of it.',
-	[ExploitSignal.BYPASSED]: 'A WAF or CDN sits in front of the host and the check succeeded.',
+	[ExploitSignal.REACHABLE]: 'Answers from the internet. No CDN or WAF.',
+	[ExploitSignal.BYPASSED]: 'The check matched through a WAF or CDN.',
 	[ExploitSignal.CROWD]: 'Run by more than 100,000 hosts on the internet.',
 	[ExploitSignal.UNTESTABLE]: 'No scanner template covers this CVE.'
 };

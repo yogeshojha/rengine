@@ -13,11 +13,10 @@
 
 	interface Props {
 		coverage: CoverageRead[];
-		projectWide?: boolean;
 		compact?: boolean;
 	}
 
-	let { coverage, projectWide = false, compact = false }: Props = $props();
+	let { coverage, compact = false }: Props = $props();
 
 	interface TierRow {
 		key: string;
@@ -108,7 +107,7 @@
 		!ran ? 'text-muted-foreground' : partial ? 'text-warning' : 'text-muted-foreground'
 	);
 	let summary = $derived.by(() => {
-		if (!ran) return projectWide ? 'No vulnerability scan has run' : 'No vulnerability scan ran';
+		if (!ran) return 'Not scanned';
 		const parts = [
 			`${n(checks)} ${checks === 1 ? 'check' : 'checks'}`,
 			`${n(targets)} ${targets === 1 ? 'target' : 'targets'}`

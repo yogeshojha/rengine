@@ -215,7 +215,7 @@
 			<span class="text-muted-foreground">
 				{v.host_count}
 				{v.host_count === 1 ? WEB.noun : WEB.nounPlural}{v.replays
-					? ` · confirmed on ${v.replays} equivalent`
+					? ` · reproduced on ${v.replays} equivalent`
 					: ''}
 			</span>
 			<button
@@ -228,7 +228,7 @@
 		</div>
 		{#if v.corroborated_by.length}
 			<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/20 px-3 py-1.5 text-2xs">
-				<span class="text-muted-foreground">Also reported by</span>
+				<span class="text-muted-foreground">Corroborated by</span>
 				{#each v.corroborated_by as c (c.template_id)}
 					<button
 						type="button"
@@ -270,7 +270,7 @@
 			<EvidenceMark evidence={v.evidence} showLabel onFilter={(t) => onFilter(t)} />
 			{#if v.matcher_name}
 				<span
-					><span class="text-muted-foreground">Matcher</span>
+					><span class="text-muted-foreground">Matched on</span>
 					<span class="font-mono">{v.matcher_name}</span></span
 				>
 			{/if}

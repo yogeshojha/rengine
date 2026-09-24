@@ -146,7 +146,7 @@
 				<DropdownMenu.Label>Density</DropdownMenu.Label>
 				<DropdownMenu.RadioGroup value={density} onValueChange={onDensity}>
 					<DropdownMenu.RadioItem value="compact">Compact</DropdownMenu.RadioItem>
-					<DropdownMenu.RadioItem value="cozy">Cozy</DropdownMenu.RadioItem>
+					<DropdownMenu.RadioItem value="cozy">Comfortable</DropdownMenu.RadioItem>
 				</DropdownMenu.RadioGroup>
 			</DropdownMenu.Group>
 		</DropdownMenu.Content>

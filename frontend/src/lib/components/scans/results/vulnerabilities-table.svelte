@@ -588,7 +588,7 @@
 		try {
 			open(await vulnerabilitiesApi.detail(projectId, scanId, id));
 		} catch {
-			toast.error('Finding not found in this scan');
+			toast.error('Finding not found');
 		}
 	}
 	function step(dir: -1 | 1) {
@@ -968,8 +968,8 @@
 
 	const SHORTCUTS: [string, string][] = [
 		['j / k', 'Move between findings'],
-		['e', 'Expand or collapse the brief'],
-		['1 to 5', 'Switch brief tab'],
+		['e', 'Expand or collapse the row'],
+		['1 to 5', 'Switch row tab'],
 		['Enter', 'Open finding'],
 		['x', 'Select finding'],
 		[Object.values(VULN_STATE_KEYS).join(' / '), Object.values(VULN_STATE_LABELS).join(', ')],
@@ -1100,7 +1100,7 @@
 	</div>
 
 	{#if coverageLoaded}
-		<CoverageStrip {projectWide} {coverage} />
+		<CoverageStrip {coverage} />
 	{/if}
 
 	<FilterBar
@@ -1212,7 +1212,6 @@
 			<EmptyState
 				icon={SearchX}
 				title="No findings match"
-				description="Widen the search or remove a filter."
 				class="rounded-none border-0 bg-transparent py-16"
 			>
 				<Button
@@ -1233,8 +1232,7 @@
 		{:else if coverageLoaded}
 			<EmptyState
 				icon={ShieldCheck}
-				title="No vulnerability scan ran"
-				description="Enable it on the scan engine or add it at launch."
+				title="Not scanned"
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
 		{:else}

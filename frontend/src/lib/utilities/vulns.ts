@@ -436,7 +436,7 @@ export function vulnQueryChips(q: VulnQuery, facets: VulnFacetSet): VulnFilterCh
 	if (q.corroboratedOnly)
 		chips.push({
 			id: 'corroborated',
-			label: 'Confirmed by another check',
+			label: 'Corroborated',
 			remove: (x) => ({ ...x, corroboratedOnly: false })
 		});
 	if (!q.includeInfo)

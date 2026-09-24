@@ -185,7 +185,7 @@
 					<HighlightText text={it.template_name} {term} />
 				</span>
 				{#if it.is_kev}
-					<Hint text="On the CISA Known Exploited Vulnerabilities list">
+					<Hint text="Listed in CISA KEV">
 						{#snippet child(props)}
 							<button
 								{...props}
@@ -223,8 +223,8 @@
 				{#if it.corroborated > 0}
 					<Hint
 						text={it.corroborated === it.findings
-							? 'Another check confirms this weakness at the same location'
-							: `${it.corroborated} of ${it.findings} findings are confirmed by another check`}
+							? 'Corroborated by another check at the same location'
+							: `${it.corroborated} of ${it.findings} findings corroborated by another check`}
 					>
 						{#snippet child(props)}
 							<button
@@ -235,7 +235,9 @@
 							>
 								<Badge variant="secondary" class="gap-1 px-1 text-2xs font-normal">
 									<CheckCheck class="size-2.5" />
-									{it.corroborated === it.findings ? 'confirmed' : `${it.corroborated} confirmed`}
+									{it.corroborated === it.findings
+										? 'corroborated'
+										: `${it.corroborated} corroborated`}
 								</Badge>
 							</button>
 						{/snippet}

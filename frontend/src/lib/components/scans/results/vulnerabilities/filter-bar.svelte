@@ -59,7 +59,7 @@
 		{ value: 'new', label: 'New' },
 		{ value: 'kev', label: 'Known exploited' },
 		{ value: 'cve', label: 'Has a CVE' },
-		{ value: 'corroborated', label: 'Confirmed' },
+		{ value: 'corroborated', label: 'Corroborated' },
 		{ value: 'noinfo', label: 'Hide info' }
 	];
 

@@ -27,7 +27,7 @@
 	});
 
 	let crossScanner = $derived(peers.some((p) => p.scanner !== scanner));
-	let text = $derived(crossScanner ? `${hint}. Confirmed by a second scanner` : hint);
+	let text = $derived(crossScanner ? `${hint}. Corroborated by a second scanner` : hint);
 </script>
 
 {#if peers.length}
@@ -44,13 +44,13 @@
 					}}
 				>
 					<Badge variant="secondary" class="gap-1 px-1 text-2xs font-normal">
-						<CheckCheck class="size-2.5" /> confirmed
+						<CheckCheck class="size-2.5" /> corroborated
 					</Badge>
 				</button>
 			{:else}
 				<span {...props} class="flex h-4 shrink-0 items-center">
 					<Badge variant="secondary" class="gap-1 px-1 text-2xs font-normal">
-						<CheckCheck class="size-2.5" /> confirmed
+						<CheckCheck class="size-2.5" /> corroborated
 					</Badge>
 				</span>
 			{/if}

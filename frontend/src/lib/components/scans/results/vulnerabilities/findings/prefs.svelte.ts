@@ -25,7 +25,7 @@ export const BRIEF_TABS = ['asset', 'host', 'check', 'evidence', 'intel'] as con
 export type BriefTab = (typeof BRIEF_TABS)[number];
 export const BRIEF_TAB_LABELS: Record<BriefTab, string> = {
 	asset: 'Web asset',
-	host: 'On this asset',
+	host: 'Same web asset',
 	check: 'Same check',
 	evidence: 'Evidence',
 	intel: 'Intel'

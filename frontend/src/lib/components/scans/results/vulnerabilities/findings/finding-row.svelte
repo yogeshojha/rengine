@@ -199,7 +199,7 @@
 					>
 				{/if}
 				{#if v.is_kev}
-					<Hint text="Listed as exploited in the wild">
+					<Hint text="Listed in CISA KEV">
 						{#snippet child(props)}
 							<button
 								{...props}
@@ -397,7 +397,7 @@
 					</PeekCard>
 				{:else if v.replays}
 					<span class="text-2xs text-muted-foreground">
-						Confirmed on {v.replays} equivalent
+						Reproduced on {v.replays} equivalent
 					</span>
 				{/if}
 			</div>

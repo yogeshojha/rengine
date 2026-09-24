@@ -85,7 +85,7 @@ class DalfoxScanner(VulnScanner):
         if not reflecting:
             coverage.status = CoverageStatus.COMPLETED.value
             coverage.error = (
-                "No parameter reflected in the response, so nothing was fuzzed."
+                "No parameter reflected in the response. Nothing was fuzzed."
             )
             coverage.ended_at = utc_now()
             return ScannerResult(coverage=[coverage])
