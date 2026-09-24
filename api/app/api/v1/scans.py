@@ -230,6 +230,18 @@ async def list_scans(
     return page
 
 
+@router.get("/latest", response_model=list[ScanRead])
+async def latest_runs(
+    _current_user: CurrentUser,
+    service: Annotated[ScanService, Depends(get_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    target_id: Annotated[
+        list[UUID], Query(description="Targets", max_length=MAX_TREND_TARGETS)
+    ],
+):
+    return await service.latest_for_targets(project_id, target_id)
+
+
 @router.get("/trends", response_model=list[ScanTargetTrend])
 async def finding_trends(
     _current_user: CurrentUser,

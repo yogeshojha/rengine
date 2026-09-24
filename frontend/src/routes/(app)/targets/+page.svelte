@@ -12,10 +12,10 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as Pagination from '$lib/components/ui/pagination';
 	import * as Empty from '$lib/components/ui/empty';
-	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 	import Upload from '@lucide/svelte/icons/upload';
 	import Play from '@lucide/svelte/icons/play';
 	import Plus from '@lucide/svelte/icons/plus';
@@ -24,16 +24,34 @@
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { toast } from 'svelte-sonner';
 
-	import TargetTypeTabs from '$lib/components/targets/target-type-tabs.svelte';
 	import TargetFilters from '$lib/components/targets/target-filters.svelte';
-	import TargetsKpiStrip from '$lib/components/targets/targets-kpi-strip.svelte';
 	import ProjectEstateTray from '$lib/components/targets/project-estate-tray.svelte';
 	import TargetViewControls from '$lib/components/targets/target-view-controls.svelte';
-	import TargetListItem from '$lib/components/targets/target-list-item.svelte';
-	import TargetListHeader from '$lib/components/targets/target-list-header.svelte';
-	import TargetListSkeleton from '$lib/components/targets/target-list-skeleton.svelte';
+	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
+	import CountTabs from '$lib/components/count-tabs.svelte';
+	import Hint from '$lib/components/hint.svelte';
+	import CompareSheet from '$lib/components/scans/history/compare-sheet.svelte';
+	import TargetsStrip from '$lib/components/targets/list/targets-strip.svelte';
+	import TargetRow from '$lib/components/targets/list/target-row.svelte';
+	import { TargetRuns } from '$lib/components/targets/list/target-runs.svelte';
+	import { TCOL } from '$lib/components/targets/list/columns';
+	import {
+		TARGET_COLUMNS,
+		TARGET_COLUMN_LABELS,
+		targetPrefs
+	} from '$lib/components/targets/list/prefs.svelte';
+	import { TARGET_TYPE_ICONS_COMPACT } from '$lib/config/icons';
+	import { TargetType, formatTargetTypePlural } from '$lib/types/target';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import { Checkbox } from '$lib/components/ui/checkbox';
+	import { Kbd } from '$lib/components/ui/kbd';
+	import ArrowDown from '@lucide/svelte/icons/arrow-down';
+	import ArrowUp from '@lucide/svelte/icons/arrow-up';
+	import Columns3 from '@lucide/svelte/icons/columns-3';
+	import Keyboard from '@lucide/svelte/icons/keyboard';
+	import { forgetFindings } from '$lib/components/scans/history/findings';
 	import TargetEmptyState from '$lib/components/targets/target-empty-state.svelte';
-	import TargetDetailDialog from '$lib/components/targets/target-detail-dialog.svelte';
 	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
 	import AddTargetModal from '$lib/components/modals/add-target-modal.svelte';
 	import PageSizeSelector from '$lib/components/targets/page-size-selector.svelte';
@@ -86,9 +104,7 @@
 	$effect(() => {
 		if (!showAddModal) prefillValue = '';
 	});
-	let showDetailDialog = $state(false);
 	let showDeleteDialog = $state(false);
-	let selectedTarget = $state<Target | null>(null);
 	let targetToDelete = $state<Target | null>(null);
 	let isDeleting = $state(false);
 	let isRefreshing = $state(false);
@@ -239,8 +255,126 @@
 		attention: 'Needs attention',
 		awaiting: 'Enriching',
 		enriched: 'Enriched',
-		monitored: 'New checks'
+		monitored: 'New checks',
+		unscanned: 'Not scanned',
+		stale: 'Stale · 30 days',
+		critical: 'Critical findings',
+		high: 'High findings'
 	};
+
+	const TYPE_TABS = [
+		{ key: 'all', label: 'All' },
+		...Object.keys(TARGET_TYPE_ICONS_COMPACT).map((key) => ({
+			key,
+			label: formatTargetTypePlural(key as TargetType)
+		}))
+	];
+
+	const runs = new TargetRuns();
+	const expanded = new SvelteSet<string>();
+	let now = $state(Date.now());
+	let focusId = $state<string | null>(null);
+	let compare = $state<{ current: string; baseline: string | null } | null>(null);
+	let shortcutsOpen = $state(false);
+	let projectId = $derived(projectsStore.activeProject?.id ?? '');
+	let rows = $derived(targetsStore.filteredTargets);
+	let rowIds = $derived(rows.map((t) => t.id).join(','));
+	let liveCount = $derived(rows.filter((t) => liveScans.isTargetLive(t.id)).length);
+
+	$effect(() => {
+		const t = setInterval(() => (now = Date.now()), 1000);
+		return () => clearInterval(t);
+	});
+
+	$effect(() => {
+		const ids = rowIds;
+		const pid = projectId;
+		void liveScans.completedTick;
+		if (!pid || targetsStore.isLoading) return;
+		untrack(() => runs.load(pid, ids ? ids.split(',') : []));
+	});
+
+	$effect(() => {
+		const ids = new Set(rows.map((t) => t.id));
+		for (const id of expanded) if (!ids.has(id)) expanded.delete(id);
+	});
+
+	function toggleExpand(id: string) {
+		if (expanded.has(id)) expanded.delete(id);
+		else expanded.add(id);
+	}
+
+	function refreshRuns() {
+		for (const r of runs.runs.values()) forgetFindings(r.id);
+		void runs.load(
+			projectId,
+			rows.map((t) => t.id)
+		);
+	}
+
+	function typing(e: KeyboardEvent): boolean {
+		const el = e.target as HTMLElement | null;
+		return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+	}
+
+	function onKey(e: KeyboardEvent) {
+		if (e.metaKey || e.ctrlKey || e.altKey) return;
+		if (e.key === '/' && !typing(e)) {
+			e.preventDefault();
+			document.getElementById('target-search')?.focus();
+			return;
+		}
+		if (typing(e) || document.querySelector('[role=dialog],[role=menu]')) return;
+		const idx = rows.findIndex((t) => t.id === focusId);
+		const focused = idx >= 0 ? rows[idx] : null;
+		const move = (d: number) => {
+			const next = rows[Math.max(0, Math.min(rows.length - 1, (idx < 0 ? -1 : idx) + d))];
+			if (!next) return;
+			focusId = next.id;
+			document.getElementById(`target-row-${next.id}`)?.scrollIntoView({ block: 'nearest' });
+		};
+		switch (e.key) {
+			case 'j':
+			case 'ArrowDown':
+				e.preventDefault();
+				move(1);
+				break;
+			case 'k':
+			case 'ArrowUp':
+				e.preventDefault();
+				move(-1);
+				break;
+			case 'o':
+				if (focused) toggleExpand(focused.id);
+				break;
+			case 'x':
+				if (focused) handleTargetSelect(focused.id);
+				break;
+			case 's':
+				if (focused) handleScan(focused);
+				break;
+			case 'Enter':
+				if (focused) goto(ROUTES.target(focused.id));
+				break;
+			case '?':
+				shortcutsOpen = true;
+				break;
+			case 'Escape':
+				if (focused && expanded.has(focused.id)) expanded.delete(focused.id);
+				else if (selectedTargetIds.size) clearSelection();
+				break;
+		}
+	}
+
+	const SHORTCUTS: [string, string][] = [
+		['j / k', 'Move between targets'],
+		['o', 'Expand or collapse the row'],
+		['Enter', 'Open target'],
+		['s', 'Scan'],
+		['x', 'Select target'],
+		['/', 'Search'],
+		['Esc', 'Collapse or clear selection']
+	];
 
 	let activeChips = $derived.by(() => {
 		const chips: { key: string; label: string; color?: string; remove: () => void }[] = [];
@@ -384,10 +518,6 @@
 		scanHistoryTarget = target;
 		showScanHistoryModal = true;
 	}
-	function handleViewTarget(target: Target) {
-		selectedTarget = target;
-		showDetailDialog = true;
-	}
 
 	function handleDeleteTarget(target: Target) {
 		targetToDelete = target;
@@ -464,7 +594,6 @@
 			if (success) {
 				toast.success('Target deleted');
 				showDeleteDialog = false;
-				showDetailDialog = false;
 				targetToDelete = null;
 			} else {
 				toast.error('Target not deleted');
@@ -545,47 +674,28 @@
 
 <svelte:head><title>{routeLabels.targets} · reNgine</title></svelte:head>
 
-<div class="space-y-6">
-	<div class="flex items-start justify-between">
-		<div>
-			<h1 class="text-2xl font-semibold tracking-tight">Targets</h1>
-		</div>
-		<div class="flex items-center gap-2">
-			<Button
-				variant="outline"
-				size="icon"
-				class="h-9 w-9"
-				aria-label="Refresh"
-				onclick={handleRefresh}
-				disabled={isRefreshing}
-			>
-				<RefreshCw class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}" />
-			</Button>
+<svelte:window onkeydown={onKey} />
 
-			{#if !targetsStore.isLoading && targetsStore.filteredTargets.length > 0}
-				<Button variant="outline" size="sm" class="gap-2 h-9" onclick={handleScanAll}>
-					<Play class="h-4 w-4" />
-					Scan all ({targetsStore.filteredTargets.length})
-				</Button>
-			{/if}
+{#snippet sortHead(label: string, key: SortKey, cls: string)}
+	<button
+		type="button"
+		class="{cls} items-center gap-1 text-left tracking-wide uppercase hover:text-foreground {targetsStore
+			.filters.sortKey === key
+			? 'text-foreground'
+			: ''}"
+		onclick={() => handleSort(key)}
+	>
+		{label}
+		{#if targetsStore.filters.sortKey === key}
+			{#if targetsStore.filters.sortDir === 'desc'}<ArrowDown class="size-3" />{:else}<ArrowUp
+					class="size-3"
+				/>{/if}
+		{/if}
+	</button>
+{/snippet}
 
-			<Button variant="outline" onclick={() => (showImportModal = true)} class="gap-2">
-				<Upload class="h-4 w-4" />
-				Import
-			</Button>
-
-			<Button onclick={() => (showAddModal = true)} class="gap-2">
-				<Plus class="h-4 w-4" />
-				Add target
-			</Button>
-		</div>
-	</div>
-
-	<TargetTypeTabs
-		counts={targetsStore.counts}
-		activeTab={targetsStore.filters.activeTab}
-		onTabChange={handleTabChange}
-	/>
+<div class="flex flex-col gap-4">
+	<h1 class="sr-only">Targets</h1>
 
 	{#if projectsStore.activeProject}
 		<ProjectEstateTray
@@ -594,17 +704,25 @@
 		/>
 	{/if}
 
-	{#if targetsStore.signalSummary.total > 0}
-		<TargetsKpiStrip
+	<Card.Root class="gap-0 overflow-hidden py-0">
+		<TargetsStrip
 			summary={targetsStore.signalSummary}
-			activeSignal={targetsStore.filters.signalFilter}
-			onSelect={handleSignalSelect}
+			live={liveCount}
+			active={targetsStore.filters.signalFilter}
+			onSignal={handleSignalSelect}
 		/>
-	{/if}
 
-	<Card.Root class="overflow-hidden">
-		<div class="p-4 border-b flex items-center gap-3 flex-wrap">
-			<div class="flex-1 min-w-0">
+		<div class="flex flex-wrap items-center justify-between gap-2 border-b px-2">
+			<CountTabs
+				tabs={TYPE_TABS}
+				value={targetsStore.filters.activeTab}
+				counts={targetsStore.counts as unknown as Record<string, number>}
+				onChange={handleTabChange}
+			/>
+		</div>
+
+		<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
+			<div class="min-w-[240px] flex-1">
 				<TargetFilters
 					searchQuery={targetsStore.filters.searchQuery}
 					onSearchChange={handleSearchChange}
@@ -614,46 +732,120 @@
 					tags={tagSummaries}
 					selectedTags={targetsStore.filters.selectedTags}
 					onTagToggle={handleTagToggle}
-					onClearFilters={handleClearFilters}
 				/>
 			</div>
-			<TargetViewsMenu currentQuery={targetsStore.toQueryString()} onApply={handleApplyView} />
-			<TargetViewControls
-				sortKey={targetsStore.filters.sortKey}
-				sortDir={targetsStore.filters.sortDir}
-				onSort={handleSort}
-				onExport={handleExport}
-				exportDisabled={targetsStore.filteredTargets.length === 0}
-			/>
+			<div class="flex flex-wrap items-center gap-2">
+				<TargetViewsMenu currentQuery={targetsStore.toQueryString()} onApply={handleApplyView} />
+				<TargetViewControls
+					sortKey={targetsStore.filters.sortKey}
+					sortDir={targetsStore.filters.sortDir}
+					onSort={handleSort}
+					onExport={handleExport}
+					exportDisabled={rows.length === 0}
+				/>
+				<DropdownMenu.Root>
+					<DropdownMenu.Trigger>
+						{#snippet child({ props })}
+							<Button
+								{...props}
+								variant="outline"
+								size="icon"
+								class="size-9"
+								aria-label="Columns and density"
+							>
+								<Columns3 class="size-4" />
+							</Button>
+						{/snippet}
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Content align="end" class="w-48">
+						<DropdownMenu.Label>Columns</DropdownMenu.Label>
+						{#each TARGET_COLUMNS as c (c)}
+							<DropdownMenu.CheckboxItem
+								checked={targetPrefs.shows(c)}
+								onCheckedChange={() => targetPrefs.toggle(c)}
+							>
+								{TARGET_COLUMN_LABELS[c]}
+							</DropdownMenu.CheckboxItem>
+						{/each}
+						<DropdownMenu.Separator />
+						<DropdownMenu.Label>Density</DropdownMenu.Label>
+						<DropdownMenu.RadioGroup
+							value={targetPrefs.density}
+							onValueChange={(v) =>
+								(targetPrefs.density = v === 'compact' ? 'compact' : 'comfortable')}
+						>
+							<DropdownMenu.RadioItem value="comfortable">Comfortable</DropdownMenu.RadioItem>
+							<DropdownMenu.RadioItem value="compact">Compact</DropdownMenu.RadioItem>
+						</DropdownMenu.RadioGroup>
+					</DropdownMenu.Content>
+				</DropdownMenu.Root>
+				<Hint text="Refresh">
+					{#snippet child(props)}
+						<Button
+							{...props}
+							variant="outline"
+							size="icon"
+							class="size-9"
+							aria-label="Refresh"
+							onclick={handleRefresh}
+							disabled={isRefreshing}
+						>
+							<RefreshCw class="size-4 {isRefreshing ? 'animate-spin' : ''}" />
+						</Button>
+					{/snippet}
+				</Hint>
+				<Hint text="Keyboard shortcuts">
+					{#snippet child(props)}
+						<Button
+							{...props}
+							variant="outline"
+							size="icon"
+							class="hidden size-9 sm:inline-flex"
+							aria-label="Keyboard shortcuts"
+							onclick={() => (shortcutsOpen = true)}
+						>
+							<Keyboard class="size-4" />
+						</Button>
+					{/snippet}
+				</Hint>
+				{#if !targetsStore.isLoading && rows.length > 0}
+					<Button variant="outline" class="h-9 gap-2" onclick={handleScanAll}>
+						<Play class="size-4" /> Scan {rows.length}
+					</Button>
+				{/if}
+				<Button variant="outline" class="h-9 gap-2" onclick={() => (showImportModal = true)}>
+					<Upload class="size-4" /> Import
+				</Button>
+				<Button class="h-9 gap-2" onclick={() => (showAddModal = true)}>
+					<Plus class="size-4" /> Add target
+				</Button>
+			</div>
 		</div>
 
 		{#if activeChips.length > 0}
-			<div class="flex flex-wrap items-center gap-1.5 px-4 py-2 border-b bg-muted/10">
+			<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/10 px-4 py-2">
 				{#each activeChips as chip (chip.key)}
 					<Badge variant="outline" class="gap-1 bg-background font-normal">
 						{#if chip.color}
-							<span class="h-2 w-2 rounded-full" style="background-color: {chip.color}"></span>
+							<span class="size-2 rounded-full" style="background-color: {chip.color}"></span>
 						{/if}
 						{chip.label}
-						<Tooltip.Provider delayDuration={300}>
-							<Tooltip.Root>
-								<Tooltip.Trigger
-									class="rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-									onclick={chip.remove}
-									aria-label={`Remove filter ${chip.label}`}
-								>
-									<X class="h-3 w-3" />
-									<span class="sr-only">Remove filter {chip.label}</span>
-								</Tooltip.Trigger>
-								<Tooltip.Content>Remove filter {chip.label}</Tooltip.Content>
-							</Tooltip.Root>
-						</Tooltip.Provider>
+						<Tooltip.Root>
+							<Tooltip.Trigger
+								class="rounded-sm text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+								onclick={chip.remove}
+								aria-label="Remove filter {chip.label}"
+							>
+								<X class="size-3" />
+							</Tooltip.Trigger>
+							<Tooltip.Content>Remove filter {chip.label}</Tooltip.Content>
+						</Tooltip.Root>
 					</Badge>
 				{/each}
 				<button
-					class="ml-1 rounded-sm text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+					type="button"
+					class="ml-auto text-xs text-muted-foreground hover:text-foreground"
 					onclick={handleClearFilters}
-					aria-label="Clear all filters"
 				>
 					Clear all
 				</button>
@@ -661,8 +853,13 @@
 		{/if}
 
 		{#if targetsStore.isLoading}
-			<TargetListSkeleton count={8} />
-		{:else if targetsStore.error && targetsStore.filteredTargets.length === 0}
+			<TableSkeleton
+				lead={[{ key: 'name', label: 'Target', width: 'min-w-0 flex-1' }]}
+				rows={8}
+				actions={false}
+				selectable
+			/>
+		{:else if targetsStore.error && rows.length === 0}
 			<Empty.Root class="py-16">
 				<Empty.Header>
 					<Empty.Media class="size-12 rounded-2xl bg-destructive/10">
@@ -673,56 +870,83 @@
 				</Empty.Header>
 				<Empty.Content>
 					<Button variant="outline" class="gap-2" onclick={() => targetsStore.reload()}>
-						<RefreshCw class="h-4 w-4" />
-						Retry
+						<RefreshCw class="size-4" /> Retry
 					</Button>
 				</Empty.Content>
 			</Empty.Root>
-		{:else if targetsStore.filteredTargets.length === 0}
+		{:else if rows.length === 0}
 			<TargetEmptyState
 				hasFilters={targetsStore.hasActiveFilters}
 				onAddTarget={() => (showAddModal = true)}
 				onClearFilters={handleClearFilters}
 			/>
 		{:else}
-			<TargetListHeader
-				{selectAllChecked}
-				onSelectAll={handleSelectAll}
-				sortKey={targetsStore.filters.sortKey}
-				sortDir={targetsStore.filters.sortDir}
-				onSort={handleSort}
-			/>
-
-			<div class="divide-y divide-border/50">
-				{#each targetsStore.filteredTargets as target (target.id)}
-					<TargetListItem
+			<div class="@container/targets w-full" role="table" aria-label="Targets">
+				<div
+					class="flex items-center gap-3 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
+					role="row"
+				>
+					<div class={TCOL.select}>
+						<Checkbox
+							checked={selectAllChecked === true}
+							indeterminate={selectAllChecked === 'indeterminate'}
+							onCheckedChange={handleSelectAll}
+							aria-label="Select all targets on this page"
+						/>
+					</div>
+					{@render sortHead('Target', 'name', `${TCOL.target} flex`)}
+					{#if targetPrefs.shows('run')}<div class={TCOL.run}>Last run</div>{/if}
+					{#if targetPrefs.shows('findings')}<div class={TCOL.findings}>Findings</div>{/if}
+					{#if targetPrefs.shows('assets')}<div class={TCOL.assets}>Assets</div>{/if}
+					{#if targetPrefs.shows('change')}<div class={TCOL.change}>Change</div>{/if}
+					{#if targetPrefs.shows('organizations')}<div class={TCOL.organizations}>
+							Organizations
+						</div>{/if}
+					{#if targetPrefs.shows('tags')}<div class={TCOL.tags}>Tags</div>{/if}
+					<div class={TCOL.actions}></div>
+				</div>
+				{#each rows as target, i (target.id)}
+					<TargetRow
+						{projectId}
 						{target}
-						isSelected={selectedTargetIds.has(target.id)}
-						isScanning={liveScans.isTargetLive(target.id)}
-						onSelect={handleTargetSelect}
-						onScan={handleScan}
-						onSchedule={handleSchedule}
-						onOpenHistory={handleOpenScanHistory}
-						onView={handleViewTarget}
-						onDelete={handleDeleteTarget}
-						onRename={handleRename}
-						onReEnrich={handleReEnrich}
-						onWhoisClick={handleWhoisClick}
-						onDiscoveriesClick={handleDiscoveriesClick}
-						onBgpClick={handleBgpClick}
-						onDnsClick={handleDnsClick}
-						onInfraClick={handleInfraClick}
+						run={runs.runs.get(target.id)}
+						trend={runs.trends.get(target.id)}
+						loaded={runs.loaded}
+						{now}
+						index={i}
+						expanded={expanded.has(target.id)}
+						focused={focusId === target.id}
+						selected={selectedTargetIds.has(target.id)}
+						scanning={liveScans.isTargetLive(target.id)}
+						onToggle={() => toggleExpand(target.id)}
+						onSelect={() => handleTargetSelect(target.id)}
+						onFocus={() => (focusId = target.id)}
+						onScan={() => handleScan(target)}
+						onSchedule={() => handleSchedule(target)}
+						onHistory={() => handleOpenScanHistory(target)}
+						onCompare={(run) => (compare = { current: run.id, baseline: null })}
+						onDelete={() => handleDeleteTarget(target)}
+						onRename={(name) => handleRename(target, name)}
+						onReEnrich={(kind) => handleReEnrich(target, kind)}
+						onWhois={() => handleWhoisClick(target)}
+						onDiscoveries={() => handleDiscoveriesClick(target)}
+						onBgp={() => handleBgpClick(target)}
+						onDns={() => handleDnsClick(target)}
+						onInfra={() => handleInfraClick(target)}
+						onChanged={refreshRuns}
 					/>
 				{/each}
 			</div>
 
-			<div class="px-4 py-3 border-t bg-muted/20 flex items-center justify-between">
+			<div class="flex flex-wrap items-center justify-between gap-3 border-t bg-muted/20 px-4 py-3">
 				<div class="flex items-center gap-4">
-					<div class="text-xs text-muted-foreground">
-						Showing {targetsStore.filteredTargets.length} of {targetsStore.pagination.totalItems} targets
-					</div>
-					{#if selectedTargetIds.size >= targetsStore.filteredTargets.length && selectedTargetIds.size < targetsStore.pagination.totalItems}
+					<span class="text-xs text-muted-foreground">
+						{rows.length} of {targetsStore.pagination.totalItems}
+						{targetsStore.pagination.totalItems === 1 ? 'target' : 'targets'}
+					</span>
+					{#if selectedTargetIds.size >= rows.length && selectedTargetIds.size < targetsStore.pagination.totalItems}
 						<button
+							type="button"
 							class="text-xs font-medium text-primary hover:underline"
 							onclick={handleSelectAllMatching}
 						>
@@ -734,35 +958,28 @@
 						onPageSizeChange={handlePageSizeChange}
 					/>
 				</div>
-
 				{#if showPagination}
 					<Pagination.Root
 						count={targetsStore.pagination.totalItems}
 						perPage={targetsStore.pagination.pageSize}
 						page={targetsStore.pagination.currentPage}
-						onPageChange={(page) => handlePageChange(page)}
+						onPageChange={(p) => handlePageChange(p)}
 					>
 						{#snippet children({ pages, currentPage })}
 							<Pagination.Content>
-								<Pagination.Item>
-									<Pagination.Previous />
-								</Pagination.Item>
-								{#each pages as page (page.key)}
-									{#if page.type === 'ellipsis'}
-										<Pagination.Item>
-											<Pagination.Ellipsis />
-										</Pagination.Item>
+								<Pagination.Item><Pagination.Previous /></Pagination.Item>
+								{#each pages as p (p.key)}
+									{#if p.type === 'ellipsis'}
+										<Pagination.Item><Pagination.Ellipsis /></Pagination.Item>
 									{:else}
 										<Pagination.Item>
-											<Pagination.Link {page} isActive={currentPage === page.value}>
-												{page.value}
-											</Pagination.Link>
+											<Pagination.Link page={p} isActive={currentPage === p.value}
+												>{p.value}</Pagination.Link
+											>
 										</Pagination.Item>
 									{/if}
 								{/each}
-								<Pagination.Item>
-									<Pagination.Next />
-								</Pagination.Item>
+								<Pagination.Item><Pagination.Next /></Pagination.Item>
 							</Pagination.Content>
 						{/snippet}
 					</Pagination.Root>
@@ -771,6 +988,25 @@
 		{/if}
 	</Card.Root>
 </div>
+
+<CompareSheet
+	{projectId}
+	current={compare?.current ?? null}
+	baseline={compare?.baseline ?? null}
+	onClose={() => (compare = null)}
+/>
+
+<Dialog.Root bind:open={shortcutsOpen}>
+	<Dialog.Content class="sm:max-w-md">
+		<Dialog.Header><Dialog.Title>Keyboard shortcuts</Dialog.Title></Dialog.Header>
+		<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+			{#each SHORTCUTS as [k, label] (k)}
+				<dt><Kbd>{k}</Kbd></dt>
+				<dd class="text-muted-foreground">{label}</dd>
+			{/each}
+		</dl>
+	</Dialog.Content>
+</Dialog.Root>
 
 <AddTargetModal bind:open={showAddModal} initialValue={prefillValue} />
 <ImportTargetsModal bind:open={showImportModal} />
@@ -793,15 +1029,6 @@
 		showScheduleModal = false;
 		scheduleTargetId = undefined;
 	}}
-/>
-
-<TargetDetailDialog
-	bind:open={showDetailDialog}
-	target={selectedTarget}
-	onOpenChange={(open) => (showDetailDialog = open)}
-	onScan={handleScan}
-	onOpenHistory={handleOpenScanHistory}
-	onDelete={handleDeleteTarget}
 />
 
 <ScanHistoryModal

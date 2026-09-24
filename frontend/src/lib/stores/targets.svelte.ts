@@ -4,7 +4,13 @@ import { tagsApi, type Tag } from '$lib/api/tags';
 import { TargetType, type Target } from '$lib/types/target';
 import { TaskStatus } from '$lib/types/task-status';
 import type { PaginatedResponse, TargetCounts } from '$lib/types/pagination';
-import type { SignalFilter, SortDir, SortKey, TargetSummary } from '$lib/utilities/target-signals';
+import {
+	EMPTY_TARGET_SUMMARY,
+	type SignalFilter,
+	type SortDir,
+	type SortKey,
+	type TargetSummary
+} from '$lib/utilities/target-signals';
 import { SvelteURLSearchParams } from 'svelte/reactivity';
 import { scansStore } from '$lib/stores/scans.svelte';
 import { dashboardStore } from '$lib/stores/dashboard.svelte';
@@ -62,14 +68,7 @@ function createTargetsStore() {
 		url: 0
 	});
 
-	let signalSummary = $state<TargetSummary>({
-		total: 0,
-		expiring: 0,
-		attention: 0,
-		awaiting: 0,
-		enriched: 0,
-		monitored: 0
-	});
+	let signalSummary = $state<TargetSummary>({ ...EMPTY_TARGET_SUMMARY });
 
 	let searchDebounce: ReturnType<typeof setTimeout> | undefined;
 
@@ -494,14 +493,7 @@ function createTargetsStore() {
 				totalItems: 0,
 				totalPages: 0
 			};
-			signalSummary = {
-				total: 0,
-				expiring: 0,
-				attention: 0,
-				awaiting: 0,
-				enriched: 0,
-				monitored: 0
-			};
+			signalSummary = { ...EMPTY_TARGET_SUMMARY };
 			error = null;
 			hasFetched = false;
 		}

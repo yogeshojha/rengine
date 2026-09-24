@@ -4,6 +4,8 @@ export const STORAGE_KEYS = {
 	toolboxLastTool: 'rengine:toolbox:lastTool',
 	launchLastContext: 'rengine:launch:lastContext',
 	targetViews: 'targets:views',
+	targetsHidden: 'rengine:targets:hidden',
+	targetsDensity: 'rengine:targets:density',
 	engineLensTargetType: 'rengine:engine:lensTargetType',
 	engineSidePane: 'rengine:engine:sidePane',
 	engineSplit: 'rengine:engine:split',

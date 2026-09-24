@@ -1222,6 +1222,43 @@ class ScanService:
         for i in items:
             i.target_runs = int(runs.get(i.target_id, 0))
 
+    async def latest_for_targets(
+        self, project_id: UUID, target_ids: list[UUID]
+    ) -> list[ScanRead]:
+        """The newest census run of each target, with the fields the history rows show."""
+        if not target_ids:
+            return []
+        started = func.coalesce(Scan.started_at, Scan.created_at)
+        ranked = (
+            select(
+                Scan.id.label("id"),
+                func.row_number()
+                .over(partition_by=Scan.target_id, order_by=started.desc())
+                .label("rn"),
+            )
+            .where(
+                Scan.project_id == project_id,
+                Scan.target_id.in_(target_ids),
+                census_only(),
+            )
+            .subquery()
+        )
+        rows = (
+            (
+                await self.session.execute(
+                    select(Scan).where(
+                        Scan.id.in_(select(ranked.c.id).where(ranked.c.rn == 1))
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        items = [self.to_read(s) for s in rows]
+        await self.attach_deltas(items)
+        await self.attach_target_runs(items)
+        return items
+
     async def finding_trends(
         self, project_id: UUID, target_ids: list[UUID], limit: int = TREND_POINTS
     ) -> list[ScanTargetTrend]:

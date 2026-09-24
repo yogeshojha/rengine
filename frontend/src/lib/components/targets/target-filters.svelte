@@ -10,7 +10,6 @@
 	import * as Command from '$lib/components/ui/command';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Checkbox } from '$lib/components/ui/checkbox';
-	import { Separator } from '$lib/components/ui/separator';
 	import type { OrganizationSummary, TagSummary } from '$lib/types/target';
 
 	interface Props {
@@ -22,7 +21,6 @@
 		tags: TagSummary[];
 		selectedTags: string[];
 		onTagToggle: (tagId: string) => void;
-		onClearFilters: () => void;
 	}
 
 	let {
@@ -33,24 +31,18 @@
 		onOrganizationToggle,
 		tags,
 		selectedTags,
-		onTagToggle,
-		onClearFilters
+		onTagToggle
 	}: Props = $props();
 
 	let orgPopoverOpen = $state(false);
 	let tagPopoverOpen = $state(false);
-
-	let hasActiveFilters = $derived(
-		selectedOrganizations.length > 0 || selectedTags.length > 0 || searchQuery.trim() !== ''
-	);
-
-	let activeFilterCount = $derived(selectedOrganizations.length + selectedTags.length);
 </script>
 
 <div class="flex flex-wrap items-center gap-3 gap-y-2">
-	<div class="relative flex-1 min-w-0 sm:max-w-sm">
+	<div class="relative min-w-0 flex-1 basis-full sm:max-w-sm sm:basis-auto">
 		<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 		<Input
+			id="target-search"
 			type="text"
 			placeholder="Search targets…"
 			class="pl-9 h-9"
@@ -155,22 +147,4 @@
 			</Command.Root>
 		</Popover.Content>
 	</Popover.Root>
-
-	{#if hasActiveFilters}
-		<Separator orientation="vertical" class="h-6" />
-		<Button
-			variant="ghost"
-			size="sm"
-			class="h-9 gap-2 text-muted-foreground"
-			onclick={onClearFilters}
-		>
-			<X class="h-4 w-4" />
-			Clear filters
-			{#if activeFilterCount > 0}
-				<Badge variant="secondary" class="h-5 px-1.5 text-xs">
-					{activeFilterCount}
-				</Badge>
-			{/if}
-		</Button>
-	{/if}
 </div>

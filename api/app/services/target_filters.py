@@ -2,22 +2,37 @@ from datetime import timedelta
 from typing import Literal
 from uuid import UUID
 
-from sqlalchemy import Select, and_, case, exists, func, or_
+from sqlalchemy import Select, and_, case, exists, func, or_, select
 from sqlalchemy.sql.elements import ColumnElement
 
+from shared.definitions.vulnerabilities import SUPPRESSED_STATES, Severity
 from shared.enums.target import TargetType
 from shared.enums.task_status import TaskStatus
 from shared.models import Target
+from shared.models.scan import Scan
 from shared.models.tag import TargetTag
 from shared.models.target import TargetOrganization
+from shared.models.vulnerability import Vulnerability, VulnerabilityTriage
 from shared.models.whois import WhoisRecord
+from shared.services.scan_scope import census_only
 from shared.utils.datetime import utc_now
 
-SignalName = Literal["expiring", "attention", "awaiting", "enriched", "monitored"]
+SignalName = Literal[
+    "expiring",
+    "attention",
+    "awaiting",
+    "enriched",
+    "monitored",
+    "unscanned",
+    "stale",
+    "critical",
+    "high",
+]
 SortKey = Literal["updated", "created", "name", "type", "expiry", "enrichment"]
 SortDir = Literal["asc", "desc"]
 
 EXPIRY_WINDOW_DAYS = 30
+STALE_DAYS = 30
 
 _DNS_TYPES = (TargetType.DOMAIN, TargetType.URL)
 _BGP_TYPES = (TargetType.IP, TargetType.IP_RANGE, TargetType.ASN)
@@ -78,12 +93,61 @@ def monitored_expr() -> ColumnElement[bool]:
     return Target.new_checks.is_(True)
 
 
+def _started():
+    return func.coalesce(Scan.started_at, Scan.created_at)
+
+
+def unscanned_expr() -> ColumnElement[bool]:
+    return ~exists(select(1).where(Scan.target_id == Target.id, census_only()))
+
+
+def stale_expr() -> ColumnElement[bool]:
+    last = (
+        select(func.max(_started()))
+        .where(Scan.target_id == Target.id, census_only())
+        .scalar_subquery()
+    )
+    return last < utc_now() - timedelta(days=STALE_DAYS)
+
+
+def _latest_run():
+    return (
+        select(Scan.id)
+        .where(Scan.target_id == Target.id, census_only())
+        .order_by(_started().desc())
+        .limit(1)
+        .correlate(Target)
+        .scalar_subquery()
+    )
+
+
+def severity_expr(severity: str) -> ColumnElement[bool]:
+    suppressed = exists(
+        select(1).where(
+            VulnerabilityTriage.target_id == Vulnerability.target_id,
+            VulnerabilityTriage.fingerprint == Vulnerability.fingerprint,
+            VulnerabilityTriage.state.in_(SUPPRESSED_STATES),
+        )
+    )
+    return exists(
+        select(1).where(
+            Vulnerability.scan_id == _latest_run(),
+            Vulnerability.severity == severity,
+            ~suppressed,
+        )
+    )
+
+
 _SIGNAL_EXPR = {
     "expiring": expiring_expr,
     "attention": attention_expr,
     "awaiting": awaiting_expr,
     "enriched": enriched_expr,
     "monitored": monitored_expr,
+    "unscanned": unscanned_expr,
+    "stale": stale_expr,
+    "critical": lambda: severity_expr(Severity.CRITICAL.value),
+    "high": lambda: severity_expr(Severity.HIGH.value),
 }
 
 
@@ -203,4 +267,14 @@ def signal_count_columns() -> list:
         func.coalesce(func.sum(case((monitored_expr(), 1), else_=0)), 0).label(
             "monitored"
         ),
+        func.coalesce(func.sum(case((unscanned_expr(), 1), else_=0)), 0).label(
+            "unscanned"
+        ),
+        func.coalesce(func.sum(case((stale_expr(), 1), else_=0)), 0).label("stale"),
+        func.coalesce(
+            func.sum(case((severity_expr(Severity.CRITICAL.value), 1), else_=0)), 0
+        ).label("critical"),
+        func.coalesce(
+            func.sum(case((severity_expr(Severity.HIGH.value), 1), else_=0)), 0
+        ).label("high"),
     ]

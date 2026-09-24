@@ -122,6 +122,12 @@ export const scansApi = {
 		return api.get<ScanStats>(`/scans/stats?${sp.toString()}`);
 	},
 
+	async latest(projectId: string, targetIds: string[]): Promise<ScanRead[]> {
+		const sp = new URLSearchParams({ project_id: projectId });
+		for (const id of targetIds) sp.append('target_id', id);
+		return api.get<ScanRead[]>(`/scans/latest?${sp}`);
+	},
+
 	async trends(projectId: string, targetIds: string[]): Promise<ScanTargetTrend[]> {
 		const sp = new URLSearchParams({ project_id: projectId });
 		for (const id of targetIds) sp.append('target_id', id);

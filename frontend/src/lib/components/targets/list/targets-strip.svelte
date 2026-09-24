@@ -1,0 +1,94 @@
+<script lang="ts">
+	import { SEVERITY_CHIP, SEVERITY_LABELS, Severity } from '$lib/config/vulnerabilities';
+	import type { SignalFilter, TargetSummary } from '$lib/utilities/target-signals';
+
+	interface Props {
+		summary: TargetSummary;
+		live: number;
+		active: SignalFilter | null;
+		onSignal: (signal: SignalFilter | null) => void;
+	}
+
+	let { summary, live, active, onSignal }: Props = $props();
+
+	const FINDINGS: { signal: SignalFilter; sev: string }[] = [
+		{ signal: 'critical', sev: Severity.CRITICAL },
+		{ signal: 'high', sev: Severity.HIGH }
+	];
+	const ENRICHMENT: { signal: SignalFilter; label: string; tone: string }[] = [
+		{ signal: 'attention', label: 'Needs attention', tone: 'text-destructive' },
+		{ signal: 'expiring', label: 'Expiring', tone: 'text-warning' },
+		{ signal: 'awaiting', label: 'Enriching', tone: 'text-info' },
+		{ signal: 'monitored', label: 'New checks', tone: 'text-foreground' }
+	];
+</script>
+
+{#snippet stat(label: string, signal: SignalFilter | null, n: number, tone: string, sub = '')}
+	{@const on = signal === null ? active === null : active === signal}
+	<button
+		type="button"
+		class="group/s flex flex-col items-start gap-0.5 rounded-md text-left focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+		aria-pressed={on}
+		onclick={() => onSignal(signal === null || on ? null : signal)}
+	>
+		<span class="text-2xs tracking-wide text-muted-foreground uppercase">{label}</span>
+		<span
+			class="font-mono text-2xl font-semibold tabular-nums underline-offset-4 group-hover/s:underline {n
+				? tone
+				: 'text-muted-foreground/60'} {on && signal !== null ? 'underline decoration-2' : ''}"
+		>
+			{n.toLocaleString()}
+		</span>
+		{#if sub}<span class="text-2xs text-muted-foreground">{sub}</span>{/if}
+	</button>
+{/snippet}
+
+<div class="flex flex-wrap items-start gap-x-8 gap-y-4 border-b px-4 py-4">
+	{@render stat('Targets', null, summary.total, 'text-foreground', live ? `${live} scanning` : '')}
+	{@render stat('Not scanned', 'unscanned', summary.unscanned, 'text-foreground')}
+	{@render stat('Stale · 30 days', 'stale', summary.stale, 'text-warning')}
+	<div class="flex flex-col gap-1">
+		<span class="text-2xs tracking-wide text-muted-foreground uppercase">With findings</span>
+		<div class="flex items-center gap-1.5">
+			{#each FINDINGS as f (f.signal)}
+				{@const on = active === f.signal}
+				<button
+					type="button"
+					class="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 font-mono text-sm font-semibold tabular-nums transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {SEVERITY_CHIP[
+						f.sev
+					].chip} {on ? 'ring-2 ring-current/50' : ''} {summary[f.signal] ? '' : 'opacity-45'}"
+					aria-pressed={on}
+					aria-label="Targets with {SEVERITY_LABELS[f.sev].toLowerCase()} findings: {summary[
+						f.signal
+					]}"
+					onclick={() => onSignal(on ? null : f.signal)}
+				>
+					<span class="text-2xs font-medium opacity-70">{SEVERITY_LABELS[f.sev]}</span>
+					{summary[f.signal].toLocaleString()}
+				</button>
+			{/each}
+		</div>
+	</div>
+	<div class="flex flex-col gap-1 lg:ml-auto">
+		<span class="text-2xs tracking-wide text-muted-foreground uppercase">Enrichment</span>
+		<div class="flex flex-wrap items-center gap-1.5">
+			{#each ENRICHMENT as e (e.signal)}
+				{@const on = active === e.signal}
+				{@const n = summary[e.signal]}
+				<button
+					type="button"
+					class="inline-flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-xs transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {on
+						? 'border-foreground/40 bg-muted'
+						: 'border-border hover:border-foreground/30'} {n ? '' : 'opacity-50'}"
+					aria-pressed={on}
+					onclick={() => onSignal(on ? null : e.signal)}
+				>
+					<span class="text-muted-foreground">{e.label}</span>
+					<span class="font-mono font-semibold tabular-nums {n ? e.tone : ''}"
+						>{n.toLocaleString()}</span
+					>
+				</button>
+			{/each}
+		</div>
+	</div>
+</div>

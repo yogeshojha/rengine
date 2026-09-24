@@ -174,3 +174,24 @@ async def test_trends_are_oldest_first_and_capped(estate, now):
     assert await estate.session.scalar(
         select(Scan.id).where(Scan.id == trend.points[0].scan_id)
     )
+
+
+async def test_latest_for_targets_returns_one_run_per_target(estate, now):
+    await estate.scan("example.com", "old", at=now - timedelta(days=2))
+    await estate.scan("example.com", "new", at=now)
+    await estate.activity("new", RAN_VULNS)
+    await estate.vulns("new", [("rce", "critical")], at=now)
+    await estate.scan("other.com", "only", at=now - timedelta(days=1))
+
+    service = ScanService(estate.session)
+    runs = await service.latest_for_targets(
+        estate.project_id,
+        [estate.targets["example.com"], estate.targets["other.com"]],
+    )
+    by_target = {r.target_id: r for r in runs}
+
+    assert len(runs) == 2
+    assert by_target[estate.targets["example.com"]].id == estate.scans["new"]
+    assert by_target[estate.targets["example.com"]].findings.critical == 1
+    assert by_target[estate.targets["example.com"]].target_runs == 2
+    assert by_target[estate.targets["other.com"]].id == estate.scans["only"]

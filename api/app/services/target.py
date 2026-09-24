@@ -255,6 +255,7 @@ class TargetService:
             "attention": 0,
             "awaiting": 0,
             "enriched": 0,
+            "monitored": 0,
         }
 
         project = await self._get_project_by_slug(project_slug)
@@ -281,6 +282,10 @@ class TargetService:
             "awaiting": row.awaiting,
             "enriched": row.enriched,
             "monitored": row.monitored,
+            "unscanned": row.unscanned,
+            "stale": row.stale,
+            "critical": row.critical,
+            "high": row.high,
         }
 
     async def get_matching_target_ids(

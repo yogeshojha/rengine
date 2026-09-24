@@ -43,7 +43,7 @@
 		</span>
 		<span class="flex min-w-0 flex-col">
 			<span class="text-sm">
-				Found <span class="font-semibold tabular-nums">{total.toLocaleString()}</span>
+				<span class="font-semibold tabular-nums">{total.toLocaleString()}</span>
 				{total === 1 ? 'domain' : 'domains'} associated with {subject}
 			</span>
 			{#if detail}
