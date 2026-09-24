@@ -57,6 +57,15 @@ export function formatShortDate(date: string | Date): string {
 	});
 }
 
+export function formatDateTime(date: string | Date): string {
+	return new Date(date).toLocaleString('en-GB', {
+		day: 'numeric',
+		month: 'short',
+		hour: '2-digit',
+		minute: '2-digit'
+	});
+}
+
 export function formatMonthYear(date: string | Date): string {
 	return new Date(date).toLocaleDateString('en-US', {
 		year: 'numeric',

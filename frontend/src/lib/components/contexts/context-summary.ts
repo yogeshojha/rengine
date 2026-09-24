@@ -21,7 +21,7 @@ export const FACET_LABELS: Record<FacetKey, string> = {
 	proxy: 'Proxy'
 };
 
-const HTTP_PROTOCOL_LABELS: Record<HttpProtocol, string> = {
+export const HTTP_PROTOCOL_LABELS: Record<HttpProtocol, string> = {
 	both: '',
 	http_only: 'HTTP only',
 	https_only: 'HTTPS only'

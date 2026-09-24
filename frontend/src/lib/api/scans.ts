@@ -6,6 +6,7 @@ import type {
 	ScanCommandDetail,
 	ScanCommandRead,
 	ScanCreate,
+	ScanDay,
 	ScanExportRow,
 	ScanPreview,
 	ScanRead,
@@ -13,7 +14,7 @@ import type {
 	ScanSortKey,
 	ScanStats,
 	ScanStatus,
-	ScanTargetGroup,
+	ScanTargetTrend,
 	ScanTimeRange
 } from '$lib/types/scan';
 import type { PaginatedResponse } from '$lib/types/pagination';
@@ -38,6 +39,12 @@ interface ScanFilterParams {
 	scheduled?: boolean | null;
 	include_focused?: boolean;
 	new_checks?: boolean | null;
+	severity?: string[];
+	short?: boolean | null;
+	added?: boolean | null;
+	started_from?: string | null;
+	started_to?: string | null;
+	latest?: boolean;
 }
 
 interface ListScansParams extends ScanFilterParams {
@@ -59,6 +66,12 @@ function buildScanQuery(projectId: string, params: ScanFilterParams): URLSearchP
 	if (params.scheduled != null) sp.append('scheduled', String(params.scheduled));
 	if (params.include_focused) sp.append('include_focused', 'true');
 	if (params.new_checks != null) sp.append('new_checks', String(params.new_checks));
+	for (const v of params.severity ?? []) sp.append('severity', v);
+	if (params.short != null) sp.append('short', String(params.short));
+	if (params.added != null) sp.append('added', String(params.added));
+	if (params.started_from) sp.append('started_from', params.started_from);
+	if (params.started_to) sp.append('started_to', params.started_to);
+	if (params.latest) sp.append('latest', 'true');
 	return sp;
 }
 
@@ -102,21 +115,23 @@ export const scansApi = {
 		return api.get<ScanExportRow[]>(`/scans/export?${sp.toString()}`);
 	},
 
-	async listTargets(
-		projectId: string,
-		params: ListScansParams = {}
-	): Promise<PaginatedResponse<ScanTargetGroup>> {
-		const sp = buildScanQuery(projectId, params);
-		if (params.page) sp.append('page', String(params.page));
-		if (params.size) sp.append('size', String(params.size));
-		return api.get<PaginatedResponse<ScanTargetGroup>>(`/scans/targets?${sp.toString()}`);
-	},
-
 	async stats(projectId: string, targetId?: string, includeFocused = false): Promise<ScanStats> {
 		const sp = new URLSearchParams({ project_id: projectId });
 		if (targetId) sp.append('target_id', targetId);
 		if (includeFocused) sp.append('include_focused', 'true');
 		return api.get<ScanStats>(`/scans/stats?${sp.toString()}`);
+	},
+
+	async trends(projectId: string, targetIds: string[]): Promise<ScanTargetTrend[]> {
+		const sp = new URLSearchParams({ project_id: projectId });
+		for (const id of targetIds) sp.append('target_id', id);
+		return api.get<ScanTargetTrend[]>(`/scans/trends?${sp}`);
+	},
+
+	async daily(projectId: string, days: number, targetId?: string): Promise<ScanDay[]> {
+		const sp = new URLSearchParams({ project_id: projectId, days: String(days) });
+		if (targetId) sp.append('target_id', targetId);
+		return api.get<ScanDay[]>(`/scans/daily?${sp}`);
 	},
 
 	async get(id: string, projectId: string): Promise<ScanRead> {

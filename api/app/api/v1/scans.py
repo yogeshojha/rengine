@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
@@ -10,7 +11,13 @@ from app.api.deps import CurrentUser
 from app.api.pagination import Page
 from app.core.database import get_session
 from app.services.rescan import RescanService, rescan_schema
-from app.services.scan import ScanService, ScanSortDir, ScanSortKey
+from app.services.scan import (
+    MAX_DAILY_WINDOW,
+    MAX_TREND_TARGETS,
+    ScanService,
+    ScanSortDir,
+    ScanSortKey,
+)
 from app.services.scan_compare import ScanCompareService
 from shared.definitions.compare import (
     DEFAULT_ROWS_PER_PAGE,
@@ -18,6 +25,7 @@ from shared.definitions.compare import (
     VERB_ORDER,
     ChangeVerb,
 )
+from shared.definitions.vulnerabilities import Severity
 from shared.enums.scan import ScanStatus
 from shared.models.compare import ChangeRows, ComparableRun, ScanComparison
 from shared.models.recheck import RecheckRead
@@ -30,10 +38,11 @@ from shared.models.scan import (
     ScanCancelAll,
     ScanChanges,
     ScanCreate,
+    ScanDay,
     ScanExportRow,
     ScanRead,
     ScanStats,
-    ScanTargetGroup,
+    ScanTargetTrend,
 )
 from shared.models.scan_activity import ScanActivityRead
 from shared.models.scan_command import ScanCommandDetail, ScanCommandRead
@@ -172,6 +181,22 @@ async def list_scans(
     new_checks: Annotated[
         bool | None, Query(description="New checks runs only, or none of them")
     ] = None,
+    severity: Annotated[
+        list[Severity] | None, Query(description="Runs with open findings of these")
+    ] = None,
+    short: Annotated[
+        bool | None, Query(description="Runs with a partial or failed stage, or none")
+    ] = None,
+    added: Annotated[
+        bool | None, Query(description="Runs that found web assets new to the target")
+    ] = None,
+    started_from: Annotated[
+        datetime | None, Query(description="Started at or after")
+    ] = None,
+    started_to: Annotated[datetime | None, Query(description="Started before")] = None,
+    latest: Annotated[
+        bool, Query(description="The newest matching run of each target")
+    ] = False,
 ):
     query = service.build_list_query(
         project_id=project_id,
@@ -187,6 +212,12 @@ async def list_scans(
         scheduled=scheduled,
         include_focused=include_focused,
         new_checks=new_checks,
+        severities=[s.value for s in severity] if severity else None,
+        short=short,
+        added=added,
+        started_from=started_from,
+        started_to=started_to,
+        latest=latest,
     )
     page = await paginate(
         session,
@@ -194,7 +225,33 @@ async def list_scans(
         transformer=lambda items: [service.to_read(s) for s in items],
     )
     await service.attach_deltas(page.items)
+    if latest:
+        await service.attach_target_runs(page.items, include_focused)
     return page
+
+
+@router.get("/trends", response_model=list[ScanTargetTrend])
+async def finding_trends(
+    _current_user: CurrentUser,
+    service: Annotated[ScanService, Depends(get_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    target_id: Annotated[
+        list[UUID], Query(description="Targets", max_length=MAX_TREND_TARGETS)
+    ],
+):
+    return await service.finding_trends(project_id, target_id)
+
+
+@router.get("/daily", response_model=list[ScanDay])
+async def daily_runs(
+    _current_user: CurrentUser,
+    service: Annotated[ScanService, Depends(get_service)],
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    days: Annotated[int, Query(ge=1, le=MAX_DAILY_WINDOW)] = 30,
+    target_id: Annotated[UUID | None, Query(description="Filter by target ID")] = None,
+    include_focused: Annotated[bool, Query()] = False,
+):
+    return await service.daily(project_id, days, target_id, include_focused)
 
 
 @router.get("/stats", response_model=ScanStats)
@@ -210,49 +267,6 @@ async def scan_stats(
     return await service.stats(
         project_id=project_id, target_id=target_id, include_focused=include_focused
     )
-
-
-@router.get("/targets", response_model=Page[ScanTargetGroup])
-async def list_scan_target_groups(
-    _current_user: CurrentUser,
-    session: Annotated[AsyncSession, Depends(get_session)],
-    service: Annotated[ScanService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
-    status: Annotated[list[ScanStatus] | None, Query()] = None,
-    engine: Annotated[list[str] | None, Query()] = None,
-    context: Annotated[list[str] | None, Query()] = None,
-    search: Annotated[str | None, Query()] = None,
-    time_range: Annotated[str | None, Query()] = None,
-):
-    query = service.build_target_groups_query(
-        project_id=project_id,
-        statuses=[s.value for s in status] if status else None,
-        engines=engine,
-        contexts=context,
-        search=search,
-        time_range=time_range,
-    )
-    page = await paginate(
-        session,
-        query,
-        transformer=lambda rows: [
-            ScanTargetGroup(
-                target_id=r.target_id,
-                target_value=r.target_value,
-                target_type=getattr(r.target_type, "value", r.target_type),
-                scan_count=r.scan_count,
-                last_scan_at=r.last_scan_at,
-                last_status=r.last_status,
-                running=r.running or 0,
-            )
-            for r in rows
-        ],
-    )
-    if page.items:
-        trends = await service.target_trends([g.target_id for g in page.items])
-        for g in page.items:
-            g.trend = trends.get(g.target_id, [])
-    return page
 
 
 @router.get("/changes", response_model=ScanChanges)

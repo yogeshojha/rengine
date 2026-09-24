@@ -36,6 +36,8 @@ from shared.config import BaseAppSettings
 from shared.definitions.compare import Tone
 from shared.definitions.new_checks import NEW_CHECKS_KEY
 from shared.definitions.rescan import change_dimension, rescan_label
+from shared.definitions.surface import SurfaceDimension
+from shared.definitions.vulnerabilities import ACTIONABLE_SEVERITIES, Severity
 from shared.definitions.watch import WATCH_HOST_KEY
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.api_key import APIProvider
@@ -58,11 +60,15 @@ from shared.models.scan import (
     ScanCancelAll,
     ScanChanges,
     ScanCreate,
+    ScanDay,
     ScanExportRow,
     ScanFacet,
+    ScanFindings,
     ScanRead,
     ScanStats,
     ScanStatusCounts,
+    ScanTargetTrend,
+    ScanTrendPoint,
     fold_pause,
 )
 from shared.models.scan_activity import ScanActivity, ScanActivityRead
@@ -80,8 +86,10 @@ from shared.models.scan_preview import (
 )
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
+from shared.models.vulnerability import Vulnerability
 from shared.services import target_seeds
 from shared.services.activity_log import ActivityLogService
+from shared.services.asset_query import QueryScope, vuln_suppressed
 from shared.services.celery_dispatch import (
     dispatch_scan_finalize,
     dispatch_scan_resume,
@@ -98,7 +106,7 @@ from shared.services.scan_resolve import (
     merge_engine_context,
     redact_command,
 )
-from shared.services.scan_scope import census_only
+from shared.services.scan_scope import census_only, covering_stages
 from shared.utils.datetime import utc_now
 from shared.utils.validation import unrecognised_target, validate_target
 from stages.registry import resume_point
@@ -121,6 +129,33 @@ _WINDOW_DELTAS = {
 }
 
 MAX_SCAN_EXPORT = 50000
+
+_RAN = (ScanActivityStatus.SUCCESS.value, ScanActivityStatus.PARTIAL.value)
+_SHORT = (ScanActivityStatus.PARTIAL.value, ScanActivityStatus.FAILED.value)
+TREND_POINTS = 10
+MAX_TREND_TARGETS = 100
+MAX_DAILY_WINDOW = 90
+
+_FINDINGS_RANK = (
+    select(
+        func.coalesce(
+            func.sum(
+                case(
+                    (Vulnerability.severity == Severity.CRITICAL.value, 1_000_000),
+                    (Vulnerability.severity == Severity.HIGH.value, 1_000),
+                    else_=1,
+                )
+            ),
+            0,
+        )
+    )
+    .where(
+        Vulnerability.scan_id == Scan.id,
+        Vulnerability.severity.in_(ACTIONABLE_SEVERITIES),
+    )
+    .correlate(Scan)
+    .scalar_subquery()
+)
 
 _STATUS_RANK = case(
     (Scan.status == ScanStatus.RUNNING.value, 0),
@@ -627,7 +662,7 @@ class ScanService:
         if sort_by == "subdomains":
             return Scan.subdomains_found
         if sort_by == "vulnerabilities":
-            return Scan.vulnerabilities_found
+            return _FINDINGS_RANK
         return func.coalesce(Scan.started_at, Scan.created_at)
 
     def _filter_conditions(
@@ -675,6 +710,12 @@ class ScanService:
         include_focused: bool = False,
         parent_id: UUID | None = None,
         new_checks: bool | None = None,
+        severities: list[str] | None = None,
+        short: bool | None = None,
+        added: bool | None = None,
+        started_from: datetime | None = None,
+        started_to: datetime | None = None,
+        latest: bool = False,
     ) -> Select:
         query = select(Scan).where(
             Scan.project_id == project_id,
@@ -688,6 +729,34 @@ class ScanService:
                 new_checks,
             ),
         )
+        started = func.coalesce(Scan.started_at, Scan.created_at)
+        if started_from is not None:
+            query = query.where(started >= started_from)
+        if started_to is not None:
+            query = query.where(started < started_to)
+        if severities:
+            query = query.where(
+                exists(
+                    select(1).where(
+                        Vulnerability.scan_id == Scan.id,
+                        Vulnerability.severity.in_(severities),
+                        not_(vuln_suppressed(QueryScope(()))),
+                    )
+                )
+            )
+        if short is not None:
+            fell_short = exists(
+                select(1).where(
+                    ScanActivity.scan_id == Scan.id,
+                    ScanActivity.status.in_(_SHORT),
+                )
+            )
+            query = query.where(fell_short if short else not_(fell_short))
+        if added is not None:
+            grew = exists(
+                select(1).where(Subdomain.scan_id == Scan.id, not_(_host_seen_before()))
+            )
+            query = query.where(grew if added else not_(grew))
         if parent_id is not None:
             query = query.where(Scan.parent_scan_id == parent_id)
         if target_id is not None:
@@ -708,71 +777,22 @@ class ScanService:
                 )
             )
 
+        if latest:
+            ranked = query.with_only_columns(
+                Scan.id.label("id"),
+                func.row_number()
+                .over(partition_by=Scan.target_id, order_by=started.desc())
+                .label("rn"),
+            ).subquery()
+            query = select(Scan).where(
+                Scan.id.in_(select(ranked.c.id).where(ranked.c.rn == 1))
+            )
+
         expr = self._sort_expr(sort_by)
         ordering = expr.asc() if sort_dir == "asc" else expr.desc()
         if sort_by == "duration":
             ordering = nullslast(ordering)
         return query.order_by(ordering, Scan.created_at.desc())
-
-    def build_target_groups_query(
-        self,
-        project_id: UUID,
-        statuses: list[str] | None = None,
-        engines: list[str] | None = None,
-        contexts: list[str] | None = None,
-        search: str | None = None,
-        time_range: str | None = None,
-    ) -> Select:
-        last_t = func.coalesce(Scan.started_at, Scan.created_at)
-        inner = aliased(Scan)
-        last_status = (
-            select(inner.status)
-            .where(
-                inner.target_id == Scan.target_id,
-                inner.project_id == project_id,
-                *self._filter_conditions(
-                    inner, statuses, engines, contexts, time_range
-                ),
-            )
-            .order_by(func.coalesce(inner.started_at, inner.created_at).desc())
-            .limit(1)
-            .correlate(Scan)
-            .scalar_subquery()
-        )
-        live = case(
-            (
-                Scan.status.in_([ScanStatus.RUNNING.value, ScanStatus.PENDING.value]),
-                1,
-            ),
-            else_=0,
-        )
-        query = (
-            select(
-                Scan.target_id.label("target_id"),
-                Target.target_value.label("target_value"),
-                Target.target_type.label("target_type"),
-                func.count().label("scan_count"),
-                func.max(last_t).label("last_scan_at"),
-                func.sum(live).label("running"),
-                last_status.label("last_status"),
-            )
-            .join(Target, Scan.target_id == Target.id)
-            .where(
-                Scan.project_id == project_id,
-                *self._filter_conditions(Scan, statuses, engines, contexts, time_range),
-            )
-            .group_by(Scan.target_id, Target.target_value, Target.target_type)
-        )
-        if search and search.strip():
-            term = f"%{search.strip().lower()}%"
-            query = query.where(
-                or_(
-                    func.lower(Target.target_value).like(term),
-                    func.lower(Scan.engine_name).like(term),
-                    func.lower(func.coalesce(Scan.context_name, "")).like(term),
-                )
-            )
-        return query.order_by(func.max(last_t).desc())
 
     def to_read(self, scan: Scan) -> ScanRead:
         return self._to_read(scan)
@@ -932,28 +952,6 @@ class ScanService:
         )
         rows = (await self.session.execute(query)).all()
         return dict(rows)
-
-    async def target_trends(
-        self, target_ids: list[UUID], limit: int = 12
-    ) -> dict[UUID, list[int]]:
-        """Per target, subdomains_found across completed runs, oldest first, last `limit`."""
-        if not target_ids:
-            return {}
-        ordering = func.coalesce(Scan.started_at, Scan.created_at)
-        rows = (
-            await self.session.execute(
-                select(Scan.target_id, Scan.subdomains_found)
-                .where(
-                    Scan.target_id.in_(target_ids),
-                    Scan.status == ScanStatus.COMPLETED.value,
-                )
-                .order_by(Scan.target_id, ordering.asc())
-            )
-        ).all()
-        out: dict[UUID, list[int]] = {}
-        for tid, n in rows:
-            out.setdefault(tid, []).append(n)
-        return {tid: vals[-limit:] for tid, vals in out.items()}
 
     async def retired_subdomain_total(
         self, project_id: UUID, cutoff: datetime, target_id: UUID | None = None
@@ -1147,13 +1145,175 @@ class ScanService:
         rechecks = await self.recheck_tallies(
             [i.id for i in items if i.scope == ScanScope.FOCUSED.value]
         )
+        findings = await self.finding_counts(scan_ids)
         for i in items:
+            i.findings = findings.get(i.id)
             i.new_subdomains = new_counts.get(i.id, 0)
             i.gone_subdomains = gone_counts.get(i.id, 0)
             i.prev_subdomains_found = prev_counts.get(i.id)
             i.is_first_scan = i.id in first_ids
             i.rescans = rescans.get(i.id)
             i.recheck = rechecks.get(i.id)
+
+    async def finding_counts(self, scan_ids: list[UUID]) -> dict[UUID, ScanFindings]:
+        """Per scan, open findings by actionable severity and whether the scan looked."""
+        if not scan_ids:
+            return {}
+        counts = (
+            await self.session.execute(
+                select(Vulnerability.scan_id, Vulnerability.severity, func.count())
+                .where(
+                    Vulnerability.scan_id.in_(scan_ids),
+                    Vulnerability.severity.in_(ACTIONABLE_SEVERITIES),
+                    not_(vuln_suppressed(QueryScope(tuple(scan_ids)))),
+                )
+                .group_by(Vulnerability.scan_id, Vulnerability.severity)
+            )
+        ).all()
+        wrote = set(
+            (
+                await self.session.execute(
+                    select(Vulnerability.scan_id)
+                    .where(Vulnerability.scan_id.in_(scan_ids))
+                    .distinct()
+                )
+            ).scalars()
+        )
+        ran = set(
+            (
+                await self.session.execute(
+                    select(ScanActivity.scan_id)
+                    .where(
+                        ScanActivity.scan_id.in_(scan_ids),
+                        ScanActivity.status.in_(_RAN),
+                        ScanActivity.name.in_(
+                            covering_stages()[SurfaceDimension.VULNERABILITIES.value]
+                        ),
+                    )
+                    .distinct()
+                )
+            ).scalars()
+        )
+        out = {
+            sid: ScanFindings(covered=sid in wrote or sid in ran) for sid in scan_ids
+        }
+        for sid, severity, n in counts:
+            setattr(out[sid], severity, int(n))
+        return out
+
+    async def attach_target_runs(
+        self, items: list[ScanRead], include_focused: bool = False
+    ) -> None:
+        """Per row, how many runs its target holds."""
+        target_ids = list({i.target_id for i in items})
+        if not target_ids:
+            return
+        conds = [Scan.target_id.in_(target_ids)]
+        if not include_focused:
+            conds.append(census_only())
+        rows = (
+            await self.session.execute(
+                select(Scan.target_id, func.count())
+                .where(*conds)
+                .group_by(Scan.target_id)
+            )
+        ).all()
+        runs = dict(rows)
+        for i in items:
+            i.target_runs = int(runs.get(i.target_id, 0))
+
+    async def finding_trends(
+        self, project_id: UUID, target_ids: list[UUID], limit: int = TREND_POINTS
+    ) -> list[ScanTargetTrend]:
+        """Per target, open findings of its last completed census runs, oldest first."""
+        if not target_ids:
+            return []
+        started = func.coalesce(Scan.started_at, Scan.created_at)
+        rn = (
+            func.row_number()
+            .over(partition_by=Scan.target_id, order_by=started.desc())
+            .label("rn")
+        )
+        ranked = (
+            select(
+                Scan.id.label("id"),
+                Scan.target_id.label("target_id"),
+                started.label("at"),
+                rn,
+            )
+            .where(
+                Scan.project_id == project_id,
+                Scan.target_id.in_(target_ids),
+                Scan.status == ScanStatus.COMPLETED.value,
+                census_only(),
+            )
+            .subquery()
+        )
+        runs = (
+            await self.session.execute(
+                select(ranked.c.id, ranked.c.target_id, ranked.c.at)
+                .where(ranked.c.rn <= limit)
+                .order_by(ranked.c.target_id, ranked.c.at.asc())
+            )
+        ).all()
+        counts = await self.finding_counts([r.id for r in runs])
+        out: dict[UUID, ScanTargetTrend] = {
+            tid: ScanTargetTrend(target_id=tid) for tid in target_ids
+        }
+        for r in runs:
+            c = counts.get(r.id) or ScanFindings()
+            out[r.target_id].points.append(
+                ScanTrendPoint(
+                    scan_id=r.id,
+                    started_at=r.at,
+                    critical=c.critical,
+                    high=c.high,
+                    medium=c.medium,
+                )
+            )
+        return list(out.values())
+
+    async def daily(
+        self,
+        project_id: UUID,
+        days: int,
+        target_id: UUID | None = None,
+        include_focused: bool = False,
+    ) -> list[ScanDay]:
+        """Runs started per UTC day, and how many found open findings of each severity."""
+        days = max(1, min(days, MAX_DAILY_WINDOW))
+        today = utc_now().replace(hour=0, minute=0, second=0, microsecond=0)
+        since = today - timedelta(days=days - 1)
+        started = func.coalesce(Scan.started_at, Scan.created_at)
+        conds = [Scan.project_id == project_id, started >= since]
+        if target_id is not None:
+            conds.append(Scan.target_id == target_id)
+        if not include_focused:
+            conds.append(census_only())
+        runs = (
+            await self.session.execute(
+                select(Scan.id, Scan.status, started.label("at")).where(*conds)
+            )
+        ).all()
+        counts = await self.finding_counts([r.id for r in runs])
+        out = {
+            (since + timedelta(days=n)).date(): ScanDay(day=since + timedelta(days=n))
+            for n in range(days)
+        }
+        for r in runs:
+            day = out.get(r.at.astimezone(since.tzinfo).date())
+            if day is None:
+                continue
+            day.runs += 1
+            if r.status == ScanStatus.FAILED.value:
+                day.failed += 1
+            c = counts.get(r.id)
+            if c is None:
+                continue
+            for severity in ACTIONABLE_SEVERITIES:
+                if getattr(c, severity):
+                    setattr(day, severity, getattr(day, severity) + 1)
+        return list(out.values())
 
     async def recheck_tallies(self, scan_ids: list[UUID]) -> dict[UUID, RecheckTally]:
         """Per focused run, the assets it rechecked and which fields moved."""

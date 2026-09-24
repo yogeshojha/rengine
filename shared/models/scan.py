@@ -297,6 +297,13 @@ class RescanSummary(BaseModel):
     failed: int = 0
 
 
+class ScanFindings(BaseModel):
+    critical: int = 0
+    high: int = 0
+    medium: int = 0
+    covered: bool = False
+
+
 class ScanRead(BaseModel):
     id: uuid.UUID
     project_id: uuid.UUID
@@ -335,6 +342,8 @@ class ScanRead(BaseModel):
     is_first_scan: bool | None = None
     rescans: RescanSummary | None = None
     recheck: RecheckTally | None = None
+    findings: ScanFindings | None = None
+    target_runs: int | None = None
 
 
 class ScanStatusCounts(BaseModel):
@@ -364,17 +373,6 @@ class ScanChanges(BaseModel):
     failed_runs: int
 
 
-class ScanTargetGroup(BaseModel):
-    target_id: uuid.UUID
-    target_value: str
-    target_type: str
-    scan_count: int
-    last_scan_at: datetime
-    last_status: str
-    running: int
-    trend: list[int] = []
-
-
 class ScanExportRow(BaseModel):
     target: str
     status: str
@@ -390,6 +388,28 @@ class ScanExportRow(BaseModel):
     started_at: datetime | None
     completed_at: datetime | None
     created_at: datetime
+
+
+class ScanTrendPoint(BaseModel):
+    scan_id: uuid.UUID
+    started_at: datetime
+    critical: int = 0
+    high: int = 0
+    medium: int = 0
+
+
+class ScanTargetTrend(BaseModel):
+    target_id: uuid.UUID
+    points: list[ScanTrendPoint] = []
+
+
+class ScanDay(BaseModel):
+    day: datetime
+    runs: int = 0
+    failed: int = 0
+    critical: int = 0
+    high: int = 0
+    medium: int = 0
 
 
 class ScanStats(BaseModel):

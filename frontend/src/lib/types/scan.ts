@@ -172,6 +172,37 @@ export interface ScanRead {
 	is_first_scan: boolean | null;
 	rescans: RescanSummary | null;
 	recheck: RecheckTally | null;
+	findings?: ScanFindings | null;
+	target_runs?: number | null;
+}
+
+export interface ScanFindings {
+	critical: number;
+	high: number;
+	medium: number;
+	covered: boolean;
+}
+
+export interface ScanTrendPoint {
+	scan_id: string;
+	started_at: string;
+	critical: number;
+	high: number;
+	medium: number;
+}
+
+export interface ScanTargetTrend {
+	target_id: string;
+	points: ScanTrendPoint[];
+}
+
+export interface ScanDay {
+	day: string;
+	runs: number;
+	failed: number;
+	critical: number;
+	high: number;
+	medium: number;
 }
 
 export type StageOverrides = Record<string, Record<string, unknown>>;
@@ -251,17 +282,6 @@ export interface ScanStatusCounts {
 	completed: number;
 	failed: number;
 	cancelled: number;
-}
-
-export interface ScanTargetGroup {
-	target_id: string;
-	target_value: string;
-	target_type: string;
-	scan_count: number;
-	last_scan_at: string;
-	last_status: ScanStatus;
-	running: number;
-	trend: number[];
 }
 
 export interface ScanFacet {
