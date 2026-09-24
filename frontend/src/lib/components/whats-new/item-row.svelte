@@ -13,7 +13,7 @@
 	import ScreenshotThumb from '$lib/components/scans/results/screenshot-thumb.svelte';
 	import SeverityMark from '$lib/components/scans/results/vulnerabilities/severity-mark.svelte';
 	import { ROUTES } from '$lib/config/routes';
-	import { NewKind } from '$lib/config/whats-new';
+	import { NewKind, TERMS_KINDS } from '$lib/config/whats-new';
 	import { rowHref } from '$lib/utilities/whats-new';
 	import { relativeTime } from '$lib/utilities/dates';
 	import type { NewItem } from '$lib/types/whats-new';
@@ -57,8 +57,6 @@
 	}: Props = $props();
 
 	const MONO_KINDS = new Set<string>([
-		NewKind.WEB_ASSET,
-		NewKind.SERVICE,
 		NewKind.SCOPE,
 		NewKind.CERT_HOST,
 		NewKind.TARGET,
@@ -81,7 +79,7 @@
 	data-new-row={index}
 	onclick={() => onPick?.(index)}
 	class="group/row grid grid-cols-[1.25rem_minmax(0,1fr)_auto] items-center gap-x-3 px-3 py-1.5 transition-colors hover:bg-muted/50 {cursor
-		? 'bg-muted/50 shadow-[inset_2px_0_0_var(--primary)]'
+		? 'bg-muted/50'
 		: ''} max-sm:grid-cols-[1.25rem_minmax(0,1fr)]"
 >
 	<div class="flex h-5 items-center">
@@ -154,23 +152,17 @@
 				{#if item.is_kev}<Badge variant="destructive">KEV</Badge>{/if}
 				{#if item.detail}<span class="font-mono text-xs text-muted-foreground">{item.detail}</span
 					>{/if}
-			{:else if item.kind === NewKind.SERVICE}
-				{#if item.detail}<span class="text-xs text-muted-foreground">{item.detail}</span>{/if}
-				{#if item.sensitive}<Badge variant="warning">Sensitive</Badge>{/if}
-			{:else if item.kind === NewKind.SECRET}
-				{#if item.detail}<span class="font-mono text-xs text-muted-foreground wrap-anywhere"
-						>{item.detail}</span
+			{:else if TERMS_KINDS.has(item.kind)}
+				{#if item.asset_type}<span class="text-xs text-muted-foreground">{item.asset_type}</span
 					>{/if}
-			{:else if item.kind === NewKind.WEB_ASSET || item.kind === NewKind.CERT_HOST}
+				{#if item.detail}<span class="text-xs wrap-anywhere">{item.detail}</span>{/if}
+			{:else if item.kind === NewKind.CERT_HOST}
 				<span class="text-xs text-muted-foreground">
 					{#if answer}<span class="text-foreground">{answer}</span
-						>{:else if item.kind === NewKind.WEB_ASSET}Not answering{:else if item.ips.length === 0}Unresolved{/if}
+						>{:else if item.ips.length === 0}Unresolved{/if}
 					{#if item.tech.length}<span> · {item.tech.join(', ')}</span>{/if}
 					{#if item.ips.length}<span class="font-mono"> · {item.ips.join(', ')}</span>{/if}
-					{#if item.kind === NewKind.CERT_HOST && item.detail}<span> · {item.detail}</span>{/if}
-					{#if item.kind === NewKind.WEB_ASSET && item.source_label}<span>
-							· {item.source_label}</span
-						>{/if}
+					{#if item.detail}<span> · {item.detail}</span>{/if}
 				</span>
 				{#if item.muted}<Badge variant="secondary">Muted</Badge>{/if}
 			{:else if item.kind === NewKind.SCOPE || item.kind === NewKind.OUT_OF_SCOPE}
@@ -283,17 +275,6 @@
 					</LoadingButton>
 				{/snippet}
 			</Hint>
-		{:else if item.kind === NewKind.WEB_ASSET}
-			<LoadingButton
-				variant="ghost"
-				size="sm"
-				class="h-7 px-2 text-xs"
-				loading={busy}
-				loadingLabel="Starting"
-				onclick={() => onScan?.(item)}
-			>
-				Scan
-			</LoadingButton>
 		{:else if item.kind === NewKind.TARGET}
 			<Button
 				size={item.scanned ? 'sm' : 'sm'}

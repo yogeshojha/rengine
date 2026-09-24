@@ -3,6 +3,9 @@ import AsteriskIcon from '@lucide/svelte/icons/asterisk';
 import BinaryIcon from '@lucide/svelte/icons/binary';
 import BrainIcon from '@lucide/svelte/icons/brain';
 import BanknoteIcon from '@lucide/svelte/icons/banknote';
+import BadgeDollarSignIcon from '@lucide/svelte/icons/badge-dollar-sign';
+import FilePenIcon from '@lucide/svelte/icons/file-pen';
+import ScrollTextIcon from '@lucide/svelte/icons/scroll-text';
 import CircleCheckIcon from '@lucide/svelte/icons/circle-check';
 import CircleHelpIcon from '@lucide/svelte/icons/circle-help';
 import DoorClosedIcon from '@lucide/svelte/icons/door-closed';
@@ -46,7 +49,10 @@ export const ASSET_ICONS: Record<string, IconComponent> = {
 	'octagon-alert': OctagonAlertIcon,
 	'door-open': DoorOpenIcon,
 	'door-closed': DoorClosedIcon,
-	banknote: BanknoteIcon
+	banknote: BanknoteIcon,
+	'badge-dollar-sign': BadgeDollarSignIcon,
+	'file-pen': FilePenIcon,
+	'scroll-text': ScrollTextIcon
 };
 
 export const EVENT_TONE: Record<string, string> = {

@@ -146,7 +146,7 @@ async def cached[T: BaseModel](
         logger.debug("aggregate cache unavailable on read", name=name, exc_info=True)
 
     computed = await build()
-    if not keep(computed):
+    if getattr(computed, "error", None) is not None or not keep(computed):
         return computed
     try:
         await _redis().set(key, computed.model_dump_json(), ex=ttl)

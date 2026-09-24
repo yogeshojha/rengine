@@ -36,153 +36,114 @@ def _sections(out, kind: str):
     return [s for g in out.groups for s in g.sections if s.kind == kind]
 
 
+def _rows(out, kind: str):
+    return [i for s in _sections(out, kind) for i in s.items]
+
+
 def _values(out, kind: str) -> list[str]:
-    return [i.value for s in _sections(out, kind) for i in s.items]
+    return [i.value for i in _rows(out, kind)]
 
 
-async def test_a_host_the_previous_run_lacked_is_new(estate, now):
+async def _rescan(estate, now, fresh_rows, *, kev=False, host="www.example.com"):
     await estate.scan("example.com", "older", at=now - timedelta(days=2))
-    await estate.hosts("older", ["a.example.com"], at=now - timedelta(days=2))
+    await estate.vulns("older", [("old-check", "low")], at=now - timedelta(days=2))
     await estate.scan("example.com", "fresh", at=now)
-    await estate.hosts(
-        "fresh",
-        ["a.example.com", "b.example.com"],
-        at=now,
-        sources=["subfinder"],
-        status=200,
-        title="Hello",
+    await estate.vulns("fresh", fresh_rows, at=now, kev=kev, host=host)
+
+
+async def test_a_rescan_reports_new_critical_and_high_findings(estate, now):
+    await _rescan(
+        estate,
+        now,
+        [
+            ("old-check", "low"),
+            ("solr-rce", "critical"),
+            ("info-leak", "high"),
+            ("weak-tls", "medium"),
+        ],
+        kev=True,
     )
 
     out = await _service(estate).feed(
         estate.project_id, estate.user_id, since=now - timedelta(hours=1)
     )
 
-    assert _values(out, NewKind.WEB_ASSET.value) == ["b.example.com"]
-    row = _sections(out, NewKind.WEB_ASSET.value)[0].items[0]
-    assert row.source == "subfinder"
-    assert row.status == 200
-    assert row.query == "host=b.example.com"
-    assert out.counts[NewKind.WEB_ASSET.value] == 1
+    assert out.counts[NewKind.FINDING.value] == 2
+    assert out.facts[NewKind.FINDING.value] == {
+        Fact.CRITICAL.value: 1,
+        Fact.HIGH.value: 1,
+        Fact.KEV.value: 2,
+    }
     assert out.basis == NewBasis.MARK.value
     group = out.groups[0]
     assert group.scan_id == estate.scans["fresh"]
     assert group.previous_scan_id == estate.scans["older"]
-    assert group.subject.target_value == "example.com"
+    assert group.at == group.completed_at
+    assert group.severities == {"critical": 1, "high": 1}
+    assert [e.query for e in group.evidence] == [
+        "is:new template=solr-rce",
+        "is:new template=info-leak",
+    ]
     today = now.date().isoformat()
     assert [d.counts for d in out.daily if d.date == today] == [
-        {NewKind.WEB_ASSET.value: 1}
+        {NewKind.FINDING.value: 2}
     ]
 
 
-async def test_a_first_run_reports_nothing(estate, now):
+async def test_a_first_scan_is_not_an_event(estate, now):
     await estate.scan("example.com", "first", at=now)
-    await estate.hosts("first", ["a.example.com", "b.example.com"], at=now)
+    await estate.vulns("first", [("solr-rce", "critical")], at=now)
 
     out = await _service(estate).feed(
         estate.project_id, estate.user_id, since=now - timedelta(hours=1)
     )
 
     assert out.groups == []
-    assert sum(out.counts.values()) == 0
+    assert out.counts[NewKind.FINDING.value] == 0
     assert out.first_runs == 1
 
 
-async def test_services_and_findings_carry_their_facts(estate, now):
-    await estate.scan("example.com", "older", at=now - timedelta(days=2))
-    await estate.ports(
-        "older", [("10.0.0.1", 443, "https")], at=now - timedelta(days=2)
-    )
-    await estate.vulns("older", [("old-check", "low")], at=now - timedelta(days=2))
-    await estate.scan("example.com", "fresh", at=now)
-    await estate.ports(
-        "fresh", [("10.0.0.1", 443, "https"), ("10.0.0.1", 3389, "rdp")], at=now
-    )
-    await estate.vulns(
-        "fresh", [("old-check", "low"), ("solr-rce", "critical")], at=now, kev=True
-    )
+async def test_a_rescan_with_only_lower_severities_is_not_an_event(estate, now):
+    await _rescan(estate, now, [("old-check", "low"), ("weak-tls", "medium")])
 
     out = await _service(estate).feed(
         estate.project_id, estate.user_id, since=now - timedelta(hours=1)
     )
 
-    assert _values(out, NewKind.SERVICE.value) == ["10.0.0.1:3389"]
-    assert out.facts[NewKind.SERVICE.value] == {Fact.SENSITIVE.value: 1}
-    assert _values(out, NewKind.FINDING.value) == ["Solr Rce"]
-    assert out.facts[NewKind.FINDING.value] == {
-        Fact.CRITICAL.value: 1,
-        Fact.KEV.value: 1,
-    }
-    assert len(out.groups) == 1
-    assert out.groups[0].counts == {
-        NewKind.SERVICE.value: 1,
-        NewKind.FINDING.value: 1,
-    }
-
-
-async def test_a_retired_host_is_a_count_on_the_run(estate, now):
-    await estate.scan("example.com", "older", at=now - timedelta(days=2))
-    await estate.hosts(
-        "older", ["a.example.com", "b.example.com"], at=now - timedelta(days=2)
-    )
-    await estate.scan("example.com", "fresh", at=now)
-    await estate.hosts("fresh", ["a.example.com"], at=now)
-
-    out = await _service(estate).feed(
-        estate.project_id, estate.user_id, since=now - timedelta(hours=1)
-    )
-
-    assert out.counts[NewKind.RETIRED.value] == 1
-    assert out.groups[0].retired == 1
-    assert out.groups[0].sections == []
+    assert out.groups == []
+    assert out.counts[NewKind.FINDING.value] == 0
 
 
 async def test_a_day_range_bounds_the_feed(estate, now):
     old = now - timedelta(days=5)
     await estate.scan("example.com", "base", at=now - timedelta(days=9))
-    await estate.hosts("base", ["a.example.com"], at=now - timedelta(days=9))
+    await estate.vulns("base", [("old-check", "low")], at=now - timedelta(days=9))
     await estate.scan("example.com", "mid", at=old)
-    await estate.hosts("mid", ["b.example.com"], at=old)
+    await estate.vulns("mid", [("mid-rce", "critical")], at=old)
     await estate.scan("example.com", "fresh", at=now)
-    await estate.hosts("fresh", ["c.example.com"], at=now)
+    await estate.vulns("fresh", [("new-rce", "high")], at=now)
 
     out = await _service(estate).feed(
         estate.project_id, estate.user_id, day_from=old.date(), day_to=old.date()
     )
 
     assert out.basis == NewBasis.DAYS.value
-    assert _values(out, NewKind.WEB_ASSET.value) == ["b.example.com"]
-    days = {d.date: d.counts for d in out.daily}
-    assert days[old.date().isoformat()] == {
-        NewKind.WEB_ASSET.value: 1,
-        NewKind.RETIRED.value: 1,
-    }
-    assert days[now.date().isoformat()] == {
-        NewKind.WEB_ASSET.value: 1,
-        NewKind.RETIRED.value: 1,
-    }
+    assert out.counts[NewKind.FINDING.value] == 1
+    assert [g.scan_id for g in out.groups] == [estate.scans["mid"]]
 
 
-async def test_text_filter_narrows_rows_and_counts(estate, now):
-    await estate.scan("example.com", "older", at=now - timedelta(days=2))
-    await estate.hosts("older", ["a.example.com"], at=now - timedelta(days=2))
-    await estate.scan("example.com", "fresh", at=now)
-    await estate.hosts("fresh", ["api.example.com", "www.example.com"], at=now)
+async def test_text_filter_narrows_findings(estate, now):
+    await _rescan(estate, now, [("solr-rce", "critical"), ("info-leak", "high")])
 
     out = await _service(estate).feed(
-        estate.project_id, estate.user_id, since=now - timedelta(hours=1), q="api"
+        estate.project_id, estate.user_id, since=now - timedelta(hours=1), q="solr"
     )
 
-    assert _values(out, NewKind.WEB_ASSET.value) == ["api.example.com"]
-    assert out.counts[NewKind.WEB_ASSET.value] == 1
+    assert out.counts[NewKind.FINDING.value] == 1
 
 
 async def test_a_kind_filter_leaves_no_empty_run(estate, now):
-    await estate.scan("example.com", "older", at=now - timedelta(days=2))
-    await estate.hosts(
-        "older", ["a.example.com", "b.example.com"], at=now - timedelta(days=2)
-    )
-    await estate.scan("example.com", "fresh", at=now)
-    await estate.hosts("fresh", ["a.example.com", "c.example.com"], at=now)
+    await _rescan(estate, now, [("solr-rce", "critical")])
 
     out = await _service(estate).feed(
         estate.project_id,
@@ -192,8 +153,7 @@ async def test_a_kind_filter_leaves_no_empty_run(estate, now):
     )
 
     assert out.groups == []
-    assert out.counts[NewKind.WEB_ASSET.value] == 1
-    assert out.counts[NewKind.RETIRED.value] == 1
+    assert out.counts[NewKind.FINDING.value] == 1
 
 
 async def test_a_hand_added_target_is_not_new(estate, now):
@@ -239,13 +199,12 @@ async def test_a_certificate_host_is_reported_by_the_watch_alone(estate, now):
         estate.project_id, estate.user_id, since=now - timedelta(hours=1)
     )
 
-    assert out.counts[NewKind.WEB_ASSET.value] == 0
     assert out.counts[NewKind.CERT_HOST.value] == 1
     assert out.facts[NewKind.CERT_HOST.value] == {Fact.ANSWERING.value: 1}
     group = next(g for g in out.groups if g.subject.kind == "program")
     assert group.subject.watched is True
     assert group.subject.watch_id == watch.id
-    row = group.sections[0].items[0]
+    row = _rows(out, NewKind.CERT_HOST.value)[0]
     assert row.host_id is not None
     assert row.watch_id == watch.id
 
@@ -312,7 +271,7 @@ async def test_scope_events_count_for_engaged_programs_only(estate, now):
         estate.project_id, estate.user_id, since=now - timedelta(hours=1)
     )
     assert _values(out, NewKind.SCOPE.value) == ["*.acme.com"]
-    row = _sections(out, NewKind.SCOPE.value)[0].items[0]
+    row = _rows(out, NewKind.SCOPE.value)[0]
     assert row.importable is True
     assert row.target_exists is False
     assert row.scope_id is not None
@@ -365,7 +324,7 @@ async def test_an_asset_leaving_scope_names_the_target_it_covers(estate, now):
     )
 
     assert out.counts[NewKind.OUT_OF_SCOPE.value] == 1
-    row = _sections(out, NewKind.OUT_OF_SCOPE.value)[0].items[0]
+    row = _rows(out, NewKind.OUT_OF_SCOPE.value)[0]
     assert row.target_id == tid
     assert row.target_exists is True
     assert row.importable is False
@@ -394,7 +353,7 @@ async def test_a_target_the_scope_added_is_new(estate, now):
 
     assert out.counts[NewKind.TARGET.value] == 1
     assert out.facts[NewKind.TARGET.value] == {Fact.NOT_SCANNED.value: 1}
-    row = _sections(out, NewKind.TARGET.value)[0].items[0]
+    row = _rows(out, NewKind.TARGET.value)[0]
     assert row.program_name == "Acme"
     assert row.scanned is False
 
@@ -444,9 +403,11 @@ async def test_a_host_whose_screenshot_moved_is_a_visual_pair(estate, now):
 
 async def test_the_mark_moves_and_unseen_reads_it(estate, now):
     await estate.scan("example.com", "older", at=now - timedelta(days=2))
-    await estate.hosts("older", ["a.example.com"], at=now - timedelta(days=2))
+    await estate.vulns("older", [("old-check", "low")], at=now - timedelta(days=2))
     await estate.scan("example.com", "fresh", at=now - timedelta(minutes=5))
-    await estate.hosts("fresh", ["b.example.com"], at=now - timedelta(minutes=5))
+    await estate.vulns(
+        "fresh", [("solr-rce", "critical")], at=now - timedelta(minutes=5)
+    )
     service = _service(estate)
 
     before = await service.unseen(estate.project_id, estate.user_id, bounty=True)

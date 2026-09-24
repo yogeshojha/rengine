@@ -22,6 +22,7 @@ from shared.definitions.bounty_feed import (
 )
 from shared.definitions.bounty_programs import (
     DEFAULT_FEED_INTERVAL,
+    MAX_EVENT_DETAIL,
     SYNC_INTERVAL_HOURS,
     BountyEvent,
     ProgramSource,
@@ -33,7 +34,12 @@ from shared.definitions.bounty_programs import (
 )
 from shared.logging import get_logger
 from shared.models.bounty_program import BountyProgram, BountyScope
-from shared.services.bounty_programs import event_row, scope_changes
+from shared.services.bounty_programs import (
+    event_row,
+    scope_changes,
+    scope_snapshot,
+    terms_changes,
+)
 from shared.utils.datetime import utc_now
 from shared.utils.text import strip_control
 
@@ -179,20 +185,16 @@ def sync_platform(session: Session, spec: FeedSpec) -> dict:
                 program.sources = sorted({*program.sources, ProgramSource.FEED.value})
                 session.commit()
                 continue
+            for kind, detail in terms_changes(program, row):
+                session.add(event_row(program, kind, detail=detail[:MAX_EVENT_DETAIL]))
             for key, value in row.items():
                 setattr(program, key, value)
             program.sources = sorted({*program.sources, ProgramSource.FEED.value})
             updated += 1
 
         wanted = _scope_rows(spec, entry, program.id)
-        before: dict[tuple[str, str], str] = {}
         if program.scopes_synced_at is not None:
-            before = {
-                (s.asset_type, s.asset_identifier): s.scope_state
-                for s in session.execute(
-                    select(BountyScope).where(BountyScope.program_id == program.id)
-                ).scalars()
-            }
+            before = scope_snapshot(session, program.id)
             session.add_all(scope_changes(program, before, wanted))
         session.execute(
             BountyScope.__table__.delete().where(

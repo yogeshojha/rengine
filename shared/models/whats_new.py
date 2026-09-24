@@ -63,6 +63,15 @@ class NewSubject(BaseModel):
     watch_id: uuid.UUID | None = None
 
 
+class NewEvidence(BaseModel):
+    kind: str
+    label: str
+    count: int
+    severity: str | None = None
+    kev: int = 0
+    query: str
+
+
 class NewGroup(BaseModel):
     id: str
     subject: NewSubject
@@ -73,8 +82,10 @@ class NewGroup(BaseModel):
     scan_started_at: datetime | None = None
     scan_status: str | None = None
     previous_scan_id: uuid.UUID | None = None
-    retired: int = 0
-    run_label: str | None = None
+    severities: dict[str, int] = Field(default_factory=dict)
+    completed_at: datetime | None = None
+    evidence: list[NewEvidence] = Field(default_factory=list)
+    more: int = 0
 
 
 class NewDay(BaseModel):
@@ -95,7 +106,6 @@ class NewFeed(BaseModel):
     truncated: bool = False
     first_runs: int = 0
     visual: int = 0
-    new_checks: int = 0
 
 
 class VisualPair(BaseModel):

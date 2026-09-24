@@ -1,32 +1,40 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { replaceState } from '$app/navigation';
+	import { goto, replaceState } from '$app/navigation';
 	import { untrack } from 'svelte';
 	import { SvelteMap, SvelteSet, SvelteURLSearchParams } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import Check from '@lucide/svelte/icons/check';
+	import Keyboard from '@lucide/svelte/icons/keyboard';
+	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import Search from '@lucide/svelte/icons/search';
 	import Sparkles from '@lucide/svelte/icons/sparkles';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import X from '@lucide/svelte/icons/x';
+	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
+	import * as Card from '$lib/components/ui/card';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import * as Empty from '$lib/components/ui/empty';
 	import { Input } from '$lib/components/ui/input';
-	import * as Kbd from '$lib/components/ui/kbd';
+	import { Kbd } from '$lib/components/ui/kbd';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
+	import CountTabs from '$lib/components/count-tabs.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import Hint from '$lib/components/hint.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import SelectionActionBar from '$lib/components/selection-action-bar.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
+	import CompareSheet from '$lib/components/scans/history/compare-sheet.svelte';
 	import WatchDialog from '$lib/components/bounty-hub/watch-dialog.svelte';
 	import { RowSelection } from '$lib/components/scans/results/table/selection.svelte';
-	import KindStrip from '$lib/components/whats-new/kind-strip.svelte';
+	import NewStrip from '$lib/components/whats-new/new-strip.svelte';
+	import EventRow from '$lib/components/whats-new/event-row.svelte';
 	import VisualPairs from '$lib/components/whats-new/visual-pairs.svelte';
 	import VisualCompareDialog from '$lib/components/whats-new/visual-compare-dialog.svelte';
 	import DistanceFilter from '$lib/components/whats-new/distance-filter.svelte';
-	import CountTabs from '$lib/components/count-tabs.svelte';
-	import ActivityGrid from '$lib/components/whats-new/activity-grid.svelte';
-	import GroupCard from '$lib/components/whats-new/group-card.svelte';
 	import PickPopover, { type PickOption } from '$lib/components/whats-new/pick-popover.svelte';
 	import { whatsNewApi } from '$lib/api/whats-new';
 	import { bountyProgramsApi } from '$lib/api/bounty-programs';
@@ -38,68 +46,53 @@
 	import { whatsNewStore } from '$lib/stores/whats-new.svelte';
 	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
 	import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
-	import { rechecks } from '$lib/stores/rechecks.svelte';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
-	import { goto } from '$app/navigation';
 	import { subdomainsApi } from '$lib/api/subdomains';
-	import { secretsApi, servicesApi } from '$lib/api/scan-results';
-	import { vulnerabilitiesApi } from '$lib/api/vulnerabilities';
 	import WebAssetDetailSheet from '$lib/components/scans/results/web-asset-detail-sheet.svelte';
-	import VulnerabilityDetailSheet from '$lib/components/scans/results/vulnerability-detail-sheet.svelte';
-	import ServiceDetailSheet from '$lib/components/scans/results/service-detail-sheet.svelte';
-	import SecretDetailSheet from '$lib/components/scans/results/secrets/secret-detail-sheet.svelte';
 	import { compileQuery, emptyQuery, exactToken } from '$lib/utilities/scan-insights';
 	import { SURFACE } from '$lib/config/surface';
-	import { ROUTES } from '$lib/config/routes';
+	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import type { SubdomainRead } from '$lib/types/subdomain';
-	import type { VulnerabilityRead } from '$lib/utilities/vulns';
-	import {
-		compileServiceQuery,
-		emptyServiceQuery,
-		type ServiceRead
-	} from '$lib/utilities/services';
-	import type { SecretDetail } from '$lib/types/secret';
 	import { Capability } from '$lib/config/capabilities';
-	import { routeLabels } from '$lib/config/routes';
 	import { SurfaceDimension } from '$lib/config/surface';
 	import {
 		BOUNTY_KINDS,
 		GONE_KINDS,
 		KIND_ORDER,
 		NEW_KEYS,
-		NEW_WINDOWS,
 		NEW_TABS,
-		VISUAL_KEYS,
+		NEW_WINDOWS,
 		NewBasis,
 		NewKind,
 		NewSource,
 		NewTab,
 		ProgramRing,
+		RING_LABELS,
+		SELECTABLE_KINDS,
+		SIGNAL_LABELS,
+		SINCE_KEY,
 		SOURCE_KINDS,
 		SOURCE_OPTIONS,
-		RING_LABELS,
-		ROWS_SHOWN,
-		SELECTABLE_KINDS,
-		SINCE_KEY,
+		Signal,
 		SubjectKind,
+		VISUAL_KEYS,
 		type NewKindKey,
 		type NewSourceKey,
 		type NewTabKey,
-		type NewWindowKey
+		type NewWindowKey,
+		type SignalKey
 	} from '$lib/config/whats-new';
-	import { runDescription, runStarted } from '$lib/utilities/rechecks';
 	import { formatShortDate } from '$lib/utilities/dates';
 	import { rowHref } from '$lib/utilities/whats-new';
-	import type { NewFeed, NewItem, VisualFeed, VisualPair } from '$lib/types/whats-new';
-	import type { SeedPick } from '$lib/types/recheck';
+	import type { NewFeed, NewGroup, NewItem, VisualFeed, VisualPair } from '$lib/types/whats-new';
 
 	const WINDOW_KEYS = new Set<string>(NEW_WINDOWS.map((w) => w.key));
-	const KIND_KEYS = new Set<string>(KIND_ORDER);
 	const SOURCE_KEYS = new Set<string>(SOURCE_OPTIONS.map((o) => o.key));
+	const TAB_KEYS = new Set<string>(NEW_TABS.map((t) => t.key));
+	const SIGNAL_KEYS = new Set<string>([...Object.values(Signal), ...KIND_ORDER]);
 	const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 	const RING_LIBRARY = `ring:${ProgramRing.LIBRARY}`;
 	const Q_DEBOUNCE_MS = 250;
-	const GRID_LEVELS = [0, 0.3, 0.55, 0.8, 1];
 
 	const initial = page.url.searchParams;
 	let range = $state<NewWindowKey>(
@@ -121,8 +114,8 @@
 				? `${initial.get('platform')}:${initial.get('handle')}`
 				: ''
 	);
-	const kinds = new SvelteSet<string>(
-		(initial.get('kinds') ?? '').split(',').filter((k) => KIND_KEYS.has(k))
+	let signal = $state<SignalKey | null>(
+		SIGNAL_KEYS.has(initial.get('signal') ?? '') ? (initial.get('signal') as SignalKey) : null
 	);
 	let source = $state<NewSourceKey>(
 		SOURCE_KEYS.has(initial.get('source') ?? '')
@@ -131,11 +124,10 @@
 	);
 	let q = $state(initial.get('q') ?? '');
 	let qApplied = $state(initial.get('q') ?? '');
-
-	const TAB_KEYS = new Set<string>(NEW_TABS.map((t) => t.key));
 	let tab = $state<NewTabKey>(
-		TAB_KEYS.has(initial.get('tab') ?? '') ? (initial.get('tab') as NewTabKey) : NewTab.NEW
+		TAB_KEYS.has(initial.get('tab') ?? '') ? (initial.get('tab') as NewTabKey) : NewTab.TIMELINE
 	);
+
 	let visual = $state<VisualFeed | null>(null);
 	let visualLoading = $state(false);
 	let silentOnly = $state(false);
@@ -154,17 +146,16 @@
 	const selection = new RowSelection<NewItem>();
 	const busy = new SvelteSet<string>();
 	let searchRef = $state<HTMLInputElement | null>(null);
+	let shortcutsOpen = $state(false);
+	let runCompare = $state<{ current: string; baseline: string } | null>(null);
 
 	let watchFor = $state<NewItem | null>(null);
 	let launchFor = $state<string | null>(null);
 	let removeFor = $state<NewItem | null>(null);
 	let removing = $state(false);
 	let addingAll = $state<string | null>(null);
-	let lastChecked = $state(-1);
+	let lastChecked = $state<string | null>(null);
 	let sheetSub = $state<SubdomainRead | null>(null);
-	let sheetVuln = $state<VulnerabilityRead | null>(null);
-	let sheetService = $state<ServiceRead | null>(null);
-	let sheetSecret = $state<SecretDetail | null>(null);
 	let sheetScan = $state('');
 	let sheetOpen = $state(false);
 	let opening = $state<string | null>(null);
@@ -177,14 +168,8 @@
 	let visibleKinds = $derived(
 		KIND_ORDER.filter((k) => (bounty || !BOUNTY_KINDS.has(k)) && SOURCE_KINDS[sourceOn].has(k))
 	);
-	let pickedKinds = $derived(visibleKinds.filter((k) => kinds.has(k)));
-	let wantedKinds = $derived<string[] | null>(
-		pickedKinds.length ? pickedKinds : sourceOn === NewSource.ALL ? null : visibleKinds
-	);
-	let keys = $derived(NEW_KEYS.filter((k) => bounty || !k.bounty));
-	let gridKinds = $derived<NewKindKey[]>(
-		pickedKinds.length ? pickedKinds : visibleKinds.filter((k) => !GONE_KINDS.has(k))
-	);
+	let wantedKinds = $derived<string[] | null>(sourceOn === NewSource.ALL ? null : visibleKinds);
+	let gridKinds = $derived<NewKindKey[]>(visibleKinds.filter((k) => !GONE_KINDS.has(k)));
 
 	const splitProgram = (v: string): [string, string] => {
 		const i = v.indexOf(':');
@@ -196,52 +181,33 @@
 			? visibleKinds.reduce((n, k) => (GONE_KINDS.has(k) ? n : n + (feed?.counts[k] ?? 0)), 0)
 			: 0
 	);
-	let gone = $derived(
-		feed
-			? visibleKinds.reduce((n, k) => (GONE_KINDS.has(k) ? n + (feed?.counts[k] ?? 0) : n), 0)
-			: 0
-	);
 
-	const stamp = (iso: string) => {
-		const at = new Date(iso);
-		return `${formatShortDate(at)}, ${at.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
-	};
 	const dayLabel = (d: string) =>
 		new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', {
 			month: 'short',
 			day: 'numeric',
 			timeZone: 'UTC'
 		});
-	let periodLabel = $derived.by(() => {
+	const WINDOW_WORDS: Record<string, string> = {
+		'24h': '24 hours',
+		'7d': '7 days',
+		'30d': '30 days'
+	};
+	let sinceLabel = $derived.by(() => {
 		if (!feed) return '';
 		if (feed.basis === NewBasis.DAYS && dayFrom) {
 			return dayTo && dayTo !== dayFrom
 				? `${dayLabel(dayFrom)} to ${dayLabel(dayTo)}`
 				: dayLabel(dayFrom);
 		}
-		if (feed.basis === NewBasis.MARK) return `since caught up ${stamp(feed.since)}`;
-		const w = NEW_WINDOWS.find((x) => x.key === feed?.window);
-		return w
-			? `in the last ${w.key === '24h' ? '24 hours' : w.key === '7d' ? '7 days' : '30 days'}`
-			: '';
+		const at = new Date(feed.since);
+		return `${formatShortDate(at)} ${at.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
 	});
-	let headline = $derived.by(() => {
+	let periodLabel = $derived.by(() => {
 		if (!feed) return '';
-		const what = total === 1 ? '1 new' : `${total.toLocaleString()} new`;
-		const tail = gone ? ` · ${gone.toLocaleString()} gone` : '';
-		return `${what} ${periodLabel}${tail}${fromNewChecks}${firstRuns}`;
-	});
-	let fromNewChecks = $derived.by(() => {
-		const n = feed?.new_checks ?? 0;
-		if (!n) return '';
-		return n === 1
-			? ' · 1 finding from new checks'
-			: ` · ${n.toLocaleString()} findings from new checks`;
-	});
-	let firstRuns = $derived.by(() => {
-		const n = feed?.first_runs ?? 0;
-		if (!n) return '';
-		return n === 1 ? ' · 1 first scan set a baseline' : ` · ${n} first scans set a baseline`;
+		if (feed.basis === NewBasis.DAYS) return `on ${sinceLabel}`;
+		if (feed.basis === NewBasis.MARK) return 'since caught up';
+		return feed.window ? `in the last ${WINDOW_WORDS[feed.window] ?? feed.window}` : '';
 	});
 	let emptyTitle = $derived(feed ? `Nothing new ${periodLabel}` : '');
 	let emptyDescription = $derived(
@@ -252,24 +218,66 @@
 			: undefined
 	);
 	let filtered = $derived(
-		!!(targetId || program || qApplied || pickedKinds.length || sourceOn !== NewSource.ALL)
+		!!(targetId || program || qApplied || signal || sourceOn !== NewSource.ALL || dayFrom)
 	);
 
-	// ---------- rows in reading order ----------
+	// ---------- timeline ----------
 
-	let rows = $derived.by<NewItem[]>(() => {
-		const out: NewItem[] = [];
+	interface Entry {
+		id: string;
+		group: NewGroup;
+	}
+
+	function passes(g: NewGroup): boolean {
+		if (!signal) return true;
+		if (signal === Signal.CRITICAL || signal === Signal.HIGH) {
+			return (g.severities[signal] ?? 0) > 0;
+		}
+		return (g.counts[signal] ?? 0) > 0;
+	}
+	const dayKey = (iso: string) => new Date(iso).toDateString();
+	function dayHeading(iso: string): string {
+		const at = new Date(iso);
+		const today = new Date();
+		const yesterday = new Date(today.getTime() - 86_400_000);
+		if (at.toDateString() === today.toDateString()) return 'Today';
+		if (at.toDateString() === yesterday.toDateString()) return 'Yesterday';
+		return at.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+	}
+
+	let entries = $derived.by<Entry[]>(() => {
+		const out: Entry[] = [];
 		for (const g of feed?.groups ?? []) {
-			for (const s of g.sections) {
-				const key = `${g.id}:${s.kind}`;
-				const shown = expanded.has(key) ? s.items : s.items.slice(0, ROWS_SHOWN);
-				out.push(...shown);
-			}
+			if (!passes(g)) continue;
+			out.push({ id: g.id, group: g });
 		}
 		return out;
 	});
-	let rowIndexOf = $derived(new Map(rows.map((r, i) => [r.id, i])));
-	let cursorId = $derived(rows[cursor]?.id ?? null);
+	let days = $derived.by(() => {
+		const out: { key: string; label: string; rows: { entry: Entry; index: number }[] }[] = [];
+		entries.forEach((entry, index) => {
+			const key = dayKey(entry.group.at);
+			let day = out[out.length - 1];
+			if (!day || day.key !== key) {
+				day = { key, label: dayHeading(entry.group.at), rows: [] };
+				out.push(day);
+			}
+			day.rows.push({ entry, index });
+		});
+		return out;
+	});
+	let markedAt = $derived(feed?.marked_at ? new Date(feed.marked_at).getTime() : null);
+	let markIndex = $derived(
+		markedAt === null ? -1 : entries.findIndex((e) => new Date(e.group.at).getTime() <= markedAt)
+	);
+	let markLabel = $derived.by(() => {
+		if (!feed?.marked_at) return '';
+		const at = new Date(feed.marked_at);
+		return `${formatShortDate(at)}, ${at.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+	});
+
+	let rowCount = $derived(tab === NewTab.TIMELINE ? entries.length : 0);
+	let briefItems = $derived(entries.flatMap((e) => e.group.sections.flatMap((s) => s.items)));
 
 	// ---------- pickers ----------
 
@@ -312,13 +320,51 @@
 		{ value: '', label: RING_LABELS[ProgramRing.ENGAGED] },
 		{ value: RING_LIBRARY, label: RING_LABELS[ProgramRing.LIBRARY] }
 	];
+	let targetLabel = $derived(targetOptions.find((o) => o.value === targetId)?.label ?? '');
+	let programLabel = $derived(
+		program === RING_LIBRARY
+			? RING_LABELS[ProgramRing.LIBRARY]
+			: (programOptions.find((o) => o.value === program)?.label ?? splitProgram(program)[1])
+	);
+
+	let chips = $derived.by(() => {
+		const out: { key: string; label: string; remove: () => void }[] = [];
+		if (dayFrom) {
+			out.push({
+				key: 'day',
+				label:
+					dayTo && dayTo !== dayFrom
+						? `${dayLabel(dayFrom)} to ${dayLabel(dayTo)}`
+						: dayLabel(dayFrom),
+				remove: () => pickDays(null, null)
+			});
+		}
+		if (signal) {
+			out.push({ key: 'signal', label: SIGNAL_LABELS[signal], remove: () => (signal = null) });
+		}
+		if (targetId) {
+			out.push({ key: 'target', label: targetLabel || 'Target', remove: () => (targetId = '') });
+		}
+		if (program) out.push({ key: 'program', label: programLabel, remove: () => (program = '') });
+		if (qApplied) {
+			out.push({
+				key: 'q',
+				label: `"${qApplied}"`,
+				remove: () => {
+					q = '';
+					qApplied = '';
+				}
+			});
+		}
+		return out;
+	});
 
 	// ---------- loading ----------
 
 	function syncUrl() {
 		try {
 			const sp = new SvelteURLSearchParams();
-			if (tab !== NewTab.NEW) sp.set('tab', tab);
+			if (tab !== NewTab.TIMELINE) sp.set('tab', tab);
 			if (range !== SINCE_KEY) sp.set('window', range);
 			if (dayFrom) sp.set('day', dayFrom);
 			if (dayTo) sp.set('day_to', dayTo);
@@ -330,7 +376,7 @@
 				sp.set('handle', handle);
 			}
 			if (bounty && source !== NewSource.ALL) sp.set('source', source);
-			if (pickedKinds.length) sp.set('kinds', pickedKinds.join(','));
+			if (signal) sp.set('signal', signal);
 			if (qApplied) sp.set('q', qApplied);
 			const qs = sp.toString();
 			replaceState(qs ? `?${qs}` : location.pathname, page.state);
@@ -366,7 +412,7 @@
 			) {
 				range = res.window as NewWindowKey;
 			}
-			if (cursor >= rows.length) cursor = rows.length - 1;
+			if (cursor >= rowCount) cursor = rowCount - 1;
 		} catch (e) {
 			if (my !== reqId) return;
 			error = e instanceof Error ? e.message : 'Feed not loaded';
@@ -429,7 +475,6 @@
 		void program;
 		void qApplied;
 		void source;
-		void kinds.size;
 		const onVisual = tab === NewTab.VISUAL;
 		untrack(() => {
 			if (id && loadedFor !== id) {
@@ -443,6 +488,15 @@
 			syncUrl();
 			void load();
 			if (onVisual) void loadVisual();
+		});
+	});
+
+	$effect(() => {
+		void tab;
+		void signal;
+		untrack(() => {
+			syncUrl();
+			cursor = -1;
 		});
 	});
 
@@ -486,13 +540,19 @@
 		dayFrom = from;
 		dayTo = to;
 	}
-	function toggleKind(kind: NewKindKey) {
-		if (kinds.has(kind)) kinds.delete(kind);
-		else kinds.add(kind);
-	}
 	function setSource(next: NewSourceKey) {
 		source = next;
-		for (const k of [...kinds]) if (!SOURCE_KINDS[next].has(k)) kinds.delete(k);
+		if (
+			signal &&
+			!SOURCE_KINDS[next].has(signal as string) &&
+			KIND_ORDER.includes(signal as NewKindKey)
+		) {
+			signal = null;
+		}
+	}
+	function setTab(next: NewTabKey) {
+		tab = next;
+		if (next === NewTab.VISUAL && !visual) void loadVisual();
 	}
 	function clearFilters() {
 		source = NewSource.ALL;
@@ -500,7 +560,13 @@
 		program = '';
 		q = '';
 		qApplied = '';
-		kinds.clear();
+		signal = null;
+		dayFrom = null;
+		dayTo = null;
+	}
+	function toggle(key: string) {
+		if (expanded.has(key)) expanded.delete(key);
+		else expanded.add(key);
 	}
 
 	// ---------- actions ----------
@@ -514,7 +580,9 @@
 			dayTo = null;
 			range = SINCE_KEY;
 			selection.clear();
+			expanded.clear();
 			await load();
+			toast.success('Marked as caught up');
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Not marked');
 		} finally {
@@ -524,8 +592,8 @@
 
 	function patch(id: string, fn: (item: NewItem) => void) {
 		for (const g of feed?.groups ?? []) {
-			for (const s of g.sections) {
-				const item = s.items.find((i) => i.id === id);
+			for (const section of g.sections) {
+				const item = section.items.find((i) => i.id === id);
 				if (item) fn(item);
 			}
 		}
@@ -593,30 +661,7 @@
 		}
 	}
 
-	async function scanAssets(items: NewItem[]) {
-		const picks: SeedPick[] = items
-			.filter((i) => i.kind === NewKind.WEB_ASSET && i.scan_id)
-			.map((i) => ({ value: i.value, scan_id: i.scan_id ?? undefined }));
-		if (!picks.length || !projectId) return;
-		for (const i of items) busy.add(i.id);
-		try {
-			const run = await rechecks.rescan(projectId, {
-				selection: { dimension: SurfaceDimension.WEB_ASSETS, picks },
-				dimension: ''
-			});
-			toast.success(runStarted(run, 'web asset', 'web assets'), {
-				description: runDescription(run)
-			});
-			selection.clear();
-		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Rescan not started');
-		} finally {
-			for (const i of items) busy.delete(i.id);
-		}
-	}
-
 	function scan(item: NewItem) {
-		if (item.kind === NewKind.WEB_ASSET) return void scanAssets([item]);
 		if (item.target_id) launchFor = item.target_id;
 	}
 
@@ -647,15 +692,21 @@
 		};
 	}
 
+	async function addAll(key: string, items: NewItem[]) {
+		addingAll = key;
+		try {
+			await addTargets(items);
+		} finally {
+			addingAll = null;
+		}
+	}
+
 	// ---------- sheets ----------
 
 	function closeSheet(open: boolean) {
 		sheetOpen = open;
 		if (!open) {
 			sheetSub = null;
-			sheetVuln = null;
-			sheetService = null;
-			sheetSecret = null;
 		}
 	}
 
@@ -674,10 +725,9 @@
 		}
 		if (opening) return;
 		opening = item.id;
-		const rowId = item.id.slice(item.id.indexOf(':') + 1);
 		try {
 			sheetScan = scanId;
-			if (item.kind === NewKind.WEB_ASSET || item.kind === NewKind.CERT_HOST) {
+			if (item.kind === NewKind.CERT_HOST) {
 				const res = await subdomainsApi.search(
 					projectId,
 					scanId,
@@ -689,29 +739,6 @@
 					return;
 				}
 				sheetSub = hit;
-			} else if (item.kind === NewKind.FINDING) {
-				sheetVuln = await vulnerabilitiesApi.detail(projectId, scanId, rowId);
-			} else if (item.kind === NewKind.SERVICE) {
-				const [ip, port] = item.value.split(/:(?=\d+$)/);
-				const res = await servicesApi.search(
-					projectId,
-					scanId,
-					compileServiceQuery(
-						{ ...emptyServiceQuery(), search: `ip=${ip} port=${port}` },
-						'port',
-						1,
-						0,
-						5
-					)
-				);
-				const hit = res.items.find((r) => r.ip === ip && String(r.port) === port) ?? null;
-				if (!hit) {
-					toast.error('Service not found in this scan');
-					return;
-				}
-				sheetService = hit;
-			} else if (item.kind === NewKind.SECRET) {
-				sheetSecret = await secretsApi.detail(projectId, scanId, rowId);
 			} else {
 				const link = rowHref(item);
 				if (link) void goto(link);
@@ -752,28 +779,21 @@
 	// ---------- selection ----------
 
 	function check(item: NewItem, shift: boolean) {
-		const index = rowIndexOf.get(item.id) ?? -1;
-		if (shift && lastChecked >= 0 && index >= 0 && lastChecked !== index) {
-			const [lo, hi] = lastChecked < index ? [lastChecked, index] : [index, lastChecked];
+		const ids = briefItems.map((i) => i.id);
+		const index = ids.indexOf(item.id);
+		const last = lastChecked ? ids.indexOf(lastChecked) : -1;
+		if (shift && last >= 0 && index >= 0 && last !== index) {
+			const [lo, hi] = last < index ? [last, index] : [index, last];
 			const on = !selection.has(item.id);
 			for (let i = lo; i <= hi; i++) {
-				const row = rows[i];
+				const row = briefItems[i];
 				if (!row || !SELECTABLE_KINDS.has(row.kind)) continue;
 				if (selection.has(row.id) !== on) selection.toggle(row);
 			}
 		} else {
 			selection.toggle(item);
 		}
-		lastChecked = index;
-	}
-
-	async function addAll(items: NewItem[]) {
-		addingAll = items[0]?.id ?? null;
-		try {
-			await addTargets(items);
-		} finally {
-			addingAll = null;
-		}
+		lastChecked = item.id;
 	}
 
 	let picked = $derived(selection.rows());
@@ -781,16 +801,26 @@
 		picked.filter((i) => i.kind === NewKind.SCOPE && i.importable && !i.target_exists)
 	);
 	let pickedHosts = $derived(picked.filter((i) => i.kind === NewKind.CERT_HOST));
-	let pickedAssets = $derived(picked.filter((i) => i.kind === NewKind.WEB_ASSET));
 
 	// ---------- keyboard ----------
 
 	function scrollCursor() {
-		document.querySelector(`[data-new-row="${cursor}"]`)?.scrollIntoView({ block: 'nearest' });
+		document.querySelector(`[data-event-row="${cursor}"]`)?.scrollIntoView({ block: 'nearest' });
 	}
+
+	function eventHref(g: NewGroup): string {
+		const s = g.subject;
+		if (g.scan_id) return ROUTES.scan(g.scan_id);
+		if (s.kind === SubjectKind.PROGRAM && s.handle) {
+			return ROUTES.bountyHub(s.handle, s.platform ?? undefined);
+		}
+		if (s.kind === SubjectKind.TARGETS) return ROUTES.targets;
+		return ROUTES.bountyHubTab('updates');
+	}
+
 	function onKey(e: KeyboardEvent) {
 		if (e.metaKey || e.ctrlKey || e.altKey) return;
-		if (watchFor || launchFor || removeFor || sheetOpen || compareOpen) return;
+		if (watchFor || launchFor || removeFor || sheetOpen || compareOpen || runCompare) return;
 		const t = e.target as HTMLElement | null;
 		const typing =
 			!!t &&
@@ -807,8 +837,16 @@
 			if (e.key === 'Escape') (t as HTMLElement).blur();
 			return;
 		}
+		if (e.key === '?') {
+			shortcutsOpen = true;
+			return;
+		}
+		const tabIndex = ['1', '2'].indexOf(e.key);
+		if (tabIndex >= 0 && NEW_TABS[tabIndex]) {
+			setTab(NEW_TABS[tabIndex].key);
+			return;
+		}
 		if (tab === NewTab.VISUAL) {
-			if (compareOpen) return;
 			const n = visualPairs.length;
 			if (e.key === 'j' || e.key === 'ArrowDown' || e.key === 'ArrowRight') {
 				e.preventDefault();
@@ -828,333 +866,329 @@
 			}
 			return;
 		}
-		const row = rows[cursor] ?? null;
+		const entry = entries[cursor] ?? null;
 		if (e.key === 'j' || e.key === 'ArrowDown') {
 			e.preventDefault();
-			cursor = Math.min(cursor + 1, rows.length - 1);
+			cursor = Math.min(cursor + 1, rowCount - 1);
 			scrollCursor();
 		} else if (e.key === 'k' || e.key === 'ArrowUp') {
 			e.preventDefault();
 			cursor = Math.max(cursor - 1, 0);
 			scrollCursor();
-		} else if (e.key === 'x' && row) {
+		} else if (e.key === 'o' && entry) {
+			toggle(entry.id);
+		} else if (e.key === 'Enter' && entry) {
 			e.preventDefault();
-			selection.toggle(row);
-		} else if (e.key === 'Enter' && row) {
-			e.preventDefault();
-			void openRow(row);
-		} else if (e.key === 'a' && row) {
-			void addTargets([row]);
-		} else if (e.key === 's' && row) {
-			scan(row);
-		} else if (e.key === 'm' && row) {
-			void muteHosts([row]);
+			void goto(eventHref(entry.group));
+		} else if (e.key === 's' && entry?.group.subject.target_id && entry.group.scan_id) {
+			launchFor = entry.group.subject.target_id;
 		} else if (e.key === 'Escape') {
 			if (selection.size) selection.clear();
+			else if (entry && expanded.has(entry.id)) expanded.delete(entry.id);
 			else cursor = -1;
 		}
 	}
 </script>
 
-<svelte:window onkeydown={onKey} />
-
 <svelte:head><title>{routeLabels['whats-new']} · reNgine</title></svelte:head>
 
-<div class="flex flex-col gap-4 p-4">
-	<div class="flex flex-wrap items-end justify-between gap-3">
-		<div class="flex flex-col gap-0.5">
-			<h1 class="text-xl font-semibold">{routeLabels['whats-new']}</h1>
-			{#if feed}
-				<p class="text-sm text-muted-foreground">
-					{headline}
-				</p>
-			{:else}
-				<Skeleton class="h-4 w-48" />
-			{/if}
-		</div>
-		<div class="flex flex-wrap items-center gap-2">
-			<ToggleGroup.Root
-				type="single"
-				value={dayFrom ? '' : range}
-				onValueChange={(v) => v && setRange(v as NewWindowKey)}
-				variant="outline"
-				size="sm"
-				aria-label="Period"
-			>
-				{#each NEW_WINDOWS as option (option.key)}
-					<ToggleGroup.Item value={option.key} class="h-8 px-2.5 text-xs font-normal">
-						{option.label}
-					</ToggleGroup.Item>
-				{/each}
-			</ToggleGroup.Root>
-			<LoadingButton
-				size="sm"
-				class="h-8"
-				loading={catchingUp}
-				loadingLabel="Marking"
-				onclick={caughtUp}
-				disabled={!feed}
-			>
-				<Check class="size-3.5" />
-				Caught up
-			</LoadingButton>
-		</div>
-	</div>
+<svelte:window onkeydown={onKey} />
 
-	<CountTabs
-		tabs={NEW_TABS}
-		value={tab}
-		counts={feed ? { [NewTab.NEW]: total, [NewTab.VISUAL]: feed.visual } : null}
-		onChange={(k) => (tab = k as NewTabKey)}
-	/>
+<div class="flex flex-col gap-4">
+	<h1 class="sr-only">{routeLabels['whats-new']}</h1>
 
-	<div
-		class="sticky top-0 z-20 -mx-4 flex flex-wrap items-center gap-2 bg-background/95 px-4 py-2 backdrop-blur"
-	>
-		<div class="relative">
-			<Search
-				class="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
-			/>
-			<Input
-				bind:ref={searchRef}
-				bind:value={q}
-				placeholder="Filter"
-				class="h-8 w-56 pl-8 text-xs"
-				aria-label="Filter"
-				autocomplete="off"
-				spellcheck={false}
-			/>
-		</div>
-		{#if bounty && tab === NewTab.NEW}
-			<ToggleGroup.Root
-				type="single"
-				value={source}
-				onValueChange={(v) => v && setSource(v as NewSourceKey)}
-				variant="outline"
-				size="sm"
-				aria-label="Source"
-			>
-				{#each SOURCE_OPTIONS as option (option.key)}
-					<ToggleGroup.Item value={option.key} class="h-8 px-2.5 text-xs font-normal">
-						{option.label}
-					</ToggleGroup.Item>
-				{/each}
-			</ToggleGroup.Root>
-		{/if}
-		<PickPopover
-			label="All targets"
-			value={targetId}
-			options={targetOptions}
-			heading={[{ value: '', label: 'All targets' }]}
-			placeholder="Target"
-			onChange={(v) => (targetId = v)}
+	<Card.Root class="gap-0 overflow-hidden py-0">
+		<NewStrip
+			{feed}
+			kinds={visibleKinds}
+			since={sinceLabel}
+			active={signal}
+			{gridKinds}
+			from={dayFrom}
+			to={dayTo}
+			onSignal={(s) => (signal = s)}
+			onPick={pickDays}
 		/>
-		{#if tab === NewTab.VISUAL && visual}
-			<DistanceFilter
-				distances={visualDistances}
-				min={minDistance}
-				onChange={(v) => (minDistance = v)}
-			/>
-		{/if}
-		{#if tab === NewTab.VISUAL}
-			<Button
-				variant={silentOnly ? 'secondary' : 'outline'}
-				size="sm"
-				class="h-8 text-xs font-normal"
-				aria-pressed={silentOnly}
-				onclick={() => (silentOnly = !silentOnly)}
-			>
-				Silent redeploys{#if visual?.silent}
-					<span class="text-muted-foreground tabular-nums">{visual.silent}</span>{/if}
-			</Button>
-		{/if}
-		{#if bounty && sourceOn !== NewSource.TARGETS && tab === NewTab.NEW}
-			<PickPopover
-				label={RING_LABELS[ProgramRing.ENGAGED]}
-				value={program}
-				options={programOptions}
-				heading={ringOptions}
-				placeholder="Program"
-				onChange={(v) => (program = v)}
-			/>
-		{/if}
-		{#if filtered}
-			<Button variant="ghost" size="sm" class="h-8 gap-1 text-xs" onclick={clearFilters}>
-				<X class="size-3.5" /> Clear
-			</Button>
-		{/if}
-		{#if dayFrom}
-			<Button
-				variant="secondary"
-				size="sm"
-				class="h-8 gap-1 text-xs"
-				onclick={() => pickDays(null, null)}
-			>
-				{dayTo && dayTo !== dayFrom
-					? `${dayLabel(dayFrom)} to ${dayLabel(dayTo)}`
-					: dayLabel(dayFrom)}
-				<X class="size-3.5" />
-			</Button>
-		{/if}
-	</div>
 
-	{#if tab === NewTab.VISUAL}
-		{#if visual && !visualLoading && visualPairs.length === 0}
-			<EmptyState
-				icon={Sparkles}
-				title={silentOnly
-					? `No silent redeploys ${periodLabel}`
-					: `No visual changes ${periodLabel}`}
-				description="A host counts once both runs captured it and the screenshots differ."
-				class="rounded-xl"
+		<div class="flex flex-wrap items-center justify-between gap-2 border-b px-2">
+			<CountTabs
+				tabs={NEW_TABS}
+				value={tab}
+				counts={feed
+					? {
+							[NewTab.TIMELINE]: total,
+							[NewTab.VISUAL]: feed.visual
+						}
+					: null}
+				onChange={(k) => setTab(k as NewTabKey)}
 			/>
-		{:else if visual}
-			<div class="transition-opacity {visualLoading ? 'opacity-60' : ''}">
-				<VisualPairs
-					pairs={visualPairs}
-					cursor={visualCursor}
-					onOpen={openPair}
-					onCompare={openCompare}
-					onScan={(pair) => (launchFor = pair.target_id)}
-					onPick={(i) => (visualCursor = i)}
+		</div>
+
+		<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
+			<div class="relative min-w-[200px] flex-1 sm:max-w-xs">
+				<Search
+					class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
 				/>
-				{#if visual.truncated}
-					<p class="py-3 text-center text-xs text-muted-foreground">
-						Largest {visual.pairs.length} changes shown. Narrow the period or filter to see the rest.
+				<Input
+					bind:ref={searchRef}
+					bind:value={q}
+					placeholder="Filter"
+					class="h-9 pl-8"
+					aria-label="Filter"
+					autocomplete="off"
+					spellcheck={false}
+				/>
+			</div>
+			{#if bounty && tab !== NewTab.VISUAL}
+				<ToggleGroup.Root
+					type="single"
+					value={source}
+					onValueChange={(v) => v && setSource(v as NewSourceKey)}
+					variant="outline"
+					aria-label="Source"
+				>
+					{#each SOURCE_OPTIONS as option (option.key)}
+						<ToggleGroup.Item value={option.key} class="h-9 px-3 text-xs font-normal">
+							{option.label}
+						</ToggleGroup.Item>
+					{/each}
+				</ToggleGroup.Root>
+			{/if}
+			<PickPopover
+				label="All targets"
+				value={targetId}
+				options={targetOptions}
+				heading={[{ value: '', label: 'All targets' }]}
+				placeholder="Target"
+				onChange={(v) => (targetId = v)}
+			/>
+			{#if bounty && sourceOn !== NewSource.TARGETS && tab !== NewTab.VISUAL}
+				<PickPopover
+					label={RING_LABELS[ProgramRing.ENGAGED]}
+					value={program}
+					options={programOptions}
+					heading={ringOptions}
+					placeholder="Program"
+					onChange={(v) => (program = v)}
+				/>
+			{/if}
+			{#if tab === NewTab.VISUAL && visual}
+				<DistanceFilter
+					distances={visualDistances}
+					min={minDistance}
+					onChange={(v) => (minDistance = v)}
+				/>
+				<Button
+					variant={silentOnly ? 'secondary' : 'outline'}
+					class="h-9 text-xs font-normal"
+					aria-pressed={silentOnly}
+					onclick={() => (silentOnly = !silentOnly)}
+				>
+					Silent redeploys{#if visual.silent}
+						<span class="text-muted-foreground tabular-nums">{visual.silent}</span>{/if}
+				</Button>
+			{/if}
+			<div class="flex flex-wrap items-center gap-2 lg:ml-auto">
+				<ToggleGroup.Root
+					type="single"
+					value={dayFrom ? '' : range}
+					onValueChange={(v) => v && setRange(v as NewWindowKey)}
+					variant="outline"
+					aria-label="Period"
+				>
+					{#each NEW_WINDOWS as option (option.key)}
+						<ToggleGroup.Item value={option.key} class="h-9 px-3 text-xs font-normal">
+							{option.label}
+						</ToggleGroup.Item>
+					{/each}
+				</ToggleGroup.Root>
+				<Hint text="Keyboard shortcuts">
+					{#snippet child(props)}
+						<Button
+							{...props}
+							variant="outline"
+							size="icon"
+							class="hidden size-9 sm:inline-flex"
+							aria-label="Keyboard shortcuts"
+							onclick={() => (shortcutsOpen = true)}
+						>
+							<Keyboard class="size-4" />
+						</Button>
+					{/snippet}
+				</Hint>
+				<LoadingButton
+					class="h-9 gap-2"
+					loading={catchingUp}
+					loadingLabel="Marking"
+					onclick={caughtUp}
+					disabled={!feed}
+				>
+					<Check class="size-4" />
+					Caught up
+				</LoadingButton>
+			</div>
+		</div>
+
+		{#if chips.length > 0}
+			<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/10 px-4 py-2">
+				{#each chips as chip (chip.key)}
+					<Badge variant="outline" class="gap-1 bg-background font-normal">
+						{chip.label}
+						<button
+							type="button"
+							class="rounded-sm text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+							onclick={chip.remove}
+							aria-label="Remove filter {chip.label}"
+						>
+							<X class="size-3" />
+						</button>
+					</Badge>
+				{/each}
+				{#if filtered}
+					<button
+						type="button"
+						class="ml-auto text-xs text-muted-foreground hover:text-foreground"
+						onclick={clearFilters}
+					>
+						Clear all
+					</button>
+				{/if}
+			</div>
+		{/if}
+
+		{#if tab === NewTab.VISUAL}
+			<div class="p-4">
+				{#if visual && !visualLoading && visualPairs.length === 0}
+					<EmptyState
+						icon={Sparkles}
+						title={silentOnly
+							? `No silent redeploys ${periodLabel}`
+							: `No visual changes ${periodLabel}`}
+						description="A web asset counts once both runs captured it and the screenshots differ."
+					/>
+				{:else if visual}
+					<div class="transition-opacity {visualLoading ? 'opacity-60' : ''}">
+						<VisualPairs
+							pairs={visualPairs}
+							cursor={visualCursor}
+							onOpen={openPair}
+							onCompare={openCompare}
+							onScan={(pair) => (launchFor = pair.target_id)}
+							onPick={(i) => (visualCursor = i)}
+						/>
+						{#if visual.truncated}
+							<p class="py-3 text-center text-xs text-muted-foreground">
+								Largest {visual.pairs.length} changes shown.
+							</p>
+						{/if}
+					</div>
+				{:else}
+					<div class="grid grid-cols-[repeat(auto-fill,minmax(21rem,1fr))] gap-3">
+						{#each { length: 6 } as _, i (i)}
+							<Skeleton class="h-52 rounded-xl" />
+						{/each}
+					</div>
+				{/if}
+			</div>
+		{:else if error}
+			<Empty.Root class="py-16">
+				<Empty.Header>
+					<Empty.Media class="size-12 rounded-2xl bg-destructive/10">
+						<TriangleAlert class="size-6 text-destructive" />
+					</Empty.Media>
+					<Empty.Title>What's new not loaded</Empty.Title>
+					<Empty.Description class="max-w-md">{error}</Empty.Description>
+				</Empty.Header>
+				<Empty.Content>
+					<Button variant="outline" class="gap-2" onclick={() => load()}>
+						<RefreshCw class="size-4" /> Retry
+					</Button>
+				</Empty.Content>
+			</Empty.Root>
+		{:else if !feed}
+			<div class="flex flex-col" aria-busy="true">
+				<div class="border-b bg-muted/20 px-4 py-2"><Skeleton class="h-3 w-40" /></div>
+				{#each { length: 8 } as _, i (i)}
+					<div class="flex items-center gap-3 border-b border-border/60 px-4 py-3">
+						<Skeleton class="size-3.5" />
+						<div class="flex flex-1 flex-col gap-1.5">
+							<Skeleton class="h-3.5 w-1/3" />
+							<Skeleton class="h-3 w-1/4" />
+						</div>
+						<Skeleton class="hidden h-6 w-24 sm:block" />
+						<Skeleton class="h-4 w-10" />
+						<Skeleton class="h-7 w-20" />
+					</div>
+				{/each}
+			</div>
+		{:else if entries.length === 0}
+			<EmptyState icon={Sparkles} title={emptyTitle} description={emptyDescription} />
+		{:else}
+			<div class="flex flex-col pb-2 transition-opacity {loading ? 'opacity-60' : ''}">
+				{#each days as day (day.key)}
+					<h2
+						class="sticky top-0 z-10 border-b bg-card/95 px-4 py-2 text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase backdrop-blur"
+					>
+						{day.label}
+					</h2>
+					<ol>
+						{#each day.rows as { entry, index } (entry.id)}
+							{#if index === markIndex}
+								<li
+									class="grid grid-cols-[3rem_1rem_minmax(0,1fr)] items-center gap-x-3 px-4 py-1.5"
+								>
+									<span></span>
+									<span class="flex justify-center"
+										><span class="h-4 border-l border-dashed border-muted-foreground/60"
+										></span></span
+									>
+									<span class="flex items-center gap-2 text-2xs text-muted-foreground">
+										<span class="h-px flex-1 border-t border-dashed border-muted-foreground/40"
+										></span>
+										Caught up {markLabel}
+										<span class="h-px flex-1 border-t border-dashed border-muted-foreground/40"
+										></span>
+									</span>
+								</li>
+							{/if}
+							<EventRow
+								group={entry.group}
+								{index}
+								cursor={cursor === index}
+								unseen={markedAt === null || new Date(entry.group.at).getTime() > markedAt}
+								expanded={expanded.has(entry.id)}
+								isChecked={(id) => selection.has(id)}
+								isBusy={(id) => busy.has(id)}
+								addingAll={addingAll === entry.id}
+								onToggle={() => toggle(entry.id)}
+								onPick={(i) => (cursor = i)}
+								onCompare={(current, baseline) => (runCompare = { current, baseline })}
+								onAddTargets={(items) => addAll(entry.id, items)}
+								onOpen={(item) => openRow(item)}
+								onCheck={check}
+								onAddTarget={(item) => addTargets([item])}
+								onWatch={(item) => (watchFor = item)}
+								onMute={(item) => muteHosts([item])}
+								onScan={scan}
+								onRemoveTarget={(item) => (removeFor = item)}
+							/>
+						{/each}
+					</ol>
+				{/each}
+				{#if feed.truncated}
+					<p class="px-4 py-3 text-xs text-muted-foreground">
+						Newest {feed.groups.length} events shown.
 					</p>
 				{/if}
 			</div>
-		{:else}
-			<div class="grid grid-cols-[repeat(auto-fill,minmax(21rem,1fr))] gap-3">
-				{#each { length: 6 } as _, i (i)}
-					<Skeleton class="h-52 rounded-xl" />
-				{/each}
-			</div>
 		{/if}
-	{:else if feed}
-		{@const hasTiles = visibleKinds.some((k) => (feed?.counts[k] ?? 0) > 0 || kinds.has(k))}
-		<div class="overflow-clip rounded-xl border bg-card">
-			<KindStrip
-				kinds={visibleKinds}
-				counts={feed.counts}
-				facts={feed.facts}
-				selected={kinds}
-				flat
-				daily={feed.daily}
-				onToggle={toggleKind}
-			/>
-			{#if feed.daily.length}
-				<div
-					class="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 overflow-x-auto px-4 py-3 {hasTiles
-						? 'border-t'
-						: ''}"
-				>
-					<ActivityGrid
-						days={feed.daily}
-						kinds={gridKinds}
-						from={dayFrom}
-						to={dayTo}
-						onPick={pickDays}
-					/>
-					<div class="flex items-center gap-3 text-2xs text-muted-foreground">
-						<span>Last 13 weeks</span>
-						<span class="flex items-center gap-1">
-							Less
-							{#each GRID_LEVELS as level (level)}
-								<span
-									class="size-3 rounded-[2px] {level ? '' : 'bg-muted/60'}"
-									style={level ? `background: var(--series); opacity: ${level}` : ''}
-								></span>
-							{/each}
-							More
-						</span>
-					</div>
-				</div>
-			{/if}
-		</div>
-	{:else if !error}
-		<div class="flex flex-col gap-4">
-			<Skeleton class="h-24 rounded-xl" />
-			<Skeleton class="h-32 w-full rounded-xl lg:w-[22rem]" />
-		</div>
-	{/if}
-
-	{#if tab === NewTab.VISUAL}{:else if error}
-		<div class="flex flex-col items-center gap-3 rounded-xl border bg-card py-16">
-			<p class="text-sm text-muted-foreground">{error}</p>
-			<Button size="sm" variant="outline" onclick={() => load()}>Retry</Button>
-		</div>
-	{:else if feed && feed.groups.length === 0 && !loading}
-		<EmptyState
-			icon={Sparkles}
-			title={emptyTitle}
-			description={emptyDescription}
-			class="rounded-xl"
-		/>
-	{:else if feed}
-		<div class="flex flex-col gap-3 transition-opacity {loading ? 'opacity-60' : ''}">
-			{#each feed.groups as group (group.id)}
-				<GroupCard
-					{group}
-					rowIndex={(item) => rowIndexOf.get(item.id) ?? -1}
-					{cursorId}
-					isChecked={(id) => selection.has(id)}
-					isBusy={(id) => busy.has(id)}
-					{expanded}
-					onExpand={(key) => expanded.add(key)}
-					onCheck={check}
-					onOpen={(item) => openRow(item)}
-					onAddTargets={addAll}
-					addingAll={!!addingAll &&
-						group.sections.some((s) => s.items.some((i) => i.id === addingAll))}
-					onAddTarget={(item) => addTargets([item])}
-					onWatch={(item) => (watchFor = item)}
-					onMute={(item) => muteHosts([item])}
-					onScan={scan}
-					onRemoveTarget={(item) => (removeFor = item)}
-					onScanTarget={(id) => (launchFor = id)}
-					onPick={(index) => (cursor = index)}
-				/>
-			{/each}
-			{#if feed.truncated}
-				<p class="py-2 text-center text-xs text-muted-foreground">
-					Newest {feed.groups.length} groups shown. Narrow the period or filter to see the rest.
-				</p>
-			{/if}
-		</div>
-	{:else}
-		<div class="flex flex-col gap-3">
-			{#each { length: 3 } as _, i (i)}
-				<Skeleton class="h-36 rounded-xl" />
-			{/each}
-		</div>
-	{/if}
-
-	{#if tab === NewTab.VISUAL}
-		<div class="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-2xs text-muted-foreground">
-			{#each VISUAL_KEYS as k (k.key)}
-				<span class="inline-flex items-center gap-1.5"><Kbd.Root>{k.key}</Kbd.Root>{k.does}</span>
-			{/each}
-		</div>
-	{/if}
-	{#if tab === NewTab.NEW}
-		<div class="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-2xs text-muted-foreground">
-			{#each keys as k (k.key)}
-				<span class="inline-flex items-center gap-1.5"><Kbd.Root>{k.key}</Kbd.Root>{k.does}</span>
-			{/each}
-		</div>
-	{/if}
+	</Card.Root>
 </div>
 
 <SelectionActionBar selectedCount={selection.size} noun="row" onClear={() => selection.clear()}>
 	{#if pickedAddable.length}
 		<Button size="sm" class="h-7 text-xs" onclick={() => addTargets(pickedAddable)}>
 			Add {pickedAddable.length === 1 ? 'target' : `${pickedAddable.length} targets`}
-		</Button>
-	{/if}
-	{#if pickedAssets.length}
-		<Button variant="ghost" size="sm" class="h-7 text-xs" onclick={() => scanAssets(pickedAssets)}>
-			Scan {pickedAssets.length === 1 ? 'web asset' : `${pickedAssets.length} web assets`}
 		</Button>
 	{/if}
 	{#if pickedHosts.length}
@@ -1165,11 +1199,23 @@
 	{/if}
 </SelectionActionBar>
 
+<Dialog.Root bind:open={shortcutsOpen}>
+	<Dialog.Content class="sm:max-w-md">
+		<Dialog.Header><Dialog.Title>Keyboard shortcuts</Dialog.Title></Dialog.Header>
+		<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+			{#each tab === NewTab.VISUAL ? VISUAL_KEYS : NEW_KEYS as [k, label] (k)}
+				<dt><Kbd>{k}</Kbd></dt>
+				<dd class="text-muted-foreground">{label}</dd>
+			{/each}
+		</dl>
+	</Dialog.Content>
+</Dialog.Root>
+
 {#if watchFor && projectId}
-	{@const program = watchProgram()}
-	{#if program}
+	{@const watched = watchProgram()}
+	{#if watched}
 		<WatchDialog
-			{program}
+			program={watched}
 			{projectId}
 			open={true}
 			onOpenChange={(v) => {
@@ -1196,6 +1242,13 @@
 	/>
 {/if}
 
+<CompareSheet
+	{projectId}
+	current={runCompare?.current ?? null}
+	baseline={runCompare?.baseline ?? null}
+	onClose={() => (runCompare = null)}
+/>
+
 <VisualCompareDialog
 	pairs={visualPairs}
 	index={compareIndex}
@@ -1216,29 +1269,6 @@
 		{projectId}
 		scanId={sheetScan}
 		onFilter={(dsl) => scanTab(SurfaceDimension.WEB_ASSETS, dsl)}
-	/>
-	<VulnerabilityDetailSheet
-		vuln={sheetVuln}
-		{projectId}
-		scanId={sheetScan}
-		open={sheetOpen && sheetVuln !== null}
-		onOpenChange={closeSheet}
-		onFilter={(dsl) => scanTab(SurfaceDimension.VULNERABILITIES, dsl)}
-		onHost={(dsl) => scanTab(SurfaceDimension.WEB_ASSETS, dsl)}
-	/>
-	<ServiceDetailSheet
-		service={sheetService}
-		open={sheetOpen && sheetService !== null}
-		onOpenChange={closeSheet}
-		onFilter={(dsl) => scanTab(SurfaceDimension.SERVICES, dsl)}
-		onHosts={(dsl) => scanTab(SurfaceDimension.WEB_ASSETS, dsl)}
-		onAddress={(dsl) => scanTab(SurfaceDimension.IPS, dsl)}
-	/>
-	<SecretDetailSheet
-		scanId={sheetScan}
-		row={sheetSecret}
-		open={sheetOpen && sheetSecret !== null}
-		onOpenChange={closeSheet}
 	/>
 {/if}
 

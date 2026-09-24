@@ -63,6 +63,10 @@ class BountyEvent(Enum):
     SCOPE_REMOVED = "scope_removed"
     WENT_OUT_OF_SCOPE = "went_out_of_scope"
     CAME_INTO_SCOPE = "came_into_scope"
+    PAYOUT_CHANGED = "payout_changed"
+    RULES_CHANGED = "rules_changed"
+    ASSET_BOUNTY_CHANGED = "asset_bounty_changed"
+    ASSET_RULES_CHANGED = "asset_rules_changed"
 
 
 class AssetGroup(Enum):
@@ -308,6 +312,38 @@ EVENTS: tuple[EventSpec, ...] = (
         "The program paused or closed submissions",
         "door-closed",
         "muted",
+        actionable=False,
+    ),
+    EventSpec(
+        BountyEvent.PAYOUT_CHANGED.value,
+        "Payout changed",
+        "The program changed its bounty range",
+        "banknote",
+        "info",
+        actionable=False,
+    ),
+    EventSpec(
+        BountyEvent.RULES_CHANGED.value,
+        "Rules changed",
+        "Safe harbor or the 2FA requirement changed",
+        "scroll-text",
+        "info",
+        actionable=False,
+    ),
+    EventSpec(
+        BountyEvent.ASSET_BOUNTY_CHANGED.value,
+        "Asset bounty changed",
+        "An asset's tier, bounty eligibility or severity cap changed",
+        "badge-dollar-sign",
+        "info",
+        actionable=False,
+    ),
+    EventSpec(
+        BountyEvent.ASSET_RULES_CHANGED.value,
+        "Asset rules changed",
+        "The program rewrote an asset's instructions",
+        "file-pen",
+        "info",
         actionable=False,
     ),
 )

@@ -8,61 +8,42 @@ from enum import StrEnum
 from shared.definitions.bounty_programs import BountyEvent
 from shared.definitions.correlation import SCREENSHOT_DISTANCE
 from shared.definitions.surface import SurfaceDimension
+from shared.definitions.vulnerabilities import Severity
 
 
 class NewKind(StrEnum):
-    WEB_ASSET = "web_asset"
-    SERVICE = "service"
     FINDING = "finding"
-    SECRET = "secret"  # noqa: S105
-    SCOPE = "scope"
     PROGRAM = "program"
+    SCOPE = "scope"
+    OUT_OF_SCOPE = "out_of_scope"
+    BOUNTY_TABLE = "bounty_table"
+    RULES = "rules"
     CERT_HOST = "cert_host"
     TARGET = "target"
-    OUT_OF_SCOPE = "out_of_scope"
-    RETIRED = "retired"
 
 
 KIND_ORDER: tuple[str, ...] = tuple(k.value for k in NewKind)
 
 KIND_LABELS: dict[str, str] = {
-    NewKind.WEB_ASSET.value: "Web assets",
-    NewKind.SERVICE.value: "Services",
     NewKind.FINDING.value: "Findings",
-    NewKind.SECRET.value: "Secrets",
-    NewKind.SCOPE.value: "In scope",
     NewKind.PROGRAM.value: "Programs",
+    NewKind.SCOPE.value: "In scope",
+    NewKind.OUT_OF_SCOPE.value: "Out of scope",
+    NewKind.BOUNTY_TABLE.value: "Bounty table",
+    NewKind.RULES.value: "Rules",
     NewKind.CERT_HOST.value: "Certificate hosts",
     NewKind.TARGET.value: "Targets",
-    NewKind.OUT_OF_SCOPE.value: "Out of scope",
-    NewKind.RETIRED.value: "Retired",
 }
 
-SCAN_KINDS: tuple[str, ...] = (
-    NewKind.WEB_ASSET.value,
-    NewKind.SERVICE.value,
-    NewKind.FINDING.value,
-    NewKind.SECRET.value,
-)
-BOUNTY_KINDS: frozenset[str] = frozenset(
-    {
-        NewKind.SCOPE.value,
-        NewKind.PROGRAM.value,
-        NewKind.CERT_HOST.value,
-        NewKind.TARGET.value,
-        NewKind.OUT_OF_SCOPE.value,
-    }
-)
-GONE_KINDS: frozenset[str] = frozenset(
-    {NewKind.OUT_OF_SCOPE.value, NewKind.RETIRED.value}
-)
+SCAN_KINDS: tuple[str, ...] = (NewKind.FINDING.value,)
+BOUNTY_KINDS: frozenset[str] = frozenset(KIND_ORDER) - frozenset(SCAN_KINDS)
+GONE_KINDS: frozenset[str] = frozenset({NewKind.OUT_OF_SCOPE.value})
 
 KIND_DIMENSION: dict[str, str] = {
-    NewKind.WEB_ASSET.value: SurfaceDimension.WEB_ASSETS.value,
-    NewKind.SERVICE.value: SurfaceDimension.SERVICES.value,
     NewKind.FINDING.value: SurfaceDimension.VULNERABILITIES.value,
-    NewKind.SECRET.value: SurfaceDimension.SECRETS.value,
 }
+
+ALERT_SEVERITIES: tuple[str, ...] = (Severity.CRITICAL.value, Severity.HIGH.value)
 
 
 class NewBasis(StrEnum):
@@ -96,9 +77,9 @@ NEW_WINDOWS: dict[str, timedelta] = {
 }
 DEFAULT_NEW_WINDOW = "7d"
 GRID_DAYS = 91
-ROWS_PER_SECTION = 5
 BOUNTY_ROWS_PER_SECTION = 50
 GROUP_LIMIT = 80
+EVIDENCE_FINDINGS = 4
 MAX_TEXT_FILTER = 200
 
 SOURCE_LABELS: dict[str, str] = {
@@ -123,16 +104,27 @@ PROGRAM_EVENTS: frozenset[str] = frozenset(
 GONE_EVENTS: frozenset[str] = frozenset(
     {BountyEvent.SCOPE_REMOVED.value, BountyEvent.WENT_OUT_OF_SCOPE.value}
 )
+BOUNTY_TABLE_EVENTS: frozenset[str] = frozenset(
+    {BountyEvent.PAYOUT_CHANGED.value, BountyEvent.ASSET_BOUNTY_CHANGED.value}
+)
+RULES_EVENTS: frozenset[str] = frozenset(
+    {BountyEvent.RULES_CHANGED.value, BountyEvent.ASSET_RULES_CHANGED.value}
+)
+ENGAGED_EVENTS: frozenset[str] = (
+    SCOPE_EVENTS | GONE_EVENTS | BOUNTY_TABLE_EVENTS | RULES_EVENTS
+)
 
 EVENT_KIND: dict[str, str] = {
     **dict.fromkeys(SCOPE_EVENTS, NewKind.SCOPE.value),
     **dict.fromkeys(PROGRAM_EVENTS, NewKind.PROGRAM.value),
     **dict.fromkeys(GONE_EVENTS, NewKind.OUT_OF_SCOPE.value),
+    **dict.fromkeys(BOUNTY_TABLE_EVENTS, NewKind.BOUNTY_TABLE.value),
+    **dict.fromkeys(RULES_EVENTS, NewKind.RULES.value),
 }
 
 
 class NewTab(StrEnum):
-    NEW = "new"
+    TIMELINE = "timeline"
     VISUAL = "visual"
 
 
@@ -148,14 +140,12 @@ VISUAL_FIELD_LABELS: dict[str, str] = {
 
 
 class Fact(StrEnum):
-    SENSITIVE = "sensitive"
     CRITICAL = "critical"
+    HIGH = "high"
     KEV = "kev"
     NOT_TARGET = "not_target"
     ANSWERING = "answering"
     NOT_SCANNED = "not_scanned"
-    TARGETS = "targets"
-    RUNS = "runs"
 
 
 def mark_key(project_id) -> str:

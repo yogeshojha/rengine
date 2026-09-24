@@ -57,6 +57,47 @@ def _program_changes(current: BountyProgram, row: dict) -> list[str]:
     return kinds
 
 
+def _payout(low: float | None, high: float | None, currency: str | None) -> str:
+    unit = f"{currency} " if currency else ""
+    if low is None or low == high:
+        return f"{unit}{high:,.0f}" if high is not None else "none"
+    if high is None:
+        return f"from {unit}{low:,.0f}"
+    return f"{unit}{low:,.0f} to {high:,.0f}"
+
+
+def terms_changes(current: BountyProgram, row: dict) -> list[tuple[str, str]]:
+    """Payout and rule changes on a program read from the same source."""
+    if current.source != row.get("source", current.source):
+        return []
+    out: list[tuple[str, str]] = []
+    before = (current.min_payout, current.max_payout)
+    after = (row.get("min_payout"), row.get("max_payout"))
+    if (
+        "max_payout" in row
+        and any(v is not None for v in before)
+        and any(v is not None for v in after)
+        and before != after
+    ):
+        currency = row.get("payout_currency") or current.payout_currency
+        out.append(
+            (
+                BountyEvent.PAYOUT_CHANGED.value,
+                f"{_payout(*before, current.payout_currency)} → {_payout(*after, currency)}",
+            )
+        )
+    rules: list[str] = []
+    old, new = current.safe_harbor, row.get("safe_harbor")
+    if "safe_harbor" in row and old and new and old != new:
+        rules.append(f"Safe harbor {old} → {new}")
+    old, new = current.requires_2fa, row.get("requires_2fa")
+    if "requires_2fa" in row and old is not None and new is not None and old != new:
+        rules.append("2FA required" if new else "2FA no longer required")
+    if rules:
+        out.append((BountyEvent.RULES_CHANGED.value, " · ".join(rules)))
+    return out
+
+
 def sync_programs(session: Session, provider: BountyProvider) -> dict[str, int]:
     """Refresh one platform's program list."""
     started = time.monotonic()
@@ -88,6 +129,8 @@ def sync_programs(session: Session, provider: BountyProvider) -> dict[str, int]:
             continue
         for kind in _program_changes(current, row):
             events.append(event_row(current, kind))
+        for kind, detail in terms_changes(current, row):
+            events.append(event_row(current, kind, detail=detail[:MAX_EVENT_DETAIL]))
         if current.source != row["source"]:
             current.scopes_synced_at = None
             current.scope_access = None
@@ -116,10 +159,69 @@ _SCOPE_TRANSITIONS = {
 }
 
 
-def scope_changes(
-    program: BountyProgram, before: dict[tuple[str, str], str], after: dict
+def scope_snapshot(session: Session, program_id) -> dict[tuple[str, str], dict]:
+    return {
+        (s.asset_type, s.asset_identifier): {
+            "scope_state": s.scope_state,
+            "tier": s.tier,
+            "eligible_for_bounty": s.eligible_for_bounty,
+            "max_severity": s.max_severity,
+            "instruction": s.instruction,
+        }
+        for s in session.execute(
+            select(BountyScope).where(BountyScope.program_id == program_id)
+        ).scalars()
+    }
+
+
+def _bounty_terms(was: dict, row: dict) -> list[str]:
+    moved: list[str] = []
+    old, new = was.get("tier"), row.get("tier")
+    if old != new:
+        moved.append(f"{old or 'No tier'} → {new or 'No tier'}")
+    old, new = was.get("eligible_for_bounty"), row.get("eligible_for_bounty")
+    if old is not None and new is not None and old != new:
+        moved.append("Eligible for bounty" if new else "Not eligible for bounty")
+    old, new = was.get("max_severity"), row.get("max_severity")
+    if old and new and old != new:
+        moved.append(f"Max severity {old} → {new}")
+    return moved
+
+
+def _asset_terms(
+    program: BountyProgram, key: tuple[str, str], was: dict, row: dict
 ) -> list[BountyEventRow]:
-    """Added, removed and flipped assets, never on a program's first read."""
+    events: list[BountyEventRow] = []
+    moved = _bounty_terms(was, row)
+    if moved:
+        events.append(
+            event_row(
+                program,
+                BountyEvent.ASSET_BOUNTY_CHANGED.value,
+                asset_type=key[0],
+                asset_identifier=key[1],
+                detail=" · ".join(moved)[:MAX_EVENT_DETAIL],
+            )
+        )
+    old = (was.get("instruction") or "").strip()
+    new = (row.get("instruction") or "").strip()
+    if old != new:
+        events.append(
+            event_row(
+                program,
+                BountyEvent.ASSET_RULES_CHANGED.value,
+                asset_type=key[0],
+                asset_identifier=key[1],
+                detail=(new or "Instructions removed")[:MAX_EVENT_DETAIL],
+            )
+        )
+    return events
+
+
+def scope_changes(
+    program: BountyProgram, before: dict[tuple[str, str], dict], after: dict
+) -> list[BountyEventRow]:
+    """Added, removed, flipped and re-termed assets, never on a program's first read."""
     events: list[BountyEventRow] = []
     for key, row in after.items():
         asset_type, identifier = key
@@ -127,8 +229,9 @@ def scope_changes(
         if was is None:
             kind = BountyEvent.SCOPE_ADDED.value
         else:
-            kind = _SCOPE_TRANSITIONS.get((was, row["scope_state"]))
+            kind = _SCOPE_TRANSITIONS.get((was["scope_state"], row["scope_state"]))
             if kind is None:
+                events.extend(_asset_terms(program, key, was, row))
                 continue
         events.append(
             event_row(
@@ -175,14 +278,8 @@ def sync_scopes(
             "program_id": program.id,
         }
 
-    before: dict[tuple[str, str], str] = {}
     if program.scopes_synced_at is not None:
-        before = {
-            (s.asset_type, s.asset_identifier): s.scope_state
-            for s in session.execute(
-                select(BountyScope).where(BountyScope.program_id == program.id)
-            ).scalars()
-        }
+        before = scope_snapshot(session, program.id)
         session.add_all(scope_changes(program, before, deduped))
 
     session.execute(delete(BountyScope).where(BountyScope.program_id == program.id))

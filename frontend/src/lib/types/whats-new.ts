@@ -63,8 +63,19 @@ export interface NewGroup {
 	scan_started_at: string | null;
 	scan_status: string | null;
 	previous_scan_id: string | null;
-	retired: number;
-	run_label: string | null;
+	severities: Record<string, number>;
+	completed_at: string | null;
+	evidence: NewEvidence[];
+	more: number;
+}
+
+export interface NewEvidence {
+	kind: string;
+	label: string;
+	count: number;
+	severity: string | null;
+	kev: number;
+	query: string;
 }
 
 export interface NewDay {
@@ -85,7 +96,6 @@ export interface NewFeed {
 	truncated: boolean;
 	first_runs: number;
 	visual: number;
-	new_checks: number;
 }
 
 export interface VisualPair {

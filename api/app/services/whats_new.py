@@ -19,41 +19,35 @@ from sqlalchemy import (
     select,
     values,
 )
-from sqlalchemy.dialects.postgresql import BIT, JSONB
+from sqlalchemy.dialects.postgresql import BIT
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
-from app.services.scan import ScanService
 from shared.definitions.bounty_programs import (
     ASSET_TYPES_BY_KEY,
     UNKNOWN_ASSET_TYPE,
     ScopeState,
     event_spec,
 )
-from shared.definitions.new_checks import NEW_CHECKS_KEY
-from shared.definitions.ports import SENSITIVE_PORTS
-from shared.definitions.secrets import DETECTOR_LABELS
 from shared.definitions.vulnerabilities import (
     SEVERITY_RANK,
     SUPPRESSED_STATES,
-    Severity,
 )
 from shared.definitions.watch import ARRIVED_STATES, CT_SOURCE, WatchHostState
 from shared.definitions.whats_new import (
+    ALERT_SEVERITIES,
     BOUNTY_ROWS_PER_SECTION,
     DEFAULT_NEW_WINDOW,
+    ENGAGED_EVENTS,
     EVENT_KIND,
-    GONE_EVENTS,
+    EVIDENCE_FINDINGS,
     GONE_KINDS,
     GRID_DAYS,
     GROUP_LIMIT,
     KIND_ORDER,
     NEW_WINDOWS,
     PROGRAM_EVENTS,
-    ROWS_PER_SECTION,
-    SCAN_KINDS,
-    SCOPE_EVENTS,
     SOURCE_LABELS,
     VISUAL_DISTANCE,
     VISUAL_FIELDS,
@@ -66,17 +60,16 @@ from shared.definitions.whats_new import (
     SubjectKind,
     mark_key,
 )
-from shared.enums.scan import SCAN_TERMINAL_STATUSES, ScanScope, ScanStatus
+from shared.enums.scan import SCAN_TERMINAL_STATUSES, ScanStatus
 from shared.models.bounty_program import BountyEventRow, BountyProgram, BountyScope
-from shared.models.port import Port
 from shared.models.scan import Scan
-from shared.models.secret import Secret
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target, TargetOrganization
 from shared.models.vulnerability import Vulnerability, VulnerabilityTriage
 from shared.models.watch import ProgramWatch, UserMark, WatchHost
 from shared.models.whats_new import (
     NewDay,
+    NewEvidence,
     NewFeed,
     NewGroup,
     NewItem,
@@ -85,34 +78,13 @@ from shared.models.whats_new import (
     VisualFeed,
     VisualPair,
 )
+from shared.services.asset_query.tokens import token
 from shared.services.scan_scope import census_only
 from shared.utils.datetime import utc_now
 
+TERMS_KINDS = frozenset({NewKind.BOUNTY_TABLE.value, NewKind.RULES.value})
 WATCH_SOURCE = "watch"
 SCOPE_SOURCE = "scope"
-
-_MODELS = {
-    NewKind.WEB_ASSET.value: Subdomain,
-    NewKind.SERVICE.value: Port,
-    NewKind.FINDING.value: Vulnerability,
-    NewKind.SECRET.value: Secret,
-}
-_KEYS = {
-    NewKind.WEB_ASSET.value: (Subdomain.name,),
-    NewKind.SERVICE.value: (Port.ip, Port.number, Port.protocol),
-    NewKind.FINDING.value: (Vulnerability.fingerprint,),
-    NewKind.SECRET.value: (Secret.fingerprint,),
-}
-_TEXT = {
-    NewKind.WEB_ASSET.value: (Subdomain.name,),
-    NewKind.SERVICE.value: (Port.ip, Port.service_name, Port.product),
-    NewKind.FINDING.value: (
-        Vulnerability.template_name,
-        Vulnerability.template_id,
-        Vulnerability.host,
-    ),
-    NewKind.SECRET.value: (Secret.host, Secret.kind, Secret.url),
-}
 
 
 def _severity_rank():
@@ -129,16 +101,37 @@ def _suppressed():
     )
 
 
-def _seen_earlier(model, keys):
-    earlier = aliased(model)
+def _seen_earlier():
+    earlier = aliased(Vulnerability)
     return exists(
         select(1).where(
-            earlier.target_id == model.target_id,
-            *[getattr(earlier, k.key) == k for k in keys],
-            earlier.scan_id != model.scan_id,
-            earlier.discovered_at < model.discovered_at,
+            earlier.target_id == Vulnerability.target_id,
+            earlier.fingerprint == Vulnerability.fingerprint,
+            earlier.scan_id != Vulnerability.scan_id,
+            earlier.discovered_at < Vulnerability.discovered_at,
         )
     )
+
+
+def _new_conds(baseline: list[UUID], q: str | None) -> list:
+    base = [
+        Vulnerability.scan_id.in_(baseline),
+        Vulnerability.severity.in_(ALERT_SEVERITIES),
+        not_(_seen_earlier()),
+        not_(_suppressed()),
+    ]
+    if q:
+        base.append(
+            _text_match(
+                (
+                    Vulnerability.template_name,
+                    Vulnerability.template_id,
+                    Vulnerability.host,
+                ),
+                q,
+            )
+        )
+    return base
 
 
 def _text_match(columns, q: str):
@@ -170,6 +163,22 @@ def _day_start(d: date) -> datetime:
     return datetime.combine(d, time.min, tzinfo=UTC)
 
 
+class _Check:
+    def __init__(self, template_id: str):
+        self.template_id = template_id
+        self.name: str | None = None
+        self.kev = 0
+        self.severities: dict[str, int] = defaultdict(int)
+        self.runs: dict[UUID, int] = defaultdict(int)
+
+    def rank(self):
+        worst = min(
+            (SEVERITY_RANK.get(sev, len(SEVERITY_RANK)) for sev in self.severities),
+            default=len(SEVERITY_RANK),
+        )
+        return (worst, -self.kev, -sum(self.runs.values()), self.name or "")
+
+
 class _Groups:
     def __init__(self):
         self.by_id: dict[str, NewGroup] = {}
@@ -178,7 +187,13 @@ class _Groups:
         self.daily: dict[str, dict[str, int]] = defaultdict(dict)
         self.first_runs = 0
         self.visual = 0
-        self.new_checks = 0
+        self.checks: dict[str, _Check] = {}
+
+    def check(self, template_id: str) -> _Check:
+        c = self.checks.get(template_id)
+        if c is None:
+            c = self.checks[template_id] = _Check(template_id)
+        return c
 
     def group(self, gid: str, subject: NewSubject, at: datetime) -> NewGroup:
         g = self.by_id.get(gid)
@@ -282,9 +297,6 @@ class WhatsNewService:
             q,
             rows,
         )
-        await self._follow_ups(
-            out, project_id, cutoff, until, target_ids, wanted, q, rows
-        )
         out.visual = await self._visual_count(project_id, cutoff, until, target_ids, q)
         if bounty:
             await self._bounty(
@@ -303,11 +315,13 @@ class WhatsNewService:
             )
 
         groups = sorted(
-            (g for g in out.by_id.values() if g.sections or g.retired),
+            (g for g in out.by_id.values() if g.sections),
             key=lambda g: g.at,
             reverse=True,
         )
         truncated = len(groups) > GROUP_LIMIT
+        if rows:
+            self._evidence(out, groups)
         return NewFeed(
             since=cutoff,
             until=until,
@@ -321,7 +335,6 @@ class WhatsNewService:
             truncated=truncated,
             first_runs=out.first_runs,
             visual=out.visual,
-            new_checks=out.new_checks,
         )
 
     @staticmethod
@@ -470,76 +483,80 @@ class WhatsNewService:
         }
         if not scans:
             return
+        holding, baseline = await self._baseline_scans(scans)
+        for sid in holding - set(baseline):
+            at = scans[sid].started_at or scans[sid].created_at
+            if at >= since and (until is None or at < until):
+                out.first_runs += 1
+        if not baseline:
+            return
+        kind = NewKind.FINDING.value
+        base = _new_conds(baseline, q)
+
+        if grid_start is not None:
+            daily = await self.session.execute(
+                select(func.date(Vulnerability.discovered_at), func.count())
+                .where(*base, Vulnerability.discovered_at >= grid_start)
+                .group_by(func.date(Vulnerability.discovered_at))
+            )
+            for d, n in daily.all():
+                out.day(kind, d, n)
+
+        window = [*base, Vulnerability.discovered_at >= since]
+        if until is not None:
+            window.append(Vulnerability.discovered_at < until)
+        stmt = (
+            select(
+                Vulnerability.scan_id,
+                Vulnerability.template_id,
+                Vulnerability.severity,
+                func.max(Vulnerability.template_name),
+                func.count(),
+                func.count().filter(Vulnerability.is_kev),
+            )
+            .where(*window)
+            .group_by(
+                Vulnerability.scan_id,
+                Vulnerability.template_id,
+                Vulnerability.severity,
+            )
+        )
+        found = (await self.session.execute(stmt)).all()
+        if not found:
+            return
         targets = {
             t.id: t
             for t in (
                 await self.session.execute(
                     select(Target).where(
-                        Target.id.in_({s.target_id for s in scans.values()})
+                        Target.id.in_({scans[r[0]].target_id for r in found})
                     )
                 )
             )
             .scalars()
             .all()
         }
-
-        with_rows: set[UUID] = set()
-        baselined: set[UUID] = set()
-        for kind in SCAN_KINDS:
-            model = _MODELS[kind]
-            holding, baseline = await self._baseline_scans(model, scans)
-            with_rows |= holding
-            baselined |= set(baseline)
-            if not baseline:
+        show = rows and kind in wanted
+        for sid, template_id, severity, name, n, kev in found:
+            scan = scans[sid]
+            out.count(kind, n)
+            out.fact(kind, severity, n)
+            out.fact(kind, Fact.KEV.value, kev)
+            if not show:
                 continue
-            base = [
-                model.scan_id.in_(baseline),
-                not_(_seen_earlier(model, _KEYS[kind])),
-            ]
-            if kind == NewKind.WEB_ASSET.value:
-                base.append(not_(cast(Subdomain.sources, JSONB).contains([CT_SOURCE])))
-            if kind == NewKind.FINDING.value:
-                base.append(not_(_suppressed()))
-            if q:
-                base.append(_text_match(_TEXT[kind], q))
-
-            if grid_start is not None:
-                daily = await self.session.execute(
-                    select(func.date(model.discovered_at), func.count())
-                    .where(*base, model.discovered_at >= grid_start)
-                    .group_by(func.date(model.discovered_at))
-                )
-                for d, n in daily.all():
-                    out.day(kind, d, n)
-
-            window = [*base, model.discovered_at >= since]
-            if until is not None:
-                window.append(model.discovered_at < until)
-            counted = await self._counts(kind, model, window)
-            for sid, (n, facts) in counted.items():
-                scan = scans[sid]
-                out.count(kind, n)
-                for fact, value in facts.items():
-                    out.fact(kind, fact, value)
-                if rows and kind in wanted:
-                    g = self._run_group(out, scan, targets[scan.target_id])
-                    items = await self._rows(kind, model, window, sid, scan, targets)
-                    out.section(g, kind, n, items)
-
-        for sid in with_rows - baselined:
-            at = scans[sid].started_at or scans[sid].created_at
-            if at >= since and (until is None or at < until):
-                out.first_runs += 1
-        await self._retired(
-            out,
-            scans,
-            targets,
-            since,
-            until,
-            grid_start,
-            rows and NewKind.RETIRED.value in wanted,
-        )
-        await self._previous_runs(out, scans)
+            g = self._run_group(out, scan, targets[scan.target_id])
+            g.severities[severity] = g.severities.get(severity, 0) + n
+            c = out.check(template_id)
+            c.name = name
+            c.kev += kev
+            c.severities[severity] += n
+            c.runs[sid] += n
+        if show:
+            for g in out.by_id.values():
+                if g.scan_id is not None:
+                    total = sum(g.severities.values())
+                    out.section(g, kind, total, [])
+            await self._previous_runs(out, scans)
 
     async def _visual_count(self, project_id, since, until, target_ids, q) -> int:
         pairs = await self._run_pairs(project_id, since, until, target_ids)
@@ -703,14 +720,14 @@ class WhatsNewService:
         return feed
 
     async def _baseline_scans(
-        self, model, scans: dict[UUID, Scan]
+        self, scans: dict[UUID, Scan]
     ) -> tuple[set[UUID], list[UUID]]:
-        """Scans holding rows of the dimension, and those of them with an earlier scan to compare against."""
+        """Scans holding findings, and those of them with an earlier scan that held findings."""
         firsts = (
             await self.session.execute(
-                select(model.scan_id, func.min(model.discovered_at))
-                .where(model.scan_id.in_(list(scans)))
-                .group_by(model.scan_id)
+                select(Vulnerability.scan_id, func.min(Vulnerability.discovered_at))
+                .where(Vulnerability.scan_id.in_(list(scans)))
+                .group_by(Vulnerability.scan_id)
             )
         ).all()
         if not firsts:
@@ -721,7 +738,7 @@ class WhatsNewService:
             column("first_at", DateTime(timezone=True)),
             name="firsts",
         ).data([(sid, scans[sid].target_id, at) for sid, at in firsts])
-        earlier = aliased(model)
+        earlier = aliased(Vulnerability)
         rows = await self.session.execute(
             select(table.c.id).where(
                 exists(
@@ -735,120 +752,36 @@ class WhatsNewService:
         )
         return {sid for sid, _ in firsts}, [r[0] for r in rows.all()]
 
-    async def _counts(
-        self, kind: str, model, conds
-    ) -> dict[UUID, tuple[int, dict[str, int]]]:
-        extra = []
-        if kind == NewKind.SERVICE.value:
-            extra.append(
-                func.count().filter(Port.number.in_(SENSITIVE_PORTS)).label("a")
-            )
-        elif kind == NewKind.FINDING.value:
-            extra.append(
-                func.count()
-                .filter(Vulnerability.severity == Severity.CRITICAL.value)
-                .label("a")
-            )
-            extra.append(func.count().filter(Vulnerability.is_kev).label("b"))
-        rows = await self.session.execute(
-            select(model.scan_id, func.count(), *extra)
-            .where(*conds)
-            .group_by(model.scan_id)
-        )
-        out: dict[UUID, tuple[int, dict[str, int]]] = {}
-        for row in rows.all():
-            facts: dict[str, int] = {}
-            if kind == NewKind.SERVICE.value:
-                facts[Fact.SENSITIVE.value] = int(row[2])
-            elif kind == NewKind.FINDING.value:
-                facts[Fact.CRITICAL.value] = int(row[2])
-                facts[Fact.KEV.value] = int(row[3])
-            out[row[0]] = (int(row[1]), facts)
-        return out
-
-    async def _follow_ups(
-        self,
-        out: _Groups,
-        project_id: UUID,
-        since: datetime,
-        until: datetime | None,
-        target_ids,
-        wanted: set[str],
-        q: str | None,
-        rows: bool,
-    ) -> None:
-        """Runs that tested the web assets with the checks the library gained."""
-        if NewKind.FINDING.value not in wanted:
-            return
-        conds = [
-            Scan.project_id == project_id,
-            Scan.scope == ScanScope.FOCUSED.value,
-            cast(Scan.execution_config, JSONB).has_key(NEW_CHECKS_KEY),
-            Scan.completed_at.isnot(None),
-            Scan.completed_at >= since,
-        ]
-        if until is not None:
-            conds.append(Scan.completed_at <= until)
-        if target_ids is not None:
-            conds.append(Scan.target_id.in_(target_ids))
-        scans = (await self.session.execute(select(Scan).where(*conds))).scalars().all()
-        if not scans:
-            return
-        targets = {
-            t.id: t
-            for t in (
-                await self.session.execute(
-                    select(Target).where(Target.id.in_({s.target_id for s in scans}))
-                )
-            )
-            .scalars()
-            .all()
-        }
-        for scan in scans:
-            target = targets.get(scan.target_id)
-            if target is None:
+    @staticmethod
+    def _evidence(out: _Groups, groups: list[NewGroup]) -> None:
+        by_run: dict[UUID, list[_Check]] = defaultdict(list)
+        for c in out.checks.values():
+            for sid in c.runs:
+                by_run[sid].append(c)
+        for g in groups:
+            if g.scan_id is None:
                 continue
-            found = [Vulnerability.scan_id == scan.id, not_(_suppressed())]
-            if q:
-                needle = f"%{q}%"
-                found.append(
-                    or_(
-                        Vulnerability.template_name.ilike(needle),
-                        Vulnerability.host.ilike(needle),
-                    )
+            ranked = sorted(by_run.get(g.scan_id, []), key=_Check.rank)
+            picked = ranked[:EVIDENCE_FINDINGS]
+            g.more = len(ranked) - len(picked)
+            g.evidence = [
+                NewEvidence(
+                    kind=NewKind.FINDING.value,
+                    label=c.name or c.template_id,
+                    count=c.runs[g.scan_id],
+                    severity=min(
+                        c.severities,
+                        key=lambda sev: SEVERITY_RANK.get(sev, len(SEVERITY_RANK)),
+                        default=None,
+                    ),
+                    kev=c.kev,
+                    query=f"is:new {token('template', '=', c.template_id)}",
                 )
-            total = int(
-                await self.session.scalar(
-                    select(func.count()).select_from(Vulnerability).where(*found)
-                )
-                or 0
-            )
-            if not total:
-                continue
-            g = self._run_group(out, scan, target)
-            g.run_label = scan.engine_name
-            items: list[NewItem] = []
-            if rows:
-                listed = (
-                    await self.session.execute(
-                        select(Vulnerability)
-                        .where(*found)
-                        .order_by(
-                            _severity_rank(),
-                            Vulnerability.discovered_at.desc(),
-                            Vulnerability.template_name,
-                        )
-                        .limit(ROWS_PER_SECTION)
-                    )
-                ).scalars()
-                items = [self._finding(v, target) for v in listed]
-            out.section(g, NewKind.FINDING.value, total, items)
-            out.count(NewKind.FINDING.value, total)
-            out.day(NewKind.FINDING.value, scan.completed_at.date(), total)
-            out.new_checks += total
+                for c in picked
+            ]
 
     def _run_group(self, out: _Groups, scan: Scan, target: Target) -> NewGroup:
-        at = scan.started_at or scan.created_at
+        at = scan.completed_at or scan.started_at or scan.created_at
         g = out.group(
             f"run:{scan.id}",
             NewSubject(
@@ -862,154 +795,10 @@ class WhatsNewService:
             at,
         )
         g.scan_id = scan.id
-        g.scan_started_at = at
+        g.scan_started_at = scan.started_at or scan.created_at
+        g.completed_at = scan.completed_at
         g.scan_status = scan.status
         return g
-
-    async def _rows(
-        self, kind: str, model, conds, scan_id: UUID, scan: Scan, targets
-    ) -> list[NewItem]:
-        order = {
-            NewKind.WEB_ASSET.value: (
-                Subdomain.http_status.is_(None),
-                Subdomain.discovered_at.desc(),
-                Subdomain.name,
-            ),
-            NewKind.SERVICE.value: (
-                not_(Port.number.in_(SENSITIVE_PORTS)),
-                Port.discovered_at.desc(),
-                Port.ip,
-                Port.number,
-            ),
-            NewKind.FINDING.value: (
-                _severity_rank(),
-                Vulnerability.discovered_at.desc(),
-                Vulnerability.template_name,
-            ),
-            NewKind.SECRET.value: (Secret.discovered_at.desc(), Secret.host),
-        }[kind]
-        rows = (
-            await self.session.execute(
-                select(model)
-                .where(*conds, model.scan_id == scan_id)
-                .order_by(*order)
-                .limit(ROWS_PER_SECTION)
-            )
-        ).scalars()
-        target = targets[scan.target_id]
-        build = {
-            NewKind.WEB_ASSET.value: self._web_asset,
-            NewKind.SERVICE.value: self._service,
-            NewKind.FINDING.value: self._finding,
-            NewKind.SECRET.value: self._secret,
-        }[kind]
-        return [build(r, target) for r in rows]
-
-    @staticmethod
-    def _web_asset(s: Subdomain, target: Target) -> NewItem:
-        source = (s.sources or [None])[0]
-        return NewItem(
-            id=f"{NewKind.WEB_ASSET.value}:{s.id}",
-            kind=NewKind.WEB_ASSET.value,
-            at=s.discovered_at,
-            value=s.name,
-            status=s.http_status,
-            title=s.page_title,
-            tech=list(s.tech or [])[:4],
-            ips=list(s.resolved_ips or [])[:2],
-            source=source,
-            source_label=_source_label(source),
-            screenshot_path=s.screenshot_path,
-            query=f"host={s.name}",
-            target_id=target.id,
-            target_value=target.target_value,
-            target_type=target.target_type.value,
-            scan_id=s.scan_id,
-        )
-
-    @staticmethod
-    def _service(p: Port, target: Target) -> NewItem:
-        product = " ".join(x for x in (p.product, p.version) if x)
-        return NewItem(
-            id=f"{NewKind.SERVICE.value}:{p.id}",
-            kind=NewKind.SERVICE.value,
-            at=p.discovered_at,
-            value=f"{p.ip}:{p.number}",
-            detail=" · ".join(x for x in (p.service_name, product) if x) or None,
-            sensitive=p.number in SENSITIVE_PORTS,
-            source=p.source,
-            query=f"ip={p.ip} port={p.number}",
-            target_id=target.id,
-            target_value=target.target_value,
-            target_type=target.target_type.value,
-            scan_id=p.scan_id,
-        )
-
-    @staticmethod
-    def _finding(v: Vulnerability, target: Target) -> NewItem:
-        where = v.host or v.ip or ""
-        if v.port and where:
-            where = f"{where}:{v.port}"
-        return NewItem(
-            id=f"{NewKind.FINDING.value}:{v.id}",
-            kind=NewKind.FINDING.value,
-            at=v.discovered_at,
-            value=v.template_name,
-            detail=where or None,
-            severity=v.severity,
-            is_kev=v.is_kev,
-            tone=NewTone.HOT.value if v.is_kev else NewTone.NEW.value,
-            query=f"template={v.template_id} host={v.host}"
-            if v.host
-            else f"template={v.template_id}",
-            target_id=target.id,
-            target_value=target.target_value,
-            target_type=target.target_type.value,
-            scan_id=v.scan_id,
-        )
-
-    @staticmethod
-    def _secret(s: Secret, target: Target) -> NewItem:
-        return NewItem(
-            id=f"{NewKind.SECRET.value}:{s.id}",
-            kind=NewKind.SECRET.value,
-            at=s.discovered_at,
-            value=DETECTOR_LABELS.get(s.kind, s.kind),
-            detail=s.url or s.host,
-            query=f"fingerprint={s.fingerprint}",
-            target_id=target.id,
-            target_value=target.target_value,
-            target_type=target.target_type.value,
-            scan_id=s.scan_id,
-        )
-
-    async def _retired(
-        self, out: _Groups, scans, targets, since, until, grid_start, rows: bool
-    ) -> None:
-        completed = [
-            s
-            for s in scans.values()
-            if s.status == ScanStatus.COMPLETED.value and s.started_at is not None
-        ]
-        if not completed:
-            return
-        gone = await ScanService(self.session).gone_subdomain_counts(
-            [s.id for s in completed], list({s.target_id for s in completed})
-        )
-        for sid, n in gone.items():
-            if not n:
-                continue
-            scan = scans[sid]
-            at = scan.started_at
-            if grid_start is not None and at >= grid_start:
-                out.day(NewKind.RETIRED.value, at.date(), n)
-            if at < since or (until is not None and at >= until):
-                continue
-            out.count(NewKind.RETIRED.value, n)
-            out.fact(NewKind.RETIRED.value, Fact.TARGETS.value, 1)
-            if rows:
-                g = self._run_group(out, scan, targets[scan.target_id])
-                g.retired = n
 
     async def _previous_runs(self, out: _Groups, scans) -> None:
         run_scans = [g.scan_id for g in out.by_id.values() if g.scan_id is not None]
@@ -1107,7 +896,7 @@ class WhatsNewService:
 
     def _event_reach(self, project_id: UUID, program, ring: str):
         engaged = BountyEventRow.program_id.in_(self._engaged_programs(project_id))
-        scope_kinds = list(SCOPE_EVENTS | GONE_EVENTS)
+        scope_kinds = list(ENGAGED_EVENTS)
         if program is not None:
             return BountyEventRow.program_id == program.id
         if ring == ProgramRing.LIBRARY.value:
@@ -1205,17 +994,22 @@ class WhatsNewService:
             if kind not in wanted:
                 continue
             watch_id = watches.get(e.program_id)
+            day = e.created_at.date().isoformat()
             if kind == NewKind.PROGRAM.value:
-                gid = "library:programs"
+                gid = f"library:programs:{day}"
                 subjects[gid] = NewSubject(
                     kind=SubjectKind.LIBRARY.value, label="Programs"
                 )
                 item = self._program_item(e, p, watch_id)
             else:
-                gid = f"program:{e.program_id}"
+                gid = f"program:{e.program_id}:{day}"
                 subjects[gid] = self._program_subject(e, watch_id)
                 scope = scopes.get((e.program_id, e.asset_identifier or ""))
-                item = self._scope_item(e, p, scope, existing, scanned, watch_id)
+                item = (
+                    self._terms_item(e, p, watch_id)
+                    if kind in TERMS_KINDS
+                    else self._scope_item(e, p, scope, existing, scanned, watch_id)
+                )
             by_group[gid][kind].append(item)
             latest[gid] = max(latest.get(gid, e.created_at), e.created_at)
 
@@ -1257,6 +1051,30 @@ class WhatsNewService:
             program_url=p.url,
             watch_id=watch_id,
             importable=p.scopes_synced_at is not None,
+        )
+
+    @staticmethod
+    def _terms_item(e: BountyEventRow, p: BountyProgram, watch_id) -> NewItem:
+        kind = EVENT_KIND[e.kind]
+        spec = event_spec(e.kind)
+        return NewItem(
+            id=f"{kind}:{e.id}",
+            kind=kind,
+            at=e.created_at,
+            value=e.asset_identifier or spec.label,
+            detail=e.detail,
+            asset_type=ASSET_TYPES_BY_KEY.get(
+                (e.asset_type or "").upper(), UNKNOWN_ASSET_TYPE
+            ).label
+            if e.asset_type
+            else None,
+            source=p.source,
+            source_label=_source_label(p.source),
+            platform=e.platform,
+            handle=e.handle,
+            program_name=e.program_name,
+            program_url=p.url,
+            watch_id=watch_id,
         )
 
     @staticmethod
@@ -1396,7 +1214,7 @@ class WhatsNewService:
         subjects: dict[str, NewSubject] = {}
         latest: dict[str, datetime] = {}
         for h, w, p, t in (await self.session.execute(stmt)).all():
-            gid = f"program:{p.id}"
+            gid = f"program:{p.id}:{h.first_seen_at.date().isoformat()}"
             subjects[gid] = NewSubject(
                 kind=SubjectKind.PROGRAM.value,
                 id=str(p.id),
@@ -1541,9 +1359,13 @@ class WhatsNewService:
                     scanned=t.id in scanned,
                 )
             )
-        g = out.group(
-            "targets",
-            NewSubject(kind=SubjectKind.TARGETS.value, label="Targets"),
-            targets[0].created_at,
-        )
-        out.section(g, kind, len(items), items[:BOUNTY_ROWS_PER_SECTION])
+        by_day: dict[str, list[NewItem]] = defaultdict(list)
+        for item in items:
+            by_day[item.at.date().isoformat()].append(item)
+        for day, listed in by_day.items():
+            g = out.group(
+                f"targets:{day}",
+                NewSubject(kind=SubjectKind.TARGETS.value, label="Targets"),
+                listed[0].at,
+            )
+            out.section(g, kind, len(listed), listed[:BOUNTY_ROWS_PER_SECTION])
