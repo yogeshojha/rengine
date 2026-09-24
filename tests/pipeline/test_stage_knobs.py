@@ -38,6 +38,7 @@ _READ_ELSEWHERE = {
     ("url_discovery", "keep_per_family"),
     ("url_discovery", "sibling_cap"),
     ("url_discovery", "drop_noise"),
+    ("port_scan", "http_on_every_port"),
 }
 
 

@@ -197,7 +197,7 @@ export function validate(
 			push(
 				['stages', stageName, 'enabled'],
 				'warning',
-				`${spec.title} cannot be disabled. This setting is ignored.`
+				`${spec.title} runs automatically. This setting is ignored.`
 			);
 		}
 		for (const [key, value] of Object.entries(config as Record<string, unknown>)) {

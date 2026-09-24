@@ -60,6 +60,11 @@ class PortScanConfig(StageConfig):
         title="Skip private addresses",
         description="Skip loopback, link-local and RFC1918 addresses. An address or netblock named as the target is scanned.",
     )
+    http_on_every_port: bool = advanced(
+        False,
+        title="HTTP on every open port",
+        description="Probe ports classed as non-web services for HTTP as well.",
+    )
     max_addresses: int = advanced(
         8192,
         ge=1,

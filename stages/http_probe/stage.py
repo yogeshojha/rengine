@@ -37,6 +37,7 @@ from tools.httpx.parser import parse_httpx_record
 
 logger = get_logger(__name__)
 
+_PORT_SCAN = "port_scan"
 _IP_FAMILY = {TargetType.IP.value, TargetType.IP_RANGE.value, TargetType.ASN.value}
 _MAX_TARGETS = 50000
 _SHUFFLE_SEED = 1
@@ -95,9 +96,10 @@ class HttpProbeStage(Stage):
         "Fingerprint every host and port for live HTTP, technologies and titles."
     )
     phase = Phase.EXPANSION.value
-    depends_on = frozenset({"port_scan", "vhost"})
+    depends_on = frozenset({_PORT_SCAN, "vhost"})
     group = StageGroup.WEB.value
-    role = StageRole.CAPABILITY.value
+    role = StageRole.SUPPORT.value
+    always_on = True
     consumes = frozenset({AssetKind.HOSTS.value, AssetKind.ADDRESSES.value})
     produces = frozenset({AssetKind.HTTP_ASSETS.value})
     tools = ("httpx",)
@@ -167,9 +169,12 @@ class HttpProbeStage(Stage):
                 Port.scan_id == self.ctx.scan_id
             )
         ).all()
+        every_port = bool(
+            (self.ctx.resolved.stages.get(_PORT_SCAN) or {}).get("http_on_every_port")
+        )
         out: dict[str, set[int]] = {}
         for ip, number, name, klass in rows:
-            if not self.cfg.probe_all_ports:
+            if not every_port:
                 resolved = klass or service_class(name, number)
                 if resolved not in _WEB_CAPABLE:
                     continue

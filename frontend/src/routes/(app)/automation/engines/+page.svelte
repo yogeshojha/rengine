@@ -124,6 +124,7 @@
 			const created = await scanEnginesStore.createEngine(project.id, {
 				name,
 				description: preset.description,
+				intensity: preset.intensity,
 				stages: preset.stages
 			});
 			if (created) {
@@ -347,7 +348,7 @@
 			{#if engineCatalogStore.presets.length}
 				<div class="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
 					{#each engineCatalogStore.presets as preset (preset.name)}
-						{@const summary = summarize(preset.stages, stages, 'normal')}
+						{@const summary = summarize(preset.stages, stages, preset.intensity)}
 						<button
 							type="button"
 							class="group flex flex-col gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:border-foreground/25 hover:bg-card focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"

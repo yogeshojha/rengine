@@ -132,18 +132,31 @@ export function resolvePlan(
 	const applicable = levels.flat();
 	const selected = new Set(
 		applicable
-			.filter((s) => (!quick || s.role === CAPABILITY) && Boolean(effective[s.name]?.enabled))
+			.filter((s) =>
+				quick
+					? s.role === CAPABILITY && Boolean(effective[s.name]?.enabled)
+					: s.always_on || Boolean(effective[s.name]?.enabled)
+			)
 			.map((s) => s.name)
 	);
 	const chosen = new Set(selected);
 	const implied = new Set<string>();
+	if (quick && (selected.size > 0 || seedKinds.length > 0)) {
+		for (const stage of applicable) {
+			if (!stage.always_on || blocked(stage)) continue;
+			chosen.add(stage.name);
+			implied.add(stage.name);
+		}
+	}
 	const unsatisfied = new Set<string>();
 
 	let changed = true;
 	while (changed) {
 		changed = false;
 		unsatisfied.clear();
-		const active = applicable.some((s) => chosen.has(s.name) && s.touches_target && !blocked(s));
+		const active = applicable.some(
+			(s) => chosen.has(s.name) && !s.always_on && s.touches_target && !blocked(s)
+		);
 		const available = new Set([
 			...(targetType ? (catalog.seed_produces[targetType] ?? []) : []),
 			...seedKinds
@@ -156,7 +169,8 @@ export function resolvePlan(
 				if (chosen.has(stage.name)) {
 					if (blocked(stage)) continue;
 					if (!fed) {
-						const producer = quick ? pickProducer(stage, earlier, chosen, blocked) : null;
+						const producer =
+							quick && !stage.always_on ? pickProducer(stage, earlier, chosen, blocked) : null;
 						if (producer) {
 							chosen.add(producer.name);
 							implied.add(producer.name);
@@ -199,6 +213,7 @@ export function resolvePlan(
 	const merged: Record<string, StageConfig> = { ...effective };
 	if (quick) {
 		for (const stage of applicable) {
+			if (stage.always_on) continue;
 			merged[stage.name] = { ...merged[stage.name], enabled: chosen.has(stage.name) };
 		}
 	}

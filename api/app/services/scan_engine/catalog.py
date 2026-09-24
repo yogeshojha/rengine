@@ -109,6 +109,7 @@ def build_catalog(unavailable: dict[str, str] | None = None) -> EngineCatalog:
                 name=p.name,
                 title=p.title,
                 description=p.description,
+                intensity=p.intensity,
                 stages=preset_stages(p.name),
             )
             for p in PRESETS

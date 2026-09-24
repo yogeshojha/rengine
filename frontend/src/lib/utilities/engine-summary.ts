@@ -42,7 +42,7 @@ export interface EngineSummary {
 }
 
 function enabled(stage: StageCatalogEntry, stages: Record<string, StageConfig>): boolean {
-	return Boolean(stages?.[stage.name]?.enabled ?? stage.defaults.enabled);
+	return Boolean(stage.always_on || (stages?.[stage.name]?.enabled ?? stage.defaults.enabled));
 }
 
 export function summarize(

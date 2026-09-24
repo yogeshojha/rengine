@@ -182,7 +182,9 @@
 				label: group.label,
 				capabilities,
 				active: support.filter((s) => s.touches_target && !s.always_on),
-				automatic: support.filter((s) => !s.touches_target || s.always_on)
+				automatic: support.filter(
+					(s) => (!s.touches_target || s.always_on) && !blockedByIntensity(s.name)
+				)
 			};
 		})
 	);

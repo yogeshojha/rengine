@@ -121,6 +121,7 @@ export interface EnginePreset {
 	name: string;
 	title: string;
 	description: string;
+	intensity: Intensity;
 	stages: Record<string, StageConfig>;
 }
 

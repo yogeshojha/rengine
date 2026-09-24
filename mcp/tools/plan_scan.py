@@ -27,7 +27,7 @@ class Input(ToolInput):
         max_length=20,
         description=(
             "Capability stages to enable for an ad hoc plan, for example "
-            "subdomain_discovery, port_scan, http_probe, vulnerability_scan."
+            "subdomain_discovery, port_scan, url_discovery, vulnerability_scan."
         ),
     )
     intensity: str | None = Field(
@@ -51,7 +51,7 @@ class PlanScan(Tool):
     )
     Input = Input
     examples = (
-        "plan_scan target=example.com stages=['subdomain_discovery','http_probe']",
+        "plan_scan target=example.com stages=['subdomain_discovery','vulnerability_scan']",
     )
 
     async def run(self, ctx: ToolContext, args: Input) -> ToolResult:

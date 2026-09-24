@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
+from shared.enums.scan import Intensity
+
 
 class Preset(StrEnum):
     STANDARD = "standard"
@@ -16,6 +18,7 @@ class PresetSpec:
     name: str
     title: str
     description: str
+    intensity: str = Intensity.NORMAL.value
 
 
 PRESETS: tuple[PresetSpec, ...] = (
@@ -28,6 +31,7 @@ PRESETS: tuple[PresetSpec, ...] = (
         Preset.PASSIVE.value,
         "Passive Recon",
         "Only stages that send no traffic to the target.",
+        Intensity.PASSIVE.value,
     ),
     PresetSpec(
         Preset.FULL.value,

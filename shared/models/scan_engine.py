@@ -148,6 +148,7 @@ class EnginePreset(BaseModel):
     name: str
     title: str
     description: str
+    intensity: str
     stages: dict[str, dict]
 
 

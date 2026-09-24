@@ -1,4 +1,4 @@
-import type { EnginePreset } from '$lib/types/scan-engine';
+import { DEFAULT_INTENSITY, type EnginePreset, type Intensity } from '$lib/types/scan-engine';
 import type { StageOverrides } from '$lib/types/scan';
 import { cloneStages, readLastPlan, rememberLastPlan } from '$lib/utilities/launch-plan';
 
@@ -30,10 +30,13 @@ export function defaultSelection(presets: EnginePreset[]): QuickScanSelection | 
 export function quickScanPlan(
 	selection: QuickScanSelection,
 	presets: EnginePreset[]
-): { engine_id: string | null; overrides: StageOverrides } {
-	if (selection.kind === 'engine') return { engine_id: selection.engineId, overrides: {} };
+): { engine_id: string | null; overrides: StageOverrides; intensity: Intensity | null } {
+	if (selection.kind === 'engine') {
+		return { engine_id: selection.engineId, overrides: {}, intensity: null };
+	}
 	const preset = presets.find((p) => p.name === selection.preset);
-	return { engine_id: null, overrides: cloneStages(preset?.stages ?? {}) };
+	const intensity = preset && preset.intensity !== DEFAULT_INTENSITY ? preset.intensity : null;
+	return { engine_id: null, overrides: cloneStages(preset?.stages ?? {}), intensity };
 }
 
 function selectionFromStored(
@@ -65,7 +68,7 @@ export function rememberQuickScanChoice(
 		mode: plan.engine_id ? 'engine' : 'quick',
 		engineId: plan.engine_id,
 		stages: plan.overrides,
-		intensity: null,
+		intensity: plan.intensity,
 		contextId
 	});
 }
