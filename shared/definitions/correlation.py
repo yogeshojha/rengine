@@ -33,6 +33,7 @@ class CorrelationKind(StrEnum):
     SERVER = "server"
     CDN = "cdn"
     ASN = "asn"
+    TRACKING = "tracking"
 
 
 CORRELATION_KIND_LABELS: dict[str, str] = {
@@ -50,6 +51,7 @@ CORRELATION_KIND_LABELS: dict[str, str] = {
     CorrelationKind.SERVER.value: "Server header",
     CorrelationKind.CDN.value: "CDN",
     CorrelationKind.ASN.value: "Network",
+    CorrelationKind.TRACKING.value: "Tracking account",
 }
 
 CORRELATION_KIND_HELP: dict[str, str] = {
@@ -67,6 +69,7 @@ CORRELATION_KIND_HELP: dict[str, str] = {
     CorrelationKind.SERVER.value: "Hosts returning the same Server header",
     CorrelationKind.CDN.value: "Hosts fronted by the same CDN or WAF",
     CorrelationKind.ASN.value: "Hosts announced by the same autonomous system",
+    CorrelationKind.TRACKING.value: "Hosts loading the same analytics, tag manager or ads account",
 }
 
 # what a set of hosts sharing this identity does, after "N hosts"
@@ -85,6 +88,7 @@ CORRELATION_RELATION_PHRASE: dict[str, str] = {
     CorrelationKind.SERVER.value: "return the same Server header",
     CorrelationKind.CDN.value: "sit behind the same CDN",
     CorrelationKind.ASN.value: "sit in the same network",
+    CorrelationKind.TRACKING.value: "report to the same tracking account",
 }
 
 # drawn by default
@@ -98,6 +102,7 @@ CORRELATION_DEFAULT_KINDS: frozenset[str] = frozenset(
         CorrelationKind.SCREENSHOT.value,
         CorrelationKind.JARM.value,
         CorrelationKind.CERT.value,
+        CorrelationKind.TRACKING.value,
     }
 )
 
@@ -107,6 +112,7 @@ CORRELATION_KIND_ORDER: tuple[str, ...] = tuple(k.value for k in CorrelationKind
 # a value shared with a host under another target, strongest first
 CROSS_LINK_ORDER: tuple[str, ...] = (
     CorrelationKind.CERT.value,
+    CorrelationKind.TRACKING.value,
     CorrelationKind.BODY.value,
     CorrelationKind.FAVICON.value,
     CorrelationKind.CNAME.value,
@@ -118,6 +124,7 @@ CROSS_PAGE_KINDS: frozenset[str] = frozenset(
         CorrelationKind.TITLE.value,
         CorrelationKind.FAVICON.value,
         CorrelationKind.BODY.value,
+        CorrelationKind.TRACKING.value,
     }
 )
 MAX_CROSS_LINKS = 3

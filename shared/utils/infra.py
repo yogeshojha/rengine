@@ -248,7 +248,7 @@ _STATUS_CODE = re.compile(r"\b([1-5]\d{2})\b")
 
 
 def _normalize_title(title: str) -> str:
-    return re.sub(r"[^a-z0-9 ]+", " ", title.strip().lower())
+    return re.sub(r"[^\w ]+", " ", title.strip().lower())
 
 
 def generic_page(title: str | None, statuses: Iterable[int | None] = ()) -> str | None:

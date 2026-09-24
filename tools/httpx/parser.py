@@ -9,6 +9,7 @@ from shared.services.web_hygiene import evaluate as evaluate_hygiene
 from shared.utils.datetime import utc_now
 from shared.utils.net import split_host_port
 from shared.utils.software import components_of
+from shared.utils.tracking import tracking_ids
 from tools.runner.fieldmap import F, parse_record
 
 _REQUEST_SECRET_HEADER = re.compile(
@@ -168,4 +169,5 @@ def parse_httpx_record(record: dict) -> dict[str, Any]:
     )
     fields["hygiene_issues"] = hygiene.issues
     fields["hygiene_checked"] = hygiene.checked
+    fields["tracking_ids"] = tracking_ids(fields.get("response_body"))
     return fields

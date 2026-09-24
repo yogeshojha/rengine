@@ -34,6 +34,8 @@ MEASURED_REAL = [
     ("Uber Freight", 200),
     ("Grafana", 200),
     ("Error 404 on our Jenkins", 200),
+    ("गृह मन्त्रालय", 200),
+    ("主頁 - 賽馬會智家樂計劃", 200),
 ]
 
 

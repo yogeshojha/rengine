@@ -21,6 +21,8 @@ from shared.definitions.hygiene import (
 )
 from shared.logging import get_logger
 from shared.models.http_asset import HttpAsset
+from shared.utils.tracking import BODY_SCAN_BYTES as TRACKING_SCAN_BYTES
+from shared.utils.tracking import tracking_ids
 
 logger = get_logger(__name__)
 
@@ -422,7 +424,11 @@ def fold_onto_hosts(session: Session, scan_id: UUID) -> int:
 _ASSET_UPDATE = (
     update(HttpAsset)
     .where(HttpAsset.id == bindparam("b_id"))
-    .values(hygiene_issues=bindparam("issues"), hygiene_checked=bindparam("checked"))
+    .values(
+        hygiene_issues=bindparam("issues"),
+        hygiene_checked=bindparam("checked"),
+        tracking_ids=bindparam("tracking"),
+    )
 )
 
 
@@ -437,7 +443,7 @@ def pending_scans(session: Session, *, limit: int) -> list[UUID]:
 
 
 def backfill_scan(session: Session, scan_id: UUID) -> int:
-    """Evaluate every stored response of one scan, then fold onto its hosts."""
+    """Evaluate every stored response of one scan and read its tracking accounts."""
     stmt = (
         select(
             HttpAsset.id,
@@ -446,7 +452,7 @@ def backfill_scan(session: Session, scan_id: UUID) -> int:
             HttpAsset.content_type,
             HttpAsset.response_headers,
             HttpAsset.raw_response_header,
-            func.left(HttpAsset.response_body, BODY_SCAN_BYTES).label("body"),
+            func.left(HttpAsset.response_body, TRACKING_SCAN_BYTES).label("body"),
         )
         .where(HttpAsset.scan_id == scan_id, HttpAsset.hygiene_checked.is_(None))
         .execution_options(yield_per=BACKFILL_BATCH)
@@ -462,7 +468,14 @@ def backfill_scan(session: Session, scan_id: UUID) -> int:
             content_type=row.content_type,
             body=row.body,
         )
-        batch.append({"b_id": row.id, "issues": found.issues, "checked": found.checked})
+        batch.append(
+            {
+                "b_id": row.id,
+                "issues": found.issues,
+                "checked": found.checked,
+                "tracking": tracking_ids(row.body),
+            }
+        )
         if len(batch) >= BACKFILL_BATCH:
             session.connection().execute(_ASSET_UPDATE, batch)
             done += len(batch)

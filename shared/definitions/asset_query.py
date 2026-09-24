@@ -535,6 +535,13 @@ FIELDS: tuple[QueryField, ...] = (
         aliases=("body_hash",),
     ),
     QueryField(
+        name="tracking",
+        type=FieldType.STRING,
+        group="Response",
+        description="Analytics, tag manager or ads account the page loads.",
+        example="tracking=UA-58851320",
+    ),
+    QueryField(
         name="jarm",
         type=FieldType.STRING,
         group="Certificates",

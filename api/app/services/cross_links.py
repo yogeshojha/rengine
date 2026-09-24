@@ -6,7 +6,9 @@ from collections import defaultdict
 from dataclasses import dataclass
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import cast, func, select
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import array as pg_array
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.surface_scope import SurfaceScopeService
@@ -39,6 +41,16 @@ _ASSET_COLUMNS = {
     CorrelationKind.BODY.value: HttpAsset.content_hash,
     CorrelationKind.CERT.value: HttpAsset.tls_fingerprint,
 }
+
+_CARRIER_COLUMNS = (
+    HttpAsset.host,
+    HttpAsset.target_id,
+    HttpAsset.cname,
+    HttpAsset.status_code,
+    HttpAsset.title,
+    HttpAsset.tls_subject_cn,
+    HttpAsset.tls_sans,
+)
 
 _HOST_COLUMNS = {
     CorrelationKind.TITLE.value: Subdomain.page_title,
@@ -116,9 +128,10 @@ class CrossLinkService:
 
     async def _asset_values(
         self, scope: QueryScope, hosts: list[str]
-    ) -> dict[str, dict[str, str]]:
+    ) -> dict[str, dict[str, list[str]]]:
         """The identities the page's hosts present, read off their HTTP asset."""
-        out: dict[str, dict[str, str]] = {kind: {} for kind in _ASSET_COLUMNS}
+        kinds = (*_ASSET_COLUMNS, CorrelationKind.TRACKING.value)
+        out: dict[str, dict[str, list[str]]] = {kind: {} for kind in kinds}
         if not hosts:
             return out
         rows = await self.session.execute(
@@ -127,20 +140,24 @@ class CrossLinkService:
                 HttpAsset.content_hash,
                 HttpAsset.tls_fingerprint,
                 HttpAsset.content_length,
+                HttpAsset.tracking_ids,
             ).where(scope.match(HttpAsset.scan_id), HttpAsset.host.in_(hosts))
         )
-        for host, body, cert, length in rows.all():
+        for host, body, cert, length, tracking in rows.all():
             if body and (length or 0) >= MIN_BODY_BYTES:
-                out[CorrelationKind.BODY.value].setdefault(host, body)
+                out[CorrelationKind.BODY.value].setdefault(host, [body])
             if cert:
-                out[CorrelationKind.CERT.value].setdefault(host, cert)
+                out[CorrelationKind.CERT.value].setdefault(host, [cert])
+            if tracking:
+                known = out[CorrelationKind.TRACKING.value].setdefault(host, [])
+                known.extend(str(v) for v in tracking if str(v) not in known)
         return out
 
     async def _carriers(
         self,
         scope: QueryScope,
         wanted: dict[str, set[str]],
-        held: dict[str, dict[str, str]],
+        held: dict[str, dict[str, list[str]]],
     ) -> dict[str, dict[str, list[Carrier]]]:
         out: dict[str, dict[str, list[Carrier]]] = defaultdict(
             lambda: defaultdict(list)
@@ -150,9 +167,14 @@ class CrossLinkService:
             for value, carrier in await self._host_carriers(scope, column, crossing):
                 out[kind][value].append(carrier)
         for kind, column in _ASSET_COLUMNS.items():
-            values = set(sorted(set(held.get(kind, {}).values()))[:MAX_CROSS_VALUES])
+            values = _capped(held.get(kind, {}))
             for value, carrier in await self._asset_carriers(scope, column, values):
                 out[kind][value].append(carrier)
+        tracking = CorrelationKind.TRACKING.value
+        for value, carrier in await self._tracking_carriers(
+            scope, _capped(held.get(tracking, {}))
+        ):
+            out[tracking][value].append(carrier)
         return out
 
     async def _crossing(self, scope: QueryScope, column, values: set[str]) -> set[str]:
@@ -201,43 +223,37 @@ class CrossLinkService:
         if not values:
             return []
         rows = await self.session.execute(
-            select(
-                column,
-                HttpAsset.host,
-                HttpAsset.target_id,
-                HttpAsset.cname,
-                HttpAsset.status_code,
-                HttpAsset.title,
-                HttpAsset.tls_subject_cn,
-                HttpAsset.tls_sans,
-            ).where(scope.match(HttpAsset.scan_id), column.in_(values))
-        )
-        seen: set[tuple[str, str]] = set()
-        out: list[tuple[str, Carrier]] = []
-        for value, host, target_id, cname, status, title, cn, sans in rows.all():
-            if (value, host) in seen:
-                continue
-            seen.add((value, host))
-            out.append(
-                (
-                    value,
-                    Carrier(
-                        host,
-                        target_id,
-                        cname,
-                        status,
-                        title,
-                        cn,
-                        tuple(str(x) for x in (sans or [])),
-                    ),
-                )
+            select(column, *_CARRIER_COLUMNS).where(
+                scope.match(HttpAsset.scan_id), column.in_(values)
             )
-        return out
+        )
+        return _carriers_of(rows.all())
+
+    async def _tracking_carriers(
+        self, scope: QueryScope, values: set[str]
+    ) -> list[tuple[str, Carrier]]:
+        if not values:
+            return []
+        element = (
+            func.json_array_elements_text(HttpAsset.tracking_ids)
+            .table_valued("value")
+            .alias("tracking")
+        )
+        rows = await self.session.execute(
+            select(element.c.value, *_CARRIER_COLUMNS)
+            .select_from(HttpAsset)
+            .join(element, element.c.value.in_(values))
+            .where(
+                scope.match(HttpAsset.scan_id),
+                cast(HttpAsset.tracking_ids, JSONB).op("?|")(pg_array(sorted(values))),
+            )
+        )
+        return _carriers_of(rows.all())
 
     def _assemble(
         self,
         rows: list[Subdomain],
-        held: dict[str, dict[str, str]],
+        held: dict[str, dict[str, list[str]]],
         carriers: dict[str, dict[str, list[Carrier]]],
         targets: dict[UUID, str],
     ) -> dict[UUID, list[CrossLink]]:
@@ -249,12 +265,13 @@ class CrossLinkService:
         shared = self._shared(carriers, reach)
         out: dict[UUID, list[CrossLink]] = {}
         for row in rows:
-            links = [
-                link
-                for kind in CROSS_LINK_ORDER
-                if (value := self._value_for(row, kind, held))
-                and (link := self._link(row, kind, value, shared, targets))
-            ]
+            links: list[CrossLink] = []
+            for kind in CROSS_LINK_ORDER:
+                for value in self._values_for(row, kind, held):
+                    link = self._link(row, kind, value, shared, targets)
+                    if link is not None:
+                        links.append(link)
+                        break
             if links:
                 out[row.id] = links[:MAX_CROSS_LINKS]
         return out
@@ -279,18 +296,17 @@ class CrossLinkService:
                 out[(kind, value)] = held
         return out
 
-    def _value_for(
-        self, row: Subdomain, kind: str, held: dict[str, dict[str, str]]
-    ) -> str | None:
-        if kind in _ASSET_COLUMNS:
-            return held.get(kind, {}).get(row.name)
-        if kind == CorrelationKind.TITLE.value:
-            return row.page_title
-        if kind == CorrelationKind.FAVICON.value:
-            return row.favicon_hash
-        if kind == CorrelationKind.CNAME.value:
-            return row.cname
-        return None
+    def _values_for(
+        self, row: Subdomain, kind: str, held: dict[str, dict[str, list[str]]]
+    ) -> list[str]:
+        if kind in held:
+            return held[kind].get(row.name, [])
+        value = {
+            CorrelationKind.TITLE.value: row.page_title,
+            CorrelationKind.FAVICON.value: row.favicon_hash,
+            CorrelationKind.CNAME.value: row.cname,
+        }.get(kind)
+        return [value] if value else []
 
     def _link(
         self,
@@ -327,3 +343,32 @@ class CrossLinkService:
             targets=sorted({targets.get(c.target_id, "") for c in peers}),
             hosts=len(peers),
         )
+
+
+def _capped(held: dict[str, list[str]]) -> set[str]:
+    values = {value for found in held.values() for value in found}
+    return set(sorted(values)[:MAX_CROSS_VALUES])
+
+
+def _carriers_of(rows) -> list[tuple[str, Carrier]]:
+    seen: set[tuple[str, str]] = set()
+    out: list[tuple[str, Carrier]] = []
+    for value, host, target_id, cname, status, title, cn, sans in rows:
+        if (value, host) in seen:
+            continue
+        seen.add((value, host))
+        out.append(
+            (
+                value,
+                Carrier(
+                    host,
+                    target_id,
+                    cname,
+                    status,
+                    title,
+                    cn,
+                    tuple(str(x) for x in (sans or [])),
+                ),
+            )
+        )
+    return out

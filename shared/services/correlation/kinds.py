@@ -75,6 +75,13 @@ KINDS: dict[str, KindSpec] = {
         KindSpec(CorrelationKind.CERT_ISSUER.value, "=", "tls_issuer", asset=True),
         KindSpec(CorrelationKind.HEADERS.value, "=", "header_hash", asset=True),
         KindSpec(CorrelationKind.TECH.value, "=", "tech", json_array=True),
+        KindSpec(
+            CorrelationKind.TRACKING.value,
+            "=",
+            "tracking_ids",
+            asset=True,
+            json_array=True,
+        ),
         KindSpec(CorrelationKind.SERVER.value, "=", "webserver"),
         KindSpec(CorrelationKind.CDN.value, "=", "cdn_name"),
         KindSpec(

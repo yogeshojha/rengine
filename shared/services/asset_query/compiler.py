@@ -335,6 +335,7 @@ _ASSET_BUILDERS = {
     "lines": lambda c, _ctx: number_match(HttpAsset.lines, c, int_coerce(c)),
     "redirect": lambda c, _ctx: string_match(HttpAsset.location, c),
     "content_hash": lambda c, _ctx: string_match(HttpAsset.content_hash, c),
+    "tracking": lambda c, _ctx: json_array_match(HttpAsset.tracking_ids, c),
     "body": lambda c, _ctx: _tsv(c, _BODY_WEIGHT),
     "header": lambda c, _ctx: _header(c),
     "cert.cn": lambda c, _ctx: string_match(HttpAsset.tls_subject_cn, c),
