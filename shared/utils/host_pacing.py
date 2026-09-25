@@ -1,4 +1,4 @@
-"""Adaptive per-host pacing: slow down a host that looks overloaded, ease back as it recovers."""
+"""Adaptive per-host request pacing that slows an overloaded host and eases back as it recovers."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ class _State:
 
 
 class HostPacer:
-    """One request pool paced per host. Healthy hosts run at full speed."""
+    """Per-host request pacing. A healthy host runs without delay."""
 
     def __init__(
         self,

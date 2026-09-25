@@ -48,7 +48,7 @@ _PATH_TEMPLATE = re.compile(r"\{[^{}/]+\}")
 
 
 class ApiSpecProvider(UrlProvider):
-    """Endpoints the service describes itself: OpenAPI, Swagger and GraphQL."""
+    """Endpoints declared by the service's own OpenAPI, Swagger or GraphQL schema."""
 
     source = EndpointSource.API_SPEC.value
     tool = None
@@ -161,10 +161,7 @@ class ApiSpecProvider(UrlProvider):
             url=url,
             found_on=url,
             methods=["POST"],
-            detail=(
-                "GraphQL endpoint with introspection enabled, "
-                f"{len(types)} types exposed"
-            ),
+            detail=(f"GraphQL endpoint, introspection enabled, {len(types)} types"),
         )
 
     def _get(self, client: httpx.Client, url: str, state: _State) -> str | None:

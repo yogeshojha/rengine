@@ -49,7 +49,7 @@ def test_quorum_requires_agreement(monkeypatch) -> None:
     monkeypatch.setattr(broken_links, "_rcode", lambda _name, _server: 3)
     assert is_unregistered("gone.example", ("a", "b"))
 
-    # one resolver still has the domain: not buyable.
+    # one resolver still resolves the domain
     monkeypatch.setattr(
         broken_links, "_rcode", lambda _name, server: 3 if server == "a" else 0
     )

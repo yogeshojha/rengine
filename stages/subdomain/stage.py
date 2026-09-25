@@ -467,7 +467,7 @@ class SubdomainStage(Stage):
         )
 
     def _wildcard_profile(self, domain: str) -> _Wildcard:
-        """Resolve several random names; a zone answering a quorum of them wildcards."""
+        """The wildcard profile from several random probe names."""
         probes = [f"{uuid.uuid4().hex[:12]}.{domain}" for _ in range(_WILDCARD_PROBES)]
         records = self._resolve(probes).records
         answered = [

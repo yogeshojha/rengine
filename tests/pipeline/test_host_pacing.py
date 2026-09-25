@@ -80,7 +80,7 @@ def test_the_slot_bounds_concurrency_per_host() -> None:
         thread.start()
     held.acquire()
     held.acquire()
-    # both slots are held; a third acquire would block, so only two run at once.
+    # both slots are held
     assert sum(running) == 2
     release.set()
     for thread in threads:

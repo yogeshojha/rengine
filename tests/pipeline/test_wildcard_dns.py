@@ -14,7 +14,7 @@ pytestmark = pytest.mark.pipeline
 
 def test_overlap_drops_a_partial_pool_answer() -> None:
     wildcard = _Wildcard(ips=frozenset({"1.1.1.1", "1.1.1.2", "1.1.1.3"}))
-    # a subset test would keep this; one shared pool IP is enough to drop it.
+    # one shared pool address is a wildcard match
     assert wildcard.matches({"ips": ["1.1.1.3", "9.9.9.9"]})
     assert wildcard.matches({"ips": ["1.1.1.1"]})
 
@@ -51,7 +51,7 @@ def test_below_the_quorum_is_not_a_wildcard_zone() -> None:
     calls = {"n": 0}
 
     def resolve(names):
-        # only the first two probes answer; the rest are NXDOMAIN.
+        # only two of five probes answer
         out = {}
         for name in names:
             calls["n"] += 1

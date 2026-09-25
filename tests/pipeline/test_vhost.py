@@ -16,7 +16,7 @@ def test_host_for_normalises() -> None:
 
 
 def test_catch_all_drops_a_wide_match() -> None:
-    # 40 of 100 candidates matched: the address answers everything.
+    # 40 of 100 candidates matched
     assert VhostStage._is_catch_all([f"h{i}" for i in range(40)], 100)
 
 
@@ -25,7 +25,7 @@ def test_a_normal_hit_rate_is_kept() -> None:
 
 
 def test_ratio_is_not_applied_to_a_tiny_wordlist() -> None:
-    # below the floor the ratio is meaningless, so nothing is dropped.
+    # below the ratio floor
     assert not VhostStage._is_catch_all(["a", "b", "c", "d", "e"], 5)
 
 

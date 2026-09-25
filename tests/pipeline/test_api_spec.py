@@ -60,7 +60,7 @@ def test_a_spec_is_recognised() -> None:
 def test_query_and_path_params_become_a_concrete_url() -> None:
     obs = parse_openapi(_V3, "https://api.example.com/openapi.json")
     get = _by_method([o for o in obs if "/users/" in o.url], "GET")
-    # the {id} template is filled and folds to a dynamic segment.
+    # the {id} template is filled with a sample value
     assert "/api/v1/users/1?" in get.url
     assert "fields=" in get.url
     assert "expand=" in get.url

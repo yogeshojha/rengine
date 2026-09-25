@@ -211,7 +211,7 @@
 								{/if}
 								{#if row.filtered}
 									<p class="text-2xs text-muted-foreground">
-										{n(row.filtered)} injection {row.filtered === 1 ? 'match' : 'matches'} filtered: the
+										{n(row.filtered)} injection {row.filtered === 1 ? 'match' : 'matches'} filtered. The
 										request URL was reflected into the response.
 									</p>
 								{/if}

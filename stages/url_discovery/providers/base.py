@@ -176,7 +176,7 @@ class UrlProvider(ABC):
     def host_observed(
         self, host: str, *, status: int | None = None, transport_error: bool = False
     ) -> None:
-        """Feed a response back so a fragile host is paced down and a healthy one eased up."""
+        """Record one response for the host's adaptive pace."""
         self._pacer.observe(host, status=status, transport_error=transport_error)
 
     def throttle(self) -> None:
