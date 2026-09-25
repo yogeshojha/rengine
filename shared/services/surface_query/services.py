@@ -37,8 +37,8 @@ if TYPE_CHECKING:
 _DERIVED_SQL = """
 WITH hosts AS (
     SELECT ip, count(DISTINCT s.name) AS host_count
-    FROM subdomains s, LATERAL jsonb_array_elements_text(cast(s.resolved_ips AS jsonb)) ip
-    WHERE s.scan_id = ANY(:sids) GROUP BY ip
+    FROM subdomains s, LATERAL json_array_elements_text(s.resolved_ips) ip
+    WHERE s.scan_id = ANY(:sids) AND s.resolved_ips::text <> '[]' GROUP BY ip
 ), addr AS (
     SELECT DISTINCT ON (ip) ip, asn, asn_org, country, prefix, is_cdn, cdn_name,
            scan_policy

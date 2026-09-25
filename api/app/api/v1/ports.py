@@ -81,6 +81,7 @@ async def search_services(
         model=ServicePage,
         build=lambda: service.search(scope, body),
         ttl=lead_cache.SEARCH_TTL_SECONDS,
+        live_ttl=None,
     )
 
 

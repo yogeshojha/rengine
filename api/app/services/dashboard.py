@@ -1,7 +1,8 @@
 from datetime import timedelta
 from uuid import UUID
 
-from sqlalchemy import Row, func, select
+from sqlalchemy import case, cast, func, select, true
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.domain_posture import DomainPostureService
@@ -27,7 +28,6 @@ from shared.utils.datetime import utc_now
 
 logger = get_logger(__name__)
 
-_CNAME_SCAN_CAP = 50000
 _ITEMS_CAP = 100
 _STALE_DAYS = 30
 
@@ -50,38 +50,42 @@ class DashboardService:
     async def _takeover_candidates(
         self, project_id: UUID, targets: Targets = None
     ) -> TakeoverSignal:
-        query = (
+        conds = [
+            Subdomain.project_id == project_id,
+            Subdomain.cname.is_not(None),
+            Subdomain.cname != "",
+        ]
+        if targets is not None:
+            conds.append(Subdomain.target_id.in_(targets))
+        latest_sighting = (
             select(
                 Subdomain.target_id,
                 Subdomain.name,
                 Subdomain.cname,
                 Subdomain.resolved_ips,
                 Subdomain.discovered_at,
-                Subdomain.scan_id,
             )
-            .where(
-                Subdomain.project_id == project_id,
-                Subdomain.cname.is_not(None),
-                Subdomain.cname != "",
+            .where(*conds)
+            .distinct(Subdomain.target_id, Subdomain.name)
+            .order_by(
+                Subdomain.target_id,
+                Subdomain.name,
+                Subdomain.discovered_at.desc(),
+                Subdomain.scan_id.desc(),
             )
-            .order_by(Subdomain.discovered_at.desc(), Subdomain.scan_id.desc())
-            .limit(_CNAME_SCAN_CAP + 1)
+            .subquery()
         )
-        if targets is not None:
-            query = query.where(Subdomain.target_id.in_(targets))
-        rows = list((await self.session.execute(query)).all())
-        if len(rows) > _CNAME_SCAN_CAP:
-            logger.warning("takeover scan capped at %d cname rows", _CNAME_SCAN_CAP)
-            rows = rows[:_CNAME_SCAN_CAP]
-        rows.sort(key=lambda r: (r.discovered_at, str(r.scan_id)))
-        latest: dict[tuple, Row] = {}
-        for r in rows:
-            latest[(r.target_id, r.name)] = r
+        ips = cast(latest_sighting.c.resolved_ips, JSONB)
+        unresolved = case(
+            (func.jsonb_typeof(ips) == "array", func.jsonb_array_length(ips) == 0),
+            else_=true(),
+        )
+        rows = (
+            await self.session.execute(select(latest_sighting).where(unresolved))
+        ).all()
 
         candidates: list[TakeoverCandidate] = []
-        for r in latest.values():
-            if r.resolved_ips:
-                continue
+        for r in rows:
             provider = takeover_provider(r.cname or "")
             if provider is None:
                 continue
@@ -94,6 +98,7 @@ class DashboardService:
                     last_seen=r.discovered_at,
                 )
             )
+        candidates.sort(key=lambda c: c.name)
         candidates.sort(key=lambda c: c.last_seen, reverse=True)
         return TakeoverSignal(count=len(candidates), items=candidates[:_ITEMS_CAP])
 

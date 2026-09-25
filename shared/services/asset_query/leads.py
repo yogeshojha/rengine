@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 
-from sqlalchemy import func, literal_column, select, union_all
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import visitors
 from sqlalchemy.sql.elements import TextClause
@@ -17,14 +17,14 @@ from .ast import QuerySyntaxError
 logger = get_logger(__name__)
 
 _TOTAL_IDX = 0
-_CHUNK = 16
 _CORRELATED = (Exists, TextClause)
 
 
 def _branch(query, index: int):
-    return select(
-        literal_column(str(index)).label("idx"), func.count().label("n")
-    ).select_from(query.limit(COUNT_CAP + 1).subquery())
+    """Count up to the cap."""
+    matches = query.cte(f"branch_{index}").prefix_with("MATERIALIZED")
+    capped = select(matches.c[0]).limit(COUNT_CAP + 1).subquery()
+    return select(func.count()).select_from(capped).scalar_subquery().label(f"n{index}")
 
 
 def _row_local(predicate) -> bool:
@@ -32,12 +32,28 @@ def _row_local(predicate) -> bool:
     return not any(isinstance(el, _CORRELATED) for el in visitors.iterate(predicate))
 
 
-def _single_pass(base, local: list[tuple[int, object | None]]):
+def _single_pass(base, local: list[tuple[int, object | None]], branches: list):
     columns = [func.count().label(f"n{_TOTAL_IDX}")]
     for index, predicate in local:
         count = func.count() if predicate is None else func.count().filter(predicate)
         columns.append(count.label(f"n{index}"))
-    return base.with_only_columns(*columns, maintain_column_froms=True).order_by(None)
+    return base.with_only_columns(
+        *columns, *branches, maintain_column_froms=True
+    ).order_by(None)
+
+
+async def _counts(
+    session: AsyncSession, base, local, branches, *, total: bool
+) -> dict[int, int]:
+    """Every count in one statement."""
+    if not local and not total:
+        if not branches:
+            return {}
+        statement = select(*branches)
+    else:
+        statement = _single_pass(base, local, branches)
+    row = (await session.execute(statement)).one()
+    return {int(key[1:]): int(value) for key, value in row._mapping.items()}
 
 
 def _rank(lead: QueryLead, total: int) -> int:
@@ -64,14 +80,7 @@ async def count_queries(
             local.append((index, predicate))
         else:
             branches.append(_branch(base.where(predicate), index))
-    counts: dict[int, int] = {}
-    if local:
-        row = (await session.execute(_single_pass(base, local))).one()
-        counts.update({int(key[1:]): int(value) for key, value in row._mapping.items()})
-    for start in range(0, len(branches), _CHUNK):
-        chunk = branches[start : start + _CHUNK]
-        rows = await session.execute(chunk[0] if len(chunk) == 1 else union_all(*chunk))
-        counts.update({int(idx): int(n) for idx, n in rows.all()})
+    counts = await _counts(session, base, local, branches, total=False)
     return QueryCounts(
         counts={q: min(counts.get(i + 1, 0), COUNT_CAP) for i, q in enumerate(kept)},
         capped={q: counts.get(i + 1, 0) > COUNT_CAP for i, q in enumerate(kept)},
@@ -107,13 +116,7 @@ async def build_leads(
         else:
             branches.append(_branch(base.where(predicate), index))
 
-    counts: dict[int, int] = {}
-    row = (await session.execute(_single_pass(base, local))).one()
-    counts.update({int(key[1:]): int(value) for key, value in row._mapping.items()})
-    for start in range(0, len(branches), _CHUNK):
-        chunk = branches[start : start + _CHUNK]
-        rows = await session.execute(chunk[0] if len(chunk) == 1 else union_all(*chunk))
-        counts.update({int(idx): int(n) for idx, n in rows.all()})
+    counts = await _counts(session, base, local, branches, total=True)
     total = counts.get(_TOTAL_IDX, 0)
     leads = [
         QueryLead(

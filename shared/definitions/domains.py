@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from enum import StrEnum
+from functools import lru_cache
+
+from shared.definitions.constants import PURE_CACHE
 
 
 class RelatedReason(StrEnum):
@@ -323,6 +326,7 @@ THIRD_PARTY_DOMAINS: frozenset[str] = frozenset(
 IGNORED_DOMAINS: frozenset[str] = frozenset(VENDOR_DOMAINS | THIRD_PARTY_DOMAINS)
 
 
+@lru_cache(maxsize=PURE_CACHE)
 def registrable_domain(hostname: str) -> str:
     host = hostname.strip().lower().rstrip(".").removeprefix("*.")
     labels = [part for part in host.split(".") if part]
@@ -370,6 +374,7 @@ TAKEOVER_FINGERPRINTS: tuple[tuple[str, str], ...] = (
 )
 
 
+@lru_cache(maxsize=PURE_CACHE)
 def takeover_provider(cname: str) -> str | None:
     """The takeover provider a CNAME points at, or None."""
     host = cname.strip().lower().rstrip(".")

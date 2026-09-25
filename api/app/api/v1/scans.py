@@ -198,6 +198,8 @@ async def list_scans(
         bool, Query(description="The newest matching run of each target")
     ] = False,
 ):
+    if added is not None:
+        await service.prepare_growth(project_id, target_id)
     query = service.build_list_query(
         project_id=project_id,
         target_id=target_id,

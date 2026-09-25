@@ -19,6 +19,7 @@ from app.services.asset_query import (
     build_leads,
     build_service_groups,
     compile_service_query,
+    page_rows,
     parse_query,
     query_error_for,
     syntax_error,
@@ -62,7 +63,7 @@ _TOP_SERVICES = 8
 _HOSTS_SQL = """
 SELECT ip AS ip, s.name AS host
 FROM subdomains s, LATERAL jsonb_array_elements_text(cast(s.resolved_ips AS jsonb)) ip
-WHERE s.scan_id = ANY(:sids) AND ip = ANY(:ips)
+WHERE s.scan_id = ANY(:sids) AND cast(s.resolved_ips AS jsonb) ?| :ips AND ip = ANY(:ips)
 """
 
 _SEEN_SQL = """
@@ -70,7 +71,7 @@ SELECT DISTINCT e.ip AS ip, e.number AS number
 FROM ports e
 JOIN ports cur ON cur.scan_id = ANY(:sids) AND cur.ip = e.ip AND cur.number = e.number
 WHERE e.target_id = cur.target_id AND NOT (e.scan_id = ANY(:sids))
-  AND e.discovered_at < cur.discovered_at AND e.ip = ANY(:ips)
+  AND e.discovered_at < cur.discovered_at AND e.ip = ANY(:ips) AND cur.ip = ANY(:ips)
 """
 
 
@@ -205,17 +206,12 @@ class PortService:
         await self.session.execute(text(STATEMENT_TIMEOUT))
         await self.session.execute(text(NO_JIT))
         try:
-            counted = await self.session.scalar(
-                select(func.count()).select_from(base.limit(COUNT_CAP + 1).subquery())
-            )
-            rows = (
-                (
-                    await self.session.execute(
-                        self._order(base, d, f).limit(f.limit).offset(f.offset)
-                    )
-                )
-                .mappings()
-                .all()
+            rows, counted = await page_rows(
+                self.session,
+                base,
+                lambda q: self._order(q, d, f),
+                limit=f.limit,
+                offset=f.offset,
             )
         except DBAPIError as exc:
             await self.session.rollback()

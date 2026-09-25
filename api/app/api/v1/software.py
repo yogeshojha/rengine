@@ -42,6 +42,7 @@ async def search_software(
         model=SoftwarePage,
         build=lambda: service.search(scope, body),
         keep=lambda page: page.error is None,
+        live_ttl=None,
     )
 
 

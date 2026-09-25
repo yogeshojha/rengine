@@ -61,6 +61,7 @@ async def ip_search(
         model=IpGroupPage,
         build=lambda: service.search(scope=scope, f=body),
         ttl=lead_cache.SEARCH_TTL_SECONDS,
+        live_ttl=None,
     )
 
 

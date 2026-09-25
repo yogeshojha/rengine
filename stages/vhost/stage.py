@@ -10,6 +10,7 @@ from shared.models.subdomain import Subdomain
 from shared.services.scope_filter import matches_any
 from shared.services.wordlists import WordlistError, lookup, resolve_path
 from shared.utils.datetime import utc_now
+from shared.utils.validation import normalize_host
 from stages.base import DOMAIN_TARGETS, Stage, StageResult
 from stages.vhost.config import BUDGET_SECONDS_PER_IP, VhostConfig
 from tools.ffuf.client import FfufClient, FfufError
@@ -17,6 +18,11 @@ from tools.ffuf.client import FfufClient, FfufError
 logger = get_logger(__name__)
 
 _MAX_IPS = 8
+
+
+def host_for(label: str, apex: str) -> str | None:
+    """The host name a virtual-host label answers for, in its stored form."""
+    return normalize_host(f"{label}.{apex}")
 
 
 class VhostStage(Stage):
@@ -86,7 +92,8 @@ class VhostStage(Stage):
         for ip in ips:
             self._check_abort()
             for label in client.vhost(ip, apex, budget=BUDGET_SECONDS_PER_IP):
-                found.setdefault(f"{label}.{apex}", set()).add(ip)
+                if name := host_for(label, apex):
+                    found.setdefault(name, set()).add(ip)
 
         count = self._persist(found)
         self.emit_progress(f"discovered {count} virtual hosts")

@@ -5,11 +5,13 @@ from __future__ import annotations
 import ipaddress
 from collections import defaultdict
 from dataclasses import dataclass
+from functools import lru_cache
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from shared.definitions.constants import PURE_CACHE
 from shared.definitions.correlation import MIN_BODY_BYTES
 from shared.definitions.ports import SENSITIVE_PORTS
 from shared.models.http_asset import HttpAsset
@@ -64,6 +66,15 @@ _COLUMNS = (
 )
 
 
+@lru_cache(maxsize=PURE_CACHE)
+def _is_address(host: str) -> bool:
+    try:
+        ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return True
+
+
 @dataclass
 class _Asset:
     host: str
@@ -82,11 +93,7 @@ class _Asset:
 
     @property
     def is_address(self) -> bool:
-        try:
-            ipaddress.ip_address(self.host)
-        except ValueError:
-            return False
-        return True
+        return _is_address(self.host)
 
     @property
     def responded(self) -> bool:

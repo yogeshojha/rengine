@@ -1,6 +1,8 @@
 import asyncio
 import copy
 import logging
+from collections import defaultdict
+from collections.abc import Iterable
 from dataclasses import replace
 from datetime import datetime, timedelta
 from typing import Literal
@@ -10,7 +12,6 @@ from fastapi import HTTPException, status
 from pydantic import ValidationError
 from sqlalchemy import (
     Select,
-    and_,
     case,
     cast,
     column,
@@ -26,8 +27,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import aliased
 
+from app.services import scan_deltas as stored_deltas
 from app.services.proxy import ProxyService
 from app.services.scan_context import ScanContextService
 from app.services.scan_engine import ScanEngineService, stage_effects
@@ -79,6 +80,7 @@ from shared.models.scan_command import (
     ScanCommandRead,
 )
 from shared.models.scan_context import ScanContext
+from shared.models.scan_delta import ScanDelta
 from shared.models.scan_engine import ScanEngine
 from shared.models.scan_preview import (
     PreviewSummary,
@@ -88,7 +90,7 @@ from shared.models.scan_preview import (
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.vulnerability import Vulnerability
-from shared.services import scan_admission, target_seeds
+from shared.services import scan_admission, scan_deltas, target_seeds
 from shared.services.activity_log import ActivityLogService
 from shared.services.asset_query import QueryScope, vuln_suppressed
 from shared.services.celery_dispatch import (
@@ -232,25 +234,6 @@ def _human_duration(seconds: int) -> str:
     hours = minutes // _MINUTES_PER_HOUR
     rem = minutes % _MINUTES_PER_HOUR
     return f"{hours}h {rem}m" if rem else f"{hours}h"
-
-
-def _host_seen_before():
-    """An earlier row of the same name for the target."""
-    earlier = aliased(Subdomain)
-    return exists(
-        select(1).where(
-            earlier.target_id == Subdomain.target_id,
-            earlier.name == Subdomain.name,
-            earlier.scan_id != Subdomain.scan_id,
-            or_(
-                earlier.discovered_at < Subdomain.discovered_at,
-                and_(
-                    earlier.discovered_at == Subdomain.discovered_at,
-                    earlier.scan_id < Subdomain.scan_id,
-                ),
-            ),
-        )
-    )
 
 
 def _scans_writing_since(project_id: UUID, since, target_id: UUID | None = None):
@@ -756,7 +739,11 @@ class ScanService:
             query = query.where(fell_short if short else not_(fell_short))
         if added is not None:
             grew = exists(
-                select(1).where(Subdomain.scan_id == Scan.id, not_(_host_seen_before()))
+                select(1).where(
+                    ScanDelta.scan_id == Scan.id,
+                    ScanDelta.dimension == SurfaceDimension.WEB_ASSETS.value,
+                    ScanDelta.first_seen > 0,
+                )
             )
             query = query.where(grew if added else not_(grew))
         if parent_id is not None:
@@ -850,19 +837,27 @@ class ScanService:
         ]
 
     async def new_subdomain_counts(
-        self, scan_ids: list[UUID], target_ids: list[UUID]
+        self, scan_ids: list[UUID], live: Iterable[UUID] = ()
     ) -> dict[UUID, int]:
         """Per scan, the names it was the first to report for its target."""
-        if not scan_ids or not target_ids:
-            return {}
+        return await stored_deltas.first_seen(
+            self.session, SurfaceDimension.WEB_ASSETS.value, scan_ids, live
+        )
+
+    async def prepare_growth(
+        self, project_id: UUID, target_id: UUID | None = None
+    ) -> None:
+        """Store a current first-seen count for every run the list can filter on."""
+        conds = [Scan.project_id == project_id]
+        if target_id is not None:
+            conds.append(Scan.target_id == target_id)
         rows = (
-            await self.session.execute(
-                select(Subdomain.scan_id, func.count())
-                .where(Subdomain.scan_id.in_(scan_ids), not_(_host_seen_before()))
-                .group_by(Subdomain.scan_id)
-            )
+            await self.session.execute(select(Scan.id, Scan.status).where(*conds))
         ).all()
-        return dict(rows)
+        await self.new_subdomain_counts(
+            [r.id for r in rows],
+            [r.id for r in rows if r.status in SCAN_OPEN_STATUSES],
+        )
 
     async def prev_completed_counts(
         self, scan_ids: list[UUID], target_ids: list[UUID]
@@ -921,39 +916,20 @@ class ScanService:
         """Per scan, subdomain names present in the previous completed run but absent now."""
         if not scan_ids or not target_ids:
             return {}
-        ordering = func.coalesce(Scan.started_at, Scan.created_at)
-        prev_id = (
-            func.lag(Scan.id)
-            .over(partition_by=Scan.target_id, order_by=ordering.asc())
-            .label("prev_id")
-        )
-        completed = (
-            select(Scan.id.label("id"), prev_id)
-            .where(
-                Scan.target_id.in_(target_ids),
-                Scan.status == ScanStatus.COMPLETED.value,
-                census_only(),
-            )
-            .subquery()
-        )
+        runs = scan_deltas.previous_completed(target_ids)
         pairs = (
-            select(completed.c.id, completed.c.prev_id)
-            .where(completed.c.id.in_(scan_ids), completed.c.prev_id.is_not(None))
-            .subquery()
-        )
-        sp = aliased(Subdomain)
-        sc = aliased(Subdomain)
-        query = (
-            select(pairs.c.id, func.count())
-            .select_from(pairs)
-            .join(sp, sp.scan_id == pairs.c.prev_id)
-            .where(
-                ~exists(select(1).where(sc.scan_id == pairs.c.id, sc.name == sp.name))
+            await self.session.execute(
+                select(runs.c.id, runs.c.prev_id).where(
+                    runs.c.id.in_(scan_ids), runs.c.prev_id.is_not(None)
+                )
             )
-            .group_by(pairs.c.id)
+        ).all()
+        counts = await stored_deltas.retired(
+            self.session,
+            SurfaceDimension.WEB_ASSETS.value,
+            [(scan_id, prev_id) for scan_id, prev_id in pairs],
         )
-        rows = (await self.session.execute(query)).all()
-        return dict(rows)
+        return {scan_id: n for (scan_id, _), n in counts.items()}
 
     async def retired_subdomain_total(
         self, project_id: UUID, cutoff: datetime, target_id: UUID | None = None
@@ -995,24 +971,53 @@ class ScanService:
         gone = await self.gone_subdomain_counts(scan_ids, target_ids)
         return sum(gone.values())
 
+    async def _first_seen_since(
+        self, project_id: UUID, cutoff: datetime, target_id: UUID | None
+    ) -> tuple[int, int]:
+        """Names first reported at or after the cutoff, and the targets they belong to."""
+        runs = (
+            await self.session.execute(
+                select(
+                    Scan.id,
+                    Scan.target_id,
+                    Scan.status,
+                    func.coalesce(Scan.started_at, Scan.created_at),
+                ).where(
+                    Scan.id.in_(_scans_writing_since(project_id, cutoff, target_id))
+                )
+            )
+        ).all()
+        inside = [r for r in runs if r[3] >= cutoff]
+        counts = await self.new_subdomain_counts(
+            [r.id for r in inside],
+            [r.id for r in inside if r.status in SCAN_OPEN_STATUSES],
+        )
+        per_target: dict[UUID, int] = defaultdict(int)
+        for r in inside:
+            per_target[r.target_id] += counts.get(r.id, 0)
+        straddling = [r.id for r in runs if r[3] < cutoff]
+        if straddling:
+            rows = await self.session.execute(
+                select(Subdomain.target_id, func.count())
+                .where(
+                    Subdomain.scan_id.in_(straddling),
+                    Subdomain.discovered_at >= cutoff,
+                    not_(scan_deltas.seen_earlier(SurfaceDimension.WEB_ASSETS.value)),
+                )
+                .group_by(Subdomain.target_id)
+            )
+            for tid, n in rows.all():
+                per_target[tid] += int(n)
+        return sum(per_target.values()), sum(1 for n in per_target.values() if n)
+
     async def changes(
         self, project_id: UUID, window: str, target_id: UUID | None = None
     ) -> ScanChanges:
         cutoff = utc_now() - _WINDOW_DELTAS.get(window, timedelta(days=7))
 
-        new_subdomains, targets_changed = (
-            await self.session.execute(
-                select(
-                    func.count(), func.count(func.distinct(Subdomain.target_id))
-                ).where(
-                    Subdomain.scan_id.in_(
-                        _scans_writing_since(project_id, cutoff, target_id)
-                    ),
-                    Subdomain.discovered_at >= cutoff,
-                    not_(_host_seen_before()),
-                )
-            )
-        ).one()
+        new_subdomains, targets_changed = await self._first_seen_since(
+            project_id, cutoff, target_id
+        )
 
         scan_conds = [Scan.project_id == project_id, Scan.created_at >= cutoff]
         if target_id is not None:
@@ -1139,7 +1144,9 @@ class ScanService:
             return
         scan_ids = [i.id for i in items]
         target_ids = list({i.target_id for i in items})
-        new_counts = await self.new_subdomain_counts(scan_ids, target_ids)
+        new_counts = await self.new_subdomain_counts(
+            scan_ids, [i.id for i in items if i.status in SCAN_OPEN_STATUSES]
+        )
         gone_counts = await self.gone_subdomain_counts(scan_ids, target_ids)
         prev_counts = await self.prev_completed_counts(scan_ids, target_ids)
         first_ids = await self.first_scan_ids(target_ids)

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import BigInteger, Column
+from sqlalchemy import BigInteger, CheckConstraint, Column
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
@@ -17,6 +17,7 @@ class Subdomain(SQLModel, table=True):
     __tablename__ = "subdomains"
     __table_args__ = (
         UniqueConstraint("scan_id", "name", name="uq_subdomain_scan_name"),
+        CheckConstraint("name = lower(name)", name="ck_subdomains_name_lower"),
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)

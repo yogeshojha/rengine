@@ -176,6 +176,7 @@ from shared.models.scan_context import (
     ScanContextRead,
     ScanContextUpdate,
 )
+from shared.models.scan_delta import ScanDelta, ScanRetired, ScanRevision
 from shared.models.scan_engine import (
     EngineCatalog,
     ScanEngine,
@@ -434,11 +435,14 @@ __all__ = [
     "ScanContextRead",
     "ScanContextUpdate",
     "ScanCreate",
+    "ScanDelta",
     "ScanEngine",
     "ScanEngineCreate",
     "ScanEngineRead",
     "ScanEngineUpdate",
     "ScanRead",
+    "ScanRetired",
+    "ScanRevision",
     "ScanSchedule",
     "ScanScheduleCreate",
     "ScanScheduleRead",

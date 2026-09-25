@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from enum import StrEnum
+from functools import lru_cache
 
+from shared.definitions.constants import PURE_CACHE
 from shared.definitions.domains import (
     VENDOR_DOMAINS,
     registrable_domain,
@@ -161,6 +163,7 @@ PROVIDER_SUFFIXES: dict[str, str] = {
 }
 
 
+@lru_cache(maxsize=PURE_CACHE)
 def provider_of(host: str) -> str | None:
     """The platform a host belongs to, or None when it is an estate's own."""
     name = (host or "").strip().lower().rstrip(".").removeprefix("*.")

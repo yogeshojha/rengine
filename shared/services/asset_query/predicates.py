@@ -303,7 +303,7 @@ def auth():
 
 
 def resolved():
-    return func.jsonb_array_length(cast(Subdomain.resolved_ips, JSONB)) > 0
+    return func.json_array_length(Subdomain.resolved_ips) > 0
 
 
 def render_distance(column, value: int):

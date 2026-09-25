@@ -32,11 +32,13 @@ from shared.services import (
     new_checks,
     proxy_sync,
     scan_admission,
+    scan_deltas,
     scan_surface,
     secret_mining,
     software_match,
 )
 from shared.services.activity_log import ActivityLogService
+from shared.services.asset_query.lead_cache import bump_sync
 from shared.services.celery_dispatch import (
     dispatch_interest_evaluation,
     dispatch_threat_intel,
@@ -414,6 +416,12 @@ def _settle(session: Session, scan: Scan) -> None:
     except Exception:
         session.rollback()
         logger.warning("surface settle failed for scan %s", scan.id, exc_info=True)
+    try:
+        scan_deltas.warm(session, scan)
+    except Exception:
+        session.rollback()
+        logger.warning("scan deltas failed for scan %s", scan.id, exc_info=True)
+    bump_sync([scan.target_id])
     if (scan.execution_config or {}).get(WATCH_HOST_KEY):
         dispatch_watch_settle(str(scan.id))
 

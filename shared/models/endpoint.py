@@ -62,7 +62,7 @@ class Endpoint(SQLModel, table=True):
     dir_path: str = Field(max_length=MAX_PATH_LENGTH, index=True)
     filename: str | None = Field(default=None, max_length=MAX_FILENAME_LENGTH)
     extension: str | None = Field(default=None, max_length=10, index=True)
-    depth: int = Field(default=0, index=True)
+    depth: int = Field(default=0)
 
     # what it accepts
     params: list = _json_list()
@@ -74,9 +74,7 @@ class Endpoint(SQLModel, table=True):
 
     # who says so
     sources: list = _json_list()
-    primary_source: str = Field(
-        default=EndpointSource.OTHER.value, max_length=24, index=True
-    )
+    primary_source: str = Field(default=EndpointSource.OTHER.value, max_length=24)
     discovery: dict = _json_dict()
     found_on: str | None = Field(default=None, max_length=2000)
 
@@ -94,9 +92,7 @@ class Endpoint(SQLModel, table=True):
     tech: list = _json_list()
 
     # how it reads
-    endpoint_class: str = Field(
-        default=EndpointClass.OTHER.value, max_length=16, index=True
-    )
+    endpoint_class: str = Field(default=EndpointClass.OTHER.value, max_length=16)
     interest: list = _json_list()
 
     http_asset_id: uuid.UUID | None = Field(default=None, index=True)

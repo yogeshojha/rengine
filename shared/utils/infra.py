@@ -1,6 +1,8 @@
 import re
 from collections.abc import Iterable
+from functools import lru_cache
 
+from shared.definitions.constants import PURE_CACHE
 from shared.utils.privacy import registrant_key
 
 _MIN_IDENTITY = 4
@@ -54,6 +56,7 @@ _SHARED_NS_DOMAINS = frozenset(
 )
 
 
+@lru_cache(maxsize=PURE_CACHE)
 def is_shared_nameserver(host: str | None) -> bool:
     if not host:
         return False
@@ -126,6 +129,7 @@ PUBLIC_CA_NAMES: dict[str, str] = {
 }
 
 
+@lru_cache(maxsize=PURE_CACHE)
 def shared_edge(host: str | None) -> str | None:
     """The platform a shared CNAME target belongs to."""
     if not host:

@@ -7,6 +7,7 @@ from sqlalchemy import (
     func,
     select,
     text,
+    tuple_,
 )
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,6 +21,7 @@ from app.services.asset_query import (
     build_ip_groups,
     build_leads,
     compile_ip_query,
+    page_rows,
     parse_query,
     query_error_for,
     syntax_error,
@@ -48,6 +50,10 @@ logger = get_logger(__name__)
 
 _FACET_LIMIT = 30
 _HOSTS_PER_ROW = 50
+# grouping(asn, country) per grouping set
+_BY_ASN = 1
+_BY_COUNTRY = 2
+_BY_NOTHING = 3
 
 
 class IpAddressService:
@@ -168,7 +174,8 @@ class IpAddressService:
                 text(
                     "SELECT ip AS ip, s.name AS host "
                     "FROM subdomains s, LATERAL jsonb_array_elements_text(cast(s.resolved_ips AS jsonb)) ip "
-                    "WHERE s.scan_id = ANY(:sids) AND ip = ANY(:ips)"
+                    "WHERE s.scan_id = ANY(:sids) "
+                    "AND cast(s.resolved_ips AS jsonb) ?| :ips AND ip = ANY(:ips)"
                 ).bindparams(sids=list(scope.ids), ips=page_ips)
             )
         ).all()
@@ -211,17 +218,12 @@ class IpAddressService:
         await self.session.execute(text(STATEMENT_TIMEOUT))
         await self.session.execute(text(NO_JIT))
         try:
-            counted = await self.session.scalar(
-                select(func.count()).select_from(base.limit(COUNT_CAP + 1).subquery())
-            )
-            rows = (
-                (
-                    await self.session.execute(
-                        self._order(base, d, f).limit(f.limit).offset(f.offset)
-                    )
-                )
-                .mappings()
-                .all()
+            rows, counted = await page_rows(
+                self.session,
+                base,
+                lambda q: self._order(q, d, f),
+                limit=f.limit,
+                offset=f.offset,
             )
         except DBAPIError as exc:
             await self.session.rollback()
@@ -345,34 +347,32 @@ class IpAddressService:
         scope = QueryScope.of(scope)
         d = self._derived(scope)
         n = func.count()
-        exposure_rows = (
+        grouped = (
             await self.session.execute(
                 select(
-                    *[
-                        func.count().filter(self._exposure(d, bucket)).label(bucket)
-                        for bucket in IP_EXPOSURE
-                    ]
-                ).select_from(d)
-            )
-        ).one()
-        asn_rows = (
-            await self.session.execute(
-                select(d.c.asn, func.max(d.c.asn_org), n)
-                .where(d.c.asn.isnot(None))
-                .group_by(d.c.asn)
-                .order_by(n.desc())
-                .limit(_FACET_LIMIT)
+                    func.grouping(d.c.asn, d.c.country),
+                    d.c.asn,
+                    d.c.country,
+                    func.max(d.c.asn_org),
+                    n,
+                    *[func.count().filter(self._exposure(d, b)) for b in IP_EXPOSURE],
+                ).group_by(
+                    func.grouping_sets(tuple_(d.c.asn), tuple_(d.c.country), tuple_())
+                )
             )
         ).all()
-        country_rows = (
-            await self.session.execute(
-                select(d.c.country, n)
-                .where(d.c.country.isnot(None))
-                .group_by(d.c.country)
-                .order_by(n.desc())
-                .limit(_FACET_LIMIT)
-            )
-        ).all()
+        exposure_rows: tuple = (0,) * len(IP_EXPOSURE)
+        asn_rows: list[tuple] = []
+        country_rows: list[tuple] = []
+        for grouping, asn, country, org, count, *exposure in grouped:
+            if grouping == _BY_ASN and asn is not None:
+                asn_rows.append((asn, org, count))
+            elif grouping == _BY_COUNTRY and country is not None:
+                country_rows.append((country, count))
+            elif grouping == _BY_NOTHING:
+                exposure_rows = tuple(exposure)
+        asn_rows = sorted(asn_rows, key=lambda r: (-r[2], r[0]))[:_FACET_LIMIT]
+        country_rows = sorted(country_rows, key=lambda r: (-r[1], r[0]))[:_FACET_LIMIT]
         ips = func.count(distinct(Port.ip))
         port_rows = (
             await self.session.execute(

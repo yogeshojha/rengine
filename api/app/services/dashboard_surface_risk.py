@@ -47,7 +47,7 @@ class SurfaceRiskService:
         scans: dict[UUID, Scan] = {
             s.id: s for runs in runs_by_target.values() for s in runs
         }
-        counts = await self.overview._counts(list(scans))
+        counts = await self.overview._counts(scans)
         ran = await self.overview._ran(list(scans))
         covered = self.overview._covered(runs_by_target, counts, ran)
         web_cover = {tid: ids[0] for tid, ids in covered[WEB].items() if ids}

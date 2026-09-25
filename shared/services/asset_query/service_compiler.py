@@ -17,6 +17,7 @@ from . import predicates as preds
 from .ast import Compare, QuerySyntaxError
 from .scope import QueryScope
 from .terms import (
+    folded_match,
     int_coerce,
     json_array_match,
     negate,
@@ -125,7 +126,7 @@ _SERVICE_BUILDERS = {
     "org": lambda c, ctx: string_match(ctx.source.c.asn_org, c),
     "country": lambda c, ctx: string_match(ctx.source.c.country, c),
     "cdn": _cdn,
-    "host": lambda c, ctx: _host_exists(ctx, string_match(Subdomain.name, c)),
+    "host": lambda c, ctx: _host_exists(ctx, folded_match(Subdomain.name, c)),
     "status": lambda c, ctx: number_match(ctx.source.c.status_code, c, int_coerce(c)),
     "vuln": lambda c, ctx: preds.service_vuln(
         ctx.scope,

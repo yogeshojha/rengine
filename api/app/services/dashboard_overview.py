@@ -8,22 +8,21 @@ from uuid import UUID
 
 from sqlalchemy import (
     Text,
-    Uuid,
     and_,
     case,
     cast,
-    column,
     exists,
     func,
     not_,
     or_,
     select,
     text,
-    values,
+    tuple_,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
+from app.services import scan_deltas as stored_deltas
 from app.services.asset_query.predicates import (
     answered,
     cert_state,
@@ -72,7 +71,7 @@ from shared.definitions.vulnerabilities import (
     Severity,
     coerce_severity,
 )
-from shared.enums.scan import ScanActivityStatus, ScanStatus
+from shared.enums.scan import SCAN_OPEN_STATUSES, ScanActivityStatus, ScanStatus
 from shared.enums.scan_schedule import ScheduleStatus
 from shared.enums.target import TargetType
 from shared.models.dashboard import (
@@ -99,14 +98,11 @@ from shared.models.dashboard import (
     FailedRun,
     StaleTarget,
 )
-from shared.models.endpoint import Endpoint
 from shared.models.ip_address import IpAddress
 from shared.models.port import Port
 from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
 from shared.models.scan_schedule import ScanSchedule
-from shared.models.secret import Secret
-from shared.models.software import SoftwareCve
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.vulnerability import (
@@ -115,6 +111,7 @@ from shared.models.vulnerability import (
     VulnerabilityTriage,
 )
 from shared.models.whois import WhoisRecord
+from shared.services import scan_deltas
 from shared.services.scan_scope import census_only, covering_stages
 from shared.utils.datetime import utc_now
 
@@ -126,24 +123,10 @@ VULNS = SurfaceDimension.VULNERABILITIES.value
 SOFTWARE = SurfaceDimension.SOFTWARE.value
 SECRETS = SurfaceDimension.SECRETS.value
 
-_TABLES = {
-    WEB: Subdomain,
-    ENDPOINTS: Endpoint,
-    SERVICES: Port,
-    IPS: IpAddress,
-    VULNS: Vulnerability,
-    SOFTWARE: SoftwareCve,
-    SECRETS: Secret,
-}
-_KEYS = {
-    WEB: (Subdomain.name,),
-    ENDPOINTS: (Endpoint.signature,),
-    SERVICES: (Port.ip, Port.number, Port.protocol),
-    IPS: (IpAddress.ip,),
-    VULNS: (Vulnerability.fingerprint,),
-    SOFTWARE: (SoftwareCve.fingerprint,),
-    SECRETS: (Secret.fingerprint,),
-}
+_TABLES = scan_deltas.TABLES
+# grouping() bits: country and scan_id grouped, country alone, the whole set
+_GROUPED_COUNTRY = 1
+_GROUPED_ALL = 3
 _TERMINAL_BAD = (ScanStatus.FAILED.value, ScanStatus.CANCELLED.value)
 _DOMAIN_TYPES = (TargetType.DOMAIN, TargetType.URL)
 _BARE_TOKEN = re.compile(r"^[\w.\-]+$")
@@ -242,7 +225,7 @@ class DashboardOverviewService:
         scans: dict[UUID, Scan] = {
             s.id: s for runs in runs_by_target.values() for s in runs
         }
-        counts = await self._counts(list(scans))
+        counts = await self._counts(scans)
         ran = await self._ran(list(scans))
         covered = self._covered(runs_by_target, counts, ran)
         baselines = self._baselines(counts, scans)
@@ -464,20 +447,24 @@ class DashboardOverviewService:
         )
         return by_target, int(total or 0)
 
-    async def _counts(self, scan_ids: list[UUID]) -> Counts:
+    async def _counts(self, scans: dict[UUID, Scan]) -> Counts:
         """Rows per scan and when its first row landed, per dimension."""
         out: Counts = {key: {} for key in _TABLES}
+        scan_ids = list(scans)
         if not scan_ids:
             return out
+        live = [sid for sid in scan_ids if scans[sid].status in SCAN_OPEN_STATUSES]
         for key, model in _TABLES.items():
-            query = (
+            if key in scan_deltas.FIRST_SEEN:
+                out[key] = await stored_deltas.row_counts(
+                    self.session, key, scan_ids, live
+                )
+                continue
+            result = await self.session.execute(
                 select(model.scan_id, func.count(), func.min(model.discovered_at))
-                .where(model.scan_id.in_(scan_ids))
+                .where(model.scan_id.in_(scan_ids), not_(_suppressed()))
                 .group_by(model.scan_id)
             )
-            if key == VULNS:
-                query = query.where(not_(_suppressed()))
-            result = await self.session.execute(query)
             out[key] = {row[0]: (int(row[1]), row[2]) for row in result.all()}
         return out
 
@@ -518,39 +505,30 @@ class DashboardOverviewService:
     ) -> dict[str, dict[UUID, int]]:
         """Per dimension, how many keys each scan was the first to report for its target."""
         out: dict[str, dict[UUID, int]] = {key: {} for key in _TABLES}
-        for key, model in _TABLES.items():
-            earlier = aliased(model)
-            by_target: dict[UUID, list[UUID]] = defaultdict(list)
-            for sid in baselines.get(key, ()):
-                scan = scans.get(sid)
-                if scan is not None:
-                    by_target[scan.target_id].append(sid)
-            for target_id, sids in by_target.items():
-                seen_before = exists(
-                    select(1).where(
-                        earlier.target_id == target_id,
-                        *[
-                            getattr(earlier, column.key) == column
-                            for column in _KEYS[key]
-                        ],
-                        earlier.scan_id != model.scan_id,
-                        earlier.discovered_at < model.discovered_at,
-                    )
-                )
-                stmt = (
-                    select(model.scan_id, func.count())
-                    .where(model.scan_id.in_(sids), not_(seen_before))
-                    .group_by(model.scan_id)
-                )
-                if key == VULNS:
-                    stmt = stmt.where(not_(_suppressed()))
-                counted = {
-                    scan_id: int(total)
-                    for scan_id, total in (await self.session.execute(stmt)).all()
-                }
-                for sid in sids:
-                    out[key][sid] = counted.get(sid, 0)
+        for key in _TABLES:
+            sids = [sid for sid in baselines.get(key, ()) if sid in scans]
+            if not sids:
+                continue
+            if key in scan_deltas.FIRST_SEEN:
+                live = [sid for sid in sids if scans[sid].status in SCAN_OPEN_STATUSES]
+                counted = await stored_deltas.first_seen(self.session, key, sids, live)
+            else:
+                counted = await self._first_seen_findings(sids)
+            out[key] = {sid: counted.get(sid, 0) for sid in sids}
         return out
+
+    async def _first_seen_findings(self, sids: list[UUID]) -> dict[UUID, int]:
+        """Findings each scan was the first to report, triaged-away ones excluded."""
+        rows = await self.session.execute(
+            select(Vulnerability.scan_id, func.count())
+            .where(
+                Vulnerability.scan_id.in_(sids),
+                not_(scan_deltas.seen_earlier(VULNS)),
+                not_(_suppressed()),
+            )
+            .group_by(Vulnerability.scan_id)
+        )
+        return {scan_id: int(total) for scan_id, total in rows.all()}
 
     def _baselines(
         self, counts: Counts, scans: dict[UUID, Scan]
@@ -919,18 +897,37 @@ class DashboardOverviewService:
             return
         expired = and_(cert_state("expired", now), live())
         expiring = cert_state("expiring", now)
+        not_after = Subdomain.tls_not_after
+        filters = []
+        for _key, _label, lower, upper in CERT_BUCKETS:
+            if upper == 0:
+                filters.append(expired)
+                continue
+            clauses = [live(), not_(cert_state("expired", now)), not_after.isnot(None)]
+            if lower:
+                clauses.append(not_after >= now + timedelta(days=lower))
+            if upper is not None:
+                clauses.append(not_after < now + timedelta(days=upper))
+            filters.append(and_(*clauses))
         rows = (
             await self.session.execute(
                 select(
                     Subdomain.scan_id,
                     func.count().filter(expired),
                     func.count().filter(expiring),
+                    *[func.count().filter(f) for f in filters],
                 )
-                .where(Subdomain.scan_id.in_(web_ids))
+                .where(
+                    Subdomain.scan_id.in_(web_ids),
+                    or_(not_after.isnot(None), Subdomain.tls_expired.is_(True)),
+                )
                 .group_by(Subdomain.scan_id)
             )
         ).all()
-        for sid, n_expired, n_expiring in rows:
+        buckets = [0] * len(CERT_BUCKETS)
+        for sid, n_expired, n_expiring, *per_bucket in rows:
+            for index, n in enumerate(per_bucket):
+                buckets[index] += int(n or 0)
             scan = scans.get(sid)
             if scan is None:
                 continue
@@ -950,35 +947,14 @@ class DashboardOverviewService:
                     )
         for signal in (certs.expired, certs.expiring):
             signal.targets.sort(key=lambda t: (-t.count, t.target_value))
-        not_after = Subdomain.tls_not_after
-        filters = []
-        for _key, _label, lower, upper in CERT_BUCKETS:
-            if upper == 0:
-                filters.append(expired)
-                continue
-            clauses = [live(), not_(cert_state("expired", now)), not_after.isnot(None)]
-            if lower:
-                clauses.append(not_after >= now + timedelta(days=lower))
-            if upper is not None:
-                clauses.append(not_after < now + timedelta(days=upper))
-            filters.append(and_(*clauses))
-        bucket_row = (
-            await self.session.execute(
-                select(*[func.count().filter(f) for f in filters]).where(
-                    Subdomain.scan_id.in_(web_ids)
-                )
-            )
-        ).one()
         certs.buckets = [
             DashboardCertBucket(
                 key=key,
                 label=label,
-                count=int(n or 0),
+                count=n,
                 query=cert_bucket_query(lower, upper),
             )
-            for (key, label, lower, upper), n in zip(
-                CERT_BUCKETS, bucket_row, strict=True
-            )
+            for (key, label, lower, upper), n in zip(CERT_BUCKETS, buckets, strict=True)
         ]
 
     async def _geography(
@@ -991,26 +967,37 @@ class DashboardOverviewService:
             IpAddress.country.is_not(None),
             IpAddress.country != "",
         )
-        totals = await self.session.execute(
-            select(IpAddress.country, func.count(func.distinct(IpAddress.ip)))
-            .where(*located)
-            .group_by(IpAddress.country)
-        )
-        per_target = await self.session.execute(
+        rows = await self.session.execute(
             select(
                 IpAddress.country,
                 IpAddress.scan_id,
                 func.count(func.distinct(IpAddress.ip)),
+                func.grouping(IpAddress.country, IpAddress.scan_id),
             )
             .where(*located)
-            .group_by(IpAddress.country, IpAddress.scan_id)
+            .group_by(
+                func.grouping_sets(
+                    tuple_(IpAddress.country, IpAddress.scan_id),
+                    tuple_(IpAddress.country),
+                    tuple_(),
+                )
+            )
         )
+        total = 0
+        totals: dict[str, int] = {}
         breakdown: dict[str, list[DashboardTargetCount]] = defaultdict(list)
-        for country, scan_id, count in per_target.all():
+        for country, scan_id, count, grouping in rows.all():
+            if grouping == _GROUPED_ALL:
+                total = int(count)
+                continue
+            code = country.upper()
+            if grouping == _GROUPED_COUNTRY:
+                totals[code] = totals.get(code, 0) + int(count)
+                continue
             scan = scans.get(scan_id)
             if scan is None:
                 continue
-            breakdown[country.upper()].append(
+            breakdown[code].append(
                 DashboardTargetCount(
                     target_id=scan.target_id,
                     target_value=names.get(scan.target_id, ""),
@@ -1018,20 +1005,17 @@ class DashboardOverviewService:
                     count=int(count),
                 )
             )
-        out = []
-        for country, count in totals.all():
-            code = country.upper()
-            rows = sorted(
-                breakdown.get(code, []), key=lambda r: (-r.count, r.target_value)
+        out = [
+            DashboardGeo(
+                code=code,
+                count=count,
+                targets=sorted(
+                    breakdown.get(code, []), key=lambda r: (-r.count, r.target_value)
+                ),
             )
-            out.append(DashboardGeo(code=code, count=int(count), targets=rows))
+            for code, count in totals.items()
+        ]
         out.sort(key=lambda g: (-g.count, g.code))
-        total = int(
-            await self.session.scalar(
-                select(func.count(func.distinct(IpAddress.ip))).where(*located)
-            )
-            or 0
-        )
         return out, total
 
     async def _monitored(self, project_id: UUID) -> set[UUID]:
@@ -1180,7 +1164,7 @@ class DashboardOverviewService:
     ) -> dict[str, dict[UUID, int]]:
         """Per dimension, rows the previous covering run held that a completed run lacks."""
         out: dict[str, dict[UUID, int]] = {key: {} for key in _TABLES}
-        for key, model in _TABLES.items():
+        for key in _TABLES:
             pairs: list[tuple[UUID, UUID]] = []
             for ids in covered[key].values():
                 for newer, older in pairwise(ids):
@@ -1191,27 +1175,11 @@ class DashboardOverviewService:
                         or _started(scan) < series_cutoff
                     ):
                         continue
-                    pairs.append((older, newer))
+                    pairs.append((newer, older))
             if not pairs:
                 continue
-            table = values(
-                column("prev_id", Uuid), column("next_id", Uuid), name="pairs"
-            ).data(pairs)
-            newer_rows = aliased(model)
-            still_there = exists(
-                select(1).where(
-                    newer_rows.scan_id == table.c.next_id,
-                    *[getattr(newer_rows, col.key) == col for col in _KEYS[key]],
-                )
-            )
-            stmt = (
-                select(table.c.next_id, func.count())
-                .select_from(table.join(model, model.scan_id == table.c.prev_id))
-                .where(not_(still_there))
-                .group_by(table.c.next_id)
-            )
-            for next_id, n in (await self.session.execute(stmt)).all():
-                out[key][next_id] = int(n)
+            counts = await stored_deltas.retired(self.session, key, pairs)
+            out[key] = {newer: n for (newer, _), n in counts.items() if n}
         return out
 
     async def _first_seen_by_severity(

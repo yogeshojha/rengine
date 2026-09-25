@@ -137,6 +137,20 @@ def dispatch_endpoint_verify(
     return True
 
 
+def dispatch_scan_deltas_refresh(scan_id: str) -> bool:
+    """Queue a recount of a live run's first-seen counts."""
+    try:
+        get_celery_client().send_task(
+            "app.tasks.scan_deltas.refresh",
+            kwargs={"scan_id": scan_id},
+            queue="default",
+        )
+    except Exception:
+        logger.warning("scan deltas dispatch failed", exc_info=True)
+        return False
+    return True
+
+
 def dispatch_report(report_id: str) -> bool:
     """Queue a report render."""
     try:

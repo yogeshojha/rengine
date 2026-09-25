@@ -220,6 +220,8 @@ class CorrelationFinder:
             base = base.where(condition)
         if wanted is not None:
             base = base.where(value.in_([spec.bind(v) for v in sorted(wanted)]))
+            if (holding := spec.holding(sorted(wanted))) is not None:
+                base = base.where(holding)
         grouped = base.group_by(value).subquery()
         rows = (
             await self.session.execute(
@@ -241,16 +243,22 @@ class CorrelationFinder:
     async def _carriers(self, scope: QueryScope, kind: str) -> int:
         """Every host in scope carrying this kind, whatever value it carries."""
         spec = KINDS[kind]
-        value = spec.value()
-        stmt = (
-            select(func.count(distinct(Subdomain.id)))
-            .select_from(Subdomain)
-            .where(scope.match(Subdomain.scan_id), value.isnot(None))
-        )
         if spec.asset:
-            stmt = stmt.join(HttpAsset, asset_join())
-        if not spec.numeric:
-            stmt = stmt.where(value != "")
+            value = spec.value()
+            stmt = (
+                select(func.count(distinct(Subdomain.id)))
+                .select_from(Subdomain)
+                .join(HttpAsset, asset_join())
+                .where(scope.match(Subdomain.scan_id), value.isnot(None))
+            )
+            if not spec.numeric:
+                stmt = stmt.where(value != "")
+        else:
+            stmt = (
+                select(func.count())
+                .select_from(Subdomain)
+                .where(scope.match(Subdomain.scan_id), spec.carried())
+            )
         for condition in spec.conditions():
             stmt = stmt.where(condition)
         return int(await self.session.scalar(stmt) or 0)
@@ -315,6 +323,8 @@ class CorrelationFinder:
             )
             if spec.asset:
                 stmt = stmt.join(HttpAsset, asset_join())
+            if (holding := spec.holding(sorted(by_value))) is not None:
+                stmt = stmt.where(holding)
             for condition in spec.conditions():
                 stmt = stmt.where(condition)
             pairs = [

@@ -15,3 +15,6 @@ MAX_TIMEOUT = 3600
 
 # bytes of a response body httpx keeps
 HTTPX_RESPONSE_CAP = 131072
+
+# entries each memoised pure helper keeps per process
+PURE_CACHE = 1 << 16

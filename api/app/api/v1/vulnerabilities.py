@@ -60,6 +60,7 @@ async def search_vulnerabilities(
         model=VulnerabilityPage,
         build=lambda: service.search(scope, body),
         ttl=lead_cache.SEARCH_TTL_SECONDS,
+        live_ttl=None,
     )
 
 

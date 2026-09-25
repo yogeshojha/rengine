@@ -54,6 +54,7 @@ async def search_endpoints(
         model=EndpointPage,
         build=lambda: service.search(scope, body),
         ttl=lead_cache.SEARCH_TTL_SECONDS,
+        live_ttl=None,
     )
 
 

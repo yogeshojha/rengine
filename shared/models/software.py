@@ -77,15 +77,15 @@ class SoftwareCve(SQLModel, table=True):
     cve: str = Field(max_length=30, index=True)
 
     # what it runs
-    name: str = Field(max_length=MAX_NAME, index=True)
+    name: str = Field(max_length=MAX_NAME)
     version: str = Field(max_length=MAX_VERSION)
     vendor: str = Field(max_length=MAX_VENDOR)
-    product: str = Field(max_length=MAX_PRODUCT, index=True)
+    product: str = Field(max_length=MAX_PRODUCT)
     cpe: str = Field(max_length=MAX_CPE)
     version_source: str = Field(default=VersionSource.BANNER.value, max_length=16)
 
     # what it is worth
-    severity: str = Field(default=Severity.UNKNOWN.value, max_length=16, index=True)
+    severity: str = Field(default=Severity.UNKNOWN.value, max_length=16)
     cvss_score: float | None = Field(default=None)
     epss_score: float | None = Field(default=None)
     epss_percentile: float | None = Field(default=None)
@@ -94,16 +94,16 @@ class SoftwareCve(SQLModel, table=True):
     kev_due_date: date | None = Field(default=None)
     exploit_score: int = Field(default=0, index=True)
     intel_kinds: list = _json_list()
-    confidence: str = Field(default=Confidence.HIGH.value, max_length=16, index=True)
+    confidence: str = Field(default=Confidence.HIGH.value, max_length=16)
     caveats: list = _json_list()
-    evidence: str = Field(default=Evidence.INFERRED.value, max_length=16, index=True)
+    evidence: str = Field(default=Evidence.INFERRED.value, max_length=16)
     fixed_in: str | None = Field(default=None, max_length=MAX_VERSION)
     fixed_in_assets: int | None = Field(default=None)
 
     # where it is
     host: str | None = Field(default=None, max_length=500, index=True)
     ip: str | None = Field(default=None, max_length=45, index=True)
-    port: int | None = Field(default=None, index=True)
+    port: int | None = Field(default=None)
     url: str | None = Field(default=None, max_length=2000)
     http_asset_id: uuid.UUID | None = Field(default=None, index=True)
     port_id: uuid.UUID | None = Field(default=None, index=True)

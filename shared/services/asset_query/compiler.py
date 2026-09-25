@@ -33,6 +33,7 @@ from .ast import Compare, Or, QuerySyntaxError, Term
 from .scope import QueryScope
 from .terms import (
     date_match,
+    folded_match,
     int_coerce,
     json_array_match,
     negate,
@@ -275,7 +276,7 @@ def _posture(cmp: Compare):
 
 _SUBDOMAIN_BUILDERS = {
     "target": lambda c, _ctx: target_match(Subdomain.target_id, c),
-    "host": lambda c, _ctx: string_match(Subdomain.name, c),
+    "host": lambda c, _ctx: folded_match(Subdomain.name, c),
     "url": lambda c, _ctx: string_match(_url(), c),
     "cname": lambda c, _ctx: string_match(Subdomain.cname, c),
     "source": lambda c, _ctx: json_array_match(Subdomain.sources, c),

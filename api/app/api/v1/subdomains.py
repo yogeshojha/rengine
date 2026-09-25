@@ -89,6 +89,7 @@ async def search_subdomains(
         model=SubdomainSearchResult,
         build=lambda: service.search(project_id=project_id, scope=scope, f=body),
         ttl=lead_cache.SEARCH_TTL_SECONDS,
+        live_ttl=None,
     )
 
 
@@ -146,6 +147,7 @@ async def subdomain_search_renders(
         model=RenderGroups,
         build=lambda: service.renders(project_id=project_id, scope=scope, f=body),
         ttl=lead_cache.SEARCH_TTL_SECONDS,
+        live_ttl=None,
     )
 
 

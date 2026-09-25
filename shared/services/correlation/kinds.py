@@ -6,8 +6,9 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from sqlalchemy import and_, cast, func
+from sqlalchemy import Text, and_, cast, exists, func, select
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import array as pg_array
 
 from shared.definitions.correlation import MIN_BODY_BYTES, CorrelationKind
 from shared.models.http_asset import HttpAsset
@@ -42,16 +43,40 @@ class KindSpec:
     def value(self) -> Any:
         """The scalar a row contributes, one per element for a list column."""
         if self.json_array:
-            return func.jsonb_array_elements_text(
-                cast(self.column, JSONB)
-            ).column_valued(f"{self.attr}_value")
+            return func.json_array_elements_text(self.column).column_valued(
+                f"{self.attr}_value"
+            )
         return self.column
+
+    def carried(self) -> Any:
+        """A row that carries at least one value of this kind."""
+        if self.json_array:
+            element = (
+                func.json_array_elements_text(self.column)
+                .table_valued("value")
+                .alias("element")
+            )
+            return exists(
+                select(1)
+                .select_from(element)
+                .where(element.c.value.isnot(None), element.c.value != "")
+            )
+        present = self.column.isnot(None)
+        return present if self.numeric else and_(present, self.column != "")
+
+    def holding(self, values: Sequence[str]) -> Any | None:
+        """An indexed test for rows carrying any of the values; None where the column is scalar."""
+        if not self.json_array:
+            return None
+        return cast(self.column, JSONB).op("?|")(pg_array(list(values)))
 
     def bind(self, value: str) -> Any:
         return int(value) if self.numeric else value
 
     def conditions(self) -> list[Any]:
         out: list[Any] = []
+        if self.json_array:
+            out.append(cast(self.column, Text) != "[]")
         if self.drop_cdn:
             out.append(Subdomain.is_cdn.is_(False))
         if self.kind == CorrelationKind.BODY.value:

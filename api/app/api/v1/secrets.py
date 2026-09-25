@@ -44,6 +44,7 @@ async def search_secrets(
         model=SecretPage,
         build=lambda: service.search(scope, body),
         keep=lambda page: page.error is None,
+        live_ttl=None,
     )
 
 

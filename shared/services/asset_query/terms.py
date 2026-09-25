@@ -16,6 +16,7 @@ _ONE_DAY = timedelta(days=1)
 _FLIPPED = {Op.GT: Op.LT, Op.GTE: Op.LTE, Op.LT: Op.GT, Op.LTE: Op.GTE}
 _TRUTHY = {"yes", "true", "1", "any", "present"}
 _FALSY = {"no", "false", "0", "none", "absent"}
+_EMPTY_ARRAY = "[]"
 
 
 def negate(expr):
@@ -48,6 +49,18 @@ def string_match(col, cmp: Compare):
     if cmp.op is Op.RE:
         return matched
     return or_(col.is_(None), negate(matched))
+
+
+def folded_match(col, cmp: Compare):
+    """`string_match` for a column stored lowercase."""
+    lowered = [v.lower() for v in cmp.values]
+    if cmp.op is Op.MATCH:
+        return or_(*[col.like(like(v), escape="\\") for v in lowered])
+    if cmp.op is Op.EQ:
+        return col.in_(lowered)
+    if cmp.op is Op.NE:
+        return or_(col.is_(None), negate(col.in_(lowered)))
+    return string_match(col, cmp)
 
 
 def target_match(column, cmp: Compare):
@@ -113,7 +126,10 @@ def json_array_match(col, cmp: Compare):
             .where(or_(*[element.c.value.op("~*")(v) for v in cmp.values]))
         )
         return negate(found) if cmp.op is Op.NRE else found
-    matched = or_(*[cast(col, Text).ilike(like(v), escape="\\") for v in cmp.values])
+    text = cast(col, Text)
+    matched = or_(*[text.ilike(like(v), escape="\\") for v in cmp.values])
+    if not any(v.lower() in _EMPTY_ARRAY for v in cmp.values):
+        matched = and_(text != _EMPTY_ARRAY, matched)
     return negate(matched) if cmp.op is Op.NE else matched
 
 

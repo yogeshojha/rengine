@@ -112,6 +112,7 @@ celery_app.conf.task_routes = {
     "app.tasks.screenshots.*": {"queue": DEFAULT_QUEUE},
     "app.tasks.software.*": {"queue": DEFAULT_QUEUE},
     "app.tasks.secrets.*": {"queue": DEFAULT_QUEUE},
+    "app.tasks.scan_deltas.*": {"queue": DEFAULT_QUEUE},
     "app.tasks.bounty_programs.*": {"queue": DEFAULT_QUEUE},
     "app.tasks.toolbox.*": {"queue": CRITICAL_QUEUE},
 }
@@ -142,6 +143,7 @@ celery_app.autodiscover_tasks(
         "app.tasks.screenshots",
         "app.tasks.software",
         "app.tasks.secrets",
+        "app.tasks.scan_deltas",
         "app.tasks.watch",
     ]
 )
@@ -161,6 +163,7 @@ CERT_RECHECK_SECONDS = 4 * 60 * 60.0
 SOFTWARE_BACKFILL_SECONDS = 5 * 60.0
 SECRET_BACKFILL_SECONDS = 5 * 60.0
 HYGIENE_BACKFILL_SECONDS = 5 * 60.0
+SCAN_DELTAS_BACKFILL_SECONDS = 5 * 60.0
 WATCH_RECHECK_SECONDS = 10 * 60.0
 
 # the task itself decides whether the interval is due
@@ -257,6 +260,11 @@ celery_app.conf.beat_schedule = {
         "task": "app.tasks.secrets.backfill",
         "schedule": SECRET_BACKFILL_SECONDS,
         "options": {"expires": SECRET_BACKFILL_SECONDS},
+    },
+    "scan-deltas-backfill": {
+        "task": "app.tasks.scan_deltas.backfill",
+        "schedule": SCAN_DELTAS_BACKFILL_SECONDS,
+        "options": {"expires": SCAN_DELTAS_BACKFILL_SECONDS},
     },
     "watch-recheck": {
         "task": "app.tasks.watch.recheck",

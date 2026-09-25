@@ -39,58 +39,56 @@ if TYPE_CHECKING:
 
 
 _DERIVED_SQL = """
-WITH hosts AS (
-    SELECT ip, count(DISTINCT s.name) AS host_count,
-           array_agg(DISTINCT s.target_id) AS target_ids
-    FROM subdomains s, LATERAL jsonb_array_elements_text(cast(s.resolved_ips AS jsonb)) ip
-    WHERE s.scan_id = ANY(:sids) GROUP BY ip
-), open_ports AS (
-    SELECT ip, count(*) AS port_count, bool_or(number = ANY(:sensitive_ports)) AS sensitive,
-           array_agg(DISTINCT target_id) AS target_ids
-    FROM ports WHERE scan_id = ANY(:sids) GROUP BY ip
-), assets AS (
-    SELECT ip, max(asn) AS asn, max(asn_org) AS asn_org, bool_or(is_cdn) AS is_cdn,
-           max(cdn_name) AS cdn_name, count(*) AS asset_count,
-           array_agg(DISTINCT target_id) AS target_ids
-    FROM http_assets WHERE scan_id = ANY(:sids) AND ip IS NOT NULL GROUP BY ip
+WITH facts AS (
+    SELECT ip, s.target_id, s.name AS host, NULL::integer AS number,
+           NULL::bigint AS asn, NULL::varchar AS asn_org, NULL::boolean AS is_cdn,
+           NULL::varchar AS cdn_name, NULL::timestamptz AS seen, 1 AS kind
+    FROM subdomains s, LATERAL json_array_elements_text(s.resolved_ips) ip
+    WHERE s.scan_id = ANY(:sids) AND s.resolved_ips::text <> '[]'
+    UNION ALL
+    SELECT ip, target_id, NULL, number, NULL, NULL, NULL, NULL, NULL, 2
+    FROM ports WHERE scan_id = ANY(:sids)
+    UNION ALL
+    SELECT ip, target_id, NULL, NULL, asn, asn_org, is_cdn, cdn_name, NULL, 3
+    FROM http_assets WHERE scan_id = ANY(:sids) AND ip IS NOT NULL
+    UNION ALL
+    SELECT ip, target_id, NULL, NULL, NULL, NULL, NULL, NULL, discovered_at, 4
+    FROM ip_addresses WHERE scan_id = ANY(:sids)
+), folded AS (
+    SELECT ip,
+           array_agg(DISTINCT target_id) AS target_ids,
+           min(seen) AS first_seen,
+           count(DISTINCT host) AS host_count,
+           count(*) FILTER (WHERE kind = 2) AS port_count,
+           bool_or(number = ANY(:sensitive_ports)) AS sensitive,
+           count(*) FILTER (WHERE kind = 3) AS asset_count,
+           max(asn) AS asn, max(asn_org) AS asn_org, bool_or(is_cdn) AS is_cdn,
+           max(cdn_name) AS cdn_name
+    FROM facts GROUP BY ip
 ), addr AS (
     SELECT DISTINCT ON (ip) ip, asn, asn_org, country, prefix,
            is_cdn, cdn_name, is_alive, ptr_hostnames
     FROM ip_addresses WHERE scan_id = ANY(:sids)
     ORDER BY ip, discovered_at DESC
-), addr_t AS (
-    SELECT ip, array_agg(DISTINCT target_id) AS target_ids,
-           min(discovered_at) AS first_seen
-    FROM ip_addresses WHERE scan_id = ANY(:sids) GROUP BY ip
-), ips AS (
-    SELECT ip FROM hosts UNION SELECT ip FROM open_ports UNION SELECT ip FROM assets
-    UNION SELECT ip FROM addr
 )
-SELECT i.ip AS ip,
-       (SELECT array_agg(DISTINCT tid) FROM unnest(
-            coalesce(xt.target_ids, '{}') || coalesce(p.target_ids, '{}')
-            || coalesce(a.target_ids, '{}') || coalesce(h.target_ids, '{}')
-        ) tid) AS target_ids,
-       xt.first_seen AS first_seen,
-       CASE WHEN i.ip LIKE '%:%' THEN 6 ELSE 4 END AS version,
-       coalesce(x.asn, a.asn) AS asn,
-       coalesce(x.asn_org, a.asn_org) AS asn_org,
+SELECT f.ip AS ip,
+       f.target_ids AS target_ids,
+       f.first_seen AS first_seen,
+       CASE WHEN f.ip LIKE '%:%' THEN 6 ELSE 4 END AS version,
+       coalesce(x.asn, f.asn) AS asn,
+       coalesce(x.asn_org, f.asn_org) AS asn_org,
        x.country AS country,
        x.prefix AS prefix,
-       coalesce(x.is_cdn, a.is_cdn, false) AS is_cdn,
-       coalesce(x.cdn_name, a.cdn_name) AS cdn_name,
-       coalesce(x.is_alive, a.asset_count > 0 OR p.port_count > 0, false) AS is_alive,
+       coalesce(x.is_cdn, f.is_cdn, false) AS is_cdn,
+       coalesce(x.cdn_name, f.cdn_name) AS cdn_name,
+       coalesce(x.is_alive, f.asset_count > 0 OR f.port_count > 0, false) AS is_alive,
        coalesce(cast(x.ptr_hostnames AS jsonb), '[]'::jsonb) AS ptr_hostnames,
-       coalesce(h.host_count, 0) AS host_count,
-       coalesce(p.port_count, 0) AS port_count,
-       coalesce(p.sensitive, false) AS sensitive,
-       coalesce(a.asset_count, 0) AS asset_count
-FROM ips i
-LEFT JOIN hosts h ON h.ip = i.ip
-LEFT JOIN open_ports p ON p.ip = i.ip
-LEFT JOIN assets a ON a.ip = i.ip
-LEFT JOIN addr x ON x.ip = i.ip
-LEFT JOIN addr_t xt ON xt.ip = i.ip
+       f.host_count AS host_count,
+       f.port_count AS port_count,
+       coalesce(f.sensitive, false) AS sensitive,
+       f.asset_count AS asset_count
+FROM folded f
+LEFT JOIN addr x ON x.ip = f.ip
 """
 
 

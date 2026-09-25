@@ -19,6 +19,7 @@ from .groups import (
 )
 from .ip_compiler import IpQueryContext, compile_ip_query
 from .leads import build_leads, count_queries
+from .paging import page_rows
 from .parser import parse_query
 from .predicates import (
     endpoint_has_baseline,
@@ -85,6 +86,7 @@ __all__ = [
     "endpoint_source",
     "endpoint_status_class",
     "inet_of",
+    "page_rows",
     "parse_query",
     "query_error_for",
     "resolved",
