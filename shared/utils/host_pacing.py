@@ -1,4 +1,4 @@
-"""Adaptive per-host request pacing that slows an overloaded host and eases back as it recovers."""
+"""Adaptive per-host request pacing."""
 
 from __future__ import annotations
 
