@@ -16,6 +16,7 @@ from shared.logging import get_logger
 from shared.services.endpoint_inventory import EndpointObservation
 from shared.services.scope_filter import matches_any
 from shared.utils.datetime import utc_now
+from shared.utils.host_pacing import HostPacer
 from tools.runner import tool_path
 
 if TYPE_CHECKING:
@@ -163,6 +164,20 @@ class UrlProvider(ABC):
 
     def workers(self, cap: int) -> int:
         return max(1, min(cap, self.ctx.transport.threads))
+
+    @cached_property
+    def _pacer(self) -> HostPacer:
+        return HostPacer()
+
+    def host_slot(self, host: str):
+        """Hold one of a host's in-flight slots after paying its adaptive backoff."""
+        return self._pacer.slot(host)
+
+    def host_observed(
+        self, host: str, *, status: int | None = None, transport_error: bool = False
+    ) -> None:
+        """Feed a response back so a fragile host is paced down and a healthy one eased up."""
+        self._pacer.observe(host, status=status, transport_error=transport_error)
 
     def throttle(self) -> None:
         """One request per 1/rate seconds across the provider's workers."""

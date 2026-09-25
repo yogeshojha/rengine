@@ -106,8 +106,10 @@ class SourceMapProvider(UrlProvider):
         if self.path_excluded(url):
             return outcome
         self.throttle()
+        host = urlsplit(url).hostname or ""
         try:
-            with client.stream("GET", url) as response:
+            with self.host_slot(host), client.stream("GET", url) as response:
+                self.host_observed(host, status=response.status_code)
                 if response.status_code != _OK:
                     return outcome
                 body = bytearray()
@@ -117,6 +119,7 @@ class SourceMapProvider(UrlProvider):
                         outcome.too_large = True
                         return outcome
         except (httpx.HTTPError, ValueError):
+            self.host_observed(host, transport_error=True)
             outcome.failed = True
             return outcome
         outcome.read(bytes(body))

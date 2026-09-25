@@ -135,13 +135,17 @@ class ApiSpecProvider(UrlProvider):
             return None
         self.throttle()
         state.fetched += 1
+        host = urlsplit(url).hostname or ""
         try:
-            response = client.post(
-                url,
-                content=_INTROSPECTION,
-                headers={"Content-Type": "application/json"},
-            )
+            with self.host_slot(host):
+                response = client.post(
+                    url,
+                    content=_INTROSPECTION,
+                    headers={"Content-Type": "application/json"},
+                )
+            self.host_observed(host, status=response.status_code)
         except (httpx.HTTPError, ValueError):
+            self.host_observed(host, transport_error=True)
             state.errors += 1
             return None
         if response.status_code >= _CLIENT_ERROR:
@@ -168,9 +172,11 @@ class ApiSpecProvider(UrlProvider):
             return None
         self.throttle()
         state.fetched += 1
+        host = urlsplit(url).hostname or ""
         body = bytearray()
         try:
-            with client.stream("GET", url) as response:
+            with self.host_slot(host), client.stream("GET", url) as response:
+                self.host_observed(host, status=response.status_code)
                 if response.status_code >= _CLIENT_ERROR:
                     return None
                 for chunk in response.iter_bytes():
@@ -178,6 +184,7 @@ class ApiSpecProvider(UrlProvider):
                     if len(body) >= _MAX_BYTES:
                         break
         except (httpx.HTTPError, ValueError):
+            self.host_observed(host, transport_error=True)
             state.errors += 1
             return None
         return bytes(body[:_MAX_BYTES]).decode("utf-8", errors="replace")
