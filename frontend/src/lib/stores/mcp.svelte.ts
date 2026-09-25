@@ -6,6 +6,7 @@ import type {
 	McpToken,
 	McpTokenCreate,
 	McpTokenCreated,
+	McpTokenUpdate,
 	McpTool
 } from '$lib/types/mcp';
 import { toast } from 'svelte-sonner';
@@ -24,12 +25,13 @@ function createMcpStore() {
 	let isSaving = $state(false);
 	let hasFetched = $state(false);
 	let callsLoadedAt = $state<number | null>(null);
+	let tokensLoaded = $state(false);
 
 	async function refreshStatus(silent = false) {
 		try {
 			status = await mcpApi.status();
 		} catch (e) {
-			if (!silent) toast.error(message(e, 'MCP server status not loaded'));
+			if (!silent) toast.error(message(e, 'Server status not loaded'));
 		}
 	}
 
@@ -58,6 +60,9 @@ function createMcpStore() {
 		get callsLoadedAt() {
 			return callsLoadedAt;
 		},
+		get tokensLoaded() {
+			return tokensLoaded;
+		},
 		get running() {
 			return status?.enabled ?? false;
 		},
@@ -71,7 +76,7 @@ function createMcpStore() {
 				tools = t;
 				hasFetched = true;
 			} catch (e) {
-				toast.error(message(e, 'MCP settings not loaded'));
+				toast.error(message(e, 'Agents not loaded'));
 			} finally {
 				isLoading = false;
 			}
@@ -79,11 +84,12 @@ function createMcpStore() {
 
 		refreshStatus,
 
-		async loadTokens() {
+		async loadTokens(silent = false) {
 			try {
 				tokens = await mcpApi.tokens();
+				tokensLoaded = true;
 			} catch (e) {
-				toast.error(message(e, 'Service tokens not loaded'));
+				if (!silent) toast.error(message(e, 'Agents not loaded'));
 			}
 		},
 
@@ -100,10 +106,10 @@ function createMcpStore() {
 			isSaving = true;
 			try {
 				status = await mcpApi.update({ enabled: value });
-				toast.success(value ? 'MCP server started' : 'MCP server stopped');
+				toast.success(value ? 'Server started' : 'Server stopped');
 				return true;
 			} catch (e) {
-				toast.error(message(e, 'MCP server state not changed'));
+				toast.error(message(e, 'Server state not changed'));
 				return false;
 			} finally {
 				isSaving = false;
@@ -116,7 +122,7 @@ function createMcpStore() {
 				status = await mcpApi.update(body);
 				return true;
 			} catch (e) {
-				toast.error(message(e, 'MCP settings not saved'));
+				toast.error(message(e, 'Settings not saved'));
 				return false;
 			} finally {
 				isSaving = false;
@@ -130,8 +136,20 @@ function createMcpStore() {
 				await refreshStatus();
 				return created;
 			} catch (e) {
-				toast.error(message(e, 'Token not created'));
+				toast.error(message(e, 'Agent not created'));
 				return null;
+			}
+		},
+
+		async updateToken(id: string, body: McpTokenUpdate): Promise<boolean> {
+			try {
+				const row = await mcpApi.updateToken(id, body);
+				tokens = tokens.map((t) => (t.id === id ? row : t));
+				toast.success('Access saved');
+				return true;
+			} catch (e) {
+				toast.error(message(e, 'Access not saved'));
+				return false;
 			}
 		},
 
@@ -140,10 +158,10 @@ function createMcpStore() {
 				await mcpApi.revokeToken(id);
 				await this.loadTokens();
 				await refreshStatus();
-				toast.success('Token revoked');
+				toast.success('Access cut');
 				return true;
 			} catch (e) {
-				toast.error(message(e, 'Token not revoked'));
+				toast.error(message(e, 'Access not cut'));
 				return false;
 			}
 		},
@@ -153,10 +171,10 @@ function createMcpStore() {
 				await mcpApi.deleteToken(id);
 				await this.loadTokens();
 				await refreshStatus();
-				toast.success('Token deleted');
+				toast.success('Agent deleted');
 				return true;
 			} catch (e) {
-				toast.error(message(e, 'Token not deleted'));
+				toast.error(message(e, 'Agent not deleted'));
 				return false;
 			}
 		},
@@ -181,6 +199,7 @@ function createMcpStore() {
 			isSaving = false;
 			hasFetched = false;
 			callsLoadedAt = null;
+			tokensLoaded = false;
 		}
 	};
 }

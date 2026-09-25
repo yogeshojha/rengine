@@ -112,35 +112,87 @@ async def _call(request: Request, ctx: ToolContext) -> dict:
 
 async def invoke(ctx: ToolContext, name: str, raw: dict) -> ToolResult:
     """Run one tool for any transport; every failure is an McpError."""
+    started = time.monotonic()
     spec = registry.get(name)
     if spec is None:
         known = ", ".join(sorted(registry.registry()))
         msg = f"Unknown tool {name!r}. Available: {known}."
+        await _observe(ctx, name, ok=False, started=started, detail=msg)
         raise ToolError(msg)
 
-    ctx.require(spec.capability)
+    phrased = telemetry.phrase_args(raw)
+    try:
+        ctx.require(spec.capability)
+    except McpError as exc:
+        await _observe(
+            ctx,
+            name,
+            ok=False,
+            started=started,
+            detail=exc.message,
+            capability=spec.capability,
+            args=phrased,
+            refused=True,
+        )
+        raise
 
     try:
         args = spec.tool_cls.Input.model_validate(raw)
     except ValidationError as exc:
-        raise InvalidParamsError(_readable(exc)) from exc
+        message = _readable(exc)
+        await _observe(
+            ctx,
+            name,
+            ok=False,
+            started=started,
+            detail=message,
+            capability=spec.capability,
+            args=phrased,
+        )
+        raise InvalidParamsError(message) from exc
 
-    started = time.monotonic()
+    phrased = telemetry.phrase_args(args.model_dump(mode="json", exclude_defaults=True))
     try:
         result = await spec.tool_cls().run(ctx, args)
     except McpError as exc:
-        await _observe(ctx, name, ok=False, started=started, detail=exc.message)
+        await _observe(
+            ctx,
+            name,
+            ok=False,
+            started=started,
+            detail=exc.message,
+            capability=spec.capability,
+            args=phrased,
+        )
         raise ToolError(exc.message, exc.data) from exc
     except Exception as exc:
         logger.exception("mcp tool failed", tool=name)
-        await _observe(ctx, name, ok=False, started=started, detail=str(exc))
+        await _observe(
+            ctx,
+            name,
+            ok=False,
+            started=started,
+            detail=str(exc),
+            capability=spec.capability,
+            args=phrased,
+        )
         msg = f"{spec.title} failed: {exc}"
         raise ToolError(msg) from exc
 
-    await _observe(ctx, name, ok=True, started=started)
     if not isinstance(result, ToolResult):
+        await _observe(ctx, name, ok=False, started=started, capability=spec.capability)
         msg = f"{name} returned {type(result).__name__}, expected ToolResult."
         raise ToolError(msg)
+    await _observe(
+        ctx,
+        name,
+        ok=True,
+        started=started,
+        capability=spec.capability,
+        args=phrased,
+        summary=result.summary,
+        pivot=result.pivot,
+    )
     return result
 
 
@@ -157,7 +209,17 @@ def _readable(exc: ValidationError) -> str:
 
 
 async def _observe(
-    ctx: ToolContext, tool: str, *, ok: bool, started: float, detail: str | None = None
+    ctx: ToolContext,
+    tool: str,
+    *,
+    ok: bool,
+    started: float,
+    detail: str | None = None,
+    capability: str | None = None,
+    args: str | None = None,
+    summary: str | None = None,
+    pivot: str | None = None,
+    refused: bool = False,
 ) -> None:
     await telemetry.record(
         telemetry.CallRecord(
@@ -168,6 +230,12 @@ async def _observe(
             ok=ok,
             duration_ms=int((time.monotonic() - started) * 1000),
             detail=detail[:300] if detail else None,
+            command=ctx.extras.get("command"),
+            capability=capability,
+            args=args,
+            summary=telemetry.clip(summary),
+            pivot=pivot,
+            refused=refused,
         )
     )
     await telemetry.touch(

@@ -6,6 +6,7 @@ import type {
 	McpToken,
 	McpTokenCreate,
 	McpTokenCreated,
+	McpTokenUpdate,
 	McpTool
 } from '$lib/types/mcp';
 
@@ -32,6 +33,10 @@ export const mcpApi = {
 
 	createToken(body: McpTokenCreate): Promise<McpTokenCreated> {
 		return api.post<McpTokenCreated>('/mcp/tokens', body);
+	},
+
+	updateToken(id: string, body: McpTokenUpdate): Promise<McpToken> {
+		return api.patch<McpToken>(`/mcp/tokens/${id}`, body);
 	},
 
 	revokeToken(id: string): Promise<void> {

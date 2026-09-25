@@ -13,7 +13,7 @@ from shared.logging import get_logger
 
 logger = get_logger(__name__)
 
-DISABLED_MESSAGE = "The MCP server is stopped. Start it on the MCP page."
+DISABLED_MESSAGE = "The MCP server is stopped. Start it on the Agents page."
 RATE_MESSAGE = "Rate limit exceeded. Retry in a minute."
 
 

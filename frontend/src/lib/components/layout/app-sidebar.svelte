@@ -173,7 +173,7 @@
 					url: ROUTES.remoteControl(),
 					icon: MessageSquareIcon
 				},
-				{ title: routeLabels.mcp, url: ROUTES.mcp(), icon: BotIcon }
+				{ title: routeLabels.agents, url: ROUTES.agents(), icon: BotIcon }
 			]
 		}
 	]);

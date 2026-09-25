@@ -3,18 +3,21 @@
 from __future__ import annotations
 
 import json
+import math
 import uuid
 from datetime import timedelta
 
+from sqlalchemy import func
 from sqlmodel import select
 
-from mcp import auth, registry, telemetry
+from mcp import auth, clients, registry, telemetry
 from mcp import settings as server_settings
 from mcp.capabilities import (
     ALWAYS_GRANTED,
     CAPABILITY_HELP,
     CAPABILITY_LABELS,
     CAPABILITY_ORDER,
+    CAPABILITY_REACH,
     TOUCHES_TARGETS,
     normalize,
     within_ceiling,
@@ -31,11 +34,13 @@ from mcp.models import (
     McpTokenCreate,
     McpTokenCreated,
     McpTokenRead,
+    McpTokenUpdate,
     McpToolRead,
 )
 from shared.definitions.channels import CHANNEL_ORDER
 from shared.models.instance_settings import InstanceSettings
 from shared.models.project import Project
+from shared.models.target import Target
 from shared.utils.datetime import utc_now
 
 
@@ -123,6 +128,7 @@ class McpService:
             calls_today=await telemetry.calls_today(CHANNEL_ORDER),
             last_call_at=await telemetry.last_call_at(CHANNEL_ORDER),
             capabilities=capability_catalog(),
+            clients=clients.catalog(),
         )
 
     def tools(self) -> list[McpToolRead]:
@@ -135,6 +141,7 @@ class McpService:
                 group=spec.group,
                 destructive=spec.destructive,
                 examples=list(spec.examples),
+                context_tokens=context_tokens(spec.descriptor()),
                 schema=spec.schema,
             )
             for spec in registry.registry().values()
@@ -156,7 +163,24 @@ class McpService:
             .all()
         )
         names = await self._project_names({r.project_id for r in rows if r.project_id})
-        return [_read(row, names.get(row.project_id)) for row in rows]
+        reach = await self._reach()
+        return [_read(row, names.get(row.project_id), reach) for row in rows]
+
+    async def _reach(self) -> dict[uuid.UUID | None, tuple[int, int]]:
+        """Projects and targets a token scoped to each project reaches; None is every."""
+        counts = dict(
+            (
+                await self.session.execute(
+                    select(Target.project_id, func.count()).group_by(Target.project_id)
+                )
+            ).all()
+        )
+        projects = (await self.session.execute(select(func.count(Project.id)))).scalar()
+        out: dict[uuid.UUID | None, tuple[int, int]] = {
+            pid: (1, n) for pid, n in counts.items()
+        }
+        out[None] = (int(projects or 0), sum(counts.values()))
+        return out
 
     async def create_token(
         self, data: McpTokenCreate, user_id: uuid.UUID, ui_base: str = ""
@@ -200,11 +224,50 @@ class McpService:
         await self.session.refresh(row)
 
         names = await self._project_names({row.project_id} if row.project_id else set())
+        url = server_settings.endpoint_url(ui_base or "http://localhost:8000")
         return McpTokenCreated(
-            token=_read(row, names.get(row.project_id)),
+            token=_read(row, names.get(row.project_id), await self._reach()),
             secret=secret,
-            client_config=client_config(secret, ui_base),
+            clients=clients.snippets(url, secret),
         )
+
+    async def update_token(
+        self, token_id: uuid.UUID, data: McpTokenUpdate
+    ) -> McpTokenRead:
+        row = await self.session.get(McpToken, token_id)
+        if row is None:
+            msg = "The token does not exist."
+            raise McpConfigError(msg)
+        if row.revoked_at is not None:
+            msg = "The token was revoked."
+            raise McpConfigError(msg)
+
+        given = data.model_fields_set
+        if "name" in given and data.name:
+            row.name = data.name.strip()[:80]
+        if "project_id" in given:
+            if data.project_id is not None and not await self._project_exists(
+                data.project_id
+            ):
+                msg = "The project does not exist."
+                raise McpConfigError(msg)
+            row.project_id = data.project_id
+        if data.capabilities is not None:
+            config = await self.config()
+            asked = normalize(data.capabilities)
+            granted = within_ceiling(asked, config.ceiling)
+            refused = [c for c in asked if c not in granted]
+            if refused:
+                names = ", ".join(CAPABILITY_LABELS[c] for c in refused)
+                msg = f"{names} is switched off for this instance. Raise the ceiling first."
+                raise McpConfigError(msg)
+            row.capabilities = granted
+
+        self.session.add(row)
+        await self.session.commit()
+        await self.session.refresh(row)
+        names = await self._project_names({row.project_id} if row.project_id else set())
+        return _read(row, names.get(row.project_id), await self._reach())
 
     async def revoke_token(self, token_id: uuid.UUID) -> None:
         row = await self.session.get(McpToken, token_id)
@@ -289,6 +352,7 @@ def capability_catalog() -> list[dict]:
             "key": key,
             "label": CAPABILITY_LABELS[key],
             "help": CAPABILITY_HELP[key],
+            "reach": CAPABILITY_REACH[key],
             "always": key in ALWAYS_GRANTED,
             "touches_targets": key in TOUCHES_TARGETS,
         }
@@ -296,18 +360,9 @@ def capability_catalog() -> list[dict]:
     ]
 
 
-def client_config(secret: str, ui_base: str = "") -> str:
-    """Client config with the token embedded."""
-    body = {
-        "mcpServers": {
-            server_settings.SERVER_NAME: {
-                "type": "http",
-                "url": server_settings.endpoint_url(ui_base or "http://localhost:8000"),
-                "headers": {"Authorization": f"Bearer {secret}"},
-            }
-        }
-    }
-    return json.dumps(body, indent=2)
+def context_tokens(descriptor: dict) -> int:
+    """Estimated at four characters a token."""
+    return math.ceil(len(json.dumps(descriptor, separators=(",", ":"))) / 4)
 
 
 def _active(row: McpToken) -> bool:
@@ -316,7 +371,14 @@ def _active(row: McpToken) -> bool:
     return row.expires_at is None or row.expires_at > utc_now()
 
 
-def _read(row: McpToken, project_name: str | None) -> McpTokenRead:
+def _read(
+    row: McpToken,
+    project_name: str | None,
+    reach: dict[uuid.UUID | None, tuple[int, int]] | None = None,
+) -> McpTokenRead:
+    projects, targets = (reach or {}).get(
+        row.project_id, (1 if row.project_id else 0, 0)
+    )
     return McpTokenRead(
         id=row.id,
         name=row.name,
@@ -331,6 +393,8 @@ def _read(row: McpToken, project_name: str | None) -> McpTokenRead:
         last_client=row.last_client,
         calls=row.calls or 0,
         created_at=row.created_at,
+        projects=projects,
+        targets=targets,
     )
 
 

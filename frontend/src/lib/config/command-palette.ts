@@ -320,11 +320,11 @@ function destinations(): Destination[] {
 			keywords: 'burp proxy browsing'
 		},
 		{
-			id: 'page:mcp',
-			label: routeLabels.mcp,
-			href: ROUTES.mcp(),
+			id: 'page:agents',
+			label: routeLabels.agents,
+			href: ROUTES.agents(),
 			icon: Bot,
-			keywords: 'model context protocol agent tokens'
+			keywords: 'mcp model context protocol agent keys tokens'
 		},
 		{
 			id: 'page:whats-new',

@@ -1,14 +1,19 @@
-import type { McpCall, McpSession, McpToken } from '$lib/types/mcp';
+import {
+	CHANGING_CAPABILITIES,
+	type AgentPresence,
+	type McpCall,
+	type McpCapability,
+	type McpSession,
+	type McpToken
+} from '$lib/types/mcp';
 import { MS_PER_DAY } from '$lib/utilities/dates';
 
 export const MCP_POLL_MS = 10_000;
+export const CONNECT_POLL_MS = 2_000;
 export const BURST_GAP_MS = 5 * 60_000;
 export const SESSION_LIVE_MS = 60_000;
-export const PULSE_HOURS = 24;
 export const EXPIRY_WARN_DAYS = 7;
 export const TRAIL_CAP = 200;
-
-export const agentKey = (client: string, token: string) => `${client}|${token}`;
 
 export interface ClientInfo {
 	name: string;
@@ -23,27 +28,51 @@ export function parseClient(raw: string | null | undefined): ClientInfo {
 	return { name: m[1], version: m[2] ?? null, kind: m[3]?.trim() || null };
 }
 
-export interface ToolTally {
-	name: string;
-	count: number;
+export const agentOf = (call: McpCall) => call.token_id ?? call.token_name;
+
+export function callsOf(calls: McpCall[], token: McpToken): McpCall[] {
+	return calls.filter((c) => (c.token_id ? c.token_id === token.id : c.token_name === token.name));
+}
+
+export const isChange = (call: McpCall) =>
+	call.ok && CHANGING_CAPABILITIES.includes(call.capability as McpCapability);
+
+export function presenceOf(token: McpToken, sessions: McpSession[], now: number): AgentPresence {
+	if (token.revoked) return 'revoked';
+	if (token.expired) return 'expired';
+	const seen = sessions
+		.filter((s) => s.token_id === token.id)
+		.map((s) => new Date(s.last_seen).getTime());
+	if (!seen.length) return 'offline';
+	return now - Math.max(...seen) < SESSION_LIVE_MS ? 'connected' : 'idle';
+}
+
+export function inAppHref(pivot: string): string {
+	try {
+		const url = new URL(pivot);
+		return `${url.pathname}${url.search}${url.hash}`;
+	} catch {
+		return pivot;
+	}
 }
 
 export interface CallBurst {
 	key: string;
+	agent: string;
 	token: string;
 	client: string;
 	calls: McpCall[];
 	started: string;
 	ended: string;
 	failed: number;
-	tools: ToolTally[];
+	changes: number;
 	spanMs: number;
 }
 
 export function groupBursts(calls: McpCall[], gapMs = BURST_GAP_MS): CallBurst[] {
 	const perAgent = new Map<string, CallBurst[]>();
 	for (const call of calls) {
-		const key = agentKey(call.client, call.token_name);
+		const key = `${agentOf(call)}|${call.client}`;
 		const list = perAgent.get(key) ?? [];
 		const current = list[list.length - 1];
 		const t = new Date(call.at).getTime();
@@ -53,13 +82,14 @@ export function groupBursts(calls: McpCall[], gapMs = BURST_GAP_MS): CallBurst[]
 		} else {
 			list.push({
 				key: '',
+				agent: agentOf(call),
 				token: call.token_name,
 				client: call.client,
 				calls: [call],
 				started: call.at,
 				ended: call.at,
 				failed: 0,
-				tools: [],
+				changes: 0,
 				spanMs: 0
 			});
 		}
@@ -67,62 +97,12 @@ export function groupBursts(calls: McpCall[], gapMs = BURST_GAP_MS): CallBurst[]
 	}
 	const out = [...perAgent.values()].flat();
 	for (const burst of out) {
-		burst.key = `${burst.started}|${burst.token}|${burst.client}`;
+		burst.key = `${burst.started}|${burst.agent}|${burst.client}`;
 		burst.failed = burst.calls.filter((c) => !c.ok).length;
-		burst.tools = tally(burst.calls);
+		burst.changes = burst.calls.filter(isChange).length;
 		burst.spanMs = new Date(burst.ended).getTime() - new Date(burst.started).getTime();
 	}
 	return out.sort((a, b) => b.ended.localeCompare(a.ended));
-}
-
-export function trailStart(calls: McpCall[], cap = TRAIL_CAP): string | null {
-	return calls.length >= cap ? (calls[calls.length - 1]?.at ?? null) : null;
-}
-
-export function tally(calls: McpCall[]): ToolTally[] {
-	const counts = new Map<string, number>();
-	for (const c of calls) counts.set(c.tool, (counts.get(c.tool) ?? 0) + 1);
-	return [...counts.entries()]
-		.map(([name, count]) => ({ name, count }))
-		.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-}
-
-export interface PulseBucket {
-	start: number;
-	calls: number;
-	failed: number;
-}
-
-export function hourlyPulse(
-	calls: McpCall[],
-	now = Date.now(),
-	hours = PULSE_HOURS
-): PulseBucket[] {
-	const hour = 3_600_000;
-	const top = new Date(now);
-	top.setMinutes(0, 0, 0);
-	const end = top.getTime() + hour;
-	const buckets: PulseBucket[] = Array.from({ length: hours }, (_, i) => ({
-		start: end - (hours - i) * hour,
-		calls: 0,
-		failed: 0
-	}));
-	const first = buckets[0].start;
-	for (const c of calls) {
-		const t = new Date(c.at).getTime();
-		if (t < first || t >= end) continue;
-		const b = buckets[Math.floor((t - first) / hour)];
-		b.calls += 1;
-		if (!c.ok) b.failed += 1;
-	}
-	return buckets;
-}
-
-export function median(values: number[]): number | null {
-	if (!values.length) return null;
-	const sorted = [...values].sort((a, b) => a - b);
-	const mid = Math.floor(sorted.length / 2);
-	return sorted.length % 2 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
 }
 
 export function durationLabel(ms: number): string {
@@ -155,6 +135,10 @@ export function dayLabel(iso: string, now = new Date()): string {
 	if (d.toDateString() === today) return 'Today';
 	if (d.toDateString() === yesterday) return 'Yesterday';
 	return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+export function contextLabel(tokens: number): string {
+	return tokens >= 1000 ? `${(tokens / 1000).toFixed(1)}k` : String(tokens);
 }
 
 export type ExpiryTone = 'none' | 'soon' | 'expired';
@@ -227,43 +211,4 @@ export function schemaArgs(schema: Record<string, unknown>): ArgSpec[] {
 			prop.default === undefined || prop.default === null ? null : JSON.stringify(prop.default),
 		options: optionsOf(prop)
 	}));
-}
-
-export function countByTool(calls: McpCall[]): Map<string, number> {
-	const out = new Map<string, number>();
-	for (const c of calls) out.set(c.tool, (out.get(c.tool) ?? 0) + 1);
-	return out;
-}
-
-export interface AgentTally {
-	key: string;
-	client: string;
-	token: string;
-	count: number;
-}
-
-export function tallyAgents(calls: McpCall[]): AgentTally[] {
-	const out = new Map<string, AgentTally>();
-	for (const c of calls) {
-		const key = agentKey(c.client, c.token_name);
-		const entry = out.get(key) ?? { key, client: c.client, token: c.token_name, count: 0 };
-		entry.count += 1;
-		out.set(key, entry);
-	}
-	return [...out.values()].sort((a, b) => b.count - a.count);
-}
-
-export interface LiveSession {
-	client: string;
-	last: string;
-}
-
-export function sessionsByToken(sessions: McpSession[]): Map<string, LiveSession[]> {
-	const out = new Map<string, LiveSession[]>();
-	for (const s of sessions) {
-		const list = out.get(s.token_id) ?? [];
-		list.push({ client: s.client, last: s.last_seen });
-		out.set(s.token_id, list);
-	}
-	return out;
 }

@@ -26,6 +26,7 @@ from mcp.models import (
     McpTokenCreate,
     McpTokenCreated,
     McpTokenRead,
+    McpTokenUpdate,
     McpToolRead,
 )
 from mcp.service import McpConfigError, McpService
@@ -127,6 +128,16 @@ async def create_mcp_token(
 ):
     try:
         return await McpService(session).create_token(body, admin.id, ui_base())
+    except McpConfigError as exc:
+        raise _guard(exc) from exc
+
+
+@router.patch("/tokens/{token_id}", response_model=McpTokenRead)
+async def update_mcp_token(
+    _admin: CurrentSuperuser, session: Session, token_id: UUID, body: McpTokenUpdate
+):
+    try:
+        return await McpService(session).update_token(token_id, body)
     except McpConfigError as exc:
         raise _guard(exc) from exc
 

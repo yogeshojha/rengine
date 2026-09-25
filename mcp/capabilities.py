@@ -28,6 +28,13 @@ CAPABILITY_HELP: dict[str, str] = {
     Capability.LAUNCH.value: "Start scans and focused rescans against targets.",
 }
 
+CAPABILITY_REACH: dict[str, str] = {
+    Capability.READ.value: "Reads",
+    Capability.PLAN.value: "Reads and plans scans",
+    Capability.WRITE.value: "Reads and changes targets and triage",
+    Capability.LAUNCH.value: "Launches scans",
+}
+
 ALWAYS_GRANTED: tuple[str, ...] = (Capability.READ.value,)
 
 TOUCHES_TARGETS: tuple[str, ...] = (Capability.LAUNCH.value,)

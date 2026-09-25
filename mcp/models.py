@@ -50,6 +50,14 @@ class McpTokenCreate(BaseModel):
     expires_in_days: int | None = PydanticField(default=30, ge=1, le=365)
 
 
+class McpTokenUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str | None = PydanticField(default=None, min_length=1, max_length=MAX_NAME)
+    project_id: uuid.UUID | None = None
+    capabilities: list[str] | None = PydanticField(default=None, max_length=8)
+
+
 class McpTokenRead(BaseModel):
     id: uuid.UUID
     name: str
@@ -64,6 +72,16 @@ class McpTokenRead(BaseModel):
     last_client: str | None
     calls: int
     created_at: datetime
+    projects: int = 0
+    targets: int = 0
+
+
+class McpClientSnippet(BaseModel):
+    key: str
+    label: str
+    where: str
+    lang: str
+    text: str
 
 
 class McpTokenCreated(BaseModel):
@@ -71,7 +89,7 @@ class McpTokenCreated(BaseModel):
 
     token: McpTokenRead
     secret: str
-    client_config: str
+    clients: list[McpClientSnippet]
 
 
 class McpCeiling(BaseModel):
@@ -107,6 +125,7 @@ class McpToolRead(BaseModel):
     group: str
     destructive: bool = False
     examples: list[str]
+    context_tokens: int = 0
     schema_: dict = PydanticField(default_factory=dict, alias="schema")
 
     model_config = ConfigDict(populate_by_name=True)
@@ -125,12 +144,19 @@ class McpSessionRead(BaseModel):
 
 class McpCallRead(BaseModel):
     at: datetime
+    token_id: uuid.UUID | None = None
     token_name: str
     client: str
     tool: str
     ok: bool
     duration_ms: int
     detail: str | None = None
+    command: str | None = None
+    capability: str | None = None
+    args: str | None = None
+    summary: str | None = None
+    pivot: str | None = None
+    refused: bool = False
 
 
 class McpStatus(BaseModel):
@@ -149,3 +175,4 @@ class McpStatus(BaseModel):
     calls_today: int
     last_call_at: datetime | None
     capabilities: list[dict]
+    clients: list[dict]

@@ -1,5 +1,3 @@
-import type { McpTab } from '$lib/config/routes';
-
 export const MCP_CAPABILITIES = ['read', 'plan', 'write', 'launch'] as const;
 export type McpCapability = (typeof MCP_CAPABILITIES)[number];
 
@@ -22,31 +20,24 @@ export const MCP_EXPIRY_CHOICES: { value: number | null; label: string }[] = [
 	{ value: null, label: 'Never' }
 ];
 
-export const MCP_TOOL_GROUPS = ['Orient', 'Interrogate', 'Explain', 'Act'] as const;
-
-export const MCP_TAB_LABELS: Record<McpTab, string> = {
-	server: 'Overview',
-	tools: 'Tools',
-	access: 'Access',
-	activity: 'Activity'
-};
-
-export const MCP_TOKEN_STATES = ['active', 'expiring', 'expired', 'revoked'] as const;
-export type McpTokenState = (typeof MCP_TOKEN_STATES)[number];
-
-export const MCP_TOKEN_STATE_LABELS: Record<McpTokenState, string> = {
-	active: 'Active',
-	expiring: 'Expiring soon',
-	expired: 'Expired',
-	revoked: 'Revoked'
-};
-
 export interface McpCapabilitySpec {
 	key: McpCapability;
 	label: string;
 	help: string;
+	reach: string;
 	always: boolean;
 	touches_targets: boolean;
+}
+
+export interface McpClientSpec {
+	key: string;
+	label: string;
+}
+
+export interface McpClientSnippet extends McpClientSpec {
+	where: string;
+	lang: string;
+	text: string;
 }
 
 export interface McpSession {
@@ -76,6 +67,7 @@ export interface McpStatus {
 	calls_today: number;
 	last_call_at: string | null;
 	capabilities: McpCapabilitySpec[];
+	clients: McpClientSpec[];
 }
 
 export interface McpToken {
@@ -92,12 +84,20 @@ export interface McpToken {
 	last_client: string | null;
 	calls: number;
 	created_at: string;
+	projects: number;
+	targets: number;
 }
 
 export interface McpTokenCreated {
 	token: McpToken;
 	secret: string;
-	client_config: string;
+	clients: McpClientSnippet[];
+}
+
+export interface McpTokenUpdate {
+	name?: string;
+	project_id?: string | null;
+	capabilities?: string[];
 }
 
 export interface McpTokenCreate {
@@ -115,17 +115,25 @@ export interface McpTool {
 	group: string;
 	destructive: boolean;
 	examples: string[];
+	context_tokens: number;
 	schema: Record<string, unknown>;
 }
 
 export interface McpCall {
 	at: string;
+	token_id?: string | null;
 	token_name: string;
 	client: string;
 	tool: string;
 	ok: boolean;
 	duration_ms: number;
 	detail: string | null;
+	command?: string | null;
+	capability?: string | null;
+	args?: string | null;
+	summary?: string | null;
+	pivot?: string | null;
+	refused?: boolean;
 }
 
 export interface McpSettingsUpdate {
@@ -134,19 +142,54 @@ export interface McpSettingsUpdate {
 	ceiling?: Record<string, boolean>;
 }
 
-export const MCP_STATE_DOT: Record<'running' | 'stopped' | 'idle', string> = {
+export const SERVER_STATE_DOT: Record<'running' | 'stopped', string> = {
 	running: 'bg-info',
-	idle: 'bg-info/40',
 	stopped: 'bg-muted-foreground/40'
 };
 
-export const MCP_STATE_LABEL: Record<'running' | 'stopped', string> = {
-	running: 'Accepting connections',
-	stopped: 'Stopped'
+export const SERVER_STATE_LABEL: Record<'running' | 'stopped', string> = {
+	running: 'Server running',
+	stopped: 'Server stopped'
 };
 
-export function tokenState(token: McpToken): 'revoked' | 'expired' | 'active' {
-	if (token.revoked) return 'revoked';
-	if (token.expired) return 'expired';
-	return 'active';
+export const AGENT_PRESENCE = ['connected', 'idle', 'offline', 'expired', 'revoked'] as const;
+export type AgentPresence = (typeof AGENT_PRESENCE)[number];
+
+export const AGENT_PRESENCE_LABELS: Record<AgentPresence, string> = {
+	connected: 'Connected',
+	idle: 'Idle',
+	offline: 'Offline',
+	expired: 'Key expired',
+	revoked: 'Key revoked'
+};
+
+export const AGENT_PRESENCE_DOT: Record<AgentPresence, string> = {
+	connected: 'bg-info',
+	idle: 'bg-info/40',
+	offline: 'bg-muted-foreground/40',
+	expired: 'bg-muted-foreground/25',
+	revoked: 'bg-muted-foreground/25'
+};
+
+export const CHANGING_CAPABILITIES: McpCapability[] = ['write', 'launch'];
+
+export function tokenUsable(token: McpToken): boolean {
+	return !token.revoked && !token.expired;
+}
+
+export function ceilingKeys(status: {
+	capabilities: McpCapabilitySpec[];
+	ceiling: Record<string, boolean>;
+}): Set<string> {
+	return new Set(
+		status.capabilities.filter((c) => c.always || status.ceiling[c.key]).map((c) => c.key)
+	);
+}
+
+export function ladderLevel(capabilities: readonly string[]): number {
+	return MCP_CAPABILITIES.reduce((top, cap, i) => (capabilities.includes(cap) ? i : top), 0);
+}
+
+export function grantsUpTo(level: number, allowed: Set<string>): McpCapability[] {
+	return MCP_CAPABILITIES.slice(0, level + 1).filter((c) => allowed.has(c));
 }

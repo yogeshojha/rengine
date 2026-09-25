@@ -12,6 +12,7 @@ from datetime import datetime
 from shared.logging import get_logger
 from shared.redis import async_client
 from shared.utils.datetime import utc_now
+from shared.utils.text import strip_control
 
 logger = get_logger(__name__)
 
@@ -25,6 +26,10 @@ SESSION_TTL = 300
 CALLS_KEPT = 200
 CALLS_TTL = 7 * 24 * 3600
 COUNTER_TTL = 2 * 24 * 3600
+ARGS_MAX = 200
+SUMMARY_MAX = 240
+LIST_SHOWN = 5
+_SECRET_NAMES = ("token", "secret", "password", "header", "cookie", "auth", "key")
 
 
 @dataclass
@@ -36,6 +41,34 @@ class CallRecord:
     ok: bool
     duration_ms: int
     detail: str | None = None
+    command: str | None = None
+    capability: str | None = None
+    args: str | None = None
+    summary: str | None = None
+    pivot: str | None = None
+    refused: bool = False
+
+
+def phrase_args(values: dict | None) -> str | None:
+    """One line of the arguments a person can read, secrets left out."""
+    parts: list[str] = []
+    for name, value in (values or {}).items():
+        if value in (None, "", [], {}) or isinstance(value, dict):
+            continue
+        if any(word in name.lower() for word in _SECRET_NAMES):
+            continue
+        text = str(value)
+        if isinstance(value, list | tuple):
+            shown = ", ".join(str(v) for v in value[:LIST_SHOWN])
+            extra = len(value) - LIST_SHOWN
+            text = f"{shown} +{extra}" if extra > 0 else shown
+        parts.append(f"{name}={text}")
+    text = strip_control(" ".join(parts))[:ARGS_MAX]
+    return text or None
+
+
+def clip(value: str | None, limit: int = SUMMARY_MAX) -> str | None:
+    return strip_control(value)[:limit] if value else None
 
 
 async def touch(
@@ -114,12 +147,19 @@ async def record(call: CallRecord) -> None:
     now = utc_now()
     entry = {
         "at": now.isoformat(),
+        "token_id": str(call.token_id),
         "token_name": call.token_name,
         "client": call.client,
         "tool": call.tool,
         "ok": call.ok,
         "duration_ms": call.duration_ms,
         "detail": call.detail,
+        "command": call.command,
+        "capability": call.capability,
+        "args": call.args,
+        "summary": call.summary,
+        "pivot": call.pivot,
+        "refused": call.refused,
     }
     try:
         redis = async_client()

@@ -21,7 +21,7 @@ export const routeLabels: Record<string, string> = {
 	compare: 'Compare runs',
 	connectors: 'Connectors',
 	'remote-control': 'Remote control',
-	mcp: 'MCP',
+	agents: 'Agents',
 	notes: 'Notes',
 	'whats-new': "What's new",
 	bounty: 'Bounty',
@@ -72,8 +72,6 @@ export type ReportTab = (typeof REPORT_TABS)[number];
 export const AI_SECTIONS = ['connection', 'features', 'usage'] as const;
 export const CONNECTOR_TABS = ['queue', 'discovered', 'settings'] as const;
 export type ConnectorTab = (typeof CONNECTOR_TABS)[number];
-export const MCP_TABS = ['server', 'tools', 'access', 'activity'] as const;
-export type McpTab = (typeof MCP_TABS)[number];
 export const REMOTE_CONTROL_TABS = CHANNEL_ORDER;
 export type RemoteControlTab = ChannelKind;
 export type AiSection = (typeof AI_SECTIONS)[number];
@@ -148,7 +146,7 @@ export const ROUTES = {
 	reportsForScan: (scanId: string) => `/reports?scan=${scanId}`,
 	reportsForTarget: (targetId: string) => `/reports?target=${targetId}`,
 	ai: (section?: AiSection) => (section ? `/settings/ai#ai-${section}` : '/settings/ai'),
-	mcp: (tab?: McpTab) => (tab ? `/mcp?tab=${tab}` : '/mcp'),
+	agents: () => '/agents',
 	connectors: (tab?: ConnectorTab) => (tab ? `/connectors?tab=${tab}` : '/connectors'),
 	remoteControl: (tab?: RemoteControlTab) =>
 		tab ? `/remote-control?tab=${tab}` : '/remote-control',
