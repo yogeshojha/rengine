@@ -15,7 +15,7 @@ from sqlalchemy import (
     select,
     text,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, INET
+from sqlalchemy.dialects.postgresql import ARRAY, INET, JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 
 from shared.definitions.asset_query import SERVICE_QUERY
@@ -56,6 +56,19 @@ WITH hosts AS (
     SELECT ip, port, count(DISTINCT host) AS web_count
     FROM http_assets
     WHERE scan_id = ANY(:sids) AND ip IS NOT NULL AND host <> ip GROUP BY ip, port
+), ai AS (
+    SELECT a.ip, a.port,
+           coalesce(jsonb_agg(DISTINCT a.ai_service)
+                    FILTER (WHERE a.ai_service IS NOT NULL), '[]') AS ai_services,
+           coalesce(jsonb_agg(DISTINCT a.ai_category)
+                    FILTER (WHERE a.ai_category IS NOT NULL), '[]') AS ai_categories,
+           coalesce(jsonb_agg(DISTINCT m.value)
+                    FILTER (WHERE m.value IS NOT NULL), '[]') AS ai_models
+    FROM http_assets a
+    LEFT JOIN LATERAL json_array_elements_text(coalesce(a.ai_models, '[]'::json)) m(value)
+      ON true
+    WHERE a.scan_id = ANY(:sids) AND a.ip IS NOT NULL AND a.ai_checked
+    GROUP BY a.ip, a.port
 )
 SELECT p.id AS id,
        p.scan_id AS scan_id,
@@ -88,12 +101,17 @@ SELECT p.id AS id,
        w.status_code AS status_code,
        w.url AS url,
        w.title AS title,
-       w.screenshot_path AS screenshot_path
+       w.screenshot_path AS screenshot_path,
+       (ai.ip IS NOT NULL) AS ai_checked,
+       coalesce(ai.ai_services, '[]') AS ai_services,
+       coalesce(ai.ai_categories, '[]') AS ai_categories,
+       coalesce(ai.ai_models, '[]') AS ai_models
 FROM ports p
 LEFT JOIN addr x ON x.ip = p.ip
 LEFT JOIN hosts h ON h.ip = p.ip
 LEFT JOIN web_top w ON w.ip = p.ip AND w.port = p.number
 LEFT JOIN web_count c ON c.ip = p.ip AND c.port = p.number
+LEFT JOIN ai ON ai.ip = p.ip AND ai.port = p.number
 WHERE p.scan_id = ANY(:sids)
 """
 
@@ -134,6 +152,10 @@ def derived(scope: QueryScope):
             column("url", String),
             column("title", String),
             column("screenshot_path", String),
+            column("ai_checked", Boolean),
+            column("ai_services", JSONB),
+            column("ai_categories", JSONB),
+            column("ai_models", JSONB),
         )
         .bindparams(
             bindparam("sids", list(scope.ids), type_=ARRAY(PG_UUID(as_uuid=True))),

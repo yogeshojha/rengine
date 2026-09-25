@@ -37,6 +37,7 @@ export interface SubdomainRead {
 	hygiene_checked: string[];
 	posture_issues: string[];
 	posture_checked: string[];
+	ai_services?: string[] | null;
 	ports?: number[];
 	endpoint_count?: number;
 	title_count?: number;

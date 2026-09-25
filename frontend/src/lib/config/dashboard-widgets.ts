@@ -86,6 +86,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetSpec[] = [
 	{ id: 'software', label: 'Software CVEs', row: 'scanning', modes: BOTH, skeleton: 'ranked' },
 	{ id: 'services', label: 'Services', row: 'composition', modes: BOTH, skeleton: 'donut' },
 	{ id: 'tech', label: 'Technology', row: 'composition', modes: BOTH, skeleton: 'ranked' },
+	{ id: 'ai', label: 'AI services', row: 'composition', modes: BOTH, skeleton: 'ranked' },
 	{ id: 'hosting', label: 'Hosting', row: 'composition', modes: BOTH, skeleton: 'ranked' },
 	{
 		id: 'shared',

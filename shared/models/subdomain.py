@@ -73,6 +73,9 @@ class Subdomain(SQLModel, table=True):
     posture_checked: list | None = Field(
         default=None, sa_column=Column(JSON(none_as_null=True), nullable=True)
     )
+    ai_services: list | None = Field(
+        default=None, sa_column=Column(JSON(none_as_null=True), nullable=True)
+    )
 
     interest_score: int = Field(default=0, index=True)
     interest_band: str | None = Field(default=None, max_length=16, index=True)
@@ -119,6 +122,7 @@ class SubdomainRead(BaseModel):
     hygiene_checked: list[str] = Field(default_factory=list)
     posture_issues: list[str] = Field(default_factory=list)
     posture_checked: list[str] = Field(default_factory=list)
+    ai_services: list[str] | None = None
     interest_score: int = 0
     interest_band: str | None = None
     interest_kinds: list[str] = Field(default_factory=list)

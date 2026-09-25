@@ -8,6 +8,8 @@ from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
 
+from shared.definitions.ai_services import AI_PORTS
+
 MAX_PORT = 65535
 DEFAULT_WEB_PORTS: tuple[int, ...] = (80, 443)
 
@@ -301,7 +303,7 @@ WELL_KNOWN: dict[int, ServiceSpec] = {
     50000: _s("db2", "IBM Db2", ServiceClass.DATABASE, "IBM Db2 database"),
 }
 
-WEB_PORTS: tuple[int, ...] = (
+_HTTP_PORTS: tuple[int, ...] = (
     80, 81, 88, 443, 591, 593, 832, 981, 1010, 1099, 1311, 2082, 2083, 2086, 2087,
     2095, 2096, 2480, 3000, 3001, 3002, 3003, 3128, 3333, 4243, 4443, 4567, 4711,
     4712, 4993, 5000, 5001, 5104, 5108, 5280, 5281, 5601, 5800, 6543, 7000, 7001,
@@ -311,6 +313,7 @@ WEB_PORTS: tuple[int, ...] = (
     9090, 9091, 9200, 9443, 9502, 9800, 9981, 10000, 10250, 11371, 12443, 15672,
     16080, 17778, 18091, 18092, 20720, 32000, 55440, 55672,
 )  # fmt: skip
+WEB_PORTS: tuple[int, ...] = tuple(sorted(set(_HTTP_PORTS) | set(AI_PORTS)))
 
 SENSITIVE_PORTS: list[int] = [
     21, 22, 23, 25, 53, 111, 135, 139, 389, 445, 512, 513, 514, 623, 873, 1080,

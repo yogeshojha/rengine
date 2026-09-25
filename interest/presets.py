@@ -200,6 +200,20 @@ PRESETS: tuple[Preset, ...] = (
         query="is:sensitive",
     ),
     Preset(
+        name="AI services",
+        kind=InterestKind.AI_SERVICE.value,
+        description="A model server, AI gateway, AI application or MCP server.",
+        query="ai:yes",
+        notify=True,
+    ),
+    Preset(
+        name="AI models listed",
+        kind=InterestKind.NO_AUTHENTICATION.value,
+        description="An AI service that listed its models without authentication.",
+        query="ai.model:yes",
+        notify=True,
+    ),
+    Preset(
         name="Expired certificate",
         kind=InterestKind.CERTIFICATE_ANOMALY.value,
         description="Answering on a certificate that has expired.",

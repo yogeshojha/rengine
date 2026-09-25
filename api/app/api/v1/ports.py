@@ -12,6 +12,7 @@ from app.services.port import PortService
 from shared.models.asset_query import QueryGroups, QueryLeads
 from shared.models.port import PortRead, PortSummary
 from shared.models.scan_correlation import (
+    AiSummary,
     OriginExposure,
     ScanExposure,
     ServiceFacets,
@@ -119,6 +120,23 @@ async def service_facets(
         facets="",
         model=ServiceFacets,
         build=lambda: service.facets(scope),
+    )
+
+
+@router.get("/ai", response_model=AiSummary)
+async def service_ai(
+    _current_user: CurrentUser,
+    service: Annotated[PortService, Depends(get_service)],
+    scope: ServiceScope,
+):
+    """Services carrying each AI service, and the models those services listed."""
+    return await lead_cache.cached(
+        service.session,
+        name="ai:services",
+        scans=scope.ids,
+        facets="",
+        model=AiSummary,
+        build=lambda: service.ai(scope),
     )
 
 

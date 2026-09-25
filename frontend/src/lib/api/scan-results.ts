@@ -28,6 +28,7 @@ import type {
 	HostBrief
 } from '$lib/utilities/endpoints';
 import type { HttpAssetDetail } from '$lib/types/http-asset';
+import type { AiSummary } from '$lib/utilities/scan-insights';
 import type { QueryGroups, QueryLeads } from '$lib/types/asset-query';
 import type { IpFacetSet, IpGroupFilter, IpSearchResult } from '$lib/utilities/ip-groups';
 import type { OriginExposure } from '$lib/utilities/origins';
@@ -108,6 +109,10 @@ export const servicesApi = {
 
 	async origins(projectId: string, scanId: string): Promise<OriginExposure> {
 		return api.get<OriginExposure>(`/ports/origins?${scopeQuery({ projectId, scanId })}`);
+	},
+
+	async ai(projectId: string, scanId: string, scope: TargetScope = {}): Promise<AiSummary> {
+		return api.get<AiSummary>(`/ports/ai?${scopeQuery({ projectId, scanId, ...scope })}`);
 	}
 };
 

@@ -7,7 +7,9 @@ from typing import Any
 
 from sqlalchemy import cast, exists, func, literal, or_, select
 from sqlalchemy.dialects.postgresql import INET, JSONB
+from sqlalchemy.dialects.postgresql import array as pg_array
 
+from shared.definitions.ai_services import CATEGORY_LABELS as AI_CATEGORIES
 from shared.definitions.asset_query import SERVICE_FLAGS, SERVICE_QUERY, Op
 from shared.definitions.ports import PortSource
 from shared.models.subdomain import Subdomain
@@ -88,6 +90,39 @@ def _flag(cmp: Compare, ctx: ServiceQueryContext):
     return or_(*branches)
 
 
+def _ai(cmp: Compare, ctx: ServiceQueryContext):
+    services = ctx.source.c.ai_services
+    state = tri_state(cmp)
+    if state is not None:
+        present = func.jsonb_array_length(services) > 0
+        matched = present if state else ~present
+        return negate(matched) if cmp.op is Op.NE else matched
+    if cmp.op in (Op.RE, Op.NRE):
+        return json_array_match(services, cmp)
+    values = [v.lower() for v in cmp.values]
+    categories = [v for v in values if v in AI_CATEGORIES]
+    keys = [v for v in values if v not in AI_CATEGORIES]
+    parts = []
+    if keys:
+        parts.append(func.jsonb_exists_any(services, pg_array(keys)))
+    if categories:
+        parts.append(
+            func.jsonb_exists_any(ctx.source.c.ai_categories, pg_array(categories))
+        )
+    matched = or_(*parts)
+    return negate(matched) if cmp.op is Op.NE else matched
+
+
+def _ai_model(cmp: Compare, ctx: ServiceQueryContext):
+    models = ctx.source.c.ai_models
+    state = tri_state(cmp)
+    if state is None:
+        return json_array_match(models, cmp)
+    present = func.jsonb_array_length(models) > 0
+    matched = present if state else ~present
+    return negate(matched) if cmp.op is Op.NE else matched
+
+
 _FLAG_BUILDERS = {
     "new": lambda ctx: preds.service_is_new(ctx.source, ctx.scope),
     "http": lambda ctx: ctx.source.c.is_http.is_(True),
@@ -140,6 +175,8 @@ _SERVICE_BUILDERS = {
         ctx.source.c.port,
         json_array_match(Vulnerability.cve_ids, c),
     ),
+    "ai": _ai,
+    "ai.model": _ai_model,
     "is": _flag,
 }
 

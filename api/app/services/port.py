@@ -6,6 +6,7 @@ from sqlalchemy import (
     func,
     select,
     text,
+    true,
 )
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,6 +27,7 @@ from app.services.asset_query import (
 )
 from app.services.surface_scope import baselined_targets
 from app.services.target_names import target_names
+from shared.definitions import ai_services as ai_defs
 from shared.definitions.asset_query import COUNT_CAP, SERVICE_QUERY
 from shared.definitions.ports import (
     DEFAULT_WEB_PORTS,
@@ -41,6 +43,9 @@ from shared.logging import get_logger
 from shared.models.asset_query import QueryGroups, QueryLeads
 from shared.models.port import Port, PortRead, PortSummary
 from shared.models.scan_correlation import (
+    AiModelCount,
+    AiServiceCount,
+    AiSummary,
     ExposureBand,
     ExposureLine,
     ScanExposure,
@@ -59,6 +64,7 @@ logger = get_logger(__name__)
 _FACET_LIMIT = 30
 _HOSTS_PER_ROW = 20
 _TOP_SERVICES = 8
+_AI_TOP_MODELS = 12
 
 _HOSTS_SQL = """
 SELECT ip AS ip, s.name AS host
@@ -272,6 +278,8 @@ class PortService:
                     is_sensitive=bool(r["sensitive"]),
                     is_new=r["target_id"] in baseline
                     and (r["ip"], int(r["port"])) not in seen,
+                    ai_services=list(r["ai_services"] or []),
+                    ai_models=list(r["ai_models"] or []),
                 )
             )
         return page
@@ -345,6 +353,61 @@ class PortService:
             await self.session.rollback()
             logger.info("service groups failed", error=str(exc.orig))
             return QueryGroups(dimension=key)
+
+    async def ai(self, scope: ScopeLike) -> AiSummary:
+        """Services carrying each AI service, and the models those services listed."""
+        scope = QueryScope.of(scope)
+        d = self._derived(scope)
+        n = func.count()
+        head = (
+            await self.session.execute(
+                select(
+                    n.filter(d.c.ai_checked).label("evaluated"),
+                    n.filter(func.jsonb_array_length(d.c.ai_services) > 0).label(
+                        "found"
+                    ),
+                    n.filter(func.jsonb_array_length(d.c.ai_models) > 0).label(
+                        "listed"
+                    ),
+                ).select_from(d)
+            )
+        ).one()
+
+        async def spread(column, limit: int | None = None):
+            element = func.jsonb_array_elements_text(column).table_valued("value")
+            element = element.alias("element")
+            query = (
+                select(element.c.value, n)
+                .select_from(d)
+                .join(element, true())
+                .group_by(element.c.value)
+                .order_by(n.desc(), element.c.value)
+            )
+            if limit:
+                query = query.limit(limit)
+            return (await self.session.execute(query)).all()
+
+        return AiSummary(
+            evaluated=int(head.evaluated),
+            found=int(head.found),
+            models_listed=int(head.listed),
+            services=[
+                AiServiceCount(
+                    key=key,
+                    label=ai_defs.service_label(key),
+                    category=ai_defs.normalise_category(None, key),
+                    count=int(count),
+                    query=ai_defs.ai_query(key),
+                )
+                for key, count in await spread(d.c.ai_services)
+            ],
+            models=[
+                AiModelCount(
+                    name=name, count=int(count), query=ai_defs.model_query(name)
+                )
+                for name, count in await spread(d.c.ai_models, _AI_TOP_MODELS)
+            ],
+        )
 
     async def facets(self, scope: ScopeLike) -> ServiceFacets:
         scope = QueryScope.of(scope)

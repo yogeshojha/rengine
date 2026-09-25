@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from dataclasses import field as dc_field
 from enum import StrEnum
 
+from shared.definitions.ai_services import AI_FIELD, AI_MODEL_FIELD, AI_QUERY_VALUES
 from shared.definitions.domain_posture import (
     QUERY_VALUES as POSTURE_VALUES,
 )
@@ -154,6 +155,7 @@ GROUPS: tuple[str, ...] = (
     "HTTP",
     "Response",
     "Hygiene",
+    "AI",
     "Network",
     "Certificates",
     "Findings",
@@ -476,6 +478,25 @@ FIELDS: tuple[QueryField, ...] = (
         aliases=("dns_posture", "mail"),
         values=POSTURE_VALUES,
         facet="posture",
+    ),
+    QueryField(
+        name=AI_FIELD,
+        type=FieldType.ENUM,
+        group="AI",
+        description=(
+            "AI service identified on any of the host's web assets. "
+            "Takes a service, a category, yes or no."
+        ),
+        example="ai:ollama",
+        aliases=("ai_service",),
+        values=AI_QUERY_VALUES,
+    ),
+    QueryField(
+        name=AI_MODEL_FIELD,
+        type=FieldType.STRING,
+        group="AI",
+        description="Model an AI service on the host listed. yes or no filters on presence.",
+        example="ai.model~llama",
     ),
     QueryField(
         name="cert",
@@ -1557,6 +1578,24 @@ SERVICE_FIELDS: tuple[QueryField, ...] = (
         description="Text the service returned on connect.",
         example="banner:ubuntu",
         free_text=True,
+    ),
+    QueryField(
+        name=AI_FIELD,
+        type=FieldType.ENUM,
+        group="Software",
+        description=(
+            "AI service identified on the port. Takes a service, a category, yes or no."
+        ),
+        example="ai:ollama",
+        aliases=("ai_service",),
+        values=AI_QUERY_VALUES,
+    ),
+    QueryField(
+        name=AI_MODEL_FIELD,
+        type=FieldType.STRING,
+        group="Software",
+        description="Model an AI service on the port listed. yes or no filters on presence.",
+        example="ai.model~llama",
     ),
     QueryField(
         name="ip",

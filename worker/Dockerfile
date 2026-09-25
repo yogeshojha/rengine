@@ -75,6 +75,25 @@ RUN set -eux; \
     chmod +x /out/bin/dalfox; \
     /out/bin/dalfox --version
 
+# julius names AI services; its MCP probe alone drives the MCP path lane
+ARG JULIUS_VERSION=v1.4.19
+RUN set -eux; \
+    arch="$(dpkg --print-architecture)"; \
+    case "$arch" in \
+      amd64|arm64) ;; \
+      *) echo "unsupported arch $arch" >&2; exit 1 ;; \
+    esac; \
+    v="${JULIUS_VERSION#v}"; \
+    curl -fsSL -o /tmp/julius.tar.gz "https://github.com/praetorian-inc/julius/releases/download/${JULIUS_VERSION}/julius_${v}_linux_${arch}.tar.gz"; \
+    tar -xzf /tmp/julius.tar.gz -C /tmp julius; \
+    mv /tmp/julius /out/bin/julius; \
+    chmod +x /out/bin/julius; \
+    curl -fsSL -o /tmp/julius-src.tar.gz "https://github.com/praetorian-inc/julius/archive/refs/tags/${JULIUS_VERSION}.tar.gz"; \
+    mkdir -p /out/julius/probes-mcp; \
+    tar -xzf /tmp/julius-src.tar.gz -C /out/julius/probes-mcp --strip-components=2 "julius-${v}/probes/mcp-server.yaml"; \
+    /out/bin/julius validate /out/julius/probes-mcp; \
+    rm -f /tmp/julius.tar.gz /tmp/julius-src.tar.gz
+
 
 ##################################################################
 # Development
@@ -91,6 +110,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && python3 -m pip install --no-cache-dir --break-system-packages wafw00f
 
 COPY --from=gotools /out/bin/ /root/go/bin/
+COPY --from=gotools /out/julius/ /opt/julius/
 ENV PATH="/root/go/bin:${PATH}"
 
 COPY shared /app/shared

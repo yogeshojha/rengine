@@ -2,7 +2,7 @@ import { dashboardApi } from '$lib/api/dashboard';
 import { subdomainsApi } from '$lib/api/subdomains';
 import { domainPostureApi } from '$lib/api/domain-posture';
 import { interestApi } from '$lib/api/interest';
-import { ipsApi, softwareApi } from '$lib/api/scan-results';
+import { ipsApi, servicesApi, softwareApi } from '$lib/api/scan-results';
 import { threatIntelApi } from '$lib/api/threat-intel';
 import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
 import { Capability } from '$lib/config/capabilities';
@@ -11,7 +11,7 @@ import type { IpFacetSet } from '$lib/utilities/ip-groups';
 import type { InterestPage } from '$lib/types/interest';
 import type { IntelChange, ThreatIntelStatus } from '$lib/types/threat-intel';
 import type { SoftwareCoverage, SoftwareFacets } from '$lib/types/software';
-import type { HygieneSummary } from '$lib/utilities/scan-insights';
+import type { AiSummary, HygieneSummary } from '$lib/utilities/scan-insights';
 import type { DomainPostureSummary } from '$lib/types/domain-posture';
 import type { CorrelationGraph } from '$lib/types/correlation';
 import { SvelteSet } from 'svelte/reactivity';
@@ -59,6 +59,7 @@ function createDashboardStore() {
 	let exposures = $state<InterestPage | null>(null);
 	let software = $state<{ facets: SoftwareFacets; coverage: SoftwareCoverage } | null>(null);
 	let hygiene = $state<HygieneSummary | null>(null);
+	let ai = $state<AiSummary | null>(null);
 	let posture = $state<DomainPostureSummary | null>(null);
 	let postureHosts = $state<HygieneSummary | null>(null);
 	let shared = $state<CorrelationGraph | null>(null);
@@ -170,6 +171,7 @@ function createDashboardStore() {
 				(v) => (software = v)
 			),
 			settle('hygiene', subdomainsApi.hygiene(pid, '', sc), (v) => (hygiene = v)),
+			settle('ai', servicesApi.ai(pid, '', sc), (v) => (ai = v)),
 			settle('posture', domainPostureApi.project(pid, sc), (v) => (posture = v)),
 			settle('posture', subdomainsApi.posture(pid, '', sc), (v) => (postureHosts = v)),
 			settle('shared', subdomainsApi.correlationGraph(pid, '', sc), (v) => (shared = v)),
@@ -194,6 +196,7 @@ function createDashboardStore() {
 		exposures = null;
 		software = null;
 		hygiene = null;
+		ai = null;
 		posture = null;
 		postureHosts = null;
 		shared = null;
@@ -239,6 +242,9 @@ function createDashboardStore() {
 		},
 		get hygiene() {
 			return hygiene;
+		},
+		get ai() {
+			return ai;
 		},
 		get posture() {
 			return posture;

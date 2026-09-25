@@ -6,6 +6,7 @@ import pytest
 
 from tools.ffuf.client import HEADER_FLAG as FFUF_HEADER
 from tools.httpx.client import HEADER_FLAG as HTTPX_HEADER
+from tools.julius.client import HEADER_FLAG as JULIUS_HEADER
 from tools.katana.client import HEADER_FLAG as KATANA_HEADER
 from tools.katana.client import KatanaClient
 from tools.nuclei.client import HEADER_FLAG as NUCLEI_HEADER
@@ -19,6 +20,7 @@ MEASURED = {
     "nuclei": "-header",
     "katana": "-headers",
     "ffuf": "-H",
+    "julius": "-H",
 }
 
 
@@ -27,6 +29,7 @@ EMITTED = {
     "nuclei": NUCLEI_HEADER,
     "katana": KATANA_HEADER,
     "ffuf": FFUF_HEADER,
+    "julius": JULIUS_HEADER,
 }
 
 

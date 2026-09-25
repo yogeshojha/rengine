@@ -70,6 +70,7 @@
 		hygieneQuery
 	} from '$lib/config/hygiene';
 	import type { IconComponent } from '$lib/config/icons';
+	import { AI_ICON, AI_YES, aiQuery, aiServiceLabel } from '$lib/config/ai-services';
 	import type { SubdomainRead } from '$lib/types/subdomain';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import Settings2 from '@lucide/svelte/icons/settings-2';
@@ -153,6 +154,7 @@
 	let cert = $derived(certState(s));
 	let hygieneIssues = $derived(sortChecks(s.hygiene_issues ?? []));
 	let hygieneChecked = $derived(s.hygiene_checked ?? []);
+	let aiServices = $derived(s.ai_services ?? []);
 	let ports = $derived(s.ports ?? []);
 	let ips = $derived(s.resolved_ips ?? []);
 	let internalIp = $derived(ips.find(isPrivateIp) ?? null);
@@ -281,6 +283,22 @@
 					</span>
 				</HostHoverCard>
 			</span>
+			{#if aiServices.length > 0}
+				<Hint text={aiServices.map(aiServiceLabel).join(' · ')}>
+					{#snippet child(props)}
+						<button
+							{...props}
+							type="button"
+							class="flex h-5 shrink-0 items-center gap-1 rounded border border-border px-1 text-2xs tabular-nums transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+							aria-label="Filter to AI services"
+							onclick={(e) => pivot(e, aiQuery(aiServices.length === 1 ? aiServices[0] : AI_YES))}
+						>
+							<AI_ICON class="size-3" />
+							{#if aiServices.length > 1}{aiServices.length}{/if}
+						</button>
+					{/snippet}
+				</Hint>
+			{/if}
 			{#if onStructure && (s.endpoint_count ?? 0) > 0}
 				<Hint
 					text="{s.endpoint_count?.toLocaleString()} {s.endpoint_count === 1

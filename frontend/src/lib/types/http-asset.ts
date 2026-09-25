@@ -53,6 +53,11 @@ export interface HttpAssetRead {
 	body_preview: string | null;
 	hygiene_issues: string[];
 	hygiene_checked: string[];
+	ai_checked?: boolean;
+	ai_service?: string | null;
+	ai_category?: string | null;
+	ai_endpoint?: string | null;
+	ai_models?: string[];
 	discovered_at: string;
 }
 

@@ -254,6 +254,28 @@ export interface HygieneSummary {
 	checks: HygieneCheckCount[];
 }
 
+export interface AiServiceCount {
+	key: string;
+	label: string;
+	category: string;
+	count: number;
+	query: string;
+}
+
+export interface AiModelCount {
+	name: string;
+	count: number;
+	query: string;
+}
+
+export interface AiSummary {
+	evaluated: number;
+	found: number;
+	models_listed: number;
+	services: AiServiceCount[];
+	models: AiModelCount[];
+}
+
 export interface SubdomainRelation {
 	kind: string;
 	reason: string;

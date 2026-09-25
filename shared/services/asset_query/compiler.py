@@ -17,7 +17,9 @@ from sqlalchemy import (
     union_all,
 )
 from sqlalchemy.dialects.postgresql import INET, JSONB
+from sqlalchemy.dialects.postgresql import array as pg_array
 
+from shared.definitions.ai_services import CATEGORY_LABELS as AI_CATEGORIES
 from shared.definitions.asset_query import FLAGS, HOST_QUERY, FieldType, Op
 from shared.definitions.domain_posture import QUERY_VALUES as POSTURE_VALUES
 from shared.definitions.hygiene import QUERY_VALUES as HYGIENE_VALUES
@@ -274,6 +276,40 @@ def _posture(cmp: Compare):
     return negate(matched) if cmp.op is Op.NE else matched
 
 
+def _ai(cmp: Compare, ctx: QueryContext):
+    services = cast(Subdomain.ai_services, JSONB)
+    state = tri_state(cmp)
+    if state is not None:
+        present = func.coalesce(func.jsonb_array_length(services), 0) > 0
+        matched = present if state else ~present
+        return negate(matched) if cmp.op is Op.NE else matched
+    if cmp.op in (Op.RE, Op.NRE):
+        return json_array_match(Subdomain.ai_services, cmp)
+    values = [v.lower() for v in cmp.values]
+    categories = [v for v in values if v in AI_CATEGORIES]
+    keys = [v for v in values if v not in AI_CATEGORIES]
+    parts = []
+    if keys:
+        parts.append(func.jsonb_exists_any(services, pg_array(keys)))
+    if categories:
+        parts.append(
+            preds.asset_match(ctx.scope, HttpAsset.ai_category.in_(categories))
+        )
+    matched = or_(*parts)
+    return negate(matched) if cmp.op is Op.NE else matched
+
+
+def _ai_model(cmp: Compare):
+    state = tri_state(cmp)
+    if state is None:
+        return json_array_match(HttpAsset.ai_models, cmp)
+    present = func.coalesce(
+        func.jsonb_array_length(cast(HttpAsset.ai_models, JSONB)), 0
+    )
+    matched = present > 0 if state else present == 0
+    return negate(matched) if cmp.op is Op.NE else matched
+
+
 _SUBDOMAIN_BUILDERS = {
     "target": lambda c, _ctx: target_match(Subdomain.target_id, c),
     "host": lambda c, _ctx: folded_match(Subdomain.name, c),
@@ -324,6 +360,7 @@ _SUBDOMAIN_BUILDERS = {
     "exposure_band": lambda c, _ctx: _interest_band(c),
     "hygiene": lambda c, _ctx: _hygiene(c),
     "posture": lambda c, _ctx: _posture(c),
+    "ai": _ai,
     "cve": lambda c, ctx: preds.host_vuln(
         ctx.scope, json_array_match(Vulnerability.cve_ids, c)
     ),
@@ -331,6 +368,7 @@ _SUBDOMAIN_BUILDERS = {
 }
 
 _ASSET_BUILDERS = {
+    "ai.model": lambda c, _ctx: _ai_model(c),
     "path": lambda c, _ctx: string_match(HttpAsset.path, c),
     "words": lambda c, _ctx: number_match(HttpAsset.words, c, int_coerce(c)),
     "lines": lambda c, _ctx: number_match(HttpAsset.lines, c, int_coerce(c)),

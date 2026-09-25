@@ -17,6 +17,7 @@ class TransportTool(StrEnum):
     FFUF = "ffuf"
     DNSX = "dnsx"
     BANNER = "banner"
+    JULIUS = "julius"
 
 
 @dataclass(frozen=True)
@@ -40,6 +41,7 @@ _NORMAL: dict[str, tuple[int | None, int]] = {
     TransportTool.FFUF.value: (150, 40),
     TransportTool.DNSX.value: (None, 30),
     TransportTool.BANNER.value: (None, 32),
+    TransportTool.JULIUS.value: (150, 20),
 }
 _AGGRESSIVE: dict[str, tuple[int | None, int]] = {
     TransportTool.HTTPX.value: (400, 300),
@@ -49,6 +51,7 @@ _AGGRESSIVE: dict[str, tuple[int | None, int]] = {
     TransportTool.FFUF.value: (400, 80),
     TransportTool.DNSX.value: (None, 50),
     TransportTool.BANNER.value: (None, 64),
+    TransportTool.JULIUS.value: (400, 40),
 }
 PROFILES: dict[str, dict[str, tuple[int | None, int]]] = {
     Intensity.PASSIVE.value: _NORMAL,
@@ -64,6 +67,7 @@ TOOL_TIMEOUT: dict[str, int] = {
     TransportTool.FFUF.value: 8,
     TransportTool.DNSX.value: 5,
     TransportTool.BANNER.value: 4,
+    TransportTool.JULIUS.value: 5,
 }
 TOOL_RETRIES: dict[str, int] = {
     TransportTool.NAABU.value: 1,

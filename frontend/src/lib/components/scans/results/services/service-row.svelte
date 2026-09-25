@@ -47,6 +47,7 @@
 	import type { Recheck } from '$lib/types/recheck';
 	import { SERVICE_LEAD_COLUMNS } from './columns';
 	import { hostPort } from '$lib/utilities/net';
+	import { AI_ICON, AI_YES, aiQuery, aiServiceLabel } from '$lib/config/ai-services';
 
 	interface Props {
 		service: ServiceRead;
@@ -87,6 +88,8 @@
 	let hosts = $derived(s.hosts ?? []);
 	let endpoint = $derived(hostPort(s.ip, s.port));
 	let passive = $derived(s.source === PortSource.INTERNETDB);
+	let aiServices = $derived(s.ai_services ?? []);
+	let aiModels = $derived(s.ai_models ?? []);
 	let software = $derived(s.product ? (s.version ? `${s.product} ${s.version}` : s.product) : null);
 	let tone = $derived(rowTone(selected || checked, focused));
 	let pin = $derived(pinTone(selected || checked, focused));
@@ -200,6 +203,30 @@
 						{/if}
 					</Tooltip.Content>
 				</Tooltip.Root>
+			{/if}
+			{#if aiServices.length}
+				{#snippet aiChip(props: Record<string, unknown>)}
+					<button
+						{...props}
+						type="button"
+						class="flex h-5 shrink-0 items-center"
+						onclick={(e) => pivot(e, aiQuery(aiServices.length === 1 ? aiServices[0] : AI_YES))}
+					>
+						<Badge variant="outline" class="gap-1 px-1.5 text-2xs font-normal">
+							<AI_ICON class="size-3" />
+							{aiServices.map(aiServiceLabel).join(' · ')}
+						</Badge>
+					</button>
+				{/snippet}
+				{#if aiModels.length}
+					<Hint text="Models listed · {aiModels.join(', ')}">
+						{#snippet child(props)}
+							{@render aiChip(props)}
+						{/snippet}
+					</Hint>
+				{:else}
+					{@render aiChip({})}
+				{/if}
 			{/if}
 			{#if s.is_new}
 				<Tooltip.Root>

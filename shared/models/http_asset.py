@@ -8,6 +8,7 @@ from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
+from shared.definitions.ai_services import MAX_ENDPOINT_LENGTH, MAX_SERVICE_LENGTH
 from shared.models.scan_surface import AssetSurface
 from shared.utils.datetime import utc_now
 
@@ -121,6 +122,12 @@ class HttpAsset(SQLModel, table=True):
     hygiene_issues: list | None = _json_optional_list()
     hygiene_checked: list | None = _json_optional_list()
     tracking_ids: list | None = _json_optional_list()
+    # ai
+    ai_checked: bool = Field(default=False)
+    ai_service: str | None = Field(default=None, max_length=MAX_SERVICE_LENGTH)
+    ai_category: str | None = Field(default=None, max_length=32)
+    ai_endpoint: str | None = Field(default=None, max_length=MAX_ENDPOINT_LENGTH)
+    ai_models: list | None = _json_optional_list()
     not_found: list | None = _json_optional_list()
     search_tsv: Any | None = Field(
         default=None,
@@ -186,6 +193,11 @@ class HttpAssetRead(BaseModel):
     body_preview: str | None = None
     hygiene_issues: list[str] = Field(default_factory=list)
     hygiene_checked: list[str] = Field(default_factory=list)
+    ai_checked: bool = False
+    ai_service: str | None = None
+    ai_category: str | None = None
+    ai_endpoint: str | None = None
+    ai_models: list[str] = Field(default_factory=list)
     discovered_at: datetime
 
 

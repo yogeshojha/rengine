@@ -38,6 +38,8 @@ export interface ServiceRead {
 	screenshot_path: string | null;
 	is_sensitive: boolean;
 	is_new: boolean;
+	ai_services?: string[];
+	ai_models?: string[];
 }
 
 export interface ServiceQuery {

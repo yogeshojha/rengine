@@ -224,6 +224,7 @@ class SubdomainService:
             hygiene_checked=list(sub.hygiene_checked or []),
             posture_issues=list(sub.posture_issues or []),
             posture_checked=list(sub.posture_checked or []),
+            ai_services=None if sub.ai_services is None else list(sub.ai_services),
             discovered_at=sub.discovered_at,
         )
 

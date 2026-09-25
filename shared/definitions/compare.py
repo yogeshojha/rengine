@@ -73,6 +73,7 @@ _HOST_FIELDS: tuple[WatchedField, ...] = (
     WatchedField("tech", "Technology", FieldKind.LIST.value),
     WatchedField("hygiene_issues", "Hygiene", FieldKind.LIST.value),
     WatchedField("posture_issues", "Domain posture", FieldKind.LIST.value),
+    WatchedField("ai_services", "AI service", FieldKind.LIST.value),
     WatchedField("resolved_ips", "Addresses", FieldKind.LIST.value),
 )
 

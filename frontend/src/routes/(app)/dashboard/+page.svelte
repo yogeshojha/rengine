@@ -41,6 +41,7 @@
 	import SoftwareCell from '$lib/components/dashboard/software-cell.svelte';
 	import ServicesCell from '$lib/components/dashboard/services-cell.svelte';
 	import TechCell from '$lib/components/dashboard/tech-cell.svelte';
+	import AiCell from '$lib/components/dashboard/ai-cell.svelte';
 	import HostingCell from '$lib/components/dashboard/hosting-cell.svelte';
 	import SharedCell from '$lib/components/dashboard/shared-cell.svelte';
 	import ActivityCell from '$lib/components/dashboard/activity-cell.svelte';
@@ -437,6 +438,9 @@
 				{/if}
 				{#if show('tech') && (extras || (dashboardStore.tech?.length ?? 0) > 0)}
 					<TechCell tech={dashboardStore.tech} loading={extras} />
+				{/if}
+				{#if show('ai') && (extras || (dashboardStore.ai?.found ?? 0) > 0)}
+					<AiCell ai={dashboardStore.ai} loading={extras} />
 				{/if}
 				{#if show('hosting') && (extras || (dashboardStore.hosting?.resolved ?? 0) > 0)}
 					<HostingCell

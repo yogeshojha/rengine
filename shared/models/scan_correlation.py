@@ -175,6 +175,30 @@ class ServiceRead(BaseModel):
     screenshot_path: str | None = None
     is_sensitive: bool = False
     is_new: bool = False
+    ai_services: list[str] = Field(default_factory=list)
+    ai_models: list[str] = Field(default_factory=list)
+
+
+class AiServiceCount(BaseModel):
+    key: str
+    label: str
+    category: str
+    count: int = 0
+    query: str
+
+
+class AiModelCount(BaseModel):
+    name: str
+    count: int = 0
+    query: str
+
+
+class AiSummary(BaseModel):
+    evaluated: int = 0
+    found: int = 0
+    models_listed: int = 0
+    services: list[AiServiceCount] = Field(default_factory=list)
+    models: list[AiModelCount] = Field(default_factory=list)
 
 
 class ServicePage(BaseModel):

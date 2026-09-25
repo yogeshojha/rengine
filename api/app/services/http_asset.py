@@ -78,6 +78,11 @@ class HttpAssetService:
             body_preview=asset.body_preview,
             hygiene_issues=list(asset.hygiene_issues or []),
             hygiene_checked=list(asset.hygiene_checked or []),
+            ai_checked=asset.ai_checked,
+            ai_service=asset.ai_service,
+            ai_category=asset.ai_category,
+            ai_endpoint=asset.ai_endpoint,
+            ai_models=list(asset.ai_models or []),
             discovered_at=asset.discovered_at,
         )
 

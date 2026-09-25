@@ -1,4 +1,11 @@
 <script lang="ts">
+	import {
+		AI_ICON,
+		aiCategoryLabel,
+		aiModelQuery,
+		aiQuery,
+		aiServiceLabel
+	} from '$lib/config/ai-services';
 	import { SHEET_ROW_TIGHT, SHEET_DT, sheetStep } from './sheet';
 	import Globe from '@lucide/svelte/icons/globe';
 	import NoteSection from '$lib/components/notes/note-section.svelte';
@@ -150,6 +157,7 @@
 
 	let primaryAsset = $derived(corr?.primary_asset ?? null);
 	let hostAssets = $derived(corr?.services ?? []);
+	let aiAssets = $derived(hostAssets.filter((a) => !!a.ai_service));
 	let ports = $derived(corr?.ports ?? []);
 	let ipMetas = $derived(corr?.ip_metas ?? []);
 	let related = $derived(corr?.related ?? []);
@@ -795,6 +803,36 @@
 							</section>
 						{/if}
 
+						{#if aiAssets.length}
+							<section class="flex flex-col gap-2">
+								{@render heading(AI_ICON, 'AI services')}
+								<ul class="flex flex-col divide-y divide-border/60">
+									{#each aiAssets as a (a.id)}
+										{@const service = a.ai_service ?? ''}
+										<li class="flex flex-col gap-1.5 py-2">
+											<div class="flex flex-wrap items-center gap-1.5">
+												{@render chip(aiServiceLabel(service), aiQuery(service))}
+												<span class="text-xs text-muted-foreground">
+													{aiCategoryLabel(a.ai_category)}
+												</span>
+												<span class="ml-auto font-mono text-2xs break-all text-muted-foreground">
+													{a.scheme}://{a.host}:{a.port}{a.ai_endpoint ?? ''}
+												</span>
+											</div>
+											{#if a.ai_models?.length}
+												<div class="flex flex-wrap items-center gap-1">
+													<span class="text-2xs text-muted-foreground">Models listed</span>
+													{#each a.ai_models as model (model)}
+														{@render chip(model, aiModelQuery(model), true)}
+													{/each}
+												</div>
+											{/if}
+										</li>
+									{/each}
+								</ul>
+							</section>
+						{/if}
+
 						{#if sub.tech.length || detail?.cpe?.length}
 							<section class="flex flex-col gap-2">
 								{@render heading(Layers, 'Technologies')}
@@ -1068,6 +1106,12 @@
 													</Item.Title>
 													{#if a.title}
 														<Item.Description class="text-xs">{a.title}</Item.Description>
+													{/if}
+													{#if a.ai_service}
+														<Item.Description class="flex items-center gap-1 text-xs">
+															<AI_ICON class="size-3" />
+															{aiServiceLabel(a.ai_service)}
+														</Item.Description>
 													{/if}
 												</Item.Content>
 												<Item.Actions class="gap-2">

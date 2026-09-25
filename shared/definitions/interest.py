@@ -58,6 +58,7 @@ class InterestKind(StrEnum):
     EXPLOITED_SOFTWARE = "exploited_software"
     CERTIFICATE_ANOMALY = "certificate_anomaly"
     TAKEOVER_RISK = "takeover_risk"
+    AI_SERVICE = "ai_service"
     NETWORK_OUTLIER = "network_outlier"
     RARE_TECHNOLOGY = "rare_technology"
     RARE_IDENTITY = "rare_identity"
@@ -177,6 +178,13 @@ KINDS: tuple[KindSpec, ...] = (
         "Takeover risk",
         "A CNAME points at a name that does not answer.",
         30,
+        TONE_WARNING,
+    ),
+    KindSpec(
+        InterestKind.AI_SERVICE.value,
+        "AI service",
+        "A model server, AI gateway, AI application or MCP server answering on the internet.",
+        26,
         TONE_WARNING,
     ),
     KindSpec(

@@ -22,6 +22,7 @@ import Radar from '@lucide/svelte/icons/radar';
 import ListFilter from '@lucide/svelte/icons/list-filter';
 import Type from '@lucide/svelte/icons/type';
 import Eye from '@lucide/svelte/icons/eye';
+import BrainCircuit from '@lucide/svelte/icons/brain-circuit';
 import type { IconComponent } from './icons';
 import { INTEREST_BAND, INTEREST_SOURCE } from '$lib/types/interest';
 
@@ -43,6 +44,7 @@ export enum InterestKind {
 	EXPLOITED_SOFTWARE = 'exploited_software',
 	CERTIFICATE_ANOMALY = 'certificate_anomaly',
 	TAKEOVER_RISK = 'takeover_risk',
+	AI_SERVICE = 'ai_service',
 	NETWORK_OUTLIER = 'network_outlier',
 	RARE_TECHNOLOGY = 'rare_technology',
 	RARE_IDENTITY = 'rare_identity',
@@ -66,6 +68,7 @@ export const KIND_ICONS: Record<string, IconComponent> = {
 	[InterestKind.EXPLOITED_SOFTWARE]: Flame,
 	[InterestKind.CERTIFICATE_ANOMALY]: FileBadge,
 	[InterestKind.TAKEOVER_RISK]: Unlink,
+	[InterestKind.AI_SERVICE]: BrainCircuit,
 	[InterestKind.NETWORK_OUTLIER]: Network,
 	[InterestKind.RARE_TECHNOLOGY]: Layers,
 	[InterestKind.RARE_IDENTITY]: Image,

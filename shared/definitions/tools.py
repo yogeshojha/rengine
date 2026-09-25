@@ -119,6 +119,12 @@ SCAN_TOOLS: tuple[ToolSpec, ...] = (
         phase="CDN Attribution",
         example="-resp",
     ),
+    ToolSpec(
+        name="julius",
+        label="julius",
+        phase="AI Detection",
+        example="--base-paths /api,/proxy",
+    ),
 )
 
 TOOL_NAMES: frozenset[str] = frozenset(t.name for t in SCAN_TOOLS)
