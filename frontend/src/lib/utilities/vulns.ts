@@ -270,6 +270,7 @@ export interface CoverageRead {
 	hosts_dropped_count: number;
 	requests_sent: number | null;
 	matched: number | null;
+	echo_filtered: number;
 	errors: number | null;
 	rate_limit: number | null;
 	duration_seconds: number | null;

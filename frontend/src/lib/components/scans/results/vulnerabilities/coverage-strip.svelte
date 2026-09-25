@@ -30,6 +30,7 @@
 		requests: number | null;
 		errors: number | null;
 		dropped: number;
+		filtered: number;
 		unloaded: number;
 		error: string | null;
 		sample: string | null;
@@ -85,6 +86,7 @@
 					requests: sum(rows.map((r) => r.requests_sent)),
 					errors: sum(rows.map((r) => r.errors)),
 					dropped,
+					filtered: rows.reduce((a, c) => a + (c.echo_filtered ?? 0), 0),
 					unloaded,
 					error: rows.find((r) => r.error)?.error ?? null,
 					sample: rows.find((r) => r.hosts_dropped.length)?.hosts_dropped[0]?.host ?? null
@@ -101,6 +103,7 @@
 	let requests = $derived(sum(coverage.map((c) => c.requests_sent)));
 	let errors = $derived(sum(coverage.map((c) => c.errors)));
 	let dropped = $derived(coverage.reduce((a, c) => a + c.hosts_dropped_count, 0));
+	let filtered = $derived(coverage.reduce((a, c) => a + (c.echo_filtered ?? 0), 0));
 	let partial = $derived(ran && coverage.some((c) => c.status !== 'completed'));
 	let Icon = $derived(!ran ? CircleSlash : partial ? TriangleAlert : CircleCheck);
 	let tone = $derived(
@@ -116,6 +119,8 @@
 		if (requests !== null) parts.push(`${n(requests)} ${requests === 1 ? 'request' : 'requests'}`);
 		if (dropped) parts.push(`${n(dropped)} ${dropped === 1 ? 'target' : 'targets'} dropped`);
 		else if (errors) parts.push(`${n(errors)} request ${errors === 1 ? 'error' : 'errors'}`);
+		if (filtered)
+			parts.push(`${n(filtered)} echoed ${filtered === 1 ? 'match' : 'matches'} filtered`);
 		return parts.join(' · ');
 	});
 </script>
@@ -202,6 +207,12 @@
 										{row.dropped === 1 ? 'target' : 'targets'} dropped after repeated errors:
 										<span class="font-mono">{row.sample}</span>
 										{#if row.dropped > 1}and {n(row.dropped - 1)} more{/if}
+									</p>
+								{/if}
+								{#if row.filtered}
+									<p class="text-2xs text-muted-foreground">
+										{n(row.filtered)} injection {row.filtered === 1 ? 'match' : 'matches'} filtered: the
+										request URL was reflected into the response.
 									</p>
 								{/if}
 								{#if row.error}
