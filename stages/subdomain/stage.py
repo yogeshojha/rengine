@@ -94,9 +94,26 @@ def _guess_budget(count: int) -> int:
     return max(_GUESS_MIN_BUDGET, -(-count // _GUESS_FLOOR_RATE))
 
 
-def _is_wildcard(info: dict, wildcard_ips: set[str]) -> bool:
-    ips = set(info.get("ips") or ())
-    return bool(ips) and bool(wildcard_ips) and ips <= wildcard_ips
+_WILDCARD_PROBES = 5
+_WILDCARD_QUORUM = 3
+
+
+@dataclass(frozen=True)
+class _Wildcard:
+    """The addresses and CNAME targets a zone answers with for any name."""
+
+    ips: frozenset[str] = frozenset()
+    cnames: frozenset[str] = frozenset()
+
+    def __bool__(self) -> bool:
+        return bool(self.ips or self.cnames)
+
+    def matches(self, info: dict) -> bool:
+        ips = {str(ip) for ip in info.get("ips") or ()}
+        if ips and (ips & self.ips):
+            return True
+        cname = info.get("cname")
+        return bool(cname and cname in self.cnames)
 
 
 @dataclass
@@ -195,9 +212,9 @@ class SubdomainStage(Stage):
         self._check_abort()
 
         merged = merge_and_filter(results, domain, resolved.included_subdomains)
-        wildcard_ips = self._wildcard_ips(domain)
+        wildcard = self._wildcard_profile(domain)
         extra = self._expand(
-            domain, cfg, sorted(merged, key=_seed_rank), wildcard_ips, activity
+            domain, cfg, sorted(merged, key=_seed_rank), wildcard, activity
         )
         if extra:
             merged = merge_and_filter(
@@ -218,9 +235,9 @@ class SubdomainStage(Stage):
 
         self._write_names(merged)
         to_resolve = [n for n in merged if n not in excluded]
-        state = self._resolve(to_resolve, wildcard_ips)
+        state = self._resolve(to_resolve, wildcard)
 
-        active, ips_seen = self._persist(merged, state.records, wildcard_ips, excluded)
+        active, ips_seen = self._persist(merged, state.records, wildcard, excluded)
         return StageResult(
             counts={
                 "subdomains": len(merged),
@@ -239,7 +256,7 @@ class SubdomainStage(Stage):
         domain: str,
         cfg: SubdomainConfig,
         seeds: list[str],
-        wildcard_ips: set[str],
+        wildcard: _Wildcard,
         activity: ActivityLogService,
     ) -> list[ProviderResult]:
         """Zone transfer, bruteforce and permutation results."""
@@ -248,9 +265,9 @@ class SubdomainStage(Stage):
         if cfg.zone_transfer:
             out.append(self._zone_transfer(domain, passive=passive))
         if cfg.bruteforce:
-            out.append(self._bruteforce(domain, cfg, wildcard_ips, passive=passive))
+            out.append(self._bruteforce(domain, cfg, wildcard, passive=passive))
         if cfg.permutations:
-            out.append(self._permute(seeds, wildcard_ips, passive=passive))
+            out.append(self._permute(seeds, wildcard, passive=passive))
         for result in out:
             self._check_abort()
             self._log_provider(activity, result)
@@ -338,7 +355,7 @@ class SubdomainStage(Stage):
         self,
         domain: str,
         cfg: SubdomainConfig,
-        wildcard_ips: set[str],
+        wildcard: _Wildcard,
         *,
         passive: bool,
     ) -> ProviderResult:
@@ -367,7 +384,7 @@ class SubdomainStage(Stage):
                     if parsed is None:
                         continue
                     name, info = parsed
-                    if _is_wildcard(info, wildcard_ips):
+                    if wildcard.matches(info):
                         wildcards += 1
                         continue
                     found.add(name)
@@ -394,7 +411,7 @@ class SubdomainStage(Stage):
     def _permute(
         self,
         seeds: list[str],
-        wildcard_ips: set[str],
+        wildcard: _Wildcard,
         *,
         passive: bool,
     ) -> ProviderResult:
@@ -435,7 +452,7 @@ class SubdomainStage(Stage):
                 if parsed is None:
                     continue
                 name, info = parsed
-                if info.get("active") and not _is_wildcard(info, wildcard_ips):
+                if info.get("active") and not wildcard.matches(info):
                     found.add(name)
                 self._check_abort()
         notes = [f"{len(candidates):,} variants resolved"]
@@ -449,10 +466,24 @@ class SubdomainStage(Stage):
             duration_seconds=round(time.monotonic() - start, 2),
         )
 
-    def _wildcard_ips(self, domain: str) -> set[str]:
-        probe = f"{uuid.uuid4().hex[:12]}.{domain}"
-        info = self._resolve([probe]).records.get(probe)
-        return set(info["ips"]) if info and info.get("ips") else set()
+    def _wildcard_profile(self, domain: str) -> _Wildcard:
+        """Resolve several random names; a zone answering a quorum of them wildcards."""
+        probes = [f"{uuid.uuid4().hex[:12]}.{domain}" for _ in range(_WILDCARD_PROBES)]
+        records = self._resolve(probes).records
+        answered = [
+            records[p] for p in probes if p in records and records[p].get("active")
+        ]
+        if len(answered) < _WILDCARD_QUORUM:
+            return _Wildcard()
+        ips: set[str] = set()
+        cnames: dict[str, int] = {}
+        for info in answered:
+            ips.update(str(ip) for ip in info.get("ips") or ())
+            cname = info.get("cname")
+            if cname:
+                cnames[cname] = cnames.get(cname, 0) + 1
+        wildcard_cnames = {c for c, seen in cnames.items() if seen >= _WILDCARD_QUORUM}
+        return _Wildcard(frozenset(ips), frozenset(wildcard_cnames))
 
     @staticmethod
     def _resolution_warnings(state: _Resolution) -> list[str]:
@@ -591,9 +622,9 @@ class SubdomainStage(Stage):
     def _resolve(
         self,
         names: list[str],
-        wildcard_ips: set[str] | None = None,
+        wildcard: _Wildcard | None = None,
     ) -> _Resolution:
-        """wildcard_ips is None for the wildcard probe itself, whose name is not stored."""
+        """wildcard is None for the wildcard probe itself, whose name is not stored."""
         state = _Resolution(submitted=len(names))
         if not names:
             return state
@@ -617,9 +648,9 @@ class SubdomainStage(Stage):
             batch.answered = len(records)
             batch.stalled = stalled
             wrote = 0.0
-            if wildcard_ips is not None:
+            if wildcard is not None:
                 started = time.monotonic()
-                self._write_resolution(records, wildcard_ips)
+                self._write_resolution(records, wildcard)
                 wrote = time.monotonic() - started
             note = (
                 f"resolved {state.answered:,}/{len(names):,} names, "
@@ -632,7 +663,7 @@ class SubdomainStage(Stage):
             self.emit_progress(note)
 
         self._retry_degraded(client, batches, state)
-        self._retry_silent(client, names, state, wildcard_ips)
+        self._retry_silent(client, names, state, wildcard)
         return state
 
     def _resolve_batches(self, client: DnsxClient, batches: list[_Batch]):
@@ -693,7 +724,7 @@ class SubdomainStage(Stage):
         client: DnsxClient,
         names: list[str],
         state: _Resolution,
-        wildcard_ips: set[str] | None,
+        wildcard: _Wildcard | None,
     ) -> None:
         """dnsx says nothing for a name it dropped and for a name that does not exist."""
         size = DNS_BATCH_SIZE
@@ -710,8 +741,8 @@ class SubdomainStage(Stage):
                 )
                 state.records.update(records)
                 found += len(records)
-                if wildcard_ips is not None:
-                    self._write_resolution(records, wildcard_ips)
+                if wildcard is not None:
+                    self._write_resolution(records, wildcard)
             state.recovered += found
             state.still_dropping = bool(found)
             if not found:
@@ -797,9 +828,7 @@ class SubdomainStage(Stage):
         self.publish_results(SurfaceDimension.WEB_ASSETS.value)
         return len(rows)
 
-    def _write_resolution(
-        self, records: dict[str, dict], wildcard_ips: set[str]
-    ) -> int:
+    def _write_resolution(self, records: dict[str, dict], wildcard: _Wildcard) -> int:
         """Apply one batch of answers to rows the name write already created."""
         rows = []
         for name, info in sorted(records.items()):
@@ -812,9 +841,7 @@ class SubdomainStage(Stage):
                 "resolved_ips": ips,
                 "cname": info.get("cname"),
                 "is_active": bool(info.get("active", False)),
-                "is_wildcard": bool(ips)
-                and bool(wildcard_ips)
-                and set(ips) <= wildcard_ips,
+                "is_wildcard": wildcard.matches(info),
             }
             if self._resolved.get(name) == row:
                 continue
@@ -834,14 +861,14 @@ class SubdomainStage(Stage):
         self,
         merged: dict[str, set[str]],
         resolution: dict[str, dict],
-        wildcard_ips: set[str],
+        wildcard: _Wildcard,
         excluded: set[str],
     ) -> tuple[int, set[str]]:
         """The reconciling write."""
         self._write_names(merged)
         self._write_resolution(
             {n: info for n, info in resolution.items() if n not in excluded},
-            wildcard_ips,
+            wildcard,
         )
         active = 0
         ips_seen: set[str] = set()
