@@ -9,9 +9,10 @@ from channels.models import BotInfo
 from channels.render import Line, chunk
 from channels.telegram.api import SAFE_LIMIT, TelegramApi, TelegramError
 
-__all__ = ["TelegramError", "menu", "notify", "valid_token", "verify"]
+__all__ = ["TOKEN_INVALID", "TelegramError", "menu", "notify", "valid_token", "verify"]
 
 TOKEN_RE = re.compile(r"^\d{5,15}:[A-Za-z0-9_-]{20,64}$")
+TOKEN_INVALID = "Not a Telegram bot token. Copy the token @BotFather sent."  # noqa: S105
 
 
 def valid_token(value: str) -> bool:

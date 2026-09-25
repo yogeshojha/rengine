@@ -8,7 +8,6 @@ import type {
 	ChannelCommand,
 	ChannelSettingsUpdate,
 	ChannelStatus,
-	ChannelVerifyResult,
 	PairingApprove,
 	PairingRequest
 } from '$lib/types/remote-control';
@@ -132,15 +131,35 @@ function createRemoteControlStore() {
 			return this.save({ enabled: value }, value ? 'Listener started' : 'Listener stopped');
 		},
 
-		async verify(): Promise<ChannelVerifyResult | null> {
+		async connect(token: string): Promise<string | null> {
 			if (!channel) return null;
+			isSaving = true;
 			try {
-				const result = await remoteControlApi.verify(channel);
-				await this.refreshStatus(true);
-				return result;
-			} catch (e) {
-				toast.error(message(e, 'Bot token not verified'));
+				status = await remoteControlApi.connect(channel, token);
+				await this.loadAdmin(true);
+				toast.success(`@${status.bot?.username ?? 'bot'} connected`);
 				return null;
+			} catch (e) {
+				return message(e, 'Bot not connected');
+			} finally {
+				isSaving = false;
+			}
+		},
+
+		async disconnect(): Promise<boolean> {
+			if (!channel) return false;
+			isSaving = true;
+			try {
+				status = await remoteControlApi.disconnect(channel);
+				pending = [];
+				chats = [];
+				toast.success('Bot disconnected');
+				return true;
+			} catch (e) {
+				toast.error(message(e, 'Bot not disconnected'));
+				return false;
+			} finally {
+				isSaving = false;
 			}
 		},
 

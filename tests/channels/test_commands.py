@@ -6,11 +6,13 @@ import pytest
 
 from channels import commands
 from channels.commands import BUILTIN, CommandError, _coerce, bind, parse
+from channels.dispatch import said
 from mcp import registry as mcp_registry
 from mcp.capabilities import Capability
 from shared.definitions.channels import (
     CHAT_GROUP_ORDER,
     COMMAND_PRESETS,
+    COMMAND_TEXT_MAX,
     ChatGroup,
     CommandSource,
 )
@@ -223,3 +225,8 @@ def test_parse_keeps_an_apostrophe_inside_a_word():
     quoted = parse('/project "Bob\'s lab"')
     assert quoted is not None
     assert quoted.bare == ["Bob's lab"]
+
+
+def test_said_strips_control_and_caps_length():
+    assert said(parse("/scan acme.com\x07")) == "/scan acme.com"
+    assert len(said(parse("/scan " + "a" * 400))) == COMMAND_TEXT_MAX

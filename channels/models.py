@@ -100,6 +100,7 @@ class ChannelStatus(BaseModel):
     commands_total: int
     calls_recent: int
     last_call_at: datetime | None
+    shared_notifications: int = 0
 
 
 class ChannelCatalogEntry(BaseModel):
@@ -116,6 +117,12 @@ class ChannelSettingsUpdate(BaseModel):
     enabled: bool | None = None
     rate_limit_per_minute: int | None = PydanticField(default=None, ge=1, le=10_000)
     ceiling: McpCeiling | None = None
+
+
+class ChannelConnect(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    token: str = PydanticField(min_length=1, max_length=200)
 
 
 class ChannelVerifyResult(BaseModel):

@@ -72,13 +72,13 @@ export const CHAT_GROUP_LABELS: Record<ChatGroup, string> = {
 	[ChatGroup.CHAT]: 'Chat'
 };
 
-export const CHANNEL_VIEWS = ['overview', 'commands', 'activity'] as const;
+export const CHANNEL_VIEWS = ['chats', 'activity', 'commands'] as const;
 export type ChannelView = (typeof CHANNEL_VIEWS)[number];
 
 export const CHANNEL_VIEW_LABELS: Record<ChannelView, string> = {
-	overview: 'Overview',
-	commands: 'Commands',
-	activity: 'Activity'
+	chats: 'Chats',
+	activity: 'Activity',
+	commands: 'Commands'
 };
 
 export type ListenerState = 'listening' | 'stopped' | 'unconfigured' | 'unreachable' | 'faulted';
@@ -99,21 +99,21 @@ export const LISTENER_STATE_DOT: Record<ListenerState, string> = {
 	faulted: 'bg-destructive'
 };
 
-export const TELEGRAM_BOTFATHER_URL = 'https://core.telegram.org/bots#how-do-i-create-a-bot';
+export const TELEGRAM_BOTFATHER_URL = 'https://t.me/BotFather';
 export const TELEGRAM_CHAT_URL = (username: string) => `https://t.me/${username}`;
 
 export interface ChannelMeta {
-	apiKeyLabel: string;
-	createLabel: string;
-	createUrl: string;
+	tokenSource: string;
+	tokenSourceUrl: string;
+	tokenPlaceholder: string;
 	chatUrl: (username: string) => string;
 }
 
 export const CHANNEL_META: Record<ChannelKind, ChannelMeta> = {
 	[ChannelKind.TELEGRAM]: {
-		apiKeyLabel: 'Telegram API key',
-		createLabel: 'Create a Telegram bot',
-		createUrl: TELEGRAM_BOTFATHER_URL,
+		tokenSource: '@BotFather',
+		tokenSourceUrl: TELEGRAM_BOTFATHER_URL,
+		tokenPlaceholder: '123456789:AAF…',
 		chatUrl: TELEGRAM_CHAT_URL
 	}
 };

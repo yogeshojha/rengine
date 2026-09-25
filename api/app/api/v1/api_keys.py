@@ -6,8 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentSuperuser
 from app.core.database import get_session
+from channels.service import ChannelService
 from channels.telegram.driver import TelegramError, valid_token
 from channels.telegram.driver import verify as verify_bot
+from shared.definitions.channels import PROVIDER_CHANNELS
 from shared.enums.api_key import APIProvider
 from shared.models.api_key import APIKeyCreate, APIKeyRead, APIKeyUpdate, ProviderInfo
 from shared.services.api_key.async_api_key import APIKeyService
@@ -70,6 +72,12 @@ API_KEY_TESTERS = {
 router = APIRouter(prefix="/api-keys", tags=["api-keys"])
 
 
+async def _rebind(session: AsyncSession, provider: APIProvider) -> None:
+    channel = PROVIDER_CHANNELS.get(provider)
+    if channel is not None:
+        await ChannelService(session, channel).rebind()
+
+
 def get_api_key_service(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> APIKeyService:
@@ -98,7 +106,9 @@ async def create_api_key(
     _current_user: CurrentSuperuser,
     service: Annotated[APIKeyService, Depends(get_api_key_service)],
 ):
-    return await service.create_key(data)
+    created = await service.create_key(data)
+    await _rebind(service.session, data.provider)
+    return created
 
 
 @router.patch("/{key_id}", response_model=APIKeyRead)
@@ -108,7 +118,10 @@ async def update_api_key(
     _current_user: CurrentSuperuser,
     service: Annotated[APIKeyService, Depends(get_api_key_service)],
 ):
-    return await service.update_key(key_id, data)
+    updated = await service.update_key(key_id, data)
+    if data.key_value is not None or data.is_enabled:
+        await _rebind(service.session, updated.provider)
+    return updated
 
 
 @router.delete("/{key_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -117,7 +130,12 @@ async def delete_api_key(
     _current_user: CurrentSuperuser,
     service: Annotated[APIKeyService, Depends(get_api_key_service)],
 ):
+    api_key = await service._get_key_or_404(key_id)
+    provider = api_key.provider
     await service.delete_key(key_id)
+    channel = PROVIDER_CHANNELS.get(provider)
+    if channel is not None:
+        await ChannelService(service.session, channel).disconnect(None, keep_key=True)
 
 
 @router.get("/{key_id}/reveal")

@@ -7,6 +7,7 @@ from enum import StrEnum
 from pydantic import BaseModel, Field
 
 from shared.enums.api_key import APIProvider
+from shared.enums.notification_channel import NotificationProvider
 
 
 class ChannelKind(StrEnum):
@@ -22,6 +23,13 @@ CHANNEL_LABELS: dict[str, str] = {
 # API key provider per channel
 CHANNEL_PROVIDERS: dict[str, APIProvider] = {
     ChannelKind.TELEGRAM.value: APIProvider.TELEGRAM,
+}
+
+PROVIDER_CHANNELS: dict[APIProvider, str] = {v: k for k, v in CHANNEL_PROVIDERS.items()}
+
+# notification provider that sends with the channel's key when it has no token of its own
+CHANNEL_NOTIFICATIONS: dict[str, str] = {
+    ChannelKind.TELEGRAM.value: NotificationProvider.TELEGRAM.value,
 }
 
 
@@ -132,4 +140,5 @@ DEFAULT_RATE_LIMIT = 60
 MAX_CHATS = 50
 MAX_DISPLAY = 120
 MAX_EXTERNAL_ID = 64
+COMMAND_TEXT_MAX = 200
 STATUS_TTL = 30

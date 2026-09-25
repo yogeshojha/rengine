@@ -23,6 +23,7 @@ from mcp.errors import McpError
 from mcp.phrasing import short_id
 from shared.definitions.channels import (
     CHAT_GROUP_LABELS,
+    COMMAND_TEXT_MAX,
     PAIRING_CODE_TTL,
     STEP_UP_PENDING_SECONDS,
     ChatState,
@@ -36,6 +37,7 @@ from shared.models.target import Target
 from shared.models.user import User
 from shared.services.celery_dispatch import dispatch_toolbox_run
 from shared.utils.datetime import utc_now
+from shared.utils.text import strip_control
 from toolbox import registry as toolbox_registry
 from toolbox import store
 from toolbox.base import ToolContext as LookupContext
@@ -251,9 +253,11 @@ class Dispatcher:
             return
 
         if spec.source == CommandSource.TOOLBOX.value:
-            await self._lookup(session, chat, user, identity, spec, args, external_id)
+            await self._lookup(
+                session, chat, user, identity, spec, args, external_id, said(parsed)
+            )
         else:
-            await self._tool(session, identity, spec, args, external_id)
+            await self._tool(session, identity, spec, args, external_id, said(parsed))
 
     async def _tool(
         self,
@@ -262,12 +266,14 @@ class Dispatcher:
         spec: CommandSpec,
         args: dict,
         external_id: str,
+        command: str,
     ) -> None:
         ctx = ToolContext(
             session=session,
             token=identity,
             ui_base_url=self.ui_base,
             client=self.channel.kind,
+            extras={"command": command},
         )
         try:
             result = await server.invoke(ctx, spec.tool or "", args)
@@ -287,6 +293,7 @@ class Dispatcher:
         spec: CommandSpec,
         args: dict,
         external_id: str,
+        command: str,
     ) -> None:
         tool = toolbox_registry.get(spec.tool or "")
         if tool is None:
@@ -335,7 +342,7 @@ class Dispatcher:
                 ],
             )
             task = asyncio.create_task(
-                self._follow(user.id, run.id, external_id, identity, tool.name)
+                self._follow(user.id, run.id, external_id, identity, tool.name, command)
             )
             self._followers.add(task)
             task.add_done_callback(self._followers.discard)
@@ -347,22 +354,22 @@ class Dispatcher:
                 tool.tool_cls().run(ctx, payload), timeout=INLINE_TIMEOUT
             )
         except TimeoutError:
-            await self._observe(identity, tool.name, False, started, "timeout")
+            await self._observe(identity, tool.name, False, started, "timeout", command)
             await self._say(
                 external_id,
                 f"Lookup timed out after {INLINE_TIMEOUT} seconds.",
             )
             return
         except LookupError as exc:
-            await self._observe(identity, tool.name, False, started, str(exc))
+            await self._observe(identity, tool.name, False, started, str(exc), command)
             await self._say(external_id, str(exc))
             return
         except Exception as exc:
             logger.warning("lookup failed", tool=tool.name, error=str(exc))
-            await self._observe(identity, tool.name, False, started, str(exc))
+            await self._observe(identity, tool.name, False, started, str(exc), command)
             await self._say(external_id, "Lookup failed.")
             return
-        await self._observe(identity, tool.name, True, started, None)
+        await self._observe(identity, tool.name, True, started, None, command)
         await self.channel.reply(
             external_id, render.outcome_lines(outcome, self.ui_base)
         )
@@ -382,6 +389,7 @@ class Dispatcher:
         external_id: str,
         identity: TokenIdentity,
         tool: str,
+        command: str,
     ) -> None:
         started = time.monotonic()
         deadline = started + RUN_DEADLINE_SECONDS + 30
@@ -398,11 +406,13 @@ class Dispatcher:
             if run.status in TERMINAL_STATUSES:
                 break
         if run is None or run.status not in TERMINAL_STATUSES:
-            await self._observe(identity, tool, False, started, "timeout")
+            await self._observe(identity, tool, False, started, "timeout", command)
             await self._say(external_id, f"Run {short_id(run_id)} did not complete.")
             return
         ok = run.status == RunStatus.COMPLETED.value
-        await self._observe(identity, tool, ok, started, None if ok else run.error)
+        await self._observe(
+            identity, tool, ok, started, None if ok else run.error, command
+        )
         await self.channel.reply(external_id, render.run_lines(run, self.ui_base))
 
     async def _observe(
@@ -412,6 +422,7 @@ class Dispatcher:
         ok: bool,
         started: float,
         detail: str | None,
+        command: str | None = None,
     ) -> None:
         await telemetry.record(
             telemetry.CallRecord(
@@ -422,6 +433,7 @@ class Dispatcher:
                 ok=ok,
                 duration_ms=int((time.monotonic() - started) * 1000),
                 detail=detail[:300] if detail else None,
+                command=command,
             )
         )
 
@@ -660,6 +672,10 @@ class Dispatcher:
         if project_id is not None:
             statement = statement.where(Scan.project_id == project_id)
         return [(row[0], row[1]) for row in (await session.execute(statement)).all()]
+
+
+def said(parsed: Parsed) -> str:
+    return strip_control(parsed.raw)[:COMMAND_TEXT_MAX]
 
 
 def _pick_project(rows: list[Project], wanted: str) -> Project | None:

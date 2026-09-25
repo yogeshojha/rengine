@@ -5,7 +5,14 @@ import {
 	type CommandSource,
 	type ListenerState
 } from '$lib/config/channels';
-import type { McpCall, McpCapability, McpCapabilitySpec } from '$lib/types/mcp';
+import {
+	ceilingKeys,
+	grantsUpTo,
+	ladderLevel,
+	type McpCall,
+	type McpCapability,
+	type McpCapabilitySpec
+} from '$lib/types/mcp';
 
 export interface BotInfo {
 	id: string;
@@ -40,6 +47,7 @@ export interface ChannelStatus {
 	commands_total: number;
 	calls_recent: number;
 	last_call_at: string | null;
+	shared_notifications: number;
 }
 
 export interface ChannelCatalogEntry {
@@ -54,12 +62,6 @@ export interface ChannelSettingsUpdate {
 	enabled?: boolean;
 	rate_limit_per_minute?: number;
 	ceiling?: Record<string, boolean>;
-}
-
-export interface ChannelVerifyResult {
-	ok: boolean;
-	bot: BotInfo | null;
-	error: string | null;
 }
 
 export interface PairingRequest {
@@ -152,7 +154,7 @@ export function chatName(tokenName: string): string {
 }
 
 export function allowedKeys(status: ChannelStatus): Set<string> {
-	return new Set(
-		status.capabilities.filter((c) => c.always || status.ceiling[c.key]).map((c) => c.key)
-	);
+	return ceilingKeys(status);
 }
+
+export { grantsUpTo, ladderLevel };

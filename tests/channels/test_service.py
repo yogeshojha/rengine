@@ -8,7 +8,12 @@ import pytest
 
 from channels import pairing
 from channels import service as channel_service
-from channels.models import ChannelChatUpdate, ChannelSettingsUpdate, PairingApprove
+from channels.models import (
+    BotInfo,
+    ChannelChatUpdate,
+    ChannelSettingsUpdate,
+    PairingApprove,
+)
 from channels.service import ChannelConfigError, ChannelService
 from mcp import telemetry
 from mcp.models import McpCeiling
@@ -185,3 +190,69 @@ async def test_a_chat_call_is_found_behind_newer_calls_from_other_clients(estate
     rows = await ChannelService(estate.session, CHANNEL).calls(limit=5)
 
     assert any(row.tool == mark for row in rows), "a cut before the filter hides it"
+
+
+BOT_A = BotInfo(id="1001", username="ops_bot", name="Ops")
+BOT_B = BotInfo(id="2002", username="other_bot", name="Other")
+TOKEN = "100100:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
+
+@pytest.fixture
+def bot(monkeypatch):
+    current = {"info": BOT_A}
+
+    async def verify(_token):
+        return current["info"]
+
+    async def clear(_channel):
+        return None
+
+    monkeypatch.setattr(channel_service.telegram_driver, "verify", verify)
+    monkeypatch.setattr(pairing, "clear", clear)
+    return current
+
+
+async def _paired(service, estate):
+    return await service.approve(
+        "H7K2-Q9XZ",
+        PairingApprove(user_id=estate.user_id, project_id=estate.project_id),
+        estate.user_id,
+    )
+
+
+async def test_connect_stores_the_token_and_starts_the_listener(estate, quiet, bot):
+    service = ChannelService(estate.session, CHANNEL)
+    status = await service.connect(TOKEN, estate.user_id)
+    assert status.configured
+    assert status.enabled
+    assert status.bot == BOT_A
+    assert await service._token() == TOKEN
+
+
+async def test_connect_refuses_a_malformed_token(estate, quiet, bot):
+    service = ChannelService(estate.session, CHANNEL)
+    with pytest.raises(ChannelConfigError, match="Not a Telegram bot token"):
+        await service.connect("not-a-token", estate.user_id)
+
+
+async def test_a_different_bot_drops_every_pairing(estate, quiet, bot):
+    service = ChannelService(estate.session, CHANNEL)
+    await service.connect(TOKEN, estate.user_id)
+    await _paired(service, estate)
+    await service.connect(TOKEN, estate.user_id)
+    assert len(await service.chats()) == 1
+    bot["info"] = BOT_B
+    await service.connect(TOKEN, estate.user_id)
+    assert await service.chats() == []
+
+
+async def test_disconnect_removes_the_key_and_the_chats(estate, quiet, bot):
+    service = ChannelService(estate.session, CHANNEL)
+    await service.connect(TOKEN, estate.user_id)
+    await _paired(service, estate)
+    status = await service.disconnect(estate.user_id)
+    assert not status.configured
+    assert not status.enabled
+    assert status.bot is None
+    assert await service.chats() == []
+    assert await service._token() is None

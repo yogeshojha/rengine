@@ -137,3 +137,9 @@ async def forget(channel: str, external_id: str) -> None:
 
 async def _prune(channel: str) -> None:
     await pending(channel)
+
+
+async def clear(channel: str) -> None:
+    for entry in await pending(channel):
+        await forget(channel, entry["external_id"])
+    await async_client().delete(INDEX_KEY.format(channel=channel))

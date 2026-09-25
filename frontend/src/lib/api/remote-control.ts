@@ -8,7 +8,6 @@ import type {
 	ChannelCommand,
 	ChannelSettingsUpdate,
 	ChannelStatus,
-	ChannelVerifyResult,
 	PairingApprove,
 	PairingRequest
 } from '$lib/types/remote-control';
@@ -28,8 +27,12 @@ export const remoteControlApi = {
 		return api.patch<ChannelStatus>(`${base(channel)}/settings`, body);
 	},
 
-	verify(channel: ChannelKind): Promise<ChannelVerifyResult> {
-		return api.post<ChannelVerifyResult>(`${base(channel)}/verify`);
+	connect(channel: ChannelKind, token: string): Promise<ChannelStatus> {
+		return api.post<ChannelStatus>(`${base(channel)}/connect`, { token });
+	},
+
+	disconnect(channel: ChannelKind): Promise<ChannelStatus> {
+		return api.post<ChannelStatus>(`${base(channel)}/disconnect`);
 	},
 
 	pending(channel: ChannelKind): Promise<PairingRequest[]> {

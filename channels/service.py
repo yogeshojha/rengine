@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import datetime
 from types import ModuleType
@@ -42,14 +43,19 @@ from mcp.models import McpCallRead
 from mcp.service import capability_catalog
 from shared.definitions.channels import (
     CHANNEL_LABELS,
+    CHANNEL_NOTIFICATIONS,
     CHANNEL_ORDER,
+    CHANNEL_PROVIDERS,
     MAX_CHATS,
     ChannelKind,
     ChatState,
 )
 from shared.logging import get_logger
+from shared.models.api_key import APIKey
+from shared.models.notification_channel import NotificationChannel
 from shared.models.project import Project
 from shared.models.user import User
+from shared.utils.crypto import encrypt_secret, try_decrypt
 from shared.utils.datetime import utc_now
 
 logger = get_logger(__name__)
@@ -77,6 +83,14 @@ def _granted(wanted: list[str], ceiling: dict[str, bool]) -> list[str]:
         msg = f"{names} is off in the channel ceiling. Raise the ceiling first."
         raise ChannelConfigError(msg)
     return granted
+
+
+def _config(row: NotificationChannel) -> dict:
+    try:
+        loaded = json.loads(try_decrypt(row.config_encrypted) or "{}")
+    except (ValueError, TypeError):
+        return {}
+    return loaded if isinstance(loaded, dict) else {}
 
 
 def _parse(value: str | None) -> datetime | None:
@@ -153,6 +167,7 @@ class ChannelService:
             commands_total=len(commands.catalog()),
             calls_recent=len(calls),
             last_call_at=calls[0].at if calls else None,
+            shared_notifications=await self._shared_notifications(),
         )
 
     async def update(
@@ -186,6 +201,120 @@ class ChannelService:
         if data.ceiling is not None:
             await self._reconcile_chats(cfg.ceiling)
         return await self.status()
+
+    async def connect(self, token: str, user_id: uuid.UUID) -> ChannelStatus:
+        token = token.strip()
+        if not self.driver.valid_token(token):
+            raise ChannelConfigError(self.driver.TOKEN_INVALID)
+        info = await self._verify(token)
+        await self._store_token(token)
+        await self._adopt(info)
+        row = await self.row()
+        cfg = settings.read(row)
+        cfg.bot = info
+        cfg.enabled = True
+        cfg.started_at = utc_now()
+        settings.write(row, cfg)
+        row.updated_by = user_id
+        self.session.add(row)
+        await self.session.commit()
+        return await self.status()
+
+    async def disconnect(
+        self, user_id: uuid.UUID | None, *, keep_key: bool = False
+    ) -> ChannelStatus:
+        row = await self.row()
+        cfg = settings.read(row)
+        cfg.enabled = False
+        cfg.started_at = None
+        cfg.bot = None
+        settings.write(row, cfg)
+        row.updated_by = user_id
+        self.session.add(row)
+        await self.session.commit()
+        await self._forget_chats()
+        if not keep_key:
+            key = await self._key_row()
+            if key is not None:
+                await self.session.delete(key)
+                await self.session.commit()
+        return await self.status()
+
+    async def rebind(self) -> None:
+        """Re-read the bot after its API key changed."""
+        secret = await self._token()
+        if secret is None:
+            return
+        row = await self.row()
+        cfg = settings.read(row)
+        try:
+            info = await self._verify(secret)
+        except ChannelConfigError:
+            cfg.enabled = False
+            cfg.started_at = None
+            cfg.bot = None
+        else:
+            await self._adopt(info)
+            cfg.bot = info
+        settings.write(row, cfg)
+        self.session.add(row)
+        await self.session.commit()
+
+    async def _adopt(self, info: BotInfo) -> None:
+        current = settings.read(await self.row()).bot
+        if current is not None and current.id != info.id:
+            await self._forget_chats()
+
+    async def _forget_chats(self) -> None:
+        rows = (
+            (
+                await self.session.execute(
+                    select(ChannelChat).where(ChannelChat.channel == self.channel)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        for chat in rows:
+            await stepup.clear_grace(self.channel, chat.external_id)
+            await self.session.delete(chat)
+        await self.session.commit()
+        await pairing.clear(self.channel)
+
+    async def _key_row(self) -> APIKey | None:
+        provider = CHANNEL_PROVIDERS[self.channel]
+        return (
+            await self.session.execute(
+                select(APIKey).where(APIKey.provider == provider)
+            )
+        ).scalar_one_or_none()
+
+    async def _store_token(self, token: str) -> None:
+        key = await self._key_row()
+        if key is None:
+            key = APIKey(provider=CHANNEL_PROVIDERS[self.channel], key_value="")
+        key.key_value = encrypt_secret(token)
+        key.is_enabled = True
+        key.updated_at = utc_now()
+        self.session.add(key)
+        await self.session.commit()
+
+    async def _shared_notifications(self) -> int:
+        provider = CHANNEL_NOTIFICATIONS.get(self.channel)
+        if provider is None:
+            return 0
+        rows = (
+            (
+                await self.session.execute(
+                    select(NotificationChannel).where(
+                        NotificationChannel.provider == provider
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        return sum(1 for row in rows if not _config(row).get("bot_token"))
 
     async def verify(self) -> ChannelVerifyResult:
         row = await self.row()

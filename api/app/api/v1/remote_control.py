@@ -11,6 +11,7 @@ from channels.models import (
     ChannelChatRead,
     ChannelChatUpdate,
     ChannelCommandRead,
+    ChannelConnect,
     ChannelSettingsUpdate,
     ChannelStatus,
     ChannelVerifyResult,
@@ -64,6 +65,21 @@ async def update_channel(
         return await _service(session, channel).update(body, admin.id)
     except ChannelConfigError as exc:
         raise _guard(exc) from exc
+
+
+@router.post("/channels/{channel}/connect", response_model=ChannelStatus)
+async def connect_channel(
+    admin: CurrentSuperuser, session: Session, channel: str, body: ChannelConnect
+):
+    try:
+        return await _service(session, channel).connect(body.token, admin.id)
+    except ChannelConfigError as exc:
+        raise _guard(exc) from exc
+
+
+@router.post("/channels/{channel}/disconnect", response_model=ChannelStatus)
+async def disconnect_channel(admin: CurrentSuperuser, session: Session, channel: str):
+    return await _service(session, channel).disconnect(admin.id)
 
 
 @router.post("/channels/{channel}/verify", response_model=ChannelVerifyResult)

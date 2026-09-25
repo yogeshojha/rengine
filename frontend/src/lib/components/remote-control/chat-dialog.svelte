@@ -4,11 +4,16 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import FormField from '$lib/components/form-field.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
-	import CapabilityPicker from './capability-picker.svelte';
+	import LadderPick from '$lib/components/access/ladder-pick.svelte';
 	import { remoteControl } from '$lib/stores/remote-control.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
-	import { SvelteSet } from 'svelte/reactivity';
-	import { allowedKeys, type ChannelChat, type ChannelStatus } from '$lib/types/remote-control';
+	import {
+		allowedKeys,
+		grantsUpTo,
+		ladderLevel,
+		type ChannelChat,
+		type ChannelStatus
+	} from '$lib/types/remote-control';
 
 	interface Props {
 		status: ChannelStatus;
@@ -18,21 +23,18 @@
 
 	let { status, chat, onOpenChange }: Props = $props();
 
-	let projectId = $state<string>('');
-	const granted = new SvelteSet<string>();
+	let projectId = $state('');
+	let level = $state(0);
 	let saving = $state(false);
 
 	const open = $derived(chat !== null);
-	const projectList = $derived(projectsStore.projects ?? []);
-	const projectLabel = $derived(
-		projectList.find((p) => p.id === projectId)?.name ?? 'Select a project'
-	);
+	const allowed = $derived(allowedKeys(status));
+	const projects = $derived(projectsStore.projects ?? []);
 
 	$effect(() => {
 		if (!chat) return;
 		projectId = chat.project_id ?? '';
-		granted.clear();
-		for (const key of chat.capabilities) granted.add(key);
+		level = ladderLevel(chat.capabilities);
 	});
 
 	async function save() {
@@ -40,7 +42,7 @@
 		saving = true;
 		const ok = await remoteControl.updateChat(chat.id, {
 			project_id: projectId || undefined,
-			capabilities: [...granted].filter((c) => allowedKeys(status).has(c))
+			capabilities: grantsUpTo(level, allowed)
 		});
 		saving = false;
 		if (ok) onOpenChange(false);
@@ -48,15 +50,12 @@
 </script>
 
 <Dialog.Root {open} {onOpenChange}>
-	<Dialog.Content class="sm:max-w-lg">
+	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
 			<Dialog.Title>Edit chat</Dialog.Title>
 			{#if chat}
 				<Dialog.Description>
-					{chat.display}
-					{#if chat.username}
-						· account {chat.username}
-					{/if}
+					{chat.display}{chat.username ? ` · ${chat.username}` : ''}
 				</Dialog.Description>
 			{/if}
 		</Dialog.Header>
@@ -65,17 +64,21 @@
 			<FormField label="Project">
 				{#snippet children({ id })}
 					<Select.Root type="single" bind:value={projectId}>
-						<Select.Trigger {id} class="w-full">{projectLabel}</Select.Trigger>
+						<Select.Trigger {id} class="w-full">
+							{projects.find((p) => p.id === projectId)?.name ?? 'Select a project'}
+						</Select.Trigger>
 						<Select.Content>
-							{#each projectList as project (project.id)}
+							{#each projects as project (project.id)}
 								<Select.Item value={project.id} label={project.name}>{project.name}</Select.Item>
 							{/each}
 						</Select.Content>
 					</Select.Root>
 				{/snippet}
 			</FormField>
-
-			<CapabilityPicker {status} {granted} />
+			<div class="flex flex-col gap-2">
+				<span class="text-sm font-medium">Capabilities</span>
+				<LadderPick {level} {allowed} onChange={(v) => (level = v)} />
+			</div>
 		</div>
 
 		<div class="flex justify-end gap-2">
