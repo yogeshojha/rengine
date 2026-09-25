@@ -286,7 +286,7 @@ def on_worker_ready(sender, **kwargs) -> None:  # noqa: ARG001
     logger.info("Worker ready: %s", sender.hostname)
     consumed = celery_app.amqp.queues.consume_from
     if consumed.keys() & set(SCAN_QUEUES):
-        from app import presence  # noqa: PLC0415
+        from shared.services import worker_presence as presence  # noqa: PLC0415
 
         presence.announce(sender.hostname)
         sender.timer.call_repeatedly(
@@ -335,7 +335,7 @@ def _warm_threat_intel() -> None:
 def on_worker_shutdown(sender, **kwargs) -> None:  # noqa: ARG001
     """Log when worker shuts down."""
     logger.info("Worker shutting down: %s", sender.hostname)
-    from app import presence  # noqa: PLC0415
+    from shared.services import worker_presence as presence  # noqa: PLC0415
 
     presence.withdraw(sender.hostname)
 

@@ -31,6 +31,7 @@ from shared.models.vulnerability import VulnerabilityCoverage
 from shared.services import (
     new_checks,
     proxy_sync,
+    scan_admission,
     scan_surface,
     secret_mining,
     software_match,
@@ -112,6 +113,7 @@ def _finalize_user_cancelled(
     session.add(locked)
     session.commit()
     scan = locked
+    _admit_next(session)
     _settle(session, scan)
     if first:
         _log_cancelled(ActivityLogService(session), scan)
@@ -416,6 +418,14 @@ def _settle(session: Session, scan: Scan) -> None:
         dispatch_watch_settle(str(scan.id))
 
 
+def _admit_next(session: Session) -> None:
+    try:
+        scan_admission.admit_waiting(session)
+    except Exception:
+        session.rollback()
+        logger.warning("queued scans not started", exc_info=True)
+
+
 def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
     events = ScanEventPublisher(
         redis_url, scan_id=str(scan.id), project_id=str(scan.project_id)
@@ -483,6 +493,7 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
     session.add(locked)
     session.commit()
     scan = locked
+    _admit_next(session)
     _settle(session, scan)
 
     activity_log = ActivityLogService(session)

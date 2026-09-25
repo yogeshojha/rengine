@@ -11,15 +11,20 @@ from app.core.crypto import encrypt_secret, try_decrypt
 from shared.definitions.mode_features import VALID_MODES, capabilities_for
 from shared.enums.instance import AIProvider
 from shared.http import get_async_client
+from shared.logging import get_logger
 from shared.models.instance_settings import (
     SINGLETON_KEY,
     InstanceSettings,
     InstanceSettingsRead,
     InstanceSettingsUpdate,
 )
+from shared.services import scan_admission
+from shared.services.celery_dispatch import dispatch_scan_admission
 from shared.services.scan_resolve import MASK
 from shared.utils.datetime import utc_now
 from shared.utils.net import validate_public_https_url
+
+logger = get_logger(__name__)
 
 _TEST_TIMEOUT = 10
 _OPENAI_BASE = "https://api.openai.com"
@@ -42,6 +47,22 @@ def _mask_ai_key(key: str) -> str:
 def _validate_public_https_url(raw: str) -> str:
     validate_public_https_url(raw, label="Azure endpoint")
     return raw
+
+
+def _apply_limit(settings: InstanceSettings, value: int | None) -> bool:
+    if value is None or value == settings.concurrent_scans:
+        return False
+    settings.concurrent_scans = value
+    return True
+
+
+async def _admit_on_change(changed: bool) -> None:
+    if not changed:
+        return
+    try:
+        await asyncio.to_thread(dispatch_scan_admission)
+    except Exception:
+        logger.warning("scan admission dispatch failed", exc_info=True)
 
 
 class InstanceSettingsService:
@@ -87,6 +108,7 @@ class InstanceSettingsService:
             scan_history_retention_days=settings.scan_history_retention_days,
             screenshot_retention_days=settings.screenshot_retention_days,
             cert_recheck_enabled=settings.cert_recheck_enabled,
+            concurrent_scans=settings.concurrent_scans,
             ai_enabled=settings.ai_enabled,
             ai_provider=settings.ai_provider,
             ai_model=settings.ai_model,
@@ -123,6 +145,7 @@ class InstanceSettingsService:
             settings.screenshot_retention_days = data.screenshot_retention_days
         if data.cert_recheck_enabled is not None:
             settings.cert_recheck_enabled = data.cert_recheck_enabled
+        limit_changed = _apply_limit(settings, data.concurrent_scans)
         if data.ai_enabled is not None:
             settings.ai_enabled = data.ai_enabled
         if data.ai_provider is not None:
@@ -146,7 +169,17 @@ class InstanceSettingsService:
         settings.updated_at = utc_now()
         await self.session.commit()
         await self.session.refresh(settings)
-        return self.to_read(settings)
+        await _admit_on_change(limit_changed)
+        return await self.with_limit(self.to_read(settings))
+
+    async def with_limit(self, read: InstanceSettingsRead) -> InstanceSettingsRead:
+        try:
+            read.concurrent_scans_auto = await asyncio.to_thread(
+                scan_admission.automatic_limit
+            )
+        except Exception:
+            logger.warning("automatic scan limit unreadable", exc_info=True)
+        return read
 
     async def test_ai(
         self, provider: str, model: str | None, api_key: str | None

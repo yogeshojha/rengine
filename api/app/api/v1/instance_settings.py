@@ -33,7 +33,7 @@ async def get_instance_settings(
     service: Annotated[InstanceSettingsService, Depends(get_service)],
 ):
     settings = await service.get_or_create()
-    return service.to_read(settings)
+    return await service.with_limit(service.to_read(settings))
 
 
 @router.patch("", response_model=InstanceSettingsRead)

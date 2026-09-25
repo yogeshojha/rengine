@@ -10,7 +10,6 @@ from celery import shared_task
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
-from app import presence
 from app.celery import celery_app
 from app.config import settings
 from app.database import get_sync_session
@@ -32,6 +31,8 @@ from shared.enums.scan import (
 from shared.logging import get_logger
 from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
+from shared.services import scan_admission
+from shared.services import worker_presence as presence
 from shared.services.activity_log import ActivityLogService
 from shared.services.celery_dispatch import dispatch_scan_run
 from shared.services.orchestrator import superseded
@@ -63,18 +64,10 @@ def run_scan(self, scan_id: str, epoch: int = 0) -> dict:
         if scan is None:
             logger.warning("scan %s not found", scan_id)
             return {"error": "scan not found"}
-        if superseded(scan.run_epoch, epoch):
-            logger.info("launch of scan %s belongs to a superseded canvas", scan_id)
-            return {"skipped": "superseded canvas"}
-        if scan.status in _LAUNCH_SKIPPED:
-            logger.info("scan %s is %s, not launching", scan_id, scan.status)
-            return {"skipped": scan.status}
-        if (
-            scan.status == ScanStatus.RUNNING.value
-            and len(scan.celery_task_ids or []) >= _DISPATCHED_TASK_IDS
-        ):
-            logger.info("scan %s canvas already dispatched, skipping", scan_id)
-            return {"skipped": "already dispatched"}
+        refused = _launch_refused(session, scan, epoch)
+        if refused is not None:
+            session.commit()
+            return refused
 
         was_pending = scan.status == ScanStatus.PENDING.value
         if was_pending:
@@ -113,6 +106,27 @@ def run_scan(self, scan_id: str, epoch: int = 0) -> dict:
             session.commit()
             events.scan_started(status=scan.status, engine=scan.engine_name)
         return {"dispatched": True, "task_id": result.id}
+
+
+def _launch_refused(session: Session, scan: Scan, epoch: int) -> dict | None:
+    if superseded(scan.run_epoch, epoch):
+        logger.info("launch of scan %s belongs to a superseded canvas", scan.id)
+        return {"skipped": "superseded canvas"}
+    if scan.status in _LAUNCH_SKIPPED:
+        logger.info("scan %s is %s, not launching", scan.id, scan.status)
+        return {"skipped": scan.status}
+    if (
+        scan.status == ScanStatus.RUNNING.value
+        and len(scan.celery_task_ids or []) >= _DISPATCHED_TASK_IDS
+    ):
+        logger.info("scan %s canvas already dispatched, skipping", scan.id)
+        return {"skipped": "already dispatched"}
+    if scan.status == ScanStatus.PENDING.value and not scan_admission.admits(
+        session, scan
+    ):
+        logger.info("scan %s waits for a run slot", scan.id)
+        return {"queued": True}
+    return None
 
 
 @shared_task(name="app.tasks.scan.run_scan_step", max_retries=0)
@@ -223,6 +237,14 @@ def resume_scan(self, scan_id: str, epoch: int) -> dict:
         return {"resumed": True, "task_id": result.id, "stages_left": left}
 
 
+@shared_task(name="app.tasks.scan.admit", max_retries=0)
+def admit() -> dict:
+    """Launch the pending scans whose turn has come."""
+    with get_sync_session() as session:
+        started = scan_admission.admit_waiting(session)
+    return {"started": started}
+
+
 @shared_task(bind=True, name="app.tasks.scan.reap_stalled", max_retries=0)
 def reap_stalled(self) -> dict:  # noqa: ARG001
     """Resume a RUNNING scan whose canvas died, and settle one that never comes back."""
@@ -272,20 +294,11 @@ def reap_stalled(self) -> dict:  # noqa: ARG001
 
 
 def _requeue_pending(session: Session, queued: set[str]) -> list[str]:
-    """Send the launch again for a PENDING scan whose launch is nowhere in the queue."""
+    """Send the launch again for a PENDING scan whose turn has come and whose launch is nowhere in the queue."""
     cutoff = utc_now() - timedelta(seconds=PENDING_GRACE_SECONDS)
-    scans = (
-        session.execute(
-            select(Scan).where(
-                Scan.status == ScanStatus.PENDING.value, Scan.created_at < cutoff
-            )
-        )
-        .scalars()
-        .all()
-    )
     requeued = []
-    for scan in scans:
-        if str(scan.id) in queued:
+    for scan in scan_admission.admissible(session):
+        if str(scan.id) in queued or scan.created_at >= cutoff:
             continue
         try:
             dispatch_scan_run(str(scan.id), scan.run_epoch or 0)

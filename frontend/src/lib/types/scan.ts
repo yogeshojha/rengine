@@ -174,6 +174,7 @@ export interface ScanRead {
 	recheck: RecheckTally | null;
 	findings?: ScanFindings | null;
 	target_runs?: number | null;
+	queue_position?: number | null;
 }
 
 export interface ScanFindings {

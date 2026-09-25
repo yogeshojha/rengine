@@ -39,6 +39,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Kbd } from '$lib/components/ui/kbd';
 	import ScanStatusBadge from '@/components/scan-status-badge.svelte';
+	import { queueLabel } from '$lib/config/scan-admission';
 	import Hint from '$lib/components/hint.svelte';
 	import ConfirmDialog from '@/components/confirm-dialog.svelte';
 	import EmptyState from '@/components/empty-state.svelte';
@@ -735,6 +736,9 @@
 						class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground"
 					>
 						<ScanStatusBadge status={scan.status} class="h-5" />
+						{#if scan.status === 'pending' && scan.queue_position != null}
+							<span class="text-xs">{queueLabel(scan.queue_position)}</span>
+						{/if}
 						{#if focused}
 							<Badge variant="info" class="h-5 font-normal">Focused</Badge>
 						{/if}

@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 
 from pydantic import BaseModel
+from pydantic import Field as PydanticField
 from sqlalchemy import Column
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
@@ -15,6 +16,7 @@ from shared.definitions.oast import (
     MAX_SERVER_LENGTH,
     OastMode,
 )
+from shared.definitions.scan_admission import AUTOMATIC, MAX_CONCURRENT_SCANS
 from shared.enums.instance import InstanceMode
 from shared.utils.datetime import utc_now
 
@@ -70,6 +72,7 @@ class InstanceSettings(SQLModel, table=True):
     oast_server: str | None = Field(default=None, max_length=MAX_SERVER_LENGTH)
     oast_public_acknowledged: bool = Field(default=False)
     oast_wait_seconds: int = Field(default=DEFAULT_WAIT_SECONDS)
+    concurrent_scans: int = Field(default=AUTOMATIC)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
 
@@ -81,6 +84,9 @@ class InstanceSettingsUpdate(BaseModel):
     scan_history_retention_days: int | None = None
     screenshot_retention_days: int | None = None
     cert_recheck_enabled: bool | None = None
+    concurrent_scans: int | None = PydanticField(
+        default=None, ge=AUTOMATIC, le=MAX_CONCURRENT_SCANS
+    )
     ai_enabled: bool | None = None
     ai_provider: str | None = None
     ai_model: str | None = None
@@ -102,6 +108,8 @@ class InstanceSettingsRead(BaseModel):
     scan_history_retention_days: int
     screenshot_retention_days: int
     cert_recheck_enabled: bool
+    concurrent_scans: int = AUTOMATIC
+    concurrent_scans_auto: int | None = None
     ai_enabled: bool
     ai_provider: str | None
     ai_model: str | None

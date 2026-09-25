@@ -21,6 +21,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import { toast } from 'svelte-sonner';
+	import { AUTOMATIC, CONCURRENT_SCAN_CHOICES } from '$lib/config/scan-admission';
 	import SparklesIcon from '@lucide/svelte/icons/sparkles';
 	import CircleAlertIcon from '@lucide/svelte/icons/circle-alert';
 	import RotateCwIcon from '@lucide/svelte/icons/rotate-cw';
@@ -70,12 +71,22 @@
 	let scanRetention = $state('90');
 	let screenshotRetention = $state('30');
 	let certRecheck = $state(false);
+	let concurrentScans = $state(String(AUTOMATIC));
 
 	let zoneOptions = $derived.by(() => {
 		const local = Intl.DateTimeFormat().resolvedOptions().timeZone;
 		if (local && !TIMEZONES.includes(local)) return [local, ...TIMEZONES];
 		return TIMEZONES;
 	});
+
+	let automaticLabel = $derived.by(() => {
+		const auto = instanceSettingsStore.settings?.concurrent_scans_auto;
+		return auto ? `Automatic · ${auto}` : 'Automatic';
+	});
+	let concurrencyOptions = $derived([
+		{ value: String(AUTOMATIC), label: automaticLabel },
+		...CONCURRENT_SCAN_CHOICES.map((n) => ({ value: String(n), label: String(n) }))
+	]);
 
 	let modePlaceholder = $derived(
 		INSTANCE_MODES.find((m) => m.value === mode)?.label ?? MODE_LABELS[DEFAULT_INSTANCE_MODE]
@@ -89,7 +100,8 @@
 			mode,
 			scanRetention,
 			screenshotRetention,
-			certRecheck
+			certRecheck,
+			concurrentScans
 		});
 	}
 
@@ -104,6 +116,7 @@
 		scanRetention = String(s.scan_history_retention_days);
 		screenshotRetention = String(s.screenshot_retention_days);
 		certRecheck = s.cert_recheck_enabled;
+		concurrentScans = String(s.concurrent_scans);
 		snapshot = currentState();
 	}
 
@@ -124,7 +137,8 @@
 				mode,
 				scan_history_retention_days: Number(scanRetention),
 				screenshot_retention_days: Number(screenshotRetention),
-				cert_recheck_enabled: certRecheck
+				cert_recheck_enabled: certRecheck,
+				concurrent_scans: Number(concurrentScans)
 			});
 			if (updated) {
 				hydrate();
@@ -179,7 +193,7 @@
 	<div>
 		<h2 class="text-lg font-semibold tracking-tight">General</h2>
 		<p class="text-sm text-muted-foreground">
-			Instance identity, retention windows and AI analysis.
+			Instance identity, scan concurrency, retention windows and AI analysis.
 		</p>
 	</div>
 
@@ -279,6 +293,32 @@
 							</Select.Content>
 						</Select.Root>
 					</div>
+				</div>
+			</Card.Content>
+		</Card.Root>
+
+		<Card.Root>
+			<Card.Header>
+				<Card.Title class="text-base">Scans</Card.Title>
+				<Card.Description>Scans past the limit wait in launch order.</Card.Description>
+			</Card.Header>
+			<Card.Content>
+				<div class="space-y-1.5">
+					<Label class="text-xs">Concurrent scans</Label>
+					<Select.Root type="single" bind:value={concurrentScans}>
+						<Select.Trigger class="h-9 w-full text-sm sm:w-72">
+							{concurrencyOptions.find((o) => o.value === concurrentScans)?.label ??
+								concurrentScans}
+						</Select.Trigger>
+						<Select.Content>
+							{#each concurrencyOptions as o (o.value)}
+								<Select.Item value={o.value} label={o.label}>{o.label}</Select.Item>
+							{/each}
+						</Select.Content>
+					</Select.Root>
+					<p class="text-xs text-muted-foreground">
+						Automatic follows the stage slots of the running scan workers.
+					</p>
 				</div>
 			</Card.Content>
 		</Card.Root>

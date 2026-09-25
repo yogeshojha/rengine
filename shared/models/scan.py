@@ -345,6 +345,7 @@ class ScanRead(BaseModel):
     recheck: RecheckTally | None = None
     findings: ScanFindings | None = None
     target_runs: int | None = None
+    queue_position: int | None = None
 
 
 class ScanStatusCounts(BaseModel):

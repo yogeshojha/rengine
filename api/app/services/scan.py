@@ -49,6 +49,7 @@ from shared.enums.scan import (
     ScanStatus,
 )
 from shared.models.api_key import APIKey
+from shared.models.instance_settings import SINGLETON_KEY, InstanceSettings
 from shared.models.recheck import AssetRecheck
 from shared.models.scan import (
     SCAN_STATUSES,
@@ -87,10 +88,11 @@ from shared.models.scan_preview import (
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.vulnerability import Vulnerability
-from shared.services import target_seeds
+from shared.services import scan_admission, target_seeds
 from shared.services.activity_log import ActivityLogService
 from shared.services.asset_query import QueryScope, vuln_suppressed
 from shared.services.celery_dispatch import (
+    dispatch_scan_admission,
     dispatch_scan_finalize,
     dispatch_scan_resume,
     revoke_scan_tasks,
@@ -1146,7 +1148,11 @@ class ScanService:
             [i.id for i in items if i.scope == ScanScope.FOCUSED.value]
         )
         findings = await self.finding_counts(scan_ids)
+        queued = await self.queue_positions(
+            [i.id for i in items if i.status == ScanStatus.PENDING.value]
+        )
         for i in items:
+            i.queue_position = queued.get(i.id)
             i.findings = findings.get(i.id)
             i.new_subdomains = new_counts.get(i.id, 0)
             i.gone_subdomains = gone_counts.get(i.id, 0)
@@ -1154,6 +1160,28 @@ class ScanService:
             i.is_first_scan = i.id in first_ids
             i.rescans = rescans.get(i.id)
             i.recheck = rechecks.get(i.id)
+
+    async def queue_positions(self, scan_ids: list[UUID]) -> dict[UUID, int]:
+        """Scans ahead of each pending scan the limit holds back."""
+        if not scan_ids:
+            return {}
+        places = dict(
+            (await self.session.execute(scan_admission.positions_query(scan_ids))).all()
+        )
+        if not places:
+            return {}
+        busy = await self.session.scalar(scan_admission.running_query()) or 0
+        configured = await self.session.scalar(
+            select(InstanceSettings.concurrent_scans).where(
+                InstanceSettings.singleton_key == SINGLETON_KEY
+            )
+        )
+        limit = await asyncio.to_thread(scan_admission.resolve, configured)
+        return {
+            scan_id: place - 1
+            for scan_id, place in places.items()
+            if busy + place - 1 >= limit
+        }
 
     async def finding_counts(self, scan_ids: list[UUID]) -> dict[UUID, ScanFindings]:
         """Per scan, open findings by actionable severity and whether the scan looked."""
@@ -1495,6 +1523,7 @@ class ScanService:
     async def cancel(self, id: UUID, project_id: UUID) -> ScanRead:
         scan = await self._get_scan(id, project_id, lock=True)
         if scan.status in SCAN_OPEN_STATUSES:
+            held = scan.status == ScanStatus.RUNNING.value
             scan.status = ScanStatus.CANCELLED.value
             scan.completed_at = utc_now()
             fold_pause(scan, scan.completed_at)
@@ -1516,6 +1545,8 @@ class ScanService:
                 await asyncio.to_thread(dispatch_scan_finalize, str(scan.id))
             except Exception:
                 logger.warning("cancel finalize dispatch failed", exc_info=True)
+            if held:
+                await self._admit_waiting()
             await self._announce_cancelled(scan)
             await self.session.refresh(scan)
         return self._to_read(scan)
@@ -1573,6 +1604,7 @@ class ScanService:
         await self.session.commit()
 
         revoke_scan_tasks(scan.celery_task_ids or [])
+        await self._admit_waiting()
         self._announce_paused(scan, stopped)
         await self.session.refresh(scan)
         return self._to_read(scan)
@@ -1759,10 +1791,19 @@ class ScanService:
 
     async def delete(self, id: UUID, project_id: UUID) -> None:
         scan = await self._get_scan(id, project_id)
+        held = scan.status == ScanStatus.RUNNING.value
         if scan.status in SCAN_OPEN_STATUSES:
             revoke_scan_tasks(scan.celery_task_ids or [])
         await self.session.delete(scan)
         await self.session.commit()
+        if held:
+            await self._admit_waiting()
+
+    async def _admit_waiting(self) -> None:
+        try:
+            await asyncio.to_thread(dispatch_scan_admission)
+        except Exception:
+            logger.warning("scan admission dispatch failed", exc_info=True)
 
     def _to_read(self, scan: Scan) -> ScanRead:
         cfg = copy.deepcopy(scan.execution_config or {})

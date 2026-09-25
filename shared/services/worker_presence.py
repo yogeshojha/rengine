@@ -2,13 +2,14 @@
 
 import redis
 
-from app.config import settings
+from shared.config import base_settings
 from shared.logging import get_logger
 
 logger = get_logger(__name__)
 
 ANNOUNCE_SECONDS = 30.0
 PRESENCE_TTL = int(ANNOUNCE_SECONDS * 3)
+STAGE_WORKER = "worker-scans@"
 _PREFIX = "rengine:scan-worker:"
 
 _client: redis.Redis | None = None
@@ -17,7 +18,7 @@ _client: redis.Redis | None = None
 def _redis() -> redis.Redis:
     global _client  # noqa: PLW0603
     if _client is None:
-        _client = redis.from_url(settings.celery_broker_url)
+        _client = redis.from_url(base_settings().celery_broker_url)
     return _client
 
 
@@ -43,3 +44,10 @@ def live_workers() -> set[str] | None:
         logger.warning("worker presence unreadable", exc_info=True)
         return None
     return {key.decode()[len(_PREFIX) :] for key in keys}
+
+
+def stage_slots() -> int:
+    """Stage slots across the live worker-scans containers, one container when none is seen."""
+    live = live_workers() or set()
+    containers = sum(1 for name in live if name.startswith(STAGE_WORKER))
+    return max(1, containers) * base_settings().CELERY_SCAN_CONCURRENCY

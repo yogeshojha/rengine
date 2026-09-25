@@ -12,6 +12,8 @@ export interface InstanceSettings {
 	scan_history_retention_days: number;
 	screenshot_retention_days: number;
 	cert_recheck_enabled: boolean;
+	concurrent_scans: number;
+	concurrent_scans_auto: number | null;
 	ai_enabled: boolean;
 	ai_provider: string | null;
 	ai_model: string | null;
@@ -30,6 +32,7 @@ export interface InstanceSettingsUpdate {
 	scan_history_retention_days?: number;
 	screenshot_retention_days?: number;
 	cert_recheck_enabled?: boolean;
+	concurrent_scans?: number;
 	ai_enabled?: boolean;
 	ai_provider?: string | null;
 	ai_model?: string | null;

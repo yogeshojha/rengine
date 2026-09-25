@@ -76,6 +76,12 @@ def dispatch_scan_resume(scan_id: str, epoch: int) -> None:
     )
 
 
+def dispatch_scan_admission() -> None:
+    get_celery_client().send_task(
+        "app.tasks.scan.admit", kwargs={}, queue=SCAN_CONTROL_QUEUE
+    )
+
+
 def dispatch_scan_finalize(scan_id: str) -> None:
     logger.info("Dispatching scan finalize %s", scan_id)
     get_celery_client().send_task(

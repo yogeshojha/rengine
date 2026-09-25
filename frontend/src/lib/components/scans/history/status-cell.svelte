@@ -5,6 +5,7 @@
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 	import { isOpenStatus } from '$lib/utilities/scan-status';
 	import { plannedStages, stageProgress } from '$lib/utilities/scan-progress';
+	import { queueLabel } from '$lib/config/scan-admission';
 	import type { ScanRead } from '$lib/types/scan';
 
 	interface Props {
@@ -53,6 +54,8 @@
 		<span class="truncate text-2xs text-muted-foreground"
 			>{scan.status === 'paused' ? 'Paused' : progress.label}</span
 		>
+	{:else if scan.status === 'pending' && scan.queue_position != null}
+		<span class="text-2xs text-muted-foreground">{queueLabel(scan.queue_position)}</span>
 	{:else if ended && scan.error}
 		<Hint text={scan.error}>
 			{#snippet child(props)}
