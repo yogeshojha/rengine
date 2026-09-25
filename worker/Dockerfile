@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpcap-dev \
     && rm -rf /var/lib/apt/lists/*
 
-RUN curl -fsSL https://go.dev/dl/go1.25.7.linux-amd64.tar.gz | tar -C /usr/local -xzf -
+RUN curl -fsSL "https://go.dev/dl/go1.25.7.linux-$(dpkg --print-architecture).tar.gz" | tar -C /usr/local -xzf -
 
 ENV PATH="/usr/local/go/bin:${PATH}" \
     GOBIN=/out/bin \
