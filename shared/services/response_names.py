@@ -14,6 +14,7 @@ from shared.enums.subdomain import SubdomainSource
 from shared.models.http_asset import HttpAsset
 
 BODY_SCAN_BYTES = 500_000
+STREAM_BATCH = 200
 _MAX_NAME = 253
 _ESCAPES = (
     ("%2f", "/"),
@@ -105,5 +106,9 @@ def mentioned(
         if not hosts:
             return {}
         query = query.where(HttpAsset.host.in_(sorted(hosts)))
-    rows = [tuple(r) for r in session.execute(query).all()]
-    return harvest(rows, root)
+    found: dict[str, set[str]] = defaultdict(set)
+    result = session.execute(query.execution_options(yield_per=STREAM_BATCH))
+    for batch in result.partitions():
+        for name, sources in harvest([tuple(r) for r in batch], root).items():
+            found[name].update(sources)
+    return dict(found)

@@ -23,6 +23,7 @@ from shared.definitions.name_ownership import (
     MIN_ALIAS_LABEL,
     MIN_EVIDENCE,
     MIN_LINKS,
+    STREAM_BATCH,
     ClaimEvidence,
     NameClaim,
 )
@@ -234,20 +235,19 @@ def _rank(claim: Claim) -> tuple[int, int, bool]:
     )
 
 
-def judge(assets: list[Asset], root: str, owned: set[str]) -> list[Claim]:
-    """One claim per hostname, strongest first."""
-    root = root.lower().rstrip(".")
-    defaults = {
-        (a.ip, a.port): a for a in assets if _is_address(a.host) and a.content_hash
-    }
-    best: dict[str, Claim] = {}
-    for asset in assets:
-        claim = _judge_one(asset, defaults.get((asset.ip, asset.port)), root, owned)
-        if claim is None:
-            continue
-        current = best.get(claim.host)
-        if current is None or _rank(claim) > _rank(current):
-            best[claim.host] = claim
+def _defaults(assets: list[Asset]) -> dict[tuple[str | None, int | None], Asset]:
+    return {(a.ip, a.port): a for a in assets if _is_address(a.host) and a.content_hash}
+
+
+def _keep(best: dict[str, Claim], claim: Claim | None) -> None:
+    if claim is None:
+        return
+    current = best.get(claim.host)
+    if current is None or _rank(claim) > _rank(current):
+        best[claim.host] = claim
+
+
+def _ranked(best: dict[str, Claim]) -> list[Claim]:
     claims = list(best.values())
     together = Counter((c.ip, c.domain) for c in claims)
     for claim in claims:
@@ -256,55 +256,85 @@ def judge(assets: list[Asset], root: str, owned: set[str]) -> list[Claim]:
     return claims
 
 
+def judge(assets: list[Asset], root: str, owned: set[str]) -> list[Claim]:
+    """One claim per hostname, strongest first."""
+    root = root.lower().rstrip(".")
+    defaults = _defaults(assets)
+    best: dict[str, Claim] = {}
+    for asset in assets:
+        _keep(
+            best, _judge_one(asset, defaults.get((asset.ip, asset.port)), root, owned)
+        )
+    return _ranked(best)
+
+
+_COLUMNS = (
+    HttpAsset.host,
+    HttpAsset.url,
+    HttpAsset.ip,
+    HttpAsset.port,
+    HttpAsset.scheme,
+    HttpAsset.status_code,
+    HttpAsset.title,
+    HttpAsset.final_url,
+    HttpAsset.location,
+    HttpAsset.tls_subject_cn,
+    HttpAsset.tls_sans,
+    HttpAsset.is_cdn,
+    HttpAsset.content_hash,
+    HttpAsset.content_length,
+    HttpAsset.asn_org,
+)
+
+
+def _asset(r, body: str | None) -> Asset:
+    return Asset(
+        host=r[0] or "",
+        url=r[1] or "",
+        ip=r[2],
+        port=r[3],
+        scheme=r[4],
+        status_code=r[5],
+        title=r[6],
+        final_url=r[7],
+        location=r[8],
+        tls_subject_cn=r[9],
+        tls_sans=[str(s) for s in (r[10] or [])],
+        is_cdn=bool(r[11]),
+        content_hash=r[12],
+        content_length=r[13],
+        asn_org=r[14],
+        body=body,
+    )
+
+
 def claims(session: Session, scan_id: UUID, root: str, project_id: UUID) -> list[Claim]:
     """Claims for a scan's web assets against the target root and the project's other targets."""
+    root = root.lower().rstrip(".")
     owned = {
         value.lower()
         for value in session.execute(
             select(Target.target_value).where(Target.project_id == project_id)
         ).scalars()
     }
-    owned.discard(root.lower())
-    rows = session.execute(
-        select(
-            HttpAsset.host,
-            HttpAsset.url,
-            HttpAsset.ip,
-            HttpAsset.port,
-            HttpAsset.scheme,
-            HttpAsset.status_code,
-            HttpAsset.title,
-            HttpAsset.final_url,
-            HttpAsset.location,
-            HttpAsset.tls_subject_cn,
-            HttpAsset.tls_sans,
-            HttpAsset.is_cdn,
-            HttpAsset.content_hash,
-            HttpAsset.content_length,
-            HttpAsset.asn_org,
-            func.left(HttpAsset.response_body, BODY_SCAN_BYTES),
-        ).where(HttpAsset.scan_id == scan_id)
-    ).all()
-    assets = [
-        Asset(
-            host=r[0] or "",
-            url=r[1] or "",
-            ip=r[2],
-            port=r[3],
-            scheme=r[4],
-            status_code=r[5],
-            title=r[6],
-            final_url=r[7],
-            location=r[8],
-            tls_subject_cn=r[9],
-            tls_sans=[str(s) for s in (r[10] or [])],
-            is_cdn=bool(r[11]),
-            content_hash=r[12],
-            content_length=r[13],
-            asn_org=r[14],
-            body=r[15],
+    owned.discard(root)
+    light = session.execute(
+        select(*_COLUMNS).where(
+            HttpAsset.scan_id == scan_id, HttpAsset.content_hash.is_not(None)
         )
-        for r in rows
-        if r[0]
-    ]
-    return judge(assets, root, owned)
+    ).all()
+    defaults = _defaults([_asset(r, None) for r in light if r[0]])
+    best: dict[str, Claim] = {}
+    result = session.execute(
+        select(*_COLUMNS, func.left(HttpAsset.response_body, BODY_SCAN_BYTES))
+        .where(HttpAsset.scan_id == scan_id, HttpAsset.host.is_not(None))
+        .execution_options(yield_per=STREAM_BATCH)
+    )
+    for batch in result.partitions():
+        for r in batch:
+            asset = _asset(r, r[15])
+            _keep(
+                best,
+                _judge_one(asset, defaults.get((asset.ip, asset.port)), root, owned),
+            )
+    return _ranked(best)

@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import random
+import uuid
 from collections.abc import Iterable
 from dataclasses import dataclass
 
 from sqlalchemy import bindparam, delete, select, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import defer
 
 from shared.definitions.intensity import TransportTool
@@ -308,31 +310,41 @@ class HttpProbeStage(Stage):
         excluded: list[str],
     ) -> list[str]:
         now = utc_now()
-        live: list[str] = []
-        for name in sorted(answers):
-            if name not in fresh:
-                continue
-            ips = answers[name]["ips"]
-            skip = matches_any(name, excluded)
-            self.session.add(
-                Subdomain(
-                    scan_id=self.ctx.scan_id,
-                    target_id=self.ctx.target_id,
-                    project_id=self.ctx.project_id,
-                    name=name,
-                    sources=sorted(fresh[name]),
-                    resolved_ips=ips,
-                    cname=answers[name]["cname"],
-                    is_active=True,
-                    is_wildcard=bool(ips) and set(ips) <= wildcard,
-                    is_excluded=skip,
-                    discovered_at=now,
-                )
+        rows = [
+            {
+                "id": uuid.uuid4(),
+                "scan_id": self.ctx.scan_id,
+                "target_id": self.ctx.target_id,
+                "project_id": self.ctx.project_id,
+                "name": name,
+                "sources": sorted(fresh[name]),
+                "resolved_ips": answers[name]["ips"],
+                "cname": answers[name]["cname"],
+                "tech": [],
+                "interest_kinds": [],
+                "is_active": True,
+                "is_wildcard": bool(answers[name]["ips"])
+                and set(answers[name]["ips"]) <= wildcard,
+                "is_excluded": matches_any(name, excluded),
+                "discovered_at": now,
+                "created_at": now,
+            }
+            for name in sorted(answers)
+            if name in fresh
+        ]
+        written: set[str] = set()
+        for start in range(0, len(rows), _PERSIST_BATCH):
+            statement = (
+                pg_insert(Subdomain)
+                .values(rows[start : start + _PERSIST_BATCH])
+                .on_conflict_do_nothing(constraint="uq_subdomain_scan_name")
+                .returning(Subdomain.name)
             )
-            if not skip:
-                live.append(name)
+            written.update(self.session.execute(statement).scalars())
         self.session.commit()
-        return live
+        return [
+            r["name"] for r in rows if r["name"] in written and not r["is_excluded"]
+        ]
 
     def _port_map(self) -> dict[str, set[int]]:
         """Open ports per address, filtered to what can plausibly answer HTTP."""
