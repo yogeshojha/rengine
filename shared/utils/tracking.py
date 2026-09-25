@@ -23,7 +23,7 @@ _PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
 
 
 def tracking_ids(body: str | None) -> list[str]:
-    """Every account a page names, a Universal Analytics property folded to its account."""
+    """Account IDs in a page, Universal Analytics properties folded to the account."""
     if not body:
         return []
     text = body[:BODY_SCAN_BYTES]

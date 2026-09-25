@@ -310,7 +310,7 @@ def bigip_backend(encoded_ip: str, encoded_port: str) -> str | None:
 
 
 def internal_addresses(raw_header: str | None, body: str | None) -> list[str]:
-    """Private addresses and internal names a response hands out, with where they appear."""
+    """Private addresses and internal hostnames in a response, with their location."""
     found: dict[str, str] = {}
     for line in (raw_header or "").splitlines():
         name, _sep, value = line.partition(":")
@@ -443,7 +443,7 @@ def pending_scans(session: Session, *, limit: int) -> list[UUID]:
 
 
 def backfill_scan(session: Session, scan_id: UUID) -> int:
-    """Evaluate every stored response of one scan and read its tracking accounts."""
+    """Evaluate hygiene and tracking accounts for every stored response of one scan."""
     stmt = (
         select(
             HttpAsset.id,

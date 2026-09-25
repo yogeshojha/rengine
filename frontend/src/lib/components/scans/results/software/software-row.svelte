@@ -73,7 +73,7 @@
 
 	const fixedHint = $derived(
 		row.fixed_in && row.fixed_in_assets
-			? `${row.name} ${row.fixed_in} runs on ${plural(row.fixed_in_assets, 'asset')} in this scan without ${row.cve}.`
+			? `Not affected: ${row.name} ${row.fixed_in}, ${plural(row.fixed_in_assets, 'asset')} in this scan`
 			: null
 	);
 </script>

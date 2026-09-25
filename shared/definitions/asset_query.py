@@ -538,7 +538,7 @@ FIELDS: tuple[QueryField, ...] = (
         name="tracking",
         type=FieldType.STRING,
         group="Response",
-        description="Analytics, tag manager or ads account the page loads.",
+        description="Analytics, tag manager or advertising account ID.",
         example="tracking=UA-58851320",
     ),
     QueryField(
@@ -2807,7 +2807,7 @@ SOFTWARE_FLAGS: dict[str, str] = {
     "web": "Inferred from a web asset",
     "service": "Inferred from a service banner",
     "corroborated": "A check at the same host names the same CVE",
-    "fixable": "A newer release in the same scan does not carry the CVE",
+    "fixable": "A newer release in this scan is not affected",
 }
 
 SOFTWARE_FIELDS: tuple[QueryField, ...] = (
@@ -3033,7 +3033,7 @@ SOFTWARE_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="is:kev and is:fixable",
-        description="Exploited CVEs a newer release in the same scan does not carry",
+        description="Known exploited CVEs with an unaffected release in this scan",
         group="Priority",
         generic=True,
     ),

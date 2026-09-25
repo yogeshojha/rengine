@@ -1,4 +1,4 @@
-"""Judge which owned names are answered by a server that does not host them."""
+"""Hostnames on third-party servers."""
 
 from __future__ import annotations
 
@@ -99,7 +99,7 @@ def _grams(label: str) -> set[str]:
 
 
 def _alias(host: str, domain: str, root: str, title: str | None) -> bool:
-    """Whether the domain reads as the owner's own other name."""
+    """Whether the domain is an alias of the target owner."""
     theirs = domain.split(".", maxsplit=1)[0]
     brand = registrable_domain(root).split(".")[0]
     if len(brand) >= MIN_ALIAS_LABEL and (
@@ -235,7 +235,7 @@ def _rank(claim: Claim) -> tuple[int, int, bool]:
 
 
 def judge(assets: list[Asset], root: str, owned: set[str]) -> list[Claim]:
-    """One claim per owned name, strongest first."""
+    """One claim per hostname, strongest first."""
     root = root.lower().rstrip(".")
     defaults = {
         (a.ip, a.port): a for a in assets if _is_address(a.host) and a.content_hash
@@ -257,7 +257,7 @@ def judge(assets: list[Asset], root: str, owned: set[str]) -> list[Claim]:
 
 
 def claims(session: Session, scan_id: UUID, root: str, project_id: UUID) -> list[Claim]:
-    """Judge a scan's web assets against the target root and every other target."""
+    """Claims for a scan's web assets against the target root and the project's other targets."""
     owned = {
         value.lower()
         for value in session.execute(

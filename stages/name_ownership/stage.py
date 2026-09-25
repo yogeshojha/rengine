@@ -11,8 +11,8 @@ from stages.name_ownership.finding import claim_finding
 
 class NameOwnershipStage(Stage):
     name = "name_ownership"
-    title = "Name Ownership"
-    description = "Report owned names answered by another organisation's server."
+    title = "Hostname Ownership"
+    description = "Report hostnames that serve third-party content or resolve to a server with no site for them."
     phase = Phase.DEPTH.value
     depends_on = frozenset({"http_probe", "origin_probe"})
     group = StageGroup.HOSTS.value
@@ -38,7 +38,6 @@ class NameOwnershipStage(Stage):
         if stored:
             self.publish_results(SurfaceDimension.VULNERABILITIES.value)
             self.emit_progress(
-                f"{stored} name{'' if stored == 1 else 's'} answered by another "
-                "organisation's server"
+                f"{stored} hostname{'' if stored == 1 else 's'} on third-party servers"
             )
         return StageResult(counts={"vulnerabilities": stored})

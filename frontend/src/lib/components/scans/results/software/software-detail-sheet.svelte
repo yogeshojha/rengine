@@ -101,7 +101,7 @@
 									{row.fixed_in}
 									{#if row.fixed_in_assets}
 										<span class="text-muted-foreground">
-											on {plural(row.fixed_in_assets, 'asset')} in this scan
+											· {plural(row.fixed_in_assets, 'asset')} in this scan
 										</span>
 									{/if}
 								</dd>

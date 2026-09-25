@@ -147,7 +147,7 @@ def test_the_finding_names_the_domain_and_is_stable():
     assert a.template_id == CLAIM_TEMPLATES[NameClaim.FOREIGN_SITE.value]
     assert a.severity == Severity.HIGH.value
     assert a.matcher_name == "tenant.shop"
-    assert "does not mention gov.example" in a.description
+    assert "References to gov.example: none" in a.description
 
 
 def test_the_stage_sends_nothing_and_produces_findings():

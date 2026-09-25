@@ -168,11 +168,10 @@ CHECKS: tuple[CheckSpec, ...] = (
         HygieneCheck.INTERNAL_ADDRESS.value,
         "Internal address disclosed",
         "Internal addresses",
-        "A header, a load balancer cookie or a link in the page names a private "
-        "address or an internal host name.",
+        "Private IP address or internal hostname in a header, load balancer cookie "
+        "or page link.",
         "Every response.",
-        "Serve public addresses to the internet and strip backend addresses from "
-        "headers and cookies.",
+        "Remove private addresses and internal hostnames from responses.",
         "Content-Security-Policy",
         HygieneGroup.DISCLOSURE.value,
         TONE_WARNING,

@@ -1,4 +1,4 @@
-"""Names under the target that the responses of a scan mention."""
+"""Hostnames under the target referenced in a scan's stored responses."""
 
 from __future__ import annotations
 
@@ -65,7 +65,7 @@ def harvest(
     ],
     root: str,
 ) -> dict[str, set[str]]:
-    """Every name under the root each response mentions, with where it was read."""
+    """Hostnames under the root in each response, with the source of each."""
     root = root.lower().rstrip(".")
     pattern = _pattern(root)
     found: dict[str, set[str]] = defaultdict(set)
@@ -92,7 +92,7 @@ def harvest(
 def mentioned(
     session: Session, scan_id: UUID, root: str, hosts: set[str] | None = None
 ) -> dict[str, set[str]]:
-    """Harvest a scan's stored responses, or only those of the named hosts."""
+    """Hostnames referenced in a scan's stored responses, or in those of the given hosts."""
     query = select(
         HttpAsset.tls_subject_cn,
         HttpAsset.tls_sans,

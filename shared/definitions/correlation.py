@@ -69,7 +69,7 @@ CORRELATION_KIND_HELP: dict[str, str] = {
     CorrelationKind.SERVER.value: "Hosts returning the same Server header",
     CorrelationKind.CDN.value: "Hosts fronted by the same CDN or WAF",
     CorrelationKind.ASN.value: "Hosts announced by the same autonomous system",
-    CorrelationKind.TRACKING.value: "Hosts loading the same analytics, tag manager or ads account",
+    CorrelationKind.TRACKING.value: "Hosts sharing an analytics, tag manager or advertising account",
 }
 
 # what a set of hosts sharing this identity does, after "N hosts"
@@ -88,7 +88,7 @@ CORRELATION_RELATION_PHRASE: dict[str, str] = {
     CorrelationKind.SERVER.value: "return the same Server header",
     CorrelationKind.CDN.value: "sit behind the same CDN",
     CorrelationKind.ASN.value: "sit in the same network",
-    CorrelationKind.TRACKING.value: "report to the same tracking account",
+    CorrelationKind.TRACKING.value: "share a tracking account",
 }
 
 # drawn by default

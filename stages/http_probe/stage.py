@@ -181,13 +181,11 @@ class HttpProbeStage(Stage):
             warnings.append(f"{rejected:,} responses could not be stored")
         if mention.skipped:
             warnings.append(
-                f"{mention.skipped:,} names mentioned in responses were not resolved. "
-                f"The first {MAX_MENTIONED:,} of each round were."
+                f"{mention.skipped:,} referenced hostnames not resolved. "
+                f"Limit is {MAX_MENTIONED:,} per round."
             )
         if mention.unresolved:
-            warnings.append(
-                "dnsx unavailable. Names mentioned in responses were not followed."
-            )
+            warnings.append("dnsx unavailable. Referenced hostnames not resolved.")
         return StageResult(
             counts={
                 "http_assets": count,
@@ -207,7 +205,7 @@ class HttpProbeStage(Stage):
         )
 
     def _follow_mentions(self, probe) -> _Mentions:
-        """Resolve and probe the names under the target that responses mention."""
+        """Resolve and probe hostnames under the target referenced in stored responses."""
         out = _Mentions()
         root = self.ctx.target_value.strip().lower()
         resolved = self.ctx.resolved
@@ -238,7 +236,7 @@ class HttpProbeStage(Stage):
             out.skipped += max(0, len(names) - MAX_MENTIONED)
             names = names[:MAX_MENTIONED]
             known.update(names)
-            self.emit_progress(f"resolving {len(names):,} names mentioned in responses")
+            self.emit_progress(f"resolving {len(names):,} referenced hostnames")
             answers = self._resolve_mentions(names)
             if answers is None:
                 out.unresolved = True
@@ -255,7 +253,7 @@ class HttpProbeStage(Stage):
                 )
             )
             self.emit_progress(
-                f"probing {len(live):,} names mentioned in responses, "
+                f"probing {len(live):,} referenced hostnames, "
                 f"{len(queue):,} host and port pairs"
             )
             answered, rejected = self._persist(probe(queue), clear=False)
@@ -272,7 +270,7 @@ class HttpProbeStage(Stage):
                 extra_args=self.ctx.resolved.tool_args("dnsx"),
             )
         except DnsxError:
-            logger.warning("dnsx unavailable, mentioned names not followed")
+            logger.warning("dnsx unavailable, referenced hostnames not resolved")
             return None
         answers: dict[str, dict] = {}
         pending = list(names)

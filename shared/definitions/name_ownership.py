@@ -1,4 +1,4 @@
-"""Owned names answered by a server that does not host them."""
+"""Hostnames resolving to third-party content or to a server with no site for them."""
 
 from __future__ import annotations
 
@@ -25,20 +25,20 @@ CLAIM_TEMPLATES: dict[str, str] = {
 }
 
 CLAIM_TITLES: dict[str, str] = {
-    NameClaim.FOREIGN_SITE.value: "Name serves another organisation's site",
-    NameClaim.UNHOSTED.value: "Name points at a server that does not host it",
+    NameClaim.FOREIGN_SITE.value: "Third-party content on hostname",
+    NameClaim.UNHOSTED.value: "Dangling A record",
 }
 
 CLAIM_EVIDENCE_LABELS: dict[str, str] = {
-    ClaimEvidence.REDIRECT.value: "Redirects to",
-    ClaimEvidence.CERTIFICATE.value: "Presents the certificate for",
-    ClaimEvidence.LINKS.value: "Links to",
-    ClaimEvidence.ADDRESS_DEFAULT.value: "Same page as the bare address",
+    ClaimEvidence.REDIRECT.value: "Redirect",
+    ClaimEvidence.CERTIFICATE.value: "Certificate",
+    ClaimEvidence.LINKS.value: "Links",
+    ClaimEvidence.ADDRESS_DEFAULT.value: "IP address response",
 }
 
 # independent kinds of evidence a claim needs
 MIN_EVIDENCE = 2
-# links to one domain before the page is read as that domain's
+# links to one domain that attribute the page to it
 MIN_LINKS = 3
 # a certificate naming more registrable domains than this is a platform's
 MAX_CERT_DOMAINS = NEIGHBOUR_MAX_NAMES

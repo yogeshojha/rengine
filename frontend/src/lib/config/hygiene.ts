@@ -166,9 +166,9 @@ export const CHECKS: CheckSpec[] = [
 		key: 'internal_address',
 		label: 'Internal address disclosed',
 		control: 'Internal addresses',
-		help: 'A header, a load balancer cookie or a link in the page names a private address or an internal host name.',
+		help: 'Private IP address or internal hostname in a header, load balancer cookie or page link.',
 		applies: 'Every response.',
-		fix: 'Serve public addresses to the internet and strip backend addresses from headers and cookies.',
+		fix: 'Remove private addresses and internal hostnames from responses.',
 		header: 'Content-Security-Policy',
 		group: 'disclosure',
 		tone: 'warning'

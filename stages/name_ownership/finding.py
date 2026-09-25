@@ -19,56 +19,44 @@ _SEVERITY = {
 }
 
 
-def _facts(claim: Claim) -> list[str]:
-    facts: list[str] = []
+def _lines(claim: Claim, root: str) -> list[str]:
+    network = f" ({claim.asn_org})" if claim.asn_org else ""
+    lines = [f"Resolves to: {claim.ip or 'unknown'}{network}"]
+    if claim.kind == NameClaim.FOREIGN_SITE.value:
+        shown = f"{claim.title} ({claim.domain})" if claim.title else claim.domain
+        lines.append(f"Content: {shown}")
+    else:
+        lines.append(f"Content: {claim.title or 'none'}")
     for kind, value in claim.evidence:
         if kind == ClaimEvidence.REDIRECT.value:
-            facts.append(f"It redirects to {value}.")
+            lines.append(f"Redirect: {value}")
         elif kind == ClaimEvidence.CERTIFICATE.value:
-            facts.append(f"It presents the certificate for {value}.")
+            lines.append(f"Certificate: {value}")
         elif kind == ClaimEvidence.LINKS.value:
-            facts.append(f"The page links to {claim.domain} {value} times.")
+            lines.append(f"Links to {claim.domain}: {value}")
         elif kind == ClaimEvidence.ADDRESS_DEFAULT.value:
-            facts.append(f"{value} returns the same page with no hostname.")
-    return facts
-
-
-def _where(claim: Claim) -> str:
-    network = f" ({claim.asn_org})" if claim.asn_org else ""
-    return f"{claim.ip}{network}" if claim.ip else "its address"
+            lines.append(f"Same response as {value} without a Host header")
+    if claim.kind == NameClaim.FOREIGN_SITE.value:
+        lines.append(f"References to {root}: none")
+    if claim.siblings:
+        lines.append(
+            f"Same finding on this address: {claim.siblings} more under {root}"
+        )
+    return lines
 
 
 def claim_finding(claim: Claim, root: str) -> Finding:
-    """One owned name answered by another organisation's server, as a finding."""
+    """One hostname on a third-party server, as a finding."""
     template = CLAIM_TEMPLATES[claim.kind]
     digest = hashlib.sha256(
         f"{Scanner.RENGINE.value}|{template}|{claim.host}|{claim.domain}".encode()
     ).hexdigest()
-    siblings = (
-        f" {claim.siblings} other name{'' if claim.siblings == 1 else 's'} under "
-        f"{root} on this address {'does' if claim.siblings == 1 else 'do'} the same."
-        if claim.siblings
-        else ""
-    )
     if claim.kind == NameClaim.FOREIGN_SITE.value:
-        shown = f"{claim.title} ({claim.domain})" if claim.title else claim.domain
-        description = (
-            f"{claim.host} resolves to {_where(claim)} and serves {shown}. "
-            f"{' '.join(_facts(claim))} The page does not mention {root}.{siblings}"
-        )
         impact = (
-            f"The operator of {claim.domain} controls what {claim.host} serves and "
-            "can obtain a certificate for it."
+            f"Content on {claim.host} is controlled by the operator of {claim.domain}."
         )
     else:
-        description = (
-            f"{claim.host} resolves to {_where(claim)}, which has no site for it. "
-            f"{' '.join(_facts(claim))}{siblings}"
-        )
-        impact = (
-            f"Whoever operates {claim.ip or 'the address'} decides what "
-            f"{claim.host} serves."
-        )
+        impact = f"Content on {claim.host} is controlled by the operator of {claim.ip or 'the address'}."
     return Finding(
         fingerprint=digest,
         scanner=Scanner.RENGINE.value,
@@ -81,12 +69,9 @@ def claim_finding(claim: Claim, root: str) -> Finding:
         matcher_name=claim.domain,
         extractor_name=None,
         extracted_results=[claim.domain, *sorted({k for k, _ in claim.evidence})],
-        description=description,
+        description="\n".join(_lines(claim, root)),
         impact=impact,
-        remediation=(
-            f"Remove the DNS record for {claim.host}, or point it at a server "
-            "that hosts it."
-        ),
+        remediation=f"Remove or update the DNS record for {claim.host}.",
         references=[],
         tags=["takeover", "dns", "stale-record"],
         authors=["rengine"],
