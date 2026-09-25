@@ -19,6 +19,7 @@ import Crosshair from '@lucide/svelte/icons/crosshair';
 import Upload from '@lucide/svelte/icons/upload';
 import Cable from '@lucide/svelte/icons/cable';
 import ShieldAlert from '@lucide/svelte/icons/shield-alert';
+import Webhook from '@lucide/svelte/icons/webhook';
 import Folder from '@lucide/svelte/icons/folder';
 import FolderOpen from '@lucide/svelte/icons/folder-open';
 import FolderCog from '@lucide/svelte/icons/folder-cog';
@@ -156,6 +157,7 @@ export enum EndpointSource {
 	VULN_SCAN = 'vuln_scan',
 	PROXY = 'proxy',
 	IMPORT = 'import',
+	API_SPEC = 'api_spec',
 	OTHER = 'other'
 }
 
@@ -175,6 +177,7 @@ export const SOURCE_LABELS: Record<string, string> = {
 	[EndpointSource.VULN_SCAN]: 'Vulnerability scan',
 	[EndpointSource.PROXY]: 'Proxy',
 	[EndpointSource.IMPORT]: 'Imported',
+	[EndpointSource.API_SPEC]: 'API specification',
 	[EndpointSource.OTHER]: 'Other'
 };
 
@@ -262,6 +265,7 @@ export const SOURCE_ICONS: Record<string, IconComponent> = {
 	[EndpointSource.VULN_SCAN]: ShieldAlert,
 	[EndpointSource.PROXY]: Cable,
 	[EndpointSource.IMPORT]: Upload,
+	[EndpointSource.API_SPEC]: Webhook,
 	[EndpointSource.OTHER]: CircleHelp
 };
 
@@ -280,6 +284,8 @@ export const ARCHIVE_SOURCES: ReadonlySet<string> = new Set([
 	EndpointSource.ARCHIVE,
 	EndpointSource.DEEP_ARCHIVE
 ]);
+
+export const API_DOC_INTEREST = 'api_doc';
 
 // mirrors ParamInterest + PathInterest
 export const INTEREST_LABELS: Record<string, string> = {

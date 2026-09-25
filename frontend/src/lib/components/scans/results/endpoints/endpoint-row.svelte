@@ -5,6 +5,7 @@
 	import { formatBytes } from '$lib/utilities/scan-correlation';
 	import Copy from '@lucide/svelte/icons/copy';
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
+	import Webhook from '@lucide/svelte/icons/webhook';
 
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
@@ -21,6 +22,7 @@
 		ENDPOINT_CLASS_ICONS,
 		ENDPOINT_CLASS_LABELS,
 		ENDPOINT_CLASS_TONE,
+		API_DOC_INTEREST,
 		EndpointSource,
 		INTEREST_LABELS,
 		SENSITIVE_INTEREST,
@@ -73,7 +75,13 @@
 	let ClassIcon = $derived(ENDPOINT_CLASS_ICONS[endpoint.endpoint_class]);
 	let classTone = $derived(ENDPOINT_CLASS_TONE[endpoint.endpoint_class] ?? 'text-muted-foreground');
 	let sensitive = $derived(endpoint.interest.filter((i) => SENSITIVE_INTEREST.has(i)));
-	let testable = $derived(endpoint.interest.filter((i) => !SENSITIVE_INTEREST.has(i)));
+	let testable = $derived(
+		endpoint.interest.filter((i) => !SENSITIVE_INTEREST.has(i) && i !== API_DOC_INTEREST)
+	);
+	let isApi = $derived(
+		endpoint.sources.includes(EndpointSource.API_SPEC) ||
+			endpoint.interest.includes(API_DOC_INTEREST)
+	);
 	let isRoot = $derived(endpoint.path === '/');
 	let isIndex = $derived(endpoint.filename === null && !label);
 	let dirLabel = $derived(isRoot ? '' : endpoint.dir_path);
@@ -98,8 +106,23 @@
 </script>
 
 {#snippet badges(compact: boolean)}
-	{#if sensitive.length || testable.length || endpoint.is_new || gone || endpoint.sources.includes(EndpointSource.ROBOTS)}
+	{#if isApi || sensitive.length || testable.length || endpoint.is_new || gone || endpoint.sources.includes(EndpointSource.ROBOTS)}
 		<div class="flex flex-wrap items-center gap-1 {compact ? '' : 'mt-1'}">
+			{#if isApi}
+				<Hint text="Declared by the service's own API schema.">
+					{#snippet child(props)}
+						<span {...props} class="inline-flex">
+							<Badge
+								variant="info"
+								class="h-4 gap-1 px-1.5 text-2xs font-semibold tracking-wide uppercase"
+							>
+								<Webhook class="size-2.5" />
+								API
+							</Badge>
+						</span>
+					{/snippet}
+				</Hint>
+			{/if}
 			{#each sensitive as key (key)}
 				<Badge variant="destructive" class="h-4 gap-1 px-1.5 text-2xs">
 					<ShieldAlert class="size-2.5" />

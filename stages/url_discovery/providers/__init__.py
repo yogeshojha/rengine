@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from stages.url_discovery.providers.api_spec import ApiSpecProvider
 from stages.url_discovery.providers.archive import ArchiveProvider
 from stages.url_discovery.providers.base import (
     Host,
@@ -18,6 +19,7 @@ URL_PROVIDERS: dict[str, type[UrlProvider]] = {
     KatanaProvider.source: KatanaProvider,
     ArchiveProvider.source: ArchiveProvider,
     SourceMapProvider.source: SourceMapProvider,
+    ApiSpecProvider.source: ApiSpecProvider,
 }
 
 PROVIDER_NAMES: tuple[str, ...] = tuple(URL_PROVIDERS)

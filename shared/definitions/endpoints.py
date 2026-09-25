@@ -53,6 +53,7 @@ class EndpointSource(StrEnum):
     JS = "js"
     FUZZ = "fuzz"
     PARAM_MINING = "param_mining"
+    API_SPEC = "api_spec"
     VULN_SCAN = "vuln_scan"
     PROXY = "proxy"
     IMPORT = "import"
@@ -70,6 +71,7 @@ SOURCE_LABELS: dict[str, str] = {
     EndpointSource.JS.value: "JavaScript",
     EndpointSource.FUZZ.value: "Content discovery",
     EndpointSource.PARAM_MINING.value: "Parameter mining",
+    EndpointSource.API_SPEC.value: "API specification",
     EndpointSource.VULN_SCAN.value: "Vulnerability scan",
     EndpointSource.PROXY.value: "Proxy",
     EndpointSource.IMPORT.value: "Imported",
@@ -87,6 +89,7 @@ SOURCE_HELP: dict[str, str] = {
     EndpointSource.JS.value: "Extracted from a JavaScript bundle or its source map.",
     EndpointSource.FUZZ.value: "Guessed from a wordlist and answered.",
     EndpointSource.PARAM_MINING.value: "A parameter the endpoint accepts but did not advertise.",
+    EndpointSource.API_SPEC.value: "Declared by the service's own OpenAPI, Swagger or GraphQL schema.",
     EndpointSource.VULN_SCAN.value: "A location a vulnerability scanner reported.",
     EndpointSource.PROXY.value: "Observed by a connected proxy.",
     EndpointSource.IMPORT.value: "Supplied by a user.",
@@ -104,6 +107,7 @@ SOURCE_KIND: dict[str, str] = {
     EndpointSource.JS.value: SourceKind.ACTIVE.value,
     EndpointSource.FUZZ.value: SourceKind.ACTIVE.value,
     EndpointSource.PARAM_MINING.value: SourceKind.ACTIVE.value,
+    EndpointSource.API_SPEC.value: SourceKind.ACTIVE.value,
     EndpointSource.VULN_SCAN.value: SourceKind.DERIVED.value,
     EndpointSource.PROXY.value: SourceKind.DERIVED.value,
     EndpointSource.IMPORT.value: SourceKind.DERIVED.value,
@@ -122,6 +126,7 @@ SOURCE_RANK: dict[str, int] = {
     EndpointSource.SITEMAP.value: 30,
     EndpointSource.PARAM_MINING.value: 35,
     EndpointSource.VULN_SCAN.value: 40,
+    EndpointSource.API_SPEC.value: 55,
     EndpointSource.FUZZ.value: 45,
     EndpointSource.CRAWL.value: 50,
     EndpointSource.SEED.value: 60,

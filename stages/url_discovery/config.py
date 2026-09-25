@@ -15,13 +15,7 @@ from shared.definitions.endpoints import (
 )
 from stages.config import StageConfig, advanced
 
-DEFAULT_PROVIDERS: list[str] = [
-    EndpointSource.RESPONSE_MINING.value,
-    EndpointSource.SITEMAP.value,
-    EndpointSource.CRAWL.value,
-    EndpointSource.ARCHIVE.value,
-    EndpointSource.JS.value,
-]
+DEFAULT_PROVIDERS: list[str] = [EndpointSource.RESPONSE_MINING.value]
 
 _PROVIDER_LABELS = {
     EndpointSource.RESPONSE_MINING.value: "Response mining",
@@ -29,6 +23,7 @@ _PROVIDER_LABELS = {
     EndpointSource.CRAWL.value: "Crawl",
     EndpointSource.ARCHIVE.value: "Public archives",
     EndpointSource.JS.value: "Source maps",
+    EndpointSource.API_SPEC.value: "API schemas",
 }
 
 
@@ -134,3 +129,4 @@ MAX_URLS = 50_000
 MAX_KNOWN_FILE_HOSTS = 200
 MAX_SOURCE_MAPS = 200
 MAX_ARCHIVE_DOMAINS = 10
+MAX_API_SPEC_HOSTS = 200
