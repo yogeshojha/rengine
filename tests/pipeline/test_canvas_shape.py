@@ -7,6 +7,7 @@ from celery import Celery, chord
 
 from shared.definitions.constants import SCAN_CONTROL_QUEUE, SCANS_QUEUE
 from shared.services.orchestrator import canvas
+from stages.registry import resume_level
 
 pytestmark = pytest.mark.pipeline
 
@@ -67,9 +68,10 @@ def test_a_step_past_the_plan_is_finalize(app: Celery):
 def test_a_resume_carries_only_the_steps_left(app: Celery):
     full = canvas.plan_steps()
     done = set(full[0])
-    left = canvas.plan_steps(1, done)
+    level = resume_level(frozenset(done))
+    left = canvas.plan_steps(level, done)
     assert left == full[1:]
-    first = canvas.build_canvas(app, "s1", 1, start_level=1, done=done)
+    first = canvas.build_canvas(app, "s1", 1, start_level=level, done=done)
     assert first.body.kwargs["steps"] == left
 
 

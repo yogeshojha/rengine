@@ -68,6 +68,10 @@
 	import MonitoringCell from '$lib/components/targets/target-detail/overview/monitoring-cell.svelte';
 	import SeedsCell from '$lib/components/targets/target-detail/overview/seeds-cell.svelte';
 	import EstateTray from '$lib/components/targets/estate-tray.svelte';
+	import LookalikeTray from '$lib/components/lookalikes/lookalike-tray.svelte';
+	import LookalikeCell from '$lib/components/lookalikes/lookalike-cell.svelte';
+	import { lookalikesApi } from '$lib/api/lookalikes';
+	import type { LookalikeSummary } from '$lib/types/lookalike';
 	import ActivityCell from '$lib/components/targets/target-detail/overview/activity-cell.svelte';
 	import RunsCell from '$lib/components/targets/target-detail/overview/runs-cell.svelte';
 	import ReachabilityCell, {
@@ -152,6 +156,7 @@
 	let historyLoaded = $state(false);
 	let programs = $state<ProgramMatch[]>([]);
 	let estate = $state<TargetEstate | null>(null);
+	let lookalikes = $state<LookalikeSummary | null>(null);
 	let programsLoaded = false;
 	let ipFacets = $state<IpFacetSet | null>(null);
 	let hosting = $state<HostingComposition | null>(null);
@@ -285,6 +290,7 @@
 	let showSoftware = $derived((software?.facets.product.length ?? 0) > 0);
 	let showCerts = $derived(!!certBuckets && certBuckets.some((b) => b.count > 0));
 	let showExposures = $derived((exposures?.summary.total ?? 0) > 0);
+	let showLookalikes = $derived((lookalikes?.registered ?? 0) > 0);
 	let compositionKeys = $derived(
 		[
 			showGeo && 'geo',
@@ -294,6 +300,7 @@
 			showAi && 'ai',
 			showHygiene && 'hygiene',
 			showPostureZones && 'domain-posture',
+			showLookalikes && 'lookalikes',
 			showSoftware && 'software',
 			showCerts && 'certs',
 			showExposures && 'exposures'
@@ -465,8 +472,19 @@
 		const key = scanId ?? 'none';
 		if (!project || estateFor === key) return;
 		estateFor = key;
-		await settle('Estate', targetsApi.getEstate(targetId, project.id, scanId), (e) => {
-			estate = e;
+		await Promise.all([
+			settle('Estate', targetsApi.getEstate(targetId, project.id, scanId), (e) => {
+				estate = e;
+			}),
+			fetchLookalikes()
+		]);
+	}
+
+	async function fetchLookalikes() {
+		const project = projectsStore.activeProject;
+		if (!project || !showDns) return;
+		await settle('Lookalike domains', lookalikesApi.target(project.id, targetId), (l) => {
+			lookalikes = l;
 		});
 	}
 
@@ -980,6 +998,14 @@
 						/>
 					{/if}
 
+					{#if lookalikes && lookalikes.registered > 0 && projectsStore.activeProject}
+						<LookalikeTray
+							summary={lookalikes}
+							projectId={projectsStore.activeProject.id}
+							onChanged={fetchLookalikes}
+						/>
+					{/if}
+
 					{#if showReach && reach && webScanId}
 						<div class="grid grid-cols-12 overflow-hidden rounded-xl border bg-card">
 							<ReachabilityCell
@@ -1039,6 +1065,13 @@
 										summary={posture}
 										hosts={postureHosts}
 										scanId={posture?.scan_id}
+										class={cls}
+									/>
+								{:else if key === 'lookalikes' && lookalikes && projectsStore.activeProject}
+									<LookalikeCell
+										summary={lookalikes}
+										projectId={projectsStore.activeProject.id}
+										onChanged={fetchLookalikes}
 										class={cls}
 									/>
 								{:else if key === 'software'}

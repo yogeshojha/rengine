@@ -16,6 +16,9 @@
 	import HygienePanel from './overview/hygiene-panel.svelte';
 	import DomainPosturePanel from './overview/domain-posture-panel.svelte';
 	import EstateTray from '$lib/components/targets/estate-tray.svelte';
+	import LookalikeTray from '$lib/components/lookalikes/lookalike-tray.svelte';
+	import { lookalikesApi } from '$lib/api/lookalikes';
+	import type { LookalikeSummary } from '$lib/types/lookalike';
 	import { subdomainsApi } from '$lib/api/subdomains';
 	import { targetsApi } from '$lib/api/targets';
 	import { domainPostureApi } from '$lib/api/domain-posture';
@@ -180,9 +183,19 @@
 			.catch(() => (estate = null));
 	}
 
+	let lookalikes = $state<LookalikeSummary | null>(null);
+	function loadLookalikes() {
+		if (!scanId || !projectId || !isDomain) return;
+		lookalikesApi
+			.scan(projectId, scanId)
+			.then((l) => (lookalikes = l))
+			.catch(() => (lookalikes = null));
+	}
+
 	function reload() {
 		loadInsights();
 		loadEstate();
+		loadLookalikes();
 		loadHosting();
 		loadHygiene();
 		loadPosture();
@@ -272,6 +285,10 @@
 				sheetDescription="{estate.domains.length} domains · {estate.providers
 					.length} providers · {estate.considered_targets} targets considered"
 			/>
+		{/if}
+
+		{#if lookalikes && lookalikes.registered > 0}
+			<LookalikeTray summary={lookalikes} {projectId} onChanged={loadLookalikes} />
 		{/if}
 
 		<AttentionPanel

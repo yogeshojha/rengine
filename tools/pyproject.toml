@@ -3,6 +3,8 @@ name = "rengine-tools"
 version = "3.0.0"
 requires-python = ">=3.13"
 dependencies = [
+    "dnstwist>=20250130",
+    "ppdeep>=20260221",
     "whoisit>=4.0.3",
 ]
 

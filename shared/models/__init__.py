@@ -108,6 +108,12 @@ from shared.models.ip_address import (
     TargetIpAddressRead,
 )
 from shared.models.ip_asn_range import IpAsnRange, IpCountryRange
+from shared.models.lookalike import (
+    LookalikeDomain,
+    LookalikeRead,
+    LookalikeSummary,
+    LookalikeTriage,
+)
 from shared.models.note import (
     Note,
     NoteCount,
@@ -368,6 +374,10 @@ __all__ = [
     "IpAddressSummary",
     "IpAsnRange",
     "IpCountryRange",
+    "LookalikeDomain",
+    "LookalikeRead",
+    "LookalikeSummary",
+    "LookalikeTriage",
     "Note",
     "NoteCount",
     "NoteCreate",
