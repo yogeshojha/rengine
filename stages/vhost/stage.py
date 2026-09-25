@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+import contextlib
+import os
+import tempfile
+from pathlib import Path
+
 from sqlalchemy import select
 
 from shared.definitions.intensity import TransportTool
@@ -17,7 +22,10 @@ from tools.ffuf.client import FfufClient, FfufError
 
 logger = get_logger(__name__)
 
-_MAX_IPS = 8
+_MAX_IPS = 25
+_MAX_DISCOVERED_LABELS = 1000
+_CATCH_ALL_RATIO = 0.35
+_MIN_FOR_RATIO = 20
 
 
 def host_for(label: str, apex: str) -> str | None:
@@ -71,10 +79,11 @@ class VhostStage(Stage):
         if not ips:
             return StageResult(counts={"subdomains": 0})
 
+        candidates, total = self._wordlist_with_discovered(wordlist, apex)
         net = self.net_options()
         try:
             client = FfufClient(
-                wordlist=str(wordlist),
+                wordlist=str(candidates),
                 threads=self.transport.threads,
                 rate=self.transport.rate or 1,
                 request_timeout=self.transport.timeout,
@@ -86,18 +95,81 @@ class VhostStage(Stage):
             )
         except FfufError as exc:
             logger.warning("ffuf unavailable, skipping vhost discovery")
+            self._discard(candidates, wordlist)
             return StageResult(warnings=[str(exc)], partial=True)
 
         found: dict[str, set[str]] = {}
-        for ip in ips:
-            self._check_abort()
-            for label in client.vhost(ip, apex, budget=BUDGET_SECONDS_PER_IP):
-                if name := host_for(label, apex):
-                    found.setdefault(name, set()).add(ip)
+        catch_all = 0
+        try:
+            for ip in ips:
+                self._check_abort()
+                labels = client.vhost(ip, apex, budget=BUDGET_SECONDS_PER_IP)
+                if self._is_catch_all(labels, total):
+                    catch_all += 1
+                    continue
+                for label in labels:
+                    if name := host_for(label, apex):
+                        found.setdefault(name, set()).add(ip)
+        finally:
+            self._discard(candidates, wordlist)
 
         count = self._persist(found)
         self.emit_progress(f"discovered {count} virtual hosts")
-        return StageResult(counts={"subdomains": count})
+        warnings = (
+            [
+                f"{catch_all} of {len(ips)} addresses answered every host and were dropped"
+            ]
+            if catch_all
+            else []
+        )
+        return StageResult(counts={"subdomains": count}, warnings=warnings)
+
+    @staticmethod
+    def _is_catch_all(labels: list[str], total: int) -> bool:
+        return total >= _MIN_FOR_RATIO and len(labels) > total * _CATCH_ALL_RATIO
+
+    @staticmethod
+    def _discard(candidates: Path, base: Path) -> None:
+        if candidates != base:
+            with contextlib.suppress(OSError):
+                candidates.unlink(missing_ok=True)
+
+    def _wordlist_with_discovered(self, base: Path, apex: str) -> tuple[Path, int]:
+        """The base wordlist plus the labels of names already found, as one file."""
+        words: dict[str, None] = {}
+        with contextlib.suppress(OSError):
+            for line in base.read_text(encoding="utf-8", errors="replace").splitlines():
+                word = line.strip()
+                if word and not word.startswith("#"):
+                    words.setdefault(word, None)
+        base_count = len(words)
+        for label in self._discovered_labels(apex):
+            words.setdefault(label, None)
+        if len(words) == base_count:
+            return base, base_count
+        fd, path = tempfile.mkstemp(suffix=".txt", prefix="vhost_")
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write("\n".join(words))
+        return Path(path), len(words)
+
+    def _discovered_labels(self, apex: str) -> list[str]:
+        suffix = f".{apex}"
+        names = (
+            self.session.execute(
+                select(Subdomain.name).where(Subdomain.scan_id == self.ctx.scan_id)
+            )
+            .scalars()
+            .all()
+        )
+        labels: dict[str, None] = {}
+        for name in names:
+            if name and name.endswith(suffix):
+                label = name[: -len(suffix)]
+                if label and "*" not in label:
+                    labels.setdefault(label, None)
+            if len(labels) >= _MAX_DISCOVERED_LABELS:
+                break
+        return list(labels)
 
     def _candidate_ips(self) -> list[str]:
         subs = (
@@ -110,16 +182,16 @@ class VhostStage(Stage):
             .scalars()
             .all()
         )
-        ips: list[str] = []
+        resolvable: list[str] = []
+        wildcard: list[str] = []
         seen: set[str] = set()
         for sub in subs:
-            if sub.is_wildcard:
-                continue
+            bucket = wildcard if sub.is_wildcard else resolvable
             for ip in sub.resolved_ips or []:
                 if ip not in seen:
                     seen.add(ip)
-                    ips.append(ip)
-        return ips[:_MAX_IPS]
+                    bucket.append(ip)
+        return (resolvable + wildcard)[:_MAX_IPS]
 
     def _persist(self, found: dict[str, set[str]]) -> int:
         existing = set(
