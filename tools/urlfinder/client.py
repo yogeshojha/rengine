@@ -32,7 +32,10 @@ class UrlfinderClient:
 
         try:
             self._runner = CLIToolRunner(
-                URLFINDER_BINARY, default_timeout=DEFAULT_TIMEOUT
+                URLFINDER_BINARY,
+                default_timeout=DEFAULT_TIMEOUT,
+                recorder=recorder,
+                extra_args=self.extra_args,
             )
         except ToolNotFoundError as e:
             raise UrlfinderError(str(e)) from e
@@ -45,10 +48,5 @@ class UrlfinderClient:
             args=args,
             use_output_file=False,
             output_format=OutputFormat.PLAIN,
-            silent=True,
-            silent_flag="-silent",
-            recorder=self.recorder,
-            tool=URLFINDER_BINARY,
-            extra_args=self.extra_args,
         )
         return [line.strip() for line in result.output_lines if line.strip()]

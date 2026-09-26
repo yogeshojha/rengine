@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
@@ -82,7 +83,7 @@
 				outline = contents;
 				page = 1;
 			} catch (err) {
-				if (mine === session) error = err instanceof Error ? err.message : 'Preview not loaded.';
+				if (mine === session) error = errorMessage(err, 'Preview not loaded.');
 			} finally {
 				if (mine === session) loading = false;
 			}

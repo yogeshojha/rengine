@@ -19,6 +19,8 @@ import Waypoints from '@lucide/svelte/icons/waypoints';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import type { IconComponent } from '$lib/config/icons';
 import { STORAGE_KEYS } from '$lib/config/storage-keys';
+import { readRaw, writeRaw } from '$lib/utilities/storage';
+import { errorMessage } from '$lib/utilities/errors';
 
 export function getActivityIcon(eventType: string): IconComponent {
 	const s = eventType.toLowerCase();
@@ -63,22 +65,14 @@ export function categorize(t: string): ActivityFilter {
 }
 
 function readPinned(): boolean {
-	try {
-		return localStorage.getItem(STORAGE_KEYS.activityPinned) === '1';
-	} catch {
-		return false;
-	}
+	return readRaw(STORAGE_KEYS.activityPinned) === '1';
 }
 
 function readGrouping(): ActivityGrouping {
-	try {
-		const v = localStorage.getItem(STORAGE_KEYS.activityGrouping);
-		return ACTIVITY_GROUPINGS.includes(v as ActivityGrouping)
-			? (v as ActivityGrouping)
-			: DEFAULT_ACTIVITY_GROUPING;
-	} catch {
-		return DEFAULT_ACTIVITY_GROUPING;
-	}
+	const v = readRaw(STORAGE_KEYS.activityGrouping);
+	return ACTIVITY_GROUPINGS.includes(v as ActivityGrouping)
+		? (v as ActivityGrouping)
+		: DEFAULT_ACTIVITY_GROUPING;
 }
 
 function createActivityFeed() {
@@ -248,9 +242,7 @@ function createActivityFeed() {
 		},
 		setGrouping(g: ActivityGrouping) {
 			grouping = g;
-			try {
-				localStorage.setItem(STORAGE_KEYS.activityGrouping, g);
-			} catch {}
+			writeRaw(STORAGE_KEYS.activityGrouping, g);
 		},
 		toggleGroup(key: string) {
 			if (collapsedGroups.has(key)) collapsedGroups.delete(key);
@@ -262,9 +254,7 @@ function createActivityFeed() {
 				open = true;
 				newCount = 0;
 			}
-			try {
-				localStorage.setItem(STORAGE_KEYS.activityPinned, v ? '1' : '0');
-			} catch {}
+			writeRaw(STORAGE_KEYS.activityPinned, v ? '1' : '0');
 		},
 		toggle() {
 			this.setOpen(!open);
@@ -299,7 +289,7 @@ function createActivityFeed() {
 				page = p;
 				loadError = null;
 			} catch (e) {
-				loadError = e instanceof Error ? e.message : 'Activity not loaded';
+				loadError = errorMessage(e, 'Activity not loaded');
 			} finally {
 				loading = false;
 				initialLoad = false;

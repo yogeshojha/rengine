@@ -21,7 +21,8 @@
 
 	import QueryBar from './query-bar/query-bar.svelte';
 	import ListHeader from './table/list-header.svelte';
-	import { readPref, rowPadding, selectAllState, withTarget, writePref } from './table/columns';
+	import { rowPadding, selectAllState, withTarget } from './table/columns';
+	import { readPref, writePref } from '$lib/utilities/storage';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import SelectionBar from './table/selection-bar.svelte';
 	import RowSelectionBar from './table/row-selection-bar.svelte';
@@ -30,6 +31,8 @@
 	import { RowSelection } from './table/selection.svelte';
 	import type { SeedPick, SeedSelection } from '$lib/types/recheck';
 	import GroupList from './table/group-list.svelte';
+	import { GroupedView, ResultsTable } from './table/results-state.svelte';
+	import { pageParam, parsePageIndex, parseSort, sortParam, type SortKey } from './table/sort';
 	import FilterBar from './services/filter-bar.svelte';
 	import ServiceRow from './services/service-row.svelte';
 	import ServiceDetailSheet from './service-detail-sheet.svelte';
@@ -60,9 +63,7 @@
 		type ServiceQuery,
 		type ServiceRead as Service
 	} from '$lib/utilities/services';
-	import type { QueryError, QueryGroups, QueryLeads } from '$lib/types/asset-query';
-	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
-	import { afterPause } from '$lib/utilities/debounce';
+	import { SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 	import { LiveRefresh } from '$lib/utilities/live-results';
 
 	interface Props {
@@ -99,37 +100,23 @@
 
 	let ready = $derived(Boolean(projectId) && (projectWide || Boolean(scanId)));
 
-	const DEFAULT_SORT = { key: 'exposure', dir: -1 as const };
+	const DEFAULT_SORT: SortKey = { key: 'exposure', dir: -1 };
 
 	const initial = appPage.url.searchParams;
-	const initialSort = initial.get('svc_sort')?.split(':') ?? [];
 
 	let visiblePref = $state<string[] | null>(readPref(STORAGE_KEYS.servicesColumns, null));
-	let density = $state<string>(readPref(STORAGE_KEYS.servicesDensity, 'cozy'));
-	let pageSize = $state<number>(readPref(STORAGE_KEYS.servicesPageSize, RESULTS_PAGE_SIZE));
-	let sort = $state<{ key: string; dir: 1 | -1 }>(
-		initialSort[0]
-			? { key: initialSort[0], dir: initialSort[1] === 'desc' ? -1 : 1 }
-			: { ...DEFAULT_SORT }
+	const table = new ResultsTable<Service, ServiceFacetSet>({
+		facets: EMPTY_SERVICE_FACETS,
+		sort: parseSort(initial.get('svc_sort'), DEFAULT_SORT),
+		pageIndex: parsePageIndex(initial.get('svc_page')),
+		pageSizeKey: STORAGE_KEYS.servicesPageSize,
+		densityKey: STORAGE_KEYS.servicesDensity
+	});
+	const groups = new GroupedView(
+		initial.get('svc_group') ?? '',
+		(by) => servicesApi.groups(projectId, scanId, by, leadFilterWithQuery),
+		() => ready
 	);
-	let pageIndex = $state(Math.max(0, Number(initial.get('svc_page') ?? 1) - 1));
-
-	let items = $state<Service[]>([]);
-	let total = $state(0);
-	let totalCapped = $state(false);
-	let queryError = $state<QueryError | null>(null);
-	let queryReady = $state(true);
-	let loading = $state(true);
-	let refreshing = $state(false);
-	let errored = $state(false);
-	let facets = $state<ServiceFacetSet>(EMPTY_SERVICE_FACETS);
-	let facetsLoaded = $state(false);
-	let leadSet = $state<QueryLeads | null>(null);
-	let groupBy = $state<string>(initial.get('svc_group') ?? '');
-	let groupSet = $state<QueryGroups | null>(null);
-	let groupFailed = $state(false);
-	let groupLoading = $state(false);
-	let groupReq = 0;
 
 	let selected = $state<Service | null>(null);
 	let drawerOpen = $state(false);
@@ -144,38 +131,34 @@
 		if (active) seen = true;
 	});
 
-	let scanTotal = $derived(facets['class'].reduce((n, f) => n + f.count, 0));
-	let pageCount = $derived(Math.max(1, Math.ceil(total / pageSize)));
-	let selectedIndex = $derived(selected ? items.findIndex((s) => s.id === selected?.id) : -1);
+	let scanTotal = $derived(table.facets['class'].reduce((n, f) => n + f.count, 0));
+	let selectedIndex = $derived(selected ? table.items.findIndex((s) => s.id === selected?.id) : -1);
 	let visible = $derived(visiblePref ?? DEFAULT_VISIBLE_SERVICE_COLUMNS);
 	let allColumns = $derived(withTarget(SERVICE_COLUMNS, projectWide));
 	let shownColumns = $derived(
 		allColumns.filter((c) => visible.includes(c.key) || c.key === 'target')
 	);
-	let checkedCount = $derived(selection.countOn(items));
+	let checkedCount = $derived(selection.countOn(table.items));
 	let pickedCount = $derived(selection.size);
-	let selectAllChecked = $derived(selectAllState(checkedCount, items.length));
+	let selectAllChecked = $derived(selectAllState(checkedCount, table.items.length));
 	let filtered = $derived(serviceActiveFacetCount(query) > 0 || !!query.search);
-	let chips = $derived(serviceQueryChips(query, facets));
-	let rowPad = $derived(rowPadding(density));
+	let chips = $derived(serviceQueryChips(query, table.facets));
+	let rowPad = $derived(rowPadding(table.density));
 	let term = $derived(query.search.trim().includes(':') ? '' : query.search.trim());
 	let classTab = $derived(
 		query.classes.length === 0 ? 'all' : query.classes.length === 1 ? query.classes[0] : ''
 	);
 	let classCounts = $derived.by(() => {
-		if (!facetsLoaded) return null;
+		if (!table.facetsLoaded) return null;
 		const m: Record<string, number> = { all: scanTotal };
-		for (const f of facets['class']) m[f.value] = f.count;
+		for (const f of table.facets['class']) m[f.value] = f.count;
 		return m;
 	});
 
 	$effect(() => {
 		if (visiblePref) writePref(STORAGE_KEYS.servicesColumns, visiblePref);
 	});
-	$effect(() => writePref(STORAGE_KEYS.servicesDensity, density));
-	$effect(() => writePref(STORAGE_KEYS.servicesPageSize, pageSize));
 
-	let reqId = 0;
 	let timer: ReturnType<typeof setTimeout> | null = null;
 	let lastSig = '';
 	let primed = false;
@@ -187,55 +170,56 @@
 	}
 
 	async function runSearch() {
-		if (!queryReady) {
+		if (!table.queryReady) {
 			syncLeads();
 			return;
 		}
-		const filter = compileServiceQuery(query, sort.key, sort.dir, pageIndex * pageSize, pageSize);
+		const filter = compileServiceQuery(
+			query,
+			table.sort.key,
+			table.sort.dir,
+			table.pageIndex * table.pageSize,
+			table.pageSize
+		);
 		const sig = JSON.stringify({ ...filter, offset: 0 });
-		if (sig !== lastSig && pageIndex !== 0 && !pendingSelect) {
+		if (sig !== lastSig && table.pageIndex !== 0 && !pendingSelect) {
 			lastSig = sig;
-			pageIndex = 0;
+			table.pageIndex = 0;
 			return;
 		}
 		lastSig = sig;
-		const my = ++reqId;
-		loading = true;
+		const current = table.searchRequest.begin();
+		table.loading = true;
 		try {
 			const res = await servicesApi.search(projectId, scanId, filter);
-			if (my !== reqId) return;
-			items = res.items;
-			total = res.total;
-			totalCapped = res.total_capped;
-			queryError = res.error;
-			errored = false;
+			if (!current()) return;
+			table.accept(res);
 			if (!res.error && filter.q) queryBar?.remember(filter.q);
 			if (pendingSelect) {
-				selected = pendingSelect === 'first' ? (items[0] ?? null) : (items.at(-1) ?? null);
+				selected =
+					pendingSelect === 'first' ? (table.items[0] ?? null) : (table.items.at(-1) ?? null);
 				pendingSelect = null;
 			}
 		} catch {
-			if (my === reqId) {
-				items = [];
-				total = 0;
-				totalCapped = false;
-				errored = true;
-			}
+			if (current()) table.fail();
 		} finally {
-			if (my === reqId) {
-				loading = false;
+			if (current()) {
+				table.loading = false;
 				syncLeads();
 			}
 		}
 	}
 
 	let exportFilters = $derived(
-		compileServiceQuery(query, sort.key, sort.dir, 0, 1) as unknown as Record<string, unknown>
+		compileServiceQuery(query, table.sort.key, table.sort.dir, 0, 1) as unknown as Record<
+			string,
+			unknown
+		>
 	);
 	let leadFilter = $derived(compileServiceQuery({ ...query, search: '' }, 'port', 1, 0, 1));
 	let leadSig = $derived(JSON.stringify(leadFilter));
 	let leadFilterWithQuery = $derived({ ...leadFilter, q: query.search.trim() || null });
-	let groupSig = $derived(groupBy ? JSON.stringify(leadFilterWithQuery) + groupBy : '');
+	let groupSig = $derived(groups.by ? JSON.stringify(leadFilterWithQuery) + groups.by : '');
 	let loadedLeadSig = '';
 
 	async function loadLeads() {
@@ -243,60 +227,37 @@
 		loadedLeadSig = sig;
 		try {
 			const res = await servicesApi.leads(projectId, scanId, leadFilter);
-			if (leadSig === sig) leadSet = res.computed ? res : null;
+			if (leadSig === sig) table.leadSet = res.computed ? res : null;
 		} catch {
-			if (leadSig === sig) leadSet = null;
+			if (leadSig === sig) table.leadSet = null;
 			loadedLeadSig = '';
 		}
 	}
 
 	function syncLeads() {
-		if (!active || loading || !ready) return;
+		if (!active || table.loading || !ready) return;
 		if (leadSig === loadedLeadSig) return;
 		void loadLeads();
-	}
-
-	async function loadGroups() {
-		if (!groupBy || !ready) {
-			groupSet = null;
-			return;
-		}
-		const my = ++groupReq;
-		groupLoading = true;
-		try {
-			const res = await servicesApi.groups(projectId, scanId, groupBy, leadFilterWithQuery);
-			if (my === groupReq) {
-				groupSet = res;
-				groupFailed = false;
-			}
-		} catch {
-			if (my === groupReq) {
-				groupSet = null;
-				groupFailed = true;
-			}
-		} finally {
-			if (my === groupReq) groupLoading = false;
-		}
 	}
 
 	async function loadFacets() {
 		if (!ready) return;
 		try {
-			facets = await servicesApi.facets(projectId, scanId);
-			onScanTotal?.(facets['class'].reduce((n, f) => n + f.count, 0));
-			facetsLoaded = true;
+			table.facets = await servicesApi.facets(projectId, scanId);
+			onScanTotal?.(table.facets['class'].reduce((n, f) => n + f.count, 0));
+			table.facetsLoaded = true;
 		} catch {
-			if (!facetsLoaded) facets = EMPTY_SERVICE_FACETS;
+			if (!table.facetsLoaded) table.facets = EMPTY_SERVICE_FACETS;
 		}
 	}
 
 	async function refresh(quiet = false) {
-		refreshing = !quiet;
+		table.refreshing = !quiet;
 		try {
 			if (!quiet) loadedLeadSig = '';
-			await Promise.all([runSearch(), loadFacets(), loadGroups()]);
+			await Promise.all([runSearch(), loadFacets(), groups.reload()]);
 		} finally {
-			if (!quiet) refreshing = false;
+			if (!quiet) table.refreshing = false;
 		}
 	}
 
@@ -308,13 +269,13 @@
 
 	$effect(() => {
 		void JSON.stringify(query);
-		void sort.key;
-		void sort.dir;
-		void pageIndex;
-		void pageSize;
+		void table.sort.key;
+		void table.sort.dir;
+		void table.pageIndex;
+		void table.pageSize;
 		void scanId;
 		void projectId;
-		void queryReady;
+		void table.queryReady;
 		if (!seen || !ready) return;
 		if (timer) clearTimeout(timer);
 		timer = setTimeout(runSearch, primed ? SEARCH_DEBOUNCE_MS : 0);
@@ -338,11 +299,7 @@
 
 	$effect(() => {
 		void groupSig;
-		if (!groupBy) {
-			groupSet = null;
-			return;
-		}
-		return afterPause(loadGroups);
+		return groups.schedule();
 	});
 
 	function syncUrl() {
@@ -350,14 +307,9 @@
 			const sp = new SvelteURLSearchParams(location.search);
 			const set = (k: string, v: string | null) => (v ? sp.set(k, v) : sp.delete(k));
 			set('svc_q', query.search || null);
-			set('svc_group', groupBy || null);
-			set('svc_page', pageIndex > 0 ? String(pageIndex + 1) : null);
-			set(
-				'svc_sort',
-				sort.key !== DEFAULT_SORT.key || sort.dir !== DEFAULT_SORT.dir
-					? `${sort.key}:${sort.dir === 1 ? 'asc' : 'desc'}`
-					: null
-			);
+			set('svc_group', groups.by || null);
+			set('svc_page', pageParam(table.pageIndex));
+			set('svc_sort', sortParam(table.sort, DEFAULT_SORT));
 			const qs = sp.toString();
 			replaceState(qs ? `?${qs}` : location.pathname, appPage.state);
 		} catch {
@@ -366,10 +318,10 @@
 	}
 	$effect(() => {
 		void query.search;
-		void groupBy;
-		void pageIndex;
-		void sort.key;
-		void sort.dir;
+		void groups.by;
+		void table.pageIndex;
+		void table.sort.key;
+		void table.sort.dir;
 		if (!seen || !active) return;
 		untrack(syncUrl);
 	});
@@ -380,42 +332,41 @@
 	}
 	function step(dir: -1 | 1) {
 		const next = selectedIndex + dir;
-		if (next >= 0 && next < items.length) {
-			selected = items[next];
+		if (next >= 0 && next < table.items.length) {
+			selected = table.items[next];
 			return;
 		}
-		if (dir === 1 && pageIndex < pageCount - 1) {
+		if (dir === 1 && table.pageIndex < table.pageCount - 1) {
 			pendingSelect = 'first';
-			pageIndex += 1;
-		} else if (dir === -1 && pageIndex > 0) {
+			table.pageIndex += 1;
+		} else if (dir === -1 && table.pageIndex > 0) {
 			pendingSelect = 'last';
-			pageIndex -= 1;
+			table.pageIndex -= 1;
 		}
 	}
 	function toggleSort(key: string) {
-		sort = sort.key === key ? { key, dir: sort.dir === 1 ? -1 : 1 } : { key, dir: 1 };
-		pageIndex = 0;
+		table.toggleSort(key);
 	}
 	function toggleCheck(id: string) {
-		const row = items.find((s) => s.id === id);
+		const row = table.items.find((s) => s.id === id);
 		if (row) selection.toggle(row);
 	}
 	function toggleSelectAll() {
-		selection.toggleAll(items);
+		selection.toggleAll(table.items);
 	}
 	function toggleCol(key: string) {
 		visiblePref = visible.includes(key) ? visible.filter((k) => k !== key) : [...visible, key];
 	}
 	function setQuery(q: ServiceQuery) {
 		query = q;
-		pageIndex = 0;
+		table.pageIndex = 0;
 	}
 	function setClassTab(key: string) {
 		setQuery({ ...query, classes: key === 'all' ? [] : [key] });
 	}
 	function drillGroup(token: string) {
 		setQuery({ ...query, search: appendToken(query.search, token) });
-		groupBy = '';
+		groups.by = '';
 	}
 	function applyDsl(token: string) {
 		setQuery({ ...query, search: appendToken(query.search, token) });
@@ -446,17 +397,17 @@
 			searchRef?.focus();
 			return;
 		}
-		if (typing || drawerOpen || !items.length) return;
+		if (typing || drawerOpen || !table.items.length) return;
 		if (e.key === 'j' || e.key === 'ArrowDown') {
 			e.preventDefault();
-			cursor = Math.min(cursor + 1, items.length - 1);
+			cursor = Math.min(cursor + 1, table.items.length - 1);
 			scrollCursor();
 		} else if (e.key === 'k' || e.key === 'ArrowUp') {
 			e.preventDefault();
 			cursor = Math.max(cursor - 1, 0);
 			scrollCursor();
-		} else if (e.key === 'Enter' && cursor >= 0 && items[cursor]) {
-			open(items[cursor]);
+		} else if (e.key === 'Enter' && cursor >= 0 && table.items[cursor]) {
+			open(table.items[cursor]);
 		} else if (e.key === 'Escape') {
 			cursor = -1;
 		}
@@ -541,13 +492,13 @@
 		recentsKey={SURFACE[SurfaceDimension.SERVICES].recentsKey}
 		hint="class:database not is:cdn"
 		value={query.search}
-		facets={facets as unknown as Record<string, Facet[]>}
-		busy={loading && !!query.search}
-		{leadSet}
-		total={errored ? null : total}
-		capped={totalCapped}
-		serverError={queryError}
-		onReady={(value) => (queryReady = value)}
+		facets={table.facets as unknown as Record<string, Facet[]>}
+		busy={table.loading && !!query.search}
+		leadSet={table.leadSet}
+		total={table.errored ? null : table.total}
+		capped={table.totalCapped}
+		serverError={table.queryError}
+		onReady={(value) => (table.queryReady = value)}
 		onChange={(v) => setQuery({ ...query, search: v })}
 		onSubmit={flushSearch}
 	/>
@@ -565,25 +516,25 @@
 
 	<FilterBar
 		{query}
-		{facets}
+		facets={table.facets}
 		onQuery={setQuery}
 		dimensions={serviceQuerySchema.schema.group_dimensions}
 		columns={SERVICE_COLUMNS}
 		{visible}
 		onToggleColumn={toggleCol}
-		{density}
-		onDensity={(d) => (density = d)}
+		density={table.density}
+		onDensity={(d) => (table.density = d)}
 		sorts={SERVICE_SORTS}
-		sortKey={sort.key}
-		sortDir={sort.dir}
+		sortKey={table.sort.key}
+		sortDir={table.sort.dir}
 		onSort={toggleSort}
-		{refreshing}
+		refreshing={table.refreshing}
 		{projectId}
 		{scanId}
 		{exportFilters}
 		onRefresh={refresh}
-		{groupBy}
-		onGroupBy={(key) => (groupBy = key)}
+		groupBy={groups.by}
+		onGroupBy={(key) => (groups.by = key)}
 	/>
 
 	{#if chips.length > 0}
@@ -614,12 +565,12 @@
 		</div>
 	{/if}
 
-	{#if !groupBy}
+	{#if !groups.by}
 		<SelectionBar
 			noun={SVC.noun}
 			nounPlural={SVC.nounPlural}
-			{total}
-			{totalCapped}
+			total={table.total}
+			totalCapped={table.totalCapped}
 			maxAssets={rechecks.schema?.max_assets ?? 0}
 			queryActive={Boolean(query.search.trim()) || chips.length > 0}
 			query={queryLabel()}
@@ -629,11 +580,16 @@
 		/>
 	{/if}
 
-	{#if loading && items.length === 0 && !groupBy}
+	{#if table.loading && table.items.length === 0 && !groups.by}
 		<ScrollArea orientation="horizontal">
-			<TableSkeleton lead={SERVICE_LEAD_COLUMNS} columns={shownColumns} {density} selectable />
+			<TableSkeleton
+				lead={SERVICE_LEAD_COLUMNS}
+				columns={shownColumns}
+				density={table.density}
+				selectable
+			/>
 		</ScrollArea>
-	{:else if errored}
+	{:else if table.errored}
 		<EmptyState
 			icon={TriangleAlert}
 			title="Services not loaded"
@@ -643,23 +599,23 @@
 				<RefreshCw class="h-4 w-4" /> Retry
 			</Button>
 		</EmptyState>
-	{:else if groupBy}
+	{:else if groups.by}
 		<GroupList
-			set={groupSet}
-			failed={groupFailed}
-			onRetry={loadGroups}
+			set={groups.value}
+			failed={groups.failed}
+			onRetry={groups.reload}
 			dimensions={serviceQuerySchema.schema.group_dimensions}
 			noun={serviceQuerySchema.schema.noun}
 			nounPlural={serviceQuerySchema.schema.noun_plural}
-			loading={groupLoading}
+			loading={groups.loading}
 			onPick={drillGroup}
 		/>
-	{:else if items.length === 0}
-		{#if queryError}
+	{:else if table.items.length === 0}
+		{#if table.queryError}
 			<EmptyState
 				icon={SearchX}
 				title="Query did not run"
-				description={queryError.message}
+				description={table.queryError.message}
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
 		{:else if filtered}
@@ -695,13 +651,13 @@
 			{selectAllChecked}
 			selectAllLabel="Select all services on this page"
 			onSelectAll={toggleSelectAll}
-			sortKey={sort.key}
-			sortDir={sort.dir}
+			sortKey={table.sort.key}
+			sortDir={table.sort.dir}
 			onSort={toggleSort}
 		/>
 		<ScrollArea orientation="horizontal" bind:ref={scrollRef}>
-			<div class="divide-y divide-border/50 transition-opacity {loading ? 'opacity-60' : ''}">
-				{#each items as s, i (s.id)}
+			<div class="divide-y divide-border/50 transition-opacity {table.loading ? 'opacity-60' : ''}">
+				{#each table.items as s, i (s.id)}
 					<ServiceRow
 						service={s}
 						index={i}
@@ -723,19 +679,16 @@
 		</ScrollArea>
 	{/if}
 
-	{#if !errored && total > 0 && !groupBy}
+	{#if !table.errored && table.total > 0 && !groups.by}
 		<ResultsPagination
-			{total}
-			capped={totalCapped}
-			page={pageIndex}
-			{pageSize}
+			total={table.total}
+			capped={table.totalCapped}
+			page={table.pageIndex}
+			pageSize={table.pageSize}
 			noun={SVC.noun}
 			plural={SVC.nounPlural}
-			onPage={(p) => (pageIndex = p)}
-			onPageSize={(s) => {
-				pageSize = s;
-				pageIndex = 0;
-			}}
+			onPage={(p) => (table.pageIndex = p)}
+			onPageSize={(s) => table.setPageSize(s)}
 		/>
 	{/if}
 </Card.Root>
@@ -776,8 +729,8 @@
 	open={drawerOpen}
 	onOpenChange={(o) => (drawerOpen = o)}
 	index={selectedIndex}
-	pageOffset={pageIndex * pageSize}
-	{total}
+	pageOffset={table.pageIndex * table.pageSize}
+	total={table.total}
 	onStep={step}
 	onFilter={applyDsl}
 	onHosts={showHosts}

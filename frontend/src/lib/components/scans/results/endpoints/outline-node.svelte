@@ -20,6 +20,7 @@
 		type TreeLeaf,
 		type TreeNode
 	} from '$lib/utilities/endpoints';
+	import { LatestRequest } from '$lib/utilities/latest-request';
 
 	interface Props {
 		node: TreeNode;
@@ -63,7 +64,7 @@
 	let page = $state(1);
 	let loading = $state(false);
 	let loadedSig = '';
-	let req = 0;
+	const req = new LatestRequest();
 
 	let leafFilter = $derived({
 		...ctx.filter,
@@ -74,12 +75,12 @@
 	let sig = $derived(JSON.stringify(leafFilter) + (ctx.merged ? '|m' : '|h'));
 
 	async function load(nextPage: number) {
-		const my = ++req;
+		const current = req.begin();
 		loading = true;
 		try {
 			if (ctx.merged) {
 				const res = await endpointsApi.mergedLeaves(ctx.projectId, ctx.scanId, leafFilter);
-				if (my !== req) return;
+				if (!current()) return;
 				merged = res.items;
 				total = res.total;
 			} else {
@@ -88,20 +89,20 @@
 					page: nextPage,
 					size: LEAF_PAGE
 				});
-				if (my !== req) return;
+				if (!current()) return;
 				leaves = nextPage === 1 ? res.items : [...leaves, ...res.items];
 				total = res.total;
 				page = nextPage;
 			}
 		} catch {
-			if (my === req) {
+			if (current()) {
 				leaves = [];
 				merged = [];
 				total = 0;
 				loadedSig = '';
 			}
 		} finally {
-			if (my === req) loading = false;
+			if (current()) loading = false;
 		}
 	}
 

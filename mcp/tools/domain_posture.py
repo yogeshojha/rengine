@@ -26,7 +26,7 @@ class Input(ToolInput):
 class DomainPosture(Tool):
     name = "domain_posture"
     title = "Domain posture"
-    group = ToolGroup.INTERROGATE.value
+    group = ToolGroup.INTERROGATE
     description = (
         "Sender, mail-transport and zone checks per registrable domain of a target, "
         "from its newest settled run: SPF policy and lookup count, DMARC policy and "

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from tools.ffuf.client import FFUF_ALIASES
 from tools.nuclei.client import NUCLEI_ALIASES
 from tools.runner.executor import merge_extra_args
 
@@ -48,3 +49,9 @@ def test_the_reserved_set_covers_the_short_spelling_too():
     assert merge_extra_args(
         [], ["-l", "x", "-o", "y", "-tags", "cve"], ("-list", "-output"), NUCLEI_ALIASES
     ) == ["-tags", "cve"]
+
+
+def test_ffuf_folds_a_custom_silent_into_its_own_short_flag():
+    """ffuf has no `-silent`; passed through, it would fail the run."""
+    extra = ["-silent", "-s", "-ac"]
+    assert merge_extra_args([], extra, ("-s",), FFUF_ALIASES) == ["-ac"]

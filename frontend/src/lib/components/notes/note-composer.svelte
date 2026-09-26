@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import Check from '@lucide/svelte/icons/check';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -75,7 +76,7 @@
 			if (!note) picked.clear();
 			onSaved?.(saved);
 		} catch (e) {
-			failed = e instanceof Error ? e.message : 'Note not saved';
+			failed = errorMessage(e, 'Note not saved');
 		} finally {
 			saving = false;
 		}

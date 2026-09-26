@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { onMount, tick } from 'svelte';
 	import { apiKeysApi } from '$lib/api/api-keys';
 	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
@@ -76,7 +77,7 @@
 			configuredKeys.clear();
 			for (const k of keyList) configuredKeys.set(k.provider, k);
 		} catch (e) {
-			loadError = e instanceof Error ? e.message : 'API keys not loaded';
+			loadError = errorMessage(e, 'API keys not loaded');
 			toast.error(loadError);
 		} finally {
 			isLoading = false;
@@ -116,7 +117,7 @@
 			await refreshProviders();
 			addDialogOpen = false;
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'API key not added');
+			toast.error(errorMessage(e, 'API key not added'));
 		} finally {
 			addDialogSaving = false;
 		}
@@ -148,7 +149,7 @@
 			toast.success('API key updated');
 			return true;
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'API key not updated');
+			toast.error(errorMessage(e, 'API key not updated'));
 			return false;
 		}
 	}
@@ -163,7 +164,7 @@
 			await refreshProviders();
 			toast.success(`${key.meta.name} ${enabled ? 'enabled' : 'disabled'}`);
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'API key not updated');
+			toast.error(errorMessage(e, 'API key not updated'));
 		}
 	}
 
@@ -186,7 +187,7 @@
 			toast.success('API key removed');
 			deleteDialogOpen = false;
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'API key not removed');
+			toast.error(errorMessage(e, 'API key not removed'));
 		} finally {
 			isDeleting = false;
 		}
@@ -208,7 +209,7 @@
 				toast.error(result.message);
 			}
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Test failed');
+			toast.error(errorMessage(e, 'Test failed'));
 		} finally {
 			testingKeyId = null;
 		}

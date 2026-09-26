@@ -3,7 +3,7 @@
 from collections.abc import Iterator
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Protocol, TypedDict, runtime_checkable
 
 from pydantic import BaseModel, Field
 
@@ -13,6 +13,16 @@ class OutputFormat(Enum):
 
     JSONL = "jsonl"
     PLAIN = "plain"
+
+
+@dataclass(frozen=True)
+class ToolFlags:
+    """How one binary spells the flags the runner adds on its own."""
+
+    input: str = "-l"
+    output: str = "-o"
+    json: str = "-json"
+    silent: str = "-silent"
 
 
 @runtime_checkable
@@ -30,6 +40,13 @@ class CommandRecorder(Protocol):
         error: str | None,
         duration_seconds: float,
     ) -> None: ...
+
+
+class ToolWiring(TypedDict):
+    """What every tool client takes from the scan it runs for, as keyword arguments."""
+
+    recorder: CommandRecorder | None
+    extra_args: list[str]
 
 
 class ToolResult(BaseModel):

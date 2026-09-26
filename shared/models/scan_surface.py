@@ -3,20 +3,12 @@ from datetime import datetime
 
 from pydantic import BaseModel
 from pydantic import Field as PydanticField
-from sqlalchemy import Column, Index
-from sqlalchemy.types import JSON
+from sqlalchemy import Index
 from sqlmodel import Field, SQLModel
 
 from shared.definitions.scan_surface import SurfaceClass, SurfaceState
+from shared.models._columns import json_dict, json_list
 from shared.utils.datetime import utc_now
-
-
-def _json_list() -> Field:
-    return Field(default_factory=list, sa_column=Column(JSON, nullable=False))
-
-
-def _json_dict() -> Field:
-    return Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
 
 
 class ScanSurfaceItem(SQLModel, table=True):
@@ -53,18 +45,18 @@ class ScanSurfaceItem(SQLModel, table=True):
 
     cluster_id: uuid.UUID | None = Field(default=None, index=True)
     representative_id: uuid.UUID | None = Field(default=None, index=True)
-    cluster_signals: list = _json_list()
+    cluster_signals: list = json_list()
     members: int = Field(default=1)
 
     drop_reason: str | None = Field(default=None, max_length=32)
     rank: float = Field(default=0.0)
     batch: int | None = Field(default=None)
     guarded: bool = Field(default=False)
-    tags: list = _json_list()
-    unmapped_tech: list = _json_list()
+    tags: list = json_list()
+    unmapped_tech: list = json_list()
 
-    tiers_planned: list = _json_list()
-    tiers_done: dict = _json_dict()
+    tiers_planned: list = json_list()
+    tiers_done: dict = json_dict()
     state: str = Field(default=SurfaceState.PLANNED.value, max_length=16)
     note: str | None = Field(default=None, max_length=500)
 

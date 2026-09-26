@@ -58,9 +58,7 @@
 	};
 
 	const proxyName = $derived(
-		draft.proxy_id
-			? (proxiesStore.proxies.find((p) => p.id === draft.proxy_id)?.name ?? null)
-			: null
+		draft.proxy_id ? (proxiesStore.items.find((p) => p.id === draft.proxy_id)?.name ?? null) : null
 	);
 	const facets = $derived(contextFacets(draft, proxyName));
 

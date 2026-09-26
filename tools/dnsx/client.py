@@ -47,7 +47,12 @@ class DnsxClient:
         self.extra_args = extra_args or []
 
         try:
-            self._runner = CLIToolRunner(DNSX_BINARY, default_timeout=timeout)
+            self._runner = CLIToolRunner(
+                DNSX_BINARY,
+                default_timeout=timeout,
+                recorder=recorder,
+                extra_args=self.extra_args,
+            )
         except ToolNotFoundError as e:
             raise DnsxError(str(e)) from e
 
@@ -125,15 +130,8 @@ class DnsxClient:
         with self._runner.stream_json(
             args=args,
             input_data=targets,
-            input_flag="-l",
-            json_flag="-json",
-            silent=True,
-            silent_flag="-silent",
             timeout=timeout,
             idle_timeout=idle_timeout,
-            recorder=self.recorder,
-            tool=DNSX_BINARY,
-            extra_args=self.extra_args,
         ) as stream:
             yield stream
 
@@ -150,13 +148,7 @@ class DnsxClient:
         args += ["-d", domain, "-w", wordlist, "-a", "-aaaa", "-resp"]
         with self._runner.stream_json(
             args=args,
-            json_flag="-json",
-            silent=True,
-            silent_flag="-silent",
             timeout=timeout,
-            recorder=self.recorder,
-            tool=DNSX_BINARY,
-            extra_args=self.extra_args,
         ) as stream:
             yield stream
 
@@ -178,13 +170,6 @@ class DnsxClient:
         return self._runner.run(
             args=args,
             input_data=targets,
-            input_flag="-l",
             output_format=OutputFormat.JSONL,
-            json_flag="-json",
             timeout=self.timeout,
-            silent=True,
-            silent_flag="-silent",
-            recorder=self.recorder,
-            tool=DNSX_BINARY,
-            extra_args=self.extra_args,
         )

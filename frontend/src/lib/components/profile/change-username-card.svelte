@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { authApi } from '$lib/api/auth';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -49,7 +50,7 @@
 			newUsername = '';
 			usernameDirty = false;
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Username not changed');
+			toast.error(errorMessage(error, 'Username not changed'));
 		} finally {
 			isChangingUsername = false;
 		}

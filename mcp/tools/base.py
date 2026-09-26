@@ -36,8 +36,8 @@ class Tool(ABC):
     name: ClassVar[str]
     title: ClassVar[str]
     description: ClassVar[str]
-    capability: ClassVar[str] = Capability.READ.value
-    group: ClassVar[str] = ToolGroup.INTERROGATE.value
+    capability: ClassVar[Capability] = Capability.READ
+    group: ClassVar[ToolGroup] = ToolGroup.INTERROGATE
     # the call destroys data a user cannot get back
     destructive: ClassVar[bool] = False
     # one short word; None keeps the tool out of chat

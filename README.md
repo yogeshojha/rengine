@@ -172,6 +172,8 @@ reNgine is now available at `http://127.0.0.1:5173`, or at the server's address 
 
 The database, Redis and Flower are bound to `127.0.0.1`. Place a reverse proxy with TLS in front of port 5173 when exposing reNgine to a network.
 
+The published `yogeshojha/rengine-frontend` image differs from the compose development frontend: it is a production build that listens on port `3000` and forwards `/api` to `API_ORIGIN` (default `http://api:8000`). Deployments built on the published images map port 3000 and set `API_ORIGIN` when the api is not reachable as `api:8000`.
+
 For other platforms and a detailed walkthrough, see [rengine.wiki/install](https://rengine.wiki/install/).
 
 ## Updating

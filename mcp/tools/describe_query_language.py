@@ -24,7 +24,7 @@ class Input(ToolInput):
 class DescribeQueryLanguage(Tool):
     name = "describe_query_language"
     title = "Describe query language"
-    group = ToolGroup.ORIENT.value
+    group = ToolGroup.ORIENT
     description = (
         "The query grammar for one dimension: fields with types and operators, "
         "is:/has: flags, group keys and examples. Fields differ per dimension."

@@ -35,4 +35,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    pass
+    """Irreversible: the original casing of each folded value is not kept, and the
+    folded rows are indistinguishable from targets entered in lower case.
+    """

@@ -16,6 +16,7 @@ from shared.logging import get_logger
 from shared.services.endpoint_inventory import EndpointObservation
 from shared.services.scope_filter import matches_any
 from shared.utils.datetime import utc_now
+from stages.base import tool_wiring
 from tools.runner import tool_path
 
 if TYPE_CHECKING:
@@ -26,7 +27,7 @@ if TYPE_CHECKING:
     from shared.enums.api_key import APIProvider
     from shared.services.scan_resolve import ResolvedScanConfig
     from stages.base import NetOptions
-    from tools.runner.models import CommandRecorder
+    from tools.runner.models import CommandRecorder, ToolWiring
 
 logger = get_logger(__name__)
 
@@ -101,8 +102,9 @@ class UrlProvider(ABC):
         self.ctx = ctx
 
     @property
-    def extra_args(self) -> list[str]:
-        return self.ctx.resolved.tool_args(self.tool or "")
+    def wiring(self) -> ToolWiring:
+        """This scan's command recorder and the user's custom args for the provider's tool."""
+        return tool_wiring(self.ctx.recorder, self.ctx.resolved, self.tool or "")
 
     def availability(self) -> tuple[bool, str | None]:
         if self.binary and shutil.which(self.binary, path=tool_path()) is None:

@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import contextlib
-import json
 import os
-import re
 import tempfile
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
@@ -13,8 +11,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from shared.logging import get_logger
-from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError
+from tools.runner import CLIToolRunner, OutputFormat, ToolFlags, ToolNotFoundError
 from tools.runner.models import CommandRecorder
+from tools.wafw00f.parser import parse_detections
 
 logger = get_logger(__name__)
 
@@ -47,20 +46,6 @@ class WafScan:
     unfinished: int = 0
 
 
-_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
-
-
-def _extract_json_array(raw: str) -> list:
-    match = re.search(r"\[\s*\{.*\}\s*\]", _ANSI_RE.sub("", raw), re.DOTALL)
-    if not match:
-        return []
-    try:
-        data = json.loads(match.group(0))
-    except json.JSONDecodeError:
-        return []
-    return data if isinstance(data, list) else []
-
-
 class Wafw00fClient:
     def __init__(
         self,
@@ -80,7 +65,11 @@ class Wafw00fClient:
 
         try:
             self._runner = CLIToolRunner(
-                WAFW00F_BINARY, default_timeout=DEFAULT_TIMEOUT
+                WAFW00F_BINARY,
+                default_timeout=DEFAULT_TIMEOUT,
+                recorder=recorder,
+                extra_args=self.extra_args,
+                flags=ToolFlags(input="-i"),
             )
         except ToolNotFoundError as e:
             raise Wafw00fError(str(e)) from e
@@ -138,23 +127,11 @@ class Wafw00fClient:
         result = self._runner.run(
             args=args,
             input_data=urls,
-            input_flag="-i",
             use_output_file=False,
             output_format=OutputFormat.PLAIN,
             silent=False,
-            recorder=self.recorder,
-            tool=WAFW00F_BINARY,
-            extra_args=self.extra_args,
         )
-
-        out: dict[str, str] = {}
-        for rec in _extract_json_array(result.stdout):
-            url = rec.get("url")
-            if url and rec.get("detected") and rec.get("firewall"):
-                name = rec["firewall"]
-                if name and name.lower() not in ("none", "generic"):
-                    out[url] = name[:100]
-        return out, not result.timed_out
+        return parse_detections(result.stdout), not result.timed_out
 
 
 def _run_all(fn, shards: list[list[str]], concurrency: int) -> list[tuple[dict, bool]]:

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from shared.utils.crypto import (
     SecretDecryptionError,
     decrypt_secret,

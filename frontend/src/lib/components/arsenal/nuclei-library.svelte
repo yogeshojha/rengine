@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
@@ -117,7 +118,7 @@
 			}
 		} catch (e) {
 			stats = null;
-			statsError = e instanceof Error ? e.message : 'Request failed.';
+			statsError = errorMessage(e, 'Request failed.');
 		} finally {
 			statsLoading = false;
 		}
@@ -136,7 +137,7 @@
 			if (my === reqId) {
 				items = [];
 				total = 0;
-				listError = e instanceof Error ? e.message : 'Request failed.';
+				listError = errorMessage(e, 'Request failed.');
 			}
 		} finally {
 			if (my === reqId) listLoading = false;

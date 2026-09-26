@@ -1,4 +1,13 @@
-"""Run certspotter over the watched apexes and hand every certificate to the worker."""
+"""Run certspotter over the watched apexes and hand every certificate to the worker.
+
+certspotter is the one tool that does not go through `tools.runner.CLIToolRunner`.
+The runner serves bounded scan invocations: a timeout, output captured and parsed
+when the process exits, a command row on a scan's recorder, a stage's abort check.
+certspotter is a daemon this supervisor keeps alive for the life of the container,
+restarts when the watchlist changes, and hears from through `hook.sh` writing to
+a spool directory. None of the runner's lifecycle applies, so the process is
+driven with `subprocess` directly. It is still looked up on the tool PATH.
+"""
 
 from __future__ import annotations
 
@@ -26,6 +35,7 @@ from shared.logging import get_logger
 from shared.services import watch_sync
 from shared.services.celery_dispatch import dispatch_watch_certificate
 from shared.utils.datetime import utc_now
+from tools.runner import tool_path
 
 logger = get_logger(__name__)
 
@@ -34,7 +44,7 @@ SPOOL_DIR = STATE_DIR / "spool"
 CERT_DIR = STATE_DIR / "certspotter"
 WATCHLIST = STATE_DIR / "watchlist"
 HOOK = Path(__file__).with_name("hook.sh")
-BINARY = shutil.which("certspotter") or "certspotter"
+BINARY = shutil.which("certspotter", path=tool_path()) or "certspotter"
 HEALTHCHECK = "1h"
 STOP_GRACE_SECONDS = 10
 PRUNE_SECONDS = 3600

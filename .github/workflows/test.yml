@@ -14,13 +14,13 @@ concurrency:
   group: tests-${{ github.ref }}
   cancel-in-progress: true
 
+# Every check is a Makefile target, so `make lint` and `make test` run exactly
+# what CI runs. The package list and the ruff pin live in the Makefile and
+# pyproject.toml, not here.
 jobs:
   lint:
     name: 🧹 Lint
     runs-on: ubuntu-latest
-    env:
-      PACKAGES: api shared reports worker stages tools toolbox interest mcp channels connectors tests
-      RUFF: ruff@0.14.14
     steps:
       - name: 📥 Checkout the git repo
         uses: actions/checkout@v4
@@ -28,18 +28,12 @@ jobs:
       - name: 🐍 Install uv
         uses: astral-sh/setup-uv@v5
 
-      - name: 🧹 ruff check
-        run: uvx $RUFF check $PACKAGES
-
-      - name: 🎨 ruff format
-        run: uvx $RUFF format --check $PACKAGES
+      - name: 🧹 Package lists, ruff check and ruff format
+        run: make lint-python
 
   frontend:
     name: 🎨 Frontend checks
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
     steps:
       - name: 📥 Checkout the git repo
         uses: actions/checkout@v4
@@ -52,16 +46,14 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: 📦 Install
+        working-directory: frontend
         run: npm ci
 
       - name: 🧹 Lint
-        run: npm run lint
+        run: make lint-frontend
 
-      - name: 🔎 Type check
-        run: npm run check
-
-      - name: 🧪 Unit tests
-        run: npm run test
+      - name: 🧪 Type check and unit tests
+        run: make test-frontend
 
   pytest:
     name: 🐍 Python tests
@@ -103,9 +95,7 @@ jobs:
           done
 
       - name: 🧪 pytest
-        run: >
-          docker compose run --rm --no-deps api
-          sh -lc 'cd /app && /app/.venv/bin/python -m pytest tests -q --tb=short'
+        run: make test-python
 
       - name: 📜 Service logs on failure
         if: failure()

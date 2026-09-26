@@ -104,7 +104,11 @@ class HttpxClient:
 
         try:
             self._runner = CLIToolRunner(
-                HTTPX_BINARY, default_timeout=DEFAULT_TIMEOUT, aliases=HTTPX_ALIASES
+                HTTPX_BINARY,
+                default_timeout=DEFAULT_TIMEOUT,
+                recorder=recorder,
+                extra_args=self.extra_args,
+                aliases=HTTPX_ALIASES,
             )
         except ToolNotFoundError as e:
             raise HttpxError(str(e)) from e
@@ -140,15 +144,8 @@ class HttpxClient:
         with self._runner.stream_json(
             args=args,
             input_data=self._scoped(targets),
-            input_flag="-l",
-            json_flag="-json",
-            silent=True,
-            silent_flag="-silent",
             timeout=0,
             idle_timeout=max(_IDLE_FLOOR, self.timeout * _IDLE_TIMEOUT_FACTOR),
-            recorder=self.recorder,
-            tool=HTTPX_BINARY,
-            extra_args=self.extra_args,
         ) as stream:
             stream.records = _answered(stream.records)
             yield stream
@@ -189,14 +186,7 @@ class HttpxClient:
         with self._runner.stream_json(
             args=self._capture_args(),
             input_data=self._scoped(targets),
-            input_flag="-l",
-            json_flag="-json",
-            silent=True,
-            silent_flag="-silent",
             timeout=ceiling,
             idle_timeout=max(_CAPTURE_IDLE_FLOOR, self.timeout * _IDLE_TIMEOUT_FACTOR),
-            recorder=self.recorder,
-            tool=HTTPX_BINARY,
-            extra_args=self.extra_args,
         ) as stream:
             yield stream

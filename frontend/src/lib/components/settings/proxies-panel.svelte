@@ -74,7 +74,7 @@
 	let deletingProxy = $state<ProxyRead | null>(null);
 	let isDeleting = $state(false);
 
-	let proxies = $derived(proxiesStore.proxies);
+	let proxies = $derived(proxiesStore.items);
 
 	function openAdd() {
 		editingId = null;

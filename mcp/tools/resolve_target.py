@@ -26,7 +26,7 @@ class ResolveTarget(Tool):
     command = "target"
     value_field = "target"
     title = "Resolve target"
-    group = ToolGroup.ORIENT.value
+    group = ToolGroup.ORIENT
     description = (
         "For each of a target's five result dimensions: whether it was scanned, what "
         "the most recent covering scan found, when, and the scan id other tools take. "

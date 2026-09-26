@@ -13,6 +13,7 @@
 	import { subdomainsApi } from '$lib/api/subdomains';
 	import { SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 	import type { Facet } from '$lib/utilities/scan-insights';
+	import { LatestRequest } from '$lib/utilities/latest-request';
 
 	interface Props {
 		open: boolean;
@@ -32,22 +33,22 @@
 	let loading = $state(false);
 	let errored = $state(false);
 	let timer: ReturnType<typeof setTimeout> | undefined;
-	let seq = 0;
+	const seq = new LatestRequest();
 
 	function fetchList(q: string) {
-		const my = ++seq;
+		const current = seq.begin();
 		loading = true;
 		errored = false;
 		subdomainsApi
 			.tech(projectId, scanId, q, LIST_LIMIT)
 			.then((r) => {
-				if (my === seq) items = r;
+				if (current()) items = r;
 			})
 			.catch(() => {
-				if (my === seq) errored = true;
+				if (current()) errored = true;
 			})
 			.finally(() => {
-				if (my === seq) loading = false;
+				if (current()) loading = false;
 			});
 	}
 

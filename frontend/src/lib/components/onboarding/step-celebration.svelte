@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { goto } from '$app/navigation';
 	import { ROUTES } from '$lib/config/routes';
 	import { MODE_LABELS, coerceInstanceMode } from '$lib/config/capabilities';
@@ -58,7 +59,7 @@
 			try {
 				await onboardingApi.complete();
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Setup not completed');
+				toast.error(errorMessage(e, 'Setup not completed'));
 			}
 			await Promise.allSettled([projectsStore.refresh(), onboardingStore.refresh()]);
 			finishing = false;

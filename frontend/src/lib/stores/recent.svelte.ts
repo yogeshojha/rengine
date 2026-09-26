@@ -1,4 +1,5 @@
 import { STORAGE_KEYS } from '$lib/config/storage-keys';
+import { readPref, writePref } from '$lib/utilities/storage';
 import { SURFACE_ORDER, type SurfaceDimension } from '$lib/config/surface';
 
 const VISIT_LIMIT = 8;
@@ -20,33 +21,17 @@ export interface RecentSearch {
 }
 
 function read(): Visit[] {
-	if (typeof localStorage === 'undefined') return [];
-	try {
-		const raw = localStorage.getItem(STORAGE_KEYS.paletteRecents);
-		const parsed: unknown = raw ? JSON.parse(raw) : [];
-		return Array.isArray(parsed) ? (parsed as Visit[]) : [];
-	} catch {
-		return [];
-	}
+	const parsed = readPref<unknown>(STORAGE_KEYS.paletteRecents, []);
+	return Array.isArray(parsed) ? (parsed as Visit[]) : [];
 }
 
 function write(entries: Visit[]) {
-	try {
-		localStorage.setItem(STORAGE_KEYS.paletteRecents, JSON.stringify(entries));
-	} catch {
-		/* storage unavailable */
-	}
+	writePref(STORAGE_KEYS.paletteRecents, entries);
 }
 
 function readQueries(key: string): string[] {
-	if (typeof localStorage === 'undefined') return [];
-	try {
-		const raw = localStorage.getItem(key);
-		const parsed: unknown = raw ? JSON.parse(raw) : [];
-		return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : [];
-	} catch {
-		return [];
-	}
+	const parsed = readPref<unknown>(key, []);
+	return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : [];
 }
 
 function createRecentStore() {

@@ -84,8 +84,7 @@ class DnsPostureStage(Stage):
                 timeout=_RUN_TIMEOUT,
                 threads=max(self.transport.threads, _MIN_THREADS),
                 query_timeout=self.transport.timeout,
-                recorder=self.ctx.recorder,
-                extra_args=self.ctx.resolved.tool_args("dnsx"),
+                **self.wiring("dnsx"),
             )
         except DnsxError as exc:
             return StageResult(warnings=[str(exc)], partial=True)

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { untrack } from 'svelte';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import Undo2 from '@lucide/svelte/icons/undo-2';
@@ -36,7 +37,7 @@
 			rows = await interestApi.dismissals(id);
 			error = null;
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Dismissals not loaded';
+			error = errorMessage(e, 'Dismissals not loaded');
 		} finally {
 			loading = false;
 		}

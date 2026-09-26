@@ -16,6 +16,8 @@ from shared.definitions.channels import (
 )
 from toolbox import registry as toolbox_registry
 
+pytestmark = pytest.mark.channels
+
 EXPECTED = {
     "targets",
     "target",

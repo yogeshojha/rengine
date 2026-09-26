@@ -7,15 +7,19 @@ export enum SecretState {
 	EXPIRED = 'expired'
 }
 
-export const STATE_ORDER: string[] = [SecretState.EXPOSED, SecretState.PUBLIC, SecretState.EXPIRED];
+export const STATE_ORDER: SecretState[] = [
+	SecretState.EXPOSED,
+	SecretState.PUBLIC,
+	SecretState.EXPIRED
+];
 
-export const STATE_LABELS: Record<string, string> = {
+export const STATE_LABELS: Record<SecretState, string> = {
 	[SecretState.EXPOSED]: 'Exposed',
 	[SecretState.PUBLIC]: 'Public',
 	[SecretState.EXPIRED]: 'Expired'
 };
 
-export const STATE_BADGE: Record<string, BadgeVariant> = {
+export const STATE_BADGE: Record<SecretState, BadgeVariant> = {
 	[SecretState.EXPOSED]: 'warning',
 	[SecretState.PUBLIC]: 'outline',
 	[SecretState.EXPIRED]: 'info'
@@ -33,7 +37,7 @@ export enum SecretGroup {
 	CONTACT = 'contact'
 }
 
-export const GROUP_ORDER: string[] = [
+export const GROUP_ORDER: SecretGroup[] = [
 	SecretGroup.CLOUD,
 	SecretGroup.CODE,
 	SecretGroup.PAYMENTS,
@@ -45,7 +49,7 @@ export const GROUP_ORDER: string[] = [
 	SecretGroup.CONTACT
 ];
 
-export const GROUP_LABELS: Record<string, string> = {
+export const GROUP_LABELS: Record<SecretGroup, string> = {
 	[SecretGroup.CLOUD]: 'Cloud',
 	[SecretGroup.CODE]: 'Source control and packages',
 	[SecretGroup.PAYMENTS]: 'Payments',
@@ -65,7 +69,7 @@ export enum SecretSource {
 	FINDING = 'finding'
 }
 
-export const SOURCE_LABELS: Record<string, string> = {
+export const SOURCE_LABELS: Record<SecretSource, string> = {
 	[SecretSource.BODY]: 'Web asset body',
 	[SecretSource.HEADER]: 'Web asset headers',
 	[SecretSource.ENDPOINT_BODY]: 'Endpoint body',

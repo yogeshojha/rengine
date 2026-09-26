@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { page } from '$app/state';
 	import { goto, replaceState } from '$app/navigation';
 	import { browser } from '$app/environment';
@@ -374,7 +375,7 @@
 			target = await targetsApi.get(targetId);
 			breadcrumbStore.set(targetId, target.target_value);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Target not loaded';
+			error = errorMessage(e, 'Target not loaded');
 		} finally {
 			isLoading = false;
 		}
@@ -386,7 +387,7 @@
 			detail = await targetsApi.getDetail(targetId);
 			detailError = null;
 		} catch (e) {
-			detailError = e instanceof Error ? e.message : 'Enrichment not loaded';
+			detailError = errorMessage(e, 'Enrichment not loaded');
 		} finally {
 			if (!silent) detailLoading = false;
 		}

@@ -1,6 +1,7 @@
 import { onboardingApi } from '$lib/api/onboarding';
 import type { OnboardingStatus } from '$lib/types/onboarding';
 import { toast } from 'svelte-sonner';
+import { errorMessage } from '$lib/utilities/errors';
 
 function createOnboardingStore() {
 	let status = $state<OnboardingStatus | null>(null);
@@ -31,7 +32,7 @@ function createOnboardingStore() {
 				status = await onboardingApi.getStatus();
 				hasFetched = true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Onboarding status not loaded');
+				toast.error(errorMessage(e, 'Onboarding status not loaded'));
 			} finally {
 				isLoading = false;
 			}
@@ -43,7 +44,7 @@ function createOnboardingStore() {
 				status = await onboardingApi.getStatus();
 				hasFetched = true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Onboarding status not loaded');
+				toast.error(errorMessage(e, 'Onboarding status not loaded'));
 			} finally {
 				isLoading = false;
 			}

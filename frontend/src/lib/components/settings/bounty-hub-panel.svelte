@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
@@ -41,8 +42,8 @@
 			]);
 			loadError = null;
 		} catch (error) {
-			loadError = error instanceof Error ? error.message : 'Request failed.';
-			toast.error(error instanceof Error ? error.message : 'Bounty Hub settings not loaded');
+			loadError = errorMessage(error, 'Request failed.');
+			toast.error(errorMessage(error, 'Bounty Hub settings not loaded'));
 		} finally {
 			loading = false;
 		}
@@ -67,7 +68,7 @@
 		try {
 			settings = await bountyProgramsApi.saveSettings(patch);
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Settings not saved');
+			toast.error(errorMessage(error, 'Settings not saved'));
 			await load();
 		} finally {
 			saving = false;

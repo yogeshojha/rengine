@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from typing import Any
 
 from sqlalchemy import and_, false, or_, true
@@ -14,6 +14,7 @@ from .terms import negate
 
 Builder = Callable[[Compare, Any], Any]
 Builders = dict[str, Builder]
+FlagBuilders = dict[str, Callable[[Any], Any]]
 Walker = Callable[[Node | None, Any], Any]
 
 
@@ -24,6 +25,26 @@ def compare_with(builders: Builders, cmp: Compare, ctx: Any):
         msg = f"Field {cmp.name!r} cannot be searched."
         raise QuerySyntaxError(msg, cmp.start, cmp.end)
     return builder(cmp, ctx)
+
+
+def flag_builder(flags: FlagBuilders, known: Iterable[str]) -> Builder:
+    """The `is:` builder: rows carrying any named flag, an unknown flag a syntax error.
+
+    `known` is the dimension's documented flag list, quoted in the hint.
+    """
+    hint = f"Try one of: {', '.join(known)}"
+
+    def build(cmp: Compare, ctx: Any):
+        branches = []
+        for raw in cmp.values:
+            builder = flags.get(raw.lower())
+            if builder is None:
+                msg = f"Unknown flag {raw!r}."
+                raise QuerySyntaxError(msg, cmp.start, cmp.end, hint)
+            branches.append(builder(ctx))
+        return or_(*branches)
+
+    return build
 
 
 def as_compare(term: Term, field: str) -> Compare:

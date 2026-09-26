@@ -90,9 +90,8 @@ class PortScanStage(Stage):
                     port_threshold=PORT_THRESHOLD,
                     exclude_ports=cfg.exclude_ports,
                     proxy_url=self.net_options().proxy_url,
-                    extra_args=self.ctx.resolved.tool_args("naabu"),
                 ),
-                recorder=self.ctx.recorder,
+                **self.wiring("naabu"),
             )
         except NaabuError as exc:
             logger.warning("naabu unavailable, skipping port scan")

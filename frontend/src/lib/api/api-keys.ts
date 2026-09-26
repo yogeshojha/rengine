@@ -1,4 +1,5 @@
 import { api } from './client';
+import type { ActionResult } from '$lib/types/action-result';
 import type { APIKeyRead, APIKeyCreate, APIKeyUpdate, ProviderInfo } from '$lib/types/api-key';
 
 export const apiKeysApi = {
@@ -26,7 +27,7 @@ export const apiKeysApi = {
 		return api.get(`/api-keys/${keyId}/reveal`);
 	},
 
-	async test(keyId: string): Promise<{ provider: string; success: boolean; message: string }> {
+	async test(keyId: string): Promise<ActionResult & { provider: string }> {
 		return api.post(`/api-keys/${keyId}/test`);
 	}
 };

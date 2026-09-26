@@ -3,17 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import or_
-
 from shared.definitions.asset_query import SECRET_FLAGS, SECRET_QUERY
 from shared.definitions.secrets import SecretState
 from shared.models.secret import Secret
 
 from . import predicates as preds
-from .ast import Compare, QuerySyntaxError
 from .scope import QueryScope
 from .terms import date_match, string_match, target_match
-from .walk import walker
+from .walk import flag_builder, walker
 
 
 @dataclass(frozen=True)
@@ -32,18 +29,6 @@ _FLAG_BUILDERS = {
 }
 
 
-def _flag(cmp: Compare, ctx: SecretQueryContext):
-    branches = []
-    for raw in cmp.values:
-        builder = _FLAG_BUILDERS.get(raw.lower())
-        if builder is None:
-            msg = f"Unknown flag {raw!r}."
-            hint = f"Try one of: {', '.join(SECRET_FLAGS)}"
-            raise QuerySyntaxError(msg, cmp.start, cmp.end, hint)
-        branches.append(builder(ctx))
-    return or_(*branches)
-
-
 _BUILDERS = {
     "target": lambda c, _ctx: target_match(Secret.target_id, c),
     "secret": lambda c, _ctx: string_match(Secret.kind, c),
@@ -56,7 +41,7 @@ _BUILDERS = {
     "host": lambda c, _ctx: string_match(Secret.host, c),
     "url": lambda c, _ctx: string_match(Secret.url, c),
     "seen": lambda c, ctx: date_match(Secret.discovered_at, c, ctx.now, future=False),
-    "is": _flag,
+    "is": flag_builder(_FLAG_BUILDERS, SECRET_FLAGS),
 }
 
 

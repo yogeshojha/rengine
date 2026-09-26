@@ -10,7 +10,7 @@ from reports.base import Section
 from reports.config import SectionConfig
 from shared.definitions.reports import SECTION_GROUP_ORDER
 from shared.models.report import SectionCatalogEntry, SectionField
-from shared.plugins import classes_in_packages
+from shared.plugins import ConfiguredSpec, by_name, classes_in_packages, spec_of
 
 SECTION_DIR = Path(__file__).resolve().parent / "sections"
 
@@ -20,7 +20,9 @@ class SectionRegistrationError(RuntimeError):
 
 
 @dataclass(frozen=True)
-class SectionSpec:
+class SectionSpec(ConfiguredSpec):
+    """A registered section: its class attributes, frozen. `spec_of` reads each off the class."""
+
     name: str
     title: str
     description: str
@@ -36,14 +38,6 @@ class SectionSpec:
     section_cls: type[Section]
     config_model: type[SectionConfig]
 
-    @property
-    def defaults(self) -> dict:
-        return self.config_model().model_dump()
-
-    @property
-    def schema(self) -> dict:
-        return self.config_model.model_json_schema()
-
     def instance(self) -> Section:
         return self.section_cls()
 
@@ -54,40 +48,17 @@ class SectionSpec:
 def _classes() -> list[type[Section]]:
     if not SECTION_DIR.is_dir():
         return []
-    found: dict[str, type[Section]] = {}
-    for obj in classes_in_packages(
+    found = classes_in_packages(
         "reports.sections", SECTION_DIR, Section, submodules=("section",)
-    ):
-        name = getattr(obj, "name", None)
-        if not name:
-            msg = f"{obj.__qualname__} must set a `name`."
-            raise SectionRegistrationError(msg)
-        if found.setdefault(name, obj) is not obj:
-            msg = f"Duplicate section name {name!r}: {obj.__qualname__}."
-            raise SectionRegistrationError(msg)
-    return list(found.values())
+    )
+    return list(by_name(found, kind="section", error=SectionRegistrationError).values())
 
 
 def _spec(cls: type[Section]) -> SectionSpec:
     if cls.group not in SECTION_GROUP_ORDER:
         msg = f"{cls.name}: unknown group {cls.group!r}."
         raise SectionRegistrationError(msg)
-    return SectionSpec(
-        name=cls.name,
-        title=cls.title,
-        description=cls.description,
-        group=cls.group,
-        order=cls.order,
-        role=cls.role,
-        launch_fields=frozenset(cls.launch_fields),
-        requires=frozenset(cls.requires),
-        repeatable=cls.repeatable,
-        default_enabled=cls.default_enabled,
-        in_toc=cls.in_toc,
-        page_break=cls.page_break,
-        section_cls=cls,
-        config_model=cls.config_model,
-    )
+    return spec_of(SectionSpec, cls, section_cls=cls)
 
 
 @lru_cache(maxsize=1)

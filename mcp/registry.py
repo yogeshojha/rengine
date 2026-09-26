@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 from mcp.capabilities import CAPABILITY_ORDER, Capability
-from mcp.tools import Tool, discover
+from mcp.tools import Tool, ToolGroup, discover
 
 COMMAND_RE = re.compile(r"^[a-z][a-z0-9]{1,15}$")
 
@@ -55,6 +55,9 @@ def _validate(cls: type[Tool]) -> None:
     if cls.capability not in CAPABILITY_ORDER:
         msg = f"{cls.__qualname__} declares unknown capability {cls.capability!r}."
         raise ToolRegistrationError(msg)
+    if cls.group not in set(ToolGroup):
+        msg = f"{cls.__qualname__} declares unknown group {cls.group!r}."
+        raise ToolRegistrationError(msg)
     if cls.command is not None and not COMMAND_RE.match(cls.command):
         msg = f"{cls.__qualname__} declares an invalid command {cls.command!r}."
         raise ToolRegistrationError(msg)
@@ -79,8 +82,9 @@ def registry() -> dict[str, ToolSpec]:
             name=name,
             title=cls.title,
             description=cls.description.strip(),
-            capability=cls.capability,
-            group=cls.group,
+            # plain strings from here on: the wire, the UI and the ceiling key on them
+            capability=Capability(cls.capability).value,
+            group=ToolGroup(cls.group).value,
             destructive=bool(cls.destructive),
             command=command,
             value_field=cls.value_field,

@@ -30,6 +30,7 @@ import {
 	type DashboardWindow,
 	type HostingSplit
 } from '$lib/types/dashboard';
+import { errorMessage } from '$lib/utilities/errors';
 
 const EXPOSURE_ROWS = 6;
 const CHANGE_ROWS = 200;
@@ -88,7 +89,7 @@ function createDashboardStore() {
 			hasFetched = true;
 		} catch (e) {
 			if (mySeq !== seq) return;
-			error = e instanceof Error ? e.message : 'Dashboard not loaded';
+			error = errorMessage(e, 'Dashboard not loaded');
 		} finally {
 			if (mySeq === seq) loading = false;
 		}

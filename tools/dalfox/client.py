@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from shared.logging import get_logger
 from tools.dalfox.parser import parse_finding
 from tools.nuclei.parser import Finding
-from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError
+from tools.runner import CLIToolRunner, OutputFormat, ToolFlags, ToolNotFoundError
 from tools.runner.models import CommandRecorder
 
 logger = get_logger(__name__)
@@ -62,7 +62,11 @@ class DalfoxClient:
         self.extra_args = list(extra_args or [])
         try:
             self._runner = CLIToolRunner(
-                DALFOX_BINARY, default_timeout=DEFAULT_TIMEOUT, recorder=recorder
+                DALFOX_BINARY,
+                default_timeout=DEFAULT_TIMEOUT,
+                recorder=recorder,
+                extra_args=self.extra_args,
+                flags=ToolFlags(json="--format"),
             )
         except ToolNotFoundError as exc:
             raise DalfoxError(str(exc)) from exc
@@ -123,11 +127,8 @@ class DalfoxClient:
             use_stdin=True,
             use_output_file=False,
             output_format=OutputFormat.JSONL,
-            json_flag="--format",
             silent=False,
             timeout=timeout,
-            recorder=self.recorder,
-            extra_args=self.extra_args,
             should_stop=should_stop,
         )
         run.command = result.command

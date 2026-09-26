@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import Sparkle from '@lucide/svelte/icons/sparkle';
 	import X from '@lucide/svelte/icons/x';
 	import { toast } from 'svelte-sonner';
@@ -30,7 +31,7 @@
 			toast.success(`Rule ${suggestion.name} added`);
 			onDone(suggestion);
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Rule not added');
+			toast.error(errorMessage(e, 'Rule not added'));
 		} finally {
 			adding = false;
 		}

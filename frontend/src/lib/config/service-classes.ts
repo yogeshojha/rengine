@@ -57,21 +57,24 @@ export enum PortSource {
 	NAABU = 'naabu',
 	INTERNETDB = 'internetdb',
 	HTTP_PROBE = 'http_probe',
-	BANNER = 'banner'
+	BANNER = 'banner',
+	SEED = 'seed'
 }
 
 export const PORT_SOURCE_LABELS: Record<string, string> = {
 	naabu: 'Port scan',
 	internetdb: 'External scanner',
 	http_probe: 'HTTP probe',
-	banner: 'Service banner'
+	banner: 'Service banner',
+	seed: 'Seeded'
 };
 
 export const PORT_SOURCE_HELP: Record<string, string> = {
 	naabu: 'TCP connection completed by this scan',
 	internetdb: 'Reported by an internet-wide scanner and not confirmed by this scan',
 	http_probe: 'Answered an HTTP request from this scan',
-	banner: 'Returned a service banner to this scan'
+	banner: 'Returned a service banner to this scan',
+	seed: 'Named by a seed URL on a non-default port'
 };
 
 export const SCAN_POLICY_LABELS: Record<string, string> = {

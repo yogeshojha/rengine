@@ -1,4 +1,4 @@
-import { instanceSettingsApi } from '$lib/api/instanceSettings';
+import { instanceSettingsApi } from '$lib/api/instance-settings';
 import {
 	capabilitiesForMode,
 	coerceInstanceMode,

@@ -26,12 +26,9 @@ async def _asset(
     ip: str | None = None,
     is_cdn: bool = False,
 ) -> None:
-    sid = estate.scans[scan]
     estate.session.add(
         HttpAsset(
-            project_id=estate.project_id,
-            scan_id=sid,
-            target_id=await estate._target_of(sid),
+            **estate.row_ids(scan),
             url=f"https://{host}",
             host=host,
             port=443,

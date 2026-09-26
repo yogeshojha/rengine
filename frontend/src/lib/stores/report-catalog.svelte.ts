@@ -1,6 +1,7 @@
 import { reportsApi } from '$lib/api/reports';
 import type { ReportCatalog, SectionCatalogEntry, ThemeSummary } from '$lib/types/report';
 import { toast } from 'svelte-sonner';
+import { errorMessage } from '$lib/utilities/errors';
 
 function createReportCatalogStore() {
 	let catalog = $state<ReportCatalog | null>(null);
@@ -46,7 +47,7 @@ function createReportCatalogStore() {
 				catalog = await reportsApi.catalog();
 				hasFetched = true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Report catalog not loaded');
+				toast.error(errorMessage(e, 'Report catalog not loaded'));
 			} finally {
 				isLoading = false;
 			}

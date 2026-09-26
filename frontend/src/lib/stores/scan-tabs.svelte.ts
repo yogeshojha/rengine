@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import { SvelteSet } from 'svelte/reactivity';
 import { STORAGE_KEYS } from '$lib/config/storage-keys';
+import { readPref, writePref } from '$lib/utilities/storage';
 import { PINNED_SCAN_TABS, type ScanTab } from '$lib/config/scan-tabs';
 
 interface Stored {
@@ -10,17 +11,11 @@ interface Stored {
 
 function read(): Stored {
 	if (!browser) return { hidden: [], shown: [] };
-	try {
-		const raw = localStorage.getItem(STORAGE_KEYS.scanTabs);
-		if (!raw) return { hidden: [], shown: [] };
-		const parsed = JSON.parse(raw) as Partial<Stored>;
-		return {
-			hidden: Array.isArray(parsed.hidden) ? parsed.hidden : [],
-			shown: Array.isArray(parsed.shown) ? parsed.shown : []
-		};
-	} catch {
-		return { hidden: [], shown: [] };
-	}
+	const parsed = readPref<Partial<Stored> | null>(STORAGE_KEYS.scanTabs, null);
+	return {
+		hidden: Array.isArray(parsed?.hidden) ? parsed.hidden : [],
+		shown: Array.isArray(parsed?.shown) ? parsed.shown : []
+	};
 }
 
 function createScanTabs() {
@@ -30,14 +25,7 @@ function createScanTabs() {
 
 	function persist() {
 		if (!browser) return;
-		try {
-			localStorage.setItem(
-				STORAGE_KEYS.scanTabs,
-				JSON.stringify({ hidden: [...hidden], shown: [...shown] })
-			);
-		} catch {
-			// storage unavailable
-		}
+		writePref(STORAGE_KEYS.scanTabs, { hidden: [...hidden], shown: [...shown] });
 	}
 
 	return {

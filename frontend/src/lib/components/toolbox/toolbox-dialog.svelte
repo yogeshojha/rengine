@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Badge } from '$lib/components/ui/badge';
@@ -15,6 +16,7 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { MODE_HELP, MODE_LABELS, toolIcon } from '$lib/config/toolbox';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
+	import { readRaw, writeRaw } from '$lib/utilities/storage';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 	import type { ToolRun } from '$lib/types/toolbox';
@@ -45,7 +47,7 @@
 		void toolbox.load();
 		const names = toolbox.tools.map((t) => t.name);
 		if (!names.length) return;
-		const stored = localStorage.getItem(STORAGE_KEYS.toolboxLastTool);
+		const stored = readRaw(STORAGE_KEYS.toolboxLastTool);
 		untrack(() => {
 			if (selected && names.includes(selected)) return;
 			selected = stored && names.includes(stored) ? stored : names[0];
@@ -54,7 +56,7 @@
 
 	$effect(() => {
 		if (!open || !tool) return;
-		localStorage.setItem(STORAGE_KEYS.toolboxLastTool, tool.name);
+		writeRaw(STORAGE_KEYS.toolboxLastTool, tool.name);
 		untrack(() => queueMicrotask(() => form?.focus()));
 	});
 
@@ -90,7 +92,7 @@
 			const started = await toolbox.run(name, payload(name), projectId);
 			shown = { ...shown, [name]: started.id };
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Run not started');
+			toast.error(errorMessage(e, 'Run not started'));
 		}
 	}
 

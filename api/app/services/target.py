@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import contextlib
 import csv
 import io
@@ -14,6 +16,16 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
+from app.services.project import (
+    project_id_for_slug,
+    project_not_found,
+    require_project_id,
+)
+from app.services.target_enrichment import (
+    BGP_ELIGIBLE_TYPES,
+    ENRICHMENTS,
+    EnrichmentKind,
+)
 from app.services.target_filters import (
     SignalName,
     SortDir,
@@ -26,7 +38,6 @@ from app.services.target_filters import (
 from shared.enums.activity import ActivityLevel
 from shared.enums.scan import SCAN_OPEN_STATUSES
 from shared.enums.target import TargetType
-from shared.enums.task_status import TaskStatus
 from shared.models import (
     Organization,
     OrganizationSummary,
@@ -78,11 +89,6 @@ from shared.schemas.target_detail import (
 )
 from shared.services import get_or_create_organization, get_or_create_tag, target_seeds
 from shared.services.activity_log import ActivityLogService
-from shared.services.celery_dispatch import (
-    dispatch_dns_lookups,
-    dispatch_ripestat_enrichment,
-    dispatch_whois_lookups,
-)
 from shared.utils.datetime import utc_now
 from shared.utils.validation import (
     normalize_target_value,
@@ -92,9 +98,6 @@ from shared.utils.validation import (
 from tools.dnsx.service import DnsxService
 
 MAX_TARGETS_IMPORT = 500
-
-BGP_ELIGIBLE_TYPES = {TargetType.IP, TargetType.IP_RANGE, TargetType.ASN}
-DNS_ELIGIBLE_TYPES = {TargetType.DOMAIN, TargetType.URL}
 
 
 @dataclass
@@ -170,13 +173,11 @@ class TargetService:
         return validate_target(target_value)
 
     async def get_target_counts(self, project_slug: str) -> dict[str, int]:
-        project = await self._get_project_by_slug(project_slug)
-        if not project:
-            raise HTTPException(status_code=404, detail="Project not found")
+        project_id = await require_project_id(self.session, project_slug)
 
         result = await self.session.execute(
             select(Target.target_type, func.count(Target.id))
-            .where(Target.project_id == project.id)
+            .where(Target.project_id == project_id)
             .group_by(Target.target_type)
         )
 
@@ -196,10 +197,10 @@ class TargetService:
         query = select(Target).where(Target.target_value.ilike(f"%{target_value}%"))
 
         if project_slug:
-            project = await self._get_project_by_slug(project_slug)
-            if not project:
+            project_id = await project_id_for_slug(self.session, project_slug)
+            if project_id is None:
                 return query.where(col(Target.id).is_(None))
-            query = query.where(Target.project_id == project.id)
+            query = query.where(Target.project_id == project_id)
 
         return query
 
@@ -224,10 +225,10 @@ class TargetService:
         query = with_whois_join(select(Target))
 
         if project_slug:
-            project = await self._get_project_by_slug(project_slug)
-            if not project:
+            project_id = await project_id_for_slug(self.session, project_slug)
+            if project_id is None:
                 return query.where(col(Target.id).is_(None))
-            query = query.where(Target.project_id == project.id)
+            query = query.where(Target.project_id == project_id)
 
         query = apply_filters(
             query,
@@ -257,13 +258,13 @@ class TargetService:
             "enriched": 0,
         }
 
-        project = await self._get_project_by_slug(project_slug)
-        if not project:
+        project_id = await project_id_for_slug(self.session, project_slug)
+        if project_id is None:
             return empty
 
         query = with_whois_join(
             select(*signal_count_columns()).select_from(Target)
-        ).where(Target.project_id == project.id)
+        ).where(Target.project_id == project_id)
         query = apply_filters(
             query,
             search=search,
@@ -294,11 +295,11 @@ class TargetService:
         signal: SignalName | None = None,
         limit: int = 10000,
     ) -> list[UUID]:
-        project = await self._get_project_by_slug(project_slug)
-        if not project:
+        project_id = await project_id_for_slug(self.session, project_slug)
+        if project_id is None:
             return []
         query = with_whois_join(select(Target.id)).where(
-            Target.project_id == project.id
+            Target.project_id == project_id
         )
         query = apply_filters(
             query,
@@ -311,40 +312,20 @@ class TargetService:
         result = await self.session.execute(query.limit(limit))
         return list(result.scalars().all())
 
-    async def bulk_enrich(self, target_ids: list[UUID], kind: str) -> int:
+    async def bulk_enrich(self, target_ids: list[UUID], kind: EnrichmentKind) -> int:
+        """Queue one enrichment for the targets it applies to; how many were queued."""
+        enrichment = ENRICHMENTS[EnrichmentKind(kind)]
         result = await self.session.execute(
             select(Target).where(Target.id.in_(target_ids))
         )
-        targets = list(result.scalars().all())
-        eligible: list[Target] = []
-
-        for target in targets:
-            if kind == "whois":
-                target.whois_status = TaskStatus.PENDING
-                target.whois_error = None
-                eligible.append(target)
-            elif kind == "dns" and target.target_type in DNS_ELIGIBLE_TYPES:
-                target.dns_status = TaskStatus.PENDING
-                target.dns_error = None
-                eligible.append(target)
-            elif kind == "bgp" and target.target_type in BGP_ELIGIBLE_TYPES:
-                target.bgp_status = TaskStatus.PENDING
-                eligible.append(target)
-            else:
-                continue
-            target.updated_at = utc_now()
-
+        eligible = [t for t in result.scalars().all() if enrichment.applies_to(t)]
+        for target in eligible:
+            enrichment.mark_pending(target)
         await self.session.commit()
 
-        ids = [str(t.id) for t in eligible]
-        if ids:
-            if kind == "whois":
-                dispatch_whois_lookups(ids)
-            elif kind == "dns":
-                dispatch_dns_lookups(ids)
-            else:
-                dispatch_ripestat_enrichment(ids)
-        return len(ids)
+        if eligible:
+            enrichment.dispatch([str(t.id) for t in eligible])
+        return len(eligible)
 
     async def bulk_add_tags(
         self, target_ids: list[UUID], tag_names: list[str], user_id: str
@@ -415,25 +396,20 @@ class TargetService:
                 detail=unrecognised_target(target_in.target_value),
             )
 
-        project = await self._get_project_by_slug(target_in.project_slug)
-        if not project:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Project not found",
-            )
+        project_id = await require_project_id(self.session, target_in.project_slug)
 
-        await self._check_duplicate_target(target_value, project.id)
+        await self._check_duplicate_target(target_value, project_id)
 
         organizations = await self._get_or_create_organizations(
-            target_in.organization_names, project.id, user_id
+            target_in.organization_names, project_id, user_id
         )
-        tags = await self._get_or_create_tags(target_in.tag_names, project.id, user_id)
+        tags = await self._get_or_create_tags(target_in.tag_names, project_id, user_id)
 
         target = Target(
             target_value=target_value,
             target_type=target_type,
             display_name=target_in.display_name or target_value,
-            project_id=project.id,
+            project_id=project_id,
             created_by=user_id,
             organizations=organizations,
             tags=tags,
@@ -483,9 +459,7 @@ class TargetService:
         if not wanted:
             return []
         if await self.session.get(Project, project_id) is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
-            )
+            raise project_not_found()
 
         rows = await self.session.execute(
             select(Target).where(
@@ -543,22 +517,17 @@ class TargetService:
     async def bulk_create_targets(
         self, bulk_in: TargetBulkCreate, user_id: str
     ) -> TargetBulkCreateResponse:
-        project = await self._get_project_by_slug(bulk_in.project_slug)
-        if not project:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Project not found",
-            )
+        project_id = await require_project_id(self.session, bulk_in.project_slug)
 
         existing_targets_result = await self.session.execute(
-            select(Target.target_value).where(Target.project_id == project.id)
+            select(Target.target_value).where(Target.project_id == project_id)
         )
         existing_target_values = set(existing_targets_result.scalars().all())
 
         organizations = await self._get_or_create_organizations(
-            bulk_in.organization_names, project.id, user_id
+            bulk_in.organization_names, project_id, user_id
         )
-        tags = await self._get_or_create_tags(bulk_in.tag_names, project.id, user_id)
+        tags = await self._get_or_create_tags(bulk_in.tag_names, project_id, user_id)
 
         results: list[TargetImportResult] = []
         imported_count = 0
@@ -570,7 +539,7 @@ class TargetService:
         for target_value in bulk_in.targets:
             result = await self._process_bulk_target(
                 target_value=target_value,
-                project_id=project.id,
+                project_id=project_id,
                 user_id=user_id,
                 organizations=organizations,
                 tags=tags,
@@ -599,7 +568,7 @@ class TargetService:
             level=ActivityLevel.SUCCESS
             if imported_count > 0
             else ActivityLevel.WARNING,
-            project_id=project.id,
+            project_id=project_id,
             user_id=user_id,
         )
         await self.session.commit()
@@ -855,15 +824,10 @@ class TargetService:
     async def import_targets_structured(
         self, import_request: TargetImportRequest, user_id: str
     ) -> TargetBulkCreateResponse:
-        project = await self._get_project_by_slug(import_request.project_slug)
-        if not project:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Project not found",
-            )
+        project_id = await require_project_id(self.session, import_request.project_slug)
 
         existing_targets_result = await self.session.execute(
-            select(Target.target_value).where(Target.project_id == project.id)
+            select(Target.target_value).where(Target.project_id == project_id)
         )
         existing_target_values = set(existing_targets_result.scalars().all())
 
@@ -875,16 +839,16 @@ class TargetService:
         created_targets: list[Target] = []
 
         shared_organizations = await self._get_or_create_organizations(
-            import_request.organization_names, project.id, user_id
+            import_request.organization_names, project_id, user_id
         )
         shared_tags = await self._get_or_create_tags(
-            import_request.tag_names, project.id, user_id
+            import_request.tag_names, project_id, user_id
         )
 
         for item in import_request.targets:
             result = await self._process_import_item(
                 item=item,
-                project_id=project.id,
+                project_id=project_id,
                 user_id=user_id,
                 existing_target_values=existing_target_values,
                 seen_in_batch=seen_in_batch,
@@ -922,7 +886,7 @@ class TargetService:
             level=ActivityLevel.SUCCESS
             if imported_count > 0
             else ActivityLevel.WARNING,
-            project_id=project.id,
+            project_id=project_id,
             user_id=user_id,
         )
         await self.session.commit()
@@ -1012,91 +976,51 @@ class TargetService:
         return await self._build_bgp_detail(target)
 
     async def refresh_target_dns(self, target_id: str) -> EnrichmentRefreshResponse:
-        target = await self._get_target_or_404(target_id)
-
-        if target.target_type not in DNS_ELIGIBLE_TYPES:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"DNS lookup does not apply to {target.target_type.value} targets. "
-                "Domain and URL targets only.",
-            )
-
-        target.dns_status = TaskStatus.PENDING
-        target.dns_error = None
-        target.updated_at = utc_now()
-        await self.session.commit()
-
-        await self._activity.log_async(
-            event=ActivityEvent.TARGET_ENRICHMENT_STARTED,
-            title=f"DNS lookup queued for {target.target_value}",
-            target_id=target.id,
-            project_id=target.project_id,
-        )
-        await self.session.commit()
-
-        dispatch_dns_lookups([str(target.id)])
-
-        return EnrichmentRefreshResponse(
-            target_id=target.id,
-            enrichment_type="dns",
-            status="queued",
-            message=f"DNS lookup queued for {target.target_value}",
-        )
+        return await self.refresh_enrichment(target_id, EnrichmentKind.DNS)
 
     async def refresh_target_whois(self, target_id: str) -> EnrichmentRefreshResponse:
-        target = await self._get_target_or_404(target_id)
-
-        target.whois_status = TaskStatus.PENDING
-        target.whois_error = None
-        target.updated_at = utc_now()
-        await self.session.commit()
-
-        await self._activity.log_async(
-            event=ActivityEvent.TARGET_ENRICHMENT_STARTED,
-            title=f"WHOIS lookup queued for {target.target_value}",
-            target_id=target.id,
-            project_id=target.project_id,
-        )
-        await self.session.commit()
-
-        dispatch_whois_lookups([str(target.id)])
-
-        return EnrichmentRefreshResponse(
-            target_id=target.id,
-            enrichment_type="whois",
-            status="queued",
-            message=f"WHOIS lookup queued for {target.target_value}",
-        )
+        return await self.refresh_enrichment(target_id, EnrichmentKind.WHOIS)
 
     async def refresh_target_bgp(self, target_id: str) -> EnrichmentRefreshResponse:
-        target = await self._get_target_or_404(target_id)
+        return await self.refresh_enrichment(target_id, EnrichmentKind.BGP)
 
-        if target.target_type not in BGP_ELIGIBLE_TYPES:
+    async def refresh_enrichment(
+        self, target_id: str, kind: EnrichmentKind
+    ) -> EnrichmentRefreshResponse:
+        """Queue one enrichment for one target.
+
+        Every database write, the activity entry included, commits before the
+        task is dispatched: the worker reads the pending row and logs its own
+        outcome, so dispatching first could let the outcome land before the
+        "queued" entry, or leave a running task behind a failed request.
+        """
+        enrichment = ENRICHMENTS[kind]
+        target = await self._get_target_or_404(target_id)
+        if not enrichment.applies_to(target):
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"BGP enrichment does not apply to {target.target_type.value} targets. "
-                "IP, IP range and ASN targets only.",
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=enrichment.not_applicable(target),
             )
 
-        target.bgp_status = TaskStatus.PENDING
-        target.updated_at = utc_now()
+        enrichment.mark_pending(target)
         await self.session.commit()
 
-        dispatch_ripestat_enrichment([str(target.id)])
-
+        message = enrichment.queued(target)
         await self._activity.log_async(
             event=ActivityEvent.TARGET_ENRICHMENT_STARTED,
-            title=f"BGP enrichment queued for {target.target_value}",
+            title=message,
             target_id=target.id,
             project_id=target.project_id,
         )
         await self.session.commit()
 
+        enrichment.dispatch([str(target.id)])
+
         return EnrichmentRefreshResponse(
             target_id=target.id,
-            enrichment_type="bgp",
+            enrichment_type=kind.value,
             status="queued",
-            message=f"BGP enrichment queued for {target.target_value}",
+            message=message,
         )
 
     async def _get_target_or_404(self, target_id: str) -> Target:
@@ -1117,10 +1041,6 @@ class TargetService:
                 detail="Target not found",
             )
         return target
-
-    async def _get_project_by_slug(self, slug: str) -> Project | None:
-        result = await self.session.execute(select(Project).where(Project.slug == slug))
-        return result.scalar_one_or_none()
 
     async def _get_organization_by_slug(self, slug: str) -> Organization | None:
         result = await self.session.execute(
@@ -1171,7 +1091,7 @@ class TargetService:
         tags: list[Tag],
         existing_target_values: set[str],
         seen_in_batch: set[str],
-    ) -> "BulkTargetResult":
+    ) -> BulkTargetResult:
         _target_value = normalize_target_value(target_value)
         rejected = _rejected(_target_value, seen_in_batch, existing_target_values)
         if rejected is not None:
@@ -1211,7 +1131,7 @@ class TargetService:
         seen_in_batch: set[str],
         shared_organizations: list[Organization] | None = None,
         shared_tags: list[Tag] | None = None,
-    ) -> "BulkTargetResult":
+    ) -> BulkTargetResult:
         target_value = normalize_target_value(item.target_value)
         rejected = _rejected(target_value, seen_in_batch, existing_target_values)
         if rejected is not None:
@@ -1613,13 +1533,7 @@ class TargetService:
         if not targets:
             return
 
-        all_ids = [str(t.id) for t in targets]
-        dispatch_whois_lookups(all_ids)
-
-        dns_ids = [str(t.id) for t in targets if t.target_type in DNS_ELIGIBLE_TYPES]
-        if dns_ids:
-            dispatch_dns_lookups(dns_ids)
-
-        bgp_ids = [str(t.id) for t in targets if t.target_type in BGP_ELIGIBLE_TYPES]
-        if bgp_ids:
-            dispatch_ripestat_enrichment(bgp_ids)
+        for enrichment in ENRICHMENTS.values():
+            ids = [str(t.id) for t in targets if enrichment.applies_to(t)]
+            if ids:
+                enrichment.dispatch(ids)

@@ -33,8 +33,8 @@ class Input(ToolInput):
 class RecordTriage(Tool):
     name = "record_triage"
     title = "Record triage"
-    capability = Capability.WRITE.value
-    group = ToolGroup.ACT.value
+    capability = Capability.WRITE
+    group = ToolGroup.ACT
     description = (
         "Record a review decision against a finding: confirmed, false positive or "
         "accepted risk. The decision is keyed to the fingerprint and applies to "
