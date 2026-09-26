@@ -13,7 +13,7 @@
 	import {
 		activityRan,
 		elapsedSeconds,
-		formatSeconds,
+		elapsedText,
 		isLiveStatus,
 		isOpenStatus
 	} from '$lib/utilities/scan-status';
@@ -144,7 +144,7 @@
 			case 'running': {
 				const parts = [run?.stage ? run.stage.title : progress.label];
 				parts.push(`${progress.done} of ${progress.total} stages`);
-				if (elapsedSec != null) parts.push(`${formatSeconds(elapsedSec)} elapsed`);
+				if (elapsedSec != null) parts.push(`${elapsedText(elapsedSec)} elapsed`);
 				if (eta) parts.push(eta);
 				return parts.join(' · ');
 			}

@@ -190,6 +190,15 @@ export function formatSeconds(total: number): string {
 	return m ? `${h}h ${m}m` : `${h}h`;
 }
 
+export function elapsedText(total: number): string {
+	const minutes = Math.floor(total / 60);
+	if (minutes < 1) return '<1m';
+	if (minutes < 60) return `${minutes}m`;
+	const h = Math.floor(minutes / 60);
+	const m = minutes % 60;
+	return m ? `${h}h ${m}m` : `${h}h`;
+}
+
 export function durationText(seconds: number | null, fractional = false): string {
 	if (seconds == null) return '';
 	if (seconds < 60) return fractional ? `${seconds.toFixed(1)}s` : `${Math.round(seconds)}s`;
@@ -198,7 +207,7 @@ export function durationText(seconds: number | null, fractional = false): string
 
 export function durationLabel(scan: ScanRead, now: number = Date.now()): string {
 	const live = elapsedSeconds(scan, now);
-	if (live != null) return formatSeconds(live);
+	if (live != null) return elapsedText(live);
 	if (scan.duration_seconds == null) return '—';
 	return formatSeconds(scan.duration_seconds);
 }

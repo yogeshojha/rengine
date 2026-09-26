@@ -7,7 +7,7 @@
 	import { SURFACE_ORDER, SurfaceDimension } from '$lib/config/surface';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { scanSchedulesStore } from '$lib/stores/scan-schedules.svelte';
-	import { elapsedSeconds, formatSeconds } from '$lib/utilities/scan-status';
+	import { elapsedSeconds, elapsedText } from '$lib/utilities/scan-status';
 	import { relativeTime } from '$lib/utilities/dates';
 	import type { DashboardOverview, DashboardPrograms } from '$lib/types/dashboard';
 	import type { ThreatIntelStatus } from '$lib/types/threat-intel';
@@ -152,7 +152,7 @@
 								</span>
 								{#if elapsed !== null}
 									<span class="shrink-0 text-xs text-muted-foreground tabular-nums">
-										{formatSeconds(elapsed)}
+										{elapsedText(elapsed)}
 									</span>
 								{/if}
 							</a>

@@ -63,7 +63,7 @@
 		SCAN_STATUS_LABEL,
 		SCAN_POLL_MS,
 		elapsedSeconds,
-		formatSeconds
+		elapsedText
 	} from '$lib/utilities/scan-status';
 	import {
 		appendToken,
@@ -922,7 +922,7 @@
 							{#if isLiveStatus(scan.status) && stripProgress}
 								<span class="text-xs text-muted-foreground tabular-nums">
 									{stripProgress.label} · {stripProgress.done} of {stripProgress.total}{#if stripElapsed != null}
-										· {formatSeconds(stripElapsed)}{/if}
+										· {elapsedText(stripElapsed)}{/if}
 								</span>
 							{:else if !isOpenStatus(scan.status)}
 								<Button

@@ -1,7 +1,12 @@
 import type { ScanActivityRead, ScanRead } from '$lib/types/scan';
 import type { StageCatalogEntry } from '$lib/types/scan-engine';
 import type { LiveRun } from '$lib/stores/live-scans.svelte';
-import { activityRan, activitySummary, formatSeconds } from '$lib/utilities/scan-status';
+import {
+	activityRan,
+	activitySummary,
+	elapsedText,
+	formatSeconds
+} from '$lib/utilities/scan-status';
 
 export function plannedStages(scan: ScanRead, catalog: StageCatalogEntry[]): StageCatalogEntry[] {
 	const cfg = scan.execution_config.stages ?? {};
@@ -55,7 +60,7 @@ export function etaLabel(
 ): string | null {
 	if (previousSeconds == null || elapsedSeconds == null) return null;
 	const remaining = previousSeconds - elapsedSeconds;
-	if (remaining > 0) return `${formatSeconds(remaining)} remaining`;
+	if (remaining > 0) return `${elapsedText(remaining)} remaining`;
 	return `previous run took ${formatSeconds(previousSeconds)}`;
 }
 

@@ -14,7 +14,7 @@
 	import {
 		durationLabel,
 		durationText,
-		formatSeconds,
+		elapsedText,
 		isOpenStatus
 	} from '$lib/utilities/scan-status';
 	import { plannedStages, stageRows } from '$lib/utilities/scan-progress';
@@ -201,7 +201,7 @@
 	function tooltip(s: Segment): string {
 		const parts = [s.title];
 		if (s.startedAt) parts.push(fmtTime(s.startedAt));
-		if (s.state === 'running') parts.push(`running ${formatSeconds(s.seconds ?? 0)}`);
+		if (s.state === 'running') parts.push(`running ${elapsedText(s.seconds ?? 0)}`);
 		else if (s.paused) parts.push(`${durationText(s.seconds)} · paused`);
 		else if (s.state === 'pending') parts.push(unfinished ? 'queued' : 'did not run');
 		else if (s.state === 'failed') parts.push(s.stopped ? 'stopped' : 'failed');
@@ -337,7 +337,7 @@
 										class="flex h-5 w-14 shrink-0 items-center justify-end text-xs text-muted-foreground tabular-nums"
 									>
 										{#if s.state === 'running'}
-											{formatSeconds(s.seconds ?? 0)}
+											{elapsedText(s.seconds ?? 0)}
 										{:else if s.paused}
 											{durationText(s.seconds)}
 										{:else if s.state === 'pending'}

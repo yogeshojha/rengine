@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { scanCountPills, formatSeconds, elapsedSeconds, scanStatusTabCount } from './scan-status';
+import {
+	scanCountPills,
+	formatSeconds,
+	elapsedSeconds,
+	elapsedText,
+	scanStatusTabCount
+} from './scan-status';
 import { SURFACE_ORDER } from '$lib/config/surface';
 import type { ScanRead, ScanStatusCounts } from '$lib/types/scan';
 
@@ -39,6 +45,15 @@ describe('scanCountPills', () => {
 			scanCountPills(scan({ vulnerabilities_found: 3 })).find((p) => p.key === 'vulnerabilities')
 				?.emphasis
 		).toBe(true);
+	});
+});
+
+describe('elapsedText', () => {
+	it('drops seconds', () => {
+		expect(elapsedText(45)).toBe('<1m');
+		expect(elapsedText(931)).toBe('15m');
+		expect(elapsedText(3660)).toBe('1h 1m');
+		expect(elapsedText(7200)).toBe('2h');
 	});
 });
 

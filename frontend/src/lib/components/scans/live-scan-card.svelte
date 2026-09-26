@@ -6,7 +6,7 @@
 	import Clock from '@lucide/svelte/icons/clock';
 	import Ban from '@lucide/svelte/icons/ban';
 	import { ROUTES } from '$lib/config/routes';
-	import { elapsedSeconds, formatSeconds, scanCountPills } from '$lib/utilities/scan-status';
+	import { elapsedSeconds, elapsedText, scanCountPills } from '$lib/utilities/scan-status';
 	import {
 		STAGE_STEP_CLASS,
 		etaLabel,
@@ -31,7 +31,7 @@
 
 	let queued = $derived(scan.status === 'pending');
 	let elapsedSec = $derived(elapsedSeconds(scan, now));
-	let elapsed = $derived(elapsedSec == null ? null : formatSeconds(elapsedSec));
+	let elapsed = $derived(elapsedSec == null ? null : elapsedText(elapsedSec));
 	let eta = $derived(queued ? null : etaLabel(previousDuration, elapsedSec));
 	let planned = $derived(plannedStages(scan, catalog));
 	let progress = $derived(stageProgress(scan, run, planned));

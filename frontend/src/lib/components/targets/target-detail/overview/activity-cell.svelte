@@ -11,7 +11,7 @@
 	import {
 		durationText,
 		elapsedSeconds,
-		formatSeconds,
+		elapsedText,
 		isLiveStatus,
 		isOpenStatus,
 		SCAN_STATUS_DOT,
@@ -83,7 +83,7 @@
 			const parts: string[] = [];
 			if (run?.stage?.title) parts.push(run.stage.title);
 			const e = elapsedSeconds(s, now);
-			if (e != null) parts.push(formatSeconds(e));
+			if (e != null) parts.push(elapsedText(e));
 			return parts.join(' · ');
 		}
 		const took = s.duration_seconds != null ? durationText(s.duration_seconds) : null;
