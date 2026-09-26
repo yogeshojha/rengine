@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { page as appPage } from '$app/state';
-	import { replaceState } from '$app/navigation';
 	import { onDestroy, untrack } from 'svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
@@ -109,6 +108,7 @@
 	import { locationTokensFromUrl } from '$lib/utilities/endpoints';
 	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 	import { afterPause } from '$lib/utilities/debounce';
+	import { UrlSync, onPopSearch } from '$lib/utilities/url-history.svelte';
 	import { LiveRefresh } from '$lib/utilities/live-results';
 
 	interface Props {
@@ -561,12 +561,31 @@
 					? `${sort.key}:${sort.dir === 1 ? 'asc' : 'desc'}`
 					: null
 			);
-			const qs = sp.toString();
-			replaceState(qs ? `?${qs}` : location.pathname, appPage.state);
+			urlSync.write(sp);
 		} catch {
 			// ignore
 		}
 	}
+	const urlSync = new UrlSync(['vuln_q', 'vuln_group', 'vuln_view']);
+
+	function restoreUrl(sp: URLSearchParams) {
+		const search = sp.get('vuln_q') ?? '';
+		if (search !== query.search) query = { ...query, search };
+		const group = sp.get('vuln_group') ?? '';
+		if (group !== groupBy) groupBy = group;
+		const rawView = sp.get('vuln_view');
+		const nextView = rawView && VIEW_KEYS.has(rawView) ? (rawView as VulnView) : DEFAULT_VULN_VIEW;
+		if (nextView !== view) view = nextView;
+		const [sortKey, sortDir] = sp.get('vuln_sort')?.split(':') ?? [];
+		const nextSort = sortKey
+			? { key: sortKey, dir: (sortDir === 'desc' ? -1 : 1) as 1 | -1 }
+			: { ...DEFAULT_SORT };
+		if (nextSort.key !== sort.key || nextSort.dir !== sort.dir) sort = nextSort;
+		const nextPage = Math.max(0, Number(sp.get('vuln_page') ?? 1) - 1);
+		if (nextPage !== pageIndex) pageIndex = nextPage;
+		if (drawerOpen && !sp.get('vuln')) drawerOpen = false;
+	}
+	$effect(() => onPopSearch(restoreUrl));
 	$effect(() => {
 		void query.search;
 		void groupBy;

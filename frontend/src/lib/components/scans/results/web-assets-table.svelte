@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { page as appPage } from '$app/state';
-	import { replaceState } from '$app/navigation';
 	import { onDestroy, untrack } from 'svelte';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
@@ -76,6 +75,7 @@
 	import type { QueryError, QueryGroups, QueryLeads } from '$lib/types/asset-query';
 	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 	import { afterPause } from '$lib/utilities/debounce';
+	import { UrlSync, onPopSearch } from '$lib/utilities/url-history.svelte';
 	import { LiveRefresh } from '$lib/utilities/live-results';
 
 	interface Props {
@@ -496,12 +496,30 @@
 					: null
 			);
 			set('asset', drawerOpen && selected ? selected.name : null);
-			const qs = sp.toString();
-			replaceState(qs ? `?${qs}` : location.pathname, appPage.state);
+			urlSync.write(sp);
 		} catch {
 			// ignore
 		}
 	}
+	const urlSync = new UrlSync(['q', 'group', 'view']);
+
+	function restoreUrl(sp: URLSearchParams) {
+		const search = sp.get('q') ?? '';
+		if (search !== query.search) query = { ...query, search };
+		const group = sp.get('group') ?? '';
+		if (group !== groupBy) groupBy = group;
+		const nextView = sp.get('view') === 'gallery' ? 'gallery' : 'table';
+		if (nextView !== view) view = nextView;
+		const [sortKey, sortDir] = sp.get('sort')?.split(':') ?? [];
+		const nextSort = sortKey
+			? { key: sortKey, dir: (sortDir === 'desc' ? -1 : 1) as 1 | -1 }
+			: { ...DEFAULT_SORT };
+		if (nextSort.key !== sort.key || nextSort.dir !== sort.dir) sort = nextSort;
+		const nextPage = Math.max(0, Number(sp.get('page') ?? 1) - 1);
+		if (nextPage !== pageIndex) pageIndex = nextPage;
+		if (drawerOpen && !sp.get('asset')) drawerOpen = false;
+	}
+	$effect(() => onPopSearch(restoreUrl));
 	$effect(() => {
 		void query.search;
 		void view;

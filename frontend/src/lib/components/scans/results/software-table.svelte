@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { page as appPage } from '$app/state';
-	import { replaceState } from '$app/navigation';
 	import { onDestroy, untrack } from 'svelte';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import SearchX from '@lucide/svelte/icons/search-x';
@@ -53,6 +52,7 @@
 		type Facet
 	} from '$lib/utilities/scan-insights';
 	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
+	import { UrlSync, onPopSearch } from '$lib/utilities/url-history.svelte';
 	import { LiveRefresh } from '$lib/utilities/live-results';
 	import { SEVERITY_TABS } from '$lib/utilities/vulns';
 	import type { QueryError } from '$lib/types/asset-query';
@@ -268,7 +268,7 @@
 	});
 
 	function syncUrl() {
-		const params = new SvelteURLSearchParams(appPage.url.searchParams);
+		const params = new SvelteURLSearchParams(location.search);
 		if (search.trim()) params.set('sw_q', search.trim());
 		else params.delete('sw_q');
 		if (pageIndex > 0) params.set('sw_page', String(pageIndex + 1));
@@ -276,9 +276,26 @@
 		if (sort.key !== DEFAULT_SORT.key || sort.dir !== DEFAULT_SORT.dir) {
 			params.set('sw_sort', `${sort.key}:${sort.dir === -1 ? 'desc' : 'asc'}`);
 		} else params.delete('sw_sort');
-		const next = `${appPage.url.pathname}${params.size ? `?${params}` : ''}`;
-		replaceState(next, appPage.state);
+		urlSync.write(params);
 	}
+	const urlSync = new UrlSync(['sw_q'], true);
+
+	function restoreUrl(sp: URLSearchParams) {
+		const nextSearch = sp.get('sw_q') ?? '';
+		const searchChanged = nextSearch !== search;
+		const before = `${sort.key}:${sort.dir}:${pageIndex}`;
+		search = nextSearch;
+		const [sortKey, sortDir] = sp.get('sw_sort')?.split(':') ?? [];
+		const nextSort = sortKey
+			? { key: sortKey, dir: (sortDir === 'desc' ? -1 : 1) as 1 | -1 }
+			: { ...DEFAULT_SORT };
+		if (nextSort.key !== sort.key || nextSort.dir !== sort.dir) sort = nextSort;
+		const nextPage = Math.max(0, Number(sp.get('sw_page') ?? 1) - 1);
+		if (nextPage !== pageIndex) pageIndex = nextPage;
+		if (searchChanged) schedule();
+		else if (before !== `${sort.key}:${sort.dir}:${pageIndex}`) void runSearch();
+	}
+	$effect(() => onPopSearch(restoreUrl));
 
 	let hideOptions = $derived([
 		{

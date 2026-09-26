@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { replaceState } from '$app/navigation';
 	import { onDestroy, untrack } from 'svelte';
 	import { SvelteSet, SvelteURLSearchParams } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
@@ -55,6 +54,7 @@
 	import SecretsTable from '$lib/components/scans/results/secrets-table.svelte';
 	import { formatShortDate, relativeTime } from '$lib/utilities/dates';
 	import { writeClipboard } from '$lib/utilities/clipboard';
+	import { historyIndex, markEntry, writeSearch } from '$lib/utilities/url-history.svelte';
 	import {
 		durationLabel,
 		isLiveStatus,
@@ -173,12 +173,13 @@
 		activeTab = v as ScanTab;
 		try {
 			const sp = new SvelteURLSearchParams(location.search);
+			const before = sp.toString();
 			sp.set('tab', v);
 			for (const [k, value] of Object.entries(params)) {
 				if (value) sp.set(k, value);
 				else sp.delete(k);
 			}
-			replaceState(`?${sp.toString()}`, page.state);
+			writeSearch(sp, sp.toString() !== before);
 		} catch {
 			// ignore
 		}
@@ -479,14 +480,19 @@
 		return `${end} · took ${durationLabel(scan, now)}`;
 	});
 
+	let entryIndex = markEntry();
+	let canStepBack = $derived(historyIndex() > entryIndex);
+
 	let lastScanId = page.params.id ?? '';
 	$effect(() => {
-		const url = page.url;
+		void page.url;
 		const id = scanId;
 		untrack(() => {
+			const url = new URL(location.href);
 			const changed = Boolean(id) && id !== lastScanId;
 			if (changed) {
 				lastScanId = id;
+				entryIndex = markEntry();
 				resultTicks = {};
 				history = [];
 				historyLoaded = false;
@@ -691,15 +697,26 @@
 <svelte:window onkeydown={onKeydown} />
 
 <div class="flex w-full flex-col gap-5 px-4 py-4 md:px-6">
-	<a
-		href={focused && scan?.parent_scan_id ? ROUTES.scan(scan.parent_scan_id) : targetHref}
-		class="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-	>
-		<ArrowLeft class="size-3.5" />
-		{focused && scan?.parent_scan_id
-			? 'Parent run'
-			: (scan?.execution_config.target_value ?? routeLabels.scans)}
-	</a>
+	{#if canStepBack}
+		<button
+			type="button"
+			class="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+			onclick={() => window.history.back()}
+		>
+			<ArrowLeft class="size-3.5" />
+			Back
+		</button>
+	{:else}
+		<a
+			href={focused && scan?.parent_scan_id ? ROUTES.scan(scan.parent_scan_id) : targetHref}
+			class="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+		>
+			<ArrowLeft class="size-3.5" />
+			{focused && scan?.parent_scan_id
+				? 'Parent run'
+				: (scan?.execution_config.target_value ?? routeLabels.scans)}
+		</a>
+	{/if}
 
 	{#if loading && !scan}
 		<Skeleton class="h-16 w-2/3" />

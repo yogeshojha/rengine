@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { page as appPage } from '$app/state';
-	import { replaceState } from '$app/navigation';
 	import { onDestroy, untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
@@ -97,6 +96,7 @@
 	import type { QueryError, QueryGroups, QueryLeads } from '$lib/types/asset-query';
 	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 	import { afterPause } from '$lib/utilities/debounce';
+	import { UrlSync, onPopSearch } from '$lib/utilities/url-history.svelte';
 	import { LiveRefresh, Throttled } from '$lib/utilities/live-results';
 	import { formatShortDate } from '$lib/utilities/dates';
 
@@ -721,12 +721,32 @@
 					? `${sort.key}:${sort.dir === 1 ? 'asc' : 'desc'}`
 					: null
 			);
-			const qs = sp.toString();
-			replaceState(qs ? `?${qs}` : location.pathname, appPage.state);
+			urlSync.write(sp);
 		} catch {
 			// ignore
 		}
 	}
+	const urlSync = new UrlSync(['ep_q', 'ep_host', 'ep_dir', 'ep_group', 'ep_view']);
+
+	function restoreUrl(sp: URLSearchParams) {
+		const search = sp.get('ep_q') ?? '';
+		const host = sp.get('ep_host') ?? '';
+		const dir = sp.get('ep_dir') ?? '';
+		if (search !== query.search || host !== query.host || dir !== query.dir) {
+			query = { ...query, search, host, dir };
+		}
+		const group = sp.get('ep_group') ?? '';
+		if (group !== groupBy) groupBy = group;
+		const nextView = normalizeView(sp.get('ep_view'));
+		if (nextView !== view) setView(nextView);
+		const nextPage = Math.max(0, Number(sp.get('ep_page') ?? 1) - 1);
+		if (nextPage !== pageIndex) pageIndex = nextPage;
+		const [key, dir2] = sp.get('ep_sort')?.split(':') ?? [];
+		const nextSort = key ? { key, dir: dir2 === 'desc' ? -1 : 1 } : DEFAULT_SORT;
+		if (nextSort.key !== sort.key || nextSort.dir !== sort.dir)
+			sort = { key: nextSort.key, dir: nextSort.dir as 1 | -1 };
+	}
+	$effect(() => onPopSearch(restoreUrl));
 	$effect(() => {
 		void query.search;
 		void query.host;
