@@ -2147,34 +2147,14 @@ VULN_FIELDS: tuple[QueryField, ...] = (
 
 VULN_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
     GroupDimension(
-        key="target",
-        label="Target",
-        description="Rows belonging to the same target",
-    ),
-    GroupDimension(
-        key="template",
-        label="Check",
-        description="The same weakness across every asset it was found on",
-    ),
-    GroupDimension(
-        key="evidence",
-        label="Evidence",
-        description="Findings with the same evidence",
-    ),
-    GroupDimension(
         key="severity",
         label="Severity",
         description="Findings of the same severity",
     ),
     GroupDimension(
-        key="location",
-        label="Location",
-        description="Every check that fired at the same place",
-    ),
-    GroupDimension(
-        key="host",
-        label="Host",
-        description="Everything found on one hostname",
+        key="template",
+        label="Check",
+        description="The same weakness across every asset it was found on",
     ),
     GroupDimension(
         key="tag",
@@ -2187,9 +2167,9 @@ VULN_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
         description="Findings sharing a published identifier",
     ),
     GroupDimension(
-        key="type",
-        label="Protocol",
-        description="Findings on the same protocol",
+        key="evidence",
+        label="Evidence",
+        description="Findings with the same evidence",
     ),
     GroupDimension(
         key="state",
@@ -2197,14 +2177,34 @@ VULN_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
         description="Findings at the same point in review",
     ),
     GroupDimension(
+        key="scanner",
+        label="Scanner",
+        description="Findings from the same tool",
+    ),
+    GroupDimension(
+        key="type",
+        label="Protocol",
+        description="Findings on the same protocol",
+    ),
+    GroupDimension(
+        key="host",
+        label="Web asset",
+        description="Everything found on one hostname",
+    ),
+    GroupDimension(
+        key="location",
+        label="Location",
+        description="Every check that fired at the same place",
+    ),
+    GroupDimension(
         key="port",
         label="Port",
         description="Findings on the same port",
     ),
     GroupDimension(
-        key="scanner",
-        label="Scanner",
-        description="Findings from the same tool",
+        key="target",
+        label="Target",
+        description="Rows belonging to the same target",
     ),
 )
 

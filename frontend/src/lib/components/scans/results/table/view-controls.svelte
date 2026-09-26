@@ -84,7 +84,9 @@
 			<DropdownMenu.Content align="end" class="max-h-none w-52 overflow-visible">
 				<DropdownMenu.Label>Group by</DropdownMenu.Label>
 				<DropdownMenu.Separator />
-				<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
+				<ScrollArea
+					class="[&_[data-slot=scroll-area-viewport]]:max-h-[min(36rem,calc(var(--bits-dropdown-menu-content-available-height)-4rem))]"
+				>
 					<DropdownMenu.RadioGroup value={groupBy} onValueChange={onGroupBy}>
 						<DropdownMenu.RadioItem value="">No grouping</DropdownMenu.RadioItem>
 						{#each dimensions as groupDimension (groupDimension.key)}
@@ -128,7 +130,9 @@
 			{#if !columnsLocked}
 				<DropdownMenu.Group>
 					<DropdownMenu.Label>Columns</DropdownMenu.Label>
-					<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-64">
+					<ScrollArea
+						class="[&_[data-slot=scroll-area-viewport]]:max-h-[min(36rem,calc(var(--bits-dropdown-menu-content-available-height)-10rem))]"
+					>
 						{#each columns as col (col.key)}
 							<DropdownMenu.CheckboxItem
 								checked={visible.includes(col.key)}
