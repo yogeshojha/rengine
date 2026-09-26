@@ -4,7 +4,7 @@ export const FCOL = {
 	finding: 'min-w-0 flex-1',
 	target: 'hidden w-[140px] shrink-0 @min-[88rem]/findings:flex',
 	asset: 'hidden w-[248px] shrink-0 @4xl/findings:flex',
-	related: 'hidden w-[150px] shrink-0 @6xl/findings:flex',
+	related: 'hidden w-[170px] shrink-0 @6xl/findings:flex',
 	risk: 'hidden w-[132px] shrink-0 @7xl/findings:flex',
 	evidence: 'hidden w-[104px] shrink-0 @min-[96rem]/findings:flex',
 	review: 'hidden w-[104px] shrink-0 @5xl/findings:flex',

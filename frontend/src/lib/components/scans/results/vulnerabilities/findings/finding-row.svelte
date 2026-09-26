@@ -349,22 +349,21 @@
 		{#if findingPrefs.shows('related')}
 			<div class="{FCOL.related} min-w-0 flex-col gap-0.5">
 				{#if v.host && hostTotal > 1}
-					<Hint text="Open findings on {v.host}">
+					<Hint text={onHost.map((c) => `${c.n} ${SEVERITY_LABELS[c.sev] ?? c.sev}`).join(' · ')}>
 						{#snippet child(props)}
 							<button
 								{...props}
 								type="button"
-								class="flex h-6 items-center gap-0.5"
+								class="flex h-6 w-fit items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
 								aria-label="{hostTotal} open findings on {v.host}"
 								onclick={(e) => pivot(e, hostToken)}
 							>
-								{#each onHost as c (c.sev)}
-									<span
-										class="inline-flex h-5 min-w-5 items-center justify-center rounded px-1 font-mono text-2xs font-semibold tabular-nums {SEVERITY_CHIP[
-											c.sev
-										].chip}">{c.n}</span
-									>
-								{/each}
+								<span class="flex items-center gap-0.5">
+									{#each onHost as c (c.sev)}
+										<span class="size-1.5 rounded-full {SEVERITY_CHIP[c.sev].edge}"></span>
+									{/each}
+								</span>
+								<span class="tabular-nums">{hostTotal} on this {WEB.noun}</span>
 							</button>
 						{/snippet}
 					</Hint>

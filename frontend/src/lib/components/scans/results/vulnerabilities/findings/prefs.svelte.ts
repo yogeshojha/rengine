@@ -4,7 +4,7 @@ export const FINDING_COLUMNS = ['asset', 'related', 'risk', 'evidence', 'review'
 export type FindingColumn = (typeof FINDING_COLUMNS)[number];
 export const FINDING_COLUMN_LABELS: Record<FindingColumn, string> = {
 	asset: 'Web asset',
-	related: 'Correlation',
+	related: 'Related findings',
 	risk: 'Risk',
 	evidence: 'Evidence',
 	review: 'Review',
