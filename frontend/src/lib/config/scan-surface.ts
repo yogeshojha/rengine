@@ -107,7 +107,7 @@ export const TIER_HELP: Record<string, string> = {
 	[Tier.UNIVERSAL]: 'Checks for any web server. One web asset per origin.',
 	[Tier.MATCHED]: 'Checks for the software the web asset was seen running.',
 	[Tier.BLIND]:
-		'Known-exploited and severe checks on every origin, within a request budget. Runs first.',
+		'Known-exploited and severe checks on every origin, within a request budget sized to the time left.',
 	[Tier.OAST]: 'Checks that report through a callback to an external server.',
 	[Tier.DEEP]:
 		"Every remaining software-specific check. Runs last and does not count toward an origin's coverage.",

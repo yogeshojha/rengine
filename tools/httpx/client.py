@@ -39,6 +39,7 @@ _RESPONSE_SIZE_CAP = HTTPX_RESPONSE_CAP
 
 _ENRICH_FLAGS = [
     "-probe",
+    "-stream",
     "-status-code",
     "-title",
     "-tech-detect",

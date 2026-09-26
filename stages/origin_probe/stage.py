@@ -85,7 +85,7 @@ class OriginProbeStage(Stage):
                 chunk = targets[start : start + _PROBE_CHUNK]
                 with client.stream_probe(chunk) as stream:
                     yield from stream.records
-                    stalled[0] = stalled[0] or stream.timed_out
+                stalled[0] = stalled[0] or stream.timed_out
 
         answered, rejected = self._persist(_chunked())
         self.emit_progress(f"{answered} of {len(targets)} answered by address alone")

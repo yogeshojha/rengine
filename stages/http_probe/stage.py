@@ -52,7 +52,7 @@ _DISCOVERY = "subdomain_discovery"
 _IP_FAMILY = {TargetType.IP.value, TargetType.IP_RANGE.value, TargetType.ASN.value}
 _MAX_TARGETS = 50000
 _SHUFFLE_SEED = 1
-_PROBE_CHUNK = 500
+_PROBE_CHUNK = 2000
 _WEB_CAPABLE = (ServiceClass.WEB.value, ServiceClass.OTHER.value)
 _PERSIST_BATCH = 500
 _PERSIST_SECONDS = 2.0
@@ -157,7 +157,7 @@ class HttpProbeStage(Stage):
                 chunk = queue[start : start + _PROBE_CHUNK]
                 with client.stream_probe(chunk) as stream:
                     yield from stream.records
-                    stalled[0] = stalled[0] or stream.timed_out
+                stalled[0] = stalled[0] or stream.timed_out
 
         count, rejected = self._persist(_chunked(targets))
         mention = _Mentions()

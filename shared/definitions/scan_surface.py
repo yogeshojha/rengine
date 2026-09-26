@@ -125,7 +125,7 @@ TIER_HELP: dict[str, str] = {
     Tier.ONE_REQUEST.value: "Root-page checks on every web asset. At most ten requests each.",
     Tier.UNIVERSAL.value: "Checks for any web server. One web asset per origin.",
     Tier.MATCHED.value: "Checks for the software the web asset was seen running.",
-    Tier.BLIND.value: "Known-exploited and severe checks on every origin, within a request budget. Runs first.",
+    Tier.BLIND.value: "Known-exploited and severe checks on every origin, within a request budget sized to the time left.",
     Tier.OAST.value: "Checks that report through a callback to an external server.",
     Tier.DEEP.value: "Every remaining software-specific check. Runs last and does not count toward an origin's coverage.",
     Tier.SERVICES.value: "Certificate and protocol checks on open ports.",
@@ -165,6 +165,7 @@ SURFACE_STATE_LABELS: dict[str, str] = {
 
 # one batch is one scanner invocation; the time cut lands between batches
 BATCH_SECONDS = 600
+DEEP_BATCH_SECONDS = 1800
 BATCH_MIN_HOSTS = 3
 BATCH_MAX_HOSTS = 250
 # a batch may run this much longer than planned before it is cut
@@ -341,6 +342,11 @@ GENERIC_TAGS: frozenset[str] = frozenset(
         "fileupload",
         "file-upload",
         "path-traversal",
+        "git",
+        "svn",
+        "hg",
+        "dotenv",
+        "ds_store",
     }
 )
 
@@ -394,6 +400,11 @@ UNIVERSAL_TAGS: frozenset[str] = frozenset(
         "secret",
         "password",
         "discovery",
+        "git",
+        "svn",
+        "hg",
+        "dotenv",
+        "ds_store",
     }
 )
 
@@ -694,6 +705,7 @@ __all__ = [
     "BLIND_SWEEP_REQUESTS",
     "BODY_IDENTITY_BYTES",
     "CLUSTER_SIGNAL_LABELS",
+    "DEEP_BATCH_SECONDS",
     "DROP_REASON_LABELS",
     "GENERIC_TAGS",
     "MAX_BASES_PER_ORIGIN",

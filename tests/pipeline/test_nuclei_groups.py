@@ -270,29 +270,30 @@ def test_the_schedule_spends_the_budget_in_tier_order(monkeypatch):
     library = _Templates(
         rows=rows, paths={r.id: f"/t/{r.template_id}.yaml" for r in rows}
     )
-    lanes = scanner._schedule(plan, split(rows), library)
+    tiers = split(rows)
+    lanes = scanner._schedule(plan, tiers, library, scanner._blind_budget(plan))
 
     jobs = lanes[STANDARD]
     assert [j.tier for j in jobs] == [
         Tier.ONE_REQUEST.value,
+        Tier.UNIVERSAL.value,
         Tier.BLIND.value,
         Tier.MATCHED.value,
         Tier.SERVICES.value,
-        Tier.UNIVERSAL.value,
     ]
     assert len(jobs[0].items) == 3, "one-request runs on the members too, first"
-    assert set(jobs[1].templates) == {"/t/geo.yaml", "/t/blind.yaml"}
-    assert jobs[2].templates == ["/t/geo.yaml"]
-    assert jobs[3].types == ("tcp", "ssl", "javascript")
-    assert len(jobs[4].items) == 1, "universal runs on the representative"
-    assert jobs[4].covered == 2
+    assert len(jobs[1].items) == 1, "universal runs on the representative"
+    assert jobs[1].covered == 2
+    assert set(jobs[2].templates) == {"/t/geo.yaml", "/t/blind.yaml"}
+    assert jobs[3].templates == ["/t/geo.yaml"]
+    assert jobs[4].types == ("tcp", "ssl", "javascript")
     assert all(j.rate == 150 for j in jobs)
 
 
 def test_the_deep_sweep_is_its_own_tier_and_never_planned(monkeypatch):
     writes = _Writes()
     monkeypatch.setattr(nuclei_scanner, "WAF_RATE_DIVISOR", 1)
-    monkeypatch.setattr(nuclei_scanner, "blind_core", lambda rows: rows[:1])
+    monkeypatch.setattr(nuclei_scanner, "blind_core", lambda rows, _budget=0: rows[:1])
     scanner = _scanner(writes)
     plan = SurfacePlan(roots=[_item("https://rep.example")])
     rows = [
@@ -312,9 +313,10 @@ def test_the_deep_sweep_is_its_own_tier_and_never_planned(monkeypatch):
         rows=rows, paths={r.id: f"/t/{r.template_id}.yaml" for r in rows}
     )
     tiers = split(rows)
-    jobs = scanner._schedule(plan, tiers, library)[STANDARD]
+    budget = scanner._blind_budget(plan)
+    jobs = scanner._schedule(plan, tiers, library, budget)[STANDARD]
     assert [j.tier for j in jobs] == [Tier.BLIND.value]
-    deep = scanner._schedule_deep(plan, tiers, library)[STANDARD]
+    deep = scanner._schedule_deep(plan, tiers, library, budget)[STANDARD]
     assert [j.tier for j in deep] == [Tier.DEEP.value]
     assert deep[0].templates == ["/t/cve1.yaml"]
     assert Tier.DEEP.value not in ROOT_TIERS
@@ -362,3 +364,35 @@ def test_skipped_hosts_are_marked_alone_and_the_rest_complete():
 
 def test_the_scanner_is_registered_under_its_enum_name():
     assert NucleiScanner.name == Scanner.NUCLEI.value
+
+
+def test_blind_and_deep_together_cover_every_product_check(monkeypatch):
+    """A reduced blind budget must not strand checks between the blind core and deep."""
+    monkeypatch.setattr(nuclei_scanner, "WAF_RATE_DIVISOR", 1)
+    scanner = _scanner(_Writes())
+    plan = SurfacePlan(roots=[_item("https://rep.example")])
+    rows = [
+        SimpleNamespace(
+            id=f"p{i}",
+            template_id=f"cve{i}",
+            tags=["cve", f"product{i}"],
+            protocol="http",
+            paths=[],
+            simple=False,
+            requests=1,
+            origin="official",
+        )
+        for i in range(6)
+    ]
+    library = _Templates(
+        rows=rows, paths={r.id: f"/t/{r.template_id}.yaml" for r in rows}
+    )
+    tiers = split(rows)
+    budget = 2  # smaller than the 6-check product tier
+    blind = scanner._schedule(plan, tiers, library, budget)[STANDARD]
+    deep = scanner._schedule_deep(plan, tiers, library, budget)[STANDARD]
+    covered = {
+        t for job in blind if job.tier == Tier.BLIND.value for t in job.templates
+    }
+    covered |= {t for job in deep for t in job.templates}
+    assert covered == {f"/t/cve{i}.yaml" for i in range(6)}
