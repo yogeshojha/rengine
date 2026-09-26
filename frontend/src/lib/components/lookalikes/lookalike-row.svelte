@@ -6,6 +6,7 @@
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 	import { toast } from 'svelte-sonner';
+	import { writeClipboard } from '$lib/utilities/clipboard';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Button } from '$lib/components/ui/button';
 	import Hint from '$lib/components/hint.svelte';
@@ -44,12 +45,8 @@
 	let title = $derived(row.title ? brandSegments(row.title, brandOf(row.apex)) : []);
 
 	async function copy(value: string) {
-		try {
-			await navigator.clipboard.writeText(value);
-			toast.success('Domain copied');
-		} catch {
-			toast.error('Domain not copied');
-		}
+		if (await writeClipboard(value)) toast.success('Domain copied');
+		else toast.error('Domain not copied');
 	}
 
 	const more = (list: string[]) => (list.length > 1 ? ` +${list.length - 1}` : '');
