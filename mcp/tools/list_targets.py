@@ -21,7 +21,9 @@ class Input(ToolInput):
     contains: str | None = Field(
         default=None, description="Only targets whose value contains this text."
     )
-    limit: int = Field(default=50, ge=1, le=MAX_TARGETS)
+    limit: int = Field(
+        default=50, ge=1, le=MAX_TARGETS, description="Targets to return."
+    )
 
 
 class ListTargets(Tool):
@@ -29,7 +31,7 @@ class ListTargets(Tool):
     command = "targets"
     value_field = "contains"
     title = "List targets"
-    group = ToolGroup.ORIENT.value
+    group = ToolGroup.ORIENT
     description = "The targets this token can reach, with project and type."
     Input = Input
     examples = ("list_targets", "list_targets contains=acme")
@@ -98,7 +100,7 @@ class ListTargets(Tool):
 class ListProjects(Tool):
     name = "list_projects"
     title = "List projects"
-    group = ToolGroup.ORIENT.value
+    group = ToolGroup.ORIENT
     description = "The projects this token can reach."
     examples = ("list_projects",)
 

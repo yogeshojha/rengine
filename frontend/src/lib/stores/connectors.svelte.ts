@@ -6,6 +6,7 @@ import type {
 	ConnectorSpec,
 	DiscoveredDomain
 } from '$lib/types/connector';
+import { errorMessage } from '$lib/utilities/errors';
 
 function createConnectorsStore() {
 	let catalog = $state<ConnectorSpec[]>([]);
@@ -18,10 +19,6 @@ function createConnectorsStore() {
 	let error = $state<string | null>(null);
 	let fetchedProjectId = $state<string | null>(null);
 	let selectedId = $state<string | null>(null);
-
-	function message(e: unknown, fallback: string) {
-		return e instanceof Error ? e.message : fallback;
-	}
 
 	return {
 		get catalog() {
@@ -69,7 +66,7 @@ function createConnectorsStore() {
 					catalog = c;
 				})
 				.catch((e) => {
-					error = message(e, 'Connector catalog not loaded');
+					error = errorMessage(e, 'Connector catalog not loaded');
 				})
 				.finally(() => {
 					catalogPending = null;
@@ -87,7 +84,7 @@ function createConnectorsStore() {
 				fetchedProjectId = projectId;
 				if (!items.some((c) => c.id === selectedId)) selectedId = items[0]?.id ?? null;
 			} catch (e) {
-				error = message(e, 'Connectors not loaded');
+				error = errorMessage(e, 'Connectors not loaded');
 			} finally {
 				isLoading = false;
 			}
@@ -98,7 +95,7 @@ function createConnectorsStore() {
 			try {
 				queue = await connectorsApi.candidates(id, projectId, params);
 			} catch (e) {
-				error = message(e, 'Queue not loaded');
+				error = errorMessage(e, 'Queue not loaded');
 			} finally {
 				queueLoading = false;
 			}
@@ -108,7 +105,7 @@ function createConnectorsStore() {
 			try {
 				discovered = await connectorsApi.discovered(id, projectId);
 			} catch (e) {
-				error = message(e, 'Discovered domains not loaded');
+				error = errorMessage(e, 'Discovered domains not loaded');
 			}
 		},
 

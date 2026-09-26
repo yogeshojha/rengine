@@ -6,7 +6,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from interest.base import InterestProvider
-from shared.plugins import classes_in_packages
+from shared.plugins import by_name, classes_in_packages
 
 PROVIDER_DIR = Path(__file__).resolve().parent / "providers"
 
@@ -18,18 +18,12 @@ class ProviderRegistrationError(RuntimeError):
 def _classes() -> list[type[InterestProvider]]:
     if not PROVIDER_DIR.is_dir():
         return []
-    found: dict[str, type[InterestProvider]] = {}
-    for obj in classes_in_packages(
+    found = classes_in_packages(
         "interest.providers", PROVIDER_DIR, InterestProvider, submodules=("provider",)
-    ):
-        if not obj.name:
-            continue
-        existing = found.get(obj.name)
-        if existing is not None and existing is not obj:
-            msg = f"Two providers claim the name {obj.name!r}."
-            raise ProviderRegistrationError(msg)
-        found[obj.name] = obj
-    return list(found.values())
+    )
+    return list(
+        by_name(found, kind="provider", error=ProviderRegistrationError).values()
+    )
 
 
 @lru_cache(maxsize=1)

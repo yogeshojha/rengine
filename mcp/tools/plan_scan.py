@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import uuid
-
 from pydantic import Field
 
 from mcp.capabilities import Capability
 from mcp.context import ToolContext
 from mcp.errors import ToolError
 from mcp.result import ToolResult
+from mcp.tools._args import optional_uuid, parse_uuid
 from mcp.tools._scope import project_for
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.models.scan_preview import PreviewToolStatus
@@ -42,8 +41,8 @@ class Input(ToolInput):
 class PlanScan(Tool):
     name = "plan_scan"
     title = "Plan a scan"
-    capability = Capability.PLAN.value
-    group = ToolGroup.ACT.value
+    capability = Capability.PLAN
+    group = ToolGroup.ACT
     description = (
         "Resolve what a scan would do: stages and their order, skipped stages and the "
         "reason, footprint and estimated duration. Nothing runs and the target is not "
@@ -59,7 +58,7 @@ class PlanScan(Tool):
         from shared.models.scan import ScanCreate  # noqa: PLC0415
 
         project_id = await project_for(
-            ctx, uuid.UUID(args.project_id) if args.project_id else None
+            ctx, optional_uuid(args.project_id, "project_id")
         )
         payload = _scan_create(args, ScanCreate)
 
@@ -115,11 +114,7 @@ def _scan_create(args: Input, model):
     overrides = {stage: {"enabled": True} for stage in args.stages}
     payload: dict = {"target_value": args.target.strip(), "overrides": overrides}
     if args.engine_id:
-        try:
-            payload["engine_id"] = uuid.UUID(args.engine_id)
-        except ValueError as exc:
-            msg = "engine_id must be a UUID."
-            raise ToolError(msg) from exc
+        payload["engine_id"] = parse_uuid(args.engine_id, "engine_id")
     if args.intensity:
         payload["intensity"] = args.intensity
     try:

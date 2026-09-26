@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import CodeBlock from '$lib/components/code-block.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
@@ -39,7 +40,7 @@
 				if (live) text = body;
 			})
 			.catch((e) => {
-				if (live) error = e instanceof Error ? e.message : 'Diff not loaded.';
+				if (live) error = errorMessage(e, 'Diff not loaded.');
 			})
 			.finally(() => {
 				if (live) loading = false;

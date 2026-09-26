@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from shared.enums.notification import NotificationSeverity, NotificationType
 from shared.models.notification import NotificationMetadata
 

@@ -5,6 +5,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
+
 from mcp import registry as mcp_registry
 from shared.definitions.channels import (
     CHANNEL_LABELS,
@@ -17,6 +19,8 @@ from shared.definitions.channels import (
     CommandSource,
 )
 from toolbox import registry as toolbox_registry
+
+pytestmark = pytest.mark.channels
 
 ROOT = Path(__file__).resolve().parents[2]
 MIRROR = Path("/app/frontend-config/channels.ts")

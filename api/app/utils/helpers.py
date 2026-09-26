@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlmodel import select
 
 from app.config import settings

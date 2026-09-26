@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
@@ -20,6 +21,7 @@
 	import { reportsApi } from '$lib/api/reports';
 	import { FORMAT_ICONS, FORMAT_LABELS, formatBytes } from '$lib/config/reports';
 	import {
+		closeDocument,
 		loadDocument,
 		pageSizes,
 		readOutline,
@@ -69,12 +71,12 @@
 				const bytes = await reportsApi.pdf(projectId, id);
 				const loaded = await loadDocument(bytes);
 				if (mine !== session) {
-					void loaded.destroy();
+					void closeDocument(loaded);
 					return;
 				}
 				const [measured, contents] = await Promise.all([pageSizes(loaded), readOutline(loaded)]);
 				if (mine !== session) {
-					void loaded.destroy();
+					void closeDocument(loaded);
 					return;
 				}
 				doc = loaded;
@@ -82,7 +84,7 @@
 				outline = contents;
 				page = 1;
 			} catch (err) {
-				if (mine === session) error = err instanceof Error ? err.message : 'Preview not loaded.';
+				if (mine === session) error = errorMessage(err, 'Preview not loaded.');
 			} finally {
 				if (mine === session) loading = false;
 			}
@@ -99,7 +101,7 @@
 		error = null;
 		fit = 'width';
 		page = 1;
-		void previous?.destroy();
+		if (previous) void closeDocument(previous);
 	});
 
 	function zoomIn() {

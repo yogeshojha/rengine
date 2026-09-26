@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { untrack } from 'svelte';
 	import KeyRoundIcon from '@lucide/svelte/icons/key-round';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
@@ -64,7 +65,7 @@
 		try {
 			connectors.upsert(await connectorsApi.update(connector.id, projectId, body));
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Change not saved.';
+			error = errorMessage(e, 'Change not saved.');
 		} finally {
 			saving = false;
 		}
@@ -88,7 +89,7 @@
 			confirmDelete = false;
 		} catch (e) {
 			confirmDelete = false;
-			error = e instanceof Error ? e.message : 'Connector not deleted.';
+			error = errorMessage(e, 'Connector not deleted.');
 		}
 	}
 

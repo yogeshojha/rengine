@@ -53,4 +53,4 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    pass
+    """Irreversible: backfilled names cannot be told apart from names a scan wrote."""

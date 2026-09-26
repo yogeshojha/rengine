@@ -235,8 +235,7 @@ class AssetSeedStage(Stage):
         try:
             client = DnsxClient(
                 timeout=_RESOLVE_TIMEOUT,
-                recorder=self.ctx.recorder,
-                extra_args=self.ctx.resolved.tool_args("dnsx"),
+                **self.wiring("dnsx"),
             )
         except DnsxError:
             logger.warning("dnsx unavailable, seeding hosts without resolution")

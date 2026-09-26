@@ -1,5 +1,6 @@
 import { bountyProgramsApi } from '$lib/api/bounty-programs';
 import type { BountyVocabulary, PlatformSpec } from '$lib/types/bounty-program';
+import { errorMessage } from '$lib/utilities/errors';
 
 class BountyVocabularyStore {
 	vocabulary = $state<BountyVocabulary | null>(null);
@@ -35,7 +36,7 @@ class BountyVocabularyStore {
 			this.fetched = true;
 			this.error = null;
 		} catch (e) {
-			this.error = e instanceof Error ? e.message : 'Bounty vocabulary not loaded';
+			this.error = errorMessage(e, 'Bounty vocabulary not loaded');
 		} finally {
 			this.loading = false;
 		}

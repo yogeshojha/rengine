@@ -218,8 +218,7 @@ class EndpointProbeStage(Stage):
             headers=net.headers,
             probe_scheme=net.probe_scheme,
             follow_redirects=self.follow_redirects(FOLLOW_REDIRECTS),
-            recorder=self.ctx.recorder,
-            extra_args=self.ctx.resolved.tool_args("httpx"),
+            **self.wiring("httpx"),
         )
 
     def _unavailable(

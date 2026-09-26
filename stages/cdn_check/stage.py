@@ -47,8 +47,7 @@ class CdnCheckStage(Stage):
 
         try:
             data = CdncheckClient(
-                recorder=self.ctx.recorder,
-                extra_args=self.ctx.resolved.tool_args("cdncheck"),
+                **self.wiring("cdncheck"),
             ).check(ips[:_MAX_IPS])
         except CdncheckError as exc:
             logger.warning("cdncheck unavailable, skipping CDN attribution")

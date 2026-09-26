@@ -116,8 +116,7 @@ class DalfoxScanner(VulnScanner):
                 proxy_url=ctx.net.proxy_url,
                 headers=ctx.net.headers,
                 follow_redirects=False,
-                recorder=ctx.recorder,
-                extra_args=ctx.resolved.tool_args("httpx"),
+                **ctx.wiring("httpx"),
             )
         except HttpxError as exc:
             logger.warning("reflection probe unavailable", error=str(exc))
@@ -155,8 +154,7 @@ class DalfoxScanner(VulnScanner):
         try:
             client = DalfoxClient(
                 options=options,
-                recorder=ctx.recorder,
-                extra_args=ctx.resolved.tool_args("dalfox"),
+                **ctx.wiring("dalfox"),
             )
         except DalfoxError as exc:
             coverage.status = CoverageStatus.SKIPPED.value

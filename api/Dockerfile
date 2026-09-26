@@ -18,9 +18,10 @@ FROM base AS development
 COPY shared /app/shared
 COPY tools /app/tools
 
-COPY api/pyproject.toml api/uv.lock* ./
+# the lockfile is required: a build resolves exactly what was locked and tested
+COPY api/pyproject.toml api/uv.lock ./
 
-RUN uv sync --no-install-project
+RUN uv sync --locked --no-install-project
 
 EXPOSE 8000
 
@@ -35,6 +36,7 @@ CMD ["/app/entrypoint.sh"]
 
 FROM development AS production
 
+# compose's &api-volumes, as copies; `make check-lists` keeps the two in step
 COPY api/app /app/app
 COPY stages /app/stages
 COPY reports /app/reports

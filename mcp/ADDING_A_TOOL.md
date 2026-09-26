@@ -124,6 +124,16 @@ raise ToolError(
 Anything else you raise is logged and returned as a generic failure, so prefer
 `ToolError` wherever the caller could do something about it.
 
+An id argument arrives as a string. Parse it with `mcp.tools._args` rather than
+`uuid.UUID(...)`, so a malformed id comes back as a `ToolError` naming the field:
+
+```python
+from mcp.tools._args import optional_uuid, parse_uuid
+
+scan_id = parse_uuid(args.scan, "scan")
+project_id = optional_uuid(args.project_id, "project_id")  # None when omitted
+```
+
 ## Working with the five dimensions
 
 If your tool is per-dimension, use the adapter rather than branching:

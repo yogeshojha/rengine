@@ -24,7 +24,7 @@ from .terms import (
     target_match,
 )
 from .values import like, network
-from .walk import walker
+from .walk import flag_builder, walker
 
 
 @dataclass(frozen=True)
@@ -102,18 +102,6 @@ _FLAG_BUILDERS = {
 }
 
 
-def _flag(cmp: Compare, ctx: SoftwareQueryContext):
-    branches = []
-    for raw in cmp.values:
-        builder = _FLAG_BUILDERS.get(raw.lower())
-        if builder is None:
-            msg = f"Unknown flag {raw!r}."
-            hint = f"Try one of: {', '.join(SOFTWARE_FLAGS)}"
-            raise QuerySyntaxError(msg, cmp.start, cmp.end, hint)
-        branches.append(builder(ctx))
-    return or_(*branches)
-
-
 _BUILDERS = {
     "target": lambda c, _ctx: target_match(SoftwareCve.target_id, c),
     "cve": lambda c, _ctx: string_match(SoftwareCve.cve, c),
@@ -135,7 +123,7 @@ _BUILDERS = {
     "seen": lambda c, ctx: date_match(
         SoftwareCve.discovered_at, c, ctx.now, future=False
     ),
-    "is": _flag,
+    "is": flag_builder(_FLAG_BUILDERS, SOFTWARE_FLAGS),
 }
 
 

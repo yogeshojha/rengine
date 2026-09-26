@@ -14,6 +14,8 @@ from channels.models import ChannelChat
 from channels.render import bold, chunk, code, data_lines, line, link, result_lines
 from mcp.result import ToolResult
 
+pytestmark = pytest.mark.channels
+
 
 def _utf16(text: str) -> int:
     return len(text.encode("utf-16-le")) // 2

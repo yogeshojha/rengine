@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Spinner } from '$lib/components/ui/spinner';
@@ -46,7 +47,7 @@
 				loaded = true;
 			} catch (e) {
 				scans = [];
-				error = e instanceof Error ? e.message : 'Runs not loaded.';
+				error = errorMessage(e, 'Runs not loaded.');
 			} finally {
 				loading = false;
 			}

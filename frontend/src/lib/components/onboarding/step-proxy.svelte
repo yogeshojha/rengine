@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Button } from '$lib/components/ui/button';
@@ -179,7 +180,7 @@
 				toast.error(result.message || 'Proxy test failed');
 			}
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Proxy test failed');
+			toast.error(errorMessage(e, 'Proxy test failed'));
 		} finally {
 			busy = false;
 		}
@@ -200,7 +201,7 @@
 			toast.success('Proxy saved as default');
 			next();
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Proxy not saved');
+			toast.error(errorMessage(e, 'Proxy not saved'));
 		} finally {
 			busy = false;
 		}

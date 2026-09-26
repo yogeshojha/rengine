@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from uuid import UUID
 
 from sqlalchemy import ColumnElement, Select, and_, func, literal, or_, select

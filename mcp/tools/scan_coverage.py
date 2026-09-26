@@ -32,7 +32,7 @@ class Input(ToolInput):
 class ScanCoverage(Tool):
     name = "scan_coverage"
     title = "Scan coverage"
-    group = ToolGroup.EXPLAIN.value
+    group = ToolGroup.EXPLAIN
     description = (
         "The scanner's account of a run: checks selected and loaded, hosts scanned, "
         "requests sent, errors and hosts abandoned. A null count means the scanner "

@@ -1,5 +1,6 @@
 import { scanEnginesApi } from '$lib/api/scan-engines';
 import type { ScanEngine, ScanEngineCreate, ScanEngineUpdate } from '$lib/types/scan-engine';
+import { errorMessage } from '$lib/utilities/errors';
 
 function createScanEnginesStore() {
 	let engines = $state<ScanEngine[]>([]);
@@ -38,7 +39,7 @@ function createScanEnginesStore() {
 				hasFetched = true;
 				fetchedProjectId = projectId;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Scan engines not loaded';
+				error = errorMessage(e, 'Scan engines not loaded');
 			} finally {
 				isLoading = false;
 			}
@@ -51,7 +52,7 @@ function createScanEnginesStore() {
 				engines = [...engines, created];
 				return created;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Scan engine not created';
+				error = errorMessage(e, 'Scan engine not created');
 				return null;
 			}
 		},
@@ -70,7 +71,7 @@ function createScanEnginesStore() {
 				}
 				return updated;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Scan engine not saved';
+				error = errorMessage(e, 'Scan engine not saved');
 				return null;
 			}
 		},
@@ -86,7 +87,7 @@ function createScanEnginesStore() {
 				}
 				return true;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Scan engine not deleted';
+				error = errorMessage(e, 'Scan engine not deleted');
 				return false;
 			}
 		},
@@ -98,7 +99,7 @@ function createScanEnginesStore() {
 				engines = [...engines, duplicate];
 				return duplicate;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Scan engine not duplicated';
+				error = errorMessage(e, 'Scan engine not duplicated');
 				return null;
 			}
 		},
@@ -113,7 +114,7 @@ function createScanEnginesStore() {
 				const res = await scanEnginesApi.exportYaml(id, projectId);
 				return res.yaml;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Scan engine not exported';
+				error = errorMessage(e, 'Scan engine not exported');
 				return null;
 			}
 		},
@@ -125,7 +126,7 @@ function createScanEnginesStore() {
 				engines = [...engines, imported];
 				return imported;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Scan engine not imported';
+				error = errorMessage(e, 'Scan engine not imported');
 				return null;
 			}
 		},

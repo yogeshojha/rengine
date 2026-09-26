@@ -9,13 +9,19 @@ from pathlib import Path
 import stages as stages_pkg
 from shared.definitions.intensity import PROFILES, RATE_TOOLS
 from shared.enums.scan import PHASE_ORDER, AssetKind, Intensity, StageGroup, StageRole
-from shared.plugins import classes_in_packages
+from shared.plugins import ConfiguredSpec, by_name, classes_in_packages, spec_of
 from stages.base import Stage
 from stages.config import StageConfig
 
 
 @dataclass(frozen=True)
-class StageSpec:
+class StageSpec(ConfiguredSpec):
+    """A registered stage: its class attributes, frozen, plus its dependency level.
+
+    Every field but `level` and `stage_cls` is read off the stage class under
+    the same name by `spec_of`, so a new `Stage` ClassVar needs only a field here.
+    """
+
     name: str
     title: str
     description: str
@@ -43,14 +49,6 @@ class StageSpec:
     stage_cls: type[Stage]
     config_model: type[StageConfig]
 
-    @property
-    def defaults(self) -> dict:
-        return self.config_model().model_dump()
-
-    @property
-    def schema(self) -> dict:
-        return self.config_model.model_json_schema()
-
     def transport(self, intensity: str, **scaling):
         """The stage's transport under this intensity, or None when it runs no tool."""
         if self.transport_tool is None:
@@ -68,19 +66,14 @@ _KINDS = frozenset(k.value for k in AssetKind)
 
 
 def _stage_classes() -> list[type[Stage]]:
-    found: dict[str, type[Stage]] = {}
-    for root in stages_pkg.__path__:
+    found = (
+        obj
+        for root in stages_pkg.__path__
         for obj in classes_in_packages(
             "stages", Path(root), Stage, submodules=("stage", "engine")
-        ):
-            name = getattr(obj, "name", None)
-            if not name:
-                msg = f"{obj.__qualname__} must set a `name`."
-                raise StageRegistrationError(msg)
-            if found.setdefault(name, obj) is not obj:
-                msg = f"Duplicate stage name {name!r}: {obj.__qualname__}."
-                raise StageRegistrationError(msg)
-    return list(found.values())
+        )
+    )
+    return list(by_name(found, kind="stage", error=StageRegistrationError).values())
 
 
 def _spec(stage_cls: type[Stage], level: int) -> StageSpec:
@@ -102,40 +95,19 @@ def _spec(stage_cls: type[Stage], level: int) -> StageSpec:
     if tool is not None and tool not in PROFILES[Intensity.NORMAL.value]:
         msg = f"{stage_cls.name}: no transport profile for {tool!r}."
         raise StageRegistrationError(msg)
-    return StageSpec(
-        name=stage_cls.name,
+    return spec_of(
+        StageSpec,
+        stage_cls,
         title=getattr(stage_cls, "title", None)
         or stage_cls.name.replace("_", " ").title(),
-        description=stage_cls.description,
-        phase=phase,
         level=level,
-        depends_on=frozenset(stage_cls.depends_on),
-        applies_to=frozenset(stage_cls.applies_to),
-        tools=tuple(stage_cls.tools),
-        api_keys=tuple(stage_cls.api_keys),
-        requires_api_keys=stage_cls.requires_api_keys,
-        touches_target=stage_cls.touches_target,
-        passive_capable=stage_cls.passive_capable,
-        deferrable=stage_cls.deferrable,
-        launch_fields=tuple(stage_cls.launch_fields),
-        catalog_hidden=stage_cls.catalog_hidden,
-        always_on=stage_cls.always_on,
-        consumes=frozenset(stage_cls.consumes),
-        produces=frozenset(stage_cls.produces),
-        group=stage_cls.group,
-        role=stage_cls.role,
-        transport_tool=stage_cls.transport_tool,
-        rate_weight=stage_cls.rate_weight,
-        thread_weight=stage_cls.thread_weight,
-        transport_timeout=stage_cls.transport_timeout,
         stage_cls=stage_cls,
-        config_model=stage_cls.config_model,
     )
 
 
 def _levels(classes: list[type[Stage]]) -> dict[str, int]:
     """Longest-path depth per stage — the barrier a stage may not start before."""
-    by_name = {cls.name: cls for cls in classes}
+    classes_by_name = {cls.name: cls for cls in classes}
     depth: dict[str, int] = {}
     resolving: set[str] = set()
 
@@ -147,8 +119,8 @@ def _levels(classes: list[type[Stage]]) -> dict[str, int]:
             raise StageRegistrationError(msg)
         resolving.add(name)
         value = 0
-        for dep in by_name[name].depends_on:
-            if dep not in by_name:
+        for dep in classes_by_name[name].depends_on:
+            if dep not in classes_by_name:
                 msg = f"{name}: depends_on names unknown stage {dep!r}."
                 raise StageRegistrationError(msg)
             value = max(value, _depth(dep) + 1)
@@ -156,7 +128,7 @@ def _levels(classes: list[type[Stage]]) -> dict[str, int]:
         depth[name] = value
         return value
 
-    for name in by_name:
+    for name in classes_by_name:
         _depth(name)
     return depth
 

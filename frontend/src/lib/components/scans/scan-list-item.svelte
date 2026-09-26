@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { goto } from '$app/navigation';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
@@ -91,7 +92,7 @@
 			rescanTotal = page.total;
 		} catch (e) {
 			rescanRuns = [];
-			rescansError = e instanceof Error ? e.message : 'Rechecks not loaded.';
+			rescansError = errorMessage(e, 'Rechecks not loaded.');
 		} finally {
 			rescansLoading = false;
 		}

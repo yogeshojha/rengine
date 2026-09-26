@@ -1,5 +1,6 @@
 import { scanEnginesApi } from '$lib/api/scan-engines';
 import type { EngineCatalog, StageCatalogEntry } from '$lib/types/scan-engine';
+import { errorMessage } from '$lib/utilities/errors';
 
 function createEngineCatalogStore() {
 	let catalog = $state<EngineCatalog | null>(null);
@@ -62,7 +63,7 @@ function createEngineCatalogStore() {
 				catalog = await scanEnginesApi.catalog();
 				hasFetched = true;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Engine catalog not loaded';
+				error = errorMessage(e, 'Engine catalog not loaded');
 			} finally {
 				isLoading = false;
 			}

@@ -6,6 +6,7 @@ import type {
 	RescanSchema,
 	SeedSelection
 } from '$lib/types/recheck';
+import { errorMessage } from '$lib/utilities/errors';
 
 const LIVE = new Set(['pending', 'running']);
 
@@ -73,7 +74,7 @@ export async function startRescan(
 		toast.success(runStarted(run, noun, nounPlural), { description: runDescription(run) });
 		return true;
 	} catch (e) {
-		toast.error(e instanceof Error ? e.message : 'Rescan not started');
+		toast.error(errorMessage(e, 'Rescan not started'));
 		return false;
 	}
 }

@@ -1,0 +1,35 @@
+# Version updates. Security alerts cover every lockfile regardless of this file.
+#
+# The api and worker uv projects are not listed: they depend on the shared and tools
+# packages through `file:///app/...` paths that exist only inside the images, so
+# Dependabot cannot resolve them and every update job fails. Bump them in the image
+# with `uv lock --upgrade-package <name>`; the images build with `uv sync --locked`,
+# which refuses a lockfile that no longer matches its pyproject.toml.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    groups:
+      frontend:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: uv
+    directory: /tools
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directories: [/api, /worker, /frontend]
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]

@@ -28,8 +28,7 @@ async def _add(
     caveats: list[str] | None = None,
     source: str = VersionSource.BANNER.value,
 ) -> None:
-    sid = estate.scans[scan]
-    target_id = await estate._target_of(sid)
+    ids = estate.row_ids(scan)
     caveats = caveats or []
     confidence = (
         Confidence.HIGH.value
@@ -40,9 +39,7 @@ async def _add(
     )
     estate.session.add(
         SoftwareCve(
-            project_id=estate.project_id,
-            scan_id=sid,
-            target_id=target_id,
+            **ids,
             fingerprint=f"{host}|{name}|{version}|{cve}",
             cve=cve,
             name=name,

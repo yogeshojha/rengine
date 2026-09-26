@@ -1,5 +1,6 @@
 import { interestApi } from '$lib/api/interest';
 import type { InterestCatalog, InterestKindEntry } from '$lib/types/interest';
+import { errorMessage } from '$lib/utilities/errors';
 
 class InterestCatalogStore {
 	catalog = $state<InterestCatalog | null>(null);
@@ -39,7 +40,7 @@ class InterestCatalogStore {
 			this.fetched = true;
 			this.error = null;
 		} catch (e) {
-			this.error = e instanceof Error ? e.message : 'Interest catalog not loaded';
+			this.error = errorMessage(e, 'Interest catalog not loaded');
 		} finally {
 			this.loading = false;
 		}

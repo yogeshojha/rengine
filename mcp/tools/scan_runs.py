@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
 from datetime import datetime
 
 from pydantic import Field
@@ -15,6 +14,7 @@ from mcp.dimensions import dimension
 from mcp.errors import ToolError
 from mcp.phrasing import elapsed, number, short_id
 from mcp.result import ToolResult
+from mcp.tools._args import parse_uuid
 from mcp.tools._scope import find_target
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.definitions.surface import SurfaceDimension
@@ -64,7 +64,7 @@ class ScanStatus(Tool):
     command = "progress"
     value_field = "scan"
     title = "Scan status"
-    group = ToolGroup.ORIENT.value
+    group = ToolGroup.ORIENT
     description = (
         "Status of a scan: stages finished, running and failed, and counts found so "
         "far. Pass a scan id, a target for its most recent run, or neither for every "
@@ -106,8 +106,8 @@ class CancelScan(Tool):
     command = "cancel"
     value_field = "scan"
     title = "Cancel a scan"
-    capability = Capability.LAUNCH.value
-    group = ToolGroup.ACT.value
+    capability = Capability.LAUNCH
+    group = ToolGroup.ACT
     description = (
         "Stop a running scan. Stages in flight are aborted. Results written so far "
         "are kept. Takes effect immediately."
@@ -169,8 +169,8 @@ class PauseScan(Tool):
     command = "pause"
     value_field = "scan"
     title = "Pause a scan"
-    capability = Capability.LAUNCH.value
-    group = ToolGroup.ACT.value
+    capability = Capability.LAUNCH
+    group = ToolGroup.ACT
     description = (
         "Pause a running scan. Stages in flight stop and run again from the start "
         "when the scan resumes. Results written so far are kept."
@@ -232,8 +232,8 @@ class ResumeScan(Tool):
     command = "resume"
     value_field = "scan"
     title = "Resume a scan"
-    capability = Capability.LAUNCH.value
-    group = ToolGroup.ACT.value
+    capability = Capability.LAUNCH
+    group = ToolGroup.ACT
     description = (
         "Resume a paused scan. It restarts at its first unfinished stage. Stages "
         "that already succeeded are not run again."
@@ -290,7 +290,7 @@ async def _one_run(
     hint: str = "Start one with start_scan.",
 ) -> Scan:
     if scan:
-        row = await ctx.session.get(Scan, _uuid(scan, "scan"))
+        row = await ctx.session.get(Scan, parse_uuid(scan, "scan"))
         if row is None:
             msg = (
                 f"No scan with id {scan!r}. Take the id from start_scan or scan_status."
@@ -493,11 +493,3 @@ def _elapsed(row: Scan) -> float | None:
     end = row.completed_at or row.paused_at or utc_now()
     ran = (end - start).total_seconds() - (row.paused_seconds or 0.0)
     return round(max(ran, 0.0), 1)
-
-
-def _uuid(value: str, field: str) -> uuid.UUID:
-    try:
-        return uuid.UUID(value)
-    except ValueError as exc:
-        msg = f"{field} must be a uuid, not {value!r}."
-        raise ToolError(msg) from exc

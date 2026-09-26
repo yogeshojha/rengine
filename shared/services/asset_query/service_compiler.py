@@ -14,7 +14,7 @@ from shared.models.subdomain import Subdomain
 from shared.models.vulnerability import Vulnerability
 
 from . import predicates as preds
-from .ast import Compare, QuerySyntaxError
+from .ast import Compare
 from .scope import QueryScope
 from .terms import (
     int_coerce,
@@ -26,7 +26,7 @@ from .terms import (
     tri_state,
 )
 from .values import PRIVATE_NETWORKS, asn_number, like, network
-from .walk import walker
+from .walk import flag_builder, walker
 
 _IPV4_RE = re.compile(r"^[0-9]{1,3}(\.[0-9]{1,3}){3}$")
 _IPV4 = 4
@@ -73,18 +73,6 @@ def _cdn(cmp: Compare, ctx: ServiceQueryContext):
     if state is None:
         return string_match(ctx.source.c.cdn_name, cmp)
     return ctx.source.c.is_cdn.is_(state)
-
-
-def _flag(cmp: Compare, ctx: ServiceQueryContext):
-    branches = []
-    for raw in cmp.values:
-        builder = _FLAG_BUILDERS.get(raw.lower())
-        if builder is None:
-            msg = f"Unknown flag {raw!r}."
-            hint = f"Try one of: {', '.join(SERVICE_FLAGS)}"
-            raise QuerySyntaxError(msg, cmp.start, cmp.end, hint)
-        branches.append(builder(ctx))
-    return or_(*branches)
 
 
 _FLAG_BUILDERS = {
@@ -139,7 +127,7 @@ _SERVICE_BUILDERS = {
         ctx.source.c.port,
         json_array_match(Vulnerability.cve_ids, c),
     ),
-    "is": _flag,
+    "is": flag_builder(_FLAG_BUILDERS, SERVICE_FLAGS),
 }
 
 

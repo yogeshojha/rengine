@@ -39,7 +39,7 @@ from .terms import (
     target_match,
 )
 from .values import asn_number, like, network
-from .walk import walker
+from .walk import flag_builder, walker
 
 _IPV4_RE = re.compile(r"^[0-9]{1,3}(\.[0-9]{1,3}){3}$")
 
@@ -87,18 +87,6 @@ def _address_meta(ctx: VulnQueryContext, condition):
     return Vulnerability.ip.in_(
         select(IpAddress.ip).where(ctx.scope.match(IpAddress.scan_id), condition)
     )
-
-
-def _flag(cmp: Compare, ctx: VulnQueryContext):
-    branches = []
-    for raw in cmp.values:
-        builder = _FLAG_BUILDERS.get(raw.lower())
-        if builder is None:
-            msg = f"Unknown flag {raw!r}."
-            hint = f"Try one of: {', '.join(VULN_FLAGS)}"
-            raise QuerySyntaxError(msg, cmp.start, cmp.end, hint)
-        branches.append(builder(ctx))
-    return or_(*branches)
 
 
 _FLAG_BUILDERS = {
@@ -196,7 +184,7 @@ _VULN_BUILDERS = {
     "seen": lambda c, ctx: date_match(
         Vulnerability.discovered_at, c, ctx.now, future=False
     ),
-    "is": _flag,
+    "is": flag_builder(_FLAG_BUILDERS, VULN_FLAGS),
 }
 
 

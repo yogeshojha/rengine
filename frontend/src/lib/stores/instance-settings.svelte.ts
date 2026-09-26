@@ -1,6 +1,8 @@
-import { instanceSettingsApi } from '$lib/api/instanceSettings';
+import { instanceSettingsApi } from '$lib/api/instance-settings';
 import type { InstanceSettings, InstanceSettingsUpdate } from '$lib/types/instance-settings';
+import type { ActionResult } from '$lib/types/action-result';
 import { toast } from 'svelte-sonner';
+import { errorMessage } from '$lib/utilities/errors';
 
 function createInstanceSettingsStore() {
 	let settings = $state<InstanceSettings | null>(null);
@@ -25,7 +27,7 @@ function createInstanceSettingsStore() {
 				settings = await instanceSettingsApi.get();
 				hasFetched = true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Instance settings not loaded');
+				toast.error(errorMessage(e, 'Instance settings not loaded'));
 			} finally {
 				isLoading = false;
 			}
@@ -36,7 +38,7 @@ function createInstanceSettingsStore() {
 				settings = await instanceSettingsApi.update(data);
 				return settings;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Instance settings not saved');
+				toast.error(errorMessage(e, 'Instance settings not saved'));
 				return null;
 			}
 		},
@@ -45,11 +47,11 @@ function createInstanceSettingsStore() {
 			provider: string;
 			model?: string;
 			api_key?: string;
-		}): Promise<{ success: boolean; message: string } | null> {
+		}): Promise<ActionResult | null> {
 			try {
 				return await instanceSettingsApi.testAi(data);
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'AI connection test failed');
+				toast.error(errorMessage(e, 'AI connection test failed'));
 				return null;
 			}
 		},

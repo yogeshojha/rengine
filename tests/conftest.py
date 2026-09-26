@@ -34,7 +34,8 @@ from shared.utils.datetime import utc_now
 TEST_DB = os.environ.get("POSTGRES_TEST_DB", "rengine_test")
 # one run of the suite at a time per database; a second waits rather than dropping it
 _RUN_LOCK = zlib.crc32(TEST_DB.encode()) - 2**31
-REPO_ROOT = Path(__file__).resolve().parent.parent
+TESTS_ROOT = Path(__file__).resolve().parent
+REPO_ROOT = TESTS_ROOT.parent
 ALEMBIC = shutil.which("alembic") or str(Path(sys.executable).parent / "alembic")
 
 
@@ -52,6 +53,30 @@ def _test_url(driver: str = "postgresql+asyncpg") -> str:
         f"{driver}://{s.POSTGRES_USER}:{s.POSTGRES_PASSWORD}"
         f"@{s.POSTGRES_HOST}:{s.POSTGRES_PORT}/{TEST_DB}"
     )
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    """Every test carries the marker its directory is named after.
+
+    A `pytestmark` in a conftest does not reach the modules beside it, so each module
+    sets its own, and a module that forgets is refused here, before `-m` deselects it.
+    """
+    unmarked = sorted(
+        {
+            str(item.path.relative_to(TESTS_ROOT))
+            for item in items
+            if item.path.is_relative_to(TESTS_ROOT)
+            and item.get_closest_marker(item.path.relative_to(TESTS_ROOT).parts[0])
+            is None
+        }
+    )
+    if unmarked:
+        msg = (
+            "These test modules lack the marker of their directory; set "
+            "`pytestmark = pytest.mark.<directory>` in each: " + ", ".join(unmarked)
+        )
+        raise pytest.UsageError(msg)
 
 
 @asynccontextmanager
@@ -121,6 +146,7 @@ class Estate:
         self.user_id = uuid.uuid4()
         self.targets: dict[str, uuid.UUID] = {}
         self.scans: dict[str, uuid.UUID] = {}
+        self._scan_targets: dict[uuid.UUID, uuid.UUID] = {}
 
     async def setup(self) -> Estate:
         self.session.add(
@@ -193,7 +219,17 @@ class Estate:
         )
         await self.session.flush()
         self.scans[name] = sid
+        self._scan_targets[sid] = tid
         return sid
+
+    def row_ids(self, scan: str) -> dict[str, uuid.UUID]:
+        """The project, scan and target ids every row the named scan found carries."""
+        sid = self.scans[scan]
+        return {
+            "project_id": self.project_id,
+            "scan_id": sid,
+            "target_id": self._scan_targets[sid],
+        }
 
     async def hosts(
         self,
@@ -212,14 +248,11 @@ class Estate:
         sources: list[str] | None = None,
         phash: int | None = None,
     ) -> None:
-        sid = self.scans[scan]
-        target_id = await self._target_of(sid)
+        ids = self.row_ids(scan)
         for n in names:
             self.session.add(
                 Subdomain(
-                    project_id=self.project_id,
-                    scan_id=sid,
-                    target_id=target_id,
+                    **ids,
                     name=n,
                     discovered_at=at,
                     sources=sources or ["test"],
@@ -232,7 +265,9 @@ class Estate:
                     is_cdn=cdn_name is not None,
                     cdn_name=cdn_name,
                     favicon_hash=favicon,
-                    screenshot_path=f"{sid}/screenshot/{n}.png" if phash else None,
+                    screenshot_path=f"{ids['scan_id']}/screenshot/{n}.png"
+                    if phash
+                    else None,
                     screenshot_phash=phash,
                 )
             )
@@ -252,14 +287,11 @@ class Estate:
         issuer: str | None = None,
         body: str | None = None,
     ) -> None:
-        sid = self.scans[scan]
-        target_id = await self._target_of(sid)
+        ids = self.row_ids(scan)
         for host in rows:
             self.session.add(
                 HttpAsset(
-                    project_id=self.project_id,
-                    scan_id=sid,
-                    target_id=target_id,
+                    **ids,
                     url=f"https://{host}:{port}",
                     host=host,
                     port=port,
@@ -287,16 +319,13 @@ class Estate:
         interest: list[str] | None = None,
         params: int = 0,
     ) -> None:
-        sid = self.scans[scan]
-        target_id = await self._target_of(sid)
+        ids = self.row_ids(scan)
         for path in paths:
             directory, _, filename = path.rpartition("/")
             extension = filename.rpartition(".")[2] if "." in filename else None
             self.session.add(
                 Endpoint(
-                    project_id=self.project_id,
-                    scan_id=sid,
-                    target_id=target_id,
+                    **ids,
                     signature=uuid.uuid4().hex,
                     url=f"https://{host}{path}",
                     host=host,
@@ -343,14 +372,11 @@ class Estate:
         host: str = "www.example.com",
         kev: bool = False,
     ) -> None:
-        sid = self.scans[scan]
-        target_id = await self._target_of(sid)
+        ids = self.row_ids(scan)
         for fingerprint, severity in rows:
             self.session.add(
                 Vulnerability(
-                    project_id=self.project_id,
-                    scan_id=sid,
-                    target_id=target_id,
+                    **ids,
                     fingerprint=fingerprint,
                     template_id=fingerprint,
                     template_name=fingerprint.replace("-", " ").title(),
@@ -363,22 +389,14 @@ class Estate:
             )
         await self.session.flush()
 
-    async def _target_of(self, scan_id: uuid.UUID) -> uuid.UUID:
-        return await self.session.scalar(
-            sa.select(Scan.target_id).where(Scan.id == scan_id)
-        )
-
     async def ports(
         self, scan: str, rows: list[tuple[str, int, str]], *, at: datetime
     ) -> None:
-        sid = self.scans[scan]
-        target_id = await self._target_of(sid)
+        ids = self.row_ids(scan)
         for ip, number, service in rows:
             self.session.add(
                 Port(
-                    project_id=self.project_id,
-                    scan_id=sid,
-                    target_id=target_id,
+                    **ids,
                     ip=ip,
                     number=number,
                     protocol="tcp",

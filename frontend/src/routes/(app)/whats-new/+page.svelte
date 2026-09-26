@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import { untrack } from 'svelte';
@@ -369,7 +370,7 @@
 			if (cursor >= rows.length) cursor = rows.length - 1;
 		} catch (e) {
 			if (my !== reqId) return;
-			error = e instanceof Error ? e.message : 'Feed not loaded';
+			error = errorMessage(e, 'Feed not loaded');
 		} finally {
 			if (my === reqId) loading = false;
 		}
@@ -391,7 +392,7 @@
 			visual = res;
 		} catch (e) {
 			if (my !== visualReq) return;
-			toast.error(e instanceof Error ? e.message : 'Visual changes not loaded');
+			toast.error(errorMessage(e, 'Visual changes not loaded'));
 		} finally {
 			if (my === visualReq) visualLoading = false;
 		}
@@ -516,7 +517,7 @@
 			selection.clear();
 			await load();
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Not marked');
+			toast.error(errorMessage(e, 'Not marked'));
 		} finally {
 			catchingUp = false;
 		}
@@ -562,7 +563,7 @@
 			void load(true);
 			void whatsNewStore.fetch(projectId, true);
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Target not added');
+			toast.error(errorMessage(e, 'Target not added'));
 		} finally {
 			for (const i of wanted) busy.delete(i.id);
 		}
@@ -587,7 +588,7 @@
 			);
 			selection.clear();
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Host not updated');
+			toast.error(errorMessage(e, 'Host not updated'));
 		} finally {
 			for (const i of wanted) busy.delete(i.id);
 		}
@@ -609,7 +610,7 @@
 			});
 			selection.clear();
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Rescan not started');
+			toast.error(errorMessage(e, 'Rescan not started'));
 		} finally {
 			for (const i of items) busy.delete(i.id);
 		}
@@ -630,7 +631,7 @@
 			removeFor = null;
 			void load(true);
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Target not removed');
+			toast.error(errorMessage(e, 'Target not removed'));
 		} finally {
 			removing = false;
 		}
@@ -719,7 +720,7 @@
 			}
 			sheetOpen = true;
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Row not loaded');
+			toast.error(errorMessage(e, 'Row not loaded'));
 		} finally {
 			opening = null;
 		}
@@ -743,7 +744,7 @@
 			sheetSub = hit;
 			sheetOpen = true;
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Row not loaded');
+			toast.error(errorMessage(e, 'Row not loaded'));
 		} finally {
 			opening = null;
 		}

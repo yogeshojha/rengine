@@ -104,8 +104,7 @@ class SeedResolutionStage(Stage):
             return self._from_ip(str(addr))
         try:
             recon = DnsxService(
-                recorder=self.ctx.recorder,
-                extra_args=self.ctx.resolved.tool_args("dnsx"),
+                **self.wiring("dnsx"),
             ).do_recon(host)
         except DnsxLookupError as exc:
             logger.warning("URL seed %s did not resolve: %s", host, exc)

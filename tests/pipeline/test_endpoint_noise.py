@@ -25,14 +25,11 @@ def _seen(url: str, **kw) -> EndpointObservation:
 
 
 async def _upsert(estate, scan, observations, policy=None, sifter=None):
-    sid = estate.scans[scan]
-    target_id = await estate._target_of(sid)
+    ids = estate.row_ids(scan)
     return await estate.session.run_sync(
         lambda s: endpoint_inventory.upsert(
             s,
-            scan_id=sid,
-            target_id=target_id,
-            project_id=estate.project_id,
+            **ids,
             source=EndpointSource.CRAWL.value,
             observations=observations,
             policy=policy,
@@ -263,7 +260,7 @@ async def test_a_disabled_policy_stores_everything_as_given(estate, now):
 async def test_one_sifter_remembers_across_calls(estate, now):
     await estate.scan("example.com", "run", at=now)
     sid = estate.scans["run"]
-    target_id = await estate._target_of(sid)
+    ids = estate.row_ids("run")
 
     def run(session):
         sifter = Sifter(session, sid, NoisePolicy(keep_per_family=2))
@@ -272,9 +269,7 @@ async def test_one_sifter_remembers_across_calls(estate, now):
             out.append(
                 endpoint_inventory.upsert(
                     session,
-                    scan_id=sid,
-                    target_id=target_id,
-                    project_id=estate.project_id,
+                    **ids,
                     source=EndpointSource.CRAWL.value,
                     observations=[
                         _seen(f"https://www.example.com/page/{i}") for i in batch

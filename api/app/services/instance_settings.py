@@ -1,9 +1,10 @@
+from __future__ import annotations
+
 import asyncio
 from zoneinfo import ZoneInfo
 
 import httpx
 from fastapi import HTTPException, status
-from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -49,11 +50,7 @@ class InstanceSettingsService:
         self.session = session
 
     async def get_or_create(self) -> InstanceSettings:
-        result = await self.session.execute(
-            select(InstanceSettings).where(
-                InstanceSettings.singleton_key == SINGLETON_KEY
-            )
-        )
+        result = await self.session.execute(InstanceSettings.singleton())
         settings = result.scalar_one_or_none()
         if settings is None:
             settings = InstanceSettings(singleton_key=SINGLETON_KEY)
@@ -63,11 +60,7 @@ class InstanceSettingsService:
                 await self.session.refresh(settings)
             except IntegrityError:
                 await self.session.rollback()
-                result = await self.session.execute(
-                    select(InstanceSettings).where(
-                        InstanceSettings.singleton_key == SINGLETON_KEY
-                    )
-                )
+                result = await self.session.execute(InstanceSettings.singleton())
                 settings = result.scalar_one()
         return settings
 

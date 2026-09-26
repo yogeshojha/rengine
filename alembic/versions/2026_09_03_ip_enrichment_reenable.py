@@ -30,4 +30,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    pass
+    """Irreversible: which engines carried the stale false is not recorded, and
+    the stage default now answers for them.
+    """

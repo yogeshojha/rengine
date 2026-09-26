@@ -32,9 +32,7 @@ async def _ranges(estate, rows: list[tuple[str, str, int, str]]) -> None:
 async def _address(estate, scan: str, ip: str) -> None:
     estate.session.add(
         IpAddress(
-            project_id=estate.project_id,
-            scan_id=estate.scans[scan],
-            target_id=await estate._target_of(estate.scans[scan]),
+            **estate.row_ids(scan),
             ip=ip,
             source=IpSource.DNS_RESOLUTION.value,
         )

@@ -20,4 +20,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    pass
+    """Nothing to restore: a cleared version only makes the next NVD sync rebuild
+    the corpus, which it does under either schema.
+    """

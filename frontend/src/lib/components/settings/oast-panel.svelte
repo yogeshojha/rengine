@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { onMount } from 'svelte';
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
@@ -101,7 +102,7 @@
 			apply(await oastApi.get());
 			error = null;
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Request failed.';
+			error = errorMessage(e, 'Request failed.');
 		} finally {
 			loading = false;
 		}
@@ -141,7 +142,7 @@
 			result = null;
 			toast.success('Out-of-band settings saved');
 		} catch (e) {
-			const message = e instanceof Error ? e.message : 'Settings not saved';
+			const message = errorMessage(e, 'Settings not saved');
 			if (mode === OastMode.SELF_HOSTED) serverError = message;
 			else toast.error(message);
 		} finally {
@@ -156,7 +157,7 @@
 		} catch (e) {
 			result = {
 				ok: false,
-				detail: e instanceof Error ? e.message : 'Request failed.',
+				detail: errorMessage(e, 'Request failed.'),
 				address: null,
 				status_code: null
 			};
@@ -173,7 +174,7 @@
 			resetOpen = false;
 			toast.success('Out-of-band settings cleared');
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Settings not cleared');
+			toast.error(errorMessage(e, 'Settings not cleared'));
 		} finally {
 			resetting = false;
 		}

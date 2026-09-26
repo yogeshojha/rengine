@@ -101,8 +101,9 @@ addopts = "-q --strict-markers --strict-config"
 markers = [
     "grammar: invariants of the asset query language",
     "pipeline: scan orchestration and stage behaviour",
-    "api: exercised through the HTTP surface",
+    "api: the API's services and route handlers, called in process",
     "hygiene: hardening checks read off stored responses",
     "posture: sender, mail and zone checks read from DNS",
     "channels: remote control over a chat channel",
+    "mcp: the MCP server's tool registry and each tool's declared contract",
 ]

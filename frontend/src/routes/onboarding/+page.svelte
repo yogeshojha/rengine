@@ -40,7 +40,7 @@
 		{
 			key: 'two-factor',
 			title: 'Two-factor authentication',
-			description: 'Add a second factor with an authenticator app.',
+			description: 'A second sign-in factor from an authenticator app.',
 			icon: ShieldCheckIcon,
 			component: StepTwoFactor
 		},

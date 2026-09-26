@@ -46,8 +46,7 @@ class WafDetectStage(Stage):
                 proxy_url=net.proxy_url,
                 headers=net.headers,
                 concurrency=self.transport.threads,
-                recorder=self.ctx.recorder,
-                extra_args=self.ctx.resolved.tool_args("wafw00f"),
+                **self.wiring("wafw00f"),
             )
         except Wafw00fError:
             logger.warning("wafw00f unavailable, skipping WAF detection")

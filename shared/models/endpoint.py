@@ -3,8 +3,6 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 from pydantic import Field as PydanticField
-from sqlalchemy import Column, Text
-from sqlalchemy.types import JSON
 from sqlmodel import Field, Index, SQLModel, UniqueConstraint
 
 from shared.definitions.asset_query import MAX_QUERY_LENGTH
@@ -19,20 +17,9 @@ from shared.definitions.endpoints import (
 )
 from shared.definitions.surface import MAX_SELECTED_ROWS
 from shared.definitions.vulnerabilities import CoverageStatus
+from shared.models._columns import json_dict, json_list, nullable_text
 from shared.models.asset_query import MatchEvidence, QueryError
 from shared.utils.datetime import utc_now
-
-
-def _json_list() -> Field:
-    return Field(default_factory=list, sa_column=Column(JSON, nullable=False))
-
-
-def _json_dict() -> Field:
-    return Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
-
-
-def _text() -> Field:
-    return Field(default=None, sa_column=Column(Text, nullable=True))
 
 
 class Endpoint(SQLModel, table=True):
@@ -65,19 +52,19 @@ class Endpoint(SQLModel, table=True):
     depth: int = Field(default=0, index=True)
 
     # what it accepts
-    params: list = _json_list()
+    params: list = json_list()
     param_count: int = Field(default=0, index=True)
-    param_samples: list = _json_list()
+    param_samples: list = json_list()
     variants: int = Field(default=1)
     more_variants: bool = Field(default=False)
-    methods: list = _json_list()
+    methods: list = json_list()
 
     # who says so
-    sources: list = _json_list()
+    sources: list = json_list()
     primary_source: str = Field(
         default=EndpointSource.OTHER.value, max_length=24, index=True
     )
-    discovery: dict = _json_dict()
+    discovery: dict = json_dict()
     found_on: str | None = Field(default=None, max_length=2000)
 
     # what it answered, if anything asked
@@ -91,13 +78,13 @@ class Endpoint(SQLModel, table=True):
     response_time: float | None = Field(default=None)
     redirect_location: str | None = Field(default=None, max_length=2000)
     content_hash: str | None = Field(default=None, max_length=80, index=True)
-    tech: list = _json_list()
+    tech: list = json_list()
 
     # how it reads
     endpoint_class: str = Field(
         default=EndpointClass.OTHER.value, max_length=16, index=True
     )
-    interest: list = _json_list()
+    interest: list = json_list()
 
     http_asset_id: uuid.UUID | None = Field(default=None, index=True)
     subdomain_id: uuid.UUID | None = Field(default=None, index=True)
@@ -116,8 +103,8 @@ class EndpointResponse(SQLModel, table=True):
         primary_key=True, foreign_key="endpoints.id", ondelete="CASCADE"
     )
     scan_id: uuid.UUID = Field(foreign_key="scans.id", index=True, ondelete="CASCADE")
-    raw_response_header: str | None = _text()
-    response_body: str | None = _text()
+    raw_response_header: str | None = nullable_text()
+    response_body: str | None = nullable_text()
     created_at: datetime = Field(default_factory=utc_now)
 
 
@@ -139,7 +126,7 @@ class EndpointCoverage(SQLModel, table=True):
 
     hosts_total: int = Field(default=0)
     hosts_scanned: int | None = Field(default=None)
-    hosts_dropped: list = _json_list()
+    hosts_dropped: list = json_list()
     urls_found: int | None = Field(default=None)
     urls_stored: int | None = Field(default=None)
     urls_probed: int | None = Field(default=None)
@@ -148,9 +135,9 @@ class EndpointCoverage(SQLModel, table=True):
     errors: int | None = Field(default=None)
     capped: bool = Field(default=False)
     cap_reason: str | None = Field(default=None, max_length=200)
-    urls_dropped: dict = _json_dict()
+    urls_dropped: dict = json_dict()
 
-    command: str | None = _text()
+    command: str | None = nullable_text()
     error: str | None = Field(default=None, max_length=2000)
 
     started_at: datetime = Field(default_factory=utc_now)

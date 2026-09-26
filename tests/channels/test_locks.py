@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import asyncio
 
+import pytest
+
 from channels.base import ChatLocks
+
+pytestmark = pytest.mark.channels
 
 
 async def test_one_chat_is_handled_one_message_at_a_time():

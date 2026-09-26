@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import uuid
-
 from pydantic import Field
 
 from mcp import links
 from mcp.context import ToolContext
 from mcp.phrasing import number, stamp
 from mcp.result import ToolResult
+from mcp.tools._args import optional_uuid
 from mcp.tools._scope import project_for
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.definitions.dashboard import DEFAULT_WINDOW, WINDOW_DELTAS
@@ -36,7 +35,7 @@ class WhatChanged(Tool):
     command = "changes"
     value_field = "window"
     title = "What changed"
-    group = ToolGroup.INTERROGATE.value
+    group = ToolGroup.INTERROGATE
     description = (
         "New web assets, services, endpoints, addresses and findings per target over "
         "a window, plus targets not scanned or stale. Counts items first reported in "
@@ -53,7 +52,7 @@ class WhatChanged(Tool):
 
         window = args.window if args.window in WINDOWS else DEFAULT_WINDOW
         project_id = await project_for(
-            ctx, uuid.UUID(args.project_id) if args.project_id else None
+            ctx, optional_uuid(args.project_id, "project_id")
         )
         overview = await DashboardOverviewService(ctx.session).overview(
             project_id, window

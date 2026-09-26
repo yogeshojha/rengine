@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { toast } from 'svelte-sonner';
 	import * as Sheet from '$lib/components/ui/sheet';
 	import * as Select from '$lib/components/ui/select';
@@ -57,7 +58,7 @@
 			preview = await interestApi.preview(query);
 		} catch (e) {
 			preview = null;
-			toast.error(e instanceof Error ? e.message : 'Query not checked');
+			toast.error(errorMessage(e, 'Query not checked'));
 		} finally {
 			checking = false;
 		}
@@ -89,7 +90,7 @@
 			toast.success(isEdit ? `${saved.name} saved` : `${saved.name} added`);
 			onSaved(saved);
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Rule not saved');
+			toast.error(errorMessage(e, 'Rule not saved'));
 		} finally {
 			saving = false;
 		}

@@ -10,6 +10,10 @@ concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: false
 
+# the images go to Docker Hub with its own credentials; the token only checks out
+permissions:
+  contents: read
+
 jobs:
   build-and-push:
     name: 🐳 Push ${{ matrix.image }}
@@ -25,8 +29,8 @@ jobs:
             dockerfile: worker/Dockerfile
             target: production
           - image: frontend
-            dockerfile: frontend/Dockerfile.dev
-            target: ""
+            dockerfile: frontend/Dockerfile
+            target: production
     steps:
       - name: 📥 Checkout the git repo
         uses: actions/checkout@v4

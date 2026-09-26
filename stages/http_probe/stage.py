@@ -120,8 +120,7 @@ class HttpProbeStage(Stage):
                 headers=net.headers,
                 probe_scheme=net.probe_scheme,
                 follow_redirects=self.follow_redirects(FOLLOW_REDIRECTS),
-                recorder=self.ctx.recorder,
-                extra_args=self.ctx.resolved.tool_args("httpx"),
+                **self.wiring("httpx"),
             )
         except HttpxError as exc:
             logger.warning("httpx unavailable, skipping HTTP probe")

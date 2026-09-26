@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import { onDestroy, untrack } from 'svelte';
@@ -552,7 +553,7 @@
 				statusChanged || !historyLoaded ? loadHistory(project.id, scan.target_id) : null
 			]);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Scan not loaded';
+			error = errorMessage(e, 'Scan not loaded');
 		} finally {
 			if (!silent) loading = false;
 		}
@@ -673,7 +674,7 @@
 			toast.success('Export started');
 		} catch (e) {
 			bundling = false;
-			toast.error(e instanceof Error ? e.message : 'Export not started.');
+			toast.error(errorMessage(e, 'Export not started.'));
 		}
 	}
 </script>

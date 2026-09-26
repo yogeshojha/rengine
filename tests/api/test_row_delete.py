@@ -76,9 +76,7 @@ async def test_an_issue_deletes_every_finding_of_that_check(estate, now):
     scan_id = estate.scans["run"]
     estate.session.add(
         Vulnerability(
-            project_id=estate.project_id,
-            scan_id=scan_id,
-            target_id=await estate._target_of(scan_id),
+            **estate.row_ids("run"),
             fingerprint="weak-tls-a-2",
             template_id="weak-tls-a",
             template_name="Weak Tls A",
@@ -106,12 +104,9 @@ async def test_an_issue_deletes_every_finding_of_that_check(estate, now):
 
 async def test_a_deleted_secret_takes_its_sightings(estate, now):
     await _seed(estate, now)
-    scan_id = estate.scans["run"]
-    target_id = await estate._target_of(scan_id)
+    ids = estate.row_ids("run")
     secret = Secret(
-        project_id=estate.project_id,
-        scan_id=scan_id,
-        target_id=target_id,
+        **ids,
         fingerprint="f" * 8,
         kind="google_api_key",
         group="cloud",
@@ -125,9 +120,7 @@ async def test_a_deleted_secret_takes_its_sightings(estate, now):
     estate.session.add(
         SecretSighting(
             secret_id=secret.id,
-            scan_id=scan_id,
-            target_id=target_id,
-            project_id=estate.project_id,
+            **ids,
             host="www.example.com",
             url="https://www.example.com/app.js",
         )
@@ -142,7 +135,7 @@ async def test_a_deleted_secret_takes_its_sightings(estate, now):
     left = await estate.session.scalar(
         sa.select(sa.func.count()).select_from(
             sa.select(SecretSighting.id)
-            .where(SecretSighting.scan_id == scan_id)
+            .where(SecretSighting.scan_id == ids["scan_id"])
             .subquery()
         )
     )

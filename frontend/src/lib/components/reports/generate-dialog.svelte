@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { untrack } from 'svelte';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
@@ -187,7 +188,7 @@
 			})
 			.catch((e) => {
 				estimate = null;
-				estimateError = e instanceof Error ? e.message : 'Request failed.';
+				estimateError = errorMessage(e, 'Request failed.');
 			})
 			.finally(() => (estimating = false));
 	});

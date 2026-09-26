@@ -4,7 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from fastapi_pagination import Page
-from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi_pagination.ext.sqlalchemy import apaginate
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -153,7 +153,7 @@ async def list_events(
     if platform:
         BountyProgramService.require_platform(platform)
     query = await service.events(platform, kind=kind, handle=handle)
-    page = await paginate(session, query)
+    page = await apaginate(session, query)
     page.items = [BountyProgramService.event_read(r) for r in page.items]
     return page
 
@@ -290,7 +290,7 @@ async def list_programs(
         joined=joined,
         scope=scope,
     )
-    page = await paginate(session, query)
+    page = await apaginate(session, query)
     page.items = await service.to_read(list(page.items), project_id)
     return page
 
@@ -411,7 +411,7 @@ async def list_watch_hosts(
 ) -> Page[WatchHostRead]:
     await _require_watches(session)
     await watches.ensure(watch_id, project_id)
-    return await paginate(
+    return await apaginate(
         session,
         watches.hosts_query(watch_id, state=state, since=since, q=q),
         transformer=lambda rows: [WatchService.host_read(r) for r in rows],
@@ -456,7 +456,7 @@ async def list_watch_events(
 ) -> Page[WatchEventRead]:
     await _require_watches(session)
     await watches.ensure(watch_id, project_id)
-    return await paginate(
+    return await apaginate(
         session,
         watches.events_query(watch_id, kind=kind, since=since),
         transformer=lambda rows: [WatchService.event_read(r) for r in rows],

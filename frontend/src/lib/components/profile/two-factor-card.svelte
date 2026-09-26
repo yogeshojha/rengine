@@ -1,9 +1,10 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { onMount } from 'svelte';
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { auth } from '$lib/stores/auth.svelte';
 	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
-	import { twoFactorApi } from '$lib/api/twoFactor';
+	import { twoFactorApi } from '$lib/api/two-factor';
 	import OtpInput from '$lib/components/onboarding/otp-input.svelte';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
@@ -96,7 +97,7 @@
 			const res = await twoFactorApi.status();
 			twoFactorEnabled = res.enabled;
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Two-factor status not loaded');
+			toast.error(errorMessage(error, 'Two-factor status not loaded'));
 		} finally {
 			twoFactorLoading = false;
 		}
@@ -113,7 +114,7 @@
 			backupCodesSaved = false;
 			setupOpen = true;
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Two-factor setup not started');
+			toast.error(errorMessage(error, 'Two-factor setup not started'));
 		} finally {
 			isSettingUp = false;
 		}
@@ -133,7 +134,7 @@
 			await auth.checkAuth();
 			toast.success('Two-factor authentication enabled');
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Invalid code');
+			toast.error(errorMessage(error, 'Invalid code'));
 		} finally {
 			isVerifying = false;
 		}
@@ -173,7 +174,7 @@
 			await auth.checkAuth();
 			toast.success('Two-factor authentication disabled');
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Invalid code');
+			toast.error(errorMessage(error, 'Invalid code'));
 		} finally {
 			isDisabling = false;
 		}

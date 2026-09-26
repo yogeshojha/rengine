@@ -35,7 +35,7 @@ class Input(ToolInput):
 class GroupAssets(Tool):
     name = "group_assets"
     title = "Group assets"
-    group = ToolGroup.INTERROGATE.value
+    group = ToolGroup.INTERROGATE
     description = (
         "Count a target's surface by a group key: technology, status, ASN, country, "
         "severity, service class. Each group carries the query that isolates it."

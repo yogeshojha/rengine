@@ -69,7 +69,7 @@
 
 	function proxyName(context: ScanContextRead): string | null {
 		if (!context.proxy_id) return null;
-		return proxiesStore.proxies.find((p) => p.id === context.proxy_id)?.name ?? null;
+		return proxiesStore.items.find((p) => p.id === context.proxy_id)?.name ?? null;
 	}
 
 	function lastUsed(context: ScanContextRead): number {

@@ -1,5 +1,8 @@
-# every image that runs worker code mounts the same tree, so beat, the stream
-# and flower cannot drift from the worker
+# Every service that runs an image's code mounts that image's one list, so the
+# stream, beat and flower cannot drift from the worker, nor channels from the
+# api. A mount one of them does not use is harmless; a missing one is a stale
+# module. The code directories here are checked against the Makefile's
+# PACKAGES, the Dockerfiles and api/entrypoint.sh by `make check-lists`.
 x-worker-volumes: &worker-volumes
   - ./worker/app:/app/app
   - ./shared:/app/shared
@@ -8,6 +11,38 @@ x-worker-volumes: &worker-volumes
   - ./reports:/app/reports
   - ./interest:/app/interest
   - ./toolbox:/app/toolbox
+  - ./scan_media:/app/scan_media
+  - vuln_templates:/app/vuln-templates
+  - wordlists:/app/wordlists
+  - reports_out:/app/reports-out
+  - exports_out:/app/exports-out
+  - report_fonts:/app/report-fonts
+  # the certificate transparency stream's cursor
+  - ct_state:/app/ct-state
+  # the editable installs the image built; a host mount must not shadow them
+  - /app/shared/build
+  - /app/shared/rengine_shared.egg-info
+  - /app/tools/build
+  - /app/tools/rengine_tools.egg-info
+
+x-api-volumes: &api-volumes
+  - ./api/app:/app/app
+  - ./shared:/app/shared
+  - ./tools:/app/tools
+  - ./stages:/app/stages
+  - ./reports:/app/reports
+  - ./interest:/app/interest
+  - ./mcp:/app/mcp
+  - ./channels:/app/channels
+  - ./connectors:/app/connectors
+  - ./toolbox:/app/toolbox
+  - ./binaries:/app/binaries:ro
+  - ./alembic:/app/alembic
+  - ./alembic.ini:/app/alembic.ini
+  - ./tests:/app/tests
+  - ./pyproject.toml:/app/pyproject.toml
+  # read-only, so the tests can check a frontend mirror has not drifted
+  - ./frontend/src/lib/config:/app/frontend-config:ro
   - ./scan_media:/app/scan_media
   - vuln_templates:/app/vuln-templates
   - wordlists:/app/wordlists
@@ -82,34 +117,7 @@ services:
       context: .
       dockerfile: api/Dockerfile
       target: development
-    volumes:
-      - ./api/app:/app/app
-      - ./shared:/app/shared
-      - ./tools:/app/tools
-      - ./stages:/app/stages
-      - ./reports:/app/reports
-      - ./interest:/app/interest
-      - ./mcp:/app/mcp
-      - ./channels:/app/channels
-      - ./connectors:/app/connectors
-      - ./toolbox:/app/toolbox
-      - ./binaries:/app/binaries:ro
-      - ./alembic:/app/alembic
-      - ./alembic.ini:/app/alembic.ini
-      - ./tests:/app/tests
-      - ./pyproject.toml:/app/pyproject.toml
-      # read-only, so the tests can check a frontend mirror has not drifted
-      - ./frontend/src/lib/config:/app/frontend-config:ro
-      - ./scan_media:/app/scan_media
-      - vuln_templates:/app/vuln-templates
-      - wordlists:/app/wordlists
-      - reports_out:/app/reports-out
-      - exports_out:/app/exports-out
-      - report_fonts:/app/report-fonts
-      - /app/shared/build
-      - /app/shared/rengine_shared.egg-info
-      - /app/tools/build
-      - /app/tools/rengine_tools.egg-info
+    volumes: *api-volumes
     ports:
       - "${APP_BIND_ADDR:-0.0.0.0}:8000:8000"
     env_file:
@@ -176,19 +184,7 @@ services:
     init: true
     # built by worker-default
     image: rengine-worker:latest
-    volumes:
-      - ./worker/app:/app/app
-      - ./shared:/app/shared
-      - ./tools:/app/tools
-      - ./stages:/app/stages
-      - ./reports:/app/reports
-      - ./interest:/app/interest
-      - ./toolbox:/app/toolbox
-      - ct_state:/app/ct-state
-      - /app/shared/build
-      - /app/shared/rengine_shared.egg-info
-      - /app/tools/build
-      - /app/tools/rengine_tools.egg-info
+    volumes: *worker-volumes
     env_file:
       - .env
     command: uv run python -m app.ct_stream
@@ -204,24 +200,12 @@ services:
     init: true
     # built by api
     image: rengine-api:latest
-    volumes:
-      - ./api/app:/app/app
-      - ./shared:/app/shared
-      - ./tools:/app/tools
-      - ./stages:/app/stages
-      - ./reports:/app/reports
-      - ./interest:/app/interest
-      - ./mcp:/app/mcp
-      - ./channels:/app/channels
-      - ./connectors:/app/connectors
-      - ./toolbox:/app/toolbox
-      - /app/shared/build
-      - /app/shared/rengine_shared.egg-info
-      - /app/tools/build
-      - /app/tools/rengine_tools.egg-info
+    volumes: *api-volumes
     env_file:
       - .env
-    command: uv run python -m channels
+    # the venv interpreter directly: `uv run` would re-resolve against the root pyproject.toml the
+    # shared api volume list mounts over /app, and install its dev group at every start
+    command: /app/.venv/bin/python -m channels
     restart: unless-stopped
     depends_on:
       db:

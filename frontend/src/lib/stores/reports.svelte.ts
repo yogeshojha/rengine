@@ -2,6 +2,7 @@ import { reportsApi } from '$lib/api/reports';
 import { isLive } from '$lib/config/reports';
 import type { Report, ReportCreate, ReportTemplate } from '$lib/types/report';
 import { toast } from 'svelte-sonner';
+import { errorMessage } from '$lib/utilities/errors';
 
 const POLL_MS = 1800;
 
@@ -69,7 +70,7 @@ function createReportsStore() {
 				fetchedProjectId = projectId;
 				schedule(projectId);
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Reports not loaded');
+				toast.error(errorMessage(e, 'Reports not loaded'));
 			} finally {
 				isLoading = false;
 			}
@@ -82,7 +83,7 @@ function createReportsStore() {
 				templates = await reportsApi.templates(projectId);
 				templatesProjectId = projectId;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Report templates not loaded');
+				toast.error(errorMessage(e, 'Report templates not loaded'));
 			} finally {
 				templatesLoading = false;
 			}
@@ -95,7 +96,7 @@ function createReportsStore() {
 				schedule(projectId);
 				return report;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Report not started');
+				toast.error(errorMessage(e, 'Report not started'));
 				return null;
 			}
 		},
@@ -107,7 +108,7 @@ function createReportsStore() {
 				schedule(projectId);
 				return true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Report not restarted');
+				toast.error(errorMessage(e, 'Report not restarted'));
 				return false;
 			}
 		},
@@ -118,7 +119,7 @@ function createReportsStore() {
 				reports = reports.filter((r) => r.id !== id);
 				return true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Report not deleted');
+				toast.error(errorMessage(e, 'Report not deleted'));
 				return false;
 			}
 		},
@@ -136,7 +137,7 @@ function createReportsStore() {
 				templates = templates.map((t) => (t.id === id ? updated : t));
 				return true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Template not saved');
+				toast.error(errorMessage(e, 'Template not saved'));
 				return false;
 			}
 		},
@@ -147,7 +148,7 @@ function createReportsStore() {
 				templates = [...templates, created];
 				return created;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Template not created');
+				toast.error(errorMessage(e, 'Template not created'));
 				return null;
 			}
 		},
@@ -158,7 +159,7 @@ function createReportsStore() {
 				templates = templates.filter((t) => t.id !== id);
 				return true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Template not deleted');
+				toast.error(errorMessage(e, 'Template not deleted'));
 				return false;
 			}
 		},

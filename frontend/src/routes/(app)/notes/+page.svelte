@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { routeLabels } from '$lib/config/routes';
 	import { untrack } from 'svelte';
 	import Search from '@lucide/svelte/icons/search';
@@ -60,7 +61,7 @@
 			total = page.total;
 			error = null;
 		} catch (e) {
-			if (seq === reqId) error = e instanceof Error ? e.message : 'Notes not loaded';
+			if (seq === reqId) error = errorMessage(e, 'Notes not loaded');
 		} finally {
 			if (seq === reqId) loading = false;
 		}

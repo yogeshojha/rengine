@@ -7,9 +7,9 @@ import { notificationStore } from '$lib/stores/notifications.svelte';
 import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
 import { onboardingStore } from '$lib/stores/onboarding.svelte';
 import { proxiesStore } from '$lib/stores/proxies.svelte';
-import { notificationChannelsStore } from '$lib/stores/notificationChannels.svelte';
+import { notificationChannelsStore } from '$lib/stores/notification-channels.svelte';
 import { scanSchedulesStore } from '$lib/stores/scan-schedules.svelte';
-import { instanceSettingsStore } from '$lib/stores/instanceSettings.svelte';
+import { instanceSettingsStore } from '$lib/stores/instance-settings.svelte';
 import { targetsStore } from '$lib/stores/targets.svelte';
 import { scansStore } from '$lib/stores/scans.svelte';
 import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
@@ -45,6 +45,7 @@ import { ai } from '$lib/stores/ai.svelte';
 import { mcp } from '$lib/stores/mcp.svelte';
 import { remoteControl } from '$lib/stores/remote-control.svelte';
 import { clearServiceLookup } from '$lib/utilities/service-lookup';
+import { errorMessage } from '$lib/utilities/errors';
 
 interface AuthState {
 	user: User | null;
@@ -90,7 +91,7 @@ function createAuthStore() {
 			toast.success('Signed in');
 			return { success: true };
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Login failed';
+			const message = errorMessage(error, 'Login failed');
 			return { success: false, error: message };
 		}
 	}
@@ -159,7 +160,7 @@ function createAuthStore() {
 			await authApi.register({ email, username, password });
 			return { success: true };
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Registration failed';
+			const message = errorMessage(error, 'Registration failed');
 			return { success: false, error: message };
 		}
 	}

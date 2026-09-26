@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
-
 from pydantic import Field
 
 from mcp import links
@@ -41,8 +39,8 @@ class Input(ToolInput):
 class FocusedRescan(Tool):
     name = "focused_rescan"
     title = "Focused rescan"
-    capability = Capability.LAUNCH.value
-    group = ToolGroup.ACT.value
+    capability = Capability.LAUNCH
+    group = ToolGroup.ACT
     description = (
         "Re-run a set of stages against named assets as a separate scan. Sends "
         "traffic to the target. Results are recorded on the new run, not on the "
@@ -122,11 +120,3 @@ class FocusedRescan(Tool):
                 "Results are recorded on this run, not on the parent scan.",
             ],
         )
-
-
-def _uuid(value: str) -> uuid.UUID:
-    try:
-        return uuid.UUID(value)
-    except ValueError as exc:
-        msg = "Expected a UUID."
-        raise ToolError(msg) from exc

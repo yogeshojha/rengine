@@ -1,3 +1,5 @@
+import type { ActionResult } from './action-result';
+
 export const PROXY_SCHEMES = ['http', 'https', 'socks5'] as const;
 export const PROXY_MODES = ['single', 'rotating'] as const;
 
@@ -63,9 +65,7 @@ export interface ProxyUpdate {
 	endpoints?: ProxyEndpoint[] | null;
 }
 
-export interface ProxyTestResult {
-	success: boolean;
-	message: string;
+export interface ProxyTestResult extends ActionResult {
 	latency_ms: number | null;
 	// false when the port answered but the proxy did not carry the request
 	reachable: boolean;

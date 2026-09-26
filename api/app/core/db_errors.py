@@ -1,5 +1,7 @@
 """Map a Postgres data exception to a 400."""
 
+from __future__ import annotations
+
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import DBAPIError

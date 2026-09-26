@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import Download from '@lucide/svelte/icons/download';
 	import History from '@lucide/svelte/icons/history';
 	import { toast } from 'svelte-sonner';
@@ -78,7 +79,7 @@
 			);
 		} catch (e) {
 			pending = false;
-			toast.error(e instanceof Error ? e.message : 'Export not started.');
+			toast.error(errorMessage(e, 'Export not started.'));
 		}
 	}
 

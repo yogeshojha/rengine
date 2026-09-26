@@ -5,6 +5,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { ROUTES } from '$lib/config/routes';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
+	import { readPref, writePref } from '$lib/utilities/storage';
 	import type { PlatformCount } from '$lib/types/bounty-program';
 
 	interface Props {
@@ -15,12 +16,7 @@
 	let { platforms, dismissible = false }: Props = $props();
 
 	function stored(): string[] {
-		try {
-			const raw = localStorage.getItem(STORAGE_KEYS.bountyConnectDismissed);
-			return raw ? (JSON.parse(raw) as string[]) : [];
-		} catch {
-			return [];
-		}
+		return readPref<string[]>(STORAGE_KEYS.bountyConnectDismissed, []);
 	}
 
 	let dismissed = $state<string[]>(stored());
@@ -41,11 +37,8 @@
 
 	function dismiss() {
 		dismissed = [...new Set([...dismissed, ...pending.map((p) => p.platform)])];
-		try {
-			localStorage.setItem(STORAGE_KEYS.bountyConnectDismissed, JSON.stringify(dismissed));
-		} catch {
-			/* a viewer with site data blocked keeps the alert */
-		}
+		// a viewer with site data blocked keeps the alert
+		writePref(STORAGE_KEYS.bountyConnectDismissed, dismissed);
 	}
 </script>
 

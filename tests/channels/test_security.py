@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import uuid
 
+import pytest
+
 from channels import pairing, settings, stepup
 from channels.identity import effective_capabilities, identity_for
 from channels.models import ChannelChat
@@ -12,6 +14,8 @@ from mcp.capabilities import Capability
 from shared.definitions.channels import PAIRING_ALPHABET, PAIRING_CODE_LENGTH
 from shared.models.user import User
 from shared.services.scan_resolve import MASK
+
+pytestmark = pytest.mark.channels
 
 TOKEN = "1234567890:AAFxYz0123456789abcdefghijklmnopqrst"
 

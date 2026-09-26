@@ -30,6 +30,8 @@
 		type EndpointTree
 	} from '$lib/utilities/endpoints';
 	import { SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
+	import { LatestRequest } from '$lib/utilities/latest-request';
+	import { flipSort, type SortKey } from '../table/sort';
 	import { afterPause } from '$lib/utilities/debounce';
 
 	interface Props {
@@ -50,8 +52,8 @@
 	let summary = $state<EndpointSummary | null>(null);
 	let selected = $state<EndpointRead | null>(null);
 	let drawerOpen = $state(false);
-	let sort = $state<{ key: string; dir: 1 | -1 }>({ key: 'relevance', dir: -1 });
-	let req = 0;
+	let sort = $state<SortKey>({ key: 'relevance', dir: -1 });
+	const req = new LatestRequest();
 
 	const columns = ENDPOINT_COLUMNS.filter((c) => DEFAULT_VISIBLE_OUTLINE_COLUMNS.includes(c.key));
 
@@ -81,15 +83,15 @@
 	let sig = $derived(JSON.stringify(filter));
 
 	async function load() {
-		const my = ++req;
+		const current = req.begin();
 		loading = true;
 		try {
 			const res = await endpointsApi.tree(projectId, scanId, 'host', filter);
-			if (my === req) tree = res;
+			if (current()) tree = res;
 		} catch {
-			if (my === req) tree = null;
+			if (current()) tree = null;
 		} finally {
-			if (my === req) loading = false;
+			if (current()) loading = false;
 		}
 	}
 
@@ -134,7 +136,7 @@
 		search = appendToken(search, exactToken('host', name));
 	}
 	function toggleSort(key: string) {
-		sort = sort.key === key ? { key, dir: sort.dir === 1 ? -1 : 1 } : { key, dir: 1 };
+		sort = flipSort(sort, key);
 	}
 	function open(e: EndpointRead) {
 		selected = e;

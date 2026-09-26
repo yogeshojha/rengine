@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import contextlib
 from collections.abc import Iterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from urllib.parse import unquote, urlsplit
 
 from shared.definitions.ports import (
@@ -15,6 +15,7 @@ from shared.definitions.ports import (
 from shared.logging import get_logger
 from shared.services.proxy_resolve import is_socks5, proxy_env
 from shared.utils.net import bracketed, host_port, unreadable_port, url_port
+from tools.naabu.parser import parse_port_record
 from tools.runner import (
     CLIToolRunner,
     OutputFormat,
@@ -89,7 +90,6 @@ class NaabuOptions:
     port_threshold: int = 0
     exclude_ports: str = ""
     proxy_url: str | None = None
-    extra_args: list[str] = field(default_factory=list)
 
 
 class NaabuClient:
@@ -98,12 +98,19 @@ class NaabuClient:
         *,
         options: NaabuOptions | None = None,
         recorder: CommandRecorder | None = None,
+        extra_args: list[str] | None = None,
     ) -> None:
         self.options = options or NaabuOptions()
         self.recorder = recorder
+        self.extra_args = extra_args or []
         self._proxy_args, self.proxy_warning = proxy_args(self.options.proxy_url)
         try:
-            self._runner = CLIToolRunner(NAABU_BINARY, default_timeout=DEFAULT_TIMEOUT)
+            self._runner = CLIToolRunner(
+                NAABU_BINARY,
+                default_timeout=DEFAULT_TIMEOUT,
+                recorder=recorder,
+                extra_args=self.extra_args,
+            )
         except ToolNotFoundError as e:
             raise NaabuError(str(e)) from e
 
@@ -128,18 +135,13 @@ class NaabuClient:
         with self._runner.stream_json(
             args=[*self._scan_args(port_flags), "-duc"],
             input_data=ips,
-            input_flag="-l",
-            json_flag="-json",
-            silent=True,
-            silent_flag="-silent",
             timeout=DEFAULT_TIMEOUT,
-            recorder=self.recorder,
-            tool=NAABU_BINARY,
-            extra_args=self.options.extra_args,
             should_stop=should_stop,
         ) as stream:
             raw = stream.records
-            stream.records = (rec for rec in map(_port_record, raw) if rec is not None)
+            stream.records = (
+                rec for rec in map(parse_port_record, raw) if rec is not None
+            )
             yield stream
 
     def _scan_args(self, port_flags: list[str]) -> list[str]:
@@ -176,7 +178,9 @@ class NaabuClient:
         if not result.success and not result.json_records:
             raise NaabuError(result.error or "naabu produced no output")
         return [
-            rec for rec in map(_port_record, result.json_records) if rec is not None
+            rec
+            for rec in map(parse_port_record, result.json_records)
+            if rec is not None
         ]
 
     def _run(
@@ -186,26 +190,6 @@ class NaabuClient:
             args=[*args, "-duc"],
             env=env,
             input_data=ips,
-            input_flag="-l",
             use_output_file=False,
             output_format=OutputFormat.JSONL,
-            json_flag="-json",
-            silent=True,
-            silent_flag="-silent",
-            recorder=self.recorder,
-            tool=NAABU_BINARY,
-            extra_args=self.options.extra_args,
         )
-
-
-def _port_record(rec: dict) -> dict | None:
-    ip = rec.get("ip") or rec.get("host")
-    port = rec.get("port")
-    if not ip or not isinstance(port, int) or not 0 < port <= MAX_PORT:
-        return None
-    return {
-        "ip": str(ip),
-        "port": port,
-        "protocol": rec.get("protocol") or "tcp",
-        "tls": bool(rec.get("tls")),
-    }

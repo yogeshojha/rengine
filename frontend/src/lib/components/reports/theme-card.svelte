@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { SEVERITY_ORDER } from '$lib/config/vulnerabilities';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -29,7 +30,7 @@
 			const source = await reportsApi.themeSource(theme.slug);
 			downloadBlob(`${theme.slug}.yaml`, source, 'text/yaml');
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Theme not exported');
+			toast.error(errorMessage(e, 'Theme not exported'));
 		}
 	}
 </script>

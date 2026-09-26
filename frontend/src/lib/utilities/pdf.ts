@@ -34,6 +34,11 @@ export async function loadDocument(data: ArrayBuffer): Promise<PDFDocumentProxy>
 	return lib.getDocument({ data }).promise;
 }
 
+/** Releases a document and its worker; pdf.js 6 moved this from the document to its loading task. */
+export function closeDocument(doc: PDFDocumentProxy): Promise<void> {
+	return doc.loadingTask.destroy();
+}
+
 export async function pageSizes(doc: PDFDocumentProxy): Promise<PageSize[]> {
 	const pages = await Promise.all(
 		Array.from({ length: doc.numPages }, (_, i) => doc.getPage(i + 1))

@@ -2,7 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
-from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi_pagination.ext.sqlalchemy import apaginate
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
@@ -110,7 +110,7 @@ async def list_schedule_scans(
 ):
     scan_service = ScanService(session)
     query = scan_service.build_list_query(project_id=project_id, schedule_id=id)
-    page = await paginate(
+    page = await apaginate(
         session,
         query,
         transformer=lambda items: [scan_service.to_read(s) for s in items],

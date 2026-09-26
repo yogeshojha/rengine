@@ -46,13 +46,10 @@ async def _software(estate, scan: str, host: str, software: list | None) -> None
 
 
 async def _match(estate, scan: str):
-    sid = estate.scans[scan]
-    target_id = await estate._target_of(sid)
+    ids = estate.row_ids(scan)
 
     def run(session):
-        return software_match.match_scan(
-            session, scan_id=sid, target_id=target_id, project_id=estate.project_id
-        )
+        return software_match.match_scan(session, **ids)
 
     return await estate.session.run_sync(run)
 
