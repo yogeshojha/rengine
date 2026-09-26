@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { SURFACE, SurfaceDimension, type ResultTab } from '$lib/config/surface';
 	import { onDestroy, untrack } from 'svelte';
 	import { LiveRefresh } from '$lib/utilities/live-results';
@@ -160,7 +161,7 @@
 				}, STALE_RETRY_MS);
 			}
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Exposures not loaded';
+			error = errorMessage(e, 'Exposures not loaded');
 		} finally {
 			if (!quiet) loading = false;
 		}

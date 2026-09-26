@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { readPref, writePref } from '$lib/utilities/storage';
 	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
@@ -120,20 +121,11 @@
 
 	function remembered(): string[] {
 		if (!rememberKey) return [];
-		try {
-			const raw = sessionStorage.getItem(rememberKey);
-			return raw ? (JSON.parse(raw) as string[]) : [];
-		} catch {
-			return [];
-		}
+		return readPref<string[]>(rememberKey, [], 'session');
 	}
 	function remember() {
 		if (!rememberKey || searching) return;
-		try {
-			sessionStorage.setItem(rememberKey, JSON.stringify([...expanded].slice(0, REMEMBER_CAP)));
-		} catch {
-			// sessionStorage unavailable
-		}
+		writePref(rememberKey, [...expanded].slice(0, REMEMBER_CAP), 'session');
 	}
 
 	$effect(() => {

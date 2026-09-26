@@ -75,8 +75,7 @@ class VhostStage(Stage):
                 proxy_url=net.proxy_url,
                 headers=net.headers,
                 probe_scheme=net.probe_scheme,
-                recorder=self.ctx.recorder,
-                extra_args=self.ctx.resolved.tool_args("ffuf"),
+                **self.wiring("ffuf"),
             )
         except FfufError as exc:
             logger.warning("ffuf unavailable, skipping vhost discovery")

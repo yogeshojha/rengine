@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+import jwt
 from argon2 import PasswordHasher
 from argon2.exceptions import VerificationError, VerifyMismatchError
-from jose import JWTError, jwt
 
 from app.config import settings
 
@@ -71,5 +73,5 @@ def decode_token(token: str) -> dict | None:
             settings.SECRET_KEY,
             algorithms=[settings.ALGORITHM],
         )
-    except JWTError:
+    except jwt.PyJWTError:
         return None

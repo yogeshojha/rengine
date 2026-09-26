@@ -5,19 +5,20 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
-from shared.plugins import classes_in_modules
+from shared.plugins import by_name, classes_in_modules
 from stages.vulnerability_scan.scanners.base import VulnScanner
+
+
+class ScannerRegistrationError(RuntimeError):
+    """A scanner module is invalid or duplicated."""
 
 
 @lru_cache(maxsize=1)
 def scanners() -> dict[str, type[VulnScanner]]:
-    found: dict[str, type[VulnScanner]] = {}
-    for cls in classes_in_modules(
+    found = classes_in_modules(
         "stages.dast_scan.scanners", Path(__file__).parent, VulnScanner
-    ):
-        if cls.name:
-            found.setdefault(cls.name, cls)
-    return found
+    )
+    return by_name(found, kind="scanner", error=ScannerRegistrationError)
 
 
-__all__ = ["scanners"]
+__all__ = ["ScannerRegistrationError", "scanners"]

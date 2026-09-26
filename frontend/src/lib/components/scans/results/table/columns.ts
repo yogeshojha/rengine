@@ -51,20 +51,3 @@ const ROW_PAD: Record<string, string> = { compact: 'py-2', cozy: 'py-3' };
 export function rowPadding(density: string): string {
 	return ROW_PAD[density] ?? ROW_PAD.cozy;
 }
-
-export function readPref<T>(key: string, fallback: T): T {
-	try {
-		const raw = localStorage.getItem(key);
-		return raw ? (JSON.parse(raw) as T) : fallback;
-	} catch {
-		return fallback;
-	}
-}
-
-export function writePref(key: string, value: unknown) {
-	try {
-		localStorage.setItem(key, JSON.stringify(value));
-	} catch {
-		// ignore
-	}
-}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import PauseIcon from '@lucide/svelte/icons/pause';
 	import PlayIcon from '@lucide/svelte/icons/play';
 	import SettingsIcon from '@lucide/svelte/icons/settings-2';
@@ -103,7 +104,7 @@
 			hostTotal = page.total;
 			counts = c;
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Hosts not loaded');
+			toast.error(errorMessage(error, 'Hosts not loaded'));
 		} finally {
 			loading = false;
 		}
@@ -121,7 +122,7 @@
 			events = page.items;
 			eventTotal = page.total;
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Activity not loaded');
+			toast.error(errorMessage(error, 'Activity not loaded'));
 		}
 	}
 
@@ -178,7 +179,7 @@
 			onChanged(updated);
 			toast.success(status === WatchStatus.Paused ? 'Watch paused' : 'Watch resumed');
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Watch not updated');
+			toast.error(errorMessage(error, 'Watch not updated'));
 		} finally {
 			busy = false;
 		}
@@ -195,7 +196,7 @@
 			onChanged(null);
 			onOpenChange(false);
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Watch not stopped');
+			toast.error(errorMessage(error, 'Watch not stopped'));
 		} finally {
 			busy = false;
 		}
@@ -207,7 +208,7 @@
 			const updated = await watchesApi.muteHost(watch.id, host.id, projectId);
 			hosts = hosts.map((h) => (h.id === updated.id ? updated : h));
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Host not updated');
+			toast.error(errorMessage(error, 'Host not updated'));
 		}
 	}
 

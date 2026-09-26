@@ -196,8 +196,7 @@ class NetblockSweepStage(Stage):
                 timeout=max(_MIN_BUDGET, count // _FLOOR_RATE),
                 threads=self.transport.threads,
                 query_timeout=self.transport.timeout,
-                recorder=self.ctx.recorder,
-                extra_args=self.ctx.resolved.tool_args("dnsx"),
+                **self.wiring("dnsx"),
             )
         except DnsxError:
             logger.warning("dnsx unavailable, skipping netblock sweep")

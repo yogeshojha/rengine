@@ -21,6 +21,7 @@ from stages.content_discovery.stage import (
     _Run,
 )
 from stages.registry import stage_by_name
+from tests.factories import build_stage
 from tools.ffuf.parser import parse_ffuf_record
 
 pytestmark = pytest.mark.pipeline
@@ -88,12 +89,8 @@ def test_the_detail_says_it_was_guessed():
 
 
 def _stage(rows: list[tuple[str, int | None]]) -> ContentDiscoveryStage:
-    stage = ContentDiscoveryStage.__new__(ContentDiscoveryStage)
-    stage.ctx = SimpleNamespace(scan_id=None)
-    stage.session = SimpleNamespace(
-        execute=lambda _q: SimpleNamespace(all=lambda: rows)
-    )
-    return stage
+    session = SimpleNamespace(execute=lambda _q: SimpleNamespace(all=lambda: rows))
+    return build_stage(ContentDiscoveryStage, session)
 
 
 def test_only_sites_that_answered_are_asked():

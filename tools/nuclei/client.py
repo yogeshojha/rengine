@@ -17,7 +17,7 @@ from shared.definitions.oast import EVICTION_SLACK
 from shared.logging import get_logger
 from shared.services.scan_resolve import redact_command
 from tools.nuclei.parser import Finding, parse_finding
-from tools.runner import CLIToolRunner, ToolNotFoundError
+from tools.runner import CLIToolRunner, ToolFlags, ToolNotFoundError
 from tools.runner.abort import StageAbortedError
 from tools.runner.executor import failure_excerpt
 from tools.runner.models import CommandRecorder
@@ -305,6 +305,7 @@ class NucleiClient:
                 recorder=recorder,
                 extra_args=list(self.options.extra_args),
                 aliases=NUCLEI_ALIASES,
+                flags=ToolFlags(input="-list", json="-jsonl"),
             )
         except ToolNotFoundError as exc:
             raise NucleiError(str(exc)) from exc
@@ -449,8 +450,6 @@ class NucleiClient:
         return self._runner.stream_json(
             args=self.args(),
             input_data=targets,
-            input_flag="-list",
-            json_flag="-jsonl",
             silent=False,
             timeout=timeout,
             stderr_sink=sink,

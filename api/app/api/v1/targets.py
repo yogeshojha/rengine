@@ -1,4 +1,4 @@
-from typing import Annotated, Literal
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import (
@@ -11,7 +11,7 @@ from fastapi import (
     UploadFile,
     status,
 )
-from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi_pagination.ext.sqlalchemy import apaginate
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,6 +21,7 @@ from app.core.database import get_session
 from app.services.program_coverage import ProgramCoverageService
 from app.services.target import TargetService
 from app.services.target_assets import TargetAssetService
+from app.services.target_enrichment import EnrichmentKind
 from app.services.target_estate import TargetEstateService
 from app.services.target_filters import SignalName, SortDir, SortKey
 from app.services.target_relations import TargetRelationService
@@ -204,7 +205,7 @@ MAX_BULK_NAMES = 100
 
 class BulkEnrichRequest(BaseModel):
     target_ids: list[UUID] = Field(..., min_length=1, max_length=MAX_BULK_TARGET_IDS)
-    kind: Literal["whois", "dns", "bgp"]
+    kind: EnrichmentKind
 
 
 class BulkTagRequest(BaseModel):
@@ -266,7 +267,7 @@ async def search_targets_by_value(
         project_slug=project_slug,
     )
 
-    return await paginate(
+    return await apaginate(
         session,
         query,
         transformer=lambda items: [service._to_target_read(t) for t in items],
@@ -313,7 +314,7 @@ async def list_targets(
         sort_dir=sort_dir,
     )
 
-    return await paginate(
+    return await apaginate(
         session,
         query,
         transformer=lambda items: [service._to_target_read(t) for t in items],

@@ -5,7 +5,7 @@ from tools.runner.executor import (
     ToolNotFoundError,
     tool_path,
 )
-from tools.runner.models import OutputFormat, StreamOutcome, ToolResult
+from tools.runner.models import OutputFormat, StreamOutcome, ToolFlags, ToolResult
 
 __all__ = [
     "CLIToolRunner",
@@ -13,6 +13,7 @@ __all__ = [
     "StageAbortedError",
     "StreamOutcome",
     "ToolExecutionError",
+    "ToolFlags",
     "ToolNotFoundError",
     "ToolResult",
     "tool_path",

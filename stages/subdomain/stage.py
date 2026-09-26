@@ -410,8 +410,7 @@ class SubdomainStage(Stage):
         try:
             client = AlterxClient(
                 limit=PERMUTATION_LIMIT,
-                recorder=self.ctx.recorder,
-                extra_args=self.ctx.resolved.tool_args("alterx"),
+                **self.wiring("alterx"),
             )
         except AlterxError:
             return self._skipped(source, "alterx is not installed on this instance")
@@ -550,8 +549,7 @@ class SubdomainStage(Stage):
                 timeout=max(120, tool_timeout(self.ctx.resolved.intensity)),
                 threads=threads,
                 query_timeout=self.transport.timeout,
-                recorder=self.ctx.recorder,
-                extra_args=self.ctx.resolved.tool_args("dnsx"),
+                **self.wiring("dnsx"),
             )
         except DnsxError:
             logger.warning("dnsx unavailable, storing subdomains without resolution")

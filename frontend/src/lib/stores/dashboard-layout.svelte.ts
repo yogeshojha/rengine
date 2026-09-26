@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import { STORAGE_KEYS } from '$lib/config/storage-keys';
+import { readPref, writePref } from '$lib/utilities/storage';
 import {
 	DASHBOARD_WIDGETS,
 	widgetAvailable,
@@ -22,26 +23,16 @@ function key(mode: InstanceMode) {
 
 function read(mode: InstanceMode): Stored {
 	if (!browser) return { hidden: [], shown: [] };
-	try {
-		const raw = localStorage.getItem(key(mode));
-		if (!raw) return { hidden: [], shown: [] };
-		const parsed = JSON.parse(raw) as Partial<Stored>;
-		return {
-			hidden: Array.isArray(parsed.hidden) ? parsed.hidden : [],
-			shown: Array.isArray(parsed.shown) ? parsed.shown : []
-		};
-	} catch {
-		return { hidden: [], shown: [] };
-	}
+	const parsed = readPref<Partial<Stored> | null>(key(mode), null);
+	return {
+		hidden: Array.isArray(parsed?.hidden) ? parsed.hidden : [],
+		shown: Array.isArray(parsed?.shown) ? parsed.shown : []
+	};
 }
 
 function write(mode: InstanceMode, value: Stored) {
 	if (!browser) return;
-	try {
-		localStorage.setItem(key(mode), JSON.stringify(value));
-	} catch {
-		// storage unavailable
-	}
+	writePref(key(mode), value);
 }
 
 function createDashboardLayout() {

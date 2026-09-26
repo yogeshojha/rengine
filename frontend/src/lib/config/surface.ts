@@ -53,7 +53,8 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		nounPlural: 'web assets',
 		icon: Globe,
 		tab: 'web-assets',
-		queryParam: 'q',
+		// prefixed like its siblings; the table still reads a bare `q` from links shared before
+		queryParam: 'wa_q',
 		recentsKey: STORAGE_KEYS.webAssetsRecentQueries,
 		kinds: ['hosts', 'http_assets'],
 		countColumns: ['subdomains_found', 'http_assets_found'],

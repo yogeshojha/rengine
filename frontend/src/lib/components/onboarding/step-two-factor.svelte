@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
@@ -14,7 +15,7 @@
 	import KeyRoundIcon from '@lucide/svelte/icons/key-round';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
-	import { twoFactorApi } from '$lib/api/twoFactor';
+	import { twoFactorApi } from '$lib/api/two-factor';
 	import OtpInput from './otp-input.svelte';
 	import type { StepProps } from '$lib/types/onboarding';
 
@@ -64,7 +65,7 @@
 			code = '';
 			phase = 'enroll';
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Two-factor setup not started');
+			toast.error(errorMessage(e, 'Two-factor setup not started'));
 		} finally {
 			setupLoading = false;
 		}
@@ -86,7 +87,7 @@
 			toast.success('Two-factor authentication enabled');
 		} catch (e) {
 			failCount += 1;
-			errorMsg = e instanceof Error ? e.message : 'Code not accepted. Enter the current code.';
+			errorMsg = errorMessage(e, 'Code not accepted. Enter the current code.');
 			code = '';
 		} finally {
 			verifying = false;

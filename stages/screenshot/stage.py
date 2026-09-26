@@ -70,8 +70,7 @@ class ScreenshotStage(Stage):
                 probe_scheme=net.probe_scheme,
                 follow_redirects=self.follow_redirects(True),
                 store_dir=store_dir,
-                recorder=self.ctx.recorder,
-                extra_args=self.ctx.resolved.tool_args("httpx"),
+                **self.wiring("httpx"),
             )
         except HttpxError as exc:
             logger.warning("httpx unavailable, skipping screenshots")

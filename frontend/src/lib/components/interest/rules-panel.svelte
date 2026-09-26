@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { untrack } from 'svelte';
 	import Plus from '@lucide/svelte/icons/plus';
 	import Search from '@lucide/svelte/icons/search';
@@ -66,7 +67,7 @@
 			rules = await interestApi.rules(id);
 			error = null;
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Rules not loaded';
+			error = errorMessage(e, 'Rules not loaded');
 		} finally {
 			loading = false;
 		}

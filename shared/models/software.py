@@ -3,7 +3,6 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import BigInteger, Column, Text
-from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
 from shared.definitions.evidence import Evidence
@@ -15,13 +14,10 @@ from shared.definitions.software import (
 )
 from shared.definitions.surface import MAX_SELECTED_ROWS
 from shared.definitions.vulnerabilities import Severity
+from shared.models._columns import json_list
 from shared.models.asset_query import QueryError
 from shared.utils.datetime import utc_now
 from shared.utils.software import MAX_CPE, MAX_NAME, MAX_VERSION
-
-
-def _json_list() -> Field:
-    return Field(default_factory=list, sa_column=Column(JSON, nullable=False))
 
 
 class NvdCve(SQLModel, table=True):
@@ -93,9 +89,9 @@ class SoftwareCve(SQLModel, table=True):
     kev_ransomware: bool = Field(default=False)
     kev_due_date: date | None = Field(default=None)
     exploit_score: int = Field(default=0, index=True)
-    intel_kinds: list = _json_list()
+    intel_kinds: list = json_list()
     confidence: str = Field(default=Confidence.HIGH.value, max_length=16, index=True)
-    caveats: list = _json_list()
+    caveats: list = json_list()
     evidence: str = Field(default=Evidence.INFERRED.value, max_length=16, index=True)
 
     # where it is

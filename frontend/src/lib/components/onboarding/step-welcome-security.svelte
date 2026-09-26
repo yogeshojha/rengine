@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
@@ -9,7 +10,7 @@
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 	import LockIcon from '@lucide/svelte/icons/lock';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
-	import { instanceSettingsApi } from '$lib/api/instanceSettings';
+	import { instanceSettingsApi } from '$lib/api/instance-settings';
 	import { authApi } from '$lib/api/auth';
 	import type { StepProps } from '$lib/types/onboarding';
 
@@ -97,7 +98,7 @@
 			data.instanceName = instanceName.trim();
 			next();
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Settings not saved');
+			toast.error(errorMessage(e, 'Settings not saved'));
 		} finally {
 			busy = false;
 		}

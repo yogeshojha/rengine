@@ -35,7 +35,7 @@ class Input(ToolInput):
 class ExplainFinding(Tool):
     name = "explain_finding"
     title = "Explain finding"
-    group = ToolGroup.EXPLAIN.value
+    group = ToolGroup.EXPLAIN
     description = (
         "One finding in full: what the check tests for, impact, remediation, CVE, "
         "CWE, CVSS, EPSS and KEV signals, every location on the target, and the "

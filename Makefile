@@ -1,7 +1,15 @@
-.PHONY: help up down build logs logs-api logs-worker lint test migrate migrate-create migrate-draft \
+.PHONY: help up down build logs logs-api logs-worker lint lint-python lint-frontend check-lists \
+        test test-python test-frontend migrate migrate-create migrate-draft \
         migrate-history migrate-downgrade db-stamp db-reset shell-api shell-worker db-shell
 
+# The one list of Python packages. CI runs the targets below rather than its own
+# copy; the copies other tools need (pre-commit, compose, the Dockerfiles, the
+# api entrypoint) are compared with it by `make check-lists`.
 PACKAGES = api shared reports worker stages tools toolbox interest mcp channels connectors tests
+
+# ruff at the version pyproject.toml's dev group pins, which pre-commit also runs
+RUFF_VERSION := $(shell sed -n 's/^ *"ruff==\([^"]*\)".*/\1/p' pyproject.toml)
+RUFF = uvx ruff@$(RUFF_VERSION)
 
 help:
 	@echo "reNgine 3.0 Dev Commands"
@@ -15,8 +23,12 @@ help:
 	@echo "    make logs-worker     Tail worker logs"
 	@echo ""
 	@echo "  Checks:"
-	@echo "    make lint            ruff, prettier and eslint"
-	@echo "    make test            pytest, svelte-check and vitest"
+	@echo "    make lint            lint-python, then lint-frontend"
+	@echo "    make lint-python     package lists, then pinned ruff check and format"
+	@echo "    make lint-frontend   prettier and eslint"
+	@echo "    make test            test-python, then test-frontend"
+	@echo "    make test-python     pytest in a one-off api container (db must be up)"
+	@echo "    make test-frontend   svelte-check and vitest"
 	@echo ""
 	@echo "  Database Migrations:"
 	@echo "    make migrate                  Apply all pending migrations"
@@ -51,14 +63,28 @@ logs-api:
 logs-worker:
 	docker compose logs -f worker-default
 
-# Checks: the same commands CI runs
-lint:
-	ruff check $(PACKAGES)
-	ruff format --check $(PACKAGES)
+# Checks: CI runs these same targets
+lint: lint-python lint-frontend
+
+lint-python: check-lists
+	@test -n "$(RUFF_VERSION)" || { echo "pyproject.toml pins no ruff version"; exit 1; }
+	$(RUFF) check $(PACKAGES) .github/scripts
+	$(RUFF) format --check $(PACKAGES) .github/scripts
+
+lint-frontend:
 	cd frontend && npm run lint
 
-test:
-	docker compose exec -T api /app/.venv/bin/python -m pytest tests -q
+check-lists:
+	python3 .github/scripts/check_lists.py --ruff "$(RUFF_VERSION)" $(PACKAGES)
+
+test: test-python test-frontend
+
+# a one-off container from the api service: the stack's mounts and .env, the
+# running db and redis, and no dependence on the api container being up
+test-python:
+	docker compose run --rm --no-deps api /app/.venv/bin/python -m pytest tests --tb=short
+
+test-frontend:
 	cd frontend && npm run check && npm run test
 
 migrate:

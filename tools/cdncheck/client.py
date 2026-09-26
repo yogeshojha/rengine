@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from shared.logging import get_logger
-from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError
+from tools.cdncheck.parser import parse_attributions
+from tools.runner import CLIToolRunner, OutputFormat, ToolFlags, ToolNotFoundError
 from tools.runner.models import CommandRecorder
 
 logger = get_logger(__name__)
@@ -28,7 +29,11 @@ class CdncheckClient:
 
         try:
             self._runner = CLIToolRunner(
-                CDNCHECK_BINARY, default_timeout=DEFAULT_TIMEOUT
+                CDNCHECK_BINARY,
+                default_timeout=DEFAULT_TIMEOUT,
+                recorder=recorder,
+                extra_args=self.extra_args,
+                flags=ToolFlags(json="-jsonl"),
             )
         except ToolNotFoundError as e:
             raise CdncheckError(str(e)) from e
@@ -43,25 +48,5 @@ class CdncheckClient:
             use_stdin=True,
             use_output_file=False,
             output_format=OutputFormat.JSONL,
-            json_flag="-jsonl",
-            silent=True,
-            silent_flag="-silent",
-            recorder=self.recorder,
-            tool=CDNCHECK_BINARY,
-            extra_args=self.extra_args,
         )
-        out: dict[str, dict] = {}
-        for rec in result.json_records:
-            ip = rec.get("input") or rec.get("ip")
-            if not ip:
-                continue
-            if rec.get("cdn"):
-                kind, name = "cdn", rec.get("cdn_name")
-            elif rec.get("waf"):
-                kind, name = "waf", rec.get("waf_name")
-            elif rec.get("cloud"):
-                kind, name = "cloud", rec.get("cloud_name")
-            else:
-                continue
-            out[str(ip)] = {"is_cdn": True, "cdn_name": name, "cdn_type": kind}
-        return out
+        return parse_attributions(result.json_records)

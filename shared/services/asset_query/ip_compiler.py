@@ -14,7 +14,7 @@ from shared.models.subdomain import Subdomain
 from shared.models.vulnerability import Vulnerability
 
 from . import predicates as preds
-from .ast import Compare, QuerySyntaxError
+from .ast import Compare
 from .scope import QueryScope
 from .terms import (
     int_coerce,
@@ -26,7 +26,7 @@ from .terms import (
     tri_state,
 )
 from .values import PRIVATE_NETWORKS, asn_number, like, network
-from .walk import walker
+from .walk import flag_builder, walker
 
 _IPV4_RE = re.compile(r"^[0-9]{1,3}(\.[0-9]{1,3}){3}$")
 _IPV4 = 4
@@ -87,18 +87,6 @@ def _cdn(cmp: Compare, ctx: IpQueryContext):
     return ctx.source.c.is_cdn.is_(state)
 
 
-def _flag(cmp: Compare, ctx: IpQueryContext):
-    branches = []
-    for raw in cmp.values:
-        builder = _FLAG_BUILDERS.get(raw.lower())
-        if builder is None:
-            msg = f"Unknown flag {raw!r}."
-            hint = f"Try one of: {', '.join(IP_FLAGS)}"
-            raise QuerySyntaxError(msg, cmp.start, cmp.end, hint)
-        branches.append(builder(ctx))
-    return or_(*branches)
-
-
 _FLAG_BUILDERS = {
     "new": lambda ctx: preds.address_is_new(ctx.source, ctx.scope),
     "alive": lambda ctx: ctx.source.c.is_alive.is_(True),
@@ -142,7 +130,7 @@ _IP_BUILDERS = {
     "cve": lambda c, ctx: preds.address_vuln(
         ctx.scope, ctx.source.c.ip, json_array_match(Vulnerability.cve_ids, c)
     ),
-    "is": _flag,
+    "is": flag_builder(_FLAG_BUILDERS, IP_FLAGS),
 }
 
 

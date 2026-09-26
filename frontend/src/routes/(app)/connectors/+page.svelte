@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import { browser } from '$app/environment';
@@ -102,7 +103,7 @@
 		try {
 			connectors.upsert(await connectorsApi.update(selected.id, projectId, { paused }));
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Connector not updated');
+			toast.error(errorMessage(e, 'Connector not updated'));
 		}
 	}
 </script>

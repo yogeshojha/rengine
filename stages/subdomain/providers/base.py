@@ -4,16 +4,16 @@ import shutil
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from shared.definitions.tools import parse_tool_args
 from shared.logging import get_logger
-from tools.runner import tool_path
+from tools.runner import CLIToolRunner, tool_path
 
 if TYPE_CHECKING:
     from shared.enums.api_key import APIProvider
     from shared.enums.subdomain import SubdomainSource
-    from tools.runner.models import CommandRecorder
+    from tools.runner.models import CommandRecorder, ToolResult
 
 logger = get_logger(__name__)
 
@@ -53,6 +53,21 @@ class SubdomainProvider(ABC):
     @property
     def extra_args(self) -> list[str]:
         return parse_tool_args((self.ctx.tool_options or {}).get(self.tool, ""))
+
+    def run_tool(self, args: list[str], **options: Any) -> ToolResult:
+        """One run of the provider's binary under the scan's recorder, budget and custom args.
+
+        `availability` has already found the binary, so a binary gone since
+        then is an error the provider reports, not an empty answer.
+        """
+        runner = CLIToolRunner(
+            self.binary or self.tool,
+            default_timeout=self.ctx.timeout,
+            recorder=self.ctx.recorder,
+            tool=self.tool,
+            extra_args=self.extra_args,
+        )
+        return runner.run(args=args, timeout=self.ctx.timeout, **options)
 
     def availability(self) -> tuple[bool, str | None]:
         if self.binary and shutil.which(self.binary, path=tool_path()) is None:

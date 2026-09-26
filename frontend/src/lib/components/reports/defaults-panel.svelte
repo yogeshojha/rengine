@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { untrack } from 'svelte';
 	import { beforeNavigate, goto } from '$app/navigation';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -77,7 +78,7 @@
 					theme = value.theme;
 					snapshot = JSON.stringify({ branding, theme });
 				})
-				.catch((e) => toast.error(e instanceof Error ? e.message : 'Defaults not loaded'))
+				.catch((e) => toast.error(errorMessage(e, 'Defaults not loaded')))
 				.finally(() => (loading = false));
 		});
 	});
@@ -95,7 +96,7 @@
 			snapshot = JSON.stringify({ branding, theme });
 			toast.success('Defaults saved');
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Defaults not saved');
+			toast.error(errorMessage(e, 'Defaults not saved'));
 		} finally {
 			saving = false;
 		}

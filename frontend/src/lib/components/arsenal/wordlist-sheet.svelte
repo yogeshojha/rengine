@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import Copy from '@lucide/svelte/icons/copy';
@@ -37,7 +38,7 @@
 		try {
 			words = await wordlistsApi.preview(id, PREVIEW);
 		} catch (e) {
-			failed = e instanceof Error ? e.message : 'Wordlist not loaded';
+			failed = errorMessage(e, 'Wordlist not loaded');
 		} finally {
 			loading = false;
 		}

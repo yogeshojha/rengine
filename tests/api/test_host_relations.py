@@ -76,12 +76,9 @@ async def test_a_shared_edge_is_the_provider_not_a_relation(estate, now):
         ips=["151.101.2.132"],
         cname="j.sni.global.fastly.net",
     )
-    sid = estate.scans["run"]
     estate.session.add(
         IpAddress(
-            project_id=estate.project_id,
-            scan_id=sid,
-            target_id=await estate._target_of(sid),
+            **estate.row_ids("run"),
             ip="151.101.2.132",
             version=4,
             source=IpSource.DNS_RESOLUTION.value,

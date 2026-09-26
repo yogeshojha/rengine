@@ -12,6 +12,7 @@ from tools.runner import (
     CLIToolRunner,
     OutputFormat,
     StreamOutcome,
+    ToolFlags,
     ToolNotFoundError,
 )
 
@@ -19,6 +20,10 @@ logger = get_logger(__name__)
 
 FFUF_BINARY = "ffuf"
 DEFAULT_TIMEOUT = 1800
+
+# ffuf only knows `-s`; the `-silent` other ProjectDiscovery-style tools take is folded into it,
+# so a custom `-silent` is dropped with the flag the runner sets instead of failing the run
+FFUF_ALIASES: dict[str, str] = {"-silent": "-s"}
 
 # ffuf takes -H only
 HEADER_FLAG = "-H"
@@ -63,7 +68,14 @@ class FfufClient:
         self.extra_args = extra_args or []
 
         try:
-            self._runner = CLIToolRunner(FFUF_BINARY, default_timeout=DEFAULT_TIMEOUT)
+            self._runner = CLIToolRunner(
+                FFUF_BINARY,
+                default_timeout=DEFAULT_TIMEOUT,
+                recorder=recorder,
+                extra_args=self.extra_args,
+                flags=ToolFlags(silent="-s"),
+                aliases=FFUF_ALIASES,
+            )
         except ToolNotFoundError as e:
             raise FfufError(str(e)) from e
 
@@ -105,13 +117,7 @@ class FfufClient:
 
         with self._runner.stream_json(
             args=args,
-            json_flag="-json",
-            silent=True,
-            silent_flag="-s",
             timeout=budget + _BUDGET_SLACK,
-            recorder=self.recorder,
-            tool=FFUF_BINARY,
-            extra_args=self.extra_args,
         ) as stream:
             yield stream
 
@@ -153,9 +159,6 @@ class FfufClient:
             output_format=OutputFormat.PLAIN,
             silent=False,
             timeout=budget + _BUDGET_SLACK,
-            recorder=self.recorder,
-            tool=FFUF_BINARY,
-            extra_args=self.extra_args,
         )
         return self._parse(result.stdout)
 

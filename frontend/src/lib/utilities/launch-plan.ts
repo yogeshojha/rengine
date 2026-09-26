@@ -7,6 +7,7 @@ import type {
 } from '$lib/types/scan-engine';
 import type { StageOverrides } from '$lib/types/scan';
 import { STORAGE_KEYS } from '$lib/config/storage-keys';
+import { readPref, writePref } from '$lib/utilities/storage';
 
 export type StageState = 'on' | 'off' | 'implied' | 'blocked';
 
@@ -210,26 +211,18 @@ export interface StoredPlan extends LaunchPlan {
 }
 
 export function readLastPlan(): StoredPlan | null {
-	try {
-		const raw = localStorage.getItem(STORAGE_KEYS.launchLastPlan);
-		if (!raw) return null;
-		const parsed = JSON.parse(raw) as Partial<StoredPlan>;
-		if (typeof parsed !== 'object' || parsed === null) return null;
-		const engineId = typeof parsed.engineId === 'string' ? parsed.engineId : null;
-		return {
-			mode: parsed.mode === 'engine' || (parsed.mode !== 'quick' && engineId) ? 'engine' : 'quick',
-			engineId,
-			stages: parsed.stages && typeof parsed.stages === 'object' ? parsed.stages : {},
-			intensity: (parsed.intensity as Intensity | null) ?? null,
-			contextId: typeof parsed.contextId === 'string' ? parsed.contextId : null
-		};
-	} catch {
-		return null;
-	}
+	const parsed = readPref<Partial<StoredPlan> | null>(STORAGE_KEYS.launchLastPlan, null);
+	if (typeof parsed !== 'object' || parsed === null) return null;
+	const engineId = typeof parsed.engineId === 'string' ? parsed.engineId : null;
+	return {
+		mode: parsed.mode === 'engine' || (parsed.mode !== 'quick' && engineId) ? 'engine' : 'quick',
+		engineId,
+		stages: parsed.stages && typeof parsed.stages === 'object' ? parsed.stages : {},
+		intensity: (parsed.intensity as Intensity | null) ?? null,
+		contextId: typeof parsed.contextId === 'string' ? parsed.contextId : null
+	};
 }
 
 export function rememberLastPlan(plan: StoredPlan) {
-	try {
-		localStorage.setItem(STORAGE_KEYS.launchLastPlan, JSON.stringify(plan));
-	} catch {}
+	writePref(STORAGE_KEYS.launchLastPlan, plan);
 }

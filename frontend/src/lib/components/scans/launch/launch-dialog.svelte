@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
@@ -314,7 +315,7 @@
 				else toast.error(`${INVALID_TARGET_MESSAGE}: ${value}. ${TARGET_FORMATS}`);
 			}
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Targets not loaded');
+			toast.error(errorMessage(e, 'Targets not loaded'));
 		} finally {
 			targetsLoading = false;
 		}
@@ -362,7 +363,7 @@
 			toast.success(runStarted(run, 'asset', 'assets'), { description: runDescription(run) });
 			close();
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Rescan not started');
+			toast.error(errorMessage(e, 'Rescan not started'));
 		}
 	}
 

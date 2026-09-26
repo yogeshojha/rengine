@@ -96,8 +96,7 @@ class ContentDiscoveryStage(Stage):
             "follow_redirects": self.follow_redirects(False),
             "proxy_url": net.proxy_url,
             "headers": net.headers,
-            "recorder": self.ctx.recorder,
-            "extra_args": self.ctx.resolved.tool_args("ffuf"),
+            **self.wiring("ffuf"),
         }
         try:
             FfufClient(**args)

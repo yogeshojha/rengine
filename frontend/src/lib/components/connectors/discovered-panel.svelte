@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { untrack } from 'svelte';
 	import CompassIcon from '@lucide/svelte/icons/compass';
 	import PlusIcon from '@lucide/svelte/icons/plus';
@@ -47,7 +48,7 @@
 			const slug = targetsStore.filters?.projectSlug;
 			if (slug) void targetsStore.fetchAll(slug, 1, true);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Target not added.';
+			error = errorMessage(e, 'Target not added.');
 		} finally {
 			working = null;
 		}
@@ -59,7 +60,7 @@
 			await connectorsApi.dismissDomain(connector.id, projectId, domain);
 			await reload();
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Domain not dismissed.';
+			error = errorMessage(e, 'Domain not dismissed.');
 		} finally {
 			working = null;
 		}

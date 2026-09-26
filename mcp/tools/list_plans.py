@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import uuid
-
 from pydantic import Field
 
 from mcp.context import ToolContext
-from mcp.errors import ToolError
 from mcp.result import ToolResult
+from mcp.tools._args import optional_uuid
 from mcp.tools._scope import project_for
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.utils.text import counted
@@ -25,13 +23,13 @@ class EnginesInput(ToolInput):
         default=None,
         description="Which project's engines. Omit when the token is scoped to one.",
     )
-    limit: int = Field(default=25, ge=1, le=MAX_ROWS)
+    limit: int = Field(default=25, ge=1, le=MAX_ROWS, description="Rows to return.")
 
 
 class ListEngines(Tool):
     name = "list_engines"
     title = "List scan engines"
-    group = ToolGroup.ORIENT.value
+    group = ToolGroup.ORIENT
     description = (
         "The saved scan engines in a project, with the id start_scan and plan_scan "
         "take. An engine is a named configuration of stages."
@@ -42,7 +40,9 @@ class ListEngines(Tool):
     async def run(self, ctx: ToolContext, args: EnginesInput) -> ToolResult:
         from app.services.scan_engine import ScanEngineService  # noqa: PLC0415
 
-        project_id = await project_for(ctx, _uuid(args.project_id, "project_id"))
+        project_id = await project_for(
+            ctx, optional_uuid(args.project_id, "project_id")
+        )
         rows = await ScanEngineService(ctx.session).list(project_id)
         if args.contains:
             needle = args.contains.strip().lower()
@@ -85,13 +85,13 @@ class ContextsInput(ToolInput):
         default=None,
         description="Which project's contexts. Omit when the token is scoped to one.",
     )
-    limit: int = Field(default=25, ge=1, le=MAX_ROWS)
+    limit: int = Field(default=25, ge=1, le=MAX_ROWS, description="Rows to return.")
 
 
 class ListContexts(Tool):
     name = "list_contexts"
     title = "List scan contexts"
-    group = ToolGroup.ORIENT.value
+    group = ToolGroup.ORIENT
     description = (
         "The saved scan contexts in a project, with the id start_scan takes. A context "
         "carries authentication, scope, rate limits and proxy. Credentials are not "
@@ -103,7 +103,9 @@ class ListContexts(Tool):
     async def run(self, ctx: ToolContext, args: ContextsInput) -> ToolResult:
         from app.services.scan_context import ScanContextService  # noqa: PLC0415
 
-        project_id = await project_for(ctx, _uuid(args.project_id, "project_id"))
+        project_id = await project_for(
+            ctx, optional_uuid(args.project_id, "project_id")
+        )
         rows = await ScanContextService(ctx.session).list(project_id)
         shown = rows[: args.limit]
         return ToolResult(
@@ -140,13 +142,3 @@ def _more(total: int, shown: int, noun: str) -> list[str]:
         if total > shown
         else []
     )
-
-
-def _uuid(value: str | None, field: str) -> uuid.UUID | None:
-    if not value:
-        return None
-    try:
-        return uuid.UUID(value)
-    except ValueError as exc:
-        msg = f"{field} must be a uuid, not {value!r}."
-        raise ToolError(msg) from exc

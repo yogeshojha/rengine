@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { page as appPage } from '$app/state';
 	import { replaceState } from '$app/navigation';
@@ -22,10 +23,20 @@
 	import CountTabs from '$lib/components/count-tabs.svelte';
 
 	import QueryBar from './query-bar/query-bar.svelte';
-	import { readPref, rowPadding, selectAllState, writePref } from './table/columns';
+	import { rowPadding, selectAllState } from './table/columns';
+	import { readPref, writePref } from '$lib/utilities/storage';
 	import ListHeader from './table/list-header.svelte';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import GroupList from './table/group-list.svelte';
+	import { GroupedView, ResultsTable } from './table/results-state.svelte';
+	import {
+		flipSort,
+		pageParam,
+		parsePageIndex,
+		parseSort,
+		sortParam,
+		type SortKey
+	} from './table/sort';
 	import SelectionBar from './table/selection-bar.svelte';
 	import RowSelectionBar from './table/row-selection-bar.svelte';
 	import { RowSelection } from './table/selection.svelte';
@@ -87,8 +98,8 @@
 		type TreeNode
 	} from '$lib/utilities/endpoints';
 	import type { Crumb } from './endpoints/outline-context';
-	import type { QueryError, QueryGroups, QueryLeads } from '$lib/types/asset-query';
 	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
+	import { LatestRequest } from '$lib/utilities/latest-request';
 	import { afterPause } from '$lib/utilities/debounce';
 	import { LiveRefresh, Throttled } from '$lib/utilities/live-results';
 	import { formatShortDate } from '$lib/utilities/dates';
@@ -129,7 +140,7 @@
 
 	let ready = $derived(Boolean(projectId) && (projectWide || Boolean(scanId)));
 
-	const DEFAULT_SORT = { key: 'relevance', dir: -1 as const };
+	const DEFAULT_SORT: SortKey = { key: 'relevance', dir: -1 };
 	const DEFAULT_HIDE_STATIC: Record<string, boolean> = { hosts: true, merged: true, list: false };
 	const SEND_CAP = 200;
 
@@ -141,15 +152,24 @@
 	}
 
 	const initial = appPage.url.searchParams;
-	const initialSort = initial.get('ep_sort')?.split(':') ?? [];
 
 	let listColumnsPref = $state<string[] | null>(readPref(STORAGE_KEYS.endpointsColumns, null));
 	let outlineColumnsPref = $state<string[] | null>(
 		readPref(STORAGE_KEYS.endpointsOutlineColumns, null)
 	);
 	let hostColumnsPref = $state<string[] | null>(readPref(STORAGE_KEYS.endpointsHostColumns, null));
-	let density = $state<string>(readPref(STORAGE_KEYS.endpointsDensity, 'cozy'));
-	let pageSize = $state<number>(readPref(STORAGE_KEYS.endpointsPageSize, RESULTS_PAGE_SIZE));
+	const table = new ResultsTable<Endpoint, EndpointFacetSet>({
+		facets: EMPTY_ENDPOINT_FACETS,
+		sort: parseSort(initial.get('ep_sort'), DEFAULT_SORT),
+		pageIndex: parsePageIndex(initial.get('ep_page')),
+		pageSizeKey: STORAGE_KEYS.endpointsPageSize,
+		densityKey: STORAGE_KEYS.endpointsDensity
+	});
+	const groups = new GroupedView(
+		initial.get('ep_group') ?? '',
+		(by) => endpointsApi.groups(projectId, scanId, by, leadFilterWithQuery),
+		() => ready
+	);
 	let view = $state<EndpointView>(
 		normalizeView(initial.get('ep_view') ?? readPref(STORAGE_KEYS.endpointsView, 'hosts'))
 	);
@@ -157,43 +177,21 @@
 		readPref(STORAGE_KEYS.endpointsHideStatic, DEFAULT_HIDE_STATIC)
 	);
 	let hideRootOnly = $state<boolean>(readPref(STORAGE_KEYS.endpointsHideRootOnly, true));
-	let sort = $state<{ key: string; dir: 1 | -1 }>(
-		initialSort[0]
-			? { key: initialSort[0], dir: initialSort[1] === 'desc' ? -1 : 1 }
-			: { ...DEFAULT_SORT }
-	);
-	let hostSort = $state<{ key: string; dir: 1 | -1 }>({ ...DEFAULT_SORT });
-	let pageIndex = $state(Math.max(0, Number(initial.get('ep_page') ?? 1) - 1));
+	let hostSort = $state<SortKey>({ ...DEFAULT_SORT });
 
-	let items = $state<Endpoint[]>([]);
-	let total = $state(0);
-	let totalCapped = $state(false);
-	let queryError = $state<QueryError | null>(null);
-	let queryReady = $state(true);
-	let loading = $state(true);
-	let refreshing = $state(false);
-	let errored = $state(false);
-	let facets = $state<EndpointFacetSet>(EMPTY_ENDPOINT_FACETS);
-	let facetsLoaded = $state(false);
 	let accountLoaded = $state(false);
-	let leadSet = $state<QueryLeads | null>(null);
-	let groupBy = $state<string>(initial.get('ep_group') ?? '');
-	let groupSet = $state<QueryGroups | null>(null);
-	let groupFailed = $state(false);
-	let groupLoading = $state(false);
-	let groupReq = 0;
 	let tree = $state<EndpointTree | null>(null);
 	let treeLoading = $state(false);
-	let treeReq = 0;
+	const treeReq = new LatestRequest();
 	let hosts = $state<HostPage | null>(null);
 	let hostPage = $state(1);
 	let hostsLoading = $state(false);
-	let hostsReq = 0;
+	const hostsReq = new LatestRequest();
 	let hostCursor = $state(-1);
 	let pendingHost: 'first' | 'last' | null = null;
 	let brief = $state<HostBrief | null>(null);
 	let briefLoading = $state(false);
-	let briefReq = 0;
+	const briefReq = new LatestRequest();
 	let openKeys = $state<string[]>([]);
 	let outline = $state<ReturnType<typeof Outline> | null>(null);
 	let expandedCount = $state(0);
@@ -201,7 +199,7 @@
 	let gonePage = $state<GonePage | null>(null);
 	let goneLoading = $state(false);
 	let goneIndex = $state(0);
-	let goneReq = 0;
+	const goneReq = new LatestRequest();
 	let selectedScanId = $state('');
 	let headEl = $state<HTMLElement | null>(null);
 	let crumbs = $state<Crumb[]>([]);
@@ -226,10 +224,9 @@
 	let atEstate = $derived(view === 'hosts' && !query.host);
 	let isTree = $derived(inHost || isMerged);
 	let hideStatic = $derived(hideStaticPref[view] ?? DEFAULT_HIDE_STATIC[view] ?? false);
-	let scanTotal = $derived(facets.total);
-	let staticTotal = $derived(facets.static_total);
-	let pageCount = $derived(Math.max(1, Math.ceil(total / pageSize)));
-	let selectedIndex = $derived(selected ? items.findIndex((e) => e.id === selected?.id) : -1);
+	let scanTotal = $derived(table.facets.total);
+	let staticTotal = $derived(table.facets.static_total);
+	let selectedIndex = $derived(selected ? table.items.findIndex((e) => e.id === selected?.id) : -1);
 	let columnOptions = $derived(
 		atEstate
 			? HOST_COLUMNS
@@ -247,7 +244,7 @@
 	let shownColumns = $derived(columnOptions.filter((c) => visible.includes(c.key)));
 	let filtered = $derived(endpointActiveFacetCount({ ...query, host: '' }) > 0 || !!query.search);
 	let chips = $derived(endpointQueryChips(query).filter((c) => !(inHost && c.id === 'host')));
-	let rowPad = $derived(rowPadding(density));
+	let rowPad = $derived(rowPadding(table.density));
 	let known = $derived((name: string) => endpointQuerySchema.byName.has(name));
 	let terms = $derived(highlightTerms(query.search, known));
 	let classTab = $derived(query.endpointClass || 'all');
@@ -262,9 +259,9 @@
 			for (const [k, v] of Object.entries(brief.by_class)) m[k] = v;
 			return m;
 		}
-		if (!facetsLoaded) return null;
+		if (!table.facetsLoaded) return null;
 		const m: Record<string, number> = { all: hideStatic ? scanTotal - staticTotal : scanTotal };
-		for (const f of facets.endpoint_class) m[f.value] = f.count;
+		for (const f of table.facets.endpoint_class) m[f.value] = f.count;
 		return m;
 	});
 	let proxies = $derived(connectorStore.items);
@@ -279,8 +276,6 @@
 	$effect(() => {
 		if (hostColumnsPref) writePref(STORAGE_KEYS.endpointsHostColumns, hostColumnsPref);
 	});
-	$effect(() => writePref(STORAGE_KEYS.endpointsDensity, density));
-	$effect(() => writePref(STORAGE_KEYS.endpointsPageSize, pageSize));
 	$effect(() => writePref(STORAGE_KEYS.endpointsView, view));
 	$effect(() => writePref(STORAGE_KEYS.endpointsHideStatic, hideStaticPref));
 	$effect(() => writePref(STORAGE_KEYS.endpointsHideRootOnly, hideRootOnly));
@@ -351,7 +346,6 @@
 		rescanOptionsFor = querySelection();
 	}
 
-	let reqId = 0;
 	let timer: ReturnType<typeof setTimeout> | null = null;
 	let lastSig = '';
 	let primed = false;
@@ -363,55 +357,53 @@
 	}
 
 	async function runSearch() {
-		if (!queryReady) {
+		if (!table.queryReady) {
 			syncLeads();
 			return;
 		}
-		const filter = compiled(query, sort.key, sort.dir, pageIndex + 1, pageSize);
+		const filter = compiled(
+			query,
+			table.sort.key,
+			table.sort.dir,
+			table.pageIndex + 1,
+			table.pageSize
+		);
 		const sig = JSON.stringify({ ...filter, page: 1 });
-		if (sig !== lastSig && pageIndex !== 0 && !pendingSelect) {
+		if (sig !== lastSig && table.pageIndex !== 0 && !pendingSelect) {
 			lastSig = sig;
-			pageIndex = 0;
+			table.pageIndex = 0;
 			return;
 		}
 		lastSig = sig;
-		const my = ++reqId;
-		loading = true;
+		const current = table.searchRequest.begin();
+		table.loading = true;
 		try {
 			const res = await endpointsApi.search(projectId, scanId, filter);
-			if (my !== reqId) return;
-			items = res.items;
-			total = res.total;
-			totalCapped = res.total_capped;
-			queryError = res.error;
-			errored = false;
+			if (!current()) return;
+			table.accept(res);
 			if (!res.error && filter.q) queryBar?.remember(filter.q);
 			if (pendingSelect) {
-				selected = pendingSelect === 'first' ? (items[0] ?? null) : (items.at(-1) ?? null);
+				selected =
+					pendingSelect === 'first' ? (table.items[0] ?? null) : (table.items.at(-1) ?? null);
 				pendingSelect = null;
 			}
 		} catch {
-			if (my === reqId) {
-				items = [];
-				total = 0;
-				totalCapped = false;
-				errored = true;
-			}
+			if (current()) table.fail();
 		} finally {
-			if (my === reqId) {
-				loading = false;
+			if (current()) {
+				table.loading = false;
 				syncLeads();
 			}
 		}
 	}
 
-	let treeFilter = $derived(compiled(query, sort.key, sort.dir, 1, 1));
+	let treeFilter = $derived(compiled(query, table.sort.key, table.sort.dir, 1, 1));
 	let treeSig = $derived(JSON.stringify(treeFilter) + (isMerged ? '|m' : '|h'));
 	let loadedTreeSig = '';
 
 	async function loadTree() {
 		if (!ready || !isTree) return;
-		const my = ++treeReq;
+		const current = treeReq.begin();
 		loadedTreeSig = treeSig;
 		treeLoading = true;
 		try {
@@ -421,14 +413,14 @@
 				isMerged ? 'merged' : 'host',
 				treeFilter
 			);
-			if (my === treeReq) tree = res;
+			if (current()) tree = res;
 		} catch {
-			if (my === treeReq) {
+			if (current()) {
 				tree = null;
 				loadedTreeSig = '';
 			}
 		} finally {
-			if (my === treeReq) treeLoading = false;
+			if (current()) treeLoading = false;
 		}
 	}
 
@@ -443,12 +435,12 @@
 
 	async function loadHosts() {
 		if (!ready || view !== 'hosts') return;
-		const my = ++hostsReq;
+		const current = hostsReq.begin();
 		loadedHostsSig = hostsSig;
 		hostsLoading = true;
 		try {
 			const res = await endpointsApi.treeHosts(projectId, scanId, hostsFilter);
-			if (my !== hostsReq) return;
+			if (!current()) return;
 			hosts = res;
 			if (pendingHost) {
 				const pick = pendingHost === 'first' ? res.items[0] : res.items.at(-1);
@@ -456,12 +448,12 @@
 				if (pick) enterHost(pick.name);
 			}
 		} catch {
-			if (my === hostsReq) {
+			if (current()) {
 				hosts = null;
 				loadedHostsSig = '';
 			}
 		} finally {
-			if (my === hostsReq) hostsLoading = false;
+			if (current()) hostsLoading = false;
 		}
 	}
 
@@ -470,19 +462,19 @@
 
 	async function loadBrief() {
 		if (!ready || !inHost) return;
-		const my = ++briefReq;
+		const current = briefReq.begin();
 		loadedBriefSig = briefSig;
 		briefLoading = true;
 		try {
 			const res = await endpointsApi.hostBrief(projectId, scanId, query.host, hideStatic);
-			if (my === briefReq) brief = res;
+			if (current()) brief = res;
 		} catch {
-			if (my === briefReq) {
+			if (current()) {
 				brief = null;
 				loadedBriefSig = '';
 			}
 		} finally {
-			if (my === briefReq) briefLoading = false;
+			if (current()) briefLoading = false;
 		}
 	}
 
@@ -494,18 +486,18 @@
 	});
 
 	let exportFilters = $derived(
-		compiled(query, sort.key, sort.dir, 1, 1) as unknown as Record<string, unknown>
+		compiled(query, table.sort.key, table.sort.dir, 1, 1) as unknown as Record<string, unknown>
 	);
 	const selection = new RowSelection<Endpoint>();
-	let checkedCount = $derived(selection.countOn(items));
-	let selectAllChecked = $derived(selectAllState(checkedCount, items.length));
+	let checkedCount = $derived(selection.countOn(table.items));
+	let selectAllChecked = $derived(selectAllState(checkedCount, table.items.length));
 
 	function toggleCheck(e: Endpoint) {
 		selection.toggle(e);
 	}
 
 	function toggleSelectAll() {
-		selection.toggleAll(items);
+		selection.toggleAll(table.items);
 	}
 
 	async function selectBranch(node: TreeNode) {
@@ -527,7 +519,7 @@
 	let leadFilter = $derived(compiled({ ...query, search: '' }, 'path', 1, 1, 1));
 	let leadSig = $derived(JSON.stringify(leadFilter));
 	let leadFilterWithQuery = $derived({ ...leadFilter, q: treeFilter.q });
-	let groupSig = $derived(groupBy ? JSON.stringify(leadFilterWithQuery) + groupBy : '');
+	let groupSig = $derived(groups.by ? JSON.stringify(leadFilterWithQuery) + groups.by : '');
 	let loadedLeadSig = '';
 
 	async function loadLeads() {
@@ -535,50 +527,27 @@
 		loadedLeadSig = sig;
 		try {
 			const res = await endpointsApi.leads(projectId, scanId, leadFilter);
-			if (leadSig === sig) leadSet = res.computed ? res : null;
+			if (leadSig === sig) table.leadSet = res.computed ? res : null;
 		} catch {
-			if (leadSig === sig) leadSet = null;
+			if (leadSig === sig) table.leadSet = null;
 			loadedLeadSig = '';
 		}
 	}
 
 	function syncLeads() {
-		if (!active || loading || !ready) return;
+		if (!active || table.loading || !ready) return;
 		if (leadSig === loadedLeadSig) return;
 		void loadLeads();
-	}
-
-	async function loadGroups() {
-		if (!groupBy || !ready) {
-			groupSet = null;
-			return;
-		}
-		const my = ++groupReq;
-		groupLoading = true;
-		try {
-			const res = await endpointsApi.groups(projectId, scanId, groupBy, leadFilterWithQuery);
-			if (my === groupReq) {
-				groupSet = res;
-				groupFailed = false;
-			}
-		} catch {
-			if (my === groupReq) {
-				groupSet = null;
-				groupFailed = true;
-			}
-		} finally {
-			if (my === groupReq) groupLoading = false;
-		}
 	}
 
 	async function loadFacets() {
 		if (!ready) return;
 		try {
-			facets = await endpointsApi.facets(projectId, scanId);
-			onScanTotal?.(facets.total);
-			facetsLoaded = true;
+			table.facets = await endpointsApi.facets(projectId, scanId);
+			onScanTotal?.(table.facets.total);
+			table.facetsLoaded = true;
 		} catch {
-			if (!facetsLoaded) facets = EMPTY_ENDPOINT_FACETS;
+			if (!table.facetsLoaded) table.facets = EMPTY_ENDPOINT_FACETS;
 		}
 	}
 
@@ -607,7 +576,7 @@
 		loadedBriefSig = '';
 		return Promise.all([
 			loadFacets(),
-			loadGroups(),
+			groups.reload(),
 			isTree ? loadTree() : Promise.resolve(),
 			view === 'hosts' ? loadHosts() : Promise.resolve(),
 			inHost ? loadBrief() : Promise.resolve(),
@@ -617,13 +586,13 @@
 	const liveAggregates = new Throttled(aggregates);
 
 	async function refresh(quiet = false) {
-		refreshing = !quiet;
+		table.refreshing = !quiet;
 		try {
 			if (!quiet) loadedLeadSig = '';
 			const heavy = quiet ? liveAggregates.call() : aggregates();
 			await Promise.all([runSearch(), heavy ?? Promise.resolve()]);
 		} finally {
-			if (!quiet) refreshing = false;
+			if (!quiet) table.refreshing = false;
 		}
 	}
 
@@ -638,13 +607,13 @@
 
 	$effect(() => {
 		void JSON.stringify(query);
-		void sort.key;
-		void sort.dir;
-		void pageIndex;
-		void pageSize;
+		void table.sort.key;
+		void table.sort.dir;
+		void table.pageIndex;
+		void table.pageSize;
 		void scanId;
 		void projectId;
-		void queryReady;
+		void table.queryReady;
 		void hideStatic;
 		if (!seen || !ready) return;
 		if (timer) clearTimeout(timer);
@@ -691,11 +660,7 @@
 
 	$effect(() => {
 		void groupSig;
-		if (!groupBy) {
-			groupSet = null;
-			return;
-		}
-		return afterPause(loadGroups);
+		return groups.schedule();
 	});
 
 	function syncUrl() {
@@ -705,15 +670,10 @@
 			set('ep_q', query.search || null);
 			set('ep_host', query.host || null);
 			set('ep_dir', query.dir || null);
-			set('ep_group', groupBy || null);
+			set('ep_group', groups.by || null);
 			set('ep_view', view === 'hosts' ? null : view);
-			set('ep_page', pageIndex > 0 ? String(pageIndex + 1) : null);
-			set(
-				'ep_sort',
-				sort.key !== DEFAULT_SORT.key || sort.dir !== DEFAULT_SORT.dir
-					? `${sort.key}:${sort.dir === 1 ? 'asc' : 'desc'}`
-					: null
-			);
+			set('ep_page', pageParam(table.pageIndex));
+			set('ep_sort', sortParam(table.sort, DEFAULT_SORT));
 			const qs = sp.toString();
 			replaceState(qs ? `?${qs}` : location.pathname, appPage.state);
 		} catch {
@@ -724,11 +684,11 @@
 		void query.search;
 		void query.host;
 		void query.dir;
-		void groupBy;
-		void pageIndex;
+		void groups.by;
+		void table.pageIndex;
 		void view;
-		void sort.key;
-		void sort.dir;
+		void table.sort.key;
+		void table.sort.dir;
 		if (!seen || !active) return;
 		untrack(syncUrl);
 	});
@@ -782,7 +742,7 @@
 				`${res.queued.toLocaleString()} ${res.queued === 1 ? 'request' : 'requests'} sent to ${proxyName(connectorId)}.`
 			);
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Requests not sent.');
+			toast.error(errorMessage(e, 'Requests not sent.'));
 		}
 	}
 	async function sendEndpoint(e: Endpoint, connectorId: string) {
@@ -792,7 +752,7 @@
 			});
 			toast.success(`Sent to ${proxyName(connectorId)}.`);
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : 'Request not sent.');
+			toast.error(errorMessage(err, 'Request not sent.'));
 		}
 	}
 	let branchScope = $derived({ projectId, scanId, filter: treeFilter, merged: isMerged });
@@ -806,26 +766,24 @@
 	}
 	function step(dir: -1 | 1) {
 		const next = selectedIndex + dir;
-		if (next >= 0 && next < items.length) {
-			selected = items[next];
+		if (next >= 0 && next < table.items.length) {
+			selected = table.items[next];
 			return;
 		}
-		if (dir === 1 && pageIndex < pageCount - 1) {
+		if (dir === 1 && table.pageIndex < table.pageCount - 1) {
 			pendingSelect = 'first';
-			pageIndex += 1;
-		} else if (dir === -1 && pageIndex > 0) {
+			table.pageIndex += 1;
+		} else if (dir === -1 && table.pageIndex > 0) {
 			pendingSelect = 'last';
-			pageIndex -= 1;
+			table.pageIndex -= 1;
 		}
 	}
 	function toggleSort(key: string) {
 		if (atEstate) {
-			hostSort =
-				hostSort.key === key ? { key, dir: hostSort.dir === 1 ? -1 : 1 } : { key, dir: -1 };
+			hostSort = flipSort(hostSort, key, -1);
 			return;
 		}
-		sort = sort.key === key ? { key, dir: sort.dir === 1 ? -1 : 1 } : { key, dir: 1 };
-		pageIndex = 0;
+		table.toggleSort(key);
 	}
 	function toggleCol(key: string) {
 		const next = visible.includes(key) ? visible.filter((k) => k !== key) : [...visible, key];
@@ -833,25 +791,27 @@
 		else if (isTree) outlineColumnsPref = next;
 		else listColumnsPref = next;
 	}
-	let goneFilter = $derived(compiled(query, sort.key, sort.dir, goneIndex + 1, pageSize));
+	let goneFilter = $derived(
+		compiled(query, table.sort.key, table.sort.dir, goneIndex + 1, table.pageSize)
+	);
 	let goneSig = $derived(JSON.stringify(goneFilter));
 	let loadedGoneSig = '';
 
 	async function loadGone() {
 		if (!ready) return;
-		const my = ++goneReq;
+		const current = goneReq.begin();
 		loadedGoneSig = goneSig;
 		goneLoading = true;
 		try {
 			const res = await endpointsApi.gone(projectId, scanId, goneFilter);
-			if (my === goneReq) gonePage = res;
+			if (current()) gonePage = res;
 		} catch {
-			if (my === goneReq) {
+			if (current()) {
 				gonePage = null;
 				loadedGoneSig = '';
 			}
 		} finally {
-			if (my === goneReq) goneLoading = false;
+			if (current()) goneLoading = false;
 		}
 	}
 
@@ -864,7 +824,7 @@
 
 	$effect(() => {
 		void query;
-		void sort.key;
+		void table.sort.key;
 		untrack(() => (goneIndex = 0));
 	});
 
@@ -876,11 +836,11 @@
 
 	function setHideStatic(value: boolean) {
 		hideStaticPref = { ...hideStaticPref, [view]: value };
-		pageIndex = 0;
+		table.pageIndex = 0;
 	}
 	function setQuery(q: EndpointQuery) {
 		query = q;
-		pageIndex = 0;
+		table.pageIndex = 0;
 	}
 	function setView(v: EndpointView) {
 		view = v;
@@ -891,7 +851,7 @@
 	}
 	function drillGroup(token: string) {
 		setQuery({ ...query, search: appendToken(query.search, token) });
-		groupBy = '';
+		groups.by = '';
 	}
 	function applyDsl(token: string) {
 		setQuery({ ...query, search: appendToken(query.search, token) });
@@ -1016,17 +976,17 @@
 			}
 			return;
 		}
-		if (!isList || !items.length) return;
+		if (!isList || !table.items.length) return;
 		if (e.key === 'j' || e.key === 'ArrowDown') {
 			e.preventDefault();
-			cursor = Math.min(cursor + 1, items.length - 1);
+			cursor = Math.min(cursor + 1, table.items.length - 1);
 			scrollCursor();
 		} else if (e.key === 'k' || e.key === 'ArrowUp') {
 			e.preventDefault();
 			cursor = Math.max(cursor - 1, 0);
 			scrollCursor();
-		} else if (e.key === 'Enter' && cursor >= 0 && items[cursor]) {
-			open(items[cursor]);
+		} else if (e.key === 'Enter' && cursor >= 0 && table.items[cursor]) {
+			open(table.items[cursor]);
 		} else if (e.key === 'Escape') {
 			cursor = -1;
 		}
@@ -1050,13 +1010,13 @@
 		recentsKey={SURFACE[SurfaceDimension.ENDPOINTS].recentsKey}
 		hint={inHost ? 'path:/api or is:param' : 'is:param and is:live'}
 		value={query.search}
-		facets={facets as unknown as Record<string, Facet[]>}
-		busy={loading && !!query.search}
-		{leadSet}
-		total={errored ? null : total}
-		capped={totalCapped}
-		serverError={queryError}
-		onReady={(value) => (queryReady = value)}
+		facets={table.facets as unknown as Record<string, Facet[]>}
+		busy={table.loading && !!query.search}
+		leadSet={table.leadSet}
+		total={table.errored ? null : table.total}
+		capped={table.totalCapped}
+		serverError={table.queryError}
+		onReady={(value) => (table.queryReady = value)}
 		onChange={(v) => setQuery({ ...query, search: v })}
 		onSubmit={flushSearch}
 	/>
@@ -1079,11 +1039,11 @@
 </div>
 
 {#snippet emptyStates()}
-	{#if queryError}
+	{#if table.queryError}
 		<EmptyState
 			icon={SearchX}
 			title="Query did not run"
-			description={queryError.message}
+			description={table.queryError.message}
 			class="rounded-none border-0 bg-transparent py-16"
 		/>
 	{:else if filtered || (hideStatic && scanTotal > 0)}
@@ -1150,8 +1110,8 @@
 	<SelectionBar
 		noun="host"
 		nounPlural="hosts"
-		{total}
-		{totalCapped}
+		total={table.total}
+		totalCapped={table.totalCapped}
 		maxAssets={rechecks.schema?.max_assets ?? 0}
 		queryActive={Boolean(query.search.trim()) || chips.length > 0 || Boolean(query.host)}
 		query={queryLabel()}
@@ -1203,25 +1163,25 @@
 
 	<FilterBar
 		{query}
-		{facets}
+		facets={table.facets}
 		onQuery={setQuery}
 		dimensions={endpointQuerySchema.schema.group_dimensions}
 		columns={columnOptions}
 		{visible}
 		onToggleColumn={toggleCol}
-		{density}
-		onDensity={(d) => (density = d)}
+		density={table.density}
+		onDensity={(d) => (table.density = d)}
 		sorts={atEstate ? HOST_SORTS : ENDPOINT_SORTS}
-		sortKey={atEstate ? hostSort.key : sort.key}
-		sortDir={atEstate ? hostSort.dir : sort.dir}
+		sortKey={atEstate ? hostSort.key : table.sort.key}
+		sortDir={atEstate ? hostSort.dir : table.sort.dir}
 		onSort={toggleSort}
-		{refreshing}
+		refreshing={table.refreshing}
 		{projectId}
 		{scanId}
 		{exportFilters}
 		onRefresh={refresh}
-		{groupBy}
-		onGroupBy={(key) => (groupBy = key)}
+		groupBy={groups.by}
+		onGroupBy={(key) => (groups.by = key)}
 		{view}
 		onView={setView}
 		{inHost}
@@ -1301,7 +1261,7 @@
 					columns={ENDPOINT_COLUMNS.filter((c) =>
 						(listColumnsPref ?? DEFAULT_VISIBLE_ENDPOINT_COLUMNS).includes(c.key)
 					)}
-					{density}
+					density={table.density}
 					rows={5}
 				/>
 			</ScrollArea>
@@ -1320,8 +1280,8 @@
 				columns={ENDPOINT_COLUMNS.filter((c) =>
 					(listColumnsPref ?? DEFAULT_VISIBLE_ENDPOINT_COLUMNS).includes(c.key)
 				)}
-				sortKey={sort.key}
-				sortDir={sort.dir}
+				sortKey={table.sort.key}
+				sortDir={table.sort.dir}
 				onSort={toggleSort}
 			/>
 			<ScrollArea orientation="horizontal" bind:ref={scrollRef}>
@@ -1340,12 +1300,12 @@
 					{/each}
 				</div>
 			</ScrollArea>
-			{#if gonePage.total > pageSize}
+			{#if gonePage.total > table.pageSize}
 				<ResultsPagination
 					total={gonePage.total}
 					capped={gonePage.total_capped}
 					page={goneIndex}
-					{pageSize}
+					pageSize={table.pageSize}
 					noun={EP.noun}
 					plural={EP.nounPlural}
 					onPage={(p) => (goneIndex = p)}
@@ -1360,7 +1320,7 @@
 				description={hosts.error.message}
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
-		{:else if errored && !hosts}
+		{:else if table.errored && !hosts}
 			{@render retryState()}
 		{:else if !hostsLoading && hosts && hosts.items.length === 0}
 			{@render emptyStates()}
@@ -1397,7 +1357,7 @@
 				description={tree.error.message}
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
-		{:else if errored && !tree}
+		{:else if table.errored && !tree}
 			{@render retryState()}
 		{:else if !treeLoading && tree && tree.nodes.length === 0}
 			{@render emptyStates()}
@@ -1419,8 +1379,8 @@
 				paused={drawerOpen}
 				searching={filtered}
 				selectedId={drawerOpen ? (selected?.id ?? null) : null}
-				sortKey={sort.key}
-				sortDir={sort.dir}
+				sortKey={table.sort.key}
+				sortDir={table.sort.dir}
 				connectors={proxies}
 				{catalog}
 				onSort={toggleSort}
@@ -1440,24 +1400,29 @@
 		{/if}
 	{:else}
 		<div class="flex min-w-0 flex-1 flex-col">
-			{#if loading && items.length === 0 && !groupBy}
+			{#if table.loading && table.items.length === 0 && !groups.by}
 				<ScrollArea orientation="horizontal">
-					<TableSkeleton lead={ENDPOINT_LEAD_COLUMNS} columns={shownColumns} {density} selectable />
+					<TableSkeleton
+						lead={ENDPOINT_LEAD_COLUMNS}
+						columns={shownColumns}
+						density={table.density}
+						selectable
+					/>
 				</ScrollArea>
-			{:else if errored}
+			{:else if table.errored}
 				{@render retryState()}
-			{:else if groupBy}
+			{:else if groups.by}
 				<GroupList
-					set={groupSet}
-					failed={groupFailed}
-					onRetry={loadGroups}
+					set={groups.value}
+					failed={groups.failed}
+					onRetry={groups.reload}
 					dimensions={endpointQuerySchema.schema.group_dimensions}
 					noun={endpointQuerySchema.schema.noun}
 					nounPlural={endpointQuerySchema.schema.noun_plural}
-					loading={groupLoading}
+					loading={groups.loading}
 					onPick={drillGroup}
 				/>
-			{:else if items.length === 0}
+			{:else if table.items.length === 0}
 				{@render emptyStates()}
 			{:else}
 				<ListHeader
@@ -1466,16 +1431,18 @@
 					follow={scrollRef}
 					lead={ENDPOINT_LEAD_COLUMNS}
 					columns={shownColumns}
-					sortKey={sort.key}
-					sortDir={sort.dir}
+					sortKey={table.sort.key}
+					sortDir={table.sort.dir}
 					{selectAllChecked}
 					selectAllLabel="Select every endpoint on this page"
 					onSelectAll={toggleSelectAll}
 					onSort={toggleSort}
 				/>
 				<ScrollArea orientation="horizontal" bind:ref={scrollRef}>
-					<div class="divide-y divide-border/50 transition-opacity {loading ? 'opacity-60' : ''}">
-						{#each items as e, i (e.id)}
+					<div
+						class="divide-y divide-border/50 transition-opacity {table.loading ? 'opacity-60' : ''}"
+					>
+						{#each table.items as e, i (e.id)}
 							<div data-endpoint-row-index={i}>
 								<EndpointRow
 									endpoint={e}
@@ -1495,19 +1462,16 @@
 				</ScrollArea>
 			{/if}
 
-			{#if !errored && total > 0 && !groupBy}
+			{#if !table.errored && table.total > 0 && !groups.by}
 				<ResultsPagination
-					{total}
-					capped={totalCapped}
-					page={pageIndex}
-					{pageSize}
+					total={table.total}
+					capped={table.totalCapped}
+					page={table.pageIndex}
+					pageSize={table.pageSize}
 					noun={EP.noun}
 					plural={EP.nounPlural}
-					onPage={(p) => (pageIndex = p)}
-					onPageSize={(s) => {
-						pageSize = s;
-						pageIndex = 0;
-					}}
+					onPage={(p) => (table.pageIndex = p)}
+					onPageSize={(s) => table.setPageSize(s)}
 				/>
 			{/if}
 		</div>
@@ -1521,8 +1485,8 @@
 	open={drawerOpen}
 	onOpenChange={(o) => (drawerOpen = o)}
 	index={isList ? selectedIndex : -1}
-	pageOffset={pageIndex * pageSize}
-	total={isList ? total : 0}
+	pageOffset={table.pageIndex * table.pageSize}
+	total={isList ? table.total : 0}
 	onStep={step}
 	onFilter={applyDsl}
 	onHost={showHost}

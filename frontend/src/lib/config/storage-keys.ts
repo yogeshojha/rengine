@@ -1,9 +1,9 @@
 export const STORAGE_KEYS = {
-	activeProjectSlug: 'activeProjectSlug',
+	activeProjectSlug: 'rengine:projects:activeSlug',
 	launchLastEngine: 'rengine:launch:lastEngine',
 	toolboxLastTool: 'rengine:toolbox:lastTool',
 	launchLastContext: 'rengine:launch:lastContext',
-	targetViews: 'targets:views',
+	targetViews: 'rengine:targets:views',
 	engineLensTargetType: 'rengine:engine:lensTargetType',
 	engineSidePane: 'rengine:engine:sidePane',
 	engineSplit: 'rengine:engine:split',
@@ -51,3 +51,11 @@ export const STORAGE_KEYS = {
 	scanTabs: 'rengine:scan:tabs',
 	paletteRecents: 'rengine:palette:recents'
 } as const;
+
+// Keys that were once stored outside the `rengine:` namespace. `readRaw` in
+// `$lib/utilities/storage` still reads the old name and moves the value over,
+// so a returning viewer keeps the active project and saved target views.
+export const LEGACY_STORAGE_KEYS: Readonly<Record<string, string>> = {
+	[STORAGE_KEYS.activeProjectSlug]: 'activeProjectSlug',
+	[STORAGE_KEYS.targetViews]: 'targets:views'
+};

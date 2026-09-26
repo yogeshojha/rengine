@@ -10,6 +10,9 @@ concurrency:
   group: build-pr-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: 🐳 Build ${{ matrix.image }}
@@ -25,8 +28,8 @@ jobs:
             dockerfile: worker/Dockerfile
             target: production
           - image: frontend
-            dockerfile: frontend/Dockerfile.dev
-            target: ""
+            dockerfile: frontend/Dockerfile
+            target: production
     steps:
       - name: 📥 Checkout the git repo
         uses: actions/checkout@v4

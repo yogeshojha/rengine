@@ -87,13 +87,13 @@ describe('scope', () => {
 
 	it('keeps a run search on that run', () => {
 		expect(searchHref(SurfaceDimension.WEB_ASSETS, 'is:new', SCAN, 'here')).toBe(
-			'/scans/run-1?tab=web-assets&q=is%3Anew'
+			'/scans/run-1?tab=web-assets&wa_q=is%3Anew'
 		);
 	});
 
 	it('anchors a target search to the target', () => {
 		expect(searchHref(SurfaceDimension.WEB_ASSETS, 'is:new', TARGET, 'here')).toBe(
-			'/surface/web-assets?q=target%3Aacme.com+and+%28is%3Anew%29'
+			'/surface/web-assets?wa_q=target%3Aacme.com+and+%28is%3Anew%29'
 		);
 	});
 

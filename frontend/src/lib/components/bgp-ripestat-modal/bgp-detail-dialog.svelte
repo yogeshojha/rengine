@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { targetsApi } from '$lib/api/targets';
 	import type {
 		ASOverviewRead,
@@ -183,7 +184,7 @@
 			prefixOverview = (d.prefix_overview as PrefixOverviewRead[]) ?? null;
 			relatedPrefixes = (d.related_prefixes as RelatedPrefixRead[]) ?? null;
 		} catch (e) {
-			overviewError = e instanceof Error ? e.message : 'BGP data not loaded';
+			overviewError = errorMessage(e, 'BGP data not loaded');
 		} finally {
 			isLoadingOverview = false;
 			isLoadingPrefixes = false;

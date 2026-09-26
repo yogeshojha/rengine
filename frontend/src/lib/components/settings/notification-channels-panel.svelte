@@ -1,9 +1,10 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { onMount } from 'svelte';
-	import { notificationChannelsStore } from '$lib/stores/notificationChannels.svelte';
+	import { notificationChannelsStore } from '$lib/stores/notification-channels.svelte';
 	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
 	import { Capability } from '$lib/config/capabilities';
-	import { notificationChannelsApi } from '$lib/api/notificationChannels';
+	import { notificationChannelsApi } from '$lib/api/notification-channels';
 	import {
 		NOTIF_CATEGORIES,
 		NOTIF_SEVERITIES,
@@ -75,7 +76,7 @@
 	let deletingChannel = $state<NotificationChannelRead | null>(null);
 	let isDeleting = $state(false);
 
-	let channels = $derived(notificationChannelsStore.channels);
+	let channels = $derived(notificationChannelsStore.items);
 	const picked = new SvelteSet<string>();
 
 	function toggleCheck(id: string) {
@@ -130,7 +131,7 @@
 			if (result.success) toast.success(result.message);
 			else toast.error(result.message);
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Test failed');
+			toast.error(errorMessage(e, 'Test failed'));
 		} finally {
 			testingDraft = false;
 		}

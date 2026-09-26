@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { toast } from 'svelte-sonner';
 	import Eye from '@lucide/svelte/icons/eye';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
@@ -88,7 +89,7 @@
 				toast.error(`${rejection.filename} not added`, { description: rejection.reason });
 			}
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Upload failed');
+			toast.error(errorMessage(e, 'Upload failed'));
 		} finally {
 			uploading = false;
 		}
@@ -170,7 +171,7 @@
 					<EmptyState
 						icon={Upload}
 						title="No wordlists"
-						description="Upload a text file with one word per line."
+						description="A wordlist is a text file with one word per line."
 					/>
 				</div>
 			{:else}

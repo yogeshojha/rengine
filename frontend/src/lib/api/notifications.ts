@@ -1,4 +1,5 @@
 import { api } from './client';
+import type { ActionResult } from '$lib/types/action-result';
 import type { Notification, NotificationStats } from '$lib/types/notification';
 import type { PaginatedResponse } from '$lib/types/pagination';
 
@@ -27,14 +28,12 @@ export const notificationsApi = {
 		);
 	},
 
-	markAsRead: (id: number): Promise<{ success: boolean; message: string }> => {
-		return api.patch<{ success: boolean; message: string }>(`/notifications/${id}/read`, {});
+	markAsRead: (id: number): Promise<ActionResult> => {
+		return api.patch<ActionResult>(`/notifications/${id}/read`, {});
 	},
 
-	markAllAsRead: (
-		projectId?: string
-	): Promise<{ success: boolean; message: string; count: number }> => {
-		return api.post<{ success: boolean; message: string; count: number }>(
+	markAllAsRead: (projectId?: string): Promise<ActionResult & { count: number }> => {
+		return api.post<ActionResult & { count: number }>(
 			`/notifications/read-all${projectId ? `?project_id=${projectId}` : ''}`,
 			{}
 		);

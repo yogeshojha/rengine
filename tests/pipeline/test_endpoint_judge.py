@@ -23,14 +23,11 @@ def _url(path: str) -> str:
 async def _write(
     estate, scan: str, paths: list[str], source=EndpointSource.CRAWL.value
 ):
-    sid = estate.scans[scan]
-    target_id = await estate._target_of(sid)
+    ids = estate.row_ids(scan)
     return await estate.session.run_sync(
         lambda s: endpoint_inventory.upsert(
             s,
-            scan_id=sid,
-            target_id=target_id,
-            project_id=estate.project_id,
+            **ids,
             source=source,
             observations=[EndpointObservation(url=_url(p)) for p in paths],
             policy=NoisePolicy.off(),

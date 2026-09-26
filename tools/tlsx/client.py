@@ -27,7 +27,12 @@ class TlsxClient:
         self.recorder = recorder
         self.extra_args = extra_args or []
         try:
-            self._runner = CLIToolRunner(TLSX_BINARY, default_timeout=timeout)
+            self._runner = CLIToolRunner(
+                TLSX_BINARY,
+                default_timeout=timeout,
+                recorder=recorder,
+                extra_args=self.extra_args,
+            )
         except ToolNotFoundError as e:
             raise TlsxError(str(e)) from e
 
@@ -43,13 +48,6 @@ class TlsxClient:
         return self._runner.run(
             args=args,
             input_data=hosts,
-            input_flag="-l",
             output_format=OutputFormat.JSONL,
-            json_flag="-json",
             timeout=timeout,
-            silent=True,
-            silent_flag="-silent",
-            recorder=self.recorder,
-            tool=TLSX_BINARY,
-            extra_args=self.extra_args,
         )

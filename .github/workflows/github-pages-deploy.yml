@@ -6,6 +6,10 @@ on:
       - master
   workflow_dispatch:
 
+# peaceiris/actions-gh-pages pushes the gh-pages branch with GITHUB_TOKEN
+permissions:
+  contents: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest

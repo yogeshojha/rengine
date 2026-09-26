@@ -1,3 +1,5 @@
+import type { ActionResult } from './action-result';
+
 export interface AiUsage {
 	calls: number;
 	cached: number;
@@ -59,9 +61,7 @@ export interface AiSettingsUpdate {
 	features?: Record<string, boolean>;
 }
 
-export interface AiTestResult {
-	success: boolean;
-	message: string;
+export interface AiTestResult extends ActionResult {
 	model: string | null;
 	latency_ms: number | null;
 }

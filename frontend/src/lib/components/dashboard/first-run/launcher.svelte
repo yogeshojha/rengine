@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import Play from '@lucide/svelte/icons/play';
@@ -88,7 +89,7 @@
 			dashboardStore.refresh();
 			onStarted?.();
 		} catch (e) {
-			problem = e instanceof Error ? e.message : 'Scan not started.';
+			problem = errorMessage(e, 'Scan not started.');
 		} finally {
 			starting = false;
 		}

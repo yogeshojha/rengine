@@ -19,11 +19,8 @@ from shared.definitions.vulnerabilities import (
     TemplateOrigin,
     reject_unknown,
 )
+from shared.models._columns import json_list
 from shared.utils.datetime import utc_now
-
-
-def _json_list() -> Field:
-    return Field(default_factory=list, sa_column=Column(JSON, nullable=False))
 
 
 class VulnTemplate(SQLModel, table=True):
@@ -46,11 +43,11 @@ class VulnTemplate(SQLModel, table=True):
     directory: str = Field(default="", max_length=200, index=True)
     description: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
     remediation: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
-    tags: list = _json_list()
-    authors: list = _json_list()
-    references: list = _json_list()
-    cve_ids: list = _json_list()
-    cwe_ids: list = _json_list()
+    tags: list = json_list()
+    authors: list = json_list()
+    references: list = json_list()
+    cve_ids: list = json_list()
+    cwe_ids: list = json_list()
     cvss_score: float | None = Field(default=None)
     requests: int = Field(default=0)
     paths: list | None = Field(

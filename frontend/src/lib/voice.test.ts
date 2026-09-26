@@ -13,7 +13,8 @@ const SCOPE_NARRATION =
 // a description may decode a visual encoding; that is not a restatement
 const ENCODING = /\b(sized|tinted|coloured|colored|ranked|ordered|scaled|shaded) by\b/i;
 const RHETORICAL = /^(What|Where|Why|How|Who)\b/;
-const IMPERATIVE = /^(Leave|Pick|Tick|Press|Make sure|Please|Head|Go|Click|Hover)\b/;
+const IMPERATIVE =
+	/^(Leave|Pick|Tick|Press|Make sure|Please|Head|Go|Click|Hover|Add|Choose|Select|Enter|Use|Try|Paste|Upload|Enable|Disable|Configure|Create|Remove|Save|Drag|Connect)\b/;
 
 const STOP = new Set([
 	'a',
@@ -59,15 +60,16 @@ function walk(dir: string, out: string[] = []): string[] {
 		const path = join(dir, name);
 		if (name === 'ui' && dir.endsWith('components')) continue;
 		if (statSync(path).isDirectory()) walk(path, out);
-		else if (/\.svelte$/.test(name)) out.push(path);
+		else if (/\.(svelte|ts)$/.test(name) && !/\.(test|d)\.ts$/.test(name)) out.push(path);
 	}
 	return out;
 }
 
-const files = walk(ROOT).map((path) => ({
+const sources = walk(ROOT).map((path) => ({
 	name: path.slice(ROOT.length + 1),
 	text: readFileSync(path, 'utf8')
 }));
+const files = sources.filter(({ name }) => name.endsWith('.svelte'));
 
 // an informational heading describes; an action heading (confirm, empty state)
 // states a consequence, which is not a restatement
@@ -102,10 +104,32 @@ function descriptions(text: string): string[] {
 	return [...text.matchAll(re)].map((m) => m[1]);
 }
 
+// a descriptive prop outside `description=`: a tray's detail, a sheet's
+// description, a hint or caption under a field
+const PROSE_ATTR = /\b(sheetDescription|subtitle|detail|hint|help|caption)=\{?"([^"{}]{4,300})"/g;
+// a step, a config entry or a table row carries its description as a property
+const PROSE_PROP =
+	/\b(description|subtitle|detail|hint|help|caption)\??:\s*(['"])((?:(?!\2)[^\\]|\\.){4,400})\2/g;
+// a short string that lands inside a sentence the UI composes ("domains
+// associated with {subject}") or on a control
+const LABEL_ATTR = /\b(subject|title|label|placeholder|aria-label)=\{?"([^"{}]{2,200})"/g;
+
+/** descriptive copy outside `description=` attributes, in .svelte and .ts. */
+function prose(name: string, text: string): string[] {
+	const found = [...text.matchAll(PROSE_PROP)].map((m) => m[3]);
+	if (name.endsWith('.svelte')) found.push(...[...text.matchAll(PROSE_ATTR)].map((m) => m[2]));
+	return found;
+}
+
+/** short strings a component shows as a label or folds into a sentence. */
+function labels(name: string, text: string): string[] {
+	return name.endsWith('.svelte') ? [...text.matchAll(LABEL_ATTR)].map((m) => m[2]) : [];
+}
+
 describe('voice', () => {
 	it('keeps LLM register out of copy', () => {
-		const offenders = files.flatMap(({ name, text }) =>
-			[...descriptions(text), ...subtitles(text)]
+		const offenders = sources.flatMap(({ name, text }) =>
+			[...descriptions(text), ...subtitles(text), ...prose(name, text)]
 				.filter((s) => REGISTER.test(s))
 				.map((s) => `${name}: ${s}`)
 		);
@@ -113,8 +137,8 @@ describe('voice', () => {
 	});
 
 	it('does not address the reader', () => {
-		const offenders = files.flatMap(({ name, text }) =>
-			[...descriptions(text), ...subtitles(text)]
+		const offenders = sources.flatMap(({ name, text }) =>
+			[...descriptions(text), ...subtitles(text), ...prose(name, text), ...labels(name, text)]
 				.filter((s) => ADDRESS.test(s))
 				.map((s) => `${name}: ${s}`)
 		);
@@ -122,8 +146,8 @@ describe('voice', () => {
 	});
 
 	it('does not narrate scope a control already shows', () => {
-		const offenders = files.flatMap(({ name, text }) =>
-			[...descriptions(text), ...subtitles(text)]
+		const offenders = sources.flatMap(({ name, text }) =>
+			[...descriptions(text), ...subtitles(text), ...prose(name, text)]
 				.filter((s) => SCOPE_NARRATION.test(s))
 				.map((s) => `${name}: ${s}`)
 		);
@@ -131,8 +155,8 @@ describe('voice', () => {
 	});
 
 	it('does not pose a heading or description as a question', () => {
-		const offenders = files.flatMap(({ name, text }) =>
-			[...descriptions(text), ...subtitles(text), ...headings(text)]
+		const offenders = sources.flatMap(({ name, text }) =>
+			[...descriptions(text), ...subtitles(text), ...headings(text), ...prose(name, text)]
 				.filter((s) => RHETORICAL.test(s))
 				.map((s) => `${name}: ${s}`)
 		);
@@ -140,8 +164,8 @@ describe('voice', () => {
 	});
 
 	it('does not instruct the reader from a description', () => {
-		const offenders = files.flatMap(({ name, text }) =>
-			[...descriptions(text), ...subtitles(text)]
+		const offenders = sources.flatMap(({ name, text }) =>
+			[...descriptions(text), ...subtitles(text), ...prose(name, text)]
 				.filter((s) => IMPERATIVE.test(s))
 				.map((s) => `${name}: ${s}`)
 		);

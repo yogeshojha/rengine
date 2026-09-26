@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import ipaddress
 from functools import lru_cache
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import FileText from '@lucide/svelte/icons/file-text';
 	import Code from '@lucide/svelte/icons/code';
 	import List from '@lucide/svelte/icons/list';
@@ -381,7 +382,7 @@
 			previewItems = validated;
 			mode = 'preview';
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Input not processed');
+			toast.error(errorMessage(e, 'Input not processed'));
 		} finally {
 			isProcessing = false;
 			validateDone = 0;
@@ -401,7 +402,7 @@
 
 			await executeImport(items);
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Import failed');
+			toast.error(errorMessage(e, 'Import failed'));
 			isImporting = false;
 		}
 	}
@@ -413,7 +414,7 @@
 			const validItems = previewItems.filter((item) => !item.error);
 			await executeImport(validItems);
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Import failed');
+			toast.error(errorMessage(e, 'Import failed'));
 			isImporting = false;
 		}
 	}

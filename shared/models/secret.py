@@ -4,7 +4,6 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 from pydantic import Field as PydanticField
 from sqlalchemy import BigInteger, Column, Text
-from sqlalchemy.types import JSON
 from sqlmodel import Field, Index, SQLModel, UniqueConstraint
 
 from shared.definitions.asset_query import MAX_QUERY_LENGTH
@@ -16,16 +15,9 @@ from shared.definitions.secrets import (
 )
 from shared.definitions.surface import MAX_SELECTED_ROWS
 from shared.definitions.vulnerabilities import CoverageStatus
+from shared.models._columns import json_dict, nullable_text
 from shared.models.asset_query import MatchEvidence, QueryError
 from shared.utils.datetime import utc_now
-
-
-def _json_dict() -> Field:
-    return Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
-
-
-def _text() -> Field:
-    return Field(default=None, sa_column=Column(Text, nullable=True))
 
 
 class Secret(SQLModel, table=True):
@@ -57,14 +49,14 @@ class Secret(SQLModel, table=True):
     # the value
     value: str = Field(sa_column=Column(Text, nullable=False))
     subject: str | None = Field(default=None, max_length=MAX_SUBJECT_LENGTH, index=True)
-    meta: dict = _json_dict()
+    meta: dict = json_dict()
 
     # where it was read, first sighting
     host: str = Field(max_length=MAX_HOST_LENGTH, index=True)
     url: str = Field(max_length=MAX_URL_LENGTH)
     http_asset_id: uuid.UUID | None = Field(default=None, index=True)
     source: str = Field(default=SecretSource.BODY.value, max_length=16)
-    context: str | None = _text()
+    context: str | None = nullable_text()
 
     sightings: int = Field(default=1)
     hosts: int = Field(default=1)
@@ -97,7 +89,7 @@ class SecretSighting(SQLModel, table=True):
     http_asset_id: uuid.UUID | None = Field(default=None, index=True)
     source: str = Field(default=SecretSource.BODY.value, max_length=16)
     offset: int = Field(default=0)
-    context: str | None = _text()
+    context: str | None = nullable_text()
 
     created_at: datetime = Field(default_factory=utc_now)
 
@@ -128,7 +120,7 @@ class SecretCoverage(SQLModel, table=True):
     detectors: int = Field(default=0)
     matches: int = Field(default=0)
     secrets: int = Field(default=0)
-    dropped: dict = _json_dict()
+    dropped: dict = json_dict()
     error: str | None = Field(default=None, max_length=2000)
 
     started_at: datetime = Field(default_factory=utc_now)

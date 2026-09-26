@@ -1,6 +1,7 @@
 import { wordlistsApi } from '$lib/api/wordlists';
 import type { Wordlist, WordlistUpload, WordlistUploadResult } from '$lib/types/wordlist';
 import { toast } from 'svelte-sonner';
+import { errorMessage } from '$lib/utilities/errors';
 
 function createWordlistsStore() {
 	let wordlists = $state<Wordlist[]>([]);
@@ -29,7 +30,7 @@ function createWordlistsStore() {
 				wordlists = await wordlistsApi.list();
 				hasFetched = true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Wordlists not loaded');
+				toast.error(errorMessage(e, 'Wordlists not loaded'));
 			} finally {
 				isLoading = false;
 			}
@@ -41,7 +42,7 @@ function createWordlistsStore() {
 				if (result.stored.length) await this.fetch(true);
 				return result;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Upload failed');
+				toast.error(errorMessage(e, 'Upload failed'));
 				return null;
 			}
 		},
@@ -52,7 +53,7 @@ function createWordlistsStore() {
 				wordlists = wordlists.filter((w) => w.id !== id);
 				return true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Wordlist not deleted');
+				toast.error(errorMessage(e, 'Wordlist not deleted'));
 				return false;
 			}
 		},

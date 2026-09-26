@@ -8,6 +8,7 @@ import type { SignalFilter, SortDir, SortKey, TargetSummary } from '$lib/utiliti
 import { SvelteURLSearchParams } from 'svelte/reactivity';
 import { scansStore } from '$lib/stores/scans.svelte';
 import { dashboardStore } from '$lib/stores/dashboard.svelte';
+import { errorMessage } from '$lib/utilities/errors';
 
 interface TargetFilters {
 	projectSlug?: string;
@@ -203,7 +204,7 @@ function createTargetsStore() {
 
 				hasFetched = true;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Targets not loaded';
+				error = errorMessage(e, 'Targets not loaded');
 			} finally {
 				isLoading = false;
 			}
@@ -357,7 +358,7 @@ function createTargetsStore() {
 				await this.refresh();
 				return newTarget;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Target not created';
+				error = errorMessage(e, 'Target not created');
 				return null;
 			}
 		},
@@ -376,7 +377,7 @@ function createTargetsStore() {
 				targets = targets.map((t) => (t.id === targetId ? updatedTarget : t));
 				return updatedTarget;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Target not saved';
+				error = errorMessage(e, 'Target not saved');
 				return null;
 			}
 		},
@@ -433,7 +434,7 @@ function createTargetsStore() {
 				dashboardStore.markStale();
 				return true;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Target not deleted';
+				error = errorMessage(e, 'Target not deleted');
 				return false;
 			}
 		},

@@ -12,10 +12,7 @@ import type {
 	PairingApprove,
 	PairingRequest
 } from '$lib/types/remote-control';
-
-function message(e: unknown, fallback: string): string {
-	return e instanceof Error ? e.message : fallback;
-}
+import { errorMessage } from '$lib/utilities/errors';
 
 function createRemoteControlStore() {
 	let channel = $state<ChannelKind | null>(null);
@@ -73,7 +70,7 @@ function createRemoteControlStore() {
 				status = s;
 				commands = c;
 			} catch (e) {
-				toast.error(message(e, 'Remote control status not loaded'));
+				toast.error(errorMessage(e, 'Remote control status not loaded'));
 			} finally {
 				isLoading = false;
 			}
@@ -84,7 +81,7 @@ function createRemoteControlStore() {
 			try {
 				status = await remoteControlApi.status(channel);
 			} catch (e) {
-				if (!silent) toast.error(message(e, 'Remote control status not loaded'));
+				if (!silent) toast.error(errorMessage(e, 'Remote control status not loaded'));
 			}
 		},
 
@@ -98,7 +95,7 @@ function createRemoteControlStore() {
 				pending = p;
 				chats = c;
 			} catch (e) {
-				if (!silent) toast.error(message(e, 'Paired chats not loaded'));
+				if (!silent) toast.error(errorMessage(e, 'Paired chats not loaded'));
 			}
 		},
 
@@ -108,7 +105,7 @@ function createRemoteControlStore() {
 				calls = await remoteControlApi.calls(channel);
 				callsLoadedAt = Date.now();
 			} catch (e) {
-				if (!silent) toast.error(message(e, 'Recent commands not loaded'));
+				if (!silent) toast.error(errorMessage(e, 'Recent commands not loaded'));
 			}
 		},
 
@@ -120,7 +117,7 @@ function createRemoteControlStore() {
 				if (success) toast.success(success);
 				return true;
 			} catch (e) {
-				toast.error(message(e, 'Settings not saved'));
+				toast.error(errorMessage(e, 'Settings not saved'));
 				return false;
 			} finally {
 				isSaving = false;
@@ -138,7 +135,7 @@ function createRemoteControlStore() {
 				await this.refreshStatus(true);
 				return result;
 			} catch (e) {
-				toast.error(message(e, 'Bot token not verified'));
+				toast.error(errorMessage(e, 'Bot token not verified'));
 				return null;
 			}
 		},
@@ -151,7 +148,7 @@ function createRemoteControlStore() {
 				await Promise.all([this.loadAdmin(true), this.refreshStatus(true)]);
 				return chat;
 			} catch (e) {
-				toast.error(message(e, 'Chat not paired'));
+				toast.error(errorMessage(e, 'Chat not paired'));
 				return null;
 			}
 		},
@@ -164,7 +161,7 @@ function createRemoteControlStore() {
 				await Promise.all([this.loadAdmin(true), this.refreshStatus(true)]);
 				return true;
 			} catch (e) {
-				toast.error(message(e, 'Chat not blocked'));
+				toast.error(errorMessage(e, 'Chat not blocked'));
 				return false;
 			}
 		},
@@ -177,7 +174,7 @@ function createRemoteControlStore() {
 				toast.success('Chat updated');
 				return true;
 			} catch (e) {
-				toast.error(message(e, 'Chat not updated'));
+				toast.error(errorMessage(e, 'Chat not updated'));
 				return false;
 			}
 		},
@@ -191,7 +188,7 @@ function createRemoteControlStore() {
 				await this.refreshStatus(true);
 				return true;
 			} catch (e) {
-				toast.error(message(e, 'Chat not revoked'));
+				toast.error(errorMessage(e, 'Chat not revoked'));
 				return false;
 			}
 		},
@@ -205,7 +202,7 @@ function createRemoteControlStore() {
 				await this.refreshStatus(true);
 				return true;
 			} catch (e) {
-				toast.error(message(e, 'Chat not deleted'));
+				toast.error(errorMessage(e, 'Chat not deleted'));
 				return false;
 			}
 		},

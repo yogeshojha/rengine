@@ -57,9 +57,8 @@ class HostDiscoveryStage(Stage):
                     timeout=self.transport.timeout,
                     retries=self.transport.retries,
                     proxy_url=net.proxy_url,
-                    extra_args=self.ctx.resolved.tool_args("naabu"),
                 ),
-                recorder=self.ctx.recorder,
+                **self.wiring("naabu"),
             )
         except NaabuError as exc:
             logger.warning("naabu unavailable, skipping host discovery")

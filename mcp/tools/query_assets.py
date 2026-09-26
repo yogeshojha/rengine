@@ -44,7 +44,7 @@ class QueryAssets(Tool):
     name = "query_assets"
     value_field = "target"
     title = "Query assets"
-    group = ToolGroup.INTERROGATE.value
+    group = ToolGroup.INTERROGATE
     description = (
         "Search one dimension of the attack surface with the query language, on one "
         "target or across every target in the project. Returns matching rows and a "

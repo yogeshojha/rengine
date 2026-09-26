@@ -1,6 +1,7 @@
 import { aiApi } from '$lib/api/ai';
 import type { AiCatalog, AiSettingsUpdate, AiStatus, AiTestResult } from '$lib/types/ai';
 import { toast } from 'svelte-sonner';
+import { errorMessage } from '$lib/utilities/errors';
 
 function createAiStore() {
 	let status = $state<AiStatus | null>(null);
@@ -38,7 +39,7 @@ function createAiStore() {
 				catalog = c;
 				hasFetched = true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'AI settings not loaded');
+				toast.error(errorMessage(e, 'AI settings not loaded'));
 			} finally {
 				isLoading = false;
 			}
@@ -50,7 +51,7 @@ function createAiStore() {
 				status = await aiApi.update(body);
 				return true;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'AI settings not saved');
+				toast.error(errorMessage(e, 'AI settings not saved'));
 				return false;
 			} finally {
 				isSaving = false;
@@ -61,7 +62,7 @@ function createAiStore() {
 			try {
 				return await aiApi.test(body);
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Test not run');
+				toast.error(errorMessage(e, 'Test not run'));
 				return null;
 			}
 		},
@@ -72,7 +73,7 @@ function createAiStore() {
 				if (status) status = { ...status, cached_narratives: 0 };
 				return result.removed;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Cache not cleared');
+				toast.error(errorMessage(e, 'Cache not cleared'));
 				return 0;
 			}
 		},

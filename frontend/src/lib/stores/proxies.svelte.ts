@@ -1,109 +1,30 @@
-import { proxiesApi } from '$lib/api/proxies';
-import type { ProxyRead, ProxyCreate, ProxyUpdate, ProxyTestResult } from '$lib/types/proxy';
 import { toast } from 'svelte-sonner';
+import { proxiesApi } from '$lib/api/proxies';
+import { createCrudStore } from '$lib/stores/crud.svelte';
+import type { ProxyRead } from '$lib/types/proxy';
+import { errorMessage } from '$lib/utilities/errors';
 
 function createProxiesStore() {
-	let proxies = $state<ProxyRead[]>([]);
-	let isLoading = $state(false);
-	let hasFetched = $state(false);
+	const store = createCrudStore(proxiesApi, {
+		notLoaded: 'Proxies not loaded',
+		notCreated: 'Proxy not created',
+		notSaved: 'Proxy not saved',
+		notDeleted: 'Proxy not deleted',
+		testFailed: 'Proxy test failed'
+	});
 
-	return {
-		get proxies() {
-			return proxies;
-		},
-		get isLoading() {
-			return isLoading;
-		},
-		get hasFetched() {
-			return hasFetched;
-		},
-
-		async fetch() {
-			if (isLoading) return;
-			isLoading = true;
-			try {
-				proxies = await proxiesApi.list();
-				hasFetched = true;
-			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Proxies not loaded');
-			} finally {
-				isLoading = false;
-			}
-		},
-
-		async create(data: ProxyCreate): Promise<ProxyRead | null> {
-			try {
-				const created = await proxiesApi.create(data);
-				proxies = [...proxies, created];
-				return created;
-			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Proxy not created');
-				return null;
-			}
-		},
-
-		async update(id: string, data: ProxyUpdate): Promise<ProxyRead | null> {
-			try {
-				const updated = await proxiesApi.update(id, data);
-				proxies = proxies.map((p) => (p.id === id ? updated : p));
-				return updated;
-			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Proxy not saved');
-				return null;
-			}
-		},
-
-		drop(id: string): void {
-			proxies = proxies.filter((p) => p.id !== id);
-		},
-
-		async remove(id: string): Promise<boolean> {
-			try {
-				await proxiesApi.remove(id);
-				proxies = proxies.filter((p) => p.id !== id);
-				return true;
-			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Proxy not deleted');
-				return false;
-			}
-		},
-
-		async test(id: string): Promise<ProxyTestResult | null> {
-			try {
-				const result = await proxiesApi.test(id);
-				proxies = proxies.map((p) =>
-					p.id === id
-						? {
-								...p,
-								last_test_at: new Date().toISOString(),
-								last_test_ok: result.success,
-								last_test_message: result.message
-							}
-						: p
-				);
-				return result;
-			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Proxy test failed');
-				return null;
-			}
-		},
-
+	return Object.assign(store, {
 		async setDefault(id: string): Promise<ProxyRead | null> {
 			try {
 				const updated = await proxiesApi.setDefault(id);
-				proxies = proxies.map((p) => ({ ...p, is_default: p.id === id }));
+				store.patchAll((p) => ({ ...p, is_default: p.id === id }));
 				return updated;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Default proxy not set');
+				toast.error(errorMessage(e, 'Default proxy not set'));
 				return null;
 			}
-		},
-
-		clear() {
-			proxies = [];
-			hasFetched = false;
 		}
-	};
+	});
 }
 
 export const proxiesStore = createProxiesStore();

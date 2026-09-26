@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { onMount } from 'svelte';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
@@ -29,7 +30,7 @@
 		try {
 			providers = (await apiKeysApi.listProviders()).filter((p) => !p.configured);
 		} catch (e) {
-			loadError = e instanceof Error ? e.message : 'Integrations not loaded';
+			loadError = errorMessage(e, 'Integrations not loaded');
 		} finally {
 			loading = false;
 		}
@@ -55,7 +56,7 @@
 			return true;
 		} catch (e) {
 			if (isAlreadyExists(e)) return true;
-			toast.error(e instanceof Error ? e.message : `${p.name} key not saved`);
+			toast.error(errorMessage(e, `${p.name} key not saved`));
 			return false;
 		}
 	}

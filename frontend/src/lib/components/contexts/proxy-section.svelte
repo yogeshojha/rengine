@@ -23,7 +23,7 @@
 		if (!proxiesStore.hasFetched) proxiesStore.fetch();
 	});
 
-	let activeProxies = $derived(proxiesStore.proxies.filter((p) => p.is_active));
+	let activeProxies = $derived(proxiesStore.items.filter((p) => p.is_active));
 	let selectedId = $derived(context.proxy_id ?? SELECT_NONE);
 	let selected = $derived(activeProxies.find((p) => p.id === context.proxy_id) ?? null);
 
