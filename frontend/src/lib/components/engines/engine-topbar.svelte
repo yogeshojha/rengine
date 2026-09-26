@@ -16,20 +16,28 @@
 	import Download from '@lucide/svelte/icons/download';
 	import Pencil from '@lucide/svelte/icons/pencil';
 	import Terminal from '@lucide/svelte/icons/terminal';
+	import Gauge from '@lucide/svelte/icons/gauge';
 	import MoreHorizontal from '@lucide/svelte/icons/more-horizontal';
 	import LoadingButton from '@/components/loading-button.svelte';
 	import type { Intensity, ScanEngine } from '$lib/types/scan-engine';
-	import { INTENSITIES, INTENSITY_HELP, INTENSITY_LABELS } from '$lib/types/scan-engine';
+	import {
+		INTENSITIES,
+		INTENSITY_HELP,
+		INTENSITY_LABELS,
+		INTENSITY_TAGLINE
+	} from '$lib/types/scan-engine';
 
 	interface Props {
 		engine: ScanEngine;
 		isSaving: boolean;
 		hasUnsavedChanges: boolean;
 		errorCount: number;
+		custom: boolean;
 		onSave: () => void;
 		onNameChange: (name: string) => void;
 		onIntensityChange: (intensity: Intensity) => void;
 		onToolOptions: () => void;
+		onRates: () => void;
 		onRun: () => void;
 		onBack: () => void;
 		onDuplicate?: () => void;
@@ -42,10 +50,12 @@
 		isSaving,
 		hasUnsavedChanges,
 		errorCount,
+		custom,
 		onSave,
 		onNameChange,
 		onIntensityChange,
 		onToolOptions,
+		onRates,
 		onRun,
 		onBack,
 		onDuplicate,
@@ -135,6 +145,26 @@
 				</Tooltip.Root>
 			{/each}
 		</ToggleGroup.Root>
+
+		<Tooltip.Root>
+			<Tooltip.Trigger>
+				{#snippet child({ props })}
+					<Button
+						{...props}
+						variant={custom ? 'default' : 'ghost'}
+						size="sm"
+						class="h-7 gap-1.5 px-2 text-xs"
+						onclick={onRates}
+					>
+						<Gauge size={13} />
+						{custom ? 'Custom' : 'Rates'}
+					</Button>
+				{/snippet}
+			</Tooltip.Trigger>
+			<Tooltip.Content class="max-w-[220px] text-xs">
+				{custom ? INTENSITY_TAGLINE.custom : 'Set requests a second and concurrency per tool'}
+			</Tooltip.Content>
+		</Tooltip.Root>
 	</div>
 
 	<div class="right">

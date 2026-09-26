@@ -39,6 +39,7 @@
 	import ResolvedPanel from '$lib/components/engines/resolved-panel.svelte';
 	import DiffPanel from '$lib/components/engines/diff-panel.svelte';
 	import ToolOptionsPanel from '$lib/components/engines/tool-options-panel.svelte';
+	import TransportPanel from '$lib/components/engines/transport-panel.svelte';
 
 	import { scanEnginesStore } from '$lib/stores/scan-engines.svelte';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
@@ -55,8 +56,10 @@
 		Intensity,
 		ScanEngine,
 		StageCatalogEntry,
-		StageConfig
+		StageConfig,
+		TransportOverrides
 	} from '$lib/types/scan-engine';
+	import { hasCustomTransport } from '$lib/types/scan-engine';
 	import type { PreviewPhase } from '$lib/types/scan';
 	import {
 		engineToYaml,
@@ -96,6 +99,10 @@
 	let showToolOptions = $state(false);
 	let showLaunch = $state(false);
 	let pendingToolOptions = $state<Record<string, string> | null>(null);
+	let showTransport = $state(false);
+	let pendingTransport = $state<TransportOverrides | null>(null);
+	let presetRates = $state<Record<string, number>>({});
+	let presetThreads = $state<Record<string, number>>({});
 	let showDeleteDialog = $state(false);
 	let isDeleting = $state(false);
 	let showLeaveDialog = $state(false);
@@ -138,7 +145,7 @@
 	const hasUnsavedChanges = $derived(
 		Boolean(engine) &&
 			Boolean(yamlSource) &&
-			(yamlSource !== savedYaml || pendingToolOptions !== null)
+			(yamlSource !== savedYaml || pendingToolOptions !== null || pendingTransport !== null)
 	);
 
 	const stageStates = $derived(
@@ -268,9 +275,10 @@
 		const stages = parsed?.stages;
 		const intensity = parsed?.intensity;
 		const target = lensTargetType;
+		const transport = engine?.transport_overrides ?? {};
 		if (!stages || !engineCatalogStore.hasFetched) return;
 		const timer = setTimeout(
-			() => refreshPreview(target, intensity as Intensity, stages),
+			() => refreshPreview(target, intensity as Intensity, stages, transport),
 			PREVIEW_DEBOUNCE_MS
 		);
 		return () => clearTimeout(timer);
@@ -280,7 +288,8 @@
 	async function refreshPreview(
 		target_type: string,
 		intensity: Intensity,
-		stages: Record<string, StageConfig>
+		stages: Record<string, StageConfig>,
+		transport_overrides: TransportOverrides
 	) {
 		const token = ++previewToken;
 		previewLoading = true;
@@ -289,12 +298,15 @@
 			const result = await scanEnginesApi.preview({
 				target_type,
 				intensity,
-				stages
+				stages,
+				transport_overrides
 			});
 			if (token === previewToken) {
 				previewPhases = result.phases;
 				resolvedStages = result.resolved_stages;
 				previewWarnings = result.warnings;
+				presetRates = result.resolved.preset_rates ?? {};
+				presetThreads = result.resolved.preset_threads ?? {};
 			}
 		} catch (e) {
 			if (token === previewToken) {
@@ -348,11 +360,13 @@
 				intensity: draft.intensity,
 				stages: draft.stages,
 				yaml_source: yamlSource,
-				tool_options: pendingToolOptions ?? draft.tool_options
+				tool_options: pendingToolOptions ?? draft.tool_options,
+				transport_overrides: pendingTransport ?? draft.transport_overrides ?? {}
 			});
 			if (updated) {
 				engine = updated;
 				pendingToolOptions = null;
+				pendingTransport = null;
 				toast.success('Engine saved');
 			} else {
 				saveError = scanEnginesStore.error ?? 'Engine not saved';
@@ -374,6 +388,11 @@
 	function setToolOptions(tool_options: Record<string, string>) {
 		if (engine) engine = { ...engine, tool_options };
 		pendingToolOptions = tool_options;
+	}
+
+	function setTransport(transport_overrides: TransportOverrides) {
+		if (engine) engine = { ...engine, transport_overrides };
+		pendingTransport = transport_overrides;
 	}
 
 	function handleExportYaml() {
@@ -762,7 +781,9 @@
 			onSave={handleSave}
 			onNameChange={setName}
 			onIntensityChange={setIntensity}
+			custom={hasCustomTransport(engine.transport_overrides)}
 			onToolOptions={() => (showToolOptions = true)}
+			onRates={() => (showTransport = true)}
 			onRun={() => (showLaunch = true)}
 			onBack={() => goto(ROUTES.engines)}
 			onDuplicate={handleDuplicate}
@@ -850,6 +871,17 @@
 			tools={engineCatalogStore.toolOptions}
 			onOpenChange={(o) => (showToolOptions = o)}
 			onChange={setToolOptions}
+		/>
+
+		<TransportPanel
+			open={showTransport}
+			intensity={(draft ?? engine).intensity}
+			overrides={engine.transport_overrides ?? {}}
+			rateTools={engineCatalogStore.catalog?.rate_tools ?? []}
+			{presetRates}
+			{presetThreads}
+			onOpenChange={(o) => (showTransport = o)}
+			onChange={setTransport}
 		/>
 	{/if}
 </div>

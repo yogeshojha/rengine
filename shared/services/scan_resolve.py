@@ -394,17 +394,34 @@ def merge_engine_context(
 
     headers, auth_header_names = _build_headers(engine, ctx)
 
+    engine_transport = getattr(engine, "transport_overrides", None) or {}
+
+    def _rate_override(tool: str) -> int | None:
+        # both are "no faster than" intents; the lower wins so neither is raised
+        candidates = [
+            int(v)
+            for v in (
+                rate_overrides.get(tool),
+                (engine_transport.get(tool) or {}).get("rate"),
+            )
+            if v
+        ]
+        return _clamp(min(candidates), 1, MAX_RATE) if candidates else None
+
+    def _thread_override(tool: str) -> int | None:
+        value = (engine_transport.get(tool) or {}).get("threads")
+        return int(value) if value else None
+
     stored = engine.stages or {}
     run_overrides = validate_overrides(overrides)
     stages: dict[str, dict] = {}
     transports: dict[str, dict] = {}
     per_tool_rate_limits: dict[str, int] = {}
     for tool in rate_tools():
-        override = rate_overrides.get(tool)
         limit = tool_rate(
             tool,
             run_intensity,
-            rate_override=_clamp(int(override), 1, MAX_RATE) if override else None,
+            rate_override=_rate_override(tool),
             ceiling=global_rate_limit_ceiling,
         )
         if limit is not None:
@@ -424,12 +441,12 @@ def merge_engine_context(
         config = spec.config_model(**authored)
         values = config.model_dump()
         if spec.transport_tool is not None:
-            override = rate_overrides.get(spec.transport_tool)
             transports[spec.name] = spec.transport(
                 run_intensity,
                 thread_multiplier=thread_mult,
                 timeout_multiplier=timeout_mult,
-                rate_override=_clamp(int(override), 1, MAX_RATE) if override else None,
+                rate_override=_rate_override(spec.transport_tool),
+                thread_override=_thread_override(spec.transport_tool),
                 ceiling=global_rate_limit_ceiling,
             ).as_dict()
         if passive and spec.touches_target and not spec.passive_capable:

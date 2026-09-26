@@ -6,6 +6,12 @@ from app.services.scan_engine.validation import (
     _validate_intensity,
     _validate_stages,
 )
+from shared.definitions.intensity import (
+    TransportTool,
+    clean_transport_overrides,
+    tool_rate,
+    tool_threads,
+)
 from shared.definitions.launch import ASSET_KIND_LABELS, seed_produces
 from shared.enums.scan import Intensity
 from shared.enums.target import TargetType
@@ -107,6 +113,9 @@ class _DraftEngine:
         self.global_headers = []
         self.tool_options = {}
         self.stages = _validate_stages(data.stages)
+        self.transport_overrides = clean_transport_overrides(
+            getattr(data, "transport_overrides", None)
+        )
 
 
 async def preview_engine(
@@ -131,9 +140,16 @@ async def preview_engine(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Scan context not found"
             )
-    resolved = merge_engine_context(
-        _DraftEngine(data), context, "preview", data.target_type
-    )
+    draft = _DraftEngine(data)
+    resolved = merge_engine_context(draft, context, "preview", data.target_type)
+    preset_threads = {
+        tool.value: tool_threads(tool.value, data.intensity) for tool in TransportTool
+    }
+    preset_rates: dict[str, int] = {}
+    for tool in TransportTool:
+        rate = tool_rate(tool.value, data.intensity)
+        if rate is not None:
+            preset_rates[tool.value] = rate
     phases, warnings = stage_effects(resolved, set())
     return EnginePreviewResult(
         phases=phases,
@@ -142,6 +158,8 @@ async def preview_engine(
             header_names=list(resolved.headers),
             global_rate_limit_ceiling=resolved.global_rate_limit_ceiling,
             per_tool_rate_limits=resolved.per_tool_rate_limits,
+            preset_rates=preset_rates,
+            preset_threads=preset_threads,
             excluded_subdomains=resolved.excluded_subdomains,
             excluded_paths=resolved.excluded_paths,
             excluded_ips=resolved.excluded_ips,

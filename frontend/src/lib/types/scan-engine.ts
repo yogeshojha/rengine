@@ -2,19 +2,32 @@ export type Intensity = 'passive' | 'normal' | 'aggressive';
 
 export const INTENSITIES: readonly Intensity[] = ['passive', 'normal', 'aggressive'] as const;
 export const DEFAULT_INTENSITY: Intensity = 'normal';
+export const CUSTOM_INTENSITY = 'custom';
 
-export const INTENSITY_LABELS: Record<Intensity, string> = {
+export const INTENSITY_LABELS: Record<string, string> = {
 	passive: 'Passive',
 	normal: 'Normal',
-	aggressive: 'Aggressive'
+	aggressive: 'Aggressive',
+	custom: 'Custom'
 };
 
-export const INTENSITY_HELP: Record<Intensity, string> = {
-	passive: 'Public sources only. No traffic is sent to the target.',
-	normal: '150 requests per second per tool, 1,000 packets per second for the port scan.',
-	aggressive:
-		'400 requests per second per tool, 3,000 packets per second for the port scan. Concurrency doubled.'
+export const INTENSITY_TAGLINE: Record<string, string> = {
+	passive: 'No traffic to the target.',
+	normal: 'Default rates for every tool.',
+	aggressive: 'Higher rates and concurrency.',
+	custom: 'Rates and concurrency set per tool.'
 };
+
+export const INTENSITY_HELP: Record<string, string> = {
+	passive: 'Findings come from public sources only. No request reaches the target.',
+	normal: '150 requests a second per tool. 1,000 packets a second for the port scan.',
+	aggressive:
+		'400 requests a second per tool. 3,000 packets a second for the port scan, and higher concurrency.',
+	custom: 'Rates and concurrency set per tool. An empty value uses the preset.'
+};
+
+export type ToolTransport = { rate?: number | null; threads?: number | null };
+export type TransportOverrides = Record<string, ToolTransport>;
 
 export type StageConfig = Record<string, unknown>;
 
@@ -32,6 +45,7 @@ export interface ScanEngine {
 	intensity: Intensity;
 	global_headers: string[];
 	stages: Record<string, StageConfig>;
+	transport_overrides: TransportOverrides;
 	yaml_source: string | null;
 	tool_options: Record<string, string>;
 	usage: EngineUsage;
@@ -47,6 +61,7 @@ export interface ScanEngineCreate {
 	intensity?: Intensity;
 	global_headers?: string[];
 	stages?: Record<string, StageConfig>;
+	transport_overrides?: TransportOverrides;
 	yaml_source?: string | null;
 	tool_options?: Record<string, string>;
 }
@@ -140,6 +155,8 @@ export interface PreviewResolved {
 	header_names: string[];
 	global_rate_limit_ceiling: number | null;
 	per_tool_rate_limits: Record<string, number>;
+	preset_rates: Record<string, number>;
+	preset_threads: Record<string, number>;
 	excluded_subdomains: string[];
 	excluded_paths: string[];
 	excluded_ips: string[];
@@ -161,6 +178,14 @@ export interface EnginePreviewRequest {
 	context?: import('./scan-context').ScanContextCreate | null;
 	intensity?: Intensity;
 	stages?: Record<string, StageConfig>;
+	transport_overrides?: TransportOverrides;
+}
+
+export function hasCustomTransport(overrides: TransportOverrides | undefined | null): boolean {
+	if (!overrides) return false;
+	return Object.values(overrides).some(
+		(t) => (t?.rate ?? null) !== null || (t?.threads ?? null) !== null
+	);
 }
 
 export function basicFields(stage: StageCatalogEntry): StageField[] {

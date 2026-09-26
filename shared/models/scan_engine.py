@@ -8,6 +8,7 @@ from sqlalchemy import Column
 from sqlalchemy.types import JSON, Text
 from sqlmodel import Field, SQLModel
 
+from shared.definitions.intensity import clean_transport_overrides
 from shared.enums.scan import Intensity
 from shared.models.scan_context import ScanContextCreate
 from shared.utils.datetime import utc_now
@@ -27,6 +28,9 @@ class ScanEngine(SQLModel, table=True):
         default_factory=list, sa_column=Column(JSON, nullable=False)
     )
     stages: dict = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
+    transport_overrides: dict = Field(
+        default_factory=dict, sa_column=Column(JSON, nullable=False)
+    )
     yaml_source: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
     tool_options: dict = Field(
         default_factory=dict, sa_column=Column(JSON, nullable=False)
@@ -43,10 +47,14 @@ class ScanEngineCreate(BaseModel):
     intensity: str = Intensity.NORMAL.value
     global_headers: list[str] = PydanticField(default_factory=list)
     stages: dict[str, dict] = PydanticField(default_factory=dict)
+    transport_overrides: dict[str, dict] = PydanticField(default_factory=dict)
     yaml_source: str | None = None
     tool_options: dict[str, str] = PydanticField(default_factory=dict)
 
     _validate_name = field_validator("name")(partial(clean_name, max_len=200))
+    _validate_transport = field_validator("transport_overrides")(
+        lambda cls, v: clean_transport_overrides(v)  # noqa: ARG005
+    )
 
 
 class ScanEngineUpdate(BaseModel):
@@ -55,10 +63,16 @@ class ScanEngineUpdate(BaseModel):
     intensity: str | None = None
     global_headers: list[str] | None = None
     stages: dict[str, dict] | None = None
+    transport_overrides: dict[str, dict] | None = None
     yaml_source: str | None = None
     tool_options: dict[str, str] | None = None
 
     _validate_name = field_validator("name")(partial(clean_optional_name, max_len=200))
+
+    @field_validator("transport_overrides")
+    @classmethod
+    def _validate_transport(cls, value):
+        return None if value is None else clean_transport_overrides(value)
 
 
 class EngineUsage(BaseModel):
@@ -75,6 +89,7 @@ class ScanEngineRead(BaseModel):
     intensity: str
     global_headers: list[str]
     stages: dict[str, dict]
+    transport_overrides: dict[str, dict] = PydanticField(default_factory=dict)
     yaml_source: str | None
     tool_options: dict[str, str] = PydanticField(default_factory=dict)
     usage: EngineUsage = PydanticField(default_factory=EngineUsage)
@@ -167,6 +182,8 @@ class PreviewResolved(BaseModel):
     header_names: list[str] = PydanticField(default_factory=list)
     global_rate_limit_ceiling: int | None = None
     per_tool_rate_limits: dict[str, int] = PydanticField(default_factory=dict)
+    preset_rates: dict[str, int] = PydanticField(default_factory=dict)
+    preset_threads: dict[str, int] = PydanticField(default_factory=dict)
     excluded_subdomains: list[str] = PydanticField(default_factory=list)
     excluded_paths: list[str] = PydanticField(default_factory=list)
     excluded_ips: list[str] = PydanticField(default_factory=list)
@@ -188,3 +205,9 @@ class EnginePreviewRequest(BaseModel):
     context: ScanContextCreate | None = None
     intensity: str = Intensity.NORMAL.value
     stages: dict[str, dict] = PydanticField(default_factory=dict)
+    transport_overrides: dict[str, dict] = PydanticField(default_factory=dict)
+
+    @field_validator("transport_overrides")
+    @classmethod
+    def _validate_transport(cls, value):
+        return clean_transport_overrides(value)

@@ -78,16 +78,38 @@ RATE_TOOLS: tuple[str, ...] = tuple(
     tool for tool, (rate, _) in _NORMAL.items() if rate is not None
 )
 
+CUSTOM_INTENSITY = "custom"
+
 INTENSITY_LABELS: dict[str, str] = {
     Intensity.PASSIVE.value: "Passive",
     Intensity.NORMAL.value: "Normal",
     Intensity.AGGRESSIVE.value: "Aggressive",
+    CUSTOM_INTENSITY: "Custom",
+}
+INTENSITY_TAGLINE: dict[str, str] = {
+    Intensity.PASSIVE.value: "No traffic to the target.",
+    Intensity.NORMAL.value: "Default rates for every tool.",
+    Intensity.AGGRESSIVE.value: "Higher rates and concurrency.",
+    CUSTOM_INTENSITY: "Rates and concurrency set per tool.",
 }
 INTENSITY_HELP: dict[str, str] = {
-    Intensity.PASSIVE.value: "Public sources only. No traffic is sent to the target.",
-    Intensity.NORMAL.value: "150 requests per second per tool, 1,000 packets per second for the port scan.",
-    Intensity.AGGRESSIVE.value: "400 requests per second per tool, 3,000 packets per second for the port scan. Concurrency doubled.",
+    Intensity.PASSIVE.value: "Findings come from public sources only. No request reaches the target.",
+    Intensity.NORMAL.value: "150 requests a second per tool. 1,000 packets a second for the port scan.",
+    Intensity.AGGRESSIVE.value: "400 requests a second per tool. 3,000 packets a second for the port scan, and higher concurrency.",
+    CUSTOM_INTENSITY: "Rates and concurrency set per tool. An empty value uses the preset.",
 }
+
+
+def tool_threads(
+    tool: str,
+    intensity: str,
+    *,
+    thread_override: int | None = None,
+) -> int:
+    """The concurrency one tool runs at under this intensity, before per-stage weights."""
+    base = PROFILES.get(intensity, _NORMAL).get(tool, (None, 1))[1]
+    value = thread_override if thread_override is not None else base
+    return _clamp(int(value), 1, MAX_THREADS)
 
 
 def _clamp(value: int, lo: int, hi: int) -> int:
@@ -121,13 +143,14 @@ def transport_for(
     thread_multiplier: float = 1.0,
     timeout_multiplier: float = 1.0,
     rate_override: int | None = None,
+    thread_override: int | None = None,
     ceiling: int | None = None,
 ) -> Transport:
     profile = PROFILES.get(intensity, _NORMAL)
     if tool not in profile:
         msg = f"{tool!r} has no transport profile."
         raise KeyError(msg)
-    _, threads = profile[tool]
+    threads = tool_threads(tool, intensity, thread_override=thread_override)
     rate = tool_rate(tool, intensity, rate_override=rate_override, ceiling=ceiling)
     if rate is not None:
         rate = _clamp(round(rate * rate_weight) or 1, 1, MAX_RATE)
@@ -145,15 +168,62 @@ def transport_for(
     )
 
 
+_TOOLS: frozenset[str] = frozenset(t.value for t in TransportTool)
+_OVERRIDE_FIELDS: frozenset[str] = frozenset({"rate", "threads"})
+
+
+def clean_transport_overrides(raw: object) -> dict[str, dict[str, int]]:
+    """Validate a per-tool rate/concurrency override map, clamped to the safe range."""
+    if not raw:
+        return {}
+    if not isinstance(raw, dict):
+        msg = "transport must be a map of tool to rate and concurrency."
+        raise ValueError(msg)
+    clean: dict[str, dict[str, int]] = {}
+    for tool, values in raw.items():
+        if tool not in _TOOLS:
+            msg = f"unknown tool {tool!r}."
+            raise ValueError(msg)
+        if not isinstance(values, dict):
+            msg = f"{tool}: expected rate and concurrency."
+            raise ValueError(msg)
+        entry: dict[str, int] = {}
+        for field, value in values.items():
+            if field not in _OVERRIDE_FIELDS:
+                msg = f"{tool}: unknown setting {field!r}."
+                raise ValueError(msg)
+            if value is None:
+                continue
+            if field == "rate" and tool not in RATE_TOOLS:
+                msg = f"{tool}: rate is not settable."
+                raise ValueError(msg)
+            try:
+                number = int(value)
+            except (TypeError, ValueError) as exc:
+                msg = f"{tool}.{field}: not a whole number."
+                raise ValueError(msg) from exc
+            if field == "rate":
+                entry[field] = _clamp(number, 1, MAX_RATE)
+            else:
+                entry[field] = _clamp(number, 1, MAX_THREADS)
+        if entry:
+            clean[tool] = entry
+    return clean
+
+
 __all__ = [
+    "CUSTOM_INTENSITY",
     "INTENSITY_HELP",
     "INTENSITY_LABELS",
+    "INTENSITY_TAGLINE",
     "PROFILES",
     "RATE_TOOLS",
     "TOOL_RETRIES",
     "TOOL_TIMEOUT",
     "Transport",
     "TransportTool",
+    "clean_transport_overrides",
     "tool_rate",
+    "tool_threads",
     "transport_for",
 ]

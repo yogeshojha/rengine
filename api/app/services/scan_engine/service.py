@@ -64,6 +64,7 @@ def _to_read(engine: ScanEngine, usage: EngineUsage | None = None) -> ScanEngine
         intensity=engine.intensity,
         global_headers=_mask_global_headers(engine.global_headers or []),
         stages=dict(engine.stages or {}),
+        transport_overrides=dict(engine.transport_overrides or {}),
         yaml_source=engine.yaml_source,
         tool_options=_mask_tool_options(engine.tool_options),
         builtin=bool(engine.builtin),
@@ -121,6 +122,7 @@ class ScanEngineService:
             intensity=data.intensity,
             global_headers=data.global_headers,
             stages=_validate_stages(data.stages),
+            transport_overrides=dict(data.transport_overrides or {}),
             yaml_source=_validate_yaml_source(data.yaml_source),
             tool_options=_validate_tool_options(data.tool_options),
         )
@@ -205,6 +207,8 @@ class ScanEngineService:
             engine.global_headers = restored
         if data.stages is not None:
             engine.stages = _validate_stages(data.stages)
+        if data.transport_overrides is not None:
+            engine.transport_overrides = dict(data.transport_overrides)
         if data.yaml_source is not None:
             engine.yaml_source = _validate_yaml_source(data.yaml_source)
         if data.tool_options is not None:
@@ -261,6 +265,7 @@ class ScanEngineService:
             intensity=original.intensity,
             global_headers=list(original.global_headers or []),
             stages=dict(original.stages or {}),
+            transport_overrides=dict(original.transport_overrides or {}),
             yaml_source=original.yaml_source,
             tool_options=dict(original.tool_options or {}),
         )
