@@ -16,7 +16,7 @@ _SCAN_TYPES = {"connect": "Connect", "syn": "SYN"}
 
 class PortScanConfig(StageConfig):
     enabled: bool = Field(
-        default=True,
+        default=False,
         title="Scan ports",
         description="Find listening TCP services on every address in scope.",
     )

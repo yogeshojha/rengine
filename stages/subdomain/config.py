@@ -12,9 +12,7 @@ PASSIVE_TOOLS: tuple[str, ...] = tuple(
 )
 DEFAULT_PASSIVE_TOOLS: list[str] = [
     "subfinder",
-    "ctfr",
     "crtname",
-    "assetfinder",
 ]
 
 _TOOL_TIMEOUTS = {
@@ -47,12 +45,12 @@ class SubdomainConfig(StageConfig):
         description="Pull subject alternative names from the target's certificates.",
     )
     zone_transfer: bool = Field(
-        default=True,
+        default=False,
         title="Attempt zone transfer",
         description="Request the whole zone from each of its nameservers.",
     )
     bruteforce: bool = Field(
-        default=True,
+        default=False,
         title="Bruteforce names",
         description="Resolve wordlist names against the target's nameservers.",
     )

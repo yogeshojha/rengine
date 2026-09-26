@@ -158,6 +158,7 @@ services:
     init: true
     # built by worker-default
     image: rengine-worker:latest
+    shm_size: 512m
     volumes: *worker-volumes
     env_file:
       - .env
