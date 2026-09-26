@@ -206,7 +206,7 @@
 			{#if liveScans.hasLive}
 				<Badge variant="info" class="h-5 gap-1 px-1.5 text-2xs tabular-nums">
 					<Spinner class="size-2.5" />
-					{liveScans.count} running
+					{liveScans.summary}
 				</Badge>
 			{/if}
 
@@ -276,8 +276,8 @@
 						></span>
 						<span class="relative inline-flex size-1.5 rounded-full bg-info"></span>
 					</span>
-					Running now
-					<span class="font-mono tabular-nums opacity-70">{liveScans.count}</span>
+					In progress
+					<span class="font-mono tabular-nums opacity-70">{liveScans.summary}</span>
 				</span>
 				<ChevronDown
 					class="size-3 transition-transform duration-150 {runningOpen ? '' : '-rotate-90'}"

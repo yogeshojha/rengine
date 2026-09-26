@@ -108,8 +108,8 @@
 					title: routeLabels.scans,
 					url: ROUTES.scans,
 					icon: RadarIcon,
-					badge: liveScans.hasLive
-						? { label: String(liveScans.count), live: true, tone: 'info' as const }
+					badge: liveScans.running
+						? { label: String(liveScans.running), live: true, tone: 'info' as const }
 						: null
 				},
 				{ title: routeLabels.schedules, url: ROUTES.schedules, icon: CalendarClockIcon },

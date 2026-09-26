@@ -62,6 +62,12 @@ function createLiveScansStore() {
 
 	const count = $derived(scans.length);
 	const hasLive = $derived(count > 0);
+	const running = $derived(scans.filter((sc) => sc.status === 'running').length);
+	const summary = $derived(
+		[running && `${running} running`, count - running && `${count - running} queued`]
+			.filter(Boolean)
+			.join(' · ')
+	);
 
 	function schedulePoll() {
 		clearTimeout(pollTimer);
@@ -229,6 +235,12 @@ function createLiveScansStore() {
 		},
 		get hasLive() {
 			return hasLive;
+		},
+		get running() {
+			return running;
+		},
+		get summary() {
+			return summary;
 		},
 		get completedTick() {
 			return completedTick;

@@ -52,9 +52,11 @@
 						<span class="max-w-[140px] truncate font-mono text-foreground/80"
 							>{solo.execution_config.target_value}</span
 						>
-						<span class="truncate font-medium">{soloStage ?? 'running'}</span>
+						<span class="truncate font-medium"
+							>{soloStage ?? (solo.status === 'pending' ? 'queued' : 'running')}</span
+						>
 					{:else}
-						<span class="font-medium tabular-nums">{liveScans.count} running</span>
+						<span class="font-medium tabular-nums">{liveScans.summary}</span>
 					{/if}
 				</span>
 				<Spinner class="h-3.5 w-3.5 text-info sm:hidden" />
