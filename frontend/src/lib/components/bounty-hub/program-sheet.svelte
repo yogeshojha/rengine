@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { untrack } from 'svelte';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import RadarIcon from '@lucide/svelte/icons/radar';
@@ -73,8 +74,8 @@
 				}
 			}
 		} catch (error) {
-			loadError = error instanceof Error ? error.message : 'Request failed.';
-			toast.error(error instanceof Error ? error.message : 'Program not loaded');
+			loadError = errorMessage(error, 'Request failed.');
+			toast.error(errorMessage(error, 'Program not loaded'));
 			detail = null;
 		} finally {
 			loading = false;
@@ -166,7 +167,7 @@
 			await load(program.handle, program.platform);
 			onImported();
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Targets not added');
+			toast.error(errorMessage(error, 'Targets not added'));
 		} finally {
 			importing = false;
 		}
@@ -179,7 +180,7 @@
 			await bountyProgramsApi.syncProgram(program.handle, program.platform);
 			toast.success('Scope refresh started');
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Scope not refreshed');
+			toast.error(errorMessage(error, 'Scope not refreshed'));
 		} finally {
 			syncing = false;
 		}

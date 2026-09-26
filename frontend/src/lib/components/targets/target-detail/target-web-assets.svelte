@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { untrack } from 'svelte';
 	import Search from '@lucide/svelte/icons/search';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
@@ -98,7 +99,7 @@
 			});
 			error = null;
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Web assets not loaded';
+			error = errorMessage(e, 'Web assets not loaded');
 		} finally {
 			loading = false;
 		}

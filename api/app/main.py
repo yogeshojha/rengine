@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -46,9 +48,6 @@ app = FastAPI(
 )
 
 
-add_pagination(app)
-
-
 def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
@@ -94,6 +93,9 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)
+# after the routers: it wires the paginated routes that exist when it runs (and again at
+# startup), so the app is complete as soon as it is imported
+add_pagination(app)
 
 
 @app.get("/")

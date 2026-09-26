@@ -10,7 +10,7 @@ import pytest
 
 from tools.runner.abort import StageAbortedError, aborting_on
 from tools.runner.executor import CLIToolRunner, _run_process
-from tools.runner.models import ToolResult
+from tools.runner.models import ToolFlags, ToolResult
 
 pytestmark = pytest.mark.pipeline
 
@@ -91,9 +91,9 @@ def test_a_grandchild_does_not_outlive_the_stop():
 
 def _stream(script: str, **over):
     """A streaming run through the public entry point."""
-    runner = CLIToolRunner("sh")
-    # json_flag is already in args, so nothing is appended to the command
-    options = {"args": ["-c", script], "json_flag": "-c", "silent": False}
+    # the json flag is already in args, so nothing is appended to the command
+    runner = CLIToolRunner("sh", flags=ToolFlags(json="-c"))
+    options = {"args": ["-c", script], "silent": False}
     options.update(over)
     with runner.stream_json(**options) as outcome:
         list(outcome.records)

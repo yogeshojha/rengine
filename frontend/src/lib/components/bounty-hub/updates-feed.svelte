@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import ArrowUpRightIcon from '@lucide/svelte/icons/arrow-up-right';
 	import BellOffIcon from '@lucide/svelte/icons/bell-off';
@@ -50,7 +51,7 @@
 			events = result.items;
 			total = result.total;
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Updates not loaded');
+			toast.error(errorMessage(error, 'Updates not loaded'));
 			events = [];
 			total = 0;
 		} finally {

@@ -31,8 +31,11 @@
 
 	import QueryBar from './query-bar/query-bar.svelte';
 	import GroupList from './table/group-list.svelte';
+	import { GroupedView, ResultsTable } from './table/results-state.svelte';
+	import { pageParam, parsePageIndex, parseSort, sortParam, type SortKey } from './table/sort';
 	import ListHeader from './table/list-header.svelte';
-	import { readPref, rowPadding, selectAllState, withTarget, writePref } from './table/columns';
+	import { rowPadding, selectAllState, withTarget } from './table/columns';
+	import { readPref, writePref } from '$lib/utilities/storage';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import CoverageStrip from './vulnerabilities/coverage-strip.svelte';
 	import FilterBar from './vulnerabilities/filter-bar.svelte';
@@ -76,10 +79,9 @@
 		type VulnView,
 		type VulnerabilityRead
 	} from '$lib/utilities/vulns';
-	import type { QueryError, QueryGroups, QueryLeads } from '$lib/types/asset-query';
 	import { locationTokensFromUrl } from '$lib/utilities/endpoints';
-	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
-	import { afterPause } from '$lib/utilities/debounce';
+	import { SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
+	import { LatestRequest } from '$lib/utilities/latest-request';
 	import { LiveRefresh } from '$lib/utilities/live-results';
 
 	interface Props {
@@ -115,12 +117,11 @@
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
 	let ready = $derived(projectWide ? Boolean(projectId) : Boolean(scanId));
 
-	const DEFAULT_SORT = { key: 'risk', dir: -1 as const };
+	const DEFAULT_SORT: SortKey = { key: 'risk', dir: -1 };
 	const INSTANCE_PAGE = 100;
 	const VIEW_KEYS = new Set<string>(VULN_VIEWS.map((v) => v.key));
 
 	const initial = appPage.url.searchParams;
-	const initialSort = initial.get('vuln_sort')?.split(':') ?? [];
 	const initialView = initial.get('vuln_view');
 
 	let view = $state<VulnView>(
@@ -129,33 +130,21 @@
 			: readPref<VulnView>(STORAGE_KEYS.vulnsView, DEFAULT_VULN_VIEW)
 	);
 	let visiblePref = $state<string[] | null>(readPref(STORAGE_KEYS.vulnsColumns, null));
-	let density = $state<string>(readPref(STORAGE_KEYS.vulnsDensity, 'cozy'));
-	let pageSize = $state<number>(readPref(STORAGE_KEYS.vulnsPageSize, RESULTS_PAGE_SIZE));
-	let sort = $state<{ key: string; dir: 1 | -1 }>(
-		initialSort[0]
-			? { key: initialSort[0], dir: initialSort[1] === 'desc' ? -1 : 1 }
-			: { ...DEFAULT_SORT }
+	const table = new ResultsTable<VulnerabilityRead, VulnFacetSet>({
+		facets: EMPTY_VULN_FACETS,
+		sort: parseSort(initial.get('vuln_sort'), DEFAULT_SORT),
+		pageIndex: parsePageIndex(initial.get('vuln_page')),
+		pageSizeKey: STORAGE_KEYS.vulnsPageSize,
+		densityKey: STORAGE_KEYS.vulnsDensity
+	});
+	const groups = new GroupedView(
+		initial.get('vuln_group') ?? '',
+		(by) => vulnerabilitiesApi.groups(projectId, scanId, by, leadFilterWithQuery),
+		() => ready
 	);
-	let pageIndex = $state(Math.max(0, Number(initial.get('vuln_page') ?? 1) - 1));
 
-	let items = $state<VulnerabilityRead[]>([]);
 	let issues = $state<IssueRead[]>([]);
-	let total = $state(0);
-	let totalCapped = $state(false);
-	let queryError = $state<QueryError | null>(null);
-	let queryReady = $state(true);
-	let loading = $state(true);
-	let refreshing = $state(false);
-	let errored = $state(false);
-	let facets = $state<VulnFacetSet>(EMPTY_VULN_FACETS);
-	let facetsLoaded = $state(false);
 	let coverage = $state<CoverageRead[]>([]);
-	let leadSet = $state<QueryLeads | null>(null);
-	let groupBy = $state<string>(initial.get('vuln_group') ?? '');
-	let groupSet = $state<QueryGroups | null>(null);
-	let groupFailed = $state(false);
-	let groupLoading = $state(false);
-	let groupReq = 0;
 
 	let expandedId = $state<string | null>(null);
 	let instancesSig = '';
@@ -164,7 +153,7 @@
 	let instancesTotal = $state(0);
 	let instancesLoading = $state(false);
 	let instanceLimit = $state(INSTANCE_PAGE);
-	let instanceReq = 0;
+	const instanceReq = new LatestRequest();
 
 	let selected = $state<VulnerabilityRead | null>(null);
 	let drawerOpen = $state(false);
@@ -181,11 +170,10 @@
 	});
 
 	let isIssues = $derived(view === 'issues');
-	let rowCount = $derived(isIssues ? issues.length : items.length);
-	let pageCount = $derived(Math.max(1, Math.ceil(total / pageSize)));
-	let sheetItems = $derived(isIssues ? instances : items);
+	let rowCount = $derived(isIssues ? issues.length : table.items.length);
+	let sheetItems = $derived(isIssues ? instances : table.items);
 	let selectedIndex = $derived(selected ? sheetItems.findIndex((v) => v.id === selected?.id) : -1);
-	let sheetTotal = $derived(isIssues ? instancesTotal : total);
+	let sheetTotal = $derived(isIssues ? instancesTotal : table.total);
 	let visible = $derived(visiblePref ?? DEFAULT_VISIBLE_VULN_COLUMNS);
 	let allColumns = $derived(withTarget(VULN_COLUMNS, projectWide));
 	let shownColumns = $derived(
@@ -194,19 +182,19 @@
 	let checkedCount = $derived(
 		isIssues
 			? issues.filter((i) => checkedIds.has(i.template_id)).length
-			: items.filter((v) => checkedIds.has(v.id)).length
+			: table.items.filter((v) => checkedIds.has(v.id)).length
 	);
 	let selectAllChecked = $derived(selectAllState(checkedCount, rowCount));
 	let filtered = $derived(vulnActiveFacetCount(query) > 0 || !!query.search);
-	let chips = $derived(vulnQueryChips(query, facets));
-	let rowPad = $derived(rowPadding(density));
+	let chips = $derived(vulnQueryChips(query, table.facets));
+	let rowPad = $derived(rowPadding(table.density));
 	let term = $derived(query.search.trim().includes(':') ? '' : query.search.trim());
 	let severityTab = $derived(
 		query.severities.length === 0 ? 'all' : query.severities.length === 1 ? query.severities[0] : ''
 	);
 	let severityCounts = $derived.by(() => {
-		if (!facetsLoaded) return null;
-		const source = isIssues ? facets.issue_severity : facets.severity;
+		if (!table.facetsLoaded) return null;
+		const source = isIssues ? table.facets.issue_severity : table.facets.severity;
 		const m: Record<string, number> = { all: source.reduce((n, f) => n + f.count, 0) };
 		for (const f of source) m[f.name] = f.count;
 		return m;
@@ -219,15 +207,12 @@
 	$effect(() => {
 		if (visiblePref) writePref(STORAGE_KEYS.vulnsColumns, visiblePref);
 	});
-	$effect(() => writePref(STORAGE_KEYS.vulnsDensity, density));
-	$effect(() => writePref(STORAGE_KEYS.vulnsPageSize, pageSize));
 	$effect(() => writePref(STORAGE_KEYS.vulnsView, view));
 	$effect(() => {
-		const ids = new Set(isIssues ? issues.map((i) => i.template_id) : items.map((v) => v.id));
+		const ids = new Set(isIssues ? issues.map((i) => i.template_id) : table.items.map((v) => v.id));
 		for (const id of checkedIds) if (!ids.has(id)) checkedIds.delete(id);
 	});
 
-	let reqId = 0;
 	let timer: ReturnType<typeof setTimeout> | null = null;
 	let lastSig = '';
 	let primed = false;
@@ -239,28 +224,34 @@
 	}
 
 	async function runSearch() {
-		if (!queryReady) {
+		if (!table.queryReady) {
 			syncLeads();
 			return;
 		}
-		const filter = compileVulnQuery(query, sort.key, sort.dir, pageIndex * pageSize, pageSize);
+		const filter = compileVulnQuery(
+			query,
+			table.sort.key,
+			table.sort.dir,
+			table.pageIndex * table.pageSize,
+			table.pageSize
+		);
 		const sig = JSON.stringify({ ...filter, offset: 0, view });
-		if (sig !== lastSig && pageIndex !== 0 && !pendingSelect) {
+		if (sig !== lastSig && table.pageIndex !== 0 && !pendingSelect) {
 			lastSig = sig;
-			pageIndex = 0;
+			table.pageIndex = 0;
 			return;
 		}
 		lastSig = sig;
-		const my = ++reqId;
-		loading = true;
+		const current = table.searchRequest.begin();
+		table.loading = true;
 		try {
 			if (view === 'issues') {
 				const res = await vulnerabilitiesApi.issues(projectId, scanId, filter);
-				if (my !== reqId) return;
+				if (!current()) return;
 				issues = res.items;
-				total = res.total;
-				totalCapped = res.total_capped;
-				queryError = res.error;
+				table.total = res.total;
+				table.totalCapped = res.total_capped;
+				table.queryError = res.error;
 				if (expandedId && !issues.some((i) => i.template_id === expandedId)) collapse();
 				else if (expandedId && instancesSig !== JSON.stringify(query))
 					void loadInstances(expandedId, instanceLimit);
@@ -271,48 +262,46 @@
 				}
 			} else {
 				const res = await vulnerabilitiesApi.search(projectId, scanId, filter);
-				if (my !== reqId) return;
-				items = res.items;
-				total = res.total;
-				totalCapped = res.total_capped;
-				queryError = res.error;
+				if (!current()) return;
+				table.accept(res);
 				if (pendingVuln) {
 					const id = pendingVuln;
 					pendingVuln = null;
-					const hit = items.find((v) => v.id === id);
+					const hit = table.items.find((v) => v.id === id);
 					if (hit) open(hit);
 					else void openById(id);
 				}
 				if (pendingSelect) {
-					selected = pendingSelect === 'first' ? (items[0] ?? null) : (items.at(-1) ?? null);
+					selected =
+						pendingSelect === 'first' ? (table.items[0] ?? null) : (table.items.at(-1) ?? null);
 					pendingSelect = null;
 				}
 			}
-			errored = false;
-			if (!queryError && filter.q) queryBar?.remember(filter.q);
+			table.errored = false;
+			if (!table.queryError && filter.q) queryBar?.remember(filter.q);
 		} catch {
-			if (my === reqId) {
-				items = [];
+			if (current()) {
 				issues = [];
-				total = 0;
-				totalCapped = false;
-				errored = true;
+				table.fail();
 			}
 		} finally {
-			if (my === reqId) {
-				loading = false;
+			if (current()) {
+				table.loading = false;
 				syncLeads();
 			}
 		}
 	}
 
 	let exportFilters = $derived(
-		compileVulnQuery(query, sort.key, sort.dir, 0, 1) as unknown as Record<string, unknown>
+		compileVulnQuery(query, table.sort.key, table.sort.dir, 0, 1) as unknown as Record<
+			string,
+			unknown
+		>
 	);
 	let leadFilter = $derived(compileVulnQuery({ ...query, search: '' }, 'risk', -1, 0, 1));
 	let leadSig = $derived(JSON.stringify(leadFilter));
 	let leadFilterWithQuery = $derived({ ...leadFilter, q: query.search.trim() || null });
-	let groupSig = $derived(groupBy ? JSON.stringify(leadFilterWithQuery) + groupBy : '');
+	let groupSig = $derived(groups.by ? JSON.stringify(leadFilterWithQuery) + groups.by : '');
 	let loadedLeadSig = '';
 
 	async function loadLeads() {
@@ -320,50 +309,27 @@
 		loadedLeadSig = sig;
 		try {
 			const res = await vulnerabilitiesApi.leads(projectId, scanId, leadFilter);
-			if (leadSig === sig) leadSet = res.computed ? res : null;
+			if (leadSig === sig) table.leadSet = res.computed ? res : null;
 		} catch {
-			if (leadSig === sig) leadSet = null;
+			if (leadSig === sig) table.leadSet = null;
 			loadedLeadSig = '';
 		}
 	}
 
 	function syncLeads() {
-		if (!active || loading || !ready) return;
+		if (!active || table.loading || !ready) return;
 		if (leadSig === loadedLeadSig) return;
 		void loadLeads();
-	}
-
-	async function loadGroups() {
-		if (!groupBy || !ready) {
-			groupSet = null;
-			return;
-		}
-		const my = ++groupReq;
-		groupLoading = true;
-		try {
-			const res = await vulnerabilitiesApi.groups(projectId, scanId, groupBy, leadFilterWithQuery);
-			if (my === groupReq) {
-				groupSet = res;
-				groupFailed = false;
-			}
-		} catch {
-			if (my === groupReq) {
-				groupSet = null;
-				groupFailed = true;
-			}
-		} finally {
-			if (my === groupReq) groupLoading = false;
-		}
 	}
 
 	async function loadFacets() {
 		if (!ready) return;
 		try {
-			facets = await vulnerabilitiesApi.facets(projectId, scanId);
-			onScanTotal?.(facets.severity.reduce((n, f) => n + f.count, 0));
-			facetsLoaded = true;
+			table.facets = await vulnerabilitiesApi.facets(projectId, scanId);
+			onScanTotal?.(table.facets.severity.reduce((n, f) => n + f.count, 0));
+			table.facetsLoaded = true;
 		} catch {
-			if (!facetsLoaded) facets = EMPTY_VULN_FACETS;
+			if (!table.facetsLoaded) table.facets = EMPTY_VULN_FACETS;
 		}
 	}
 
@@ -378,22 +344,22 @@
 	}
 
 	async function loadInstances(templateId: string, limit: number) {
-		const my = ++instanceReq;
+		const current = instanceReq.begin();
 		instancesSig = JSON.stringify(query);
 		instancesLoading = true;
 		try {
 			const filter = compileVulnQuery({ ...query, templates: [templateId] }, 'host', 1, 0, limit);
 			const res = await vulnerabilitiesApi.search(projectId, scanId, filter);
-			if (my !== instanceReq) return;
+			if (!current()) return;
 			instances = res.items;
 			instancesTotal = res.total;
 		} catch {
-			if (my === instanceReq) {
+			if (current()) {
 				instances = [];
 				instancesTotal = 0;
 			}
 		} finally {
-			if (my === instanceReq) instancesLoading = false;
+			if (current()) instancesLoading = false;
 		}
 	}
 
@@ -423,13 +389,13 @@
 	}
 
 	async function refresh(quiet = false) {
-		refreshing = !quiet;
+		table.refreshing = !quiet;
 		try {
 			if (!quiet) loadedLeadSig = '';
-			await Promise.all([runSearch(), loadFacets(), loadCoverage(), loadGroups()]);
+			await Promise.all([runSearch(), loadFacets(), loadCoverage(), groups.reload()]);
 			if (expandedId) await loadInstances(expandedId, instanceLimit);
 		} finally {
-			if (!quiet) refreshing = false;
+			if (!quiet) table.refreshing = false;
 		}
 	}
 
@@ -441,13 +407,13 @@
 
 	$effect(() => {
 		void JSON.stringify(query);
-		void sort.key;
-		void sort.dir;
-		void pageIndex;
-		void pageSize;
+		void table.sort.key;
+		void table.sort.dir;
+		void table.pageIndex;
+		void table.pageSize;
 		void scanId;
 		void projectId;
-		void queryReady;
+		void table.queryReady;
 		void view;
 		if (!seen || !ready) return;
 		if (timer) clearTimeout(timer);
@@ -475,11 +441,7 @@
 
 	$effect(() => {
 		void groupSig;
-		if (!groupBy) {
-			groupSet = null;
-			return;
-		}
-		return afterPause(loadGroups);
+		return groups.schedule();
 	});
 
 	function syncUrl() {
@@ -487,16 +449,11 @@
 			const sp = new SvelteURLSearchParams(location.search);
 			const set = (k: string, v: string | null) => (v ? sp.set(k, v) : sp.delete(k));
 			set('vuln_q', query.search || null);
-			set('vuln_group', groupBy || null);
+			set('vuln_group', groups.by || null);
 			set('vuln_view', view !== DEFAULT_VULN_VIEW ? view : null);
-			set('vuln_page', pageIndex > 0 ? String(pageIndex + 1) : null);
+			set('vuln_page', pageParam(table.pageIndex));
 			set('vuln', drawerOpen && selected ? selected.id : null);
-			set(
-				'vuln_sort',
-				sort.key !== DEFAULT_SORT.key || sort.dir !== DEFAULT_SORT.dir
-					? `${sort.key}:${sort.dir === 1 ? 'asc' : 'desc'}`
-					: null
-			);
+			set('vuln_sort', sortParam(table.sort, DEFAULT_SORT));
 			const qs = sp.toString();
 			replaceState(qs ? `?${qs}` : location.pathname, appPage.state);
 		} catch {
@@ -505,11 +462,11 @@
 	}
 	$effect(() => {
 		void query.search;
-		void groupBy;
-		void pageIndex;
+		void groups.by;
+		void table.pageIndex;
 		void view;
-		void sort.key;
-		void sort.dir;
+		void table.sort.key;
+		void table.sort.dir;
 		void drawerOpen;
 		void selected?.id;
 		if (!seen || !active) return;
@@ -534,12 +491,12 @@
 			return;
 		}
 		if (isIssues) return;
-		if (dir === 1 && pageIndex < pageCount - 1) {
+		if (dir === 1 && table.pageIndex < table.pageCount - 1) {
 			pendingSelect = 'first';
-			pageIndex += 1;
-		} else if (dir === -1 && pageIndex > 0) {
+			table.pageIndex += 1;
+		} else if (dir === -1 && table.pageIndex > 0) {
 			pendingSelect = 'last';
-			pageIndex -= 1;
+			table.pageIndex -= 1;
 		}
 	}
 	function setView(next: VulnView) {
@@ -548,12 +505,11 @@
 		checkedIds.clear();
 		collapse();
 		cursor = -1;
-		pageIndex = 0;
-		sort = { ...DEFAULT_SORT };
+		table.pageIndex = 0;
+		table.sort = { ...DEFAULT_SORT };
 	}
 	function toggleSort(key: string) {
-		sort = sort.key === key ? { key, dir: sort.dir === 1 ? -1 : 1 } : { key, dir: 1 };
-		pageIndex = 0;
+		table.toggleSort(key);
 	}
 	function toggleCheck(id: string) {
 		if (checkedIds.has(id)) checkedIds.delete(id);
@@ -562,21 +518,21 @@
 	function toggleSelectAll() {
 		if (checkedCount === rowCount) checkedIds.clear();
 		else if (isIssues) for (const i of issues) checkedIds.add(i.template_id);
-		else for (const v of items) checkedIds.add(v.id);
+		else for (const v of table.items) checkedIds.add(v.id);
 	}
 	function toggleCol(key: string) {
 		visiblePref = visible.includes(key) ? visible.filter((k) => k !== key) : [...visible, key];
 	}
 	function setQuery(q: VulnQuery) {
 		query = q;
-		pageIndex = 0;
+		table.pageIndex = 0;
 	}
 	function setSeverityTab(key: string) {
 		setQuery({ ...query, severities: key === 'all' ? [] : [key] });
 	}
 	function drillGroup(token: string) {
 		setQuery({ ...query, search: appendToken(query.search, token) });
-		groupBy = '';
+		groups.by = '';
 	}
 	function applyDsl(token: string) {
 		setQuery({ ...query, search: appendToken(query.search, token) });
@@ -598,7 +554,7 @@
 	}
 
 	function applyState(fingerprints: Set<string>, state: string, note: string | null) {
-		items = items.map((item) =>
+		table.items = table.items.map((item) =>
 			fingerprints.has(item.fingerprint) ? { ...item, state, note } : item
 		);
 		instances = instances.map((item) =>
@@ -680,7 +636,9 @@
 		if (isIssues) {
 			void triageMany({ template_ids: [...checkedIds] }, state, what);
 		} else {
-			const fingerprints = items.filter((v) => checkedIds.has(v.id)).map((v) => v.fingerprint);
+			const fingerprints = table.items
+				.filter((v) => checkedIds.has(v.id))
+				.map((v) => v.fingerprint);
 			void triageMany({ fingerprints }, state, what);
 		}
 	}
@@ -710,7 +668,7 @@
 		}
 		if (typing) return;
 		const state = TRIAGE_KEYS[e.key];
-		const target = drawerOpen ? selected : isIssues ? null : (items[cursor] ?? null);
+		const target = drawerOpen ? selected : isIssues ? null : (table.items[cursor] ?? null);
 		if (state && target) {
 			e.preventDefault();
 			void triage(target, state);
@@ -718,7 +676,7 @@
 		}
 		if (e.key === 'x' && !drawerOpen) {
 			e.preventDefault();
-			const id = isIssues ? issues[cursor]?.template_id : items[cursor]?.id;
+			const id = isIssues ? issues[cursor]?.template_id : table.items[cursor]?.id;
 			if (id) toggleCheck(id);
 			return;
 		}
@@ -733,7 +691,7 @@
 			scrollCursor();
 		} else if (e.key === 'Enter' && cursor >= 0) {
 			if (isIssues && issues[cursor]) toggleIssue(issues[cursor]);
-			else if (!isIssues && items[cursor]) open(items[cursor]);
+			else if (!isIssues && table.items[cursor]) open(table.items[cursor]);
 		} else if (e.key === 'Escape') {
 			cursor = -1;
 			if (isIssues) collapse();
@@ -752,12 +710,12 @@
 	function pickedRows() {
 		const picked = isIssues
 			? instances.filter((v) => checkedIds.has(v.template_id))
-			: items.filter((v) => checkedIds.has(v.id));
+			: table.items.filter((v) => checkedIds.has(v.id));
 		if (picked.length) return picked;
-		return isIssues ? [] : items.filter((v) => v.id === selected?.id);
+		return isIssues ? [] : table.items.filter((v) => v.id === selected?.id);
 	}
 
-	function picksOf(rows: typeof items): SeedPick[] {
+	function picksOf(rows: VulnerabilityRead[]): SeedPick[] {
 		const picks: SeedPick[] = [];
 		const seen: Record<string, true> = {};
 		for (const v of rows) {
@@ -771,7 +729,7 @@
 		return picks;
 	}
 
-	function templatesOf(rows: typeof items): string[] {
+	function templatesOf(rows: VulnerabilityRead[]): string[] {
 		return [...new Set(rows.map((v) => v.template_id).filter(Boolean))] as string[];
 	}
 
@@ -851,13 +809,13 @@
 		recentsKey={SURFACE[SurfaceDimension.VULNERABILITIES].recentsKey}
 		hint="severity:critical and not is:cdn"
 		value={query.search}
-		facets={facetsAsRecord(facets) as unknown as Record<string, Facet[]>}
-		busy={loading && !!query.search}
-		{leadSet}
-		total={errored ? null : total}
-		capped={totalCapped}
-		serverError={queryError}
-		onReady={(value) => (queryReady = value)}
+		facets={facetsAsRecord(table.facets) as unknown as Record<string, Facet[]>}
+		busy={table.loading && !!query.search}
+		leadSet={table.leadSet}
+		total={table.errored ? null : table.total}
+		capped={table.totalCapped}
+		serverError={table.queryError}
+		onReady={(value) => (table.queryReady = value)}
 		onChange={(v) => setQuery({ ...query, search: v })}
 		onSubmit={flushSearch}
 	/>
@@ -896,26 +854,26 @@
 
 	<FilterBar
 		{query}
-		{facets}
+		facets={table.facets}
 		onQuery={setQuery}
 		dimensions={vulnQuerySchema.schema.group_dimensions}
 		columns={isIssues ? ISSUE_COLUMNS : VULN_COLUMNS}
 		visible={isIssues ? ISSUE_COLUMNS.map((c) => c.key) : visible}
 		columnsLocked={isIssues}
 		onToggleColumn={toggleCol}
-		{density}
-		onDensity={(d) => (density = d)}
+		density={table.density}
+		onDensity={(d) => (table.density = d)}
 		sorts={isIssues ? ISSUE_SORTS : VULN_SORTS}
-		sortKey={sort.key}
-		sortDir={sort.dir}
+		sortKey={table.sort.key}
+		sortDir={table.sort.dir}
 		onSort={toggleSort}
-		{refreshing}
+		refreshing={table.refreshing}
 		{projectId}
 		{scanId}
 		{exportFilters}
 		onRefresh={refresh}
-		{groupBy}
-		onGroupBy={(key) => (groupBy = key)}
+		groupBy={groups.by}
+		onGroupBy={(key) => (groups.by = key)}
 	/>
 
 	{#if chips.length > 0}
@@ -946,12 +904,12 @@
 		</div>
 	{/if}
 
-	{#if !groupBy}
+	{#if !groups.by}
 		<SelectionBar
 			noun={VULN.noun}
 			nounPlural={VULN.nounPlural}
-			{total}
-			{totalCapped}
+			total={table.total}
+			totalCapped={table.totalCapped}
 			maxAssets={rechecks.schema?.max_assets ?? 0}
 			queryActive={Boolean(query.search.trim()) || chips.length > 0}
 			query={queryLabel()}
@@ -961,16 +919,16 @@
 		/>
 	{/if}
 
-	{#if loading && rowCount === 0 && !groupBy}
+	{#if table.loading && rowCount === 0 && !groups.by}
 		<ScrollArea orientation="horizontal">
 			<TableSkeleton
 				lead={isIssues ? ISSUE_LEAD_COLUMNS : VULN_LEAD_COLUMNS}
 				columns={isIssues ? ISSUE_COLUMNS : shownColumns}
-				{density}
+				density={table.density}
 				selectable
 			/>
 		</ScrollArea>
-	{:else if errored}
+	{:else if table.errored}
 		<EmptyState
 			icon={TriangleAlert}
 			title="Findings not loaded"
@@ -980,23 +938,23 @@
 				<RefreshCw class="h-4 w-4" /> Retry
 			</Button>
 		</EmptyState>
-	{:else if groupBy}
+	{:else if groups.by}
 		<GroupList
-			set={groupSet}
-			failed={groupFailed}
-			onRetry={loadGroups}
+			set={groups.value}
+			failed={groups.failed}
+			onRetry={groups.reload}
 			dimensions={vulnQuerySchema.schema.group_dimensions}
 			noun={vulnQuerySchema.schema.noun}
 			nounPlural={vulnQuerySchema.schema.noun_plural}
-			loading={groupLoading}
+			loading={groups.loading}
 			onPick={drillGroup}
 		/>
 	{:else if rowCount === 0}
-		{#if queryError}
+		{#if table.queryError}
 			<EmptyState
 				icon={SearchX}
 				title="Query did not run"
-				description={queryError.message}
+				description={table.queryError.message}
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
 		{:else if filtered}
@@ -1025,7 +983,7 @@
 			<EmptyState
 				icon={ShieldCheck}
 				title="No vulnerability scan ran"
-				description="Enable it on the scan engine or add it at launch."
+				description="The engine leaves vulnerability scanning off and it was not added at launch."
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
 		{:else}
@@ -1049,12 +1007,12 @@
 			{selectAllChecked}
 			selectAllLabel="Select all weaknesses on this page"
 			onSelectAll={toggleSelectAll}
-			sortKey={sort.key}
-			sortDir={sort.dir}
+			sortKey={table.sort.key}
+			sortDir={table.sort.dir}
 			onSort={toggleSort}
 		/>
 		<ScrollArea orientation="horizontal" bind:ref={scrollRef}>
-			<div class="divide-y divide-border/50 transition-opacity {loading ? 'opacity-60' : ''}">
+			<div class="divide-y divide-border/50 transition-opacity {table.loading ? 'opacity-60' : ''}">
 				{#each issues as issue, i (issue.template_id)}
 					<div>
 						<IssueRow
@@ -1098,13 +1056,13 @@
 			{selectAllChecked}
 			selectAllLabel="Select all findings on this page"
 			onSelectAll={toggleSelectAll}
-			sortKey={sort.key}
-			sortDir={sort.dir}
+			sortKey={table.sort.key}
+			sortDir={table.sort.dir}
 			onSort={toggleSort}
 		/>
 		<ScrollArea orientation="horizontal" bind:ref={scrollRef}>
-			<div class="divide-y divide-border/50 transition-opacity {loading ? 'opacity-60' : ''}">
-				{#each items as v, i (v.id)}
+			<div class="divide-y divide-border/50 transition-opacity {table.loading ? 'opacity-60' : ''}">
+				{#each table.items as v, i (v.id)}
 					<VulnRow
 						vuln={v}
 						index={i}
@@ -1125,19 +1083,16 @@
 		</ScrollArea>
 	{/if}
 
-	{#if !errored && total > 0 && !groupBy}
+	{#if !table.errored && table.total > 0 && !groups.by}
 		<ResultsPagination
-			{total}
-			capped={totalCapped}
-			page={pageIndex}
-			{pageSize}
+			total={table.total}
+			capped={table.totalCapped}
+			page={table.pageIndex}
+			pageSize={table.pageSize}
 			{noun}
 			plural={nounPlural}
-			onPage={(p) => (pageIndex = p)}
-			onPageSize={(s) => {
-				pageSize = s;
-				pageIndex = 0;
-			}}
+			onPage={(p) => (table.pageIndex = p)}
+			onPageSize={(s) => table.setPageSize(s)}
 		/>
 	{/if}
 </Card.Root>
@@ -1149,7 +1104,7 @@
 	open={drawerOpen}
 	onOpenChange={(o) => (drawerOpen = o)}
 	index={selectedIndex}
-	pageOffset={isIssues ? 0 : pageIndex * pageSize}
+	pageOffset={isIssues ? 0 : table.pageIndex * table.pageSize}
 	total={sheetTotal}
 	onStep={step}
 	onFilter={applyDsl}
@@ -1180,12 +1135,12 @@
 		: [
 				{
 					label: 'locations',
-					values: () => items.filter((v) => checkedIds.has(v.id)).map((v) => v.matched_at)
+					values: () => table.items.filter((v) => checkedIds.has(v.id)).map((v) => v.matched_at)
 				},
 				{
 					label: 'template IDs',
 					values: () => [
-						...new Set(items.filter((v) => checkedIds.has(v.id)).map((v) => v.template_id))
+						...new Set(table.items.filter((v) => checkedIds.has(v.id)).map((v) => v.template_id))
 					]
 				}
 			]}

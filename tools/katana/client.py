@@ -4,7 +4,7 @@ import contextlib
 from collections.abc import Callable, Iterator
 
 from shared.logging import get_logger
-from tools.runner import CLIToolRunner, ToolNotFoundError
+from tools.runner import CLIToolRunner, ToolFlags, ToolNotFoundError
 from tools.runner.models import CommandRecorder
 
 logger = get_logger(__name__)
@@ -69,7 +69,13 @@ class KatanaClient:
         self.extra_args = extra_args or []
 
         try:
-            self._runner = CLIToolRunner(KATANA_BINARY, default_timeout=DEFAULT_TIMEOUT)
+            self._runner = CLIToolRunner(
+                KATANA_BINARY,
+                default_timeout=DEFAULT_TIMEOUT,
+                recorder=recorder,
+                extra_args=self.extra_args,
+                flags=ToolFlags(input="-list", json="-jsonl"),
+            )
         except ToolNotFoundError as e:
             raise KatanaError(str(e)) from e
 
@@ -117,14 +123,7 @@ class KatanaClient:
         with self._runner.stream_json(
             args=self._args(),
             input_data=targets,
-            input_flag="-list",
-            json_flag="-jsonl",
-            silent=True,
-            silent_flag="-silent",
             timeout=self.kill_after(),
-            recorder=self.recorder,
-            tool=KATANA_BINARY,
-            extra_args=self.extra_args,
             should_stop=should_stop,
             stderr_sink=stderr_sink,
         ) as stream:

@@ -23,7 +23,6 @@ from shared.utils.text import REFUSED_ROW
 from shared.utils.validation import extract_asn_number
 from stages.config import StageConfig
 from stages.sink import DEFAULT_ROWS, DEFAULT_SECONDS, ResultSink
-from tools.runner import CLIToolRunner
 from tools.runner.abort import StageAbortedError
 
 logger = get_logger(__name__)
@@ -35,7 +34,7 @@ if TYPE_CHECKING:
 
     from shared.services.orchestrator.events import ScanEventPublisher
     from shared.services.scan_resolve import ResolvedScanConfig
-    from tools.runner.models import CommandRecorder
+    from tools.runner.models import CommandRecorder, ToolWiring
 
 
 @dataclass
@@ -77,6 +76,13 @@ DOMAIN_TARGETS: frozenset[str] = frozenset({TargetType.DOMAIN.value})
 RANGE_TARGETS: frozenset[str] = frozenset(
     {TargetType.IP_RANGE.value, TargetType.ASN.value}
 )
+
+
+def tool_wiring(
+    recorder: CommandRecorder | None, resolved: ResolvedScanConfig, tool: str
+) -> ToolWiring:
+    """The keyword arguments that bind a tool client to one scan: its recorder, the user's args."""
+    return {"recorder": recorder, "extra_args": resolved.tool_args(tool)}
 
 
 def parse_asn(value: str) -> int | None:
@@ -149,14 +155,9 @@ class Stage(ABC):
     @abstractmethod
     def run(self) -> StageResult: ...
 
-    def runner(self, binary: str, default_timeout: int = 300) -> CLIToolRunner:
-        """A CLIToolRunner pre-bound to this scan's recorder + the tool's custom args."""
-        return CLIToolRunner(
-            binary,
-            default_timeout=default_timeout,
-            recorder=self.ctx.recorder,
-            extra_args=self.ctx.resolved.tool_args(binary),
-        )
+    def wiring(self, tool: str) -> ToolWiring:
+        """This scan's command recorder and the user's custom args for `tool`."""
+        return tool_wiring(self.ctx.recorder, self.ctx.resolved, tool)
 
     def _check_abort(self) -> None:
         if self.ctx.is_aborted is not None and self.ctx.is_aborted():

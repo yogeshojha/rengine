@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -11,7 +12,7 @@
 	import { goto } from '$app/navigation';
 	import { ROUTES } from '$lib/config/routes';
 	import { auth } from '$lib/stores/auth.svelte';
-	import { twoFactorApi } from '$lib/api/twoFactor';
+	import { twoFactorApi } from '$lib/api/two-factor';
 
 	import { cn } from '$lib/utils.js';
 	import type { HTMLAttributes } from 'svelte/elements';
@@ -77,7 +78,7 @@
 			await twoFactorApi.loginVerify(mfaToken, code.trim());
 			await auth.checkAuth();
 		} catch (err) {
-			mfaError = err instanceof Error ? err.message : 'Invalid code';
+			mfaError = errorMessage(err, 'Invalid code');
 			code = '';
 			verifying = false;
 		}

@@ -2,7 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
-from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi_pagination.ext.sqlalchemy import apaginate
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
@@ -45,7 +45,7 @@ async def list_notes(
         statuses=status_filter,
         search=search,
     )
-    return await paginate(
+    return await apaginate(
         service.session,
         query,
         unique=False,

@@ -23,8 +23,7 @@ class ArchiveProvider(UrlProvider):
             client = UrlfinderClient(
                 timeout=self.ctx.transport.timeout,
                 proxy_url=self.ctx.net.proxy_url,
-                recorder=self.ctx.recorder,
-                extra_args=self.extra_args,
+                **self.wiring,
             )
         except UrlfinderError as e:
             raise RuntimeError(str(e)) from e

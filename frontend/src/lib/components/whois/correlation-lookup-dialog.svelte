@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import PanelSkeleton from '$lib/components/skeleton/panel-skeleton.svelte';
 	import { whoisApi } from '$lib/api/whois';
 	import { goto } from '$app/navigation';
@@ -129,7 +130,7 @@
 			}
 			records = all.sort((a, b) => a.query_value.localeCompare(b.query_value));
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Lookup failed';
+			error = errorMessage(e, 'Lookup failed');
 		} finally {
 			isLoading = false;
 		}

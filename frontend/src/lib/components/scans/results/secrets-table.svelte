@@ -18,7 +18,9 @@
 	import ResultsPagination from './table/results-pagination.svelte';
 	import ViewControls from './table/view-controls.svelte';
 	import GroupList from './table/group-list.svelte';
-	import { readPref, selectAllState, writePref } from './table/columns';
+	import { GroupedView, ResultsTable } from './table/results-state.svelte';
+	import { pageParam, parsePageIndex, parseSort, sortParam, type SortKey } from './table/sort';
+	import { selectAllState } from './table/columns';
 	import RowSelectionBar from './table/row-selection-bar.svelte';
 	import { RowSelection } from './table/selection.svelte';
 	import SecretListHeader from './secrets/secret-list-header.svelte';
@@ -31,10 +33,9 @@
 	import { secretQuerySchema } from '$lib/stores/query-schema.svelte';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import { appendToken, type Facet } from '$lib/utilities/scan-insights';
-	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
+	import { SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 	import { LiveRefresh } from '$lib/utilities/live-results';
 	import { STATE_TABS } from '$lib/config/secrets';
-	import type { QueryError, QueryGroups } from '$lib/types/asset-query';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import type {
 		SecretCoverage,
@@ -71,7 +72,7 @@
 		source: [],
 		subject: []
 	};
-	const DEFAULT_SORT = { key: 'state', dir: -1 as const };
+	const DEFAULT_SORT: SortKey = { key: 'state', dir: -1 };
 	const QUICK_FILTERS = [
 		{ token: 'is:exposed', label: 'Exposed' },
 		{ token: 'is:new', label: 'New' },
@@ -81,34 +82,23 @@
 	];
 
 	const initial = appPage.url.searchParams;
-	const initialSort = initial.get('sec_sort')?.split(':') ?? [];
 
 	let search = $state(initial.get('sec_q') ?? '');
-	let groupBy = $state<string>(initial.get('sec_group') ?? '');
+	const table = new ResultsTable<SecretRead, SecretFacets>({
+		facets: EMPTY_FACETS,
+		sort: parseSort(initial.get('sec_sort'), DEFAULT_SORT),
+		pageIndex: parsePageIndex(initial.get('sec_page')),
+		pageSizeKey: STORAGE_KEYS.secretPageSize
+	});
+	const groups = new GroupedView(
+		initial.get('sec_group') ?? '',
+		(by) => secretsApi.groups(projectId, scanId, by, { q: search.trim() || undefined }),
+		() => ready
+	);
 	let queryBar = $state<ReturnType<typeof QueryBar> | null>(null);
 	let sideLoaded = $state(false);
-	let pageSize = $state<number>(readPref(STORAGE_KEYS.secretPageSize, RESULTS_PAGE_SIZE));
-	let sort = $state<{ key: string; dir: 1 | -1 }>(
-		initialSort[0]
-			? { key: initialSort[0], dir: initialSort[1] === 'desc' ? -1 : 1 }
-			: { ...DEFAULT_SORT }
-	);
-	let pageIndex = $state(Math.max(0, Number(initial.get('sec_page') ?? 1) - 1));
 
-	let items = $state<SecretRead[]>([]);
-	let total = $state(0);
-	let totalCapped = $state(false);
-	let queryError = $state<QueryError | null>(null);
-	let queryReady = $state(true);
-	let loading = $state(true);
-	let refreshing = $state(false);
-	let errored = $state(false);
-	let facets = $state<SecretFacets>(EMPTY_FACETS);
 	let coverage = $state<SecretCoverage | null>(null);
-
-	let groupSet = $state<QueryGroups | null>(null);
-	let groupLoading = $state(false);
-	let groupFailed = $state(false);
 
 	let selected = $state<SecretDetail | null>(null);
 	let drawerOpen = $state(false);
@@ -120,15 +110,14 @@
 		if (active) seen = true;
 	});
 
-	let pageCount = $derived(Math.max(1, Math.ceil(total / pageSize)));
-	let checkedCount = $derived(selection.countOn(items));
-	let selectAllChecked = $derived(selectAllState(checkedCount, items.length));
+	let checkedCount = $derived(selection.countOn(table.items));
+	let selectAllChecked = $derived(selectAllState(checkedCount, table.items.length));
 	let term = $derived(search.trim().includes(':') ? '' : search.trim());
 	let filtered = $derived(Boolean(search.trim()));
 	let stateCounts = $derived.by(() => {
 		if (!sideLoaded) return null;
 		const out: Record<string, number> = { all: coverage?.secrets ?? 0 };
-		for (const f of facets.state) out[f.key] = f.count;
+		for (const f of table.facets.state) out[f.key] = f.count;
 		return out;
 	});
 	let stateTab = $derived.by(() => {
@@ -137,76 +126,55 @@
 	});
 	let exportFilters = $derived({
 		q: search.trim() || null,
-		sort: sort.key,
-		direction: sort.dir === -1 ? 'desc' : 'asc'
+		sort: table.sort.key,
+		direction: table.sort.dir === -1 ? 'desc' : 'asc'
 	} as unknown as Record<string, unknown>);
 	let barFacets = $derived<Record<string, Facet[]>>({
-		state: facets.state.map((f) => ({ value: f.key, label: f.label, count: f.count })),
-		group: facets.group.map((f) => ({ value: f.key, label: f.label, count: f.count })),
-		secret: facets.kind.map((f) => ({ value: f.key, label: f.label, count: f.count })),
-		kind: facets.kind.map((f) => ({ value: f.key, label: f.label, count: f.count })),
-		vendor: facets.vendor.map((f) => ({ value: f.key, label: f.label, count: f.count })),
-		source: facets.source.map((f) => ({ value: f.key, label: f.label, count: f.count })),
-		subject: facets.subject.map((f) => ({ value: f.key, label: f.label, count: f.count }))
+		state: table.facets.state.map((f) => ({ value: f.key, label: f.label, count: f.count })),
+		group: table.facets.group.map((f) => ({ value: f.key, label: f.label, count: f.count })),
+		secret: table.facets.kind.map((f) => ({ value: f.key, label: f.label, count: f.count })),
+		kind: table.facets.kind.map((f) => ({ value: f.key, label: f.label, count: f.count })),
+		vendor: table.facets.vendor.map((f) => ({ value: f.key, label: f.label, count: f.count })),
+		source: table.facets.source.map((f) => ({ value: f.key, label: f.label, count: f.count })),
+		subject: table.facets.subject.map((f) => ({ value: f.key, label: f.label, count: f.count }))
 	});
 
-	$effect(() => writePref(STORAGE_KEYS.secretPageSize, pageSize));
-
-	let reqId = 0;
 	let timer: ReturnType<typeof setTimeout> | null = null;
 
 	function filterOf(): SecretFilter {
 		return {
 			q: search.trim() || undefined,
-			limit: pageSize,
-			offset: pageIndex * pageSize,
-			sort: sort.key,
-			direction: sort.dir === -1 ? 'desc' : 'asc'
+			limit: table.pageSize,
+			offset: table.pageIndex * table.pageSize,
+			sort: table.sort.key,
+			direction: table.sort.dir === -1 ? 'desc' : 'asc'
 		};
 	}
 
 	async function runSearch() {
-		if (!ready || !queryReady) return;
-		const mine = ++reqId;
-		refreshing = items.length > 0;
+		if (!ready || !table.queryReady) return;
+		const current = table.searchRequest.begin();
+		table.refreshing = table.items.length > 0;
 		const filter = filterOf();
 		try {
 			const result = await secretsApi.search(projectId, scanId, filter);
-			if (mine !== reqId) return;
-			queryError = result.error ?? null;
-			items = result.error ? [] : result.items;
-			total = result.error ? 0 : result.total;
-			totalCapped = result.total_capped;
-			errored = false;
+			if (!current()) return;
+			table.queryError = result.error ?? null;
+			table.items = result.error ? [] : result.items;
+			table.total = result.error ? 0 : result.total;
+			table.totalCapped = result.total_capped;
+			table.errored = false;
 			if (!result.error && filter.q) queryBar?.remember(filter.q);
 		} catch {
-			if (mine !== reqId) return;
-			errored = true;
-			items = [];
-			total = 0;
+			if (!current()) return;
+			table.errored = true;
+			table.items = [];
+			table.total = 0;
 		} finally {
-			if (mine === reqId) {
-				loading = false;
-				refreshing = false;
+			if (current()) {
+				table.loading = false;
+				table.refreshing = false;
 			}
-		}
-	}
-
-	async function loadGroups() {
-		if (!groupBy || !ready) {
-			groupSet = null;
-			return;
-		}
-		groupLoading = true;
-		groupFailed = false;
-		try {
-			groupSet = await secretsApi.groups(projectId, scanId, groupBy, {
-				q: search.trim() || undefined
-			});
-		} catch {
-			groupFailed = true;
-		} finally {
-			groupLoading = false;
 		}
 	}
 
@@ -215,7 +183,7 @@
 		timer = setTimeout(() => {
 			timer = null;
 			void runSearch();
-			void loadGroups();
+			void groups.reload();
 		}, SEARCH_DEBOUNCE_MS);
 	}
 
@@ -226,7 +194,7 @@
 				secretsApi.facets(projectId, scanId),
 				secretsApi.coverage(projectId, scanId)
 			]);
-			facets = f;
+			table.facets = f;
 			coverage = c;
 			sideLoaded = true;
 			onScanTotal?.(c.secrets);
@@ -238,7 +206,7 @@
 	const live = new LiveRefresh(() => {
 		void runSearch();
 		void loadSide();
-		void loadGroups();
+		void groups.reload();
 	});
 	$effect(() => {
 		const tick = revision;
@@ -258,47 +226,43 @@
 				void loadSide();
 			}
 			void runSearch();
-			void loadGroups();
+			void groups.reload();
 		});
 	});
 
 	let primedGroup = false;
 	$effect(() => {
-		void groupBy;
+		void groups.by;
 		if (!primedGroup) {
 			primedGroup = true;
 			return;
 		}
 		untrack(() => {
 			syncUrl();
-			void loadGroups();
+			void groups.reload();
 		});
 	});
 
 	function syncUrl() {
 		const params = new SvelteURLSearchParams(appPage.url.searchParams);
-		if (search.trim()) params.set('sec_q', search.trim());
-		else params.delete('sec_q');
-		if (pageIndex > 0) params.set('sec_page', String(pageIndex + 1));
-		else params.delete('sec_page');
-		if (groupBy) params.set('sec_group', groupBy);
-		else params.delete('sec_group');
-		if (sort.key !== DEFAULT_SORT.key || sort.dir !== DEFAULT_SORT.dir) {
-			params.set('sec_sort', `${sort.key}:${sort.dir === -1 ? 'desc' : 'asc'}`);
-		} else params.delete('sec_sort');
+		const set = (k: string, v: string | null) => (v ? params.set(k, v) : params.delete(k));
+		set('sec_q', search.trim() || null);
+		set('sec_page', pageParam(table.pageIndex));
+		set('sec_group', groups.by || null);
+		set('sec_sort', sortParam(table.sort, DEFAULT_SORT));
 		const next = `${appPage.url.pathname}${params.size ? `?${params}` : ''}`;
 		replaceState(next, appPage.state);
 	}
 
 	function onQuery(value: string) {
 		search = value;
-		pageIndex = 0;
+		table.pageIndex = 0;
 		syncUrl();
 		schedule();
 	}
 
 	function drillGroup(query: string) {
-		groupBy = '';
+		groups.by = '';
 		onQuery(appendToken(search, query));
 	}
 
@@ -324,23 +288,22 @@
 	}
 
 	function toggleCheck(id: string) {
-		const row = items.find((r) => r.id === id);
+		const row = table.items.find((r) => r.id === id);
 		if (row) selection.toggle(row);
 	}
 
 	function toggleSelectAll() {
-		selection.toggleAll(items);
+		selection.toggleAll(table.items);
 	}
 
 	function onSort(key: string) {
-		sort = sort.key === key ? { key, dir: sort.dir === 1 ? -1 : 1 } : { key, dir: -1 };
-		pageIndex = 0;
+		table.toggleSort(key, -1);
 		syncUrl();
 		void runSearch();
 	}
 
 	function onPage(next: number) {
-		pageIndex = Math.max(0, Math.min(next, pageCount - 1));
+		table.pageIndex = Math.max(0, Math.min(next, table.pageCount - 1));
 		syncUrl();
 		void runSearch();
 	}
@@ -365,11 +328,11 @@
 		value={search}
 		facets={barFacets}
 		onChange={onQuery}
-		busy={refreshing}
-		total={errored ? null : total}
-		capped={totalCapped}
-		serverError={queryError}
-		onReady={(value) => (queryReady = value)}
+		busy={table.refreshing}
+		total={table.errored ? null : table.total}
+		capped={table.totalCapped}
+		serverError={table.queryError}
+		onReady={(value) => (table.queryReady = value)}
 	/>
 </div>
 
@@ -396,11 +359,11 @@
 			<ViewControls
 				dimension={SurfaceDimension.SECRETS}
 				dimensions={secretQuerySchema.schema.group_dimensions}
-				{groupBy}
-				onGroupBy={(key) => (groupBy = key)}
+				groupBy={groups.by}
+				onGroupBy={(key) => (groups.by = key)}
 				sorts={SECRET_SORTS}
-				sortKey={sort.key}
-				sortDir={sort.dir}
+				sortKey={table.sort.key}
+				sortDir={table.sort.dir}
 				{onSort}
 				columns={[]}
 				visible={[]}
@@ -408,11 +371,11 @@
 				density="cozy"
 				onDensity={() => {}}
 				showColumns={false}
-				{refreshing}
+				refreshing={table.refreshing}
 				onRefresh={() => {
 					void runSearch();
 					void loadSide();
-					void loadGroups();
+					void groups.reload();
 				}}
 				{projectId}
 				{scanId}
@@ -421,26 +384,26 @@
 		</div>
 	</div>
 
-	{#if groupBy}
+	{#if groups.by}
 		<GroupList
-			set={groupSet}
-			failed={groupFailed}
-			onRetry={loadGroups}
+			set={groups.value}
+			failed={groups.failed}
+			onRetry={groups.reload}
 			dimensions={secretQuerySchema.schema.group_dimensions}
 			noun={SEC.noun}
 			nounPlural={SEC.nounPlural}
-			loading={groupLoading}
+			loading={groups.loading}
 			onPick={drillGroup}
 		/>
-	{:else if loading}
+	{:else if table.loading}
 		<TableSkeleton lead={secretSkeletonColumns(projectWide)} actions={false} selectable />
-	{:else if errored}
+	{:else if table.errored}
 		<EmptyState icon={TriangleAlert} title="Secrets not loaded">
 			<Button variant="outline" size="sm" onclick={() => void runSearch()}>Retry</Button>
 		</EmptyState>
 	{:else if coverage && !coverage.ran}
 		<EmptyState icon={KeyRound} title="Not scanned" />
-	{:else if items.length === 0}
+	{:else if table.items.length === 0}
 		<EmptyState
 			icon={filtered ? SearchX : ShieldCheck}
 			title={filtered ? 'No secrets match' : 'No secrets found'}
@@ -452,14 +415,14 @@
 	{:else}
 		<SecretListHeader
 			{projectWide}
-			sortKey={sort.key}
-			sortDir={sort.dir}
+			sortKey={table.sort.key}
+			sortDir={table.sort.dir}
 			{selectAllChecked}
 			onSelectAll={toggleSelectAll}
 			{onSort}
 		/>
-		<div class="divide-y divide-border transition-opacity {refreshing ? 'opacity-60' : ''}">
-			{#each items as row (row.id)}
+		<div class="divide-y divide-border transition-opacity {table.refreshing ? 'opacity-60' : ''}">
+			{#each table.items as row (row.id)}
 				<SecretRow
 					{row}
 					{term}
@@ -473,16 +436,15 @@
 		</div>
 
 		<ResultsPagination
-			{total}
-			page={pageIndex}
-			{pageSize}
-			capped={totalCapped}
+			total={table.total}
+			page={table.pageIndex}
+			pageSize={table.pageSize}
+			capped={table.totalCapped}
 			noun={SEC.noun}
 			plural={SEC.nounPlural}
 			{onPage}
 			onPageSize={(size) => {
-				pageSize = size;
-				pageIndex = 0;
+				table.setPageSize(size);
 				void runSearch();
 			}}
 		/>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { whoisApi } from '$lib/api/whois';
 	import type { WhoisRecordRead, WhoisCorrelationResult } from '$lib/types/whois';
@@ -130,7 +131,7 @@
 		try {
 			correlations = await whoisApi.getTargetCorrelations(targetId);
 		} catch (e) {
-			correlationsError = e instanceof Error ? e.message : 'Correlations not loaded';
+			correlationsError = errorMessage(e, 'Correlations not loaded');
 		} finally {
 			isLoadingCorrelations = false;
 		}
@@ -143,7 +144,7 @@
 			try {
 				internalRecord = await whoisApi.getRecord(recordId);
 			} catch (e) {
-				recordError = e instanceof Error ? e.message : 'WHOIS record not loaded';
+				recordError = errorMessage(e, 'WHOIS record not loaded');
 			} finally {
 				isLoadingRecord = false;
 			}
@@ -163,7 +164,7 @@
 			await loadCorrelations();
 			toast.success('WHOIS record refreshed');
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'WHOIS record not refreshed');
+			toast.error(errorMessage(e, 'WHOIS record not refreshed'));
 		} finally {
 			isRefreshing = false;
 		}

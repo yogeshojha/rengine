@@ -96,14 +96,11 @@ def test_a_finding_without_a_response_is_no_document():
 
 
 async def _upsert(estate, scan: str, urls: list[str]) -> None:
-    sid = estate.scans[scan]
-    target_id = await estate._target_of(sid)
+    ids = estate.row_ids(scan)
     await estate.session.run_sync(
         lambda s: endpoint_inventory.upsert(
             s,
-            scan_id=sid,
-            target_id=target_id,
-            project_id=estate.project_id,
+            **ids,
             source=EndpointSource.SEED.value,
             observations=[EndpointObservation(url=u) for u in urls],
             policy=NoisePolicy.off(),
@@ -198,14 +195,11 @@ async def test_a_second_probe_replaces_the_stored_response(durable_estate, now):
 
 
 async def _mine(estate, scan: str, *, sources, incremental: bool = False):
-    sid = estate.scans[scan]
-    target_id = await estate._target_of(sid)
+    ids = estate.row_ids(scan)
     return await estate.session.run_sync(
         lambda s: secret_mining.mine_scan(
             s,
-            scan_id=sid,
-            target_id=target_id,
-            project_id=estate.project_id,
+            **ids,
             sources=sources,
             incremental=incremental,
         )

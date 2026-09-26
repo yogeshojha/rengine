@@ -12,6 +12,7 @@ import type {
 } from '$lib/types/scan';
 import { isLiveStatus } from '$lib/utilities/scan-status';
 import type { PaginatedResponse } from '$lib/types/pagination';
+import { errorMessage } from '$lib/utilities/errors';
 
 interface ScanFilters {
 	projectId?: string;
@@ -137,7 +138,7 @@ function createScansStore() {
 			hasFetched = true;
 		} catch (e) {
 			if (seq === loadSeq && !silent) {
-				error = e instanceof Error ? e.message : 'Scans not loaded';
+				error = errorMessage(e, 'Scans not loaded');
 			}
 		} finally {
 			if (seq === loadSeq) {
@@ -346,7 +347,7 @@ function createScansStore() {
 				this.refresh();
 				return true;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Scan not cancelled';
+				error = errorMessage(e, 'Scan not cancelled');
 				return false;
 			}
 		},
@@ -359,7 +360,7 @@ function createScansStore() {
 				this.refresh();
 				return updated;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Scan not paused';
+				error = errorMessage(e, 'Scan not paused');
 				return null;
 			}
 		},
@@ -372,7 +373,7 @@ function createScansStore() {
 				this.refresh();
 				return updated;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Scan not resumed';
+				error = errorMessage(e, 'Scan not resumed');
 				return null;
 			}
 		},
@@ -385,7 +386,7 @@ function createScansStore() {
 				this.refresh();
 				return true;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Scan not deleted';
+				error = errorMessage(e, 'Scan not deleted');
 				return false;
 			}
 		},
@@ -417,7 +418,7 @@ function createScansStore() {
 				this.refresh();
 				return cancelled;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Scans not cancelled';
+				error = errorMessage(e, 'Scans not cancelled');
 				return null;
 			}
 		},
@@ -446,7 +447,7 @@ function createScansStore() {
 				if (projectId === filters.projectId) this.refresh();
 				return created;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Scans not started';
+				error = errorMessage(e, 'Scans not started');
 				return null;
 			}
 		},

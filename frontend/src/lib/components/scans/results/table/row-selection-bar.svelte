@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import type { Snippet } from 'svelte';
 	import Copy from '@lucide/svelte/icons/copy';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
@@ -100,7 +101,7 @@
 			);
 			onDeleted?.(result);
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : `${spec.label} not deleted.`);
+			toast.error(errorMessage(e, `${spec.label} not deleted.`));
 		} finally {
 			removing = false;
 		}

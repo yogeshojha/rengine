@@ -157,4 +157,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    pass
+    """Irreversible: the pruned keys and cleared YAML sources are not kept; an
+    engine without them runs on the stage defaults.
+    """

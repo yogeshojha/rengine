@@ -1,4 +1,5 @@
 import type { QueryError } from './asset-query';
+import type { SecretGroup, SecretSource, SecretState } from '$lib/config/secrets';
 
 export interface SecretRead {
 	id: string;
@@ -8,10 +9,10 @@ export interface SecretRead {
 	fingerprint: string;
 	kind: string;
 	kind_label: string;
-	group: string;
+	group: SecretGroup;
 	group_label: string;
 	vendor: string;
-	state: string;
+	state: SecretState;
 	state_label: string;
 	is_secret: boolean;
 	value: string;
@@ -20,7 +21,7 @@ export interface SecretRead {
 	host: string;
 	url: string;
 	http_asset_id: string | null;
-	source: string;
+	source: SecretSource;
 	source_label: string;
 	sightings: number;
 	hosts: number;
@@ -33,7 +34,7 @@ export interface SecretSightingRead {
 	host: string;
 	url: string;
 	http_asset_id: string | null;
-	source: string;
+	source: SecretSource;
 	source_label: string;
 	offset: number;
 	context: string | null;

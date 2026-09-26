@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import PlainTextResponse
-from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi_pagination.ext.sqlalchemy import apaginate
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
@@ -188,7 +188,7 @@ async def list_scans(
         include_focused=include_focused,
         new_checks=new_checks,
     )
-    page = await paginate(
+    page = await apaginate(
         session,
         query,
         transformer=lambda items: [service.to_read(s) for s in items],
@@ -232,7 +232,7 @@ async def list_scan_target_groups(
         search=search,
         time_range=time_range,
     )
-    page = await paginate(
+    page = await apaginate(
         session,
         query,
         transformer=lambda rows: [

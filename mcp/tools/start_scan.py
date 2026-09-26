@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
-
 from pydantic import Field
 
 from mcp import links
@@ -12,6 +10,7 @@ from mcp.context import ToolContext
 from mcp.errors import ToolError
 from mcp.phrasing import short_id
 from mcp.result import ToolResult
+from mcp.tools._args import optional_uuid, parse_uuid
 from mcp.tools._scope import project_for
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.enums.scan import Intensity
@@ -45,8 +44,8 @@ class StartScan(Tool):
     command = "scan"
     value_field = "target"
     title = "Start a scan"
-    capability = Capability.LAUNCH.value
-    group = ToolGroup.ACT.value
+    capability = Capability.LAUNCH
+    group = ToolGroup.ACT
     description = (
         "Start a scan against a target in this token's project. Sends traffic to the "
         "target. Returns a scan id and a link. The scan runs in the background. "
@@ -64,7 +63,7 @@ class StartScan(Tool):
             raise ToolError(msg)
 
         project_id = await project_for(
-            ctx, uuid.UUID(args.project_id) if args.project_id else None
+            ctx, optional_uuid(args.project_id, "project_id")
         )
         payload: dict = {
             "target_value": args.target.strip(),
@@ -75,7 +74,7 @@ class StartScan(Tool):
             ("context_id", args.context_id),
         ):
             if value:
-                payload[key] = _uuid(value, key)
+                payload[key] = parse_uuid(value, key)
         if args.intensity:
             payload["intensity"] = args.intensity
 
@@ -120,11 +119,3 @@ def _traffic_note(scan) -> str:
         if passive
         else "Traffic is being sent to the target."
     )
-
-
-def _uuid(value: str, field: str) -> uuid.UUID:
-    try:
-        return uuid.UUID(value)
-    except ValueError as exc:
-        msg = f"{field} must be a UUID."
-        raise ToolError(msg) from exc

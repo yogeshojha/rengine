@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
@@ -157,7 +158,7 @@
 			if (runs.length === 1) void goto(ROUTES.scan(runs[0].id));
 			else toast.success(`${runs.length} scans started.`);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Scan not started.';
+			error = errorMessage(e, 'Scan not started.');
 		} finally {
 			scanning = false;
 		}
@@ -172,7 +173,7 @@
 			await reload();
 			toast.success(`${result.queued} sent to Repeater.`);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Requests not queued.';
+			error = errorMessage(e, 'Requests not queued.');
 		} finally {
 			sending = false;
 		}

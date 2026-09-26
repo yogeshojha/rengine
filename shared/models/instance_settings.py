@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from pydantic import BaseModel
-from sqlalchemy import Column
+from sqlalchemy import Column, Select, select
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
@@ -14,6 +14,8 @@ from shared.definitions.oast import (
     DEFAULT_WAIT_SECONDS,
     MAX_SERVER_LENGTH,
     OastMode,
+    normalize_server,
+    off_reason,
 )
 from shared.enums.instance import InstanceMode
 from shared.utils.datetime import utc_now
@@ -72,6 +74,32 @@ class InstanceSettings(SQLModel, table=True):
     oast_wait_seconds: int = Field(default=DEFAULT_WAIT_SECONDS)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
+
+    @classmethod
+    def singleton(cls) -> Select:
+        """The query for the instance's one row, for a sync or an async session."""
+        return select(cls).where(cls.singleton_key == SINGLETON_KEY)
+
+    @property
+    def oast_host(self) -> str | None:
+        """The configured out-of-band server as a bare host, or None."""
+        return normalize_server(self.oast_server)
+
+    @property
+    def oast_off_reason(self) -> str | None:
+        """Why the configured out-of-band mode cannot be used, or None when it can."""
+        return off_reason(
+            self.oast_mode,
+            server=self.oast_host,
+            acknowledged=self.oast_public_acknowledged,
+        )
+
+
+def oast_reason(row: InstanceSettings | None) -> str | None:
+    """Why out-of-band testing is unusable, or None. No row yet is the default: off."""
+    if row is None:
+        return off_reason(OastMode.OFF.value, server=None, acknowledged=False)
+    return row.oast_off_reason
 
 
 class InstanceSettingsUpdate(BaseModel):

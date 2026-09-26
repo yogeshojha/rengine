@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { untrack } from 'svelte';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -58,7 +59,7 @@
 			open = false;
 			name = '';
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Connector not created.';
+			error = errorMessage(e, 'Connector not created.');
 		} finally {
 			saving = false;
 		}

@@ -281,8 +281,10 @@ export function unquote(value: string): string {
 	return value.startsWith('"') ? value.slice(1) : value;
 }
 
+// the lexer and the backend parser both read a backslash as an escape inside quotes, so it is
+// escaped along with `"`: a scanned value ending in one would otherwise close the quote early
 export function quoteValue(value: string): string {
-	return /[\s()"[\]:=><~]/.test(value) ? `"${value.replace(/"/g, '\\"')}"` : value;
+	return /[\s()"[\]:=><~\\]/.test(value) ? `"${value.replace(/[\\"]/g, '\\$&')}"` : value;
 }
 
 export function replaceRange(source: string, start: number, end: number, insert: string): string {

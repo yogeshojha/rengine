@@ -2,7 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi_pagination.ext.sqlalchemy import apaginate
 from pydantic import BaseModel
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -56,7 +56,7 @@ async def list_activity_logs(
 
     query = query.order_by(ActivityLog.timestamp.desc())
 
-    return await paginate(session, query)
+    return await apaginate(session, query)
 
 
 @router.delete("", response_model=ActivityDeleteResponse)

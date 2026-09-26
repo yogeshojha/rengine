@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import Copy from '@lucide/svelte/icons/copy';
@@ -113,7 +114,7 @@ http:
 			onSaved();
 			onOpenChange(false);
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Check not saved.';
+			error = errorMessage(err, 'Check not saved.');
 		} finally {
 			saving = false;
 		}

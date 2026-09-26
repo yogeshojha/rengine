@@ -32,7 +32,7 @@ class Input(ToolInput):
 class CveExposure(Tool):
     name = "cve_exposure"
     title = "CVE exposure"
-    group = ToolGroup.INTERROGATE.value
+    group = ToolGroup.INTERROGATE
     description = (
         "Every asset in the estate that carries one CVE, across both findings "
         "dimensions, counted on one evidence ladder. Inferred: a version fell in "

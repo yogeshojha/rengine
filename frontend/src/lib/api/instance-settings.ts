@@ -1,4 +1,5 @@
 import { api } from './client';
+import type { ActionResult } from '$lib/types/action-result';
 import type { InstanceSettings, InstanceSettingsUpdate } from '$lib/types/instance-settings';
 
 export const instanceSettingsApi = {
@@ -10,11 +11,7 @@ export const instanceSettingsApi = {
 		return api.patch<InstanceSettings>('/instance-settings', data);
 	},
 
-	testAi: (data: {
-		provider: string;
-		model?: string;
-		api_key?: string;
-	}): Promise<{ success: boolean; message: string }> => {
-		return api.post<{ success: boolean; message: string }>('/instance-settings/ai/test', data);
+	testAi: (data: { provider: string; model?: string; api_key?: string }): Promise<ActionResult> => {
+		return api.post<ActionResult>('/instance-settings/ai/test', data);
 	}
 };

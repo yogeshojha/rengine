@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import ipaddress
 from uuid import UUID
 

@@ -26,8 +26,24 @@ Apply migrations before restarting the api.
 # Checks
 
 ```
-make lint    # ruff over every package, then prettier and eslint
-make test    # pytest in the api container, then svelte-check and vitest
+make lint    # lint-python, then lint-frontend
+make test    # test-python, then test-frontend
 ```
 
-Both are what CI runs.
+CI runs the same four targets, so a green `make lint` and `make test` is a
+green CI run:
+
+- `make lint-python`: `make check-lists`, then ruff check and ruff format
+  over every package in the Makefile's `PACKAGES`, with the ruff version
+  `pyproject.toml` pins (run through `uvx`, so the host ruff does not matter).
+- `make lint-frontend`: prettier and eslint.
+- `make test-python`: pytest in a one-off container of the api service
+  (`docker compose run --rm --no-deps api`); db and redis must be up.
+- `make test-frontend`: svelte-check and vitest. Run `npm ci` in `frontend/`
+  first.
+
+`make check-lists` compares the copies of the package list that tools cannot
+share (the pre-commit pattern, compose's `&api-volumes` and `&worker-volumes`,
+the Dockerfile `COPY` lines and `RELOAD_DIRS` in `api/entrypoint.sh`) with the
+Makefile's `PACKAGES`, and the pre-commit ruff rev with the `pyproject.toml`
+pin. A new package goes into all of them.

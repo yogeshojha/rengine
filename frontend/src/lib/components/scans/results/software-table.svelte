@@ -22,16 +22,12 @@
 	import QueryBar from './query-bar/query-bar.svelte';
 	import ListHeader from './table/list-header.svelte';
 	import ResultsPagination from './table/results-pagination.svelte';
-	import {
-		readPref,
-		rowPadding,
-		selectAllState,
-		TARGET_COLUMN,
-		withTarget,
-		writePref
-	} from './table/columns';
+	import { rowPadding, selectAllState, TARGET_COLUMN, withTarget } from './table/columns';
+	import { readPref, writePref } from '$lib/utilities/storage';
 	import RowSelectionBar from './table/row-selection-bar.svelte';
 	import { RowSelection } from './table/selection.svelte';
+	import { ResultsTable } from './table/results-state.svelte';
+	import { pageParam, parsePageIndex, parseSort, sortParam, type SortKey } from './table/sort';
 	import ExportMenu from './export-menu.svelte';
 	import SoftwareRow from './software/software-row.svelte';
 	import SoftwareDetailSheet from './software/software-detail-sheet.svelte';
@@ -46,10 +42,9 @@
 	import { softwareQuerySchema } from '$lib/stores/query-schema.svelte';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import { appendToken, type Facet } from '$lib/utilities/scan-insights';
-	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
+	import { SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 	import { LiveRefresh } from '$lib/utilities/live-results';
 	import { SEVERITY_TABS } from '$lib/utilities/vulns';
-	import type { QueryError } from '$lib/types/asset-query';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import type {
 		SoftwareCoverage,
@@ -86,33 +81,22 @@
 		evidence: [],
 		product: []
 	};
-	const DEFAULT_SORT = { key: 'rank', dir: -1 as const };
+	const DEFAULT_SORT: SortKey = { key: 'rank', dir: -1 };
 
 	const initial = appPage.url.searchParams;
-	const initialSort = initial.get('sw_sort')?.split(':') ?? [];
 
 	let search = $state(initial.get('sw_q') ?? '');
 	let queryBar = $state<ReturnType<typeof QueryBar> | null>(null);
 	let sideLoaded = $state(false);
-	let density = $state<string>(readPref(STORAGE_KEYS.softwareDensity, 'cozy'));
-	let pageSize = $state<number>(readPref(STORAGE_KEYS.softwarePageSize, RESULTS_PAGE_SIZE));
+	const table = new ResultsTable<SoftwareCve, SoftwareFacets>({
+		facets: EMPTY_FACETS,
+		sort: parseSort(initial.get('sw_sort'), DEFAULT_SORT),
+		pageIndex: parsePageIndex(initial.get('sw_page')),
+		pageSizeKey: STORAGE_KEYS.softwarePageSize,
+		densityKey: STORAGE_KEYS.softwareDensity
+	});
 	let visiblePref = $state<string[] | null>(readPref(STORAGE_KEYS.softwareColumns, null));
-	let sort = $state<{ key: string; dir: 1 | -1 }>(
-		initialSort[0]
-			? { key: initialSort[0], dir: initialSort[1] === 'desc' ? -1 : 1 }
-			: { ...DEFAULT_SORT }
-	);
-	let pageIndex = $state(Math.max(0, Number(initial.get('sw_page') ?? 1) - 1));
 
-	let items = $state<SoftwareCve[]>([]);
-	let total = $state(0);
-	let totalCapped = $state(false);
-	let queryError = $state<QueryError | null>(null);
-	let queryReady = $state(true);
-	let loading = $state(true);
-	let refreshing = $state(false);
-	let errored = $state(false);
-	let facets = $state<SoftwareFacets>(EMPTY_FACETS);
 	let coverage = $state<SoftwareCoverage | null>(null);
 
 	const QUICK_FILTERS = [
@@ -137,21 +121,20 @@
 	let shownColumns = $derived(
 		allColumns.filter((c) => visible.includes(c.key) || c.key === 'target')
 	);
-	let pageCount = $derived(Math.max(1, Math.ceil(total / pageSize)));
-	let checkedCount = $derived(selection.countOn(items));
-	let selectAllChecked = $derived(selectAllState(checkedCount, items.length));
+	let checkedCount = $derived(selection.countOn(table.items));
+	let selectAllChecked = $derived(selectAllState(checkedCount, table.items.length));
 	let exportFilters = $derived({
 		q: search.trim() || null,
-		sort: sort.key,
-		direction: sort.dir === -1 ? 'desc' : 'asc'
+		sort: table.sort.key,
+		direction: table.sort.dir === -1 ? 'desc' : 'asc'
 	} as unknown as Record<string, unknown>);
-	let rowPad = $derived(rowPadding(density));
+	let rowPad = $derived(rowPadding(table.density));
 	let term = $derived(search.trim().includes(':') ? '' : search.trim());
 	let filtered = $derived(Boolean(search.trim()));
 	let severityCounts = $derived.by(() => {
 		if (!sideLoaded) return null;
 		const out: Record<string, number> = { all: coverage?.findings ?? 0 };
-		for (const f of facets.severity) out[f.key] = f.count;
+		for (const f of table.facets.severity) out[f.key] = f.count;
 		return out;
 	});
 	let severityTab = $derived.by(() => {
@@ -159,55 +142,56 @@
 		return m ? m[1] : 'all';
 	});
 	let barFacets = $derived<Record<string, Facet[]>>({
-		severity: facets.severity.map((f) => ({ value: f.key, label: f.label, count: f.count })),
-		confidence: facets.confidence.map((f) => ({ value: f.key, label: f.label, count: f.count })),
-		source: facets.source.map((f) => ({ value: f.key, label: f.label, count: f.count })),
-		caveat: facets.caveat.map((f) => ({ value: f.key, label: f.label, count: f.count })),
-		evidence: facets.evidence.map((f) => ({ value: f.key, label: f.label, count: f.count }))
+		severity: table.facets.severity.map((f) => ({ value: f.key, label: f.label, count: f.count })),
+		confidence: table.facets.confidence.map((f) => ({
+			value: f.key,
+			label: f.label,
+			count: f.count
+		})),
+		source: table.facets.source.map((f) => ({ value: f.key, label: f.label, count: f.count })),
+		caveat: table.facets.caveat.map((f) => ({ value: f.key, label: f.label, count: f.count })),
+		evidence: table.facets.evidence.map((f) => ({ value: f.key, label: f.label, count: f.count }))
 	});
 
 	$effect(() => {
 		if (visiblePref) writePref(STORAGE_KEYS.softwareColumns, visiblePref);
 	});
-	$effect(() => writePref(STORAGE_KEYS.softwareDensity, density));
-	$effect(() => writePref(STORAGE_KEYS.softwarePageSize, pageSize));
 
-	let reqId = 0;
 	let timer: ReturnType<typeof setTimeout> | null = null;
 
 	function filterOf(): SoftwareFilter {
 		return {
 			q: search.trim() || undefined,
-			limit: pageSize,
-			offset: pageIndex * pageSize,
-			sort: sort.key,
-			direction: sort.dir === -1 ? 'desc' : 'asc'
+			limit: table.pageSize,
+			offset: table.pageIndex * table.pageSize,
+			sort: table.sort.key,
+			direction: table.sort.dir === -1 ? 'desc' : 'asc'
 		};
 	}
 
 	async function runSearch() {
-		if (!ready || !queryReady) return;
-		const mine = ++reqId;
-		refreshing = items.length > 0;
+		if (!ready || !table.queryReady) return;
+		const current = table.searchRequest.begin();
+		table.refreshing = table.items.length > 0;
 		const filter = filterOf();
 		try {
 			const result = await softwareApi.search(projectId, scanId, filter);
-			if (mine !== reqId) return;
-			queryError = result.error ?? null;
-			items = result.error ? [] : result.items;
-			total = result.error ? 0 : result.total;
-			totalCapped = result.total_capped;
-			errored = false;
+			if (!current()) return;
+			table.queryError = result.error ?? null;
+			table.items = result.error ? [] : result.items;
+			table.total = result.error ? 0 : result.total;
+			table.totalCapped = result.total_capped;
+			table.errored = false;
 			if (!result.error && filter.q) queryBar?.remember(filter.q);
 		} catch {
-			if (mine !== reqId) return;
-			errored = true;
-			items = [];
-			total = 0;
+			if (!current()) return;
+			table.errored = true;
+			table.items = [];
+			table.total = 0;
 		} finally {
-			if (mine === reqId) {
-				loading = false;
-				refreshing = false;
+			if (current()) {
+				table.loading = false;
+				table.refreshing = false;
 			}
 		}
 	}
@@ -227,7 +211,7 @@
 				softwareApi.facets(projectId, scanId),
 				softwareApi.coverage(projectId, scanId)
 			]);
-			facets = f;
+			table.facets = f;
 			coverage = c;
 			sideLoaded = true;
 			onScanTotal?.(c.findings);
@@ -263,20 +247,17 @@
 
 	function syncUrl() {
 		const params = new SvelteURLSearchParams(appPage.url.searchParams);
-		if (search.trim()) params.set('sw_q', search.trim());
-		else params.delete('sw_q');
-		if (pageIndex > 0) params.set('sw_page', String(pageIndex + 1));
-		else params.delete('sw_page');
-		if (sort.key !== DEFAULT_SORT.key || sort.dir !== DEFAULT_SORT.dir) {
-			params.set('sw_sort', `${sort.key}:${sort.dir === -1 ? 'desc' : 'asc'}`);
-		} else params.delete('sw_sort');
+		const set = (k: string, v: string | null) => (v ? params.set(k, v) : params.delete(k));
+		set('sw_q', search.trim() || null);
+		set('sw_page', pageParam(table.pageIndex));
+		set('sw_sort', sortParam(table.sort, DEFAULT_SORT));
 		const next = `${appPage.url.pathname}${params.size ? `?${params}` : ''}`;
 		replaceState(next, appPage.state);
 	}
 
 	function onQuery(value: string) {
 		search = value;
-		pageIndex = 0;
+		table.pageIndex = 0;
 		syncUrl();
 		schedule();
 	}
@@ -303,23 +284,22 @@
 	}
 
 	function toggleCheck(id: string) {
-		const row = items.find((r) => r.id === id);
+		const row = table.items.find((r) => r.id === id);
 		if (row) selection.toggle(row);
 	}
 
 	function toggleSelectAll() {
-		selection.toggleAll(items);
+		selection.toggleAll(table.items);
 	}
 
 	function onSort(key: string) {
-		sort = sort.key === key ? { key, dir: sort.dir === 1 ? -1 : 1 } : { key, dir: -1 };
-		pageIndex = 0;
+		table.toggleSort(key, -1);
 		syncUrl();
 		void runSearch();
 	}
 
 	function onPage(next: number) {
-		pageIndex = Math.max(0, Math.min(next, pageCount - 1));
+		table.pageIndex = Math.max(0, Math.min(next, table.pageCount - 1));
 		syncUrl();
 		void runSearch();
 	}
@@ -345,11 +325,11 @@
 		value={search}
 		facets={barFacets}
 		onChange={onQuery}
-		busy={refreshing}
-		total={errored ? null : total}
-		capped={totalCapped}
-		serverError={queryError}
-		onReady={(value) => (queryReady = value)}
+		busy={table.refreshing}
+		total={table.errored ? null : table.total}
+		capped={table.totalCapped}
+		serverError={table.queryError}
+		onReady={(value) => (table.queryReady = value)}
 	/>
 </div>
 
@@ -397,7 +377,7 @@
 			</Toggle>
 		{/each}
 		<div class="ml-auto flex items-center gap-1.5">
-			<SortMenu sorts={SOFTWARE_SORTS} sortKey={sort.key} sortDir={sort.dir} {onSort} />
+			<SortMenu sorts={SOFTWARE_SORTS} sortKey={table.sort.key} sortDir={table.sort.dir} {onSort} />
 			<ExportMenu
 				dimension={SurfaceDimension.SOFTWARE}
 				{projectId}
@@ -414,29 +394,29 @@
 					void loadSide();
 				}}
 			>
-				<RefreshCw class="size-3.5 {refreshing ? 'animate-spin' : ''}" />
+				<RefreshCw class="size-3.5 {table.refreshing ? 'animate-spin' : ''}" />
 			</Button>
 		</div>
 	</div>
 
-	{#if loading}
+	{#if table.loading}
 		<ScrollArea orientation="horizontal" class="min-h-0">
 			<div class="min-w-max">
 				<TableSkeleton
 					lead={projectWide ? [TARGET_COLUMN, ...SOFTWARE_LEAD_COLUMNS] : SOFTWARE_LEAD_COLUMNS}
 					columns={shownColumns.filter((c) => c.key !== 'target')}
-					{density}
+					density={table.density}
 					selectable
 				/>
 			</div>
 		</ScrollArea>
-	{:else if errored}
+	{:else if table.errored}
 		<EmptyState icon={TriangleAlert} title="Software CVEs not loaded">
 			<Button variant="outline" size="sm" onclick={() => void runSearch()}>Retry</Button>
 		</EmptyState>
 	{:else if coverage && coverage.components === 0}
 		<EmptyState icon={Package} title="No software versions reported" />
-	{:else if items.length === 0}
+	{:else if table.items.length === 0}
 		<EmptyState
 			icon={filtered ? SearchX : Package}
 			title={filtered ? 'No software CVEs match' : 'No software CVEs'}
@@ -452,8 +432,8 @@
 			follow={scrollRef}
 			lead={projectWide ? [TARGET_COLUMN, ...SOFTWARE_LEAD_COLUMNS] : SOFTWARE_LEAD_COLUMNS}
 			columns={shownColumns.filter((c) => c.key !== 'target')}
-			sortKey={sort.key}
-			sortDir={sort.dir}
+			sortKey={table.sort.key}
+			sortDir={table.sort.dir}
 			{selectAllChecked}
 			selectAllLabel="Select every software CVE on this page"
 			onSelectAll={toggleSelectAll}
@@ -461,8 +441,12 @@
 		/>
 		<ScrollArea orientation="horizontal" class="min-h-0" bind:ref={scrollRef}>
 			<div class="min-w-max">
-				<div class="divide-y divide-border/50 transition-opacity {refreshing ? 'opacity-60' : ''}">
-					{#each items as row (row.id)}
+				<div
+					class="divide-y divide-border/50 transition-opacity {table.refreshing
+						? 'opacity-60'
+						: ''}"
+				>
+					{#each table.items as row (row.id)}
 						<SoftwareRow
 							{row}
 							{term}
@@ -482,16 +466,15 @@
 		</ScrollArea>
 
 		<ResultsPagination
-			{total}
-			page={pageIndex}
-			{pageSize}
-			capped={totalCapped}
+			total={table.total}
+			page={table.pageIndex}
+			pageSize={table.pageSize}
+			capped={table.totalCapped}
 			noun={SW.noun}
 			plural={SW.nounPlural}
 			{onPage}
 			onPageSize={(size) => {
-				pageSize = size;
-				pageIndex = 0;
+				table.setPageSize(size);
 				void runSearch();
 			}}
 		/>

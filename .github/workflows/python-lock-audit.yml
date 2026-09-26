@@ -1,0 +1,58 @@
+name: "Python lock audit"
+
+# Dependabot cannot update api/uv.lock or worker/uv.lock (their `file:///app/...` path
+# dependencies exist only in the images), so this job does it: pip-audit on both locks,
+# `uv lock --upgrade-package` for every package with a released fix, and a pull request
+# with the result. The pull request runs the usual tests.
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: python-lock-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          # the version the api and worker images build with
+          version: "0.12.13"
+
+      - name: Audit and bump the locks
+        id: audit
+        env:
+          SUDO: sudo
+        run: |
+          {
+            echo "summary<<AUDIT_EOF"
+            bash .github/scripts/python-lock-audit.sh
+            echo "AUDIT_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Open or update the pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: automation/python-lock-audit
+          delete-branch: true
+          add-paths: |
+            api/uv.lock
+            worker/uv.lock
+          commit-message: "fix(deps): the api and worker lock past their published advisories"
+          title: "fix(deps): the api and worker lock past their published advisories"
+          body: |
+            pip-audit found advisories with a released fix in the api or worker lock, and
+            `uv lock --upgrade-package` moved those packages:
+
+            ${{ steps.audit.outputs.summary }}
+
+            Opened by the Python lock audit workflow (`.github/workflows/python-lock-audit.yml`).

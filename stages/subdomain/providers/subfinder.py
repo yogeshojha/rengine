@@ -7,7 +7,7 @@ from pathlib import Path
 
 from shared.enums.subdomain import SubdomainSource
 from stages.subdomain.providers.base import SubdomainProvider
-from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError
+from tools.runner import OutputFormat
 
 # our vault provider value -> subfinder source name
 _SUBFINDER_KEY_SOURCES = {
@@ -37,7 +37,6 @@ class SubfinderProvider(SubdomainProvider):
         return Path(path)
 
     def discover(self) -> set[str]:
-        runner = CLIToolRunner(self.binary, default_timeout=self.ctx.timeout)
         config_path = self._write_provider_config()
         args = ["-d", self.ctx.domain, "-all", "-t", str(self.ctx.threads)]
         if config_path is not None:
@@ -45,19 +44,7 @@ class SubfinderProvider(SubdomainProvider):
         if self.ctx.proxy_url:
             args += ["-proxy", self.ctx.proxy_url]
         try:
-            result = runner.run(
-                args=args,
-                output_format=OutputFormat.JSONL,
-                json_flag="-json",
-                silent=True,
-                silent_flag="-silent",
-                timeout=self.ctx.timeout,
-                recorder=self.ctx.recorder,
-                tool=self.tool,
-                extra_args=self.extra_args,
-            )
-        except ToolNotFoundError:
-            return set()
+            result = self.run_tool(args, output_format=OutputFormat.JSONL)
         finally:
             if config_path is not None:
                 with contextlib.suppress(OSError):

@@ -15,7 +15,7 @@ from shared.models.target_seed import TargetSeed
 from shared.services import target_seeds
 from shared.services.scan_resolve import ResolvedScanConfig
 from stages.asset_seed.stage import AssetSeedStage
-from stages.base import StageContext
+from tests.factories import build_stage
 
 pytestmark = pytest.mark.pipeline
 
@@ -174,30 +174,18 @@ async def test_a_discovery_rerun_keeps_the_rows_it_did_not_write(estate, now):
 
 async def test_a_seeded_host_carries_its_source_and_its_answer(estate, now):
     await estate.scan("example.com", "run", at=now)
-    target_id = estate.targets["example.com"]
 
     def write(sync_session):
-        stage = AssetSeedStage.__new__(AssetSeedStage)
-        stage.session = sync_session
-        stage.ctx = StageContext(
-            scan_id=estate.scans["run"],
-            target_id=target_id,
-            project_id=estate.project_id,
-            target_value="example.com",
-            target_type=TargetType.DOMAIN.value,
-            resolved=_resolved(),
-        )
+        stage = build_stage(AssetSeedStage, sync_session, **estate.row_ids("run"))
         stage._sources = {
             "www.example.com": SubdomainSource.IMPORTED.value,
             "dead.example.com": SubdomainSource.IMPORTED.value,
         }
-        stored = stage._persist_hosts(
+        return stage._persist_hosts(
             ["dead.example.com", "www.example.com"],
             {},
             {"www.example.com": {"ips": ["203.0.113.10"], "cname": None}},
         )
-        sync_session.commit()
-        return stored
 
     assert await estate.session.run_sync(write) == 2
 
@@ -223,19 +211,9 @@ async def test_seeding_the_same_host_twice_updates_one_row(estate, now):
     await estate.scan("example.com", "run", at=now)
 
     def write(sync_session, answers):
-        stage = AssetSeedStage.__new__(AssetSeedStage)
-        stage.session = sync_session
-        stage.ctx = StageContext(
-            scan_id=estate.scans["run"],
-            target_id=estate.targets["example.com"],
-            project_id=estate.project_id,
-            target_value="example.com",
-            target_type=TargetType.DOMAIN.value,
-            resolved=_resolved(),
-        )
+        stage = build_stage(AssetSeedStage, sync_session, **estate.row_ids("run"))
         stage._sources = {"www.example.com": SubdomainSource.IMPORTED.value}
         stage._persist_hosts(["www.example.com"], {}, answers)
-        sync_session.commit()
 
     await estate.session.run_sync(lambda s: write(s, {}))
     await estate.session.run_sync(
@@ -270,7 +248,7 @@ def test_a_run_with_no_seeds_has_no_seeded_hosts():
 
 def _seed_stage(monkeypatch, passes: list[dict[str, dict]]):
     """A stage whose dnsx passes are scripted, so the silent-drop retry is observable."""
-    stage = AssetSeedStage.__new__(AssetSeedStage)
+    stage = build_stage(AssetSeedStage)
     stage._recovered = 0
     calls: list[list[str]] = []
 
@@ -319,20 +297,9 @@ async def test_a_seed_write_stays_under_the_bind_parameter_cap(estate, now):
     names = [f"h{i}.example.com" for i in range(4000)]
 
     def write(sync_session):
-        stage = AssetSeedStage.__new__(AssetSeedStage)
-        stage.session = sync_session
-        stage.ctx = StageContext(
-            scan_id=estate.scans["run"],
-            target_id=estate.targets["example.com"],
-            project_id=estate.project_id,
-            target_value="example.com",
-            target_type=TargetType.DOMAIN.value,
-            resolved=_resolved(),
-        )
+        stage = build_stage(AssetSeedStage, sync_session, **estate.row_ids("run"))
         stage._sources = dict.fromkeys(names, SubdomainSource.IMPORTED.value)
-        stored = stage._persist_hosts(names, {}, {})
-        sync_session.commit()
-        return stored
+        return stage._persist_hosts(names, {}, {})
 
     assert await estate.session.run_sync(write) == 4000
     count = await estate.session.scalar(
@@ -355,19 +322,9 @@ async def test_a_dropped_seed_never_overwrites_a_good_answer(estate, now):
     )
 
     def write(sync_session):
-        stage = AssetSeedStage.__new__(AssetSeedStage)
-        stage.session = sync_session
-        stage.ctx = StageContext(
-            scan_id=estate.scans["run"],
-            target_id=estate.targets["example.com"],
-            project_id=estate.project_id,
-            target_value="example.com",
-            target_type=TargetType.DOMAIN.value,
-            resolved=_resolved(),
-        )
+        stage = build_stage(AssetSeedStage, sync_session, **estate.row_ids("run"))
         stage._sources = {"www.example.com": SubdomainSource.IMPORTED.value}
         stage._persist_hosts(["www.example.com"], {}, {})
-        sync_session.commit()
 
     await estate.session.run_sync(write)
 

@@ -29,7 +29,7 @@ class Input(ToolInput):
 class SurfaceBrief(Tool):
     name = "surface_brief"
     title = "Surface brief"
-    group = ToolGroup.ORIENT.value
+    group = ToolGroup.ORIENT
     description = (
         "The curated query library, each query counted against the target's most "
         "recent covering scan and ranked by how well it discriminates. "

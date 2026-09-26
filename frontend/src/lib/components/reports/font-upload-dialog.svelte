@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -100,7 +101,7 @@
 			note = '';
 			faces = [];
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Typeface not uploaded');
+			toast.error(errorMessage(e, 'Typeface not uploaded'));
 		} finally {
 			busy = false;
 		}

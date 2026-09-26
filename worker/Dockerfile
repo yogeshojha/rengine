@@ -88,7 +88,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpcap0.8t64 \
     libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fontconfig \
     && rm -rf /var/lib/apt/lists/* \
-    && python3 -m pip install --no-cache-dir --break-system-packages wafw00f
+    && python3 -m pip install --no-cache-dir --break-system-packages wafw00f==2.4.2
 
 COPY --from=gotools /out/bin/ /root/go/bin/
 ENV PATH="/root/go/bin:${PATH}"
@@ -96,9 +96,10 @@ ENV PATH="/root/go/bin:${PATH}"
 COPY shared /app/shared
 COPY tools /app/tools
 
-COPY worker/pyproject.toml worker/uv.lock* ./
+# the lockfile is required: a build resolves exactly what was locked and tested
+COPY worker/pyproject.toml worker/uv.lock ./
 
-RUN uv sync --no-install-project
+RUN uv sync --locked --no-install-project
 
 CMD ["uv", "run", "celery", "-A", "app.celery", "worker", "--loglevel=INFO"]
 
@@ -109,6 +110,7 @@ CMD ["uv", "run", "celery", "-A", "app.celery", "worker", "--loglevel=INFO"]
 
 FROM development AS production
 
+# compose's &worker-volumes, as copies; `make check-lists` keeps the two in step
 COPY worker/app /app/app
 COPY stages /app/stages
 COPY reports /app/reports

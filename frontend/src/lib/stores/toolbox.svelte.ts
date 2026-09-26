@@ -1,6 +1,7 @@
 import { toolboxApi } from '$lib/api/toolbox';
 import { TOOLBOX_POLL_MS } from '$lib/config/toolbox';
 import type { ToolboxCatalog, ToolRun, ToolSpec } from '$lib/types/toolbox';
+import { errorMessage } from '$lib/utilities/errors';
 
 const PENDING = new Set(['queued', 'running']);
 
@@ -80,7 +81,7 @@ function createToolboxStore() {
 			try {
 				catalog = await toolboxApi.catalog();
 			} catch (e) {
-				catalogError = e instanceof Error ? e.message : 'Toolbox not loaded';
+				catalogError = errorMessage(e, 'Toolbox not loaded');
 			} finally {
 				loadingCatalog = false;
 			}
@@ -92,7 +93,7 @@ function createToolboxStore() {
 				runs = await toolboxApi.runs();
 				historyError = null;
 			} catch (e) {
-				historyError = e instanceof Error ? e.message : 'Recent runs not loaded';
+				historyError = errorMessage(e, 'Recent runs not loaded');
 			}
 		},
 

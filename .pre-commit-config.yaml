@@ -1,5 +1,6 @@
 repos:
-  # Python specific - Ruff
+  # Python specific - Ruff. The rev and the &packages list copy pyproject.toml's
+  # ruff pin and the Makefile's PACKAGES; `make check-lists` fails on drift.
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.14
     hooks:

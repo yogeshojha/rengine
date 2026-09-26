@@ -47,7 +47,6 @@ function selectionFromStored(
 }
 
 export function readQuickScanPrefs(presets: EnginePreset[]): QuickScanPrefs {
-	if (typeof localStorage === 'undefined') return { selection: null, contextId: null };
 	const stored = readLastPlan();
 	return {
 		selection: stored ? selectionFromStored(stored, presets) : null,

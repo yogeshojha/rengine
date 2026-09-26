@@ -22,14 +22,11 @@ async def _upsert(
     observations: list[EndpointObservation],
     source: str = EndpointSource.SEED.value,
 ):
-    sid = estate.scans[scan]
-    target_id = await estate._target_of(sid)
+    ids = estate.row_ids(scan)
     return await estate.session.run_sync(
         lambda s: endpoint_inventory.upsert(
             s,
-            scan_id=sid,
-            target_id=target_id,
-            project_id=estate.project_id,
+            **ids,
             source=source,
             observations=observations,
             policy=NoisePolicy.off(),

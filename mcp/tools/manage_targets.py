@@ -12,6 +12,7 @@ from mcp.capabilities import Capability
 from mcp.context import ToolContext
 from mcp.errors import ToolError
 from mcp.result import ToolResult
+from mcp.tools._args import optional_uuid
 from mcp.tools._scope import project_for, resolve
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.models.project import Project
@@ -50,8 +51,8 @@ class AddTarget(Tool):
     command = "add"
     value_field = "targets"
     title = "Add targets"
-    capability = Capability.WRITE.value
-    group = ToolGroup.ACT.value
+    capability = Capability.WRITE
+    group = ToolGroup.ACT
     description = (
         "Add targets to a project. Records each target and queues WHOIS, DNS and "
         "routing enrichment. Runs no scan. An existing value is reused."
@@ -67,7 +68,9 @@ class AddTarget(Tool):
         from shared.models.target import TargetUpdate  # noqa: PLC0415
 
         operator = _operator(ctx)
-        project_id = await project_for(ctx, _uuid(args.project_id, "project_id"))
+        project_id = await project_for(
+            ctx, optional_uuid(args.project_id, "project_id")
+        )
         service = TargetService(ctx.session)
 
         wanted: list[str] = []
@@ -157,8 +160,8 @@ class UpdateInput(ToolInput):
 class UpdateTarget(Tool):
     name = "update_target"
     title = "Update a target"
-    capability = Capability.WRITE.value
-    group = ToolGroup.ACT.value
+    capability = Capability.WRITE
+    group = ToolGroup.ACT
     description = (
         "Change a target's display name, tags or organizations. Tags and "
         "organizations are replaced, not merged. The target value cannot be changed."
@@ -214,8 +217,8 @@ class DeleteInput(ToolInput):
 class DeleteTarget(Tool):
     name = "delete_target"
     title = "Delete a target"
-    capability = Capability.WRITE.value
-    group = ToolGroup.ACT.value
+    capability = Capability.WRITE
+    group = ToolGroup.ACT
     destructive = True
     description = (
         "Delete a target and everything recorded against it: scans, web assets, "
@@ -263,16 +266,6 @@ def _operator(ctx: ToolContext) -> uuid.UUID:
         msg = "This token has no issuing operator to attribute the change to."
         raise ToolError(msg)
     return ctx.token.issued_by
-
-
-def _uuid(value: str | None, field: str) -> uuid.UUID | None:
-    if not value:
-        return None
-    try:
-        return uuid.UUID(value)
-    except ValueError as exc:
-        msg = f"{field} must be a uuid, not {value!r}."
-        raise ToolError(msg) from exc
 
 
 async def _guard(awaitable):

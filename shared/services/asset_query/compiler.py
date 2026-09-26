@@ -43,7 +43,7 @@ from .terms import (
     tri_state,
 )
 from .values import asn_number, like, network, render_hash, status_range, tsquery
-from .walk import as_compare, free_text_fields, walker
+from .walk import as_compare, flag_builder, free_text_fields, walker
 
 _IPV4_RE = re.compile(r"^[0-9]{1,3}(\.[0-9]{1,3}){3}$")
 _HEADER_WEIGHT = "A"
@@ -156,19 +156,6 @@ def _status(cmp: Compare):
     if cmp.op is Op.NE:
         return or_(Subdomain.http_status.is_(None), negate(matched))
     return matched
-
-
-def _flag(cmp: Compare, ctx: QueryContext):
-    branches = []
-    for raw in cmp.values:
-        name = raw.lower()
-        builder = _FLAG_BUILDERS.get(name)
-        if builder is None:
-            msg = f"Unknown flag {raw!r}."
-            hint = f"Try one of: {', '.join(FLAGS)}"
-            raise QuerySyntaxError(msg, cmp.start, cmp.end, hint)
-        branches.append(builder(ctx))
-    return or_(*branches)
 
 
 _FLAG_BUILDERS = {
@@ -326,7 +313,7 @@ _SUBDOMAIN_BUILDERS = {
     "cve": lambda c, ctx: preds.host_vuln(
         ctx.scope, json_array_match(Vulnerability.cve_ids, c)
     ),
-    "is": _flag,
+    "is": flag_builder(_FLAG_BUILDERS, FLAGS),
 }
 
 _ASSET_BUILDERS = {

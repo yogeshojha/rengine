@@ -25,6 +25,7 @@
 		CorrelationHost,
 		CorrelationHub
 	} from '$lib/types/correlation';
+	import { LatestRequest } from '$lib/utilities/latest-request';
 
 	interface Props {
 		scanId: string;
@@ -64,7 +65,7 @@
 	let search = $state('');
 	let chart = $state<ReturnType<typeof CorrelationGraph> | null>(null);
 	let seen = $state(false);
-	let req = 0;
+	const req = new LatestRequest();
 
 	$effect(() => {
 		if (active) seen = true;
@@ -72,11 +73,11 @@
 
 	async function load() {
 		if (!projectId || (!scanId && !projectWide)) return;
-		const my = ++req;
+		const current = req.begin();
 		loading = true;
 		try {
 			const res = await subdomainsApi.correlationGraph(projectId, scanId);
-			if (my !== req) return;
+			if (!current()) return;
 			graph = res;
 			errored = false;
 			if (!settled) {
@@ -86,9 +87,9 @@
 				crossOnly = res.targets_total > 1;
 			}
 		} catch {
-			if (my === req) errored = true;
+			if (current()) errored = true;
 		} finally {
-			if (my === req) loading = false;
+			if (current()) loading = false;
 		}
 	}
 

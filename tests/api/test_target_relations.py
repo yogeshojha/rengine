@@ -17,12 +17,9 @@ pytestmark = pytest.mark.api
 
 
 async def _address(estate, scan: str, ip: str, asn: int, org: str, at) -> None:
-    sid = estate.scans[scan]
     estate.session.add(
         IpAddress(
-            project_id=estate.project_id,
-            scan_id=sid,
-            target_id=await estate._target_of(sid),
+            **estate.row_ids(scan),
             ip=ip,
             version=4,
             source=IpSource.DNS_RESOLUTION.value,
@@ -35,12 +32,9 @@ async def _address(estate, scan: str, ip: str, asn: int, org: str, at) -> None:
 
 
 async def _certificate(estate, scan: str, host: str, sans: list[str], at) -> None:
-    sid = estate.scans[scan]
     estate.session.add(
         HttpAsset(
-            project_id=estate.project_id,
-            scan_id=sid,
-            target_id=await estate._target_of(sid),
+            **estate.row_ids(scan),
             url=f"https://{host}",
             host=host,
             port=443,

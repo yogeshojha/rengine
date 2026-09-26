@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from shared.definitions.launch import STAGE_GROUP_LABELS, seed_produces
 from shared.definitions.tools import SCAN_TOOLS
 from shared.enums.scan import INTENSITIES, StageGroup

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import { browser } from '$app/environment';
@@ -185,9 +186,7 @@
 				else await reportsApi.deleteFont(id);
 				await reportCatalog.fetch(true);
 			} catch (e) {
-				toast.error(
-					e instanceof Error ? e.message : `${kind === 'theme' ? 'Theme' : 'Typeface'} not deleted`
-				);
+				toast.error(errorMessage(e, `${kind === 'theme' ? 'Theme' : 'Typeface'} not deleted`));
 			}
 		}
 		pendingDelete = null;

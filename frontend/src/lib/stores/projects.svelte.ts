@@ -1,11 +1,12 @@
 import { projectsApi } from '$lib/api/projects';
 import type { Project } from '$lib/types/project';
 import { STORAGE_KEYS } from '$lib/config/storage-keys';
+import { readRaw, removePref, writeRaw } from '$lib/utilities/storage';
 import { toast } from 'svelte-sonner';
+import { errorMessage } from '$lib/utilities/errors';
 
 function getStoredActiveProjectSlug(): string | null {
-	if (typeof window === 'undefined') return null;
-	return localStorage.getItem(STORAGE_KEYS.activeProjectSlug);
+	return readRaw(STORAGE_KEYS.activeProjectSlug);
 }
 
 function createProjectsStore() {
@@ -59,7 +60,7 @@ function createProjectsStore() {
 					activeProject = projects[0];
 				}
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Projects not loaded';
+				error = errorMessage(e, 'Projects not loaded');
 			} finally {
 				isLoading = false;
 			}
@@ -74,8 +75,7 @@ function createProjectsStore() {
 		setActiveProject(project: Project) {
 			const previousProject = activeProject;
 			activeProject = project;
-			if (typeof window === 'undefined') return;
-			localStorage.setItem(STORAGE_KEYS.activeProjectSlug, project.slug);
+			writeRaw(STORAGE_KEYS.activeProjectSlug, project.slug);
 
 			if (previousProject && previousProject.slug !== project.slug) {
 				toast.info(`Switched to project "${project.name}"`);
@@ -90,7 +90,7 @@ function createProjectsStore() {
 				projects = [newProject, ...projects];
 				return newProject;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Project not created';
+				error = errorMessage(e, 'Project not created');
 				return null;
 			}
 		},
@@ -104,14 +104,14 @@ function createProjectsStore() {
 					activeProject = projects[0] || null;
 
 					if (activeProject) {
-						localStorage.setItem(STORAGE_KEYS.activeProjectSlug, activeProject.slug);
+						writeRaw(STORAGE_KEYS.activeProjectSlug, activeProject.slug);
 					} else {
-						localStorage.removeItem(STORAGE_KEYS.activeProjectSlug);
+						removePref(STORAGE_KEYS.activeProjectSlug);
 					}
 				}
 				return true;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Project not deleted';
+				error = errorMessage(e, 'Project not deleted');
 				return false;
 			}
 		},
@@ -121,9 +121,7 @@ function createProjectsStore() {
 			activeProject = null;
 			error = null;
 			hasFetched = false;
-			if (typeof window !== 'undefined') {
-				localStorage.removeItem(STORAGE_KEYS.activeProjectSlug);
-			}
+			removePref(STORAGE_KEYS.activeProjectSlug);
 		}
 	};
 }

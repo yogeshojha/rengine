@@ -31,11 +31,8 @@ async def _on(estate, value: bool = True) -> None:
 async def _host(
     estate, scan: str, name: str, *, expires, checked=None, at
 ) -> Subdomain:
-    sid = estate.scans[scan]
     row = Subdomain(
-        project_id=estate.project_id,
-        scan_id=sid,
-        target_id=await estate._target_of(sid),
+        **estate.row_ids(scan),
         name=name,
         sources=["test"],
         discovered_at=at,

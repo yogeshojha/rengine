@@ -4,18 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import select
-
-from shared.definitions.oast import (
-    DEFAULT_WAIT_SECONDS,
-    OastConfig,
-    OastMode,
-    normalize_server,
-    off_reason,
-)
+from shared.definitions.oast import DEFAULT_WAIT_SECONDS, OastConfig, OastMode
 from shared.enums.api_key import APIProvider
 from shared.logging import get_logger
-from shared.models.instance_settings import SINGLETON_KEY, InstanceSettings
+from shared.models.instance_settings import InstanceSettings, oast_reason
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -26,40 +18,24 @@ logger = get_logger(__name__)
 def settings_row(session: Session | None) -> InstanceSettings | None:
     if session is None:
         return None
-    return (
-        session.execute(
-            select(InstanceSettings).where(
-                InstanceSettings.singleton_key == SINGLETON_KEY
-            )
-        )
-        .scalars()
-        .first()
-    )
+    return session.execute(InstanceSettings.singleton()).scalars().first()
 
 
 def config(session: Session | None) -> OastConfig:
     """The effective configuration. Off whenever the mode cannot be used."""
     row = settings_row(session)
+    reason = oast_reason(row)
     if row is None:
-        return OastConfig(
-            reason=off_reason(OastMode.OFF.value, server=None, acknowledged=False)
-        )
-    server = normalize_server(row.oast_server)
-    reason = off_reason(
-        row.oast_mode, server=server, acknowledged=row.oast_public_acknowledged
-    )
+        return OastConfig(reason=reason)
+    wait_seconds = row.oast_wait_seconds or DEFAULT_WAIT_SECONDS
     if reason is not None:
-        return OastConfig(
-            wait_seconds=row.oast_wait_seconds or DEFAULT_WAIT_SECONDS, reason=reason
-        )
-    token = None
-    if row.oast_mode == OastMode.SELF_HOSTED.value:
-        token = _token(session)
+        return OastConfig(wait_seconds=wait_seconds, reason=reason)
+    self_hosted = row.oast_mode == OastMode.SELF_HOSTED.value
     return OastConfig(
         mode=row.oast_mode,
-        server=server if row.oast_mode == OastMode.SELF_HOSTED.value else None,
-        token=token,
-        wait_seconds=row.oast_wait_seconds or DEFAULT_WAIT_SECONDS,
+        server=row.oast_host if self_hosted else None,
+        token=_token(session) if self_hosted else None,
+        wait_seconds=wait_seconds,
     )
 
 

@@ -22,13 +22,10 @@ CVE = "CVE-2021-23017"
 async def _software(
     estate, scan: str, *, at: datetime, cve: str = CVE, host: str = HOST
 ) -> None:
-    sid = estate.scans[scan]
-    target_id = await estate._target_of(sid)
+    ids = estate.row_ids(scan)
     estate.session.add(
         SoftwareCve(
-            project_id=estate.project_id,
-            scan_id=sid,
-            target_id=target_id,
+            **ids,
             fingerprint=f"{host}|nginx|1.18.0|{cve}",
             cve=cve,
             name="nginx",
@@ -57,13 +54,10 @@ async def _finding(
     interaction: dict | None = None,
     severity: str = Severity.HIGH.value,
 ) -> None:
-    sid = estate.scans[scan]
-    target_id = await estate._target_of(sid)
+    ids = estate.row_ids(scan)
     estate.session.add(
         Vulnerability(
-            project_id=estate.project_id,
-            scan_id=sid,
-            target_id=target_id,
+            **ids,
             fingerprint=f"{template}|{host}",
             template_id=template,
             template_name=template,

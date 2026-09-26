@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession

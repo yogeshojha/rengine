@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import PanelSkeleton from '$lib/components/skeleton/panel-skeleton.svelte';
 	import { viewdnsApi } from '$lib/api/viewdns';
 	import { targetsStore } from '$lib/stores/targets.svelte';
@@ -202,7 +203,7 @@
 
 			sourceResults = results;
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Discoveries not loaded';
+			error = errorMessage(e, 'Discoveries not loaded');
 		} finally {
 			isLoading = false;
 		}
@@ -257,7 +258,7 @@
 				);
 			}
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Enrichment failed');
+			toast.error(errorMessage(e, 'Enrichment failed'));
 		} finally {
 			isEnriching = false;
 			showEnrichDialog = false;

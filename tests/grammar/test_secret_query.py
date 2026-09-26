@@ -25,13 +25,10 @@ async def _add(
     vendor: str = "Amazon Web Services",
     value: str = "AKIAV",
 ) -> None:
-    sid = estate.scans[scan]
-    target_id = await estate._target_of(sid)
+    ids = estate.row_ids(scan)
     estate.session.add(
         Secret(
-            project_id=estate.project_id,
-            scan_id=sid,
-            target_id=target_id,
+            **ids,
             fingerprint=f"{kind}|{value}",
             kind=kind,
             group=group,
@@ -71,7 +68,6 @@ async def test_the_total_equals_the_rows_it_opens(estate, now) -> None:
         subject="example.com",
         value="b",
     )
-    await estate.session.commit()
 
     total, kinds = await _search(estate, "run", "")
     assert total == 2
@@ -93,7 +89,6 @@ async def test_the_total_equals_the_rows_it_opens(estate, now) -> None:
 async def test_is_new_needs_a_baseline(estate, now) -> None:
     await estate.scan("example.com", "first", at=now)
     await _add(estate, "first", at=now, value="k")
-    await estate.session.commit()
 
     total, _ = await _search(estate, "first", "is:new")
     assert total == 0
@@ -106,7 +101,6 @@ async def test_a_value_seen_in_an_earlier_scan_is_not_new(estate, now) -> None:
     await estate.scan("example.com", "second", at=now)
     await _add(estate, "second", at=now, value="k")
     await _add(estate, "second", at=now, kind="google_api_key", value="new")
-    await estate.session.commit()
 
     total, kinds = await _search(estate, "second", "is:new")
     assert total == 1
@@ -118,7 +112,6 @@ async def test_a_facet_count_equals_its_search(estate, now) -> None:
     await _add(estate, "run", at=now, kind="aws_access_key", value="a")
     await _add(estate, "run", at=now, kind="google_api_key", value="b")
     await _add(estate, "run", at=now, kind="google_api_key", value="c")
-    await estate.session.commit()
 
     service = SecretService(estate.session)
     facets = await service.facets(estate.scans["run"])
@@ -132,7 +125,6 @@ async def test_a_group_count_equals_its_drilldown(estate, now) -> None:
     await _add(estate, "run", at=now, kind="aws_access_key", value="a")
     await _add(estate, "run", at=now, kind="google_api_key", value="b")
     await _add(estate, "run", at=now, kind="google_api_key", value="c")
-    await estate.session.commit()
 
     service = SecretService(estate.session)
     groups = await service.groups(estate.scans["run"], SecretFilter(), "secret")

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { page } from '$app/state';
 	import { goto, replaceState } from '$app/navigation';
 	import { untrack } from 'svelte';
@@ -160,7 +161,7 @@
 			}
 		} catch (e) {
 			comparison = null;
-			error = e instanceof Error ? e.message : 'Comparison not loaded.';
+			error = errorMessage(e, 'Comparison not loaded.');
 		} finally {
 			loading = false;
 		}
@@ -173,7 +174,7 @@
 			runs = await compareApi.comparable(projectId, currentId);
 			runsError = null;
 		} catch (e) {
-			runsError = e instanceof Error ? e.message : 'Runs not loaded.';
+			runsError = errorMessage(e, 'Runs not loaded.');
 		} finally {
 			runsLoading = false;
 		}
@@ -228,7 +229,7 @@
 		} catch (e) {
 			rows = [];
 			rowTotal = 0;
-			toast.error(e instanceof Error ? e.message : 'Changes not loaded.');
+			toast.error(errorMessage(e, 'Changes not loaded.'));
 		} finally {
 			rowsLoading = false;
 		}

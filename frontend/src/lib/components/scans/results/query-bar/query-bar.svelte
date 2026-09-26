@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { readPref, writePref } from '$lib/utilities/storage';
 	import Search from '@lucide/svelte/icons/search';
 	import X from '@lucide/svelte/icons/x';
 	import CircleQuestionMark from '@lucide/svelte/icons/circle-question-mark';
@@ -126,22 +127,13 @@
 	});
 
 	function readRecents(): string[] {
-		try {
-			const raw = localStorage.getItem(recentsKey);
-			const parsed = raw ? (JSON.parse(raw) as unknown) : [];
-			return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : [];
-		} catch {
-			return [];
-		}
+		const parsed = readPref<unknown>(recentsKey, []);
+		return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : [];
 	}
 
 	function writeRecents(next: string[]) {
 		recents = next;
-		try {
-			localStorage.setItem(recentsKey, JSON.stringify(next));
-		} catch {
-			// localStorage unavailable
-		}
+		writePref(recentsKey, next);
 	}
 
 	export function remember(query: string) {

@@ -14,6 +14,8 @@ from shared.definitions.surface import SurfaceDimension
 from shared.models.note import Note, NoteCreate, NoteUpdate
 from shared.models.tag import Tag
 
+pytestmark = pytest.mark.api
+
 
 async def _tag(estate, name: str = "lead") -> Tag:
     tag = Tag(

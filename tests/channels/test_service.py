@@ -17,6 +17,8 @@ from shared.enums.api_key import APIProvider
 from shared.models.api_key import APIKey
 from shared.utils.crypto import encrypt_secret
 
+pytestmark = pytest.mark.channels
+
 CHANNEL = ChannelKind.TELEGRAM.value
 
 

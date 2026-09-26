@@ -2,7 +2,7 @@
 	import { ROUTES } from '$lib/config/routes';
 	import { onMount } from 'svelte';
 	import { beforeNavigate, goto } from '$app/navigation';
-	import { instanceSettingsStore } from '$lib/stores/instanceSettings.svelte';
+	import { instanceSettingsStore } from '$lib/stores/instance-settings.svelte';
 	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import {
 		INSTANCE_MODES,

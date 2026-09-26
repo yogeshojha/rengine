@@ -20,4 +20,4 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    pass
+    """Postgres cannot drop an enum value without recreating the type."""

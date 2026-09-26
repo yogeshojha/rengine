@@ -33,7 +33,12 @@ class AlterxClient:
         self.extra_args = extra_args or []
 
         try:
-            self._runner = CLIToolRunner(ALTERX_BINARY, default_timeout=DEFAULT_TIMEOUT)
+            self._runner = CLIToolRunner(
+                ALTERX_BINARY,
+                default_timeout=DEFAULT_TIMEOUT,
+                recorder=recorder,
+                extra_args=self.extra_args,
+            )
         except ToolNotFoundError as e:
             raise AlterxError(str(e)) from e
 
@@ -53,11 +58,6 @@ class AlterxClient:
             use_stdin=True,
             use_output_file=False,
             output_format=OutputFormat.PLAIN,
-            silent=True,
-            silent_flag="-silent",
-            recorder=self.recorder,
-            tool=ALTERX_BINARY,
-            extra_args=self.extra_args,
         )
         seeds = set(names)
         out: list[str] = []

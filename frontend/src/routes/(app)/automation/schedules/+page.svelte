@@ -8,7 +8,7 @@
 
 	import { scanSchedulesStore } from '$lib/stores/scan-schedules.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
-	import { instanceSettingsStore } from '$lib/stores/instanceSettings.svelte';
+	import { instanceSettingsStore } from '$lib/stores/instance-settings.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import EmptyState from '@/components/empty-state.svelte';

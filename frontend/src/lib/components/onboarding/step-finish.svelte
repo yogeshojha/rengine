@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { instanceSettingsApi } from '$lib/api/instanceSettings';
+	import { instanceSettingsApi } from '$lib/api/instance-settings';
 	import { onboardingApi } from '$lib/api/onboarding';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';

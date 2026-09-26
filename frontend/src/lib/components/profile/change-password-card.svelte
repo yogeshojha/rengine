@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { authApi } from '$lib/api/auth';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -67,7 +68,7 @@
 			confirmPassword = '';
 			passwordDirty = { current: false, next: false, confirm: false };
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Password not changed');
+			toast.error(errorMessage(error, 'Password not changed'));
 		} finally {
 			isChangingPassword = false;
 		}

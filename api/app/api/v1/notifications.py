@@ -2,7 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi_pagination.ext.sqlalchemy import apaginate
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -70,7 +70,7 @@ async def list_notifications(
     query = _in_scope(select(Notification), project_id).order_by(
         Notification.created_at.desc()
     )
-    return await paginate(session, query)
+    return await apaginate(session, query)
 
 
 @router.get("/unread", response_model=Page[NotificationRead])
@@ -82,7 +82,7 @@ async def list_unread_notifications(
     query = _in_scope(
         select(Notification).where(Notification.is_read.is_(False)), project_id
     ).order_by(Notification.created_at.desc())
-    return await paginate(session, query)
+    return await apaginate(session, query)
 
 
 @router.post("", response_model=NotificationRead, status_code=status.HTTP_201_CREATED)

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { untrack } from 'svelte';
 	import * as Select from '$lib/components/ui/select';
@@ -98,7 +99,7 @@
 			plain = base;
 			merged = withContext;
 		} catch (e) {
-			if (mine === token) error = e instanceof Error ? e.message : 'Preview unavailable';
+			if (mine === token) error = errorMessage(e, 'Preview unavailable');
 		} finally {
 			if (mine === token) isLoading = false;
 		}

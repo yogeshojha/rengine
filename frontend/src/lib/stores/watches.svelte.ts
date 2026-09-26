@@ -1,5 +1,6 @@
 import { watchesApi } from '$lib/api/watches';
 import type { Watch } from '$lib/types/watch';
+import { errorMessage } from '$lib/utilities/errors';
 
 function createWatchesStore() {
 	let watches = $state<Watch[]>([]);
@@ -29,7 +30,7 @@ function createWatchesStore() {
 				watches = await watchesApi.list(projectId);
 				fetchedProjectId = projectId;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Watches not loaded';
+				error = errorMessage(e, 'Watches not loaded');
 			} finally {
 				isLoading = false;
 			}
@@ -40,7 +41,7 @@ function createWatchesStore() {
 			try {
 				watches = await watchesApi.list(fetchedProjectId);
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Watches not loaded';
+				error = errorMessage(e, 'Watches not loaded');
 			}
 		},
 

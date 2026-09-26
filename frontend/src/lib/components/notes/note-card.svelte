@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import Pencil from '@lucide/svelte/icons/pencil';
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
@@ -41,7 +42,7 @@
 			await notes.update(projectId, note.id, { status: resolved ? 'open' : 'resolved' });
 			onChanged?.();
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Note not updated');
+			toast.error(errorMessage(e, 'Note not updated'));
 		} finally {
 			busy = false;
 		}
@@ -55,7 +56,7 @@
 			confirmDelete = false;
 			onChanged?.();
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Note not deleted');
+			toast.error(errorMessage(e, 'Note not deleted'));
 		} finally {
 			busy = false;
 		}

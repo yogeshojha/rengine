@@ -8,11 +8,8 @@ from sqlmodel import Field, SQLModel, UniqueConstraint
 
 from shared.definitions.threat_intel import FeedStatus
 from shared.enums.api_key import APIProvider
+from shared.models._columns import json_list
 from shared.utils.datetime import utc_now
-
-
-def _json_list() -> Field:
-    return Field(default_factory=list, sa_column=Column(JSON, nullable=False))
 
 
 class EpssScore(SQLModel, table=True):
@@ -33,7 +30,7 @@ class KevEntry(SQLModel, table=True):
     short_description: str | None = Field(default=None, sa_column=Column(Text))
     required_action: str | None = Field(default=None, sa_column=Column(Text))
     notes: str | None = Field(default=None, sa_column=Column(Text))
-    cwes: list = _json_list()
+    cwes: list = json_list()
     known_ransomware: bool = Field(default=False, index=True)
     date_added: date | None = Field(default=None, index=True)
     due_date: date | None = Field(default=None)
@@ -50,8 +47,8 @@ class CveIntel(SQLModel, table=True):
     cvss_score: float | None = Field(default=None)
     description: str | None = Field(default=None, sa_column=Column(Text))
     remediation: str | None = Field(default=None, sa_column=Column(Text))
-    weaknesses: list = _json_list()
-    pocs: list = _json_list()
+    weaknesses: list = json_list()
+    pocs: list = json_list()
     poc_count: int = Field(default=0)
     poc_first_seen: datetime | None = Field(default=None)
     template_available: bool | None = Field(default=None)
@@ -59,9 +56,9 @@ class CveIntel(SQLModel, table=True):
     needs_auth: bool | None = Field(default=None)
     patch_available: bool | None = Field(default=None)
     vendor_kev: bool = Field(default=False)
-    kev_sources: list = _json_list()
+    kev_sources: list = json_list()
     exposure_hosts: int | None = Field(default=None)
-    exposure_products: list = _json_list()
+    exposure_products: list = json_list()
     hackerone_rank: int | None = Field(default=None)
     hackerone_reports: int | None = Field(default=None)
     published_at: datetime | None = Field(default=None)

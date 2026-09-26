@@ -20,6 +20,7 @@ from tools.runner.models import (
     CommandRecorder,
     OutputFormat,
     StreamOutcome,
+    ToolFlags,
     ToolResult,
 )
 
@@ -194,7 +195,12 @@ def failure_excerpt(stderr: str | None, stdout: str | None) -> str:
 
 
 class CLIToolRunner:
-    """Generic CLI tool executor managing the full run lifecycle (validate, run, parse, cleanup)."""
+    """Generic CLI tool executor managing the full run lifecycle (validate, run, parse, cleanup).
+
+    Everything that describes the binary and the scan it runs for (its flag
+    spellings, the command recorder, the user's custom args) is bound here once;
+    `run` and `stream_json` take only what differs between two invocations.
+    """
 
     def __init__(
         self,
@@ -204,15 +210,23 @@ class CLIToolRunner:
         tool: str | None = None,
         extra_args: list[str] | None = None,
         aliases: dict[str, str] | None = None,
+        flags: ToolFlags | None = None,
     ) -> None:
         self.binary = binary
         self.default_timeout = default_timeout
+        self.flags = flags or ToolFlags()
         self._recorder = recorder
-        self._tool = tool
-        self._extra_args = extra_args or []
+        self._tool = tool or binary
+        self._extra_args = list(extra_args or [])
         self._aliases = dict(aliases or {})
         self._binary_path: str | None = None
         self._verify_binary()
+
+    def _with_extra_args(self, args: list[str] | None, *reserved: str) -> list[str]:
+        """The stage's args, then the user's custom args minus any flag already set."""
+        out = list(args) if args else []
+        out.extend(merge_extra_args(out, self._extra_args, reserved, self._aliases))
+        return out
 
     def _verify_binary(self) -> None:
         """Check that the binary exists in PATH."""
@@ -230,33 +244,21 @@ class CLIToolRunner:
         self,
         args: list[str] | None = None,
         input_data: str | list[str] | None = None,
-        input_flag: str = "-l",
+        *,
         use_stdin: bool = False,
         use_output_file: bool = True,
-        output_flag: str = "-o",
         output_format: OutputFormat = OutputFormat.PLAIN,
-        json_flag: str = "-json",
         timeout: int | None = None,
         env: dict[str, str] | None = None,
         silent: bool = True,
-        silent_flag: str = "-silent",
-        recorder: CommandRecorder | None = None,
-        tool: str | None = None,
-        extra_args: list[str] | None = None,
         should_stop: Callable[[], bool] | None = None,
     ) -> ToolResult:
         """Execute the CLI tool and return parsed results."""
         timeout = timeout or self.default_timeout
-        args = list(args) if args else []
-        recorder = recorder if recorder is not None else self._recorder
-        tool = tool if tool is not None else self._tool
-        args.extend(
-            merge_extra_args(
-                args,
-                extra_args if extra_args is not None else self._extra_args,
-                (input_flag, output_flag, json_flag, silent_flag),
-                self._aliases,
-            )
+        flags = self.flags
+        recorder = self._recorder
+        args = self._with_extra_args(
+            args, flags.input, flags.output, flags.json, flags.silent
         )
 
         input_file: Path | None = None
@@ -290,24 +292,24 @@ class CLIToolRunner:
                     stdin_data = raw_input
                 else:
                     input_file = self._write_temp_file(raw_input, prefix="input_")
-                    args.extend([input_flag, str(input_file)])
+                    args.extend([flags.input, str(input_file)])
 
             if use_output_file:
                 output_file = self._create_temp_path(prefix="output_")
-                args.extend([output_flag, str(output_file)])
+                args.extend([flags.output, str(output_file)])
 
-            if output_format == OutputFormat.JSONL and json_flag not in args:
-                args.append(json_flag)
+            if output_format == OutputFormat.JSONL and flags.json not in args:
+                args.append(flags.json)
 
-            if silent and silent_flag not in args:
-                args.append(silent_flag)
+            if silent and flags.silent not in args:
+                args.append(flags.silent)
 
             cmd = [self._binary_path, *args]
             cmd_str = " ".join(cmd)
             logger.info("Executing: %s", redact_command(cmd_str))
 
             if recorder is not None:
-                handle = recorder.start(tool or self.binary, cmd_str)
+                handle = recorder.start(self._tool, cmd_str)
 
             process_result = _run_process(
                 cmd,
@@ -399,32 +401,18 @@ class CLIToolRunner:
         *,
         args: list[str] | None = None,
         input_data: str | list[str] | None = None,
-        input_flag: str = "-l",
-        json_flag: str = "-json",
         silent: bool = True,
-        silent_flag: str = "-silent",
         timeout: int | None = None,
         idle_timeout: int | None = None,
         env: dict[str, str] | None = None,
-        recorder: CommandRecorder | None = None,
-        tool: str | None = None,
-        extra_args: list[str] | None = None,
         stderr_sink: Callable[[str], None] | None = None,
         should_stop: Callable[[], bool] | None = None,
     ) -> Iterator[StreamOutcome]:
         """Stream-parse the tool's JSONL stdout."""
         timeout = self.default_timeout if timeout is None else timeout
-        args = list(args) if args else []
-        recorder = recorder if recorder is not None else self._recorder
-        tool = tool if tool is not None else self._tool
-        args.extend(
-            merge_extra_args(
-                args,
-                extra_args if extra_args is not None else self._extra_args,
-                (input_flag, json_flag, silent_flag),
-                self._aliases,
-            )
-        )
+        flags = self.flags
+        recorder = self._recorder
+        args = self._with_extra_args(args, flags.input, flags.json, flags.silent)
 
         input_file: Path | None = None
         start_time = time.monotonic()
@@ -441,16 +429,16 @@ class CLIToolRunner:
             if input_data is not None:
                 raw_input = self._normalize_input(input_data)
                 input_file = self._write_temp_file(raw_input, prefix="input_")
-                lead.extend([input_flag, str(input_file)])
-            if json_flag not in args:
-                lead.append(json_flag)
-            if silent and silent_flag not in args:
-                lead.append(silent_flag)
+                lead.extend([flags.input, str(input_file)])
+            if flags.json not in args:
+                lead.append(flags.json)
+            if silent and flags.silent not in args:
+                lead.append(flags.silent)
 
             cmd = [self._binary_path, *lead, *args]
             logger.info("Executing (stream): %s", redact_command(" ".join(cmd)))
             if recorder is not None:
-                handle = recorder.start(tool or self.binary, " ".join(cmd))
+                handle = recorder.start(self._tool, " ".join(cmd))
 
             proc = subprocess.Popen(  # noqa: S603
                 cmd,

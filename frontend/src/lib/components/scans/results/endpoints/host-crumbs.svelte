@@ -14,6 +14,7 @@
 	import Hint from '$lib/components/hint.svelte';
 	import { SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 	import type { TreeNode } from '$lib/utilities/endpoints';
+	import { LatestRequest } from '$lib/utilities/latest-request';
 
 	interface Props {
 		host: string;
@@ -32,7 +33,7 @@
 	let term = $state('');
 	let remote = $state<TreeNode[] | null>(null);
 	let searching = $state(false);
-	let req = 0;
+	const req = new LatestRequest();
 
 	let at = $derived(ranked.findIndex((n) => n.name === host));
 	let position = $derived(at >= 0 ? offset + at + 1 : 0);
@@ -49,16 +50,16 @@
 			remote = null;
 			return;
 		}
-		const my = ++req;
+		const current = req.begin();
 		const handle = setTimeout(async () => {
 			searching = true;
 			try {
 				const res = await untrack(() => search(needle));
-				if (my === req) remote = res;
+				if (current()) remote = res;
 			} catch {
-				if (my === req) remote = [];
+				if (current()) remote = [];
 			} finally {
-				if (my === req) searching = false;
+				if (current()) searching = false;
 			}
 		}, SEARCH_DEBOUNCE_MS);
 		return () => clearTimeout(handle);

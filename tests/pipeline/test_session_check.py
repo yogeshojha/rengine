@@ -9,6 +9,7 @@ from shared.enums.target import TargetType
 from shared.services.scan_resolve import ResolvedScanConfig, resolve_headers
 from stages.registry import execution_plan, stage_by_name
 from stages.session_check.stage import SessionCheckStage, _Answer
+from tests.factories import build_stage
 
 pytestmark = pytest.mark.pipeline
 
@@ -32,14 +33,12 @@ def _stage(
     resolved._auth_header_names = (
         auth_names if auth_names is not None else ["Authorization"]
     )
-    stage = SessionCheckStage.__new__(SessionCheckStage)
-    stage.ctx = SimpleNamespace(
+    stage = build_stage(
+        SessionCheckStage,
         target_value=target_value,
         target_type=target_type,
         resolved=resolved,
-        is_aborted=None,
     )
-    stage._cfg = SimpleNamespace(enabled=True, timeout=5)
     queue = list(answers)
     stage.sent = []
 
@@ -49,16 +48,7 @@ def _stage(
 
     stage._get = _get
     stage._client = lambda: SimpleNamespace(close=lambda: None)
-    stage.emit_progress = lambda _msg: None
-    stage._check_abort = lambda: None
     return stage
-
-
-@pytest.fixture(autouse=True)
-def _cfg(monkeypatch):
-    monkeypatch.setattr(
-        SessionCheckStage, "cfg", property(lambda self: self._cfg), raising=False
-    )
 
 
 def test_a_session_that_changes_nothing_is_reported():

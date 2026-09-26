@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import { untrack } from 'svelte';
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import SparklesIcon from '@lucide/svelte/icons/sparkles';
@@ -66,7 +67,7 @@
 		try {
 			status = await bountyProgramsApi.status();
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Bounty Hub status not loaded');
+			toast.error(errorMessage(error, 'Bounty Hub status not loaded'));
 		}
 	}
 
@@ -82,7 +83,7 @@
 			programs = result.items;
 			total = result.total;
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Programs not loaded');
+			toast.error(errorMessage(error, 'Programs not loaded'));
 			programs = [];
 			total = 0;
 		} finally {
@@ -248,7 +249,7 @@
 			await loadPrograms(filters, pageIndex, pageSize, projectId);
 			toast.success(done ? 'Programs refreshed' : 'Refresh running');
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Refresh not started');
+			toast.error(errorMessage(error, 'Refresh not started'));
 		} finally {
 			syncing = false;
 		}

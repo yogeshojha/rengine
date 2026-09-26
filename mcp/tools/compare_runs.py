@@ -43,7 +43,7 @@ class Input(ToolInput):
 class CompareRuns(Tool):
     name = "compare_runs"
     title = "Compare runs"
-    group = ToolGroup.INTERROGATE.value
+    group = ToolGroup.INTERROGATE
     description = (
         "Rows that appeared, changed and disappeared between two runs of one target, "
         "per result dimension. The comparability verdict states whether the runs "

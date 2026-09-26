@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '$lib/utilities/errors';
 	import Plus from '@lucide/svelte/icons/plus';
 	import StickyNote from '@lucide/svelte/icons/sticky-note';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
@@ -54,7 +55,7 @@
 			if (seq === reqId) {
 				items = [];
 				total = 0;
-				error = e instanceof Error ? e.message : 'Request failed.';
+				error = errorMessage(e, 'Request failed.');
 			}
 		} finally {
 			if (seq === reqId) loading = false;

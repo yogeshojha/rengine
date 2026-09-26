@@ -23,12 +23,11 @@ from shared.definitions.oast import (
     PUBLIC_SERVERS,
     OastMode,
     normalize_server,
-    off_reason,
 )
 from shared.enums.api_key import APIProvider
 from shared.logging import get_logger
 from shared.models.api_key import APIKey
-from shared.models.instance_settings import SINGLETON_KEY, InstanceSettings
+from shared.models.instance_settings import InstanceSettings, oast_reason
 from shared.models.oast import OastRead, OastTest, OastUpdate
 from shared.models.vuln_template import VulnTemplate
 from shared.models.vulnerability import Vulnerability
@@ -53,20 +52,7 @@ _PROBE_PATH = "/poll"
 
 async def instance_reason(session: AsyncSession) -> str | None:
     """Why out-of-band testing cannot be used on this instance, or None when it can."""
-    row = (
-        await session.execute(
-            select(InstanceSettings).where(
-                InstanceSettings.singleton_key == SINGLETON_KEY
-            )
-        )
-    ).scalar_one_or_none()
-    if row is None:
-        return off_reason(OastMode.OFF.value, server=None, acknowledged=False)
-    return off_reason(
-        row.oast_mode,
-        server=normalize_server(row.oast_server),
-        acknowledged=row.oast_public_acknowledged,
-    )
+    return oast_reason(await session.scalar(InstanceSettings.singleton()))
 
 
 class OastService:
@@ -78,21 +64,16 @@ class OastService:
 
     async def read(self) -> OastRead:
         row = await self._row()
-        server = normalize_server(row.oast_server)
         interactions, last_interaction = await self._proven()
         return OastRead(
             mode=row.oast_mode,
-            server=server,
+            server=row.oast_host,
             wait_seconds=row.oast_wait_seconds,
             public_acknowledged=row.oast_public_acknowledged,
             token_set=await self._token_set(),
             public_servers=list(PUBLIC_SERVERS),
             checks=await self._checks(),
-            reason=off_reason(
-                row.oast_mode,
-                server=server,
-                acknowledged=row.oast_public_acknowledged,
-            ),
+            reason=row.oast_off_reason,
             last_interaction_at=last_interaction,
             interactions=interactions,
         )
@@ -115,9 +96,7 @@ class OastService:
             )
         if data.public_acknowledged is not None:
             row.oast_public_acknowledged = data.public_acknowledged
-        if row.oast_mode == OastMode.SELF_HOSTED.value and not normalize_server(
-            row.oast_server
-        ):
+        if row.oast_mode == OastMode.SELF_HOSTED.value and not row.oast_host:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="Set the server before choosing self-hosted.",
@@ -142,7 +121,7 @@ class OastService:
     async def test(self) -> OastTest:
         """Ask the configured server whether it answers. Nothing is scanned."""
         row = await self._row()
-        server = normalize_server(row.oast_server)
+        server = row.oast_host
         if row.oast_mode == OastMode.PUBLIC.value:
             server = PUBLIC_SERVERS[0]
         if not server:

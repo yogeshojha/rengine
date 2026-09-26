@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
+	import { readPref, writePref } from '$lib/utilities/storage';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import ConfirmDialog from '@/components/confirm-dialog.svelte';
@@ -39,15 +40,12 @@
 
 	function load(): SavedView[] {
 		if (!browser) return [];
-		try {
-			return JSON.parse(localStorage.getItem(KEY) ?? '[]');
-		} catch {
-			return [];
-		}
+		const stored = readPref<unknown>(KEY, []);
+		return Array.isArray(stored) ? (stored as SavedView[]) : [];
 	}
 
 	function persist() {
-		if (browser) localStorage.setItem(KEY, JSON.stringify(views));
+		if (browser) writePref(KEY, views);
 	}
 
 	function confirmSave(e: Event) {
