@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import FileText from '@lucide/svelte/icons/file-text';
 	import Code from '@lucide/svelte/icons/code';
 	import List from '@lucide/svelte/icons/list';
@@ -176,10 +177,11 @@
 		queuedScans = 0;
 	}
 
+	$effect(() => {
+		if (open) untrack(resetModal);
+	});
+
 	function handleOpenChange(isOpen: boolean) {
-		if (!isOpen) {
-			resetModal();
-		}
 		open = isOpen;
 	}
 
