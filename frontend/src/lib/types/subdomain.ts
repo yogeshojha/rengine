@@ -49,6 +49,7 @@ export interface SubdomainRead {
 	render_targets?: number;
 	vuln_count?: number;
 	vuln_severity?: string | null;
+	vuln_severities?: Record<string, number>;
 	vuln_kev?: boolean;
 	matched_in?: MatchEvidence[];
 	cross_links?: CrossLink[];

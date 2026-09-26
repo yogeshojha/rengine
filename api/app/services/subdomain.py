@@ -106,7 +106,7 @@ from shared.utils.infra import generic_page
 
 logger = get_logger(__name__)
 
-_NO_FINDINGS: tuple[int, str | None, bool] = (0, None, False)
+_NO_FINDINGS: tuple[int, str | None, bool, dict[str, int]] = (0, None, False, {})
 _NO_SHARE: tuple[int, int] = (0, 1)
 
 _TARGET_ROLLUP_CAP = 20000
@@ -404,6 +404,7 @@ class SubdomainService:
                     vuln_count=findings.get(s.name, _NO_FINDINGS)[0],
                     vuln_severity=findings.get(s.name, _NO_FINDINGS)[1],
                     vuln_kev=findings.get(s.name, _NO_FINDINGS)[2],
+                    vuln_severities=findings.get(s.name, _NO_FINDINGS)[3],
                     matched_in=evidence.get(s.id, []),
                     cross_links=links.get(s.id, []),
                 )
@@ -416,20 +417,15 @@ class SubdomainService:
 
     async def _findings_for(
         self, scope: QueryScope, hosts: list[str]
-    ) -> dict[str, tuple[int, str | None, bool]]:
-        """Worst finding per host on this page."""
+    ) -> dict[str, tuple[int, str | None, bool, dict[str, int]]]:
+        """Findings per host on this page."""
         if not hosts:
             return {}
-        rank = case(
-            {name: index for index, name in enumerate(SEVERITY_ORDER)},
-            value=Vulnerability.severity,
-            else_=len(SEVERITY_ORDER),
-        )
         rows = await self.session.execute(
             select(
                 Vulnerability.host,
+                Vulnerability.severity,
                 func.count(),
-                func.min(rank),
                 func.bool_or(Vulnerability.is_kev),
             )
             .where(
@@ -437,12 +433,24 @@ class SubdomainService:
                 Vulnerability.host.in_(hosts),
                 not_(vuln_suppressed(scope)),
             )
-            .group_by(Vulnerability.host)
+            .group_by(Vulnerability.host, Vulnerability.severity)
         )
+        by_host: dict[str, dict[str, int]] = {}
+        kev_hosts: set[str] = set()
+        for host, severity, count, kev in rows.all():
+            if severity not in SEVERITY_ORDER:
+                continue
+            by_host.setdefault(host, {})[severity] = int(count)
+            if kev:
+                kev_hosts.add(host)
         return {
-            host: (int(count), SEVERITY_ORDER[int(worst)], bool(kev))
-            for host, count, worst, kev in rows.all()
-            if worst is not None and int(worst) < len(SEVERITY_ORDER)
+            host: (
+                sum(counts.values()),
+                min(counts, key=SEVERITY_ORDER.index),
+                host in kev_hosts,
+                {sev: counts[sev] for sev in SEVERITY_ORDER if sev in counts},
+            )
+            for host, counts in by_host.items()
         }
 
     async def counts(

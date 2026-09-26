@@ -142,6 +142,7 @@ class SubdomainRow(SubdomainRead):
     render_targets: int = 1
     vuln_count: int = 0
     vuln_severity: str | None = None
+    vuln_severities: dict[str, int] = Field(default_factory=dict)
     vuln_kev: bool = False
     matched_in: list[MatchEvidence] = Field(default_factory=list)
     cross_links: list[CrossLink] = Field(default_factory=list)

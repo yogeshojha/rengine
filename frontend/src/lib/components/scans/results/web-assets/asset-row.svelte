@@ -131,6 +131,14 @@
 	}: Props = $props();
 
 	let worstSeverity = $derived((s.vuln_count ?? 0) > 0 ? (s.vuln_severity ?? null) : null);
+	let findingsHint = $derived(
+		[
+			...Object.entries(s.vuln_severities ?? {}).map(
+				([severity, count]) => `${count.toLocaleString()} ${severityLabel(severity)}`
+			),
+			...(s.vuln_kev ? ['Known exploited'] : [])
+		].join(' · ')
+	);
 
 	const ALWAYS_VISIBLE = ['host', 'title', 'cname'];
 	const COLUMN_EVIDENCE: Record<string, string> = {
@@ -323,11 +331,7 @@
 				</Hint>
 			{/if}
 			{#if worstSeverity}
-				<Hint
-					text="{s.vuln_count} {s.vuln_count === 1 ? 'finding' : 'findings'} · worst {severityLabel(
-						worstSeverity
-					).toLowerCase()}{s.vuln_kev ? ' · known exploited' : ''}"
-				>
+				<Hint text={findingsHint}>
 					{#snippet child(props)}
 						<button
 							{...props}
