@@ -205,7 +205,10 @@ def table(
     title: str | None = None,
     empty: str | None = None,
     total: int | None = None,
+    action: str | None = None,
+    keys: list[str | None] | None = None,
 ) -> Block:
+    """`keys` names each row for `action`; a None key leaves that row unselectable."""
     return Block(
         kind=BlockKind.TABLE.value,
         title=title,
@@ -213,6 +216,8 @@ def table(
         rows=rows,
         empty=empty,
         total=total,
+        action=action,
+        keys=keys or [],
     )
 
 

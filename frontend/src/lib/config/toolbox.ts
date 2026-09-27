@@ -8,8 +8,9 @@ import Network from '@lucide/svelte/icons/network';
 import GitFork from '@lucide/svelte/icons/git-fork';
 import Globe from '@lucide/svelte/icons/globe';
 import ShieldAlert from '@lucide/svelte/icons/shield-alert';
+import Building2 from '@lucide/svelte/icons/building-2';
 import type { IconComponent } from './icons';
-import type { Tone } from '$lib/types/toolbox';
+import type { RowAction, Tone } from '$lib/types/toolbox';
 
 export const TOOL_ICONS: Record<string, IconComponent> = {
 	'scroll-text': ScrollText,
@@ -17,10 +18,19 @@ export const TOOL_ICONS: Record<string, IconComponent> = {
 	network: Network,
 	'git-fork': GitFork,
 	globe: Globe,
-	'shield-alert': ShieldAlert
+	'shield-alert': ShieldAlert,
+	'building-2': Building2
 };
 
 export const TOOLBOX_ICON = ToolCase;
+
+export const ORG_DOMAINS_TOOL = 'org_domains';
+export const ORG_DOMAINS_ICON = Building2;
+
+export const ROW_ACTION: Record<'addTargets', RowAction> = { addTargets: 'add_targets' };
+export const ADD_TARGETS_BATCH = 500;
+export const SELECT_ROW_PAGE = 25;
+export const SELECT_FILTER_AT = 10;
 
 export function toolIcon(slug: string): IconComponent {
 	return TOOL_ICONS[slug] ?? Wrench;

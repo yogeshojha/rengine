@@ -30,6 +30,7 @@ from tools.ripestat.models import (
     PrefixOverviewRead,
     RelatedPrefixRead,
     RIPEStatResult,
+    SearchASN,
 )
 from tools.ripestat.parser import (
     parse_abuse_contact,
@@ -39,6 +40,7 @@ from tools.ripestat.parser import (
     parse_network_info,
     parse_prefix_overview,
     parse_related_prefixes,
+    parse_search_asns,
 )
 
 logger = get_logger(__name__)
@@ -676,6 +678,14 @@ class RIPEStatService:
         ]
         return self._to_result(lookup_type, prefix, data, len(parsed.related))
 
+    async def search_asns(self, query: str) -> list[SearchASN]:
+        """Organization name -> autonomous systems. Not cached; a free-text search."""
+        try:
+            raw = await self._client.searchcomplete(query)
+        except RIPEStatAPIError as e:
+            raise RIPEStatLookupError(str(e)) from e
+        return parse_search_asns(raw)
+
     # methods exposed to celery workers
 
     def announced_prefixes_sync(
@@ -1171,3 +1181,10 @@ class RIPEStatService:
             for r in parsed.related
         ]
         return self._to_result(lookup_type, prefix, data, len(parsed.related))
+
+    def search_asns_sync(self, query: str) -> list[SearchASN]:
+        try:
+            raw = self._client.searchcomplete_sync(query)
+        except RIPEStatAPIError as e:
+            raise RIPEStatLookupError(str(e)) from e
+        return parse_search_asns(raw)

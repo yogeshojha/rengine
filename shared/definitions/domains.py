@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 from enum import StrEnum
 from functools import lru_cache
+from pathlib import Path
 
 from shared.definitions.constants import PURE_CACHE
 
@@ -274,6 +276,7 @@ VENDOR_DOMAINS: frozenset[str] = frozenset(
 
 _MIN_LABELS = 2
 _SUFFIX_LABELS = 3
+_SUFFIX_PATH = Path(__file__).parent / "data" / "public_suffixes.json"
 
 
 THIRD_PARTY_DOMAINS: frozenset[str] = frozenset(
@@ -326,14 +329,45 @@ THIRD_PARTY_DOMAINS: frozenset[str] = frozenset(
 IGNORED_DOMAINS: frozenset[str] = frozenset(VENDOR_DOMAINS | THIRD_PARTY_DOMAINS)
 
 
+@lru_cache(maxsize=1)
+def _suffix_rules() -> tuple[frozenset[str], frozenset[str], frozenset[str]]:
+    try:
+        data = json.loads(_SUFFIX_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        data = {}
+    return (
+        frozenset(data.get("suffixes", ())) | PUBLIC_SECOND_LEVEL,
+        frozenset(data.get("wildcards", ())),
+        frozenset(data.get("exceptions", ())),
+    )
+
+
+def _suffix_length(labels: list[str]) -> int:
+    """Labels in the longest public suffix the name ends with."""
+    suffixes, wildcards, exceptions = _suffix_rules()
+    for size in range(len(labels), 0, -1):
+        candidate = ".".join(labels[-size:])
+        if candidate in exceptions:
+            return size - 1
+        if candidate in suffixes:
+            return size
+        if size > 1 and ".".join(labels[-(size - 1) :]) in wildcards:
+            return size
+    return 1
+
+
 @lru_cache(maxsize=PURE_CACHE)
-def registrable_domain(hostname: str) -> str:
+def registrable_domain(hostname: str, *, strict: bool = False) -> str:
+    """The registrable domain. `strict` reads the full ICANN public suffix list."""
     host = hostname.strip().lower().rstrip(".").removeprefix("*.")
     labels = [part for part in host.split(".") if part]
     if len(labels) < _MIN_LABELS:
         return ""
     if labels[-1].isdigit():
         return ""
+    if strict:
+        size = _suffix_length(labels)
+        return "" if size >= len(labels) else ".".join(labels[-(size + 1) :])
     if len(labels) >= _SUFFIX_LABELS and ".".join(labels[-2:]) in PUBLIC_SECOND_LEVEL:
         return ".".join(labels[-3:])
     return ".".join(labels[-2:])

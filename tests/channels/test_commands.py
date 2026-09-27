@@ -36,6 +36,7 @@ EXPECTED = {
     "cve",
     "http",
     "subs",
+    "org",
     "help",
     "start",
     "project",

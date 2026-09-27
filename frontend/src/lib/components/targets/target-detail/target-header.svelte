@@ -27,6 +27,8 @@
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import FileText from '@lucide/svelte/icons/file-text';
 	import { ROUTES } from '$lib/config/routes';
+	import { ORG_DOMAINS_ICON as OrgIcon, ORG_DOMAINS_TOOL } from '$lib/config/toolbox';
+	import { toolbox } from '$lib/stores/toolbox.svelte';
 
 	interface Props {
 		target: Target;
@@ -188,6 +190,16 @@
 				{/snippet}
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content align="end" class="w-56">
+				{#if target.target_type === TargetType.DOMAIN}
+					<DropdownMenu.Item
+						onclick={() =>
+							toolbox.open({ value: target.target_value, tool: ORG_DOMAINS_TOOL, run: true })}
+					>
+						<OrgIcon class="size-4" />
+						Domains by owner
+					</DropdownMenu.Item>
+					<DropdownMenu.Separator />
+				{/if}
 				<DropdownMenu.Item onclick={onRefreshEnrichment} disabled={pendingSources.length > 0}>
 					<RefreshCw class="size-4" />
 					Refresh enrichment

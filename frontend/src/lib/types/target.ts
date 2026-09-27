@@ -164,6 +164,7 @@ export interface TargetImportResult {
 	target_type: TargetType | null;
 	target_id: string | null;
 	error: string | null;
+	duplicate: boolean;
 }
 
 export interface TargetBulkCreateResponse {

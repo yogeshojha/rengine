@@ -22,6 +22,9 @@
 	const spec = $derived(toolbox.tool(run.tool));
 	const Icon = $derived(toolIcon(spec?.icon ?? ''));
 	const pending = $derived(run.status === 'queued' || run.status === 'running');
+	const organization = $derived(
+		typeof run.raw?.organization === 'string' ? run.raw.organization : null
+	);
 	const took = $derived(
 		run.duration_ms === null
 			? ''
@@ -83,13 +86,13 @@
 		</div>
 	{:else}
 		{#each run.blocks as block, i (i)}
-			<ResultBlockView {block} {onLookup} />
+			<ResultBlockView {block} {organization} {onLookup} {onNavigate} />
 		{/each}
 		{#if run.pivot}
 			<button
 				type="button"
 				onclick={openPivot}
-				class="inline-flex items-center gap-1 text-xs text-primary underline-offset-2 hover:underline"
+				class="inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80"
 			>
 				{run.pivot.label}
 				<ArrowUpRight class="size-3" />

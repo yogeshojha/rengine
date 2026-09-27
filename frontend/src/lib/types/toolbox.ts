@@ -1,6 +1,7 @@
 export type ToolExecution = 'inline' | 'queued';
 export type RunStatus = 'queued' | 'running' | 'completed' | 'failed';
 export type BlockKind = 'hero' | 'facts' | 'table' | 'tags' | 'code' | 'note' | 'image';
+export type RowAction = 'add_targets';
 export type Tone = 'neutral' | 'success' | 'warning' | 'critical' | 'info' | 'muted';
 
 export interface ToolField {
@@ -121,6 +122,8 @@ export interface ResultBlock {
 	src: string | null;
 	empty: string | null;
 	total: number | null;
+	action: RowAction | null;
+	keys: (string | null)[];
 }
 
 export interface Pivot {
@@ -153,4 +156,10 @@ export interface ToolRunRequest {
 	tool: string;
 	input: Record<string, unknown>;
 	project_id?: string;
+}
+
+export interface ToolboxLaunch {
+	value: string;
+	tool?: string | null;
+	run?: boolean;
 }

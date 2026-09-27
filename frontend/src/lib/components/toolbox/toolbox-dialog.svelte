@@ -17,11 +17,11 @@
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
-	import type { ToolRun } from '$lib/types/toolbox';
+	import type { ToolboxLaunch, ToolRun } from '$lib/types/toolbox';
 
 	interface Props {
 		open?: boolean;
-		launch?: { value: string; tool?: string | null; run?: boolean } | null;
+		launch?: ToolboxLaunch | null;
 	}
 
 	let { open = $bindable(false), launch = $bindable(null) }: Props = $props();
@@ -34,8 +34,10 @@
 	const projectId = $derived(projectsStore.activeProject?.id);
 	const tool = $derived(selected ? toolbox.tool(selected) : undefined);
 	const Icon = $derived(tool ? toolIcon(tool.icon) : null);
+	let starting = $state<Record<string, ToolRun>>({});
 	const run = $derived.by(() => {
 		if (!selected) return undefined;
+		if (starting[selected]) return starting[selected];
 		const id = shown[selected];
 		return id ? toolbox.runs.find((r) => r.id === id) : toolbox.lastRun(selected);
 	});
@@ -63,8 +65,12 @@
 		if (!open || !pending || !toolbox.tools.length) return;
 		launch = null;
 		untrack(() => {
-			if (pending.run) chase(pending.value, pending.tool ?? null);
-			else if (prefill(pending.value, pending.tool ?? null)) queueMicrotask(() => form?.focus());
+			const value = pending.value.trim();
+			if (!value) {
+				if (pending.tool && toolbox.tool(pending.tool)) selected = pending.tool;
+				queueMicrotask(() => form?.focus());
+			} else if (pending.run) chase(value, pending.tool ?? null);
+			else if (prefill(value, pending.tool ?? null)) queueMicrotask(() => form?.focus());
 		});
 	});
 
@@ -85,12 +91,41 @@
 		return out;
 	}
 
+	function placeholder(name: string, input: Record<string, unknown>): ToolRun {
+		const spec = toolbox.tool(name);
+		const value = spec ? input[spec.value_field] : undefined;
+		return {
+			id: `starting:${name}`,
+			tool: name,
+			title: spec?.title ?? name,
+			label: typeof value === 'string' ? value : (spec?.title ?? name),
+			input,
+			status: 'running',
+			summary: null,
+			blocks: [],
+			caveats: [],
+			pivot: null,
+			raw: null,
+			error: null,
+			queued_at: new Date().toISOString(),
+			started_at: null,
+			finished_at: null,
+			duration_ms: null
+		};
+	}
+
 	async function start(name: string) {
+		const input = payload(name);
+		starting = { ...starting, [name]: placeholder(name, input) };
 		try {
-			const started = await toolbox.run(name, payload(name), projectId);
+			const started = await toolbox.run(name, input, projectId);
 			shown = { ...shown, [name]: started.id };
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Run not started');
+		} finally {
+			const next = { ...starting };
+			delete next[name];
+			starting = next;
 		}
 	}
 

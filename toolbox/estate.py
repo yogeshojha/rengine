@@ -9,6 +9,7 @@ from sqlalchemy import cast, func, select
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import array as pg_array
 
+from shared.models.http_asset import HttpAsset
 from shared.models.ip_address import IpAddress
 from shared.models.port import Port
 from shared.models.software import SoftwareCve
@@ -36,6 +37,12 @@ class NetworkEstate:
 @dataclass
 class HostEstate:
     known: set[str] = field(default_factory=set)
+
+
+@dataclass
+class DomainEstate:
+    targets: dict[str, uuid.UUID] = field(default_factory=dict)
+    seen: set[str] = field(default_factory=set)
 
 
 def _asn_hosts(project_id: uuid.UUID, asn: int):
@@ -72,6 +79,33 @@ def _ports(project_id: uuid.UUID, ip: str):
 def _known_hosts(project_id: uuid.UUID, names: list[str]):
     return select(func.distinct(Subdomain.name)).where(
         Subdomain.project_id == project_id, Subdomain.name.in_(names)
+    )
+
+
+MAX_CERTIFICATE_ROWS = 2000
+
+
+def _certificates(project_id: uuid.UUID, domain: str):
+    return (
+        select(
+            HttpAsset.host,
+            HttpAsset.tls_subject_cn,
+            HttpAsset.tls_sans,
+            HttpAsset.tls_subject_dn,
+        )
+        .where(
+            HttpAsset.project_id == project_id,
+            HttpAsset.tls_subject_dn.is_not(None),
+            (HttpAsset.host == domain)
+            | HttpAsset.host.endswith(f".{domain}", autoescape=True),
+        )
+        .limit(MAX_CERTIFICATE_ROWS)
+    )
+
+
+def _targets_by_value(project_id: uuid.UUID, values: list[str]):
+    return select(Target.target_value, Target.id).where(
+        Target.project_id == project_id, Target.target_value.in_(values)
     )
 
 
@@ -154,6 +188,21 @@ def known_hosts_sync(
     return set(session.execute(_known_hosts(project_id, names)).scalars().all())
 
 
+async def classify_domains(
+    session, project_id: uuid.UUID | None, names: list[str]
+) -> DomainEstate:
+    """For a set of registrable domains, which are already targets or seen as hosts."""
+    if project_id is None or not names:
+        return DomainEstate()
+    values = list(dict.fromkeys(names))
+    rows = (await session.execute(_targets_by_value(project_id, values))).all()
+    targets = dict(rows)
+    seen = set(
+        (await session.execute(_known_hosts(project_id, values))).scalars().all()
+    )
+    return DomainEstate(targets=targets, seen=seen)
+
+
 def network_sync(
     session, project_id: uuid.UUID | None, asn: int | None
 ) -> NetworkEstate:
@@ -161,3 +210,13 @@ def network_sync(
         return NetworkEstate()
     row = session.execute(_asn_hosts(project_id, asn)).first()
     return NetworkEstate(hosts=int(row[0] or 0), addresses=int(row[1] or 0))
+
+
+async def certificates(
+    session, project_id: uuid.UUID | None, domain: str
+) -> list[tuple[str, str | None, list, str | None]]:
+    """(host, subject CN, SANs, subject DN) of certificates scans read under a domain."""
+    if project_id is None or not domain:
+        return []
+    rows = (await session.execute(_certificates(project_id, domain))).all()
+    return [(host, cn, list(sans or []), dn) for host, cn, sans, dn in rows]

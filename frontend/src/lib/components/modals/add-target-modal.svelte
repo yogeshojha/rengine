@@ -16,6 +16,8 @@
 	import TagMultiSelect from '$lib/components/tag-multi-select.svelte';
 	import QuickScanFields from '$lib/components/scans/quick-scan-fields.svelte';
 	import { targetsStore } from '$lib/stores/targets.svelte';
+	import { toolbox } from '$lib/stores/toolbox.svelte';
+	import { ORG_DOMAINS_ICON as OrgIcon, ORG_DOMAINS_TOOL } from '$lib/config/toolbox';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { scansStore } from '$lib/stores/scans.svelte';
 	import { targetsApi } from '$lib/api/targets';
@@ -240,6 +242,13 @@
 		}
 	}
 
+	function findByOrganization() {
+		const value = targetValue.trim();
+		resetForm();
+		open = false;
+		toolbox.open({ value, tool: ORG_DOMAINS_TOOL, run: value.length > 0 });
+	}
+
 	function resetForm() {
 		clearTimeout(validateTimeout);
 		targetValue = '';
@@ -431,6 +440,16 @@
 			<Separator />
 
 			<div class="flex items-center justify-end gap-2 p-4 bg-muted/30">
+				<Button
+					type="button"
+					variant="ghost"
+					class="mr-auto text-muted-foreground"
+					onclick={findByOrganization}
+					disabled={isSubmitting}
+				>
+					<OrgIcon class="size-4" />
+					Domains by organization
+				</Button>
 				<Button type="button" variant="outline" onclick={requestClose} disabled={isSubmitting}>
 					Cancel
 				</Button>

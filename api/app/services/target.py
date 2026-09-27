@@ -105,7 +105,7 @@ class BulkTargetResult:
 
 
 def _rejected(
-    value: str, seen_in_batch: set[str], existing: set[str]
+    value: str, seen_in_batch: set[str], existing: dict[str, UUID]
 ) -> BulkTargetResult | None:
     """The result for a value no import may store, or None."""
     if not value:
@@ -120,7 +120,11 @@ def _rejected(
         return None
     return BulkTargetResult(
         import_result=TargetImportResult(
-            target_value=value, success=False, error=reason
+            target_value=value,
+            success=False,
+            error=reason,
+            duplicate=duplicate,
+            target_id=existing.get(value),
         ),
         duplicate=duplicate,
     )
@@ -557,9 +561,11 @@ class TargetService:
             )
 
         existing_targets_result = await self.session.execute(
-            select(Target.target_value).where(Target.project_id == project.id)
+            select(Target.target_value, Target.id).where(
+                Target.project_id == project.id
+            )
         )
-        existing_target_values = set(existing_targets_result.scalars().all())
+        existing_target_values = dict(existing_targets_result.all())
 
         organizations = await self._get_or_create_organizations(
             bulk_in.organization_names, project.id, user_id
@@ -869,9 +875,11 @@ class TargetService:
             )
 
         existing_targets_result = await self.session.execute(
-            select(Target.target_value).where(Target.project_id == project.id)
+            select(Target.target_value, Target.id).where(
+                Target.project_id == project.id
+            )
         )
-        existing_target_values = set(existing_targets_result.scalars().all())
+        existing_target_values = dict(existing_targets_result.all())
 
         results: list[TargetImportResult] = []
         imported_count = 0
@@ -1175,7 +1183,7 @@ class TargetService:
         user_id: str,
         organizations: list[Organization],
         tags: list[Tag],
-        existing_target_values: set[str],
+        existing_target_values: dict[str, UUID],
         seen_in_batch: set[str],
     ) -> "BulkTargetResult":
         _target_value = normalize_target_value(target_value)
@@ -1196,7 +1204,7 @@ class TargetService:
         self.session.add(target)
 
         seen_in_batch.add(_target_value)
-        existing_target_values.add(_target_value)
+        existing_target_values[_target_value] = target.id
 
         return BulkTargetResult(
             import_result=TargetImportResult(
@@ -1213,7 +1221,7 @@ class TargetService:
         item: TargetImportItem,
         project_id: str,
         user_id: str,
-        existing_target_values: set[str],
+        existing_target_values: dict[str, UUID],
         seen_in_batch: set[str],
         shared_organizations: list[Organization] | None = None,
         shared_tags: list[Tag] | None = None,
@@ -1255,7 +1263,7 @@ class TargetService:
         self.session.add(target)
 
         seen_in_batch.add(target_value)
-        existing_target_values.add(target_value)
+        existing_target_values[target_value] = target.id
 
         return BulkTargetResult(
             import_result=TargetImportResult(

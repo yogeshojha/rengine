@@ -10,6 +10,7 @@
 	import QuickActionsMenu from '$lib/components/layout/quick-actions-menu.svelte';
 	import ToolboxMenu from '$lib/components/toolbox/toolbox-menu.svelte';
 	import ToolboxDialog from '$lib/components/toolbox/toolbox-dialog.svelte';
+	import { toolbox } from '$lib/stores/toolbox.svelte';
 
 	interface BreadcrumbItem {
 		label: string;
@@ -27,12 +28,7 @@
 		launchOpen = true;
 	};
 
-	let toolboxOpen = $state(false);
-	let toolboxLaunch = $state<{ value: string } | null>(null);
-	const handleToolbox = (value: string) => {
-		toolboxLaunch = { value };
-		toolboxOpen = true;
-	};
+	const handleToolbox = (value: string) => toolbox.open({ value });
 </script>
 
 <header class="sticky top-0 z-50 flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4">
@@ -67,7 +63,7 @@
 	<div class="flex-1"></div>
 
 	<CommandSearch onAddTarget={handleAddTarget} onScan={handleScan} onToolbox={handleToolbox} />
-	<ToolboxMenu bind:open={toolboxOpen} />
+	<ToolboxMenu bind:open={toolbox.dialogOpen} />
 	<NotificationsMenu />
 	<QuickActionsMenu onAddTarget={handleAddTarget} />
 </header>
@@ -78,4 +74,4 @@
 	targetValues={scanValue ? [scanValue] : undefined}
 	onClose={() => (scanValue = undefined)}
 />
-<ToolboxDialog bind:open={toolboxOpen} bind:launch={toolboxLaunch} />
+<ToolboxDialog bind:open={toolbox.dialogOpen} bind:launch={toolbox.launch} />

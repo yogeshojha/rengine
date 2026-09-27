@@ -1,6 +1,6 @@
 import { toolboxApi } from '$lib/api/toolbox';
 import { TOOLBOX_POLL_MS } from '$lib/config/toolbox';
-import type { ToolboxCatalog, ToolRun, ToolSpec } from '$lib/types/toolbox';
+import type { ToolboxCatalog, ToolboxLaunch, ToolRun, ToolSpec } from '$lib/types/toolbox';
 
 const PENDING = new Set(['queued', 'running']);
 
@@ -11,6 +11,8 @@ function createToolboxStore() {
 	let runs = $state<ToolRun[]>([]);
 	let historyError = $state<string | null>(null);
 	let busy = $state(false);
+	let dialogOpen = $state(false);
+	let launch = $state<ToolboxLaunch | null>(null);
 	let timer: ReturnType<typeof setTimeout> | null = null;
 
 	function upsert(run: ToolRun) {
@@ -63,6 +65,24 @@ function createToolboxStore() {
 		},
 		get busy() {
 			return busy;
+		},
+		get dialogOpen() {
+			return dialogOpen;
+		},
+		set dialogOpen(value: boolean) {
+			dialogOpen = value;
+		},
+		get launch() {
+			return launch;
+		},
+		set launch(value: ToolboxLaunch | null) {
+			launch = value;
+		},
+
+		/** Opens the toolbox, optionally on one tool with a value, optionally running it. */
+		open(request: ToolboxLaunch | null = null) {
+			launch = request;
+			dialogOpen = true;
 		},
 
 		tool(name: string): ToolSpec | undefined {
@@ -120,6 +140,8 @@ function createToolboxStore() {
 
 		reset() {
 			stopPolling();
+			dialogOpen = false;
+			launch = null;
 			catalog = null;
 			catalogError = null;
 			runs = [];

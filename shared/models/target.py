@@ -161,6 +161,7 @@ class TargetImportResult(BaseModel):
     target_type: TargetType | None = None
     target_id: uuid.UUID | None = None
     error: str | None = None
+    duplicate: bool = False
 
 
 class TargetBulkCreateResponse(BaseModel):

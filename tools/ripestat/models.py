@@ -118,6 +118,11 @@ class RelatedPrefixRead(BaseModel):
     origin_asn: int | None
 
 
+class SearchASN(BaseModel):
+    asn: int
+    holder: str = ""
+
+
 class RIPEStatResult(BaseModel):
     lookup_type: RIPEStatLookupType
     query_value: str

@@ -17,13 +17,36 @@ from tools.ripestat.models import (
     PrefixOverviewResponse,
     RelatedPrefixEntry,
     RelatedPrefixesResponse,
+    SearchASN,
 )
 
 logger = get_logger(__name__)
 
+_ASN_CATEGORY = "ASNs"
+
 
 def _detect_ip_version(prefix: str) -> int:
     return 6 if ":" in prefix else 4
+
+
+def parse_search_asns(data: dict[str, Any]) -> list[SearchASN]:
+    out: list[SearchASN] = []
+    for category in data.get("categories") or []:
+        if not isinstance(category, dict) or category.get("category") != _ASN_CATEGORY:
+            continue
+        for suggestion in category.get("suggestions") or []:
+            if not isinstance(suggestion, dict):
+                continue
+            value = str(suggestion.get("value", "")).upper().replace("AS", "").strip()
+            if not value.isdigit():
+                continue
+            out.append(
+                SearchASN(
+                    asn=int(value),
+                    holder=str(suggestion.get("description", "")).strip(),
+                )
+            )
+    return out
 
 
 def _parse_datetime(value: str | None) -> datetime | None:

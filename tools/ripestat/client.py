@@ -137,6 +137,14 @@ class RIPEStatClient:
             )
         return self._handle_response(resp, "related-prefixes")
 
+    async def searchcomplete(self, query: str) -> dict[str, Any]:
+        async with get_async_client() as client:
+            resp = await client.get(
+                f"{BASE_URL}/searchcomplete/data.json",
+                params=self._build_params(query),
+            )
+        return self._handle_response(resp, "searchcomplete")
+
     # celery sync methods
 
     def announced_prefixes_sync(self, asn: str) -> dict[str, Any]:
@@ -194,3 +202,11 @@ class RIPEStatClient:
                 params=self._build_params(prefix),
             )
         return self._handle_response(resp, "related-prefixes")
+
+    def searchcomplete_sync(self, query: str) -> dict[str, Any]:
+        with self._egress() as client:
+            resp = client.get(
+                f"{BASE_URL}/searchcomplete/data.json",
+                params=self._build_params(query),
+            )
+        return self._handle_response(resp, "searchcomplete")

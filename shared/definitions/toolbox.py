@@ -60,6 +60,11 @@ class Tone(StrEnum):
     MUTED = "muted"
 
 
+class RowAction(StrEnum):
+    # keys are target values; the last column is the row's tracking status
+    ADD_TARGETS = "add_targets"
+
+
 class IdentityKind(StrEnum):
     TECH = "tech"
     FLAG = "flag"
@@ -153,6 +158,8 @@ class Block(BaseModel):
     src: str | None = None
     empty: str | None = None
     total: int | None = None
+    action: str | None = None
+    keys: list[str | None] = Field(default_factory=list)
 
 
 class Pivot(BaseModel):

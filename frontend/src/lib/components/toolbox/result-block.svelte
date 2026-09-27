@@ -4,7 +4,8 @@
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import HeroBlock from './hero-block.svelte';
 	import IdentityMark from './identity-mark.svelte';
-	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
+	import ResultCell from './result-cell.svelte';
+	import SelectableTable from './selectable-table.svelte';
 	import Info from '@lucide/svelte/icons/info';
 	import { TONE_CHIP, TONE_DOT, TONE_TEXT } from '$lib/config/toolbox';
 	import type { CodeLang } from '$lib/utilities/code-highlight';
@@ -12,10 +13,12 @@
 
 	interface Props {
 		block: ResultBlock;
+		organization?: string | null;
 		onLookup?: (value: string, tool: string | null) => void;
+		onNavigate?: () => void;
 	}
 
-	let { block, onLookup }: Props = $props();
+	let { block, organization = null, onLookup, onNavigate }: Props = $props();
 
 	const count = $derived(
 		block.rows.length || block.facts.length || block.tags.length || (block.text ? 1 : 0)
@@ -81,13 +84,11 @@
 										href={f.href}
 										target={external(f.href) ? '_blank' : undefined}
 										rel={external(f.href) ? 'noreferrer' : undefined}
-										class="underline-offset-2 hover:underline">{f.value}</a
+										onclick={() => f.href && !external(f.href) && onNavigate?.()}
+										class="hover:text-primary">{f.value}</a
 									>
 								{:else if go}
-									<button
-										type="button"
-										onclick={go}
-										class="text-left decoration-dotted underline-offset-4 hover:underline"
+									<button type="button" onclick={go} class="text-left hover:text-primary"
 										>{f.value}</button
 									>
 								{:else}
@@ -105,6 +106,8 @@
 				</div>
 			{/each}
 		</dl>
+	{:else if block.kind === 'table' && block.action}
+		<SelectableTable {block} {organization} {onLookup} {onNavigate} />
 	{:else if block.kind === 'table'}
 		<ScrollArea orientation="horizontal" class="w-full">
 			<table class="w-full min-w-full text-left">
@@ -123,44 +126,8 @@
 					{#each shownRows as row, i (i)}
 						<tr class="border-b border-border/40 last:border-0">
 							{#each row as c, j (j)}
-								{@const go = chase(c.lookup)}
 								<td class="py-1 pr-4 align-top last:pr-0">
-									<span class="flex items-start gap-1.5">
-										{#if c.identity}
-											<span class="flex h-5 shrink-0 items-center">
-												<IdentityMark identity={c.identity} class="size-3.5" />
-											</span>
-										{/if}
-										<span
-											class="text-sm leading-5 {TINTED[c.tone]} {c.mono
-												? 'font-mono text-xs break-all'
-												: 'break-words'}"
-										>
-											{#if c.href}
-												<a
-													href={c.href}
-													target={external(c.href) ? '_blank' : undefined}
-													rel={external(c.href) ? 'noreferrer' : undefined}
-													class="inline-flex items-center gap-1 underline-offset-2 hover:underline"
-												>
-													{c.value}
-													{#if external(c.href)}<ArrowUpRight class="size-3 shrink-0" />{/if}
-												</a>
-											{:else if go}
-												<button
-													type="button"
-													onclick={go}
-													class="text-left decoration-dotted underline-offset-4 hover:underline"
-													>{c.value}</button
-												>
-											{:else}
-												{c.value}
-											{/if}
-											{#if c.note}
-												<span class="text-xs text-muted-foreground"> {c.note}</span>
-											{/if}
-										</span>
-									</span>
+									<ResultCell cell={c} {onLookup} {onNavigate} />
 								</td>
 							{/each}
 						</tr>

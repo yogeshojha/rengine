@@ -10,6 +10,8 @@
 	import Building from '@lucide/svelte/icons/building';
 	import Cog from '@lucide/svelte/icons/cog';
 	import Layers from '@lucide/svelte/icons/layers';
+	import { toolbox } from '$lib/stores/toolbox.svelte';
+	import { ORG_DOMAINS_ICON as OrgIcon, ORG_DOMAINS_TOOL } from '$lib/config/toolbox';
 
 	let { onAddTarget }: { onAddTarget: () => void } = $props();
 </script>
@@ -39,6 +41,12 @@
 							Add organization
 						</span>
 						<Badge variant="secondary" class="text-2xs">Soon</Badge>
+					</DropdownMenu.Item>
+					<DropdownMenu.Separator />
+					<DropdownMenu.Label class="text-xs text-muted-foreground">Discover</DropdownMenu.Label>
+					<DropdownMenu.Item onclick={() => toolbox.open({ value: '', tool: ORG_DOMAINS_TOOL })}>
+						<OrgIcon class="mr-2 h-4 w-4" />
+						Domains by organization
 					</DropdownMenu.Item>
 					<DropdownMenu.Separator />
 					<DropdownMenu.Label class="text-xs text-muted-foreground">Automation</DropdownMenu.Label>
