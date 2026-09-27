@@ -1,3 +1,4 @@
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
 
 from app.config import settings
@@ -22,5 +23,10 @@ async def create_initial_admin() -> None:
                 is_superuser=True,
             )
             session.add(admin)
-            await session.commit()
+            # another api process can win the same first boot
+            try:
+                await session.commit()
+            except IntegrityError:
+                await session.rollback()
+                return
             logger.info(f"Initial admin created: {settings.ADMIN_USERNAME}")

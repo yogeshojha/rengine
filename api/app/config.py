@@ -18,6 +18,9 @@ class Settings(BaseAppSettings):
     GLOBAL_RATE_LIMIT_PER_MINUTE: int = 600
     TRUSTED_PROXIES: str = ""
 
+    API_RELOAD: bool = True
+    API_WORKERS: int = 4
+
     CLIENTS_DIR: str = "/app/binaries"
 
     ADMIN_EMAIL: str = "admin@rengine.local"

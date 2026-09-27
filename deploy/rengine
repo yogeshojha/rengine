@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+# manage a reNgine install: start, stop, logs, update, backup
+set -euo pipefail
+
+SELF="$(readlink -f "${BASH_SOURCE[0]}")"
+RENGINE_HOME="$(dirname "$(dirname "$SELF")")"
+cd "$RENGINE_HOME"
+
+REPO="yogeshojha/rengine"
+
+die() { printf 'error: %s\n' "$*" >&2; exit 1; }
+env_get() { grep -E "^$1=" .env 2>/dev/null | head -1 | cut -d= -f2-; }
+
+WORK=""
+cleanup() { [ -n "$WORK" ] && rm -rf "$WORK"; return 0; }
+trap cleanup EXIT
+
+[ -f .env ] || die "no .env in $RENGINE_HOME"
+
+usage() {
+  cat <<'EOF'
+Usage: rengine <command>
+
+  start          start the stack
+  stop           stop the stack
+  restart        stop and start the stack
+  status         services and API health
+  logs [svc]     follow logs, all services or one
+  scale <n>      run n scan worker containers
+  update [tag]   move to a release, the latest when no tag is given
+  backup         write a backup archive to ./backups
+  restore <f>    replace this instance's data with an archive
+  uninstall      remove containers and data volumes
+  version        installed release
+EOF
+}
+
+cmd_status() {
+  docker compose ps
+  local origin
+  origin="$(env_get PUBLIC_ORIGIN)"
+  [ -n "$origin" ] || return 0
+  if curl -ksfm 5 "$origin/api/v1/health/health" >/dev/null 2>&1; then
+    printf 'API answering at %s\n' "$origin"
+  else
+    printf 'The API did not respond. Check that the api service is running.\n'
+  fi
+}
+
+cmd_update() {
+  [ -n "$(env_get RENGINE_SRC)" ] && die "a source install. Update the checkout, then run install.sh --build again."
+  local tag="${1:-}"
+  if [ -z "$tag" ]; then
+    tag="$(curl -fsSLm 15 "https://api.github.com/repos/$REPO/releases/latest" 2>/dev/null \
+      | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')"
+    [ -n "$tag" ] || die "GitHub did not answer. Pass a tag: rengine update v3.0.1"
+  fi
+  local image_tag="${tag#v}"
+  local current
+  current="$(env_get RENGINE_TAG)"
+  if [ "$image_tag" = "$current" ]; then
+    printf 'Already on %s.\n' "$image_tag"
+    return 0
+  fi
+  printf 'Updating %s to %s\n' "${current:-unknown}" "$image_tag"
+  local src
+  WORK="$(mktemp -d)"
+  curl -fsSL "https://github.com/$REPO/archive/refs/tags/$tag.tar.gz" | tar -xz -C "$WORK"
+  src="$(find "$WORK" -maxdepth 1 -mindepth 1 -type d | head -1)"
+  [ -f "$src/docker-compose.prod.yml" ] || die "the $tag archive has no docker-compose.prod.yml"
+  cp "$src/docker-compose.prod.yml" .
+  mkdir -p scripts bin
+  install -m 755 "$src/scripts/backup.sh" scripts/backup.sh
+  install -m 755 "$src/deploy/rengine" bin/rengine
+  RENGINE_TAG="$image_tag" docker compose pull \
+    || die "the image pull failed. The install stays on $current."
+  sed -i "s|^RENGINE_TAG=.*|RENGINE_TAG=$image_tag|" .env
+  docker compose up -d --remove-orphans
+  printf 'Updated to %s.\n' "$image_tag"
+}
+
+cmd_uninstall() {
+  printf 'Containers and data volumes are removed. Backups and .env stay in %s.\n' "$RENGINE_HOME"
+  local ans
+  read -rp 'Continue? [y/N] ' ans
+  case "$ans" in y|Y|yes) ;; *) printf 'Uninstall not run.\n'; return 0 ;; esac
+  docker compose down --volumes --remove-orphans
+  local link
+  link="$(command -v rengine 2>/dev/null || true)"
+  if [ -n "$link" ] && [ "$(readlink -f "$link" 2>/dev/null)" = "$SELF" ]; then
+    rm -f "$link"
+  fi
+  printf 'Uninstalled. %s remains.\n' "$RENGINE_HOME"
+}
+
+cmd="${1:-}"
+shift || true
+case "$cmd" in
+  start)     docker compose up -d ;;
+  stop)      docker compose down ;;
+  restart)   docker compose down && docker compose up -d ;;
+  status)    cmd_status ;;
+  logs)      docker compose logs -f --tail 200 "$@" ;;
+  scale)     [ -n "${1:-}" ] || die "usage: rengine scale <n>"
+             docker compose up -d --scale "worker-scans=$1" worker-scans ;;
+  update)    cmd_update "${1:-}" ;;
+  backup)    exec scripts/backup.sh dump "${1:-./backups}" ;;
+  restore)   [ -n "${1:-}" ] || die "usage: rengine restore <archive>"
+             exec scripts/backup.sh restore "$1" ;;
+  uninstall) cmd_uninstall ;;
+  version)   env_get RENGINE_TAG ;;
+  ''|help|-h|--help) usage ;;
+  *)         die "unknown command: $cmd" ;;
+esac

@@ -38,6 +38,8 @@ class BaseAppSettings(BaseSettings):
     CELERY_SCAN_CONCURRENCY: int = 16
     CELERY_CONTROL_CONCURRENCY: int = 8
     CELERY_DEFAULT_CONCURRENCY: int = 4
+    TASK_SOFT_TIME_LIMIT: int = 3600 * 6
+    TASK_HARD_TIME_LIMIT: int = 3600 * 8
 
     @property
     def worker_children(self) -> int:

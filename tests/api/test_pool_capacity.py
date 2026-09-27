@@ -12,9 +12,10 @@ pytestmark = pytest.mark.api
 
 def test_demand_counts_every_pool():
     per_child = settings.WORKER_DB_POOL_SIZE + settings.WORKER_DB_MAX_OVERFLOW
+    api_pool = settings.DB_POOL_SIZE + settings.DB_MAX_OVERFLOW
+    api_processes = 1 if settings.API_RELOAD else settings.API_WORKERS
     expected = (
-        settings.DB_POOL_SIZE
-        + settings.DB_MAX_OVERFLOW
+        (api_processes + 1) * api_pool
         + settings.CELERY_SCAN_CONCURRENCY * per_child
         + settings.CELERY_CONTROL_CONCURRENCY * per_child
         + settings.CELERY_DEFAULT_CONCURRENCY * per_child
@@ -22,6 +23,16 @@ def test_demand_counts_every_pool():
     )
     assert pool_demand() == expected
     assert pool_demand() > settings.DB_POOL_SIZE, "a worker pool is a pool too"
+
+
+def test_demand_counts_every_api_process(monkeypatch):
+    monkeypatch.setattr(settings, "API_RELOAD", False)
+    monkeypatch.setattr(settings, "API_WORKERS", 4)
+    single = settings.DB_POOL_SIZE + settings.DB_MAX_OVERFLOW
+    monkeypatch.setattr(settings, "API_WORKERS", 1)
+    baseline = pool_demand()
+    monkeypatch.setattr(settings, "API_WORKERS", 4)
+    assert pool_demand() == baseline + 3 * single
 
 
 async def test_the_configured_pools_fit_the_configured_server(caplog):

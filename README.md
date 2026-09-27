@@ -131,59 +131,51 @@ Detailed documentation is available at [rengine.wiki](https://rengine.wiki).
 
 ## Quick Installation
 
-reNgine requires Docker and Docker Compose v2 on a Linux host. The default database settings are sized for 8 GB of memory.
+reNgine installs on a Linux host, local or VPS, with one script. It checks for Docker and Docker Compose v2, sizes the database for the machine, generates the secrets and starts the stack behind a Caddy reverse proxy that terminates HTTPS.
 
-1. Clone the repository
+```bash
+curl -fsSL https://raw.githubusercontent.com/yogeshojha/rengine/master/install.sh -o install.sh
+sudo bash install.sh
+```
 
-    ```bash
-    git clone https://github.com/yogeshojha/rengine && cd rengine
-    ```
+The guided setup asks where the instance is reached: a public domain with a Let's Encrypt certificate, a server address with a self-signed certificate, or this machine only. It then asks for the UI port, whether the API is published on its own port beside the UI, and the administrator credentials. Everything else is generated. The UI, agents and connectors all reach the API at `/api` on the same origin, so no other port needs to be open.
 
-2. Create the environment file and generate a secret key
+For an unattended install, pass the answers as flags:
 
-    ```bash
-    cp .env.example .env
-    sed -i "s/^SECRET_KEY=.*/SECRET_KEY=$(openssl rand -hex 32)/" .env
-    ```
+```bash
+sudo bash install.sh --domain asm.example.com
+sudo bash install.sh --local --ui-port 8080
+```
 
-3. Set the administrator credentials and the database password in `.env`
+`install.sh --help` lists every option. 4 GB of memory and 10 GB of disk are the minimum. 8 GB of memory and 25 GB of disk are recommended for regular scanning.
 
-    ```bash
-    ADMIN_USERNAME=rengine
-    ADMIN_EMAIL=admin@example.com
-    ADMIN_PASSWORD=yourStrongPassword
-    POSTGRES_PASSWORD=yourStrongPassword
-    ```
+After the install, the `rengine` command manages the instance:
 
-4. Build and start reNgine
+```bash
+rengine status      # services and API health
+rengine logs api    # follow one service
+rengine backup      # archive the database, scan media and settings
+rengine update      # move to the latest release
+```
 
-    ```bash
-    docker compose up -d --build
-    ```
+### From source
 
-5. Apply the database migrations and restart the API
+A checkout installs the same way with images built locally instead of pulled:
 
-    ```bash
-    make migrate
-    docker compose restart api
-    ```
+```bash
+git clone https://github.com/yogeshojha/rengine && cd rengine
+sudo bash install.sh --build
+```
 
-reNgine is now available at `http://127.0.0.1:5173`, or at the server's address when installed on a VPS. Sign in with the administrator credentials and complete the setup wizard.
-
-The database, Redis and Flower are bound to `127.0.0.1`. Place a reverse proxy with TLS in front of port 5173 when exposing reNgine to a network.
-
-For other platforms and a detailed walkthrough, see [rengine.wiki/install](https://rengine.wiki/install/).
+For development with hot reload, copy `.env.example` to `.env`, set a secret key and the credentials, then `docker compose up -d --build` and `make migrate`. The development UI serves at `http://127.0.0.1:5173`.
 
 ## Updating
 
 ```bash
-cd rengine
-git pull
-docker compose build
-docker compose up -d
-make migrate
-docker compose restart api
+rengine update
 ```
+
+A source install updates with `git pull`, then `install.sh --build`.
 
 ## Upgrading from reNgine 2.x
 

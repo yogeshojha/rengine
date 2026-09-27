@@ -1,0 +1,293 @@
+# production stack: caddy is the only door, published ports live in ports.yml
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 20m
+    max-file: "5"
+
+x-worker-base: &worker-base
+  init: true
+  image: ${RENGINE_IMAGE:-yogeshojha/rengine}-worker:${RENGINE_TAG:-latest}
+  env_file:
+    - .env
+  logging: *logging
+  restart: unless-stopped
+  volumes:
+    - ./scan_media:/app/scan_media
+    - vuln_templates:/app/vuln-templates
+    - wordlists:/app/wordlists
+    - reports_out:/app/reports-out
+    - exports_out:/app/exports-out
+    - report_fonts:/app/report-fonts
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    migrate:
+      condition: service_completed_successfully
+
+services:
+  db:
+    image: postgres:16-alpine
+    logging: *logging
+    shm_size: ${POSTGRES_SHM_SIZE:-1gb}
+    env_file:
+      - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    command: >
+      postgres
+      -c shared_buffers=${POSTGRES_SHARED_BUFFERS:-2GB}
+      -c effective_cache_size=${POSTGRES_EFFECTIVE_CACHE_SIZE:-6GB}
+      -c work_mem=${POSTGRES_WORK_MEM:-32MB}
+      -c maintenance_work_mem=${POSTGRES_MAINTENANCE_WORK_MEM:-512MB}
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c max_parallel_workers_per_gather=4
+      -c jit=off
+      -c max_connections=${POSTGRES_MAX_CONNECTIONS:-250}
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.max=5000
+      -c pg_stat_statements.track=top
+      -c track_io_timing=on
+      -c log_min_duration_statement=${POSTGRES_LOG_MIN_DURATION:-2000}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-rengine}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:8-alpine
+    logging: *logging
+    volumes:
+      - redis_data:/data
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "redis-cli $${REDIS_PASSWORD:+-a \"$$REDIS_PASSWORD\"} --no-auth-warning ping | grep -q PONG",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory ${REDIS_MAXMEMORY:-1gb}
+      --maxmemory-policy noeviction
+      ${REDIS_PASSWORD:+--requirepass} ${REDIS_PASSWORD:-}
+
+  migrate:
+    image: ${RENGINE_IMAGE:-yogeshojha/rengine}-api:${RENGINE_TAG:-latest}
+    env_file:
+      - .env
+    logging: *logging
+    command: ["uv", "run", "alembic", "upgrade", "head"]
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    image: ${RENGINE_IMAGE:-yogeshojha/rengine}-api:${RENGINE_TAG:-latest}
+    build:
+      context: ${RENGINE_SRC:-.}
+      dockerfile: api/Dockerfile
+      target: production
+    volumes:
+      - ./scan_media:/app/scan_media
+      - vuln_templates:/app/vuln-templates
+      - wordlists:/app/wordlists
+      - reports_out:/app/reports-out
+      - exports_out:/app/exports-out
+      - report_fonts:/app/report-fonts
+    env_file:
+      - .env
+    environment:
+      API_RELOAD: "false"
+      FORWARDED_ALLOW_IPS: ${CADDY_ADDR:-172.29.0.253}
+    logging: *logging
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/app/.venv/bin/python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  # background jobs and toolbox runs
+  worker-default:
+    <<: *worker-base
+    build:
+      context: ${RENGINE_SRC:-.}
+      dockerfile: worker/Dockerfile
+      target: production
+    command: >
+      uv run celery -A app.celery worker
+      --loglevel=INFO
+      --concurrency=${CELERY_DEFAULT_CONCURRENCY:-4}
+      --queues=critical,default
+      --hostname=worker-default@%h
+      --max-tasks-per-child=100
+    healthcheck:
+      test: ["CMD-SHELL", "/app/.venv/bin/celery -A app.celery inspect ping -d worker-default@$$HOSTNAME || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # scan stages, one slot per running stage; scale with --scale worker-scans=N
+  worker-scans:
+    <<: *worker-base
+    shm_size: 512m
+    command: >
+      uv run celery -A app.celery worker
+      --loglevel=INFO
+      --concurrency=${CELERY_SCAN_CONCURRENCY:-16}
+      --queues=scans
+      --hostname=worker-scans@%h
+      --max-tasks-per-child=100
+    healthcheck:
+      test: ["CMD-SHELL", "/app/.venv/bin/celery -A app.celery inspect ping -d worker-scans@$$HOSTNAME || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # scan launch, step hand-over, resume and finalize
+  worker-control:
+    <<: *worker-base
+    command: >
+      uv run celery -A app.celery worker
+      --loglevel=INFO
+      --concurrency=${CELERY_CONTROL_CONCURRENCY:-8}
+      --queues=scan_control
+      --hostname=worker-control@%h
+      --max-tasks-per-child=100
+    healthcheck:
+      test: ["CMD-SHELL", "/app/.venv/bin/celery -A app.celery inspect ping -d worker-control@$$HOSTNAME || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # beat scheduler: emits the schedule tick that fires due scan schedules
+  worker-beat:
+    <<: *worker-base
+    command: >
+      uv run celery -A app.celery beat
+      --loglevel=INFO
+      --schedule=/tmp/celerybeat-schedule
+
+  # certificate transparency stream for watched programs
+  ct-stream:
+    <<: *worker-base
+    volumes:
+      - ct_state:/app/ct-state
+    command: uv run python -m app.ct_stream
+
+  # remote control: long-polls every chat channel that is switched on
+  channels:
+    init: true
+    image: ${RENGINE_IMAGE:-yogeshojha/rengine}-api:${RENGINE_TAG:-latest}
+    env_file:
+      - .env
+    command: uv run python -m channels
+    logging: *logging
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      api:
+        condition: service_started
+
+  flower:
+    image: ${RENGINE_IMAGE:-yogeshojha/rengine}-worker:${RENGINE_TAG:-latest}
+    logging: *logging
+    profiles: ["debug"]
+    ports:
+      - "127.0.0.1:5555:5555"
+    env_file:
+      - .env
+    command: >
+      uv run celery -A app.celery flower
+      --port=5555
+      --basic-auth=${FLOWER_USER:-admin}:${FLOWER_PASSWORD:-admin}
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  frontend:
+    image: ${RENGINE_IMAGE:-yogeshojha/rengine}-frontend:${RENGINE_TAG:-latest}
+    build:
+      context: ${RENGINE_SRC:-.}
+      dockerfile: frontend/Dockerfile
+      target: production
+    environment:
+      - ORIGIN=${PUBLIC_ORIGIN:-http://localhost}
+    logging: *logging
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    depends_on:
+      - api
+
+  caddy:
+    image: caddy:2-alpine
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - RENGINE_HOST=${RENGINE_HOST:-}
+      - ACME_EMAIL=${ACME_EMAIL:-}
+    networks:
+      default:
+        ipv4_address: ${CADDY_ADDR:-172.29.0.253}
+    logging: *logging
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: ${DOCKER_SUBNET:-172.29.0.0/24}
+
+volumes:
+  ct_state:
+  postgres_data:
+  redis_data:
+  vuln_templates:
+  wordlists:
+  exports_out:
+  reports_out:
+  report_fonts:
+  caddy_data:
+  caddy_config:

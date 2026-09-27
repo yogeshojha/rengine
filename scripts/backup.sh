@@ -16,6 +16,8 @@
 # every stored secret is unreadable. Treat an archive as a credential.
 
 set -euo pipefail
+# an archive carries SECRET_KEY and the database
+umask 077
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$HERE"

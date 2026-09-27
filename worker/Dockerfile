@@ -3,7 +3,8 @@ FROM python:3.13-slim AS base
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app \
-    C_FORCE_ROOT=1
+    C_FORCE_ROOT=1 \
+    UV_NO_SYNC=1
 
 WORKDIR /app
 
@@ -24,7 +25,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpcap-dev \
     && rm -rf /var/lib/apt/lists/*
 
-RUN curl -fsSL https://go.dev/dl/go1.25.7.linux-amd64.tar.gz | tar -C /usr/local -xzf -
+RUN set -eux; \
+    arch="$(dpkg --print-architecture)"; \
+    curl -fsSL "https://go.dev/dl/go1.25.7.linux-${arch}.tar.gz" | tar -C /usr/local -xzf -
 
 ENV PATH="/usr/local/go/bin:${PATH}" \
     GOBIN=/out/bin \

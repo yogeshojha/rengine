@@ -4,9 +4,6 @@ from shared.config import BaseAppSettings
 
 
 class Settings(BaseAppSettings):
-    TASK_SOFT_TIME_LIMIT: int = 3600 * 6  # 6 hours
-    TASK_HARD_TIME_LIMIT: int = 3600 * 8  # 8 hours
-
     @property
     def database_url(self) -> str:
         """Database URL for Worker (sync)."""

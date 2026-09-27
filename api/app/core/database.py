@@ -51,9 +51,11 @@ def pool_stats() -> dict[str, int]:
 def pool_demand() -> int:
     """Connections every pool can ask for at once."""
     per_child = settings.WORKER_DB_POOL_SIZE + settings.WORKER_DB_MAX_OVERFLOW
+    api_pool = settings.DB_POOL_SIZE + settings.DB_MAX_OVERFLOW
+    api_processes = 1 if settings.API_RELOAD else settings.API_WORKERS
+    # +1: channels runs the api image with the same pool
     return (
-        settings.DB_POOL_SIZE
-        + settings.DB_MAX_OVERFLOW
+        (api_processes + 1) * api_pool
         + settings.worker_children * per_child
         + per_child
     )

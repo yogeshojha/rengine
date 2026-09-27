@@ -21,12 +21,16 @@ jobs:
           - image: api
             dockerfile: api/Dockerfile
             target: production
+            platforms: linux/amd64,linux/arm64
+          # the worker compiles its tool set, which QEMU stretches past the job limit
           - image: worker
             dockerfile: worker/Dockerfile
             target: production
+            platforms: linux/amd64
           - image: frontend
-            dockerfile: frontend/Dockerfile.dev
-            target: ""
+            dockerfile: frontend/Dockerfile
+            target: production
+            platforms: linux/amd64,linux/arm64
     steps:
       - name: 📥 Checkout the git repo
         uses: actions/checkout@v4
@@ -60,7 +64,7 @@ jobs:
           context: .
           file: ${{ matrix.dockerfile }}
           target: ${{ matrix.target }}
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platforms }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
