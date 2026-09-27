@@ -113,10 +113,7 @@
 					</div>
 					<div class="relative h-2.5 rounded-sm bg-muted/40">
 						<span
-							class="absolute inset-y-0 rounded-sm {BAR[r.a.status] ?? 'bg-muted-foreground/30'} {r
-								.a.status === 'running'
-								? 'animate-pulse'
-								: ''}"
+							class="absolute inset-y-0 rounded-sm {BAR[r.a.status] ?? 'bg-muted-foreground/30'}"
 							style="left: {r.left}%; width: {r.width}%"
 						></span>
 					</div>

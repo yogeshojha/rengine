@@ -241,12 +241,10 @@
 							<button
 								{...props}
 								type="button"
-								class="relative h-full min-w-1.5 rounded-full transition-opacity before:absolute before:inset-x-0 before:-inset-y-1 before:content-[''] {s.state ===
-								'running'
-									? 'animate-pulse'
-									: ''} {hovered && hovered !== s.name ? 'opacity-40' : ''} {s.hasActivity
-									? 'cursor-pointer'
-									: 'cursor-default'}"
+								class="relative h-full min-w-1.5 rounded-full transition-opacity before:absolute before:inset-x-0 before:-inset-y-1 before:content-[''] {hovered &&
+								hovered !== s.name
+									? 'opacity-40'
+									: ''} {s.hasActivity ? 'cursor-pointer' : 'cursor-default'}"
 								style="flex:{s.weight} 1 0;background:{s.fill}"
 								aria-label={tooltip(s)}
 								onclick={() => select(s.name, s.hasActivity)}

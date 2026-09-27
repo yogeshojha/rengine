@@ -21,7 +21,7 @@ export type StageStepState = 'done' | 'failed' | 'running' | 'paused' | 'pending
 export const STAGE_STEP_CLASS: Record<StageStepState, string> = {
 	done: 'bg-info',
 	failed: 'bg-destructive',
-	running: 'bg-info/45 animate-pulse',
+	running: 'bg-info/45',
 	paused: 'bg-muted-foreground/50',
 	pending: 'bg-muted-foreground/20'
 };
