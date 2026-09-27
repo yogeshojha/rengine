@@ -40,8 +40,7 @@
 				aria-label="Stages done"
 			>
 				<div
-					class="h-full rounded-full transition-[width] duration-700 motion-reduce:transition-none {scan.status ===
-					'paused'
+					class="h-full rounded-full {scan.status === 'paused'
 						? 'bg-muted-foreground/50'
 						: 'bg-info'}"
 					style="width: {Math.max(progress.percent, 4)}%"

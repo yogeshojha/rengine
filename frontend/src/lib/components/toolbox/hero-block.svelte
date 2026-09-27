@@ -44,10 +44,7 @@
 	{#if block.meter}
 		<div class="mt-3">
 			<div class="h-1 w-full overflow-hidden rounded-full bg-border">
-				<div
-					class="h-full rounded-full transition-[width] duration-500 {TONE_METER[block.meter.tone]}"
-					style="width: {pct}%"
-				></div>
+				<div class="h-full rounded-full {TONE_METER[block.meter.tone]}" style="width: {pct}%"></div>
 			</div>
 			{#if block.meter.caption}
 				<p class="mt-1 text-2xs text-muted-foreground">{block.meter.caption}</p>

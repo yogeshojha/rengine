@@ -74,7 +74,7 @@
 								>{r.live.toLocaleString()}</span
 							>
 							<span
-								class="block h-4 rounded-sm transition-[width] duration-500 ease-out motion-reduce:transition-none"
+								class="block h-4 rounded-sm"
 								style="width:{r.live ? pct(r.live, maxLive) : 0}%;background:var(--series)"
 							></span>
 							{#if !r.live}<span class="block h-4 w-0.5 rounded-sm bg-border"></span>{/if}
@@ -97,10 +97,7 @@
 						</span>
 						<span class="flex items-center gap-2 pr-2">
 							{#if total}
-								<span
-									class="flex h-4 gap-0.5 transition-[width] duration-500 ease-out motion-reduce:transition-none"
-									style="width:{pct(total, maxShown)}%"
-								>
+								<span class="flex h-4 gap-0.5" style="width:{pct(total, maxShown)}%">
 									{#each severities as s (s)}
 										{#if r.by_severity[s]}
 											<span

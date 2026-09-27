@@ -261,7 +261,7 @@
 				</span>
 				<span class="block h-1 w-full overflow-hidden rounded-full bg-muted">
 					<span
-						class="block h-full rounded-full bg-series transition-[width] duration-500"
+						class="block h-full rounded-full bg-series"
 						style="width: {Math.max(share(group.count), 1)}%"
 					></span>
 				</span>

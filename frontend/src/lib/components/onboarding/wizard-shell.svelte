@@ -124,7 +124,7 @@
 					<span>Step {currentIndex + 1} of {total}</span>
 					<span class="tabular-nums">{pct}%</span>
 				</div>
-				<Progress value={pct} class="h-1 transition-all duration-500 ease-out" />
+				<Progress value={pct} class="h-1" />
 			</div>
 		</aside>
 
