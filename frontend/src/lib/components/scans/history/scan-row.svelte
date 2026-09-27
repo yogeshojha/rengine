@@ -35,7 +35,6 @@
 		focused: boolean;
 		selected: boolean;
 		nested?: boolean;
-		flash?: boolean;
 		earlierOpen?: boolean;
 		onEarlier?: () => void;
 		onToggle: () => void;
@@ -62,7 +61,6 @@
 		focused,
 		selected,
 		nested = false,
-		flash = false,
 		earlierOpen = false,
 		onEarlier,
 		onToggle,
@@ -89,7 +87,7 @@
 <div
 	id="scan-row-{scan.id}"
 	class="group relative border-b border-border/60 transition-colors
-		{expanded ? 'bg-muted/25' : ''} {selected ? 'bg-primary/5' : ''} {flash ? 'animate-pulse' : ''}"
+		{expanded ? 'bg-muted/25' : ''} {selected ? 'bg-primary/5' : ''}"
 >
 	{#if focused}
 		<span class="absolute inset-y-0 left-0 w-0.5 bg-primary" aria-hidden="true"></span>

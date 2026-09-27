@@ -73,7 +73,7 @@
 		<span class="font-mono text-2xs tabular-nums text-muted-foreground">{timeAgo}</span>
 		{#if isNew}
 			<span
-				class="new-badge inline-flex h-4 items-center rounded px-1 text-2xs font-semibold uppercase tracking-wide text-info"
+				class="inline-flex h-4 items-center rounded px-1 text-2xs font-semibold uppercase tracking-wide text-info"
 			>
 				new
 			</span>
@@ -84,7 +84,7 @@
 {#if cluster.kind === 'run'}
 	<ActivityRunItem {cluster} {tick} {isNew} {inGroup} {onRescan} />
 {:else}
-	<div class="group/item relative flex gap-2.5 pb-3 last:pb-1" class:is-new={isNew}>
+	<div class="group/item relative flex gap-2.5 pb-3 last:pb-1">
 		{@render node(cluster.level, primary.event_type, running)}
 
 		<div class="min-w-0 flex-1">
@@ -183,38 +183,3 @@
 		</div>
 	</div>
 {/if}
-
-<style>
-	.is-new {
-		animation:
-			slide-in 0.25s ease-out,
-			flash 1.4s ease-out;
-		border-radius: 6px;
-	}
-	.new-badge {
-		animation: fade-out 5s ease-out forwards;
-	}
-	@keyframes slide-in {
-		from {
-			opacity: 0;
-			transform: translateY(-3px);
-		}
-	}
-	@keyframes flash {
-		0% {
-			background-color: hsl(var(--primary) / 0.07);
-		}
-		100% {
-			background-color: transparent;
-		}
-	}
-	@keyframes fade-out {
-		0%,
-		70% {
-			opacity: 1;
-		}
-		100% {
-			opacity: 0;
-		}
-	}
-</style>

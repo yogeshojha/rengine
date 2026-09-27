@@ -80,7 +80,7 @@
 	}
 </script>
 
-<div class="group/item relative flex gap-2.5 pb-3 last:pb-1" class:is-new={isNew}>
+<div class="group/item relative flex gap-2.5 pb-3 last:pb-1">
 	<div class="relative z-[1] flex w-5 shrink-0 justify-center">
 		<div class="mt-px flex h-5 w-5 items-center justify-center rounded-full {NODE_TINT[status]}">
 			{#if status === 'running'}
@@ -124,7 +124,7 @@
 					<span class="font-mono text-2xs text-muted-foreground tabular-nums">{timeAgo}</span>
 					{#if isNew}
 						<span
-							class="new-badge inline-flex h-4 items-center rounded px-1 text-2xs font-semibold tracking-wide text-info uppercase"
+							class="inline-flex h-4 items-center rounded px-1 text-2xs font-semibold tracking-wide text-info uppercase"
 						>
 							new
 						</span>
@@ -206,38 +206,3 @@
 		{/if}
 	</div>
 </div>
-
-<style>
-	.is-new {
-		animation:
-			slide-in 0.25s ease-out,
-			flash 1.4s ease-out;
-		border-radius: 6px;
-	}
-	.new-badge {
-		animation: fade-out 5s ease-out forwards;
-	}
-	@keyframes slide-in {
-		from {
-			opacity: 0;
-			transform: translateY(-3px);
-		}
-	}
-	@keyframes flash {
-		0% {
-			background-color: color-mix(in oklch, var(--primary) 7%, transparent);
-		}
-		100% {
-			background-color: transparent;
-		}
-	}
-	@keyframes fade-out {
-		0%,
-		70% {
-			opacity: 1;
-		}
-		100% {
-			opacity: 0;
-		}
-	}
-</style>

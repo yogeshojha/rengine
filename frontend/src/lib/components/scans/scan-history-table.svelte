@@ -95,7 +95,6 @@
 	let expanded = new SvelteSet<string>();
 	let earlier = $state<Record<string, ScanRead[] | 'loading'>>({});
 	let focusId = $state<string | null>(null);
-	let flashId = $state<string | null>(null);
 	const selected = new SvelteSet<string>();
 
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
@@ -235,12 +234,10 @@
 		}
 		expanded.add(scanId);
 		focusId = scanId;
-		flashId = scanId;
 		await tick();
 		document
 			.getElementById(`scan-row-${scanId}`)
 			?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-		setTimeout(() => (flashId = null), 1200);
 	}
 
 	function sortBy(key: ScanSortKey) {
@@ -769,7 +766,6 @@
 						expanded={expanded.has(v.scan.id)}
 						focused={focusId === v.scan.id}
 						selected={selected.has(v.scan.id)}
-						flash={flashId === v.scan.id}
 						earlierOpen={!!earlier[v.scan.id]}
 						onEarlier={latest && !v.nested ? () => toggleEarlier(v.scan) : undefined}
 						onToggle={() => toggleExpand(v.scan.id)}

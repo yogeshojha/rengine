@@ -27,16 +27,6 @@
 	let total = $derived(counts.reduce((a, c) => a + c.n, 0));
 	let version = $derived(counts.map((c) => c.n).join('.'));
 
-	let previous: Record<string, number> = {};
-	let bumped = $state<Record<string, number>>({});
-	$effect(() => {
-		for (const c of counts) {
-			const was = previous[c.sev];
-			if (was !== undefined && c.n > was) bumped = { ...bumped, [c.sev]: (bumped[c.sev] ?? 0) + 1 };
-			previous[c.sev] = c.n;
-		}
-	});
-
 	let items = $state<Record<string, VulnerabilityRead[] | null>>({});
 	let failed = $state<Record<string, boolean>>({});
 
@@ -79,9 +69,7 @@
 							? 'finding'
 							: 'findings'}"
 					>
-						{#key bumped[c.sev]}
-							<span class:bump={!!bumped[c.sev]}>{c.n}</span>
-						{/key}
+						{c.n}
 					</HoverCard.Trigger>
 					<HoverCard.Content class="w-96 p-0" align="start">
 						<div class="flex items-center justify-between border-b px-3 py-2">
@@ -127,23 +115,3 @@
 		{/each}
 	</div>
 {/if}
-
-<style>
-	.bump {
-		display: inline-block;
-		animation: bump 600ms ease-out;
-	}
-	@keyframes bump {
-		0% {
-			transform: scale(1.45);
-		}
-		100% {
-			transform: scale(1);
-		}
-	}
-	@media (prefers-reduced-motion: reduce) {
-		.bump {
-			animation: none;
-		}
-	}
-</style>
