@@ -159,9 +159,8 @@
 						{#each presetColors as color (color)}
 							<button
 								type="button"
-								class="h-6 w-6 rounded-full border-2 transition-transform hover:scale-110 {selectedColor ===
-								color
-									? 'border-foreground scale-110'
+								class="h-6 w-6 rounded-full border-2 {selectedColor === color
+									? 'border-foreground'
 									: 'border-transparent'}"
 								style="background-color: {color}"
 								onclick={() => (selectedColor = color)}

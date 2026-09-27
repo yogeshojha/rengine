@@ -403,7 +403,7 @@
 			<button
 				type="button"
 				onclick={jumpToLive}
-				class="absolute top-2 left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-1 rounded-full border border-primary/20 bg-primary px-2.5 py-1 text-2xs font-semibold text-primary-foreground shadow-lg transition-transform hover:scale-105"
+				class="absolute top-2 left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-1 rounded-md border border-primary/20 bg-primary px-2.5 py-1 text-2xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
 			>
 				<ArrowUp class="size-3" />
 				{activityFeed.freshIds.size} new

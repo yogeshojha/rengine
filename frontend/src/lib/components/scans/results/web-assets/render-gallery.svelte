@@ -105,7 +105,7 @@
 								alt="Rendered page shared by {g.count} web assets"
 								loading="lazy"
 								onerror={() => broken.add(g.hash)}
-								class="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-[1.02]"
+								class="h-full w-full object-cover object-top"
 							/>
 						{:else}
 							<div
