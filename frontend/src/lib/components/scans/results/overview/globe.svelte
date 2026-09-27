@@ -38,7 +38,6 @@
 	const INSET = 10;
 	const DEFAULT_VIEW: [number, number] = [-20, 25];
 	const RING_STEP = 3;
-	const RUN_STAGGER = 1.1;
 	const RINGS = [
 		{ inc: 24, precess: 96 },
 		{ inc: 58, precess: -132 },
@@ -180,12 +179,6 @@
 
 	{#each rings as ring (ring.i)}
 		<path class="ring" d={ring.d} pathLength="1" />
-		<path
-			class="ring-run"
-			d={ring.d}
-			pathLength="1"
-			style="animation-delay:{ring.i * RUN_STAGGER}s"
-		/>
 	{/each}
 
 	{#each dots as dot (dot.code)}
@@ -227,38 +220,10 @@
 </svg>
 
 <style>
-	svg {
-		--globe-run: var(--primary);
-	}
-	:global(.dark) svg {
-		--globe-run: oklch(0.98 0.01 264);
-	}
 	.ring {
 		fill: none;
 		stroke: var(--series);
 		stroke-width: 0.75;
 		opacity: 0.2;
-	}
-	.ring-run {
-		fill: none;
-		stroke: var(--globe-run);
-		stroke-width: 1;
-		stroke-linecap: round;
-		stroke-dasharray: 0.1 0.9;
-		animation: ring-run 3.6s linear infinite;
-	}
-	@keyframes ring-run {
-		from {
-			stroke-dashoffset: 0.1;
-		}
-		to {
-			stroke-dashoffset: -0.9;
-		}
-	}
-	@media (prefers-reduced-motion: reduce) {
-		.ring-run {
-			animation: none;
-			opacity: 0;
-		}
 	}
 </style>
