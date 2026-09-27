@@ -154,11 +154,11 @@
 		if (leads > 0)
 			out.push({
 				key: 'leads',
-				label: 'Untracked domains',
+				label: 'Candidate targets',
 				count: leads,
 				detail: 'named on certificates',
 				tone: null,
-				open: () => show({ kind: 'discovery', title: 'Untracked domains', rows: [] })
+				open: () => show({ kind: 'discovery', title: 'Candidate targets', rows: [] })
 			});
 		if (unscheduled.length)
 			out.push({

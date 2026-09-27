@@ -44,7 +44,7 @@ export const DASHBOARD_SLICE_LABELS: Record<DashboardSlice, string> = {
 	shared: 'Shared across targets',
 	activity: 'Activity',
 	programs: 'Programs',
-	discovery: 'Untracked domains',
+	discovery: 'Candidate targets',
 	surfaceRisk: 'Surface against risk'
 };
 

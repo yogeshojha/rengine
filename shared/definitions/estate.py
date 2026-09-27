@@ -60,10 +60,10 @@ ESTATE_STRENGTH_LABELS: dict[str, str] = {
 }
 
 PROVIDER_KIND_LABELS: dict[str, str] = {
-    ProviderKind.EDGE.value: "edge",
-    ProviderKind.HOSTING.value: "hosting",
-    ProviderKind.DNS.value: "nameservers",
-    ProviderKind.MAIL.value: "mail",
+    ProviderKind.EDGE.value: "Edge",
+    ProviderKind.HOSTING.value: "Hosting",
+    ProviderKind.DNS.value: "Nameservers",
+    ProviderKind.MAIL.value: "Mail",
 }
 
 # a certificate naming more registrable domains than this is a platform's

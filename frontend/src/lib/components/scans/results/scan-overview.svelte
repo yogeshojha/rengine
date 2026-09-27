@@ -282,8 +282,6 @@
 				domains={estate.domains}
 				providers={estate.providers}
 				neighbours={estate.neighbours}
-				sheetDescription="{estate.domains.length} domains · {estate.providers
-					.length} providers · {estate.considered_targets} targets considered"
 			/>
 		{/if}
 

@@ -53,10 +53,10 @@ export const ESTATE_STRENGTH_LABELS: Record<string, string> = {
 };
 
 export const PROVIDER_KIND_LABELS: Record<string, string> = {
-	[ProviderKind.EDGE]: 'edge',
-	[ProviderKind.HOSTING]: 'hosting',
-	[ProviderKind.DNS]: 'nameservers',
-	[ProviderKind.MAIL]: 'mail'
+	[ProviderKind.EDGE]: 'Edge',
+	[ProviderKind.HOSTING]: 'Hosting',
+	[ProviderKind.DNS]: 'Nameservers',
+	[ProviderKind.MAIL]: 'Mail'
 };
 
 export const NEIGHBOUR_MAX_NAMES = 5;

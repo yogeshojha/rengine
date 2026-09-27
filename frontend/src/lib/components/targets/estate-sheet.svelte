@@ -74,7 +74,8 @@
 
 	let rows = $derived.by<SheetRow[]>(() => {
 		const out: SheetRow[] = [];
-		for (const d of domains) {
+		const ordered = [...domains.filter((d) => !d.target_id), ...domains.filter((d) => d.target_id)];
+		for (const d of ordered) {
 			const tracked = !!d.target_id;
 			const sources = d.sources.length
 				? ` · from ${d.sources.map((s) => s.target_value).join(', ')}`
@@ -84,7 +85,7 @@
 				primary: d.domain,
 				secondary: `${evidence(d)}${sources}`,
 				meta: ESTATE_STRENGTH_LABELS[d.strength ? EstateStrength.DIRECT : EstateStrength.SHARED],
-				group: tracked ? 'Targets' : 'Not a target',
+				group: tracked ? 'Targets' : 'Candidates',
 				href: tracked ? ROUTES.target(d.target_id!) : undefined,
 				action: tracked
 					? undefined
@@ -103,7 +104,7 @@
 				primary: p.name,
 				secondary: p.detail,
 				meta: `${PROVIDER_KIND_LABELS[p.kind] ?? p.kind} · ${p.count}`,
-				group: 'Runs on'
+				group: 'Providers'
 			});
 		for (const n of neighbours)
 			out.push({

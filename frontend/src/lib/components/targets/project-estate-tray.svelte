@@ -38,13 +38,8 @@
 {#if estate}
 	<EstateTray
 		count={estate.untracked}
-		subject="the targets"
 		detail={bySource.map(([t, n]) => `${n} from ${t}`).join(' · ')}
 		domains={estate.domains}
-		sheetDescription="{estate.untracked} domains named by {estate.targets_examined} targets{estate
-			.domains.length < estate.untracked
-			? ` · strongest ${estate.domains.length} shown`
-			: ''}"
 		{onAdded}
 	/>
 {/if}
