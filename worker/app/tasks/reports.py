@@ -202,7 +202,7 @@ def _notify(session, report: Report, *, ok: bool) -> None:
     body = (
         f"{name} for {report.subject} is ready."
         if ok
-        else f"{name} for {report.subject} failed: {report.error}"
+        else f"{name} for {report.subject} failed: {(report.error or '')[:300]}"
     )
     try:
         SyncNotificationPublisher(settings.celery_broker_url).publish(
@@ -211,6 +211,7 @@ def _notify(session, report: Report, *, ok: bool) -> None:
             NotificationSeverity.SUCCESS if ok else NotificationSeverity.ERROR,
             "Report ready" if ok else "Report failed",
             body,
+            metadata={"url": "/reports"},
             project_id=report.project_id,
         )
     except Exception:

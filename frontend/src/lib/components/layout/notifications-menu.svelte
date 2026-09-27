@@ -477,7 +477,9 @@
 <DeleteConfirmationDialog
 	bind:open={clearAllOpen}
 	title="Clear all notifications"
-	description={`${notificationStore.totalCount} notifications in this project are removed.`}
+	description={notificationStore.totalCount === 1
+		? '1 notification in this project is removed.'
+		: `${notificationStore.totalCount} notifications in this project are removed.`}
 	confirmLabel="Clear all"
 	isDeleting={clearing}
 	onOpenChange={(o) => (clearAllOpen = o)}

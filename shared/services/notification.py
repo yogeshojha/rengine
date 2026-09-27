@@ -8,7 +8,6 @@ from shared.enums.sse import SSEChannel, SSEEventType
 from shared.logging import get_logger
 from shared.models.notification import Notification, NotificationMetadata
 from shared.sse import sse_manager
-from shared.utils.datetime import utc_now
 
 logger = get_logger(__name__)
 
@@ -151,22 +150,3 @@ class NotificationManager:
             await session.commit()
 
         return result.rowcount
-
-    @staticmethod
-    async def cleanup_expired(
-        session: AsyncSession,
-        commit: bool = True,
-    ) -> int:
-        now = utc_now()
-        result = await session.execute(
-            delete(Notification).where(Notification.expires_at < now)
-        )
-
-        if commit:
-            await session.commit()
-
-        deleted_count = result.rowcount
-        if deleted_count > 0:
-            logger.info(f"Cleaned up {deleted_count} expired notifications")
-
-        return deleted_count

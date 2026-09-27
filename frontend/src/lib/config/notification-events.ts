@@ -62,8 +62,8 @@ export interface ChannelLevel {
 
 export const CHANNEL_LEVELS: ChannelLevel[] = [
 	{ value: 'info', label: 'All events' },
-	{ value: 'warning', label: 'Warning and critical' },
-	{ value: 'error', label: 'Critical only' }
+	{ value: 'warning', label: 'Warnings and errors' },
+	{ value: 'error', label: 'Errors only' }
 ];
 
 export const DEFAULT_CHANNEL_LEVEL = 'info';

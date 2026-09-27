@@ -73,7 +73,7 @@
 		const meta = PROVIDERS.find((m) => m.provider === p);
 		if (!meta) return false;
 		const d = drafts[p];
-		return meta.fields.every((f) => (d.config[f.key] ?? '').trim() !== '');
+		return meta.fields.every((f) => !f.required || (d.config[f.key] ?? '').trim() !== '');
 	}
 
 	function setField(p: NotifProvider, key: string, value: string) {
@@ -134,7 +134,12 @@
 	}
 
 	async function handleNext() {
-		const pending = PROVIDERS.filter((m) => drafts[m.provider].enabled && isConfigured(m.provider));
+		const pending = PROVIDERS.filter((m) => drafts[m.provider].enabled);
+		const incomplete = pending.find((m) => !isConfigured(m.provider));
+		if (incomplete) {
+			toast.error(`${incomplete.name} fields are empty`);
+			return;
+		}
 		busy = true;
 		try {
 			for (const meta of pending) {

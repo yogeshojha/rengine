@@ -7,7 +7,8 @@ import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
 
-from sqlalchemy import bindparam, delete, or_, select, text
+from sqlalchemy import String, bindparam, delete, or_, select, text
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Session
 
 from interest import InterestContext, RawSignal, providers
@@ -384,11 +385,6 @@ current AS (
 SELECT c.host,
        c.band,
        c.score,
-       EXISTS (
-           SELECT 1 FROM interest_signals sig
-           JOIN interest_rules r ON r.id = sig.rule_id
-           WHERE sig.subdomain_id = c.id AND sig.scan_id = :sid AND r.notify = true
-       ) AS notify_rule,
        (
            SELECT array_agg(DISTINCT sig2.kind)
            FROM interest_signals sig2
@@ -396,6 +392,14 @@ SELECT c.host,
        ) AS kinds
 FROM current c
 WHERE NOT EXISTS (SELECT 1 FROM prior p WHERE p.host = c.host)
+  AND (
+      c.band = ANY(:bands)
+      OR EXISTS (
+          SELECT 1 FROM interest_signals sig
+          JOIN interest_rules r ON r.id = sig.rule_id
+          WHERE sig.subdomain_id = c.id AND sig.scan_id = :sid AND r.notify = true
+      )
+  )
 ORDER BY c.score DESC, c.host
 LIMIT :cap
 """
@@ -415,18 +419,15 @@ def new_interesting(
             bindparam("sid", scan.id),
             bindparam("tid", scan.target_id),
             bindparam("cap", cap),
+            bindparam("bands", sorted(NOTIFY_BANDS), type_=ARRAY(String)),
         )
     ).all()
-    leads = []
-    for row in rows:
-        if row.band not in NOTIFY_BANDS and not row.notify_rule:
-            continue
-        leads.append(
-            InterestLead(
-                host=row.host,
-                band=row.band,
-                score=int(row.score or 0),
-                kinds=tuple(row.kinds or ()),
-            )
+    return [
+        InterestLead(
+            host=row.host,
+            band=row.band,
+            score=int(row.score or 0),
+            kinds=tuple(row.kinds or ()),
         )
-    return leads
+        for row in rows
+    ]

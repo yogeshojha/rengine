@@ -183,7 +183,7 @@ if settings.DEBUG:
             severity=template["severity"],
             title=template["title"],
             message=template["message"],
-            metadata=template["metadata"],
+            metadata=template.get("metadata"),
         )
 
         return NotificationRead(**notification.model_dump())

@@ -1,7 +1,7 @@
 """Refresh the bug bounty program list and every program's structured scope."""
 
 from celery import shared_task
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text
 from sqlmodel import col
 
 from app.config import settings
@@ -68,6 +68,16 @@ def _notify(session, since) -> int:
     kinds = notify_events(stored)
     if not kinds:
         return 0
+    counts = dict(
+        session.execute(
+            select(BountyEventRow.kind, func.count())
+            .where(
+                BountyEventRow.created_at >= since,
+                col(BountyEventRow.kind).in_(sorted(kinds)),
+            )
+            .group_by(BountyEventRow.kind)
+        ).all()
+    )
     rows = (
         session.execute(
             select(BountyEventRow)
@@ -90,7 +100,8 @@ def _notify(session, since) -> int:
                 asset=r.asset_identifier,
             )
             for r in rows
-        ]
+        ],
+        counts=counts,
     )
     if payload is None:
         return 0
@@ -105,7 +116,8 @@ def _notify(session, since) -> int:
         )
     except Exception:
         logger.warning("bounty change notification failed", exc_info=True)
-    return len(rows)
+        return 0
+    return sum(counts.values())
 
 
 def _sync_platform(session, provider: BountyProvider, *, scopes: bool) -> dict:

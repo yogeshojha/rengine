@@ -1,120 +1,142 @@
+"""Sample notifications rendered through the real templates."""
+
+from datetime import timedelta
+
+from shared.definitions.notifications import (
+    BountyChange,
+    IntelShift,
+    InterestLead,
+    NewChecksResult,
+    NewChecksSweep,
+    ScanDeltas,
+    SoftwareExposure,
+    WatchAlert,
+    bounty_changes,
+    intel_changed,
+    new_checks_result,
+    new_checks_started,
+    scan_digest,
+    scan_failed,
+    scan_interesting,
+    software_exposed,
+    watch_alert,
+    whois_enrichment_incomplete,
+)
 from shared.enums.notification import NotificationSeverity, NotificationType
-from shared.models.notification import NotificationMetadata
+from shared.utils.datetime import utc_now
+
+_SCAN_ID = "00000000-0000-0000-0000-000000000000"
+
+_COUNTS = {
+    "subdomains_found": 118,
+    "ips_found": 64,
+    "open_ports_found": 203,
+    "http_assets_found": 87,
+    "vulnerabilities_found": 9,
+    "endpoints_found": 1_204,
+}
 
 DEBUG_NOTIFICATION_TEMPLATES = [
+    scan_digest(
+        _SCAN_ID,
+        "example.com",
+        _COUNTS,
+        ScanDeltas(
+            baseline=True,
+            new_hosts=4,
+            new_services=2,
+            sensitive_services=1,
+            new_vulnerabilities=3,
+            vulnerability_counts={"critical": 1, "high": 2},
+            kev=1,
+        ),
+    ),
+    scan_digest(_SCAN_ID, "example.com", _COUNTS, ScanDeltas(baseline=False)),
+    scan_failed(_SCAN_ID, "example.com", "Full scan", "subdomain_discovery failed"),
+    scan_interesting(
+        _SCAN_ID,
+        "example.com",
+        [
+            InterestLead(host="admin.example.com", band="critical", score=92),
+            InterestLead(host="staging.example.com", band="high", score=71),
+        ],
+    ),
+    intel_changed(
+        [
+            IntelShift(
+                cve="CVE-2024-3400",
+                target="example.com",
+                finding="GlobalProtect OS command injection",
+                kind="kev",
+                scan_id=_SCAN_ID,
+            )
+        ]
+    ),
+    software_exposed(
+        [
+            SoftwareExposure(
+                cve="CVE-2021-44228",
+                host="api.example.com",
+                name="Log4j",
+                version="2.14.1",
+                severity="critical",
+                is_kev=True,
+                kev_ransomware=True,
+            )
+        ]
+    ),
+    bounty_changes(
+        [
+            BountyChange(
+                kind="scope_added",
+                program="Example VDP",
+                handle="example",
+                asset="*.example.com",
+            ),
+            BountyChange(
+                kind="went_out_of_scope",
+                program="Example VDP",
+                handle="example",
+                asset="legacy.example.com",
+            ),
+        ]
+    ),
+    watch_alert(
+        WatchAlert(
+            program="Example VDP",
+            host="new.example.com",
+            matched_item="*.example.com",
+            status_code=200,
+            title="Sign in",
+            tech=("nginx", "React"),
+            ips=("203.0.113.10",),
+            issuer="R11",
+            not_before=utc_now() - timedelta(hours=2),
+            scan_id=_SCAN_ID,
+        )
+    ),
+    new_checks_started(NewChecksSweep(templates=14, targets=3, busy=1)),
+    new_checks_result(
+        NewChecksResult(
+            scan_id=_SCAN_ID,
+            target="example.com",
+            checks=14,
+            findings=2,
+            by_severity={"high": 1, "medium": 1},
+        )
+    ),
+    whois_enrichment_incomplete(success=2, failed=1, total=3, names=["example.com"]),
     {
-        "type": NotificationType.SCAN,
+        "type": NotificationType.SYSTEM,
         "severity": NotificationSeverity.SUCCESS,
-        "title": "Debug: Scan Completed",
-        "message": "Subdomain enumeration scan completed successfully",
-        "metadata": NotificationMetadata(
-            url="/scans/debug-123",
-            scan_id="debug-123",
-            action_label="View Results",
-        ),
-    },
-    {
-        "type": NotificationType.SCAN,
-        "severity": NotificationSeverity.ERROR,
-        "title": "Debug: Scan Failed",
-        "message": "Connection timeout while scanning target",
-        "metadata": NotificationMetadata(
-            url="/scans/debug-456",
-            scan_id="debug-456",
-        ),
-    },
-    {
-        "type": NotificationType.SCAN,
-        "severity": NotificationSeverity.INFO,
-        "title": "Debug: Scan Started",
-        "message": "Port scan initiated for example.com",
-        "metadata": NotificationMetadata(
-            url="/scans/debug-789",
-            scan_id="debug-789",
-        ),
+        "title": "Report ready",
+        "message": "Attack surface report for example.com is ready.",
+        "metadata": {"url": "/reports"},
     },
     {
         "type": NotificationType.SYSTEM,
-        "severity": NotificationSeverity.INFO,
-        "title": "Debug: Update Available",
-        "message": "reNgine v3.1.0 is now available",
-        "metadata": NotificationMetadata(
-            url="https://github.com/yogeshojha/rengine/releases",
-            open_new_tab=True,
-            action_label="View Release",
-        ),
-    },
-    {
-        "type": NotificationType.SYSTEM,
-        "severity": NotificationSeverity.WARNING,
-        "title": "Debug: Maintenance Scheduled",
-        "message": "System maintenance scheduled for tonight at 2 AM",
-        "metadata": NotificationMetadata(),
-    },
-    {
-        "type": NotificationType.VULNERABILITY,
-        "severity": NotificationSeverity.ERROR,
-        "title": "Debug: Critical Vulnerability Found",
-        "message": "CVE-2024-1234 detected on api.example.com",
-        "metadata": NotificationMetadata(
-            url="/vulnerabilities/debug-001",
-            action_label="View Details",
-        ),
-    },
-    {
-        "type": NotificationType.VULNERABILITY,
-        "severity": NotificationSeverity.WARNING,
-        "title": "Debug: Medium Severity Vulnerability",
-        "message": "XSS vulnerability found on login page",
-        "metadata": NotificationMetadata(
-            url="/vulnerabilities/debug-002",
-        ),
-    },
-    {
-        "type": NotificationType.TARGET,
-        "severity": NotificationSeverity.WARNING,
-        "title": "Debug: Target Unreachable",
-        "message": "Target example.com is not responding",
-        "metadata": NotificationMetadata(
-            url="/targets/debug-target-2",
-            target_id="debug-target-2",
-        ),
-    },
-    {
-        "type": NotificationType.RESOURCE,
-        "severity": NotificationSeverity.WARNING,
-        "title": "Debug: Low Disk Space",
-        "message": "Available disk space is below 10GB",
-        "metadata": NotificationMetadata(
-            url="/settings/storage",
-            action_label="Manage Storage",
-        ),
-    },
-    {
-        "type": NotificationType.RESOURCE,
-        "severity": NotificationSeverity.ERROR,
-        "title": "Debug: High Memory Usage",
-        "message": "Memory usage exceeded 90%",
-        "metadata": NotificationMetadata(
-            url="/settings/resources",
-        ),
-    },
-    {
-        "type": NotificationType.INTEGRATION,
-        "severity": NotificationSeverity.ERROR,
-        "title": "Debug: Slack Integration Failed",
-        "message": "Failed to send notification to Slack. Check credentials.",
-        "metadata": NotificationMetadata(
-            url="/settings/integrations",
-        ),
-    },
-    {
-        "type": NotificationType.INTEGRATION,
         "severity": NotificationSeverity.SUCCESS,
-        "title": "Debug: Integration Connected",
-        "message": "Successfully connected to GitHub API",
-        "metadata": NotificationMetadata(
-            url="/settings/integrations",
-        ),
+        "title": "Export ready",
+        "message": "Web assets for example.com: 1,204 rows ready to download.",
     },
 ]

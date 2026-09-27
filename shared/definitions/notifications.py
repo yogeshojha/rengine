@@ -265,7 +265,7 @@ def _digest_body(counts: dict, deltas: ScanDeltas) -> str:
                         deltas.new_vulnerabilities,
                         *_noun(SurfaceDimension.VULNERABILITIES, before="new"),
                     )
-                    + (f" ({detail})" if detail else ""),
+                    + (f" · {detail}" if detail else ""),
                     deltas.new_vulnerabilities,
                 ),
             )
@@ -294,8 +294,7 @@ def _digest_body(counts: dict, deltas: ScanDeltas) -> str:
     if deltas.dropped_hosts:
         body += (
             " Testing stopped on "
-            f"{_count(deltas.dropped_hosts, *_noun(SurfaceDimension.WEB_ASSETS))} "
-            f"after repeated errors. Coverage there is partial."
+            f"{_count(deltas.dropped_hosts, *_noun(SurfaceDimension.WEB_ASSETS))}."
         )
     return body
 
@@ -337,10 +336,16 @@ def scan_digest(
     }
 
 
-def scan_failed(scan_id: str, target: str, engine: str, error: str) -> dict:
+def scan_failed(
+    scan_id: str,
+    target: str,
+    engine: str,
+    error: str,
+    ntype: NotificationType = NotificationType.SCAN,
+) -> dict:
     return {
-        "type": NotificationType.SCAN,
-        "severity": NotificationSeverity.WARNING,
+        "type": ntype,
+        "severity": NotificationSeverity.ERROR,
         "title": f"Scan failed on {target}",
         "message": f"The {engine} run did not finish: {error[:300]}",
         "metadata": _scan_meta(scan_id),
@@ -370,7 +375,8 @@ def scan_interesting(
     critical = [x for x in leads if x.band == InterestBand.CRITICAL.value]
     severity = NotificationSeverity.WARNING if critical else NotificationSeverity.INFO
     head = _count(len(leads), "new asset", "new assets")
-    title = f"{head} flagged as an exposure on {target}"
+    noun = "an exposure" if len(leads) == 1 else "exposures"
+    title = f"{head} flagged as {noun} on {target}"
     body = "\n".join(_lead_line(lead) for lead in leads[:shown])
     if len(leads) > shown:
         body += f"\n… and {len(leads) - shown} more"
@@ -410,13 +416,13 @@ def intel_changed(shifts: list["IntelShift"], shown: int = 5) -> dict | None:
     body = "\n".join(_shift_line(s) for s in shifts[:shown])
     if len(shifts) > shown:
         body += f"\n… and {len(shifts) - shown} more"
-    body += "\nThe exploitation feeds changed. No scan ran."
+    query = "is%3Aexploitable" if exploited else "is%3Aweaponised"
     return {
         "type": NotificationType.SCAN,
         "severity": severity,
         "title": title,
         "message": body,
-        "metadata": {"kind": "threat_intel"},
+        "metadata": {"url": f"/surface/vulnerabilities?vuln_q={query}"},
     }
 
 
@@ -453,18 +459,25 @@ def software_exposed(
         return None
     exploited = any(e.is_kev for e in loud)
     cves = sorted({e.cve for e in loud})
-    assets = _count(len({e.host for e in loud}), "asset", "assets")
-    what = "known-exploited" if exploited else "published"
+    kev_cves = {e.cve for e in loud if e.is_kev}
+    hosts = len({e.host for e in loud})
+    assets = _count(hosts, "asset", "assets")
+    verb = "matches" if hosts == 1 else "match"
+    if kev_cves == set(cves):
+        what = "known-exploited "
+    elif not kev_cves:
+        what = "published "
+    else:
+        what = ""
     if len(cves) == 1:
-        title = f"{assets} newly match {cves[0]}"
+        title = f"{assets} newly {verb} {cves[0]}"
     else:
         title = (
-            f"{assets} newly match {_count(len(cves), f'{what} CVE', f'{what} CVEs')}"
+            f"{assets} newly {verb} {_count(len(cves), f'{what}CVE', f'{what}CVEs')}"
         )
     body = "\n".join(_exposure_line(e) for e in loud[:shown])
     if len(loud) > shown:
         body += f"\n… and {len(loud) - shown} more"
-    body += "\nThe NVD corpus changed. No scan ran."
     url = (
         f"/surface/cve/{cves[0]}"
         if len(cves) == 1
@@ -477,7 +490,7 @@ def software_exposed(
         else NotificationSeverity.WARNING,
         "title": title,
         "message": body,
-        "metadata": {"kind": "software_exposed", "url": url, "cves": cves[:25]},
+        "metadata": {"url": url},
     }
 
 
@@ -494,32 +507,39 @@ def _bounty_line(change: "BountyChange") -> str:
     return f"• {event_spec(change.kind).label} · {change.program}{what}"
 
 
-def bounty_changes(changes: list["BountyChange"], shown: int = 6) -> dict | None:
+def bounty_changes(
+    changes: list["BountyChange"],
+    shown: int = 6,
+    counts: dict[str, int] | None = None,
+) -> dict | None:
     """Delta-only: what a program changed since the last sync."""
     if not changes:
         return None
-    stop = [c for c in changes if c.kind == BountyEvent.WENT_OUT_OF_SCOPE.value]
-    fresh = [
-        c
-        for c in changes
-        if c.kind in {BountyEvent.PROGRAM_ADDED.value, BountyEvent.SCOPE_ADDED.value}
-    ]
+    by_kind = counts or {}
+    if not by_kind:
+        for c in changes:
+            by_kind[c.kind] = by_kind.get(c.kind, 0) + 1
+    total = sum(by_kind.values())
+    stop = by_kind.get(BountyEvent.WENT_OUT_OF_SCOPE.value, 0)
+    fresh = by_kind.get(BountyEvent.PROGRAM_ADDED.value, 0) + by_kind.get(
+        BountyEvent.SCOPE_ADDED.value, 0
+    )
     severity = NotificationSeverity.WARNING if stop else NotificationSeverity.INFO
     if stop:
-        title = _count(len(stop), "asset", "assets") + " went out of scope"
+        title = _count(stop, "asset", "assets") + " went out of scope"
     elif fresh:
-        title = _count(len(fresh), "scope change", "scope changes")
+        title = _count(fresh, "scope change", "scope changes")
     else:
-        title = _count(len(changes), "program change", "program changes")
+        title = _count(total, "program change", "program changes")
     body = "\n".join(_bounty_line(c) for c in changes[:shown])
-    if len(changes) > shown:
-        body += f"\n… and {len(changes) - shown} more"
+    if total > shown:
+        body += f"\n… and {total - shown} more"
     return {
         "type": NotificationType.INTEGRATION,
         "severity": severity,
         "title": title,
         "message": body,
-        "metadata": {"kind": "bounty_programs"},
+        "metadata": {"url": "/bounty-hub?tab=updates"},
     }
 
 

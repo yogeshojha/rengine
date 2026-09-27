@@ -28,7 +28,6 @@ logger = get_logger(__name__)
 
 
 ALERT_KINDS = ("kev", "ransom_path", "fresh_exploit", "weaponised")
-ALERT_LIMIT = 25
 
 _NEW_SIGNALS_SQL = """
 SELECT s.kind, v.template_name, v.scan_id, v.project_id,
@@ -38,46 +37,49 @@ JOIN vulnerabilities v ON v.id = s.vulnerability_id
 JOIN targets t ON t.id = v.target_id
 WHERE s.kind = ANY(:kinds) AND s.created_at >= :since
 ORDER BY array_position(:kinds, s.kind), v.exploit_score DESC
-LIMIT :limit
 """
 
 
 def _notify_changes(session, since) -> int:
-    """Delta-only: only signals this refresh is the first to record reach a channel."""
+    """Delta-only, one notification per project whose findings gained a signal."""
     rows = session.execute(
         text(_NEW_SIGNALS_SQL),
-        {"kinds": list(ALERT_KINDS), "since": since, "limit": ALERT_LIMIT},
+        {"kinds": list(ALERT_KINDS), "since": since},
     ).all()
-    if not rows:
-        return 0
-    payload = intel_changed(
-        [
-            IntelShift(
-                cve=r.cve or "",
-                target=r.target_value or "",
-                finding=r.template_name,
-                kind=r.kind,
-                scan_id=str(r.scan_id),
-            )
-            for r in rows
-        ]
-    )
-    if payload is None:
-        return 0
-    try:
-        SyncNotificationPublisher(settings.redis_url).publish(
-            session=session,
-            type=payload["type"],
-            severity=payload["severity"],
-            title=payload["title"],
-            message=payload["message"],
-            metadata=payload.get("metadata"),
-            project_id=rows[0].project_id,
+    by_project: dict = {}
+    for r in rows:
+        by_project.setdefault(r.project_id, []).append(r)
+    sent = 0
+    for project_id, group in by_project.items():
+        payload = intel_changed(
+            [
+                IntelShift(
+                    cve=r.cve or "",
+                    target=r.target_value or "",
+                    finding=r.template_name,
+                    kind=r.kind,
+                    scan_id=str(r.scan_id),
+                )
+                for r in group
+            ]
         )
-    except Exception:
-        logger.warning("threat intel notification failed", exc_info=True)
-        return 0
-    return len(rows)
+        if payload is None:
+            continue
+        try:
+            SyncNotificationPublisher(settings.redis_url).publish(
+                session=session,
+                type=payload["type"],
+                severity=payload["severity"],
+                title=payload["title"],
+                message=payload["message"],
+                metadata=payload.get("metadata"),
+                project_id=project_id,
+            )
+        except Exception:
+            logger.warning("threat intel notification failed", exc_info=True)
+            continue
+        sent += len(group)
+    return sent
 
 
 def _notify_exposures(session, result: RematchResult) -> int:

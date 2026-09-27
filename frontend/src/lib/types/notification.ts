@@ -21,7 +21,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
 	vulnerability: 'Vulnerability',
 	target: 'Target',
 	resource: 'Resource',
-	integration: 'Integration',
+	integration: 'Programs',
 	watch: 'Watch',
 	new_checks: 'New checks'
 };

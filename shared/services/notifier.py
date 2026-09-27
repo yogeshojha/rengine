@@ -126,10 +126,10 @@ def send_one(
             return (True, "Sent.") if ok else (False, "Delivery failed.")
         if provider in DIRECT_POST_PROVIDERS:
             return _send_direct(provider, config, title, body, severity)
-        return False, f"Not a {provider} webhook URL."
+        return False, "Invalid channel configuration."
     except Exception as exc:
         logger.warning("notifier send error (%s): %s", provider, exc)
-        return False, str(exc)
+        return False, f"Delivery failed: {type(exc).__name__}."
 
 
 def _send_direct(

@@ -67,8 +67,8 @@ class ChannelLevel:
 
 CHANNEL_LEVELS: tuple[ChannelLevel, ...] = (
     ChannelLevel(NotificationSeverity.INFO.value, "All events"),
-    ChannelLevel(NotificationSeverity.WARNING.value, "Warning and critical"),
-    ChannelLevel(NotificationSeverity.ERROR.value, "Critical only"),
+    ChannelLevel(NotificationSeverity.WARNING.value, "Warnings and errors"),
+    ChannelLevel(NotificationSeverity.ERROR.value, "Errors only"),
 )
 
 DEFAULT_CHANNEL_LEVEL = NotificationSeverity.INFO.value

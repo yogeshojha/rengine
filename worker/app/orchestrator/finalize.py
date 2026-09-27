@@ -17,6 +17,7 @@ from shared.definitions.secrets import FINALIZE_SOURCES
 from shared.definitions.vulnerabilities import SUPPRESSED_STATES, CoverageStatus
 from shared.definitions.watch import WATCH_HOST_KEY
 from shared.enums.activity import ActivityEvent, ActivityLevel
+from shared.enums.notification import NotificationType
 from shared.enums.scan import (
     ACTIVITY_TERMINAL_STATUSES,
     SCAN_TERMINAL_STATUSES,
@@ -161,6 +162,14 @@ SELECT EXISTS (
     JOIN scans bs ON bs.id = b.scan_id
                  AND bs.id <> :sid AND bs.started_at < :started
     WHERE b.target_id = :tid
+)
+"""
+
+_RUN_BASELINE_SQL = """
+SELECT EXISTS (
+    SELECT 1 FROM scans bs
+    WHERE bs.target_id = :tid AND bs.scope = 'full' AND bs.status = 'completed'
+      AND bs.id <> :sid AND bs.started_at < :started
 )
 """
 
@@ -366,26 +375,25 @@ def _settled_counts(session: Session, scan: Scan) -> dict:
 
 
 def _measure(session: Session, scan: Scan) -> ScanDeltas:
-    """Each dimension is only compared where an earlier census run covered it."""
-    hosts, services, vulns = (
+    """Deltas are measured against every earlier run, a clean earlier run included."""
+    hosts, services, vulns, run = (
         _guard(session, lambda sql=sql: _has_baseline(session, scan, sql), False)
-        for sql in (_HOST_BASELINE_SQL, _SERVICE_BASELINE_SQL, _VULN_BASELINE_SQL)
+        for sql in (
+            _HOST_BASELINE_SQL,
+            _SERVICE_BASELINE_SQL,
+            _VULN_BASELINE_SQL,
+            _RUN_BASELINE_SQL,
+        )
     )
-    new_services, sensitive = (
-        _guard(session, lambda: _count_new_services(session, scan), (0, 0))
-        if services
-        else (0, 0)
+    new_services, sensitive = _guard(
+        session, lambda: _count_new_services(session, scan), (0, 0)
     )
-    vuln_counts, kev, new_vulns = (
-        _guard(session, lambda: _count_new_vulnerabilities(session, scan), ({}, 0, 0))
-        if vulns
-        else ({}, 0, 0)
+    vuln_counts, kev, new_vulns = _guard(
+        session, lambda: _count_new_vulnerabilities(session, scan), ({}, 0, 0)
     )
     return ScanDeltas(
-        baseline=hosts or services or vulns,
-        new_hosts=_guard(session, lambda: _count_new_subdomains(session, scan), 0)
-        if hosts
-        else 0,
+        baseline=hosts or services or vulns or run,
+        new_hosts=_guard(session, lambda: _count_new_subdomains(session, scan), 0),
         new_services=new_services,
         sensitive_services=sensitive,
         new_vulnerabilities=new_vulns,
@@ -562,6 +570,12 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
         session,
         scan,
         scan_failed(
-            str(scan.id), target_value, scan.engine_name, scan.error or "unknown error"
+            str(scan.id),
+            target_value,
+            scan.engine_name,
+            scan.error or "unknown error",
+            ntype=NotificationType.NEW_CHECKS
+            if new_checks.is_follow_up(scan)
+            else NotificationType.SCAN,
         ),
     )

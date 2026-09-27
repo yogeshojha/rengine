@@ -8,9 +8,11 @@ from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
 from shared.definitions.notification_events import (
+    CHANNEL_LEVELS,
     DEFAULT_CHANNEL_EVENTS,
     DEFAULT_CHANNEL_LEVEL,
 )
+from shared.enums.notification import NotificationType
 from shared.enums.notification_channel import NotificationProvider
 from shared.utils.datetime import utc_now
 from shared.utils.validation import clean_name, clean_optional_name
@@ -19,10 +21,23 @@ PROVIDERS = tuple(p.value for p in NotificationProvider)
 
 DEFAULT_PREFERENCE_TYPES = list(DEFAULT_CHANNEL_EVENTS)
 
+_KNOWN_TYPES = frozenset(t.value for t in NotificationType)
+_KNOWN_LEVELS = frozenset(level.value for level in CHANNEL_LEVELS)
+
 
 class NotificationPreference(BaseModel):
     types: list[str] = Field(default_factory=lambda: list(DEFAULT_PREFERENCE_TYPES))
     min_severity: str = DEFAULT_CHANNEL_LEVEL
+
+    @field_validator("types")
+    @classmethod
+    def _known_types(cls, v: list[str]) -> list[str]:
+        return [t for t in v if t in _KNOWN_TYPES]
+
+    @field_validator("min_severity")
+    @classmethod
+    def _known_level(cls, v: str) -> str:
+        return v if v in _KNOWN_LEVELS else DEFAULT_CHANNEL_LEVEL
 
 
 class NotificationChannel(SQLModel, table=True):

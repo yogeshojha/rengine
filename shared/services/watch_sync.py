@@ -579,10 +579,7 @@ def _live_channels(session: Session, watch: ProgramWatch) -> list[uuid.UUID]:
         .all()
     )
     if not live:
-        watch.last_error = (
-            "The chosen notification channels are gone. Alerts go to channels "
-            "subscribed to Program watches."
-        )
+        watch.last_error = "The chosen notification channels no longer exist."
     return live
 
 

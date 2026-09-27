@@ -60,17 +60,21 @@ def enrich_targets_bgp(target_ids: list[str]) -> dict:
 
         for target in targets:
             try:
-                count = _enrich_target(service, session, target, activity)
-                if count > 0:
-                    success += 1
-                else:
-                    skipped += 1
+                _enrich_target(service, session, target, activity)
             except Exception:
                 logger.exception(
                     "RIPEstat enrichment failed for %s (%s)",
                     target.target_value,
                     target.target_type,
                 )
+                failed += 1
+                failed_names.append(target.target_value)
+                continue
+            if target.bgp_status == TaskStatus.SUCCESS:
+                success += 1
+            elif target.bgp_status == TaskStatus.NOT_APPLICABLE:
+                skipped += 1
+            else:
                 failed += 1
                 failed_names.append(target.target_value)
 
