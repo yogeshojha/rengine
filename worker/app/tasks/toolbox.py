@@ -6,6 +6,7 @@ from celery import shared_task
 
 from app.database import get_sync_session
 from shared.logging import get_logger
+from shared.utils.net import redact_url_queries
 from toolbox import registry, store
 from toolbox.base import ToolContext, ToolError
 from toolbox.runner import complete, fail, validate
@@ -50,8 +51,16 @@ def run(
         except ToolError as exc:
             fail(record, str(exc))
         except Exception as exc:
-            logger.warning("toolbox run failed", tool=tool, error=str(exc))
-            fail(record, f"The run failed: {exc}")
+            logger.warning(
+                "toolbox run failed",
+                tool=tool,
+                error=redact_url_queries(f"{type(exc).__name__}: {exc}"),
+            )
+            fail(
+                record,
+                "The run failed with an unexpected error. It is recorded in the "
+                "worker log.",
+            )
 
     store.save_sync(user_id, record)
     return {"run_id": run_id, "status": record.status}

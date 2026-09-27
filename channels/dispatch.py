@@ -37,6 +37,7 @@ from shared.models.target import Target
 from shared.models.user import User
 from shared.services.celery_dispatch import dispatch_toolbox_run
 from shared.utils.datetime import utc_now
+from shared.utils.net import redact_url_queries
 from shared.utils.text import strip_control
 from toolbox import registry as toolbox_registry
 from toolbox import store
@@ -365,8 +366,9 @@ class Dispatcher:
             await self._say(external_id, str(exc))
             return
         except Exception as exc:
-            logger.warning("lookup failed", tool=tool.name, error=str(exc))
-            await self._observe(identity, tool.name, False, started, str(exc), command)
+            reason = redact_url_queries(f"{type(exc).__name__}: {exc}")
+            logger.warning("lookup failed", tool=tool.name, error=reason)
+            await self._observe(identity, tool.name, False, started, reason, command)
             await self._say(external_id, "Lookup failed.")
             return
         await self._observe(identity, tool.name, True, started, None, command)

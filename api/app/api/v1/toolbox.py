@@ -16,6 +16,7 @@ from shared.definitions.toolbox import (
 from shared.logging import get_logger
 from shared.models.user import User
 from shared.services.celery_dispatch import dispatch_toolbox_run
+from shared.utils.net import redact_url_queries
 from toolbox import registry, store
 from toolbox.base import ToolContext, ToolError
 from toolbox.registry import ToolSpec
@@ -26,6 +27,9 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/toolbox", tags=["toolbox"])
 
 INLINE_TIMEOUT = 45
+UNEXPECTED_FAILURE = (
+    "The lookup failed with an unexpected error. It is recorded in the api log."
+)
 
 
 @router.get("/catalog", response_model=ToolboxCatalog)
@@ -131,8 +135,12 @@ async def _start(
     except ToolError as exc:
         fail(run, str(exc))
     except Exception as exc:
-        logger.warning("toolbox run failed", tool=spec.name, error=str(exc))
-        fail(run, f"The lookup failed: {exc}")
+        logger.warning(
+            "toolbox run failed",
+            tool=spec.name,
+            error=redact_url_queries(f"{type(exc).__name__}: {exc}"),
+        )
+        fail(run, UNEXPECTED_FAILURE)
 
     await store.save(current_user.id, run)
     return run

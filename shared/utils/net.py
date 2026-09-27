@@ -1,7 +1,15 @@
 import ipaddress
+import re
 import socket
 from collections.abc import Iterable
 from urllib.parse import SplitResult, urlsplit
+
+_URL_QUERY = re.compile(r"(https?://[^\s'\"?#]+)\?[^\s'\"#]*", re.IGNORECASE)
+
+
+def redact_url_queries(text: str) -> str:
+    """Drop the query string of every URL in a message; queries carry API keys."""
+    return _URL_QUERY.sub(r"\1?…", text)
 
 
 def is_registry_routable(value: str) -> bool:
