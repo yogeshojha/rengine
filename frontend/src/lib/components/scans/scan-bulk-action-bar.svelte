@@ -40,7 +40,7 @@
 		: 'translate-y-3 opacity-0 pointer-events-none'}"
 >
 	<div
-		class="flex flex-wrap items-center justify-center gap-0.5 gap-y-1 bg-popover text-popover-foreground backdrop-blur-xl backdrop-saturate-180 border border-border rounded-2xl shadow-xl shadow-black/30 p-1.5"
+		class="flex flex-wrap items-center justify-center gap-0.5 gap-y-1 rounded-lg border border-border bg-popover p-1.5 text-popover-foreground shadow-md"
 	>
 		<div class="flex items-center px-2.5 py-1.5">
 			<span class="text-xs font-medium text-muted-foreground tabular-nums">

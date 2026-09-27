@@ -27,7 +27,7 @@
 	aria-hidden={selectedCount === 0}
 >
 	<div
-		class="flex flex-wrap items-center justify-center gap-0.5 gap-y-1 rounded-2xl border border-border bg-popover p-1.5 text-popover-foreground shadow-xl shadow-black/30 backdrop-blur-xl backdrop-saturate-180"
+		class="flex flex-wrap items-center justify-center gap-0.5 gap-y-1 rounded-lg border border-border bg-popover p-1.5 text-popover-foreground shadow-md"
 	>
 		<div class="flex items-center px-2.5 py-1.5">
 			<span class="text-xs font-medium tabular-nums text-muted-foreground">
