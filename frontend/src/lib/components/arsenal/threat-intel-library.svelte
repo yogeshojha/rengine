@@ -11,7 +11,7 @@
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
-	import { FEED_STATUS_DOT, FEED_STATUS_TONE, FeedStatus } from '$lib/config/threat-intel';
+	import { FEED_STATUS_DOT, FEED_STATUS_TONE } from '$lib/config/threat-intel';
 	import { threatIntelApi } from '$lib/api/threat-intel';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { ROUTES } from '$lib/config/routes';
@@ -187,16 +187,11 @@
 
 		{@render group('Feeds')}
 		{#each feeds as feed (feed.kind)}
-			{@const live = feed.status === FeedStatus.SYNCING}
 			<div class="border-b px-6 py-4">
 				<div class="grid grid-cols-2 items-center gap-x-4 gap-y-3 {COLUMNS}">
 					<div class="col-span-2 flex min-w-0 items-start gap-3 md:col-span-1">
 						<span class="flex h-5 shrink-0 items-center">
-							<span
-								class="size-2 rounded-full {FEED_STATUS_DOT[feed.status]} {live
-									? 'animate-pulse'
-									: ''}"
-							></span>
+							<span class="size-2 rounded-full {FEED_STATUS_DOT[feed.status]}"></span>
 						</span>
 						<div class="flex min-w-0 flex-col">
 							<span class="text-sm leading-5 font-medium">{feed.label}</span>

@@ -79,9 +79,9 @@
 	let connection = $derived.by((): { label: string; variant: BadgeVariant; dot: string } => {
 		if (sseStore.isConnected) return { label: 'Live', variant: 'success', dot: 'bg-success' };
 		if (sseStore.isReconnecting)
-			return { label: 'Reconnecting', variant: 'warning', dot: 'bg-warning animate-pulse' };
+			return { label: 'Reconnecting', variant: 'warning', dot: 'bg-warning' };
 		if (sseStore.connectionState === 'connecting')
-			return { label: 'Connecting', variant: 'warning', dot: 'bg-warning animate-pulse' };
+			return { label: 'Connecting', variant: 'warning', dot: 'bg-warning' };
 		return { label: 'Offline', variant: 'outline', dot: 'bg-muted-foreground/50' };
 	});
 
@@ -270,12 +270,7 @@
 				class="flex w-full items-center justify-between rounded-md px-1 py-1 text-2xs font-semibold tracking-[0.08em] text-info uppercase transition-colors hover:bg-info/10"
 			>
 				<span class="flex items-center gap-1.5">
-					<span class="relative flex size-1.5">
-						<span
-							class="absolute inline-flex size-full animate-ping rounded-full bg-info opacity-75"
-						></span>
-						<span class="relative inline-flex size-1.5 rounded-full bg-info"></span>
-					</span>
+					<span class="size-1.5 rounded-full bg-info"></span>
 					In progress
 					<span class="font-mono tabular-nums opacity-70">{liveScans.summary}</span>
 				</span>

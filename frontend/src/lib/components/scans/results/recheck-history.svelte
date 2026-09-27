@@ -18,7 +18,7 @@
 
 	const dot = (r: Recheck) =>
 		isRecheckLive(r)
-			? 'bg-primary animate-pulse'
+			? 'bg-primary'
 			: recheckFailed(r)
 				? 'bg-destructive'
 				: r.changed

@@ -422,12 +422,7 @@
 				<span class="flex items-center gap-2 font-mono text-2xl font-semibold tabular-nums">
 					{byStatus?.running ?? 0}
 					{#if (byStatus?.running ?? 0) > 0}
-						<span class="relative flex size-2">
-							<span
-								class="absolute inline-flex size-full animate-ping rounded-full bg-info opacity-60 motion-reduce:animate-none"
-							></span>
-							<span class="relative inline-flex size-2 rounded-full bg-info"></span>
-						</span>
+						<span class="size-2 rounded-full bg-info"></span>
 					{/if}
 				</span>
 				<span class="text-2xs text-muted-foreground">

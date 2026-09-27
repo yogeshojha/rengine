@@ -34,14 +34,7 @@
 				? 'ring-1 ring-primary/30'
 				: ''}"
 		>
-			<span class="relative flex h-2 w-2 shrink-0">
-				{#if activityFeed.isLive}
-					<span
-						class="absolute inline-flex h-full w-full animate-ping rounded-full bg-info opacity-75"
-					></span>
-				{/if}
-				<span class="relative inline-flex h-2 w-2 rounded-full {statusDot}"></span>
-			</span>
+			<span class="h-2 w-2 shrink-0 rounded-full {statusDot}"></span>
 
 			{#if liveScans.hasLive}
 				{@const solo = liveScans.count === 1 ? liveScans.scans[0] : null}

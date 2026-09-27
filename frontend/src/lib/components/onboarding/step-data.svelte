@@ -160,9 +160,9 @@
 	}
 </script>
 
-{#snippet dot(tone: string, pulse: boolean)}
+{#snippet dot(tone: string)}
 	<span class="flex h-5 shrink-0 items-center">
-		<span class="size-2 rounded-full {tone} {pulse ? 'animate-pulse' : ''}"></span>
+		<span class="size-2 rounded-full {tone}"></span>
 	</span>
 {/snippet}
 
@@ -173,8 +173,7 @@
 			class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2 rounded-lg border px-4 py-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]"
 		>
 			{@render dot(
-				!health ? 'bg-muted-foreground' : workersOnline ? 'bg-success' : 'bg-destructive',
-				checking
+				!health ? 'bg-muted-foreground' : workersOnline ? 'bg-success' : 'bg-destructive'
 			)}
 			<div class="flex min-w-0 flex-col gap-0.5">
 				<span class="text-sm leading-5 font-medium">Scan and job queues</span>
@@ -243,7 +242,7 @@
 					<div
 						class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2 border-b px-4 py-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]"
 					>
-						{@render dot(FEED_STATUS_DOT[waiting ? FeedStatus.SYNCING : d.status], live)}
+						{@render dot(FEED_STATUS_DOT[waiting ? FeedStatus.SYNCING : d.status])}
 						<div class="flex min-w-0 flex-col gap-0.5">
 							<span class="text-sm leading-5 font-medium">{d.label}</span>
 							<span class="text-xs text-muted-foreground">{d.description}</span>

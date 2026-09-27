@@ -221,10 +221,7 @@
 							</div>
 						{:else}
 							<div class="flex items-center gap-3 rounded-md border border-dashed px-3 py-3">
-								<span
-									class="size-2 animate-pulse rounded-full bg-muted-foreground motion-reduce:animate-none"
-									aria-hidden="true"
-								></span>
+								<span class="size-2 rounded-full bg-muted-foreground" aria-hidden="true"></span>
 								<div class="flex flex-col">
 									<span class="text-sm font-medium">Waiting for the first call</span>
 									<span class="font-mono text-xs text-muted-foreground">

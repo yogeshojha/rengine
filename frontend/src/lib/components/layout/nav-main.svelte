@@ -94,7 +94,7 @@
 		)}
 	>
 		{#if b.live}
-			<span class="size-1.5 animate-pulse rounded-full bg-info"></span>
+			<span class="size-1.5 rounded-full bg-info"></span>
 		{/if}
 		{b.label}
 	</Sidebar.MenuBadge>
