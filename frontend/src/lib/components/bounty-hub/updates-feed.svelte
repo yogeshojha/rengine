@@ -100,7 +100,7 @@
 							<button
 								type="button"
 								onclick={() => onOpenProgram(event.handle, event.platform)}
-								class="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground hover:underline"
+								class="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
 							>
 								{event.program_name}
 								<ArrowUpRightIcon class="size-3" />

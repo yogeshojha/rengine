@@ -290,7 +290,7 @@
 												type="button"
 												class="font-mono text-sm tabular-nums {httpStatusTextClass(
 													s.status_code
-												)} hover:underline"
+												)} hover:text-primary"
 												onclick={() => onFilter?.(`status:${s.status_code}`)}
 											>
 												{s.status_code}
@@ -312,7 +312,7 @@
 												href={s.url}
 												target="_blank"
 												rel="noopener noreferrer"
-												class="inline-flex items-center gap-1 font-mono text-xs break-all hover:underline"
+												class="inline-flex items-center gap-1 font-mono text-xs break-all hover:text-primary"
 											>
 												{s.url}
 												<ExternalLink class="size-3 shrink-0" />

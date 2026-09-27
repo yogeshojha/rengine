@@ -287,7 +287,7 @@
 				<span class="size-4 shrink-0"></span>
 				<button
 					type="button"
-					class="font-medium text-primary hover:underline disabled:opacity-60"
+					class="font-medium text-primary hover:text-primary/80 disabled:opacity-60"
 					disabled={loading}
 					onclick={() => load(page + 1)}
 				>

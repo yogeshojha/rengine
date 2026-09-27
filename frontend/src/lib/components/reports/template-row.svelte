@@ -69,7 +69,7 @@
 
 	<div class="min-w-0">
 		<div class="flex items-center gap-2">
-			<a {href} class="truncate text-sm font-medium hover:underline">{template.name}</a>
+			<a {href} class="truncate text-sm font-medium hover:text-primary">{template.name}</a>
 			<OriginBadge builtin={template.is_builtin} />
 		</div>
 		<p class="line-clamp-1 text-xs text-muted-foreground">{template.description}</p>

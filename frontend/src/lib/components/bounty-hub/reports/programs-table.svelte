@@ -107,7 +107,7 @@
 						href={href(p)}
 						target={p.in_hub ? undefined : '_blank'}
 						rel={p.in_hub ? undefined : 'noopener noreferrer'}
-						class="block truncate text-sm font-medium hover:underline">{p.name}</a
+						class="block truncate text-sm font-medium hover:text-primary">{p.name}</a
 					>
 					<div class="flex items-center gap-1.5 text-2xs text-muted-foreground">
 						<span class="font-mono">@{p.handle}</span>

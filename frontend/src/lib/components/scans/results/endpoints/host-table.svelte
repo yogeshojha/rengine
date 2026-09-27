@@ -110,7 +110,7 @@
 			</span>
 			<button
 				type="button"
-				class="rounded-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+				class="rounded-sm text-primary hover:text-primary/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 				onclick={onShowRootOnly}
 			>
 				Show

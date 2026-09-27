@@ -322,7 +322,7 @@
 							<span class="flex h-4 shrink-0 items-center">
 								<TechIcon name={productBrand(s.product)} class="size-3.5" />
 							</span>
-							<span class="min-w-0 text-xs leading-4 wrap-anywhere hover:underline">
+							<span class="min-w-0 text-xs leading-4 wrap-anywhere hover:text-primary">
 								<HighlightText text={software} {term} />
 							</span>
 						</span>
@@ -382,7 +382,7 @@
 								type="button"
 								class="shrink-0 font-mono text-xs tabular-nums {httpStatusTextClass(
 									s.status_code
-								)} hover:underline"
+								)} hover:text-primary"
 								onclick={(e) => pivot(e, `status:${s.status_code}`)}
 							>
 								{s.status_code}
@@ -412,7 +412,7 @@
 								class="block min-w-0 max-w-full text-left"
 								onclick={(e) => pivot(e, `asn:${s.asn}`)}
 							>
-								<span class="block font-mono text-xs hover:underline">AS{s.asn}</span>
+								<span class="block font-mono text-xs hover:text-primary">AS{s.asn}</span>
 								{#if s.asn_org}
 									<span class="block truncate text-xs text-muted-foreground">
 										<HighlightText text={s.asn_org} {term} />
@@ -428,7 +428,7 @@
 				{#if s.country}
 					<button
 						type="button"
-						class="text-xs text-muted-foreground hover:text-foreground hover:underline"
+						class="text-xs text-muted-foreground hover:text-foreground"
 						onclick={(e) => pivot(e, exactToken('country', s.country ?? ''))}
 					>
 						<CountryFlag code={s.country} />
@@ -443,7 +443,7 @@
 							<button
 								{...props}
 								type="button"
-								class="min-w-0 truncate text-xs text-muted-foreground hover:text-foreground hover:underline"
+								class="min-w-0 truncate text-xs text-muted-foreground hover:text-foreground"
 								onclick={(e) => pivot(e, exactToken('source', s.source))}
 							>
 								{PORT_SOURCE_LABELS[s.source] ?? s.source}

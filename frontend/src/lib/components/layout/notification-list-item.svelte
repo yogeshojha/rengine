@@ -105,7 +105,7 @@
 				<span class="text-muted-foreground/40">·</span>
 				<button
 					type="button"
-					class="inline-flex items-center gap-0.5 text-2xs font-medium text-primary hover:underline"
+					class="inline-flex items-center gap-0.5 text-2xs font-medium text-primary hover:text-primary/80"
 					onclick={(e) => onAction(notification.id, e)}
 				>
 					{meta.action_label}

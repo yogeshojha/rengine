@@ -161,7 +161,7 @@
 			{/if}
 			{#if showAnchor}
 				<span class="text-muted-foreground/60">·</span>
-				<a href={ROUTES.target(note.target_id)} class="hover:text-foreground hover:underline">
+				<a href={ROUTES.target(note.target_id)} class="hover:text-foreground">
 					{note.target_value}
 				</a>
 			{/if}

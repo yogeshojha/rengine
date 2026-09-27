@@ -77,7 +77,10 @@
 								{c.n}
 								{SEVERITY_LABELS[c.sev].toLowerCase()}
 							</span>
-							<a href={findingsHref(scanId, [c.sev])} class="text-2xs text-primary hover:underline">
+							<a
+								href={findingsHref(scanId, [c.sev])}
+								class="text-2xs text-primary hover:text-primary/80"
+							>
 								Open in results
 							</a>
 						</div>

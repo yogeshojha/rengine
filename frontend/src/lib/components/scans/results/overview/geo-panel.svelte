@@ -56,7 +56,7 @@
 				onpointerleave={() => (hovered = null)}
 			>
 				<CountryFlag code={dominant.name} showCode={false} />
-				<span class="min-w-0 flex-1 truncate text-sm font-medium group-hover:underline">
+				<span class="min-w-0 flex-1 truncate text-sm font-medium group-hover:text-primary">
 					{countryName(dominant.name)}
 				</span>
 				<span class="text-sm font-medium tabular-nums">{dominant.count.toLocaleString()}</span>

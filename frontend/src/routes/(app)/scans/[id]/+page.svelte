@@ -1014,7 +1014,7 @@
 					{#if surfaceLink}
 						<a
 							href={surfaceLink}
-							class="hidden shrink-0 items-center gap-1 py-2.5 pl-2 text-xs whitespace-nowrap text-muted-foreground hover:text-foreground hover:underline sm:flex"
+							class="hidden shrink-0 items-center gap-1 py-2.5 pl-2 text-xs whitespace-nowrap text-muted-foreground hover:text-foreground sm:flex"
 						>
 							Across all targets
 							<ArrowUpRight class="size-3.5" />

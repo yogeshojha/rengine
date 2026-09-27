@@ -381,7 +381,7 @@
 			<p class="mt-5 text-xs text-muted-foreground">
 				<button
 					type="button"
-					class="font-medium text-foreground underline-offset-4 hover:underline"
+					class="font-medium text-foreground hover:text-primary"
 					onclick={() => (showImportDialog = true)}
 				>
 					Import a YAML file

@@ -220,7 +220,7 @@
 						<button
 							{...props}
 							type="button"
-							class="min-w-0 truncate font-mono hover:text-foreground hover:underline"
+							class="min-w-0 truncate font-mono hover:text-foreground"
 							onclick={(e) => pivot(e, filterToken('ptr', ptr[0]))}
 						>
 							<HighlightText text={ptr[0]} {term} />
@@ -244,7 +244,7 @@
 						class="block min-w-0 max-w-full text-left"
 						onclick={(e) => pivot(e, `asn:${g.asn}`)}
 					>
-						<span class="block font-mono text-xs hover:underline">AS{g.asn}</span>
+						<span class="block font-mono text-xs hover:text-primary">AS{g.asn}</span>
 						{#if g.asn_org}
 							<span class="block truncate text-xs text-muted-foreground">
 								<HighlightText text={g.asn_org} {term} />
@@ -336,7 +336,7 @@
 				{#if g.country}
 					<button
 						type="button"
-						class="text-xs text-muted-foreground hover:text-foreground hover:underline"
+						class="text-xs text-muted-foreground hover:text-foreground"
 						onclick={(e) => pivot(e, exactToken('country', g.country ?? ''))}
 					>
 						<CountryFlag code={g.country} />
@@ -348,7 +348,7 @@
 				{#if g.prefix}
 					<button
 						type="button"
-						class="min-w-0 truncate font-mono text-xs text-muted-foreground hover:text-foreground hover:underline"
+						class="min-w-0 truncate font-mono text-xs text-muted-foreground hover:text-foreground"
 						onclick={(e) => pivot(e, exactToken('prefix', g.prefix ?? ''))}
 					>
 						{g.prefix}

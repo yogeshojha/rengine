@@ -70,7 +70,7 @@
 			{#if summary.clean > 0}
 				<button
 					type="button"
-					class="flex items-center gap-1 text-left text-primary hover:underline {cleanOn
+					class="flex items-center gap-1 text-left text-primary hover:text-primary/80 {cleanOn
 						? 'font-medium'
 						: ''}"
 					aria-pressed={cleanOn}

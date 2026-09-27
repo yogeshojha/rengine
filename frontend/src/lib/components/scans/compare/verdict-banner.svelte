@@ -160,7 +160,7 @@
 		{#if evidence}
 			<Collapsible.Root bind:open class="mt-1">
 				<Collapsible.Trigger
-					class="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+					class="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80"
 				>
 					<ChevronRight class={cn('size-3.5 transition-transform', open && 'rotate-90')} />
 					{open ? 'Hide' : 'Show'} what differs

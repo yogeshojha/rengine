@@ -111,7 +111,7 @@
 		{#snippet child(props)}
 			<a
 				{...props}
-				class="inline-flex min-w-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+				class="inline-flex min-w-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
 				href={url}
 				target="_blank"
 				rel="noopener noreferrer"
@@ -280,7 +280,7 @@
 									{#snippet child(props)}
 										<a
 											{...props}
-											class="w-fit text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+											class="w-fit text-xs text-muted-foreground hover:text-foreground"
 											href={ROUTES.settings('api-keys')}
 										>
 											No API key

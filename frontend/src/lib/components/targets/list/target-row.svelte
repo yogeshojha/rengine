@@ -168,7 +168,7 @@
 				<div class="flex min-w-0 items-center gap-1.5">
 					<a
 						href={ROUTES.target(target.id)}
-						class="truncate font-mono text-sm font-medium hover:underline"
+						class="truncate font-mono text-sm font-medium hover:text-primary"
 						onclick={stopProp}>{target.target_value}</a
 					>
 					<CopyButton

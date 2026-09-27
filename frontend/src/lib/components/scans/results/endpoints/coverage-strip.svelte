@@ -95,7 +95,7 @@
 		<span>·</span>
 		<button
 			type="button"
-			class="rounded-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+			class="rounded-sm text-primary hover:text-primary/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 			onclick={onShowStatic}
 		>
 			{n(hidden)} static hidden
@@ -105,7 +105,7 @@
 		<span>·</span>
 		<button
 			type="button"
-			class="rounded-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+			class="rounded-sm text-primary hover:text-primary/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 			onclick={onShowRootOnly}
 		>
 			{n(rootOnly)} root-only {rootOnly === 1 ? 'host' : 'hosts'} hidden
@@ -115,7 +115,7 @@
 		<span>·</span>
 		<button
 			type="button"
-			class="rounded-sm text-info hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+			class="rounded-sm text-info hover:text-info/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 			onclick={onShowNew}
 		>
 			{n(summary.new)} new since the previous scan
@@ -125,7 +125,7 @@
 		<span>·</span>
 		<button
 			type="button"
-			class="rounded-sm text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+			class="rounded-sm text-foreground hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 			onclick={onShowGone}
 		>
 			{n(summary.gone)} gone

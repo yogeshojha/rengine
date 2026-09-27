@@ -75,14 +75,14 @@
 			<div class={STAT}>
 				<a
 					href={actionableHref}
-					class="text-lg leading-tight font-semibold tracking-tight tabular-nums hover:underline {data.actionable
+					class="text-lg leading-tight font-semibold tracking-tight tabular-nums hover:text-primary {data.actionable
 						? 'text-[var(--sev-critical-ink)]'
 						: ''}"
 				>
 					{data.actionable.toLocaleString()}
 				</a>
 				<span class="truncate text-2xs text-muted-foreground">
-					actionable · <a href={actHref} class="hover:underline"
+					actionable · <a href={actHref} class="hover:text-primary"
 						>{data.act.toLocaleString()} act now</a
 					>
 				</span>

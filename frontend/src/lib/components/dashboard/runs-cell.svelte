@@ -63,7 +63,7 @@
 	{#snippet footer()}
 		<span>
 			{total.toLocaleString()} runs in {days} days ·
-			<a href={ROUTES.scansWhere({ status: 'failed', range: window })} class="hover:underline">
+			<a href={ROUTES.scansWhere({ status: 'failed', range: window })} class="hover:text-primary">
 				{failed} failed
 			</a>
 		</span>

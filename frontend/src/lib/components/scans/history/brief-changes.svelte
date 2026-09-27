@@ -75,7 +75,7 @@
 				</span>
 				<button
 					type="button"
-					class="font-medium text-primary hover:underline"
+					class="font-medium text-primary hover:text-primary/80"
 					onclick={() => (baseline = data?.suggestion?.scan_id ?? null)}
 				>
 					Compare with this run
@@ -108,7 +108,7 @@
 					{#each data.dimensions as d (d.dimension)}
 						<tr class="border-t border-border/50">
 							<td class="py-1.5 pr-3">
-								<a href={ROUTES.compare(scan.id, data.baseline.scan_id)} class="hover:underline"
+								<a href={ROUTES.compare(scan.id, data.baseline.scan_id)} class="hover:text-primary"
 									>{d.label}</a
 								>
 								{#if d.verdict.comparability !== COMPARABILITY.LIKE_FOR_LIKE}
@@ -135,7 +135,7 @@
 		</ScrollArea>
 		<a
 			href={ROUTES.compare(scan.id, data.baseline.scan_id)}
-			class="px-1 text-xs text-primary hover:underline"
+			class="px-1 text-xs text-primary hover:text-primary/80"
 		>
 			Open comparison
 		</a>

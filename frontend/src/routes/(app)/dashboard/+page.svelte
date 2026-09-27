@@ -194,17 +194,17 @@
 					{#if headline.critical}
 						<a
 							href={headlineHref(VULNS, `severity:critical and ${NEW_IN_WINDOW}`)}
-							class="text-destructive hover:underline"
+							class="text-destructive hover:text-destructive/80"
 							>{plural(headline.critical, 'critical finding', 'critical findings')}</a
 						>
 						and
 					{/if}
-					<a href={headlineHref(VULNS, NEW_IN_WINDOW)} class="hover:underline"
+					<a href={headlineHref(VULNS, NEW_IN_WINDOW)} class="hover:text-primary"
 						>{plural(headline.findings, 'finding', 'findings')}</a
 					>
 					in {days} days.
 					<span class="font-medium text-muted-foreground">
-						<a href={headlineHref(WEB, NEW_IN_WINDOW)} class="hover:underline"
+						<a href={headlineHref(WEB, NEW_IN_WINDOW)} class="hover:text-primary"
 							>{plural(headline.web, 'new web asset', 'new web assets')}</a
 						>{headline.targets ? ` on ${plural(headline.targets, 'target', 'targets')}` : ''}.
 					</span>

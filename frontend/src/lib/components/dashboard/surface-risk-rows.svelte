@@ -129,7 +129,7 @@
 					<div class="flex items-baseline justify-between gap-2">
 						<a
 							href={ROUTES.target(r.target_id)}
-							class="truncate text-sm font-semibold hover:underline">{r.target_value}</a
+							class="truncate text-sm font-semibold hover:text-primary">{r.target_value}</a
 						>
 						<span class="shrink-0 text-2xs text-muted-foreground">
 							{#if r.last_at}{relativeTime(r.last_at)}{/if}{#if !settled && r.scan_status}
@@ -146,13 +146,16 @@
 							</div>
 						{/each}
 					</div>
-					<a href={liveQuery(r)} class="flex justify-between gap-2 rounded-sm hover:underline">
+					<a href={liveQuery(r)} class="flex justify-between gap-2 rounded-sm hover:text-primary">
 						<span class="text-muted-foreground">Live web assets</span>
 						<span class="font-medium tabular-nums"
 							>{r.live.toLocaleString()} of {r.names.toLocaleString()}</span
 						>
 					</a>
-					<a href={findingsQuery(r)} class="flex justify-between gap-2 rounded-sm hover:underline">
+					<a
+						href={findingsQuery(r)}
+						class="flex justify-between gap-2 rounded-sm hover:text-primary"
+					>
 						<span class="text-muted-foreground">Open findings</span>
 						<span class="font-medium tabular-nums">{r.findings.toLocaleString()}</span>
 					</a>

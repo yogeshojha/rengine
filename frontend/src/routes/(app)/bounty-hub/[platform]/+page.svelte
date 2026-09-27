@@ -475,7 +475,7 @@
 							href="{platformUrl}/{summary.username}"
 							target="_blank"
 							rel="noopener noreferrer"
-							class="flex items-center gap-0.5 font-mono text-foreground hover:underline"
+							class="flex items-center gap-0.5 font-mono text-foreground hover:text-primary"
 						>
 							@{summary.username}<ArrowUpRight class="size-3" />
 						</a>

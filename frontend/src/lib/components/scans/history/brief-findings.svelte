@@ -130,7 +130,7 @@
 		{#if !historyPrefs.showMedium && (findings?.medium ?? 0) > 0}
 			<button
 				type="button"
-				class="text-primary hover:underline"
+				class="text-primary hover:text-primary/80"
 				onclick={() => (historyPrefs.showMedium = true)}
 			>
 				Show {findings?.medium} medium
@@ -237,7 +237,10 @@
 			{/each}
 		{/each}
 		{#if total > (items?.length ?? 0)}
-			<a href={findingsHref(scanId, shown)} class="px-4 py-2 text-xs text-primary hover:underline">
+			<a
+				href={findingsHref(scanId, shown)}
+				class="px-4 py-2 text-xs text-primary hover:text-primary/80"
+			>
 				Open all {total} in results
 			</a>
 		{/if}

@@ -83,7 +83,7 @@
 				{#if !isRecheckLive(entry)}
 					<a
 						href={ROUTES.scan(entry.scan_id)}
-						class="mt-2 ml-4 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+						class="mt-2 ml-4 inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80"
 					>
 						Open focused scan <ArrowUpRight class="size-3" />
 					</a>

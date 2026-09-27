@@ -105,7 +105,7 @@
 							{/if}
 							<button
 								type="button"
-								class="truncate font-mono hover:underline"
+								class="truncate font-mono hover:text-primary"
 								onclick={() => onTab(WEB.tab, hostToken)}>{v.host}</button
 							>
 						</dd>
@@ -137,14 +137,14 @@
 						<dd class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
 							<button
 								type="button"
-								class="font-mono hover:underline"
+								class="font-mono hover:text-primary"
 								onclick={() => onTab(IPS.tab, ipToken)}>{v.ip}</button
 							>
 							{#if asset?.country}<CountryFlag code={asset.country} showCode />{/if}
 							{#if asset?.asn}
 								<button
 									type="button"
-									class="truncate text-muted-foreground hover:text-foreground hover:underline"
+									class="truncate text-muted-foreground hover:text-foreground"
 									onclick={() => onFilter(`asn:${asset.asn}`)}
 								>
 									AS{asset.asn}{asset.asn_org ? ` · ${asset.asn_org}` : ''}
@@ -186,7 +186,7 @@
 				</span>
 				<button
 					type="button"
-					class="ml-auto text-2xs text-primary hover:underline"
+					class="ml-auto text-2xs text-primary hover:text-primary/80"
 					onclick={() => onFilter(hostToken)}
 				>
 					Filter to this {WEB.noun}
@@ -220,7 +220,7 @@
 			</span>
 			<button
 				type="button"
-				class="ml-auto text-2xs text-primary hover:underline"
+				class="ml-auto text-2xs text-primary hover:text-primary/80"
 				onclick={() => onFilter(templateToken)}
 			>
 				All {checkTotal || ''} findings from this check
@@ -308,7 +308,8 @@
 				{#if v.cve_ids.length}
 					<dt class="text-muted-foreground">CVE</dt>
 					<dd class="flex flex-wrap gap-x-2 font-mono">
-						{#each v.cve_ids as c (c)}<a href={ROUTES.cve(c)} class="hover:underline">{c}</a>{/each}
+						{#each v.cve_ids as c (c)}<a href={ROUTES.cve(c)} class="hover:text-primary">{c}</a
+							>{/each}
 					</dd>
 				{/if}
 				{#if v.cwe_ids.length}

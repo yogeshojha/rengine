@@ -258,7 +258,7 @@
 						href={program.url ?? bountyVocabulary.url(program.platform)}
 						target="_blank"
 						rel="noreferrer noopener"
-						class="inline-flex items-center gap-1 font-mono text-xs hover:underline"
+						class="inline-flex items-center gap-1 font-mono text-xs hover:text-primary"
 					>
 						@{program.handle}
 						<ExternalLinkIcon class="size-3" />
@@ -267,7 +267,7 @@
 						{#if bountyVocabulary.platform(program.platform)?.tracks_reports}
 							<a
 								href={ROUTES.bountyReports(program.platform, program.handle)}
-								class="text-xs text-foreground underline-offset-4 hover:underline"
+								class="text-xs text-foreground hover:text-primary"
 							>
 								{program.reports_for_user}
 								{program.reports_for_user === 1 ? 'report' : 'reports'}{program.earnings_for_user

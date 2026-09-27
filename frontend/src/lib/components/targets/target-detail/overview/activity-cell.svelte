@@ -156,7 +156,7 @@
 		{/if}
 		<a
 			href={ROUTES.whatsNew({ window: '30d', target: target.id })}
-			class="text-xs text-muted-foreground hover:text-foreground hover:underline"
+			class="text-xs text-muted-foreground hover:text-foreground"
 		>
 			What's new
 		</a>
@@ -184,7 +184,7 @@
 				</span>
 				<span class="flex min-w-0 flex-col gap-1.5 pb-[18px]">
 					<span class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-						<a href={ROUTES.scan(s.id)} class="font-semibold hover:underline">{s.engine_name}</a>
+						<a href={ROUTES.scan(s.id)} class="font-semibold hover:text-primary">{s.engine_name}</a>
 						<span
 							class="rounded-full px-[7px] text-2xs font-semibold tracking-[0.02em] {SCAN_STATUS_PILL[
 								s.status
@@ -240,7 +240,7 @@
 					</span>
 					<span class="flex min-w-0 flex-col gap-1 pb-3.5">
 						<span class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-							<a href={ROUTES.scan(r.id)} class="font-medium hover:underline">{r.engine_name}</a>
+							<a href={ROUTES.scan(r.id)} class="font-medium hover:text-primary">{r.engine_name}</a>
 							<span
 								class="rounded-full px-[7px] text-2xs font-semibold tracking-[0.02em] {SCAN_STATUS_PILL[
 									r.status

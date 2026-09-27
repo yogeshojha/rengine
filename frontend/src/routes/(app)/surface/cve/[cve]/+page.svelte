@@ -152,7 +152,7 @@
 						{#if description.length > DESCRIPTION_CLAMP}
 							<button
 								type="button"
-								class="ml-1 text-xs text-foreground hover:underline"
+								class="ml-1 text-xs text-foreground hover:text-primary"
 								onclick={() => (showDescription = !showDescription)}
 							>
 								{showDescription ? 'Show less' : 'Show more'}

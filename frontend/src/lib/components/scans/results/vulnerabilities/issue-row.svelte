@@ -258,7 +258,7 @@
 						<button
 							{...props}
 							type="button"
-							class="min-w-0 font-mono text-2xs text-muted-foreground hover:text-foreground hover:underline"
+							class="min-w-0 font-mono text-2xs text-muted-foreground hover:text-foreground"
 							onclick={(e) => pivot(e, exactToken('template', it.template_id))}
 						>
 							<HighlightText text={it.template_id} {term} />

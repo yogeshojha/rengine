@@ -119,7 +119,7 @@
 					href={programHref}
 					target={report.program_in_hub ? undefined : '_blank'}
 					rel={report.program_in_hub ? undefined : 'noopener noreferrer'}
-					class="block truncate text-sm hover:underline"
+					class="block truncate text-sm hover:text-primary"
 				>
 					{programName}
 				</a>
@@ -266,7 +266,7 @@
 								href={programHref}
 								target={report.program_in_hub ? undefined : '_blank'}
 								rel={report.program_in_hub ? undefined : 'noopener noreferrer'}
-								class="truncate text-sm font-medium hover:underline">{programName}</a
+								class="truncate text-sm font-medium hover:text-primary">{programName}</a
 							>
 						{/if}
 						<span class="font-mono text-2xs text-muted-foreground">@{report.program_handle}</span>
@@ -309,7 +309,7 @@
 						<dd class="min-w-0">
 							<button
 								type="button"
-								class="truncate text-left hover:underline"
+								class="truncate text-left hover:text-primary"
 								onclick={() => onSearch(report.weakness!)}>{report.weakness}</button
 							>
 						</dd>
@@ -319,7 +319,7 @@
 						<dd class="flex min-w-0 items-center gap-1">
 							<button
 								type="button"
-								class="truncate text-left font-mono text-xs hover:underline"
+								class="truncate text-left font-mono text-xs hover:text-primary"
 								onclick={() => onSearch(report.asset_identifier!)}>{report.asset_identifier}</button
 							>
 							<CopyButton value={report.asset_identifier} class="shrink-0" />

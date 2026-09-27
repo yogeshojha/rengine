@@ -252,7 +252,7 @@
 			{#if column.key === 'host'}
 				<button
 					type="button"
-					class="block w-full truncate text-left text-xs hover:text-primary hover:underline"
+					class="block w-full truncate text-left text-xs hover:text-primary"
 					onclick={(e) => {
 						e.stopPropagation();
 						onFilter?.(filterToken('host', endpoint.host));

@@ -215,7 +215,9 @@
 								{/if}
 								{#if note.text}<span class="truncate">{note.text}</span>{/if}
 								{#if href}
-									<a {href} class="font-medium text-primary hover:underline">open in {IPS.label}</a>
+									<a {href} class="font-medium text-primary hover:text-primary/80"
+										>open in {IPS.label}</a
+									>
 								{/if}
 							</span>
 							<span

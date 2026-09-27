@@ -65,7 +65,7 @@
 					href={meta.chatUrl(status.bot.username)}
 					target="_blank"
 					rel="noopener noreferrer"
-					class="font-mono text-xs text-primary hover:underline">@{status.bot.username}</a
+					class="font-mono text-xs text-primary hover:text-primary/80">@{status.bot.username}</a
 				>
 			{/if}
 		</div>

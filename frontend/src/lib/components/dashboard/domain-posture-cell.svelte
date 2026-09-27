@@ -91,7 +91,7 @@
 									<a
 										{...props}
 										href={link(postureQuery(key))}
-										class="block text-sm leading-5 hover:underline">{spec?.label ?? key}</a
+										class="block text-sm leading-5 hover:text-primary">{spec?.label ?? key}</a
 									>
 								{/snippet}
 							</Hint>

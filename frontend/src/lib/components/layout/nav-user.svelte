@@ -131,14 +131,18 @@
 				<a
 					href="https://github.com/yogeshojha/rengine"
 					target="_blank"
-					class="text-sm text-primary hover:underline"
+					class="text-sm text-primary hover:text-primary/80"
 				>
 					github.com/yogeshojha/rengine
 				</a>
 			</div>
 			<div class="space-y-2">
 				<h4 class="font-medium">Wiki</h4>
-				<a href="https://rengine.wiki" target="_blank" class="text-sm text-primary hover:underline">
+				<a
+					href="https://rengine.wiki"
+					target="_blank"
+					class="text-sm text-primary hover:text-primary/80"
+				>
 					rengine.wiki
 				</a>
 			</div>

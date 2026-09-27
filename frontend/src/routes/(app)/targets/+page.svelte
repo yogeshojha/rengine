@@ -945,7 +945,7 @@
 					{#if selectedTargetIds.size >= rows.length && selectedTargetIds.size < targetsStore.pagination.totalItems}
 						<button
 							type="button"
-							class="text-xs font-medium text-primary hover:underline"
+							class="text-xs font-medium text-primary hover:text-primary/80"
 							onclick={handleSelectAllMatching}
 						>
 							Select all {targetsStore.pagination.totalItems} matching

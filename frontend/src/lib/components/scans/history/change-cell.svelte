@@ -114,12 +114,12 @@
 				{#if added}
 					<a
 						href={ROUTES.results(WEB.tab, scan.id, { [WEB.queryParam]: 'is:new' })}
-						class="text-primary hover:underline"
+						class="text-primary hover:text-primary/80"
 					>
 						Open new {WEB.nounPlural}
 					</a>
 				{/if}
-				<button type="button" class="text-primary hover:underline" onclick={onCompare}>
+				<button type="button" class="text-primary hover:text-primary/80" onclick={onCompare}>
 					Compare with previous
 				</button>
 			</div>

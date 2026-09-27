@@ -47,12 +47,12 @@
 			</span>
 			<span class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
 				{#if step.software > 0}
-					<a href={softwareHref(step)} class="hover:underline">
+					<a href={softwareHref(step)} class="hover:text-primary">
 						{step.software.toLocaleString()} in {software.label}
 					</a>
 				{/if}
 				{#if step.findings > 0}
-					<a href={findingsHref(step)} class="hover:underline">
+					<a href={findingsHref(step)} class="hover:text-primary">
 						{step.findings.toLocaleString()} in {findings.label}
 					</a>
 				{/if}

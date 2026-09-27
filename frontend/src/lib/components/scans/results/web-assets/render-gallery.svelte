@@ -143,7 +143,7 @@
 							<button
 								type="button"
 								onclick={() => onHost(host)}
-								class="truncate text-left font-mono text-2xs text-muted-foreground hover:text-foreground hover:underline"
+								class="truncate text-left font-mono text-2xs text-muted-foreground hover:text-foreground"
 							>
 								{host}
 							</button>
@@ -164,7 +164,7 @@
 						<button
 							type="button"
 							onclick={() => onFilter(g.query)}
-							class="truncate text-left text-2xs text-muted-foreground hover:text-foreground hover:underline"
+							class="truncate text-left text-2xs text-muted-foreground hover:text-foreground"
 						>
 							Open all {g.count}
 						</button>

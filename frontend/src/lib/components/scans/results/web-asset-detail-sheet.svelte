@@ -451,7 +451,7 @@
 										href={sub.final_url}
 										target="_blank"
 										rel="noreferrer noopener"
-										class="ml-1 font-mono break-all hover:underline">{sub.final_url}</a
+										class="ml-1 font-mono break-all hover:text-primary">{sub.final_url}</a
 									>
 								</div>
 							</div>
@@ -571,7 +571,7 @@
 												href={url}
 												target="_blank"
 												rel="noreferrer noopener"
-												class="font-mono text-sm break-all hover:underline">{url}</a
+												class="font-mono text-sm break-all hover:text-primary">{url}</a
 											>
 										</dd>
 									</div>
@@ -626,7 +626,7 @@
 														Covered by
 														<button
 															type="button"
-															class="font-mono hover:underline"
+															class="font-mono hover:text-primary"
 															onclick={() => {
 																const rep = surface.representative_value ?? '';
 																const host = rep.replace(/^https?:\/\//, '').replace(/:\d+$/, '');
@@ -717,7 +717,7 @@
 																<button
 																	{...props}
 																	type="button"
-																	class="text-left text-sm leading-5 hover:underline"
+																	class="text-left text-sm leading-5 hover:text-primary"
 																	onclick={() => onFilter?.(hygieneQuery(key))}
 																>
 																	{checkLabel(key)}
@@ -775,7 +775,7 @@
 																<button
 																	{...props}
 																	type="button"
-																	class="text-left text-sm leading-5 hover:underline"
+																	class="text-left text-sm leading-5 hover:text-primary"
 																	onclick={() => onFilter?.(postureQuery(key))}
 																>
 																	{spec?.label ?? key}

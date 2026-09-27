@@ -115,7 +115,7 @@
 								<button
 									{...props}
 									type="button"
-									class="text-2xs text-muted-foreground hover:text-primary hover:underline"
+									class="text-2xs text-muted-foreground hover:text-primary"
 									onclick={(e) => e.stopPropagation()}
 								>
 									on {leaf.hosts} hosts
@@ -165,7 +165,7 @@
 				{:else if leaf.host_names[0]}
 					<button
 						type="button"
-						class="font-mono text-2xs text-muted-foreground hover:text-primary hover:underline"
+						class="font-mono text-2xs text-muted-foreground hover:text-primary"
 						onclick={(e) => {
 							e.stopPropagation();
 							onHost(leaf.host_names[0]);

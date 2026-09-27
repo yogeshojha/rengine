@@ -81,7 +81,7 @@
 								</span>
 								<a
 									href={ROUTES.target(row.target_id)}
-									class="min-w-0 flex-1 truncate text-xs leading-5 hover:underline"
+									class="min-w-0 flex-1 truncate text-xs leading-5 hover:text-primary"
 								>
 									{row.target_value}
 								</a>
@@ -95,7 +95,7 @@
 								{#if row.scan_id}
 									<a
 										href={ROUTES.scan(row.scan_id)}
-										class="shrink-0 text-2xs leading-5 text-muted-foreground hover:text-foreground hover:underline"
+										class="shrink-0 text-2xs leading-5 text-muted-foreground hover:text-foreground"
 									>
 										run
 									</a>

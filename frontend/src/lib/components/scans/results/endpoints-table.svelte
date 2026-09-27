@@ -1106,7 +1106,7 @@
 				{#if i > 0}<span class="text-muted-foreground/60">›</span>{/if}
 				<button
 					type="button"
-					class="max-w-64 truncate font-mono text-muted-foreground hover:text-foreground hover:underline"
+					class="max-w-64 truncate font-mono text-muted-foreground hover:text-foreground"
 					onclick={() => outline?.jumpTo(crumb.key)}
 				>
 					{crumb.name}
@@ -1326,7 +1326,7 @@
 			{/if}
 			<button
 				type="button"
-				class="ml-auto rounded-sm text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+				class="ml-auto rounded-sm text-foreground hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 				onclick={() => (goneLens = false)}
 			>
 				Back to this scan

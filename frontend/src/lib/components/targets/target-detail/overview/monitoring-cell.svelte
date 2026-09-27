@@ -112,7 +112,11 @@
 	</dl>
 	{#snippet footer()}
 		<span>{enrichedAt ? `Enriched ${relativeTime(enrichedAt)}` : 'Not enriched'}</span>
-		<button type="button" class="font-medium text-primary hover:underline" onclick={onRefresh}>
+		<button
+			type="button"
+			class="font-medium text-primary hover:text-primary/80"
+			onclick={onRefresh}
+		>
 			Refresh
 		</button>
 	{/snippet}

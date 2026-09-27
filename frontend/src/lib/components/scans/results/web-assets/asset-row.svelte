@@ -515,7 +515,7 @@
 						<button
 							{...props}
 							type="button"
-							class="inline-flex items-center gap-1 font-mono text-xs hover:underline {httpStatusTextClass(
+							class="inline-flex items-center gap-1 font-mono text-xs hover:text-primary {httpStatusTextClass(
 								code
 							)}"
 							onclick={(e) => pivot(e, `status:${code}`)}
@@ -604,7 +604,7 @@
 									<button
 										{...props}
 										type="button"
-										class="max-w-full truncate text-left font-mono text-xs hover:underline {isPrivateIp(
+										class="max-w-full truncate text-left font-mono text-xs hover:text-primary {isPrivateIp(
 											ip
 										)
 											? 'text-warning'

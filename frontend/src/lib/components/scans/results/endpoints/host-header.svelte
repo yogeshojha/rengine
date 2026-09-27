@@ -137,34 +137,34 @@
 				><b class="font-semibold text-foreground tabular-nums">{n(brief.total)}</b> endpoints</span
 			>
 			{#if brief.probed}
-				<button type="button" class="hover:underline" onclick={() => onPivot('is:probed')}>
+				<button type="button" class="hover:text-primary" onclick={() => onPivot('is:probed')}>
 					<b class="font-semibold text-foreground tabular-nums">{n(brief.probed)}</b> verified
 				</button>
 			{/if}
 			{#if brief.with_params}
-				<button type="button" class="hover:underline" onclick={() => onPivot('is:param')}>
+				<button type="button" class="hover:text-primary" onclick={() => onPivot('is:param')}>
 					<b class="font-semibold text-foreground tabular-nums">{n(brief.with_params)}</b> take input
 				</button>
 			{/if}
 			{#if brief.api}
-				<button type="button" class="hover:underline" onclick={() => onPivot('class:api')}>
+				<button type="button" class="hover:text-primary" onclick={() => onPivot('class:api')}>
 					<b class="font-semibold text-foreground tabular-nums">{n(brief.api)}</b> API
 				</button>
 			{/if}
 			{#if brief.walled}
-				<button type="button" class="hover:underline" onclick={() => onPivot('is:auth')}>
+				<button type="button" class="hover:text-primary" onclick={() => onPivot('is:auth')}>
 					<b class="font-semibold text-foreground tabular-nums">{n(brief.walled)}</b> behind auth
 				</button>
 			{/if}
 			{#if brief.new}
-				<button type="button" class="hover:underline" onclick={onNew}>
+				<button type="button" class="hover:text-primary" onclick={onNew}>
 					<b class="font-semibold text-success tabular-nums">+{n(brief.new)}</b>
 					new{#if brief.previous_scan_at}
 						since {formatShortDate(brief.previous_scan_at)}{/if}
 				</button>
 			{/if}
 			{#if brief.findings && onFindings}
-				<button type="button" class="hover:underline" onclick={onFindings}>
+				<button type="button" class="hover:text-primary" onclick={onFindings}>
 					<b class="font-semibold text-destructive tabular-nums">{n(brief.findings)}</b>
 					{brief.findings === 1 ? 'finding' : 'findings'}
 				</button>
@@ -196,7 +196,7 @@
 				{#if hiddenParams > 0}
 					<button
 						type="button"
-						class="text-2xs text-muted-foreground hover:text-foreground hover:underline"
+						class="text-2xs text-muted-foreground hover:text-foreground"
 						onclick={() => (allParams = true)}
 					>
 						+{n(hiddenParams)} more
@@ -204,7 +204,7 @@
 				{:else if allParams && brief.params_total > PARAM_LIMIT}
 					<button
 						type="button"
-						class="text-2xs text-muted-foreground hover:text-foreground hover:underline"
+						class="text-2xs text-muted-foreground hover:text-foreground"
 						onclick={() => (allParams = false)}
 					>
 						Show fewer

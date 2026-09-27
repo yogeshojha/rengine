@@ -17,7 +17,7 @@
 	{#if host}
 		<button
 			type="button"
-			class="flex items-center gap-1 font-mono hover:text-primary hover:underline"
+			class="flex items-center gap-1 font-mono hover:text-primary"
 			onclick={() => onSelect(host, '/')}
 		>
 			<Globe class="size-3" />
@@ -30,7 +30,7 @@
 		<ChevronRight class="size-3 shrink-0 text-muted-foreground" />
 		<button
 			type="button"
-			class="font-mono hover:text-primary hover:underline"
+			class="font-mono hover:text-primary"
 			onclick={() => onSelect(host, '/' + segments.slice(0, i + 1).join('/') + '/')}
 		>
 			{segment}

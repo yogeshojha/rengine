@@ -103,7 +103,10 @@
 							{#if entity.email}
 								<div class="flex items-start gap-2.5">
 									<Mail class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
-									<a href="mailto:{entity.email}" class="text-sm text-primary hover:underline">
+									<a
+										href="mailto:{entity.email}"
+										class="text-sm text-primary hover:text-primary/80"
+									>
 										{entity.email}
 									</a>
 								</div>

@@ -22,7 +22,7 @@
 				<button
 					{...props}
 					type="button"
-					class="min-w-0 truncate text-xs text-muted-foreground hover:text-foreground hover:underline"
+					class="min-w-0 truncate text-xs text-muted-foreground hover:text-foreground"
 					onclick={(event) => {
 						event.stopPropagation();
 						onFilter?.(exactToken('target', first));

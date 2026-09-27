@@ -33,7 +33,7 @@
 						href={meta.tokenSourceUrl}
 						target="_blank"
 						rel="noopener noreferrer"
-						class="font-medium text-primary hover:underline">{meta.tokenSource}</a
+						class="font-medium text-primary hover:text-primary/80">{meta.tokenSource}</a
 					>
 					and copy its token.
 				</span>

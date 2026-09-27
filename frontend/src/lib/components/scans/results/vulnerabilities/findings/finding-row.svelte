@@ -181,7 +181,7 @@
 			<div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
 				<button
 					type="button"
-					class="min-w-0 text-left text-sm leading-6 font-medium wrap-anywhere hover:underline {suppressed
+					class="min-w-0 text-left text-sm leading-6 font-medium wrap-anywhere hover:text-primary {suppressed
 						? 'text-muted-foreground line-through decoration-muted-foreground/40'
 						: ''}"
 					onclick={(e) => {
@@ -225,7 +225,7 @@
 				{#if projectWide && v.target_value}
 					<button
 						type="button"
-						class="font-medium text-foreground/80 hover:underline {NARROW.target}"
+						class="font-medium text-foreground/80 hover:text-primary {NARROW.target}"
 						onclick={(e) => pivot(e, exactToken('target', v.target_value ?? ''))}
 						>{v.target_value}</button
 					>
@@ -233,7 +233,7 @@
 				{/if}
 				<button
 					type="button"
-					class="font-mono text-muted-foreground hover:text-foreground hover:underline"
+					class="font-mono text-muted-foreground hover:text-foreground"
 					onclick={(e) => pivot(e, templateToken)}
 				>
 					<HighlightText text={v.template_id} {term} />
@@ -244,7 +244,7 @@
 						<button
 							{...props}
 							type="button"
-							class="min-w-0 truncate text-left font-mono text-foreground/80 hover:underline"
+							class="min-w-0 truncate text-left font-mono text-foreground/80 hover:text-primary"
 							onclick={(e) => pivot(e, filterToken('location', path))}
 						>
 							<span class={NARROW.origin}>{origin}</span><HighlightText text={path} {term} />
@@ -298,7 +298,7 @@
 								<button
 									{...props}
 									type="button"
-									class="min-w-0 truncate font-mono text-xs hover:underline"
+									class="min-w-0 truncate font-mono text-xs hover:text-primary"
 									onclick={(e) => pivot(e, hostToken)}
 								>
 									<HighlightText text={v.host ?? ''} {term} />
@@ -307,14 +307,14 @@
 							{#snippet footer()}
 								<button
 									type="button"
-									class="text-primary hover:underline"
+									class="text-primary hover:text-primary/80"
 									onclick={() => onFilter(hostToken)}
 								>
 									Filter to this {WEB.noun}
 								</button>
 								<button
 									type="button"
-									class="text-primary hover:underline"
+									class="text-primary hover:text-primary/80"
 									onclick={() => onTab(WEB.tab, hostToken)}
 								>
 									Open in {WEB.nounPlural}
@@ -387,7 +387,7 @@
 							<button
 								{...props}
 								type="button"
-								class="w-fit text-left text-2xs text-muted-foreground hover:text-foreground hover:underline"
+								class="w-fit text-left text-2xs text-muted-foreground hover:text-foreground"
 								onclick={(e) => pivot(e, templateToken)}
 							>
 								Same check on {others} more
@@ -408,7 +408,7 @@
 					{#if v.cve_ids.length}
 						<a
 							href={ROUTES.cve(v.cve_ids[0])}
-							class="h-6 truncate font-mono text-xs leading-6 hover:underline"
+							class="h-6 truncate font-mono text-xs leading-6 hover:text-primary"
 							onclick={stopProp}
 						>
 							{v.cve_ids[0]}{v.cve_ids.length > 1 ? ` +${v.cve_ids.length - 1}` : ''}
@@ -420,7 +420,7 @@
 								<button
 									{...props}
 									type="button"
-									class="w-fit text-left font-mono text-2xs tabular-nums hover:underline"
+									class="w-fit text-left font-mono text-2xs tabular-nums hover:text-primary"
 									onclick={(e) => pivot(e, `exploit:>=${Math.max(10, v.exploit_score - 10)}`)}
 								>
 									<span class="text-muted-foreground">Rank</span>

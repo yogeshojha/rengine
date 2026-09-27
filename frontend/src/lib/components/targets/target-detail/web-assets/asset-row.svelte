@@ -66,7 +66,7 @@
 				href={scanHref}
 				class="truncate font-mono text-sm {asset.current
 					? ''
-					: 'text-muted-foreground line-through decoration-muted-foreground/40'} hover:underline"
+					: 'text-muted-foreground line-through decoration-muted-foreground/40'} hover:text-primary"
 			>
 				<HighlightText text={asset.name} terms={[term]} />
 			</a>

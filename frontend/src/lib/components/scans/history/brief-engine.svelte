@@ -52,7 +52,7 @@
 		{#if scan.engine_id}
 			<a
 				href={ROUTES.engine(scan.engine_id)}
-				class="text-xl font-semibold tracking-tight hover:underline"
+				class="text-xl font-semibold tracking-tight hover:text-primary"
 			>
 				{scan.engine_name}
 			</a>

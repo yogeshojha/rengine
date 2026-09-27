@@ -120,8 +120,9 @@
 									Added{result.attached ? ` · ${result.attached} attached` : ''}
 								</span>
 								{#if result.scan_id}
-									<a href={ROUTES.scan(result.scan_id)} class="text-primary text-xs hover:underline"
-										>Scan running</a
+									<a
+										href={ROUTES.scan(result.scan_id)}
+										class="text-primary text-xs hover:text-primary/80">Scan running</a
 									>
 								{/if}
 							</div>
