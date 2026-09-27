@@ -9,7 +9,7 @@
 	import Keyboard from '@lucide/svelte/icons/keyboard';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import Search from '@lucide/svelte/icons/search';
-	import Sparkles from '@lucide/svelte/icons/sparkles';
+	import Newspaper from '@lucide/svelte/icons/newspaper';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import X from '@lucide/svelte/icons/x';
 	import { Badge } from '$lib/components/ui/badge';
@@ -1073,7 +1073,7 @@
 			<div class="p-4">
 				{#if visual && !visualLoading && visualPairs.length === 0}
 					<EmptyState
-						icon={Sparkles}
+						icon={Newspaper}
 						title={silentOnly
 							? `No silent redeploys ${periodLabel}`
 							: `No visual changes ${periodLabel}`}
@@ -1135,7 +1135,7 @@
 				{/each}
 			</div>
 		{:else if entries.length === 0}
-			<EmptyState icon={Sparkles} title={emptyTitle} />
+			<EmptyState icon={Newspaper} title={emptyTitle} />
 		{:else}
 			<div class="flex flex-col pb-2 transition-opacity {loading ? 'opacity-60' : ''}">
 				{#each days as day (day.key)}

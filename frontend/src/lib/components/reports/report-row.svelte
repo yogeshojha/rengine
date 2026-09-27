@@ -8,7 +8,6 @@
 	import MoreHorizontalIcon from '@lucide/svelte/icons/more-horizontal';
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
-	import SparklesIcon from '@lucide/svelte/icons/sparkles';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import {
@@ -103,10 +102,7 @@
 				{/if}
 				<Badge variant="outline" class="font-mono text-2xs">{report.subject}</Badge>
 				{#if report.ai_used}
-					<Badge variant="info" class="gap-1">
-						<SparklesIcon class="size-3" />
-						AI
-					</Badge>
+					<Badge variant="info">AI</Badge>
 				{/if}
 			</div>
 			<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">

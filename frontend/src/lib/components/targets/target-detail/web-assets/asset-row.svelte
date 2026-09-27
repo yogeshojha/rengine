@@ -5,7 +5,6 @@
 	import Copy from '@lucide/svelte/icons/copy';
 	import Asterisk from '@lucide/svelte/icons/asterisk';
 	import CircleSlash from '@lucide/svelte/icons/circle-slash';
-	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
@@ -74,8 +73,11 @@
 			{#if asset.is_new}
 				<Hint text="First seen in the latest scan">
 					{#snippet child(props)}
-						<span {...props} class="flex h-5 shrink-0 items-center text-info">
-							<Sparkles class="size-3.5" />
+						<span
+							{...props}
+							class="flex h-5 shrink-0 items-center text-2xs font-medium text-info uppercase"
+						>
+							New
 						</span>
 					{/snippet}
 				</Hint>

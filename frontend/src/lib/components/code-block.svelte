@@ -8,7 +8,7 @@
 	import ChevronUp from '@lucide/svelte/icons/chevron-up';
 	import Download from '@lucide/svelte/icons/download';
 	import TextWrap from '@lucide/svelte/icons/text-wrap';
-	import WandSparkles from '@lucide/svelte/icons/wand-sparkles';
+	import IndentIncrease from '@lucide/svelte/icons/indent-increase';
 	import FileCode from '@lucide/svelte/icons/file-code';
 	import Braces from '@lucide/svelte/icons/braces';
 	import ArrowLeftRight from '@lucide/svelte/icons/arrow-left-right';
@@ -317,7 +317,7 @@
 									aria-pressed={pretty}
 									onclick={() => (pretty = !pretty)}
 								>
-									<WandSparkles class="size-3.5" />
+									<IndentIncrease class="size-3.5" />
 								</Button>
 							{/snippet}
 						</Hint>

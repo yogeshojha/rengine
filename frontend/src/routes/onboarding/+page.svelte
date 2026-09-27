@@ -27,7 +27,7 @@
 	import CompassIcon from '@lucide/svelte/icons/compass';
 	import PlugIcon from '@lucide/svelte/icons/plug';
 	import ShieldIcon from '@lucide/svelte/icons/shield';
-	import SparklesIcon from '@lucide/svelte/icons/sparkles';
+	import BotIcon from '@lucide/svelte/icons/bot';
 	import BellIcon from '@lucide/svelte/icons/bell';
 	import FolderPlusIcon from '@lucide/svelte/icons/folder-plus';
 	import CircleCheckIcon from '@lucide/svelte/icons/circle-check';
@@ -109,7 +109,7 @@
 			title: 'AI analysis',
 			description:
 				'A language model summarizes findings and drafts remediation. A computed summary of each scan is sent to the selected provider.',
-			icon: SparklesIcon,
+			icon: BotIcon,
 			component: StepAi
 		},
 		{

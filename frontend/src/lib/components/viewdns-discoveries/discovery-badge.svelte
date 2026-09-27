@@ -5,7 +5,6 @@
 	import { TargetType } from '$lib/types/target';
 	import { DISCOVERY_SOURCE_LABELS } from '$lib/types/viewdns';
 	import * as Tooltip from '$lib/components/ui/tooltip';
-	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import { SvelteMap } from 'svelte/reactivity';
 
 	interface Props {
@@ -129,7 +128,6 @@
 					class="inline-flex items-center gap-1 text-2xs text-primary hover:text-primary/80 transition-colors cursor-pointer"
 					onclick={handleClick}
 				>
-					<Sparkles class="h-3 w-3" />
 					<span class="font-medium">{total.toLocaleString()}</span>
 					<span class="hidden sm:inline">
 						{total === 1 ? 'discovery' : 'discoveries'}

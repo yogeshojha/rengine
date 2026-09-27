@@ -246,7 +246,7 @@ EVENTS: tuple[EventSpec, ...] = (
         BountyEvent.PROGRAM_ADDED.value,
         "New program",
         "A program appeared in the library",
-        "sparkles",
+        "list-plus",
         "info",
         actionable=True,
     ),

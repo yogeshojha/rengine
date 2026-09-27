@@ -3,7 +3,7 @@
 	import { untrack } from 'svelte';
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
-	import SparklesIcon from '@lucide/svelte/icons/sparkles';
+	import NewspaperIcon from '@lucide/svelte/icons/newspaper';
 	import TargetIcon from '@lucide/svelte/icons/target';
 	import { toast } from 'svelte-sonner';
 	import { goto, replaceState } from '$app/navigation';
@@ -312,7 +312,7 @@
 
 		<div class="flex items-center gap-2">
 			<Button variant="outline" size="sm" href={ROUTES.whatsNew()}>
-				<SparklesIcon class="mr-2 size-3.5" />
+				<NewspaperIcon class="mr-2 size-3.5" />
 				What's new
 			</Button>
 			<LoadingButton loading={syncing} variant="outline" size="sm" onclick={sync}>

@@ -13,7 +13,7 @@ import DoorOpenIcon from '@lucide/svelte/icons/door-open';
 import MinusIcon from '@lucide/svelte/icons/minus';
 import OctagonAlertIcon from '@lucide/svelte/icons/octagon-alert';
 import PlusIcon from '@lucide/svelte/icons/plus';
-import SparklesIcon from '@lucide/svelte/icons/sparkles';
+import ListPlusIcon from '@lucide/svelte/icons/list-plus';
 import CpuIcon from '@lucide/svelte/icons/cpu';
 import FileCodeIcon from '@lucide/svelte/icons/file-code';
 import FileSignatureIcon from '@lucide/svelte/icons/file-signature';
@@ -42,7 +42,7 @@ export const ASSET_ICONS: Record<string, IconComponent> = {
 	cpu: CpuIcon,
 	'file-signature': FileSignatureIcon,
 	'circle-help': CircleHelpIcon,
-	sparkles: SparklesIcon,
+	'list-plus': ListPlusIcon,
 	plus: PlusIcon,
 	minus: MinusIcon,
 	'circle-check': CircleCheckIcon,

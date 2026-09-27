@@ -20,7 +20,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import EnrichConfirmDialog from './enrich-confirm-dialog.svelte';
 	import { toast } from 'svelte-sonner';
-	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import SearchX from '@lucide/svelte/icons/search-x';
 	import Telescope from '@lucide/svelte/icons/telescope';
 	import UserRound from '@lucide/svelte/icons/user-round';
@@ -378,7 +377,6 @@
 	<div class="space-y-5 py-1">
 		{#if totalDiscovered > 0}
 			<div class="flex items-center gap-2 text-sm text-muted-foreground">
-				<Sparkles class="h-4 w-4 text-muted-foreground" />
 				<span>
 					<span class="font-semibold text-foreground">{totalDiscovered.toLocaleString()}</span>
 					discovered {totalDiscovered === 1 ? 'domain' : 'domains'}

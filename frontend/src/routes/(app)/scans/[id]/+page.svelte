@@ -87,7 +87,6 @@
 	import NotePanel from '$lib/components/notes/note-panel.svelte';
 	import InterestingTable from '$lib/components/scans/results/interesting/interesting-table.svelte';
 	import { plannedStages, stageProgress } from '$lib/utilities/scan-progress';
-	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import type { TargetType } from '$lib/types/target';
 	import { SCAN_COUNT_COLUMNS } from '$lib/types/scan';
 	import type { ScanRead, ScanActivityRead, ScanCommandRead } from '$lib/types/scan';
@@ -1006,7 +1005,7 @@
 									aria-pressed={newOnly}
 									onclick={toggleNew}
 								>
-									<Sparkles class="size-3.5" /> New
+									New
 								</Button>
 							{/snippet}
 						</Hint>

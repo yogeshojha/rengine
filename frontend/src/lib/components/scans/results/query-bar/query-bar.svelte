@@ -2,7 +2,6 @@
 	import Search from '@lucide/svelte/icons/search';
 	import X from '@lucide/svelte/icons/x';
 	import CircleQuestionMark from '@lucide/svelte/icons/circle-question-mark';
-	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -343,7 +342,6 @@
 					aria-label="{findings.length} {findingWord} in this scan"
 					onclick={openFindings}
 				>
-					<Sparkles class="size-4" />
 					<span class="tabular-nums">{findings.length}</span>
 					<span class="max-sm:hidden">{findingWord}</span>
 				</Button>

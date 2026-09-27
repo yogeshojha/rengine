@@ -13,7 +13,7 @@
 	import Search from '@lucide/svelte/icons/search';
 	import Copy from '@lucide/svelte/icons/copy';
 	import Download from '@lucide/svelte/icons/download';
-	import WandSparkles from '@lucide/svelte/icons/wand-sparkles';
+	import IndentIncrease from '@lucide/svelte/icons/indent-increase';
 	import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
 	import Workflow from '@lucide/svelte/icons/workflow';
 	import GitCompare from '@lucide/svelte/icons/git-compare';
@@ -655,7 +655,7 @@
 										onclick={handleFormatYaml}
 										aria-label="Format document"
 									>
-										<WandSparkles size={13} />
+										<IndentIncrease size={13} />
 									</Button>
 								{/snippet}
 							</Tooltip.Trigger>

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Switch } from '$lib/components/ui/switch';
@@ -51,10 +50,7 @@
 		class="grid max-h-[88vh] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-3xl"
 	>
 		<Dialog.Header class="gap-1 border-b p-5">
-			<Dialog.Title class="flex items-center gap-2">
-				<Sparkles class="size-4 text-primary" />
-				Findings
-			</Dialog.Title>
+			<Dialog.Title>Findings</Dialog.Title>
 			<Dialog.Description>Prebuilt queries with matches in this scan.</Dialog.Description>
 		</Dialog.Header>
 

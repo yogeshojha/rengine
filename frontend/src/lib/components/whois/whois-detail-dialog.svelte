@@ -18,7 +18,6 @@
 	import DiscoveriesSummary from '$lib/components/viewdns-discoveries/discoveries-summary.svelte';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
-	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import { getLookupTypeIcon } from '$lib/config/icons';
 	import { SvelteSet } from 'svelte/reactivity';
@@ -273,10 +272,7 @@
 							{/if}
 						</Tabs.Trigger>
 						{#if showDiscoveriesTab}
-							<Tabs.Trigger value="discoveries" class="flex-1 gap-1.5">
-								Discoveries
-								<Sparkles class="h-3 w-3 text-muted-foreground ml-0.5" />
-							</Tabs.Trigger>
+							<Tabs.Trigger value="discoveries" class="flex-1 gap-1.5">Discoveries</Tabs.Trigger>
 						{/if}
 					</Tabs.List>
 				</div>

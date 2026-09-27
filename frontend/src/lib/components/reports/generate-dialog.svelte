@@ -17,7 +17,6 @@
 	import SectionConfigPopover from './generate/section-config-popover.svelte';
 	import SectionField from './builder/section-field.svelte';
 	import { ReportPlan } from './generate/report-plan.svelte';
-	import SparklesIcon from '@lucide/svelte/icons/sparkles';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
@@ -450,10 +449,7 @@
 					<div class="space-y-3 rounded-lg border p-3.5">
 						<div class="flex items-start justify-between gap-4">
 							<div class="space-y-0.5">
-								<Label class="flex items-center gap-1.5 text-sm font-medium">
-									<SparklesIcon class="size-3.5" />
-									Draft the narrative with AI
-								</Label>
+								<Label class="text-sm font-medium">Draft the narrative with AI</Label>
 								<p class="text-xs text-muted-foreground">
 									{aiAvailable
 										? 'The model receives a summary of the findings.'

@@ -1,7 +1,6 @@
 <script lang="ts">
 	import CornerDownLeft from '@lucide/svelte/icons/corner-down-left';
 	import Clock from '@lucide/svelte/icons/clock';
-	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 	import CircleQuestionMark from '@lucide/svelte/icons/circle-question-mark';
 	import X from '@lucide/svelte/icons/x';
@@ -70,11 +69,11 @@
 	);
 </script>
 
-{#snippet heading(label: string, spark = false)}
+{#snippet heading(label: string)}
 	<p
-		class="flex items-center gap-1.5 px-2 pt-2 pb-1.5 text-2xs font-medium tracking-[0.08em] text-muted-foreground uppercase"
+		class="px-2 pt-2 pb-1.5 text-2xs font-medium tracking-[0.08em] text-muted-foreground uppercase"
 	>
-		{#if spark}<Sparkles class="size-3 text-primary" />{/if}{label}
+		{label}
 	</p>
 {/snippet}
 
@@ -115,7 +114,7 @@
 			{/if}
 			{#if shownExamples.length}
 				<div class="flex min-w-0 flex-col">
-					{@render heading(counted ? 'Findings in this scan' : 'Suggested queries', counted)}
+					{@render heading(counted ? 'Findings in this scan' : 'Suggested queries')}
 					<div class="grid gap-1.5 px-1 pb-1 {columns}">
 						{#each shownExamples as example (example.query)}
 							<QueryExample {example} {noun} {nounPlural} onPick={onQuery} />

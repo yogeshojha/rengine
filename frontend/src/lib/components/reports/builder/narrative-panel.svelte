@@ -6,7 +6,7 @@
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
-	import SparklesIcon from '@lucide/svelte/icons/sparkles';
+	import BotIcon from '@lucide/svelte/icons/bot';
 	import { ROUTES } from '$lib/config/routes';
 	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
 	import type { NarrativeOptions } from '$lib/types/report';
@@ -59,7 +59,7 @@
 
 	{#if !aiAvailable}
 		<Alert.Root>
-			<SparklesIcon />
+			<BotIcon />
 			<Alert.Title>AI is not connected</Alert.Title>
 			<Alert.Description>
 				Connect a provider on the <a href={ROUTES.ai()} class="underline">AI page</a> to draft the narrative.

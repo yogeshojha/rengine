@@ -3,7 +3,7 @@
 	import TargetIcon from '@lucide/svelte/icons/target';
 	import RadarIcon from '@lucide/svelte/icons/radar';
 	import StickyNoteIcon from '@lucide/svelte/icons/sticky-note';
-	import SparklesIcon from '@lucide/svelte/icons/sparkles';
+	import NewspaperIcon from '@lucide/svelte/icons/newspaper';
 	import LayersIcon from '@lucide/svelte/icons/layers';
 	import WorkflowIcon from '@lucide/svelte/icons/workflow';
 	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
@@ -74,7 +74,7 @@
 				{
 					title: routeLabels['whats-new'],
 					url: ROUTES.whatsNew(),
-					icon: SparklesIcon,
+					icon: NewspaperIcon,
 					badge: whatsNewStore.unseen
 						? { label: compact(whatsNewStore.unseen), tone: 'info' as const }
 						: null
