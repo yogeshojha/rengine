@@ -21,7 +21,6 @@ from tools.httpx.client import HttpxClient, HttpxError
 logger = get_logger(__name__)
 
 _MEDIA_ROOT = "/app/scan_media"
-_MAX_TARGETS = 6000
 _WRITE_BATCH = 50
 
 
@@ -120,7 +119,8 @@ class ScreenshotStage(Stage):
             return StageResult(warnings=[str(exc)], partial=True)
 
         ranked = sorted(live, key=_rank)
-        chosen = ranked[:_MAX_TARGETS]
+        budget = self.cfg.max_screenshots
+        chosen = ranked[:budget] if budget else ranked
         by_url = {row[1]: row[0] for row in chosen}
         selected = [row[1] for row in chosen]
 
@@ -152,7 +152,7 @@ class ScreenshotStage(Stage):
             warnings.append(f"{no_answer:,} web assets did not answer during capture")
         if skipped:
             warnings.append(
-                f"{skipped:,} web assets beyond the {_MAX_TARGETS:,} budget were not captured"
+                f"{skipped:,} web assets beyond the {budget:,} screenshot budget were not captured"
             )
         return StageResult(
             counts={"screenshots": captured},

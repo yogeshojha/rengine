@@ -32,8 +32,6 @@ NO_FALLBACK_FLAG = "-no-fallback-scheme"
 _IDLE_FLOOR = 300
 _IDLE_TIMEOUT_FACTOR = 6
 _CAPTURE_IDLE_FLOOR = 300
-CAPTURE_SECONDS_PER_TARGET = 6
-MAX_CAPTURE_SECONDS = 7200
 
 _RESPONSE_SIZE_CAP = HTTPX_RESPONSE_CAP
 
@@ -183,10 +181,6 @@ class HttpxClient:
         if not targets:
             yield StreamOutcome(records=iter(()), return_code=0)
             return
-        ceiling = min(
-            MAX_CAPTURE_SECONDS,
-            max(DEFAULT_TIMEOUT, len(targets) * CAPTURE_SECONDS_PER_TARGET),
-        )
         with self._runner.stream_json(
             args=self._capture_args(),
             input_data=self._scoped(targets),
@@ -194,7 +188,7 @@ class HttpxClient:
             json_flag="-json",
             silent=True,
             silent_flag="-silent",
-            timeout=ceiling,
+            timeout=0,
             idle_timeout=max(_CAPTURE_IDLE_FLOOR, self.timeout * _IDLE_TIMEOUT_FACTOR),
             recorder=self.recorder,
             tool=HTTPX_BINARY,
