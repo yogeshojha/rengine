@@ -245,7 +245,7 @@ def _raise_if_broken(coverage: list[VulnerabilityCoverage]) -> None:
 
 
 def _budget_warnings(coverage: list[VulnerabilityCoverage]) -> list[str]:
-    """Fuzzing the time budget never finished."""
+    """A warning when the time budget cut fuzzing short."""
     cut = any(
         row.status == CoverageStatus.SKIPPED.value and row.error == BUDGET_NOTE
         for row in coverage

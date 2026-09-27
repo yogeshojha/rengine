@@ -392,9 +392,17 @@
 		pendingToolOptions = tool_options;
 	}
 
+	function canonTransport(o: TransportOverrides): string {
+		return JSON.stringify(
+			Object.keys(o)
+				.sort()
+				.map((k) => [k, o[k]?.rate ?? null, o[k]?.threads ?? null])
+		);
+	}
+
 	function setTransport(transport_overrides: TransportOverrides) {
-		const saved = JSON.stringify(engine?.transport_overrides ?? {});
-		pendingTransport = JSON.stringify(transport_overrides) === saved ? null : transport_overrides;
+		const saved = canonTransport(engine?.transport_overrides ?? {});
+		pendingTransport = canonTransport(transport_overrides) === saved ? null : transport_overrides;
 	}
 
 	function handleExportYaml() {

@@ -143,7 +143,7 @@ class ScreenshotStage(Stage):
         warnings = []
         if cut_short:
             warnings.append(
-                f"the renderer ran out of time. {captured:,} of "
+                f"the renderer stalled and was stopped. {captured:,} of "
                 f"{len(selected):,} web assets were captured."
             )
         if failed:

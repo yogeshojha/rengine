@@ -271,7 +271,7 @@ def test_the_schedule_spends_the_budget_in_tier_order(monkeypatch):
         rows=rows, paths={r.id: f"/t/{r.template_id}.yaml" for r in rows}
     )
     tiers = split(rows)
-    lanes = scanner._schedule(plan, tiers, library, scanner._blind_budget(plan))
+    lanes = scanner._schedule(plan, tiers, library, scanner._blind_core(plan, tiers))
 
     jobs = lanes[STANDARD]
     assert [j.tier for j in jobs] == [
@@ -313,10 +313,10 @@ def test_the_deep_sweep_is_its_own_tier_and_never_planned(monkeypatch):
         rows=rows, paths={r.id: f"/t/{r.template_id}.yaml" for r in rows}
     )
     tiers = split(rows)
-    budget = scanner._blind_budget(plan)
-    jobs = scanner._schedule(plan, tiers, library, budget)[STANDARD]
+    core = scanner._blind_core(plan, tiers)
+    jobs = scanner._schedule(plan, tiers, library, core)[STANDARD]
     assert [j.tier for j in jobs] == [Tier.BLIND.value]
-    deep = scanner._schedule_deep(plan, tiers, library, budget)[STANDARD]
+    deep = scanner._schedule_deep(plan, tiers, library, core)[STANDARD]
     assert [j.tier for j in deep] == [Tier.DEEP.value]
     assert deep[0].templates == ["/t/cve1.yaml"]
     assert Tier.DEEP.value not in ROOT_TIERS
@@ -388,11 +388,36 @@ def test_blind_and_deep_together_cover_every_product_check(monkeypatch):
         rows=rows, paths={r.id: f"/t/{r.template_id}.yaml" for r in rows}
     )
     tiers = split(rows)
-    budget = 2  # smaller than the 6-check product tier
-    blind = scanner._schedule(plan, tiers, library, budget)[STANDARD]
-    deep = scanner._schedule_deep(plan, tiers, library, budget)[STANDARD]
+    core = nuclei_scanner.blind_core(list(tiers.product), 2)  # smaller than the tier
+    blind = scanner._schedule(plan, tiers, library, core)[STANDARD]
+    deep = scanner._schedule_deep(plan, tiers, library, core)[STANDARD]
     covered = {
         t for job in blind if job.tier == Tier.BLIND.value for t in job.templates
     }
     covered |= {t for job in deep for t in job.templates}
     assert covered == {f"/t/cve{i}.yaml" for i in range(6)}
+
+
+def test_blind_is_scheduled_even_when_the_budget_is_zero(monkeypatch):
+    """A zero budget must still schedule the top check, or settle marks blind done unrun."""
+    monkeypatch.setattr(nuclei_scanner, "WAF_RATE_DIVISOR", 1)
+    scanner = _scanner(_Writes())
+    scanner._deadline = time.monotonic() - 1  # no time left
+    plan = SurfacePlan(roots=[_item("https://rep.example")])
+    rows = [
+        SimpleNamespace(
+            id=f"p{i}",
+            template_id=f"cve{i}",
+            tags=["cve", f"product{i}"],
+            protocol="http",
+            paths=[],
+            simple=False,
+            requests=1,
+            origin="official",
+        )
+        for i in range(3)
+    ]
+    tiers = split(rows)
+    assert scanner._blind_budget(plan) == 0
+    core = scanner._blind_core(plan, tiers)
+    assert len(core) == 1, "blind still schedules its top check when planned"
