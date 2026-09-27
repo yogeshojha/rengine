@@ -55,6 +55,8 @@ DROP_REASON_LABELS: dict[str, str] = {
     DropReason.OVER_CAP.value: "Over the target budget",
 }
 
+BUDGET_NOTE = f"{DROP_REASON_LABELS[DropReason.BUDGET.value]}."
+
 
 class ClusterSignal(StrEnum):
     ADDRESS = "address"
@@ -704,6 +706,7 @@ __all__ = [
     "BATCH_SECONDS",
     "BLIND_SWEEP_REQUESTS",
     "BODY_IDENTITY_BYTES",
+    "BUDGET_NOTE",
     "CLUSTER_SIGNAL_LABELS",
     "DEEP_BATCH_SECONDS",
     "DROP_REASON_LABELS",

@@ -277,15 +277,15 @@ def test_the_schedule_spends_the_budget_in_tier_order(monkeypatch):
     assert [j.tier for j in jobs] == [
         Tier.ONE_REQUEST.value,
         Tier.UNIVERSAL.value,
-        Tier.BLIND.value,
         Tier.MATCHED.value,
+        Tier.BLIND.value,
         Tier.SERVICES.value,
     ]
     assert len(jobs[0].items) == 3, "one-request runs on the members too, first"
     assert len(jobs[1].items) == 1, "universal runs on the representative"
     assert jobs[1].covered == 2
-    assert set(jobs[2].templates) == {"/t/geo.yaml", "/t/blind.yaml"}
-    assert jobs[3].templates == ["/t/geo.yaml"]
+    assert jobs[2].templates == ["/t/geo.yaml"], "matched runs before the blind sweep"
+    assert set(jobs[3].templates) == {"/t/geo.yaml", "/t/blind.yaml"}
     assert jobs[4].types == ("tcp", "ssl", "javascript")
     assert all(j.rate == 150 for j in jobs)
 

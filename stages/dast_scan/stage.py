@@ -5,6 +5,7 @@ import uuid
 from shared.definitions.intensity import TransportTool
 from shared.definitions.scan_surface import (
     BASE_MAX_DEPTH,
+    BUDGET_NOTE,
     MAX_BASES_PER_ORIGIN,
     SurfaceClass,
 )
@@ -181,12 +182,15 @@ class DastScanStage(Stage):
         self.session.commit()
         scan_surface.settle(self.session, self.ctx.scan_id)
         _raise_if_broken(rows)
+        warnings = _budget_warnings(rows)
         return StageResult(
             counts={
                 "vulnerabilities": total,
                 "requests": len(plan.requests),
                 "directories": len(plan.bases),
-            }
+            },
+            warnings=warnings,
+            partial=bool(warnings),
         )
 
     def _record(
@@ -238,6 +242,15 @@ def _raise_if_broken(coverage: list[VulnerabilityCoverage]) -> None:
     ]
     if broken:
         raise RuntimeError("; ".join(broken)[:1000])
+
+
+def _budget_warnings(coverage: list[VulnerabilityCoverage]) -> list[str]:
+    """Fuzzing the time budget never finished."""
+    cut = any(
+        row.status == CoverageStatus.SKIPPED.value and row.error == BUDGET_NOTE
+        for row in coverage
+    )
+    return ["Fuzzing did not finish within the time budget."] if cut else []
 
 
 __all__ = ["DastScanStage"]

@@ -59,7 +59,7 @@ def _status_rank(status: int | None) -> int:
 
 
 def _rank(row) -> tuple:
-    """Capture the most useful web assets first: answering, hostname, https, then the value."""
+    """Rank web assets: answering, hostname, https, then the value."""
     _id, url, host, scheme, status = row
     return (
         _status_rank(status),

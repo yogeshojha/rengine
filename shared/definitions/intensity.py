@@ -168,7 +168,6 @@ def transport_for(
     )
 
 
-_TOOLS: frozenset[str] = frozenset(t.value for t in TransportTool)
 _OVERRIDE_FIELDS: frozenset[str] = frozenset({"rate", "threads"})
 
 
@@ -181,8 +180,8 @@ def clean_transport_overrides(raw: object) -> dict[str, dict[str, int]]:
         raise ValueError(msg)
     clean: dict[str, dict[str, int]] = {}
     for tool, values in raw.items():
-        if tool not in _TOOLS:
-            msg = f"unknown tool {tool!r}."
+        if tool not in RATE_TOOLS:
+            msg = f"{tool!r} is not tunable."
             raise ValueError(msg)
         if not isinstance(values, dict):
             msg = f"{tool}: expected rate and concurrency."
@@ -194,18 +193,13 @@ def clean_transport_overrides(raw: object) -> dict[str, dict[str, int]]:
                 raise ValueError(msg)
             if value is None:
                 continue
-            if field == "rate" and tool not in RATE_TOOLS:
-                msg = f"{tool}: rate is not settable."
-                raise ValueError(msg)
             try:
                 number = int(value)
             except (TypeError, ValueError) as exc:
                 msg = f"{tool}.{field}: not a whole number."
                 raise ValueError(msg) from exc
-            if field == "rate":
-                entry[field] = _clamp(number, 1, MAX_RATE)
-            else:
-                entry[field] = _clamp(number, 1, MAX_THREADS)
+            limit = MAX_RATE if field == "rate" else MAX_THREADS
+            entry[field] = _clamp(number, 1, limit)
         if entry:
             clean[tool] = entry
     return clean

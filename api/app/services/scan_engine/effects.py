@@ -7,7 +7,7 @@ from app.services.scan_engine.validation import (
     _validate_stages,
 )
 from shared.definitions.intensity import (
-    TransportTool,
+    RATE_TOOLS,
     clean_transport_overrides,
     tool_rate,
     tool_threads,
@@ -142,14 +142,8 @@ async def preview_engine(
             )
     draft = _DraftEngine(data)
     resolved = merge_engine_context(draft, context, "preview", data.target_type)
-    preset_threads = {
-        tool.value: tool_threads(tool.value, data.intensity) for tool in TransportTool
-    }
-    preset_rates: dict[str, int] = {}
-    for tool in TransportTool:
-        rate = tool_rate(tool.value, data.intensity)
-        if rate is not None:
-            preset_rates[tool.value] = rate
+    preset_threads = {tool: tool_threads(tool, data.intensity) for tool in RATE_TOOLS}
+    preset_rates = {tool: tool_rate(tool, data.intensity) or 0 for tool in RATE_TOOLS}
     phases, warnings = stage_effects(resolved, set())
     return EnginePreviewResult(
         phases=phases,

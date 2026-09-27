@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/utilities/page-title';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { onMount, untrack } from 'svelte';
 	import { page } from '$app/state';
@@ -142,6 +143,7 @@
 	});
 
 	const savedYaml = $derived(engine ? (engine.yaml_source ?? engineToYaml(engine, catalog)) : '');
+	const currentTransport = $derived(pendingTransport ?? engine?.transport_overrides ?? {});
 	const hasUnsavedChanges = $derived(
 		Boolean(engine) &&
 			Boolean(yamlSource) &&
@@ -275,7 +277,7 @@
 		const stages = parsed?.stages;
 		const intensity = parsed?.intensity;
 		const target = lensTargetType;
-		const transport = engine?.transport_overrides ?? {};
+		const transport = currentTransport;
 		if (!stages || !engineCatalogStore.hasFetched) return;
 		const timer = setTimeout(
 			() => refreshPreview(target, intensity as Intensity, stages, transport),
@@ -391,8 +393,8 @@
 	}
 
 	function setTransport(transport_overrides: TransportOverrides) {
-		if (engine) engine = { ...engine, transport_overrides };
-		pendingTransport = transport_overrides;
+		const saved = JSON.stringify(engine?.transport_overrides ?? {});
+		pendingTransport = JSON.stringify(transport_overrides) === saved ? null : transport_overrides;
 	}
 
 	function handleExportYaml() {
@@ -500,7 +502,7 @@
 	});
 </script>
 
-<svelte:head><title>{engine?.name ?? routeLabels.engines} · reNgine</title></svelte:head>
+<svelte:head><title>{pageTitle(engine?.name ?? routeLabels.engines)}</title></svelte:head>
 
 {#snippet stageRow(stage: StageCatalogEntry, support: boolean)}
 	<StageRow
@@ -781,7 +783,7 @@
 			onSave={handleSave}
 			onNameChange={setName}
 			onIntensityChange={setIntensity}
-			custom={hasCustomTransport(engine.transport_overrides)}
+			custom={hasCustomTransport(currentTransport)}
 			onToolOptions={() => (showToolOptions = true)}
 			onRates={() => (showTransport = true)}
 			onRun={() => (showLaunch = true)}
@@ -876,7 +878,7 @@
 		<TransportPanel
 			open={showTransport}
 			intensity={(draft ?? engine).intensity}
-			overrides={engine.transport_overrides ?? {}}
+			overrides={currentTransport}
 			rateTools={engineCatalogStore.catalog?.rate_tools ?? []}
 			{presetRates}
 			{presetThreads}

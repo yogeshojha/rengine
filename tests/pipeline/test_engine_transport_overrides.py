@@ -50,7 +50,9 @@ def test_the_validator_clamps_and_rejects():
         "httpx": {"rate": 80}
     }
     assert clean_transport_overrides({"httpx": {"rate": None}}) == {}
-    with pytest.raises(ValueError, match="unknown tool"):
+    with pytest.raises(ValueError, match="not tunable"):
         clean_transport_overrides({"nope": {"rate": 1}})
+    with pytest.raises(ValueError, match="not tunable"):
+        clean_transport_overrides({"dnsx": {"threads": 5}})
     with pytest.raises(ValueError, match="unknown setting"):
         clean_transport_overrides({"httpx": {"speed": 1}})

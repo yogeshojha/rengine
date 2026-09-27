@@ -397,7 +397,6 @@ def merge_engine_context(
     engine_transport = getattr(engine, "transport_overrides", None) or {}
 
     def _rate_override(tool: str) -> int | None:
-        # both are "no faster than" intents; the lower wins so neither is raised
         candidates = [
             int(v)
             for v in (
