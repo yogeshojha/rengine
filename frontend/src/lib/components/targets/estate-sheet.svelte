@@ -1,11 +1,16 @@
 <script lang="ts">
 	import { toast } from 'svelte-sonner';
-	import { SvelteSet } from 'svelte/reactivity';
+	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import SignalSheet, { type SheetRow } from '$lib/components/dashboard/signal-sheet.svelte';
 	import { targetsApi } from '$lib/api/targets';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { ROUTES } from '$lib/config/routes';
-	import { ESTATE_STRENGTH_LABELS, EstateStrength, PROVIDER_KIND_LABELS } from '$lib/config/estate';
+	import {
+		ESTATE_STRENGTH_LABELS,
+		EstateStrength,
+		EstateTriageState,
+		PROVIDER_KIND_LABELS
+	} from '$lib/config/estate';
 	import type { EstateDomain, EstateNeighbourCert, EstateProvider } from '$lib/types/estate';
 
 	interface Props {
@@ -18,6 +23,7 @@
 		neighbours?: EstateNeighbourCert[];
 		loading?: boolean;
 		onAdded?: (domain: string) => void;
+		onTriaged?: (domain: string, state: string) => void;
 	}
 
 	let {
@@ -29,12 +35,17 @@
 		providers = [],
 		neighbours = [],
 		loading = false,
-		onAdded
+		onAdded,
+		onTriaged
 	}: Props = $props();
 
 	let added = new SvelteSet<string>();
 	let pending = $state<string | null>(null);
 	let adding = $state(false);
+	let states = new SvelteMap<string, string>();
+	let triaging = $state<string | null>(null);
+
+	const stateOf = (d: EstateDomain) => states.get(d.domain) ?? d.state;
 
 	export function evidence(d: EstateDomain): string {
 		return d.signals.map((s) => (s.detail ? `${s.label} ${s.detail}` : s.label)).join(' · ');
@@ -61,7 +72,34 @@
 		else toast.error(`Target ${domain} not added`);
 	}
 
-	let candidates = $derived(domains.filter((d) => !d.target_id && !added.has(d.domain)));
+	async function setState(domain: string, next: EstateTriageState) {
+		const projectId = projectsStore.activeProject?.id;
+		if (!projectId) return;
+		const previous = states.get(domain);
+		states.set(domain, next);
+		triaging = domain;
+		try {
+			await targetsApi.estateTriage(projectId, [domain], next);
+			onTriaged?.(domain, next);
+			toast.success(
+				next === EstateTriageState.DISMISSED ? `${domain} dismissed` : `${domain} restored`
+			);
+		} catch {
+			if (previous === undefined) states.delete(domain);
+			else states.set(domain, previous);
+			toast.error(
+				next === EstateTriageState.DISMISSED ? `${domain} not dismissed` : `${domain} not restored`
+			);
+		} finally {
+			triaging = null;
+		}
+	}
+
+	let candidates = $derived(
+		domains.filter(
+			(d) => !d.target_id && !added.has(d.domain) && stateOf(d) === EstateTriageState.OPEN
+		)
+	);
 
 	async function addAll() {
 		adding = true;
@@ -72,32 +110,54 @@
 		else toast.error('Targets not added');
 	}
 
-	let rows = $derived.by<SheetRow[]>(() => {
-		const out: SheetRow[] = [];
-		const ordered = [...domains.filter((d) => !d.target_id), ...domains.filter((d) => d.target_id)];
-		for (const d of ordered) {
-			const tracked = !!d.target_id;
-			const sources = d.sources.length
-				? ` · from ${d.sources.map((s) => s.target_value).join(', ')}`
-				: '';
-			out.push({
-				key: d.domain,
-				primary: d.domain,
-				secondary: `${evidence(d)}${sources}`,
-				meta: ESTATE_STRENGTH_LABELS[d.strength ? EstateStrength.DIRECT : EstateStrength.SHARED],
-				group: tracked ? 'Targets' : 'Candidates',
-				href: tracked ? ROUTES.target(d.target_id!) : undefined,
-				action: tracked
-					? undefined
+	function domainRow(d: EstateDomain): SheetRow {
+		const tracked = !!d.target_id;
+		const dismissed = !tracked && stateOf(d) === EstateTriageState.DISMISSED;
+		const sources = d.sources.length
+			? ` · from ${d.sources.map((s) => s.target_value).join(', ')}`
+			: '';
+		return {
+			key: d.domain,
+			primary: d.domain,
+			secondary: `${evidence(d)}${sources}`,
+			meta: ESTATE_STRENGTH_LABELS[d.strength ? EstateStrength.DIRECT : EstateStrength.SHARED],
+			group: tracked ? 'Targets' : dismissed ? 'Dismissed' : 'Candidates',
+			href: tracked ? ROUTES.target(d.target_id!) : undefined,
+			action: tracked
+				? undefined
+				: dismissed
+					? {
+							label: 'Restore',
+							doneLabel: 'Restored',
+							pending: triaging === d.domain,
+							onClick: () => setState(d.domain, EstateTriageState.OPEN)
+						}
 					: {
 							label: 'Add',
 							doneLabel: 'Added',
 							done: added.has(d.domain),
 							pending: pending === d.domain,
 							onClick: () => addOne(d.domain)
+						},
+			quietAction:
+				tracked || dismissed
+					? undefined
+					: {
+							label: 'Dismiss',
+							doneLabel: 'Dismissed',
+							pending: triaging === d.domain,
+							onClick: () => setState(d.domain, EstateTriageState.DISMISSED)
 						}
-			});
-		}
+		};
+	}
+
+	let rows = $derived.by<SheetRow[]>(() => {
+		const open = domains.filter((d) => !d.target_id && stateOf(d) === EstateTriageState.OPEN);
+		const tracked = domains.filter((d) => d.target_id);
+		const dismissed = domains.filter(
+			(d) => !d.target_id && stateOf(d) === EstateTriageState.DISMISSED
+		);
+		const out: SheetRow[] = [...open, ...tracked].map(domainRow);
 		for (const p of providers)
 			out.push({
 				key: `provider:${p.name}:${p.kind}`,
@@ -114,6 +174,7 @@
 				meta: `${n.names} names`,
 				group: 'Platform neighbours'
 			});
+		out.push(...dismissed.map(domainRow));
 		return out;
 	});
 </script>

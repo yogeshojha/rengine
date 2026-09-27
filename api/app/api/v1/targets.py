@@ -40,7 +40,7 @@ from shared.models import (
     TargetValidationRequest,
     TargetValidationResponse,
 )
-from shared.models.estate import ProjectEstate, TargetEstate
+from shared.models.estate import EstateTriageUpdate, ProjectEstate, TargetEstate
 from shared.models.relations import TargetPrograms, TargetRelations
 from shared.models.target_asset import TargetAssetFilter, TargetAssetPage
 from shared.models.target_summary import TargetSummaryRead
@@ -130,6 +130,20 @@ async def get_project_estate(
 ):
     """Domains the project's targets point at that are not targets."""
     return await TargetEstateService(session).for_project(project_id)
+
+
+@router.patch("/estate/triage", response_model=dict[str, int])
+async def triage_estate(
+    _current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    body: EstateTriageUpdate,
+    project_id: Annotated[UUID, Query(description="Project ID")],
+):
+    """Set the review state of candidate targets."""
+    updated = await TargetEstateService(session).triage(
+        project_id, body.domains, body.state.value
+    )
+    return {"updated": updated}
 
 
 @router.get("/counts", response_model=dict[str, int])

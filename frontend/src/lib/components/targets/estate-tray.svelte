@@ -1,9 +1,10 @@
 <script lang="ts">
 	import Link2 from '@lucide/svelte/icons/link-2';
-	import { SvelteSet } from 'svelte/reactivity';
+	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { Button } from '$lib/components/ui/button';
 	import Hint from '$lib/components/hint.svelte';
 	import EstateSheet from '$lib/components/targets/estate-sheet.svelte';
+	import { EstateTriageState } from '$lib/config/estate';
 	import type { EstateDomain, EstateNeighbourCert, EstateProvider } from '$lib/types/estate';
 
 	interface Props {
@@ -29,12 +30,24 @@
 	const SHOWN = 3;
 	let open = $state(false);
 	let added = new SvelteSet<string>();
+	let states = new SvelteMap<string, string>();
+	const stateOf = (d: EstateDomain) => states.get(d.domain) ?? d.state;
 	let candidates = $derived(
 		domains
-			.filter((d) => !d.target_id && !added.has(d.domain))
+			.filter((d) => !d.target_id && !added.has(d.domain) && stateOf(d) === EstateTriageState.OPEN)
 			.toSorted((a, b) => b.strength - a.strength)
 	);
-	let total = $derived(Math.max(0, count - added.size));
+	let triageDelta = $derived(
+		domains.reduce((n, d) => {
+			if (d.target_id) return n;
+			const wasOpen = d.state === EstateTriageState.OPEN;
+			const isOpen = stateOf(d) === EstateTriageState.OPEN;
+			if (wasOpen && !isOpen) return n + 1;
+			if (!wasOpen && isOpen) return n - 1;
+			return n;
+		}, 0)
+	);
+	let total = $derived(Math.max(0, count - added.size - triageDelta));
 	let strengths = $derived.by(() => {
 		const direct = candidates.filter((d) => d.strength).length;
 		const shared = candidates.length - direct;
@@ -46,7 +59,7 @@
 	let subline = $derived(detail || strengths);
 	let sheetDescription = $derived.by(() => {
 		const basis = `Tied to ${subject ?? 'the targets'} by scan evidence.`;
-		const shown = domains.filter((d) => !d.target_id).length;
+		const shown = domains.filter((d) => !d.target_id && d.state === EstateTriageState.OPEN).length;
 		if (shown >= count) return basis;
 		return `${basis} ${shown.toLocaleString()} of ${count.toLocaleString()} shown.`;
 	});
@@ -107,5 +120,6 @@
 			added.add(d);
 			onAdded?.();
 		}}
+		onTriaged={(d, s) => states.set(d, s)}
 	/>
 {/if}

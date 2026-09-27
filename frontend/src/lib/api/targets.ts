@@ -98,6 +98,17 @@ export const targetsApi = {
 		return api.get<ProjectEstate>(`/targets/estate?project_id=${projectId}`);
 	},
 
+	async estateTriage(
+		projectId: string,
+		domains: string[],
+		state: string
+	): Promise<{ updated: number }> {
+		return api.patch<{ updated: number }>(`/targets/estate/triage?project_id=${projectId}`, {
+			domains,
+			state
+		});
+	},
+
 	async getPrograms(targetId: string, projectId: string): Promise<TargetPrograms> {
 		return api.get<TargetPrograms>(`/targets/${targetId}/programs?project_id=${projectId}`);
 	},

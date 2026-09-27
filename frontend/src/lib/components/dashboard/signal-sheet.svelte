@@ -15,6 +15,7 @@
 		tone?: 'warn' | 'bad';
 		group?: string;
 		action?: SheetRowAction;
+		quietAction?: SheetRowAction;
 	}
 	export interface SheetAction {
 		label: string;
@@ -132,13 +133,24 @@
 								{#if r.action}
 									<div class="flex items-start gap-3 px-3 py-2.5">
 										{@render body(r)}
-										<span class="flex h-5 shrink-0 items-center">
+										<span class="flex h-5 shrink-0 items-center gap-1.5">
 											{#if r.action.done}
 												<span class="flex items-center gap-1 text-xs text-success">
 													<Check class="size-3.5" />
 													{r.action.doneLabel}
 												</span>
 											{:else}
+												{#if r.quietAction}
+													<LoadingButton
+														variant="ghost"
+														size="sm"
+														class="h-6 px-2 text-xs text-muted-foreground"
+														loading={r.quietAction.pending}
+														onclick={r.quietAction.onClick}
+													>
+														{r.quietAction.label}
+													</LoadingButton>
+												{/if}
 												<LoadingButton
 													variant="outline"
 													size="sm"

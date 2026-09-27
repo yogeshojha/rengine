@@ -14,6 +14,11 @@ export enum EstateStrength {
 	SHARED = 'shared'
 }
 
+export enum EstateTriageState {
+	OPEN = 'open',
+	DISMISSED = 'dismissed'
+}
+
 export enum ProviderKind {
 	EDGE = 'edge',
 	HOSTING = 'hosting',

@@ -17,6 +17,7 @@ export interface EstateDomain {
 	domain: string;
 	target_id: string | null;
 	strength: number;
+	state: string;
 	signals: EstateSignal[];
 	sources: EstateSource[];
 }

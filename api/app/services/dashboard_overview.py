@@ -55,6 +55,7 @@ from shared.definitions.dashboard import (
     cert_bucket_query,
 )
 from shared.definitions.domains import MAX_RELATED_HOSTNAMES
+from shared.definitions.estate import EstateTriageState
 from shared.definitions.evidence import EVIDENCE_ORDER, Evidence
 from shared.definitions.ports import (
     SENSITIVE_PORTS,
@@ -309,7 +310,10 @@ class DashboardOverviewService:
         """Registrable domains the estate names that are not targets."""
         estate = await TargetEstateService(self.session).for_project(project_id)
         out = DashboardDiscovery(targets_examined=estate.targets_examined)
-        for d in estate.domains[:DISCOVERY_LIMIT]:
+        candidates = [
+            d for d in estate.domains if d.state == EstateTriageState.OPEN.value
+        ]
+        for d in candidates[:DISCOVERY_LIMIT]:
             hosts = sorted({h for s in d.signals for h in s.hosts})
             out.domains.append(
                 DashboardDiscoveredDomain(

@@ -35,6 +35,11 @@ class ProviderKind(StrEnum):
     MAIL = "mail"
 
 
+class EstateTriageState(StrEnum):
+    OPEN = "open"
+    DISMISSED = "dismissed"
+
+
 ESTATE_REASON_LABELS: dict[str, str] = {
     EstateReason.REDIRECT.value: "Redirects to",
     EstateReason.CNAME.value: "Delegates to",
@@ -71,6 +76,7 @@ NEIGHBOUR_MAX_NAMES = 5
 MAX_ESTATE_DOMAINS = 60
 MAX_ESTATE_HOSTS = 6
 MAX_PROJECT_ESTATE = 60
+MAX_ESTATE_DOMAIN_LENGTH = 253
 
 # suffix -> provider name, for hosts that are a platform's rather than an estate's
 PROVIDER_SUFFIXES: dict[str, str] = {

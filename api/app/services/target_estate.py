@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import ipaddress
 import re
+import uuid as uuid_module
 from collections import defaultdict
 from dataclasses import dataclass, field
 from urllib.parse import urlsplit
 from uuid import UUID
 
 from sqlalchemy import func, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.surface_scope import SurfaceScopeService
@@ -29,6 +31,7 @@ from shared.definitions.estate import (
     PROVIDER_SUFFIXES,
     EstateReason,
     EstateStrength,
+    EstateTriageState,
     ProviderKind,
     provider_of,
 )
@@ -45,6 +48,7 @@ from shared.models.estate import (
     EstateProvider,
     EstateSignal,
     EstateSource,
+    EstateTriage,
     ProjectEstate,
     TargetEstate,
 )
@@ -53,6 +57,7 @@ from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.vulnerability import Vulnerability
 from shared.services.asset_query import lead_cache
+from shared.utils.datetime import utc_now
 from shared.utils.net import cert_covers
 
 _EDGE_PROVIDERS = frozenset(
@@ -143,6 +148,7 @@ class TargetEstateService:
         scan_id: UUID | None = None,
         *,
         relations: bool = True,
+        dismissed: set[str] | None = None,
     ) -> TargetEstate:
         targets = await self._targets(project_id)
         target = targets.get(target_id)
@@ -179,22 +185,29 @@ class TargetEstateService:
                 await self._addresses(project_id, scan_id, target_id, targets, signals)
 
         domains = self._domains(signals, apexes, root)
+        if dismissed is None:
+            dismissed = await self._dismissed(project_id)
+        for d in domains:
+            if d.target_id is None and d.domain in dismissed:
+                d.state = EstateTriageState.DISMISSED.value
+        open_domains = [d for d in domains if d.state == EstateTriageState.OPEN.value]
+        closed = [d for d in domains if d.state != EstateTriageState.OPEN.value]
         out = TargetEstate(
             target_id=target_id,
             scan_id=scan_id,
             root=root,
-            domains=domains[:MAX_ESTATE_DOMAINS],
+            domains=(open_domains + closed)[:MAX_ESTATE_DOMAINS],
             providers=self._providers(providers),
             neighbours=sorted(neighbours, key=lambda n: -n.names),
             own=list(dict.fromkeys(own)),
             considered_targets=len(targets),
         )
         out.counts = EstateCounts(
-            untracked=sum(1 for d in domains if d.target_id is None),
+            untracked=sum(1 for d in open_domains if d.target_id is None),
             tracked=sum(1 for d in domains if d.target_id is not None),
             providers=len(out.providers),
             neighbour_names=sum(n.names for n in neighbours),
-            by_reason=self._by_reason(domains),
+            by_reason=self._by_reason(open_domains),
         )
         return out
 
@@ -217,6 +230,7 @@ class TargetEstateService:
         self, project_id: UUID, covering: dict[UUID, UUID]
     ) -> ProjectEstate:
         targets = await self._targets(project_id)
+        dismissed = await self._dismissed(project_id)
         merged: dict[str, EstateDomain] = {}
         examined = 0
         for target_id, scan_id in covering.items():
@@ -225,12 +239,14 @@ class TargetEstateService:
                 continue
             examined += 1
             estate = await self.for_target(
-                project_id, target_id, scan_id, relations=False
+                project_id, target_id, scan_id, relations=False, dismissed=dismissed
             )
             for d in estate.domains:
                 if d.target_id is not None:
                     continue
-                entry = merged.setdefault(d.domain, EstateDomain(domain=d.domain))
+                entry = merged.setdefault(
+                    d.domain, EstateDomain(domain=d.domain, state=d.state)
+                )
                 entry.strength = max(entry.strength, d.strength)
                 entry.sources.append(
                     EstateSource(
@@ -250,15 +266,61 @@ class TargetEstateService:
                         entry.signals.append(s.model_copy())
         domains = sorted(
             merged.values(),
-            key=lambda d: (-d.strength, -len(d.sources), d.domain),
+            key=lambda d: (
+                d.state != EstateTriageState.OPEN.value,
+                -d.strength,
+                -len(d.sources),
+                d.domain,
+            ),
         )
+        open_count = sum(1 for d in domains if d.state == EstateTriageState.OPEN.value)
         return ProjectEstate(
             targets_examined=examined,
-            untracked=len(domains),
+            untracked=open_count,
             domains=domains[:MAX_PROJECT_ESTATE],
         )
 
+    async def triage(self, project_id: UUID, domains: list[str], state: str) -> int:
+        clean = sorted({_clean(d) for d in domains} - {""})
+        if not clean:
+            return 0
+        now = utc_now()
+        stmt = insert(EstateTriage).values(
+            [
+                {
+                    "id": uuid_module.uuid4(),
+                    "project_id": project_id,
+                    "domain": domain,
+                    "state": state,
+                    "updated_at": now,
+                }
+                for domain in clean
+            ]
+        )
+        stmt = stmt.on_conflict_do_update(
+            constraint="uq_estate_triage_project_domain",
+            set_={"state": stmt.excluded.state, "updated_at": stmt.excluded.updated_at},
+        )
+        await self.session.execute(stmt)
+        await self.session.commit()
+        target_ids = (
+            await self.session.execute(
+                select(Target.id).where(Target.project_id == project_id)
+            )
+        ).scalars()
+        await lead_cache.bump(list(target_ids))
+        return len(clean)
+
     # ---------- readers ----------
+
+    async def _dismissed(self, project_id: UUID) -> set[str]:
+        rows = await self.session.execute(
+            select(EstateTriage.domain).where(
+                EstateTriage.project_id == project_id,
+                EstateTriage.state == EstateTriageState.DISMISSED.value,
+            )
+        )
+        return set(rows.scalars())
 
     async def _drop_claimed(
         self, scan_id: UUID, signals: dict[str, dict[str, _Signal]]
