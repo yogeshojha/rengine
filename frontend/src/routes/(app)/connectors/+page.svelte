@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/utilities/page-title';
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import { browser } from '$app/environment';
@@ -107,12 +108,12 @@
 	}
 </script>
 
-<svelte:head><title>{routeLabels.connectors} · reNgine</title></svelte:head>
+<svelte:head><title>{pageTitle(routeLabels.connectors)}</title></svelte:head>
 
-<div class="space-y-6 p-4 md:p-6">
+<div class="space-y-6">
 	<header class="flex flex-wrap items-start justify-between gap-4">
 		<div class="min-w-0">
-			<h1 class="text-xl font-semibold">{routeLabels.connectors}</h1>
+			<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.connectors}</h1>
 		</div>
 		<Button size="sm" onclick={() => (newOpen = true)}>
 			<PlusIcon class="size-4" />

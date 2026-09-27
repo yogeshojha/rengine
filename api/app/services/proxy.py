@@ -7,13 +7,12 @@ from uuid import UUID
 
 import httpx
 from fastapi import HTTPException, status
-from sqlalchemy import select, text, update
+from sqlalchemy import func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.crypto import encrypt_secret
 from shared.http import get_async_client
 from shared.models.proxy import (
-    PROXY_MODES,
     PROXY_SCHEMES,
     Proxy,
     ProxyCreate,
@@ -23,6 +22,7 @@ from shared.models.proxy import (
     ProxyTestResult,
     ProxyUpdate,
 )
+from shared.models.scan_context import ScanContext
 from shared.services.proxy_resolve import (
     build_proxy_url as _build_url,
 )
@@ -42,16 +42,11 @@ _TCP_TIMEOUT = 6.0
 _MIN_PORT = 1
 _MAX_PORT = 65535
 _DEFAULT_LOCK_KEY = 0x70726F78
+_MAX_TESTED = 10
 
 
 def _bad(detail: str) -> HTTPException:
     return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
-
-
-def _validate_mode(mode: str) -> None:
-    if mode not in PROXY_MODES:
-        msg = f"Invalid mode. Must be one of {', '.join(PROXY_MODES)}."
-        raise _bad(msg)
 
 
 def _validate_endpoints(endpoints: list[ProxyEndpoint]) -> None:
@@ -77,10 +72,11 @@ def _endpoint_key(ep: ProxyEndpoint) -> tuple:
 
 
 def _mask_url(ep: ProxyEndpoint) -> str:
+    authority = host_port(ep.host, ep.port)
     if ep.username:
         cred = f"{ep.username}:{MASK}@" if ep.password else f"{ep.username}@"
-        return f"{ep.scheme}://{cred}{ep.host}:{ep.port}"
-    return f"{ep.scheme}://{ep.host}:{ep.port}"
+        return f"{ep.scheme}://{cred}{authority}"
+    return f"{ep.scheme}://{authority}"
 
 
 def _endpoint_to_read(ep: ProxyEndpoint) -> ProxyEndpointRead:
@@ -99,21 +95,46 @@ def _encrypt_endpoints(endpoints: list[ProxyEndpoint]) -> str:
     return encrypt_secret(json.dumps(payload))
 
 
+def _summarize(
+    endpoints: list[ProxyEndpoint], results: list[ProxyTestResult]
+) -> ProxyTestResult:
+    if len(results) == 1:
+        return results[0]
+    passed = [r for r in results if r.success]
+    if len(passed) == len(results):
+        return ProxyTestResult(
+            success=True,
+            message=f"All {len(results)} endpoints carried the request.",
+            latency_ms=max(r.latency_ms or 0 for r in passed),
+            reachable=True,
+        )
+    failed = next(i for i, r in enumerate(results) if not r.success)
+    ep = endpoints[failed]
+    return ProxyTestResult(
+        success=False,
+        message=(
+            f"{len(passed)} of {len(results)} endpoints carried the request. "
+            f"{host_port(ep.host, ep.port)}: {results[failed].message}"
+        ),
+        reachable=all(r.reachable for r in results),
+    )
+
+
 class ProxyService:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    def to_read(self, proxy: Proxy) -> ProxyRead:
+    def to_read(self, proxy: Proxy, contexts: int = 0) -> ProxyRead:
         endpoints = _load_endpoints(proxy)
         return ProxyRead(
             id=proxy.id,
             name=proxy.name,
             description=proxy.description,
-            mode=proxy.mode,
             is_active=proxy.is_active,
             is_default=proxy.is_default,
             endpoints=[_endpoint_to_read(e) for e in endpoints],
             endpoint_count=proxy.endpoint_count,
+            contexts=contexts,
             created_at=proxy.created_at,
             updated_at=proxy.updated_at,
             last_test_at=proxy.last_test_at,
@@ -121,24 +142,37 @@ class ProxyService:
             last_test_message=proxy.last_test_message,
         )
 
+    async def _read(self, proxy: Proxy) -> ProxyRead:
+        used = await self.session.scalar(
+            select(func.count()).where(ScanContext.proxy_id == proxy.id)
+        )
+        return self.to_read(proxy, int(used or 0))
+
     async def list(self) -> list[ProxyRead]:
         result = await self.session.execute(
             select(Proxy).order_by(Proxy.is_default.desc(), Proxy.updated_at.desc())
         )
-        return [self.to_read(p) for p in result.scalars().all()]
+        used = dict(
+            (
+                await self.session.execute(
+                    select(ScanContext.proxy_id, func.count())
+                    .where(ScanContext.proxy_id.is_not(None))
+                    .group_by(ScanContext.proxy_id)
+                )
+            ).all()
+        )
+        return [self.to_read(p, used.get(p.id, 0)) for p in result.scalars().all()]
 
     async def get(self, id: UUID) -> ProxyRead:
         proxy = await self._get_or_404(id)
-        return self.to_read(proxy)
+        return await self._read(proxy)
 
     async def create(self, data: ProxyCreate, created_by: UUID) -> ProxyRead:
-        _validate_mode(data.mode)
         _validate_endpoints(data.endpoints)
 
         proxy = Proxy(
             name=data.name,
             description=data.description,
-            mode=data.mode,
             is_active=data.is_active,
             is_default=data.is_default,
             endpoints_encrypted=_encrypt_endpoints(data.endpoints),
@@ -151,7 +185,7 @@ class ProxyService:
             await self._unset_other_defaults(proxy.id)
         await self.session.commit()
         await self.session.refresh(proxy)
-        return self.to_read(proxy)
+        return await self._read(proxy)
 
     async def update(self, id: UUID, data: ProxyUpdate) -> ProxyRead:
         proxy = await self._get_or_404(id)
@@ -160,9 +194,6 @@ class ProxyService:
             proxy.name = data.name
         if data.description is not None:
             proxy.description = data.description
-        if data.mode is not None:
-            _validate_mode(data.mode)
-            proxy.mode = data.mode
         if data.is_active is not None:
             proxy.is_active = data.is_active
 
@@ -181,10 +212,15 @@ class ProxyService:
             await self._unset_other_defaults(proxy.id)
         await self.session.commit()
         await self.session.refresh(proxy)
-        return self.to_read(proxy)
+        return await self._read(proxy)
 
     async def delete(self, id: UUID) -> bool:
         proxy = await self._get_or_404(id)
+        await self.session.execute(
+            update(ScanContext)
+            .where(ScanContext.proxy_id == proxy.id)
+            .values(proxy_id=None)
+        )
         await self.session.delete(proxy)
         await self.session.commit()
         return True
@@ -197,7 +233,7 @@ class ProxyService:
         proxy.updated_at = utc_now()
         await self.session.commit()
         await self.session.refresh(proxy)
-        return self.to_read(proxy)
+        return await self._read(proxy)
 
     async def test(self, id: UUID) -> ProxyTestResult:
         proxy = await self._get_or_404(id)
@@ -208,14 +244,27 @@ class ProxyService:
                 ProxyTestResult(success=False, message="No endpoints configured."),
             )
 
-        ep = endpoints[0]
-        url = _build_url(ep)
-        result = await self._probe(ep, url)
-        return await self._persist_test(proxy, result)
+        tested = endpoints[:_MAX_TESTED]
+        results = await asyncio.gather(
+            *(self._probe(ep, _build_url(ep)) for ep in tested)
+        )
+        return await self._persist_test(proxy, _summarize(tested, results))
 
-    async def resolve_proxy_url(self, proxy_id: UUID) -> str | None:
-        proxy = await self.session.get(Proxy, proxy_id)
-        return _resolve_proxy_url(proxy)
+    async def scan_proxy(self, context: ScanContext | None) -> Proxy | None:
+        """The context's proxy, or the default proxy for a scan without a context."""
+        if context is None:
+            result = await self.session.execute(
+                select(Proxy).where(
+                    Proxy.is_default.is_(True), Proxy.is_active.is_(True)
+                )
+            )
+            return result.scalars().first()
+        if context.proxy_id is None:
+            return None
+        return await self.session.get(Proxy, context.proxy_id)
+
+    async def scan_proxy_url(self, context: ScanContext | None) -> str | None:
+        return _resolve_proxy_url(await self.scan_proxy(context))
 
     def _merge_endpoints(
         self, proxy: Proxy, incoming: list[ProxyEndpoint]

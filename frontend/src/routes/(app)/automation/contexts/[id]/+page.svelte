@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/utilities/page-title';
 	import { onMount, untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { page } from '$app/state';
@@ -122,6 +123,18 @@
 		if (!proxiesStore.hasFetched) untrack(() => proxiesStore.fetch());
 	});
 
+	let proxyPreset = false;
+	$effect(() => {
+		const fallback = proxiesStore.defaultId;
+		if (!isNew || !draft || proxyPreset || !proxiesStore.hasFetched) return;
+		proxyPreset = true;
+		if (fallback && !draft.proxy_id) {
+			untrack(() => {
+				if (draft) draft.proxy_id = fallback;
+			});
+		}
+	});
+
 	$effect(() => {
 		const project = projectsStore.activeProject;
 		const id = contextId;
@@ -187,6 +200,7 @@
 		const templateKey = page.url.searchParams.get('template');
 		const template = contextTemplate(templateKey);
 		draft = templateDraft(templateKey);
+		proxyPreset = false;
 		loaded = null;
 		baseline = '';
 		touchedSecrets.clear();
@@ -349,7 +363,7 @@
 	}
 </script>
 
-<svelte:head><title>{loaded?.name ?? routeLabels.contexts} · reNgine</title></svelte:head>
+<svelte:head><title>{pageTitle(loaded?.name ?? routeLabels.contexts)}</title></svelte:head>
 
 {#snippet form()}
 	<section class="form">

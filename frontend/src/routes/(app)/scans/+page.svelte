@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/utilities/page-title';
 	import { routeLabels } from '$lib/config/routes';
 	import { page } from '$app/state';
 	import { toast } from 'svelte-sonner';
@@ -72,7 +73,7 @@
 	}
 </script>
 
-<svelte:head><title>{routeLabels.scans} · reNgine</title></svelte:head>
+<svelte:head><title>{pageTitle(routeLabels.scans)}</title></svelte:head>
 
 <div class="flex flex-col gap-4">
 	<h1 class="sr-only">Scans</h1>

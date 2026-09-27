@@ -215,9 +215,13 @@ class VulnTemplateService:
         fired = await self.session.scalar(
             select(func.count(func.distinct(Vulnerability.template_id)))
         )
+        callback = await self.session.scalar(
+            select(func.count(VulnTemplate.id)).where(VulnTemplate.needs_oast.is_(True))
+        )
         return TemplateLibraryStats(
             ready=total > 0,
             total=total,
+            callback=int(callback or 0),
             official=by_origin.get(TemplateOrigin.OFFICIAL.value, 0),
             custom=by_origin.get(TemplateOrigin.CUSTOM.value, 0),
             by_severity=[
@@ -274,6 +278,8 @@ class VulnTemplateService:
         )
         if f.fired:
             query = query.where(hits.c.findings > 0)
+        if f.callback:
+            query = query.where(VulnTemplate.needs_oast.is_(True))
         if f.new_since is not None:
             query = query.where(
                 VulnTemplate.origin == TemplateOrigin.OFFICIAL.value,

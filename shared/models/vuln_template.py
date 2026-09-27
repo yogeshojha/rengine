@@ -141,6 +141,7 @@ class TemplateFilter(BaseModel):
     sets: list[str] = PydanticField(default_factory=list, max_length=40)
     tags: list[str] = PydanticField(default_factory=list, max_length=40)
     fired: bool = False
+    callback: bool = False
     new_since: datetime | None = None
     limit: int = PydanticField(default=50, ge=1, le=200)
     offset: int = PydanticField(default=0, ge=0, le=1_000_000)
@@ -221,6 +222,7 @@ class TemplateLibraryStats(BaseModel):
     sets: list[TemplateSetSpec] = PydanticField(default_factory=list)
     tags: list[SelectionBreakdown] = PydanticField(default_factory=list)
     fired: int = 0
+    callback: int = 0
     new: int = 0
     seen_at: datetime | None = None
     last_synced_at: datetime | None = None

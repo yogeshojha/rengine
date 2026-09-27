@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/utilities/page-title';
 	import { routeLabels } from '$lib/config/routes';
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
@@ -126,7 +127,7 @@
 	}
 </script>
 
-<svelte:head><title>{routeLabels.schedules} · reNgine</title></svelte:head>
+<svelte:head><title>{pageTitle(routeLabels.schedules)}</title></svelte:head>
 
 <div class="space-y-6">
 	<div class="flex items-start justify-between">

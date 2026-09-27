@@ -89,7 +89,11 @@ async def list_providers(
     _current_user: CurrentSuperuser,
     service: Annotated[APIKeyService, Depends(get_api_key_service)],
 ):
-    return await service.list_providers()
+    providers = await service.list_providers()
+    return [
+        p.model_copy(update={"testable": p.provider in API_KEY_TESTERS})
+        for p in providers
+    ]
 
 
 @router.get("", response_model=list[APIKeyRead])
@@ -161,13 +165,15 @@ async def test_api_key(
         return {
             "provider": api_key.provider,
             "success": False,
-            "message": f"No test available for {api_key.provider.value}",
+            "message": f"No key test for {api_key.provider.value}.",
         }
 
     key_value = try_decrypt(api_key.key_value) or api_key.key_value
     try:
         result = await tester(key_value, api_key.key_meta)
-        return {"provider": api_key.provider, "success": True, **result}
     except Exception as e:
         message = str(e).replace(key_value, MASK) if key_value else str(e)
+        await service.record_test(api_key, False, message)
         return {"provider": api_key.provider, "success": False, "message": message}
+    await service.record_test(api_key, True, result.get("message", ""))
+    return {"provider": api_key.provider, "success": True, **result}

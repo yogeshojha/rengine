@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/utilities/page-title';
 	import { routeLabels } from '$lib/config/routes';
 	import { untrack } from 'svelte';
 	import Search from '@lucide/svelte/icons/search';
@@ -119,7 +120,7 @@
 	}
 </script>
 
-<svelte:head><title>{routeLabels.notes} · reNgine</title></svelte:head>
+<svelte:head><title>{pageTitle(routeLabels.notes)}</title></svelte:head>
 
 <div class="space-y-6">
 	<h1 class="text-2xl font-semibold tracking-tight">Notes</h1>

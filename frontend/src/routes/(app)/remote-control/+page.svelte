@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/utilities/page-title';
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import { browser } from '$app/environment';
@@ -112,9 +113,9 @@
 	}
 </script>
 
-<svelte:head><title>{routeLabels['remote-control']} · reNgine</title></svelte:head>
+<svelte:head><title>{pageTitle(routeLabels['remote-control'])}</title></svelte:head>
 
-<div class="flex flex-col gap-4 p-4 md:p-6">
+<div class="flex flex-col gap-4">
 	<h1 class="sr-only">{routeLabels['remote-control']}</h1>
 
 	{#if !status}

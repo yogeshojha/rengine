@@ -1,6 +1,8 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
+	import { page as route } from '$app/state';
+	import { replaceState } from '$app/navigation';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import Download from '@lucide/svelte/icons/download';
 	import FilePlus from '@lucide/svelte/icons/file-plus';
@@ -11,6 +13,7 @@
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import Upload from '@lucide/svelte/icons/upload';
+	import X from '@lucide/svelte/icons/x';
 	import * as Card from '$lib/components/ui/card';
 	import * as Select from '$lib/components/ui/select';
 	import { Badge } from '$lib/components/ui/badge';
@@ -27,6 +30,11 @@
 	import SeverityMark from '$lib/components/scans/results/vulnerabilities/severity-mark.svelte';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import TemplateSheet from './template-sheet.svelte';
+	import CallbackServerSheet from './callback-server-sheet.svelte';
+	import { oastApi } from '$lib/api/oast';
+	import { CALLBACK_PANEL, PANEL_PARAM } from '$lib/config/routes';
+	import { CALLBACK_SERVER, OAST_MODE_LABELS, OastMode } from '$lib/config/oast';
+	import type { OastRead } from '$lib/types/oast';
 	import { vulnTemplatesApi } from '$lib/api/vulnerabilities';
 	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
 	import { Checkbox } from '$lib/components/ui/checkbox';
@@ -72,6 +80,9 @@
 	let origin = $state(ALL);
 	let set = $state(ALL);
 	let onlyNew = $state(false);
+	let onlyCallback = $state(false);
+	let oast = $state<OastRead | null>(null);
+	let callbackOpen = $state(false);
 	let seenAt = $state<string | null>(null);
 	let reqId = 0;
 
@@ -159,6 +170,7 @@
 		const org = origin === ALL ? [] : [origin];
 		const chosen = set === ALL ? [] : [set];
 		const newSince = onlyNew ? seenAt : null;
+		const callback = onlyCallback;
 		untrack(() => {
 			filter = {
 				...filter,
@@ -167,9 +179,40 @@
 				origins: org,
 				sets: chosen,
 				new_since: newSince,
+				callback,
 				offset: 0
 			};
 		});
+	});
+
+	const callbackState = $derived(
+		!oast || oast.mode === OastMode.OFF ? 'off' : oast.reason ? 'blocked' : 'on'
+	);
+	const CALLBACK_DOT: Record<string, string> = {
+		on: 'bg-success',
+		blocked: 'bg-warning',
+		off: 'bg-muted-foreground/40'
+	};
+
+	onMount(() => {
+		void oastApi
+			.get()
+			.then((row) => (oast = row))
+			.catch(() => (oast = null));
+		if (route.url.searchParams.get(PANEL_PARAM) === CALLBACK_PANEL) callbackOpen = true;
+	});
+
+	$effect(() => {
+		if (callbackOpen) return;
+		const params = untrack(() => new URLSearchParams(route.url.searchParams));
+		if (params.get(PANEL_PARAM) !== CALLBACK_PANEL) return;
+		params.delete(PANEL_PARAM);
+		const qs = params.toString();
+		try {
+			replaceState(qs ? `?${qs}` : location.pathname, {});
+		} catch {
+			// ignore
+		}
 	});
 
 	async function sync() {
@@ -258,7 +301,14 @@
 		{#if stats?.last_synced_at}
 			<Card.Description>Synced {relativeTime(stats.last_synced_at)}</Card.Description>
 		{/if}
-		<Card.Action class="flex items-center gap-2">
+		<Card.Action class="flex flex-wrap items-center justify-end gap-2">
+			<Button variant="outline" size="sm" class="gap-2" onclick={() => (callbackOpen = true)}>
+				<span class="size-2 shrink-0 rounded-full {CALLBACK_DOT[callbackState]}"></span>
+				{CALLBACK_SERVER}
+				<span class="text-muted-foreground">
+					{callbackState === 'on' && oast ? OAST_MODE_LABELS[oast.mode as OastMode] : 'Off'}
+				</span>
+			</Button>
 			<input
 				bind:this={fileInput}
 				type="file"
@@ -343,6 +393,19 @@
 					</span>
 					<span class="text-xs text-muted-foreground">{TEMPLATE_ORIGIN_LABELS.custom}</span>
 				</div>
+				{#if stats.callback > 0}
+					<button
+						type="button"
+						class="-mx-2 -my-1 flex flex-col rounded-md px-2 py-1 text-left transition-colors hover:bg-muted/60 aria-pressed:bg-muted"
+						aria-pressed={onlyCallback}
+						onclick={() => (onlyCallback = !onlyCallback)}
+					>
+						<span class="font-mono text-sm leading-6 tabular-nums">
+							{stats.callback.toLocaleString()}
+						</span>
+						<span class="text-xs text-muted-foreground">Need a callback</span>
+					</button>
+				{/if}
 				<div class="flex min-w-64 flex-1 flex-col gap-2">
 					<SeverityBar counts={severityCounts} height="h-1.5" />
 					<div class="flex flex-wrap gap-x-4 gap-y-1">
@@ -418,6 +481,18 @@
 					<span class="text-info tabular-nums">{newCount.toLocaleString()}</span>
 				</ToggleGroup.Item>
 			</ToggleGroup.Root>
+		{/if}
+		{#if onlyCallback}
+			<Button
+				variant="secondary"
+				size="sm"
+				class="h-9 gap-1.5"
+				aria-label="Clear the need a callback filter"
+				onclick={() => (onlyCallback = false)}
+			>
+				Need a callback
+				<X class="size-3.5" />
+			</Button>
 		{/if}
 		<Button
 			variant="outline"
@@ -616,3 +691,5 @@
 	}}
 	onClear={() => picked.clear()}
 />
+
+<CallbackServerSheet bind:open={callbackOpen} settings={oast} onSaved={(row) => (oast = row)} />

@@ -35,6 +35,18 @@ class UserCreate(SQLModel):
     password: str
 
 
+class UserAdminCreate(SQLModel):
+    email: str
+    username: str
+    password: str
+    is_superuser: bool = False
+
+
+class UserAdminUpdate(SQLModel):
+    is_active: bool | None = None
+    is_superuser: bool | None = None
+
+
 class UserRead(UserBase):
     id: uuid.UUID
     totp_enabled: bool = False

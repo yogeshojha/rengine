@@ -62,6 +62,9 @@ class APIKeyService:
             is_enabled=api_key.is_enabled,
             usage_counter=api_key.usage_counter,
             last_used_at=api_key.last_used_at,
+            last_test_at=api_key.last_test_at,
+            last_test_ok=api_key.last_test_ok,
+            last_test_message=api_key.last_test_message,
             created_at=api_key.created_at,
             updated_at=api_key.updated_at,
             meta=API_PROVIDER_META.get(api_key.provider, {}),
@@ -144,6 +147,9 @@ class APIKeyService:
 
         if data.key_value is not None:
             api_key.key_value = encrypt_secret(data.key_value)
+            api_key.last_test_at = None
+            api_key.last_test_ok = None
+            api_key.last_test_message = None
         if data.is_enabled is not None:
             api_key.is_enabled = data.is_enabled
         if data.key_meta is not None:
@@ -154,6 +160,13 @@ class APIKeyService:
         await self.session.commit()
         await self.session.refresh(api_key)
         return self._to_read(api_key)
+
+    async def record_test(self, api_key: APIKey, ok: bool, message: str) -> None:
+        api_key.last_test_at = utc_now()
+        api_key.last_test_ok = ok
+        api_key.last_test_message = message[:500]
+        self.session.add(api_key)
+        await self.session.commit()
 
     async def delete_key(self, key_id: str) -> None:
         api_key = await self._get_key_or_404(key_id)

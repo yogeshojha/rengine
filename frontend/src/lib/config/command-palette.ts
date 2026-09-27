@@ -28,6 +28,7 @@ import Radar from '@lucide/svelte/icons/radar';
 import Target from '@lucide/svelte/icons/target';
 
 import type { IconComponent } from './icons';
+import { CALLBACK_SERVER } from './oast';
 import { Capability, type CapabilityKey } from './capabilities';
 import { ROUTES, routeLabels, SETTINGS_SECTIONS } from './routes';
 import { SURFACE_ORDER } from './surface';
@@ -223,8 +224,7 @@ function destinations(): Destination[] {
 		label: `${routeLabels.settings} · ${routeLabels[section] ?? section}`,
 		href: ROUTES.settings(section),
 		icon: Settings2,
-		keywords: section.replace(/-/g, ' '),
-		capability: section === 'bounty-hub' ? Capability.BOUNTY_PLATFORMS : undefined
+		keywords: section.replace(/-/g, ' ')
 	}));
 
 	return [
@@ -340,6 +340,21 @@ function destinations(): Destination[] {
 			icon: Award,
 			keywords: 'programs watching platforms',
 			capability: Capability.BOUNTY_PROGRAMS
+		},
+		{
+			id: 'page:bounty-hub-settings',
+			label: `${routeLabels['bounty-hub']} · ${routeLabels.settings}`,
+			href: ROUTES.bountyHubSettings(),
+			icon: Award,
+			keywords: 'program sync feed interval alerts',
+			capability: Capability.BOUNTY_PROGRAMS
+		},
+		{
+			id: 'page:callback-server',
+			label: `${routeLabels.arsenal} · ${CALLBACK_SERVER}`,
+			href: ROUTES.callbackServer(),
+			icon: Settings2,
+			keywords: 'out-of-band oast interactsh callback'
 		},
 		...settings
 	];

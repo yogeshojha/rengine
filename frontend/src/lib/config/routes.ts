@@ -42,9 +42,9 @@ export const routeLabels: Record<string, string> = {
 	general: 'General',
 	'api-keys': 'API keys',
 	proxies: 'Proxies',
-	oast: 'Out-of-band testing',
 	notifications: 'Notifications',
 	ai: 'AI',
+	users: 'Users',
 
 	profile: 'Profile'
 };
@@ -53,17 +53,25 @@ export const SETTINGS_SECTIONS = [
 	'general',
 	'api-keys',
 	'proxies',
-	'oast',
 	'notifications',
-	'bounty-hub',
-	'ai'
+	'ai',
+	'users'
 ] as const;
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
+export const ADMIN_SETTINGS: readonly SettingsSection[] = [
+	'api-keys',
+	'proxies',
+	'notifications',
+	'users'
+];
 
 export const BOUNTY_HUB_TABS = ['watching', 'programs', 'updates'] as const;
 export type BountyHubTab = (typeof BOUNTY_HUB_TABS)[number];
 
 export const ARSENAL_TABS = ['nuclei', 'wordlists', 'threat-intel'] as const;
+export const PANEL_PARAM = 'panel';
+export const CALLBACK_PANEL = 'callback-server';
+export const BOUNTY_SETTINGS_PANEL = 'settings';
 export const EXPOSURE_TABS = ['exposures', 'rules', 'dismissed'] as const;
 export type ExposureTab = (typeof EXPOSURE_TABS)[number];
 export const REPORT_TABS = ['reports', 'templates', 'themes', 'typefaces', 'branding'] as const;
@@ -127,6 +135,8 @@ export const ROUTES = {
 	},
 	schedules: '/automation/schedules',
 	arsenal: (tab?: ArsenalTab) => (tab ? `/arsenal?tab=${tab}` : '/arsenal'),
+	callbackServer: () => `/arsenal?${PANEL_PARAM}=${CALLBACK_PANEL}`,
+	bountyHubSettings: () => `/bounty-hub?${PANEL_PARAM}=${BOUNTY_SETTINGS_PANEL}`,
 	bountyHub: (handle?: string, platform?: string) =>
 		handle ? `/bounty-hub?program=${handle}&platform=${platform ?? 'hackerone'}` : '/bounty-hub',
 	bountyHubTab: (tab: BountyHubTab) => `/bounty-hub?tab=${tab}`,

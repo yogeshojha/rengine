@@ -9,6 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.crypto import encrypt_secret, try_decrypt
 from shared.definitions.mode_features import VALID_MODES, capabilities_for
+from shared.definitions.retention import (
+    KEEP_FOREVER,
+    SCAN_RETENTION_DAYS,
+    SCREENSHOT_RETENTION_DAYS,
+)
 from shared.enums.instance import AIProvider
 from shared.http import get_async_client
 from shared.logging import get_logger
@@ -63,6 +68,15 @@ async def _admit_on_change(changed: bool) -> None:
         await asyncio.to_thread(dispatch_scan_admission)
     except Exception:
         logger.warning("scan admission dispatch failed", exc_info=True)
+
+
+def _check_window(label: str, days: int, allowed: tuple[int, ...]) -> None:
+    if days not in allowed:
+        choices = ", ".join(str(d) for d in allowed if d != KEEP_FOREVER)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{label} retention must be {choices} days, or {KEEP_FOREVER} to keep forever.",
+        )
 
 
 class InstanceSettingsService:
@@ -124,7 +138,13 @@ class InstanceSettingsService:
         settings = await self.get_or_create()
 
         if data.instance_name is not None:
-            settings.instance_name = data.instance_name
+            name = data.instance_name.strip()
+            if not name:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Instance name is required.",
+                )
+            settings.instance_name = name[:120]
         if data.timezone is not None:
             try:
                 ZoneInfo(data.timezone)
@@ -140,8 +160,16 @@ class InstanceSettingsService:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
             settings.mode = data.mode
         if data.scan_history_retention_days is not None:
+            _check_window(
+                "Scan history", data.scan_history_retention_days, SCAN_RETENTION_DAYS
+            )
             settings.scan_history_retention_days = data.scan_history_retention_days
         if data.screenshot_retention_days is not None:
+            _check_window(
+                "Screenshot",
+                data.screenshot_retention_days,
+                SCREENSHOT_RETENTION_DAYS,
+            )
             settings.screenshot_retention_days = data.screenshot_retention_days
         if data.cert_recheck_enabled is not None:
             settings.cert_recheck_enabled = data.cert_recheck_enabled

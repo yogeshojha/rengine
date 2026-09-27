@@ -70,7 +70,7 @@ from shared.services.focused import focused_overrides
 from shared.services.launch_plan import AdHocEngine
 from shared.services.notification_sync import SyncNotificationPublisher
 from shared.services.notifier import dispatch_sync
-from shared.services.proxy_resolve import resolve_proxy_url
+from shared.services.proxy_resolve import scan_proxy_url
 from shared.services.proxy_sync import census_in_flight
 from shared.services.scan_factory import build_scan_row
 from shared.services.scan_resolve import merge_engine_context
@@ -424,11 +424,7 @@ def build_probe_scan(
     if engine is None:
         engine = AdHocEngine(name=label)
     context = context_of(session, watch)
-    proxy_url = None
-    if context is not None and context.proxy_id is not None:
-        from shared.models.proxy import Proxy  # noqa: PLC0415
-
-        proxy_url = resolve_proxy_url(session.get(Proxy, context.proxy_id))
+    proxy_url = scan_proxy_url(session, context)
     resolved = merge_engine_context(
         engine,
         context,

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/utilities/page-title';
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import { browser } from '$app/environment';
@@ -44,7 +45,7 @@
 	});
 </script>
 
-<svelte:head><title>{routeLabels.exposures} · reNgine</title></svelte:head>
+<svelte:head><title>{pageTitle(routeLabels.exposures)}</title></svelte:head>
 
 <div class="space-y-6">
 	<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.exposures}</h1>

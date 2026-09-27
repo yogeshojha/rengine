@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/utilities/page-title';
 	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { untrack } from 'svelte';
@@ -168,7 +169,7 @@
 	}
 </script>
 
-<svelte:head><title>{routeLabels.dashboard} · reNgine</title></svelte:head>
+<svelte:head><title>{pageTitle(routeLabels.dashboard)}</title></svelte:head>
 
 <div class="flex flex-col gap-6">
 	<div class="flex flex-wrap items-end justify-between gap-4">

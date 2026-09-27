@@ -1,58 +1,64 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { toast } from 'svelte-sonner';
+	import BellIcon from '@lucide/svelte/icons/bell';
+	import CheckIcon from '@lucide/svelte/icons/check';
+	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
+	import EyeIcon from '@lucide/svelte/icons/eye';
+	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
+	import FlaskConicalIcon from '@lucide/svelte/icons/flask-conical';
+	import KeyRoundIcon from '@lucide/svelte/icons/key-round';
+	import MoreVerticalIcon from '@lucide/svelte/icons/more-vertical';
+	import PlusIcon from '@lucide/svelte/icons/plus';
+	import RotateCwIcon from '@lucide/svelte/icons/rotate-cw';
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
+	import * as Card from '$lib/components/ui/card/index.js';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+	import * as InputGroup from '$lib/components/ui/input-group/index.js';
+	import * as RadioGroup from '$lib/components/ui/radio-group/index.js';
+	import * as Select from '$lib/components/ui/select/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import { Label } from '$lib/components/ui/label/index.js';
+	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
+	import { Separator } from '$lib/components/ui/separator/index.js';
+	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+	import { Spinner } from '$lib/components/ui/spinner/index.js';
+	import { Switch } from '$lib/components/ui/switch/index.js';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
+	import EmptyState from '$lib/components/empty-state.svelte';
+	import FormField from '$lib/components/form-field.svelte';
+	import Hint from '$lib/components/hint.svelte';
+	import LoadingButton from '$lib/components/loading-button.svelte';
 	import { notificationChannelsStore } from '$lib/stores/notificationChannels.svelte';
-	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
-	import { Capability } from '$lib/config/capabilities';
 	import { notificationChannelsApi } from '$lib/api/notificationChannels';
+	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
+	import { settingsActions } from '$lib/stores/settings-actions.svelte';
 	import {
-		NOTIF_CATEGORIES,
-		NOTIF_SEVERITIES,
-		defaultNotificationPreference,
-		type NotificationChannelRead,
-		type NotificationPreference,
-		type NotifProvider
-	} from '$lib/types/notification-channel';
+		CHANNEL_LEVELS,
+		DEFAULT_CHANNEL_LEVEL,
+		channelEventsFor
+	} from '$lib/config/notification-events';
 	import {
 		NOTIFICATION_PROVIDERS as PROVIDERS,
 		notificationProviderMeta as metaFor,
 		type ProviderMeta
 	} from '$lib/config/notification-providers';
-	import * as Card from '$lib/components/ui/card/index.js';
-	import * as Dialog from '$lib/components/ui/dialog/index.js';
-	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
-	import * as RadioGroup from '$lib/components/ui/radio-group/index.js';
-	import * as InputGroup from '$lib/components/ui/input-group/index.js';
-	import * as Select from '$lib/components/ui/select/index.js';
-	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
-	import { Button } from '$lib/components/ui/button/index.js';
-	import { Input } from '$lib/components/ui/input/index.js';
-	import { Label } from '$lib/components/ui/label/index.js';
-	import { Badge } from '$lib/components/ui/badge/index.js';
-	import { Switch } from '$lib/components/ui/switch/index.js';
-	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
-	import { Separator } from '$lib/components/ui/separator/index.js';
-	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
-	import { Spinner } from '$lib/components/ui/spinner/index.js';
-	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
-	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
-	import LoadingButton from '$lib/components/loading-button.svelte';
-	import FormField from '$lib/components/form-field.svelte';
-	import { toast } from 'svelte-sonner';
-	import BellIcon from '@lucide/svelte/icons/bell';
-	import PlusIcon from '@lucide/svelte/icons/plus';
-	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
-	import Pencil from '@lucide/svelte/icons/pencil';
-	import Trash2Icon from '@lucide/svelte/icons/trash-2';
-	import FlaskConicalIcon from '@lucide/svelte/icons/flask-conical';
-	import CheckIcon from '@lucide/svelte/icons/check';
-	import CircleXIcon from '@lucide/svelte/icons/circle-x';
-	import KeyRoundIcon from '@lucide/svelte/icons/key-round';
-	import EyeIcon from '@lucide/svelte/icons/eye';
-	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
-	import { formatDate } from '$lib/utilities';
-	import { SvelteSet } from 'svelte/reactivity';
+	import {
+		defaultNotificationPreference,
+		type NotificationChannelRead,
+		type NotificationPreference,
+		type NotifProvider
+	} from '$lib/types/notification-channel';
+	import { relativeTime } from '$lib/utilities/dates';
+	import { BODY_ROW, CHANNEL_COL, HEAD_ROW } from './columns';
+	import { CHECK_DOT, type CheckState } from './status';
 
-	let isLoading = $state(true);
+	let loading = $state(true);
+	let loadFailed = $state(false);
 	let testingId = $state<string | null>(null);
 
 	let dialogOpen = $state(false);
@@ -66,74 +72,87 @@
 	let revealed = $state<Record<string, boolean>>({});
 	let saving = $state(false);
 	let testingDraft = $state(false);
-
 	let nameError = $state('');
-	let categoryError = $state('');
+	let eventsError = $state('');
 	let fieldErrors = $state<Record<string, string>>({});
 
-	let deleteOpen = $state(false);
-	let deletingChannel = $state<NotificationChannelRead | null>(null);
-	let isDeleting = $state(false);
+	let removing = $state<NotificationChannelRead | null>(null);
+	let deleting = $state(false);
 
-	let channels = $derived(notificationChannelsStore.channels);
-	const picked = new SvelteSet<string>();
+	const isAdmin = $derived(auth.user?.is_superuser ?? false);
+	const channels = $derived(notificationChannelsStore.channels);
+	const events = $derived(channelEventsFor((c) => capabilitiesStore.has(c)));
+	const formMeta = $derived(metaFor(formProvider));
+	const levelLabel = $derived(
+		CHANNEL_LEVELS.find((l) => l.value === formPref.min_severity)?.label ?? CHANNEL_LEVELS[0].label
+	);
+	const allEvents = $derived(events.every((e) => formPref.types.includes(e.type)));
 
-	function toggleCheck(id: string) {
-		if (picked.has(id)) picked.delete(id);
-		else picked.add(id);
+	async function load() {
+		loading = true;
+		await notificationChannelsStore.fetch();
+		loadFailed = !notificationChannelsStore.hasFetched;
+		loading = false;
 	}
-	let formMeta = $derived(metaFor(formProvider));
-	let severityLabel = $derived(
-		NOTIF_SEVERITIES.find((s) => s.value === formPref.min_severity)?.label ?? 'Everything'
-	);
-	let twoColumnFields = $derived(formMeta.fields.length > 2);
-	const categories = $derived(
-		NOTIF_CATEGORIES.filter(
-			(c) => c.value !== 'watch' || capabilitiesStore.has(Capability.PROGRAM_WATCHES)
-		)
-	);
-	let allCategories = $derived(formPref.types.length === categories.length);
+
+	onMount(() => {
+		if (!isAdmin) loading = false;
+		else if (notificationChannelsStore.hasFetched) loading = false;
+		else void load();
+	});
+
+	function eventSummary(channel: NotificationChannelRead): string {
+		const chosen = events.filter((e) => channel.events?.types?.includes(e.type));
+		if (chosen.length === events.length) return 'All events';
+		if (chosen.length === 0) return 'No events';
+		if (chosen.length <= 2) return chosen.map((e) => e.label).join(', ');
+		return `${chosen.length} of ${events.length} events`;
+	}
+
+	function levelOf(channel: NotificationChannelRead): string {
+		const value = channel.events?.min_severity ?? DEFAULT_CHANNEL_LEVEL;
+		return CHANNEL_LEVELS.find((l) => l.value === value)?.label ?? value;
+	}
+
+	function delivery(channel: NotificationChannelRead): {
+		check: CheckState;
+		label: string;
+		message: string | null;
+	} {
+		if (!channel.is_active) return { check: 'off', label: 'Disabled', message: null };
+		if (channel.last_sent_at) {
+			return {
+				check: channel.last_sent_ok ? 'ok' : 'failed',
+				label: channel.last_sent_ok
+					? `Sent ${relativeTime(channel.last_sent_at)}`
+					: `Failed ${relativeTime(channel.last_sent_at)}`,
+				message: channel.last_sent_ok ? null : channel.last_sent_message
+			};
+		}
+		if (channel.last_test_at) {
+			return {
+				check: channel.last_test_ok ? 'ok' : 'failed',
+				label: `Tested ${relativeTime(channel.last_test_at)}`,
+				message: channel.last_test_ok ? null : channel.last_test_message
+			};
+		}
+		return { check: 'untested', label: 'Nothing sent', message: null };
+	}
 
 	function applyDefaults(meta: ProviderMeta) {
-		const cfg: Record<string, unknown> = {};
-		for (const f of meta.fields) {
-			if (f.default !== undefined) cfg[f.key] = f.default;
+		const config: Record<string, unknown> = {};
+		for (const field of meta.fields) {
+			if (field.default !== undefined) config[field.key] = field.default;
 		}
-		formConfig = cfg;
+		formConfig = config;
 		formMasked = {};
 	}
 
 	function clearErrors() {
 		nameError = '';
-		categoryError = '';
+		eventsError = '';
 		fieldErrors = {};
 		revealed = {};
-	}
-
-	function toggleAllCategories() {
-		formPref = {
-			...formPref,
-			types: allCategories ? [] : categories.map((c) => c.value)
-		};
-		if (categoryError) categoryError = '';
-	}
-
-	async function handleTestDraft() {
-		const config = buildConfig();
-		if (config === null) {
-			toast.error('Complete the connection fields');
-			return;
-		}
-		testingDraft = true;
-		try {
-			const result = await notificationChannelsApi.testConfig({ provider: formProvider, config });
-			if (result.success) toast.success(result.message);
-			else toast.error(result.message);
-		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Test failed');
-		} finally {
-			testingDraft = false;
-		}
 	}
 
 	function openAdd() {
@@ -147,31 +166,30 @@
 		dialogOpen = true;
 	}
 
-	function openEdit(c: NotificationChannelRead) {
-		editingId = c.id;
-		formProvider = c.provider as NotifProvider;
-		formName = c.name;
-		formActive = c.is_active;
+	function openEdit(channel: NotificationChannelRead) {
+		editingId = channel.id;
+		formProvider = channel.provider as NotifProvider;
+		formName = channel.name;
+		formActive = channel.is_active;
 		formConfig = {};
 		formMasked = {};
-		const meta = metaFor(c.provider);
-		for (const f of meta.fields) {
-			if (f.kind === 'secret') {
-				formMasked[f.key] = (c.config_masked[f.key] ?? '') !== '';
-			} else if (c.config_masked[f.key] !== undefined) {
-				formConfig[f.key] = c.config_masked[f.key];
-			} else if (f.default !== undefined) {
-				formConfig[f.key] = f.default;
+		for (const field of metaFor(channel.provider).fields) {
+			if (field.kind === 'secret') {
+				formMasked[field.key] = (channel.config_masked[field.key] ?? '') !== '';
+			} else if (channel.config_masked[field.key] !== undefined) {
+				formConfig[field.key] = channel.config_masked[field.key];
+			} else if (field.default !== undefined) {
+				formConfig[field.key] = field.default;
 			}
 		}
-		formPref = { ...defaultNotificationPreference(), ...c.events };
+		formPref = { ...defaultNotificationPreference(), ...channel.events };
 		clearErrors();
 		dialogOpen = true;
 	}
 
-	function setProvider(v: string) {
-		formProvider = v as NotifProvider;
-		applyDefaults(metaFor(v));
+	function setProvider(value: string) {
+		formProvider = value as NotifProvider;
+		applyDefaults(metaFor(value));
 		fieldErrors = {};
 	}
 
@@ -185,65 +203,51 @@
 		}
 	}
 
-	function toggleCategory(value: string, on: boolean) {
-		const set = new SvelteSet(formPref.types);
-		if (on) set.add(value);
-		else set.delete(value);
-		formPref = { ...formPref, types: [...set] };
-		if (categoryError) categoryError = '';
+	function toggleEvent(type: string, on: boolean) {
+		const rest = formPref.types.filter((t) => t !== type);
+		formPref = { ...formPref, types: on ? [...rest, type] : rest };
+		eventsError = '';
+	}
+
+	function toggleAll() {
+		formPref = { ...formPref, types: allEvents ? [] : events.map((e) => e.type) };
+		eventsError = '';
 	}
 
 	function buildConfig(): Record<string, unknown> | null {
 		const out: Record<string, unknown> = {};
 		const errors: Record<string, string> = {};
-		for (const f of formMeta.fields) {
-			const raw = formConfig[f.key];
-			if (f.kind === 'bool') {
-				out[f.key] = raw === undefined ? (f.default ?? false) : !!raw;
+		for (const field of formMeta.fields) {
+			const raw = formConfig[field.key];
+			if (field.kind === 'bool') {
+				out[field.key] = raw === undefined ? (field.default ?? false) : !!raw;
 				continue;
 			}
-			if (f.kind === 'number') {
+			if (field.kind === 'number') {
 				if (raw === '' || raw === undefined) {
-					if (f.default !== undefined) out[f.key] = Number(f.default);
-					else if (f.required) errors[f.key] = `${f.label} is required`;
+					if (field.default !== undefined) out[field.key] = Number(field.default);
+					else if (field.required) errors[field.key] = `${field.label} is required`;
 					continue;
 				}
 				const n = Number(raw);
-				if (!Number.isFinite(n)) errors[f.key] = `${f.label} must be a number`;
-				else out[f.key] = n;
+				if (!Number.isFinite(n)) errors[field.key] = `${field.label} must be a number`;
+				else out[field.key] = n;
 				continue;
 			}
-			const val = String(raw ?? '').trim();
-			if (val) {
-				out[f.key] = val;
-			} else if (f.kind === 'secret' && editingId) {
-				continue;
-			} else if (f.required) {
-				errors[f.key] = `${f.label} is required`;
-			}
+			const value = String(raw ?? '').trim();
+			if (value) out[field.key] = value;
+			else if (field.kind === 'secret' && editingId) continue;
+			else if (field.required) errors[field.key] = `${field.label} is required`;
 		}
 		fieldErrors = errors;
 		return Object.keys(errors).length > 0 ? null : out;
 	}
 
-	async function handleSave() {
-		nameError = '';
-		categoryError = '';
-		let invalid = false;
-		if (!formName.trim()) {
-			nameError = 'Channel name is required';
-			invalid = true;
-		}
-		if (formPref.types.length === 0) {
-			categoryError = 'Select at least one notification category';
-			invalid = true;
-		}
+	async function save() {
+		nameError = formName.trim() ? '' : 'Channel name is required';
+		eventsError = formPref.types.length ? '' : 'Select at least one event';
 		const config = buildConfig();
-		if (config === null || invalid) {
-			toast.error('Correct the highlighted fields');
-			return;
-		}
-
+		if (config === null || nameError || eventsError) return;
 		saving = true;
 		try {
 			if (editingId) {
@@ -254,7 +258,7 @@
 					events: formPref
 				});
 				if (updated) {
-					toast.success('Channel updated');
+					toast.success('Channel saved');
 					dialogOpen = false;
 				}
 			} else {
@@ -275,10 +279,25 @@
 		}
 	}
 
-	async function handleTest(id: string) {
-		testingId = id;
+	async function testDraft() {
+		const config = buildConfig();
+		if (config === null) return;
+		testingDraft = true;
 		try {
-			const result = await notificationChannelsStore.test(id);
+			const result = await notificationChannelsApi.testConfig({ provider: formProvider, config });
+			if (result.success) toast.success(result.message);
+			else toast.error(result.message);
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : 'Test not sent');
+		} finally {
+			testingDraft = false;
+		}
+	}
+
+	async function test(channel: NotificationChannelRead) {
+		testingId = channel.id;
+		try {
+			const result = await notificationChannelsStore.test(channel.id);
 			if (!result) return;
 			if (result.success) toast.success(result.message);
 			else toast.error(result.message);
@@ -287,195 +306,135 @@
 		}
 	}
 
-	function openDelete(c: NotificationChannelRead) {
-		deletingChannel = c;
-		deleteOpen = true;
+	async function setActive(channel: NotificationChannelRead, active: boolean) {
+		const updated = await notificationChannelsStore.update(channel.id, { is_active: active });
+		if (updated) toast.success(`Channel ${active ? 'enabled' : 'disabled'}`);
 	}
 
-	async function handleDelete() {
-		if (!deletingChannel) return;
-		isDeleting = true;
+	async function remove() {
+		const channel = removing;
+		if (!channel) return;
+		deleting = true;
 		try {
-			const ok = await notificationChannelsStore.remove(deletingChannel.id);
-			if (ok) {
+			if (await notificationChannelsStore.remove(channel.id)) {
 				toast.success('Channel removed');
-				deleteOpen = false;
+				removing = null;
 			}
 		} finally {
-			isDeleting = false;
+			deleting = false;
 		}
 	}
 
-	function summaryLine(c: NotificationChannelRead): string {
-		const n = c.events?.types?.length ?? 0;
-		return `${n} categor${n === 1 ? 'y' : 'ies'}`;
-	}
-
-	onMount(async () => {
-		if (!notificationChannelsStore.hasFetched) await notificationChannelsStore.fetch();
-		isLoading = false;
+	$effect(() => {
+		if (!isAdmin) return;
+		settingsActions.set(addAction);
+		return () => settingsActions.clear(addAction);
 	});
 </script>
 
-<div class="space-y-6">
-	<div class="flex items-start justify-between">
-		<div>
-			<h2 class="text-lg font-semibold tracking-tight">Notifications</h2>
-			<p class="text-sm text-muted-foreground">Scan events sent to external channels.</p>
-		</div>
+{#snippet addAction()}
+	<Button size="sm" onclick={openAdd}>
+		<PlusIcon class="size-4" />
+		Add channel
+	</Button>
+{/snippet}
+
+{#if !isAdmin}
+	<EmptyState compact icon={BellIcon} title="Notifications are managed by administrators" />
+{:else if loading}
+	<Card.Root class="gap-3 p-4">
+		<Skeleton class="h-8 w-full" />
+		<Skeleton class="h-10 w-full" />
+		<Skeleton class="h-10 w-full" />
+	</Card.Root>
+{:else if loadFailed}
+	<EmptyState compact icon={TriangleAlertIcon} title="Notification channels not loaded">
+		<Button variant="outline" size="sm" onclick={load}>
+			<RotateCwIcon class="size-3.5" />
+			Retry
+		</Button>
+	</EmptyState>
+{:else if channels.length === 0}
+	<EmptyState
+		icon={BellIcon}
+		title="No notification channels"
+		description={PROVIDERS.map((p) => p.name).join(', ')}
+	>
 		<Button size="sm" onclick={openAdd}>
-			<PlusIcon class="mr-1.5 size-4" />
+			<PlusIcon class="size-4" />
 			Add channel
 		</Button>
-	</div>
-
-	<Separator />
-
-	{#if isLoading}
-		<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-			{#each Array(3) as _, i (i)}
-				<Card.Root>
-					<Card.Content class="p-5">
-						<div class="flex items-start gap-3">
-							<Skeleton class="size-10 rounded-lg" />
-							<div class="flex-1 space-y-2">
-								<Skeleton class="h-5 w-28" />
-								<Skeleton class="h-4 w-full" />
-							</div>
-						</div>
-					</Card.Content>
-				</Card.Root>
-			{/each}
-		</div>
-	{:else if channels.length === 0}
-		<Card.Root class="border-dashed">
-			<Card.Content class="flex flex-col items-center justify-center gap-3 py-16 text-center">
-				<BellIcon class="size-10 text-muted-foreground/40" />
-				<div class="space-y-1">
-					<p class="text-sm font-medium">No notification channels</p>
-					<p class="text-xs text-muted-foreground">
-						{PROVIDERS.map((p) => p.name).join(', ')}
-					</p>
-				</div>
-				<Button size="sm" variant="outline" onclick={openAdd}>
-					<PlusIcon class="mr-1.5 size-4" />
-					Add channel
-				</Button>
-			</Card.Content>
-		</Card.Root>
-	{:else}
-		<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+	</EmptyState>
+{:else}
+	<Card.Root class="gap-0 overflow-hidden py-0">
+		<div class="@container/channels w-full" role="table" aria-label="Notification channels">
+			<div class={HEAD_ROW} role="row">
+				<div class={CHANNEL_COL.channel}>Channel</div>
+				<div class={CHANNEL_COL.events}>Events</div>
+				<div class={CHANNEL_COL.level}>Minimum level</div>
+				<div class={CHANNEL_COL.delivery}>Last delivery</div>
+				<div class={CHANNEL_COL.actions}></div>
+			</div>
 			{#each channels as channel (channel.id)}
 				{@const meta = metaFor(channel.provider)}
-				{@const Icon = meta.icon}
-				<Card.Root
-					class="relative transition-all duration-200 {channel.is_active
-						? 'ring-1 ring-border'
-						: 'border-dashed opacity-75'}"
-				>
-					<Card.Content class="p-5">
-						<div class="flex items-start justify-between gap-3">
-							<div class="flex min-w-0 items-start gap-3">
-								<div class="flex h-10 shrink-0 items-center">
-									<Checkbox
-										checked={picked.has(channel.id)}
-										onCheckedChange={() => toggleCheck(channel.id)}
-										aria-label="Select {channel.name}"
-									/>
-								</div>
-								<div class="shrink-0 rounded-lg border bg-muted p-2.5">
-									<Icon class="size-[18px] text-muted-foreground" />
-								</div>
-								<div class="min-w-0">
-									<h4 class="truncate text-sm font-medium">{channel.name}</h4>
-									<p class="mt-0.5 text-xs text-muted-foreground">{meta.name}</p>
-								</div>
-							</div>
-							<Switch
-								checked={channel.is_active}
-								onCheckedChange={(checked) =>
-									notificationChannelsStore.update(channel.id, { is_active: checked }).then((u) => {
-										if (u) toast.success(checked ? 'Channel enabled' : 'Channel disabled');
-									})}
-							/>
-						</div>
-
-						<Separator class="my-3" />
-
-						<div class="space-y-2">
-							{#each meta.fields.filter((f) => f.kind !== 'bool') as f (f.key)}
-								<div class="flex items-center gap-2 text-xs">
-									<span class="shrink-0 text-muted-foreground">{f.label}</span>
-									<code class="truncate font-mono text-muted-foreground"
-										>{String(channel.config_masked[f.key] ?? '—')}</code
-									>
-								</div>
-							{/each}
-							<div class="flex flex-wrap items-center gap-2 pt-1">
-								<Badge variant="secondary" class="h-5 border-0 px-1.5 text-2xs">
-									{summaryLine(channel)}
-								</Badge>
-								{#if channel.last_test_at}
-									<span class="flex items-center gap-1 text-xs text-muted-foreground">
-										{#if channel.last_test_ok}
-											<CheckIcon class="size-3 text-foreground" />
-										{:else}
-											<CircleXIcon class="size-3 text-destructive" />
-										{/if}
-										{formatDate(channel.last_test_at)}
-									</span>
-								{/if}
-							</div>
-						</div>
-
-						<div class="mt-3 flex items-center gap-1.5">
-							<Button
-								variant="ghost"
-								size="sm"
-								class="h-7 px-2 text-xs"
-								onclick={() => openEdit(channel)}
-							>
-								<Pencil class="mr-1 size-3" />
-								Edit
-							</Button>
-							<Button
-								variant="ghost"
-								size="sm"
-								class="h-7 px-2 text-xs"
-								disabled={testingId === channel.id}
-								onclick={() => handleTest(channel.id)}
-							>
-								{#if testingId === channel.id}
-									<Spinner class="mr-1 size-3" />
-								{:else}
-									<FlaskConicalIcon class="mr-1 size-3" />
-								{/if}
-								Test
-							</Button>
-							<div class="flex-1"></div>
-							<Tooltip.Root>
-								<Tooltip.Trigger>
-									{#snippet child({ props })}
-										<Button
-											{...props}
-											variant="ghost"
-											size="sm"
-											class="h-7 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
-											onclick={() => openDelete(channel)}
-										>
-											<Trash2Icon class="size-3" />
-										</Button>
-									{/snippet}
-								</Tooltip.Trigger>
-								<Tooltip.Content>Remove channel</Tooltip.Content>
-							</Tooltip.Root>
-						</div>
-					</Card.Content>
-				</Card.Root>
+				{@const sent = delivery(channel)}
+				<div class="{BODY_ROW} {channel.is_active ? '' : 'text-muted-foreground'}" role="row">
+					<div class="{CHANNEL_COL.channel} flex flex-col">
+						<span class="text-sm leading-5 font-medium wrap-anywhere">{channel.name}</span>
+						<span class="text-2xs text-muted-foreground">{meta.name}</span>
+					</div>
+					<div class="{CHANNEL_COL.events} text-sm">{eventSummary(channel)}</div>
+					<div class="{CHANNEL_COL.level} text-sm">{levelOf(channel)}</div>
+					<div class={CHANNEL_COL.delivery}>
+						<Hint text={sent.message}>
+							{#snippet child(props)}
+								<span {...props} class="inline-flex items-center gap-2 text-sm">
+									{#if testingId === channel.id}
+										<Spinner class="size-3" />
+										<span class="text-muted-foreground">Sending</span>
+									{:else}
+										<span class="size-2 shrink-0 rounded-full {CHECK_DOT[sent.check]}"></span>
+										<span class={sent.check === 'failed' ? '' : 'text-muted-foreground'}>
+											{sent.label}
+										</span>
+									{/if}
+								</span>
+							{/snippet}
+						</Hint>
+					</div>
+					<div class={CHANNEL_COL.actions}>
+						<DropdownMenu.Root>
+							<DropdownMenu.Trigger>
+								{#snippet child({ props })}
+									<Button {...props} variant="ghost" size="icon" class="size-7">
+										<MoreVerticalIcon class="size-4" />
+										<span class="sr-only">{channel.name} actions</span>
+									</Button>
+								{/snippet}
+							</DropdownMenu.Trigger>
+							<DropdownMenu.Content align="end">
+								<DropdownMenu.Item
+									disabled={testingId !== null || !channel.is_active}
+									onSelect={() => test(channel)}
+								>
+									Send test
+								</DropdownMenu.Item>
+								<DropdownMenu.Item onSelect={() => openEdit(channel)}>Edit</DropdownMenu.Item>
+								<DropdownMenu.Item onSelect={() => setActive(channel, !channel.is_active)}>
+									{channel.is_active ? 'Disable' : 'Enable'}
+								</DropdownMenu.Item>
+								<DropdownMenu.Separator />
+								<DropdownMenu.Item variant="destructive" onSelect={() => (removing = channel)}>
+									Remove
+								</DropdownMenu.Item>
+							</DropdownMenu.Content>
+						</DropdownMenu.Root>
+					</div>
+				</div>
 			{/each}
 		</div>
-	{/if}
-</div>
+	</Card.Root>
+{/if}
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Content
@@ -485,7 +444,6 @@
 	>
 		<Dialog.Header class="p-6 pb-4">
 			<Dialog.Title>{editingId ? 'Edit channel' : 'Add channel'}</Dialog.Title>
-			<Dialog.Description>Connection and events.</Dialog.Description>
 		</Dialog.Header>
 
 		<Separator />
@@ -507,7 +465,7 @@
 							{#each PROVIDERS as p (p.provider)}
 								{@const PIcon = p.icon}
 								<Label
-									class="group/provider flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm font-normal text-muted-foreground transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring/50 hover:bg-muted/60 hover:text-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground data-[active=true]:shadow-xs"
+									class="group/provider flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm font-normal text-muted-foreground transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring/50 hover:bg-muted/60 hover:text-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground"
 									data-active={formProvider === p.provider}
 								>
 									<RadioGroup.Item value={p.provider} class="sr-only" disabled={saving} />
@@ -528,33 +486,18 @@
 			{/if}
 
 			<ScrollArea class="min-h-0">
-				<div class="space-y-6 p-6">
-					{#if editingId}
-						{@const FIcon = formMeta.icon}
-						<div class="flex items-center gap-3 rounded-lg border bg-muted/30 px-3 py-2.5">
-							<span
-								class="flex size-8 shrink-0 items-center justify-center rounded-md border bg-background text-primary"
-							>
-								<FIcon class="size-4" />
-							</span>
-							<div class="min-w-0">
-								<p class="truncate text-sm font-medium">{formMeta.name}</p>
-								<p class="text-xs text-muted-foreground">Provider is read-only.</p>
-							</div>
-						</div>
-					{/if}
-
-					<section class="space-y-4">
+				<div class="flex flex-col gap-6 p-6">
+					<section class="flex flex-col gap-4">
 						<div class="flex items-center justify-between gap-3">
-							<h4 class="text-2xs font-semibold tracking-wider text-muted-foreground uppercase">
-								Connection
-							</h4>
+							<h3 class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+								{editingId ? formMeta.name : 'Connection'}
+							</h3>
 							{#if formMeta.help}
 								<a
 									href={formMeta.help.url}
 									target="_blank"
 									rel="noopener noreferrer"
-									class="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+									class="inline-flex items-center gap-1 text-xs text-primary transition-colors hover:text-foreground"
 								>
 									{formMeta.help.label}<ExternalLinkIcon class="size-3" />
 								</a>
@@ -569,34 +512,33 @@
 									placeholder="{formMeta.name} alerts"
 									disabled={saving}
 									aria-invalid={!!nameError}
-									oninput={() => {
-										if (nameError) nameError = '';
-									}}
+									oninput={() => (nameError = '')}
 								/>
 							{/snippet}
 						</FormField>
 
-						<div class="grid gap-4 {twoColumnFields ? 'sm:grid-cols-2' : ''}">
+						<div class="grid gap-4 {formMeta.fields.length > 2 ? 'sm:grid-cols-2' : ''}">
 							{#each formMeta.fields as field (field.key)}
 								{#if field.kind === 'bool'}
-									<div
+									<label
 										class="flex items-center justify-between rounded-md border px-3 py-2 sm:col-span-2"
+										for="channel-{field.key}"
 									>
-										<Label class="text-sm font-normal">{field.label}</Label>
+										<span class="text-sm">{field.label}</span>
 										<Switch
+											id="channel-{field.key}"
 											checked={formConfig[field.key] === undefined
 												? !!field.default
 												: !!formConfig[field.key]}
 											onCheckedChange={(v) => setField(field.key, v)}
 											disabled={saving}
 										/>
-									</div>
+									</label>
 								{:else if field.kind === 'secret'}
 									{@const stored = !!editingId && formMasked[field.key]}
 									<FormField
 										label={field.label}
 										error={fieldErrors[field.key]}
-										description={stored ? 'A value is stored. Leave blank to keep it.' : undefined}
 										class="sm:col-span-2"
 									>
 										{#snippet children({ id })}
@@ -610,9 +552,7 @@
 													value={formConfig[field.key] === undefined
 														? ''
 														: String(formConfig[field.key])}
-													placeholder={stored
-														? 'Leave blank to keep the current value'
-														: (field.placeholder ?? '')}
+													placeholder={stored ? 'Stored' : (field.placeholder ?? '')}
 													autocomplete="off"
 													class="font-mono text-xs"
 													disabled={saving}
@@ -627,11 +567,7 @@
 														onclick={() =>
 															(revealed = { ...revealed, [field.key]: !revealed[field.key] })}
 													>
-														{#if revealed[field.key]}
-															<EyeOffIcon />
-														{:else}
-															<EyeIcon />
-														{/if}
+														{#if revealed[field.key]}<EyeOffIcon />{:else}<EyeIcon />{/if}
 													</InputGroup.Button>
 												</InputGroup.Addon>
 											</InputGroup.Root>
@@ -662,63 +598,59 @@
 
 					<Separator />
 
-					<section class="space-y-3">
+					<section class="flex flex-col gap-3">
 						<div class="flex items-center justify-between gap-3">
-							<h4 class="text-2xs font-semibold tracking-wider text-muted-foreground uppercase">
+							<h3 class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
 								Events
-							</h4>
-							<div class="flex items-center gap-2 text-xs text-muted-foreground">
-								<span class="tabular-nums">{formPref.types.length} of {categories.length}</span>
-								<Button
-									variant="link"
-									size="sm"
-									class="h-auto px-0 text-xs"
-									onclick={toggleAllCategories}
-									disabled={saving}
-								>
-									{allCategories ? 'Clear all' : 'Select all'}
-								</Button>
-							</div>
+							</h3>
+							<Button
+								variant="link"
+								size="sm"
+								class="h-auto px-0 text-xs"
+								onclick={toggleAll}
+								disabled={saving}
+							>
+								{allEvents ? 'Clear all' : 'Select all'}
+							</Button>
 						</div>
-
 						<div
-							class="divide-y overflow-hidden rounded-lg border {categoryError
+							class="divide-y overflow-hidden rounded-lg border {eventsError
 								? 'border-destructive'
 								: ''}"
 						>
-							{#each categories as cat (cat.value)}
+							{#each events as event (event.type)}
 								<Label
 									class="flex cursor-pointer items-center gap-3 px-3 py-2.5 font-normal transition-colors hover:bg-muted/40"
 								>
 									<Checkbox
-										checked={formPref.types.includes(cat.value)}
-										onCheckedChange={(v) => toggleCategory(cat.value, v === true)}
+										checked={formPref.types.includes(event.type)}
+										onCheckedChange={(v) => toggleEvent(event.type, v === true)}
 										disabled={saving}
 									/>
-									<span class="min-w-0 flex-1">
-										<span class="block text-sm font-medium">{cat.label}</span>
-										<span class="block text-xs text-muted-foreground">{cat.hint}</span>
+									<span class="flex min-w-0 flex-1 flex-col">
+										<span class="text-sm font-medium">{event.label}</span>
+										<span class="text-xs text-muted-foreground">{event.hint}</span>
 									</span>
 								</Label>
 							{/each}
 						</div>
-						{#if categoryError}<p class="text-xs text-destructive">{categoryError}</p>{/if}
+						{#if eventsError}<p class="text-xs text-destructive">{eventsError}</p>{/if}
 
 						<div class="flex flex-wrap items-center justify-between gap-3 pt-1">
-							<div class="space-y-0.5">
-								<Label class="text-sm">Minimum severity</Label>
-								<p class="text-xs text-muted-foreground">Events below this level are not sent.</p>
-							</div>
+							<Label for="channel-level" class="text-sm">Minimum level</Label>
 							<Select.Root
 								type="single"
 								value={formPref.min_severity}
-								onValueChange={(v) => (formPref = { ...formPref, min_severity: v ?? 'info' })}
+								onValueChange={(v) =>
+									(formPref = { ...formPref, min_severity: v ?? DEFAULT_CHANNEL_LEVEL })}
 								disabled={saving}
 							>
-								<Select.Trigger class="w-full text-sm sm:w-56">{severityLabel}</Select.Trigger>
+								<Select.Trigger id="channel-level" class="w-full sm:w-56">
+									{levelLabel}
+								</Select.Trigger>
 								<Select.Content>
-									{#each NOTIF_SEVERITIES as s (s.value)}
-										<Select.Item value={s.value} label={s.label}>{s.label}</Select.Item>
+									{#each CHANNEL_LEVELS as level (level.value)}
+										<Select.Item value={level.value} label={level.label}>{level.label}</Select.Item>
 									{/each}
 								</Select.Content>
 							</Select.Root>
@@ -731,59 +663,44 @@
 		<Separator />
 
 		<div class="flex flex-wrap items-center justify-between gap-3 bg-muted/30 p-4">
-			<Label class="cursor-pointer gap-3">
-				<Switch checked={formActive} onCheckedChange={(v) => (formActive = v)} disabled={saving} />
-				<span class="space-y-0.5">
-					<span class="block text-sm font-medium">Active</span>
-					<span class="hidden text-xs font-normal text-muted-foreground sm:block">
-						A disabled channel sends nothing.
-					</span>
-				</span>
+			<Label class="cursor-pointer gap-3" for="channel-active">
+				<Switch
+					id="channel-active"
+					checked={formActive}
+					onCheckedChange={(v) => (formActive = v)}
+					disabled={saving}
+				/>
+				<span class="text-sm font-medium">Active</span>
 			</Label>
 			<div class="flex items-center gap-2">
 				{#if !editingId}
-					<Button
-						variant="ghost"
-						onclick={handleTestDraft}
-						disabled={saving || testingDraft}
-						class="gap-1.5"
-					>
-						{#if testingDraft}
-							<Spinner class="size-4" />
-						{:else}
-							<FlaskConicalIcon class="size-4" />
-						{/if}
+					<Button variant="ghost" onclick={testDraft} disabled={saving || testingDraft}>
+						{#if testingDraft}<Spinner class="size-4" />{:else}<FlaskConicalIcon
+								class="size-4"
+							/>{/if}
 						Send test
 					</Button>
 				{/if}
 				<Button variant="outline" onclick={() => (dialogOpen = false)} disabled={saving}>
 					Cancel
 				</Button>
-				<LoadingButton onclick={handleSave} loading={saving} loadingLabel="Saving">
-					{editingId ? 'Save changes' : 'Add channel'}
+				<LoadingButton onclick={save} loading={saving} loadingLabel="Saving">
+					{editingId ? 'Save channel' : 'Add channel'}
 				</LoadingButton>
 			</div>
 		</div>
 	</Dialog.Content>
 </Dialog.Root>
 
-<DeleteConfirmationDialog
-	bind:open={deleteOpen}
+<ConfirmDialog
+	open={removing !== null}
 	title="Remove channel"
-	description={`Channel ${deletingChannel?.name ?? ''} is removed.`}
+	description={removing ? `Channel ${removing.name} is removed.` : ''}
 	confirmLabel="Remove"
-	{isDeleting}
-	onOpenChange={(o) => (deleteOpen = o)}
-	onConfirm={handleDelete}
-/>
-
-<SelectionDeleteBar
-	ids={[...picked]}
-	noun="channel"
-	remove={async (id) => {
-		await notificationChannelsApi.remove(id);
-		notificationChannelsStore.drop(id);
+	destructive
+	loading={deleting}
+	onOpenChange={(open) => {
+		if (!open) removing = null;
 	}}
-	onDone={() => picked.clear()}
-	onClear={() => picked.clear()}
+	onConfirm={remove}
 />

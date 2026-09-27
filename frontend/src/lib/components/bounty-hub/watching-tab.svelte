@@ -9,7 +9,6 @@
 	import { SUBMISSION_STATE_LABELS } from '$lib/config/bounty-programs';
 	import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
 	import { SubmissionState } from '$lib/types/bounty-program';
-	import { ROUTES } from '$lib/config/routes';
 	import { relativeTime } from '$lib/utilities/dates';
 	import {
 		WatchStatus,
@@ -91,7 +90,14 @@
 			{:else}
 				<span>Certificate stream not running. Check that the ct-stream service is up.</span>
 			{/if}
-			<a href={ROUTES.settings('bounty-hub')} class="hover:underline">Details</a>
+			{#if stream.last_error}
+				<span class="text-destructive">
+					{stream.last_error}
+					{#if stream.last_error_at}
+						<span class="text-muted-foreground">· {relativeTime(stream.last_error_at)}</span>
+					{/if}
+				</span>
+			{/if}
 		</div>
 	{/if}
 

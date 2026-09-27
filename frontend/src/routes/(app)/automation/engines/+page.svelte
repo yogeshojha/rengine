@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/utilities/page-title';
 	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
@@ -274,7 +275,7 @@
 	const selectable = $derived(scanEnginesStore.engines.filter((e) => !e.builtin).length);
 </script>
 
-<svelte:head><title>{routeLabels.engines} · reNgine</title></svelte:head>
+<svelte:head><title>{pageTitle(routeLabels.engines)}</title></svelte:head>
 
 <div class="space-y-6">
 	<div class="flex flex-wrap items-start justify-between gap-4">

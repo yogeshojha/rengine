@@ -104,6 +104,9 @@ class APIKey(SQLModel, table=True):
     is_enabled: bool = Field(default=True)
     usage_counter: int = Field(default=0)
     last_used_at: datetime | None = Field(default=None)
+    last_test_at: datetime | None = Field(default=None)
+    last_test_ok: bool | None = Field(default=None)
+    last_test_message: str | None = Field(default=None, max_length=500)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
 
@@ -128,6 +131,9 @@ class APIKeyRead(BaseModel):
     is_enabled: bool
     usage_counter: int
     last_used_at: datetime | None
+    last_test_at: datetime | None = None
+    last_test_ok: bool | None = None
+    last_test_message: str | None = None
     created_at: datetime
     updated_at: datetime
     meta: dict
@@ -144,3 +150,4 @@ class ProviderInfo(BaseModel):
     group_label: str
     configured: bool = False
     is_enabled: bool = False
+    testable: bool = False

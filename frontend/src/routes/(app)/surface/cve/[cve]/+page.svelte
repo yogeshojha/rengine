@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/utilities/page-title';
 	import { page } from '$app/state';
 	import { untrack } from 'svelte';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
@@ -82,7 +83,7 @@
 		`${n.toLocaleString()} ${n === 1 ? one : many}`;
 </script>
 
-<svelte:head><title>{cve || routeLabels.cves} · reNgine</title></svelte:head>
+<svelte:head><title>{pageTitle(cve || routeLabels.cves)}</title></svelte:head>
 
 <div class="space-y-6">
 	<a

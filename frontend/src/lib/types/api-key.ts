@@ -28,6 +28,9 @@ export interface APIKeyRead {
 	is_enabled: boolean;
 	usage_counter: number;
 	last_used_at: string | null;
+	last_test_at: string | null;
+	last_test_ok: boolean | null;
+	last_test_message: string | null;
 	created_at: string;
 	updated_at: string;
 	meta: ProviderMeta;
@@ -44,6 +47,7 @@ export interface ProviderInfo {
 	group_label: string;
 	configured: boolean;
 	is_enabled: boolean;
+	testable: boolean;
 }
 
 export interface APIKeyCreate {

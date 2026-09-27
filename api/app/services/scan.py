@@ -321,11 +321,7 @@ class ScanService:
         if context_id is not None:
             context = await self._get_context(context_id, project_id)
 
-        proxy_url = None
-        if context is not None and context.proxy_id is not None:
-            proxy_url = await ProxyService(self.session).resolve_proxy_url(
-                context.proxy_id
-            )
+        proxy_url = await ProxyService(self.session).scan_proxy_url(context)
         return engine, context, proxy_url
 
     @staticmethod
@@ -477,14 +473,8 @@ class ScanService:
             h.get("name") for h in (extra_headers or []) if h.get("name")
         ]
 
-        proxy_name = None
-        if context is not None and context.proxy_id is not None:
-            try:
-                proxy_name = (
-                    await ProxyService(self.session).get(context.proxy_id)
-                ).name
-            except HTTPException:
-                proxy_name = None
+        proxy = await ProxyService(self.session).scan_proxy(context)
+        proxy_name = proxy.name if proxy is not None and proxy.is_active else None
 
         summary = PreviewSummary(
             auth_summary=_auth_summary(auth, extra_headers),

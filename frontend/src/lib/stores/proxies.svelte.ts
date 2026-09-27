@@ -17,6 +17,9 @@ function createProxiesStore() {
 		get hasFetched() {
 			return hasFetched;
 		},
+		get defaultId(): string | null {
+			return proxies.find((p) => p.is_default && p.is_active)?.id ?? null;
+		},
 
 		async fetch() {
 			if (isLoading) return;

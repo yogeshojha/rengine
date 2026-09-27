@@ -1,10 +1,12 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/utilities/page-title';
 	import { untrack } from 'svelte';
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
+	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import SparklesIcon from '@lucide/svelte/icons/sparkles';
 	import TargetIcon from '@lucide/svelte/icons/target';
 	import { toast } from 'svelte-sonner';
-	import { goto } from '$app/navigation';
+	import { goto, replaceState } from '$app/navigation';
 	import { page } from '$app/state';
 	import * as Card from '$lib/components/ui/card';
 	import EmptyState from '$lib/components/empty-state.svelte';
@@ -20,6 +22,7 @@
 	import ProgramSheet from '$lib/components/bounty-hub/program-sheet.svelte';
 	import WatchingTab from '$lib/components/bounty-hub/watching-tab.svelte';
 	import WatchSheet from '$lib/components/bounty-hub/watch-sheet.svelte';
+	import SettingsSheet from '$lib/components/bounty-hub/settings-sheet.svelte';
 	import { watchesApi } from '$lib/api/watches';
 	import { watchesStore } from '$lib/stores/watches.svelte';
 	import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
@@ -31,7 +34,14 @@
 		REFRESH_POLL_MS,
 		SYNC_INTERVAL_LABELS
 	} from '$lib/config/bounty-programs';
-	import { BOUNTY_HUB_TABS, ROUTES, type BountyHubTab } from '$lib/config/routes';
+	import {
+		BOUNTY_HUB_TABS,
+		BOUNTY_SETTINGS_PANEL,
+		PANEL_PARAM,
+		ROUTES,
+		routeLabels,
+		type BountyHubTab
+	} from '$lib/config/routes';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
 	import type {
@@ -58,6 +68,20 @@
 	let watchTab = $state<'hosts' | 'activity'>('hosts');
 	let deepLinkedWatch = $state<string | null>(null);
 	let stream = $state<StreamStatus | null>(null);
+	let settingsOpen = $state(page.url.searchParams.get(PANEL_PARAM) === BOUNTY_SETTINGS_PANEL);
+
+	$effect(() => {
+		if (settingsOpen) return;
+		const params = untrack(() => new URLSearchParams(page.url.searchParams));
+		if (params.get(PANEL_PARAM) !== BOUNTY_SETTINGS_PANEL) return;
+		params.delete(PANEL_PARAM);
+		const qs = params.toString();
+		try {
+			replaceState(qs ? `?${qs}` : location.pathname, {});
+		} catch {
+			// ignore
+		}
+	});
 
 	const projectId = $derived(projectsStore.activeProject?.id);
 	const filterKey = $derived(JSON.stringify(filters));
@@ -255,12 +279,12 @@
 	}
 </script>
 
-<svelte:head><title>Bounty Hub · reNgine</title></svelte:head>
+<svelte:head><title>{pageTitle(routeLabels['bounty-hub'])}</title></svelte:head>
 
-<div class="flex flex-col gap-4 p-4">
+<div class="flex flex-col gap-4">
 	<div class="flex flex-wrap items-end justify-between gap-3">
 		<div class="flex flex-col gap-1">
-			<h1 class="text-xl font-semibold">Bounty Hub</h1>
+			<h1 class="text-2xl font-semibold tracking-tight">{routeLabels['bounty-hub']}</h1>
 			<p class="text-sm text-muted-foreground">
 				{#if status}
 					{status.programs.toLocaleString()} programs across {status.platforms.filter(
@@ -273,9 +297,13 @@
 						· synced {relativeTime(status.last_synced_at)}
 					{/if}
 					·
-					<a href={ROUTES.settings('bounty-hub')} class="hover:underline">
+					<button
+						type="button"
+						class="transition-colors hover:text-foreground"
+						onclick={() => (settingsOpen = true)}
+					>
 						{SYNC_INTERVAL_LABELS[status.sync_interval] ?? status.sync_interval}
-					</a>
+					</button>
 				{:else}
 					Bug bounty programs and their scope
 				{/if}
@@ -291,6 +319,10 @@
 				<RefreshCwIcon class="mr-2 size-3.5" />
 				Refresh all platforms
 			</LoadingButton>
+			<Button variant="outline" size="sm" onclick={() => (settingsOpen = true)}>
+				<SettingsIcon class="size-4" />
+				Settings
+			</Button>
 		</div>
 	</div>
 
@@ -401,3 +433,5 @@
 		}}
 	/>
 {/if}
+
+<SettingsSheet bind:open={settingsOpen} onSaved={() => void loadStatus()} />

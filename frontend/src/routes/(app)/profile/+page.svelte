@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { ROLE_LABELS, roleLabel } from '$lib/config/users';
+	import { pageTitle } from '$lib/utilities/page-title';
 	import { routeLabels } from '$lib/config/routes';
 	import { auth } from '$lib/stores/auth.svelte';
 	import ChangeUsernameCard from '$lib/components/profile/change-username-card.svelte';
@@ -16,7 +18,7 @@
 	import { getInitials } from '$lib/utilities';
 </script>
 
-<svelte:head><title>{routeLabels.profile} · reNgine</title></svelte:head>
+<svelte:head><title>{pageTitle(routeLabels.profile)}</title></svelte:head>
 
 <div class="container max-w-5xl mx-auto space-y-6">
 	<h1 class="text-2xl font-semibold tracking-tight">Account and security</h1>
@@ -37,7 +39,7 @@
 						<div class="flex items-baseline gap-2 mb-0.5">
 							<h2 class="text-xl font-semibold">{auth.user?.username}</h2>
 							{#if auth.user?.is_superuser}
-								<Badge variant="secondary" class="h-5 text-xs px-2">Administrator</Badge>
+								<Badge variant="secondary" class="h-5 text-xs px-2">{ROLE_LABELS.admin}</Badge>
 							{/if}
 						</div>
 						<div class="flex items-center gap-3 text-sm text-muted-foreground">
@@ -89,7 +91,7 @@
 				<div class="space-y-1">
 					<p class="text-sm font-medium text-muted-foreground">Account type</p>
 					<p class="text-sm">
-						{auth.user?.is_superuser ? 'Administrator' : 'Standard user'}
+						{roleLabel(auth.user?.is_superuser ?? false)}
 					</p>
 				</div>
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/utilities/page-title';
 	import { goto } from '$app/navigation';
 	import { untrack } from 'svelte';
 	import Bug from '@lucide/svelte/icons/bug';
@@ -172,7 +173,7 @@
 	);
 </script>
 
-<svelte:head><title>{routeLabels.cves} · reNgine</title></svelte:head>
+<svelte:head><title>{pageTitle(routeLabels.cves)}</title></svelte:head>
 
 <svelte:window onkeydown={onKey} />
 

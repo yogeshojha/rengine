@@ -1,8 +1,6 @@
 <script lang="ts">
-	import { routeLabels } from '$lib/config/routes';
-	import OastPanel from '$lib/components/settings/oast-panel.svelte';
+	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
+	import { ROUTES } from '$lib/config/routes';
+	onMount(() => goto(ROUTES.callbackServer(), { replaceState: true }));
 </script>
-
-<svelte:head><title>{routeLabels.oast} · reNgine</title></svelte:head>
-
-<OastPanel />

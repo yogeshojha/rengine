@@ -5,11 +5,10 @@ from functools import partial
 from pydantic import BaseModel, field_validator
 from sqlmodel import Field, SQLModel
 
-from shared.enums.proxy import ProxyMode, ProxyProtocol
+from shared.enums.proxy import ProxyProtocol
 from shared.utils.datetime import utc_now
 from shared.utils.validation import clean_name, clean_optional_name
 
-PROXY_MODES = tuple(m.value for m in ProxyMode)
 PROXY_SCHEMES = tuple(p.value for p in ProxyProtocol)
 
 
@@ -27,7 +26,6 @@ class Proxy(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str = Field(max_length=120)
     description: str | None = Field(default=None, max_length=500)
-    mode: str = Field(default=ProxyMode.SINGLE.value)
     is_active: bool = Field(default=True)
     is_default: bool = Field(default=False)
     endpoints_encrypted: str
@@ -52,7 +50,6 @@ class ProxyEndpointRead(BaseModel):
 class ProxyCreate(BaseModel):
     name: str
     description: str | None = None
-    mode: str = ProxyMode.SINGLE.value
     is_active: bool = True
     is_default: bool = False
     endpoints: list[ProxyEndpoint] = Field(min_length=1)
@@ -63,7 +60,6 @@ class ProxyCreate(BaseModel):
 class ProxyUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
-    mode: str | None = None
     is_active: bool | None = None
     is_default: bool | None = None
     endpoints: list[ProxyEndpoint] | None = None
@@ -75,11 +71,11 @@ class ProxyRead(BaseModel):
     id: uuid.UUID
     name: str
     description: str | None
-    mode: str
     is_active: bool
     is_default: bool
     endpoints: list[ProxyEndpointRead]
     endpoint_count: int
+    contexts: int = 0
     created_at: datetime
     updated_at: datetime
     last_test_at: datetime | None

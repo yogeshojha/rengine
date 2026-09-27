@@ -33,7 +33,7 @@ OAST_MODE_LABELS: dict[str, str] = {
 }
 
 OAST_MODE_HELP: dict[str, str] = {
-    OastMode.OFF.value: "Checks that need a callback run against the response alone.",
+    OastMode.OFF.value: "Checks that need a callback are skipped.",
     OastMode.SELF_HOSTED.value: (
         "An interactsh server this instance operates. Callbacks reach that server."
     ),

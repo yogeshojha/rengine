@@ -7,6 +7,8 @@ export enum OastMode {
 
 export const OAST_MODES: OastMode[] = [OastMode.OFF, OastMode.SELF_HOSTED, OastMode.PUBLIC];
 
+export const CALLBACK_SERVER = 'Callback server';
+
 export const OAST_MODE_LABELS: Record<OastMode, string> = {
 	[OastMode.OFF]: 'Off',
 	[OastMode.SELF_HOSTED]: 'Self-hosted',
@@ -14,7 +16,7 @@ export const OAST_MODE_LABELS: Record<OastMode, string> = {
 };
 
 export const OAST_MODE_HELP: Record<OastMode, string> = {
-	[OastMode.OFF]: 'Checks that need a callback run against the response alone.',
+	[OastMode.OFF]: 'Checks that need a callback are skipped.',
 	[OastMode.SELF_HOSTED]:
 		'An interactsh server this instance operates. Callbacks reach that server.',
 	[OastMode.PUBLIC]:

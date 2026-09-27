@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
@@ -19,6 +19,8 @@
 	} from '$lib/components/contexts/context-form';
 	import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
+	import { proxiesStore } from '$lib/stores/proxies.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
 	import { DEFAULT_SCAN_CONTEXT, type ScanContextCreate } from '$lib/types/scan-context';
 
 	interface Props {
@@ -45,6 +47,18 @@
 	});
 
 	let validation = $derived(validateDraft(draft));
+
+	$effect(() => {
+		if (auth.user?.is_superuser && !proxiesStore.hasFetched) untrack(() => proxiesStore.fetch());
+	});
+
+	let proxyPreset = false;
+	$effect(() => {
+		const fallback = proxiesStore.defaultId;
+		if (proxyPreset || !proxiesStore.hasFetched) return;
+		proxyPreset = true;
+		if (fallback && !draft.proxy_id) untrack(() => (draft.proxy_id = fallback));
+	});
 
 	function seed(): ScanContextCreate {
 		const d = DEFAULT_SCAN_CONTEXT();

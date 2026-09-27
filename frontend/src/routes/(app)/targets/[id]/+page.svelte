@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/utilities/page-title';
 	import { page } from '$app/state';
 	import { goto, replaceState } from '$app/navigation';
 	import { browser } from '$app/environment';
@@ -850,7 +851,7 @@
 	}
 </script>
 
-<svelte:head><title>{target?.target_value ?? routeLabels.targets} · reNgine</title></svelte:head>
+<svelte:head><title>{pageTitle(target?.target_value ?? routeLabels.targets)}</title></svelte:head>
 
 <svelte:window onkeydown={onKeydown} />
 

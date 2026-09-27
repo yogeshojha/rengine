@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/utilities/page-title';
 	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { targetsStore } from '$lib/stores/targets.svelte';
@@ -673,7 +674,7 @@
 	}
 </script>
 
-<svelte:head><title>{routeLabels.targets} · reNgine</title></svelte:head>
+<svelte:head><title>{pageTitle(routeLabels.targets)}</title></svelte:head>
 
 <svelte:window onkeydown={onKey} />
 

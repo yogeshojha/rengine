@@ -32,6 +32,7 @@ export interface TemplateFilter {
 	sets: string[];
 	tags: string[];
 	fired: boolean;
+	callback: boolean;
 	new_since: string | null;
 	limit: number;
 	offset: number;
@@ -46,6 +47,7 @@ export function emptyTemplateFilter(): TemplateFilter {
 		sets: [],
 		tags: [],
 		fired: false,
+		callback: false,
 		new_since: null,
 		limit: 50,
 		offset: 0
@@ -103,6 +105,7 @@ export interface TemplateLibraryStats {
 	sets: TemplateSetSpec[];
 	tags: SelectionBreakdown[];
 	fired: number;
+	callback: number;
 	new: number;
 	seen_at: string | null;
 	last_synced_at: string | null;

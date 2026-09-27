@@ -152,6 +152,9 @@ def _to_read(channel: NotificationChannel) -> NotificationChannelRead:
         last_test_at=channel.last_test_at,
         last_test_ok=channel.last_test_ok,
         last_test_message=channel.last_test_message,
+        last_sent_at=channel.last_sent_at,
+        last_sent_ok=channel.last_sent_ok,
+        last_sent_message=channel.last_sent_message,
     )
 
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/utilities/page-title';
 	import { browser } from '$app/environment';
 	import { untrack } from 'svelte';
 	import PlusIcon from '@lucide/svelte/icons/plus';
@@ -91,7 +92,7 @@
 	}
 </script>
 
-<svelte:head><title>{routeLabels.agents} · reNgine</title></svelte:head>
+<svelte:head><title>{pageTitle(routeLabels.agents)}</title></svelte:head>
 
 <div class="flex flex-col gap-5">
 	<div class="flex flex-wrap items-end justify-between gap-3">

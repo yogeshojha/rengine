@@ -1,3 +1,10 @@
+import {
+	CHANNEL_EVENTS,
+	CHANNEL_LEVELS,
+	DEFAULT_CHANNEL_EVENTS,
+	DEFAULT_CHANNEL_LEVEL
+} from '$lib/config/notification-events';
+
 export const NOTIF_PROVIDERS = [
 	'slack',
 	'discord',
@@ -10,27 +17,14 @@ export const NOTIF_PROVIDERS = [
 
 export type NotifProvider = (typeof NOTIF_PROVIDERS)[number];
 
-export const NOTIF_CATEGORIES = [
-	{ value: 'scan', label: 'Scans', hint: 'Started, completed, failed' },
-	{ value: 'vulnerability', label: 'Vulnerabilities', hint: 'New findings by severity' },
-	{ value: 'target', label: 'Targets and assets', hint: 'Imports, new assets and endpoints' },
-	{ value: 'security', label: 'Security alerts', hint: 'Logins, account changes' },
-	{ value: 'system', label: 'System', hint: 'Updates and platform health' },
-	{ value: 'integration', label: 'Integrations', hint: 'API key and webhook failures' },
-	{ value: 'resource', label: 'Resources', hint: 'Storage and quota limits' },
-	{ value: 'watch', label: 'Program watches', hint: 'New in-scope assets on a watched program' },
-	{
-		value: 'new_checks',
-		label: 'New checks',
-		hint: 'New checks in the library and what they found'
-	}
-] as const;
+export const NOTIF_CATEGORIES = CHANNEL_EVENTS.map((event) => ({
+	value: event.type,
+	label: event.label,
+	hint: event.hint,
+	capability: event.capability
+}));
 
-export const NOTIF_SEVERITIES = [
-	{ value: 'info', label: 'Info and above' },
-	{ value: 'warning', label: 'Warning and above' },
-	{ value: 'error', label: 'Errors only' }
-] as const;
+export const NOTIF_SEVERITIES = CHANNEL_LEVELS;
 
 export interface NotificationPreference {
 	types: string[];
@@ -49,6 +43,9 @@ export interface NotificationChannelRead {
 	last_test_at: string | null;
 	last_test_ok: boolean | null;
 	last_test_message: string | null;
+	last_sent_at: string | null;
+	last_sent_ok: boolean | null;
+	last_sent_message: string | null;
 }
 
 export interface NotificationChannelCreate {
@@ -67,8 +64,5 @@ export interface NotificationChannelUpdate {
 }
 
 export function defaultNotificationPreference(): NotificationPreference {
-	return {
-		types: ['scan', 'vulnerability', 'target', 'security', 'system', 'watch', 'new_checks'],
-		min_severity: 'info'
-	};
+	return { types: [...DEFAULT_CHANNEL_EVENTS], min_severity: DEFAULT_CHANNEL_LEVEL };
 }

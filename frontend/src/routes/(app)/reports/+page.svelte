@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/utilities/page-title';
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import { browser } from '$app/environment';
@@ -195,7 +196,7 @@
 	}
 </script>
 
-<svelte:head><title>{routeLabels.reports} · reNgine</title></svelte:head>
+<svelte:head><title>{pageTitle(routeLabels.reports)}</title></svelte:head>
 
 <div class="space-y-6">
 	<div class="flex flex-wrap items-start justify-between gap-3">

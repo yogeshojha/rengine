@@ -7,27 +7,22 @@ from sqlalchemy import Column
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
-from shared.enums.notification import NotificationSeverity, NotificationType
+from shared.definitions.notification_events import (
+    DEFAULT_CHANNEL_EVENTS,
+    DEFAULT_CHANNEL_LEVEL,
+)
 from shared.enums.notification_channel import NotificationProvider
 from shared.utils.datetime import utc_now
 from shared.utils.validation import clean_name, clean_optional_name
 
 PROVIDERS = tuple(p.value for p in NotificationProvider)
 
-DEFAULT_PREFERENCE_TYPES = [
-    NotificationType.SCAN.value,
-    NotificationType.VULNERABILITY.value,
-    NotificationType.TARGET.value,
-    NotificationType.SECURITY.value,
-    NotificationType.SYSTEM.value,
-    NotificationType.WATCH.value,
-    NotificationType.NEW_CHECKS.value,
-]
+DEFAULT_PREFERENCE_TYPES = list(DEFAULT_CHANNEL_EVENTS)
 
 
 class NotificationPreference(BaseModel):
     types: list[str] = Field(default_factory=lambda: list(DEFAULT_PREFERENCE_TYPES))
-    min_severity: str = NotificationSeverity.INFO.value
+    min_severity: str = DEFAULT_CHANNEL_LEVEL
 
 
 class NotificationChannel(SQLModel, table=True):
@@ -45,6 +40,9 @@ class NotificationChannel(SQLModel, table=True):
     last_test_at: datetime | None = Field(default=None)
     last_test_ok: bool | None = Field(default=None)
     last_test_message: str | None = Field(default=None)
+    last_sent_at: datetime | None = Field(default=None)
+    last_sent_ok: bool | None = Field(default=None)
+    last_sent_message: str | None = Field(default=None, max_length=500)
 
 
 class NotificationChannelCreate(BaseModel):
@@ -78,6 +76,9 @@ class NotificationChannelRead(BaseModel):
     last_test_at: datetime | None
     last_test_ok: bool | None
     last_test_message: str | None
+    last_sent_at: datetime | None = None
+    last_sent_ok: bool | None = None
+    last_sent_message: str | None = None
 
 
 class NotificationChannelTestConfig(BaseModel):

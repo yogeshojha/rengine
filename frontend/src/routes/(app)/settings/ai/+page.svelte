@@ -1,70 +1,82 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/utilities/page-title';
 	import { untrack } from 'svelte';
-	import * as Card from '$lib/components/ui/card/index.js';
-	import * as Select from '$lib/components/ui/select/index.js';
-	import * as Alert from '$lib/components/ui/alert/index.js';
-	import { Button } from '$lib/components/ui/button/index.js';
-	import { Input } from '$lib/components/ui/input/index.js';
-	import { Label } from '$lib/components/ui/label/index.js';
-	import { Switch } from '$lib/components/ui/switch/index.js';
-	import { Badge } from '$lib/components/ui/badge/index.js';
-	import { Separator } from '$lib/components/ui/separator/index.js';
-	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
-	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
-	import FlaskConicalIcon from '@lucide/svelte/icons/flask-conical';
+	import { toast } from 'svelte-sonner';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import CircleXIcon from '@lucide/svelte/icons/circle-x';
+	import CpuIcon from '@lucide/svelte/icons/cpu';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
-	import PanelHead from '$lib/components/panel-head.svelte';
+	import * as Card from '$lib/components/ui/card/index.js';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import * as Select from '$lib/components/ui/select/index.js';
+	import * as ToggleGroup from '$lib/components/ui/toggle-group/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+	import { Switch } from '$lib/components/ui/switch/index.js';
+	import EmptyState from '$lib/components/empty-state.svelte';
+	import FormField from '$lib/components/form-field.svelte';
+	import Hint from '$lib/components/hint.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import PanelHead from '$lib/components/panel-head.svelte';
+	import SettingRow from '$lib/components/settings/setting-row.svelte';
 	import { ai } from '$lib/stores/ai.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { routeLabels } from '$lib/config/routes';
 	import { relativeTime } from '$lib/utilities/dates';
-	import { toast } from 'svelte-sonner';
 	import type { AiTestResult } from '$lib/types/ai';
 
-	let provider = $state('anthropic');
+	const ANTHROPIC = 'anthropic';
+
+	let dialogOpen = $state(false);
+	let provider = $state(ANTHROPIC);
 	let model = $state('');
 	let fastModel = $state('');
 	let workspaceId = $state('');
 	let apiKey = $state('');
 	let showKey = $state(false);
 	let testing = $state(false);
+	let draftResult = $state<AiTestResult | null>(null);
 	let result = $state<AiTestResult | null>(null);
-	let loaded = $state(false);
 
 	const status = $derived(ai.status);
 	const catalog = $derived(ai.catalog);
 	const isAdmin = $derived(auth.user?.is_superuser ?? false);
 	const providerSpec = $derived(catalog?.providers.find((p) => p.key === provider));
-	const isAnthropic = $derived(provider === 'anthropic');
+	const stored = $derived(catalog?.providers.find((p) => p.key === status?.provider));
 
 	$effect(() => {
 		untrack(() => void ai.fetch());
 	});
 
-	$effect(() => {
-		const current = status;
-		if (!current || loaded) return;
-		loaded = true;
-		provider = current.provider ?? 'anthropic';
-		model = current.model ?? '';
-		fastModel = current.fast_model ?? '';
-		workspaceId = current.workspace_id ?? '';
-	});
+	function modelLabel(spec: typeof stored, id: string | null): string {
+		if (!id) return 'Not set';
+		return spec?.models.find((m) => m.id === id)?.label ?? id;
+	}
+
+	function openEdit() {
+		provider = status?.provider ?? ANTHROPIC;
+		model = status?.model ?? '';
+		fastModel = status?.fast_model ?? '';
+		workspaceId = status?.workspace_id ?? '';
+		apiKey = '';
+		showKey = false;
+		draftResult = null;
+		dialogOpen = true;
+	}
 
 	function pickProvider(value: string) {
+		if (!value || value === provider) return;
 		provider = value;
 		const spec = catalog?.providers.find((p) => p.key === value);
 		model = spec?.models[0]?.id ?? '';
 		fastModel = spec?.models.at(-1)?.id ?? model;
 	}
 
-	async function test() {
+	async function testDraft() {
 		testing = true;
-		result = await ai.test({
+		draftResult = await ai.test({
 			provider,
 			model,
 			api_key: apiKey.trim() || undefined,
@@ -73,32 +85,40 @@
 		testing = false;
 	}
 
+	async function testStored() {
+		testing = true;
+		result = await ai.test({ provider: status?.provider ?? ANTHROPIC });
+		testing = false;
+	}
+
 	async function save() {
 		const ok = await ai.save({
 			provider,
 			model,
 			fast_model: fastModel,
-			workspace_id: workspaceId.trim(),
+			workspace_id: provider === ANTHROPIC ? workspaceId.trim() : '',
 			api_key: apiKey.trim() || undefined
 		});
 		if (ok) {
-			apiKey = '';
-			toast.success('Saved');
+			toast.success('Connection saved');
+			result = null;
+			dialogOpen = false;
 		}
 	}
 
 	async function setEnabled(value: boolean) {
-		const ok = await ai.save({ enabled: value });
-		if (ok) toast.success(value ? 'AI enabled' : 'AI disabled');
+		if (await ai.save({ enabled: value })) toast.success(value ? 'AI enabled' : 'AI disabled');
 	}
 
-	async function setFeature(key: string, value: boolean) {
-		await ai.save({ features: { [key]: value } });
+	async function setFeature(key: string, label: string, value: boolean) {
+		if (await ai.save({ features: { [key]: value } })) {
+			toast.success(`${label} ${value ? 'enabled' : 'disabled'}`);
+		}
 	}
 
 	async function clearCache() {
 		const removed = await ai.clearCache();
-		toast.success(`${removed} cached narratives removed`);
+		toast.success(`${removed.toLocaleString()} cached narratives removed`);
 	}
 
 	function money(value: number | null): string {
@@ -106,247 +126,289 @@
 	}
 </script>
 
-<svelte:head><title>{routeLabels.ai} · reNgine</title></svelte:head>
+<svelte:head><title>{pageTitle(routeLabels.ai)}</title></svelte:head>
 
-<div class="space-y-6">
-	<div class="flex flex-wrap items-start justify-between gap-3">
-		<div>
-			<h2 class="text-lg font-semibold tracking-tight">{routeLabels.ai}</h2>
-			<p class="mt-1 max-w-2xl text-sm text-muted-foreground">
-				Model connection, feature opt-ins and usage for report narratives
-			</p>
-		</div>
-		{#if status}
-			<div class="flex items-center gap-3 rounded-md border px-3 py-2">
-				<span class="text-sm">{status.enabled ? 'On' : 'Off'}</span>
-				<Switch
-					checked={status.enabled}
-					disabled={!isAdmin || !status.configured}
-					onCheckedChange={setEnabled}
-				/>
+{#if ai.isLoading && !status}
+	<Card.Root class="gap-3 p-5">
+		<Skeleton class="h-4 w-24" />
+		<Skeleton class="h-9 w-full" />
+		<Skeleton class="h-9 w-full" />
+	</Card.Root>
+{:else if !status}
+	<EmptyState compact icon={CpuIcon} title="AI settings not loaded">
+		<Button variant="outline" size="sm" onclick={() => ai.fetch(true)}>Retry</Button>
+	</EmptyState>
+{:else}
+	<div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
+		<Card.Root class="gap-0 overflow-hidden py-0">
+			<div id="ai-connection" class="scroll-mt-20"></div>
+			<PanelHead title="Connection">
+				<label class="flex items-center gap-2 text-sm text-foreground" for="ai-enabled">
+					Enabled
+					<Switch
+						id="ai-enabled"
+						checked={status.enabled}
+						disabled={!isAdmin || !status.configured || ai.isSaving}
+						onCheckedChange={setEnabled}
+					/>
+				</label>
+			</PanelHead>
+			<SettingRow label="Provider" class="border-t-0">
+				<span class="text-sm">{stored?.label ?? 'Not set'}</span>
+			</SettingRow>
+			<SettingRow label="Model">
+				<span class="text-sm">{modelLabel(stored, status.model)}</span>
+			</SettingRow>
+			<SettingRow label="Fast model" help="Asset judgement, finding explanations and attack paths">
+				<span class="text-sm">{modelLabel(stored, status.fast_model)}</span>
+			</SettingRow>
+			<SettingRow label="API key">
+				<code class="font-mono text-xs text-muted-foreground">
+					{status.key_masked ?? 'Not set'}
+				</code>
+			</SettingRow>
+			{#if status.provider === ANTHROPIC}
+				<SettingRow label="Workspace ID">
+					<code class="font-mono text-xs text-muted-foreground">
+						{status.workspace_id || 'Not set'}
+					</code>
+				</SettingRow>
+			{/if}
+			<div class="flex flex-wrap items-center gap-2 border-t px-5 py-3">
+				<Button variant="outline" size="sm" disabled={!isAdmin} onclick={openEdit}>
+					Edit connection
+				</Button>
+				<LoadingButton
+					variant="ghost"
+					size="sm"
+					loading={testing && !dialogOpen}
+					loadingLabel="Testing"
+					disabled={!isAdmin || !status.configured || testing}
+					onclick={testStored}
+				>
+					Test connection
+				</LoadingButton>
+				{#if result}
+					<span class="flex min-w-0 items-center gap-1.5 text-xs">
+						{#if result.success}
+							<CheckIcon class="size-3.5 shrink-0 text-success" />
+						{:else}
+							<CircleXIcon class="size-3.5 shrink-0 text-destructive" />
+						{/if}
+						<span class="wrap-anywhere">{result.message}</span>
+					</span>
+				{/if}
 			</div>
-		{/if}
+
+			<div id="ai-features" class="scroll-mt-20"></div>
+			<div class="border-t px-5 pt-4 pb-2">
+				<h2 class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+					Features
+				</h2>
+			</div>
+			{#each catalog?.features ?? [] as feature, i (feature.key)}
+				<SettingRow
+					label={feature.label}
+					help={feature.help}
+					for="ai-feature-{feature.key}"
+					class={i === 0 ? 'border-t-0' : ''}
+				>
+					<Switch
+						id="ai-feature-{feature.key}"
+						checked={status.features[feature.key] ?? feature.default}
+						disabled={!isAdmin || ai.isSaving}
+						onCheckedChange={(v) => setFeature(feature.key, feature.label, v)}
+					/>
+				</SettingRow>
+			{/each}
+			{#if !isAdmin}
+				<div class="border-t px-5 py-2.5 text-xs text-muted-foreground">
+					Editable by administrators.
+				</div>
+			{/if}
+		</Card.Root>
+
+		<Card.Root class="h-fit gap-0 overflow-hidden py-0">
+			<div id="ai-usage" class="scroll-mt-20"></div>
+			<PanelHead title="Usage">
+				{#if status.usage.since}
+					<span>Since {relativeTime(status.usage.since)}</span>
+				{/if}
+			</PanelHead>
+			<dl class="divide-y text-sm">
+				<div class="flex items-baseline justify-between px-5 py-2.5">
+					<dt class="text-muted-foreground">Reports written</dt>
+					<dd class="tabular-nums">{status.usage.reports.toLocaleString()}</dd>
+				</div>
+				<div class="flex items-baseline justify-between px-5 py-2.5">
+					<dt class="text-muted-foreground">Model calls</dt>
+					<dd class="tabular-nums">{status.usage.calls.toLocaleString()}</dd>
+				</div>
+				<div class="flex items-baseline justify-between px-5 py-2.5">
+					<dt class="text-muted-foreground">Served from cache</dt>
+					<dd class="tabular-nums">{status.usage.cached.toLocaleString()}</dd>
+				</div>
+				<div class="flex items-baseline justify-between px-5 py-2.5">
+					<dt class="text-muted-foreground">Tokens in / out</dt>
+					<dd class="tabular-nums">
+						{status.usage.input_tokens.toLocaleString()} / {status.usage.output_tokens.toLocaleString()}
+					</dd>
+				</div>
+				<div class="flex items-baseline justify-between px-5 py-2.5">
+					<dt class="text-muted-foreground">Estimated spend</dt>
+					<dd class="tabular-nums">{money(status.usage.cost_usd)}</dd>
+				</div>
+				<div class="flex items-center justify-between gap-3 px-5 py-2">
+					<dt class="text-muted-foreground">Cached narratives</dt>
+					<dd class="flex items-center gap-2 tabular-nums">
+						{status.cached_narratives.toLocaleString()}
+						<Hint text="Cleared narratives are rewritten and billed on the next report">
+							{#snippet child(props)}
+								<span {...props} class="inline-flex">
+									<Button
+										variant="ghost"
+										size="sm"
+										class="h-7 px-2"
+										disabled={!isAdmin || !status.cached_narratives}
+										onclick={clearCache}
+									>
+										Clear
+									</Button>
+								</span>
+							{/snippet}
+						</Hint>
+					</dd>
+				</div>
+			</dl>
+		</Card.Root>
 	</div>
+{/if}
 
-	{#if ai.isLoading && !status}
-		<Skeleton class="h-64 w-full" />
-	{:else if status}
-		<Alert.Root variant="destructive">
-			<ShieldAlertIcon />
-			<Alert.Title>Scan data is sent to the configured provider</Alert.Title>
-			<Alert.Description>
-				A computed summary of each scan is sent: counts, severity totals, check names and detected
-				conditions. Request and response bodies, credentials and scan context headers are not sent.
-			</Alert.Description>
-		</Alert.Root>
-
-		<div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
-			<Card.Root class="gap-0 py-0">
-				<div id="ai-connection" class="scroll-mt-20"></div>
-				<PanelHead title="Connection" description="Provider and model used for narratives" />
-				<div class="space-y-5 px-5 py-5">
-					<div class="space-y-2">
-						<Label class="text-xs">Provider</Label>
-						<div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-							{#each catalog?.providers ?? [] as item (item.key)}
-								<button
-									type="button"
-									class="rounded-md border px-3 py-2 text-sm transition-colors data-[active=true]:border-primary data-[active=true]:bg-muted"
-									data-active={provider === item.key}
-									disabled={!isAdmin}
-									onclick={() => pickProvider(item.key)}
-								>
-									{item.label}
-								</button>
-							{/each}
-						</div>
-					</div>
-
-					<div class="grid gap-4 sm:grid-cols-2">
-						<div class="space-y-1.5">
-							<Label class="text-xs" for="ai-key">API key</Label>
-							<div class="relative">
-								<Input
-									id="ai-key"
-									type={showKey ? 'text' : 'password'}
-									bind:value={apiKey}
-									placeholder={status.key_masked ?? providerSpec?.key_hint ?? 'API key'}
-									autocomplete="off"
-									disabled={!isAdmin}
-									class="h-9 pr-9 font-mono text-xs"
-								/>
-								<button
-									type="button"
-									class="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
-									onclick={() => (showKey = !showKey)}
-									aria-label={showKey ? 'Hide key' : 'Show key'}
-								>
-									{#if showKey}<EyeOffIcon class="size-4" />{:else}<EyeIcon class="size-4" />{/if}
-								</button>
-							</div>
-							{#if status.configured}
-								<p class="text-xs text-muted-foreground">
-									A key is stored. An empty field keeps it.
-								</p>
-							{/if}
-						</div>
-
-						{#if isAnthropic}
-							<div class="space-y-1.5">
-								<Label class="text-xs" for="ai-workspace">Workspace ID</Label>
-								<Input
-									id="ai-workspace"
-									bind:value={workspaceId}
-									disabled={!isAdmin}
-									class="h-9 font-mono text-xs"
-								/>
-								<p class="text-xs text-muted-foreground">
-									Required for keys not scoped to a workspace.
-								</p>
-							</div>
-						{/if}
-
-						<div class="space-y-1.5">
-							<Label class="text-xs">Model for narrative</Label>
-							<Select.Root type="single" bind:value={model}>
-								<Select.Trigger class="h-9 w-full" disabled={!isAdmin}>
-									{providerSpec?.models.find((m) => m.id === model)?.label ??
-										(model || 'Choose a model')}
-								</Select.Trigger>
-								<Select.Content>
-									{#each providerSpec?.models ?? [] as item (item.id)}
-										<Select.Item value={item.id}>
-											<span class="flex flex-col items-start gap-0.5">
-												<span>{item.label}</span>
-												{#if item.input_per_mtok}
-													<span class="text-xs text-muted-foreground">
-														${item.input_per_mtok} in / ${item.output_per_mtok} out per million tokens
-													</span>
-												{/if}
-											</span>
-										</Select.Item>
-									{/each}
-								</Select.Content>
-							</Select.Root>
-						</div>
-
-						<div class="space-y-1.5">
-							<Label class="text-xs">Model for per-check explanations</Label>
-							<Select.Root type="single" bind:value={fastModel}>
-								<Select.Trigger class="h-9 w-full" disabled={!isAdmin}>
-									{providerSpec?.models.find((m) => m.id === fastModel)?.label ??
-										(fastModel || 'Choose a model')}
-								</Select.Trigger>
-								<Select.Content>
-									{#each providerSpec?.models ?? [] as item (item.id)}
-										<Select.Item value={item.id}>{item.label}</Select.Item>
-									{/each}
-								</Select.Content>
-							</Select.Root>
-							<p class="text-xs text-muted-foreground">Written once per check and cached.</p>
-						</div>
-					</div>
-
-					{#if result}
-						<Alert.Root variant={result.success ? 'default' : 'destructive'}>
-							{#if result.success}<CheckIcon />{:else}<CircleXIcon />{/if}
-							<Alert.Title>{result.success ? 'Connected' : 'Connection failed'}</Alert.Title>
-							<Alert.Description class="wrap-anywhere">{result.message}</Alert.Description>
-						</Alert.Root>
-					{/if}
-
-					<div class="flex items-center gap-2">
-						<LoadingButton variant="outline" loading={testing} disabled={!isAdmin} onclick={test}>
-							<FlaskConicalIcon class="mr-1.5 size-3.5" />
-							Test connection
-						</LoadingButton>
-						<LoadingButton loading={ai.isSaving} disabled={!isAdmin} onclick={save}>
-							Save
-						</LoadingButton>
-					</div>
-					{#if !isAdmin}
-						<p class="text-xs text-muted-foreground">Editable by administrators only.</p>
-					{/if}
-				</div>
-
-				<Separator />
-
-				<div id="ai-features" class="scroll-mt-20"></div>
-				<PanelHead title="Features" description="Opt in per report" />
-				<div class="space-y-4 px-5 py-5">
-					{#each catalog?.features ?? [] as feature (feature.key)}
-						<div class="flex items-start justify-between gap-4">
-							<div class="space-y-0.5">
-								<span class="text-sm font-medium">{feature.label}</span>
-								<p class="text-xs text-muted-foreground">{feature.help}</p>
-							</div>
-							<Switch
-								checked={status.features[feature.key] ?? feature.default}
-								disabled={!isAdmin}
-								onCheckedChange={(v) => setFeature(feature.key, v)}
-							/>
-						</div>
-					{/each}
-				</div>
-			</Card.Root>
-
-			<div class="space-y-5">
-				<Card.Root class="gap-0 py-0">
-					<div id="ai-usage" class="scroll-mt-20"></div>
-					<PanelHead title="Usage" description="All reports on this instance" />
-					<div class="divide-y">
-						<div class="flex items-baseline justify-between px-5 py-3">
-							<span class="text-sm text-muted-foreground">Reports written</span>
-							<span class="font-medium">{status.usage.reports.toLocaleString()}</span>
-						</div>
-						<div class="flex items-baseline justify-between px-5 py-3">
-							<span class="text-sm text-muted-foreground">Model calls</span>
-							<span class="font-medium">{status.usage.calls.toLocaleString()}</span>
-						</div>
-						<div class="flex items-baseline justify-between px-5 py-3">
-							<span class="text-sm text-muted-foreground">Served from cache</span>
-							<span class="font-medium">{status.usage.cached.toLocaleString()}</span>
-						</div>
-						<div class="flex items-baseline justify-between px-5 py-3">
-							<span class="text-sm text-muted-foreground">Tokens in / out</span>
-							<span class="font-medium">
-								{status.usage.input_tokens.toLocaleString()} / {status.usage.output_tokens.toLocaleString()}
-							</span>
-						</div>
-						<div class="flex items-baseline justify-between px-5 py-3">
-							<span class="text-sm text-muted-foreground">Estimated spend</span>
-							<span class="font-medium">{money(status.usage.cost_usd)}</span>
-						</div>
-						{#if status.usage.since}
-							<div class="px-5 py-2.5 text-xs text-muted-foreground">
-								Since {relativeTime(status.usage.since)}
-							</div>
-						{/if}
-					</div>
-				</Card.Root>
-
-				<Card.Root class="gap-0 py-0">
-					<PanelHead title="Cached narratives" />
-					<div class="space-y-3 px-5 py-4">
-						<div class="flex items-baseline justify-between">
-							<span class="text-sm text-muted-foreground">Cached</span>
-							<Badge variant="secondary">{status.cached_narratives.toLocaleString()}</Badge>
-						</div>
-						<p class="text-xs text-muted-foreground">
-							Cleared narratives are rewritten and billed on the next report.
-						</p>
+<Dialog.Root bind:open={dialogOpen}>
+	<Dialog.Content class="sm:max-w-lg">
+		<Dialog.Header>
+			<Dialog.Title>Edit connection</Dialog.Title>
+		</Dialog.Header>
+		<div class="flex flex-col gap-4">
+			<FormField label="Provider">
+				{#snippet children({ id })}
+					<ToggleGroup.Root
+						{id}
+						type="single"
+						variant="outline"
+						value={provider}
+						onValueChange={pickProvider}
+						class="w-fit flex-wrap"
+						aria-label="Provider"
+					>
+						{#each catalog?.providers ?? [] as item (item.key)}
+							<ToggleGroup.Item value={item.key} class="h-9 px-3 text-sm font-normal">
+								{item.label}
+							</ToggleGroup.Item>
+						{/each}
+					</ToggleGroup.Root>
+				{/snippet}
+			</FormField>
+			<FormField label="API key">
+				{#snippet children({ id })}
+					<div class="relative">
+						<Input
+							{id}
+							type={showKey ? 'text' : 'password'}
+							bind:value={apiKey}
+							placeholder={status?.key_masked ?? providerSpec?.key_hint ?? ''}
+							autocomplete="off"
+							class="pr-10 font-mono text-xs"
+						/>
 						<Button
-							variant="outline"
-							size="sm"
-							class="w-full"
-							disabled={!isAdmin || !status.cached_narratives}
-							onclick={clearCache}
+							type="button"
+							variant="ghost"
+							size="icon"
+							class="absolute top-1/2 right-1.5 size-7 -translate-y-1/2 text-muted-foreground"
+							aria-label={showKey ? 'Hide key' : 'Show key'}
+							aria-pressed={showKey}
+							onclick={() => (showKey = !showKey)}
 						>
-							Clear cache
+							{#if showKey}<EyeOffIcon class="size-4" />{:else}<EyeIcon class="size-4" />{/if}
 						</Button>
 					</div>
-				</Card.Root>
+				{/snippet}
+			</FormField>
+			{#if provider === ANTHROPIC}
+				<FormField label="Workspace ID" description="Required for keys not scoped to a workspace">
+					{#snippet children({ id })}
+						<Input {id} bind:value={workspaceId} autocomplete="off" class="font-mono text-xs" />
+					{/snippet}
+				</FormField>
+			{/if}
+			<div class="grid gap-4 sm:grid-cols-2">
+				<FormField label="Model">
+					{#snippet children({ id })}
+						<Select.Root type="single" bind:value={model}>
+							<Select.Trigger {id} class="w-full">
+								{providerSpec?.models.find((m) => m.id === model)?.label ?? 'Not set'}
+							</Select.Trigger>
+							<Select.Content>
+								{#each providerSpec?.models ?? [] as item (item.id)}
+									<Select.Item value={item.id} label={item.label}>
+										<span class="flex flex-col items-start gap-0.5">
+											<span>{item.label}</span>
+											{#if item.input_per_mtok}
+												<span class="text-xs text-muted-foreground">
+													${item.input_per_mtok} in · ${item.output_per_mtok} out per million tokens
+												</span>
+											{/if}
+										</span>
+									</Select.Item>
+								{/each}
+							</Select.Content>
+						</Select.Root>
+					{/snippet}
+				</FormField>
+				<FormField label="Fast model">
+					{#snippet children({ id })}
+						<Select.Root type="single" bind:value={fastModel}>
+							<Select.Trigger {id} class="w-full">
+								{providerSpec?.models.find((m) => m.id === fastModel)?.label ?? 'Not set'}
+							</Select.Trigger>
+							<Select.Content>
+								{#each providerSpec?.models ?? [] as item (item.id)}
+									<Select.Item value={item.id} label={item.label}>{item.label}</Select.Item>
+								{/each}
+							</Select.Content>
+						</Select.Root>
+					{/snippet}
+				</FormField>
 			</div>
+			{#if draftResult}
+				<p class="flex items-start gap-1.5 text-xs">
+					{#if draftResult.success}
+						<CheckIcon class="mt-px size-3.5 shrink-0 text-success" />
+					{:else}
+						<CircleXIcon class="mt-px size-3.5 shrink-0 text-destructive" />
+					{/if}
+					<span class="wrap-anywhere">{draftResult.message}</span>
+				</p>
+			{/if}
 		</div>
-	{/if}
-</div>
+		<Dialog.Footer class="gap-2 sm:justify-between">
+			<LoadingButton
+				variant="ghost"
+				loading={testing && dialogOpen}
+				loadingLabel="Testing"
+				disabled={testing || ai.isSaving}
+				onclick={testDraft}
+			>
+				Test
+			</LoadingButton>
+			<div class="flex gap-2">
+				<Button variant="outline" disabled={ai.isSaving} onclick={() => (dialogOpen = false)}>
+					Cancel
+				</Button>
+				<LoadingButton loading={ai.isSaving} loadingLabel="Saving" onclick={save}>
+					Save connection
+				</LoadingButton>
+			</div>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>

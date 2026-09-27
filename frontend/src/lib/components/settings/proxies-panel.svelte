@@ -1,51 +1,43 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { SvelteSet } from 'svelte/reactivity';
-	import { proxiesStore } from '$lib/stores/proxies.svelte';
-	import {
-		PROXY_SCHEMES,
-		PROXY_MODES,
-		PROXY_SCHEME_LABELS,
-		PROXY_MODE_LABELS,
-		type ProxyRead,
-		type ProxyEndpoint
-	} from '$lib/types/proxy';
-	import { MASK } from '$lib/constants';
+	import { toast } from 'svelte-sonner';
+	import MoreVerticalIcon from '@lucide/svelte/icons/more-vertical';
+	import PlusIcon from '@lucide/svelte/icons/plus';
+	import RotateCwIcon from '@lucide/svelte/icons/rotate-cw';
+	import RouteIcon from '@lucide/svelte/icons/route';
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
+	import XIcon from '@lucide/svelte/icons/x';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
-	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
-	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
+	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
-	import { Label } from '$lib/components/ui/label/index.js';
-	import { Badge } from '$lib/components/ui/badge/index.js';
-	import { Switch } from '$lib/components/ui/switch/index.js';
-	import { Separator } from '$lib/components/ui/separator/index.js';
+	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
-	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
-	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
-	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
-	import { proxiesApi } from '$lib/api/proxies';
-	import { Checkbox } from '$lib/components/ui/checkbox';
-	import LoadingButton from '$lib/components/loading-button.svelte';
+	import { Switch } from '$lib/components/ui/switch/index.js';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import FormField from '$lib/components/form-field.svelte';
-	import { toast } from 'svelte-sonner';
-	import RouteIcon from '@lucide/svelte/icons/route';
-	import PlusIcon from '@lucide/svelte/icons/plus';
-	import Pencil from '@lucide/svelte/icons/pencil';
-	import Trash2Icon from '@lucide/svelte/icons/trash-2';
-	import FlaskConicalIcon from '@lucide/svelte/icons/flask-conical';
-	import StarIcon from '@lucide/svelte/icons/star';
-	import XIcon from '@lucide/svelte/icons/x';
-	import CheckIcon from '@lucide/svelte/icons/check';
-	import CircleXIcon from '@lucide/svelte/icons/circle-x';
-	import { formatDate } from '$lib/utilities';
+	import Hint from '$lib/components/hint.svelte';
+	import LoadingButton from '$lib/components/loading-button.svelte';
+	import { proxiesStore } from '$lib/stores/proxies.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
+	import { settingsActions } from '$lib/stores/settings-actions.svelte';
+	import { MASK } from '$lib/constants';
+	import { relativeTime } from '$lib/utilities/dates';
+	import {
+		PROXY_SCHEMES,
+		PROXY_SCHEME_LABELS,
+		type ProxyEndpoint,
+		type ProxyRead
+	} from '$lib/types/proxy';
+	import { BODY_ROW, HEAD_ROW, PROXY_COL } from './columns';
+	import { CHECK_DOT, checkState, type CheckState } from './status';
 
-	let isLoading = $state(true);
-	let testingId = $state<string | null>(null);
-	let settingDefaultId = $state<string | null>(null);
+	type Scheme = (typeof PROXY_SCHEMES)[number];
 
 	interface EndpointRow {
 		scheme: string;
@@ -53,627 +45,465 @@
 		port: string;
 		username: string;
 		password: string;
-		masked: boolean;
+		stored: boolean;
 	}
 
-	function blankRow(): EndpointRow {
-		return { scheme: 'http', host: '', port: '8080', username: '', password: '', masked: false };
-	}
+	const STATUS_LABEL: Record<CheckState, string> = {
+		ok: 'Reachable',
+		failed: 'Failed',
+		untested: 'Not tested',
+		off: 'Disabled'
+	};
+
+	let loading = $state(true);
+	let loadFailed = $state(false);
+	let testing = $state<string | null>(null);
 
 	let dialogOpen = $state(false);
-	let editingId = $state<string | null>(null);
-	let formName = $state('');
-	let formDescription = $state('');
-	let formMode = $state('single');
-	let formActive = $state(true);
-	let formDefault = $state(false);
-	let formRows = $state<EndpointRow[]>([blankRow()]);
+	let editing = $state<ProxyRead | null>(null);
+	let name = $state('');
+	let description = $state('');
+	let asDefault = $state(false);
+	let rows = $state<EndpointRow[]>([]);
 	let saving = $state(false);
 
-	let deleteOpen = $state(false);
-	let deletingProxy = $state<ProxyRead | null>(null);
-	let isDeleting = $state(false);
+	let removing = $state<ProxyRead | null>(null);
+	let deleting = $state(false);
 
-	let proxies = $derived(proxiesStore.proxies);
+	const isAdmin = $derived(auth.user?.is_superuser ?? false);
+	const proxies = $derived(proxiesStore.proxies);
 
-	function openAdd() {
-		editingId = null;
-		formName = '';
-		formDescription = '';
-		formMode = 'single';
-		formActive = true;
-		formDefault = proxies.length === 0;
-		formRows = [blankRow()];
+	function blank(): EndpointRow {
+		return { scheme: 'http', host: '', port: '8080', username: '', password: '', stored: false };
+	}
+
+	async function load() {
+		loading = true;
+		await proxiesStore.fetch();
+		loadFailed = !proxiesStore.hasFetched;
+		loading = false;
+	}
+
+	onMount(() => {
+		if (!isAdmin) loading = false;
+		else if (proxiesStore.hasFetched) loading = false;
+		else void load();
+	});
+
+	function openDialog(proxy: ProxyRead | null) {
+		editing = proxy;
+		name = proxy?.name ?? '';
+		description = proxy?.description ?? '';
+		asDefault = proxy ? proxy.is_default : proxies.length === 0;
+		rows = proxy?.endpoints.length
+			? proxy.endpoints.map((e) => ({
+					scheme: e.scheme,
+					host: e.host,
+					port: String(e.port),
+					username: e.username ?? '',
+					password: '',
+					stored: e.has_password
+				}))
+			: [blank()];
 		dialogOpen = true;
 	}
 
-	function openEdit(p: ProxyRead) {
-		editingId = p.id;
-		formName = p.name;
-		formDescription = p.description ?? '';
-		formMode = p.mode;
-		formActive = p.is_active;
-		formDefault = p.is_default;
-		formRows = p.endpoints.map((e) => ({
-			scheme: e.scheme,
-			host: e.host,
-			port: String(e.port),
-			username: e.username ?? '',
-			password: '',
-			masked: e.has_password
-		}));
-		if (formRows.length === 0) formRows = [blankRow()];
-		dialogOpen = true;
-	}
-
-	function addRow() {
-		formRows = [...formRows, blankRow()];
-	}
-
-	function removeRow(i: number) {
-		formRows = formRows.filter((_, idx) => idx !== i);
-		if (formRows.length === 0) formRows = [blankRow()];
-	}
-
-	function setRow(i: number, key: keyof EndpointRow, value: string) {
-		const rows = formRows.map((r) => ({ ...r }));
-		(rows[i] as Record<string, unknown>)[key] = value;
-		if (key === 'password') rows[i].masked = false;
-		formRows = rows;
-	}
-
-	function buildEndpoints(): ProxyEndpoint[] | null {
+	function endpoints(): ProxyEndpoint[] | null {
 		const out: ProxyEndpoint[] = [];
-		for (const r of formRows) {
-			const host = r.host.trim();
-			const port = Math.trunc(Number(r.port));
-			if (!host || !Number.isFinite(port) || port <= 0) continue;
-			const username = r.username.trim() || null;
-			let password: string | null;
-			if (r.password) password = r.password;
-			else if (r.masked) password = MASK;
-			else password = null;
-			out.push({ scheme: r.scheme, host, port, username, password });
+		for (const row of rows) {
+			const host = row.host.trim();
+			const port = Math.trunc(Number(row.port));
+			if (!host || !Number.isFinite(port) || port < 1 || port > 65535) return null;
+			out.push({
+				scheme: row.scheme,
+				host,
+				port,
+				username: row.username.trim() || null,
+				password: row.password ? row.password : row.stored ? MASK : null
+			});
 		}
-		return out.length > 0 ? out : null;
+		return out.length ? out : null;
 	}
 
-	async function handleSave() {
-		if (!formName.trim()) {
+	async function save() {
+		const parsed = endpoints();
+		if (!name.trim()) {
 			toast.error('Proxy name is required');
 			return;
 		}
-		const endpoints = buildEndpoints();
-		if (!endpoints) {
-			toast.error('Add at least one endpoint with a host and port');
+		if (!parsed) {
+			toast.error('Each endpoint needs a host and a port between 1 and 65535');
 			return;
 		}
-
 		saving = true;
 		try {
-			if (editingId) {
-				const updated = await proxiesStore.update(editingId, {
-					name: formName.trim(),
-					description: formDescription.trim() || null,
-					mode: formMode,
-					is_active: formActive,
-					is_default: formDefault,
-					endpoints
-				});
-				if (updated) {
-					toast.success('Proxy updated');
-					dialogOpen = false;
-				}
-			} else {
-				const created = await proxiesStore.create({
-					name: formName.trim(),
-					description: formDescription.trim() || null,
-					mode: formMode,
-					is_active: formActive,
-					is_default: formDefault,
-					endpoints
-				});
-				if (created) {
-					toast.success('Proxy added');
-					dialogOpen = false;
-				}
+			const body = {
+				name: name.trim(),
+				description: description.trim() || null,
+				is_default: asDefault,
+				endpoints: parsed
+			};
+			const saved = editing
+				? await proxiesStore.update(editing.id, body)
+				: await proxiesStore.create({ ...body, is_active: true });
+			if (saved) {
+				if (asDefault) await proxiesStore.fetch();
+				toast.success(editing ? 'Proxy saved' : 'Proxy added');
+				dialogOpen = false;
 			}
 		} finally {
 			saving = false;
 		}
 	}
 
-	// `reachable` is on the test result, not on the stored row, so the middle state lives here
-	const reachedOnly = new SvelteSet<string>();
-	const picked = new SvelteSet<string>();
-
-	function toggleCheck(id: string) {
-		if (picked.has(id)) picked.delete(id);
-		else picked.add(id);
-	}
-
-	async function handleTest(id: string) {
-		testingId = id;
+	async function test(proxy: ProxyRead) {
+		testing = proxy.id;
 		try {
-			const result = await proxiesStore.test(id);
+			const result = await proxiesStore.test(proxy.id);
 			if (!result) return;
 			if (result.success) {
-				reachedOnly.delete(id);
-				const ms = result.latency_ms != null ? ` (${result.latency_ms} ms)` : '';
+				const ms = result.latency_ms != null ? ` · ${result.latency_ms} ms` : '';
 				toast.success(`${result.message}${ms}`);
-			} else if (result.reachable) {
-				reachedOnly.add(id);
-				toast.warning(result.message);
 			} else {
-				reachedOnly.delete(id);
 				toast.error(result.message);
 			}
 		} finally {
-			testingId = null;
+			testing = null;
 		}
 	}
 
-	async function handleSetDefault(id: string) {
-		settingDefaultId = id;
-		try {
-			const updated = await proxiesStore.setDefault(id);
-			if (updated) toast.success('Default proxy updated');
-		} finally {
-			settingDefaultId = null;
-		}
+	async function setActive(proxy: ProxyRead, active: boolean) {
+		const updated = await proxiesStore.update(proxy.id, { is_active: active });
+		if (updated) toast.success(`Proxy ${active ? 'enabled' : 'disabled'}`);
 	}
 
-	function openDelete(p: ProxyRead) {
-		deletingProxy = p;
-		deleteOpen = true;
+	async function makeDefault(proxy: ProxyRead) {
+		const updated = await proxiesStore.setDefault(proxy.id);
+		if (updated) toast.success(`${proxy.name} is the default proxy`);
 	}
 
-	async function handleDelete() {
-		if (!deletingProxy) return;
-		isDeleting = true;
+	async function remove() {
+		const proxy = removing;
+		if (!proxy) return;
+		deleting = true;
 		try {
-			const ok = await proxiesStore.remove(deletingProxy.id);
-			if (ok) {
+			if (await proxiesStore.remove(proxy.id)) {
 				toast.success('Proxy removed');
-				deleteOpen = false;
+				removing = null;
 			}
 		} finally {
-			isDeleting = false;
+			deleting = false;
 		}
 	}
 
-	onMount(async () => {
-		if (!proxiesStore.hasFetched) await proxiesStore.fetch();
-		isLoading = false;
+	function removeDescription(proxy: ProxyRead): string {
+		const direct =
+			proxy.contexts === 1
+				? ' 1 scan context using it sends traffic direct.'
+				: proxy.contexts > 1
+					? ` ${proxy.contexts} scan contexts using it send traffic direct.`
+					: '';
+		return `Proxy ${proxy.name} is removed.${direct}`;
+	}
+
+	$effect(() => {
+		if (!isAdmin) return;
+		settingsActions.set(addAction);
+		return () => settingsActions.clear(addAction);
 	});
 </script>
 
-<div class="space-y-6">
-	<div class="flex items-start justify-between">
-		<div>
-			<h2 class="text-lg font-semibold tracking-tight">Proxies</h2>
-			<p class="text-sm text-muted-foreground">Proxies for scan traffic.</p>
-		</div>
-		<Button size="sm" onclick={openAdd}>
-			<PlusIcon class="mr-1.5 size-4" />
+{#snippet addAction()}
+	<Button size="sm" onclick={() => openDialog(null)}>
+		<PlusIcon class="size-4" />
+		Add proxy
+	</Button>
+{/snippet}
+
+{#if !isAdmin}
+	<EmptyState compact icon={RouteIcon} title="Proxies are managed by administrators" />
+{:else if loading}
+	<Card.Root class="gap-3 p-4">
+		<Skeleton class="h-8 w-full" />
+		<Skeleton class="h-10 w-full" />
+		<Skeleton class="h-10 w-full" />
+	</Card.Root>
+{:else if loadFailed}
+	<EmptyState compact icon={TriangleAlertIcon} title="Proxies not loaded">
+		<Button variant="outline" size="sm" onclick={load}>
+			<RotateCwIcon class="size-3.5" />
+			Retry
+		</Button>
+	</EmptyState>
+{:else if proxies.length === 0}
+	<EmptyState icon={RouteIcon} title="No proxies">
+		<Button size="sm" onclick={() => openDialog(null)}>
+			<PlusIcon class="size-4" />
 			Add proxy
 		</Button>
-	</div>
-
-	<Separator />
-
-	{#if isLoading}
-		<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-			{#each Array(3) as _, i (i)}
-				<Card.Root>
-					<Card.Content class="p-5">
-						<div class="flex items-start gap-3">
-							<Skeleton class="size-10 rounded-lg" />
-							<div class="flex-1 space-y-2">
-								<Skeleton class="h-5 w-28" />
-								<Skeleton class="h-4 w-full" />
-							</div>
-						</div>
-					</Card.Content>
-				</Card.Root>
-			{/each}
-		</div>
-	{:else if proxies.length === 0}
-		<Card.Root class="border-dashed">
-			<Card.Content class="flex flex-col items-center justify-center gap-3 py-16 text-center">
-				<RouteIcon class="size-10 text-muted-foreground/40" />
-				<div class="space-y-1">
-					<p class="text-sm font-medium">No proxies</p>
-				</div>
-				<Button size="sm" variant="outline" onclick={openAdd}>
-					<PlusIcon class="mr-1.5 size-4" />
-					Add proxy
-				</Button>
-			</Card.Content>
-		</Card.Root>
-	{:else}
-		<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+	</EmptyState>
+{:else}
+	<Card.Root class="gap-0 overflow-hidden py-0">
+		<div class="@container/proxies w-full" role="table" aria-label="Proxies">
+			<div class={HEAD_ROW} role="row">
+				<div class={PROXY_COL.proxy}>Proxy</div>
+				<div class={PROXY_COL.endpoint}>Endpoint</div>
+				<div class={PROXY_COL.contexts}>Contexts</div>
+				<div class={PROXY_COL.status}>Status</div>
+				<div class={PROXY_COL.actions}></div>
+			</div>
 			{#each proxies as proxy (proxy.id)}
-				<Card.Root
-					class="relative transition-all duration-200 {proxy.is_active
-						? 'ring-1 ring-border'
-						: 'border-dashed opacity-75'}"
-				>
-					<Card.Content class="p-5">
-						<div class="flex items-start justify-between gap-3">
-							<div class="flex min-w-0 items-start gap-3">
-								<div class="flex h-10 shrink-0 items-center">
-									<Checkbox
-										checked={picked.has(proxy.id)}
-										onCheckedChange={() => toggleCheck(proxy.id)}
-										aria-label="Select {proxy.name}"
-									/>
-								</div>
-								<div class="shrink-0 rounded-lg bg-muted p-2.5">
-									<RouteIcon class="size-5 text-foreground" />
-								</div>
-								<div class="min-w-0">
-									<div class="flex items-center gap-2">
-										<h4 class="truncate text-sm font-medium">{proxy.name}</h4>
-										{#if proxy.is_default}
-											<Badge variant="secondary" class="h-5 shrink-0 border-0 px-1.5 text-2xs"
-												>Default</Badge
-											>
-										{/if}
-									</div>
-									<p class="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-										{proxy.description ||
-											`${PROXY_MODE_LABELS[proxy.mode as (typeof PROXY_MODES)[number]] ?? proxy.mode} · ${proxy.endpoint_count} endpoint${proxy.endpoint_count === 1 ? '' : 's'}`}
-									</p>
-								</div>
-							</div>
-							<Switch
-								checked={proxy.is_active}
-								onCheckedChange={(checked) =>
-									proxiesStore.update(proxy.id, { is_active: checked }).then((u) => {
-										if (u) toast.success(checked ? 'Proxy enabled' : 'Proxy disabled');
-									})}
-							/>
-						</div>
-
-						<Separator class="my-3" />
-
-						<div class="space-y-2">
-							{#each proxy.endpoints.slice(0, 3) as ep, i (`${i}:${ep.url_masked}`)}
-								<code class="block truncate font-mono text-xs text-muted-foreground"
-									>{ep.url_masked}</code
-								>
-							{/each}
-							{#if proxy.endpoint_count > 3}
-								<p class="text-xs text-muted-foreground">+{proxy.endpoint_count - 3} more</p>
+				{@const check = checkState(proxy.is_active, proxy.last_test_ok)}
+				<div class="{BODY_ROW} {proxy.is_active ? '' : 'text-muted-foreground'}" role="row">
+					<div class="{PROXY_COL.proxy} flex flex-col">
+						<span class="flex items-center gap-2 text-sm leading-5 font-medium">
+							<span class="wrap-anywhere">{proxy.name}</span>
+							{#if proxy.is_default}
+								<Badge variant="secondary" class="h-5 px-1.5 text-2xs">Default</Badge>
 							{/if}
-						</div>
-
-						{#if proxy.last_test_at}
-							{@const reachedNotVerified = !proxy.last_test_ok && reachedOnly.has(proxy.id)}
-							<div class="mt-3 flex flex-col gap-0.5 text-xs">
-								<span class="flex items-center gap-1.5">
-									{#if proxy.last_test_ok}
-										<CheckIcon class="size-3 text-foreground" />
-										<span class="text-muted-foreground"
-											>Tested {formatDate(proxy.last_test_at)}</span
-										>
-									{:else if reachedNotVerified}
-										<TriangleAlertIcon class="size-3 text-warning" />
-										<span class="text-warning">Reachable, not verified</span>
-										<span class="text-muted-foreground">· {formatDate(proxy.last_test_at)}</span>
+						</span>
+						<span class="text-2xs text-muted-foreground">
+							{proxy.description ||
+								(proxy.endpoint_count > 1
+									? `Pool of ${proxy.endpoint_count} endpoints`
+									: 'Single endpoint')}
+						</span>
+					</div>
+					<div class="{PROXY_COL.endpoint} flex min-w-0 flex-col">
+						<code class="truncate font-mono text-xs text-muted-foreground">
+							{proxy.endpoints[0]?.url_masked ?? ''}
+						</code>
+						{#if proxy.endpoint_count > 1}
+							<span class="text-2xs text-muted-foreground">
+								+{proxy.endpoint_count - 1} more
+							</span>
+						{/if}
+					</div>
+					<div class="{PROXY_COL.contexts} text-sm tabular-nums">
+						{proxy.contexts || '—'}
+					</div>
+					<div class="{PROXY_COL.status} flex flex-col">
+						<Hint text={check === 'failed' ? proxy.last_test_message : null}>
+							{#snippet child(props)}
+								<span {...props} class="inline-flex items-center gap-2 text-sm">
+									{#if testing === proxy.id}
+										<Spinner class="size-3" />
+										<span class="text-muted-foreground">Testing</span>
 									{:else}
-										<CircleXIcon class="size-3 text-destructive" />
-										<span class="text-muted-foreground"
-											>Tested {formatDate(proxy.last_test_at)}</span
+										<span class="size-2 shrink-0 rounded-full {CHECK_DOT[check]}"></span>
+										<span
+											class={check === 'ok' || check === 'failed' ? '' : 'text-muted-foreground'}
 										>
+											{STATUS_LABEL[check]}
+										</span>
 									{/if}
 								</span>
-								{#if proxy.last_test_message}
-									<span class="pl-[18px] break-words text-muted-foreground">
-										{proxy.last_test_message}
-									</span>
-								{/if}
-							</div>
+							{/snippet}
+						</Hint>
+						{#if proxy.last_test_at && testing !== proxy.id}
+							<span class="pl-4 text-2xs text-muted-foreground tabular-nums">
+								{relativeTime(proxy.last_test_at)}
+							</span>
 						{/if}
-
-						<div class="mt-3 flex items-center gap-1.5">
-							<Tooltip.Root>
-								<Tooltip.Trigger>
-									{#snippet child({ props })}
-										<Button
-											{...props}
-											variant="ghost"
-											size="sm"
-											class="h-7 px-2 text-xs"
-											onclick={() => openEdit(proxy)}
-										>
-											<Pencil class="mr-1 size-3" />
-											Edit
-										</Button>
-									{/snippet}
-								</Tooltip.Trigger>
-								<Tooltip.Content>Edit proxy</Tooltip.Content>
-							</Tooltip.Root>
-
-							<Tooltip.Root>
-								<Tooltip.Trigger>
-									{#snippet child({ props })}
-										<Button
-											{...props}
-											variant="ghost"
-											size="sm"
-											class="h-7 px-2 text-xs"
-											disabled={testingId === proxy.id}
-											onclick={() => handleTest(proxy.id)}
-										>
-											{#if testingId === proxy.id}
-												<Spinner class="mr-1 size-3" />
-											{:else}
-												<FlaskConicalIcon class="mr-1 size-3" />
-											{/if}
-											Test
-										</Button>
-									{/snippet}
-								</Tooltip.Trigger>
-								<Tooltip.Content>Test reachability</Tooltip.Content>
-							</Tooltip.Root>
-
-							{#if !proxy.is_default}
-								<Tooltip.Root>
-									<Tooltip.Trigger>
-										{#snippet child({ props })}
-											<Button
-												{...props}
-												variant="ghost"
-												size="sm"
-												class="h-7 px-2 text-xs"
-												disabled={settingDefaultId === proxy.id}
-												onclick={() => handleSetDefault(proxy.id)}
-											>
-												{#if settingDefaultId === proxy.id}
-													<Spinner class="mr-1 size-3" />
-												{:else}
-													<StarIcon class="mr-1 size-3" />
-												{/if}
-												Default
-											</Button>
-										{/snippet}
-									</Tooltip.Trigger>
-									<Tooltip.Content>Set as default</Tooltip.Content>
-								</Tooltip.Root>
-							{/if}
-
-							<div class="flex-1"></div>
-
-							<Tooltip.Root>
-								<Tooltip.Trigger>
-									{#snippet child({ props })}
-										<Button
-											{...props}
-											variant="ghost"
-											size="sm"
-											class="h-7 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
-											onclick={() => openDelete(proxy)}
-										>
-											<Trash2Icon class="size-3" />
-										</Button>
-									{/snippet}
-								</Tooltip.Trigger>
-								<Tooltip.Content>Remove proxy</Tooltip.Content>
-							</Tooltip.Root>
-						</div>
-					</Card.Content>
-				</Card.Root>
+					</div>
+					<div class={PROXY_COL.actions}>
+						<DropdownMenu.Root>
+							<DropdownMenu.Trigger>
+								{#snippet child({ props })}
+									<Button {...props} variant="ghost" size="icon" class="size-7">
+										<MoreVerticalIcon class="size-4" />
+										<span class="sr-only">{proxy.name} actions</span>
+									</Button>
+								{/snippet}
+							</DropdownMenu.Trigger>
+							<DropdownMenu.Content align="end">
+								<DropdownMenu.Item
+									disabled={testing !== null || !proxy.is_active}
+									onSelect={() => test(proxy)}
+								>
+									Test
+								</DropdownMenu.Item>
+								<DropdownMenu.Item onSelect={() => openDialog(proxy)}>Edit</DropdownMenu.Item>
+								{#if !proxy.is_default}
+									<DropdownMenu.Item
+										disabled={!proxy.is_active}
+										onSelect={() => makeDefault(proxy)}
+									>
+										Set as default
+									</DropdownMenu.Item>
+								{/if}
+								<DropdownMenu.Item onSelect={() => setActive(proxy, !proxy.is_active)}>
+									{proxy.is_active ? 'Disable' : 'Enable'}
+								</DropdownMenu.Item>
+								<DropdownMenu.Separator />
+								<DropdownMenu.Item variant="destructive" onSelect={() => (removing = proxy)}>
+									Remove
+								</DropdownMenu.Item>
+							</DropdownMenu.Content>
+						</DropdownMenu.Root>
+					</div>
+				</div>
 			{/each}
 		</div>
-	{/if}
-</div>
+	</Card.Root>
+{/if}
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Content class="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
-		<Dialog.Header class="px-6 pt-6 pb-2">
-			<Dialog.Title>{editingId ? 'Edit proxy' : 'Add proxy'}</Dialog.Title>
-			<Dialog.Description>
-				One or more endpoints. Passwords are not shown after saving.
-			</Dialog.Description>
+		<Dialog.Header class="px-6 pt-6 pb-4">
+			<Dialog.Title>{editing ? 'Edit proxy' : 'Add proxy'}</Dialog.Title>
 		</Dialog.Header>
-
-		<ScrollArea class="flex-1">
-			<div class="space-y-5 px-6 py-4">
-				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+		<ScrollArea
+			class="min-h-0 flex-1 [&>[data-slot=scroll-area-viewport]]:max-h-[calc(85vh-10rem)]"
+		>
+			<div class="flex flex-col gap-5 px-6 pb-5">
+				<div class="grid gap-4 sm:grid-cols-2">
 					<FormField label="Name">
+						{#snippet children({ id })}
+							<Input {id} bind:value={name} maxlength={120} disabled={saving} />
+						{/snippet}
+					</FormField>
+					<FormField label="Description">
 						{#snippet children({ id })}
 							<Input
 								{id}
-								bind:value={formName}
-								placeholder="Residential pool"
-								class="h-9"
+								bind:value={description}
+								maxlength={500}
+								placeholder="Optional"
 								disabled={saving}
 							/>
 						{/snippet}
 					</FormField>
-					<div class="space-y-1.5">
-						<Label class="text-xs">Mode</Label>
-						<Select.Root type="single" bind:value={formMode}>
-							<Select.Trigger class="h-9 w-full text-sm"
-								>{PROXY_MODE_LABELS[formMode as (typeof PROXY_MODES)[number]] ??
-									'Single'}</Select.Trigger
-							>
-							<Select.Content>
-								{#each PROXY_MODES as m (m)}
-									<Select.Item value={m} label={PROXY_MODE_LABELS[m]}
-										>{PROXY_MODE_LABELS[m]}</Select.Item
-									>
-								{/each}
-							</Select.Content>
-						</Select.Root>
-					</div>
 				</div>
 
-				<FormField label="Description" description="Optional">
-					{#snippet children({ id })}
-						<Input
-							{id}
-							bind:value={formDescription}
-							placeholder="Description"
-							class="h-9"
-							disabled={saving}
-						/>
-					{/snippet}
-				</FormField>
-
-				<Separator />
-
-				<div class="space-y-3">
-					<Label class="text-xs">Endpoints</Label>
-					{#each formRows as row, i (i)}
-						<div class="space-y-3 rounded-lg border bg-muted/30 p-3">
-							<div class="grid grid-cols-1 gap-2.5 sm:grid-cols-[6.5rem_1fr_5.5rem_auto]">
-								<div class="space-y-1">
-									<Label class="text-2xs uppercase tracking-wide text-muted-foreground"
-										>Scheme</Label
-									>
-									<Select.Root
-										type="single"
-										value={row.scheme}
-										onValueChange={(v) => setRow(i, 'scheme', v ?? 'http')}
-									>
-										<Select.Trigger class="h-9 w-full text-sm"
-											>{PROXY_SCHEME_LABELS[row.scheme as (typeof PROXY_SCHEMES)[number]] ??
-												'HTTP'}</Select.Trigger
-										>
-										<Select.Content>
-											{#each PROXY_SCHEMES as s (s)}
-												<Select.Item value={s} label={PROXY_SCHEME_LABELS[s]}
-													>{PROXY_SCHEME_LABELS[s]}</Select.Item
-												>
-											{/each}
-										</Select.Content>
-									</Select.Root>
-								</div>
-								<div class="space-y-1">
-									<Label class="text-2xs uppercase tracking-wide text-muted-foreground">Host</Label>
-									<Input
-										value={row.host}
-										placeholder="gate.provider.com"
-										class="h-9 font-mono text-xs"
-										autocomplete="off"
-										oninput={(e) => setRow(i, 'host', e.currentTarget.value)}
-									/>
-								</div>
-								<div class="space-y-1">
-									<Label class="text-2xs uppercase tracking-wide text-muted-foreground">Port</Label>
-									<Input
-										type="number"
-										min="1"
-										max="65535"
-										value={row.port}
-										placeholder="8080"
-										class="h-9 font-mono text-xs"
-										oninput={(e) => setRow(i, 'port', e.currentTarget.value)}
-									/>
-								</div>
-								<div class="flex items-end">
-									<Button
-										variant="ghost"
-										size="icon"
-										class="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
-										disabled={formRows.length === 1}
-										onclick={() => removeRow(i)}
-										aria-label="Remove endpoint"
-									>
-										<XIcon class="size-4" />
-									</Button>
-								</div>
-							</div>
-							<div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-								<div class="space-y-1">
-									<Label class="text-2xs uppercase tracking-wide text-muted-foreground"
-										>Username</Label
-									>
-									<Input
-										value={row.username}
-										placeholder="Optional"
-										class="h-9 font-mono text-xs"
-										autocomplete="off"
-										oninput={(e) => setRow(i, 'username', e.currentTarget.value)}
-									/>
-								</div>
-								<div class="space-y-1">
-									<Label class="text-2xs uppercase tracking-wide text-muted-foreground"
-										>Password</Label
-									>
-									<Input
-										type="password"
-										value={row.password}
-										placeholder={row.masked ? 'Leave blank to keep the current value' : 'Optional'}
-										class="h-9 font-mono text-xs"
-										autocomplete="off"
-										oninput={(e) => setRow(i, 'password', e.currentTarget.value)}
-									/>
-								</div>
-							</div>
+				<div class="flex flex-col gap-2">
+					<div class="flex items-baseline justify-between gap-3">
+						<span class="text-sm font-medium">Endpoints</span>
+						{#if rows.length > 1}
+							<span class="text-xs text-muted-foreground">
+								Each scan uses one endpoint from the pool
+							</span>
+						{/if}
+					</div>
+					<div class="overflow-hidden rounded-lg border">
+						<div
+							class="hidden grid-cols-[6.5rem_minmax(0,1fr)_5rem_minmax(0,0.8fr)_minmax(0,0.8fr)_2rem] gap-2 border-b bg-muted/20 px-3 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase sm:grid"
+						>
+							<span>Scheme</span>
+							<span>Host</span>
+							<span>Port</span>
+							<span>Username</span>
+							<span>Password</span>
+							<span></span>
 						</div>
-					{/each}
+						{#each rows as row, i (i)}
+							<div
+								class="grid grid-cols-2 gap-2 border-b border-border/60 px-3 py-2 last:border-b-0 sm:grid-cols-[6.5rem_minmax(0,1fr)_5rem_minmax(0,0.8fr)_minmax(0,0.8fr)_2rem]"
+							>
+								<Select.Root
+									type="single"
+									value={row.scheme}
+									onValueChange={(v) => v && (row.scheme = v)}
+								>
+									<Select.Trigger class="h-9 w-full" aria-label="Scheme">
+										{PROXY_SCHEME_LABELS[row.scheme as Scheme] ?? row.scheme}
+									</Select.Trigger>
+									<Select.Content>
+										{#each PROXY_SCHEMES as scheme (scheme)}
+											<Select.Item value={scheme} label={PROXY_SCHEME_LABELS[scheme]}>
+												{PROXY_SCHEME_LABELS[scheme]}
+											</Select.Item>
+										{/each}
+									</Select.Content>
+								</Select.Root>
+								<Input
+									bind:value={row.host}
+									placeholder="gate.provider.com"
+									aria-label="Host"
+									autocomplete="off"
+									class="h-9 font-mono text-xs"
+								/>
+								<Input
+									bind:value={row.port}
+									type="number"
+									min="1"
+									max="65535"
+									aria-label="Port"
+									class="h-9 font-mono text-xs"
+								/>
+								<Input
+									bind:value={row.username}
+									placeholder="Optional"
+									aria-label="Username"
+									autocomplete="off"
+									class="h-9 font-mono text-xs"
+								/>
+								<Input
+									bind:value={row.password}
+									type="password"
+									placeholder={row.stored ? 'Stored' : 'Optional'}
+									aria-label="Password"
+									autocomplete="new-password"
+									class="h-9 font-mono text-xs"
+								/>
+								<Button
+									variant="ghost"
+									size="icon"
+									class="size-9 text-muted-foreground"
+									disabled={rows.length === 1}
+									aria-label="Remove endpoint"
+									onclick={() => (rows = rows.filter((_, idx) => idx !== i))}
+								>
+									<XIcon class="size-4" />
+								</Button>
+							</div>
+						{/each}
+					</div>
 					<Button
 						variant="ghost"
 						size="sm"
-						class="h-8 gap-1.5 text-muted-foreground"
-						onclick={addRow}
+						class="w-fit text-muted-foreground"
+						onclick={() => (rows = [...rows, blank()])}
 					>
 						<PlusIcon class="size-3.5" />
 						Add endpoint
 					</Button>
 				</div>
 
-				<Separator />
-
-				<div class="flex items-center justify-between rounded-lg border px-4 py-3">
-					<div class="space-y-0.5">
-						<Label class="text-sm font-medium">Set as default</Label>
-						<p class="text-xs text-muted-foreground">
-							Used by contexts that do not choose a proxy.
-						</p>
-					</div>
-					<Switch
-						checked={formDefault}
-						onCheckedChange={(v) => (formDefault = v)}
-						disabled={saving}
-					/>
-				</div>
+				<label
+					class="flex cursor-pointer items-center justify-between gap-4 rounded-lg border px-4 py-3"
+					for="proxy-default"
+				>
+					<span class="flex flex-col gap-0.5">
+						<span class="text-sm font-medium">Default proxy</span>
+						<span class="text-xs text-muted-foreground">
+							Used by scans launched without a scan context. Preselected for new scan contexts.
+						</span>
+					</span>
+					<Switch id="proxy-default" bind:checked={asDefault} disabled={saving} />
+				</label>
 			</div>
 		</ScrollArea>
-
 		<Dialog.Footer class="border-t px-6 py-4">
-			<Button variant="outline" onclick={() => (dialogOpen = false)} disabled={saving}
-				>Cancel</Button
-			>
-			<LoadingButton onclick={handleSave} loading={saving} loadingLabel="Saving">
-				{editingId ? 'Save changes' : 'Add proxy'}
+			<Button variant="outline" disabled={saving} onclick={() => (dialogOpen = false)}>
+				Cancel
+			</Button>
+			<LoadingButton loading={saving} loadingLabel="Saving" onclick={save}>
+				{editing ? 'Save proxy' : 'Add proxy'}
 			</LoadingButton>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
 
-<DeleteConfirmationDialog
-	bind:open={deleteOpen}
+<ConfirmDialog
+	open={removing !== null}
 	title="Remove proxy"
-	description={`Proxy ${deletingProxy?.name ?? ''} is removed. Contexts using it send traffic directly.`}
+	description={removing ? removeDescription(removing) : ''}
 	confirmLabel="Remove"
-	{isDeleting}
-	onOpenChange={(o) => (deleteOpen = o)}
-	onConfirm={handleDelete}
-/>
-
-<SelectionDeleteBar
-	ids={[...picked]}
-	noun="proxy"
-	nounPlural="proxies"
-	remove={async (id) => {
-		await proxiesApi.remove(id);
-		proxiesStore.drop(id);
+	destructive
+	loading={deleting}
+	onOpenChange={(open) => {
+		if (!open) removing = null;
 	}}
-	onDone={() => picked.clear()}
-	onClear={() => picked.clear()}
+	onConfirm={remove}
 />

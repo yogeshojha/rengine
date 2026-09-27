@@ -1,5 +1,5 @@
 import { describe, expect, it, afterEach, beforeEach, vi } from 'vitest';
-import { relativeTime, relativeTimeLong, uptime } from './dates';
+import { relativeTime, relativeTimeLong, untilTime, uptime } from './dates';
 
 const NOW = new Date('2026-09-11T12:00:00Z');
 const ago = (minutes: number) => new Date(NOW.getTime() - minutes * 60_000).toISOString();
@@ -103,5 +103,21 @@ describe('uptime', () => {
 
 	it('shares the bucket relativeTime uses', () => {
 		expect(relativeTime(ago(3 * HOUR))).toBe(`${uptime(ago(3 * HOUR))} ago`);
+	});
+});
+
+describe('untilTime', () => {
+	it('reads a future moment in the same buckets', () => {
+		expect(untilTime(ago(-5 * HOUR))).toBe('in 5h');
+		expect(untilTime(ago(-2 * DAY))).toBe('in 2d');
+	});
+
+	it('reads a moment under a minute away', () => {
+		expect(untilTime(new Date(NOW.getTime() + 20_000).toISOString())).toBe('in under a minute');
+	});
+
+	it('returns null once the moment has passed', () => {
+		expect(untilTime(ago(35))).toBeNull();
+		expect(untilTime(null)).toBeNull();
 	});
 });

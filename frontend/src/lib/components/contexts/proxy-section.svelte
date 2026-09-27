@@ -88,7 +88,7 @@
 	{/if}
 
 	<a
-		href={ROUTES.settings()}
+		href={ROUTES.settings('proxies')}
 		class="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
 	>
 		Manage proxies in Settings

@@ -173,32 +173,22 @@ AI_FEATURES: tuple[AIFeature, ...] = (
     AIFeature(
         "report_narrative",
         "Report narrative",
-        "Writes the executive summary, risk narrative and remediation plan.",
+        "Executive summary, risk narrative and remediation plan. Sends the target, "
+        "counts, check names and the web assets named on attack paths.",
         True,
-    ),
-    AIFeature(
-        "report_findings",
-        "Finding explanations",
-        "Explains what a check means for this estate. Cached per check.",
-        False,
     ),
     AIFeature(
         "asset_judgement",
         "Asset judgement",
-        "Reads hostnames and page titles after a scan and flags exposures with a reason. "
-        "Response bodies are not sent.",
+        "Flags exposures after a scan, with a reason. Sends web asset names, status "
+        "codes, page titles and technologies.",
         False,
     ),
     AIFeature(
         "rule_suggestions",
         "Rule suggestions",
-        "Proposes exposure rules from judgement results. Each is held for review.",
-        False,
-    ),
-    AIFeature(
-        "attack_paths",
-        "Attack path narrative",
-        "Describes how observed weaknesses chain together.",
+        "Proposes exposure rules from judgement results, each held for review. Sends "
+        "web asset names and judgement reasons.",
         False,
     ),
 )

@@ -3,7 +3,7 @@ import uuid
 from shared.enums.scan import ScanScope, ScanStatus
 from shared.models.scan import Scan
 from shared.services import target_seeds
-from shared.services.proxy_resolve import resolve_proxy_url
+from shared.services.proxy_resolve import scan_proxy_url
 from shared.services.scan_resolve import (
     ResolvedScanConfig,
     _mask_auth,
@@ -75,7 +75,6 @@ def build_scan_for_target_sync(
     intensity: str | None = None,
 ) -> Scan:
     """Resolve engine/context/target on a sync Session and flush a PENDING Scan."""
-    from shared.models.proxy import Proxy  # noqa: PLC0415
     from shared.models.scan_context import ScanContext  # noqa: PLC0415
     from shared.models.scan_engine import ScanEngine  # noqa: PLC0415
     from shared.models.target import Target  # noqa: PLC0415
@@ -97,9 +96,7 @@ def build_scan_for_target_sync(
         msg = "target not found"
         raise ScanFactoryError(msg)
 
-    proxy_url = None
-    if context is not None and context.proxy_id is not None:
-        proxy_url = resolve_proxy_url(session.get(Proxy, context.proxy_id))
+    proxy_url = scan_proxy_url(session, context)
 
     resolved = merge_engine_context(
         engine,

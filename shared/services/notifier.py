@@ -7,8 +7,8 @@ import re
 from urllib.parse import quote
 
 import apprise
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import Engine, bindparam, select, update
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import Session
 
 from shared.enums.api_key import APIProvider
@@ -20,6 +20,7 @@ from shared.enums.notification_channel import (
 from shared.http import get_sync_client
 from shared.models.notification_channel import NotificationChannel
 from shared.utils.crypto import try_decrypt
+from shared.utils.datetime import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -190,7 +191,8 @@ def _fan_out(
     *,
     explicit: bool = False,
     attach: str | None = None,
-) -> None:
+) -> list[tuple]:
+    sent = []
     for t in targets:
         if not explicit and not wants(t["pref"], ntype, severity):
             continue
@@ -199,6 +201,57 @@ def _fan_out(
         )
         if not ok:
             logger.warning("dispatch to channel '%s' failed: %s", t["name"], msg)
+        sent.append((t["id"], ok, msg))
+    return sent
+
+
+_CHANNELS = NotificationChannel.__table__
+_RECORD_DELIVERY = (
+    update(_CHANNELS)
+    .where(_CHANNELS.c.id == bindparam("cid"))
+    .values(
+        last_sent_at=bindparam("at"),
+        last_sent_ok=bindparam("ok"),
+        last_sent_message=bindparam("msg"),
+    )
+)
+
+
+def _delivery_rows(sent: list[tuple]) -> list[dict]:
+    now = utc_now()
+    return [
+        {"cid": cid, "at": now, "ok": ok, "msg": (msg or "")[:500]}
+        for cid, ok, msg in sent
+    ]
+
+
+def _record_sync(session: Session, sent: list[tuple]) -> None:
+    """Writes on its own connection, outside the caller's transaction."""
+    if not sent:
+        return
+    try:
+        bind = session.get_bind()
+        if isinstance(bind, Engine):
+            with bind.begin() as conn:
+                conn.execute(_RECORD_DELIVERY, _delivery_rows(sent))
+        else:
+            session.execute(_RECORD_DELIVERY, _delivery_rows(sent))
+    except Exception:
+        logger.warning("channel delivery status not recorded", exc_info=True)
+
+
+async def _record_async(session: AsyncSession, sent: list[tuple]) -> None:
+    if not sent:
+        return
+    try:
+        bind = session.bind
+        if isinstance(bind, AsyncEngine):
+            async with bind.begin() as conn:
+                await conn.execute(_RECORD_DELIVERY, _delivery_rows(sent))
+        else:
+            await session.execute(_RECORD_DELIVERY, _delivery_rows(sent))
+    except Exception:
+        logger.warning("channel delivery status not recorded", exc_info=True)
 
 
 def _channel_query(channel_ids=None):
@@ -225,7 +278,7 @@ def dispatch_sync(
     targets = _channels_to_targets(list(rows))
     _shared_bot_targets(targets, SyncAPIKeyService(session).get_key_for_provider)
     if targets:
-        _fan_out(
+        sent = _fan_out(
             targets,
             ntype,
             severity,
@@ -234,6 +287,7 @@ def dispatch_sync(
             explicit=bool(channel_ids),
             attach=attach,
         )
+        _record_sync(session, sent)
 
 
 async def dispatch_async(
@@ -253,7 +307,7 @@ async def dispatch_async(
     if targets:
         token = await APIKeyService(session).get_key_for_provider(APIProvider.TELEGRAM)
         _shared_bot_targets(targets, lambda _provider: token)
-        await asyncio.to_thread(
+        sent = await asyncio.to_thread(
             _fan_out,
             targets,
             ntype,
@@ -263,3 +317,4 @@ async def dispatch_async(
             explicit=bool(channel_ids),
             attach=attach,
         )
+        await _record_async(session, sent)

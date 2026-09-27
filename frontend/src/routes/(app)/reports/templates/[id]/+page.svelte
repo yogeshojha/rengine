@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/utilities/page-title';
 	import { untrack } from 'svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
@@ -162,7 +163,7 @@
 	}
 </script>
 
-<svelte:head><title>{name || 'Report template'} · reNgine</title></svelte:head>
+<svelte:head><title>{pageTitle(name || 'Report template')}</title></svelte:head>
 
 {#if !template}
 	<div class="space-y-4">

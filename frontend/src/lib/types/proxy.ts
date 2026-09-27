@@ -1,15 +1,9 @@
 export const PROXY_SCHEMES = ['http', 'https', 'socks5'] as const;
-export const PROXY_MODES = ['single', 'rotating'] as const;
 
 export const PROXY_SCHEME_LABELS: Record<(typeof PROXY_SCHEMES)[number], string> = {
 	http: 'HTTP',
 	https: 'HTTPS',
 	socks5: 'SOCKS5'
-};
-
-export const PROXY_MODE_LABELS: Record<(typeof PROXY_MODES)[number], string> = {
-	single: 'Single',
-	rotating: 'Rotating'
 };
 
 export interface ProxyEndpoint {
@@ -33,11 +27,11 @@ export interface ProxyRead {
 	id: string;
 	name: string;
 	description: string | null;
-	mode: string;
 	is_active: boolean;
 	is_default: boolean;
 	endpoints: ProxyEndpointRead[];
 	endpoint_count: number;
+	contexts: number;
 	created_at: string;
 	updated_at: string;
 	last_test_at: string | null;
@@ -48,7 +42,6 @@ export interface ProxyRead {
 export interface ProxyCreate {
 	name: string;
 	description?: string | null;
-	mode?: string;
 	is_active?: boolean;
 	is_default?: boolean;
 	endpoints: ProxyEndpoint[];
@@ -57,7 +50,6 @@ export interface ProxyCreate {
 export interface ProxyUpdate {
 	name?: string;
 	description?: string | null;
-	mode?: string;
 	is_active?: boolean;
 	is_default?: boolean;
 	endpoints?: ProxyEndpoint[] | null;

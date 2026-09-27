@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/utilities/page-title';
 	import { untrack, tick } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
@@ -39,7 +40,7 @@
 	import { bountyProgramsApi } from '$lib/api/bounty-programs';
 	import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
 	import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
-	import { ROUTES } from '$lib/config/routes';
+	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import { REFRESH_POLLS, REFRESH_POLL_MS } from '$lib/config/bounty-programs';
 	import {
 		REPORT_PAGE_SIZE,
@@ -371,7 +372,7 @@
 	}
 </script>
 
-<svelte:head><title>{label} · Bounty Hub · reNgine</title></svelte:head>
+<svelte:head><title>{pageTitle(`${label} · ${routeLabels['bounty-hub']}`)}</title></svelte:head>
 <svelte:window onkeydown={onKey} />
 
 {#snippet sortHead(text: string, key: ReportSort, cls: string)}

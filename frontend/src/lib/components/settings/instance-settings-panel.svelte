@@ -1,385 +1,239 @@
 <script lang="ts">
-	import { ROUTES } from '$lib/config/routes';
-	import { onMount } from 'svelte';
-	import { beforeNavigate, goto } from '$app/navigation';
-	import { instanceSettingsStore } from '$lib/stores/instanceSettings.svelte';
-	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
-	import {
-		INSTANCE_MODES,
-		MODE_LABELS,
-		DEFAULT_INSTANCE_MODE,
-		coerceInstanceMode
-	} from '$lib/config/capabilities';
-	import * as Card from '$lib/components/ui/card/index.js';
-	import * as Select from '$lib/components/ui/select/index.js';
-	import EmptyState from '$lib/components/empty-state.svelte';
-	import { Button } from '$lib/components/ui/button/index.js';
-	import { Input } from '$lib/components/ui/input/index.js';
-	import { Label } from '$lib/components/ui/label/index.js';
-	import { Switch } from '$lib/components/ui/switch/index.js';
-	import { Separator } from '$lib/components/ui/separator/index.js';
-	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
-	import { Spinner } from '$lib/components/ui/spinner/index.js';
+	import { onMount, untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import { AUTOMATIC, CONCURRENT_SCAN_CHOICES } from '$lib/config/scan-admission';
-	import SparklesIcon from '@lucide/svelte/icons/sparkles';
 	import CircleAlertIcon from '@lucide/svelte/icons/circle-alert';
 	import RotateCwIcon from '@lucide/svelte/icons/rotate-cw';
+	import * as Card from '$lib/components/ui/card/index.js';
+	import * as Select from '$lib/components/ui/select/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+	import { Switch } from '$lib/components/ui/switch/index.js';
+	import EmptyState from '$lib/components/empty-state.svelte';
+	import SectionHead from '$lib/components/section-head.svelte';
+	import SettingRow from './setting-row.svelte';
+	import TimezonePicker from './timezone-picker.svelte';
+	import { instanceSettingsStore } from '$lib/stores/instanceSettings.svelte';
+	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
+	import { INSTANCE_MODES, MODE_LABELS, coerceInstanceMode } from '$lib/config/capabilities';
+	import { AUTOMATIC, CONCURRENT_SCAN_CHOICES } from '$lib/config/scan-admission';
+	import { SCAN_RETENTION, SCREENSHOT_RETENTION, retentionLabel } from '$lib/config/retention';
+	import type { InstanceSettingsUpdate } from '$lib/types/instance-settings';
 
-	const TIMEZONES = [
-		'UTC',
-		'America/New_York',
-		'America/Chicago',
-		'America/Denver',
-		'America/Los_Angeles',
-		'America/Sao_Paulo',
-		'Europe/London',
-		'Europe/Paris',
-		'Europe/Berlin',
-		'Europe/Moscow',
-		'Asia/Dubai',
-		'Asia/Kolkata',
-		'Asia/Singapore',
-		'Asia/Shanghai',
-		'Asia/Tokyo',
-		'Australia/Sydney'
-	];
-
-	const SCAN_RETENTION = [
-		{ value: '30', label: '30 days' },
-		{ value: '60', label: '60 days' },
-		{ value: '90', label: '90 days' },
-		{ value: '180', label: '180 days' },
-		{ value: '365', label: '1 year' }
-	];
-
-	const SCREENSHOT_RETENTION = [
-		{ value: '7', label: '7 days' },
-		{ value: '14', label: '14 days' },
-		{ value: '30', label: '30 days' },
-		{ value: '60', label: '60 days' },
-		{ value: '90', label: '90 days' }
-	];
-
-	let isLoading = $state(true);
-	let loadFailed = $state(false);
+	let loading = $state(true);
 	let saving = $state(false);
+	let name = $state('');
 
-	let instanceName = $state('reNgine');
-	let timezone = $state('UTC');
-	let mode = $state<string>(DEFAULT_INSTANCE_MODE);
-	let scanRetention = $state('90');
-	let screenshotRetention = $state('30');
-	let certRecheck = $state(false);
-	let concurrentScans = $state(String(AUTOMATIC));
+	const settings = $derived(instanceSettingsStore.settings);
+	const isAdmin = $derived(auth.user?.is_superuser ?? false);
+	const locked = $derived(!isAdmin || saving);
 
-	let zoneOptions = $derived.by(() => {
-		const local = Intl.DateTimeFormat().resolvedOptions().timeZone;
-		if (local && !TIMEZONES.includes(local)) return [local, ...TIMEZONES];
-		return TIMEZONES;
-	});
-
-	let automaticLabel = $derived.by(() => {
-		const auto = instanceSettingsStore.settings?.concurrent_scans_auto;
-		return auto ? `Automatic · ${auto}` : 'Automatic';
-	});
-	let concurrencyOptions = $derived([
+	const automaticLabel = $derived(
+		settings?.concurrent_scans_auto ? `Automatic · ${settings.concurrent_scans_auto}` : 'Automatic'
+	);
+	const concurrency = $derived([
 		{ value: String(AUTOMATIC), label: automaticLabel },
 		...CONCURRENT_SCAN_CHOICES.map((n) => ({ value: String(n), label: String(n) }))
 	]);
 
-	let modePlaceholder = $derived(
-		INSTANCE_MODES.find((m) => m.value === mode)?.label ?? MODE_LABELS[DEFAULT_INSTANCE_MODE]
-	);
-	let snapshot = $state<string | null>(null);
-
-	function currentState() {
-		return JSON.stringify({
-			instanceName: instanceName.trim(),
-			timezone,
-			mode,
-			scanRetention,
-			screenshotRetention,
-			certRecheck,
-			concurrentScans
-		});
+	async function load() {
+		loading = true;
+		await instanceSettingsStore.fetch();
+		loading = false;
 	}
 
-	let isDirty = $derived(snapshot !== null && currentState() !== snapshot);
+	onMount(() => {
+		if (instanceSettingsStore.hasFetched) loading = false;
+		else void load();
+	});
 
-	function hydrate() {
-		const s = instanceSettingsStore.settings;
-		if (!s) return;
-		instanceName = s.instance_name;
-		timezone = s.timezone;
-		mode = coerceInstanceMode(s.mode);
-		scanRetention = String(s.scan_history_retention_days);
-		screenshotRetention = String(s.screenshot_retention_days);
-		certRecheck = s.cert_recheck_enabled;
-		concurrentScans = String(s.concurrent_scans);
-		snapshot = currentState();
-	}
+	$effect(() => {
+		const current = settings?.instance_name;
+		if (current !== undefined) untrack(() => (name = current));
+	});
 
-	async function handleSave() {
-		if (!instanceSettingsStore.settings) {
-			toast.error('Settings not loaded. Retry before saving.');
-			return;
-		}
-		if (!instanceName.trim()) {
-			toast.error('Instance name is required');
-			return;
-		}
+	async function save(patch: InstanceSettingsUpdate, label: string) {
 		saving = true;
 		try {
-			const updated = await instanceSettingsStore.update({
-				instance_name: instanceName.trim(),
-				timezone,
-				mode,
-				scan_history_retention_days: Number(scanRetention),
-				screenshot_retention_days: Number(screenshotRetention),
-				cert_recheck_enabled: certRecheck,
-				concurrent_scans: Number(concurrentScans)
-			});
-			if (updated) {
-				hydrate();
-				toast.success('Settings saved');
-			}
+			const updated = await instanceSettingsStore.update(patch);
+			if (!updated) return;
+			capabilitiesStore.setMode(updated.mode);
+			capabilitiesStore.setInstanceName(updated.instance_name);
+			toast.success(`${label} saved`);
 		} finally {
 			saving = false;
 		}
 	}
 
-	async function load() {
-		isLoading = true;
-		loadFailed = false;
-		if (!instanceSettingsStore.hasFetched) await instanceSettingsStore.fetch();
-		if (instanceSettingsStore.settings) hydrate();
-		else loadFailed = true;
-		isLoading = false;
-	}
-
-	onMount(load);
-
-	let showLeaveDialog = $state(false);
-	let pendingNav: (() => void) | null = $state(null);
-	let allowNavigation = $state(false);
-
-	beforeNavigate((nav) => {
-		if (allowNavigation) {
-			allowNavigation = false;
+	function commitName() {
+		if (!settings) return;
+		const next = name.trim();
+		if (next === settings.instance_name) return;
+		if (!next) {
+			name = settings.instance_name;
+			toast.error('Instance name is required');
 			return;
 		}
-		if (!isDirty || saving || pendingNav) return;
-		nav.cancel();
-		pendingNav = () => {
-			allowNavigation = true;
-			if (nav.to) goto(nav.to.url);
-		};
-		showLeaveDialog = true;
-	});
-
-	$effect(() => {
-		if (typeof window === 'undefined') return;
-		function onBeforeUnload(e: BeforeUnloadEvent) {
-			if (!isDirty || saving) return;
-			e.preventDefault();
-		}
-		window.addEventListener('beforeunload', onBeforeUnload);
-		return () => window.removeEventListener('beforeunload', onBeforeUnload);
-	});
+		void save({ instance_name: next }, 'Instance name');
+	}
 </script>
 
-<div class="space-y-6">
-	<div>
-		<h2 class="text-lg font-semibold tracking-tight">General</h2>
-		<p class="text-sm text-muted-foreground">
-			Instance identity, scan concurrency, retention windows and AI analysis.
-		</p>
-	</div>
+{#if loading && !settings}
+	<Card.Root class="gap-3 p-5">
+		<Skeleton class="h-4 w-24" />
+		<Skeleton class="h-9 w-full" />
+		<Skeleton class="h-9 w-full" />
+		<Skeleton class="h-9 w-full" />
+	</Card.Root>
+{:else if !settings}
+	<EmptyState compact icon={CircleAlertIcon} title="Settings not loaded">
+		<Button variant="outline" size="sm" onclick={load}>
+			<RotateCwIcon class="size-3.5" />
+			Retry
+		</Button>
+	</EmptyState>
+{:else}
+	<Card.Root class="gap-0 overflow-hidden py-0">
+		<div class="px-5 pt-4 pb-2"><SectionHead title="Instance" /></div>
+		<SettingRow
+			label="Name"
+			help="Shown in browser tab titles"
+			for="instance-name"
+			class="border-t-0"
+		>
+			<Input
+				id="instance-name"
+				bind:value={name}
+				maxlength={120}
+				autocomplete="off"
+				class="h-9 w-60"
+				disabled={locked}
+				onblur={commitName}
+				onkeydown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+			/>
+		</SettingRow>
+		<SettingRow label="Time zone" help="Schedules and What's new dates" for="instance-timezone">
+			<TimezonePicker
+				id="instance-timezone"
+				value={settings.timezone}
+				disabled={locked}
+				onChange={(zone) => save({ timezone: zone }, 'Time zone')}
+			/>
+		</SettingRow>
+		<SettingRow
+			label="Mode"
+			help="Bug bounty adds Bounty Hub, program watches and recon presets"
+			for="instance-mode"
+		>
+			<Select.Root
+				type="single"
+				value={coerceInstanceMode(settings.mode)}
+				onValueChange={(v) => v && v !== settings.mode && save({ mode: v }, 'Mode')}
+				disabled={locked}
+			>
+				<Select.Trigger id="instance-mode" class="h-9 w-60">
+					{MODE_LABELS[coerceInstanceMode(settings.mode)]}
+				</Select.Trigger>
+				<Select.Content>
+					{#each INSTANCE_MODES as mode (mode.value)}
+						<Select.Item value={mode.value} label={mode.label}>{mode.label}</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+		</SettingRow>
 
-	<Separator />
+		<div class="border-t px-5 pt-4 pb-2"><SectionHead title="Scanning" /></div>
+		<SettingRow
+			label="Concurrent scans"
+			help="Scans past the limit wait in launch order"
+			for="instance-concurrency"
+			class="border-t-0"
+		>
+			<Select.Root
+				type="single"
+				value={String(settings.concurrent_scans)}
+				onValueChange={(v) =>
+					v !== undefined &&
+					Number(v) !== settings.concurrent_scans &&
+					save({ concurrent_scans: Number(v) }, 'Concurrent scans')}
+				disabled={locked}
+			>
+				<Select.Trigger id="instance-concurrency" class="h-9 w-60">
+					{concurrency.find((o) => o.value === String(settings.concurrent_scans))?.label ??
+						settings.concurrent_scans}
+				</Select.Trigger>
+				<Select.Content>
+					{#each concurrency as option (option.value)}
+						<Select.Item value={option.value} label={option.label}>{option.label}</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+		</SettingRow>
+		<SettingRow
+			label="Re-check certificates"
+			help="Refreshes certificate expiry between scans"
+			for="instance-cert-recheck"
+		>
+			<Switch
+				id="instance-cert-recheck"
+				checked={settings.cert_recheck_enabled}
+				disabled={locked}
+				onCheckedChange={(v) => save({ cert_recheck_enabled: v }, 'Certificate re-check')}
+			/>
+		</SettingRow>
 
-	{#if isLoading}
-		<div class="space-y-4">
-			<Skeleton class="h-40 w-full rounded-xl" />
-			<Skeleton class="h-40 w-full rounded-xl" />
-		</div>
-	{:else if loadFailed}
-		<EmptyState class="py-16" icon={CircleAlertIcon} title="Settings not loaded">
-			<Button onclick={load} class="gap-2">
-				<RotateCwIcon class="size-4" />
-				Retry
-			</Button>
-		</EmptyState>
-	{:else}
-		<Card.Root>
-			<Card.Header>
-				<Card.Title class="text-base">Instance</Card.Title>
-				<Card.Description>Name, time zone and mode.</Card.Description>
-			</Card.Header>
-			<Card.Content class="space-y-5">
-				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<div class="space-y-1.5">
-						<Label class="text-xs" for="instance-name">Instance name</Label>
-						<Input
-							id="instance-name"
-							bind:value={instanceName}
-							placeholder="reNgine"
-							class="h-9"
-							disabled={saving}
-						/>
-					</div>
-					<div class="space-y-1.5">
-						<Label class="text-xs">Time zone</Label>
-						<Select.Root type="single" bind:value={timezone}>
-							<Select.Trigger class="h-9 w-full text-sm">{timezone}</Select.Trigger>
-							<Select.Content>
-								{#each zoneOptions as tz (tz)}
-									<Select.Item value={tz} label={tz}>{tz}</Select.Item>
-								{/each}
-							</Select.Content>
-						</Select.Root>
-					</div>
-				</div>
+		<div class="border-t px-5 pt-4 pb-2"><SectionHead title="Retention" /></div>
+		<SettingRow
+			label="Scan history"
+			help="Excludes the newest run of each target"
+			for="instance-scan-retention"
+			class="border-t-0"
+		>
+			<Select.Root
+				type="single"
+				value={String(settings.scan_history_retention_days)}
+				onValueChange={(v) =>
+					v !== undefined &&
+					Number(v) !== settings.scan_history_retention_days &&
+					save({ scan_history_retention_days: Number(v) }, 'Scan history retention')}
+				disabled={locked}
+			>
+				<Select.Trigger id="instance-scan-retention" class="h-9 w-60">
+					{retentionLabel(SCAN_RETENTION, String(settings.scan_history_retention_days))}
+				</Select.Trigger>
+				<Select.Content>
+					{#each SCAN_RETENTION as option (option.value)}
+						<Select.Item value={option.value} label={option.label}>{option.label}</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+		</SettingRow>
+		<SettingRow label="Screenshots and response bodies" for="instance-evidence-retention">
+			<Select.Root
+				type="single"
+				value={String(settings.screenshot_retention_days)}
+				onValueChange={(v) =>
+					v !== undefined &&
+					Number(v) !== settings.screenshot_retention_days &&
+					save({ screenshot_retention_days: Number(v) }, 'Evidence retention')}
+				disabled={locked}
+			>
+				<Select.Trigger id="instance-evidence-retention" class="h-9 w-60">
+					{retentionLabel(SCREENSHOT_RETENTION, String(settings.screenshot_retention_days))}
+				</Select.Trigger>
+				<Select.Content>
+					{#each SCREENSHOT_RETENTION as option (option.value)}
+						<Select.Item value={option.value} label={option.label}>{option.label}</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+		</SettingRow>
 
-				<div class="space-y-1.5">
-					<Label class="text-xs">Mode</Label>
-					<Select.Root type="single" bind:value={mode}>
-						<Select.Trigger class="h-9 w-full text-sm sm:w-72">{modePlaceholder}</Select.Trigger>
-						<Select.Content>
-							{#each INSTANCE_MODES as m (m.value)}
-								<Select.Item value={m.value} label={m.label}>{m.label}</Select.Item>
-							{/each}
-						</Select.Content>
-					</Select.Root>
-					<p class="text-xs text-muted-foreground">
-						Sets which integrations and scoping options appear.
-					</p>
-				</div>
-			</Card.Content>
-		</Card.Root>
-
-		<Card.Root>
-			<Card.Header>
-				<Card.Title class="text-base">Data retention</Card.Title>
-				<Card.Description>Runs and their evidence are pruned daily.</Card.Description>
-			</Card.Header>
-			<Card.Content>
-				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<div class="space-y-1.5">
-						<Label class="text-xs">Scan history</Label>
-						<Select.Root type="single" bind:value={scanRetention}>
-							<Select.Trigger class="h-9 w-full text-sm">
-								{SCAN_RETENTION.find((o) => o.value === scanRetention)?.label ?? '90 days'}
-							</Select.Trigger>
-							<Select.Content>
-								{#each SCAN_RETENTION as o (o.value)}
-									<Select.Item value={o.value} label={o.label}>{o.label}</Select.Item>
-								{/each}
-							</Select.Content>
-						</Select.Root>
-					</div>
-					<div class="space-y-1.5">
-						<Label class="text-xs">Screenshots and response bodies</Label>
-						<Select.Root type="single" bind:value={screenshotRetention}>
-							<Select.Trigger class="h-9 w-full text-sm">
-								{SCREENSHOT_RETENTION.find((o) => o.value === screenshotRetention)?.label ??
-									'30 days'}
-							</Select.Trigger>
-							<Select.Content>
-								{#each SCREENSHOT_RETENTION as o (o.value)}
-									<Select.Item value={o.value} label={o.label}>{o.label}</Select.Item>
-								{/each}
-							</Select.Content>
-						</Select.Root>
-					</div>
-				</div>
-			</Card.Content>
-		</Card.Root>
-
-		<Card.Root>
-			<Card.Header>
-				<Card.Title class="text-base">Scans</Card.Title>
-				<Card.Description>Scans past the limit wait in launch order.</Card.Description>
-			</Card.Header>
-			<Card.Content>
-				<div class="space-y-1.5">
-					<Label class="text-xs">Concurrent scans</Label>
-					<Select.Root type="single" bind:value={concurrentScans}>
-						<Select.Trigger class="h-9 w-full text-sm sm:w-72">
-							{concurrencyOptions.find((o) => o.value === concurrentScans)?.label ??
-								concurrentScans}
-						</Select.Trigger>
-						<Select.Content>
-							{#each concurrencyOptions as o (o.value)}
-								<Select.Item value={o.value} label={o.label}>{o.label}</Select.Item>
-							{/each}
-						</Select.Content>
-					</Select.Root>
-					<p class="text-xs text-muted-foreground">
-						Automatic follows the stage slots of the running scan workers.
-					</p>
-				</div>
-			</Card.Content>
-		</Card.Root>
-
-		<Card.Root>
-			<Card.Header>
-				<Card.Title class="text-base">Between scans</Card.Title>
-				<Card.Description
-					>Opens one TLS connection to each web asset every few hours to refresh certificate expiry.</Card.Description
-				>
-			</Card.Header>
-			<Card.Content>
-				<div class="flex items-center justify-between gap-4">
-					<Label class="text-xs" for="cert-recheck">Re-check certificates</Label>
-					<Switch id="cert-recheck" bind:checked={certRecheck} />
-				</div>
-			</Card.Content>
-		</Card.Root>
-
-		<Card.Root>
-			<Card.Header>
-				<div class="flex items-center gap-2">
-					<SparklesIcon class="size-4 text-foreground" />
-					<Card.Title class="text-base">AI</Card.Title>
-				</div>
-				<Card.Description>Model connection, feature opt-ins and cost.</Card.Description>
-			</Card.Header>
-			<Card.Content>
-				<Button variant="outline" size="sm" href={ROUTES.ai()}>
-					<SparklesIcon class="mr-1.5 size-3.5" />
-					Open AI page
-				</Button>
-			</Card.Content>
-		</Card.Root>
-
-		<div class="flex items-center justify-end gap-3">
-			{#if isDirty}
-				<span class="text-xs text-muted-foreground">Unsaved changes</span>
-			{/if}
-			<Button onclick={handleSave} disabled={saving || !isDirty}>
-				{#if saving}
-					<Spinner class="mr-2" />
-					Saving
-				{:else}
-					Save changes
-				{/if}
-			</Button>
-		</div>
-	{/if}
-</div>
-
-<UnsavedChangesDialog
-	bind:open={showLeaveDialog}
-	onOpenChange={(o) => {
-		showLeaveDialog = o;
-		if (!o) pendingNav = null;
-	}}
-	onConfirm={() => {
-		showLeaveDialog = false;
-		const resume = pendingNav;
-		pendingNav = null;
-		resume?.();
-	}}
-/>
+		{#if !isAdmin}
+			<div class="border-t px-5 py-2.5 text-xs text-muted-foreground">
+				Editable by administrators.
+			</div>
+		{/if}
+	</Card.Root>
+{/if}

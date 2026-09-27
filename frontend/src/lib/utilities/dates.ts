@@ -42,6 +42,20 @@ export function relativeTimeLong(timestamp: string | Date | null | undefined): s
 	return `${e.count} ${e.long}${e.count === 1 ? '' : 's'} ago`;
 }
 
+/** Time until a future moment, as "in 5h", or null once it has passed. */
+export function untilTime(timestamp: string | Date | null | undefined): string | null {
+	if (!timestamp) return null;
+	const then = new Date(timestamp).getTime();
+	if (Number.isNaN(then)) return null;
+	const minutes = Math.floor((then - Date.now()) / 60000);
+	if (minutes < 0) return null;
+	for (const [per, short] of UNITS) {
+		const count = Math.floor(minutes / per);
+		if (count >= 1) return `in ${count}${short}`;
+	}
+	return 'in under a minute';
+}
+
 /** How long something has been running, as "3h" or "under a minute". */
 export function uptime(timestamp: string | Date | null | undefined): string {
 	const e = elapsed(timestamp);

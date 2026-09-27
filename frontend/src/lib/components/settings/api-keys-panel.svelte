@@ -1,71 +1,96 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
-	import { apiKeysApi } from '$lib/api/api-keys';
-	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
-	import { providerAllowed } from '$lib/config/capabilities';
-	import { APIProvider, type APIKeyRead, type ProviderInfo } from '$lib/types/api-key';
-	import * as Card from '$lib/components/ui/card/index.js';
-	import * as Dialog from '$lib/components/ui/dialog/index.js';
-	import { Button } from '$lib/components/ui/button/index.js';
-	import { Input } from '$lib/components/ui/input/index.js';
-	import { Badge } from '$lib/components/ui/badge/index.js';
-	import { Separator } from '$lib/components/ui/separator/index.js';
-	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
-	import LoadingButton from '$lib/components/loading-button.svelte';
-	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
-	import FormField from '$lib/components/form-field.svelte';
-	import ApiKeyProviderCard from './api-key-provider-card.svelte';
-	import { toast } from 'svelte-sonner';
 	import { SvelteMap } from 'svelte/reactivity';
+	import { toast } from 'svelte-sonner';
+	import CheckIcon from '@lucide/svelte/icons/check';
+	import CopyIcon from '@lucide/svelte/icons/copy';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
-	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
+	import KeyRoundIcon from '@lucide/svelte/icons/key-round';
+	import MoreVerticalIcon from '@lucide/svelte/icons/more-vertical';
+	import RotateCwIcon from '@lucide/svelte/icons/rotate-cw';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
+	import * as Card from '$lib/components/ui/card/index.js';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+	import * as Popover from '$lib/components/ui/popover/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+	import { Spinner } from '$lib/components/ui/spinner/index.js';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import FormField from '$lib/components/form-field.svelte';
+	import Hint from '$lib/components/hint.svelte';
+	import LoadingButton from '$lib/components/loading-button.svelte';
+	import { apiKeysApi } from '$lib/api/api-keys';
+	import { auth } from '$lib/stores/auth.svelte';
+	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
+	import { providerAllowed } from '$lib/config/capabilities';
+	import { writeClipboard } from '$lib/utilities/clipboard';
+	import { relativeTime } from '$lib/utilities/dates';
+	import type { APIKeyRead, ProviderInfo } from '$lib/types/api-key';
+	import { ProviderGroup } from '$lib/config/api-keys';
+	import { BODY_ROW, GROUP_ROW, HEAD_ROW, KEY_COL } from './columns';
+	import { CHECK_DOT, checkState, type CheckState } from './status';
+
+	const GROUP_ORDER = Object.values(ProviderGroup);
+
+	const STATUS_LABEL: Record<CheckState, string> = {
+		ok: 'Valid',
+		failed: 'Rejected',
+		untested: 'Not tested',
+		off: 'Disabled'
+	};
 
 	let providers = $state<ProviderInfo[]>([]);
-	let configuredKeys = new SvelteMap<string, APIKeyRead>();
-	let isLoading = $state(true);
+	const keys = new SvelteMap<string, APIKeyRead>();
+	let loading = $state(true);
 	let loadError = $state<string | null>(null);
+	let testing = $state<string | null>(null);
 
-	let addDialogOpen = $state(false);
-	let addDialogProvider = $state<APIProvider | null>(null);
-	let addDialogKeyValue = $state('');
-	let addDialogUsername = $state('');
-	let addDialogSaving = $state(false);
-	let addShowKey = $state(false);
-	let addUsernameInput = $state<HTMLInputElement | null>(null);
-	let addKeyInput = $state<HTMLInputElement | null>(null);
+	let editing = $state<ProviderInfo | null>(null);
+	let dialogOpen = $state(false);
+	let keyValue = $state('');
+	let username = $state('');
+	let showKey = $state(false);
+	let saving = $state(false);
+	let usernameInput = $state<HTMLInputElement | null>(null);
+	let keyInput = $state<HTMLInputElement | null>(null);
 
-	$effect(() => {
-		if (addDialogOpen) {
-			tick().then(() => (addUsernameInput ?? addKeyInput)?.focus());
+	let removing = $state<ProviderInfo | null>(null);
+	let deleting = $state(false);
+
+	let revealed = $state<string | null>(null);
+	let revealFailed = $state(false);
+	let copied = $state(false);
+
+	const isAdmin = $derived(auth.user?.is_superuser ?? false);
+	const replacing = $derived(editing ? keys.has(editing.provider) : false);
+	const canSave = $derived(
+		!saving && !!keyValue.trim() && (!editing?.requires_username || !!username.trim() || replacing)
+	);
+	const groups = $derived.by(() => {
+		const out: { group: string; label: string; items: ProviderInfo[] }[] = [];
+		for (const provider of providers) {
+			let entry = out.find((g) => g.group === provider.group);
+			if (!entry) {
+				entry = { group: provider.group, label: provider.group_label, items: [] };
+				out.push(entry);
+			}
+			entry.items.push(provider);
 		}
+		return out.sort(
+			(a, b) =>
+				GROUP_ORDER.indexOf(a.group as ProviderGroup) -
+				GROUP_ORDER.indexOf(b.group as ProviderGroup)
+		);
 	});
+	const setCount = $derived(providers.filter((p) => keys.has(p.provider)).length);
 
-	let addRequiresUsername = $derived(
-		!!providers.find((p) => p.provider === addDialogProvider)?.requires_username
-	);
-	let addCanSave = $derived(
-		!addDialogSaving &&
-			!!addDialogKeyValue.trim() &&
-			(!addRequiresUsername || !!addDialogUsername.trim())
-	);
-
-	let deleteDialogOpen = $state(false);
-	let deletingProvider = $state<APIProvider | null>(null);
-	let deletingKeyId = $state<string | null>(null);
-	let isDeleting = $state(false);
-
-	let testingKeyId = $state<string | null>(null);
-
-	let testDialogOpen = $state(false);
-	let testDialogKeyId = $state<string | null>(null);
-	let testDialogProvider = $state<APIProvider | null>(null);
-
-	async function fetchData() {
-		isLoading = true;
+	async function load() {
+		loading = true;
 		loadError = null;
 		try {
 			const [providerList, keyList] = await Promise.all([
@@ -73,367 +98,415 @@
 				apiKeysApi.list()
 			]);
 			providers = providerList.filter((p) => providerAllowed(capabilitiesStore.mode, p.provider));
-			configuredKeys.clear();
-			for (const k of keyList) configuredKeys.set(k.provider, k);
+			keys.clear();
+			for (const key of keyList) keys.set(key.provider, key);
 		} catch (e) {
 			loadError = e instanceof Error ? e.message : 'API keys not loaded';
-			toast.error(loadError);
 		} finally {
-			isLoading = false;
-		}
-	}
-
-	function openAddDialog(provider: APIProvider) {
-		addDialogProvider = provider;
-		addDialogKeyValue = '';
-		addDialogUsername = '';
-		addShowKey = false;
-		addDialogOpen = true;
-	}
-
-	async function handleAdd() {
-		if (!addDialogProvider || !addDialogKeyValue.trim()) {
-			toast.error('API key is required');
-			return;
-		}
-
-		const addMeta = providers.find((p) => p.provider === addDialogProvider);
-		if (addMeta?.requires_username && !addDialogUsername.trim()) {
-			toast.error('Username is required');
-			return;
-		}
-
-		addDialogSaving = true;
-		try {
-			const created = await apiKeysApi.create({
-				provider: addDialogProvider,
-				key_value: addDialogKeyValue.trim(),
-				...(addMeta?.requires_username ? { key_meta: { username: addDialogUsername.trim() } } : {})
-			});
-			configuredKeys.set(created.provider, created);
-			const meta = providers.find((p) => p.provider === addDialogProvider);
-			toast.success(`${meta?.name ?? 'Provider'} API key added`);
-			await refreshProviders();
-			addDialogOpen = false;
-		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'API key not added');
-		} finally {
-			addDialogSaving = false;
-		}
-	}
-
-	async function handleEditSave(
-		provider: APIProvider,
-		keyValue: string,
-		username: string
-	): Promise<boolean> {
-		const key = configuredKeys.get(provider);
-		if (!key || !keyValue) {
-			toast.error('API key is required');
-			return false;
-		}
-
-		const editMeta = providers.find((p) => p.provider === provider);
-		if (editMeta?.requires_username && !username) {
-			toast.error('Username is required');
-			return false;
-		}
-
-		try {
-			const updated = await apiKeysApi.update(key.id, {
-				key_value: keyValue,
-				...(editMeta?.requires_username ? { key_meta: { username } } : {})
-			});
-			configuredKeys.set(updated.provider, updated);
-			toast.success('API key updated');
-			return true;
-		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'API key not updated');
-			return false;
-		}
-	}
-
-	async function handleToggle(provider: APIProvider, enabled: boolean) {
-		const key = configuredKeys.get(provider);
-		if (!key) return;
-
-		try {
-			const updated = await apiKeysApi.update(key.id, { is_enabled: enabled });
-			configuredKeys.set(updated.provider, updated);
-			await refreshProviders();
-			toast.success(`${key.meta.name} ${enabled ? 'enabled' : 'disabled'}`);
-		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'API key not updated');
-		}
-	}
-
-	function openDeleteDialog(provider: APIProvider) {
-		const key = configuredKeys.get(provider);
-		if (!key) return;
-		deletingProvider = provider;
-		deletingKeyId = key.id;
-		deleteDialogOpen = true;
-	}
-
-	async function handleDelete() {
-		if (!deletingKeyId || !deletingProvider) return;
-
-		isDeleting = true;
-		try {
-			await apiKeysApi.delete(deletingKeyId);
-			configuredKeys.delete(deletingProvider);
-			await refreshProviders();
-			toast.success('API key removed');
-			deleteDialogOpen = false;
-		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'API key not removed');
-		} finally {
-			isDeleting = false;
-		}
-	}
-
-	function openTestDialog(provider: APIProvider, keyId: string) {
-		testDialogKeyId = keyId;
-		testDialogProvider = provider;
-		testDialogOpen = true;
-	}
-
-	async function handleTest(keyId: string) {
-		testingKeyId = keyId;
-		try {
-			const result = await apiKeysApi.test(keyId);
-			if (result.success) {
-				toast.success(result.message);
-			} else {
-				toast.error(result.message);
-			}
-		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Test failed');
-		} finally {
-			testingKeyId = null;
-		}
-	}
-
-	async function handleReveal(keyId: string): Promise<string> {
-		const result = await apiKeysApi.reveal(keyId);
-		return result.key_value;
-	}
-
-	async function refreshProviders() {
-		try {
-			providers = (await apiKeysApi.listProviders()).filter((p) =>
-				providerAllowed(capabilitiesStore.mode, p.provider)
-			);
-		} catch {
-			/* empty */
+			loading = false;
 		}
 	}
 
 	onMount(() => {
-		fetchData();
+		if (isAdmin) void load();
+		else loading = false;
 	});
+
+	function stateOf(provider: ProviderInfo): CheckState {
+		const key = keys.get(provider.provider);
+		if (!key) return 'off';
+		return checkState(key.is_enabled, key.last_test_ok);
+	}
+
+	async function openDialog(provider: ProviderInfo) {
+		editing = provider;
+		keyValue = '';
+		username = String(keys.get(provider.provider)?.key_meta?.username ?? '');
+		showKey = false;
+		dialogOpen = true;
+		await tick();
+		(provider.requires_username && !username ? usernameInput : keyInput)?.focus();
+	}
+
+	async function saveKey() {
+		const provider = editing;
+		if (!provider || !canSave) return;
+		saving = true;
+		const meta = provider.requires_username ? { key_meta: { username: username.trim() } } : {};
+		try {
+			const existing = keys.get(provider.provider);
+			const stored = existing
+				? await apiKeysApi.update(existing.id, { key_value: keyValue.trim(), ...meta })
+				: await apiKeysApi.create({
+						provider: provider.provider,
+						key_value: keyValue.trim(),
+						...meta
+					});
+			keys.set(stored.provider, stored);
+			toast.success(`${provider.name} key ${existing ? 'replaced' : 'added'}`);
+			dialogOpen = false;
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : `${provider.name} key not saved`);
+		} finally {
+			saving = false;
+		}
+	}
+
+	async function test(provider: ProviderInfo) {
+		const key = keys.get(provider.provider);
+		if (!key) return;
+		testing = provider.provider;
+		try {
+			const result = await apiKeysApi.test(key.id);
+			keys.set(provider.provider, {
+				...key,
+				last_test_at: new Date().toISOString(),
+				last_test_ok: result.success,
+				last_test_message: result.message
+			});
+			if (result.success) toast.success(result.message);
+			else toast.error(result.message);
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : 'Key not tested');
+		} finally {
+			testing = null;
+		}
+	}
+
+	async function setEnabled(provider: ProviderInfo, enabled: boolean) {
+		const key = keys.get(provider.provider);
+		if (!key) return;
+		try {
+			keys.set(provider.provider, await apiKeysApi.update(key.id, { is_enabled: enabled }));
+			toast.success(`${provider.name} key ${enabled ? 'enabled' : 'disabled'}`);
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : 'Key not updated');
+		}
+	}
+
+	async function remove() {
+		const provider = removing;
+		const key = provider ? keys.get(provider.provider) : undefined;
+		if (!provider || !key) return;
+		deleting = true;
+		try {
+			await apiKeysApi.delete(key.id);
+			keys.delete(provider.provider);
+			toast.success(`${provider.name} key removed`);
+			removing = null;
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : 'Key not removed');
+		} finally {
+			deleting = false;
+		}
+	}
+
+	async function reveal(key: APIKeyRead) {
+		revealed = null;
+		revealFailed = false;
+		try {
+			revealed = (await apiKeysApi.reveal(key.id)).key_value;
+		} catch {
+			revealFailed = true;
+		}
+	}
+
+	async function copy() {
+		if (revealed && (await writeClipboard(revealed))) {
+			copied = true;
+			setTimeout(() => (copied = false), 2000);
+		} else {
+			toast.error('Copy failed');
+		}
+	}
 </script>
 
-<div class="space-y-6">
-	<div class="flex items-start justify-between">
-		<div>
-			<h2 class="text-lg font-semibold tracking-tight">API keys</h2>
-			<p class="text-sm text-muted-foreground">
-				Keys for external intelligence providers. Shared by every project.
-			</p>
-		</div>
-		<Badge variant="outline" class="text-xs">
-			{configuredKeys.size} / {providers.length} configured
-		</Badge>
-	</div>
-
-	<Separator />
-
-	{#if isLoading}
-		<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-			{#each Array(6) as _, i (i)}
-				<Card.Root>
-					<Card.Content class="p-5">
-						<div class="flex items-start gap-3">
-							<Skeleton class="size-10 rounded-lg" />
-							<div class="flex-1 space-y-2">
-								<Skeleton class="h-5 w-28" />
-								<Skeleton class="h-4 w-full" />
-								<Skeleton class="h-4 w-3/4" />
-							</div>
+{#if !isAdmin}
+	<EmptyState compact icon={KeyRoundIcon} title="API keys are managed by administrators" />
+{:else if loading}
+	<Card.Root class="gap-3 p-4">
+		<Skeleton class="h-8 w-full" />
+		<Skeleton class="h-10 w-full" />
+		<Skeleton class="h-10 w-full" />
+		<Skeleton class="h-10 w-full" />
+	</Card.Root>
+{:else if loadError}
+	<EmptyState compact icon={TriangleAlertIcon} title="API keys not loaded" description={loadError}>
+		<Button variant="outline" size="sm" onclick={load}>
+			<RotateCwIcon class="size-3.5" />
+			Retry
+		</Button>
+	</EmptyState>
+{:else}
+	<Card.Root class="gap-0 overflow-hidden py-0">
+		<div class="@container/keys w-full" role="table" aria-label="API keys">
+			<div class={HEAD_ROW} role="row">
+				<div class={KEY_COL.provider}>Provider</div>
+				<div class={KEY_COL.key}>Key</div>
+				<div class={KEY_COL.status}>Status</div>
+				<div class={KEY_COL.tested}>Last tested</div>
+				<div class="{KEY_COL.actions} normal-case tracking-normal tabular-nums">
+					{setCount} of {providers.length} set
+				</div>
+			</div>
+			{#each groups as group (group.group)}
+				<div class={GROUP_ROW} role="row">{group.label}</div>
+				{#each group.items as provider (provider.provider)}
+					{@const key = keys.get(provider.provider)}
+					{@const check = stateOf(provider)}
+					<div class={BODY_ROW} role="row">
+						<div class="{KEY_COL.provider} flex flex-col">
+							<span class="flex items-center gap-1.5 text-sm leading-5 font-medium">
+								{provider.name}
+								<a
+									href={provider.docs_url}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="text-muted-foreground transition-colors hover:text-foreground"
+									aria-label="{provider.name} documentation"
+								>
+									<ExternalLinkIcon class="size-3" />
+								</a>
+							</span>
+							<span class="text-2xs text-muted-foreground">{provider.description}</span>
 						</div>
-					</Card.Content>
-				</Card.Root>
+						<div class={KEY_COL.key}>
+							{#if key}
+								<div class="flex items-center gap-1">
+									<span class="flex min-w-0 flex-col">
+										<code class="truncate font-mono text-xs text-muted-foreground">
+											{key.key_value_masked}
+										</code>
+										{#if key.key_meta?.username}
+											<code class="truncate font-mono text-2xs text-muted-foreground">
+												{key.key_meta.username}
+											</code>
+										{/if}
+									</span>
+									<Popover.Root
+										onOpenChange={(open) => {
+											if (open) void reveal(key);
+											else revealed = null;
+										}}
+									>
+										<Popover.Trigger>
+											{#snippet child({ props })}
+												<Button
+													{...props}
+													variant="ghost"
+													size="icon"
+													class="size-7 text-muted-foreground"
+													aria-label="Reveal {provider.name} key"
+												>
+													<EyeIcon class="size-3.5" />
+												</Button>
+											{/snippet}
+										</Popover.Trigger>
+										<Popover.Content class="w-80" align="start">
+											{#if revealed}
+												<div class="flex items-start gap-2">
+													<code
+														class="min-w-0 flex-1 rounded-md bg-muted px-2.5 py-2 font-mono text-xs break-all select-all"
+													>
+														{revealed}
+													</code>
+													<Button
+														variant="ghost"
+														size="icon"
+														class="size-7 shrink-0"
+														aria-label="Copy key"
+														onclick={copy}
+													>
+														{#if copied}<CheckIcon class="size-3.5" />{:else}<CopyIcon
+																class="size-3.5"
+															/>{/if}
+													</Button>
+												</div>
+											{:else if revealFailed}
+												<p class="text-xs text-muted-foreground">Key not loaded.</p>
+											{:else}
+												<div class="flex justify-center py-2"><Spinner class="size-4" /></div>
+											{/if}
+										</Popover.Content>
+									</Popover.Root>
+								</div>
+							{:else}
+								<span class="text-xs text-muted-foreground">Not set</span>
+							{/if}
+						</div>
+						<div class={KEY_COL.status}>
+							{#if key}
+								<Hint text={check === 'failed' ? key.last_test_message : null}>
+									{#snippet child(props)}
+										<span {...props} class="inline-flex items-center gap-2 text-sm">
+											{#if testing === provider.provider}
+												<Spinner class="size-3" />
+												<span class="text-muted-foreground">Testing</span>
+											{:else}
+												<span class="size-2 shrink-0 rounded-full {CHECK_DOT[check]}"></span>
+												<span
+													class={check === 'ok' || check === 'failed'
+														? ''
+														: 'text-muted-foreground'}
+												>
+													{STATUS_LABEL[check]}
+												</span>
+											{/if}
+										</span>
+									{/snippet}
+								</Hint>
+							{:else}
+								<span class="inline-flex items-center gap-2 text-sm text-muted-foreground">
+									<span class="size-2 shrink-0 rounded-full {CHECK_DOT.off}"></span>
+									Not set
+								</span>
+							{/if}
+						</div>
+						<div class="{KEY_COL.tested} text-xs text-muted-foreground tabular-nums">
+							{key?.last_test_at ? relativeTime(key.last_test_at) : 'Never'}
+						</div>
+						<div class={KEY_COL.actions}>
+							{#if key}
+								<DropdownMenu.Root>
+									<DropdownMenu.Trigger>
+										{#snippet child({ props })}
+											<Button {...props} variant="ghost" size="icon" class="size-7">
+												<MoreVerticalIcon class="size-4" />
+												<span class="sr-only">{provider.name} key actions</span>
+											</Button>
+										{/snippet}
+									</DropdownMenu.Trigger>
+									<DropdownMenu.Content align="end">
+										{#if provider.testable}
+											<DropdownMenu.Item
+												disabled={testing !== null || !key.is_enabled}
+												onSelect={() => test(provider)}
+											>
+												Test
+											</DropdownMenu.Item>
+										{/if}
+										<DropdownMenu.Item onSelect={() => openDialog(provider)}>
+											Replace key
+										</DropdownMenu.Item>
+										<DropdownMenu.Item onSelect={() => setEnabled(provider, !key.is_enabled)}>
+											{key.is_enabled ? 'Disable' : 'Enable'}
+										</DropdownMenu.Item>
+										<DropdownMenu.Separator />
+										<DropdownMenu.Item variant="destructive" onSelect={() => (removing = provider)}>
+											Remove
+										</DropdownMenu.Item>
+									</DropdownMenu.Content>
+								</DropdownMenu.Root>
+							{:else}
+								<Button
+									variant="outline"
+									size="sm"
+									class="h-7"
+									onclick={() => openDialog(provider)}
+								>
+									Add key
+								</Button>
+							{/if}
+						</div>
+					</div>
+				{/each}
 			{/each}
 		</div>
-	{:else if loadError}
-		<EmptyState
-			compact
-			icon={TriangleAlertIcon}
-			title="API keys not loaded"
-			description={loadError}
-		>
-			<Button variant="outline" size="sm" onclick={fetchData}>
-				<RefreshCwIcon class="mr-1.5 size-3.5" />
-				Retry
-			</Button>
-		</EmptyState>
-	{:else}
-		<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-			{#each providers as provider (provider.provider)}
-				<ApiKeyProviderCard
-					{provider}
-					apiKey={configuredKeys.get(provider.provider)}
-					testing={testingKeyId === configuredKeys.get(provider.provider)?.id}
-					onToggle={handleToggle}
-					onAdd={openAddDialog}
-					onTest={openTestDialog}
-					onDelete={openDeleteDialog}
-					onReveal={handleReveal}
-					onEditSave={handleEditSave}
-				/>
-			{/each}
-		</div>
-	{/if}
-</div>
+	</Card.Root>
+{/if}
 
-<Dialog.Root bind:open={addDialogOpen}>
+<Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
-			<Dialog.Title>Add API key</Dialog.Title>
-			<Dialog.Description>
-				{#if addDialogProvider}
-					{@const meta = providers.find((p) => p.provider === addDialogProvider)}
-					{#if meta}
-						<a
-							href={meta.docs_url}
-							target="_blank"
-							rel="noopener noreferrer"
-							class="inline-flex items-center gap-1 text-primary hover:underline"
-						>
-							Get a {meta.name} key <ExternalLinkIcon class="size-3" />
-						</a>
-					{/if}
-				{/if}
-			</Dialog.Description>
+			<Dialog.Title>
+				{editing ? `${replacing ? 'Replace' : 'Add'} ${editing.name} key` : 'API key'}
+			</Dialog.Title>
+			{#if editing}
+				<Dialog.Description>
+					<a
+						href={editing.docs_url}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-1 text-primary transition-colors hover:text-foreground"
+					>
+						{editing.name} documentation <ExternalLinkIcon class="size-3" />
+					</a>
+				</Dialog.Description>
+			{/if}
 		</Dialog.Header>
-
 		<form
+			class="flex flex-col gap-4"
 			onsubmit={(e) => {
 				e.preventDefault();
-				if (addCanSave) handleAdd();
+				void saveKey();
 			}}
 		>
-			<div class="space-y-4 py-2">
-				{#if addRequiresUsername}
-					<FormField label="Username">
-						{#snippet children({ id })}
-							<Input
-								{id}
-								type="text"
-								bind:ref={addUsernameInput}
-								bind:value={addDialogUsername}
-								placeholder="Account username"
-								disabled={addDialogSaving}
-							/>
-						{/snippet}
-					</FormField>
-				{/if}
-				<FormField label="API key">
+			{#if editing?.requires_username}
+				<FormField label="Username">
 					{#snippet children({ id })}
-						<div class="relative">
-							<Input
-								{id}
-								type={addShowKey ? 'text' : 'password'}
-								bind:ref={addKeyInput}
-								bind:value={addDialogKeyValue}
-								placeholder="API key"
-								disabled={addDialogSaving}
-								class="pr-10"
-							/>
-							<Button
-								type="button"
-								variant="ghost"
-								size="icon"
-								class="absolute right-1.5 top-1/2 size-7 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-								aria-label={addShowKey ? 'Hide key' : 'Show key'}
-								aria-pressed={addShowKey}
-								onclick={() => (addShowKey = !addShowKey)}
-							>
-								{#if addShowKey}
-									<EyeOffIcon class="size-4" />
-								{:else}
-									<EyeIcon class="size-4" />
-								{/if}
-							</Button>
-						</div>
+						<Input
+							{id}
+							bind:ref={usernameInput}
+							bind:value={username}
+							autocomplete="off"
+							disabled={saving}
+						/>
 					{/snippet}
 				</FormField>
-			</div>
-
+			{/if}
+			<FormField label="API key">
+				{#snippet children({ id })}
+					<div class="relative">
+						<Input
+							{id}
+							type={showKey ? 'text' : 'password'}
+							bind:ref={keyInput}
+							bind:value={keyValue}
+							autocomplete="off"
+							spellcheck={false}
+							class="pr-10 font-mono text-xs"
+							disabled={saving}
+						/>
+						<Button
+							type="button"
+							variant="ghost"
+							size="icon"
+							class="absolute top-1/2 right-1.5 size-7 -translate-y-1/2 text-muted-foreground"
+							aria-label={showKey ? 'Hide key' : 'Show key'}
+							aria-pressed={showKey}
+							onclick={() => (showKey = !showKey)}
+						>
+							{#if showKey}<EyeOffIcon class="size-4" />{:else}<EyeIcon class="size-4" />{/if}
+						</Button>
+					</div>
+				{/snippet}
+			</FormField>
 			<Dialog.Footer>
 				<Button
 					type="button"
 					variant="outline"
-					onclick={() => (addDialogOpen = false)}
-					disabled={addDialogSaving}
+					disabled={saving}
+					onclick={() => (dialogOpen = false)}
 				>
 					Cancel
 				</Button>
-				<LoadingButton
-					type="submit"
-					loading={addDialogSaving}
-					loadingLabel="Saving"
-					disabled={!addCanSave}
-				>
-					Add key
+				<LoadingButton type="submit" loading={saving} loadingLabel="Saving" disabled={!canSave}>
+					{replacing ? 'Replace key' : 'Add key'}
 				</LoadingButton>
 			</Dialog.Footer>
 		</form>
 	</Dialog.Content>
 </Dialog.Root>
 
-<DeleteConfirmationDialog
-	bind:open={deleteDialogOpen}
+<ConfirmDialog
+	open={removing !== null}
 	title="Remove API key"
-	description={deletingProvider
-		? `The ${providers.find((p) => p.provider === deletingProvider)?.name ?? 'provider'} key is removed.`
-		: ''}
+	description={removing ? `The ${removing.name} key is removed.` : ''}
 	confirmLabel="Remove"
-	{isDeleting}
-	onOpenChange={(open) => (deleteDialogOpen = open)}
-	onConfirm={handleDelete}
+	destructive
+	loading={deleting}
+	onOpenChange={(open) => {
+		if (!open) removing = null;
+	}}
+	onConfirm={remove}
 />
-
-<Dialog.Root bind:open={testDialogOpen}>
-	<Dialog.Content class="sm:max-w-md">
-		<Dialog.Header>
-			<Dialog.Title>Test API key</Dialog.Title>
-			<Dialog.Description>
-				One call is made against the
-				{providers.find((p) => p.provider === testDialogProvider)?.name ?? 'provider'} quota.
-			</Dialog.Description>
-		</Dialog.Header>
-		<Dialog.Footer>
-			<Button
-				variant="outline"
-				onclick={() => (testDialogOpen = false)}
-				disabled={testingKeyId !== null}
-			>
-				Cancel
-			</Button>
-			<LoadingButton
-				loading={testingKeyId !== null}
-				loadingLabel="Testing"
-				onclick={async () => {
-					if (testDialogKeyId) {
-						testDialogOpen = false;
-						await handleTest(testDialogKeyId);
-					}
-				}}
-			>
-				Test
-			</LoadingButton>
-		</Dialog.Footer>
-	</Dialog.Content>
-</Dialog.Root>

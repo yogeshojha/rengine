@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/utilities/page-title';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { untrack } from 'svelte';
@@ -53,7 +54,7 @@
 	}
 </script>
 
-<svelte:head><title>{spec?.label ?? routeLabels.surface} · reNgine</title></svelte:head>
+<svelte:head><title>{pageTitle(spec?.label ?? routeLabels.surface)}</title></svelte:head>
 
 {#if !spec}
 	<EmptyState title="Unknown dimension">

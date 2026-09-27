@@ -153,7 +153,6 @@
 		if (!endpoints) return null;
 		const created = await proxiesApi.create({
 			name: `${data.instanceName || 'reNgine'} Proxy`,
-			mode: choice === 'single' ? 'rotating' : 'single',
 			is_active: true,
 			is_default: asDefault,
 			endpoints

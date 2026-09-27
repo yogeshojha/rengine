@@ -25,7 +25,6 @@ from shared.definitions.vulnerabilities import SUPPRESSED_STATES, TemplateOrigin
 from shared.enums.scan import SCAN_OPEN_STATUSES, ScanScope, ScanStatus
 from shared.logging import get_logger
 from shared.models.instance_settings import InstanceSettings
-from shared.models.proxy import Proxy
 from shared.models.scan import Scan
 from shared.models.scan_context import ScanContext
 from shared.models.scan_engine import ScanEngine
@@ -37,7 +36,7 @@ from shared.services import locks
 from shared.services.celery_dispatch import dispatch_scan_run
 from shared.services.focused import focused_overrides
 from shared.services.launch_plan import AdHocEngine
-from shared.services.proxy_resolve import resolve_proxy_url
+from shared.services.proxy_resolve import scan_proxy_url
 from shared.services.scan_factory import build_scan_row
 from shared.services.scan_resolve import merge_engine_context
 from shared.services.scan_surface import split
@@ -218,9 +217,7 @@ def build_run(
     )
     if context is not None and context.project_id != target.project_id:
         context = None
-    proxy_url = None
-    if context is not None and context.proxy_id is not None:
-        proxy_url = resolve_proxy_url(session.get(Proxy, context.proxy_id))
+    proxy_url = scan_proxy_url(session, context)
 
     overrides = focused_overrides(FOLLOW_UP_STAGES)
     overrides[_VULN_STAGE] = {

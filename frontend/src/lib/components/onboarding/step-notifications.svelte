@@ -22,14 +22,11 @@
 	import { ONBOARDING_NOTIFICATION_PROVIDERS as PROVIDERS } from '$lib/config/notification-providers';
 	import type { StepProps } from '$lib/types/onboarding';
 	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
-	import { Capability } from '$lib/config/capabilities';
 	import { SvelteSet } from 'svelte/reactivity';
 
 	let { next, setFooter }: StepProps = $props();
 	const categories = $derived(
-		NOTIF_CATEGORIES.filter(
-			(c) => c.value !== 'watch' || capabilitiesStore.has(Capability.PROGRAM_WATCHES)
-		)
+		NOTIF_CATEGORIES.filter((c) => !c.capability || capabilitiesStore.has(c.capability))
 	);
 
 	interface ChannelDraft {

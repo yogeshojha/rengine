@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/utilities/page-title';
 	import { untrack } from 'svelte';
 	import CorrelationTab from '$lib/components/scans/results/correlation/correlation-tab.svelte';
 	import ScopeStrip from '$lib/components/surface/scope-strip.svelte';
@@ -27,7 +28,7 @@
 	}
 </script>
 
-<svelte:head><title>{routeLabels.correlation} · reNgine</title></svelte:head>
+<svelte:head><title>{pageTitle(routeLabels.correlation)}</title></svelte:head>
 
 <div class="space-y-6">
 	<div class="flex flex-col gap-1">

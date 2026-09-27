@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/utilities/page-title';
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import { browser } from '$app/environment';
@@ -42,7 +43,7 @@
 	});
 </script>
 
-<svelte:head><title>{routeLabels.arsenal} · reNgine</title></svelte:head>
+<svelte:head><title>{pageTitle(routeLabels.arsenal)}</title></svelte:head>
 
 <div class="space-y-6">
 	<div>
