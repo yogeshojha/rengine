@@ -8,6 +8,7 @@ import WebhookIcon from '@lucide/svelte/icons/webhook';
 import SlidersHorizontalIcon from '@lucide/svelte/icons/sliders-horizontal';
 import { MASK } from '$lib/constants';
 import type { NotifProvider } from '$lib/types/notification-channel';
+import { APIProvider } from '$lib/types/api-key';
 
 export type FieldKind = 'text' | 'secret' | 'number' | 'bool';
 
@@ -182,6 +183,11 @@ export const ONBOARDING_NOTIFICATION_PROVIDERS: ProviderMeta[] = [
 ]
 	.map((p) => NOTIFICATION_PROVIDERS.find((m) => m.provider === p))
 	.filter((m): m is ProviderMeta => m !== undefined);
+
+// mirrors shared/services/notifier.py:SHARED_BOT_PROVIDER
+export const SHARED_BOT_PROVIDER: NotifProvider = 'telegram';
+export const SHARED_BOT_KEY = APIProvider.TELEGRAM;
+export const SHARED_BOT_FIELD = 'bot_token';
 
 export function notificationProviderMeta(provider: string): ProviderMeta {
 	return NOTIFICATION_PROVIDERS.find((p) => p.provider === provider) ?? NOTIFICATION_PROVIDERS[0];

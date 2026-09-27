@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
+from shared.definitions.api_keys import PROVIDER_GROUP_LABELS
 from shared.definitions.mode_features import provider_allowed
 from shared.enums.api_key import APIProvider
 from shared.enums.instance import InstanceMode
@@ -85,6 +86,8 @@ class APIKeyService:
                     docs_url=meta["docs_url"],
                     icon=meta.get("icon", "package"),
                     requires_username=meta.get("requires_username", False),
+                    group=meta["group"],
+                    group_label=PROVIDER_GROUP_LABELS[meta["group"]],
                     configured=key is not None,
                     is_enabled=key.is_enabled if key else False,
                 )

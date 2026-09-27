@@ -8,7 +8,8 @@ export enum APIProvider {
 	INTIGRITI = 'intigriti',
 	VULNX = 'vulnx',
 	INTERACTSH = 'interactsh',
-	GITHUB = 'github'
+	GITHUB = 'github',
+	TELEGRAM = 'telegram'
 }
 
 export interface ProviderMeta {
@@ -39,6 +40,8 @@ export interface ProviderInfo {
 	docs_url: string;
 	icon: string;
 	requires_username: boolean;
+	group: string;
+	group_label: string;
 	configured: boolean;
 	is_enabled: boolean;
 }

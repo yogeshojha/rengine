@@ -6,11 +6,12 @@ from sqlalchemy import Column
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
-from shared.enums.api_key import APIProvider
+from shared.enums.api_key import APIProvider, ProviderGroup
 from shared.utils.datetime import utc_now
 
 API_PROVIDER_META: dict[str, dict] = {
     APIProvider.VIEWDNS: {
+        "group": ProviderGroup.LOOKUPS.value,
         "name": "ViewDNS.info",
         "description": "DNS intelligence, reverse lookups and DNS history",
         "docs_url": "https://viewdns.info/api/?src=reNgine",
@@ -18,6 +19,7 @@ API_PROVIDER_META: dict[str, dict] = {
         "icon": "scan-search",
     },
     APIProvider.GITHUB: {
+        "group": ProviderGroup.SUBDOMAINS.value,
         "name": "GitHub",
         "description": "Subdomains found in public code, and subfinder's GitHub source",
         "docs_url": "https://github.com/settings/tokens",
@@ -25,6 +27,7 @@ API_PROVIDER_META: dict[str, dict] = {
         "icon": "github",
     },
     APIProvider.CHAOS: {
+        "group": ProviderGroup.SUBDOMAINS.value,
         "name": "Chaos",
         "description": "ProjectDiscovery Chaos subdomain dataset",
         "docs_url": "https://cloud.projectdiscovery.io",
@@ -32,6 +35,7 @@ API_PROVIDER_META: dict[str, dict] = {
         "icon": "radar",
     },
     APIProvider.NETLAS: {
+        "group": ProviderGroup.SUBDOMAINS.value,
         "name": "Netlas",
         "description": "Internet-wide asset and attack-surface intelligence",
         "docs_url": "https://netlas.io",
@@ -39,6 +43,7 @@ API_PROVIDER_META: dict[str, dict] = {
         "icon": "globe",
     },
     APIProvider.SECURITYTRAILS: {
+        "group": ProviderGroup.SUBDOMAINS.value,
         "name": "SecurityTrails",
         "description": "DNS, domain and subdomain history intelligence",
         "docs_url": "https://securitytrails.com",
@@ -46,6 +51,7 @@ API_PROVIDER_META: dict[str, dict] = {
         "icon": "route",
     },
     APIProvider.HACKERONE: {
+        "group": ProviderGroup.BOUNTY_PLATFORMS.value,
         "name": "HackerOne",
         "description": "Program scope and reports from HackerOne",
         "docs_url": "https://api.hackerone.com",
@@ -53,6 +59,7 @@ API_PROVIDER_META: dict[str, dict] = {
         "icon": "shield",
     },
     APIProvider.INTIGRITI: {
+        "group": ProviderGroup.BOUNTY_PLATFORMS.value,
         "name": "Intigriti",
         "description": "Program scope from Intigriti, including invite-only programs",
         "docs_url": "https://app.intigriti.com/researcher/personal-access-tokens",
@@ -60,6 +67,7 @@ API_PROVIDER_META: dict[str, dict] = {
         "icon": "shield",
     },
     APIProvider.VULNX: {
+        "group": ProviderGroup.EXPLOIT_INTEL.value,
         "name": "vulnx",
         "description": "ProjectDiscovery vulnerability intelligence: exploits, coverage and exposure",
         "docs_url": "https://cloud.projectdiscovery.io",
@@ -67,6 +75,7 @@ API_PROVIDER_META: dict[str, dict] = {
         "icon": "biohazard",
     },
     APIProvider.INTERACTSH: {
+        "group": ProviderGroup.OAST.value,
         "name": "Interactsh",
         "description": "Auth token for a self-hosted out-of-band callback server",
         "docs_url": "https://github.com/projectdiscovery/interactsh",
@@ -74,6 +83,7 @@ API_PROVIDER_META: dict[str, dict] = {
         "icon": "satellite-dish",
     },
     APIProvider.TELEGRAM: {
+        "group": ProviderGroup.CHAT.value,
         "name": "Telegram",
         "description": "Bot token for remote control and notifications",
         "docs_url": "https://core.telegram.org/bots#how-do-i-create-a-bot",
@@ -130,5 +140,7 @@ class ProviderInfo(BaseModel):
     docs_url: str
     icon: str = "package"
     requires_username: bool = False
+    group: str
+    group_label: str
     configured: bool = False
     is_enabled: bool = False

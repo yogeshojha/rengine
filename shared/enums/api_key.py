@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, StrEnum
 
 
 class APIProvider(Enum):
@@ -12,3 +12,12 @@ class APIProvider(Enum):
     INTERACTSH = "interactsh"
     GITHUB = "github"
     TELEGRAM = "telegram"
+
+
+class ProviderGroup(StrEnum):
+    SUBDOMAINS = "subdomains"
+    LOOKUPS = "lookups"
+    EXPLOIT_INTEL = "exploit_intel"
+    BOUNTY_PLATFORMS = "bounty_platforms"
+    OAST = "oast"
+    CHAT = "chat"
