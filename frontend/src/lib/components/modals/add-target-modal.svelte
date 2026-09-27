@@ -1,7 +1,6 @@
 <script lang="ts">
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
 	import CircleX from '@lucide/svelte/icons/circle-x';
-	import Rocket from '@lucide/svelte/icons/rocket';
 	import X from '@lucide/svelte/icons/x';
 	import { Button } from '$lib/components/ui/button';
 	import { Spinner } from '$lib/components/ui/spinner';
@@ -440,7 +439,6 @@
 						<Spinner class="h-4 w-4 mr-2" />
 						{scanArmed ? 'Queuing' : 'Adding'}
 					{:else if scanArmed}
-						<Rocket class="h-4 w-4 mr-2" />
 						Add & scan
 					{:else}
 						Add target

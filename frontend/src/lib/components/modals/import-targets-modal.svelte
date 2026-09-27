@@ -5,7 +5,6 @@
 	import List from '@lucide/svelte/icons/list';
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
 	import Eye from '@lucide/svelte/icons/eye';
-	import Rocket from '@lucide/svelte/icons/rocket';
 	import Upload from '@lucide/svelte/icons/upload';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import { Button } from '$lib/components/ui/button';
@@ -739,7 +738,6 @@ https://app.example.com"
 							<Spinner />
 							{scanArmed ? 'Queuing' : 'Importing'}
 						{:else if scanArmed}
-							<Rocket class="h-4 w-4 mr-2" />
 							Import & scan
 						{:else}
 							<Upload class="h-4 w-4 mr-2" />
@@ -757,7 +755,6 @@ https://app.example.com"
 						<Spinner />
 						{scanArmed ? 'Queuing' : 'Importing'}
 					{:else if scanArmed}
-						<Rocket class="h-4 w-4 mr-2" />
 						Import & scan {previewItems.filter((item) => !item.error).length}
 					{:else}
 						Import {previewItems.filter((item) => !item.error).length}
@@ -783,13 +780,9 @@ https://app.example.com"
 						Done
 					</Button>
 					{#if queuedScans > 0}
-						<Button onclick={viewScans} disabled={isImporting}>
-							<Rocket class="h-4 w-4 mr-2" />
-							View scans
-						</Button>
+						<Button onclick={viewScans} disabled={isImporting}>View scans</Button>
 					{:else if importedIds.length > 0}
 						<Button onclick={scanImported} disabled={isImporting}>
-							<Rocket class="h-4 w-4 mr-2" />
 							Scan {importedIds.length} target{importedIds.length !== 1 ? 's' : ''}
 						</Button>
 					{/if}
