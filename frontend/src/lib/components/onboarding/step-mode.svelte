@@ -25,14 +25,14 @@
 			title: 'Bug bounty',
 			icon: TargetIcon,
 			desc: 'Researching public and private bug bounty programs.',
-			adds: 'HackerOne integration, program import and breadth-first recon presets.'
+			adds: 'Bug bounty platform connections, program import, program watches and recon presets.'
 		},
 		{
 			value: InstanceMode.Corporate,
 			title: 'Corporate',
 			icon: Building2Icon,
 			desc: "Managing an organization's own attack surface.",
-			adds: 'Asset inventory, scope governance and internal monitoring. The HackerOne integration is hidden.'
+			adds: 'Asset inventory, scope governance and internal monitoring. Bug bounty platforms, programs and watches are hidden.'
 		}
 	];
 

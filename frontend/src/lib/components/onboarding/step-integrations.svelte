@@ -8,6 +8,7 @@
 	import { apiKeysApi } from '$lib/api/api-keys';
 	import type { ProviderInfo } from '$lib/types/api-key';
 	import { getProviderIcon } from '$lib/config/icons';
+	import { RECON_GROUPS, type ProviderGroup } from '$lib/config/api-keys';
 	import { toast } from 'svelte-sonner';
 	import type { StepProps } from '$lib/types/onboarding';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
@@ -25,11 +26,20 @@
 	let reveal = $state<Record<string, boolean>>({});
 	let busy = $state(false);
 
+	const groups = $derived(
+		RECON_GROUPS.map((group) => ({
+			group,
+			items: providers.filter((p) => p.group === group)
+		})).filter((g) => g.items.length > 0)
+	);
+
 	onMount(async () => {
 		try {
-			providers = (await apiKeysApi.listProviders()).filter((p) => !p.configured);
+			providers = (await apiKeysApi.listProviders()).filter(
+				(p) => !p.configured && RECON_GROUPS.includes(p.group as ProviderGroup)
+			);
 		} catch (e) {
-			loadError = e instanceof Error ? e.message : 'Integrations not loaded';
+			loadError = e instanceof Error ? e.message : 'API keys not loaded';
 		} finally {
 			loading = false;
 		}
@@ -77,7 +87,7 @@
 				else ok = false;
 			}
 			if (!ok) return;
-			if (saved > 0) toast.success(`${saved} integration${saved > 1 ? 's' : ''} connected`);
+			if (saved > 0) toast.success(`${saved} API key${saved > 1 ? 's' : ''} saved`);
 			next();
 		} finally {
 			busy = false;
@@ -91,73 +101,78 @@
 			<Skeleton class="h-28 w-full rounded-xl" />
 		{/each}
 	{:else if loadError}
-		<EmptyState compact icon={PlugIcon} title="Integrations not loaded" description={loadError} />
+		<EmptyState compact icon={PlugIcon} title="API keys not loaded" description={loadError} />
 	{:else if providers.length === 0}
-		<EmptyState compact icon={PlugIcon} title="Every integration is already connected" />
+		<EmptyState compact icon={PlugIcon} title="API keys saved" />
 	{:else}
-		{#each providers as p (p.provider)}
-			{@const Icon = getProviderIcon(p.icon)}
-			<Card.Root>
-				<Card.Content class="p-4">
-					<div class="flex items-start gap-3">
-						<div
-							class="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted"
-						>
-							<Icon class="size-[18px] text-muted-foreground" />
-						</div>
-						<div class="min-w-0 flex-1 space-y-3">
-							<div class="space-y-0.5">
-								<div class="flex items-center gap-2">
-									<span class="text-sm font-medium">{p.name}</span>
-									<a
-										href={p.docs_url}
-										target="_blank"
-										rel="noopener noreferrer"
-										class="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-									>
-										Get API key
-										<ExternalLinkIcon class="size-4" />
-									</a>
-								</div>
-								<p class="text-xs text-muted-foreground">{p.description}</p>
+		{#each groups as g (g.group)}
+			<h3 class="pt-2 text-xs font-medium text-muted-foreground first:pt-0">
+				{g.items[0].group_label}
+			</h3>
+			{#each g.items as p (p.provider)}
+				{@const Icon = getProviderIcon(p.icon)}
+				<Card.Root>
+					<Card.Content class="p-4">
+						<div class="flex items-start gap-3">
+							<div
+								class="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted"
+							>
+								<Icon class="size-[18px] text-muted-foreground" />
 							</div>
-							{#if p.requires_username}
-								<div class="space-y-1.5">
-									<Label class="text-xs" for="user-{p.provider}">API username</Label>
+							<div class="min-w-0 flex-1 space-y-3">
+								<div class="space-y-0.5">
+									<div class="flex items-center gap-2">
+										<span class="text-sm font-medium">{p.name}</span>
+										<a
+											href={p.docs_url}
+											target="_blank"
+											rel="noopener noreferrer"
+											class="inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80"
+										>
+											Get API key
+											<ExternalLinkIcon class="size-4" />
+										</a>
+									</div>
+									<p class="text-xs text-muted-foreground">{p.description}</p>
+								</div>
+								{#if p.requires_username}
+									<div class="space-y-1.5">
+										<Label class="text-xs" for="user-{p.provider}">API username</Label>
+										<Input
+											id="user-{p.provider}"
+											bind:value={usernames[p.provider]}
+											placeholder="username"
+											disabled={busy}
+											class="h-9 text-xs"
+											autocomplete="off"
+										/>
+									</div>
+								{/if}
+								<div class="relative">
 									<Input
-										id="user-{p.provider}"
-										bind:value={usernames[p.provider]}
-										placeholder="username"
+										type={reveal[p.provider] ? 'text' : 'password'}
+										bind:value={keys[p.provider]}
+										placeholder="Paste the API key"
 										disabled={busy}
-										class="h-9 text-xs"
+										class="h-9 pr-9 text-xs"
 										autocomplete="off"
 									/>
+									<button
+										type="button"
+										class="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+										onclick={() => (reveal[p.provider] = !reveal[p.provider])}
+										aria-label="Toggle visibility"
+									>
+										{#if reveal[p.provider]}<EyeOffIcon class="size-4" />{:else}<EyeIcon
+												class="size-4"
+											/>{/if}
+									</button>
 								</div>
-							{/if}
-							<div class="relative">
-								<Input
-									type={reveal[p.provider] ? 'text' : 'password'}
-									bind:value={keys[p.provider]}
-									placeholder="Paste the API key"
-									disabled={busy}
-									class="h-9 pr-9 text-xs"
-									autocomplete="off"
-								/>
-								<button
-									type="button"
-									class="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
-									onclick={() => (reveal[p.provider] = !reveal[p.provider])}
-									aria-label="Toggle visibility"
-								>
-									{#if reveal[p.provider]}<EyeOffIcon class="size-4" />{:else}<EyeIcon
-											class="size-4"
-										/>{/if}
-								</button>
 							</div>
 						</div>
-					</div>
-				</Card.Content>
-			</Card.Root>
+					</Card.Content>
+				</Card.Root>
+			{/each}
 		{/each}
 	{/if}
 </div>

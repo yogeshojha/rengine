@@ -15,9 +15,11 @@ from shared.definitions.bounty_programs import (
     notify_enabled,
     notify_events,
 )
+from shared.definitions.datasets import DatasetKind
 from shared.definitions.notifications import BountyChange, bounty_changes
 from shared.logging import get_logger
 from shared.models.bounty_program import BountyEventRow, BountyProgram
+from shared.services import feed_ledger
 from shared.services.bounty_feed import (
     feed_due,
     mark_feed_synced,
@@ -42,9 +44,9 @@ from shared.services.bounty_reports import reports_enabled
 from shared.services.bounty_reports import sync_reports as store_reports
 from shared.services.celery_dispatch import dispatch_watch_reconcile
 from shared.services.locks import (
-    BOUNTY_FEED,
     bounty_platform,
     bounty_reports,
+    dataset,
     sync_lock,
 )
 from shared.services.notification_sync import SyncNotificationPublisher
@@ -233,7 +235,11 @@ def sync_program(handle: str, platform: str = BountyPlatform.HACKERONE.value) ->
         if not program:
             return {"error": "unknown program"}
         feed = program.source == ProgramSource.FEED.value
-        key = BOUNTY_FEED if feed else bounty_platform(platform)
+        key = (
+            dataset(DatasetKind.PROGRAM_FEED.value)
+            if feed
+            else bounty_platform(platform)
+        )
         with sync_lock(session, key) as held:
             if not held:
                 return {"skipped": "already_running"}
@@ -263,12 +269,20 @@ def sync_program(handle: str, platform: str = BountyPlatform.HACKERONE.value) ->
 def sync_feed(force: bool = True) -> dict:
     """Public scope for the platforms with no researcher API."""
     started = utc_now()
-    with get_sync_session() as session, sync_lock(session, BOUNTY_FEED) as held:
+    kind = DatasetKind.PROGRAM_FEED.value
+    with get_sync_session() as session, sync_lock(session, dataset(kind)) as held:
         if not held:
             return {"skipped": "already_running"}
         if not force and not feed_due(session):
             return {"skipped": "not_due"}
-        result = sync_feeds(session)
+        with feed_ledger.refreshing(session, kind) as refresh:
+            result = sync_feeds(session)
+            refresh.rows = sum(p["programs"] for p in result["platforms"])
+            if result["errors"] and not result["platforms"]:
+                refresh.error = "; ".join(
+                    f"{platform}: {error}"
+                    for platform, error in result["errors"].items()
+                )
         if result["platforms"]:
             mark_feed_synced(session)
             dispatch_watch_reconcile()

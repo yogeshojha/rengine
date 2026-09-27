@@ -172,6 +172,7 @@ class DashboardActivityService:
     async def _feeds(self, cutoff: datetime) -> list[DashboardEvent]:
         rows = await self.session.execute(
             select(ThreatFeed).where(
+                ThreatFeed.kind.in_(list(FEEDS_BY_KIND)),
                 ThreatFeed.last_synced_at.isnot(None),
                 ThreatFeed.last_synced_at >= cutoff,
             )

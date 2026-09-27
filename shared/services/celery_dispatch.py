@@ -1,7 +1,11 @@
 from celery import Celery
 
 from shared.config import BaseAppSettings
-from shared.definitions.constants import CRITICAL_QUEUE, SCAN_CONTROL_QUEUE
+from shared.definitions.constants import (
+    CRITICAL_QUEUE,
+    DEFAULT_QUEUE,
+    SCAN_CONTROL_QUEUE,
+)
 from shared.logging import get_logger
 
 logger = get_logger(__name__)
@@ -220,6 +224,16 @@ def dispatch_threat_intel(scan_id: str, *, enrich: bool = True) -> bool:
             )
     except Exception:
         logger.warning("threat intel dispatch failed", exc_info=True)
+        return False
+    return True
+
+
+def dispatch_dataset_sync(task: str, kwargs: dict) -> bool:
+    """Queue one dataset's loader."""
+    try:
+        get_celery_client().send_task(task, kwargs=kwargs, queue=DEFAULT_QUEUE)
+    except Exception:
+        logger.warning("dataset sync dispatch failed", task=task, exc_info=True)
         return False
     return True
 

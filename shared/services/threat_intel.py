@@ -6,7 +6,6 @@ import gzip
 import json
 import shutil
 import tempfile
-import time
 import urllib.request
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -14,10 +13,10 @@ from datetime import date
 from pathlib import Path
 
 from sqlalchemy import func, select, text
-from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from shared.definitions.threat_intel import (
+    FEEDS,
     FEEDS_BY_KIND,
     STALE_AFTER_HOURS,
     FeedKind,
@@ -25,7 +24,8 @@ from shared.definitions.threat_intel import (
 )
 from shared.logging import get_logger
 from shared.models.threat_intel import EpssScore, KevEntry, ThreatFeed
-from shared.services import nvd_corpus
+from shared.services import feed_ledger, locks, nvd_corpus
+from shared.services.locks import sync_lock
 from shared.utils.datetime import utc_now
 from shared.utils.text import strip_control
 
@@ -137,83 +137,33 @@ def _sync_single(session: Session, kind: str, spec) -> tuple[int, str | None, in
     return rows, version, size
 
 
-def _mark(
-    session: Session,
-    kind: str,
-    *,
-    status: str,
-    rows: int = 0,
-    version: str | None = None,
-    size: int = 0,
-    duration_ms: int = 0,
-    error: str | None = None,
-    synced: bool = False,
-) -> None:
-    now = utc_now()
-    values = {
-        "kind": kind,
-        "status": status,
-        "rows": rows,
-        "version": version,
-        "bytes": size,
-        "duration_ms": duration_ms,
-        "error": error,
-        "last_attempt_at": now,
-        "updated_at": now,
-    }
-    if synced:
-        values["last_synced_at"] = now
-    update = {k: v for k, v in values.items() if k != "kind"}
-    if not synced:
-        update.pop("last_synced_at", None)
-    session.execute(
-        pg_insert(ThreatFeed)
-        .values(**values)
-        .on_conflict_do_update(index_elements=[ThreatFeed.kind], set_=update)
-    )
-
-
 def sync_feed(session: Session, kind: str) -> int:
-    """Refresh one feed."""
+    """Refresh one feed. One loader per feed across the instance."""
     spec = FEEDS_BY_KIND[kind]
-    started = time.monotonic()
-    _mark(session, kind, status=FeedStatus.SYNCING.value)
-    session.commit()
-    try:
-        if kind == FeedKind.NVD.value:
-            held = session.execute(
-                select(ThreatFeed.version).where(ThreatFeed.kind == kind)
-            ).scalar()
-            rows, version, size = nvd_corpus.load(session, current_version=held)
-        else:
-            rows, version, size = _sync_single(session, kind, spec)
-        elapsed = int((time.monotonic() - started) * 1000)
-        _mark(
-            session,
-            kind,
-            status=FeedStatus.READY.value,
-            rows=rows,
-            version=version,
-            size=size,
-            duration_ms=elapsed,
-            synced=True,
-        )
-        session.commit()
-        logger.info("threat feed refreshed", feed=kind, rows=rows, version=version)
-        return rows
-    except Exception as exc:
-        session.rollback()
-        elapsed = int((time.monotonic() - started) * 1000)
-        _mark(
-            session,
-            kind,
-            status=FeedStatus.FAILED.value,
-            duration_ms=elapsed,
-            error=str(exc)[:500],
-        )
-        session.commit()
-        logger.warning("threat feed refresh failed", feed=kind, exc_info=True)
-        return 0
+    with sync_lock(session, locks.dataset(kind)) as held:
+        if not held:
+            logger.info("threat feed refresh already running", feed=kind)
+            return 0
+        try:
+            with feed_ledger.refreshing(session, kind) as refresh:
+                if kind == FeedKind.NVD.value:
+                    stamp = session.execute(
+                        select(ThreatFeed.version).where(ThreatFeed.kind == kind)
+                    ).scalar()
+                    refresh.rows, refresh.version, refresh.size = nvd_corpus.load(
+                        session, current_version=stamp
+                    )
+                else:
+                    refresh.rows, refresh.version, refresh.size = _sync_single(
+                        session, kind, spec
+                    )
+        except Exception:
+            logger.warning("threat feed refresh failed", feed=kind, exc_info=True)
+            return 0
+    logger.info(
+        "threat feed refreshed", feed=kind, rows=refresh.rows, version=refresh.version
+    )
+    return refresh.rows
 
 
 def sync_feeds(session: Session, kinds: list[str] | None = None) -> dict[str, int]:
@@ -248,6 +198,17 @@ def feeds_ready(session: Session) -> bool:
     return bool(
         session.scalar(select(func.count()).select_from(EpssScore).limit(1))
     ) and bool(session.scalar(select(func.count()).select_from(KevEntry).limit(1)))
+
+
+def missing_feeds(session: Session) -> list[str]:
+    """Feeds whose table holds no rows."""
+    return [
+        spec.kind
+        for spec in FEEDS
+        if not session.execute(
+            text(f"SELECT EXISTS (SELECT 1 FROM {spec.rows_table})")  # noqa: S608
+        ).scalar()
+    ]
 
 
 def feed_rows(session: Session) -> dict[str, int]:

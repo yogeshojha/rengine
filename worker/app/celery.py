@@ -302,8 +302,24 @@ def on_worker_ready(sender, **kwargs) -> None:  # noqa: ARG001
         )
     if DEFAULT_QUEUE not in consumed:
         return
-    _warm_ip_ranges()
+    _warm_library()
     _warm_threat_intel()
+    _warm_ip_ranges()
+
+
+def _warm_library() -> None:
+    """Load the check library on first boot."""
+    try:
+        from app.database import get_sync_session  # noqa: PLC0415
+        from shared.services.vuln_templates import library_ready  # noqa: PLC0415
+
+        with get_sync_session() as session:
+            if library_ready(session):
+                return
+        celery_app.send_task("app.tasks.vuln_templates.sync")
+        logger.info("check library empty, sync dispatched")
+    except Exception:
+        logger.warning("check library warm-up could not be scheduled", exc_info=True)
 
 
 def _warm_ip_ranges() -> None:
@@ -322,19 +338,24 @@ def _warm_ip_ranges() -> None:
 
 
 def _warm_threat_intel() -> None:
-    """Pull EPSS and KEV on first boot."""
+    """Pull every empty feed on boot."""
     try:
         from app.database import get_sync_session  # noqa: PLC0415
         from shared.services.threat_intel import (  # noqa: PLC0415
             auto_sync_enabled,
-            feeds_ready,
+            missing_feeds,
         )
 
         with get_sync_session() as session:
-            if feeds_ready(session) or not auto_sync_enabled(session):
+            if not auto_sync_enabled(session):
                 return
-        celery_app.send_task("app.tasks.threat_intel.refresh")
-        logger.info("threat feeds empty, refresh dispatched")
+            missing = missing_feeds(session)
+        if not missing:
+            return
+        celery_app.send_task(
+            "app.tasks.threat_intel.refresh", kwargs={"feeds": missing}
+        )
+        logger.info("threat feeds empty, refresh dispatched", feeds=missing)
     except Exception:
         logger.warning("threat intel warm-up could not be scheduled", exc_info=True)
 

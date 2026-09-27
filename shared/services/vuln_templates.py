@@ -19,6 +19,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import array as pg_array
 from sqlalchemy.orm import Session
 
+from shared.definitions.datasets import DatasetKind
 from shared.definitions.oast import needs_callback
 from shared.definitions.vulnerabilities import (
     CUSTOM_ROOT,
@@ -38,6 +39,8 @@ from shared.definitions.vulnerabilities import (
 )
 from shared.logging import get_logger
 from shared.models.vuln_template import TemplateSelection, VulnTemplate
+from shared.services import feed_ledger
+from shared.services.locks import dataset, sync_lock
 from shared.utils.datetime import utc_now
 from shared.utils.text import strip_control
 from shared.utils.yaml_safe import DocumentTooLargeError, load_document
@@ -459,14 +462,21 @@ def index_directory(session: Session, root: Path, origin: str) -> int:
     return len(rows)
 
 
-def sync_official(session: Session) -> int:
-    """Refresh the project template set."""
-    root = official_root()
-    root.parent.mkdir(parents=True, exist_ok=True)
-    with _downloaded_archive() as archive:
-        extracted = _extract(archive, root)
-    logger.info("nuclei templates extracted", count=extracted, path=str(root))
-    return index_directory(session, root, TemplateOrigin.OFFICIAL.value)
+def sync_official(session: Session) -> int | None:
+    """Refresh the project template set. None when another load holds the lock."""
+    kind = DatasetKind.LIBRARY.value
+    with sync_lock(session, dataset(kind)) as held:
+        if not held:
+            return None
+        with feed_ledger.refreshing(session, kind) as refresh:
+            root = official_root()
+            root.parent.mkdir(parents=True, exist_ok=True)
+            with _downloaded_archive() as archive:
+                refresh.size = archive.stat().st_size
+                extracted = _extract(archive, root)
+            logger.info("nuclei templates extracted", count=extracted, path=str(root))
+            refresh.rows = index_directory(session, root, TemplateOrigin.OFFICIAL.value)
+    return refresh.rows
 
 
 def store_custom(raw: str, filename: str) -> tuple[ParsedTemplate, str]:

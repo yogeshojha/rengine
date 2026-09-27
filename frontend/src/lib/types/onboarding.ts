@@ -2,7 +2,9 @@ export interface OnboardingSummary {
 	proxies: number;
 	channels: number;
 	integrations: number;
+	platforms: number;
 	ai_enabled: boolean;
+	oast_mode: string;
 }
 
 export interface OnboardingStatus {

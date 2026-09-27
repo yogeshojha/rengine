@@ -4,7 +4,7 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import { onboardingStore } from '$lib/stores/onboarding.svelte';
 	import { onboardingApi } from '$lib/api/onboarding';
-	import type { StepFooter, WizardData } from '$lib/types/onboarding';
+	import type { StepFooter, StepProps, WizardData } from '$lib/types/onboarding';
 	import { ROUTES } from '$lib/config/routes';
 	import { toast } from 'svelte-sonner';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
@@ -13,7 +13,10 @@
 	import StepWelcomeSecurity from '$lib/components/onboarding/step-welcome-security.svelte';
 	import StepTwoFactor from '$lib/components/onboarding/step-two-factor.svelte';
 	import StepMode from '$lib/components/onboarding/step-mode.svelte';
+	import StepData from '$lib/components/onboarding/step-data.svelte';
+	import StepPlatforms from '$lib/components/onboarding/step-platforms.svelte';
 	import StepIntegrations from '$lib/components/onboarding/step-integrations.svelte';
+	import StepOast from '$lib/components/onboarding/step-oast.svelte';
 	import StepProxy from '$lib/components/onboarding/step-proxy.svelte';
 	import StepAi from '$lib/components/onboarding/step-ai.svelte';
 	import StepNotifications from '$lib/components/onboarding/step-notifications.svelte';
@@ -28,8 +31,22 @@
 	import BellIcon from '@lucide/svelte/icons/bell';
 	import FolderPlusIcon from '@lucide/svelte/icons/folder-plus';
 	import CircleCheckIcon from '@lucide/svelte/icons/circle-check';
+	import DatabaseIcon from '@lucide/svelte/icons/database';
+	import SatelliteDishIcon from '@lucide/svelte/icons/satellite-dish';
+	import NinjaIcon from '$lib/components/icons/ninja.svelte';
+	import { Capability, modeHas, type CapabilityKey } from '$lib/config/capabilities';
+	import type { Component } from 'svelte';
 
-	const STEPS = [
+	interface Step {
+		key: string;
+		title: string;
+		description: string;
+		icon: Component;
+		component: Component<StepProps>;
+		capability?: CapabilityKey;
+	}
+
+	const ALL_STEPS: Step[] = [
 		{
 			key: 'welcome-security',
 			title: 'Instance setup',
@@ -40,7 +57,7 @@
 		{
 			key: 'two-factor',
 			title: 'Two-factor authentication',
-			description: 'Add a second factor with an authenticator app.',
+			description: 'Second factor for the administrator account, from an authenticator app.',
 			icon: ShieldCheckIcon,
 			component: StepTwoFactor
 		},
@@ -52,11 +69,33 @@
 			component: StepMode
 		},
 		{
+			key: 'data',
+			title: 'Data',
+			description: 'Worker status, downloaded datasets and retention.',
+			icon: DatabaseIcon,
+			component: StepData
+		},
+		{
+			key: 'platforms',
+			title: 'Bug bounty platforms',
+			description: 'Platform API tokens add private programs and their scope.',
+			icon: NinjaIcon,
+			component: StepPlatforms,
+			capability: Capability.BOUNTY_PLATFORMS
+		},
+		{
 			key: 'integrations',
 			title: 'API keys',
-			description: 'Optional API keys for passive recon sources.',
+			description: 'Keys for subdomain sources, lookups and exploit intelligence.',
 			icon: PlugIcon,
 			component: StepIntegrations
+		},
+		{
+			key: 'oast',
+			title: 'Out-of-band testing',
+			description: 'Callback server for checks that confirm a finding out of band.',
+			icon: SatelliteDishIcon,
+			component: StepOast
 		},
 		{
 			key: 'proxy',
@@ -76,14 +115,14 @@
 		{
 			key: 'notifications',
 			title: 'Notifications',
-			description: 'Route scan events to Slack, Discord, Telegram or a webhook.',
+			description: 'Scan events sent to Slack, Discord, Telegram or a webhook.',
 			icon: BellIcon,
 			component: StepNotifications
 		},
 		{
 			key: 'finish',
 			title: 'Create a project',
-			description: 'Name the first project and set data retention.',
+			description: 'First project on this instance.',
 			icon: FolderPlusIcon,
 			component: StepFinish
 		},
@@ -96,18 +135,23 @@
 		}
 	];
 
-	const steps = STEPS.map((s) => ({
-		key: s.key,
-		title: s.title,
-		description: s.description,
-		icon: s.icon
-	}));
-
 	let ready = $state(false);
 	let loadFailed = $state(false);
 	let currentIndex = $state(0);
 	let direction = $state<'forward' | 'back'>('forward');
 	let data = $state<WizardData>({ mode: null, instanceName: '', twoFactorEnabled: false });
+
+	const STEPS = $derived(
+		ALL_STEPS.filter((step) => !step.capability || modeHas(data.mode, step.capability))
+	);
+	const steps = $derived(
+		STEPS.map((s) => ({
+			key: s.key,
+			title: s.title,
+			description: s.description,
+			icon: s.icon
+		}))
+	);
 
 	let fcfg = $state<StepFooter>({ onNext: () => {} });
 	function setFooter(cfg: StepFooter) {

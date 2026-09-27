@@ -372,7 +372,7 @@
 						href={p.url}
 						target="_blank"
 						rel="noopener noreferrer"
-						class="mt-2.5 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+						class="mt-2.5 inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80"
 					>
 						Website <ExternalLinkIcon class="size-4" />
 					</a>

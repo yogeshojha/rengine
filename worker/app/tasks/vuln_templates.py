@@ -22,5 +22,8 @@ def sync() -> dict:
         root = custom_root()
         if root.exists():
             custom = index_directory(session, root, TemplateOrigin.CUSTOM.value)
+    if official is None:
+        logger.info("check library load already running", custom=custom)
+        return {"skipped": "already_running", "custom": custom}
     logger.info("check library synced", official=official, custom=custom)
     return {"official": official, "custom": custom}

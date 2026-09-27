@@ -9,7 +9,11 @@ from app.api.deps import CurrentSuperuser, CurrentUser
 from app.core.database import get_session
 from app.services.instance_settings import InstanceSettingsService
 from app.services.scan_engine import ScanEngineService
-from shared.models.api_key import APIKey
+from shared.definitions.api_keys import RECON_GROUPS
+from shared.definitions.oast import OastMode, off_reason
+from shared.enums.api_key import ProviderGroup
+from shared.models.api_key import API_PROVIDER_META, APIKey
+from shared.models.instance_settings import InstanceSettings
 from shared.models.notification_channel import NotificationChannel
 from shared.models.project import Project, ProjectCreate, ProjectRead
 from shared.models.proxy import Proxy
@@ -34,7 +38,9 @@ class OnboardingSummary(BaseModel):
     proxies: int
     channels: int
     integrations: int
+    platforms: int
     ai_enabled: bool
+    oast_mode: str
 
 
 class OnboardingStatus(BaseModel):
@@ -46,19 +52,29 @@ class OnboardingStatus(BaseModel):
     summary: OnboardingSummary
 
 
-async def _summary(session: AsyncSession, ai_enabled: bool) -> OnboardingSummary:
+async def _summary(
+    session: AsyncSession, settings: InstanceSettings
+) -> OnboardingSummary:
     proxies = await session.execute(select(func.count(Proxy.id)).where(Proxy.is_active))
     channels = await session.execute(
         select(func.count(NotificationChannel.id)).where(NotificationChannel.is_active)
     )
-    integrations = await session.execute(
-        select(func.count(APIKey.id)).where(APIKey.is_enabled)
+    enabled = (
+        await session.execute(select(APIKey.provider).where(APIKey.is_enabled))
+    ).scalars()
+    groups = [API_PROVIDER_META[p]["group"] for p in enabled if p in API_PROVIDER_META]
+    oast_off = off_reason(
+        settings.oast_mode,
+        server=settings.oast_server,
+        acknowledged=settings.oast_public_acknowledged,
     )
     return OnboardingSummary(
         proxies=proxies.scalar_one(),
         channels=channels.scalar_one(),
-        integrations=integrations.scalar_one(),
-        ai_enabled=ai_enabled,
+        integrations=sum(group in RECON_GROUPS for group in groups),
+        platforms=groups.count(ProviderGroup.BOUNTY_PLATFORMS.value),
+        ai_enabled=settings.ai_enabled,
+        oast_mode=OastMode.OFF.value if oast_off else settings.oast_mode,
     )
 
 
@@ -72,7 +88,7 @@ async def _status(
         current_step=settings.onboarding_step,
         instance_name=settings.instance_name,
         mode=settings.mode,
-        summary=await _summary(session, settings.ai_enabled),
+        summary=await _summary(session, settings),
     )
 
 

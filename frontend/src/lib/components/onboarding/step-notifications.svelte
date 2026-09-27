@@ -19,7 +19,13 @@
 		defaultNotificationPreference,
 		type NotifProvider
 	} from '$lib/types/notification-channel';
-	import { ONBOARDING_NOTIFICATION_PROVIDERS as PROVIDERS } from '$lib/config/notification-providers';
+	import {
+		ONBOARDING_NOTIFICATION_PROVIDERS as PROVIDERS,
+		SHARED_BOT_FIELD,
+		SHARED_BOT_KEY,
+		SHARED_BOT_PROVIDER
+	} from '$lib/config/notification-providers';
+	import { apiKeysApi } from '$lib/api/api-keys';
 	import type { StepProps } from '$lib/types/onboarding';
 	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
@@ -113,6 +119,20 @@
 		}
 	}
 
+	async function saveSharedBot(token: string) {
+		const existing = (await apiKeysApi.list()).find((k) => k.provider === SHARED_BOT_KEY);
+		if (existing) await apiKeysApi.update(existing.id, { key_value: token });
+		else await apiKeysApi.create({ provider: SHARED_BOT_KEY, key_value: token });
+	}
+
+	async function channelConfig(p: NotifProvider): Promise<Record<string, string>> {
+		const config = buildConfig(p);
+		const token = config[SHARED_BOT_FIELD];
+		if (p !== SHARED_BOT_PROVIDER || !token) return config;
+		await saveSharedBot(token);
+		return { ...config, [SHARED_BOT_FIELD]: '' };
+	}
+
 	async function handleNext() {
 		const pending = PROVIDERS.filter((m) => drafts[m.provider].enabled && isConfigured(m.provider));
 		busy = true;
@@ -122,12 +142,13 @@
 				if (d.createdId) {
 					await notificationChannelsApi.update(d.createdId, { events: pref });
 				} else {
-					await notificationChannelsApi.create({
+					const created = await notificationChannelsApi.create({
 						name: meta.name,
 						provider: meta.provider,
-						config: buildConfig(meta.provider),
+						config: await channelConfig(meta.provider),
 						events: pref
 					});
+					d.createdId = created.id;
 				}
 			}
 			next();
@@ -182,6 +203,11 @@
 								</div>
 							{/each}
 						</div>
+						{#if meta.provider === SHARED_BOT_PROVIDER}
+							<p class="mt-3 text-xs text-muted-foreground">
+								The bot token is saved as the {meta.name} API key. Remote control uses the same bot.
+							</p>
+						{/if}
 						<div class="mt-4">
 							<Button
 								variant="outline"

@@ -11,6 +11,7 @@ from app.api.v1 import (
     connectors,
     cves,
     dashboard,
+    datasets,
     domain_posture,
     endpoints,
     events,
@@ -91,6 +92,7 @@ router.include_router(vulnerabilities.router)
 router.include_router(oast.router)
 router.include_router(vuln_templates.router)
 router.include_router(threat_intel.router)
+router.include_router(datasets.router)
 router.include_router(toolbox.router)
 router.include_router(interest.router)
 router.include_router(bounty_programs.router)

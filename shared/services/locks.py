@@ -14,10 +14,10 @@ if TYPE_CHECKING:
 
 # bounty_platform() spans BOUNTY_SYNC .. BOUNTY_SYNC + 0xFFFF
 BOUNTY_SYNC = 0x624F0001
-BOUNTY_FEED = 0x624F0002
 # bounty_reports() spans BOUNTY_REPORTS .. BOUNTY_REPORTS + 0xFFFF
 BOUNTY_REPORTS = 0x62520001
-IP_RANGES = 0x624E0001
+# dataset() spans DATASET_SYNC .. DATASET_SYNC + 0xFFFF
+DATASET_SYNC = 0x44530001
 # secret_mining() spans SECRET_MINING .. SECRET_MINING + 0xFFFF
 SECRET_MINING = 0x53450001
 SOFTWARE_BACKFILL = 0x53570001
@@ -31,6 +31,11 @@ SCAN_DELTAS_BACKFILL = 0x53440001
 def bounty_platform(platform: str) -> int:
     """One lock per platform."""
     return BOUNTY_SYNC + (zlib.crc32(platform.encode()) & 0xFFFF)
+
+
+def dataset(kind: str) -> int:
+    """One lock per downloaded dataset, held while it loads."""
+    return DATASET_SYNC + (zlib.crc32(kind.encode()) & 0xFFFF)
 
 
 def bounty_reports(platform: str) -> int:

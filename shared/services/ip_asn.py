@@ -15,9 +15,11 @@ from uuid import UUID
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
+from shared.definitions.datasets import DatasetKind
 from shared.logging import get_logger
 from shared.models.ip_asn_range import IpAsnRange, IpCountryRange
-from shared.services.locks import IP_RANGES, sync_lock
+from shared.services import feed_ledger
+from shared.services.locks import dataset, sync_lock
 
 logger = get_logger(__name__)
 
@@ -212,21 +214,27 @@ def _load(session: Session, feed: Feed, paths: list[Path]) -> int:
 def sync_ranges(session: Session) -> dict[str, int]:
     """Refresh both range tables. One loader at a time across the instance."""
     counts: dict[str, int] = {}
-    with sync_lock(session, IP_RANGES) as held:
+    kind = DatasetKind.IP_RANGES.value
+    with sync_lock(session, dataset(kind)) as held:
         if not held:
             logger.info("ip range refresh already running, skipped")
             return counts
-        deadline = time.monotonic() + SYNC_BUDGET
-        for feed in FEEDS:
-            try:
-                with _downloaded(feed, deadline) as paths:
-                    counts[feed.table] = _load(session, feed, paths)
-                session.commit()
-            except Exception:
-                session.rollback()
-                logger.warning(
-                    "ip range feed refresh failed", table=feed.table, exc_info=True
-                )
+        with feed_ledger.refreshing(session, kind) as refresh:
+            deadline = time.monotonic() + SYNC_BUDGET
+            failed: list[str] = []
+            for feed in FEEDS:
+                try:
+                    with _downloaded(feed, deadline) as paths:
+                        counts[feed.table] = _load(session, feed, paths)
+                    session.commit()
+                except Exception as exc:
+                    session.rollback()
+                    failed.append(f"{feed.table}: {exc}")
+                    logger.warning(
+                        "ip range feed refresh failed", table=feed.table, exc_info=True
+                    )
+            refresh.rows = counts.get(FEEDS[0].table, 0)
+            refresh.error = "; ".join(failed) or None
     return counts
 
 
