@@ -14,7 +14,7 @@ RUN node scripts/fetch-tech-icons.mjs
 
 COPY frontend/. .
 
-RUN npm run build && npm prune --omit=dev
+RUN NODE_OPTIONS=--max-old-space-size=4096 npm run build && npm prune --omit=dev
 
 
 ##################################################################
