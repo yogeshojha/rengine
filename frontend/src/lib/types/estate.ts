@@ -1,3 +1,5 @@
+import type { ProgramMatch } from './relations';
+
 export interface EstateSignal {
 	kind: string;
 	label: string;
@@ -18,6 +20,7 @@ export interface EstateDomain {
 	target_id: string | null;
 	strength: number;
 	state: string;
+	program: ProgramMatch | null;
 	signals: EstateSignal[];
 	sources: EstateSource[];
 }

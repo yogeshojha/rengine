@@ -6,11 +6,17 @@
 		pending?: boolean;
 		onClick: () => void;
 	}
+	export interface SheetRowBadge {
+		label: string;
+		variant: 'success' | 'secondary';
+		href?: string;
+	}
 	export interface SheetRow {
 		key: string;
 		primary: string;
 		secondary?: string;
 		meta?: string;
+		badge?: SheetRowBadge;
 		href?: string;
 		tone?: 'warn' | 'bad';
 		group?: string;
@@ -28,6 +34,7 @@
 	import Check from '@lucide/svelte/icons/check';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import * as Sheet from '$lib/components/ui/sheet';
+	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Skeleton } from '$lib/components/ui/skeleton';
@@ -73,7 +80,14 @@
 
 {#snippet body(r: SheetRow)}
 	<span class="flex min-w-0 flex-1 flex-col gap-0.5">
-		<span class="truncate font-mono text-xs leading-5">{r.primary}</span>
+		<span class="flex min-w-0 items-center gap-1.5">
+			<span class="truncate font-mono text-xs leading-5">{r.primary}</span>
+			{#if r.badge}
+				<Badge variant={r.badge.variant} class="shrink-0 px-1.5 py-0 text-2xs">
+					{r.badge.label}
+				</Badge>
+			{/if}
+		</span>
 		{#if r.secondary}
 			<span class="line-clamp-2 text-xs leading-4 text-muted-foreground wrap-anywhere">
 				{r.secondary}

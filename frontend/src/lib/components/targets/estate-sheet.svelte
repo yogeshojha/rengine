@@ -110,6 +110,14 @@
 		else toast.error('Targets not added');
 	}
 
+	function programBadge(d: EstateDomain) {
+		const p = d.program;
+		if (!p || !p.in_scope) return undefined;
+		return p.eligible_for_bounty
+			? { label: `Bounty · ${p.name}`, variant: 'success' as const }
+			: { label: `In scope · ${p.name}`, variant: 'secondary' as const };
+	}
+
 	function domainRow(d: EstateDomain): SheetRow {
 		const tracked = !!d.target_id;
 		const dismissed = !tracked && stateOf(d) === EstateTriageState.DISMISSED;
@@ -119,6 +127,7 @@
 		return {
 			key: d.domain,
 			primary: d.domain,
+			badge: tracked ? undefined : programBadge(d),
 			secondary: `${evidence(d)}${sources}`,
 			meta: ESTATE_STRENGTH_LABELS[d.strength ? EstateStrength.DIRECT : EstateStrength.SHARED],
 			group: tracked ? 'Targets' : dismissed ? 'Dismissed' : 'Candidates',

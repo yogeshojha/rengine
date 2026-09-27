@@ -48,12 +48,14 @@
 		}, 0)
 	);
 	let total = $derived(Math.max(0, count - added.size - triageDelta));
+	let inProgram = $derived(candidates.filter((d) => d.program && d.program.in_scope).length);
 	let strengths = $derived.by(() => {
 		const direct = candidates.filter((d) => d.strength).length;
 		const shared = candidates.length - direct;
 		const parts: string[] = [];
 		if (direct) parts.push(`Direct ${direct.toLocaleString()}`);
 		if (shared) parts.push(`Shared ${shared.toLocaleString()}`);
+		if (inProgram) parts.push(`${inProgram.toLocaleString()} in a bounty program`);
 		return parts.join(' · ');
 	});
 	let subline = $derived(detail || strengths);

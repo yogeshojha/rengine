@@ -59,6 +59,74 @@ class ProgramCoverageService:
         items.sort(key=lambda m: (not m.in_scope, not m.offers_bounties, m.name))
         return TargetPrograms(items=items[:MAX_COVERED_PROGRAMS], total=len(items))
 
+    async def best_for_hosts(self, hosts: set[str]) -> dict[str, ProgramMatch]:
+        """The strongest program match for each host, in two queries for the whole set."""
+        clean = {host_of(h) for h in hosts} - {""}
+        if not clean:
+            return {}
+        rows = await self.session.execute(
+            select(
+                BountyProgram.id,
+                BountyProgram.handle,
+                BountyProgram.name,
+                BountyProgram.platform,
+                BountyProgram.url,
+                BountyProgram.offers_bounties,
+            )
+            .join(BountyScope, BountyScope.program_id == BountyProgram.id)
+            .where(
+                BountyScope.target_value.isnot(None),
+                or_(
+                    *(
+                        or_(
+                            func.lower(BountyScope.target_value) == host,
+                            func.strpos(
+                                host, "." + func.lower(BountyScope.target_value)
+                            )
+                            > 0,
+                        )
+                        for host in clean
+                    )
+                ),
+            )
+            .distinct()
+        )
+        programs = list(rows.all())
+        if not programs:
+            return {}
+        scope_rows = await self.session.execute(
+            select(
+                BountyScope.program_id,
+                BountyScope.id,
+                BountyScope.asset_type,
+                BountyScope.asset_identifier,
+                BountyScope.scope_state,
+                BountyScope.target_value,
+                BountyScope.target_type,
+                BountyScope.eligible_for_bounty,
+                BountyScope.max_severity,
+            ).where(BountyScope.program_id.in_([p.id for p in programs]))
+        )
+        scopes_by_program: dict[UUID, list] = {}
+        for row in scope_rows.all():
+            scopes_by_program.setdefault(row.program_id, []).append(row)
+
+        best: dict[str, ProgramMatch] = {}
+        for host in clean:
+            matches: list[ProgramMatch] = []
+            for program in programs:
+                match = self._match_scopes(
+                    program, host, scopes_by_program.get(program.id, [])
+                )
+                if match is not None:
+                    matches.append(match)
+            if matches:
+                matches.sort(
+                    key=lambda m: (not m.in_scope, not m.offers_bounties, m.name)
+                )
+                best[host] = matches[0]
+        return best
+
     async def _candidates(self, host: str) -> list:
         """Programs with a scope entry this host could sit under."""
         value = func.lower(BountyScope.target_value)
@@ -93,7 +161,9 @@ class ProgramCoverageService:
                 BountyScope.max_severity,
             ).where(BountyScope.program_id == program.id)
         )
-        scopes = list(rows.all())
+        return self._match_scopes(program, host, list(rows.all()))
+
+    def _match_scopes(self, program, host: str, scopes: list) -> ProgramMatch | None:
         scope, excluded = scope_match(host, scopes)
         if scope is None:
             return None

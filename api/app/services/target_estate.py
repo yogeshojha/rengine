@@ -14,6 +14,7 @@ from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services.program_coverage import ProgramCoverageService
 from app.services.surface_scope import SurfaceScopeService
 from app.services.target_relations import TargetRelationService
 from shared.definitions.domains import (
@@ -149,6 +150,7 @@ class TargetEstateService:
         *,
         relations: bool = True,
         dismissed: set[str] | None = None,
+        with_programs: bool = False,
     ) -> TargetEstate:
         targets = await self._targets(project_id)
         target = targets.get(target_id)
@@ -192,11 +194,14 @@ class TargetEstateService:
                 d.state = EstateTriageState.DISMISSED.value
         open_domains = [d for d in domains if d.state == EstateTriageState.OPEN.value]
         closed = [d for d in domains if d.state != EstateTriageState.OPEN.value]
+        shown = (open_domains + closed)[:MAX_ESTATE_DOMAINS]
+        if with_programs:
+            await self._attach_programs(shown)
         out = TargetEstate(
             target_id=target_id,
             scan_id=scan_id,
             root=root,
-            domains=(open_domains + closed)[:MAX_ESTATE_DOMAINS],
+            domains=shown,
             providers=self._providers(providers),
             neighbours=sorted(neighbours, key=lambda n: -n.names),
             own=list(dict.fromkeys(own)),
@@ -279,6 +284,20 @@ class TargetEstateService:
             untracked=open_count,
             domains=domains[:MAX_PROJECT_ESTATE],
         )
+
+    async def _attach_programs(self, domains: list[EstateDomain]) -> None:
+        candidates = [
+            d
+            for d in domains
+            if d.target_id is None and d.state == EstateTriageState.OPEN.value
+        ]
+        if not candidates:
+            return
+        matches = await ProgramCoverageService(self.session).best_for_hosts(
+            {d.domain for d in candidates}
+        )
+        for d in candidates:
+            d.program = matches.get(d.domain)
 
     async def triage(self, project_id: UUID, domains: list[str], state: str) -> int:
         clean = sorted({_clean(d) for d in domains} - {""})

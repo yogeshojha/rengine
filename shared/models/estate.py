@@ -7,6 +7,7 @@ from sqlmodel import Field as SQLField
 from sqlmodel import SQLModel
 
 from shared.definitions.estate import MAX_ESTATE_DOMAIN_LENGTH, EstateTriageState
+from shared.models.relations import ProgramMatch
 from shared.utils.datetime import utc_now
 
 
@@ -45,6 +46,7 @@ class EstateDomain(BaseModel):
     target_id: uuid.UUID | None = None
     strength: int = 0
     state: str = EstateTriageState.OPEN.value
+    program: ProgramMatch | None = None
     signals: list[EstateSignal] = Field(default_factory=list)
     sources: list[EstateSource] = Field(default_factory=list)
 

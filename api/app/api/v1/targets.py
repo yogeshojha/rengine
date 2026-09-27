@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.api.pagination import Page
 from app.core.database import get_session
+from app.services.instance_settings import InstanceSettingsService
 from app.services.program_coverage import ProgramCoverageService
 from app.services.target import TargetService
 from app.services.target_assets import TargetAssetService
@@ -26,6 +27,7 @@ from app.services.target_filters import SignalName, SortDir, SortKey
 from app.services.target_relations import TargetRelationService
 from app.services.target_summary import TargetSummaryService
 from shared.definitions.constants import MAX_TARGET_IMPORT
+from shared.definitions.mode_features import CAP_BOUNTY_PROGRAMS, has_capability
 from shared.models import (
     TargetBulkCreate,
     TargetBulkCreateResponse,
@@ -465,7 +467,11 @@ async def get_target_estate(
     scan_id: Annotated[UUID | None, Query(description="Scan ID")] = None,
 ):
     """Domains this target points at, providers it runs on, targets it shares with."""
-    return await TargetEstateService(session).for_target(project_id, target_id, scan_id)
+    settings = await InstanceSettingsService(session).get_or_create()
+    with_programs = has_capability(settings.mode, CAP_BOUNTY_PROGRAMS)
+    return await TargetEstateService(session).for_target(
+        project_id, target_id, scan_id, with_programs=with_programs
+    )
 
 
 @router.get("/{target_id}/programs", response_model=TargetPrograms)
