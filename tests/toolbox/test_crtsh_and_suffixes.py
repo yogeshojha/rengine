@@ -8,7 +8,7 @@ from datetime import date
 import httpx
 import pytest
 
-from shared.definitions.domains import registrable_domain
+from shared.definitions.domains import owning_zone, registrable_domain, target_zone
 from shared.utils.net import redact_url_queries
 from tools.crtsh import client as crtsh_client
 from tools.crtsh.client import CrtShClient, CrtShError
@@ -25,7 +25,7 @@ from tools.viewdns.client import (
 
 SECRET = "f3282d0fdbe57be6244e5f8f20bed9ecd680b922"
 
-STRICT = [
+SUFFIXES = [
     ("uber.com", "uber.com"),
     ("a.b.uber.com", "uber.com"),
     ("uber.com.kz", "uber.com.kz"),
@@ -53,23 +53,41 @@ STRICT = [
 ]
 
 
-@pytest.mark.parametrize(("host", "domain"), STRICT)
-def test_strict_registrable_domain_reads_the_public_suffix_list(host, domain):
-    assert registrable_domain(host, strict=True) == domain
+@pytest.mark.parametrize(("host", "domain"), SUFFIXES)
+def test_registrable_domain_reads_the_public_suffix_list(host, domain):
+    assert registrable_domain(host) == domain
 
 
-LEGACY = [
-    ("www.mof.gov.cy", "gov.cy"),
-    ("a.b.uber.co.uk", "uber.co.uk"),
-    ("uber.com", "uber.com"),
-    ("gov.np", "gov.np"),
-    ("1.2.3.4", ""),
+ZONES = [
+    ("gov.cy", "gov.cy"),
+    ("go.id", "go.id"),
+    ("example.com", "example.com"),
+    ("www.example.com", "example.com"),
+    ("*.example.co.uk", "example.co.uk"),
+    ("1.2.3.4", "1.2.3.4"),
 ]
 
 
-@pytest.mark.parametrize(("host", "domain"), LEGACY)
-def test_default_registrable_domain_is_unchanged(host, domain):
-    assert registrable_domain(host) == domain
+@pytest.mark.parametrize(("value", "zone"), ZONES)
+def test_a_target_owns_its_registrable_domain_or_itself_when_a_registry(value, zone):
+    assert target_zone(value) == zone
+
+
+OWNERS = [
+    ("moh.gov.cy", "gov.cy"),
+    ("gov.cy", "gov.cy"),
+    ("kominfo.go.id", "go.id"),
+    ("example.com", "example.com"),
+    ("other.com", None),
+    ("example.com.kz", None),
+    ("", None),
+]
+
+
+@pytest.mark.parametrize(("apex", "zone"), OWNERS)
+def test_owning_zone_matches_the_target_or_the_registry_above(apex, zone):
+    zones = {target_zone(v) for v in ("gov.cy", "go.id", "www.example.com")}
+    assert owning_zone(apex, zones) == zone
 
 
 def _rows(*rows):

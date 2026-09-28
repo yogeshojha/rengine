@@ -154,9 +154,9 @@ def read(raw: str) -> Query:
 
     if " " not in text:
         host = _host_of(text)
-        if "." in host and registrable_domain(host, strict=True):
-            return Query(InputKind.DOMAIN, registrable_domain(host, strict=True))
-        if "." in host and not registrable_domain(host, strict=True):
+        if "." in host and registrable_domain(host):
+            return Query(InputKind.DOMAIN, registrable_domain(host))
+        if "." in host and not registrable_domain(host):
             msg = f"{host} is a public suffix, not a domain."
             raise InputRefusedError(msg)
 

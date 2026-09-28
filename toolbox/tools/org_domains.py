@@ -347,7 +347,7 @@ class OrgDomains(Tool):
         response = read.data if read else None
         matches = response.matches if isinstance(response, ReverseWhoisResponse) else []
         for match in matches:
-            domain = registrable_domain(match.domain, strict=True)
+            domain = registrable_domain(match.domain)
             if domain:
                 sources.registrations_found.setdefault(
                     domain, (match.created_date, match.registrar)

@@ -25,7 +25,12 @@ from shared.definitions.broken_links import (
     RESOLVERS,
     LinkKind,
 )
-from shared.definitions.domains import IGNORED_DOMAINS, registrable_domain
+from shared.definitions.domains import (
+    IGNORED_DOMAINS,
+    owning_zone,
+    registrable_domain,
+    target_zone,
+)
 from shared.definitions.estate import provider_of
 from shared.models.http_asset import HttpAsset
 
@@ -143,7 +148,7 @@ def is_unregistered(domain: str, resolvers: tuple[str, ...] = RESOLVERS) -> bool
 
 def dangling(session: Session, scan_id: UUID, root: str) -> list[BrokenLink]:
     """External resources whose registrable domain is buyable, worst tag first."""
-    own = registrable_domain(root.lower().rstrip("."))
+    own = target_zone(root)
     candidates: dict[tuple[str, str], BrokenLink] = {}
     domains: set[str] = set()
     pages = 0
@@ -200,7 +205,7 @@ def dangling(session: Session, scan_id: UUID, root: str) -> list[BrokenLink]:
 def _worth_checking(domain: str, own: str) -> bool:
     return bool(
         domain
-        and domain != own
+        and owning_zone(domain, {own}) is None
         and domain not in IGNORED_DOMAINS
         and provider_of(domain) is None
     )

@@ -45,7 +45,9 @@ from shared.definitions.domains import (
     RELATED_REASON_DETAIL,
     RELATED_REASON_LABELS,
     RelatedReason,
+    owning_zone,
     registrable_domain,
+    target_zone,
 )
 from shared.definitions.endpoints import EndpointSource, parse_url
 from shared.definitions.rescan import SeedKind, stages_for
@@ -614,11 +616,7 @@ class ConnectorService:
         )
 
     async def _owned_domains(self, project_id: uuid.UUID) -> set[str]:
-        return {
-            registrable_domain(value)
-            for _, value in await self._targets_all(project_id)
-            if registrable_domain(value)
-        }
+        return {target_zone(value) for _, value in await self._targets_all(project_id)}
 
     async def discovered(
         self,
@@ -650,7 +648,7 @@ class ConnectorService:
         grouped: dict[str, list[ConnectorHost]] = {}
         for host in hosts:
             domain = host.registrable
-            if domain in owned or domain in IGNORED_DOMAINS:
+            if owning_zone(domain, owned) or domain in IGNORED_DOMAINS:
                 continue
             if domain.rsplit(".", 1)[-1] in PRIVATE_TLDS:
                 continue

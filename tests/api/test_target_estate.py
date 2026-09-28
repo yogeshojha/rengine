@@ -236,8 +236,8 @@ async def test_names_under_a_registry_target_are_its_own(estate, now):
     await _asset(
         estate, "a", "www.go.id", at=now, final_url="https://kemenperin.go.id/"
     )
-    await _asset(estate, "a", "x.go.id", at=now, final_url="https://desa.id/")
+    await _asset(estate, "a", "x.go.id", at=now, final_url="https://pemdes.desa.id/")
 
     out = await _estate(estate, "go.id", "a")
 
-    assert [d.domain for d in out.domains] == ["desa.id"]
+    assert [d.domain for d in out.domains] == ["pemdes.desa.id"]

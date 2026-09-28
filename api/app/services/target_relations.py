@@ -10,7 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.surface_scope import SurfaceScopeService
-from shared.definitions.domains import registrable_domain
+from shared.definitions.domains import owning_zone, registrable_domain, target_zone
 from shared.definitions.relations import (
     FAVICON_MAX_TARGETS,
     MAX_RELATED_TARGETS,
@@ -42,7 +42,11 @@ _ADDRESS_RECORDS = ("A", "AAAA")
 
 def _ours(host: str, owned: set[str]) -> bool:
     """A mail host or a zone contact identifies an estate only when the estate owns it."""
-    return bool(host) and not is_shared_host(host) and registrable_domain(host) in owned
+    return (
+        bool(host)
+        and not is_shared_host(host)
+        and owning_zone(registrable_domain(host), owned) is not None
+    )
 
 
 def _dns_keys(
@@ -73,7 +77,7 @@ def _dns_keys(
 
 def _identity(target_value: str, registrant: str) -> set[str]:
     """The names a network holder would carry if this target ran it."""
-    apex = registrable_domain(target_value) or target_value
+    apex = target_zone(target_value)
     label = apex.split(".")[0] if apex else ""
     return {key for key in (registrant_key(registrant), label.lower()) if key}
 
@@ -187,11 +191,7 @@ class TargetRelationService:
         cdn = await self._cdn_addresses(
             {(value or "").strip().lower().rstrip(".") for _, _, value, _ in rows}
         )
-        owned = {
-            registrable_domain(t.target_value)
-            for t in targets.values()
-            if registrable_domain(t.target_value)
-        }
+        owned = {target_zone(t.target_value) for t in targets.values()}
         for target_id, kind, value, soa_email in rows:
             for shown, key in _dns_keys(
                 str(kind), value or "", soa_email or "", cdn, owned
@@ -228,11 +228,7 @@ class TargetRelationService:
                 subject or ""
             )
 
-        apexes = {
-            registrable_domain(t.target_value): t.id
-            for t in targets.values()
-            if registrable_domain(t.target_value)
-        }
+        apexes = {target_zone(t.target_value): t.id for t in targets.values()}
         sans = await self.session.execute(
             select(HttpAsset.target_id, HttpAsset.tls_sans, HttpAsset.host)
             .where(
@@ -243,7 +239,7 @@ class TargetRelationService:
         for target_id, names, host in sans.all():
             for raw in names or []:
                 apex = registrable_domain(str(raw))
-                owner = apexes.get(apex)
+                owner = apexes.get(owning_zone(apex, apexes) or "")
                 if owner is None or owner == target_id:
                     continue
                 facts[TargetRelation.CERTIFICATE.value][f"san:{apex}"][target_id] = host

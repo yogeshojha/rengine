@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Collection
 from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
@@ -275,7 +276,6 @@ VENDOR_DOMAINS: frozenset[str] = frozenset(
 
 
 _MIN_LABELS = 2
-_SUFFIX_LABELS = 3
 _SUFFIX_PATH = Path(__file__).parent / "data" / "public_suffixes.json"
 
 
@@ -356,21 +356,33 @@ def _suffix_length(labels: list[str]) -> int:
     return 1
 
 
+def target_zone(value: str) -> str:
+    """The zone a target owns: its registrable domain, or itself when it is a registry."""
+    host = value.strip().lower().rstrip(".").removeprefix("*.")
+    return registrable_domain(host) or host
+
+
+def owning_zone(apex: str, zones: Collection[str]) -> str | None:
+    """The zone in `zones` that is `apex` or a registry `apex` sits under."""
+    labels = [part for part in apex.split(".") if part]
+    for start in range(len(labels) - 1):
+        candidate = ".".join(labels[start:])
+        if candidate in zones:
+            return candidate
+    return None
+
+
 @lru_cache(maxsize=PURE_CACHE)
-def registrable_domain(hostname: str, *, strict: bool = False) -> str:
-    """The registrable domain. `strict` reads the full ICANN public suffix list."""
+def registrable_domain(hostname: str) -> str:
+    """The registrable domain under the ICANN public suffix list; empty for a suffix."""
     host = hostname.strip().lower().rstrip(".").removeprefix("*.")
     labels = [part for part in host.split(".") if part]
     if len(labels) < _MIN_LABELS:
         return ""
     if labels[-1].isdigit():
         return ""
-    if strict:
-        size = _suffix_length(labels)
-        return "" if size >= len(labels) else ".".join(labels[-(size + 1) :])
-    if len(labels) >= _SUFFIX_LABELS and ".".join(labels[-2:]) in PUBLIC_SECOND_LEVEL:
-        return ".".join(labels[-3:])
-    return ".".join(labels[-2:])
+    size = _suffix_length(labels)
+    return "" if size >= len(labels) else ".".join(labels[-(size + 1) :])
 
 
 TAKEOVER_FINGERPRINTS: tuple[tuple[str, str], ...] = (

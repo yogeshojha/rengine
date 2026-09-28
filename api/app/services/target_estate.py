@@ -20,7 +20,9 @@ from app.services.target_relations import TargetRelationService
 from shared.definitions.domains import (
     IGNORED_DOMAINS,
     PRIVATE_TLDS,
+    owning_zone,
     registrable_domain,
+    target_zone,
 )
 from shared.definitions.estate import (
     ESTATE_REASON_LABELS,
@@ -162,12 +164,8 @@ class TargetEstateService:
             )
             scan_id = covering.get(target_id)
 
-        root = registrable_domain(target.target_value)
-        apexes = {
-            registrable_domain(t.target_value): t.id
-            for t in targets.values()
-            if registrable_domain(t.target_value)
-        }
+        root = target_zone(target.target_value)
+        apexes = {target_zone(t.target_value): t.id for t in targets.values()}
         signals: dict[str, dict[str, _Signal]] = defaultdict(
             lambda: defaultdict(_Signal)
         )
@@ -408,7 +406,7 @@ class TargetEstateService:
         if not to or _is_address(to):
             return
         apex = registrable_domain(to)
-        if not apex or apex == root or _private(apex):
+        if not apex or _inside(apex, root) or _private(apex):
             return
         provider = provider_of(to)
         if provider:
@@ -435,7 +433,11 @@ class TargetEstateService:
         subject_apex = registrable_domain(subject) if subject else ""
         apexes = {registrable_domain(n) for n in names}
         apexes.discard("")
-        if subject_apex and subject_apex != root and len(apexes) > NEIGHBOUR_MAX_NAMES:
+        if (
+            subject_apex
+            and not _inside(subject_apex, root)
+            and len(apexes) > NEIGHBOUR_MAX_NAMES
+        ):
             key = f"{host}:{subject}"
             if key not in seen_neighbour:
                 seen_neighbour.add(key)
@@ -443,12 +445,16 @@ class TargetEstateService:
                     EstateNeighbourCert(
                         host=host,
                         subject=subject,
-                        names=len(apexes - {root}),
+                        names=sum(1 for a in apexes if not _inside(a, root)),
                         provider=provider_of(subject),
                     )
                 )
             return
-        if subject_apex and subject_apex != root and not _private(subject_apex):
+        if (
+            subject_apex
+            and not _inside(subject_apex, root)
+            and not _private(subject_apex)
+        ):
             provider = provider_of(subject)
             if provider:
                 self._provider(providers, provider, _kind_for(provider), host)
@@ -456,14 +462,15 @@ class TargetEstateService:
                 signals[subject_apex][EstateReason.CERT_SUBJECT.value].add(
                     host, subject
                 )
-        ours = subject_apex == root or cert_covers(host, subject_cn, sans)
+        ours = _inside(subject_apex, root) or cert_covers(host, subject_cn, sans)
         if not ours:
             return
         for name in names:
             apex = registrable_domain(name)
             if (
                 not apex
-                or apex in (root, subject_apex)
+                or _inside(apex, root)
+                or apex == subject_apex
                 or _private(apex)
                 or apex in IGNORED_DOMAINS
                 or provider_of(name)
@@ -488,7 +495,7 @@ class TargetEstateService:
         for name, cname in rows:
             to = _clean(cname)
             apex = registrable_domain(to)
-            if not to or not apex or apex == root or _private(apex):
+            if not to or not apex or _inside(apex, root) or _private(apex):
                 continue
             provider = provider_of(to)
             if provider:
@@ -527,7 +534,7 @@ class TargetEstateService:
                 if not host:
                     continue
                 apex = registrable_domain(host)
-                if apex == root:
+                if _inside(apex, root):
                     own.append(host)
                     continue
                 name = provider_of(host) or apex
@@ -538,7 +545,7 @@ class TargetEstateService:
                     include = _clean(m.group(1))
                     if not include:
                         continue
-                    if registrable_domain(include) == root:
+                    if _inside(registrable_domain(include), root):
                         own.append(include)
                         continue
                     name = provider_of(include) or registrable_domain(include)
@@ -560,7 +567,7 @@ class TargetEstateService:
             other = targets.get(item.target_id)
             if other is None:
                 continue
-            apex = registrable_domain(other.target_value) or other.target_value
+            apex = target_zone(other.target_value)
             for reason in item.reasons:
                 sig = signals[apex][reason.kind]
                 sig.details.add(reason.detail or reason.value)
@@ -610,7 +617,7 @@ class TargetEstateService:
             other = targets.get(other_id)
             if other is None:
                 continue
-            apex = registrable_domain(other.target_value) or other.target_value
+            apex = target_zone(other.target_value)
             sig = signals[apex][EstateReason.ADDRESS.value]
             sig.add(host, f"{count} shared, {ip}" if count > 1 else ip)
             sig.shared = True
@@ -682,7 +689,7 @@ class TargetEstateService:
             out.append(
                 EstateDomain(
                     domain=apex,
-                    target_id=apexes.get(apex),
+                    target_id=apexes.get(owning_zone(apex, apexes) or ""),
                     strength=sum(
                         1 for r in rows if r.strength == EstateStrength.DIRECT.value
                     ),

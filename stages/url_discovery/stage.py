@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor, wait
 
 from sqlalchemy import func, select
 
-from shared.definitions.domains import registrable_domain
+from shared.definitions.domains import registrable_domain, target_zone
 from shared.definitions.endpoints import parse_url
 from shared.definitions.intensity import TransportTool
 from shared.definitions.surface import SurfaceDimension
@@ -239,7 +239,7 @@ class UrlDiscoveryStage(Stage):
     def _apex_domains(self, hosts: list[Host]) -> list[str]:
         named = _named_host(self.ctx.target_type, self.ctx.target_value)
         if named:
-            apex = registrable_domain(named)
+            apex = target_zone(named)
             if apex:
                 return [apex] if named == apex else [named]
         names = (

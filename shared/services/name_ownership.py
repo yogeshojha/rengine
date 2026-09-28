@@ -13,7 +13,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from shared.definitions.correlation import MIN_BODY_BYTES
-from shared.definitions.domains import IGNORED_DOMAINS, registrable_domain
+from shared.definitions.domains import IGNORED_DOMAINS, registrable_domain, target_zone
 from shared.definitions.estate import provider_of
 from shared.definitions.name_ownership import (
     ALIAS_OVERLAP,
@@ -102,7 +102,7 @@ def _grams(label: str) -> set[str]:
 def _alias(host: str, domain: str, root: str, title: str | None) -> bool:
     """Whether the domain is an alias of the target owner."""
     theirs = domain.split(".", maxsplit=1)[0]
-    brand = registrable_domain(root).split(".")[0]
+    brand = target_zone(root).split(".")[0]
     if len(brand) >= MIN_ALIAS_LABEL and (
         brand in theirs or brand in (title or "").lower()
     ):

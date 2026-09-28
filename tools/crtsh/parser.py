@@ -15,7 +15,7 @@ _HOST_RE = re.compile(r"(?:[a-zA-Z0-9_-]+\.)+[a-zA-Z]{2,}")
 def _domains(blob: str) -> set[str]:
     found: set[str] = set()
     for token in _HOST_RE.findall(blob):
-        registrable = registrable_domain(token, strict=True)
+        registrable = registrable_domain(token)
         if registrable:
             found.add(registrable)
     return found
