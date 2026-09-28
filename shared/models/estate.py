@@ -2,11 +2,16 @@ import uuid
 from datetime import datetime
 
 from pydantic import BaseModel, Field
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import Column, UniqueConstraint
+from sqlalchemy.types import JSON
 from sqlmodel import Field as SQLField
 from sqlmodel import SQLModel
 
-from shared.definitions.estate import MAX_ESTATE_DOMAIN_LENGTH, EstateTriageState
+from shared.definitions.estate import (
+    MAX_ESTATE_DOMAIN_LENGTH,
+    MAX_REGISTRAR_LENGTH,
+    EstateTriageState,
+)
 from shared.models.relations import ProgramMatch
 from shared.utils.datetime import utc_now
 
@@ -26,6 +31,29 @@ class EstateTriage(SQLModel, table=True):
     updated_at: datetime = SQLField(default_factory=utc_now)
 
 
+class EstateCandidate(SQLModel, table=True):
+    __tablename__ = "estate_candidate"
+    __table_args__ = (
+        UniqueConstraint(
+            "project_id", "domain", name="uq_estate_candidate_project_domain"
+        ),
+    )
+
+    id: uuid.UUID = SQLField(default_factory=uuid.uuid4, primary_key=True)
+    project_id: uuid.UUID = SQLField(foreign_key="projects.id", index=True)
+    domain: str = SQLField(max_length=MAX_ESTATE_DOMAIN_LENGTH)
+    resolves: bool | None = SQLField(default=None)
+    a: list = SQLField(default_factory=list, sa_column=Column(JSON, nullable=False))
+    aaaa: list = SQLField(default_factory=list, sa_column=Column(JSON, nullable=False))
+    cname: str | None = SQLField(default=None, max_length=MAX_ESTATE_DOMAIN_LENGTH)
+    ports: list = SQLField(default_factory=list, sa_column=Column(JSON, nullable=False))
+    registered_at: datetime | None = SQLField(default=None)
+    registrar: str | None = SQLField(default=None, max_length=MAX_REGISTRAR_LENGTH)
+    takeover_provider: str | None = SQLField(default=None, max_length=64)
+    checked_at: datetime | None = SQLField(default=None, index=True)
+    updated_at: datetime = SQLField(default_factory=utc_now)
+
+
 class EstateSignal(BaseModel):
     kind: str
     label: str
@@ -41,12 +69,22 @@ class EstateSource(BaseModel):
     scan_id: uuid.UUID | None = None
 
 
+class EstateDossier(BaseModel):
+    resolves: bool | None = None
+    ports: list[int] = Field(default_factory=list)
+    registered_at: datetime | None = None
+    registrar: str | None = None
+    takeover_provider: str | None = None
+    checked_at: datetime | None = None
+
+
 class EstateDomain(BaseModel):
     domain: str
     target_id: uuid.UUID | None = None
     strength: int = 0
     state: str = EstateTriageState.OPEN.value
     program: ProgramMatch | None = None
+    dossier: EstateDossier | None = None
     signals: list[EstateSignal] = Field(default_factory=list)
     sources: list[EstateSource] = Field(default_factory=list)
 

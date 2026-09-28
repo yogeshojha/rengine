@@ -15,12 +15,22 @@ export interface EstateSource {
 	scan_id: string | null;
 }
 
+export interface EstateDossier {
+	resolves: boolean | null;
+	ports: number[];
+	registered_at: string | null;
+	registrar: string | null;
+	takeover_provider: string | null;
+	checked_at: string | null;
+}
+
 export interface EstateDomain {
 	domain: string;
 	target_id: string | null;
 	strength: number;
 	state: string;
 	program: ProgramMatch | null;
+	dossier: EstateDossier | null;
 	signals: EstateSignal[];
 	sources: EstateSource[];
 }

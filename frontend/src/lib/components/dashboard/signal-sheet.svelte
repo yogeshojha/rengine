@@ -8,13 +8,14 @@
 	}
 	export interface SheetRowBadge {
 		label: string;
-		variant: 'success' | 'secondary';
+		variant: 'success' | 'secondary' | 'warning';
 		href?: string;
 	}
 	export interface SheetRow {
 		key: string;
 		primary: string;
 		secondary?: string;
+		note?: string;
 		meta?: string;
 		badge?: SheetRowBadge;
 		href?: string;
@@ -92,6 +93,9 @@
 			<span class="line-clamp-2 text-xs leading-4 text-muted-foreground wrap-anywhere">
 				{r.secondary}
 			</span>
+		{/if}
+		{#if r.note}
+			<span class="text-2xs leading-4 text-muted-foreground tabular-nums">{r.note}</span>
 		{/if}
 	</span>
 	{#if r.meta}

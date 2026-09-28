@@ -49,6 +49,7 @@
 	);
 	let total = $derived(Math.max(0, count - added.size - triageDelta));
 	let inProgram = $derived(candidates.filter((d) => d.program && d.program.in_scope).length);
+	let takeovers = $derived(candidates.filter((d) => d.dossier?.takeover_provider).length);
 	let strengths = $derived.by(() => {
 		const direct = candidates.filter((d) => d.strength).length;
 		const shared = candidates.length - direct;
@@ -56,6 +57,7 @@
 		if (direct) parts.push(`Direct ${direct.toLocaleString()}`);
 		if (shared) parts.push(`Shared ${shared.toLocaleString()}`);
 		if (inProgram) parts.push(`${inProgram.toLocaleString()} in a bounty program`);
+		if (takeovers) parts.push(`${takeovers.toLocaleString()} possible takeover`);
 		return parts.join(' · ');
 	});
 	let subline = $derived(detail || strengths);

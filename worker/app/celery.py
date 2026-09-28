@@ -114,6 +114,7 @@ celery_app.conf.task_routes = {
     "app.tasks.secrets.*": {"queue": DEFAULT_QUEUE},
     "app.tasks.scan_deltas.*": {"queue": DEFAULT_QUEUE},
     "app.tasks.bounty_programs.*": {"queue": DEFAULT_QUEUE},
+    "app.tasks.estate.*": {"queue": DEFAULT_QUEUE},
     "app.tasks.toolbox.*": {"queue": CRITICAL_QUEUE},
 }
 
@@ -145,6 +146,7 @@ celery_app.autodiscover_tasks(
         "app.tasks.secrets",
         "app.tasks.scan_deltas",
         "app.tasks.watch",
+        "app.tasks.estate",
     ]
 )
 
@@ -162,6 +164,7 @@ THREAT_INTEL_REFRESH_SECONDS = 24 * 60 * 60.0
 CERT_RECHECK_SECONDS = 4 * 60 * 60.0
 SOFTWARE_BACKFILL_SECONDS = 5 * 60.0
 SECRET_BACKFILL_SECONDS = 5 * 60.0
+ESTATE_ENRICH_SECONDS = 5 * 60.0
 HYGIENE_BACKFILL_SECONDS = 5 * 60.0
 SCAN_DELTAS_BACKFILL_SECONDS = 5 * 60.0
 WATCH_RECHECK_SECONDS = 10 * 60.0
@@ -260,6 +263,11 @@ celery_app.conf.beat_schedule = {
         "task": "app.tasks.secrets.backfill",
         "schedule": SECRET_BACKFILL_SECONDS,
         "options": {"expires": SECRET_BACKFILL_SECONDS},
+    },
+    "estate-enrich": {
+        "task": "app.tasks.estate.enrich",
+        "schedule": ESTATE_ENRICH_SECONDS,
+        "options": {"expires": ESTATE_ENRICH_SECONDS},
     },
     "scan-deltas-backfill": {
         "task": "app.tasks.scan_deltas.backfill",

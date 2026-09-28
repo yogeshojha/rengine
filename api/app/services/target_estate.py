@@ -45,8 +45,10 @@ from shared.enums.dns import DnsRecordType
 from shared.enums.target import TargetType
 from shared.models.dns import DnsRecord
 from shared.models.estate import (
+    EstateCandidate,
     EstateCounts,
     EstateDomain,
+    EstateDossier,
     EstateNeighbourCert,
     EstateProvider,
     EstateSignal,
@@ -153,6 +155,7 @@ class TargetEstateService:
         relations: bool = True,
         dismissed: set[str] | None = None,
         with_programs: bool = False,
+        persist: bool = False,
     ) -> TargetEstate:
         targets = await self._targets(project_id)
         target = targets.get(target_id)
@@ -195,6 +198,12 @@ class TargetEstateService:
         shown = (open_domains + closed)[:MAX_ESTATE_DOMAINS]
         if with_programs:
             await self._attach_programs(shown)
+        await self._attach_dossier(project_id, shown)
+        if persist:
+            await self._persist_candidates(
+                project_id,
+                [d.domain for d in open_domains if d.target_id is None],
+            )
         out = TargetEstate(
             target_id=target_id,
             scan_id=scan_id,
@@ -251,6 +260,8 @@ class TargetEstateService:
                     d.domain, EstateDomain(domain=d.domain, state=d.state)
                 )
                 entry.strength = max(entry.strength, d.strength)
+                if entry.dossier is None:
+                    entry.dossier = d.dossier
                 entry.sources.append(
                     EstateSource(
                         target_id=target_id,
@@ -277,10 +288,15 @@ class TargetEstateService:
             ),
         )
         open_count = sum(1 for d in domains if d.state == EstateTriageState.OPEN.value)
+        shown = domains[:MAX_PROJECT_ESTATE]
+        await self._persist_candidates(
+            project_id,
+            [d.domain for d in shown if d.state == EstateTriageState.OPEN.value],
+        )
         return ProjectEstate(
             targets_examined=examined,
             untracked=open_count,
-            domains=domains[:MAX_PROJECT_ESTATE],
+            domains=shown,
         )
 
     async def _attach_programs(self, domains: list[EstateDomain]) -> None:
@@ -296,6 +312,60 @@ class TargetEstateService:
         )
         for d in candidates:
             d.program = matches.get(d.domain)
+
+    async def _attach_dossier(
+        self, project_id: UUID, domains: list[EstateDomain]
+    ) -> None:
+        names = [d.domain for d in domains if d.target_id is None]
+        if not names:
+            return
+        rows = (
+            await self.session.execute(
+                select(EstateCandidate).where(
+                    EstateCandidate.project_id == project_id,
+                    EstateCandidate.domain.in_(names),
+                    EstateCandidate.checked_at.isnot(None),
+                )
+            )
+        ).scalars()
+        by_domain = {r.domain: r for r in rows}
+        for d in domains:
+            row = by_domain.get(d.domain)
+            if row is None:
+                continue
+            d.dossier = EstateDossier(
+                resolves=row.resolves,
+                ports=list(row.ports),
+                registered_at=row.registered_at,
+                registrar=row.registrar,
+                takeover_provider=row.takeover_provider,
+                checked_at=row.checked_at,
+            )
+
+    async def _persist_candidates(self, project_id: UUID, names: list[str]) -> None:
+        clean = sorted({_clean(n) for n in names} - {""})
+        if not clean:
+            return
+        now = utc_now()
+        stmt = insert(EstateCandidate).values(
+            [
+                {
+                    "id": uuid_module.uuid4(),
+                    "project_id": project_id,
+                    "domain": domain,
+                    "a": [],
+                    "aaaa": [],
+                    "ports": [],
+                    "updated_at": now,
+                }
+                for domain in clean
+            ]
+        )
+        stmt = stmt.on_conflict_do_nothing(
+            constraint="uq_estate_candidate_project_domain"
+        )
+        await self.session.execute(stmt)
+        await self.session.commit()
 
     async def triage(self, project_id: UUID, domains: list[str], state: str) -> int:
         clean = sorted({_clean(d) for d in domains} - {""})

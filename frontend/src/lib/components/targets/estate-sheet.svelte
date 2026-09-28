@@ -5,6 +5,7 @@
 	import { targetsApi } from '$lib/api/targets';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { ROUTES } from '$lib/config/routes';
+	import { relativeTime } from '$lib/utilities/dates';
 	import {
 		ESTATE_STRENGTH_LABELS,
 		EstateStrength,
@@ -110,12 +111,34 @@
 		else toast.error('Targets not added');
 	}
 
-	function programBadge(d: EstateDomain) {
+	function rowBadge(d: EstateDomain) {
+		if (d.dossier?.takeover_provider)
+			return {
+				label: `Takeover · ${d.dossier.takeover_provider}`,
+				variant: 'warning' as const
+			};
 		const p = d.program;
 		if (!p || !p.in_scope) return undefined;
 		return p.eligible_for_bounty
 			? { label: `Bounty · ${p.name}`, variant: 'success' as const }
 			: { label: `In scope · ${p.name}`, variant: 'secondary' as const };
+	}
+
+	function dossierNote(d: EstateDomain): string | undefined {
+		const x = d.dossier;
+		if (!x || !x.checked_at) return undefined;
+		const parts: string[] = [];
+		if (x.resolves === true) parts.push(x.ports.length ? `${x.ports.length} ports` : 'Resolves');
+		else if (x.resolves === false) parts.push('No address');
+		if (x.registered_at) {
+			const age = (Date.now() - new Date(x.registered_at).getTime()) / 86400000;
+			parts.push(
+				age <= 90
+					? `registered ${relativeTime(x.registered_at)}`
+					: `registered ${new Date(x.registered_at).getFullYear()}`
+			);
+		}
+		return parts.length ? parts.join(' · ') : undefined;
 	}
 
 	function domainRow(d: EstateDomain): SheetRow {
@@ -127,8 +150,9 @@
 		return {
 			key: d.domain,
 			primary: d.domain,
-			badge: tracked ? undefined : programBadge(d),
+			badge: tracked ? undefined : rowBadge(d),
 			secondary: `${evidence(d)}${sources}`,
+			note: tracked ? undefined : dossierNote(d),
 			meta: ESTATE_STRENGTH_LABELS[d.strength ? EstateStrength.DIRECT : EstateStrength.SHARED],
 			group: tracked ? 'Targets' : dismissed ? 'Dismissed' : 'Candidates',
 			href: tracked ? ROUTES.target(d.target_id!) : undefined,

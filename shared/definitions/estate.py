@@ -78,6 +78,12 @@ MAX_ESTATE_HOSTS = 6
 MAX_PROJECT_ESTATE = 60
 MAX_ESTATE_DOMAIN_LENGTH = 253
 
+# candidate dossier
+DOSSIER_TTL_DAYS = 7
+MAX_ENRICH_PER_TICK = 40
+MAX_DOSSIER_PORTS = 8
+MAX_REGISTRAR_LENGTH = 200
+
 # suffix -> provider name, for hosts that are a platform's rather than an estate's
 PROVIDER_SUFFIXES: dict[str, str] = {
     "azurefd.net": "Azure Front Door",

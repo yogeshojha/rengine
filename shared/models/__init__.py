@@ -75,7 +75,7 @@ from shared.models.endpoint import (
     EndpointTree,
     TreeNode,
 )
-from shared.models.estate import EstateTriage
+from shared.models.estate import EstateCandidate, EstateTriage
 from shared.models.export import Export, ExportCreate, ExportRead
 from shared.models.http_asset import (
     HttpAsset,
@@ -344,6 +344,7 @@ __all__ = [
     "EndpointSummary",
     "EndpointTree",
     "EngineCatalog",
+    "EstateCandidate",
     "EstateTriage",
     "Export",
     "ExportCreate",
