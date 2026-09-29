@@ -17,6 +17,7 @@ _SEVERITY = {
     NameClaim.FOREIGN_SITE.value: Severity.HIGH.value,
     NameClaim.UNHOSTED.value: Severity.MEDIUM.value,
 }
+SEVERITIES: tuple[str, ...] = tuple(set(_SEVERITY.values()))
 
 
 def _lines(claim: Claim, root: str) -> list[str]:

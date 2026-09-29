@@ -116,6 +116,8 @@ export interface StageCatalogEntry {
 	consumes: string[];
 	produces: string[];
 	transport?: StageTransport | null;
+	check_of?: string | null;
+	finding_severities?: string[];
 	defaults: StageConfig;
 	fields: StageField[];
 }

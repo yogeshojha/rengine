@@ -8,6 +8,7 @@ from pathlib import Path
 
 import stages as stages_pkg
 from shared.definitions.intensity import PROFILES, RATE_TOOLS
+from shared.definitions.vulnerabilities import SEVERITY_RANK
 from shared.enums.scan import PHASE_ORDER, AssetKind, Intensity, StageGroup, StageRole
 from shared.plugins import classes_in_packages
 from stages.base import Stage
@@ -40,6 +41,8 @@ class StageSpec:
     rate_weight: float
     thread_weight: float
     transport_timeout: int | None
+    check_of: str | None
+    finding_severities: tuple[str, ...]
     stage_cls: type[Stage]
     config_model: type[StageConfig]
 
@@ -98,6 +101,16 @@ def _spec(stage_cls: type[Stage], level: int) -> StageSpec:
     if unknown:
         msg = f"{stage_cls.name}: unknown asset kind {sorted(unknown)[0]!r}."
         raise StageRegistrationError(msg)
+    severities = set(stage_cls.finding_severities)
+    if severities - set(SEVERITY_RANK):
+        msg = f"{stage_cls.name}: unknown severity {sorted(severities - set(SEVERITY_RANK))[0]!r}."
+        raise StageRegistrationError(msg)
+    if bool(stage_cls.check_of) != bool(severities):
+        msg = f"{stage_cls.name}: check_of and finding_severities are set together."
+        raise StageRegistrationError(msg)
+    if severities and AssetKind.VULNERABILITIES.value not in stage_cls.produces:
+        msg = f"{stage_cls.name}: a check must produce vulnerabilities."
+        raise StageRegistrationError(msg)
     tool = stage_cls.transport_tool
     if tool is not None and tool not in PROFILES[Intensity.NORMAL.value]:
         msg = f"{stage_cls.name}: no transport profile for {tool!r}."
@@ -128,9 +141,22 @@ def _spec(stage_cls: type[Stage], level: int) -> StageSpec:
         rate_weight=stage_cls.rate_weight,
         thread_weight=stage_cls.thread_weight,
         transport_timeout=stage_cls.transport_timeout,
+        check_of=stage_cls.check_of,
+        finding_severities=tuple(sorted(severities, key=SEVERITY_RANK.__getitem__)),
         stage_cls=stage_cls,
         config_model=stage_cls.config_model,
     )
+
+
+def _check_hosts(specs: list[StageSpec]) -> None:
+    by_name = {spec.name: spec for spec in specs}
+    for spec in specs:
+        if spec.check_of is None:
+            continue
+        host = by_name.get(spec.check_of)
+        if host is None or "severities" not in host.config_model.model_fields:
+            msg = f"{spec.name}: check_of must name a stage with a severities field."
+            raise StageRegistrationError(msg)
 
 
 def _levels(classes: list[type[Stage]]) -> dict[str, int]:
@@ -166,6 +192,7 @@ def stages() -> tuple[StageSpec, ...]:
     classes = _stage_classes()
     depth = _levels(classes)
     specs = [_spec(cls, depth[cls.name]) for cls in classes]
+    _check_hosts(specs)
     specs.sort(key=lambda s: (PHASE_ORDER.get(s.phase, 99), s.level, s.name))
     return tuple(specs)
 

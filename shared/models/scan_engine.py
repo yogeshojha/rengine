@@ -143,6 +143,8 @@ class StageCatalogEntry(BaseModel):
     consumes: list[str] = PydanticField(default_factory=list)
     produces: list[str] = PydanticField(default_factory=list)
     transport: StageTransport | None = None
+    check_of: str | None = None
+    finding_severities: list[str] = PydanticField(default_factory=list)
     defaults: dict
     fields: list[StageField] = PydanticField(default_factory=list)
 

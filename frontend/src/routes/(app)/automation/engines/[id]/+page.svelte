@@ -182,10 +182,29 @@
 		);
 	}
 
+	const checksByHost = $derived.by(() => {
+		const out: Record<string, StageCatalogEntry[]> = {};
+		for (const s of catalogStages) if (s.check_of) (out[s.check_of] ??= []).push(s);
+		return out;
+	});
+
+	function hostMatches(stage: StageCatalogEntry): boolean {
+		return matches(stage) || (checksByHost[stage.name] ?? []).some(matches);
+	}
+
+	function keptSeverities(stage: StageCatalogEntry): string[] | null {
+		if (!stage.check_of || blockedByIntensity(stage.check_of)) return null;
+		const host = engineCatalogStore.stage(stage.check_of);
+		const config = stageConfig(stage.check_of);
+		if (!(config.enabled ?? host?.defaults.enabled)) return null;
+		return (config.severities ?? host?.defaults.severities ?? []) as string[];
+	}
+
 	const stagesByGroup = $derived.by(() =>
 		engineCatalogStore.byGroup().map((group) => {
-			const capabilities = group.stages.filter((s) => s.role === CAPABILITY && matches(s));
-			const support = group.stages.filter((s) => s.role === SUPPORT && matches(s));
+			const listed = group.stages.filter((s) => !s.check_of);
+			const capabilities = listed.filter((s) => s.role === CAPABILITY && hostMatches(s));
+			const support = listed.filter((s) => s.role === SUPPORT && hostMatches(s));
 			return {
 				key: group.key,
 				label: group.label,
@@ -522,6 +541,8 @@
 		blockedByIntensity={blockedByIntensity(stage.name)}
 		{lensTargetType}
 		{support}
+		keptSeverities={keptSeverities(stage)}
+		checks={checksByHost[stage.name]?.length ? hostChecks : undefined}
 		onToggleOpen={() => {
 			openStages = { ...openStages, [stage.name]: !openStages[stage.name] };
 			flashStage(stage.name);
@@ -529,6 +550,12 @@
 		onChange={(field, value) => setStageField(stage.name, field, value)}
 		onReset={() => resetStage(stage.name)}
 	/>
+{/snippet}
+
+{#snippet hostChecks(name: string)}
+	{#each checksByHost[name] as check (check.name)}
+		{@render stageRow(check, true)}
+	{/each}
 {/snippet}
 
 {#snippet controls()}

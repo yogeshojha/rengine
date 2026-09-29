@@ -8,6 +8,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import array as pg_array
 from sqlalchemy.orm import Session
 
+from shared.definitions.default_engine import VULNERABILITY_STAGE
 from shared.definitions.surface import SurfaceDimension
 from shared.definitions.vulnerabilities import Protocol, Scanner, Severity
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
@@ -24,6 +25,7 @@ logger = get_logger(__name__)
 
 _TEMPLATE = "rengine-zone-transfer"
 _SAMPLE = 10
+_SEVERITY = Severity.HIGH.value
 
 
 def _finding(zone: str, names: list[str]) -> Finding:
@@ -41,7 +43,7 @@ def _finding(zone: str, names: list[str]) -> Finding:
         template_name="DNS zone transfer allowed",
         template_path=None,
         template_url=None,
-        severity=Severity.HIGH.value,
+        severity=_SEVERITY,
         protocol=Protocol.DNS.value,
         matcher_name="axfr",
         extractor_name=None,
@@ -114,6 +116,8 @@ class ZoneTransferStage(Stage):
     applies_to = ALL_TARGETS
     touches_target = False
     config_model = ZoneTransferConfig
+    check_of = VULNERABILITY_STAGE
+    finding_severities = (_SEVERITY,)
 
     def run(self) -> StageResult:
         self._check_abort()
@@ -127,7 +131,7 @@ class ZoneTransferStage(Stage):
             scan_id=self.ctx.scan_id,
             target_id=self.ctx.target_id,
             project_id=self.ctx.project_id,
-            findings=[_finding(zone, names)],
+            findings=self.selected_findings([_finding(zone, names)]),
         )
         self.session.commit()
         if stored:

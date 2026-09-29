@@ -11,6 +11,8 @@
 	import KeyRound from '@lucide/svelte/icons/key-round';
 	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 	import StageFieldRow from './stage-field.svelte';
+	import type { Snippet } from 'svelte';
+	import { SEVERITY_LABELS } from '$lib/config/vulnerabilities';
 	import type { StageCatalogEntry, StageConfig, StageField } from '$lib/types/scan-engine';
 	import { advancedFields, basicFields, targetTypeLabel } from '$lib/types/scan-engine';
 
@@ -23,6 +25,8 @@
 		blockedByIntensity: boolean;
 		lensTargetType: string | null;
 		support?: boolean;
+		checks?: Snippet<[string]>;
+		keptSeverities?: string[] | null;
 		onToggleOpen: () => void;
 		onChange: (field: string, value: unknown) => void;
 		onReset: () => void;
@@ -37,6 +41,8 @@
 		blockedByIntensity,
 		lensTargetType,
 		support = false,
+		checks,
+		keptSeverities = null,
 		onToggleOpen,
 		onChange,
 		onReset
@@ -135,6 +141,14 @@
 				<Badge variant="outline" class="tag">
 					{stage.applies_to.map(targetTypeLabel).join(' · ')} only
 				</Badge>
+			{:else if stage.finding_severities?.length}
+				<span class="severities">
+					{#each stage.finding_severities as severity (severity)}
+						<span data-kept={!keptSeverities || keptSeverities.includes(severity)}
+							>{SEVERITY_LABELS[severity] ?? severity}</span
+						>
+					{/each}
+				</span>
 			{:else if enabled && summary}
 				<span class="summary">{summary}</span>
 			{/if}
@@ -209,6 +223,13 @@
 			<p class="desc">No settings.</p>
 		{/if}
 
+		{#if checks}
+			<div class="checks">
+				<h3 class="checks-head">reNgine checks</h3>
+				{@render checks(stage.name)}
+			</div>
+		{/if}
+
 		{#if advanced.length}
 			<Collapsible.Root bind:open={advancedOpen} class="advanced">
 				<Collapsible.Trigger class="advanced-head">
@@ -268,15 +289,15 @@
 		background: var(--primary);
 		opacity: 0.6;
 	}
-	:global(.row[data-dim='true']) .title,
-	:global(.row[data-dim='true']) .summary,
-	:global(.row[data-enabled='false']) .title {
+	:global(.row[data-dim='true']) > .head .title,
+	:global(.row[data-dim='true']) > .head .summary,
+	:global(.row[data-enabled='false']) > .head .title {
 		color: var(--muted-foreground);
 	}
 	:global(.row[data-support='true']) {
 		background: color-mix(in oklch, var(--muted) 30%, transparent);
 	}
-	:global(.row[data-support='true']) .title {
+	:global(.row[data-support='true']) > .head .title {
 		font-weight: 450;
 	}
 
@@ -367,6 +388,39 @@
 		font-size: 11px;
 		font-weight: 400;
 		padding: 1px 6px;
+	}
+	.severities {
+		display: inline-flex;
+		gap: 6px;
+		font-size: 11px;
+		color: var(--foreground);
+	}
+	.severities > [data-kept='false'] {
+		color: var(--muted-foreground);
+		opacity: 0.6;
+	}
+	.checks {
+		margin-top: 6px;
+		border-top: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+	}
+	.checks-head {
+		padding: 10px 0 6px;
+		font-size: 12px;
+		font-weight: 500;
+		color: var(--muted-foreground);
+	}
+	.checks :global(.row) {
+		border: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+		border-bottom-width: 0;
+	}
+	.checks :global(.row:first-of-type) {
+		border-top-left-radius: 6px;
+		border-top-right-radius: 6px;
+	}
+	.checks :global(.row:last-child) {
+		border-bottom-width: 1px;
+		border-bottom-left-radius: 6px;
+		border-bottom-right-radius: 6px;
 	}
 	.icon-note {
 		display: inline-flex;

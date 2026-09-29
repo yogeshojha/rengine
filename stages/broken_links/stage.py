@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from shared.definitions.broken_links import KIND_SEVERITY
+from shared.definitions.default_engine import VULNERABILITY_STAGE
 from shared.definitions.surface import SurfaceDimension
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.services import vuln_inventory
@@ -23,6 +25,8 @@ class BrokenLinksStage(Stage):
     produces = frozenset({AssetKind.VULNERABILITIES.value})
     touches_target = False
     config_model = BrokenLinksConfig
+    check_of = VULNERABILITY_STAGE
+    finding_severities = tuple(set(KIND_SEVERITY.values()))
 
     def run(self) -> StageResult:
         self._check_abort()
@@ -33,7 +37,7 @@ class BrokenLinksStage(Stage):
             scan_id=self.ctx.scan_id,
             target_id=self.ctx.target_id,
             project_id=self.ctx.project_id,
-            findings=[link_finding(link) for link in found],
+            findings=self.selected_findings([link_finding(link) for link in found]),
         )
         self.session.commit()
         if stored:

@@ -35,6 +35,7 @@ if TYPE_CHECKING:
 
     from shared.services.orchestrator.events import ScanEventPublisher
     from shared.services.scan_resolve import ResolvedScanConfig
+    from tools.nuclei.parser import Finding
     from tools.runner.models import CommandRecorder
 
 
@@ -112,6 +113,8 @@ class Stage(ABC):
     thread_weight: ClassVar[float] = 1.0
     transport_timeout: ClassVar[int | None] = None
     config_model: ClassVar[type[StageConfig]] = StageConfig
+    check_of: ClassVar[str | None] = None
+    finding_severities: ClassVar[tuple[str, ...]] = ()
 
     def __init__(self, session: Session, context: StageContext) -> None:
         self.session = session
@@ -148,6 +151,19 @@ class Stage(ABC):
 
     @abstractmethod
     def run(self) -> StageResult: ...
+
+    def selected_findings(self, findings: list[Finding]) -> list[Finding]:
+        """Findings within the severities of the stage that lists this check, while it runs."""
+        from stages.registry import get_stage  # noqa: PLC0415
+
+        host = get_stage(self.check_of or "")
+        if host is None:
+            return findings
+        runner = host.stage_cls(self.session, self.ctx)
+        if not runner.should_run():
+            return findings
+        wanted = set(runner.cfg.severities)
+        return [f for f in findings if f.severity in wanted]
 
     def runner(self, binary: str, default_timeout: int = 300) -> CLIToolRunner:
         """A CLIToolRunner pre-bound to this scan's recorder + the tool's custom args."""

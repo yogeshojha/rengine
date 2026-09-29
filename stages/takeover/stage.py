@@ -4,6 +4,7 @@ import hashlib
 
 from sqlalchemy import select
 
+from shared.definitions.default_engine import VULNERABILITY_STAGE
 from shared.definitions.domains import takeover_provider
 from shared.definitions.surface import SurfaceDimension
 from shared.definitions.vulnerabilities import Protocol, Scanner, Severity
@@ -20,6 +21,7 @@ logger = get_logger(__name__)
 
 _TEMPLATE = "rengine-dangling-cname"
 _CAP = 5000
+_SEVERITY = Severity.MEDIUM.value
 
 
 def _finding(name: str, cname: str, provider: str) -> Finding:
@@ -33,7 +35,7 @@ def _finding(name: str, cname: str, provider: str) -> Finding:
         template_name="Dangling CNAME to a claimable provider",
         template_path=None,
         template_url=None,
-        severity=Severity.MEDIUM.value,
+        severity=_SEVERITY,
         protocol=Protocol.DNS.value,
         matcher_name=provider,
         extractor_name=None,
@@ -85,6 +87,8 @@ class TakeoverStage(Stage):
     applies_to = ALL_TARGETS
     touches_target = False
     config_model = TakeoverConfig
+    check_of = VULNERABILITY_STAGE
+    finding_severities = (_SEVERITY,)
 
     def run(self) -> StageResult:
         self._check_abort()
@@ -115,7 +119,7 @@ class TakeoverStage(Stage):
             scan_id=self.ctx.scan_id,
             target_id=self.ctx.target_id,
             project_id=self.ctx.project_id,
-            findings=findings,
+            findings=self.selected_findings(findings),
         )
         self.session.commit()
         if stored:

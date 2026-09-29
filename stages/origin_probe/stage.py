@@ -5,6 +5,7 @@ from collections import Counter
 
 from sqlalchemy import select
 
+from shared.definitions.default_engine import VULNERABILITY_STAGE
 from shared.definitions.intensity import TransportTool
 from shared.definitions.ports import DEFAULT_WEB_PORTS, ServiceClass
 from shared.definitions.surface import SurfaceDimension
@@ -21,7 +22,7 @@ from shared.utils.net import host_port
 from stages.base import ALL_TARGETS, Stage, StageResult
 from stages.origin_probe.config import MAX_PORTS_PER_ADDRESS, OriginProbeConfig
 from stages.origin_probe.confirm import OriginConfirmer, Verdict
-from stages.origin_probe.finding import origin_finding
+from stages.origin_probe.finding import SEVERITIES, origin_finding
 from tools.httpx.client import HttpxClient, HttpxError
 from tools.httpx.parser import parse_httpx_record
 
@@ -51,6 +52,8 @@ class OriginProbeStage(Stage):
     transport_tool = TransportTool.HTTPX.value
     thread_weight = 0.2
     config_model = OriginProbeConfig
+    check_of = VULNERABILITY_STAGE
+    finding_severities = SEVERITIES
 
     def run(self) -> StageResult:
         self._check_abort()
@@ -113,7 +116,9 @@ class OriginProbeStage(Stage):
         """Candidates the correlation found, kept only where the address served the site."""
         exposure = OriginExposureService(self.session).run(self.ctx.scan_id)
         confirmed, seen = self._confirmed(exposure)
-        findings = [origin_finding(found) for found in confirmed]
+        findings = self.selected_findings(
+            [origin_finding(found) for found in confirmed]
+        )
         stored = vuln_inventory.upsert(
             self.session,
             scan_id=self.ctx.scan_id,

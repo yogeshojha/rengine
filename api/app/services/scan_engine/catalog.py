@@ -96,6 +96,8 @@ def build_catalog(unavailable: dict[str, str] | None = None) -> EngineCatalog:
                 consumes=sorted(spec.consumes),
                 produces=sorted(spec.produces),
                 transport=_transport(spec),
+                check_of=spec.check_of,
+                finding_severities=list(spec.finding_severities),
                 defaults=spec.defaults,
                 fields=_field_specs(spec, unavailable),
             )

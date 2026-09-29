@@ -17,6 +17,8 @@ _TITLE = {
     DEFAULT_VHOST: "Address serves a different site by default",
 }
 _SEVERITY = {"high": Severity.MEDIUM.value, "medium": Severity.LOW.value}
+_FALLBACK = Severity.LOW.value
+SEVERITIES: tuple[str, ...] = tuple({*_SEVERITY.values(), _FALLBACK})
 
 
 def _evidence(found: OriginFinding) -> str:
@@ -67,7 +69,7 @@ def origin_finding(found: OriginFinding) -> Finding:
         template_name=_TITLE[kind],
         template_path=None,
         template_url=None,
-        severity=_SEVERITY.get(found.confidence, Severity.LOW.value),
+        severity=_SEVERITY.get(found.confidence, _FALLBACK),
         protocol=Protocol.HTTP.value,
         matcher_name=found.confidence,
         extractor_name=None,
