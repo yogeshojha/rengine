@@ -22,10 +22,7 @@ SEVERITIES: tuple[str, ...] = tuple({*_SEVERITY.values(), _FALLBACK})
 
 
 def _evidence(found: OriginFinding) -> str:
-    return (
-        ", ".join(f"{item.label} matches" for item in found.evidence)
-        or "no shared identity recorded"
-    )
+    return ", ".join(item.label for item in found.evidence) or "none recorded"
 
 
 def origin_finding(found: OriginFinding) -> Finding:
@@ -33,34 +30,38 @@ def origin_finding(found: OriginFinding) -> Finding:
     address = found.exposed.host or found.exposed.ip or ""
     kind = found.kind if found.kind in _TEMPLATE else ORIGIN_EXPOSED
     names = [sample.host for sample in found.fronted if sample.host]
-    behind = names[0] if names else "a name behind the CDN"
+    behind = (
+        f"{names[0]}, which is behind a CDN" if names else "a hostname behind a CDN"
+    )
     digest = hashlib.sha256(
         f"{Scanner.RENGINE.value}|{_TEMPLATE[kind]}|{address}|{behind}".encode()
     ).hexdigest()
 
     if kind == ORIGIN_EXPOSED:
         description = (
-            f"{address} answers directly and serves the same application as {behind} "
-            f"behind its CDN. Shared: {_evidence(found)}."
+            f"{address} answers directly and serves the same application as {behind}. "
+            f"Signals: {_evidence(found)}."
         )
         impact = (
             "Requests sent to the address bypass the CDN or WAF in front of the "
             "hostname."
         )
         remediation = (
-            "Restrict the origin to the CDN's ranges, or move it behind an address "
-            "that is not published."
+            "Allow inbound traffic to the origin only from the CDN's address ranges, "
+            "or move the origin to an unpublished address."
         )
     else:
         description = (
-            f"{address} serves a different site without a hostname than {behind}. "
-            f"Shared: {_evidence(found)}."
+            f"Requests to {address} without a hostname return a different site "
+            f"than {names[0] if names else 'the hostname'}. Signals: {_evidence(found)}."
         )
         impact = (
-            "The default virtual host on this address exposes an application not "
-            "reachable through the hostname."
+            "The default virtual host on this address exposes an application the "
+            "hostname does not serve."
         )
-        remediation = "Give the address a default virtual host that serves nothing."
+        remediation = (
+            "Configure the default virtual host on this address to return no content."
+        )
 
     return Finding(
         fingerprint=digest,

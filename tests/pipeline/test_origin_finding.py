@@ -41,14 +41,13 @@ def test_it_names_both_sides_and_the_evidence():
     found = origin_finding(_found())
     assert "203.0.113.9" in found.description
     assert "www.example.com" in found.description
-    assert "Response body matches" in found.description
-    assert "Favicon matches" in found.description
+    assert "Signals: Response body, Favicon." in found.description
 
 
 def test_the_default_vhost_case_reads_differently():
     found = origin_finding(_found(kind=DEFAULT_VHOST))
     assert found.template_id == "rengine-default-vhost"
-    assert "serves a different site" in found.description
+    assert "return a different site" in found.description
 
 
 def test_the_fingerprint_is_stable_and_specific():
@@ -68,7 +67,7 @@ def test_an_unknown_kind_still_produces_a_finding():
 
 def test_it_says_so_when_no_identity_was_recorded():
     found = origin_finding(_found(evidence=0))
-    assert "no shared identity recorded" in found.description
+    assert "Signals: none recorded." in found.description
 
 
 def test_every_kind_the_service_emits_has_a_template():
