@@ -6,6 +6,9 @@
 	import ChangeUsernameCard from '$lib/components/profile/change-username-card.svelte';
 	import ChangePasswordCard from '$lib/components/profile/change-password-card.svelte';
 	import TwoFactorCard from '$lib/components/profile/two-factor-card.svelte';
+	import SidebarItems from '$lib/components/layout/sidebar-items.svelte';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { sidebarLayout } from '$lib/stores/sidebar-layout.svelte';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
@@ -71,6 +74,21 @@
 	</div>
 
 	<TwoFactorCard />
+
+	<Card.Root>
+		<Card.Header>
+			<Card.Title>Sidebar</Card.Title>
+			<Card.Description>Applies to this account in this browser</Card.Description>
+			{#if sidebarLayout.customized}
+				<Card.Action>
+					<Button variant="ghost" size="sm" onclick={() => sidebarLayout.reset()}>Show all</Button>
+				</Card.Action>
+			{/if}
+		</Card.Header>
+		<Card.Content>
+			<SidebarItems />
+		</Card.Content>
+	</Card.Root>
 
 	<Card.Root>
 		<Card.Header>

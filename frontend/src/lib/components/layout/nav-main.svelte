@@ -10,6 +10,7 @@
 	}
 
 	export interface NavChild {
+		id: string;
 		title: string;
 		url: string;
 		/** sibling routes this item stays lit for */
@@ -59,15 +60,15 @@
 		void page.url.pathname;
 		overrides.clear();
 	});
-	const isOpen = (item: NavItem) => overrides.get(item.title) ?? branchActive(item);
+	const isOpen = (item: NavItem) => overrides.get(item.id) ?? branchActive(item);
 	const railCollapsed = () => !sidebar.isMobile && sidebar.state === 'collapsed';
 	const setOpen = (item: NavItem, open: boolean) => {
 		if (railCollapsed()) {
 			sidebar.setOpen(true);
-			overrides.set(item.title, true);
+			overrides.set(item.id, true);
 			return;
 		}
-		overrides.set(item.title, open);
+		overrides.set(item.id, open);
 	};
 </script>
 
@@ -110,7 +111,7 @@
 			</Sidebar.GroupLabel>
 		{/if}
 		<Sidebar.Menu class="gap-0.5">
-			{#each group.items as item (item.title)}
+			{#each group.items as item (item.id)}
 				{#if item.items && item.items.length > 0}
 					<Collapsible.Root
 						open={isOpen(item)}
@@ -142,7 +143,7 @@
 								{/if}
 								<Collapsible.Content>
 									<Sidebar.MenuSub class="gap-0.5">
-										{#each item.items as subItem (subItem.title)}
+										{#each item.items as subItem (subItem.id)}
 											<Sidebar.MenuSubItem>
 												<Sidebar.MenuSubButton isActive={childActive(subItem)}>
 													{#snippet child({ props })}

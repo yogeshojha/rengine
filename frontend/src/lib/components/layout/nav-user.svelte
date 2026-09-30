@@ -12,6 +12,8 @@
 	import SunIcon from '@lucide/svelte/icons/sun';
 	import MoonIcon from '@lucide/svelte/icons/moon';
 	import MonitorIcon from '@lucide/svelte/icons/monitor';
+	import PanelLeftIcon from '@lucide/svelte/icons/panel-left';
+	import SidebarCustomizeDialog from './sidebar-customize-dialog.svelte';
 	import { setMode, resetMode, userPrefersMode } from 'mode-watcher';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { VERSION } from '$lib/version.js';
@@ -25,6 +27,7 @@
 	const sidebar = useSidebar();
 
 	let aboutDialogOpen = $state(false);
+	let customizeOpen = $state(false);
 
 	const handleLogout = async () => {
 		await auth.logout();
@@ -84,6 +87,10 @@
 					<DropdownMenu.Item onclick={() => goto(ROUTES.profile)}>
 						<UserIcon class="size-4" />
 						Profile
+					</DropdownMenu.Item>
+					<DropdownMenu.Item onclick={() => (customizeOpen = true)}>
+						<PanelLeftIcon class="size-4" />
+						Customize sidebar
 					</DropdownMenu.Item>
 					<DropdownMenu.Item onclick={() => (aboutDialogOpen = true)}>
 						<Info class="size-4" />
@@ -156,3 +163,5 @@
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
+
+<SidebarCustomizeDialog bind:open={customizeOpen} />

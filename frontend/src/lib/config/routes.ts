@@ -6,12 +6,11 @@ export const routeLabels: Record<string, string> = {
 
 	surface: 'Attack surface',
 	assets: 'Assets',
-	engineSetup: 'Engine',
-	reporting: 'Reporting',
+	engineSetup: 'Scan setup',
+	operations: 'Operations',
 	integrations: 'Integrations',
 	...Object.fromEntries(SURFACE_ORDER.map((spec) => [spec.tab, spec.label])),
 	exposures: 'Exposures',
-	correlation: 'Correlation',
 	cves: 'CVEs',
 	cve: 'CVEs',
 
@@ -26,7 +25,6 @@ export const routeLabels: Record<string, string> = {
 	notes: 'Notes',
 	tripwires: 'Tripwires',
 	'whats-new': "What's new",
-	bounty: 'Bounty',
 	'bounty-hub': 'Bounty Hub',
 	programs: 'Programs',
 
@@ -116,7 +114,6 @@ export const ROUTES = {
 		return `/surface/${tab}${suffix ? `?${suffix}` : ''}`;
 	},
 	scan: (id: string) => `/scans/${id}`,
-	correlation: '/surface/correlation',
 	cves: '/surface/cve',
 	cve: (id: string) => `/surface/cve/${encodeURIComponent(id)}`,
 	compare: (current: string, baseline?: string | null, query?: Record<string, string>) => {

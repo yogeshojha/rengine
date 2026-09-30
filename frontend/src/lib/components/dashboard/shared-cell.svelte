@@ -3,7 +3,6 @@
 	import { SvelteMap } from 'svelte/reactivity';
 	import Cell from './cell.svelte';
 	import Hint from '$lib/components/hint.svelte';
-	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import type { CorrelationGraph } from '$lib/types/correlation';
 
@@ -29,14 +28,7 @@
 	let spanning = $derived((graph?.hubs ?? []).filter((h) => h.targets > 1 && !h.platform).length);
 </script>
 
-<Cell
-	id="shared"
-	title="Shared across targets"
-	href={ROUTES.correlation}
-	hrefLabel="Correlation"
-	loading={loading && !graph}
-	class={className}
->
+<Cell id="shared" title="Shared across targets" loading={loading && !graph} class={className}>
 	{#if hubs.length}
 		<ul class="flex flex-col gap-1.5">
 			{#each hubs as h (h.id)}

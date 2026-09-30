@@ -20,7 +20,6 @@ import Plug from '@lucide/svelte/icons/plug';
 import Bot from '@lucide/svelte/icons/bot';
 import ScanEye from '@lucide/svelte/icons/scan-eye';
 import Settings2 from '@lucide/svelte/icons/settings-2';
-import Share2 from '@lucide/svelte/icons/share-2';
 import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 import StickyNote from '@lucide/svelte/icons/sticky-note';
 import Library from '@lucide/svelte/icons/library';
@@ -258,13 +257,6 @@ function destinations(): Destination[] {
 			href: ROUTES.exposures(),
 			icon: ScanEye,
 			keywords: 'interest rules flagged'
-		},
-		{
-			id: 'page:correlation',
-			label: routeLabels.correlation,
-			href: ROUTES.correlation,
-			icon: Share2,
-			keywords: 'shared identity hubs graph'
 		},
 		{
 			id: 'page:scans',

@@ -28,7 +28,6 @@
 
 	interface Props {
 		scanId: string;
-		projectWide?: boolean;
 		projectId: string;
 		active?: boolean;
 		revision?: number;
@@ -36,15 +35,7 @@
 		onTotal?: (total: number) => void;
 	}
 
-	let {
-		scanId,
-		projectId,
-		projectWide = false,
-		active = true,
-		revision = 0,
-		onTab,
-		onTotal
-	}: Props = $props();
+	let { scanId, projectId, active = true, revision = 0, onTab, onTotal }: Props = $props();
 
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 
@@ -71,7 +62,7 @@
 	});
 
 	async function load() {
-		if (!projectId || (!scanId && !projectWide)) return;
+		if (!projectId || !scanId) return;
 		const my = ++req;
 		loading = true;
 		try {

@@ -53,6 +53,7 @@ export const STORAGE_KEYS = {
 	launchLastPlan: 'rengine:launch:lastPlan',
 	bountyConnectDismissed: 'rengine:bountyhub:connectDismissed',
 	dashboardWidgets: 'rengine:dashboard:widgets',
+	sidebarHidden: 'rengine:sidebar:hidden',
 	scanTabs: 'rengine:scan:tabs',
 	paletteRecents: 'rengine:palette:recents',
 	scansShowMedium: 'rengine:scans:showMedium',
