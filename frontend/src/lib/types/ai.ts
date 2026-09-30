@@ -1,3 +1,43 @@
+export interface AskUsage {
+	questions: number;
+	threads: number;
+	input_tokens: number;
+	output_tokens: number;
+	cost_usd: number | null;
+	since: string | null;
+}
+
+export interface AiFeatureUsage {
+	feature: string;
+	label: string;
+	calls: number;
+	cached: number;
+	failed: number;
+	input_tokens: number;
+	output_tokens: number;
+	cost_usd: number | null;
+	last_at: string | null;
+}
+
+export interface AiCall {
+	id: string;
+	at: string;
+	task: string;
+	feature: string;
+	provider: string;
+	model: string;
+	ok: boolean;
+	cached: boolean;
+	rounds: number;
+	input_tokens: number;
+	output_tokens: number;
+	cost_usd: number | null;
+	latency_ms: number;
+	error: string | null;
+	source_kind: string | null;
+	source_id: string | null;
+}
+
 export interface AiUsage {
 	calls: number;
 	cached: number;
@@ -5,7 +45,10 @@ export interface AiUsage {
 	output_tokens: number;
 	cost_usd: number | null;
 	reports: number;
+	failed: number;
 	since: string | null;
+	ask: AskUsage;
+	by_feature: AiFeatureUsage[];
 }
 
 export interface AiStatus {
@@ -15,6 +58,7 @@ export interface AiStatus {
 	model: string | null;
 	fast_model: string | null;
 	workspace_id: string | null;
+	base_url: string | null;
 	key_masked: string | null;
 	features: Record<string, boolean>;
 	usage: AiUsage;
@@ -34,6 +78,10 @@ export interface AiProvider {
 	key: string;
 	label: string;
 	key_hint: string;
+	help: string;
+	key_optional: boolean;
+	needs_base_url: boolean;
+	base_url_hint: string;
 	models: AiModel[];
 }
 
@@ -55,6 +103,7 @@ export interface AiSettingsUpdate {
 	model?: string;
 	fast_model?: string;
 	workspace_id?: string;
+	base_url?: string;
 	api_key?: string;
 	features?: Record<string, boolean>;
 }

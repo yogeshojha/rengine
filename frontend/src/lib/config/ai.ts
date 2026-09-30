@@ -2,7 +2,8 @@ export const AIProvider = {
 	OPENAI: 'openai',
 	ANTHROPIC: 'anthropic',
 	AZURE_OPENAI: 'azure_openai',
-	GOOGLE: 'google'
+	GOOGLE: 'google',
+	OPENAI_COMPATIBLE: 'openai_compatible'
 } as const;
 export type AIProviderValue = (typeof AIProvider)[keyof typeof AIProvider];
 
@@ -18,7 +19,8 @@ export const AI_PROVIDERS: readonly AIProviderMeta[] = [
 	{ value: AIProvider.OPENAI, name: 'OpenAI', model: 'gpt-4o-mini' },
 	{ value: AIProvider.ANTHROPIC, name: 'Anthropic', model: 'claude-opus-5' },
 	{ value: AIProvider.AZURE_OPENAI, name: 'Azure OpenAI', model: 'gpt-4o-mini' },
-	{ value: AIProvider.GOOGLE, name: 'Google', model: 'gemini-1.5-flash' }
+	{ value: AIProvider.GOOGLE, name: 'Google', model: 'gemini-1.5-flash' },
+	{ value: AIProvider.OPENAI_COMPATIBLE, name: 'OpenAI-compatible', model: '' }
 ] as const;
 
 export interface AIFeature {

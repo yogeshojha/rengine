@@ -14,18 +14,26 @@
 	interface Props {
 		anchor: NoteAnchor;
 		note?: Note | null;
+		initialBody?: string;
 		autofocus?: boolean;
 		onSaved?: (note: Note) => void;
 		onCancel?: () => void;
 	}
 
-	let { anchor, note = null, autofocus = false, onSaved, onCancel }: Props = $props();
+	let {
+		anchor,
+		note = null,
+		initialBody = '',
+		autofocus = false,
+		onSaved,
+		onCancel
+	}: Props = $props();
 
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
 	let projectSlug = $derived(projectsStore.activeProject?.slug ?? '');
 
 	const editing = untrack(() => note);
-	let body = $state(editing?.body ?? '');
+	let body = $state(editing?.body ?? untrack(() => initialBody));
 	let title = $state(editing?.title ?? '');
 	let picked = new SvelteSet<string>(editing?.tags.map((t) => t.id) ?? []);
 	let saving = $state(false);

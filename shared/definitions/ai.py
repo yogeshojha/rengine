@@ -22,6 +22,8 @@ class AITask(StrEnum):
     SURFACE_NARRATIVE = "surface_narrative"
     ASSET_JUDGEMENT = "asset_judgement"
     RULE_SUGGESTION = "rule_suggestion"
+    ASK = "ask"
+    CONNECTION_TEST = "connection_test"
 
 
 REPORT_TASKS: tuple[str, ...] = (
@@ -46,6 +48,8 @@ TASK_OUTPUT_TOKENS: dict[str, int] = {
     AITask.SURFACE_NARRATIVE.value: 800,
     AITask.ASSET_JUDGEMENT.value: 2500,
     AITask.RULE_SUGGESTION.value: 900,
+    AITask.ASK.value: 4000,
+    AITask.CONNECTION_TEST.value: 20,
 }
 
 
@@ -64,6 +68,8 @@ TASK_EFFORT: dict[str, str] = {
     AITask.SURFACE_NARRATIVE.value: Effort.LOW.value,
     AITask.ASSET_JUDGEMENT.value: Effort.LOW.value,
     AITask.RULE_SUGGESTION.value: Effort.LOW.value,
+    AITask.ASK.value: Effort.MEDIUM.value,
+    AITask.CONNECTION_TEST.value: Effort.LOW.value,
 }
 
 
@@ -137,6 +143,7 @@ DEFAULT_MODEL: dict[str, str] = {
     AIProvider.OPENAI.value: "gpt-4o-mini",
     AIProvider.AZURE_OPENAI.value: "gpt-4o-mini",
     AIProvider.GOOGLE.value: "gemini-1.5-flash",
+    AIProvider.OPENAI_COMPATIBLE.value: "",
 }
 
 FAST_MODEL: dict[str, str] = {
@@ -144,13 +151,15 @@ FAST_MODEL: dict[str, str] = {
     AIProvider.OPENAI.value: "gpt-4o-mini",
     AIProvider.AZURE_OPENAI.value: "gpt-4o-mini",
     AIProvider.GOOGLE.value: "gemini-1.5-flash",
+    AIProvider.OPENAI_COMPATIBLE.value: "",
 }
 
 PROVIDER_LABELS: dict[str, str] = {
-    AIProvider.OPENAI.value: "OpenAI",
     AIProvider.ANTHROPIC.value: "Anthropic",
+    AIProvider.OPENAI.value: "OpenAI",
     AIProvider.AZURE_OPENAI.value: "Azure OpenAI",
     AIProvider.GOOGLE.value: "Google",
+    AIProvider.OPENAI_COMPATIBLE.value: "OpenAI-compatible",
 }
 
 PROVIDER_KEY_HINT: dict[str, str] = {
@@ -158,7 +167,18 @@ PROVIDER_KEY_HINT: dict[str, str] = {
     AIProvider.ANTHROPIC.value: "sk-ant-...",
     AIProvider.AZURE_OPENAI.value: "Azure resource key",
     AIProvider.GOOGLE.value: "AIza...",
+    AIProvider.OPENAI_COMPATIBLE.value: "Key, or blank for a local server",
 }
+
+PROVIDER_HELP: dict[str, str] = {
+    AIProvider.OPENAI_COMPATIBLE.value: (
+        "Ollama, LM Studio, vLLM, OpenRouter or any server with the OpenAI chat API."
+    ),
+}
+
+BASE_URL_HINT = "http://ollama:11434/v1 or https://openrouter.ai/api/v1"
+BASE_URL_PROVIDERS: frozenset[str] = frozenset({AIProvider.OPENAI_COMPATIBLE.value})
+KEY_OPTIONAL_PROVIDERS: frozenset[str] = frozenset({AIProvider.OPENAI_COMPATIBLE.value})
 
 
 @dataclass(frozen=True)
@@ -191,16 +211,46 @@ AI_FEATURES: tuple[AIFeature, ...] = (
         "web asset names and judgement reasons.",
         False,
     ),
+    AIFeature(
+        "ask",
+        "Ask",
+        "Answers questions about a finding in its sheet. Sends the finding, its "
+        "request and response with secrets masked, and what the read-only tools "
+        "return.",
+        True,
+    ),
 )
 
 DEFAULT_AI_FEATURES: dict[str, bool] = {f.key: f.default for f in AI_FEATURES}
+
+TEST_FEATURE = "connection_test"
+
+TASK_FEATURE: dict[str, str] = {
+    AITask.EXECUTIVE_SUMMARY.value: "report_narrative",
+    AITask.RISK_NARRATIVE.value: "report_narrative",
+    AITask.REMEDIATION_PLAN.value: "report_narrative",
+    AITask.ISSUE_EXPLAINER.value: "report_narrative",
+    AITask.ATTACK_PATH.value: "report_narrative",
+    AITask.SURFACE_NARRATIVE.value: "report_narrative",
+    AITask.ASSET_JUDGEMENT.value: "asset_judgement",
+    AITask.RULE_SUGGESTION.value: "rule_suggestions",
+    AITask.ASK.value: "ask",
+    AITask.CONNECTION_TEST.value: TEST_FEATURE,
+}
+
+FEATURE_LABELS: dict[str, str] = {
+    **{f.key: f.label for f in AI_FEATURES},
+    TEST_FEATURE: "Connection tests",
+}
 
 
 def model_for(provider: str, requested: str | None, *, fast: bool = False) -> str:
     if requested and requested.strip():
         return requested.strip()
     table = FAST_MODEL if fast else DEFAULT_MODEL
-    return table.get(provider, DEFAULT_MODEL[AIProvider.ANTHROPIC.value])
+    if provider in table:
+        return table[provider]
+    return DEFAULT_MODEL[AIProvider.ANTHROPIC.value]
 
 
 def price(model: str, input_tokens: int, output_tokens: int) -> float | None:

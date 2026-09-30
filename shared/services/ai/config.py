@@ -7,7 +7,9 @@ from dataclasses import dataclass
 from sqlalchemy import select
 
 from shared.definitions.ai import (
+    BASE_URL_PROVIDERS,
     DEFAULT_AI_FEATURES,
+    KEY_OPTIONAL_PROVIDERS,
     REQUEST_TIMEOUT,
     model_for,
 )
@@ -28,16 +30,21 @@ class AIConfig:
     enabled: bool = True
     workspace: str = ""
     timeout: float = REQUEST_TIMEOUT
+    base_url: str = ""
 
     @property
     def available(self) -> bool:
-        return bool(self.enabled and self.api_key and self.provider in VALID_PROVIDERS)
+        if not self.enabled or self.provider not in VALID_PROVIDERS or not self.model:
+            return False
+        if not self.api_key and self.provider not in KEY_OPTIONAL_PROVIDERS:
+            return False
+        return bool(self.base_url) or self.provider not in BASE_URL_PROVIDERS
 
     def allows(self, feature: str) -> bool:
         return self.available and bool(self.features.get(feature, False))
 
     def model_for_task(self, *, fast: bool) -> str:
-        return self.fast_model if fast else self.model
+        return (self.fast_model or self.model) if fast else self.model
 
 
 def _build(row: InstanceSettings | None) -> AIConfig | None:
@@ -58,6 +65,7 @@ def _build(row: InstanceSettings | None) -> AIConfig | None:
         features=features,
         enabled=bool(row.ai_enabled),
         workspace=str(stored.get("workspace_id") or ""),
+        base_url=str(stored.get("base_url") or "").strip(),
     )
 
 

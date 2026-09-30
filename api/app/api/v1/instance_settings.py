@@ -6,7 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentSuperuser, CurrentUser
 from app.core.database import get_session
+from app.services.ai_settings import AiSettingsService
 from app.services.instance_settings import InstanceSettingsService
+from shared.models.ai import AiTestRequest
 from shared.models.instance_settings import (
     InstanceSettingsRead,
     InstanceSettingsUpdate,
@@ -48,7 +50,11 @@ async def update_instance_settings(
 @router.post("/ai/test")
 async def test_ai_connection(
     data: AITestRequest,
-    _current_user: CurrentSuperuser,
-    service: Annotated[InstanceSettingsService, Depends(get_service)],
+    current_user: CurrentSuperuser,
+    session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    return await service.test_ai(data.provider, data.model, data.api_key)
+    result = await AiSettingsService(session).test(
+        AiTestRequest(provider=data.provider, model=data.model, api_key=data.api_key),
+        current_user.id,
+    )
+    return {"success": result.success, "message": result.message}

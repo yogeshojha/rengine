@@ -26,6 +26,7 @@ from shared.definitions.interest import (
 from shared.logging import get_logger
 from shared.models.interest import InterestDismissal, InterestRule, InterestSignal
 from shared.models.scan import Scan
+from shared.services.ai import ledger
 from shared.services.ai.config import AIConfig
 from shared.utils.datetime import utc_now
 
@@ -185,7 +186,8 @@ def _collect(
         try:
             if not provider.available(ctx):
                 continue
-            produced = list(provider.evaluate(ctx))
+            with ledger.source("scan", ctx.scan.id):
+                produced = list(provider.evaluate(ctx))
         except Exception:
             logger.warning(
                 "interest provider failed", provider=provider.name, exc_info=True

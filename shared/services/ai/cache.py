@@ -11,8 +11,10 @@ from sqlalchemy.exc import IntegrityError
 from shared.definitions.ai import CACHE_VERSION, GLOBAL_CACHE_TASKS
 from shared.logging import get_logger
 from shared.models.ai import AiNarrative
+from shared.services.ai import ledger
 from shared.services.ai.client import AIResult, AIUsage, complete
 from shared.services.ai.config import AIConfig
+from shared.services.ai.ledger import CallRecord
 from shared.utils.datetime import utc_now
 
 logger = get_logger(__name__)
@@ -96,6 +98,11 @@ def narrate(
         if hit is not None:
             if usage is not None:
                 usage.record(AIResult(hit.content, model, cfg.provider, cached=True))
+            ledger.record(
+                CallRecord(
+                    task=task, provider=cfg.provider, model=model, ok=True, cached=True
+                )
+            )
             return hit.content
 
     try:

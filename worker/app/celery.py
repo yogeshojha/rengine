@@ -308,9 +308,11 @@ def configure_logging(loglevel: int, **kwargs) -> None:  # noqa: ARG001
 @worker_process_init.connect
 def on_process_init(**_) -> None:
     """Drop pooled sockets inherited from the parent."""
+    from app import ai_ledger  # noqa: PLC0415
     from app.database import engine  # noqa: PLC0415
 
     engine.dispose(close=False)
+    ai_ledger.install()
 
 
 @worker_ready.connect

@@ -11,3 +11,4 @@ class AIProvider(Enum):
     ANTHROPIC = "anthropic"
     AZURE_OPENAI = "azure_openai"
     GOOGLE = "google"
+    OPENAI_COMPATIBLE = "openai_compatible"

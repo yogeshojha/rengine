@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import {
 		AI_ICON,
 		aiCategoryLabel,
@@ -8,7 +9,11 @@
 	} from '$lib/config/ai-services';
 	import { SHEET_ROW_TIGHT, SHEET_DT, sheetStep } from './sheet';
 	import Globe from '@lucide/svelte/icons/globe';
-	import NoteSection from '$lib/components/notes/note-section.svelte';
+	import Sparkles from '@lucide/svelte/icons/sparkles';
+	import NotePanel from '$lib/components/notes/note-panel.svelte';
+	import AskTab from './vulnerabilities/ask/ask-tab.svelte';
+	import AskComposer from './vulnerabilities/ask/ask-composer.svelte';
+	import { notes } from '$lib/stores/notes.svelte';
 	import { SurfaceDimension } from '$lib/config/surface';
 	import Network from '@lucide/svelte/icons/network';
 	import Plug from '@lucide/svelte/icons/plug';
@@ -70,6 +75,10 @@
 	import ScreenshotThumb from './screenshot-thumb.svelte';
 	import TechIcon from './tech-icon.svelte';
 	import CodeBlock from '$lib/components/code-block.svelte';
+	import ProxySend from './endpoints/proxy-send.svelte';
+	import { handoffToProxy } from './endpoints/proxy';
+	import { connectors as connectorStore } from '$lib/stores/connectors.svelte';
+	import type { ActionKind } from '$lib/config/connectors';
 	import OverflowPopover from './table/overflow-popover.svelte';
 	import HostStructure from './web-assets/host-structure.svelte';
 	import RecheckHistory from './recheck-history.svelte';
@@ -139,6 +148,7 @@
 	const MAX_HOSTS = 16;
 
 	let tab = $state('overview');
+	let queued = $state('');
 	let recheckCount = $derived(sub ? rechecks.history(scanId, sub.name).length : 0);
 	let contentEl = $state<HTMLElement | null>(null);
 	let detail = $state<HttpAssetDetail | null>(null);
@@ -210,6 +220,27 @@
 
 	let hasHttp = $derived(sub?.http_status != null);
 	let url = $derived(sub?.http_url ?? (sub ? `https://${sub.name}` : ''));
+	let proxies = $derived(connectorStore.items);
+	let proxyCatalog = $derived(connectorStore.catalog);
+	$effect(() => {
+		const id = projectId;
+		if (!open || !id) return;
+		untrack(() => {
+			void connectorStore.load(id);
+			void connectorStore.loadCatalog();
+		});
+	});
+	async function sendToProxy(connectorId: string, kind: ActionKind) {
+		if (!detail) return;
+		await handoffToProxy({
+			connectorId,
+			projectId,
+			scanId: detail.scan_id,
+			body: { kind, asset_ids: [detail.id] },
+			connectors: proxies,
+			catalog: proxyCatalog
+		});
+	}
 	let redirected = $derived(!!sub?.final_url && sub.final_url !== sub.http_url);
 	let cert = $derived(sub ? certState(sub) : null);
 	let expiryDays = $derived(sub ? daysUntilExpiry(sub) : null);
@@ -417,6 +448,14 @@
 					{@render tabTrigger('services', 'Services', hostAssets.length + ports.length || null)}
 					{@render tabTrigger('related', 'Related', relatedHosts || null)}
 					{@render tabTrigger('structure', 'Structure', sub.endpoint_count || null)}
+					{@render tabTrigger('notes', 'Notes', null)}
+					<Tabs.Trigger
+						value="ask"
+						class="flex-none gap-1.5 rounded-none border-0 border-b-2 border-transparent px-3 py-2.5 text-xs font-medium text-primary shadow-none hover:text-primary data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none dark:data-[state=active]:border-primary dark:data-[state=active]:bg-transparent"
+					>
+						<Sparkles class="size-3.5" />
+						Ask
+					</Tabs.Trigger>
 				</Tabs.List>
 
 				<ScrollArea class="min-h-0 flex-1">
@@ -948,16 +987,42 @@
 								{/if}
 							</section>
 						{/if}
+					</Tabs.Content>
 
-						<NoteSection
-							anchor={{
-								targetId: sub.target_id,
-								scanId: sub.scan_id,
-								dimension: SurfaceDimension.WEB_ASSETS,
-								assetKey: sub.name,
-								assetLabel: sub.name
-							}}
-						/>
+					<Tabs.Content value="notes" class="m-0 p-5">
+						{#key notes.version}
+							<div class="overflow-hidden rounded-lg border">
+								<NotePanel
+									anchor={{
+										targetId: sub.target_id,
+										scanId: sub.scan_id,
+										dimension: SurfaceDimension.WEB_ASSETS,
+										assetKey: sub.name,
+										assetLabel: sub.name
+									}}
+									filter={{ dimension: SurfaceDimension.WEB_ASSETS, asset_key: sub.name }}
+									showAnchor={false}
+									emptyTitle="No notes"
+								/>
+							</div>
+						{/key}
+					</Tabs.Content>
+
+					<Tabs.Content value="ask" class="m-0 flex flex-col p-0">
+						{#if tab === 'ask'}
+							<AskTab
+								subject={{
+									dimension: SurfaceDimension.WEB_ASSETS,
+									key: sub.name,
+									targetId: sub.target_id,
+									scanId: sub.scan_id,
+									projectId,
+									label: sub.name
+								}}
+								{queued}
+								onQueued={() => (queued = '')}
+							/>
+						{/if}
 					</Tabs.Content>
 
 					<Tabs.Content value="http" class="m-0 p-5">
@@ -986,16 +1051,26 @@
 											</ToggleGroup.Item>
 										{/if}
 									</ToggleGroup.Root>
-									{#if httpView === 'headers'}
-										<Button
-											variant="ghost"
-											size="sm"
-											class="h-7 text-xs"
-											onclick={() => copy(headerText)}
-										>
-											<Copy data-icon="inline-start" /> Copy
-										</Button>
-									{/if}
+									<div class="flex items-center gap-1.5">
+										{#if httpView === 'headers'}
+											<Button
+												variant="ghost"
+												size="sm"
+												class="h-7 text-xs"
+												onclick={() => copy(headerText)}
+											>
+												<Copy data-icon="inline-start" /> Copy
+											</Button>
+										{/if}
+										{#if proxies.length}
+											<ProxySend
+												connectors={proxies}
+												catalog={proxyCatalog}
+												dense
+												onSend={sendToProxy}
+											/>
+										{/if}
+									</div>
 								</div>
 								{#if httpView === 'hygiene'}
 									<div class="flex flex-col gap-4">
@@ -1263,6 +1338,17 @@
 						{/if}
 					</Tabs.Content>
 				</ScrollArea>
+				{#if tab !== 'ask'}
+					<div class="border-t bg-card px-5 py-3">
+						<AskComposer
+							placeholder="Ask about this web asset"
+							onSend={(question) => {
+								queued = question;
+								tab = 'ask';
+							}}
+						/>
+					</div>
+				{/if}
 			</Tabs.Root>
 		{/if}
 	</Sheet.Content>

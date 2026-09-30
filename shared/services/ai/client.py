@@ -16,7 +16,9 @@ from shared.definitions.ai import (
 )
 from shared.enums.instance import AIProvider
 from shared.logging import get_logger
+from shared.services.ai import ledger
 from shared.services.ai.config import AIConfig
+from shared.services.ai.ledger import CallRecord
 
 logger = get_logger(__name__)
 
@@ -28,6 +30,21 @@ _HTTP_ERROR = 400
 
 class AIError(RuntimeError):
     """The provider could not answer."""
+
+    def __init__(self, message: str, *, input_tokens: int = 0, output_tokens: int = 0):
+        super().__init__(message)
+        self.input_tokens = input_tokens
+        self.output_tokens = output_tokens
+
+
+def chat_url(cfg: AIConfig) -> str:
+    if cfg.provider == AIProvider.OPENAI_COMPATIBLE.value and cfg.base_url:
+        return f"{cfg.base_url.rstrip('/')}/chat/completions"
+    return _OPENAI_URL
+
+
+def chat_headers(cfg: AIConfig) -> dict[str, str]:
+    return {"Authorization": f"Bearer {cfg.api_key}"} if cfg.api_key else {}
 
 
 @dataclass
@@ -71,14 +88,27 @@ def complete(
     effort = TASK_EFFORT.get(task, Effort.LOW.value)
     started = time.monotonic()
 
-    if cfg.provider == AIProvider.ANTHROPIC.value:
-        text, tokens = _anthropic(cfg, model, system, prompt, max_tokens, effort)
-    elif cfg.provider == AIProvider.GOOGLE.value:
-        text, tokens = _google(cfg, model, system, prompt, max_tokens)
-    else:
-        text, tokens = _openai(cfg, model, system, prompt, max_tokens)
+    try:
+        if cfg.provider == AIProvider.ANTHROPIC.value:
+            text, tokens = _anthropic(cfg, model, system, prompt, max_tokens, effort)
+        elif cfg.provider == AIProvider.GOOGLE.value:
+            text, tokens = _google(cfg, model, system, prompt, max_tokens)
+        else:
+            text, tokens = _openai(cfg, model, system, prompt, max_tokens)
+    except Exception as exc:
+        ledger.record(
+            CallRecord(
+                task=task,
+                provider=cfg.provider,
+                model=model,
+                ok=False,
+                latency_ms=int((time.monotonic() - started) * 1000),
+                error=str(exc),
+            )
+        )
+        raise
 
-    return AIResult(
+    result = AIResult(
         text=text.strip(),
         model=model,
         provider=cfg.provider,
@@ -86,6 +116,18 @@ def complete(
         output_tokens=tokens[1],
         latency_ms=int((time.monotonic() - started) * 1000),
     )
+    ledger.record(
+        CallRecord(
+            task=task,
+            provider=cfg.provider,
+            model=model,
+            ok=True,
+            input_tokens=result.input_tokens,
+            output_tokens=result.output_tokens,
+            latency_ms=result.latency_ms,
+        )
+    )
+    return result
 
 
 def count_tokens(cfg: AIConfig, *, system: str, prompt: str, fast: bool = False) -> int:
@@ -169,8 +211,7 @@ def _openai(
             {"role": "user", "content": prompt},
         ],
     }
-    headers = {"Authorization": f"Bearer {cfg.api_key}"}
-    body = _post(_OPENAI_URL, payload, headers, cfg.timeout)
+    body = _post(chat_url(cfg), payload, chat_headers(cfg), cfg.timeout)
     choices = body.get("choices") or []
     if not choices:
         msg = "The provider returned no completion."

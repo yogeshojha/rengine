@@ -20,14 +20,15 @@ export const FINDING_COLUMN_LABELS: Record<FindingColumn, string> = {
 	seen: 'Seen'
 };
 
-export const SHEET_TABS = ['overview', 'evidence', 'related', 'intel', 'notes'] as const;
+export const SHEET_TABS = ['overview', 'evidence', 'related', 'intel', 'notes', 'ask'] as const;
 export type SheetTab = (typeof SHEET_TABS)[number];
 export const SHEET_TAB_LABELS: Record<SheetTab, string> = {
 	overview: 'Overview',
 	evidence: 'Evidence',
 	related: 'Same check',
 	intel: 'Intel',
-	notes: 'Notes'
+	notes: 'Notes',
+	ask: 'Ask'
 };
 
 export const BRIEF_TABS = ['asset', 'host', 'check', 'evidence', 'intel'] as const;

@@ -1,7 +1,18 @@
 import { api } from './client';
-import type { AiCatalog, AiSettingsUpdate, AiStatus, AiTestResult, AiUsage } from '$lib/types/ai';
+import type {
+	AiCall,
+	AiCatalog,
+	AiSettingsUpdate,
+	AiStatus,
+	AiTestResult,
+	AiUsage
+} from '$lib/types/ai';
 
 export const aiApi = {
+	calls(limit = 30): Promise<AiCall[]> {
+		return api.get<AiCall[]>(`/ai/calls?limit=${limit}`);
+	},
+
 	status(): Promise<AiStatus> {
 		return api.get<AiStatus>('/ai/status');
 	},
@@ -23,6 +34,7 @@ export const aiApi = {
 		model?: string;
 		api_key?: string;
 		workspace_id?: string;
+		base_url?: string;
 	}): Promise<AiTestResult> {
 		return api.post<AiTestResult>('/ai/test', body);
 	},

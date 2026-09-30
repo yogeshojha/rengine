@@ -26,6 +26,7 @@ from shared.logging import get_logger
 from shared.models.report import Report
 from shared.models.scan import Scan
 from shared.models.target import Target
+from shared.services.ai import ledger
 from shared.services.event_publisher import SyncEventPublisher
 from shared.services.notification_sync import SyncNotificationPublisher
 from shared.utils.datetime import utc_now
@@ -99,13 +100,14 @@ def generate_report(self, report_id: str) -> dict:
             spec = ReportSpec.model_validate(report.spec or {})
             scan, target = _subject(session, report)
             theme_store.sync_builtin(session)
-            output = generate(
-                session,
-                spec,
-                scan=scan,
-                target=target,
-                progress=progress,
-            )
+            with ledger.source("report", report.id):
+                output = generate(
+                    session,
+                    spec,
+                    scan=scan,
+                    target=target,
+                    progress=progress,
+                )
 
             stem = (
                 generate_slug(f"{spec.title or 'report'}-{target.target_value}")[:80]

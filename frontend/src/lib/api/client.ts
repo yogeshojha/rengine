@@ -39,6 +39,24 @@ function extractErrorMessage(detail: unknown, status: number): string {
 	return `Request failed with status ${status}`;
 }
 
+function emitFrame(raw: string, onFrame: (event: string, data: unknown) => void): void {
+	let event = 'message';
+	const lines: string[] = [];
+	for (const line of raw.split('\n')) {
+		if (line.startsWith('event:')) event = line.slice(6).trim();
+		else if (line.startsWith('data:')) lines.push(line.slice(5).trimStart());
+	}
+	if (!lines.length) return;
+	const text = lines.join('\n');
+	let data: unknown = text;
+	try {
+		data = JSON.parse(text);
+	} catch {
+		/* plain text frame */
+	}
+	onFrame(event, data);
+}
+
 class ApiClient {
 	private baseUrl = API_PREFIX;
 
@@ -138,6 +156,47 @@ class ApiClient {
 		});
 		this.inflight.set(endpoint, pending);
 		return pending;
+	}
+
+	/** A streamed POST: each SSE frame reaches `onFrame` as it arrives. */
+	async stream(
+		endpoint: string,
+		data: unknown,
+		onFrame: (event: string, data: unknown) => void,
+		signal?: AbortSignal,
+		isRetry = false
+	): Promise<void> {
+		const response = await fetch(`${this.baseUrl}${endpoint}`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			credentials: 'include',
+			body: JSON.stringify(data),
+			signal
+		});
+		if (!response.ok) {
+			if (response.status === 401 && !isRetry && !this.isAuthEndpoint(endpoint)) {
+				const result = await this.tryRefresh();
+				if (result === 'ok') return this.stream(endpoint, data, onFrame, signal, true);
+				throw new Error(sessionError(result));
+			}
+			const errorData = await response.json().catch(() => ({}));
+			throw new Error(extractErrorMessage(errorData?.detail, response.status));
+		}
+		if (!response.body) throw new Error(NO_RESPONSE);
+		const reader = response.body.getReader();
+		const decoder = new TextDecoder();
+		let buffer = '';
+		for (;;) {
+			const { value, done } = await reader.read();
+			if (done) break;
+			buffer += decoder.decode(value, { stream: true });
+			let cut = buffer.indexOf('\n\n');
+			while (cut >= 0) {
+				emitFrame(buffer.slice(0, cut), onFrame);
+				buffer = buffer.slice(cut + 2);
+				cut = buffer.indexOf('\n\n');
+			}
+		}
 	}
 
 	/** The response itself, refreshed once on a 401, for bodies that are not JSON. */

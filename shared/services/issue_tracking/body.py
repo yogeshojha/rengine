@@ -89,12 +89,14 @@ def labels_for(severity: str) -> list[str]:
     return [TRACKER_LABEL, f"severity-{severity}"]
 
 
-def _mask_secrets(text: str) -> str:
+def mask_secrets(text: str, *, keep_lines: bool = False) -> str:
     """Mask detected secrets and the values of credential-named assignments."""
     for found in sorted(
         find_secrets(text).matches, key=lambda m: m.start, reverse=True
     ):
-        text = f"{text[: found.start]}{MASK}{text[found.end :]}"
+        span = text[found.start : found.end]
+        fill = MASK + ("\n" * span.count("\n") if keep_lines else "")
+        text = f"{text[: found.start]}{fill}{text[found.end :]}"
     return _ASSIGNED_SECRET.sub(_masked_assignment, text)
 
 
@@ -105,7 +107,7 @@ def _masked_assignment(found: re.Match) -> str:
 
 
 def _location(value: str | None) -> str:
-    return _clip(_mask_secrets(value or ""), MAX_LOCATION)
+    return _clip(mask_secrets(value or ""), MAX_LOCATION)
 
 
 def _date(value: datetime | None) -> str | None:
@@ -158,14 +160,14 @@ def single_body(vuln: Any, target_value: str, *, evidence: int = 2) -> Doc:
     _prose(doc, vuln)
     if evidence:
         curl = _clip(
-            _mask_secrets(redact_credentials(vuln.curl_command or "")),
+            mask_secrets(redact_credentials(vuln.curl_command or "")),
             MAX_EVIDENCE_CHARS,
         )
         request = _clip(
-            _mask_secrets(redact_message(vuln.request) or ""), MAX_EVIDENCE_CHARS
+            mask_secrets(redact_message(vuln.request) or ""), MAX_EVIDENCE_CHARS
         )
         response = (
-            _clip(_mask_secrets(redact_message(vuln.response) or ""), MAX_RESPONSE)
+            _clip(mask_secrets(redact_message(vuln.response) or ""), MAX_RESPONSE)
             if evidence > 1
             else ""
         )

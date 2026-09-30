@@ -37,11 +37,14 @@ from mcp.models import (
     McpTokenUpdate,
     McpToolRead,
 )
+from shared.definitions.ask import ASK_CLIENT
 from shared.definitions.channels import CHANNEL_ORDER
 from shared.models.instance_settings import InstanceSettings
 from shared.models.project import Project
 from shared.models.target import Target
 from shared.utils.datetime import utc_now
+
+HIDDEN_CLIENTS: tuple[str, ...] = (*CHANNEL_ORDER, ASK_CLIENT)
 
 
 class McpConfigError(ValueError):
@@ -107,7 +110,7 @@ class McpService:
         raw_sessions = [
             s
             for s in await telemetry.sessions()
-            if s.get("client") not in CHANNEL_ORDER
+            if s.get("client") not in HIDDEN_CLIENTS
         ]
 
         return McpStatus(
@@ -125,8 +128,8 @@ class McpService:
             tokens_total=len(tokens),
             tokens_active=len(active),
             sessions=[_session(s) for s in raw_sessions],
-            calls_today=await telemetry.calls_today(CHANNEL_ORDER),
-            last_call_at=await telemetry.last_call_at(CHANNEL_ORDER),
+            calls_today=await telemetry.calls_today(HIDDEN_CLIENTS),
+            last_call_at=await telemetry.last_call_at(HIDDEN_CLIENTS),
             capabilities=capability_catalog(),
             clients=clients.catalog(),
         )
@@ -148,7 +151,7 @@ class McpService:
         ]
 
     async def calls(self, limit: int = 100) -> list[McpCallRead]:
-        entries = await telemetry.recent(limit, without=CHANNEL_ORDER)
+        entries = await telemetry.recent(limit, without=HIDDEN_CLIENTS)
         return [McpCallRead(**entry) for entry in entries]
 
     async def disconnect(self, token_id: uuid.UUID) -> int:

@@ -1,12 +1,22 @@
 import shared.models._tztypes  # patch datetime->timestamptz first
 from shared.models.activity_log import ActivityLog, ActivityLogRead
-from shared.models.ai import AiNarrative
+from shared.models.ai import AiCall, AiCallRead, AiFeatureUsage, AiNarrative
 from shared.models.api_key import (
     APIKey,
     APIKeyCreate,
     APIKeyRead,
     APIKeyUpdate,
     ProviderInfo,
+)
+from shared.models.ask import (
+    AskBrief,
+    AskMessage,
+    AskMessageRead,
+    AskQuestion,
+    AskThread,
+    AskThreadCreate,
+    AskThreadDetail,
+    AskThreadRead,
 )
 from shared.models.compare import (
     ChangeField,
@@ -310,7 +320,18 @@ __all__ = [
     "ActivityLog",
     "ActivityLogRead",
     "AddTargetRequest",
+    "AiCall",
+    "AiCallRead",
+    "AiFeatureUsage",
     "AiNarrative",
+    "AskBrief",
+    "AskMessage",
+    "AskMessageRead",
+    "AskQuestion",
+    "AskThread",
+    "AskThreadCreate",
+    "AskThreadDetail",
+    "AskThreadRead",
     "AssetSurface",
     "AuthConfig",
     "AuthHeader",

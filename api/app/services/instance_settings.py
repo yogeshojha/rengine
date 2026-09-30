@@ -1,7 +1,6 @@
 import asyncio
 from zoneinfo import ZoneInfo
 
-import httpx
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -15,7 +14,6 @@ from shared.definitions.retention import (
     SCREENSHOT_RETENTION_DAYS,
 )
 from shared.enums.instance import AIProvider
-from shared.http import get_async_client
 from shared.logging import get_logger
 from shared.models.instance_settings import (
     SINGLETON_KEY,
@@ -31,14 +29,6 @@ from shared.utils.net import validate_public_https_url
 
 logger = get_logger(__name__)
 
-_TEST_TIMEOUT = 10
-_OPENAI_BASE = "https://api.openai.com"
-_ANTHROPIC_BASE = "https://api.anthropic.com"
-_ANTHROPIC_VERSION = "2023-06-01"
-_ANTHROPIC_PING_MODEL = "claude-haiku-4-5"
-_GOOGLE_BASE = "https://generativelanguage.googleapis.com"
-_HTTP_OK = 200
-_HTTP_UNAUTHORIZED = 401
 _VALID_AI_PROVIDERS = frozenset(p.value for p in AIProvider)
 _TAIL = 4
 
@@ -208,86 +198,3 @@ class InstanceSettingsService:
         except Exception:
             logger.warning("automatic scan limit unreadable", exc_info=True)
         return read
-
-    async def test_ai(
-        self, provider: str, model: str | None, api_key: str | None
-    ) -> dict:
-        if not api_key or MASK in api_key:
-            api_key = try_decrypt((await self.get_or_create()).ai_api_key_encrypted)
-        if not api_key:
-            return {"success": False, "message": "No API key provided."}
-
-        try:
-            return await self._ping(provider, model, api_key)
-        except (httpx.HTTPError, ValueError, KeyError) as exc:
-            return {"success": False, "message": f"Connection failed: {exc}"}
-
-    async def _ping(self, provider: str, model: str | None, api_key: str) -> dict:
-        async with get_async_client(timeout=_TEST_TIMEOUT) as client:
-            if provider == AIProvider.OPENAI.value:
-                return await self._ping_openai(client, api_key)
-            if provider == AIProvider.ANTHROPIC.value:
-                return await self._ping_anthropic(client, api_key)
-            if provider == AIProvider.GOOGLE.value:
-                return await self._ping_google(client, api_key)
-            if provider == AIProvider.AZURE_OPENAI.value:
-                return await self._ping_azure(client, model, api_key)
-        return {"success": False, "message": f"Unsupported provider '{provider}'."}
-
-    async def _ping_openai(self, client: httpx.AsyncClient, api_key: str) -> dict:
-        resp = await client.get(
-            f"{_OPENAI_BASE}/v1/models",
-            headers={"Authorization": f"Bearer {api_key}"},
-        )
-        return self._result(resp, "OpenAI")
-
-    async def _ping_anthropic(self, client: httpx.AsyncClient, api_key: str) -> dict:
-        resp = await client.post(
-            f"{_ANTHROPIC_BASE}/v1/messages",
-            headers={
-                "x-api-key": api_key,
-                "anthropic-version": _ANTHROPIC_VERSION,
-            },
-            json={
-                "model": _ANTHROPIC_PING_MODEL,
-                "max_tokens": 1,
-                "messages": [{"role": "user", "content": "ping"}],
-            },
-        )
-        return self._result(resp, "Anthropic")
-
-    async def _ping_google(self, client: httpx.AsyncClient, api_key: str) -> dict:
-        resp = await client.get(
-            f"{_GOOGLE_BASE}/v1beta/models",
-            params={"key": api_key},
-        )
-        return self._result(resp, "Google")
-
-    async def _ping_azure(
-        self, client: httpx.AsyncClient, model: str | None, api_key: str
-    ) -> dict:
-        if not model:
-            return {
-                "success": False,
-                "message": "Azure OpenAI requires an endpoint URL in the model field.",
-            }
-        url = await asyncio.to_thread(_validate_public_https_url, model.rstrip("/"))
-        resp = await client.get(
-            url,
-            headers={"api-key": api_key},
-            follow_redirects=False,
-        )
-        ok = resp.status_code != _HTTP_UNAUTHORIZED
-        if ok:
-            return {"success": True, "message": "Azure OpenAI reachable."}
-        return {"success": False, "message": "Azure OpenAI authentication failed."}
-
-    def _result(self, resp: httpx.Response, name: str) -> dict:
-        if resp.status_code == _HTTP_OK:
-            return {"success": True, "message": f"{name} connection successful."}
-        if resp.status_code == _HTTP_UNAUTHORIZED:
-            return {"success": False, "message": f"{name} authentication failed."}
-        return {
-            "success": False,
-            "message": f"{name} returned status {resp.status_code}.",
-        }

@@ -9,6 +9,7 @@ from sqlalchemy.exc import DBAPIError
 
 from app.api.router import router as api_router
 from app.config import settings
+from app.core import ai_ledger
 from app.core.crypto import SecretDecryptionError
 from app.core.database import check_capacity
 from app.core.db_errors import data_exception_handler
@@ -28,6 +29,7 @@ redis_sse_bridge = RedisSSEBridge(settings.redis_url)
 async def lifespan(_app: FastAPI):
     logger.info("Starting Backend...")
     try:
+        ai_ledger.install()
         await create_initial_admin()
         await check_capacity()
         await redis_sse_bridge.start()

@@ -1,12 +1,13 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentSuperuser, CurrentUser
 from app.core.database import get_session
 from app.services.ai_settings import AiSettingsService
 from shared.models.ai import (
+    AiCallRead,
     AiSettingsUpdate,
     AiStatus,
     AiTestRequest,
@@ -22,6 +23,15 @@ Session = Annotated[AsyncSession, Depends(get_session)]
 @router.get("/status", response_model=AiStatus)
 async def ai_status(_current_user: CurrentUser, session: Session):
     return await AiSettingsService(session).status()
+
+
+@router.get("/calls", response_model=list[AiCallRead])
+async def recent_calls(
+    _user: CurrentUser,
+    session: Session,
+    limit: Annotated[int, Query(ge=1, le=200, description="Rows")] = 30,
+):
+    return await AiSettingsService(session).calls(limit)
 
 
 @router.get("/catalog", response_model=dict)
@@ -40,8 +50,8 @@ async def update_ai(_admin: CurrentSuperuser, session: Session, body: AiSettings
 
 
 @router.post("/test", response_model=AiTestResult)
-async def test_ai(_admin: CurrentSuperuser, session: Session, body: AiTestRequest):
-    return await AiSettingsService(session).test(body)
+async def test_ai(admin: CurrentSuperuser, session: Session, body: AiTestRequest):
+    return await AiSettingsService(session).test(body, admin.id)
 
 
 @router.delete("/cache", response_model=dict)

@@ -4,6 +4,7 @@ from app.api.v1 import (
     activity_logs,
     ai,
     api_keys,
+    ask,
     auth,
     bounty_programs,
     bounty_reports,
@@ -115,5 +116,6 @@ router.include_router(proxies.router)
 router.include_router(notification_channels.router)
 router.include_router(issue_trackers.router)
 router.include_router(tripwires.router)
+router.include_router(ask.router)
 router.include_router(onboarding.router)
 router.include_router(totp.router)

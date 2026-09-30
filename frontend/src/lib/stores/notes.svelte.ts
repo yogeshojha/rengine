@@ -9,6 +9,7 @@ function countKey(dimension: string, scope: string): string {
 
 class NotesStore {
 	tags = $state<Tag[]>([]);
+	version = $state(0);
 	private counts = new SvelteMap<string, SvelteMap<string, NoteCount>>();
 	private tagsProjectId: string | null = null;
 	private tagsPending = new Map<string, Promise<void>>();
@@ -66,6 +67,7 @@ class NotesStore {
 	async create(projectId: string, body: NoteCreate): Promise<Note> {
 		const note = await notesApi.create(projectId, body);
 		this.bump(note, 1);
+		this.version += 1;
 		return note;
 	}
 
@@ -76,6 +78,7 @@ class NotesStore {
 	async remove(projectId: string, note: Note): Promise<void> {
 		await notesApi.remove(projectId, note.id);
 		this.bump(note, -1);
+		this.version += 1;
 	}
 
 	reset(): void {

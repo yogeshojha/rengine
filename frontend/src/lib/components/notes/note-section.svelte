@@ -31,6 +31,7 @@
 	});
 
 	$effect(() => {
+		void notes.version;
 		if (!projectId || !anchor.assetKey || !anchor.dimension) return;
 		void notes
 			.list(projectId, { ...filter, size: 1 })
@@ -55,14 +56,16 @@
 		</Collapsible.Trigger>
 		<Collapsible.Content>
 			<div class="overflow-hidden rounded-lg border">
-				<NotePanel
-					{anchor}
-					{filter}
-					showAnchor={false}
-					bind:composerOpen
-					emptyTitle="No notes"
-					onCount={(n) => (total = n)}
-				/>
+				{#key notes.version}
+					<NotePanel
+						{anchor}
+						{filter}
+						showAnchor={false}
+						bind:composerOpen
+						emptyTitle="No notes"
+						onCount={(n) => (total = n)}
+					/>
+				{/key}
 			</div>
 		</Collapsible.Content>
 	</Collapsible.Root>
