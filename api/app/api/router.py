@@ -20,6 +20,7 @@ from app.api.v1 import (
     instance_settings,
     interest,
     ip_addresses,
+    issue_trackers,
     lookalikes,
     mcp,
     media,
@@ -111,5 +112,6 @@ router.include_router(celery_health.router)
 router.include_router(instance_settings.router)
 router.include_router(proxies.router)
 router.include_router(notification_channels.router)
+router.include_router(issue_trackers.router)
 router.include_router(onboarding.router)
 router.include_router(totp.router)

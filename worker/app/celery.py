@@ -18,6 +18,7 @@ from shared.definitions.constants import (
     SCAN_QUEUES,
     SCANS_QUEUE,
 )
+from shared.definitions.issue_trackers import STATUS_REFRESH_SECONDS
 from shared.logging import get_logger
 from shared.logging import setup_logging as setup_rengine_logging
 
@@ -115,6 +116,7 @@ celery_app.conf.task_routes = {
     "app.tasks.scan_deltas.*": {"queue": DEFAULT_QUEUE},
     "app.tasks.bounty_programs.*": {"queue": DEFAULT_QUEUE},
     "app.tasks.estate.*": {"queue": DEFAULT_QUEUE},
+    "app.tasks.issue_trackers.*": {"queue": DEFAULT_QUEUE},
     "app.tasks.toolbox.*": {"queue": CRITICAL_QUEUE},
 }
 
@@ -147,6 +149,7 @@ celery_app.autodiscover_tasks(
         "app.tasks.scan_deltas",
         "app.tasks.watch",
         "app.tasks.estate",
+        "app.tasks.issue_trackers",
     ]
 )
 
@@ -168,11 +171,17 @@ ESTATE_ENRICH_SECONDS = 5 * 60.0
 HYGIENE_BACKFILL_SECONDS = 5 * 60.0
 SCAN_DELTAS_BACKFILL_SECONDS = 5 * 60.0
 WATCH_RECHECK_SECONDS = 10 * 60.0
+ISSUE_STATUS_SECONDS = float(STATUS_REFRESH_SECONDS)
 
 # the task itself decides whether the interval is due
 BOUNTY_SYNC_TICK_SECONDS = 60 * 60
 
 celery_app.conf.beat_schedule = {
+    "issue-status-refresh": {
+        "task": "app.tasks.issue_trackers.refresh",
+        "schedule": ISSUE_STATUS_SECONDS,
+        "options": {"expires": ISSUE_STATUS_SECONDS},
+    },
     "scan-schedule-tick": {
         "task": "app.tasks.schedule.tick",
         "schedule": SCHEDULE_TICK_SECONDS,

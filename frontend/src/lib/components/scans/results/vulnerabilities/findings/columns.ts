@@ -8,6 +8,7 @@ export const FCOL = {
 	risk: 'hidden w-[132px] shrink-0 @7xl/findings:flex',
 	evidence: 'hidden w-[104px] shrink-0 @min-[96rem]/findings:flex',
 	review: 'hidden w-[104px] shrink-0 @5xl/findings:flex',
+	issue: 'hidden w-[132px] shrink-0 @6xl/findings:flex',
 	seen: 'hidden w-[60px] shrink-0 justify-end @xl/findings:flex',
 	actions: 'flex w-[60px] shrink-0 justify-end'
 } as const;

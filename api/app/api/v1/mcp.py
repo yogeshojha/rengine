@@ -41,9 +41,7 @@ TOKEN_ATTEMPT_WINDOW = 900
 
 
 def ui_base() -> str:
-    return (
-        settings.CORS_ORIGINS[0] if settings.CORS_ORIGINS else "http://localhost:5173"
-    )
+    return settings.ui_base_url
 
 
 def _guard(exc: McpConfigError) -> HTTPException:

@@ -20,6 +20,7 @@ export const routeLabels: Record<string, string> = {
 	scans: 'Scans',
 	compare: 'Compare runs',
 	connectors: 'Connectors',
+	'issue-trackers': 'Issue trackers',
 	'remote-control': 'Remote control',
 	agents: 'Agents',
 	notes: 'Notes',
@@ -79,6 +80,8 @@ export type ReportTab = (typeof REPORT_TABS)[number];
 
 export const AI_SECTIONS = ['connection', 'features', 'usage'] as const;
 export const CONNECTOR_TABS = ['queue', 'discovered', 'settings'] as const;
+export const ISSUE_TRACKER_TABS = ['issues', 'trackers', 'routes'] as const;
+export type IssueTrackerTab = (typeof ISSUE_TRACKER_TABS)[number];
 export type ConnectorTab = (typeof CONNECTOR_TABS)[number];
 export const REMOTE_CONTROL_TABS = CHANNEL_ORDER;
 export type RemoteControlTab = ChannelKind;
@@ -158,6 +161,8 @@ export const ROUTES = {
 	ai: (section?: AiSection) => (section ? `/settings/ai#ai-${section}` : '/settings/ai'),
 	agents: () => '/agents',
 	connectors: (tab?: ConnectorTab) => (tab ? `/connectors?tab=${tab}` : '/connectors'),
+	issueTrackers: (tab?: IssueTrackerTab) =>
+		tab ? `/issue-trackers?tab=${tab}` : '/issue-trackers',
 	remoteControl: (tab?: RemoteControlTab) =>
 		tab ? `/remote-control?tab=${tab}` : '/remote-control',
 	settings: (section?: SettingsSection) => (section ? `/settings/${section}` : '/settings')

@@ -1,3 +1,4 @@
+import type { TicketRef } from '$lib/types/issue-tracker';
 import type { QueryError } from '$lib/types/asset-query';
 import type { SortOption } from '$lib/components/scans/results/table/columns';
 import type { Facet } from './scan-insights';
@@ -102,6 +103,7 @@ export interface VulnerabilityRead {
 	replays: number;
 	asset: AssetContext | null;
 	host_findings: Record<string, number>;
+	tickets?: TicketRef[];
 }
 
 export interface IssueRead {

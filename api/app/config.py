@@ -8,8 +8,6 @@ from shared.config import BaseAppSettings
 class Settings(BaseAppSettings):
     API_V1_PREFIX: str = "/api/v1"
 
-    CORS_ORIGINS: list[str] = ["http://localhost:5173"]  # noqa: RUF012
-
     SECRET_KEY: str = "change-me-in-production-use-openssl-rand-hex-32"  # noqa: S105
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30

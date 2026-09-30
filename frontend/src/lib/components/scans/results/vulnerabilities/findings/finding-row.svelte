@@ -8,7 +8,9 @@
 	import Filter from '@lucide/svelte/icons/filter';
 	import Flame from '@lucide/svelte/icons/flame';
 	import Globe from '@lucide/svelte/icons/globe';
+	import SquareKanban from '@lucide/svelte/icons/square-kanban';
 	import Terminal from '@lucide/svelte/icons/terminal';
+	import TicketChip from '$lib/components/issue-trackers/ticket-chip.svelte';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Button } from '$lib/components/ui/button';
 	import { Checkbox } from '$lib/components/ui/checkbox';
@@ -77,6 +79,8 @@
 		onTab: (tab: ResultTab, filter: string) => void;
 		onTriage: (v: VulnerabilityRead, state: string) => void;
 		onRescan: (v: VulnerabilityRead) => void;
+		onFileIssue?: (v: VulnerabilityRead) => void;
+		showIssue?: boolean;
 	}
 
 	let {
@@ -98,7 +102,9 @@
 		onFilter,
 		onTab,
 		onTriage,
-		onRescan
+		onRescan,
+		onFileIssue,
+		showIssue = false
 	}: Props = $props();
 
 	let chip = $derived(SEVERITY_CHIP[v.severity] ?? SEVERITY_CHIP.unknown);
@@ -499,6 +505,24 @@
 			</div>
 		{/if}
 
+		{#if showIssue}
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div class="{FCOL.issue} min-h-6 flex-col items-start" onclick={stopProp}>
+				{#each v.tickets ?? [] as ticket (ticket.issue_id)}
+					<TicketChip
+						state={ticket.state}
+						externalKey={ticket.external_key}
+						url={ticket.url}
+						remoteStatus={ticket.remote_status}
+						remoteCategory={ticket.remote_category}
+						error={ticket.error}
+						trackerName={ticket.tracker_name}
+						compact
+					/>
+				{/each}
+			</div>
+		{/if}
+
 		{#if findingPrefs.shows('seen')}
 			<div class="{FCOL.seen} h-6 items-center text-xs text-muted-foreground tabular-nums">
 				<Hint text={formatDateTime(v.discovered_at)}>
@@ -558,6 +582,11 @@
 						</DropdownMenu.Item>
 					{/if}
 					<DropdownMenu.Item onclick={() => onRescan(v)}>Rescan this finding</DropdownMenu.Item>
+					{#if onFileIssue && !v.tickets?.length}
+						<DropdownMenu.Item onclick={() => onFileIssue(v)}>
+							<SquareKanban class="mr-2 size-3.5" /> File issue
+						</DropdownMenu.Item>
+					{/if}
 					<DropdownMenu.Separator />
 					<DropdownMenu.Item onclick={() => onFilter(excludeToken('template', v.template_id))}>
 						<EyeOff class="mr-2 size-3.5" />

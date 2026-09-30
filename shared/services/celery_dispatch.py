@@ -369,3 +369,31 @@ def dispatch_watch_reconcile(program_id: str | None = None) -> bool:
     except Exception:
         logger.warning("watch reconcile dispatch failed", exc_info=True)
         return False
+
+
+def dispatch_issue_filing(issue_ids: list[str]) -> bool:
+    """Queue filing of pending issues and comments on the named issues."""
+    try:
+        get_celery_client().send_task(
+            "app.tasks.issue_trackers.file",
+            kwargs={"issue_ids": issue_ids},
+            queue=DEFAULT_QUEUE,
+        )
+    except Exception:
+        logger.warning("issue filing dispatch failed", exc_info=True)
+        return False
+    return True
+
+
+def dispatch_issue_observe(scan_id: str) -> bool:
+    """Queue the rescan comments a finished run owes its filed issues."""
+    try:
+        get_celery_client().send_task(
+            "app.tasks.issue_trackers.observe",
+            kwargs={"scan_id": scan_id},
+            queue=DEFAULT_QUEUE,
+        )
+    except Exception:
+        logger.warning("issue observe dispatch failed", exc_info=True)
+        return False
+    return True

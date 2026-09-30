@@ -28,12 +28,14 @@ from shared.definitions import hygiene as hygiene_defs
 from shared.definitions.correlation import SCREENSHOT_DISTANCE
 from shared.definitions.endpoints import ARCHIVE_SOURCES, LINKED_SOURCES
 from shared.definitions.evidence import Evidence
+from shared.definitions.issue_trackers import TICKETED_STATES, FilingState
 from shared.definitions.ports import SENSITIVE_PORTS
 from shared.definitions.vulnerabilities import SUPPRESSED_STATES, Severity, VulnState
 from shared.models.endpoint import Endpoint
 from shared.models.http_asset import HttpAsset
 from shared.models.interest import InterestSignal
 from shared.models.ip_address import IpAddress
+from shared.models.issue_tracker import TrackedIssue, TrackedIssueFinding
 from shared.models.port import Port
 from shared.models.scan import Scan
 from shared.models.secret import Secret
@@ -617,6 +619,26 @@ def vuln_evidence(scope: ScopeLike, value: str):
             Vulnerability.evidence == Evidence.OBSERVED.value, not_(corroborated)
         )
     return false()
+
+
+def vuln_ticketed(scope: ScopeLike, categories: list[str] | None = None):
+    """A tracker issue holds this finding, in one of the named remote categories."""
+    scope = scope_of(scope)
+    conditions = [
+        TrackedIssueFinding.target_id == _one_target(scope, Vulnerability.target_id),
+        TrackedIssueFinding.fingerprint == Vulnerability.fingerprint,
+    ]
+    if categories is None:
+        conditions.append(TrackedIssue.state.in_(TICKETED_STATES))
+    else:
+        conditions.append(TrackedIssue.state == FilingState.FILED.value)
+        conditions.append(TrackedIssue.remote_category.in_(categories))
+    return exists(
+        select(1)
+        .select_from(TrackedIssueFinding)
+        .join(TrackedIssue, TrackedIssue.id == TrackedIssueFinding.issue_id)
+        .where(*conditions)
+    )
 
 
 def vuln_state(scope: ScopeLike):

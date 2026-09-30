@@ -13,6 +13,7 @@
 	import ScanEyeIcon from '@lucide/svelte/icons/scan-eye';
 	import Share2Icon from '@lucide/svelte/icons/share-2';
 	import CableIcon from '@lucide/svelte/icons/cable';
+	import SquareKanbanIcon from '@lucide/svelte/icons/square-kanban';
 	import MessageSquareIcon from '@lucide/svelte/icons/message-square';
 	import BotIcon from '@lucide/svelte/icons/bot';
 	import Settings2Icon from '@lucide/svelte/icons/settings-2';
@@ -168,6 +169,11 @@
 			label: routeLabels.integrations,
 			items: [
 				{ title: routeLabels.connectors, url: ROUTES.connectors(), icon: CableIcon },
+				{
+					title: routeLabels['issue-trackers'],
+					url: ROUTES.issueTrackers(),
+					icon: SquareKanbanIcon
+				},
 				{
 					title: routeLabels['remote-control'],
 					url: ROUTES.remoteControl(),

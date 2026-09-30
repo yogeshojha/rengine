@@ -11,6 +11,7 @@
 	import { toast } from 'svelte-sonner';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import Settings2 from '@lucide/svelte/icons/settings-2';
+	import SquareKanban from '@lucide/svelte/icons/square-kanban';
 	import Tags from '@lucide/svelte/icons/tags';
 	import SearchX from '@lucide/svelte/icons/search-x';
 	import ShieldCheck from '@lucide/svelte/icons/shield-check';
@@ -52,6 +53,7 @@
 	import SelectionBar from './table/selection-bar.svelte';
 	import RowSelectionBar from './table/row-selection-bar.svelte';
 	import RescanAction from './table/rescan-action.svelte';
+	import FileIssuesDialog from '$lib/components/issue-trackers/file-issues-dialog.svelte';
 	import type { SeedPick, SeedSelection } from '$lib/types/recheck';
 	import IssueRow from './vulnerabilities/issue-row.svelte';
 	import FindingRow from './vulnerabilities/findings/finding-row.svelte';
@@ -829,6 +831,41 @@
 		}
 	}
 
+	const FILED_RECHECK_MS = 5000;
+	let fileFor = $state<{ fingerprints: string[]; templateIds: string[]; bulk: boolean } | null>(
+		null
+	);
+	const showIssue = $derived(
+		findingPrefs.shows('issue') && items.some((v) => (v.tickets ?? []).length > 0)
+	);
+	let fileOpen = $state(false);
+
+	function fileOne(v: VulnerabilityRead) {
+		fileFor = { fingerprints: [v.fingerprint], templateIds: [], bulk: false };
+		fileOpen = true;
+	}
+
+	function fileChecked() {
+		fileFor = isIssues
+			? { fingerprints: [], templateIds: [...checkedIds], bulk: true }
+			: {
+					fingerprints: items.filter((v) => checkedIds.has(v.id)).map((v) => v.fingerprint),
+					templateIds: [],
+					bulk: true
+				};
+		fileOpen = true;
+	}
+
+	function afterFiling() {
+		if (fileFor?.bulk) checkedIds.clear();
+		const reload = () => {
+			void refresh(true);
+			if (drawerOpen && selected) void openById(selected.id);
+		};
+		reload();
+		setTimeout(reload, FILED_RECHECK_MS);
+	}
+
 	function scrollCursor() {
 		document
 			.querySelector(`[data-vuln-row-index="${cursor}"]`)
@@ -1336,6 +1373,7 @@
 				{#if findingPrefs.shows('risk')}{@render sortHead('Risk', 'exploit', FCOL.risk)}{/if}
 				{#if findingPrefs.shows('evidence')}<div class={FCOL.evidence}>Evidence</div>{/if}
 				{#if findingPrefs.shows('review')}<div class={FCOL.review}>Review</div>{/if}
+				{#if showIssue}<div class={FCOL.issue}>Issue</div>{/if}
 				{#if findingPrefs.shows('seen')}{@render sortHead('Seen', 'seen', FCOL.seen)}{/if}
 				<div class={FCOL.actions}></div>
 			</div>
@@ -1365,6 +1403,8 @@
 						}}
 						onTriage={(item, state) => triage(item, state)}
 						onRescan={rescanOne}
+						onFileIssue={fileOne}
+						{showIssue}
 					/>
 				{/each}
 			</div>
@@ -1432,7 +1472,19 @@
 		: undefined}
 	onOpenFinding={open}
 	onRescan={rescanOne}
+	onFileIssue={fileOne}
 />
+
+{#if fileFor}
+	<FileIssuesDialog
+		bind:open={fileOpen}
+		{projectId}
+		{scanId}
+		fingerprints={fileFor.fingerprints}
+		templateIds={fileFor.templateIds}
+		onFiled={afterFiling}
+	/>
+{/if}
 
 <RowSelectionBar
 	count={checkedCount}
@@ -1493,6 +1545,10 @@
 				{/each}
 			</DropdownMenu.Content>
 		</DropdownMenu.Root>
+		<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={fileChecked}>
+			<SquareKanban class="h-3.5 w-3.5 text-muted-foreground" />
+			File issues
+		</Button>
 		<RescanAction
 			count={checkedCount}
 			dimension={SurfaceDimension.VULNERABILITIES}

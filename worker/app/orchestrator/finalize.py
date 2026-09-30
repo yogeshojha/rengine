@@ -42,6 +42,7 @@ from shared.services.activity_log import ActivityLogService
 from shared.services.asset_query.lead_cache import bump_sync
 from shared.services.celery_dispatch import (
     dispatch_interest_evaluation,
+    dispatch_issue_observe,
     dispatch_threat_intel,
     dispatch_watch_settle,
 )
@@ -543,6 +544,7 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
             )
         if scan.scope != ScanScope.FOCUSED.value:
             _dispatch_interest(scan)
+            dispatch_issue_observe(str(scan.id))
             _notify(
                 notifier,
                 session,

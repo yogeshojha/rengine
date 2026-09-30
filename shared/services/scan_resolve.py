@@ -38,7 +38,8 @@ _HEADER_VALUE = re.compile(
     re.IGNORECASE,
 )
 _CRED_FLAG = re.compile(
-    r"((?:-{1,2}[\w-]*?(?:api[-_]?key|key|token|password|passwd|pass|secret))[ =])(\S+)",
+    r"((?:-{1,2}[\w-]*?(?:api[-_]?key|key|token|password|passwd|pass|secret|cookie)"
+    r"|(?<![\w-])-b)[ =])(\S+)",
     re.IGNORECASE,
 )
 _UNSAFE_CTRL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
@@ -485,11 +486,27 @@ def merge_engine_context(
     return config
 
 
+_CREDENTIAL_HEADER = (
+    r"(?:authorization|proxy-authorization|cookie|set-cookie|x-auth-token"
+    r"|x-csrf-token|[\w-]*(?:token|secret|api-?key|session)[\w-]*)"
+)
 _MESSAGE_HEADER = re.compile(
-    r"^((?:authorization|cookie|set-cookie|x-api-key|x-auth-token|x-csrf-token"
-    r"|[\w-]*(?:token|secret)[\w-]*)\s*:\s*)(.+?)\s*$",
+    rf"^({_CREDENTIAL_HEADER}\s*:\s*)(.+?)\s*$",
     re.IGNORECASE | re.MULTILINE,
 )
+_CREDENTIAL_HEADER_VALUE = re.compile(
+    rf'({_HEADER_FLAG}\s+["\']?{_CREDENTIAL_HEADER}\s*:\s*)([^"\'\n]+?)'
+    r'(?=["\']|\s+-{1,2}[A-Za-z]|\s*$)',
+    re.IGNORECASE,
+)
+
+
+def redact_credentials(command: str) -> str:
+    """Mask proxy credentials, credential flags and credential header values in a command."""
+    safe = _UNSAFE_CTRL.sub("", command or "")
+    safe = PROXY_CREDS_RE.sub(rf"\1{MASK}@", safe)
+    safe = _CREDENTIAL_HEADER_VALUE.sub(rf"\1{MASK}", safe)
+    return _CRED_FLAG.sub(rf"\1{MASK}", safe)
 
 
 def redact_message(text: str | None) -> str | None:

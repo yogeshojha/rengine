@@ -109,6 +109,13 @@ from shared.models.ip_address import (
     TargetIpAddressRead,
 )
 from shared.models.ip_asn_range import IpAsnRange, IpCountryRange
+from shared.models.issue_tracker import (
+    IssueTracker,
+    IssueTrackerRoute,
+    TrackedIssue,
+    TrackedIssueComment,
+    TrackedIssueFinding,
+)
 from shared.models.lookalike import (
     LookalikeDomain,
     LookalikeRead,
@@ -377,6 +384,8 @@ __all__ = [
     "IpAddressSummary",
     "IpAsnRange",
     "IpCountryRange",
+    "IssueTracker",
+    "IssueTrackerRoute",
     "LookalikeDomain",
     "LookalikeRead",
     "LookalikeSummary",
@@ -513,6 +522,9 @@ __all__ = [
     "TemplateLibraryStats",
     "TemplatePage",
     "TemplateSelection",
+    "TrackedIssue",
+    "TrackedIssueComment",
+    "TrackedIssueFinding",
     "TreeNode",
     "User",
     "UserBase",

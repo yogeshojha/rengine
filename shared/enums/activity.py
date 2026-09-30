@@ -35,6 +35,10 @@ class ActivityEvent(Enum):
     SCAN_STAGE_COMPLETED = "scan.stage.completed"
     SCAN_STAGE_FAILED = "scan.stage.failed"
 
+    # issue tracker events
+    ISSUE_FILED = "issue.filed"
+    ISSUE_FAILED = "issue.failed"
+
     # project events
     PROJECT_CREATED = "project.created"
     PROJECT_UPDATED = "project.updated"

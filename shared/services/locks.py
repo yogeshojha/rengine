@@ -26,6 +26,11 @@ SOFTWARE_MATCH = 0x53580001
 NEW_CHECKS_SWEEP = 0x4E430001
 SCAN_ADMISSION = 0x53410001
 SCAN_DELTAS_BACKFILL = 0x53440001
+ISSUE_FILING = 0x49460001
+# issue_observe() spans ISSUE_OBSERVE .. ISSUE_OBSERVE + 0xFFFF
+ISSUE_OBSERVE = 0x494F0001
+# issue_tracker() spans ISSUE_TRACKER .. ISSUE_TRACKER + 0xFFFF
+ISSUE_TRACKER = 0x49540001
 
 
 def bounty_platform(platform: str) -> int:
@@ -51,6 +56,16 @@ def secret_mining(scan_id: object) -> int:
 def software_match(scan_id: object) -> int:
     """One lock per scan."""
     return SOFTWARE_MATCH + (zlib.crc32(str(scan_id).encode()) & 0xFFFF)
+
+
+def issue_tracker(tracker_id: object) -> int:
+    """One lock per tracker: writes to one tracker run one at a time."""
+    return ISSUE_TRACKER + (zlib.crc32(str(tracker_id).encode()) & 0xFFFF)
+
+
+def issue_observe(target_id: object) -> int:
+    """One lock per target."""
+    return ISSUE_OBSERVE + (zlib.crc32(str(target_id).encode()) & 0xFFFF)
 
 
 @contextmanager

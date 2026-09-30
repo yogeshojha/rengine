@@ -24,6 +24,7 @@ from shared.definitions.interest import (
 from shared.definitions.interest import (
     SOURCE_LABELS as INTEREST_SOURCE_LABELS,
 )
+from shared.definitions.issue_trackers import REMOTE_CATEGORY_ORDER
 from shared.definitions.ports import (
     PORT_SOURCE_LABELS,
     SERVICE_CLASS_LABELS,
@@ -1894,6 +1895,7 @@ VULN_FLAGS: dict[str, str] = {
     "triaged": "Reviewed",
     "open": "Not reviewed",
     "suppressed": "Reviewed and set aside as a false positive or accepted risk",
+    "ticketed": "Linked to an issue",
 }
 
 VULN_FIELDS: tuple[QueryField, ...] = (
@@ -2116,6 +2118,14 @@ VULN_FIELDS: tuple[QueryField, ...] = (
         example="state:false_positive",
         values=VULN_STATES,
         facet="state",
+    ),
+    QueryField(
+        name="ticket",
+        type=FieldType.ENUM,
+        group="Review",
+        description="Tracker status of the issue filed for this finding.",
+        example="ticket:done",
+        values=REMOTE_CATEGORY_ORDER,
     ),
     QueryField(
         name="evidence",
@@ -2344,6 +2354,11 @@ VULN_EXAMPLES: tuple[QueryExample, ...] = (
     QueryExample(
         query="is:triaged",
         description="Findings with a review decision",
+        group="Review",
+    ),
+    QueryExample(
+        query="ticket:done",
+        description="Findings whose issue is done",
         group="Review",
     ),
 )
@@ -3348,3 +3363,18 @@ SECRET_QUERY = QueryRegistry(
     examples=SECRET_EXAMPLES,
     example_groups=SECRET_EXAMPLE_GROUPS,
 )
+
+
+REGISTRIES: dict[str, QueryRegistry] = {
+    SurfaceDimension.WEB_ASSETS.value: HOST_QUERY,
+    SurfaceDimension.ENDPOINTS.value: ENDPOINT_QUERY,
+    SurfaceDimension.SERVICES.value: SERVICE_QUERY,
+    SurfaceDimension.IPS.value: IP_QUERY,
+    SurfaceDimension.VULNERABILITIES.value: VULN_QUERY,
+    SurfaceDimension.SOFTWARE.value: SOFTWARE_QUERY,
+    SurfaceDimension.SECRETS.value: SECRET_QUERY,
+}
+
+
+def registry_for(dimension: str) -> QueryRegistry:
+    return REGISTRIES[dimension]

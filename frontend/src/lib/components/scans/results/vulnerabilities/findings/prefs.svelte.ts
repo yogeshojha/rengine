@@ -1,6 +1,14 @@
 import { STORAGE_KEYS } from '$lib/config/storage-keys';
 
-export const FINDING_COLUMNS = ['asset', 'related', 'risk', 'evidence', 'review', 'seen'] as const;
+export const FINDING_COLUMNS = [
+	'asset',
+	'related',
+	'risk',
+	'evidence',
+	'review',
+	'issue',
+	'seen'
+] as const;
 export type FindingColumn = (typeof FINDING_COLUMNS)[number];
 export const FINDING_COLUMN_LABELS: Record<FindingColumn, string> = {
 	asset: 'Web asset',
@@ -8,6 +16,7 @@ export const FINDING_COLUMN_LABELS: Record<FindingColumn, string> = {
 	risk: 'Risk',
 	evidence: 'Evidence',
 	review: 'Review',
+	issue: 'Issue',
 	seen: 'Seen'
 };
 

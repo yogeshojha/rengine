@@ -400,7 +400,8 @@ async def _truncate(engine) -> None:
     async with engine.begin() as conn:
         await conn.execute(
             sa.text(
-                "TRUNCATE users, projects, instance_settings RESTART IDENTITY CASCADE"
+                "TRUNCATE users, projects, instance_settings, issue_trackers "
+                "RESTART IDENTITY CASCADE"
             )
         )
 

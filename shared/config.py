@@ -20,6 +20,8 @@ class BaseAppSettings(BaseSettings):
 
     LOG_LEVEL: str = "INFO"
 
+    CORS_ORIGINS: list[str] = ["http://localhost:5173"]
+
     POSTGRES_HOST: str = "db"
     POSTGRES_PORT: int = 5432
     POSTGRES_USER: str = "rengine"
@@ -40,6 +42,12 @@ class BaseAppSettings(BaseSettings):
     CELERY_DEFAULT_CONCURRENCY: int = 4
     TASK_SOFT_TIME_LIMIT: int = 3600 * 6
     TASK_HARD_TIME_LIMIT: int = 3600 * 8
+
+    @property
+    def ui_base_url(self) -> str:
+        return (
+            self.CORS_ORIGINS[0] if self.CORS_ORIGINS else "http://localhost:5173"
+        ).rstrip("/")
 
     @property
     def worker_children(self) -> int:

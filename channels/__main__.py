@@ -30,9 +30,7 @@ async def _serve() -> None:
         connect_args={"server_settings": {"application_name": "reNgine-channels"}},
     )
     sessions = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-    ui_base = (
-        settings.CORS_ORIGINS[0] if settings.CORS_ORIGINS else "http://localhost:5173"
-    )
+    ui_base = settings.ui_base_url
 
     stop = asyncio.Event()
     loop = asyncio.get_running_loop()

@@ -23,7 +23,7 @@ def is_registry_routable(value: str) -> bool:
 
 def is_public_address(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
     """Whether an address may be reached from a server-side request."""
-    return not (
+    return ip.is_global and not (
         ip.is_private
         or ip.is_loopback
         or ip.is_link_local

@@ -24,6 +24,7 @@ import Share2 from '@lucide/svelte/icons/share-2';
 import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 import StickyNote from '@lucide/svelte/icons/sticky-note';
 import Library from '@lucide/svelte/icons/library';
+import SquareKanban from '@lucide/svelte/icons/square-kanban';
 import Radar from '@lucide/svelte/icons/radar';
 import Target from '@lucide/svelte/icons/target';
 
@@ -318,6 +319,13 @@ function destinations(): Destination[] {
 			href: ROUTES.connectors(),
 			icon: Plug,
 			keywords: 'burp proxy browsing'
+		},
+		{
+			id: 'page:issue-trackers',
+			label: routeLabels['issue-trackers'],
+			href: ROUTES.issueTrackers(),
+			icon: SquareKanban,
+			keywords: 'jira github gitlab tickets issues tracker'
 		},
 		{
 			id: 'page:agents',

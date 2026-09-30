@@ -130,6 +130,7 @@ _FLAG_BUILDERS = {
     "triaged": lambda ctx: preds.vuln_state(ctx.scope) != VulnState.OPEN.value,
     "open": lambda ctx: preds.vuln_state(ctx.scope) == VulnState.OPEN.value,
     "suppressed": lambda ctx: preds.vuln_state(ctx.scope).in_(SUPPRESSED_STATES),
+    "ticketed": lambda ctx: preds.vuln_ticketed(ctx.scope),
 }
 
 
@@ -145,6 +146,12 @@ def _state_match(cmp: Compare, ctx: VulnQueryContext):
     state = preds.vuln_state(ctx.scope)
     values = [v.lower().replace("-", "_").replace(" ", "_") for v in cmp.values]
     matched = state.in_(values)
+    return negate(matched) if cmp.op is Op.NE else matched
+
+
+def _ticket_match(cmp: Compare, ctx: VulnQueryContext):
+    values = [v.lower().replace("-", "_").replace(" ", "_") for v in cmp.values]
+    matched = preds.vuln_ticketed(ctx.scope, values)
     return negate(matched) if cmp.op is Op.NE else matched
 
 
@@ -192,6 +199,7 @@ _VULN_BUILDERS = {
     ),
     "country": lambda c, ctx: _address_meta(ctx, string_match(IpAddress.country, c)),
     "state": _state_match,
+    "ticket": _ticket_match,
     "evidence": _evidence_match,
     "seen": lambda c, ctx: date_match(
         Vulnerability.discovered_at, c, ctx.now, future=False
