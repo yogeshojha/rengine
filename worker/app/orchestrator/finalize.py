@@ -44,6 +44,7 @@ from shared.services.celery_dispatch import (
     dispatch_interest_evaluation,
     dispatch_issue_observe,
     dispatch_threat_intel,
+    dispatch_tripwire_settle,
     dispatch_watch_settle,
 )
 from shared.services.domain_posture import fold_onto_hosts
@@ -433,6 +434,7 @@ def _settle(session: Session, scan: Scan) -> None:
     bump_sync([scan.target_id])
     if (scan.execution_config or {}).get(WATCH_HOST_KEY):
         dispatch_watch_settle(str(scan.id))
+    dispatch_tripwire_settle(str(scan.id))
 
 
 def _admit_next(session: Session) -> None:

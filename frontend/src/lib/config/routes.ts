@@ -24,6 +24,7 @@ export const routeLabels: Record<string, string> = {
 	'remote-control': 'Remote control',
 	agents: 'Agents',
 	notes: 'Notes',
+	tripwires: 'Tripwires',
 	'whats-new': "What's new",
 	bounty: 'Bounty',
 	'bounty-hub': 'Bounty Hub',
@@ -97,6 +98,11 @@ export const ROUTES = {
 	target: (id: string, tab?: string) => (tab ? `/targets/${id}?tab=${tab}` : `/targets/${id}`),
 	scans: '/scans',
 	notes: '/notes',
+	tripwires: (query?: Record<string, string>) => {
+		const params = new URLSearchParams(query ?? {});
+		const suffix = params.toString();
+		return `/tripwires${suffix ? `?${suffix}` : ''}`;
+	},
 	scansForTarget: (id: string) => `/scans?target=${id}`,
 	scansWhere: (query: Record<string, string>) => `/scans?${new URLSearchParams(query).toString()}`,
 	whatsNew: (query?: Record<string, string>) => {

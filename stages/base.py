@@ -11,12 +11,16 @@ from sqlalchemy import update
 
 from shared.definitions.intensity import Transport, transport_for
 from shared.definitions.surface import SURFACE_COUNT_COLUMNS, SurfaceDimension
+from shared.definitions.tripwires import LIVE_TRIP_SECONDS
 from shared.enums.scan import Phase
 from shared.enums.target import TargetType
 from shared.logging import get_logger
 from shared.models.scan import Scan
 from shared.models.scan_context import PROBE_SCHEME
-from shared.services.celery_dispatch import dispatch_interest_live
+from shared.services.celery_dispatch import (
+    dispatch_interest_live,
+    dispatch_tripwire_live,
+)
 from shared.services.debounce import claim
 from shared.services.orchestrator.aggregate import derived_counts
 from shared.utils.text import REFUSED_ROW
@@ -245,6 +249,7 @@ class Stage(ABC):
             self.session.rollback()
             return
         self._judge_live(dimension)
+        self._trip_live(dimension)
         if self.ctx.events is None:
             return
         try:
@@ -259,6 +264,11 @@ class Stage(ABC):
         if not claim(f"interest:{self.ctx.scan_id}", LIVE_JUDGE_SECONDS):
             return
         dispatch_interest_live(str(self.ctx.scan_id))
+
+    def _trip_live(self, dimension: str) -> None:
+        if not claim(f"tripwire:{self.ctx.scan_id}:{dimension}", LIVE_TRIP_SECONDS):
+            return
+        dispatch_tripwire_live(str(self.ctx.scan_id), dimension)
 
     def emit_progress(self, message: str, source: str | None = None) -> None:
         if self.ctx.events is None:

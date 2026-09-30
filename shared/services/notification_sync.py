@@ -32,6 +32,7 @@ class SyncNotificationPublisher:
         project_id: uuid.UUID | str | None = None,
         channel_ids=None,
         attach: str | None = None,
+        dispatch: bool = True,
     ) -> Notification:
         if isinstance(metadata, NotificationMetadata):
             metadata_dict = metadata.model_dump(exclude_none=True)
@@ -79,6 +80,8 @@ class SyncNotificationPublisher:
             "Published notification: %s/%s - %s", type.value, severity.value, title
         )
 
+        if not dispatch:
+            return notification
         try:
             from shared.services.notifier import dispatch_sync  # noqa: PLC0415
 

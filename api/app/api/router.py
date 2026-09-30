@@ -49,6 +49,7 @@ from app.api.v1 import (
     threat_intel,
     toolbox,
     totp,
+    tripwires,
     users,
     viewdns,
     vuln_templates,
@@ -113,5 +114,6 @@ router.include_router(instance_settings.router)
 router.include_router(proxies.router)
 router.include_router(notification_channels.router)
 router.include_router(issue_trackers.router)
+router.include_router(tripwires.router)
 router.include_router(onboarding.router)
 router.include_router(totp.router)

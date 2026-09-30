@@ -270,24 +270,26 @@ def dispatch_sync(
     *,
     channel_ids=None,
     attach: str | None = None,
-) -> None:
-    """Named channels receive it regardless of their event preferences."""
+) -> list[tuple]:
+    """Named channels receive it regardless of their event preferences. Returns (id, ok, message) per channel."""
     from shared.services.api_key.sync_api_key import SyncAPIKeyService  # noqa: PLC0415
 
     rows = session.execute(_channel_query(channel_ids)).scalars().all()
     targets = _channels_to_targets(list(rows))
     _shared_bot_targets(targets, SyncAPIKeyService(session).get_key_for_provider)
-    if targets:
-        sent = _fan_out(
-            targets,
-            ntype,
-            severity,
-            title,
-            body,
-            explicit=bool(channel_ids),
-            attach=attach,
-        )
-        _record_sync(session, sent)
+    if not targets:
+        return []
+    sent = _fan_out(
+        targets,
+        ntype,
+        severity,
+        title,
+        body,
+        explicit=bool(channel_ids),
+        attach=attach,
+    )
+    _record_sync(session, sent)
+    return sent
 
 
 async def dispatch_async(

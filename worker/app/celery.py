@@ -117,6 +117,7 @@ celery_app.conf.task_routes = {
     "app.tasks.bounty_programs.*": {"queue": DEFAULT_QUEUE},
     "app.tasks.estate.*": {"queue": DEFAULT_QUEUE},
     "app.tasks.issue_trackers.*": {"queue": DEFAULT_QUEUE},
+    "app.tasks.tripwires.*": {"queue": DEFAULT_QUEUE},
     "app.tasks.toolbox.*": {"queue": CRITICAL_QUEUE},
 }
 
@@ -150,12 +151,14 @@ celery_app.autodiscover_tasks(
         "app.tasks.watch",
         "app.tasks.estate",
         "app.tasks.issue_trackers",
+        "app.tasks.tripwires",
     ]
 )
 
 
 SCHEDULE_TICK_SECONDS = 60.0
 STALL_REAP_SECONDS = 300.0
+TRIPWIRE_PRUNE_SECONDS = 24 * 60 * 60.0
 IP_RANGE_REFRESH_SECONDS = 7 * 24 * 60 * 60.0
 TEMPLATE_SYNC_SECONDS = 24 * 60 * 60.0
 REPORT_CLEANUP_SECONDS = 24 * 60 * 60.0
@@ -287,6 +290,11 @@ celery_app.conf.beat_schedule = {
         "task": "app.tasks.watch.recheck",
         "schedule": WATCH_RECHECK_SECONDS,
         "options": {"expires": WATCH_RECHECK_SECONDS},
+    },
+    "tripwire-prune": {
+        "task": "app.tasks.tripwires.prune",
+        "schedule": TRIPWIRE_PRUNE_SECONDS,
+        "options": {"expires": TRIPWIRE_PRUNE_SECONDS},
     },
 }
 

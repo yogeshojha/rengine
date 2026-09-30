@@ -45,6 +45,11 @@ CHANNEL_EVENTS: tuple[ChannelEvent, ...] = (
         "Library additions and follow-up run results",
     ),
     ChannelEvent(
+        NotificationType.TRIPWIRE.value,
+        "Tripwires",
+        "A saved query matched a scan result",
+    ),
+    ChannelEvent(
         NotificationType.SYSTEM.value,
         "Reports and exports",
         "Ready or failed",

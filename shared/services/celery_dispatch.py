@@ -358,6 +358,28 @@ def dispatch_watch_settle(scan_id: str) -> bool:
         return False
 
 
+def dispatch_tripwire_settle(scan_id: str) -> bool:
+    try:
+        get_celery_client().send_task(
+            "app.tasks.tripwires.settle", kwargs={"scan_id": scan_id}, queue="default"
+        )
+        return True
+    except Exception:
+        logger.warning("tripwire settle dispatch failed", exc_info=True)
+        return False
+
+
+def dispatch_tripwire_live(scan_id: str, dimension: str) -> None:
+    try:
+        get_celery_client().send_task(
+            "app.tasks.tripwires.live",
+            kwargs={"scan_id": scan_id, "dimension": dimension},
+            queue="default",
+        )
+    except Exception:
+        logger.warning("tripwire live dispatch failed", exc_info=True)
+
+
 def dispatch_watch_reconcile(program_id: str | None = None) -> bool:
     try:
         get_celery_client().send_task(

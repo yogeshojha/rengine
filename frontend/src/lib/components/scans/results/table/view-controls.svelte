@@ -8,6 +8,7 @@
 	import { ButtonGroup } from '$lib/components/ui/button-group';
 	import { Button } from '$lib/components/ui/button';
 	import ExportMenu from '../export-menu.svelte';
+	import TripwireButton from '$lib/components/tripwires/tripwire-button.svelte';
 	import SortMenu from './sort-menu.svelte';
 	import type { SortOption, TableColumn } from './columns';
 	import type { QueryGroupSpec } from '$lib/types/asset-query';
@@ -160,6 +161,12 @@
 {#if showExport}
 	<ExportMenu {dimension} {projectId} {scanId} filters={exportFilters} />
 {/if}
+<TripwireButton
+	{dimension}
+	{projectId}
+	scanId={scanId || null}
+	query={typeof exportFilters.q === 'string' ? exportFilters.q : ''}
+/>
 <Button
 	variant="outline"
 	size="icon"

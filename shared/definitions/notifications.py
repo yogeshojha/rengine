@@ -7,6 +7,8 @@ from datetime import datetime
 from shared.definitions.bounty_programs import BountyEvent, event_spec
 from shared.definitions.interest import InterestBand, kind_label
 from shared.definitions.surface import SURFACE_NOUN, SurfaceDimension
+from shared.definitions.tripwires import FIRE_ON_VERB
+from shared.definitions.tripwires import SAMPLE_ROWS as TRIPWIRE_SAMPLE_ROWS
 from shared.definitions.vulnerabilities import (
     ALERT_SEVERITIES,
     SEVERITY_LABELS,
@@ -667,4 +669,90 @@ def watch_alert(alert: WatchAlert) -> dict:
         else {"target_id": alert.target_id, "url": f"/targets/{alert.target_id}"}
         if alert.target_id
         else {},
+    }
+
+
+@dataclass(frozen=True)
+class FiredRowLike:
+    label: str
+    detail: str = ""
+    severity: str | None = None
+
+
+@dataclass
+class TripwireFired:
+    name: str
+    target: str
+    dimension: str
+    fire_on: str
+    fired: int
+    rows: Sequence[FiredRowLike]
+    run_id: str
+    scan_id: str
+    live: bool = False
+
+
+def _worst(rows: Sequence[FiredRowLike]) -> NotificationSeverity:
+    found = {r.severity for r in rows if r.severity}
+    if Severity.CRITICAL.value in found:
+        return NotificationSeverity.ERROR
+    if Severity.HIGH.value in found:
+        return NotificationSeverity.WARNING
+    return NotificationSeverity.INFO
+
+
+def _tripwire_meta(run_id: str, scan_id: str) -> dict:
+    return {"scan_id": scan_id, "url": f"/tripwires?run={run_id}"}
+
+
+def tripwire_fired(event: TripwireFired) -> dict:
+    """One message per tripwire per run, listing the rows that fired."""
+    singular, plural = SURFACE_NOUN[event.dimension]
+    head = f"{_count(event.fired, singular, plural)} {FIRE_ON_VERB[event.fire_on]}"
+    lines = [f"{head} on {event.target}" + (" · scan running" if event.live else "")]
+    for row in event.rows[:TRIPWIRE_SAMPLE_ROWS]:
+        lines.append(row.label + (f" · {row.detail}" if row.detail else ""))
+    if event.fired > TRIPWIRE_SAMPLE_ROWS:
+        lines.append(f"and {event.fired - TRIPWIRE_SAMPLE_ROWS} more")
+    return {
+        "type": NotificationType.TRIPWIRE,
+        "severity": _worst(event.rows),
+        "title": f"Tripwire · {event.name}",
+        "message": "\n".join(lines),
+        "metadata": _tripwire_meta(event.run_id, event.scan_id),
+    }
+
+
+@dataclass
+class TripwireRunResult:
+    name: str
+    target: str
+    label: str
+    findings: int
+    by_severity: dict[str, int] = field(default_factory=dict)
+    run_id: str = ""
+    scan_id: str = ""
+
+
+def tripwire_run_result(result: TripwireRunResult) -> dict | None:
+    """One message per focused run a tripwire started that found something."""
+    if result.findings <= 0:
+        return None
+    counts = [
+        f"{n} {sev}" for sev in SEVERITY_ORDER if (n := result.by_severity.get(sev, 0))
+    ]
+    found = f"{result.findings} {'finding' if result.findings == 1 else 'findings'}"
+    if counts:
+        found += ": " + ", ".join(counts)
+    severity = NotificationSeverity.INFO
+    if result.by_severity.get(Severity.CRITICAL.value):
+        severity = NotificationSeverity.ERROR
+    elif result.by_severity.get(Severity.HIGH.value):
+        severity = NotificationSeverity.WARNING
+    return {
+        "type": NotificationType.TRIPWIRE,
+        "severity": severity,
+        "title": f"Tripwire · {result.name}",
+        "message": f"{result.label} completed on {result.target}.\n{found}.",
+        "metadata": _scan_meta(result.scan_id, "vulnerabilities"),
     }

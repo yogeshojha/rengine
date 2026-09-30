@@ -256,6 +256,7 @@ from shared.models.target_seed import (
     TargetSeedResult,
     TargetSeedWrite,
 )
+from shared.models.tripwire import Tripwire, TripwireMark, TripwireRun
 from shared.models.user import User, UserBase, UserCreate, UserRead
 from shared.models.viewdns import ViewDNSCache
 from shared.models.vuln_template import (
@@ -526,6 +527,9 @@ __all__ = [
     "TrackedIssueComment",
     "TrackedIssueFinding",
     "TreeNode",
+    "Tripwire",
+    "TripwireMark",
+    "TripwireRun",
     "User",
     "UserBase",
     "UserCreate",

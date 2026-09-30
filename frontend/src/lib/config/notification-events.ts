@@ -40,6 +40,12 @@ export const CHANNEL_EVENTS: ChannelEvent[] = [
 		capability: null
 	},
 	{
+		type: 'tripwire',
+		label: 'Tripwires',
+		hint: 'A saved query matched a scan result',
+		capability: null
+	},
+	{
 		type: 'system',
 		label: 'Reports and exports',
 		hint: 'Ready or failed',

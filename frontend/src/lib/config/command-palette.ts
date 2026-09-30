@@ -27,6 +27,7 @@ import Library from '@lucide/svelte/icons/library';
 import SquareKanban from '@lucide/svelte/icons/square-kanban';
 import Radar from '@lucide/svelte/icons/radar';
 import Target from '@lucide/svelte/icons/target';
+import Zap from '@lucide/svelte/icons/zap';
 
 import type { IconComponent } from './icons';
 import { CALLBACK_SERVER } from './oast';
@@ -298,6 +299,13 @@ function destinations(): Destination[] {
 			label: routeLabels.notes,
 			href: ROUTES.notes,
 			icon: StickyNote
+		},
+		{
+			id: 'page:tripwires',
+			label: routeLabels.tripwires,
+			href: ROUTES.tripwires(),
+			icon: Zap,
+			keywords: 'alert automation notify query fires'
 		},
 		{
 			id: 'page:reports',

@@ -36,6 +36,7 @@
 		onSubmit?: () => void;
 		actions?: Snippet;
 		ref?: HTMLInputElement | null;
+		placeholder?: string;
 	}
 
 	let {
@@ -53,7 +54,8 @@
 		onReady,
 		onSubmit,
 		actions,
-		ref = $bindable(null)
+		ref = $bindable(null),
+		placeholder = 'Search, or filter with'
 	}: Props = $props();
 
 	const RECENT_LIMIT = 6;
@@ -263,7 +265,7 @@
 					<QueryHighlight source={value} tokens={lexed.tokens} {problems} />
 				{:else}
 					<span class="font-sans text-muted-foreground"
-						>Search, or filter with
+						>{placeholder}
 						<span class="font-mono text-muted-foreground/80">{hint}</span></span
 					>
 				{/if}

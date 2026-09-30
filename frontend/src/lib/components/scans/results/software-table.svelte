@@ -32,6 +32,7 @@
 	import RowSelectionBar from './table/row-selection-bar.svelte';
 	import { RowSelection } from './table/selection.svelte';
 	import ExportMenu from './export-menu.svelte';
+	import TripwireButton from '$lib/components/tripwires/tripwire-button.svelte';
 	import SoftwareRow from './software/software-row.svelte';
 	import SoftwareDetailSheet from './software/software-detail-sheet.svelte';
 	import {
@@ -437,6 +438,13 @@
 				{projectId}
 				{scanId}
 				filters={exportFilters}
+			/>
+			<TripwireButton
+				dimension={SurfaceDimension.SOFTWARE}
+				{projectId}
+				scanId={scanId || null}
+				query={search}
+				class="h-7 px-2 text-xs"
 			/>
 			<Button
 				variant="ghost"

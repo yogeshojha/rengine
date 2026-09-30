@@ -11,6 +11,7 @@ class NotificationType(Enum):
     INTEGRATION = "integration"
     WATCH = "watch"
     NEW_CHECKS = "new_checks"
+    TRIPWIRE = "tripwire"
 
 
 class NotificationSeverity(Enum):
