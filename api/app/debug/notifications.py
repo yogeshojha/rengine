@@ -5,22 +5,18 @@ from datetime import timedelta
 from shared.definitions.notifications import (
     BountyChange,
     IntelShift,
-    InterestLead,
     NewChecksResult,
-    NewChecksSweep,
     ScanDeltas,
     SoftwareExposure,
     WatchAlert,
     bounty_changes,
     intel_changed,
     new_checks_result,
-    new_checks_started,
     scan_digest,
     scan_failed,
-    scan_interesting,
+    schedule_not_started,
     software_exposed,
     watch_alert,
-    whois_enrichment_incomplete,
 )
 from shared.enums.notification import NotificationSeverity, NotificationType
 from shared.utils.datetime import utc_now
@@ -49,18 +45,13 @@ DEBUG_NOTIFICATION_TEMPLATES = [
             new_vulnerabilities=3,
             vulnerability_counts={"critical": 1, "high": 2},
             kev=1,
+            new_secrets=2,
+            exposures=5,
         ),
     ),
     scan_digest(_SCAN_ID, "example.com", _COUNTS, ScanDeltas(baseline=False)),
     scan_failed(_SCAN_ID, "example.com", "Full scan", "subdomain_discovery failed"),
-    scan_interesting(
-        _SCAN_ID,
-        "example.com",
-        [
-            InterestLead(host="admin.example.com", band="critical", score=92),
-            InterestLead(host="staging.example.com", band="high", score=71),
-        ],
-    ),
+    schedule_not_started("Nightly estate", 2, 14),
     intel_changed(
         [
             IntelShift(
@@ -115,7 +106,6 @@ DEBUG_NOTIFICATION_TEMPLATES = [
             scan_id=_SCAN_ID,
         )
     ),
-    new_checks_started(NewChecksSweep(templates=14, targets=3, busy=1)),
     new_checks_result(
         NewChecksResult(
             scan_id=_SCAN_ID,
@@ -125,18 +115,11 @@ DEBUG_NOTIFICATION_TEMPLATES = [
             by_severity={"high": 1, "medium": 1},
         )
     ),
-    whois_enrichment_incomplete(success=2, failed=1, total=3, names=["example.com"]),
     {
         "type": NotificationType.SYSTEM,
-        "severity": NotificationSeverity.SUCCESS,
-        "title": "Report ready",
-        "message": "Attack surface report for example.com is ready.",
+        "severity": NotificationSeverity.ERROR,
+        "title": "Report failed",
+        "message": "Attack surface report · example.com. Check the worker log.",
         "metadata": {"url": "/reports"},
-    },
-    {
-        "type": NotificationType.SYSTEM,
-        "severity": NotificationSeverity.SUCCESS,
-        "title": "Export ready",
-        "message": "Web assets for example.com: 1,204 rows ready to download.",
     },
 ]

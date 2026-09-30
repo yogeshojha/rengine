@@ -23,7 +23,6 @@ from shared.definitions.interest import (
     RuleMode,
     kind_weight,
 )
-from shared.definitions.notifications import InterestLead
 from shared.logging import get_logger
 from shared.models.interest import InterestDismissal, InterestRule, InterestSignal
 from shared.models.scan import Scan
@@ -376,58 +375,36 @@ prior AS (
     WHERE sig.target_id = :tid
       AND sig.scan_id <> :sid
       AND sc.created_at < (SELECT created_at FROM cutoff)
-),
-current AS (
-    SELECT sub.id, sub.name AS host, sub.interest_band AS band, sub.interest_score AS score
-    FROM subdomains sub
-    WHERE sub.scan_id = :sid AND sub.interest_band IS NOT NULL
 )
-SELECT c.host,
-       c.band,
-       c.score,
-       (
-           SELECT array_agg(DISTINCT sig2.kind)
-           FROM interest_signals sig2
-           WHERE sig2.subdomain_id = c.id AND sig2.scan_id = :sid
-       ) AS kinds
-FROM current c
-WHERE NOT EXISTS (SELECT 1 FROM prior p WHERE p.host = c.host)
+SELECT count(*)
+FROM subdomains c
+WHERE c.scan_id = :sid
+  AND c.interest_band IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM prior p WHERE p.host = c.name)
   AND (
-      c.band = ANY(:bands)
+      c.interest_band = ANY(:bands)
       OR EXISTS (
           SELECT 1 FROM interest_signals sig
           JOIN interest_rules r ON r.id = sig.rule_id
           WHERE sig.subdomain_id = c.id AND sig.scan_id = :sid AND r.notify = true
       )
   )
-ORDER BY c.score DESC, c.host
-LIMIT :cap
 """
 
 NOTIFY_BANDS: frozenset[str] = frozenset(
     {InterestBand.CRITICAL.value, InterestBand.HIGH.value}
 )
-LEAD_CAP = 25
 
 
-def new_interesting(
-    session: Session, scan: Scan, cap: int = LEAD_CAP
-) -> list[InterestLead]:
-    """A host this target has never flagged before, and only when it is worth an interrupt."""
-    rows = session.execute(
-        text(_NEW_LEADS_SQL).bindparams(
-            bindparam("sid", scan.id),
-            bindparam("tid", scan.target_id),
-            bindparam("cap", cap),
-            bindparam("bands", sorted(NOTIFY_BANDS), type_=ARRAY(String)),
-        )
-    ).all()
-    return [
-        InterestLead(
-            host=row.host,
-            band=row.band,
-            score=int(row.score or 0),
-            kinds=tuple(row.kinds or ()),
-        )
-        for row in rows
-    ]
+def count_new_interesting(session: Session, scan: Scan) -> int:
+    """New assets this target never flagged before, in an alerting band."""
+    return int(
+        session.execute(
+            text(_NEW_LEADS_SQL).bindparams(
+                bindparam("sid", scan.id),
+                bindparam("tid", scan.target_id),
+                bindparam("bands", sorted(NOTIFY_BANDS), type_=ARRAY(String)),
+            )
+        ).scalar_one()
+        or 0
+    )

@@ -59,13 +59,13 @@ export const FIRE_ON_LABELS: Record<FireOn, string> = {
 
 export const FIRE_ON_VERB: Record<FireOn, string> = {
 	[FireOn.Appears]: 'appeared',
-	[FireOn.BecomesTrue]: 'became true',
+	[FireOn.BecomesTrue]: 'started matching',
 	[FireOn.Matches]: 'matched'
 };
 
 export const FIRE_ON_PARTICIPLE: Record<FireOn, string> = {
 	[FireOn.Appears]: 'appeared',
-	[FireOn.BecomesTrue]: 'become true',
+	[FireOn.BecomesTrue]: 'started matching',
 	[FireOn.Matches]: 'matched'
 };
 

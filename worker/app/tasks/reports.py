@@ -117,7 +117,6 @@ def generate_report(self, report_id: str) -> dict:
             session.add(report)
             session.commit()
             _announce(publisher, report)
-            _notify(session, report, ok=True)
             logger.info(
                 "report ready",
                 report_id=report_id,
@@ -147,7 +146,7 @@ def _fail(session, publisher, report_id: str, exc: Exception, seconds: float) ->
     session.add(report)
     session.commit()
     _announce(publisher, report)
-    _notify(session, report, ok=False)
+    _notify_failed(session, report)
 
 
 def _subject(session, report: Report) -> tuple[Scan | None, Target]:
@@ -197,20 +196,15 @@ def _finish(report: Report, output, files: list[dict], seconds: float) -> None:
     report.expires_at = utc_now() + timedelta(days=RETENTION_DAYS)
 
 
-def _notify(session, report: Report, *, ok: bool) -> None:
+def _notify_failed(session, report: Report) -> None:
     name = report.title or report.template_name or "Report"
-    body = (
-        f"{name} for {report.subject} is ready."
-        if ok
-        else f"{name} for {report.subject} failed: {(report.error or '')[:300]}"
-    )
     try:
         SyncNotificationPublisher(settings.celery_broker_url).publish(
             session,
             NotificationType.SYSTEM,
-            NotificationSeverity.SUCCESS if ok else NotificationSeverity.ERROR,
-            "Report ready" if ok else "Report failed",
-            body,
+            NotificationSeverity.ERROR,
+            "Report failed",
+            f"{name} · {report.subject}. Check the worker log.",
             metadata={"url": "/reports"},
             project_id=report.project_id,
         )

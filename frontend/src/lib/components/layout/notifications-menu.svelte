@@ -18,12 +18,14 @@
 	import Inbox from '@lucide/svelte/icons/inbox';
 	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
 	import NotificationListItem from '$lib/components/layout/notification-list-item.svelte';
+	import NotificationDetailSheet from '$lib/components/layout/notification-detail-sheet.svelte';
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { notificationStore } from '$lib/stores/notifications.svelte';
 	import {
 		NOTIFICATION_TYPES,
 		NOTIFICATION_TYPE_LABELS,
+		type Notification,
 		type NotificationType
 	} from '$lib/types/notification';
 	import { getTypeIcon, emptyTypeCounts } from '$lib/utilities/notification-icons';
@@ -43,6 +45,9 @@
 	let clearAllOpen = $state(false);
 	let clearing = $state(false);
 	let viewAllLoading = $state(false);
+	let detail = $state<Notification | null>(null);
+	let detailOpen = $state(false);
+	let returnToModal = $state(false);
 
 	const unread = $derived(notificationStore.notifications.filter((n) => !n.is_read));
 	const inboxList = $derived(tab === 'unread' ? unread : notificationStore.notifications);
@@ -81,6 +86,8 @@
 	beforeNavigate(() => {
 		popoverOpen = false;
 		modalOpen = false;
+		detailOpen = false;
+		returnToModal = false;
 	});
 
 	const navigateToUrl = (url: string, openNewTab?: boolean) => {
@@ -103,15 +110,38 @@
 		notificationStore.markAsRead(notificationId);
 
 		popoverOpen = false;
+		returnToModal = modalOpen;
 		modalOpen = false;
+		detail = notification;
+		detailOpen = true;
+	};
 
-		const metadata = notification.notification_metadata;
+	const onDetailOpenChange = (open: boolean) => {
+		detailOpen = open;
+		if (!open && returnToModal) {
+			returnToModal = false;
+			modalOpen = true;
+		}
+	};
+
+	const openDetailTarget = () => {
+		const metadata = detail?.notification_metadata;
+		detailOpen = false;
+		returnToModal = false;
 		if (metadata?.url) navigateToUrl(metadata.url, metadata.open_new_tab);
 	};
 
 	const handleActionClick = (notificationId: number, event: Event) => {
 		event.stopPropagation();
-		openNotification(notificationId);
+		const notification = notificationStore.notifications.find((n) => n.id === notificationId);
+		if (!notification) return;
+
+		notificationStore.markAsRead(notificationId);
+		popoverOpen = false;
+		modalOpen = false;
+
+		const metadata = notification.notification_metadata;
+		if (metadata?.url) navigateToUrl(metadata.url, metadata.open_new_tab);
 	};
 
 	const handleMarkRead = (id: number, event: Event) => {
@@ -124,7 +154,7 @@
 		try {
 			await notificationStore.deleteNotification(id);
 		} catch {
-			toast.error('Notification not deleted');
+			toast.error('Notification not dismissed');
 		}
 	};
 
@@ -474,12 +504,19 @@
 	</Dialog.Content>
 </Dialog.Root>
 
+<NotificationDetailSheet
+	notification={detail}
+	open={detailOpen}
+	onOpenChange={onDetailOpenChange}
+	onOpen={openDetailTarget}
+/>
+
 <DeleteConfirmationDialog
 	bind:open={clearAllOpen}
 	title="Clear all notifications"
 	description={notificationStore.totalCount === 1
-		? '1 notification in this project is removed.'
-		: `${notificationStore.totalCount} notifications in this project are removed.`}
+		? '1 notification is removed from this list.'
+		: `${notificationStore.totalCount} notifications are removed from this list.`}
 	confirmLabel="Clear all"
 	isDeleting={clearing}
 	onOpenChange={(o) => (clearAllOpen = o)}

@@ -144,6 +144,7 @@ from shared.models.notification_channel import (
     NotificationPreference,
 )
 from shared.models.organization import (
+    NotificationReceipt,
     Organization,
     OrganizationCreate,
     OrganizationRead,
@@ -407,6 +408,7 @@ __all__ = [
     "NotificationCreate",
     "NotificationPreference",
     "NotificationRead",
+    "NotificationReceipt",
     "NvdCpeMatch",
     "NvdCve",
     "Organization",

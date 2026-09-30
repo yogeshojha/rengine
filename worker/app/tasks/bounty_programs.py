@@ -1,7 +1,7 @@
 """Refresh the bug bounty program list and every program's structured scope."""
 
 from celery import shared_task
-from sqlalchemy import func, select, text
+from sqlalchemy import and_, exists, func, or_, select, text
 from sqlmodel import col
 
 from app.config import settings
@@ -9,6 +9,7 @@ from app.database import get_sync_session
 from shared.definitions.bounty_feed import FEEDS_BY_PLATFORM
 from shared.definitions.bounty_programs import (
     PLATFORMS_BY_KEY,
+    BountyEvent,
     BountyPlatform,
     ProgramSource,
     ScopeAccess,
@@ -19,6 +20,7 @@ from shared.definitions.datasets import DatasetKind
 from shared.definitions.notifications import BountyChange, bounty_changes
 from shared.logging import get_logger
 from shared.models.bounty_program import BountyEventRow, BountyProgram
+from shared.models.watch import ProgramWatch
 from shared.services import feed_ledger
 from shared.services.bounty_feed import (
     feed_due,
@@ -58,8 +60,23 @@ SCOPE_FAILURE_BUDGET = 25
 ALERT_LIMIT = 40
 
 
+def _alerting(kinds: set[str]):
+    """Changes on followed programs, and every program's out-of-scope moves."""
+    followed = or_(
+        BountyProgram.bookmarked.is_(True),
+        BountyProgram.joined.is_(True),
+        exists().where(ProgramWatch.program_id == BountyProgram.id),
+    )
+    return and_(
+        col(BountyEventRow.kind).in_(sorted(kinds)),
+        or_(
+            BountyEventRow.kind == BountyEvent.WENT_OUT_OF_SCOPE.value,
+            exists().where(BountyProgram.id == BountyEventRow.program_id, followed),
+        ),
+    )
+
+
 def _notify(session, since) -> int:
-    """Delta-only, and only the change kinds the operator asked to hear about."""
     stored = session.execute(
         text("SELECT bounty_settings FROM instance_settings LIMIT 1")
     ).scalar_one_or_none()
@@ -68,23 +85,18 @@ def _notify(session, since) -> int:
     kinds = notify_events(stored)
     if not kinds:
         return 0
+    alerting = _alerting(kinds)
     counts = dict(
         session.execute(
             select(BountyEventRow.kind, func.count())
-            .where(
-                BountyEventRow.created_at >= since,
-                col(BountyEventRow.kind).in_(sorted(kinds)),
-            )
+            .where(BountyEventRow.created_at >= since, alerting)
             .group_by(BountyEventRow.kind)
         ).all()
     )
     rows = (
         session.execute(
             select(BountyEventRow)
-            .where(
-                BountyEventRow.created_at >= since,
-                col(BountyEventRow.kind).in_(sorted(kinds)),
-            )
+            .where(BountyEventRow.created_at >= since, alerting)
             .order_by(BountyEventRow.created_at.desc())
             .limit(ALERT_LIMIT)
         )

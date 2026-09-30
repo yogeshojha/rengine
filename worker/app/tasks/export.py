@@ -113,7 +113,6 @@ def run_export(self, export_id: str) -> None:
         row.duration_seconds = round(time.monotonic() - started, 2)
         row.expires_at = utc_now() + timedelta(days=RETENTION_DAYS)
         session.commit()
-        _notify(session, row, ok=True)
     except Exception as exc:
         _fail(session, export_id, exc)
     finally:
@@ -173,21 +172,15 @@ def _dimension_scope(session, row: Export, dimension: str) -> QueryScope:
     return project_scope(session, row.project_id, dimension)
 
 
-def _notify(session, row: Export, *, ok: bool) -> None:
-    """Announce the finished export."""
+def _notify_failed(session, row: Export) -> None:
     label = SURFACE_LABELS.get(row.dimension, "All dimensions")
-    body = (
-        f"{label} for {row.subject}: {row.row_count:,} rows ready to download."
-        if ok
-        else f"{label} for {row.subject} did not finish."
-    )
     try:
         SyncNotificationPublisher(settings.celery_broker_url).publish(
             session,
             NotificationType.SYSTEM,
-            NotificationSeverity.SUCCESS if ok else NotificationSeverity.ERROR,
-            "Export ready" if ok else "Export failed",
-            body,
+            NotificationSeverity.ERROR,
+            "Export failed",
+            f"{label} · {row.subject}. Run the export again.",
             project_id=row.project_id,
         )
     except Exception:
@@ -209,7 +202,7 @@ def _fail(session, export_id: str, exc: Exception) -> None:
     row.step = "Failed"
     row.completed_at = utc_now()
     session.commit()
-    _notify(session, row, ok=False)
+    _notify_failed(session, row)
 
 
 @shared_task(name="app.tasks.export.cleanup")

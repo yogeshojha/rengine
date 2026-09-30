@@ -4,12 +4,7 @@ from sqlalchemy import select
 from sqlmodel import col
 
 from app.celery import celery_app
-from app.config import settings
 from app.database import get_sync_session
-from shared.definitions.notifications import (
-    ripestat_enrichment_failed,
-    ripestat_enrichment_incomplete,
-)
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.target import TargetType
 from shared.enums.task_status import TaskStatus
@@ -17,10 +12,6 @@ from shared.logging import get_logger
 from shared.models.target import Target
 from shared.services.activity_log import ActivityLogService
 from shared.services.bgp_summary import write_bgp_summary_for_target
-from shared.services.notification_sync import (
-    SyncNotificationPublisher,
-    single_project,
-)
 from shared.utils.net import is_registry_routable
 from tools.ripestat.service import RIPEStatLookupError, RIPEStatService
 
@@ -40,7 +31,6 @@ def enrich_targets_bgp(target_ids: list[str]) -> dict:
 
     session = get_sync_session()
     activity = ActivityLogService(session)
-    notifier = SyncNotificationPublisher(settings.celery_broker_url)
 
     try:
         targets = (
@@ -56,7 +46,6 @@ def enrich_targets_bgp(target_ids: list[str]) -> dict:
         success = 0
         failed = 0
         skipped = 0
-        failed_names: list[str] = []
 
         for target in targets:
             try:
@@ -68,7 +57,6 @@ def enrich_targets_bgp(target_ids: list[str]) -> dict:
                     target.target_type,
                 )
                 failed += 1
-                failed_names.append(target.target_value)
                 continue
             if target.bgp_status == TaskStatus.SUCCESS:
                 success += 1
@@ -76,25 +64,6 @@ def enrich_targets_bgp(target_ids: list[str]) -> dict:
                 skipped += 1
             else:
                 failed += 1
-                failed_names.append(target.target_value)
-
-        total = success + failed + skipped
-        template = ripestat_enrichment_incomplete(
-            success=success,
-            failed=failed,
-            skipped=skipped,
-            total=total,
-            names=failed_names,
-        )
-        if template:
-            notifier.publish(
-                session=session,
-                type=template["type"],
-                severity=template["severity"],
-                title=template["title"],
-                message=template["message"],
-                project_id=single_project(targets),
-            )
 
         logger.info(
             "RIPEstat enrichment complete: %d success, %d failed, %d skipped",
@@ -106,18 +75,6 @@ def enrich_targets_bgp(target_ids: list[str]) -> dict:
 
     except Exception:
         logger.exception("RIPEstat enrichment task failed entirely")
-
-        template = ripestat_enrichment_failed()
-        try:
-            notifier.publish(
-                session=session,
-                type=template["type"],
-                severity=template["severity"],
-                title=template["title"],
-                message=template["message"],
-            )
-        except Exception:
-            logger.exception("Failed to send failure notification")
 
         raise
 

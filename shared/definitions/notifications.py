@@ -5,12 +5,10 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from shared.definitions.bounty_programs import BountyEvent, event_spec
-from shared.definitions.interest import InterestBand, kind_label
 from shared.definitions.surface import SURFACE_NOUN, SurfaceDimension
 from shared.definitions.tripwires import FIRE_ON_VERB
 from shared.definitions.tripwires import SAMPLE_ROWS as TRIPWIRE_SAMPLE_ROWS
 from shared.definitions.vulnerabilities import (
-    ALERT_SEVERITIES,
     SEVERITY_LABELS,
     SEVERITY_ORDER,
     Severity,
@@ -22,67 +20,11 @@ def _count(n: int, singular: str, plural: str) -> str:
     return f"{n:,} {singular if n == 1 else plural}"
 
 
-MAX_NAMED_TARGETS = 3
+def _more(total: int, shown: int) -> list[str]:
+    return [f"and {total - shown:,} more"] if total > shown else []
+
+
 ENRICHMENT_FAILED = "The lookup did not complete. Check the worker log."
-
-
-def _subject(names: Sequence[str], failed: int, total: int) -> str:
-    """Name the targets when there are few enough to read, else count them."""
-    listed = [n for n in names if n][:MAX_NAMED_TARGETS]
-    if listed and failed <= MAX_NAMED_TARGETS:
-        return ", ".join(listed)
-    return f"{failed} of {total} {'target' if total == 1 else 'targets'}"
-
-
-def whois_enrichment_incomplete(
-    success: int, failed: int, total: int, names: Sequence[str] = ()
-) -> dict | None:
-    if not failed:
-        return None
-    return {
-        "type": NotificationType.TARGET,
-        "severity": NotificationSeverity.WARNING,
-        "title": "WHOIS lookup failed",
-        "message": (
-            f"WHOIS lookup failed for {_subject(names, failed, total)}."
-            f"{f' {success} succeeded.' if success else ''}"
-        ),
-    }
-
-
-def whois_enrichment_failed() -> dict:
-    return {
-        "type": NotificationType.TARGET,
-        "severity": NotificationSeverity.ERROR,
-        "title": "WHOIS enrichment failed",
-        "message": "No target was enriched. Check the worker log.",
-    }
-
-
-def ripestat_enrichment_incomplete(
-    success: int, failed: int, skipped: int, total: int, names: Sequence[str] = ()
-) -> dict | None:
-    if not failed:
-        return None
-    return {
-        "type": NotificationType.TARGET,
-        "severity": NotificationSeverity.WARNING,
-        "title": "BGP enrichment failed",
-        "message": (
-            f"BGP lookup failed for {_subject(names, failed, total)}."
-            f"{f' {success} succeeded.' if success else ''}"
-            f"{f' {skipped} had nothing to look up.' if skipped else ''}"
-        ),
-    }
-
-
-def ripestat_enrichment_failed() -> dict:
-    return {
-        "type": NotificationType.TARGET,
-        "severity": NotificationSeverity.ERROR,
-        "title": "BGP enrichment failed",
-        "message": "No target was enriched. Check the worker log.",
-    }
 
 
 def _scan_meta(scan_id: str, tab: str | None = None) -> dict:
@@ -112,6 +54,9 @@ _SCAN_COUNT_LABELS: dict[str, tuple[str, str]] = {
     "endpoints_found": _noun(SurfaceDimension.ENDPOINTS),
     "secrets_found": _noun(SurfaceDimension.SECRETS),
 }
+
+
+SCAN_COUNT_COLUMNS: tuple[str, ...] = tuple(_SCAN_COUNT_LABELS)
 
 
 def scan_count_summary(counts: dict) -> str:
@@ -182,6 +127,8 @@ class ScanDeltas:
     new_vulnerabilities: int = 0
     vulnerability_counts: dict[str, int] = field(default_factory=dict)
     kev: int = 0
+    new_secrets: int = 0
+    exposures: int = 0
     dropped_hosts: int = 0
     posture_regressions: int = 0
 
@@ -190,8 +137,8 @@ class ScanDeltas:
         return self.vulnerability_counts.get(Severity.CRITICAL.value, 0)
 
     @property
-    def severe(self) -> int:
-        return sum(self.vulnerability_counts.get(s, 0) for s in ALERT_SEVERITIES)
+    def high(self) -> int:
+        return self.vulnerability_counts.get(Severity.HIGH.value, 0)
 
     def worth_reporting(self, counts: dict) -> bool:
         if not self.baseline:
@@ -200,141 +147,207 @@ class ScanDeltas:
             self.new_hosts
             or self.new_services
             or self.new_vulnerabilities
+            or self.new_secrets
+            or self.exposures
             or self.dropped_hosts
             or self.posture_regressions
         )
 
 
+_FINDING = _noun(SurfaceDimension.VULNERABILITIES)
+_WEB_ASSET = _noun(SurfaceDimension.WEB_ASSETS)
+_SERVICE = _noun(SurfaceDimension.SERVICES)
+_SECRET = _noun(SurfaceDimension.SECRETS)
+
+
 def _severity_phrase(counts: dict) -> str:
     return ", ".join(
-        f"{counts[name]} {SEVERITY_LABELS[name].lower()}"
+        f"{counts[name]:,} {SEVERITY_LABELS[name].lower()}"
         for name in SEVERITY_ORDER
         if counts.get(name)
     )
 
 
-def _digest_title(target: str, deltas: ScanDeltas) -> str:
-    if deltas.critical:
-        head = _count(
-            deltas.critical, *_noun(SurfaceDimension.VULNERABILITIES, before="critical")
-        )
-    elif deltas.kev:
-        head = _count(
-            deltas.kev, "exploited vulnerability", "exploited vulnerabilities"
-        )
-    elif deltas.severe or deltas.sensitive_services:
-        head = "New exposure"
-    elif not deltas.baseline:
-        return f"First scan of {target}"
-    elif deltas.new_vulnerabilities:
-        head = _count(
-            deltas.new_vulnerabilities,
-            *_noun(SurfaceDimension.VULNERABILITIES, before="new"),
-        )
-    elif deltas.posture_regressions:
-        head = "Sender policy weakened"
-    elif deltas.new_hosts or deltas.new_services:
-        head = "New assets"
-    else:
-        head = "Partial coverage"
-    return f"{head} on {target}"
+@dataclass(frozen=True)
+class _Lead:
+    key: str
+    title: str
+    severity: NotificationSeverity
+    tab: str | None
 
 
-def _digest_body(counts: dict, deltas: ScanDeltas) -> str:
-    if not deltas.baseline:
-        body = f"No earlier run. This run found {scan_count_summary(counts)}."
-    else:
-        detail = _severity_phrase(deltas.vulnerability_counts)
-        parts = [
-            text
-            for text, n in (
+_FINDING_LEADS = frozenset({"critical", "kev", "high", "findings"})
+_ADMIN_PORT = (
+    "administrative or datastore port open",
+    "administrative or datastore ports open",
+)
+_INVENTORY: tuple[str, ...] = (
+    "subdomains_found",
+    "ips_found",
+    "open_ports_found",
+    "endpoints_found",
+)
+
+
+def _findings_total(d: ScanDeltas) -> int:
+    return d.new_vulnerabilities if d.baseline else sum(d.vulnerability_counts.values())
+
+
+def _lead(target: str, d: ScanDeltas) -> _Lead:
+    vuln = SurfaceDimension.VULNERABILITIES
+    err, warn, info = (
+        NotificationSeverity.ERROR,
+        NotificationSeverity.WARNING,
+        NotificationSeverity.INFO,
+    )
+    finding = _noun(vuln, before="new") if d.baseline else _FINDING
+    ladder = (
+        (
+            "critical",
+            d.critical,
+            _noun(vuln, before="critical"),
+            err,
+            "vulnerabilities",
+        ),
+        (
+            "kev",
+            d.kev,
+            ("known exploited vulnerability", "known exploited vulnerabilities"),
+            err,
+            "vulnerabilities",
+        ),
+        (
+            "secrets",
+            d.new_secrets,
+            ("exposed secret", "exposed secrets"),
+            warn,
+            "secrets",
+        ),
+        ("high", d.high, _noun(vuln, before="high"), warn, "vulnerabilities"),
+        ("sensitive", d.sensitive_services, _ADMIN_PORT, warn, "services"),
+        ("posture", d.posture_regressions, None, warn, None),
+        ("findings", _findings_total(d), finding, info, "vulnerabilities"),
+        (
+            "hosts",
+            d.new_hosts if d.baseline else 0,
+            _noun(SurfaceDimension.WEB_ASSETS, before="new"),
+            info,
+            "web-assets",
+        ),
+        (
+            "services",
+            d.new_services if d.baseline else 0,
+            _noun(SurfaceDimension.SERVICES, before="new"),
+            info,
+            "services",
+        ),
+        (
+            "exposures",
+            d.exposures,
+            ("new exposure", "new exposures")
+            if d.baseline
+            else ("exposure", "exposures"),
+            info,
+            "interesting",
+        ),
+        ("partial", d.dropped_hosts, None, warn, "vulnerabilities"),
+    )
+    for key, n, noun, severity, tab in ladder:
+        if not n:
+            continue
+        if key == "posture":
+            title = f"SPF or DMARC weakened on {target}"
+        elif key == "partial":
+            title = f"Partial coverage on {target}"
+        else:
+            title = f"{_count(n, *noun)} on {target}"
+        return _Lead(key, title, severity, tab)
+    return _Lead("completed", f"Scan completed on {target}", info, None)
+
+
+def _findings_line(total: int, counts: dict, *, new: bool) -> str:
+    noun = _noun(SurfaceDimension.VULNERABILITIES, before="new") if new else _FINDING
+    detail = _severity_phrase(counts)
+    return _count(total, *noun) + (f" · {detail}" if detail else "")
+
+
+def _inventory(counts: dict) -> str:
+    return " · ".join(
+        _count(n, *_SCAN_COUNT_LABELS[col])
+        for col in _INVENTORY
+        if (n := counts.get(col, 0))
+    )
+
+
+def _digest_body(counts: dict, d: ScanDeltas, lead: str) -> str:
+    """Line 1 is what the list shows. Risk first, the inventory last."""
+    lines: list[tuple[str, str]] = []
+    total = _findings_total(d)
+    if total and lead == "findings":
+        lines.append(("severities", _severity_phrase(d.vulnerability_counts)))
+    elif total:
+        lines.append(
+            ("findings", _findings_line(total, d.vulnerability_counts, new=d.baseline))
+        )
+    if d.kev:
+        lines.append(("kev", f"{d.kev:,} known exploited"))
+    if d.new_secrets:
+        lines.append(
+            ("secrets", _count(d.new_secrets, "exposed secret", "exposed secrets"))
+        )
+    if d.sensitive_services:
+        lines.append(("sensitive", _count(d.sensitive_services, *_ADMIN_PORT)))
+    if d.posture_regressions:
+        zones = _count(d.posture_regressions, "zone", "zones")
+        lines.append(("posture", f"SPF or DMARC weakened on {zones}"))
+    if d.baseline:
+        grown = [
+            _count(n, *noun)
+            for key, n, noun in (
                 (
-                    _count(
-                        deltas.new_hosts,
-                        *_noun(SurfaceDimension.WEB_ASSETS, before="new"),
-                    ),
-                    deltas.new_hosts,
+                    "hosts",
+                    d.new_hosts,
+                    _noun(SurfaceDimension.WEB_ASSETS, before="new"),
                 ),
                 (
-                    _count(
-                        deltas.new_services,
-                        *_noun(SurfaceDimension.SERVICES, before="new"),
-                    ),
-                    deltas.new_services,
-                ),
-                (
-                    _count(
-                        deltas.new_vulnerabilities,
-                        *_noun(SurfaceDimension.VULNERABILITIES, before="new"),
-                    )
-                    + (f" · {detail}" if detail else ""),
-                    deltas.new_vulnerabilities,
+                    "services",
+                    d.new_services,
+                    _noun(SurfaceDimension.SERVICES, before="new"),
                 ),
             )
-            if n
+            if n and key != lead
         ]
-        if parts:
-            body = ", ".join(parts) + "."
-        else:
-            body = "Nothing new since the previous run."
-
-    if deltas.sensitive_services:
-        n = deltas.sensitive_services
-        body += (
-            f" {n} {'is' if n == 1 else 'are'} on an administrative or datastore port."
+        if grown:
+            lines.append(("grown", " · ".join(grown)))
+    if d.exposures:
+        flagged = ("new asset", "new assets") if d.baseline else ("asset", "assets")
+        lines.append(
+            ("exposures", f"{_count(d.exposures, *flagged)} flagged as exposures")
         )
-    if deltas.kev:
-        body += (
-            f" {deltas.kev} {'is' if deltas.kev == 1 else 'are'} "
-            f"known to be exploited in the wild."
+    if d.dropped_hosts:
+        lines.append(
+            ("coverage", f"{_count(d.dropped_hosts, *_WEB_ASSET)} not fully tested")
         )
-    if deltas.posture_regressions:
-        body += (
-            f" {_count(deltas.posture_regressions, 'zone', 'zones')} lost SPF or "
-            "DMARC protection since the previous run."
-        )
-    if deltas.dropped_hosts:
-        body += (
-            " Testing stopped on "
-            f"{_count(deltas.dropped_hosts, *_noun(SurfaceDimension.WEB_ASSETS))}."
-        )
-    return body
+    if not d.baseline:
+        lines.append(("inventory", _inventory(counts)))
+    return "\n".join(text for key, text in lines if key != lead and text)
 
 
 def scan_digest(
     scan_id: str, target: str, counts: dict, deltas: ScanDeltas
 ) -> dict | None:
-    """One row per run."""
+    """One message per run. The title's lead fact sets the severity."""
     if not deltas.worth_reporting(counts):
         return None
-
-    if deltas.critical or deltas.kev:
-        severity = NotificationSeverity.ERROR
-    elif (
-        deltas.severe
-        or deltas.sensitive_services
-        or deltas.dropped_hosts
-        or deltas.posture_regressions
-    ):
-        severity = NotificationSeverity.WARNING
-    else:
-        severity = NotificationSeverity.SUCCESS
-
-    if deltas.new_vulnerabilities or deltas.dropped_hosts:
-        tab = "vulnerabilities"
-    elif deltas.sensitive_services or deltas.new_services:
-        tab = "services"
-    else:
-        tab = None
-
+    lead = _lead(target, deltas)
     return {
         "type": NotificationType.VULNERABILITY
-        if deltas.new_vulnerabilities
+        if lead.key in _FINDING_LEADS
         else NotificationType.SCAN,
-        "severity": severity,
-        "title": _digest_title(target, deltas),
-        "message": _digest_body(counts, deltas),
-        "metadata": _scan_meta(scan_id, tab),
+        "severity": lead.severity,
+        "title": lead.title,
+        "message": _digest_body(counts, deltas, lead.key),
+        "metadata": _scan_meta(scan_id, lead.tab),
     }
 
 
@@ -349,45 +362,19 @@ def scan_failed(
         "type": ntype,
         "severity": NotificationSeverity.ERROR,
         "title": f"Scan failed on {target}",
-        "message": f"The {engine} run did not finish: {error[:300]}",
+        "message": f"{engine} · {error[:300]}",
         "metadata": _scan_meta(scan_id),
     }
 
 
-@dataclass
-class InterestLead:
-    host: str
-    band: str
-    score: int
-    kinds: tuple[str, ...] = ()
-    source: str = ""
-
-
-def _lead_line(lead: InterestLead) -> str:
-    reasons = ", ".join(kind_label(k) for k in lead.kinds[:3])
-    return f"• {lead.host}" + (f" · {reasons}" if reasons else "")
-
-
-def scan_interesting(
-    scan_id: str, target: str, leads: list[InterestLead], shown: int = 5
-) -> dict | None:
-    """Hosts not flagged by an earlier scan of this target."""
-    if not leads:
-        return None
-    critical = [x for x in leads if x.band == InterestBand.CRITICAL.value]
-    severity = NotificationSeverity.WARNING if critical else NotificationSeverity.INFO
-    head = _count(len(leads), "new asset", "new assets")
-    noun = "an exposure" if len(leads) == 1 else "exposures"
-    title = f"{head} flagged as {noun} on {target}"
-    body = "\n".join(_lead_line(lead) for lead in leads[:shown])
-    if len(leads) > shown:
-        body += f"\n… and {len(leads) - shown} more"
+def schedule_not_started(name: str, failed: int, total: int) -> dict:
     return {
         "type": NotificationType.SCAN,
-        "severity": severity,
-        "title": title,
-        "message": body,
-        "metadata": _scan_meta(scan_id, "interesting"),
+        "severity": NotificationSeverity.ERROR,
+        "title": f"Scheduled scan not started · {name}",
+        "message": f"{failed:,} of {_count(total, 'target', 'targets')} not started. "
+        "Check the schedule and the worker log.",
+        "metadata": {"url": "/automation/schedules"},
     }
 
 
@@ -402,28 +389,23 @@ class IntelShift:
     scan_id: str
 
 
-def _shift_line(shift: IntelShift) -> str:
-    return f"• {shift.cve} · {shift.target} · {shift.finding}"
-
-
 def intel_changed(shifts: list["IntelShift"], shown: int = 5) -> dict | None:
-    """Delta-only: findings that earned a new exploitation signal since the last refresh."""
+    """Findings that gained an exploitation signal since the last refresh."""
     if not shifts:
         return None
     exploited = [s for s in shifts if s.kind in {"kev", "ransom_path", "fresh_exploit"}]
-    severity = NotificationSeverity.ERROR if exploited else NotificationSeverity.WARNING
-    head = _count(len(shifts), "finding", "findings")
-    what = "became known-exploited" if exploited else "gained a public exploit"
-    title = f"{head} {what} since the last refresh"
-    body = "\n".join(_shift_line(s) for s in shifts[:shown])
-    if len(shifts) > shown:
-        body += f"\n… and {len(shifts) - shown} more"
+    head = _count(len(shifts), *_FINDING)
+    lines = [f"{s.cve} · {s.target} · {s.finding}" for s in shifts[:shown]]
     query = "is%3Aexploitable" if exploited else "is%3Aweaponised"
     return {
         "type": NotificationType.SCAN,
-        "severity": severity,
-        "title": title,
-        "message": body,
+        "severity": NotificationSeverity.ERROR
+        if exploited
+        else NotificationSeverity.WARNING,
+        "title": f"{head} now known exploited"
+        if exploited
+        else f"Public exploit available for {head}",
+        "message": "\n".join(lines + _more(len(shifts), shown)),
         "metadata": {"url": f"/surface/vulnerabilities?vuln_q={query}"},
     }
 
@@ -441,45 +423,28 @@ class SoftwareExposure:
     kev_ransomware: bool
 
 
-def _exposure_line(e: SoftwareExposure) -> str:
-    return f"• {e.cve} · {e.host} · {e.name} {e.version}"
-
-
 def software_exposed(
     exposures: list["SoftwareExposure"], shown: int = 5
 ) -> dict | None:
-    """Delta-only: matches absent from the previous corpus. Severe or known exploited."""
+    """Known exploited CVEs that newly match a detected software version."""
     loud: list[SoftwareExposure] = []
     seen: set[tuple[str, str, str, str]] = set()
     for e in exposures:
         key = (e.cve, e.host, e.name, e.version)
-        if key in seen or not (e.is_kev or e.severity in ALERT_SEVERITIES):
+        if key in seen or not e.is_kev:
             continue
         seen.add(key)
         loud.append(e)
     if not loud:
         return None
-    exploited = any(e.is_kev for e in loud)
     cves = sorted({e.cve for e in loud})
-    kev_cves = {e.cve for e in loud if e.is_kev}
-    hosts = len({e.host for e in loud})
-    assets = _count(hosts, "asset", "assets")
-    verb = "matches" if hosts == 1 else "match"
-    if kev_cves == set(cves):
-        what = "known-exploited "
-    elif not kev_cves:
-        what = "published "
-    else:
-        what = ""
-    if len(cves) == 1:
-        title = f"{assets} newly {verb} {cves[0]}"
-    else:
-        title = (
-            f"{assets} newly {verb} {_count(len(cves), f'{what}CVE', f'{what}CVEs')}"
-        )
-    body = "\n".join(_exposure_line(e) for e in loud[:shown])
-    if len(loud) > shown:
-        body += f"\n… and {len(loud) - shown} more"
+    assets = _count(len({e.host for e in loud}), "asset", "assets")
+    subject = (
+        cves[0]
+        if len(cves) == 1
+        else _count(len(cves), "known exploited CVE", "known exploited CVEs")
+    )
+    lines = [f"{e.cve} · {e.host} · {e.name} {e.version}" for e in loud[:shown]]
     url = (
         f"/surface/cve/{cves[0]}"
         if len(cves) == 1
@@ -487,11 +452,9 @@ def software_exposed(
     )
     return {
         "type": NotificationType.VULNERABILITY,
-        "severity": NotificationSeverity.ERROR
-        if exploited
-        else NotificationSeverity.WARNING,
-        "title": title,
-        "message": body,
+        "severity": NotificationSeverity.ERROR,
+        "title": f"{subject} matched on {assets}",
+        "message": "\n".join(lines + _more(len(loud), shown)),
         "metadata": {"url": url},
     }
 
@@ -504,9 +467,41 @@ class BountyChange:
     asset: str | None = None
 
 
+_BOUNTY_HEADS: dict[str, tuple[str, str]] = {
+    BountyEvent.WENT_OUT_OF_SCOPE.value: ("asset out of scope", "assets out of scope"),
+    BountyEvent.SCOPE_ADDED.value: ("scope addition", "scope additions"),
+    BountyEvent.CAME_INTO_SCOPE.value: ("asset back in scope", "assets back in scope"),
+    BountyEvent.SUBMISSIONS_OPENED.value: (
+        "program accepting reports",
+        "programs accepting reports",
+    ),
+    BountyEvent.BOUNTIES_STARTED.value: (
+        "program now paying bounties",
+        "programs now paying bounties",
+    ),
+    BountyEvent.PROGRAM_ADDED.value: ("new program", "new programs"),
+}
+
+
 def _bounty_line(change: "BountyChange") -> str:
     what = f" · {change.asset}" if change.asset else ""
-    return f"• {event_spec(change.kind).label} · {change.program}{what}"
+    return f"{event_spec(change.kind).label} · {change.program}{what}"
+
+
+def _bounty_title(by_kind: dict[str, int]) -> str:
+    total = sum(by_kind.values())
+    stop = by_kind.get(BountyEvent.WENT_OUT_OF_SCOPE.value, 0)
+    if stop:
+        head = _count(stop, *_BOUNTY_HEADS[BountyEvent.WENT_OUT_OF_SCOPE.value])
+        rest = total - stop
+        return head + (
+            f", {_count(rest, 'other update', 'other updates')}" if rest else ""
+        )
+    if len(by_kind) == 1:
+        kind = next(iter(by_kind))
+        if kind in _BOUNTY_HEADS:
+            return _count(total, *_BOUNTY_HEADS[kind])
+    return _count(total, "program update", "program updates")
 
 
 def bounty_changes(
@@ -514,33 +509,23 @@ def bounty_changes(
     shown: int = 6,
     counts: dict[str, int] | None = None,
 ) -> dict | None:
-    """Delta-only: what a program changed since the last sync."""
+    """What followed programs changed since the last sync."""
     if not changes:
         return None
-    by_kind = counts or {}
+    by_kind = {k: n for k, n in (counts or {}).items() if n}
     if not by_kind:
         for c in changes:
             by_kind[c.kind] = by_kind.get(c.kind, 0) + 1
-    total = sum(by_kind.values())
-    stop = by_kind.get(BountyEvent.WENT_OUT_OF_SCOPE.value, 0)
-    fresh = by_kind.get(BountyEvent.PROGRAM_ADDED.value, 0) + by_kind.get(
-        BountyEvent.SCOPE_ADDED.value, 0
-    )
-    severity = NotificationSeverity.WARNING if stop else NotificationSeverity.INFO
-    if stop:
-        title = _count(stop, "asset", "assets") + " went out of scope"
-    elif fresh:
-        title = _count(fresh, "scope change", "scope changes")
-    else:
-        title = _count(total, "program change", "program changes")
-    body = "\n".join(_bounty_line(c) for c in changes[:shown])
-    if total > shown:
-        body += f"\n… and {total - shown} more"
+    stop = BountyEvent.WENT_OUT_OF_SCOPE.value
+    ordered = sorted(changes, key=lambda c: c.kind != stop)
+    lines = [_bounty_line(c) for c in ordered[:shown]]
     return {
         "type": NotificationType.INTEGRATION,
-        "severity": severity,
-        "title": title,
-        "message": body,
+        "severity": NotificationSeverity.WARNING
+        if by_kind.get(stop)
+        else NotificationSeverity.INFO,
+        "title": _bounty_title(by_kind),
+        "message": "\n".join(lines + _more(sum(by_kind.values()), len(lines))),
         "metadata": {"url": "/bounty-hub?tab=updates"},
     }
 
@@ -562,46 +547,46 @@ class WatchAlert:
     repeat: bool = False
 
 
-@dataclass
-class NewChecksSweep:
-    templates: int
-    targets: int
-    busy: int = 0
-    waiting: int = 0
-    skipped: int = 0
-
-
-def new_checks_started(sweep: NewChecksSweep) -> dict | None:
-    """One message per project when the library gained checks and follow-up runs started."""
-    if sweep.templates <= 0:
-        return None
-    noun = "check" if sweep.templates == 1 else "checks"
-    lines = [
-        f"Follow-up runs started for {sweep.targets} "
-        f"{'target' if sweep.targets == 1 else 'targets'}."
-    ]
-    if sweep.busy:
+def watch_alert(alert: WatchAlert) -> dict:
+    """One message per new in-scope host, again when the host changes."""
+    head = "Changed in-scope asset" if alert.repeat else "New in-scope asset"
+    lines = [alert.host]
+    if alert.status_code is not None:
         lines.append(
-            f"{sweep.busy} {'target' if sweep.busy == 1 else 'targets'} skipped: "
-            "a scan is running."
+            str(alert.status_code) + (f" · {alert.title}" if alert.title else "")
         )
-    if sweep.waiting:
+    if alert.tech:
+        lines.append(", ".join(alert.tech[:6]))
+    if alert.ips:
         lines.append(
-            f"{sweep.waiting} {'target waits' if sweep.waiting == 1 else 'targets wait'} "
-            "for a completed scan."
+            ", ".join(alert.ips[:4]) + (" · wildcard DNS" if alert.wildcard else "")
         )
-    if sweep.skipped:
+    if alert.issuer or alert.not_before:
+        when = alert.not_before.strftime("%Y-%m-%d %H:%M") if alert.not_before else ""
         lines.append(
-            f"{sweep.skipped} {'target' if sweep.skipped == 1 else 'targets'} had "
-            "nothing to run: no applicable check, no web asset, or passive intensity."
+            "Certificate " + " · ".join(p for p in (alert.issuer or "", when) if p)
         )
+    if alert.matched_item:
+        lines.append(f"Scope {alert.matched_item}")
     return {
-        "type": NotificationType.NEW_CHECKS,
+        "type": NotificationType.WATCH,
         "severity": NotificationSeverity.INFO,
-        "title": f"{sweep.templates} new {noun} in the library",
+        "title": f"{head} · {alert.program}",
         "message": "\n".join(lines),
-        "metadata": {"url": "/arsenal?tab=nuclei"},
+        "metadata": _scan_meta(alert.scan_id)
+        if alert.scan_id
+        else {"target_id": alert.target_id, "url": f"/targets/{alert.target_id}"}
+        if alert.target_id
+        else {},
     }
+
+
+def _worst_severity(by_severity: dict[str, int]) -> NotificationSeverity:
+    if by_severity.get(Severity.CRITICAL.value):
+        return NotificationSeverity.ERROR
+    if by_severity.get(Severity.HIGH.value):
+        return NotificationSeverity.WARNING
+    return NotificationSeverity.INFO
 
 
 @dataclass
@@ -617,58 +602,17 @@ def new_checks_result(result: NewChecksResult) -> dict | None:
     """One message per follow-up run that found something."""
     if result.findings <= 0:
         return None
-    counts = [
-        f"{n} {sev}" for sev in SEVERITY_ORDER if (n := result.by_severity.get(sev, 0))
-    ]
-    checks = (
-        f"{result.checks} new {'check' if result.checks == 1 else 'checks'} tested."
-    )
-    found = f"{result.findings} {'finding' if result.findings == 1 else 'findings'}"
-    if counts:
-        found += ": " + ", ".join(counts)
-    severity = NotificationSeverity.INFO
-    if result.by_severity.get(Severity.CRITICAL.value):
-        severity = NotificationSeverity.ERROR
-    elif result.by_severity.get(Severity.HIGH.value):
-        severity = NotificationSeverity.WARNING
     return {
         "type": NotificationType.NEW_CHECKS,
-        "severity": severity,
-        "title": f"New checks · {result.target}",
-        "message": f"{checks}\n{found}.",
+        "severity": _worst_severity(result.by_severity),
+        "title": f"New checks found {_count(result.findings, *_FINDING)} on {result.target}",
+        "message": "\n".join(
+            (
+                _findings_line(result.findings, result.by_severity, new=False),
+                f"{_count(result.checks, 'new check', 'new checks')} tested",
+            )
+        ),
         "metadata": _scan_meta(result.scan_id, "vulnerabilities"),
-    }
-
-
-def watch_alert(alert: WatchAlert) -> dict:
-    """One message per new in-scope host, again only when the host changes."""
-    head = "Changed in-scope asset" if alert.repeat else "New in-scope asset"
-    lines = [alert.host]
-    if alert.status_code is not None:
-        answer = str(alert.status_code)
-        if alert.title:
-            answer += f" · {alert.title}"
-        lines.append(answer)
-    if alert.tech:
-        lines.append(", ".join(alert.tech[:6]))
-    if alert.ips:
-        addresses = ", ".join(alert.ips[:4])
-        lines.append(addresses + (" · wildcard DNS" if alert.wildcard else ""))
-    if alert.issuer or alert.not_before:
-        when = alert.not_before.strftime("%Y-%m-%d %H:%M") if alert.not_before else ""
-        lines.append(" · ".join(p for p in (alert.issuer or "", when) if p))
-    if alert.matched_item:
-        lines.append(f"Scope {alert.matched_item}")
-    return {
-        "type": NotificationType.WATCH,
-        "severity": NotificationSeverity.INFO,
-        "title": f"{head} · {alert.program}",
-        "message": "\n".join(lines),
-        "metadata": _scan_meta(alert.scan_id)
-        if alert.scan_id
-        else {"target_id": alert.target_id, "url": f"/targets/{alert.target_id}"}
-        if alert.target_id
-        else {},
     }
 
 
@@ -690,36 +634,61 @@ class TripwireFired:
     run_id: str
     scan_id: str
     live: bool = False
+    rescan: "TripwireRescan | None" = None
 
 
-def _worst(rows: Sequence[FiredRowLike]) -> NotificationSeverity:
-    found = {r.severity for r in rows if r.severity}
-    if Severity.CRITICAL.value in found:
-        return NotificationSeverity.ERROR
-    if Severity.HIGH.value in found:
-        return NotificationSeverity.WARNING
-    return NotificationSeverity.INFO
+@dataclass
+class TripwireRescan:
+    completed: bool
+    by_severity: dict[str, int] = field(default_factory=dict)
 
 
-def _tripwire_meta(run_id: str, scan_id: str) -> dict:
-    return {"scan_id": scan_id, "url": f"/tripwires?run={run_id}"}
+def _row_severity(rows: Sequence[FiredRowLike]) -> NotificationSeverity:
+    found: dict[str, int] = {}
+    for r in rows:
+        if r.severity:
+            found[r.severity] = found.get(r.severity, 0) + 1
+    return _worst_severity(found)
+
+
+def _louder(a: NotificationSeverity, b: NotificationSeverity) -> NotificationSeverity:
+    order = (
+        NotificationSeverity.INFO,
+        NotificationSeverity.WARNING,
+        NotificationSeverity.ERROR,
+    )
+    return a if order.index(a) >= order.index(b) else b
+
+
+def _rescan_line(rescan: TripwireRescan) -> str:
+    if not rescan.completed:
+        return "Rescan did not complete"
+    total = sum(rescan.by_severity.values())
+    if not total:
+        return "Rescan · no findings"
+    return "Rescan · " + _findings_line(total, rescan.by_severity, new=False)
 
 
 def tripwire_fired(event: TripwireFired) -> dict:
-    """One message per tripwire per run, listing the rows that fired."""
+    """One message per tripwire per run, with the rescan result when one ran."""
     singular, plural = SURFACE_NOUN[event.dimension]
     head = f"{_count(event.fired, singular, plural)} {FIRE_ON_VERB[event.fire_on]}"
-    lines = [f"{head} on {event.target}" + (" · scan running" if event.live else "")]
-    for row in event.rows[:TRIPWIRE_SAMPLE_ROWS]:
-        lines.append(row.label + (f" · {row.detail}" if row.detail else ""))
-    if event.fired > TRIPWIRE_SAMPLE_ROWS:
-        lines.append(f"and {event.fired - TRIPWIRE_SAMPLE_ROWS} more")
+    lines = [
+        f"{head} on {event.target}" + (" · scan in progress" if event.live else "")
+    ]
+    shown = list(event.rows[:TRIPWIRE_SAMPLE_ROWS])
+    lines += [r.label + (f" · {r.detail}" if r.detail else "") for r in shown]
+    lines += _more(event.fired, len(shown))
+    severity = _row_severity(event.rows)
+    if event.rescan is not None:
+        lines.append(_rescan_line(event.rescan))
+        severity = _louder(severity, _worst_severity(event.rescan.by_severity))
     return {
         "type": NotificationType.TRIPWIRE,
-        "severity": _worst(event.rows),
+        "severity": severity,
         "title": f"Tripwire · {event.name}",
         "message": "\n".join(lines),
-        "metadata": _tripwire_meta(event.run_id, event.scan_id),
+        "metadata": {"scan_id": event.scan_id, "url": f"/tripwires?run={event.run_id}"},
     }
 
 
@@ -727,32 +696,20 @@ def tripwire_fired(event: TripwireFired) -> dict:
 class TripwireRunResult:
     name: str
     target: str
-    label: str
     findings: int
     by_severity: dict[str, int] = field(default_factory=dict)
-    run_id: str = ""
     scan_id: str = ""
 
 
 def tripwire_run_result(result: TripwireRunResult) -> dict | None:
-    """One message per focused run a tripwire started that found something."""
+    """A rescan with no notify action speaks only when it found something."""
     if result.findings <= 0:
         return None
-    counts = [
-        f"{n} {sev}" for sev in SEVERITY_ORDER if (n := result.by_severity.get(sev, 0))
-    ]
-    found = f"{result.findings} {'finding' if result.findings == 1 else 'findings'}"
-    if counts:
-        found += ": " + ", ".join(counts)
-    severity = NotificationSeverity.INFO
-    if result.by_severity.get(Severity.CRITICAL.value):
-        severity = NotificationSeverity.ERROR
-    elif result.by_severity.get(Severity.HIGH.value):
-        severity = NotificationSeverity.WARNING
     return {
         "type": NotificationType.TRIPWIRE,
-        "severity": severity,
+        "severity": _worst_severity(result.by_severity),
         "title": f"Tripwire · {result.name}",
-        "message": f"{result.label} completed on {result.target}.\n{found}.",
+        "message": f"Rescan of {result.target} · "
+        + _findings_line(result.findings, result.by_severity, new=False),
         "metadata": _scan_meta(result.scan_id, "vulnerabilities"),
     }

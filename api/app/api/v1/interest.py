@@ -132,7 +132,7 @@ async def scan_interest(
         QueryScope((scan.id,), project_id=scan.project_id), body, scan
     )
     if page.summary.stale:
-        dispatch_interest_evaluation(str(scan_id), include_ai=False, notify=False)
+        dispatch_interest_evaluation(str(scan_id), include_ai=False)
     return page
 
 

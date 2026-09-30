@@ -6,10 +6,13 @@ from celery import shared_task
 from sqlalchemy import select
 
 from app.database import get_sync_session
+from shared.config import BaseAppSettings
+from shared.definitions.notifications import schedule_not_started
 from shared.enums.scan_schedule import ScheduleStatus
 from shared.logging import get_logger
 from shared.models.scan_schedule import ScanSchedule
 from shared.services.celery_dispatch import dispatch_scan_run
+from shared.services.notification_sync import SyncNotificationPublisher
 from shared.services.scan_factory import build_scan_for_target_sync
 from shared.services.schedule_timing import advance_schedule
 from shared.utils.datetime import utc_now
@@ -34,6 +37,7 @@ def _format_errors(errors: list[str]) -> str | None:
 def _fire_one(schedule_id: uuid.UUID) -> int:
     """Lock the schedule, advance it, build a PENDING scan per target."""
     queued: list[tuple[str, int]] = []
+    errors: list[str] = []
     with get_sync_session() as session:
         sched = session.execute(
             select(ScanSchedule)
@@ -50,7 +54,11 @@ def _fire_one(schedule_id: uuid.UUID) -> int:
             return 0
 
         advance_schedule(sched, fired_at=utc_now())
-        errors: list[str] = []
+        name, project_id, total = (
+            sched.name,
+            sched.project_id,
+            len(sched.target_ids or []),
+        )
         for tid in uuid_list(sched.target_ids):
             try:
                 scan = build_scan_for_target_sync(
@@ -90,7 +98,27 @@ def _fire_one(schedule_id: uuid.UUID) -> int:
         logger.error(
             "schedule %s built %d scans but dispatched none", schedule_id, len(queued)
         )
+    failed = len(errors) + len(queued) - dispatched
+    if failed:
+        _notify_not_started(name, project_id, failed, total)
     return dispatched
+
+
+def _notify_not_started(name: str, project_id, failed: int, total: int) -> None:
+    payload = schedule_not_started(name, failed, total)
+    try:
+        with get_sync_session() as session:
+            SyncNotificationPublisher(BaseAppSettings().redis_url).publish(
+                session=session,
+                type=payload["type"],
+                severity=payload["severity"],
+                title=payload["title"],
+                message=payload["message"],
+                metadata=payload["metadata"],
+                project_id=project_id,
+            )
+    except Exception:
+        logger.warning("schedule notification failed", exc_info=True)
 
 
 @shared_task(name="app.tasks.schedule.tick")

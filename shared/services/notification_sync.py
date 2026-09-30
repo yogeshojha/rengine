@@ -12,11 +12,6 @@ from shared.utils.datetime import utc_now
 logger = logging.getLogger(__name__)
 
 
-def single_project(rows) -> uuid.UUID | None:
-    ids = {r.project_id for r in rows if getattr(r, "project_id", None)}
-    return next(iter(ids)) if len(ids) == 1 else None
-
-
 class SyncNotificationPublisher:
     def __init__(self, redis_url: str) -> None:
         self._event_publisher = SyncEventPublisher(redis_url)
@@ -71,7 +66,7 @@ class SyncNotificationPublisher:
                 "title": notification.title,
                 "message": notification.message,
                 "notification_metadata": notification.notification_metadata,
-                "is_read": notification.is_read,
+                "is_read": False,
                 "created_at": notification.created_at.isoformat(),
             },
         )

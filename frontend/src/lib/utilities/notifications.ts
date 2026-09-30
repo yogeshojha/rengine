@@ -42,3 +42,11 @@ export const UNREAD_BADGE_CLASS: Record<MessageLevel, string> = {
 	success: 'bg-primary text-primary-foreground',
 	info: 'bg-primary text-primary-foreground'
 };
+
+export function headline(message: string): string {
+	return message.split('\n').find((line) => line.trim()) ?? '';
+}
+
+export function detailLines(message: string): string[] {
+	return message.split('\n').filter((line) => line.trim());
+}

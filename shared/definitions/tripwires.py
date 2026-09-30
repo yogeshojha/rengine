@@ -97,13 +97,13 @@ FIRE_ON_HELP: dict[str, str] = {
 # a row a fire mode reports on, as the message names it
 FIRE_ON_VERB: dict[str, str] = {
     FireOn.APPEARS.value: "appeared",
-    FireOn.BECOMES_TRUE.value: "became true",
+    FireOn.BECOMES_TRUE.value: "started matching",
     FireOn.MATCHES.value: "matched",
 }
 # the same after "would have"
 FIRE_ON_PARTICIPLE: dict[str, str] = {
     FireOn.APPEARS.value: "appeared",
-    FireOn.BECOMES_TRUE.value: "become true",
+    FireOn.BECOMES_TRUE.value: "started matching",
     FireOn.MATCHES.value: "matched",
 }
 

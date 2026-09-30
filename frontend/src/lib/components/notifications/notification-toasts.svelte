@@ -4,9 +4,10 @@
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
 	import type { MessageLevel } from '$lib/types/message-level';
+	import { headline } from '$lib/utilities/notifications';
 
-	const INTERRUPTS: MessageLevel[] = ['warning', 'error'];
-	const DURATION: Partial<Record<MessageLevel, number>> = { warning: 6000, error: 10000 };
+	const INTERRUPTS: MessageLevel[] = ['error'];
+	const DURATION: Partial<Record<MessageLevel, number>> = { error: 10000 };
 
 	function isSameOrigin(url: string): boolean {
 		try {
@@ -21,10 +22,8 @@
 			if (!INTERRUPTS.includes(notification.severity)) return;
 
 			const metadata = notification.notification_metadata;
-			const show = notification.severity === 'error' ? toast.error : toast.warning;
-
-			show(notification.title, {
-				description: notification.message,
+			toast.error(notification.title, {
+				description: headline(notification.message),
 				action: metadata?.url
 					? {
 							label: metadata.action_label ?? 'View',

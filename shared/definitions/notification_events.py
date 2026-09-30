@@ -20,44 +20,39 @@ CHANNEL_EVENTS: tuple[ChannelEvent, ...] = (
     ChannelEvent(
         NotificationType.SCAN.value,
         "Scan results",
-        "Run digest, failed runs, exposures and exploit intelligence changes",
+        "Run summaries, failed runs and exploit intelligence",
     ),
     ChannelEvent(
         NotificationType.VULNERABILITY.value,
-        "New vulnerabilities",
-        "New findings and inferred software CVEs",
+        "New findings",
+        "Findings and known exploited software CVEs",
     ),
     ChannelEvent(
         NotificationType.INTEGRATION.value,
         "Program changes",
-        "Scope and status changes on bug bounty programs",
+        "Scope changes on followed programs",
         CAP_BOUNTY_PROGRAMS,
     ),
     ChannelEvent(
         NotificationType.WATCH.value,
         "Program watches",
-        "New in-scope assets on a watched program",
+        "New in-scope assets",
         CAP_PROGRAM_WATCHES,
     ),
     ChannelEvent(
         NotificationType.NEW_CHECKS.value,
         "New checks",
-        "Library additions and follow-up run results",
+        "Findings from checks added to the library",
     ),
     ChannelEvent(
         NotificationType.TRIPWIRE.value,
         "Tripwires",
-        "A saved query matched a scan result",
+        "Saved query matches and rescan results",
     ),
     ChannelEvent(
         NotificationType.SYSTEM.value,
-        "Reports and exports",
-        "Ready or failed",
-    ),
-    ChannelEvent(
-        NotificationType.TARGET.value,
-        "Enrichment",
-        "Failed WHOIS and BGP lookups",
+        "Report failures",
+        "Reports and exports that did not complete",
     ),
 )
 

@@ -15,8 +15,10 @@ from shared.models.notification import (
     Notification,
     NotificationCreate,
     NotificationRead,
+    NotificationReceipt,
     NotificationStats,
 )
+from shared.models.user import User
 from shared.services.notification import NotificationManager
 
 router = APIRouter(
@@ -30,59 +32,72 @@ ProjectScope = Annotated[
 ]
 
 
-def _in_scope(query, project_id: UUID | None):
-    if project_id is None:
-        return query
-    return query.where(
-        (Notification.project_id == project_id) | Notification.project_id.is_(None)
+def _visible(query, user: User, project_id: UUID | None):
+    return NotificationManager.receipt_join(
+        NotificationManager.in_scope(query, project_id), user.id
+    )
+
+
+def _read(row) -> NotificationRead:
+    notification, read_at = row
+    return NotificationRead(
+        **notification.model_dump(exclude={"is_read"}), is_read=read_at is not None
     )
 
 
 @router.get("/stats", response_model=NotificationStats)
 async def get_notification_stats(
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
     project_id: ProjectScope = None,
 ):
-    total_result = await session.execute(
-        _in_scope(select(func.count(Notification.id)), project_id)
-    )
-    total = total_result.scalar_one()
-
-    unread_result = await session.execute(
-        _in_scope(
-            select(func.count(Notification.id)).where(Notification.is_read.is_(False)),
-            project_id,
+    row = (
+        await session.execute(
+            _visible(
+                select(
+                    func.count(Notification.id),
+                    func.count(Notification.id).filter(
+                        NotificationReceipt.read_at.is_(None)
+                    ),
+                ),
+                current_user,
+                project_id,
+            )
         )
-    )
-
-    unread = unread_result.scalar_one()
-
-    return NotificationStats(total=total, unread=unread)
+    ).one()
+    return NotificationStats(total=row[0], unread=row[1])
 
 
 @router.get("", response_model=Page[NotificationRead])
 async def list_notifications(
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
     project_id: ProjectScope = None,
 ):
-    query = _in_scope(select(Notification), project_id).order_by(
-        Notification.created_at.desc()
+    query = _visible(
+        select(Notification, NotificationReceipt.read_at), current_user, project_id
+    ).order_by(Notification.created_at.desc())
+    return await paginate(
+        session, query, unique=False, transformer=lambda rows: [_read(r) for r in rows]
     )
-    return await paginate(session, query)
 
 
 @router.get("/unread", response_model=Page[NotificationRead])
 async def list_unread_notifications(
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
     project_id: ProjectScope = None,
 ):
-    query = _in_scope(
-        select(Notification).where(Notification.is_read.is_(False)), project_id
-    ).order_by(Notification.created_at.desc())
-    return await paginate(session, query)
+    query = (
+        _visible(
+            select(Notification, NotificationReceipt.read_at), current_user, project_id
+        )
+        .where(NotificationReceipt.read_at.is_(None))
+        .order_by(Notification.created_at.desc())
+    )
+    return await paginate(
+        session, query, unique=False, transformer=lambda rows: [_read(r) for r in rows]
+    )
 
 
 @router.post("", response_model=NotificationRead, status_code=status.HTTP_201_CREATED)
@@ -106,12 +121,11 @@ async def create_notification(
 @router.patch("/{notification_id}/read", response_model=dict)
 async def mark_notification_as_read(
     notification_id: int,
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     updated = await NotificationManager.mark_as_read(
-        session=session,
-        notification_id=notification_id,
+        session, notification_id, current_user.id
     )
 
     if not updated:
@@ -125,12 +139,12 @@ async def mark_notification_as_read(
 
 @router.post("/read-all", response_model=dict)
 async def mark_all_notifications_as_read(
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
     project_id: ProjectScope = None,
 ):
     count = await NotificationManager.mark_all_as_read(
-        session=session, project_id=project_id
+        session, current_user.id, project_id
     )
 
     return {
@@ -143,12 +157,11 @@ async def mark_all_notifications_as_read(
 @router.delete("/{notification_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_notification(
     notification_id: int,
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    deleted = await NotificationManager.delete_notification(
-        session=session,
-        notification_id=notification_id,
+    deleted = await NotificationManager.dismiss(
+        session, notification_id, current_user.id
     )
 
     if not deleted:
@@ -160,11 +173,11 @@ async def delete_notification(
 
 @router.delete("", status_code=status.HTTP_204_NO_CONTENT)
 async def clear_all_notifications(
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
     project_id: ProjectScope = None,
 ):
-    await NotificationManager.clear_all(session=session, project_id=project_id)
+    await NotificationManager.dismiss_all(session, current_user.id, project_id)
 
 
 if settings.DEBUG:

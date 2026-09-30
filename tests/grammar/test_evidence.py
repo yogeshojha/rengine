@@ -190,7 +190,7 @@ async def test_the_cve_page_counts_equal_the_searches_they_open(estate, now) -> 
     assert report.locations_total == 5
 
 
-def test_the_exposure_notification_is_delta_only_and_severe_only() -> None:
+def test_the_exposure_notification_is_known_exploited_only() -> None:
     def row(cve: str, host: str, severity: str, kev: bool = False) -> SoftwareExposure:
         return SoftwareExposure(
             cve=cve,
@@ -202,17 +202,20 @@ def test_the_exposure_notification_is_delta_only_and_severe_only() -> None:
             kev_ransomware=False,
         )
 
-    assert software_exposed([row(CVE, "a", Severity.LOW.value)]) is None
+    assert software_exposed([row(CVE, "a", Severity.CRITICAL.value)]) is None
     payload = software_exposed(
         [
-            row(CVE, "a", Severity.HIGH.value),
-            row(CVE, "a", Severity.HIGH.value),
+            row(CVE, "a", Severity.HIGH.value, kev=True),
+            row(CVE, "a", Severity.HIGH.value, kev=True),
             row(CVE, "b", Severity.MEDIUM.value),
             row(CVE, "c", Severity.CRITICAL.value, kev=True),
         ]
     )
     assert payload is not None
-    assert payload["title"] == f"2 assets newly match {CVE}"
-    assert payload["message"].count("•") == 2
+    assert payload["title"] == f"{CVE} matched on 2 assets"
+    assert payload["message"].split("\n") == [
+        f"{CVE} · a · nginx 1.18.0",
+        f"{CVE} · c · nginx 1.18.0",
+    ]
     assert payload["metadata"]["url"] == f"/surface/cve/{CVE}"
     assert payload["severity"].value == "error"

@@ -102,11 +102,6 @@ class SweepResult:
     def targets(self) -> int:
         return sum(self.started.values())
 
-    def projects(self) -> set[uuid.UUID]:
-        return (
-            set(self.started) | set(self.busy) | set(self.waiting) | set(self.skipped)
-        )
-
 
 # ---------- reads ----------
 

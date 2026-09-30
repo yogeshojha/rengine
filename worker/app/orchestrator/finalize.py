@@ -4,8 +4,10 @@ from sqlalchemy import Integer, String, bindparam, select, text
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Session
 
+from shared.config import BaseAppSettings
 from shared.definitions.domain_posture import SPOOFABLE_KEYS
 from shared.definitions.notifications import (
+    SCAN_COUNT_COLUMNS,
     ScanDeltas,
     new_checks_result,
     scan_count_summary,
@@ -13,7 +15,7 @@ from shared.definitions.notifications import (
     scan_failed,
 )
 from shared.definitions.ports import SENSITIVE_PORTS
-from shared.definitions.secrets import FINALIZE_SOURCES
+from shared.definitions.secrets import FINALIZE_SOURCES, SecretState
 from shared.definitions.vulnerabilities import SUPPRESSED_STATES, CoverageStatus
 from shared.definitions.watch import WATCH_HOST_KEY
 from shared.enums.activity import ActivityEvent, ActivityLevel
@@ -74,10 +76,7 @@ def _undispatched(activities: list[ScanActivity]) -> str | None:
     covered = {a.name for a in activities if a.status in ACTIVITY_TERMINAL_STATUSES}
     if not expected - covered:
         return None
-    return (
-        f"Stopped after {len(covered & expected)} of {len(expected)} stages. "
-        "The remaining stages were not dispatched."
-    )
+    return f"Stopped after {len(covered & expected)} of {len(expected)} stages."
 
 
 def _notify(
@@ -226,6 +225,22 @@ GROUP BY v.severity
 """
 
 
+_NEW_SECRETS_SQL = """
+WITH seen AS (
+    SELECT DISTINCT b.fingerprint FROM secrets b
+    JOIN scans bs ON bs.id = b.scan_id AND bs.scope = 'full'
+                 AND bs.id <> :sid AND bs.started_at < :started
+    WHERE b.target_id = :tid
+)
+SELECT count(*) AS total
+FROM secrets p
+WHERE p.scan_id = :sid
+  AND p.is_secret
+  AND p.state = :exposed
+  AND NOT EXISTS (SELECT 1 FROM seen s WHERE s.fingerprint = p.fingerprint)
+"""
+
+
 _POSTURE_REGRESSIONS_SQL = """
 WITH prev AS (
     SELECT DISTINCT ON (b.zone) b.zone, b.posture_issues
@@ -290,6 +305,17 @@ def _count_new_vulnerabilities(session: Session, scan: Scan) -> tuple[dict, int,
     return counts, kev, sum(counts.values())
 
 
+def _count_new_secrets(session: Session, scan: Scan) -> int:
+    return int(
+        session.execute(
+            text(_NEW_SECRETS_SQL).bindparams(
+                *_scope(scan), bindparam("exposed", SecretState.EXPOSED.value)
+            )
+        ).scalar_one()
+        or 0
+    )
+
+
 def _posture_regressions(session: Session, scan: Scan) -> int:
     return int(
         session.execute(
@@ -313,14 +339,28 @@ def _dropped_hosts(session: Session, scan: Scan) -> int:
         .scalars()
         .all()
     )
-    return sum(len(entry or []) for entry in rows)
+    return len({drop.get("host") for entry in rows for drop in entry or []})
 
 
-def _dispatch_interest(scan: Scan) -> None:
+def _dispatch_interest(session: Session, scan: Scan) -> None:
     try:
-        dispatch_interest_evaluation(str(scan.id))
+        dispatch_interest_evaluation(str(scan.id), digest=True)
     except Exception:
         logger.warning("interest dispatch failed", exc_info=True)
+        notify_digest(session, scan)
+
+
+def notify_digest(session: Session, scan: Scan, exposures: int = 0) -> None:
+    counts = {col: getattr(scan, col, 0) or 0 for col in SCAN_COUNT_COLUMNS}
+    target_value = (scan.execution_config or {}).get("target_value", "")
+    _notify(
+        SyncNotificationPublisher(BaseAppSettings().redis_url),
+        session,
+        scan,
+        scan_digest(
+            str(scan.id), target_value, counts, _measure(session, scan, exposures)
+        ),
+    )
 
 
 def _dispatch_intel(scan: Scan) -> None:
@@ -376,7 +416,7 @@ def _settled_counts(session: Session, scan: Scan) -> dict:
     return derived_counts(session, scan.id)
 
 
-def _measure(session: Session, scan: Scan) -> ScanDeltas:
+def _measure(session: Session, scan: Scan, exposures: int = 0) -> ScanDeltas:
     """Deltas are measured against every earlier run, a clean earlier run included."""
     hosts, services, vulns, run = (
         _guard(session, lambda sql=sql: _has_baseline(session, scan, sql), False)
@@ -401,6 +441,8 @@ def _measure(session: Session, scan: Scan) -> ScanDeltas:
         new_vulnerabilities=new_vulns,
         vulnerability_counts=vuln_counts,
         kev=kev,
+        new_secrets=_guard(session, lambda: _count_new_secrets(session, scan), 0),
+        exposures=exposures,
         dropped_hosts=_guard(session, lambda: _dropped_hosts(session, scan), 0),
         posture_regressions=_guard(
             session, lambda: _posture_regressions(session, scan), 0
@@ -545,16 +587,8 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
                 new_checks_result(new_checks.result_of(session, scan)),
             )
         if scan.scope != ScanScope.FOCUSED.value:
-            _dispatch_interest(scan)
             dispatch_issue_observe(str(scan.id))
-            _notify(
-                notifier,
-                session,
-                scan,
-                scan_digest(
-                    str(scan.id), target_value, counts, _measure(session, scan)
-                ),
-            )
+            _dispatch_interest(session, scan)
         return
 
     activity_log.log(

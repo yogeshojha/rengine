@@ -2,9 +2,10 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import Check from '@lucide/svelte/icons/check';
-	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import X from '@lucide/svelte/icons/x';
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
 	import { relativeTime } from '$lib/utilities/dates.js';
+	import { headline } from '$lib/utilities/notifications';
 	import { getTypeIcon } from '$lib/utilities/notification-icons';
 	import { NOTIFICATION_TYPE_LABELS, type Notification } from '$lib/types/notification';
 	import type { MessageLevel } from '$lib/types/message-level';
@@ -39,6 +40,7 @@
 	const unread = $derived(!notification.is_read);
 	const TypeIcon = $derived(getTypeIcon(notification.type));
 	const meta = $derived(notification.notification_metadata);
+	const line = $derived(headline(notification.message));
 
 	function onKeydown(e: KeyboardEvent) {
 		if (e.key === 'Enter' || e.key === ' ') {
@@ -93,26 +95,26 @@
 			{/if}
 		</div>
 
-		<p class={cn('mt-0.5 text-muted-foreground', full ? 'text-sm' : 'line-clamp-2 text-xs')}>
-			{notification.message}
-		</p>
+		{#if line}
+			<p class={cn('mt-0.5 truncate text-muted-foreground', full ? 'text-sm' : 'text-xs')}>
+				{line}
+			</p>
+		{/if}
 
 		<div class="mt-1.5 flex items-center gap-2">
 			<span class="text-2xs font-medium tracking-[0.08em] text-muted-foreground/70 uppercase">
 				{NOTIFICATION_TYPE_LABELS[notification.type]}
 			</span>
-			{#if meta?.action_label}
+			{#if meta?.url}
 				<span class="text-muted-foreground/40">·</span>
 				<button
 					type="button"
 					class="inline-flex items-center gap-0.5 text-2xs font-medium text-primary hover:text-primary/80"
 					onclick={(e) => onAction(notification.id, e)}
 				>
-					{meta.action_label}
+					{meta.action_label ?? 'Open'}
 					<ArrowUpRight class="size-3" />
 				</button>
-			{:else if meta?.url}
-				<ArrowUpRight class="size-3 text-muted-foreground/60" />
 			{/if}
 		</div>
 	</div>
@@ -150,15 +152,15 @@
 						{...props}
 						variant="ghost"
 						size="icon-sm"
-						class="size-6 text-muted-foreground hover:text-destructive"
+						class="size-6 text-muted-foreground"
 						onclick={(e: MouseEvent) => onDelete(notification.id, e)}
-						aria-label="Delete notification"
+						aria-label="Dismiss"
 					>
-						<Trash2 class="size-3" />
+						<X class="size-3" />
 					</Button>
 				{/snippet}
 			</Tooltip.Trigger>
-			<Tooltip.Content side="bottom">Delete</Tooltip.Content>
+			<Tooltip.Content side="bottom">Dismiss</Tooltip.Content>
 		</Tooltip.Root>
 	</div>
 </div>

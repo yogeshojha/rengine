@@ -1,22 +1,13 @@
 from sqlalchemy import select
 
 from app.celery import celery_app
-from app.config import settings
 from app.database import get_sync_session
-from shared.definitions.notifications import (
-    ENRICHMENT_FAILED,
-    whois_enrichment_failed,
-    whois_enrichment_incomplete,
-)
+from shared.definitions.notifications import ENRICHMENT_FAILED
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.task_status import TaskStatus
 from shared.logging import get_logger
 from shared.models.target import Target
 from shared.services.activity_log import ActivityLogService
-from shared.services.notification_sync import (
-    SyncNotificationPublisher,
-    single_project,
-)
 from shared.utils.datetime import utc_now
 from tools.whois.service import WhoisError, WhoisNotApplicableError, WhoisService
 
@@ -104,7 +95,6 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:
         return {"success": 0, "failed": 0, "total": 0}
 
     session = get_sync_session()
-    notifier = SyncNotificationPublisher(settings.celery_broker_url)
     activity = ActivityLogService(session)
 
     try:
@@ -132,7 +122,6 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:
 
         success_count = 0
         failed_count = 0
-        failed_names: list[str] = []
 
         for normalized_query, group_targets in query_groups.items():
             ok, failed = _resolve_group(
@@ -140,26 +129,8 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:
             )
             success_count += ok
             failed_count += failed
-            if failed:
-                failed_names.extend(t.target_value for t in group_targets)
 
         total = success_count + failed_count
-        template = whois_enrichment_incomplete(
-            success=success_count,
-            failed=failed_count,
-            total=total,
-            names=failed_names,
-        )
-        if template:
-            notifier.publish(
-                session=session,
-                type=template["type"],
-                severity=template["severity"],
-                title=template["title"],
-                message=template["message"],
-                project_id=single_project(targets),
-            )
-
         return {"success": success_count, "failed": failed_count, "total": total}
 
     except Exception:
@@ -191,18 +162,6 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:
             session.commit()
         except Exception:
             logger.exception("Failed to update target statuses after task failure")
-
-        template = whois_enrichment_failed()
-        try:
-            notifier.publish(
-                session=session,
-                type=template["type"],
-                severity=template["severity"],
-                title=template["title"],
-                message=template["message"],
-            )
-        except Exception:
-            logger.exception("Failed to send failure notification")
 
         raise
 

@@ -111,6 +111,8 @@ def send_one(
     severity: str,
     attach: str | None = None,
 ) -> tuple[bool, str]:
+    if not body.strip():
+        title, body = "", title
     try:
         url = build_apprise_url(provider, config)
         if url is not None:

@@ -1,4 +1,4 @@
-"""Decide which assets are exposures after a scan, and say so once."""
+"""Decide which assets are exposures after a scan."""
 
 import contextlib
 import uuid
@@ -9,8 +9,8 @@ from sqlalchemy import select, text
 from sqlalchemy.exc import OperationalError
 
 from app.database import get_sync_session
+from app.orchestrator.finalize import notify_digest
 from shared.config import BaseAppSettings
-from shared.definitions.notifications import scan_interesting
 from shared.enums.scan import SCAN_TERMINAL_STATUSES, ScanStatus
 from shared.logging import get_logger
 from shared.models.scan import Scan
@@ -18,12 +18,11 @@ from shared.services.ai.config import load_config
 from shared.services.asset_query.lead_cache import bump_sync
 from shared.services.interest import (
     LIVE_SOURCES,
+    count_new_interesting,
     ensure_builtin,
     evaluate,
     is_stale,
-    new_interesting,
 )
-from shared.services.notification_sync import SyncNotificationPublisher
 from shared.services.orchestrator.events import ScanEventPublisher
 
 logger = get_logger(__name__)
@@ -61,20 +60,25 @@ def _publish(scan: Scan, result) -> None:
 
 
 @shared_task(name="app.tasks.interest.evaluate_scan")
-def evaluate_scan(scan_id: str, include_ai: bool = True, notify: bool = True) -> dict:
+def evaluate_scan(scan_id: str, include_ai: bool = True, digest: bool = False) -> dict:
     with get_sync_session() as session:
         ensure_builtin(session)
         scan = session.get(Scan, uuid.UUID(scan_id))
         if scan is None:
             return {"error": "scan not found"}
-        ai = load_config(session)
+        scored = False
         try:
+            ai = load_config(session)
             with _yield_to_scans(session):
                 result = evaluate(session, scan, ai=ai, include_ai=include_ai)
+            scored = True
         except OperationalError:
             session.rollback()
             logger.info("interest evaluation yielded to a running scan", scan=scan_id)
             return {"skipped": "busy"}
+        finally:
+            if digest:
+                _digest(session, scan, scored=scored)
         logger.info(
             "interest evaluated",
             scan=scan_id,
@@ -83,8 +87,6 @@ def evaluate_scan(scan_id: str, include_ai: bool = True, notify: bool = True) ->
             ai=result.ai_used,
             providers=",".join(result.ran),
         )
-        if notify:
-            _notify(session, scan)
         _publish(scan, result)
         return {
             "hosts": result.hosts,
@@ -113,25 +115,14 @@ def evaluate_live(scan_id: str) -> dict:
         return {"hosts": result.hosts, "signals": result.signals, "live": True}
 
 
-def _notify(session, scan: Scan) -> None:
+def _digest(session, scan: Scan, *, scored: bool) -> None:
     try:
-        leads = new_interesting(session, scan)
-        payload = scan_interesting(
-            str(scan.id), (scan.execution_config or {}).get("target_value", ""), leads
-        )
-        if payload is None:
-            return
-        SyncNotificationPublisher(BaseAppSettings().redis_url).publish(
-            session=session,
-            type=payload["type"],
-            severity=payload["severity"],
-            title=payload["title"],
-            message=payload["message"],
-            metadata=payload.get("metadata"),
-            project_id=scan.project_id,
-        )
+        exposures = count_new_interesting(session, scan) if scored else 0
     except Exception:
-        logger.warning("interest notification failed", exc_info=True)
+        session.rollback()
+        logger.warning("exposure count failed", exc_info=True)
+        exposures = 0
+    notify_digest(session, scan, exposures)
 
 
 @shared_task(name="app.tasks.interest.refresh_project")

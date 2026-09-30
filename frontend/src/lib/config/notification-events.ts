@@ -12,49 +12,43 @@ export const CHANNEL_EVENTS: ChannelEvent[] = [
 	{
 		type: 'scan',
 		label: 'Scan results',
-		hint: 'Run digest, failed runs, exposures and exploit intelligence changes',
+		hint: 'Run summaries, failed runs and exploit intelligence',
 		capability: null
 	},
 	{
 		type: 'vulnerability',
-		label: 'New vulnerabilities',
-		hint: 'New findings and inferred software CVEs',
+		label: 'New findings',
+		hint: 'Findings and known exploited software CVEs',
 		capability: null
 	},
 	{
 		type: 'integration',
 		label: 'Program changes',
-		hint: 'Scope and status changes on bug bounty programs',
+		hint: 'Scope changes on followed programs',
 		capability: Capability.BOUNTY_PROGRAMS
 	},
 	{
 		type: 'watch',
 		label: 'Program watches',
-		hint: 'New in-scope assets on a watched program',
+		hint: 'New in-scope assets',
 		capability: Capability.PROGRAM_WATCHES
 	},
 	{
 		type: 'new_checks',
 		label: 'New checks',
-		hint: 'Library additions and follow-up run results',
+		hint: 'Findings from checks added to the library',
 		capability: null
 	},
 	{
 		type: 'tripwire',
 		label: 'Tripwires',
-		hint: 'A saved query matched a scan result',
+		hint: 'Saved query matches and rescan results',
 		capability: null
 	},
 	{
 		type: 'system',
-		label: 'Reports and exports',
-		hint: 'Ready or failed',
-		capability: null
-	},
-	{
-		type: 'target',
-		label: 'Enrichment',
-		hint: 'Failed WHOIS and BGP lookups',
+		label: 'Report failures',
+		hint: 'Reports and exports that did not complete',
 		capability: null
 	}
 ];

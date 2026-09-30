@@ -8,10 +8,16 @@ from pydantic import ValidationError
 from sqlalchemy import select
 
 from app.services.tripwire import TripwireError, TripwireService
-from shared.definitions.notifications import FiredRowLike, TripwireFired, tripwire_fired
+from shared.definitions.notifications import (
+    FiredRowLike,
+    TripwireFired,
+    TripwireRescan,
+    tripwire_fired,
+)
 from shared.definitions.surface import SurfaceDimension
 from shared.definitions.tripwires import (
     TEMPLATES,
+    TRIPWIRE_KEY,
     CheckStatus,
     FireOn,
     OutcomeStatus,
@@ -458,10 +464,79 @@ def test_the_message_names_the_rows_and_takes_its_severity_from_them():
     assert payload["title"] == "Tripwire · Critical findings"
     assert payload["severity"] == NotificationSeverity.ERROR
     lines = payload["message"].split("\n")
-    assert lines[0] == "7 findings appeared on example.com · scan running"
+    assert lines[0] == "7 findings appeared on example.com · scan in progress"
     assert lines[1] == "CVE-2024-3400 · critical · vpn.example.com"
     assert lines[-1] == "and 2 more"
     assert payload["metadata"]["url"] == "/tripwires?run=run"
+
+
+def test_a_rescan_result_rides_on_the_same_message():
+    payload = tripwire_fired(
+        TripwireFired(
+            name="New admin panels",
+            target="example.com",
+            dimension=WEB,
+            fire_on=FireOn.APPEARS.value,
+            fired=1,
+            rows=[FiredRowLike("admin.example.com", "200 · Sign in")],
+            run_id="run",
+            scan_id="scan",
+            rescan=TripwireRescan(completed=True, by_severity={"critical": 1}),
+        )
+    )
+    assert payload["message"].split("\n")[-1] == "Rescan · 1 finding · 1 critical"
+    assert payload["severity"] == NotificationSeverity.ERROR
+
+
+# ---------- one message per tripwire ----------
+
+
+async def test_a_started_rescan_holds_the_message_until_its_result(
+    estate, now, flush_only, monkeypatch
+):
+    from shared.services.tripwires import actions  # noqa: PLC0415
+
+    await _two_runs(estate, now)
+    tripwire = _tripwire(
+        estate,
+        query="",
+        actions=[
+            {"kind": "notify", "channel_ids": []},
+            {"kind": "scan", "stages": ["http_probe"], "intensity": None},
+        ],
+    )
+    await estate.session.flush()
+    scan = await _scan(estate, "second")
+    sent: list[dict] = []
+
+    def record(*_args, **kwargs):
+        sent.append(kwargs)
+        return Outcome(kind="notify", status=OutcomeStatus.DONE.value)
+
+    monkeypatch.setattr(actions, "notify", record)
+    monkeypatch.setattr(
+        actions,
+        "start_run",
+        lambda *_a: Outcome(kind="scan", status=OutcomeStatus.DONE.value),
+    )
+    run = await estate.session.run_sync(
+        lambda s: check(s, tripwire, scan, act=actions.run_actions)
+    )
+    assert sent == []
+    assert [o["kind"] for o in run.outcomes] == ["scan"]
+
+    rescan_id = await estate.scan(
+        "example.com",
+        "rescan",
+        at=now,
+        scope="focused",
+        config={TRIPWIRE_KEY: {"tripwire_id": str(tripwire.id), "run_id": str(run.id)}},
+    )
+    rescan = await estate.session.get(Scan, rescan_id)
+    await estate.session.run_sync(lambda s: actions.settle_run(s, rescan))
+    assert len(sent) == 1
+    assert sent[0]["fired"] == 1
+    assert sent[0]["rescan"].completed is True
 
 
 # ---------- delivery ----------

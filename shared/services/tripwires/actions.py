@@ -13,6 +13,7 @@ from shared.config import BaseAppSettings
 from shared.definitions.notifications import (
     FiredRowLike,
     TripwireFired,
+    TripwireRescan,
     TripwireRunResult,
     tripwire_fired,
     tripwire_run_result,
@@ -108,6 +109,8 @@ def notify(
     channel_ids: list,
     *,
     live: bool = False,
+    fired: int | None = None,
+    rescan: TripwireRescan | None = None,
 ) -> Outcome:
     from shared.services import notifier  # noqa: PLC0415
 
@@ -117,11 +120,12 @@ def notify(
             target=_target_value(scan),
             dimension=tripwire.dimension,
             fire_on=tripwire.fire_on,
-            fired=len(rows),
+            fired=len(rows) if fired is None else fired,
             rows=[FiredRowLike(r.label, r.detail, r.severity) for r in rows],
             run_id=str(run.id),
             scan_id=str(scan.id),
             live=live,
+            rescan=rescan,
         )
     )
     channels = live_channels(session, channel_ids)
@@ -368,23 +372,41 @@ def settle_run(session: Session, scan: Scan) -> Outcome | None:
     run.outcomes = [*list(run.outcomes or []), outcome.model_dump(mode="json")]
     session.commit()
 
+    notify_action = next(
+        (
+            a
+            for a in parse_actions(tripwire.actions)
+            if a.kind == ActionKind.NOTIFY.value
+        ),
+        None,
+    )
+    fired_on = session.get(Scan, run.scan_id)
+    if notify_action is not None and fired_on is not None:
+        sent = notify(
+            session,
+            tripwire,
+            run,
+            fired_on,
+            [FiredRow.model_validate(r) for r in run.rows or []],
+            notify_action.channel_ids,
+            fired=run.fired,
+            rescan=TripwireRescan(completed=not failed, by_severity=counts),
+        )
+        run.outcomes = [*list(run.outcomes or []), sent.model_dump(mode="json")]
+        session.commit()
+        return outcome
+
     payload = tripwire_run_result(
         TripwireRunResult(
             name=tripwire.name,
             target=_target_value(scan),
-            label=scan.engine_name,
             findings=findings,
             by_severity=counts,
-            run_id=str(run.id),
             scan_id=str(scan.id),
         )
     )
     if payload is None:
         return outcome
-    chosen: list = []
-    for action in parse_actions(tripwire.actions):
-        if action.kind == ActionKind.NOTIFY.value:
-            chosen = list(action.channel_ids)
     try:
         SyncNotificationPublisher(BaseAppSettings().redis_url).publish(
             session=session,
@@ -394,7 +416,6 @@ def settle_run(session: Session, scan: Scan) -> Outcome | None:
             message=payload["message"],
             metadata=payload.get("metadata"),
             project_id=scan.project_id,
-            channel_ids=live_channels(session, chosen),
         )
     except Exception:
         logger.warning("tripwire run result notification failed", exc_info=True)
@@ -413,16 +434,22 @@ def run_actions(
     *,
     live: bool = False,
 ) -> list[Outcome]:
-    """Every action, notify first, each recorded on its own."""
+    """Every action, each recorded on its own. A started rescan carries the notification."""
     outcomes: list[Outcome] = []
     try:
         actions = parse_actions(tripwire.actions)
     except Exception:
         logger.warning("tripwire actions did not parse", tripwire=str(tripwire.id))
         return outcomes
-    for action in sorted(actions, key=lambda a: a.kind != ActionKind.NOTIFY.value):
+    rescanning = False
+    for action in sorted(actions, key=lambda a: a.kind == ActionKind.NOTIFY.value):
         try:
-            if action.kind == ActionKind.NOTIFY.value:
+            if action.kind == ActionKind.SCAN.value:
+                seeds = seeds_of(tripwire.dimension, rows)
+                started = start_run(session, tripwire, run, scan, seeds, action)
+                outcomes.append(started)
+                rescanning = rescanning or started.status == OutcomeStatus.DONE.value
+            elif action.kind == ActionKind.NOTIFY.value and not rescanning:
                 outcomes.append(
                     notify(
                         session,
@@ -434,9 +461,6 @@ def run_actions(
                         live=live,
                     )
                 )
-            elif action.kind == ActionKind.SCAN.value:
-                seeds = seeds_of(tripwire.dimension, rows)
-                outcomes.append(start_run(session, tripwire, run, scan, seeds, action))
         except Exception:
             session.rollback()
             logger.warning("tripwire action failed", action=action.kind, exc_info=True)

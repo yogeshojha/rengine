@@ -11,12 +11,7 @@ from shared.definitions.new_checks import (
     RUN_LABEL,
     run_label,
 )
-from shared.definitions.notifications import (
-    NewChecksResult,
-    NewChecksSweep,
-    new_checks_result,
-    new_checks_started,
-)
+from shared.definitions.notifications import NewChecksResult, new_checks_result
 from shared.enums.notification import NotificationSeverity, NotificationType
 from shared.models.notification_channel import DEFAULT_PREFERENCE_TYPES
 from shared.models.vuln_template import TemplateSelection
@@ -46,24 +41,6 @@ def test_an_empty_id_list_does_not_narrow():
     assert "template_id IN" not in sql
 
 
-def test_the_sweep_notice_counts_targets_and_busy_ones():
-    payload = new_checks_started(NewChecksSweep(templates=12, targets=3, busy=1))
-    assert payload is not None
-    assert payload["type"] is NotificationType.NEW_CHECKS
-    assert payload["title"] == "12 new checks in the library"
-    assert "Follow-up runs started for 3 targets." in payload["message"]
-    assert "1 target skipped: a scan is running." in payload["message"]
-    assert new_checks_started(NewChecksSweep(templates=0, targets=0)) is None
-
-    waiting = new_checks_started(NewChecksSweep(templates=2, targets=0, waiting=2))
-    assert waiting is not None
-    assert "2 targets wait for a completed scan." in waiting["message"]
-
-    idle = new_checks_started(NewChecksSweep(templates=2, targets=0, skipped=1))
-    assert idle is not None
-    assert "1 target had nothing to run" in idle["message"]
-
-
 def test_the_window_end_moves_back_to_the_last_row_when_capped():
     until = datetime(2026, 9, 20, tzinfo=UTC)
     few = [("a", datetime(2026, 9, 19, tzinfo=UTC))]
@@ -89,8 +66,8 @@ def test_the_run_notice_is_sent_only_with_findings():
     payload = new_checks_result(loud)
     assert payload is not None
     assert payload["severity"] is NotificationSeverity.ERROR
-    assert payload["title"] == "New checks · example.com"
-    assert payload["message"] == "3 new checks tested.\n2 findings: 1 critical, 1 low."
+    assert payload["title"] == "New checks found 2 findings on example.com"
+    assert payload["message"] == "2 findings · 1 critical, 1 low\n3 new checks tested"
     assert payload["metadata"]["url"] == "/scans/s?tab=vulnerabilities"
 
 

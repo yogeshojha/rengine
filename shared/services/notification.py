@@ -1,13 +1,19 @@
 import uuid
 
-from sqlalchemy import delete, update
+from sqlalchemy import DateTime, Uuid, and_, func, literal, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.enums.notification import NotificationSeverity, NotificationType
 from shared.enums.sse import SSEChannel, SSEEventType
 from shared.logging import get_logger
-from shared.models.notification import Notification, NotificationMetadata
+from shared.models.notification import (
+    Notification,
+    NotificationMetadata,
+    NotificationReceipt,
+)
 from shared.sse import sse_manager
+from shared.utils.datetime import utc_now
 
 logger = get_logger(__name__)
 
@@ -63,7 +69,7 @@ class NotificationManager:
                 "title": notification.title,
                 "message": notification.message,
                 "notification_metadata": notification.notification_metadata,
-                "is_read": notification.is_read,
+                "is_read": False,
                 "created_at": notification.created_at.isoformat(),
             },
         )
@@ -82,71 +88,88 @@ class NotificationManager:
         return notification
 
     @staticmethod
-    async def mark_as_read(
-        session: AsyncSession,
-        notification_id: int,
-        commit: bool = True,
-    ) -> bool:
-        result = await session.execute(
-            update(Notification)
-            .where(Notification.id == notification_id)
-            .values(is_read=True)
+    def in_scope(stmt, project_id: uuid.UUID | None):
+        if project_id is None:
+            return stmt
+        return stmt.where(
+            (Notification.project_id == project_id) | Notification.project_id.is_(None)
         )
 
-        if commit:
-            await session.commit()
+    @staticmethod
+    def receipt_join(stmt, user_id: uuid.UUID):
+        return stmt.outerjoin(
+            NotificationReceipt,
+            and_(
+                NotificationReceipt.notification_id == Notification.id,
+                NotificationReceipt.user_id == user_id,
+            ),
+        ).where(NotificationReceipt.dismissed_at.is_(None))
 
-        return result.rowcount > 0
+    @staticmethod
+    async def _stamp(
+        session: AsyncSession,
+        user_id: uuid.UUID,
+        ids,
+        *,
+        dismiss: bool,
+    ) -> int:
+        now = utc_now()
+        values = select(
+            Notification.id,
+            literal(user_id, type_=Uuid),
+            literal(now, type_=DateTime(timezone=True)),
+            literal(now if dismiss else None, type_=DateTime(timezone=True)),
+        ).where(Notification.id.in_(ids))
+        stmt = insert(NotificationReceipt).from_select(
+            ["notification_id", "user_id", "read_at", "dismissed_at"], values
+        )
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["notification_id", "user_id"],
+            set_={
+                "read_at": func.coalesce(NotificationReceipt.read_at, now),
+                **({"dismissed_at": now} if dismiss else {}),
+            },
+        )
+        result = await session.execute(stmt)
+        await session.commit()
+        return result.rowcount or 0
+
+    @staticmethod
+    async def mark_as_read(
+        session: AsyncSession, notification_id: int, user_id: uuid.UUID
+    ) -> bool:
+        return (
+            await NotificationManager._stamp(
+                session, user_id, [notification_id], dismiss=False
+            )
+            > 0
+        )
 
     @staticmethod
     async def mark_all_as_read(
-        session: AsyncSession,
-        project_id: uuid.UUID | None = None,
-        commit: bool = True,
+        session: AsyncSession, user_id: uuid.UUID, project_id: uuid.UUID | None = None
     ) -> int:
-        stmt = update(Notification).where(Notification.is_read.is_(False))
-        if project_id is not None:
-            stmt = stmt.where(
-                (Notification.project_id == project_id)
-                | Notification.project_id.is_(None)
-            )
-        result = await session.execute(stmt.values(is_read=True))
-
-        if commit:
-            await session.commit()
-
-        return result.rowcount
+        unread = NotificationManager.receipt_join(
+            NotificationManager.in_scope(select(Notification.id), project_id), user_id
+        ).where(NotificationReceipt.read_at.is_(None))
+        return await NotificationManager._stamp(session, user_id, unread, dismiss=False)
 
     @staticmethod
-    async def delete_notification(
-        session: AsyncSession,
-        notification_id: int,
-        commit: bool = True,
+    async def dismiss(
+        session: AsyncSession, notification_id: int, user_id: uuid.UUID
     ) -> bool:
-        result = await session.execute(
-            delete(Notification).where(Notification.id == notification_id)
+        return (
+            await NotificationManager._stamp(
+                session, user_id, [notification_id], dismiss=True
+            )
+            > 0
         )
 
-        if commit:
-            await session.commit()
-
-        return result.rowcount > 0
-
     @staticmethod
-    async def clear_all(
-        session: AsyncSession,
-        project_id: uuid.UUID | None = None,
-        commit: bool = True,
+    async def dismiss_all(
+        session: AsyncSession, user_id: uuid.UUID, project_id: uuid.UUID | None = None
     ) -> int:
-        stmt = delete(Notification)
-        if project_id is not None:
-            stmt = stmt.where(
-                (Notification.project_id == project_id)
-                | Notification.project_id.is_(None)
-            )
-        result = await session.execute(stmt)
-
-        if commit:
-            await session.commit()
-
-        return result.rowcount
+        shown = NotificationManager.receipt_join(
+            NotificationManager.in_scope(select(Notification.id), project_id), user_id
+        )
+        return await NotificationManager._stamp(session, user_id, shown, dismiss=True)

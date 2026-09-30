@@ -53,12 +53,26 @@ class Notification(NotificationBase, table=True):
     notification_metadata: dict = SQLField(
         default_factory=dict, sa_column=Column(JSONB)
     )
-    is_read: bool = SQLField(default=False, index=True)
     created_at: datetime = SQLField(default_factory=utc_now, index=True)
     expires_at: datetime = SQLField(
         default_factory=lambda: utc_now() + timedelta(days=7),
         index=True,
     )
+
+
+class NotificationReceipt(SQLModel, table=True):
+    """One user's read and dismiss state for one notification."""
+
+    __tablename__ = "notification_receipts"
+
+    notification_id: int = SQLField(
+        foreign_key="notifications.id", primary_key=True, ondelete="CASCADE"
+    )
+    user_id: uuid.UUID = SQLField(
+        foreign_key="users.id", primary_key=True, index=True, ondelete="CASCADE"
+    )
+    read_at: datetime | None = SQLField(default=None)
+    dismissed_at: datetime | None = SQLField(default=None)
 
 
 class NotificationCreate(NotificationBase):
@@ -69,7 +83,7 @@ class NotificationRead(NotificationBase):
     id: int
     project_id: uuid.UUID | None = None
     notification_metadata: dict
-    is_read: bool
+    is_read: bool = False
     created_at: datetime
     expires_at: datetime
 
