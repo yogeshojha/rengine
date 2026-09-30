@@ -14,6 +14,7 @@ final class Settings implements Sink.Config {
     private static final String KEY_IN_SCOPE = "rengine.inScopeOnly";
     private static final String KEY_TITLES = "rengine.captureTitles";
     private static final String KEY_SELF_SIGNED = "rengine.allowSelfSigned";
+    private static final String KEY_REQUEST_HEAD = "rengine.sendRequestHead";
     private static final String KEY_TARGET = "rengine.targetId";
     private static final String KEY_PROGRAM = "rengine.programId";
 
@@ -27,6 +28,7 @@ final class Settings implements Sink.Config {
     private volatile boolean inScopeOnly = true;
     private volatile boolean captureTitles = true;
     private volatile boolean allowSelfSigned = false;
+    private volatile boolean sendRequestHead = false;
     private volatile String targetId = null;
     private volatile String programId = null;
     private final java.util.concurrent.atomic.AtomicLong generation =
@@ -52,6 +54,7 @@ final class Settings implements Sink.Config {
         inScopeOnly = bool(KEY_IN_SCOPE, true);
         captureTitles = bool(KEY_TITLES, true);
         allowSelfSigned = bool(KEY_SELF_SIGNED, false);
+        sendRequestHead = bool(KEY_REQUEST_HEAD, false);
         String storedTarget = preferences.getString(KEY_TARGET);
         targetId = storedTarget == null || storedTarget.isBlank() ? null : storedTarget.trim();
         String storedProgram = preferences.getString(KEY_PROGRAM);
@@ -78,6 +81,7 @@ final class Settings implements Sink.Config {
         preferences.setBoolean(KEY_IN_SCOPE, inScopeOnly);
         preferences.setBoolean(KEY_TITLES, captureTitles);
         preferences.setBoolean(KEY_SELF_SIGNED, allowSelfSigned);
+        preferences.setBoolean(KEY_REQUEST_HEAD, sendRequestHead);
         preferences.setString(KEY_TARGET, targetId == null ? "" : targetId);
         preferences.setString(KEY_PROGRAM, programId == null ? "" : programId);
     }
@@ -170,5 +174,13 @@ final class Settings implements Sink.Config {
 
     void captureTitles(boolean value) {
         captureTitles = value;
+    }
+
+    boolean sendRequestHead() {
+        return sendRequestHead;
+    }
+
+    void sendRequestHead(boolean value) {
+        sendRequestHead = value;
     }
 }

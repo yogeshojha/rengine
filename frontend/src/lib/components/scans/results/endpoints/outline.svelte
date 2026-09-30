@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { ActionKind } from '$lib/config/connectors';
 	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
@@ -56,7 +57,7 @@
 		onHost: (host: string) => void;
 		onExpandedChange?: (count: number) => void;
 		onVerify?: (node: TreeNode) => void;
-		onSend?: (node: TreeNode, connectorId: string) => void;
+		onSend?: (node: TreeNode, connectorId: string, kind: ActionKind) => void;
 		checked?: (id: string) => boolean;
 		onCheck?: (e: EndpointRead) => void;
 		onSelectBranch?: (node: TreeNode) => void;

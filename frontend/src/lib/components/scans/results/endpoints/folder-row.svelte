@@ -8,7 +8,6 @@
 	import Rows3 from '@lucide/svelte/icons/rows-3';
 	import ListOrdered from '@lucide/svelte/icons/list-ordered';
 	import ShieldCheck from '@lucide/svelte/icons/shield-check';
-	import Send from '@lucide/svelte/icons/send';
 	import SquareCheck from '@lucide/svelte/icons/square-check';
 
 	import { Badge } from '$lib/components/ui/badge';
@@ -21,7 +20,8 @@
 	import { ACTIONS_BODY, ACTIONS_PIN, pinTone, rowTone, type TableColumn } from '../table/columns';
 	import { OUTLINE_LEAD_COLUMNS } from './columns';
 	import { GUIDE_WIDTH, OUTLINE_ROW_ATTR } from './outline-context';
-	import { proxyLabel } from './proxy';
+	import ProxyMenuItems from './proxy-menu-items.svelte';
+	import type { ActionKind } from '$lib/config/connectors';
 	import {
 		FOLDER_GLYPH_ICONS,
 		FOLDER_GLYPH_LABELS,
@@ -55,7 +55,7 @@
 		onOnly: () => void;
 		onList: () => void;
 		onVerify?: () => void;
-		onSend?: (connectorId: string) => void;
+		onSend?: (connectorId: string, kind: ActionKind) => void;
 		onSelectBranch?: () => void;
 	}
 
@@ -281,15 +281,7 @@
 						</DropdownMenu.Item>
 					{/if}
 					{#if onSend}
-						{#each connectors as c (c.id)}
-							<DropdownMenu.Item onclick={() => onSend(c.id)}>
-								<Send class="size-3.5" />
-								Send to {proxyLabel(c, catalog)}
-								{#if connectors.length > 1}
-									<span class="ml-auto truncate text-xs text-muted-foreground">{c.name}</span>
-								{/if}
-							</DropdownMenu.Item>
-						{/each}
+						<ProxyMenuItems {connectors} {catalog} {onSend} />
 					{/if}
 					<DropdownMenu.Separator />
 					<DropdownMenu.Item onclick={onCopy}>

@@ -3,7 +3,6 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from fastapi.responses import FileResponse
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
@@ -12,11 +11,9 @@ from app.core.client_ip import client_id
 from app.core.database import get_session
 from app.core.ratelimit import clear_failures, record_failure, too_many_attempts
 from app.services.connector import ConnectorError, ConnectorService, _guard
-from app.services.endpoint import EndpointService
 from connectors import auth
 from shared.models.connector import (
     ActionRead,
-    ActionRequest,
     AddTargetRequest,
     CandidateIds,
     CandidatePage,
@@ -27,9 +24,10 @@ from shared.models.connector import (
     ConnectorScope,
     ConnectorUpdate,
     DiscoveredDomain,
-    EndpointActionRequest,
     FindingRecorded,
     FindingReport,
+    HandoffRequest,
+    HandoffResult,
     HostFacts,
     IngestRequest,
     IngestResult,
@@ -37,7 +35,6 @@ from shared.models.connector import (
     TargetAdded,
     TargetOption,
 )
-from shared.models.endpoint import Endpoint
 from shared.models.scan import ScanRead
 
 router = APIRouter(prefix="/connectors", tags=["connectors"])
@@ -250,61 +247,20 @@ async def delete_connector(
     await service.delete(connector_id, project_id)
 
 
-@router.post("/{connector_id}/send")
-async def send_to_proxy(
+@router.post("/{connector_id}/handoff", response_model=HandoffResult)
+async def handoff_to_proxy(
     connector_id: UUID,
-    body: ActionRequest,
-    _current_user: CurrentUser,
-    service: Service,
-    project_id: ProjectId,
-):
-    try:
-        queued = await service.queue_actions(
-            connector_id, project_id, body.ids, body.kind
-        )
-    except ConnectorError as exc:
-        raise _guard(exc) from exc
-    return {"queued": queued}
-
-
-@router.post("/{connector_id}/send-endpoints")
-async def send_endpoints_to_proxy(
-    connector_id: UUID,
-    body: EndpointActionRequest,
+    body: HandoffRequest,
     _current_user: CurrentUser,
     service: Service,
     project_id: ProjectId,
     scope: EndpointScope,
-    session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    """Send endpoints, by id or by filter, to the proxy."""
-    if body.endpoint_ids:
-        rows = list(
-            (
-                await session.execute(
-                    select(Endpoint).where(
-                        Endpoint.id.in_(body.endpoint_ids),
-                        Endpoint.project_id == project_id,
-                    )
-                )
-            )
-            .scalars()
-            .all()
-        )
-    elif body.filter is not None:
-        rows = await EndpointService(session).pick(scope, body.filter, body.limit)
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Pass endpoint_ids or a filter.",
-        )
+    """Queue findings, web assets, hosts, endpoints or browsed shapes for the proxy."""
     try:
-        queued = await service.queue_endpoint_actions(
-            connector_id, project_id, rows, body.kind
-        )
+        return await service.handoff(connector_id, project_id, body, scope)
     except ConnectorError as exc:
         raise _guard(exc) from exc
-    return {"queued": queued}
 
 
 @router.get("/{connector_id}/candidates", response_model=CandidatePage)

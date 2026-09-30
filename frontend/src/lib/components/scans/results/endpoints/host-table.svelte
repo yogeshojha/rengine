@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { ActionKind } from '$lib/config/connectors';
 	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import ListHeader from '../table/list-header.svelte';
@@ -29,7 +30,7 @@
 		onWordlist: (node: TreeNode) => void;
 		onList: (node: TreeNode) => void;
 		onVerify?: (node: TreeNode) => void;
-		onSend?: (node: TreeNode, connectorId: string) => void;
+		onSend?: (node: TreeNode, connectorId: string, kind: ActionKind) => void;
 		onFilter?: (token: string) => void;
 		onShowRootOnly?: () => void;
 	}

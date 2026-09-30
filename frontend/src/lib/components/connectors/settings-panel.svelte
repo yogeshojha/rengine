@@ -174,6 +174,22 @@
 	</Card.Root>
 
 	<Card.Root class="gap-0 overflow-hidden py-0">
+		<PanelHead title="Sent requests" />
+		<div class="flex items-start justify-between gap-4 px-5 py-3.5">
+			<div class="min-w-0">
+				<p class="text-sm">Restore the run's credentials</p>
+				<p class="text-muted-foreground text-xs">
+					Header values a scan masked are filled from the run that sent the request.
+				</p>
+			</div>
+			<Switch
+				checked={connector.restore_credentials}
+				onCheckedChange={(v) => patch({ restore_credentials: v })}
+			/>
+		</div>
+	</Card.Root>
+
+	<Card.Root class="gap-0 overflow-hidden py-0">
 		<PanelHead title="Connection">
 			{#if saving}<span>Saving</span>{/if}
 		</PanelHead>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { ActionKind } from '$lib/config/connectors';
 	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
 	import { filterToken } from '$lib/utilities/scan-insights';
 	import { formatBytes, formatResponseTime } from '$lib/utilities/scan-correlation';
@@ -51,7 +52,7 @@
 		onReveal?: (e: EndpointRead) => void;
 		connectors?: Connector[];
 		catalog?: ConnectorSpec[];
-		onSend?: (e: EndpointRead, connectorId: string) => Promise<void> | void;
+		onSend?: (e: EndpointRead, connectorId: string, kind: ActionKind) => Promise<void> | void;
 	}
 
 	let {
@@ -164,7 +165,12 @@
 						{/snippet}
 					</Hint>
 					{#if onSend && connectors.length}
-						<ProxySend {connectors} {catalog} class="h-7" onSend={(id) => onSend(endpoint, id)} />
+						<ProxySend
+							{connectors}
+							{catalog}
+							dense
+							onSend={(id, kind) => onSend(endpoint, id, kind)}
+						/>
 					{/if}
 					<Button
 						variant="outline"

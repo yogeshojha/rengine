@@ -95,6 +95,59 @@ public final class ActionsHarness {
                 !Report.body("t", "https://a/b", "low", "GET", null, null, null)
                         .contains("\"request\""));
 
+        String raw = "[{\"kind\":\"organizer\",\"url\":\"https://a.acme.com:8443/api?q=1\","
+                + "\"method\":\"POST\",\"label\":\"CVE-2021-44228\","
+                + "\"request\":\"POST /api?q=1 HTTP/1.1\\r\\nHost: a.acme.com:8443\\r\\n"
+                + "X-Q: \\\"quoted\\\"\\r\\n\\r\\n[{\\\"a\\\":1},{\\\"b\\\":2}]\","
+                + "\"response\":\"HTTP/1.1 200 OK\\r\\n\\r\\n{}\","
+                + "\"notes\":\"reNgine \\u00b7 Critical\\nline two\",\"color\":\"red\"},"
+                + "{\"kind\":\"repeater\",\"url\":\"https://b.acme.com/x\",\"method\":\"GET\","
+                + "\"label\":null,\"request\":null,\"response\":null,\"notes\":null,"
+                + "\"color\":null}]";
+        List<Actions.Action> rich = Actions.parse(raw);
+        check("a request body holding },{ does not split the array", rich.size() == 2);
+        check("the raw request is decoded",
+                rich.get(0).request().equals("POST /api?q=1 HTTP/1.1\r\nHost: a.acme.com:8443\r\n"
+                        + "X-Q: \"quoted\"\r\n\r\n[{\"a\":1},{\"b\":2}]"));
+        check("the response is decoded", "HTTP/1.1 200 OK\r\n\r\n{}".equals(rich.get(0).response()));
+        check("a unicode escape is decoded",
+                "reNgine \u00b7 Critical\nline two".equals(rich.get(0).notes()));
+        check("the colour is read", "red".equals(rich.get(0).color()));
+        check("a bare action has no request", !rich.get(1).hasRequest());
+        check("a bare action has no response", !rich.get(1).hasResponse());
+
+        Handoff.Origin origin = Handoff.origin("https://a.acme.com:8443/api?q=1");
+        check("the origin reads host, port and tls",
+                origin.host().equals("a.acme.com") && origin.port() == 8443 && origin.secure());
+        check("a plain url takes port 80",
+                Handoff.origin("http://b.acme.com/x").port() == 80
+                        && !Handoff.origin("http://b.acme.com/x").secure());
+        check("an https url takes port 443", Handoff.origin("https://c.acme.com").port() == 443);
+        check("an ipv6 literal is handed over bare",
+                Handoff.origin("http://[2001:db8::1]:8080/").host().equals("2001:db8::1"));
+        check("an unknown tool falls back to Repeater", Handoff.tool("scanner").equals(Handoff.REPEATER));
+        check("site map is a tool", Handoff.tool("sitemap").equals(Handoff.SITE_MAP));
+        check("a null tool is Repeater", Handoff.tool(null).equals(Handoff.REPEATER));
+
+        check("a quoted value survives readString",
+                "a \"b\" c".equals(Json.readString("{\"x\":\"a \\\"b\\\" c\",\"y\":1}", "x")));
+        check("a nested key is not read as top level",
+                Json.readString("{\"inner\":{\"x\":\"no\"},\"x\":\"yes\"}", "x").equals("yes"));
+        check("a number reads as its literal", "8443".equals(Json.readString("{\"port\":8443}", "port")));
+        check("a string array with commas inside values parses",
+                Json.strings("{\"include\":[\"https://a/x,y\",\"https://b\"]}", "include")
+                        .equals(List.of("https://a/x,y", "https://b")));
+
+        String head = Capture.sample("GET /a?x=1 HTTP/1.1\r\nHost: h\r\nCookie: sid=1\r\n"
+                + "Authorization: Bearer t\r\nX-Trace: 9\r\n\r\nbody=1");
+        check("the sample keeps the request line", head.startsWith("GET /a?x=1 HTTP/1.1\r\n"));
+        check("the sample masks the cookie", head.contains("Cookie: " + Capture.MASK));
+        check("the sample masks authorization", head.contains("Authorization: " + Capture.MASK));
+        check("the sample keeps other headers", head.contains("X-Trace: 9"));
+        check("the sample drops the body", !head.contains("body=1"));
+        check("the sample ends with a blank line", head.endsWith("\r\n\r\n"));
+        check("an empty request has no sample", Capture.sample("") == null);
+
         Notices held = new Notices();
         for (int i = 0; i < Notices.KEEP + 5; i++) {
             held.add(new Actions.Notice("sensitive", "Sensitive path", "https://a/" + i, "a"));

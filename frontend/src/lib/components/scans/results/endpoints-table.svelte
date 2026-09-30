@@ -37,7 +37,10 @@
 	import CoverageStrip from './endpoints/coverage-strip.svelte';
 	import EndpointDetailSheet from './endpoint-detail-sheet.svelte';
 	import { collectRows, copyBranch, copyWordlist, hostNode } from './endpoints/branch-actions';
-	import { proxyLabel } from './endpoints/proxy';
+	import { handoffToProxy } from './endpoints/proxy';
+	import ProxySend from './endpoints/proxy-send.svelte';
+	import { MAX_HANDOFF, type ActionKind } from '$lib/config/connectors';
+	import type { HandoffRequest } from '$lib/types/connector';
 	import {
 		ENDPOINT_COLUMNS,
 		ENDPOINT_LEAD_COLUMNS,
@@ -52,7 +55,6 @@
 	import { seedKindFor, selectionLabel, startRescan } from '$lib/utilities/rechecks';
 	import type { SeedSelection } from '$lib/types/recheck';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
-	import { connectorsApi } from '$lib/api/connectors';
 	import { endpointQuerySchema } from '$lib/stores/query-schema.svelte';
 	import { connectors as connectorStore } from '$lib/stores/connectors.svelte';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
@@ -138,7 +140,6 @@
 
 	const DEFAULT_SORT = { key: 'relevance', dir: -1 as const };
 	const DEFAULT_HIDE_STATIC: Record<string, boolean> = { hosts: true, merged: true, list: false };
-	const SEND_CAP = 200;
 
 	function normalizeView(raw: string | null | undefined): EndpointView {
 		if (raw === 'outline') return 'hosts';
@@ -789,38 +790,31 @@
 			toast.error('Verification not queued.');
 		}
 	}
-	function proxyName(connectorId: string): string {
-		const c = proxies.find((p) => p.id === connectorId);
-		return c ? proxyLabel(c, catalog) : 'the proxy';
+	function handoff(connectorId: string, body: HandoffRequest) {
+		return handoffToProxy({
+			connectorId,
+			projectId,
+			scanId,
+			body,
+			connectors: proxies,
+			catalog
+		});
 	}
-	async function sendBranch(node: TreeNode, connectorId: string) {
+	async function sendBranch(node: TreeNode, connectorId: string, kind: ActionKind) {
 		const filter: EndpointFilter = {
 			...treeFilter,
 			host: isMerged ? null : node.host,
 			dir_path: node.kind === 'host' ? null : node.path,
 			subtree: true
 		};
-		try {
-			const res = await connectorsApi.sendEndpoints(connectorId, projectId, scanId, {
-				filter,
-				limit: SEND_CAP
-			});
-			toast.success(
-				`${res.queued.toLocaleString()} ${res.queued === 1 ? 'request' : 'requests'} sent to ${proxyName(connectorId)}.`
-			);
-		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Requests not sent.');
-		}
+		await handoff(connectorId, { kind, filter, limit: MAX_HANDOFF });
 	}
-	async function sendEndpoint(e: Endpoint, connectorId: string) {
-		try {
-			await connectorsApi.sendEndpoints(connectorId, projectId, scanId, {
-				endpoint_ids: [e.id]
-			});
-			toast.success(`Sent to ${proxyName(connectorId)}.`);
-		} catch (err) {
-			toast.error(err instanceof Error ? err.message : 'Request not sent.');
-		}
+	async function sendEndpoint(e: Endpoint, connectorId: string, kind: ActionKind) {
+		await handoff(connectorId, { kind, endpoint_ids: [e.id] });
+	}
+	async function sendSelection(connectorId: string, kind: ActionKind) {
+		const ids = selection.ids().slice(0, MAX_HANDOFF);
+		if (await handoff(connectorId, { kind, endpoint_ids: ids })) selection.clear();
 	}
 	let branchScope = $derived({ projectId, scanId, filter: treeFilter, merged: isMerged });
 
@@ -1222,7 +1216,7 @@
 			onCopy={() => copyBranch(branchScope, hostStandIn)}
 			onWordlist={() => copyWordlist(branchScope, hostStandIn)}
 			onVerify={projectWide ? undefined : () => verifyBranch(hostStandIn)}
-			onSend={proxies.length ? (id) => sendBranch(hostStandIn, id) : undefined}
+			onSend={proxies.length ? (id, kind) => sendBranch(hostStandIn, id, kind) : undefined}
 			onAcross={acrossHosts}
 		/>
 	{:else if accountLoaded}
@@ -1593,7 +1587,13 @@
 		void refresh();
 	}}
 	onClear={() => selection.clear()}
-/>
+>
+	{#snippet actions()}
+		{#if proxies.length}
+			<ProxySend connectors={proxies} {catalog} variant="ghost" onSend={sendSelection} />
+		{/if}
+	{/snippet}
+</RowSelectionBar>
 
 <LaunchDialog
 	open={rescanOptionsFor !== null}

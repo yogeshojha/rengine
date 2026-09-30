@@ -43,6 +43,7 @@ final class ConnectorTab {
     private final Settings settings;
     private final Sink sink;
     private final Actions actions;
+    private final Handoff handoff;
     private final Targets targets;
     private final Facts facts;
     private final Capture capture;
@@ -56,9 +57,12 @@ final class ConnectorTab {
     private final JCheckBox captureRepeater = new JCheckBox("Repeater requests");
     private final JCheckBox inScopeOnly = new JCheckBox("Only hosts in Burp's target scope");
     private final JCheckBox captureTitles = new JCheckBox("Read page titles from HTML responses");
+    private final JCheckBox sendRequestHead =
+            new JCheckBox("Send request headers. Credential values are masked.");
     private final JCheckBox allowSelfSigned = new JCheckBox("Accept a self-signed certificate");
     private final JLabel status = new JLabel(" ");
     private final JLabel counters = new JLabel(" ");
+    private final JLabel received = new JLabel(" ");
     private final JLabel result = new JLabel(" ");
     private final JLabel hostLine = new JLabel(" ");
     private final JComboBox<Targets.Option> target = new JComboBox<>();
@@ -77,12 +81,14 @@ final class ConnectorTab {
             Settings settings,
             Sink sink,
             Actions actions,
+            Handoff handoff,
             Capture capture,
             Notices notices) {
         this.api = api;
         this.settings = settings;
         this.sink = sink;
         this.actions = actions;
+        this.handoff = handoff;
         this.targets = new Targets(settings);
         this.facts = new Facts(settings);
         this.capture = capture;
@@ -111,6 +117,7 @@ final class ConnectorTab {
         captureRepeater.setSelected(settings.captureRepeater());
         inScopeOnly.setSelected(settings.inScopeOnly());
         captureTitles.setSelected(settings.captureTitles());
+        sendRequestHead.setSelected(settings.sendRequestHead());
         allowSelfSigned.setSelected(settings.allowSelfSigned());
 
         row = section(form, c, row, "Connection");
@@ -153,7 +160,8 @@ final class ConnectorTab {
         row = gap(form, c, row);
         row = section(form, c, row, "Capture");
         for (JCheckBox box : new JCheckBox[] {
-            enabled, captureProxy, captureRepeater, inScopeOnly, captureTitles, allowSelfSigned
+            enabled, captureProxy, captureRepeater, inScopeOnly, captureTitles, sendRequestHead,
+            allowSelfSigned
         }) {
             box.addActionListener(e -> save());
             row = line(form, c, row, box);
@@ -163,6 +171,7 @@ final class ConnectorTab {
         row = section(form, c, row, "Activity");
         row = line(form, c, row, counters);
         row = line(form, c, row, result);
+        row = line(form, c, row, received);
 
         row = gap(form, c, row);
         row = section(form, c, row, "From reNgine");
@@ -401,6 +410,7 @@ final class ConnectorTab {
         settings.captureRepeater(captureRepeater.isSelected());
         settings.inScopeOnly(inScopeOnly.isSelected());
         settings.captureTitles(captureTitles.isSelected());
+        settings.sendRequestHead(sendRequestHead.isSelected());
         settings.allowSelfSigned(allowSelfSigned.isSelected());
         settings.save();
         status.setText("Saved.");
@@ -419,11 +429,21 @@ final class ConnectorTab {
 
     private void refresh() {
         counters.setText(String.format(
-                "%d sent · %d queued · %d repeated · %d dropped · %d failed · %d to Repeater",
-                sink.sent(), sink.queueDepth(), sink.deduped(), sink.dropped(), sink.failed(),
-                actions.delivered()));
+                "%d sent · %d queued · %d repeated · %d dropped · %d failed",
+                sink.sent(), sink.queueDepth(), sink.deduped(), sink.dropped(), sink.failed()));
+        received.setText(describeReceived());
         result.setText(explain());
         renderNotices();
+    }
+
+    /** What reNgine handed to Burp. */
+    private String describeReceived() {
+        String error = actions.lastError();
+        if (error != null) {
+            return error;
+        }
+        String summary = handoff.summary();
+        return summary.isEmpty() ? "Nothing received from reNgine." : "Received: " + summary;
     }
 
     private void renderNotices() {

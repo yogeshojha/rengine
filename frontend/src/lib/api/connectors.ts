@@ -1,7 +1,5 @@
 import { api } from './client';
-import { ActionKind } from '$lib/config/connectors';
 import { scopeQuery } from '$lib/utilities/surface-scope';
-import type { EndpointFilter } from '$lib/utilities/endpoints';
 import type {
 	Candidate,
 	CandidatePage,
@@ -11,6 +9,8 @@ import type {
 	ConnectorCreated,
 	ConnectorSpec,
 	DiscoveredDomain,
+	HandoffRequest,
+	HandoffResult,
 	TargetAdded,
 	ConnectorUpdate
 } from '$lib/types/connector';
@@ -65,23 +65,16 @@ export const connectorsApi = {
 		return api.delete<{ removed: number }>(`/connectors/${id}/candidates?project_id=${projectId}`);
 	},
 
-	sendEndpoints(
+	handoff(
 		id: string,
 		projectId: string,
-		scanId: string,
-		body: { endpoint_ids?: string[]; filter?: EndpointFilter; limit?: number }
-	): Promise<{ queued: number }> {
-		return api.post<{ queued: number }>(
-			`/connectors/${id}/send-endpoints?${scopeQuery({ projectId, scanId })}`,
+		body: HandoffRequest,
+		scanId?: string | null
+	): Promise<HandoffResult> {
+		return api.post<HandoffResult>(
+			`/connectors/${id}/handoff?${scopeQuery({ projectId, scanId: scanId ?? undefined })}`,
 			body
 		);
-	},
-
-	send(id: string, projectId: string, ids: string[]): Promise<{ queued: number }> {
-		return api.post<{ queued: number }>(`/connectors/${id}/send?project_id=${projectId}`, {
-			ids,
-			kind: ActionKind.REPEATER
-		});
 	},
 
 	scan(id: string, projectId: string, ids: string[] = []): Promise<ScanRead[]> {

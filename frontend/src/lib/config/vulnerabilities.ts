@@ -164,8 +164,11 @@ export const VULN_STATE_HELP: Record<string, string> = {
 
 export const SUPPRESSED_STATES: string[] = [VulnState.FALSE_POSITIVE, VulnState.ACCEPTED];
 
+// mirrors shared/definitions/vulnerabilities.py:Protocol
+export const HTTP_PROTOCOL = 'http';
+
 export const PROTOCOL_LABELS: Record<string, string> = {
-	http: 'HTTP',
+	[HTTP_PROTOCOL]: 'HTTP',
 	network: 'Network',
 	dns: 'DNS',
 	ssl: 'TLS',

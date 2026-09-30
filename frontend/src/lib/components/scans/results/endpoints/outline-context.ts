@@ -1,3 +1,4 @@
+import type { ActionKind } from '$lib/config/connectors';
 import type { TableColumn } from '../table/columns';
 import type { EndpointFilter, EndpointRead, MergedLeaf, TreeNode } from '$lib/utilities/endpoints';
 import type { Connector, ConnectorSpec } from '$lib/types/connector';
@@ -48,7 +49,7 @@ export interface OutlineContext {
 	copyBranch: (node: TreeNode) => void;
 	copyWordlist: (node: TreeNode) => void;
 	verifyBranch?: (node: TreeNode) => void;
-	sendBranch?: (node: TreeNode, connectorId: string) => void;
+	sendBranch?: (node: TreeNode, connectorId: string, kind: ActionKind) => void;
 }
 
 export function nodeCost(node: TreeNode): number {

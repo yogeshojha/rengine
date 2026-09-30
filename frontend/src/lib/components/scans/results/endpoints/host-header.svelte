@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { ActionKind } from '$lib/config/connectors';
 	import Globe from '@lucide/svelte/icons/globe';
 	import { filterToken } from '$lib/utilities/scan-insights';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
@@ -36,7 +37,7 @@
 		onCopy: () => void;
 		onWordlist: () => void;
 		onVerify?: () => void;
-		onSend?: (connectorId: string) => Promise<void> | void;
+		onSend?: (connectorId: string, kind: ActionKind) => Promise<void> | void;
 		onAcross: () => void;
 	}
 

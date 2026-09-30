@@ -3,7 +3,6 @@ package io.rengine.connector;
 import burp.api.montoya.BurpExtension;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.core.Registration;
-import burp.api.montoya.http.message.requests.HttpRequest;
 import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.JComponent;
@@ -12,7 +11,7 @@ import javax.swing.SwingUtilities;
 /** Sends requests observed in Burp to a reNgine connector. */
 public class ReNgineConnector implements BurpExtension {
     static final String NAME = "reNgine Connector";
-    static final String VERSION = "0.1.0";
+    static final String VERSION = "0.2.0";
 
     private Sink sink;
     private Actions actions;
@@ -30,10 +29,11 @@ public class ReNgineConnector implements BurpExtension {
         sink.start();
 
         notices = new Notices();
+        Handoff handoff = new Handoff(api);
         actions = new Actions(settings, api.logging()::logToOutput, new Actions.Deliver() {
             @Override
             public void action(Actions.Action action) {
-                deliver(api, action);
+                handoff.deliver(action);
             }
 
             @Override
@@ -49,8 +49,8 @@ public class ReNgineConnector implements BurpExtension {
 
         Capture capture = new Capture(api, settings, sink);
         handler = api.http().registerHttpHandler(capture);
-        tab = api.userInterface()
-                .registerSuiteTab("reNgine", buildTab(api, settings, sink, actions, capture, notices));
+        tab = api.userInterface().registerSuiteTab(
+                "reNgine", buildTab(api, settings, sink, actions, handoff, capture, notices));
 
         menu = api.userInterface().registerContextMenuItemsProvider(new ReportMenu(api, settings));
 
@@ -58,31 +58,18 @@ public class ReNgineConnector implements BurpExtension {
         api.logging().logToOutput(NAME + " " + VERSION + " loaded.");
     }
 
-    /** Opens the action in Repeater. */
-    private static void deliver(MontoyaApi api, Actions.Action action) {
-        HttpRequest request = HttpRequest.httpRequestFromUrl(action.url());
-        if (!"GET".equalsIgnoreCase(action.method())) {
-            request = request.withMethod(action.method());
-        }
-        api.repeater().sendToRepeater(request, label(action));
-    }
-
-    private static String label(Actions.Action action) {
-        String value = action.label();
-        return value == null || value.isBlank() ? "reNgine" : "reNgine " + value;
-    }
-
     private static JComponent buildTab(
             MontoyaApi api,
             Settings settings,
             Sink sink,
             Actions actions,
+            Handoff handoff,
             Capture capture,
             Notices notices) {
         AtomicReference<JComponent> holder = new AtomicReference<>();
-        Runnable build =
-                () -> holder.set(
-                        new ConnectorTab(api, settings, sink, actions, capture, notices).component());
+        Runnable build = () -> holder.set(
+                new ConnectorTab(api, settings, sink, actions, handoff, capture, notices)
+                        .component());
         if (SwingUtilities.isEventDispatchThread()) {
             build.run();
         } else {

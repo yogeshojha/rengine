@@ -9,7 +9,6 @@
 	import Rows3 from '@lucide/svelte/icons/rows-3';
 	import ShieldCheck from '@lucide/svelte/icons/shield-check';
 	import ListOrdered from '@lucide/svelte/icons/list-ordered';
-	import Send from '@lucide/svelte/icons/send';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 
 	import { Badge } from '$lib/components/ui/badge';
@@ -22,7 +21,8 @@
 	import StatusBar from './status-bar.svelte';
 	import { ACTIONS_BODY, ACTIONS_PIN, pinTone, rowTone, type TableColumn } from '../table/columns';
 	import { HOST_LEAD_COLUMNS } from './columns';
-	import { proxyLabel } from './proxy';
+	import ProxyMenuItems from './proxy-menu-items.svelte';
+	import type { ActionKind } from '$lib/config/connectors';
 	import {
 		FOLDER_GLYPH_LABELS,
 		FolderGlyph,
@@ -47,7 +47,7 @@
 		onWordlist: (node: TreeNode) => void;
 		onList: (node: TreeNode) => void;
 		onVerify?: (node: TreeNode) => void;
-		onSend?: (node: TreeNode, connectorId: string) => void;
+		onSend?: (node: TreeNode, connectorId: string, kind: ActionKind) => void;
 		onFilter?: (token: string) => void;
 	}
 
@@ -326,15 +326,7 @@
 						</DropdownMenu.Item>
 					{/if}
 					{#if onSend}
-						{#each connectors as c (c.id)}
-							<DropdownMenu.Item onclick={() => onSend(node, c.id)}>
-								<Send class="size-3.5" />
-								Send to {proxyLabel(c, catalog)}
-								{#if connectors.length > 1}
-									<span class="ml-auto truncate text-xs text-muted-foreground">{c.name}</span>
-								{/if}
-							</DropdownMenu.Item>
-						{/each}
+						<ProxyMenuItems {connectors} {catalog} onSend={(id, kind) => onSend(node, id, kind)} />
 					{/if}
 					<DropdownMenu.Separator />
 					<DropdownMenu.Item onclick={() => onCopy(node)}>

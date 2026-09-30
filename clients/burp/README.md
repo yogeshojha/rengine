@@ -43,7 +43,11 @@ polled. A machine behind NAT needs no inbound access and no tunnel.
 
 One record per response: the URL, method, status code, content type, response length, page title
 for HTML, whether the request carried a session, the originating Burp tool, and the names of body
-parameters. **Parameter values, request bodies and response bodies are not sent.**
+parameters. **Request bodies and response bodies are not sent.**
+
+With *Send request headers* on, each record also carries the request line and headers. Cookie,
+Authorization and token header values are masked before they leave Burp. reNgine keeps the sample
+only when the connector's *Keep a request sample* setting is on.
 
 Only Proxy and Repeater traffic is eligible. Scanner and Intruder traffic is not captured.
 
@@ -61,12 +65,30 @@ recorded there, how many of those were opened, and how many were not.
 
 ## Sending back
 
-Select endpoints on the Endpoints page or shapes on the Connectors page and press **Send to Burp
-Suite**. The extension collects them within a few seconds and opens each in a Repeater tab named
-after its path. The request is bare: no session, no headers.
+Findings, web assets, endpoints and browsed shapes carry **Send to Burp Suite**: on the finding
+sheet, the web asset sheet, the endpoint rows and branches, and every selection bar. The button
+opens the request in Repeater; the arrow beside it picks the tool.
 
-The extension polls for actions. An action is delivered once. One left uncollected for an hour is
-dropped.
+| Tool | What arrives |
+|---|---|
+| Repeater | One tab per request, named after the check or the path. |
+| Intruder | One attack per request. |
+| Organizer | Request and response, with the finding as a note and a highlight by severity. |
+| Site map | Request and response under the host in Target. |
+
+The request is the one reNgine stored: the exact request nuclei sent for a finding, the probe's
+request for a web asset, the request the proxy recorded for a browsed shape. An endpoint nothing
+stored a request for gets one built from its method, URL and parameters; a POST, PUT or PATCH
+carries a body template in the declared type, JSON, multipart, XML or form. A finding with no
+HTTP exchange, a DNS or TLS check, is skipped and counted in the reply. Responses arrive decoded,
+as UTF-8, with the length of what was stored; a binary response arrives as its headers.
+
+Header values a scan masked arrive masked. The connector setting *Restore the run's credentials*
+fills them from the run that sent the request, at collection time. The connector token then
+reads those values.
+
+The extension polls for queued requests. Each is delivered once. One left uncollected for an
+hour is dropped.
 
 ## From reNgine
 
@@ -102,6 +124,7 @@ with `scanner = manual`. Reporting the same thing twice is one finding.
 | Repeater requests | Capture requests sent by hand. |
 | Only hosts in Burp's target scope | Pre-filter using Burp's own scope. reNgine applies its own regardless. |
 | Read page titles from HTML responses | Extract `<title>` from HTML bodies up to 256 KB. |
+| Send request headers | Add the request line and headers to each record, credential values masked. |
 | Accept a self-signed certificate | Disable certificate verification for this connection. |
 
 ## Layout
@@ -111,7 +134,8 @@ with `scanner = manual`. Reporting the same thing twice is one finding.
 | `ReNgineConnector.java` | Extension entry point and lifecycle |
 | `Capture.java` | The HTTP handler; converts a response into an observation |
 | `Sink.java` | Bounded queue, background flush, batch POST. No Burp dependency |
-| `Actions.java` | Collects queued work and notices. No Burp dependency |
+| `Actions.java` | Collects queued requests and notices. No Burp dependency |
+| `Handoff.java` | Opens a queued request in Repeater, Intruder, Organizer or the site map |
 | `Notices.java` | The last notices from reNgine, bounded |
 | `Facts.java`, `Targets.java` | Scope, host facts and the target picker |
 | `Report.java` / `ReportMenu.java` | Reporting a finding, and the right-click that starts it |
@@ -121,3 +145,9 @@ with `scanner = manual`. Reporting the same thing twice is one finding.
 
 The connector token is held in Burp's preference store in plain text. A Burp preference export
 carries the token.
+
+## Tests
+
+`./test.sh` compiles the extension with `-Werror` and runs the offline checks. `SinkHarness`
+posts to a running reNgine: `java -cp lib/montoya-api-2025.5.jar:build/classes:build/test-classes
+io.rengine.connector.SinkHarness <ingest url> <token> [host]`.

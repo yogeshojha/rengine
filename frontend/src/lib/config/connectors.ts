@@ -26,12 +26,36 @@ export const INGESTED_TOOLS: SourceTool[] = ['proxy', 'repeater'];
 
 // mirrors shared/definitions/connectors.py:ActionKind
 export enum ActionKind {
-	REPEATER = 'repeater'
+	REPEATER = 'repeater',
+	INTRUDER = 'intruder',
+	ORGANIZER = 'organizer',
+	SITE_MAP = 'sitemap'
 }
 
+export const HANDOFF_KINDS: ActionKind[] = [
+	ActionKind.REPEATER,
+	ActionKind.INTRUDER,
+	ActionKind.ORGANIZER,
+	ActionKind.SITE_MAP
+];
+
+export const DEFAULT_ACTION_KIND = ActionKind.REPEATER;
+
 export const ACTION_KIND_LABELS: Record<ActionKind, string> = {
-	[ActionKind.REPEATER]: 'Send to Repeater'
+	[ActionKind.REPEATER]: 'Repeater',
+	[ActionKind.INTRUDER]: 'Intruder',
+	[ActionKind.ORGANIZER]: 'Organizer',
+	[ActionKind.SITE_MAP]: 'Site map'
 };
+
+export const ACTION_KIND_HELP: Record<ActionKind, string> = {
+	[ActionKind.REPEATER]: 'One tab per request.',
+	[ActionKind.INTRUDER]: 'One attack per request.',
+	[ActionKind.ORGANIZER]: 'Request and response, with the finding as a note.',
+	[ActionKind.SITE_MAP]: 'Request and response under the host in Target.'
+};
+
+export const MAX_HANDOFF = 200;
 
 export const CANDIDATE_STATES: CandidateState[] = ['new', 'queued', 'scanned', 'ignored'];
 

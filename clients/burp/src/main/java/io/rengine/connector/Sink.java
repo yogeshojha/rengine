@@ -1,7 +1,6 @@
 package io.rengine.connector;
 
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
@@ -65,7 +64,6 @@ final class Sink {
 
     private final Config settings;
     private final Log log;
-    private final HttpClient client;
     private final String userAgent;
 
     private volatile Thread worker;
@@ -78,7 +76,6 @@ final class Sink {
         this.settings = settings;
         this.log = log;
         this.userAgent = userAgent;
-        this.client = Tls.client(settings.allowSelfSigned());
     }
 
     void start() {
@@ -179,7 +176,8 @@ final class Sink {
                     .header("Authorization", "Bearer " + settings.token())
                     .POST(HttpRequest.BodyPublishers.ofString(body.toString()))
                     .build();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = Tls.clientFor(settings)
+                    .send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() / 100 == 2) {
                 sent.addAndGet(batch.size());
                 lastError = null;
@@ -220,9 +218,11 @@ final class Sink {
                     .timeout(Duration.ofSeconds(15))
                     .header("Content-Type", "application/json")
                     .header("Authorization", "Bearer " + settings.token())
-                    .POST(HttpRequest.BodyPublishers.ofString("{\"client\":\"" + Json.escape(userAgent) + "\",\"items\":[]}"))
+                    .POST(HttpRequest.BodyPublishers.ofString(
+                            "{\"client\":\"" + Json.escape(userAgent) + "\",\"items\":[]}"))
                     .build();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = Tls.clientFor(settings)
+                    .send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() / 100 == 2) {
                 rejectedAt = -1;
                 return null;

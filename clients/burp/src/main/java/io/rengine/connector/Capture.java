@@ -25,12 +25,18 @@ final class Capture implements HttpHandler {
     static final int MAX_TITLE = 300;
     static final int MAX_PARAMS = 40;
     static final int MAX_URL = 2000;
+    static final int MAX_SAMPLE = 4000;
+    static final String MASK = "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022";
 
     private static final Pattern TITLE = Pattern.compile(
             "<title[^>]*>(.*?)</title>", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
     private static final String[] AUTH_HEADERS = {
         "Authorization", "Cookie", "X-Api-Key", "X-Auth-Token", "X-CSRF-Token"
+    };
+    private static final String[] MASKED_HEADERS = {
+        "Authorization", "Proxy-Authorization", "Cookie", "X-Api-Key", "X-Auth-Token",
+        "X-CSRF-Token", "X-Access-Token", "X-Session-Token"
     };
 
     private static final Set<HttpParameterType> BODY_PARAMS = EnumSet.of(
@@ -97,7 +103,39 @@ final class Capture implements HttpHandler {
                 title(response),
                 authenticated(request),
                 tool,
-                bodyParams(request)));
+                bodyParams(request),
+                settings.sendRequestHead() ? sample(request.toString()) : null));
+    }
+
+    /** The request line and headers, credential values masked, no body. */
+    static String sample(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        String text = raw.replace("\r\n", "\n");
+        int cut = text.indexOf("\n\n");
+        String head = cut < 0 ? text : text.substring(0, cut);
+        StringBuilder sb = new StringBuilder();
+        for (String line : head.split("\n")) {
+            int colon = line.indexOf(':');
+            String name = colon > 0 ? line.substring(0, colon).trim() : null;
+            if (name != null && masked(name)) {
+                sb.append(name).append(": ").append(MASK).append("\r\n");
+            } else {
+                sb.append(line).append("\r\n");
+            }
+        }
+        String out = sb.append("\r\n").toString();
+        return out.length() <= MAX_SAMPLE ? out : out.substring(0, MAX_SAMPLE);
+    }
+
+    private static boolean masked(String name) {
+        for (String header : MASKED_HEADERS) {
+            if (header.equalsIgnoreCase(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** The host most recently captured. */

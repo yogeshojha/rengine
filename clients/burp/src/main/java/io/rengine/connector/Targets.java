@@ -1,7 +1,6 @@
 package io.rengine.connector;
 
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
@@ -31,11 +30,9 @@ final class Targets {
     }
 
     private final Sink.Config settings;
-    private final HttpClient client;
 
     Targets(Sink.Config settings) {
         this.settings = settings;
-        this.client = Tls.client(settings.allowSelfSigned());
     }
 
     static String endpointFor(String ingest) {
@@ -55,7 +52,8 @@ final class Targets {
                 .header("Authorization", "Bearer " + settings.token())
                 .GET()
                 .build();
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = Tls.clientFor(settings)
+                .send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() / 100 != 2) {
             return out;
         }
@@ -77,17 +75,7 @@ final class Targets {
         if (body == null) {
             return out;
         }
-        String trimmed = body.trim();
-        int open = trimmed.indexOf('[');
-        int close = trimmed.lastIndexOf(']');
-        if (open < 0 || close <= open) {
-            return out;
-        }
-        String inner = trimmed.substring(open + 1, close).trim();
-        if (inner.isEmpty()) {
-            return out;
-        }
-        for (String chunk : inner.split("(?<=\\})\\s*,\\s*(?=\\{)")) {
+        for (String chunk : Json.objects(body)) {
             String id = Json.readString(chunk, "id");
             String value = Json.readString(chunk, "value");
             if (id == null || value == null) {

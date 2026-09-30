@@ -32,6 +32,10 @@
 	import ResultsPagination from './table/results-pagination.svelte';
 	import SelectionBar from './table/selection-bar.svelte';
 	import RowSelectionBar from './table/row-selection-bar.svelte';
+	import ProxySend from './endpoints/proxy-send.svelte';
+	import { handoffToProxy } from './endpoints/proxy';
+	import { connectors as connectorStore } from '$lib/stores/connectors.svelte';
+	import { MAX_HANDOFF, type ActionKind } from '$lib/config/connectors';
 	import RescanAction from './table/rescan-action.svelte';
 	import { RowSelection } from './table/selection.svelte';
 	import GroupList from './table/group-list.svelte';
@@ -188,6 +192,27 @@
 	);
 	let checkedCount = $derived(selection.countOn(items));
 	let pickedCount = $derived(selection.size);
+	let proxies = $derived(connectorStore.items);
+	let proxyCatalog = $derived(connectorStore.catalog);
+	$effect(() => {
+		const id = projectId;
+		if (!id) return;
+		untrack(() => {
+			void connectorStore.load(id);
+			void connectorStore.loadCatalog();
+		});
+	});
+	async function sendSelection(connectorId: string, kind: ActionKind) {
+		const sent = await handoffToProxy({
+			connectorId,
+			projectId,
+			scanId,
+			body: { kind, host_ids: selection.ids().slice(0, MAX_HANDOFF) },
+			connectors: proxies,
+			catalog: proxyCatalog
+		});
+		if (sent) selection.clear();
+	}
 	let selectAllChecked = $derived(selectAllState(checkedCount, items.length));
 	let filtered = $derived(activeFacetCount(query) > 0 || !!query.search);
 	let chips = $derived(queryChips(query));
@@ -1131,6 +1156,14 @@
 	onClear={() => selection.clear()}
 >
 	{#snippet actions()}
+		{#if proxies.length}
+			<ProxySend
+				connectors={proxies}
+				catalog={proxyCatalog}
+				variant="ghost"
+				onSend={sendSelection}
+			/>
+		{/if}
 		<RescanAction
 			count={pickedCount}
 			dimension={SurfaceDimension.WEB_ASSETS}

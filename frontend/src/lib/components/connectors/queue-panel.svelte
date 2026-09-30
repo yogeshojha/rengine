@@ -5,7 +5,6 @@
 	import { toast } from 'svelte-sonner';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import RadarIcon from '@lucide/svelte/icons/radar';
-	import SendIcon from '@lucide/svelte/icons/send';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 	import LockIcon from '@lucide/svelte/icons/lock';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
@@ -29,9 +28,11 @@
 	import ResultsPagination from '$lib/components/scans/results/table/results-pagination.svelte';
 	import { connectorsApi } from '$lib/api/connectors';
 	import { connectors } from '$lib/stores/connectors.svelte';
+	import ProxySend from '$lib/components/scans/results/endpoints/proxy-send.svelte';
+	import { handoffToProxy } from '$lib/components/scans/results/endpoints/proxy';
 	import {
-		ACTION_KIND_LABELS,
-		ActionKind,
+		MAX_HANDOFF,
+		type ActionKind,
 		CANDIDATE_STATES,
 		CANDIDATE_STATE_LABELS,
 		NOTICE_HELP,
@@ -69,7 +70,6 @@
 	let picked = new SvelteSet<string>();
 	let opened = new SvelteSet<string>();
 	let scanning = $state(false);
-	let sending = $state(false);
 	let acting = $state(false);
 	let error = $state<string | null>(null);
 
@@ -163,18 +163,17 @@
 		}
 	}
 
-	async function sendToProxy() {
-		sending = true;
-		error = null;
-		try {
-			const result = await connectorsApi.send(connector.id, projectId, [...picked]);
+	async function sendToProxy(_connectorId: string, kind: ActionKind) {
+		const sent = await handoffToProxy({
+			connectorId: connector.id,
+			projectId,
+			body: { kind, candidate_ids: [...picked].slice(0, MAX_HANDOFF) },
+			connectors: [connector],
+			catalog: connectors.catalog
+		});
+		if (sent) {
 			picked.clear();
 			await reload();
-			toast.success(`${result.queued} sent to Repeater.`);
-		} catch (e) {
-			error = e instanceof Error ? e.message : 'Requests not queued.';
-		} finally {
-			sending = false;
 		}
 	}
 
@@ -498,18 +497,14 @@
 		<RadarIcon class="h-3.5 w-3.5 text-muted-foreground" />
 		Scan {picked.size}
 	</LoadingButton>
-	<LoadingButton
-		loading={sending}
-		variant="ghost"
-		size="sm"
-		class="gap-2 font-medium"
-		loadingLabel="Sending"
-		onclick={sendToProxy}
-		disabled={connector.paused}
-	>
-		<SendIcon class="h-3.5 w-3.5 text-muted-foreground" />
-		{ACTION_KIND_LABELS[ActionKind.REPEATER]}
-	</LoadingButton>
+	{#if !connector.paused}
+		<ProxySend
+			connectors={[connector]}
+			catalog={connectors.catalog}
+			variant="ghost"
+			onSend={sendToProxy}
+		/>
+	{/if}
 	<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={copyPicked}>
 		<CopyIcon class="h-3.5 w-3.5 text-muted-foreground" />
 		Copy URLs

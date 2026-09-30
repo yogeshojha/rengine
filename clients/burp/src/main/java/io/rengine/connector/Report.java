@@ -1,7 +1,6 @@
 package io.rengine.connector;
 
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
@@ -11,11 +10,9 @@ final class Report {
     static final int MAX_EVIDENCE = 200_000;
 
     private final Sink.Config settings;
-    private final HttpClient client;
 
     Report(Sink.Config settings) {
         this.settings = settings;
-        this.client = Tls.client(settings.allowSelfSigned());
     }
 
     static String endpointFor(String ingest) {
@@ -67,7 +64,7 @@ final class Report {
                     .POST(HttpRequest.BodyPublishers.ofString(payload))
                     .build();
             HttpResponse<String> response =
-                    client.send(request, HttpResponse.BodyHandlers.ofString());
+                    Tls.clientFor(settings).send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() / 100 == 2) {
                 return null;
             }

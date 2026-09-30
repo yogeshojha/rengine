@@ -1,3 +1,5 @@
+import type { ActionKind } from '$lib/config/connectors';
+import type { EndpointFilter } from '$lib/utilities/endpoints';
 export type ConnectorKind = 'burp';
 export type ConnectorState = 'idle' | 'live' | 'stale' | 'paused';
 export type CandidateState = 'new' | 'queued' | 'scanned' | 'ignored';
@@ -30,6 +32,7 @@ export interface Connector {
 	include_static: boolean;
 	scan_safe_methods_only: boolean;
 	context_id: string | null;
+	restore_credentials: boolean;
 	paused: boolean;
 	state: ConnectorState;
 	requests_seen: number;
@@ -78,6 +81,24 @@ export interface ConnectorCreate {
 	include_static?: boolean;
 	scan_safe_methods_only?: boolean;
 	context_id?: string | null;
+	restore_credentials?: boolean;
+}
+
+export interface HandoffRequest {
+	kind?: ActionKind;
+	finding_ids?: string[];
+	asset_ids?: string[];
+	host_ids?: string[];
+	endpoint_ids?: string[];
+	candidate_ids?: string[];
+	filter?: EndpointFilter;
+	limit?: number;
+}
+
+export interface HandoffResult {
+	queued: number;
+	skipped: number;
+	tool: string;
 }
 
 export type ConnectorUpdate = Partial<Omit<ConnectorCreate, 'project_id' | 'kind'>> & {

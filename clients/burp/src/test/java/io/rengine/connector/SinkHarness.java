@@ -65,7 +65,8 @@ public final class SinkHarness {
         // a title with characters that must survive JSON escaping
         sink.offer(new Observation(
                 "https://" + host + "/harness/quote", "GET", 200, "text/html", 42,
-                "He said \"hi\"\n\tand left \\ ", false, "proxy", List.of()));
+                "He said \"hi\"\n\tand left \\ ", false, "proxy", List.of(),
+                "GET /harness/quote HTTP/1.1\r\nHost: " + host + "\r\n\r\n"));
 
         Thread.sleep(4000);
 
@@ -82,6 +83,7 @@ public final class SinkHarness {
 
     private static Observation obs(String url, String method, int status, String type,
             boolean authenticated, List<String> params) {
-        return new Observation(url, method, status, type, 100, null, authenticated, "proxy", params);
+        return new Observation(
+                url, method, status, type, 100, null, authenticated, "proxy", params, null);
     }
 }

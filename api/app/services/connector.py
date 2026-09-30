@@ -12,14 +12,18 @@ from sqlalchemy.dialects.postgresql import JSONB, array, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from connectors import auth
+from connectors import auth, handoff
+from connectors.handoff import Handoff
 from connectors.ingest import Prepared, prepare
 from connectors.notice import notices_for
 from connectors.registry import connector as connector_for
 from connectors.registry import connectors as all_connectors
+from mcp import links
 from shared.definitions.bounty_programs import ScopeState
 from shared.definitions.connectors import (
+    ACTION_KIND_LABELS,
     ACTION_TTL_MINUTES,
+    HANDOFF_KINDS,
     INGESTED_TOOLS,
     LOUD_NOTICES,
     MANUAL_RUN_LABEL,
@@ -34,7 +38,6 @@ from shared.definitions.connectors import (
     NOTICE_LABELS,
     NOTICE_ORDER,
     SAFE_METHODS,
-    ActionKind,
     CandidateState,
     NoticeKind,
     state_for,
@@ -71,6 +74,8 @@ from shared.models.connector import (
     DiscoveredDomain,
     FindingRecorded,
     FindingReport,
+    HandoffRequest,
+    HandoffResult,
     HostFacts,
     IngestRequest,
     IngestResult,
@@ -78,19 +83,22 @@ from shared.models.connector import (
     TargetAdded,
     TargetOption,
 )
-from shared.models.endpoint import Endpoint
+from shared.models.endpoint import Endpoint, EndpointResponse
+from shared.models.http_asset import HttpAsset
 from shared.models.scan import Scan, ScanCreate, SeedAsset
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.vulnerability import Vulnerability
 from shared.services import proxy_sync
-from shared.services.scan_resolve import redact_message
+from shared.services.asset_query.tokens import token
+from shared.services.scan_resolve import redact_message, unseal_headers
 from shared.services.scan_scope import census_only, covers
 from shared.utils.datetime import utc_now
 from shared.utils.text import strip_control
 from tools.nuclei.parser import fingerprint
 
 _DIMENSION = SurfaceDimension.ENDPOINTS.value
+_VULN_TAB = SurfaceDimension.VULNERABILITIES.value
 PAGE_SIZE = 50
 _RANK = (
     cast(ConnectorCandidate.notices, JSONB).has_any(array(tuple(LOUD_NOTICES))).desc(),
@@ -211,6 +219,7 @@ class ConnectorService:
             include_static=data.include_static,
             scan_safe_methods_only=data.scan_safe_methods_only,
             context_id=data.context_id,
+            restore_credentials=data.restore_credentials,
             created_by=created_by,
         )
         self.session.add(row)
@@ -926,70 +935,148 @@ class ConnectorService:
         await self.session.commit()
         return len(actions)
 
-    async def queue_actions(
+    async def handoff(
         self,
         connector_id: uuid.UUID,
         project_id: uuid.UUID,
-        ids: list[uuid.UUID],
-        kind: str,
-    ) -> int:
-        """Hand chosen shapes back to the proxy."""
+        body: HandoffRequest,
+        scope=None,
+    ) -> HandoffResult:
+        """Queue one request per chosen row for the proxy to collect."""
         row = await self.get(connector_id, project_id)
-        if kind not in {k.value for k in ActionKind}:
-            msg = f"Unknown action {kind!r}."
+        if body.kind not in HANDOFF_KINDS:
+            msg = f"Unknown tool {body.kind!r}."
             raise ConnectorError(msg)
-        picked = (
+        items: list[Handoff | None] = []
+        items.extend(
+            handoff.from_finding(v, link=self._finding_link(v))
+            for v in await self._rows(Vulnerability, body.finding_ids, project_id)
+        )
+        assets = await self._rows(HttpAsset, body.asset_ids, project_id)
+        assets.extend(await self._host_assets(body.host_ids, project_id))
+        items.extend(handoff.from_asset(a) for a in assets)
+        endpoints = await self._rows(Endpoint, body.endpoint_ids, project_id)
+        if body.filter is not None and scope is not None:
+            from app.services.endpoint import EndpointService  # noqa: PLC0415
+
+            endpoints.extend(
+                await EndpointService(self.session).pick(scope, body.filter, body.limit)
+            )
+        responses = await self._responses([e.id for e in endpoints])
+        items.extend(handoff.from_endpoint(e, responses.get(e.id)) for e in endpoints)
+        if body.candidate_ids:
+            picked = (
+                (
+                    await self.session.execute(
+                        select(ConnectorCandidate).where(
+                            ConnectorCandidate.connector_id == row.id,
+                            ConnectorCandidate.id.in_(body.candidate_ids),
+                        )
+                    )
+                )
+                .scalars()
+                .all()
+            )
+            items.extend(handoff.from_candidate(c) for c in picked)
+        built = [item for item in items if item is not None][: body.limit]
+        if not built:
+            msg = (
+                "None of the selected rows carries an HTTP request."
+                if items
+                else "Nothing selected."
+            )
+            raise ConnectorError(msg)
+        queued = await self._queue_actions(
+            row,
+            [
+                ConnectorAction(
+                    connector_id=row.id,
+                    kind=body.kind,
+                    url=item.url[:2000],
+                    method=item.method[:16],
+                    label=item.label,
+                    request=item.request,
+                    response=item.response,
+                    notes=item.notes,
+                    color=item.color,
+                    scan_id=item.scan_id,
+                )
+                for item in built
+            ],
+        )
+        return HandoffResult(
+            queued=queued,
+            skipped=len(items) - len(built),
+            tool=ACTION_KIND_LABELS.get(body.kind, body.kind),
+        )
+
+    async def _rows(self, model, ids: list[uuid.UUID], project_id: uuid.UUID) -> list:
+        if not ids:
+            return []
+        return list(
             (
                 await self.session.execute(
-                    select(ConnectorCandidate).where(
-                        ConnectorCandidate.connector_id == row.id,
-                        ConnectorCandidate.id.in_(ids),
+                    select(model).where(
+                        model.id.in_(ids), model.project_id == project_id
                     )
                 )
             )
             .scalars()
             .all()
         )
-        return await self._queue_actions(
-            row,
-            [
-                ConnectorAction(
-                    connector_id=row.id,
-                    kind=kind,
-                    url=candidate.url,
-                    method=(candidate.methods or ["GET"])[0],
-                    label=candidate.path[:120],
+
+    async def _host_assets(
+        self, host_ids: list[uuid.UUID], project_id: uuid.UUID
+    ) -> list[HttpAsset]:
+        """Every web asset of the chosen hosts, in their own scans."""
+        if not host_ids:
+            return []
+        pairs = (
+            await self.session.execute(
+                select(Subdomain.scan_id, Subdomain.name).where(
+                    Subdomain.id.in_(host_ids), Subdomain.project_id == project_id
                 )
-                for candidate in picked
-            ],
+            )
+        ).all()
+        if not pairs:
+            return []
+        return list(
+            (
+                await self.session.execute(
+                    select(HttpAsset)
+                    .where(tuple_(HttpAsset.scan_id, HttpAsset.host).in_(list(pairs)))
+                    .order_by(HttpAsset.host, HttpAsset.port)
+                )
+            )
+            .scalars()
+            .all()
         )
 
-    async def queue_endpoint_actions(
-        self,
-        connector_id: uuid.UUID,
-        project_id: uuid.UUID,
-        endpoints: list[Endpoint],
-        kind: str,
-    ) -> int:
-        """Queue discovered endpoints for the proxy."""
-        row = await self.get(connector_id, project_id)
-        if kind not in {k.value for k in ActionKind}:
-            msg = f"Unknown action {kind!r}."
-            raise ConnectorError(msg)
-        return await self._queue_actions(
-            row,
-            [
-                ConnectorAction(
-                    connector_id=row.id,
-                    kind=kind,
-                    url=e.url,
-                    method=(e.methods or ["GET"])[0],
-                    label=e.path[:120],
+    async def _responses(
+        self, endpoint_ids: list[uuid.UUID]
+    ) -> dict[uuid.UUID, EndpointResponse]:
+        if not endpoint_ids:
+            return {}
+        rows = (
+            (
+                await self.session.execute(
+                    select(EndpointResponse).where(
+                        EndpointResponse.endpoint_id.in_(endpoint_ids)
+                    )
                 )
-                for e in endpoints
-                if e.project_id == project_id
-            ],
+            )
+            .scalars()
+            .all()
         )
+        return {r.endpoint_id: r for r in rows}
+
+    @staticmethod
+    def _finding_link(finding: Vulnerability) -> str:
+        query = (
+            f"{token('template', '=', finding.template_id)} "
+            f"{token('location', '=', finding.matched_at)}"
+        )
+        return links.scan_tab(settings.ui_base_url, finding.scan_id, _VULN_TAB, query)
 
     async def take_notices(self, row: Connector) -> list[NoticeRead]:
         """Loud notices not yet delivered."""
@@ -1166,11 +1253,42 @@ class ConnectorService:
         now = utc_now()
         for action in pending:
             action.delivered_at = now
-        await self.session.commit()
-        return [
-            ActionRead(kind=a.kind, url=a.url, method=a.method, label=a.label)
+        headers = (
+            await self._run_headers({a.scan_id for a in pending if a.scan_id})
+            if row.restore_credentials
+            else {}
+        )
+        out = [
+            ActionRead(
+                kind=a.kind,
+                url=a.url,
+                method=a.method,
+                label=a.label,
+                request=handoff.restore_headers(a.request, headers.get(a.scan_id, {})),
+                response=a.response,
+                notes=a.notes,
+                color=a.color,
+            )
             for a in pending
         ]
+        await self.session.commit()
+        return out
+
+    async def _run_headers(
+        self, scan_ids: set[uuid.UUID]
+    ) -> dict[uuid.UUID, dict[str, str]]:
+        """The header values each run sent, unsealed."""
+        if not scan_ids:
+            return {}
+        rows = (
+            await self.session.execute(
+                select(Scan.id, Scan.execution_config).where(Scan.id.in_(scan_ids))
+            )
+        ).all()
+        return {
+            scan_id: unseal_headers((config or {}).get("headers"))
+            for scan_id, config in rows
+        }
 
     # acting ---------------------------------------------------------------
 
@@ -1627,6 +1745,7 @@ class ConnectorService:
             include_static=row.include_static,
             scan_safe_methods_only=row.scan_safe_methods_only,
             context_id=row.context_id,
+            restore_credentials=row.restore_credentials,
             paused=row.paused,
             state=state_for(minutes, row.paused),
             requests_seen=row.requests_seen,

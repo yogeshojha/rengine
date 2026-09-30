@@ -5,6 +5,8 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import PanelHead from '$lib/components/panel-head.svelte';
 	import { CONNECTOR_STATE_DOT, CONNECTOR_STATE_LABELS } from '$lib/config/connectors';
+	import { connectors } from '$lib/stores/connectors.svelte';
+	import { proxyLabel } from '$lib/components/scans/results/endpoints/proxy';
 	import { relativeTime } from '$lib/utilities/dates';
 	import type { CandidateQuery, Connector } from '$lib/types/connector';
 
@@ -45,7 +47,7 @@
 		},
 		{
 			key: 'pending',
-			label: 'Waiting for Burp',
+			label: `Waiting for ${proxyLabel(connector, connectors.catalog)}`,
 			value: connector.pending_actions,
 			note: 'pending collection',
 			tone: '',

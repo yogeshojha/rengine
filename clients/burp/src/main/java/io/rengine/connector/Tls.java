@@ -10,7 +10,26 @@ import javax.net.ssl.X509TrustManager;
 
 /** HTTP clients for the connector, including the self-signed case a self-hosted reNgine needs. */
 final class Tls {
+    private static volatile HttpClient cached;
+    private static volatile boolean cachedPermissive;
+
     private Tls() {}
+
+    /** The client for the current setting, rebuilt when the self-signed switch moves. */
+    static HttpClient clientFor(Sink.Config settings) {
+        boolean permissive = settings.allowSelfSigned();
+        HttpClient current = cached;
+        if (current == null || cachedPermissive != permissive) {
+            synchronized (Tls.class) {
+                if (cached == null || cachedPermissive != permissive) {
+                    cached = client(permissive);
+                    cachedPermissive = permissive;
+                }
+                current = cached;
+            }
+        }
+        return current;
+    }
 
     static HttpClient client(boolean allowSelfSigned) {
         HttpClient.Builder builder = HttpClient.newBuilder()

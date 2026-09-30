@@ -12,7 +12,8 @@ record Observation(
         String title,
         boolean authenticated,
         String sourceTool,
-        List<String> bodyParams) {
+        List<String> bodyParams,
+        String requestSample) {
 
     String toJson() {
         Json json = new Json().object()
@@ -27,6 +28,7 @@ record Observation(
         if (!bodyParams.isEmpty()) {
             json.raw("body_params", Json.array(bodyParams));
         }
+        json.field("request_sample", requestSample);
         return json.end().toString();
     }
 }

@@ -53,6 +53,10 @@
 	import SelectionBar from './table/selection-bar.svelte';
 	import RowSelectionBar from './table/row-selection-bar.svelte';
 	import RescanAction from './table/rescan-action.svelte';
+	import ProxySend from './endpoints/proxy-send.svelte';
+	import { handoffToProxy } from './endpoints/proxy';
+	import { connectors as connectorStore } from '$lib/stores/connectors.svelte';
+	import { MAX_HANDOFF, type ActionKind } from '$lib/config/connectors';
 	import FileIssuesDialog from '$lib/components/issue-trackers/file-issues-dialog.svelte';
 	import type { SeedPick, SeedSelection } from '$lib/types/recheck';
 	import IssueRow from './vulnerabilities/issue-row.svelte';
@@ -856,6 +860,32 @@
 		fileOpen = true;
 	}
 
+	let proxies = $derived(connectorStore.items);
+	let proxyCatalog = $derived(connectorStore.catalog);
+	$effect(() => {
+		const id = projectId;
+		if (!id) return;
+		untrack(() => {
+			void connectorStore.load(id);
+			void connectorStore.loadCatalog();
+		});
+	});
+	async function sendChecked(connectorId: string, kind: ActionKind) {
+		const ids = items
+			.filter((v) => checkedIds.has(v.id))
+			.map((v) => v.id)
+			.slice(0, MAX_HANDOFF);
+		const sent = await handoffToProxy({
+			connectorId,
+			projectId,
+			scanId,
+			body: { kind, finding_ids: ids },
+			connectors: proxies,
+			catalog: proxyCatalog
+		});
+		if (sent) checkedIds.clear();
+	}
+
 	function afterFiling() {
 		if (fileFor?.bulk) checkedIds.clear();
 		const reload = () => {
@@ -1549,6 +1579,9 @@
 			<SquareKanban class="h-3.5 w-3.5 text-muted-foreground" />
 			File issues
 		</Button>
+		{#if !isIssues && proxies.length}
+			<ProxySend connectors={proxies} catalog={proxyCatalog} variant="ghost" onSend={sendChecked} />
+		{/if}
 		<RescanAction
 			count={checkedCount}
 			dimension={SurfaceDimension.VULNERABILITIES}

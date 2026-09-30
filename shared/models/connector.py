@@ -7,16 +7,16 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 from pydantic import Field as PydanticField
-from sqlalchemy import Column
+from sqlalchemy import Column, Text
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
 import shared.models._tztypes  # noqa: F401
 from shared.definitions.connectors import (
+    DEFAULT_ACTION_KIND,
     MAX_BATCH,
     MAX_NAME,
     MAX_PENDING_ACTIONS,
-    ActionKind,
     CandidateState,
     ConnectorKind,
     SourceTool,
@@ -47,6 +47,7 @@ class Connector(SQLModel, table=True):
     include_static: bool = Field(default=False)
     scan_safe_methods_only: bool = Field(default=True)
     context_id: uuid.UUID | None = Field(default=None)
+    restore_credentials: bool = Field(default=False)
     paused: bool = Field(default=False)
 
     requests_seen: int = Field(default=0)
@@ -107,16 +108,21 @@ class ConnectorCandidate(SQLModel, table=True):
 
 
 class ConnectorAction(SQLModel, table=True):
-    """Work queued for the proxy to collect."""
+    """A request queued for the proxy to collect."""
 
     __tablename__ = "connector_actions"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     connector_id: uuid.UUID = Field(foreign_key="connectors.id", index=True)
-    kind: str = Field(default=ActionKind.REPEATER.value, max_length=16)
+    kind: str = Field(default=DEFAULT_ACTION_KIND, max_length=16)
     url: str = Field(max_length=2000)
     method: str = Field(default="GET", max_length=16)
     label: str | None = Field(default=None, max_length=120)
+    request: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
+    response: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
+    notes: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
+    color: str | None = Field(default=None, max_length=16)
+    scan_id: uuid.UUID | None = Field(default=None)
     created_at: datetime = Field(default_factory=utc_now, index=True)
     delivered_at: datetime | None = Field(default=None, index=True)
 
@@ -138,24 +144,37 @@ class ConnectorHost(SQLModel, table=True):
     last_seen_at: datetime = Field(default_factory=utc_now, index=True)
 
 
-class ActionRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    ids: list[uuid.UUID] = PydanticField(default_factory=list, max_length=200)
-    kind: str = PydanticField(default=ActionKind.REPEATER.value, max_length=16)
-
-
-class EndpointActionRequest(BaseModel):
-    """Endpoints to hand to the proxy: chosen rows, or everything a filter names, capped."""
+class HandoffRequest(BaseModel):
+    """Rows to hand to the proxy: findings, web assets, hosts, endpoints or browsed shapes."""
 
     model_config = ConfigDict(extra="forbid")
 
-    endpoint_ids: list[uuid.UUID] = PydanticField(default_factory=list, max_length=200)
+    kind: str = PydanticField(default=DEFAULT_ACTION_KIND, max_length=16)
+    finding_ids: list[uuid.UUID] = PydanticField(
+        default_factory=list, max_length=MAX_PENDING_ACTIONS
+    )
+    asset_ids: list[uuid.UUID] = PydanticField(
+        default_factory=list, max_length=MAX_PENDING_ACTIONS
+    )
+    host_ids: list[uuid.UUID] = PydanticField(
+        default_factory=list, max_length=MAX_PENDING_ACTIONS
+    )
+    endpoint_ids: list[uuid.UUID] = PydanticField(
+        default_factory=list, max_length=MAX_PENDING_ACTIONS
+    )
+    candidate_ids: list[uuid.UUID] = PydanticField(
+        default_factory=list, max_length=MAX_PENDING_ACTIONS
+    )
     filter: EndpointFilter | None = None
     limit: int = PydanticField(
         default=MAX_PENDING_ACTIONS, ge=1, le=MAX_PENDING_ACTIONS
     )
-    kind: str = PydanticField(default=ActionKind.REPEATER.value, max_length=16)
+
+
+class HandoffResult(BaseModel):
+    queued: int
+    skipped: int = 0
+    tool: str
 
 
 class CandidateIds(BaseModel):
@@ -242,6 +261,10 @@ class ActionRead(BaseModel):
     url: str
     method: str
     label: str | None = None
+    request: str | None = None
+    response: str | None = None
+    notes: str | None = None
+    color: str | None = None
 
 
 class DiscoveredDomain(BaseModel):
@@ -273,6 +296,7 @@ class ConnectorCreate(BaseModel):
     include_static: bool = False
     scan_safe_methods_only: bool = True
     context_id: uuid.UUID | None = None
+    restore_credentials: bool = False
 
 
 class ConnectorUpdate(BaseModel):
@@ -286,6 +310,7 @@ class ConnectorUpdate(BaseModel):
     include_static: bool | None = None
     scan_safe_methods_only: bool | None = None
     context_id: uuid.UUID | None = None
+    restore_credentials: bool | None = None
     paused: bool | None = None
 
 
@@ -302,6 +327,7 @@ class ConnectorRead(BaseModel):
     include_static: bool
     scan_safe_methods_only: bool
     context_id: uuid.UUID | None
+    restore_credentials: bool
     paused: bool
     state: str
     requests_seen: int

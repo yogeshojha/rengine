@@ -2,12 +2,10 @@ package io.rengine.connector;
 
 import java.net.URI;
 import java.net.URLEncoder;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 
 /** Scope rules and host facts read from reNgine. */
@@ -24,11 +22,9 @@ final class Facts {
     record Scope(List<String> include, List<String> exclude, int hostsKnown, String program) {}
 
     private final Sink.Config settings;
-    private final HttpClient client;
 
     Facts(Sink.Config settings) {
         this.settings = settings;
-        this.client = Tls.client(settings.allowSelfSigned());
     }
 
     private static String base(String ingest) {
@@ -43,7 +39,8 @@ final class Facts {
                 .header("Authorization", "Bearer " + settings.token())
                 .GET()
                 .build();
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = Tls.clientFor(settings)
+                .send(request, HttpResponse.BodyHandlers.ofString());
         return response.statusCode() / 100 == 2 ? response.body() : null;
     }
 
@@ -90,24 +87,7 @@ final class Facts {
         }
     }
 
-    /** Reads one flat array of strings. The response has no nested arrays. */
     static List<String> strings(String body, String field) {
-        List<String> out = new ArrayList<>();
-        int at = body.indexOf("\"" + field + "\":");
-        if (at < 0) {
-            return out;
-        }
-        int open = body.indexOf('[', at);
-        int close = body.indexOf(']', open);
-        if (open < 0 || close < 0) {
-            return out;
-        }
-        for (String piece : body.substring(open + 1, close).split(",")) {
-            String value = piece.trim();
-            if (value.length() > 1 && value.startsWith("\"") && value.endsWith("\"")) {
-                out.add(value.substring(1, value.length() - 1));
-            }
-        }
-        return out;
+        return Json.strings(body, field);
     }
 }

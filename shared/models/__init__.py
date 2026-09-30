@@ -35,7 +35,6 @@ from shared.models.compare import (
 )
 from shared.models.connector import (
     ActionRead,
-    ActionRequest,
     AddTargetRequest,
     CandidatePage,
     CandidateRead,
@@ -51,6 +50,8 @@ from shared.models.connector import (
     DiscoveredDomain,
     FindingRecorded,
     FindingReport,
+    HandoffRequest,
+    HandoffResult,
     HostFacts,
     IngestItem,
     IngestRequest,
@@ -144,6 +145,7 @@ from shared.models.notification import (
     Notification,
     NotificationCreate,
     NotificationRead,
+    NotificationReceipt,
 )
 from shared.models.notification_channel import (
     NotificationChannel,
@@ -154,7 +156,6 @@ from shared.models.notification_channel import (
     NotificationPreference,
 )
 from shared.models.organization import (
-    NotificationReceipt,
     Organization,
     OrganizationCreate,
     OrganizationRead,
@@ -316,7 +317,6 @@ __all__ = [
     "APIKeyRead",
     "APIKeyUpdate",
     "ActionRead",
-    "ActionRequest",
     "ActivityLog",
     "ActivityLogRead",
     "AddTargetRequest",
@@ -381,6 +381,8 @@ __all__ = [
     "ExportRead",
     "FindingRecorded",
     "FindingReport",
+    "HandoffRequest",
+    "HandoffResult",
     "HostFacts",
     "HttpAsset",
     "HttpAssetRead",

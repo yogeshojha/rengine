@@ -197,7 +197,7 @@
 			? () => ctx.verifyBranch?.(node)
 			: undefined}
 		onSend={ctx.sendBranch && node.kind !== 'group' && !ctx.merged
-			? (id) => ctx.sendBranch?.(node, id)
+			? (id, kind) => ctx.sendBranch?.(node, id, kind)
 			: undefined}
 		onSelectBranch={ctx.selectBranch && !ctx.merged ? () => ctx.selectBranch?.(node) : undefined}
 	/>

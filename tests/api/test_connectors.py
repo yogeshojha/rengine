@@ -6,23 +6,33 @@ from datetime import timedelta
 import pytest
 from sqlalchemy import select
 
-from app.services.connector import ConnectorService
+from app.services.connector import ConnectorError, ConnectorService
+from connectors import handoff
 from connectors.notice import notices_for
-from shared.definitions.connectors import CandidateState, NoticeKind
+from shared.definitions.connectors import (
+    ACTION_KIND_LABELS,
+    SEVERITY_HIGHLIGHT,
+    ActionKind,
+    CandidateState,
+    NoticeKind,
+)
 from shared.definitions.endpoints import EndpointSource, shape_for
+from shared.definitions.vulnerabilities import Protocol
 from shared.enums.scan import ScanActivityStatus
 from shared.models.connector import (
+    ConnectorAction,
     ConnectorCandidate,
     ConnectorCreate,
     FindingReport,
+    HandoffRequest,
     IngestItem,
     IngestRequest,
 )
-from shared.models.endpoint import Endpoint
+from shared.models.endpoint import Endpoint, EndpointResponse
 from shared.models.scan import Scan
 from shared.models.vulnerability import Vulnerability
 from shared.services import proxy_sync
-from shared.services.scan_resolve import MASK, redact_message
+from shared.services.scan_resolve import MASK, redact_message, seal_headers
 
 pytestmark = pytest.mark.api
 
@@ -320,3 +330,371 @@ async def test_reported_findings_store_a_redacted_request(estate, now):
 
     assert "secret" not in finding.request
     assert MASK in finding.request
+
+
+# ---------- hand-off ----------
+
+
+def _finding(**kw) -> Vulnerability:
+    base = {
+        "project_id": uuid.uuid4(),
+        "scan_id": uuid.uuid4(),
+        "target_id": uuid.uuid4(),
+        "fingerprint": "f",
+        "template_id": "CVE-2021-44228",
+        "template_name": "Apache Log4j RCE",
+        "severity": "critical",
+        "protocol": Protocol.HTTP.value,
+        "matched_at": f"https://{HOST}/api",
+        "url": f"https://{HOST}/api",
+        "cve_ids": ["CVE-2021-44228"],
+    }
+    return Vulnerability(**{**base, **kw})
+
+
+def test_finding_handoff_carries_the_request_response_and_note():
+    out = handoff.from_finding(
+        _finding(
+            request='POST /api HTTP/1.1\nHost: app.example.com\nX-Api-Version: 2\n\n{"a":1}',
+            response="HTTP/1.1 200 OK\nContent-Type: text/plain\n\nok",
+        ),
+        link="http://ui/scans/x",
+    )
+    assert out.method == "POST"
+    assert out.request.startswith("POST /api HTTP/1.1\r\nHost: app.example.com\r\n")
+    assert out.request.endswith('\r\n\r\n{"a":1}')
+    assert out.response == (
+        "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 2\r\n\r\nok"
+    )
+    assert out.notes.split("\n") == [
+        "reNgine · Critical · CVE-2021-44228",
+        "Apache Log4j RCE",
+        "CVE-2021-44228",
+        f"https://{HOST}/api",
+        "http://ui/scans/x",
+    ]
+    assert out.color == SEVERITY_HIGHLIGHT["critical"]
+    assert out.label == "CVE-2021-44228"
+
+
+def test_finding_without_an_http_exchange_is_not_handed_off():
+    assert (
+        handoff.from_finding(
+            _finding(protocol=Protocol.DNS.value, matched_at=HOST, url=None)
+        )
+        is None
+    )
+    built = handoff.from_finding(_finding(request=None))
+    assert built.request.startswith(f"GET /api HTTP/1.1\r\nHost: {HOST}\r\n")
+
+
+def test_endpoint_handoff_builds_a_form_body_for_post():
+    endpoint = Endpoint(
+        project_id=uuid.uuid4(),
+        scan_id=uuid.uuid4(),
+        target_id=uuid.uuid4(),
+        signature="s",
+        url=f"https://{HOST}:8443/login?from=/",
+        host=HOST,
+        port=8443,
+        path="/login",
+        dir_path="/",
+        methods=["POST"],
+        params=["from", "user", "pass word"],
+        param_samples=[{"from": "/", "user": "admin"}],
+        status_code=302,
+        sources=["katana"],
+    )
+    out = handoff.from_endpoint(endpoint)
+    head, _, body = out.request.partition("\r\n\r\n")
+    lines = head.split("\r\n")
+    assert lines[0] == "POST /login?from=/ HTTP/1.1"
+    assert lines[1] == f"Host: {HOST}:8443"
+    assert "Content-Type: application/x-www-form-urlencoded" in lines
+    assert body == "user=admin&pass%20word="
+    assert f"Content-Length: {len(body)}" in lines
+    assert out.response is None
+    assert out.label == "/login"
+
+
+def test_endpoint_handoff_attaches_the_stored_response():
+    endpoint = Endpoint(
+        project_id=uuid.uuid4(),
+        scan_id=uuid.uuid4(),
+        target_id=uuid.uuid4(),
+        signature="s",
+        url=f"https://{HOST}/robots.txt",
+        host=HOST,
+        path="/robots.txt",
+        dir_path="/",
+        methods=["GET"],
+    )
+    stored = EndpointResponse(
+        endpoint_id=endpoint.id,
+        scan_id=endpoint.scan_id,
+        raw_response_header="HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n",
+        response_body="User-agent: *\n",
+    )
+    out = handoff.from_endpoint(endpoint, stored)
+    assert out.request.startswith("GET /robots.txt HTTP/1.1\r\n")
+    assert out.response == (
+        "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 14\r\n\r\n"
+        "User-agent: *\n"
+    )
+
+
+def test_a_decoded_body_drops_the_transfer_headers():
+    out = handoff.response_text(
+        "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\nContent-Encoding: gzip\r\n"
+        "Content-Length: 999\r\nContent-Type: text/html\r\n",
+        "<html>é</html>",
+    )
+    head, _, body = out.partition("\r\n\r\n")
+    assert "Transfer-Encoding" not in head
+    assert "Content-Encoding" not in head
+    assert head.count("Content-Length") == 1
+    assert f"Content-Length: {len(body.encode())}" in head
+
+
+def test_restore_headers_fills_masked_values_from_the_run_alone():
+    request = (
+        f"GET /a HTTP/1.1\r\nHost: {HOST}\r\nAuthorization: Bearer {MASK}\r\n"
+        f"Cookie: {MASK}\r\nX-Other: {MASK}\r\n\r\n"
+    )
+    out = handoff.restore_headers(
+        request, {"Authorization": "Bearer real-token", "cookie": "sid=1"}
+    )
+    assert "Authorization: Bearer real-token" in out
+    assert "Cookie: sid=1" in out
+    assert f"X-Other: {MASK}" in out, "a header the run did not send stays masked"
+    assert handoff.restore_headers(request, {}) == request
+
+
+async def test_handoff_queues_requests_and_delivers_them_once(estate, now):
+    await estate.scan("example.com", "census", at=now - timedelta(hours=1))
+    await estate.endpoints("census", ["/a", "/b"], at=now, host=HOST, status=200)
+    await estate.vulns("census", [("cve-x", "high")], at=now, host=HOST)
+    service, row = await _connector(estate)
+    endpoints = await _endpoints(estate.session, estate.scans["census"])
+    finding = await estate.session.scalar(
+        select(Vulnerability).where(Vulnerability.scan_id == estate.scans["census"])
+    )
+    finding.protocol = Protocol.HTTP.value
+    await estate.session.flush()
+
+    result = await service.handoff(
+        row.id,
+        estate.project_id,
+        HandoffRequest(
+            kind=ActionKind.ORGANIZER.value,
+            endpoint_ids=[endpoints["/a"].id],
+            finding_ids=[finding.id],
+        ),
+    )
+    assert result.queued == 2
+    assert result.skipped == 0
+    assert result.tool == ACTION_KIND_LABELS[ActionKind.ORGANIZER.value]
+
+    delivered = await service.take_actions(row)
+    assert {a.kind for a in delivered} == {ActionKind.ORGANIZER.value}
+    by_url = {a.url: a for a in delivered}
+    assert by_url[f"https://{HOST}/a"].request.startswith("GET /a HTTP/1.1\r\n")
+    assert by_url[f"https://{HOST}/"].notes.startswith("reNgine · High · cve-x")
+    assert by_url[f"https://{HOST}/"].color == SEVERITY_HIGHLIGHT["high"]
+    assert await service.take_actions(row) == []
+
+
+async def test_handoff_refuses_an_unknown_tool_and_an_empty_pick(estate, now):
+    service, row = await _connector(estate)
+    with pytest.raises(ConnectorError):
+        await service.handoff(row.id, estate.project_id, HandoffRequest(kind="scanner"))
+    with pytest.raises(ConnectorError):
+        await service.handoff(row.id, estate.project_id, HandoffRequest())
+
+
+async def test_delivery_restores_the_run_credentials_only_when_asked(estate, now):
+    await estate.scan(
+        "example.com",
+        "census",
+        at=now - timedelta(hours=1),
+        config={"headers": seal_headers({"Authorization": "Bearer real-token"})},
+    )
+    await estate.vulns("census", [("cve-x", "high")], at=now, host=HOST)
+    finding = await estate.session.scalar(
+        select(Vulnerability).where(Vulnerability.scan_id == estate.scans["census"])
+    )
+    finding.request = (
+        f"GET / HTTP/1.1\r\nHost: {HOST}\r\nAuthorization: Bearer {MASK}\r\n\r\n"
+    )
+    await estate.session.flush()
+    service, row = await _connector(estate)
+
+    await service.handoff(
+        row.id, estate.project_id, HandoffRequest(finding_ids=[finding.id])
+    )
+    (masked,) = await service.take_actions(row)
+    assert f"Authorization: Bearer {MASK}" in masked.request
+
+    row.restore_credentials = True
+    await service.handoff(
+        row.id, estate.project_id, HandoffRequest(finding_ids=[finding.id])
+    )
+    (restored,) = await service.take_actions(row)
+    assert "Authorization: Bearer real-token" in restored.request
+    stored = await estate.session.scalar(select(ConnectorAction.request))
+    assert "real-token" not in stored, "the queue row keeps the masked text"
+
+
+# ---------- hand-off across content types ----------
+
+
+def _candidate(**kw) -> ConnectorCandidate:
+    base = {
+        "connector_id": uuid.uuid4(),
+        "project_id": uuid.uuid4(),
+        "signature": "s",
+        "url": f"https://{HOST}/api/orders?page=1",
+        "scheme": "https",
+        "host": HOST,
+        "path": "/api/orders",
+        "dir_path": "/api/",
+        "methods": ["POST"],
+        "params": ["page", "amount", "note"],
+        "source_tool": "proxy",
+    }
+    return ConnectorCandidate(**{**base, **kw})
+
+
+def test_a_json_sample_gets_a_json_body_template():
+    out = handoff.from_candidate(
+        _candidate(
+            request_sample=(
+                f"POST /api/orders?page=1 HTTP/1.1\r\nHost: {HOST}\r\n"
+                "Content-Type: application/json\r\nContent-Length: 87\r\n\r\n"
+            )
+        )
+    )
+    head, _, body = out.request.partition("\r\n\r\n")
+    assert out.method == "POST"
+    assert body == '{"amount": "", "note": ""}', "query names stay out of the body"
+    assert f"Content-Length: {len(body)}" in head
+    assert head.count("Content-Length") == 1
+    assert "Content-Type: application/json" in head
+
+
+def test_a_multipart_sample_gets_a_multipart_body_with_its_own_boundary():
+    out = handoff.from_candidate(
+        _candidate(
+            request_sample=(
+                f"POST /api/orders?page=1 HTTP/1.1\r\nHost: {HOST}\r\n"
+                "Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryX\r\n\r\n"
+            )
+        )
+    )
+    head, _, body = out.request.partition("\r\n\r\n")
+    boundary = head.split("boundary=", 1)[1].split("\r\n", 1)[0]
+    assert boundary != "----WebKitFormBoundaryX"
+    assert body.startswith(
+        f'--{boundary}\r\nContent-Disposition: form-data; name="amount"'
+    )
+    assert body.endswith(f"--{boundary}--\r\n")
+    assert head.count("Content-Type") == 1
+
+
+def test_an_xml_sample_gets_an_xml_body():
+    out = handoff.from_candidate(
+        _candidate(
+            request_sample=(
+                f"PUT /api/orders HTTP/1.1\r\nHost: {HOST}\r\nContent-Type: text/xml\r\n\r\n"
+            ),
+            url=f"https://{HOST}/api/orders",
+            params=["amount"],
+        )
+    )
+    body = out.request.partition("\r\n\r\n")[2]
+    assert body.startswith('<?xml version="1.0" encoding="UTF-8"?><request><amount>')
+
+
+def test_a_sample_with_no_parameters_ships_an_empty_body_and_says_so():
+    out = handoff.from_candidate(
+        _candidate(
+            request_sample=(
+                f"POST /api/orders HTTP/1.1\r\nHost: {HOST}\r\nContent-Length: 40\r\n\r\n"
+            ),
+            params=[],
+        )
+    )
+    head, _, body = out.request.partition("\r\n\r\n")
+    assert body == ""
+    assert "Content-Length: 0" in head
+
+
+def test_a_get_sample_gets_no_body():
+    out = handoff.from_candidate(
+        _candidate(
+            request_sample=f"GET /api/orders?page=1 HTTP/1.1\r\nHost: {HOST}\r\n\r\n",
+            methods=["GET"],
+        )
+    )
+    assert out.request == f"GET /api/orders?page=1 HTTP/1.1\r\nHost: {HOST}\r\n\r\n"
+
+
+def test_a_stored_request_body_keeps_its_length_after_the_cut():
+    long_body = "a" * (handoff.MAX_HANDOFF_REQUEST * 2)
+    out = handoff.request_message(
+        f"POST /x HTTP/1.1\r\nHost: {HOST}\r\nContent-Length: {len(long_body)}\r\n\r\n"
+        + long_body
+    )
+    head, _, body = out.partition("\r\n\r\n")
+    assert len(out) <= handoff.MAX_HANDOFF_REQUEST
+    assert len(body) < len(long_body)
+    assert f"Content-Length: {len(body)}" in head
+
+
+def test_a_declared_charset_becomes_the_utf8_the_body_is_in():
+    out = handoff.response_text(
+        'HTTP/1.1 200 OK\r\nContent-Type: text/html; charset="ISO-8859-1"\r\n',
+        "<p>café</p>",
+    )
+    head, _, body = out.partition("\r\n\r\n")
+    assert "Content-Type: text/html; charset=utf-8" in head
+    assert f"Content-Length: {len(body.encode())}" in head
+    assert len(body.encode()) == len(body) + 1
+
+
+def test_a_binary_response_ships_its_headers_alone():
+    out = handoff.response_text(
+        "HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nContent-Length: 4821\r\n", None
+    )
+    assert (
+        out == "HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nContent-Length: 0\r\n\r\n"
+    )
+
+
+def test_request_targets_are_percent_encoded_once():
+    assert (
+        handoff.request_target("https://h/a b/ç?q=x y&r=%20")
+        == "/a%20b/%C3%A7?q=x%20y&r=%20"
+    )
+    assert handoff.request_target("https://h") == "/"
+
+
+def test_head_and_ipv6_requests():
+    endpoint = Endpoint(
+        project_id=uuid.uuid4(),
+        scan_id=uuid.uuid4(),
+        target_id=uuid.uuid4(),
+        signature="s",
+        url="http://[2001:db8::1]:8080/status",
+        host="2001:db8::1",
+        port=8080,
+        path="/status",
+        dir_path="/",
+        methods=["HEAD"],
+        params=["x"],
+    )
+    out = handoff.from_endpoint(endpoint)
+    head, _, body = out.request.partition("\r\n\r\n")
+    assert head.startswith("HEAD /status HTTP/1.1\r\nHost: [2001:db8::1]:8080\r\n")
+    assert body == ""
+    assert "Content-Length" not in head
