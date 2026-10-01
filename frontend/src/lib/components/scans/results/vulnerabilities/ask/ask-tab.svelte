@@ -244,6 +244,7 @@
 			const thread = active;
 			pending = text;
 			draft = { text: '', trace: [] };
+			void tick().then(() => composer?.focus());
 			controller = new AbortController();
 			const own = controller;
 			timer = setTimeout(() => own.abort(), LONG_REQUEST_TIMEOUT_MS);
