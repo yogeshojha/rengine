@@ -34,7 +34,11 @@
 			</Button>
 		{/snippet}
 	</DropdownMenu.Trigger>
-	<DropdownMenu.Content align="start" class="w-72 max-h-none overflow-visible">
+	<DropdownMenu.Content
+		align="start"
+		class="w-72 max-h-none overflow-visible"
+		onCloseAutoFocus={(e) => e.preventDefault()}
+	>
 		{#if threads.length}
 			<ScrollArea class="max-h-64">
 				<DropdownMenu.Group>

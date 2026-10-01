@@ -22,6 +22,11 @@
 	}: Props = $props();
 
 	let text = $state('');
+	let area = $state<HTMLTextAreaElement | null>(null);
+
+	export function focus() {
+		area?.focus();
+	}
 	let ready = $derived(!disabled && !busy && text.trim().length > 0);
 
 	function send() {
@@ -40,6 +45,7 @@
 
 <InputGroup.Root class="rounded-xl bg-card">
 	<InputGroup.Textarea
+		bind:ref={area}
 		bind:value={text}
 		rows={1}
 		maxlength={MAX_QUESTION_CHARS}

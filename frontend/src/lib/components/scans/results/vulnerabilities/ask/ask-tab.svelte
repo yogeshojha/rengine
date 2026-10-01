@@ -71,6 +71,7 @@
 	let confirmDelete = $state(false);
 	let confirmClear = $state(false);
 	let endEl = $state<HTMLDivElement | null>(null);
+	let composer = $state<AskComposer | null>(null);
 	let loadedFor = '';
 	let generation = 0;
 	let controller: AbortController | null = null;
@@ -193,6 +194,7 @@
 		active = null;
 		messages = [];
 		error = '';
+		void tick().then(() => composer?.focus());
 	}
 
 	async function removeThread() {
@@ -444,6 +446,7 @@
 	{/if}
 	<div class="px-5 pt-3 pb-4">
 		<AskComposer
+			bind:this={composer}
 			placeholder={subject.dimension === SurfaceDimension.WEB_ASSETS
 				? 'Ask about this web asset'
 				: 'Ask about this finding'}
