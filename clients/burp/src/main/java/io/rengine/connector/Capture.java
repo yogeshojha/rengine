@@ -74,7 +74,6 @@ final class Capture implements HttpHandler {
 
     private void record(HttpResponseReceived response) {
         if (!settings.enabled() || !settings.isConfigured()) {
-            sink.skippedOff();
             return;
         }
         String tool = sourceTool(response.toolSource().toolType());

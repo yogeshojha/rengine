@@ -66,12 +66,6 @@ export interface SetupStep {
 export interface ConnectorCreated {
 	connector: Connector;
 	secret: string;
-	setup: {
-		endpoint: string;
-		download_url: string | null;
-		client_file: string;
-		steps: SetupStep[];
-	};
 }
 
 export interface ConnectorCreate {
@@ -162,7 +156,6 @@ export interface TargetAdded {
 	target_id: string;
 	target_value: string;
 	attached: number;
-	scan_id: string | null;
 }
 
 export interface CandidateQuery {
@@ -170,7 +163,6 @@ export interface CandidateQuery {
 	host?: string;
 	notice?: string;
 	flagged?: boolean;
-	known?: boolean;
 	search?: string;
 	page?: number;
 }

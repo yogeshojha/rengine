@@ -8,7 +8,10 @@
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
+	import { Button } from '$lib/components/ui/button/index.js';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import LinkCard from '$lib/components/connectors/link-card.svelte';
 	import ConnectDialog from '$lib/components/connectors/connect-dialog.svelte';
 	import SettingsDialog from '$lib/components/connectors/settings-dialog.svelte';
@@ -113,6 +116,12 @@
 		if (!setupOpen) secret = null;
 	});
 
+	function retry() {
+		if (!projectId) return;
+		void connectors.loadCatalog();
+		void connectors.load(projectId, true);
+	}
+
 	function connectorOf(spec: ConnectorSpec): Connector | null {
 		return connectors.items.find((c) => c.kind === spec.kind) ?? null;
 	}
@@ -122,7 +131,7 @@
 		connecting = spec.kind;
 		try {
 			const created = await connectorsApi.create({ kind: spec.kind, project_id: projectId });
-			connectors.upsert(created.connector, true);
+			connectors.upsert(created.connector);
 			secret = created.secret;
 			setupOpen = true;
 		} catch (e) {
@@ -170,7 +179,11 @@
 <div class="flex flex-col gap-5">
 	<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.connectors}</h1>
 
-	{#if !ready}
+	{#if !ready && connectors.error}
+		<EmptyState icon={TriangleAlertIcon} title={connectors.error}>
+			<Button size="sm" variant="outline" onclick={retry}>Retry</Button>
+		</EmptyState>
+	{:else if !ready}
 		<Card.Root class="gap-3 p-5">
 			<Skeleton class="h-10 w-full" />
 		</Card.Root>

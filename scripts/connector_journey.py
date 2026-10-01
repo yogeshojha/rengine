@@ -56,17 +56,14 @@ def friction(text):
 
 call("POST", "/auth/login", {"username": USER, "password": PASSWORD})
 
-step(1, "Pentester creates a connector. It asks for a name and a proxy, nothing else.")
-s, made = call(
-    "POST", "/connectors", {"name": "My Burp", "kind": "burp", "project_id": PID}
-)
+step(1, "Pentester presses Connect Burp Suite. It asks for nothing.")
+s, made = call("POST", "/connectors", {"kind": "burp", "project_id": PID})
 tok = made["secret"]
 cid = made["connector"]["id"]
-saw(
-    f"token issued, {len(made['setup']['steps'])} setup steps, endpoint {made['setup']['endpoint']}"
-)
+s, catalog = call("GET", "/connectors/catalog")
+saw(f"token issued, {len(catalog[0]['steps'])} setup steps")
 
-step(2, "Loads the jar, pastes the token, presses Test connection.")
+step(2, "Loads the jar, pastes the token, presses Save and test.")
 s, _ = call(
     "POST", "/connectors/ingest", {"client": "burp/2026.4.2", "items": []}, token=tok
 )
@@ -157,15 +154,13 @@ for d in disc:
 if not any(d["domain"] == SITE for d in disc):
     friction(f"{SITE} is not offered")
 
-step(7, "Presses Add and scan, because reNgine knows nothing about this site yet.")
+step(7, "Presses Add as target, because reNgine knows nothing about this site yet.")
 s, added = call(
     "POST",
     f"/connectors/{cid}/discovered/add?project_id={PID}",
-    {"domain": SITE, "scan": True},
+    {"domain": SITE},
 )
-saw(
-    f"HTTP {s} · target created · {added.get('attached')} recorded rows attached · scan {str(added.get('scan_id'))[:8]}"
-)
+saw(f"HTTP {s} · target created · {added.get('attached')} recorded rows attached")
 
 step(8, "Does the browsing done BEFORE adding attach retroactively?")
 s, q2 = call("GET", f"/connectors/{cid}/candidates?project_id={PID}")
@@ -217,10 +212,10 @@ picks = [
 ]
 s, sent = call(
     "POST",
-    f"/connectors/{cid}/send?project_id={PID}",
-    {"ids": picks, "kind": "repeater"},
+    f"/connectors/{cid}/handoff?project_id={PID}",
+    {"candidate_ids": picks, "kind": "repeater"},
 )
-saw(f"queued {sent.get('queued')} for Burp to collect")
+saw(f"queued {sent.get('queued')} for Burp to collect, online={sent.get('online')}")
 s, collected = call("GET", "/connectors/actions", token=tok)
 saw(f"Burp collected {len(collected)}: {[a['label'] for a in collected]}")
 
@@ -230,7 +225,7 @@ scan = (scans or [{}])[0] if isinstance(scans, list) else (scans or {})
 saw(f"HTTP {s} · {scan.get('engine_name') if s == OK else scans}")
 
 print("\n--- cleanup ---")
-for run in (scan.get("id"), added.get("scan_id")):
+for run in (scan.get("id"),):
     if run:
         code, _ = call("POST", f"/scans/{run}/cancel?project_id={PID}")
         print(f"     cancel scan -> {code}")

@@ -12,6 +12,7 @@ import urllib.request
 
 BASE = os.environ.get("RENGINE_API", "http://localhost:8000/api/v1")
 PID = os.environ.get("RENGINE_PROJECT_ID", "")
+SLUG = os.environ.get("RENGINE_PROJECT_SLUG", "")
 USER = os.environ.get("RENGINE_USER", "rengine")
 PASSWORD = os.environ.get("RENGINE_PASSWORD", "rengine@123")
 
@@ -67,7 +68,7 @@ print("== auth ==")
 s, _ = call("POST", "/auth/login", {"username": USER, "password": PASSWORD})
 check("login", s == OK, s)
 
-s, tpage = call("GET", f"/targets?project_id={PID}&size=50")
+s, tpage = call("GET", f"/targets?project_slug={SLUG}&size=50")
 targets = tpage.get("items", tpage) if isinstance(tpage, dict) else tpage
 HOST = next(
     (t["target_value"] for t in targets if t.get("target_type") == "domain"), None
@@ -92,16 +93,20 @@ check(
     "catalog carries setup metadata",
     all(c["title"] and c["vendor"] and c["tools"] for c in cat),
 )
+check(
+    "catalog carries the setup steps",
+    all(len(c["steps"]) >= EXPECTED_SETUP_STEPS for c in cat),
+)
+check(
+    "one step downloads and one carries the credentials",
+    {s["control"] for s in cat[0]["steps"]} >= {"download", "credentials"},
+)
 
 print("\n== create ==")
 s, created = call(
     "POST",
     "/connectors",
-    {
-        "name": "e2e burp",
-        "kind": "burp",
-        "project_id": PID,
-    },
+    {"kind": "burp", "project_id": PID},
 )
 check("create returns 201", s == CREATED, s)
 secret = created["secret"]
@@ -110,10 +115,20 @@ check(
     "secret is returned once and is prefixed",
     secret.startswith("rngconn_") and len(secret) == TOKEN_LENGTH,
 )
-check("setup steps included", len(created["setup"]["steps"]) >= EXPECTED_SETUP_STEPS)
 check("state starts idle", created["connector"]["state"] == "idle")
+check("it is named after the proxy", created["connector"]["name"] == cat[0]["title"])
 
-s, _ = call("POST", "/connectors", {"name": "x", "kind": "nope", "project_id": PID})
+s, second = call("POST", "/connectors", {"kind": "burp", "project_id": PID})
+check("a second connection of one kind is refused", s == BAD_REQUEST, s)
+
+s, _ = call("GET", "/connectors/actions", token=secret)
+s, listed = call("GET", f"/connectors?project_id={PID}")
+check(
+    "a poll reads as connected",
+    next(c for c in listed if c["id"] == cid)["state"] == "connected",
+)
+
+s, _ = call("POST", "/connectors", {"kind": "nope", "project_id": PID})
 check("unknown kind rejected", s == BAD_REQUEST, s)
 s, _ = call("GET", "/connectors/targets")
 check("the target picker needs a token", s == UNAUTHORIZED, s)
@@ -198,7 +213,6 @@ check(
     offsite_rows,
 )
 check("novel equals accepted on first sight", r["novel"] == r["accepted"])
-check("manual trigger never reports ready", r["ready"] is False)
 loud = {f["url"] for f in r["flagged"]}
 check("admin path flagged", any("wp-admin" in u for u in loud), loud)
 
@@ -710,14 +724,15 @@ s, queue_page = call("GET", f"/connectors/{cid}/candidates?project_id={PID}&stat
 pick = [r["id"] for r in (queue_page or {}).get("rows", [])[:2]]
 s, queued = call(
     "POST",
-    f"/connectors/{cid}/send?project_id={PID}",
-    {"ids": pick, "kind": "repeater"},
+    f"/connectors/{cid}/handoff?project_id={PID}",
+    {"candidate_ids": pick, "kind": "repeater"},
 )
 check(
     "shapes are queued for the proxy",
     s == OK and queued.get("queued") == len(pick),
     queued,
 )
+check("the reply says the proxy is online", queued.get("online") is True, queued)
 
 s, listed = call("GET", f"/connectors?project_id={PID}")
 mine = next((c for c in listed if c["id"] == cid), {})
@@ -728,11 +743,15 @@ check(
 )
 
 s, _ = call(
-    "POST", f"/connectors/{cid}/send?project_id={PID}", {"ids": [], "kind": "repeater"}
+    "POST",
+    f"/connectors/{cid}/handoff?project_id={PID}",
+    {"candidate_ids": [], "kind": "repeater"},
 )
 check("an empty selection is refused", s == BAD_REQUEST, s)
 s, _ = call(
-    "POST", f"/connectors/{cid}/send?project_id={PID}", {"ids": pick, "kind": "nope"}
+    "POST",
+    f"/connectors/{cid}/handoff?project_id={PID}",
+    {"candidate_ids": pick, "kind": "nope"},
 )
 check("an unknown action is refused", s == BAD_REQUEST, s)
 
@@ -750,6 +769,22 @@ check("an action is delivered once, never replayed", again2 == [], again2)
 s, _ = call("GET", "/connectors/actions", token="rngconn_" + "0" * 48)
 check("collecting needs a valid token", s == UNAUTHORIZED, s)
 
+print("\n== each tab count equals its rows ==")
+s, listed = call("GET", f"/connectors?project_id={PID}")
+mine = next(c for c in listed if c["id"] == cid)
+for field, query in (
+    ("missed", "notice=unseen_by_scans"),
+    ("flagged", "flagged=true"),
+    ("out_of_scope", "notice=out_of_scope"),
+    ("candidates", ""),
+):
+    s, page = call("GET", f"/connectors/{cid}/candidates?project_id={PID}&{query}")
+    check(
+        f"{field} equals its rows",
+        page["total"] == mine[field],
+        (page["total"], mine[field]),
+    )
+
 print("\n== scan dispatch ==")
 s, scans = call("POST", f"/connectors/{cid}/scan?project_id={PID}", {"ids": []})
 scan = (scans or [{}])[0] if isinstance(scans, list) else (scans or {})
@@ -758,7 +793,12 @@ sid = scan["id"]
 check("run is focused", scan.get("scope") == "focused", scan.get("scope"))
 s, after = call("GET", f"/connectors/{cid}/candidates?project_id={PID}&state=queued")
 check("candidates moved to queued", after["total"] >= 1, after["total"])
-check("queued rows carry the scan id", all(r["scan_id"] == sid for r in after["rows"]))
+started = {run["id"] for run in scans} if isinstance(scans, list) else {sid}
+check(
+    "queued rows carry a started scan's id",
+    all(r["scan_id"] in started for r in after["rows"]),
+    {r["scan_id"] for r in after["rows"]} - started,
+)
 
 print("\n== isolation ==")
 s, _ = call(
@@ -771,6 +811,11 @@ print("\n== token rotation ==")
 s, rot = call("POST", f"/connectors/{cid}/rotate?project_id={PID}")
 new_secret = rot["secret"]
 check("rotate returns a new secret", s == OK and new_secret != secret)
+check(
+    "rotation reads as offline",
+    rot["connector"]["state"] != "connected",
+    rot["connector"]["state"],
+)
 s, _ = call("POST", "/connectors/ingest", {"items": []}, token=secret)
 check("old token no longer works", s == UNAUTHORIZED, s)
 s, _ = call("POST", "/connectors/ingest", {"items": []}, token=new_secret)

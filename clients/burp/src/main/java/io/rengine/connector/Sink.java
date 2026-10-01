@@ -72,7 +72,6 @@ final class Sink {
     private final AtomicLong dropped = new AtomicLong();
     private final AtomicLong deduped = new AtomicLong();
     private final AtomicLong failed = new AtomicLong();
-    private final AtomicLong skippedOff = new AtomicLong();
     private final AtomicLong skippedTool = new AtomicLong();
     private final AtomicLong skippedScope = new AtomicLong();
 
@@ -363,20 +362,12 @@ final class Sink {
         return failed.get();
     }
 
-    void skippedOff() {
-        skippedOff.incrementAndGet();
-    }
-
     void skippedTool() {
         skippedTool.incrementAndGet();
     }
 
     void skippedScope() {
         skippedScope.incrementAndGet();
-    }
-
-    long skippedOffCount() {
-        return skippedOff.get();
     }
 
     long skippedToolCount() {

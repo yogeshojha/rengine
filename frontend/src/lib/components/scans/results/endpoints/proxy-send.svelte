@@ -12,6 +12,8 @@
 	import { proxyTool } from '$lib/stores/proxy-tool.svelte';
 	import { connectors as connectorStore } from '$lib/stores/connectors.svelte';
 	import { connectorsApi } from '$lib/api/connectors';
+	import { projectsStore } from '$lib/stores/projects.svelte';
+	import { untrack } from 'svelte';
 	import {
 		ACTION_KIND_LABELS,
 		DELIVERY_POLL_MS,
@@ -65,6 +67,18 @@
 	$effect(() => () => {
 		run++;
 		clearTimeout(timer);
+	});
+
+	const projectId = $derived(projectsStore.activeProject?.id ?? null);
+	const known = $derived(projectId !== null && connectorStore.fetchedProjectId === projectId);
+
+	$effect(() => {
+		const id = projectId;
+		if (!id || known) return;
+		untrack(() => {
+			void connectorStore.load(id);
+			void connectorStore.loadCatalog();
+		});
 	});
 
 	/** True once the proxy has collected everything queued for it. */
@@ -172,7 +186,7 @@
 			</DropdownMenu.Content>
 		</DropdownMenu.Root>
 	</ButtonGroup>
-{:else if !bar}
+{:else if !bar && known}
 	<Button
 		variant="outline"
 		size="sm"

@@ -58,13 +58,6 @@ export const ACTION_KIND_LABELS: Record<ActionKind, string> = {
 	[ActionKind.SITE_MAP]: 'Site map'
 };
 
-export const ACTION_KIND_HELP: Record<ActionKind, string> = {
-	[ActionKind.REPEATER]: 'One tab per request.',
-	[ActionKind.INTRUDER]: 'One attack per request.',
-	[ActionKind.ORGANIZER]: 'Request and response, with the finding as a note.',
-	[ActionKind.SITE_MAP]: 'Request and response under the host in Target.'
-};
-
 export const MAX_HANDOFF = 200;
 
 export const CANDIDATE_STATES: CandidateState[] = ['new', 'queued', 'scanned', 'ignored'];
@@ -96,8 +89,6 @@ export const NOTICE_HELP: Record<string, string> = {
 	out_of_scope: 'A bug bounty program lists this host as out of scope.'
 };
 
-export const LOUD_NOTICES = new Set(['sensitive', 'admin', 'server_error', 'out_of_scope']);
-
 export function noticeTone(notice: string): string {
 	if (notice === 'out_of_scope') return 'text-destructive font-medium';
 	if (notice === 'sensitive' || notice === 'server_error') return 'text-destructive';
@@ -106,7 +97,7 @@ export function noticeTone(notice: string): string {
 	return 'text-muted-foreground';
 }
 
-export const INGEST_PATH = '/api/v1/connectors/ingest';
+const INGEST_PATH = '/api/v1/connectors/ingest';
 
 export function ingestEndpoint(): string {
 	if (typeof location === 'undefined') return INGEST_PATH;

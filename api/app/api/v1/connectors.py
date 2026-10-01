@@ -65,11 +65,6 @@ async def _authenticate(
     return row
 
 
-def _base(request: Request) -> str:
-    """API base URL for the proxy."""
-    return str(request.base_url).rstrip("/")
-
-
 Service = Annotated[ConnectorService, Depends(get_service)]
 ProjectId = Annotated[UUID, Query(description="Project ID")]
 
@@ -204,10 +199,10 @@ async def list_connectors(
 
 @router.post("", response_model=ConnectorCreated, status_code=status.HTTP_201_CREATED)
 async def create_connector(
-    data: ConnectorCreate, current_user: CurrentUser, service: Service, request: Request
+    data: ConnectorCreate, current_user: CurrentUser, service: Service
 ):
     try:
-        return await service.create(data, current_user.id, _base(request))
+        return await service.create(data, current_user.id)
     except ConnectorError as exc:
         raise _guard(exc) from exc
 
@@ -232,9 +227,8 @@ async def rotate_token(
     _current_user: CurrentUser,
     service: Service,
     project_id: ProjectId,
-    request: Request,
 ):
-    return await service.rotate(connector_id, project_id, _base(request))
+    return await service.rotate(connector_id, project_id)
 
 
 @router.delete("/{connector_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -273,7 +267,6 @@ async def candidates(
     host: str | None = None,
     notice: str | None = None,
     flagged: bool | None = None,
-    known: bool | None = None,
     search: str | None = None,
     page: int = 1,
 ):
@@ -284,7 +277,6 @@ async def candidates(
         host=host,
         notice=notice,
         flagged=flagged,
-        known=known,
         search=search,
         page=page,
     )
@@ -305,16 +297,6 @@ async def set_candidate_state(
     except ConnectorError as exc:
         raise _guard(exc) from exc
     return {"changed": changed}
-
-
-@router.delete("/{connector_id}/candidates")
-async def clear_candidates(
-    connector_id: UUID,
-    _current_user: CurrentUser,
-    service: Service,
-    project_id: ProjectId,
-):
-    return {"removed": await service.clear(connector_id, project_id)}
 
 
 @router.post("/{connector_id}/scan", response_model=list[ScanRead])
@@ -354,7 +336,7 @@ async def add_discovered_target(
 ):
     try:
         return await service.add_target(
-            connector_id, project_id, current_user.id, body.domain, body.scan
+            connector_id, project_id, current_user.id, body.domain
         )
     except ConnectorError as exc:
         raise _guard(exc) from exc

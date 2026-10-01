@@ -194,7 +194,7 @@ class ConnectorService:
         return row
 
     async def create(
-        self, data: ConnectorCreate, created_by: uuid.UUID, base_url: str = ""
+        self, data: ConnectorCreate, created_by: uuid.UUID
     ) -> ConnectorCreated:
         spec = connector_for(data.kind)
         if spec is None:
@@ -232,7 +232,6 @@ class ConnectorService:
         return ConnectorCreated(
             connector=await self._read(row),
             secret=secret,
-            setup=self._setup(row, secret, base_url),
         )
 
     async def update(
@@ -253,7 +252,7 @@ class ConnectorService:
         return await self._read(row)
 
     async def rotate(
-        self, connector_id: uuid.UUID, project_id: uuid.UUID, base_url: str = ""
+        self, connector_id: uuid.UUID, project_id: uuid.UUID
     ) -> ConnectorCreated:
         row = await self.get(connector_id, project_id)
         secret, token_hash, prefix = auth.mint()
@@ -264,7 +263,6 @@ class ConnectorService:
         return ConnectorCreated(
             connector=await self._read(row),
             secret=secret,
-            setup=self._setup(row, secret, base_url),
         )
 
     async def delete(self, connector_id: uuid.UUID, project_id: uuid.UUID) -> None:
@@ -741,7 +739,6 @@ class ConnectorService:
         project_id: uuid.UUID,
         created_by: uuid.UUID,
         domain: str,
-        scan: bool = False,
     ) -> TargetAdded:
         """Promote a discovered domain to a target, then re-attribute the hosts under it."""
         from app.services.target import TargetService  # noqa: PLC0415
@@ -772,28 +769,11 @@ class ConnectorService:
             )
         )
         await self.attach_targets(row)
-        scan_id = (
-            await self._first_scan(target_id, project_id, created_by) if scan else None
-        )
         return TargetAdded(
             target_id=target_id,
             target_value=value,
             attached=attached or 0,
-            scan_id=scan_id,
         )
-
-    async def _first_scan(
-        self, target_id: uuid.UUID, project_id: uuid.UUID, created_by: uuid.UUID
-    ) -> uuid.UUID:
-        """A full run."""
-        from app.services.scan import ScanService  # noqa: PLC0415
-
-        run = await ScanService(self.session).create(
-            ScanCreate(engine_id=None, target_id=target_id),
-            project_id,
-            created_by,
-        )
-        return run.id
 
     async def _programs(
         self, project_id: uuid.UUID
@@ -876,7 +856,6 @@ class ConnectorService:
         host: str | None = None,
         notice: str | None = None,
         flagged: bool | None = None,
-        known: bool | None = None,
         search: str | None = None,
         page: int = 1,
     ) -> CandidatePage:
@@ -899,8 +878,6 @@ class ConnectorService:
                     array(tuple(LOUD_NOTICES))
                 )
             )
-        if known is not None:
-            base = base.where(ConnectorCandidate.known.is_(known))
         if search:
             base = base.where(ConnectorCandidate.url.ilike(f"%{search.strip()}%"))
         total = await self.session.scalar(
@@ -1353,17 +1330,6 @@ class ConnectorService:
         await self.session.commit()
         return result.rowcount or 0
 
-    async def clear(self, connector_id: uuid.UUID, project_id: uuid.UUID) -> int:
-        row = await self.get(connector_id, project_id)
-        result = await self.session.execute(
-            delete(ConnectorCandidate).where(
-                ConnectorCandidate.connector_id == connector_id
-            )
-        )
-        row.candidates = 0
-        await self.session.commit()
-        return result.rowcount or 0
-
     async def scan(
         self,
         connector_id: uuid.UUID,
@@ -1689,28 +1655,6 @@ class ConnectorService:
         if states:
             query = query.where(ConnectorCandidate.state.in_(states))
         return await self.session.scalar(query) or 0
-
-    def _setup(self, row: Connector, secret: str, base_url: str = "") -> dict:
-        """Setup steps for the proxy."""
-        spec = connector_for(row.kind)
-        if spec is None:
-            return {}
-        endpoint = f"{base_url.rstrip('/')}{settings.API_V1_PREFIX}/connectors/ingest"
-        return {
-            "endpoint": endpoint,
-            "download_url": self.client_url(row.kind),
-            "client_file": spec.client_file,
-            "steps": [
-                {
-                    "title": step.title,
-                    "detail": step.detail,
-                    "code": step.code,
-                    "lang": step.lang,
-                    "control": step.control,
-                }
-                for step in spec.setup(endpoint=endpoint, secret=secret)
-            ],
-        }
 
     def _candidate_read(self, row: ConnectorCandidate) -> CandidateRead:
         return CandidateRead(

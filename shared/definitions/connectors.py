@@ -84,13 +84,6 @@ ACTION_KIND_LABELS: dict[str, str] = {
     ActionKind.SITE_MAP.value: "Site map",
 }
 
-ACTION_KIND_HELP: dict[str, str] = {
-    ActionKind.REPEATER.value: "One tab per request.",
-    ActionKind.INTRUDER.value: "One attack per request.",
-    ActionKind.ORGANIZER.value: "Request and response, with the finding as a note.",
-    ActionKind.SITE_MAP.value: "Request and response under the host in Target.",
-}
-
 HANDOFF_KINDS: tuple[str, ...] = tuple(k.value for k in ActionKind)
 DEFAULT_ACTION_KIND = ActionKind.REPEATER.value
 

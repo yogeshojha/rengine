@@ -61,10 +61,6 @@ export const connectorsApi = {
 		);
 	},
 
-	clear(id: string, projectId: string): Promise<{ removed: number }> {
-		return api.delete<{ removed: number }>(`/connectors/${id}/candidates?project_id=${projectId}`);
-	},
-
 	handoff(
 		id: string,
 		projectId: string,
@@ -85,10 +81,9 @@ export const connectorsApi = {
 		return api.get<DiscoveredDomain[]>(`/connectors/${id}/discovered?project_id=${projectId}`);
 	},
 
-	addTarget(id: string, projectId: string, domain: string, scan = false): Promise<TargetAdded> {
+	addTarget(id: string, projectId: string, domain: string): Promise<TargetAdded> {
 		return api.post<TargetAdded>(`/connectors/${id}/discovered/add?project_id=${projectId}`, {
-			domain,
-			scan
+			domain
 		});
 	},
 

@@ -53,7 +53,6 @@ final class Actions {
     private final Sink.Log log;
     private final Deliver deliver;
     private final AtomicLong delivered = new AtomicLong();
-    private final AtomicLong noticed = new AtomicLong();
 
     private volatile Thread worker;
     private volatile boolean running;
@@ -158,7 +157,6 @@ final class Actions {
         for (Notice notice : parseNotices(response.body())) {
             try {
                 deliver.notice(notice);
-                noticed.incrementAndGet();
             } catch (Exception e) {
                 log.line("Could not show a notice: " + e);
             }
@@ -205,10 +203,6 @@ final class Actions {
 
     long delivered() {
         return delivered.get();
-    }
-
-    long noticed() {
-        return noticed.get();
     }
 
     String lastError() {

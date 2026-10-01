@@ -357,7 +357,6 @@ class ConnectorCreated(BaseModel):
 
     connector: ConnectorRead
     secret: str
-    setup: dict
 
 
 class CandidateRead(BaseModel):
@@ -398,14 +397,12 @@ class AddTargetRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     domain: str = PydanticField(min_length=1, max_length=500)
-    scan: bool = False
 
 
 class TargetAdded(BaseModel):
     target_id: uuid.UUID
     target_value: str
     attached: int = 0
-    scan_id: uuid.UUID | None = None
 
 
 class IngestItem(BaseModel):

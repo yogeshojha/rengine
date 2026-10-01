@@ -17,7 +17,6 @@ function createConnectorsStore() {
 	let queueLoading = $state(false);
 	let error = $state<string | null>(null);
 	let fetchedProjectId = $state<string | null>(null);
-	let selectedId = $state<string | null>(null);
 
 	function message(e: unknown, fallback: string) {
 		return e instanceof Error ? e.message : fallback;
@@ -36,9 +35,6 @@ function createConnectorsStore() {
 		get discovered() {
 			return discovered;
 		},
-		get isLoading() {
-			return isLoading;
-		},
 		get queueLoading() {
 			return queueLoading;
 		},
@@ -48,17 +44,8 @@ function createConnectorsStore() {
 		get fetchedProjectId() {
 			return fetchedProjectId;
 		},
-		get selectedId() {
-			return selectedId;
-		},
 		get selected() {
-			return items.find((c) => c.id === selectedId) ?? items[0] ?? null;
-		},
-
-		select(id: string | null) {
-			selectedId = id;
-			queue = null;
-			discovered = [];
+			return items[0] ?? null;
 		},
 
 		async loadCatalog() {
@@ -85,7 +72,6 @@ function createConnectorsStore() {
 			try {
 				items = await connectorsApi.list(projectId);
 				fetchedProjectId = projectId;
-				if (!items.some((c) => c.id === selectedId)) selectedId = items[0]?.id ?? null;
 			} catch (e) {
 				error = message(e, 'Connectors not loaded');
 			} finally {
@@ -112,16 +98,16 @@ function createConnectorsStore() {
 			}
 		},
 
-		upsert(connector: Connector, select = false) {
+		upsert(connector: Connector) {
 			const at = items.findIndex((c) => c.id === connector.id);
 			if (at >= 0) items[at] = connector;
 			else items = [connector, ...items];
-			if (select) selectedId = connector.id;
 		},
 
 		drop(id: string) {
 			items = items.filter((c) => c.id !== id);
-			if (selectedId === id) selectedId = items[0]?.id ?? null;
+			queue = null;
+			discovered = [];
 		},
 
 		reset() {
@@ -133,7 +119,6 @@ function createConnectorsStore() {
 			queueLoading = false;
 			error = null;
 			fetchedProjectId = null;
-			selectedId = null;
 		}
 	};
 }
