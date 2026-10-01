@@ -631,6 +631,7 @@ def send_alert(
             payload["message"],
             channel_ids=channel_ids,
             attach=attach,
+            metadata=payload.get("metadata"),
         )
     now = utc_now()
     host.alerted_at = now

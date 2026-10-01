@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.crypto import encrypt_secret, try_decrypt
 from shared.enums.api_key import APIProvider
+from shared.enums.notification import NotificationSeverity, NotificationType
 from shared.enums.notification_channel import URL_PROVIDERS, NotificationProvider
 from shared.models.notification_channel import (
     PROVIDERS,
@@ -22,7 +23,7 @@ from shared.models.notification_channel import (
     NotificationPreference,
 )
 from shared.services.api_key.async_api_key import APIKeyService
-from shared.services.notifier import send_one, with_shared_bot
+from shared.services.notifier import Outbound, send_one, with_shared_bot
 from shared.services.scan_resolve import MASK
 from shared.utils.datetime import utc_now
 from shared.utils.net import host_port, url_port, validate_public_https_url
@@ -158,6 +159,19 @@ def _to_read(channel: NotificationChannel) -> NotificationChannelRead:
     )
 
 
+def _test_message(name: str) -> Outbound:
+    return Outbound(
+        title="Test message",
+        body=f"Channel {name} connected to reNgine.",
+        severity=NotificationSeverity.INFO.value,
+        type=NotificationType.SYSTEM.value,
+    )
+
+
+def _test_result(ok: bool, reason: str) -> str:
+    return "Test message sent" if ok else f"Test message not sent · {reason}"
+
+
 class NotificationChannelService:
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -241,32 +255,26 @@ class NotificationChannelService:
                 msg = f"'{field}' carries a masked value. Enter the value again."
                 raise _bad(msg)
         _validate_config(provider, config)
-        ok, message = await asyncio.to_thread(
-            send_one,
-            provider,
-            config,
-            "reNgine test notification",
-            "Test notification.",
-            "info",
+        ok, reason = await asyncio.to_thread(
+            send_one, provider, config, _test_message(provider.capitalize())
         )
-        return NotificationChannelTestResult(success=ok, message=message)
+        return NotificationChannelTestResult(
+            success=ok, message=_test_result(ok, reason)
+        )
 
     async def test(self, id: UUID) -> NotificationChannelTestResult:
         channel = await self._get_or_404(id)
         config = await self._with_shared_bot(channel.provider, _decrypt_config(channel))
-        ok, message = await asyncio.to_thread(
-            send_one,
-            channel.provider,
-            config,
-            "reNgine test notification",
-            "Test notification.",
-            "info",
+        ok, reason = await asyncio.to_thread(
+            send_one, channel.provider, config, _test_message(channel.name)
         )
         channel.last_test_at = utc_now()
         channel.last_test_ok = ok
-        channel.last_test_message = message[:500]
+        channel.last_test_message = reason[:500]
         await self.session.commit()
-        return NotificationChannelTestResult(success=ok, message=message)
+        return NotificationChannelTestResult(
+            success=ok, message=_test_result(ok, reason)
+        )
 
     async def _get_or_404(self, id: UUID) -> NotificationChannel:
         result = await self.session.execute(

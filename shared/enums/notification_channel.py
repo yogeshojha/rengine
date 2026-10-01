@@ -12,7 +12,11 @@ class NotificationProvider(Enum):
 
 
 DIRECT_POST_PROVIDERS: frozenset[str] = frozenset(
-    {NotificationProvider.WEBHOOK.value, NotificationProvider.TEAMS.value}
+    {
+        NotificationProvider.WEBHOOK.value,
+        NotificationProvider.TEAMS.value,
+        NotificationProvider.TELEGRAM.value,
+    }
 )
 
 URL_PROVIDERS: frozenset[str] = frozenset(

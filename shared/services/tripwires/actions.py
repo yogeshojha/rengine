@@ -155,6 +155,7 @@ def notify(
             payload["title"],
             payload["message"],
             channel_ids=channels,
+            metadata=payload.get("metadata"),
         )
     except Exception:
         logger.warning("tripwire channel dispatch failed", exc_info=True)

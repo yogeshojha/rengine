@@ -88,6 +88,7 @@ class SyncNotificationPublisher:
                 message,
                 channel_ids=channel_ids,
                 attach=attach,
+                metadata=metadata_dict,
             )
         except Exception as exc:
             logger.warning("External notification dispatch failed: %s", exc)

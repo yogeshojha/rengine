@@ -80,7 +80,13 @@ class NotificationManager:
             from shared.services.notifier import dispatch_async  # noqa: PLC0415
 
             await dispatch_async(
-                session, type, severity, title, message, channel_ids=channel_ids
+                session,
+                type,
+                severity,
+                title,
+                message,
+                channel_ids=channel_ids,
+                metadata=metadata_dict,
             )
         except Exception as exc:
             logger.warning(f"External notification dispatch failed: {exc}")
