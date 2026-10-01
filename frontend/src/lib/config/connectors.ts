@@ -1,18 +1,28 @@
 import type { CandidateState, ConnectorState, SourceTool } from '$lib/types/connector';
 
 export const CONNECTOR_POLL_MS = 10_000;
+export const CONNECT_POLL_MS = 2000;
+export const LIVE_POLL_MS = 2500;
+export const DELIVERY_POLL_MS = 1000;
+export const DELIVERY_WAIT_MS = 12_000;
+export const NEW_ROW_MS = 60_000;
+export const SEND_SHORTCUT = 'b';
 
 export const CONNECTOR_STATE_LABELS: Record<ConnectorState, string> = {
 	idle: 'Not connected',
 	live: 'Receiving',
-	stale: 'Idle',
+	connected: 'Connected',
+	stale: 'Offline',
 	paused: 'Paused'
 };
+
+export const ONLINE_STATES = new Set<ConnectorState>(['live', 'connected']);
 
 export const CONNECTOR_STATE_DOT: Record<ConnectorState, string> = {
 	idle: 'bg-muted-foreground',
 	live: 'bg-success',
-	stale: 'bg-warning',
+	connected: 'bg-info',
+	stale: 'bg-muted-foreground',
 	paused: 'bg-muted-foreground'
 };
 
@@ -101,4 +111,16 @@ export const INGEST_PATH = '/api/v1/connectors/ingest';
 export function ingestEndpoint(): string {
 	if (typeof location === 'undefined') return INGEST_PATH;
 	return `${location.origin}${INGEST_PATH}`;
+}
+
+const CLIENT_VERSION = /(\d+\.\d+\.\d+)/;
+
+export function clientVersion(value: string | null | undefined): string | null {
+	return value ? (CLIENT_VERSION.exec(value)?.[1] ?? null) : null;
+}
+
+export function isOutdated(client: string | null, shipped: string | null | undefined): boolean {
+	const running = clientVersion(client);
+	const current = clientVersion(shipped);
+	return running !== null && current !== null && running !== current;
 }

@@ -7,22 +7,29 @@ from enum import StrEnum
 from shared.definitions.vulnerabilities import Severity
 
 MAX_NAME = 80
-MAX_CONNECTORS = 20
 MAX_BATCH = 500
 MAX_QUEUE = 5000
 MAX_BODY_SAMPLE = 4000
 MAX_CANDIDATE_SCAN = 200
-STALE_MINUTES = 30
 LIVE_MINUTES = 2
+PRESENCE_SECONDS = 15
 
 
 class ConnectorKind(StrEnum):
     BURP = "burp"
 
 
+class SetupControl(StrEnum):
+    """The control a setup step carries."""
+
+    DOWNLOAD = "download"
+    CREDENTIALS = "credentials"
+
+
 class ConnectorState(StrEnum):
     IDLE = "idle"
     LIVE = "live"
+    CONNECTED = "connected"
     STALE = "stale"
     PAUSED = "paused"
 
@@ -30,7 +37,8 @@ class ConnectorState(StrEnum):
 CONNECTOR_STATE_LABELS: dict[str, str] = {
     ConnectorState.IDLE.value: "Not connected",
     ConnectorState.LIVE.value: "Receiving",
-    ConnectorState.STALE.value: "Idle",
+    ConnectorState.CONNECTED.value: "Connected",
+    ConnectorState.STALE.value: "Offline",
     ConnectorState.PAUSED.value: "Paused",
 }
 
@@ -185,13 +193,17 @@ COMMON_METHODS: frozenset[str] = frozenset(
 )
 
 
-def state_for(minutes_since: float | None, paused: bool) -> str:
+def presence_key(connector_id) -> str:
+    return f"connector:online:{connector_id}"
+
+
+def state_for(minutes_since: float | None, paused: bool, online: bool = False) -> str:
     if paused:
         return ConnectorState.PAUSED.value
+    if minutes_since is not None and minutes_since <= LIVE_MINUTES:
+        return ConnectorState.LIVE.value
+    if online:
+        return ConnectorState.CONNECTED.value
     if minutes_since is None:
         return ConnectorState.IDLE.value
-    if minutes_since <= LIVE_MINUTES:
-        return ConnectorState.LIVE.value
-    if minutes_since <= STALE_MINUTES:
-        return ConnectorState.STALE.value
-    return ConnectorState.IDLE.value
+    return ConnectorState.STALE.value

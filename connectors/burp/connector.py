@@ -3,17 +3,14 @@
 from __future__ import annotations
 
 from connectors.base import ProxyConnector, SetupStep
-from shared.definitions.connectors import ConnectorKind
+from shared.definitions.connectors import ConnectorKind, SetupControl
 
 
 class BurpConnector(ProxyConnector):
     kind = ConnectorKind.BURP.value
     title = "Burp Suite"
     vendor = "PortSwigger"
-    description = (
-        "Receives proxied traffic from Burp Suite. "
-        "Supported on Community and Professional."
-    )
+    description = "Burp Suite Community and Professional."
     docs_url = (
         "https://portswigger.net/burp/documentation/desktop/extend-burp/extensions"
     )
@@ -26,14 +23,16 @@ class BurpConnector(ProxyConnector):
             SetupStep(
                 title="Download the extension",
                 detail="Burp Suite Community or Professional. JRE 17 or later.",
+                control=SetupControl.DOWNLOAD.value,
             ),
             SetupStep(
                 title="Load it into Burp",
                 detail="Extensions, Installed, Add. Extension type Java. Select the jar.",
             ),
             SetupStep(
-                title="Connect it",
-                detail="Open the reNgine tab in Burp. Paste the endpoint and the token. Press Test connection.",
+                title="Paste the endpoint and the token",
+                detail="Open the reNgine tab in Burp. Press Save and test.",
+                control=SetupControl.CREDENTIALS.value,
             ),
             SetupStep(
                 title="Select the target",

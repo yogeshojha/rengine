@@ -26,28 +26,28 @@
 				label: 'Browsed',
 				value: browsing.browsed,
 				sub: 'endpoints',
-				href: ROUTES.connectors('queue')
+				href: ROUTES.connectors('all')
 			},
 			{
 				key: 'unseen',
 				label: 'Unseen by scans',
 				value: browsing.unseen,
 				sub: null,
-				href: ROUTES.connectors('queue')
+				href: ROUTES.connectors('missed')
 			},
 			{
 				key: 'params',
 				label: 'New parameters',
 				value: browsing.new_params,
 				sub: null,
-				href: ROUTES.connectors('queue')
+				href: ROUTES.connectors('all')
 			},
 			{
 				key: 'flagged',
 				label: 'Flagged',
 				value: browsing.flagged,
 				sub: null,
-				href: ROUTES.connectors('queue')
+				href: ROUTES.connectors('flagged')
 			}
 		].filter((t) => t.value > 0)
 	);

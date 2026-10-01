@@ -231,8 +231,8 @@
 		});
 	});
 	async function sendToProxy(connectorId: string, kind: ActionKind) {
-		if (!detail) return;
-		await handoffToProxy({
+		if (!detail) return null;
+		return handoffToProxy({
 			connectorId,
 			projectId,
 			scanId: detail.scan_id,
@@ -1062,14 +1062,12 @@
 												<Copy data-icon="inline-start" /> Copy
 											</Button>
 										{/if}
-										{#if proxies.length}
-											<ProxySend
-												connectors={proxies}
-												catalog={proxyCatalog}
-												dense
-												onSend={sendToProxy}
-											/>
-										{/if}
+										<ProxySend
+											connectors={proxies}
+											catalog={proxyCatalog}
+											dense
+											onSend={sendToProxy}
+										/>
 									</div>
 								</div>
 								{#if httpView === 'hygiene'}

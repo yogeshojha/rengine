@@ -8,10 +8,12 @@ Works on Burp Suite Community and Professional. The extension uses no Profession
 
 ## Install
 
-1. In reNgine, open **Connectors**, press **New connector**. The next dialog shows the endpoint,
-   the token and a Download button for the jar. The token is shown once.
+1. In reNgine, open **Connectors**, press **Connect Burp Suite**. The dialog shows the endpoint,
+   the token and a Download button for the jar. The token is shown once. **Setup** on the Burp
+   Suite card reopens the dialog. A project holds one Burp Suite connection.
 2. In Burp, go to **Extensions → Installed → Add**, extension type **Java**, and select the jar.
-3. Open the **reNgine** tab, paste the endpoint and the token, press **Test connection**.
+3. Open the **reNgine** tab, paste the endpoint and the token, press **Save and test**. The header
+   of the tab and the connector's row in reNgine both read **Connected**.
 4. Under **Working on**, pick the target and press **Apply scope to Burp**. Tick **Send captured
    requests to reNgine**.
 
@@ -37,7 +39,12 @@ polled. A machine behind NAT needs no inbound access and no tunnel.
 - **HTTPS.** The token is a bearer credential. Over plain HTTP to anything but localhost it is sent
   unencrypted, and the tab reports it.
 - **Self-signed certificates are rejected by default.** *Accept a self-signed certificate* disables
-  verification for this connection only.
+  verification for this connection only, the name on the certificate included.
+- **HTTP/2 over HTTPS, HTTP/1.1 otherwise.** An HTTPS endpoint is negotiated to HTTP/2 and falls
+  back to HTTP/1.1 when the server does not offer it. A plain HTTP endpoint uses HTTP/1.1.
+- **The endpoint is the address reNgine is installed under.** An install by IP address answers on
+  that address only. A bare origin such as `https://rengine.example.com` is completed with the
+  ingest path on save.
 
 ## What it sends
 
@@ -65,9 +72,10 @@ recorded there, how many of those were opened, and how many were not.
 
 ## Sending back
 
-Findings, web assets, endpoints and browsed shapes carry **Send to Burp Suite**: on the finding
-sheet, the web asset sheet, the endpoint rows and branches, and every selection bar. The button
-opens the request in Repeater; the arrow beside it picks the tool.
+Findings, web assets, endpoints and browsed requests carry a **Send to Repeater** button: on the
+finding sheet, the web asset sheet, the endpoint rows and branches, and every selection bar. The
+arrow beside it picks another tool, and the button keeps the last one chosen. With Burp offline
+the request is queued and the button reads **Queued for Burp Suite**.
 
 | Tool | What arrives |
 |---|---|
@@ -109,6 +117,8 @@ with `scanner = manual`. Reporting the same thing twice is one finding.
 
 - It does not block the request path. Records are queued and posted on a background thread. When
   the queue is full, records are dropped and counted.
+- It does not drop a batch on an outage. A batch reNgine did not answer, or answered with 429 or
+  a server error, is held and sent again, up to eight attempts with a wait of 2 to 30 seconds.
 - It does not re-send a URL reported within the last minute.
 - It does not shape or deduplicate. reNgine folds `/api/users/1` and `/api/users/2` into one shape
   server-side.

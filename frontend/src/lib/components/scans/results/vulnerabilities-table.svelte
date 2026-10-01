@@ -884,6 +884,7 @@
 			catalog: proxyCatalog
 		});
 		if (sent) checkedIds.clear();
+		return sent;
 	}
 
 	function afterFiling() {
@@ -1058,6 +1059,7 @@
 		['1 to 5', 'Switch row tab'],
 		['Enter', 'Open finding'],
 		['x', 'Select finding'],
+		['b', 'Send the open finding to Burp Suite'],
 		[Object.values(VULN_STATE_KEYS).join(' / '), Object.values(VULN_STATE_LABELS).join(', ')],
 		['/', 'Search'],
 		['Esc', 'Collapse or clear']

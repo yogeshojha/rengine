@@ -2,6 +2,7 @@ export const STORAGE_KEYS = {
 	activeProjectSlug: 'activeProjectSlug',
 	launchLastEngine: 'rengine:launch:lastEngine',
 	toolboxLastTool: 'rengine:toolbox:lastTool',
+	proxyLastTool: 'rengine:proxy:lastTool',
 	launchLastContext: 'rengine:launch:lastContext',
 	targetViews: 'targets:views',
 	targetsHidden: 'rengine:targets:hidden',

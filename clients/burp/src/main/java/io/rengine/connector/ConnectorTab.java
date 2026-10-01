@@ -2,11 +2,15 @@ package io.rengine.connector;
 
 import burp.api.montoya.MontoyaApi;
 import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -16,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -25,19 +30,27 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
+import javax.swing.UIManager;
 import javax.swing.table.DefaultTableModel;
 
 /** The reNgine tab. */
 final class ConnectorTab {
     private static final int REFRESH_MILLIS = 1000;
     private static final int FACTS_MILLIS = 15_000;
-    private static final String INGEST_PATH = "/api/v1/connectors/ingest";
+    private static final long ONLINE_MILLIS = 10_000;
+    private static final int FIELD_COLUMNS = 20;
+    private static final int LEFT_WIDTH = 520;
     private static final String[] NOTICE_COLUMNS = {"Notice", "URL"};
+    private static final String[] COUNTERS = {"Sent", "Queued", "Repeated", "Dropped", "Failed"};
+    private static final Color OK = new Color(0x2E9E5B);
+    private static final Color FAIL = new Color(0xD64545);
+    private static final Color WARN = new Color(0xC98A1B);
 
     private final MontoyaApi api;
     private final Settings settings;
@@ -50,18 +63,22 @@ final class ConnectorTab {
     private final Notices notices;
 
     private final JPanel root = new JPanel(new BorderLayout());
-    private final JTextField endpointField = new JTextField(46);
-    private final JPasswordField tokenField = new JPasswordField(46);
+    private final JLabel dot = new JLabel("\u25CF");
+    private final JLabel state = new JLabel("Not configured");
+    private final JLabel stateDetail = new JLabel(" ");
+    private final JTextField endpointField = new JTextField(FIELD_COLUMNS);
+    private final JPasswordField tokenField = new JPasswordField(FIELD_COLUMNS);
     private final JCheckBox enabled = new JCheckBox("Send captured requests to reNgine");
-    private final JCheckBox captureProxy = new JCheckBox("Proxy traffic");
-    private final JCheckBox captureRepeater = new JCheckBox("Repeater requests");
+    private final JCheckBox captureProxy = new JCheckBox("Proxy");
+    private final JCheckBox captureRepeater = new JCheckBox("Repeater");
     private final JCheckBox inScopeOnly = new JCheckBox("Only hosts in Burp's target scope");
     private final JCheckBox captureTitles = new JCheckBox("Read page titles from HTML responses");
     private final JCheckBox sendRequestHead =
             new JCheckBox("Send request headers. Credential values are masked.");
     private final JCheckBox allowSelfSigned = new JCheckBox("Accept a self-signed certificate");
+    private final JButton saveAndTest = new JButton("Save and test");
     private final JLabel status = new JLabel(" ");
-    private final JLabel counters = new JLabel(" ");
+    private final JLabel[] counts = new JLabel[COUNTERS.length];
     private final JLabel received = new JLabel(" ");
     private final JLabel result = new JLabel(" ");
     private final JLabel hostLine = new JLabel(" ");
@@ -73,8 +90,11 @@ final class ConnectorTab {
         }
     };
     private final JTable noticeTable = new JTable(noticeModel);
+    private final Timer refreshTimer = new Timer(REFRESH_MILLIS, e -> refresh());
+    private final Timer factsTimer = new Timer(FACTS_MILLIS, e -> refreshHostFacts());
     private List<Actions.Notice> shown = List.of();
-    private Facts.Host lastFacts;
+    private Color muted = Color.GRAY;
+    private Color plain = Color.BLACK;
 
     ConnectorTab(
             MontoyaApi api,
@@ -94,8 +114,14 @@ final class ConnectorTab {
         this.capture = capture;
         this.notices = notices;
         build();
-        new Timer(REFRESH_MILLIS, e -> refresh()).start();
-        new Timer(FACTS_MILLIS, e -> refreshHostFacts()).start();
+        refreshTimer.start();
+        factsTimer.start();
+    }
+
+    /** Stops the timers when the extension unloads. */
+    void dispose() {
+        refreshTimer.stop();
+        factsTimer.stop();
     }
 
     JComponent component() {
@@ -103,13 +129,6 @@ final class ConnectorTab {
     }
 
     private void build() {
-        JPanel form = new JPanel(new GridBagLayout());
-        form.setBorder(BorderFactory.createEmptyBorder(16, 16, 8, 16));
-        GridBagConstraints c = new GridBagConstraints();
-        c.insets = new Insets(3, 4, 3, 4);
-        c.anchor = GridBagConstraints.WEST;
-        int row = 0;
-
         endpointField.setText(settings.endpoint());
         tokenField.setText(settings.token());
         enabled.setSelected(settings.enabled());
@@ -120,64 +139,165 @@ final class ConnectorTab {
         sendRequestHead.setSelected(settings.sendRequestHead());
         allowSelfSigned.setSelected(settings.allowSelfSigned());
 
-        row = section(form, c, row, "Connection");
-        row = field(form, c, row, "Endpoint", endpointField);
-        row = field(form, c, row, "Token", tokenField);
+        JPanel left = new JPanel();
+        left.setLayout(new BoxLayout(left, BoxLayout.Y_AXIS));
+        left.setBorder(BorderFactory.createEmptyBorder(4, 20, 16, 12));
+        left.add(connection());
+        left.add(Box.createVerticalStrut(18));
+        left.add(workingOn());
+        left.add(Box.createVerticalStrut(18));
+        left.add(captureSection());
+        JPanel leftHolder = new JPanel(new BorderLayout());
+        leftHolder.add(left, BorderLayout.NORTH);
+        leftHolder.setPreferredSize(new Dimension(LEFT_WIDTH, 10));
 
-        JButton save = new JButton("Save");
-        save.addActionListener(e -> save());
-        JButton test = new JButton("Test connection");
-        test.addActionListener(e -> test());
+        JPanel right = new JPanel(new BorderLayout());
+        right.setBorder(BorderFactory.createEmptyBorder(4, 12, 16, 20));
+        right.add(activity(), BorderLayout.NORTH);
+        right.add(fromReNgine(), BorderLayout.CENTER);
+
+        root.add(header(), BorderLayout.NORTH);
+        root.add(leftHolder, BorderLayout.WEST);
+        root.add(right, BorderLayout.CENTER);
+        api.userInterface().applyThemeToComponent(root);
+        style();
+        refresh();
+        loadTargets();
+    }
+
+    /** Fonts and colours set after Burp themes the tree. */
+    private void style() {
+        Color disabled = UIManager.getColor("Label.disabledForeground");
+        muted = disabled == null ? Color.GRAY : disabled;
+        plain = state.getForeground();
+        state.setFont(state.getFont().deriveFont(Font.BOLD, state.getFont().getSize2D() + 3f));
+        dot.setFont(state.getFont());
+        stateDetail.setForeground(muted);
+        hostLine.setForeground(muted);
+        received.setForeground(muted);
+        saveAndTest.setFont(saveAndTest.getFont().deriveFont(Font.BOLD));
+        enabled.setFont(enabled.getFont().deriveFont(Font.BOLD));
+        for (JLabel count : counts) {
+            count.setFont(count.getFont().deriveFont(Font.BOLD, count.getFont().getSize2D() + 6f));
+        }
+    }
+
+    private JComponent header() {
+        JPanel text = new JPanel();
+        text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
+        JPanel line = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        line.add(dot);
+        line.add(state);
+        line.setAlignmentX(Component.LEFT_ALIGNMENT);
+        stateDetail.setBorder(BorderFactory.createEmptyBorder(2, 8, 0, 0));
+        stateDetail.setAlignmentX(Component.LEFT_ALIGNMENT);
+        text.add(line);
+        text.add(stateDetail);
+
         JButton open = new JButton("Open reNgine");
         open.addActionListener(e -> browse(webOrigin() + "/connectors"));
-        row = buttons(form, c, row, save, test, open);
-        row = line(form, c, row, status);
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        buttons.add(open);
 
-        row = gap(form, c, row);
-        row = section(form, c, row, "Working on");
+        JPanel bar = new JPanel(new BorderLayout());
+        bar.add(text, BorderLayout.WEST);
+        bar.add(buttons, BorderLayout.EAST);
+        bar.setBorder(BorderFactory.createEmptyBorder(16, 14, 12, 20));
+
+        JPanel header = new JPanel(new BorderLayout());
+        header.add(bar, BorderLayout.CENTER);
+        header.add(new JSeparator(), BorderLayout.SOUTH);
+        return header;
+    }
+
+    private JComponent connection() {
+        JPanel form = new JPanel(new GridBagLayout());
+        GridBagConstraints c = constraints();
+        c.gridy = 0;
+        c.gridx = 0;
+        form.add(new JLabel("Endpoint"), c);
+        c.gridy = 1;
+        form.add(new JLabel("Token"), c);
+        c.gridx = 1;
+        c.weightx = 1;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.insets = new Insets(3, 0, 3, 0);
+        c.gridy = 0;
+        form.add(endpointField, c);
+        c.gridy = 1;
+        form.add(tokenField, c);
+        c.gridy = 2;
+        form.add(allowSelfSigned, c);
+
+        saveAndTest.addActionListener(e -> test());
+        allowSelfSigned.addActionListener(e -> save());
+        JPanel actionsRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        actionsRow.add(saveAndTest);
+        actionsRow.add(Box.createHorizontalStrut(10));
+        actionsRow.add(status);
+        c.gridy = 3;
+        form.add(actionsRow, c);
+        return section("Connection", form);
+    }
+
+    private JComponent workingOn() {
         target.setModel(new DefaultComboBoxModel<>(new Targets.Option[] {Targets.AUTO}));
         target.setPrototypeDisplayValue(
                 new Targets.Option("x", "a-fairly-long-target-name.example.com", "target", 100000, 0));
         target.addActionListener(e -> chooseTarget());
         JButton pushScope = new JButton("Apply scope to Burp");
-        pushScope.setFont(pushScope.getFont().deriveFont(Font.BOLD));
         pushScope.addActionListener(e -> applyScope());
         JButton reload = new JButton("Reload");
         reload.addActionListener(e -> loadTargets());
-        JPanel picker = new JPanel();
-        picker.add(target);
-        picker.add(pushScope);
-        picker.add(reload);
-        c.gridy = row;
-        c.gridx = 0;
-        c.gridwidth = 2;
-        form.add(picker, c);
-        c.gridwidth = 1;
-        row++;
-        hostLine.setText("No host captured yet.");
-        row = line(form, c, row, hostLine);
 
-        row = gap(form, c, row);
-        row = section(form, c, row, "Capture");
+        JPanel picker = new JPanel(new BorderLayout(6, 0));
+        picker.add(target, BorderLayout.CENTER);
+        picker.add(reload, BorderLayout.EAST);
+        JPanel scope = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        scope.add(pushScope);
+        hostLine.setText("No host captured.");
+
+        JPanel body = column(picker, scope, hostLine);
+        return section("Working on", body);
+    }
+
+    private JComponent captureSection() {
+        JPanel tools = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        tools.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
+        tools.add(captureProxy);
+        tools.add(Box.createHorizontalStrut(10));
+        tools.add(captureRepeater);
         for (JCheckBox box : new JCheckBox[] {
-            enabled, captureProxy, captureRepeater, inScopeOnly, captureTitles, sendRequestHead,
-            allowSelfSigned
+            enabled, captureProxy, captureRepeater, inScopeOnly, captureTitles, sendRequestHead
         }) {
             box.addActionListener(e -> save());
-            row = line(form, c, row, box);
         }
+        return section("Capture", column(enabled, tools, inScopeOnly, captureTitles, sendRequestHead));
+    }
 
-        row = gap(form, c, row);
-        row = section(form, c, row, "Activity");
-        row = line(form, c, row, counters);
-        row = line(form, c, row, result);
-        row = line(form, c, row, received);
+    private JComponent activity() {
+        JPanel tiles = new JPanel(new GridLayout(1, COUNTERS.length, 8, 0));
+        for (int i = 0; i < COUNTERS.length; i++) {
+            counts[i] = new JLabel("0");
+            JLabel caption = new JLabel(COUNTERS[i]);
+            JPanel tile = new JPanel();
+            tile.setLayout(new BoxLayout(tile, BoxLayout.Y_AXIS));
+            tile.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(128, 128, 128, 70)),
+                    BorderFactory.createEmptyBorder(8, 12, 8, 12)));
+            tile.add(counts[i]);
+            tile.add(caption);
+            tiles.add(tile);
+        }
+        JPanel body = column(tiles, Box.createVerticalStrut(4), result, received);
+        return section("Activity", body);
+    }
 
-        row = gap(form, c, row);
-        row = section(form, c, row, "From reNgine");
+    private JComponent fromReNgine() {
         JButton openNotice = new JButton("Open in reNgine");
         openNotice.addActionListener(e -> openSelectedNotice());
-        line(form, c, row, openNotice);
+        JPanel bar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        bar.add(openNotice);
 
         noticeTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         noticeTable.setFillsViewportHeight(true);
@@ -192,66 +312,58 @@ final class ConnectorTab {
             }
         });
         JScrollPane table = new JScrollPane(noticeTable);
-        table.setBorder(BorderFactory.createEmptyBorder(0, 20, 16, 20));
-        table.setPreferredSize(new Dimension(800, 220));
+        table.setPreferredSize(new Dimension(400, 220));
 
-        root.add(form, BorderLayout.NORTH);
-        root.add(table, BorderLayout.CENTER);
-        api.userInterface().applyThemeToComponent(root);
-        refresh();
-        loadTargets();
+        JPanel body = new JPanel(new BorderLayout(0, 8));
+        body.add(table, BorderLayout.CENTER);
+        body.add(bar, BorderLayout.SOUTH);
+
+        JPanel panel = new JPanel(new BorderLayout(0, 8));
+        panel.setBorder(BorderFactory.createEmptyBorder(18, 0, 0, 0));
+        panel.add(title("From reNgine"), BorderLayout.NORTH);
+        panel.add(body, BorderLayout.CENTER);
+        return panel;
     }
 
-    private static int section(JPanel form, GridBagConstraints c, int row, String text) {
+    private static GridBagConstraints constraints() {
+        GridBagConstraints c = new GridBagConstraints();
+        c.insets = new Insets(3, 0, 3, 10);
+        c.anchor = GridBagConstraints.WEST;
+        return c;
+    }
+
+    private static JLabel title(String text) {
         JLabel label = new JLabel(text);
-        label.setFont(label.getFont().deriveFont(label.getFont().getStyle() | Font.BOLD));
-        c.gridy = row;
-        c.gridx = 0;
-        c.gridwidth = 2;
-        form.add(label, c);
-        c.gridwidth = 1;
-        return row + 1;
+        label.setFont(label.getFont().deriveFont(Font.BOLD));
+        label.putClientProperty("rengine.title", Boolean.TRUE);
+        return label;
     }
 
-    private static int field(
-            JPanel form, GridBagConstraints c, int row, String label, JComponent input) {
-        c.gridy = row;
-        c.gridx = 0;
-        form.add(new JLabel(label), c);
-        c.gridx = 1;
-        form.add(input, c);
-        return row + 1;
+    private static JComponent section(String name, JComponent body) {
+        JPanel panel = new JPanel(new BorderLayout(0, 8));
+        panel.add(title(name), BorderLayout.NORTH);
+        panel.add(body, BorderLayout.CENTER);
+        panel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        return panel;
     }
 
-    private static int buttons(JPanel form, GridBagConstraints c, int row, JButton... items) {
+    private static JPanel column(Component... items) {
         JPanel panel = new JPanel();
-        for (JButton item : items) {
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        for (Component item : items) {
+            if (item instanceof JComponent component) {
+                component.setAlignmentX(Component.LEFT_ALIGNMENT);
+            }
             panel.add(item);
+            panel.add(Box.createVerticalStrut(4));
         }
-        c.gridy = row;
-        c.gridx = 1;
-        form.add(panel, c);
-        return row + 1;
-    }
-
-    private static int line(JPanel form, GridBagConstraints c, int row, JComponent item) {
-        c.gridy = row;
-        c.gridx = 1;
-        form.add(item, c);
-        return row + 1;
-    }
-
-    private static int gap(JPanel form, GridBagConstraints c, int row) {
-        c.gridy = row;
-        c.gridx = 0;
-        form.add(Box.createVerticalStrut(10), c);
-        return row + 1;
+        return panel;
     }
 
     /** Web origin derived from the ingest endpoint. */
     String webOrigin() {
         String value = settings.endpoint().trim();
-        int cut = value.indexOf(INGEST_PATH);
+        int cut = value.indexOf(Settings.INGEST_PATH);
         if (cut > 0) {
             return value.substring(0, cut);
         }
@@ -277,7 +389,12 @@ final class ConnectorTab {
         } catch (Exception e) {
             api.logging().logToError("Could not open " + url + ": " + e);
         }
-        status.setText(url);
+        say(url, plain);
+    }
+
+    private void say(String text, Color color) {
+        status.setText(text);
+        status.setForeground(color);
     }
 
     private void openSelectedNotice() {
@@ -326,10 +443,10 @@ final class ConnectorTab {
         Object selected = target.getSelectedItem();
         Targets.Option option = selected instanceof Targets.Option value ? value : null;
         if (option == null || option.id() == null) {
-            status.setText("Choose a target or a program first.");
+            hostLine.setText("Choose a target or a program first.");
             return;
         }
-        status.setText("Applying scope…");
+        hostLine.setText("Applying scope.");
         new Thread(() -> {
             String message;
             try {
@@ -355,7 +472,7 @@ final class ConnectorTab {
                 message = Sink.explain(e);
             }
             String text = message;
-            SwingUtilities.invokeLater(() -> status.setText(text));
+            SwingUtilities.invokeLater(() -> hostLine.setText(text));
         }, "rengine-connector-scope").start();
     }
 
@@ -375,10 +492,7 @@ final class ConnectorTab {
                 return;
             }
             Facts.Host value = known;
-            SwingUtilities.invokeLater(() -> {
-                lastFacts = value;
-                hostLine.setText(describe(value));
-            });
+            SwingUtilities.invokeLater(() -> hostLine.setText(describe(value)));
         }, "rengine-connector-facts").start();
     }
 
@@ -404,6 +518,9 @@ final class ConnectorTab {
 
     private void save() {
         settings.endpoint(endpointField.getText());
+        if (!settings.endpoint().equals(endpointField.getText())) {
+            endpointField.setText(settings.endpoint());
+        }
         settings.token(new String(tokenField.getPassword()));
         settings.enabled(enabled.isSelected());
         settings.captureProxy(captureProxy.isSelected());
@@ -413,27 +530,66 @@ final class ConnectorTab {
         settings.sendRequestHead(sendRequestHead.isSelected());
         settings.allowSelfSigned(allowSelfSigned.isSelected());
         settings.save();
-        status.setText("Saved.");
-        loadTargets();
+        captureProxy.setEnabled(enabled.isSelected());
+        captureRepeater.setEnabled(enabled.isSelected());
+        say("Saved.", muted);
     }
 
     private void test() {
         save();
-        status.setText("Testing…");
+        say("Testing.", muted);
+        saveAndTest.setEnabled(false);
         new Thread(() -> {
             String failure = sink.verify();
-            SwingUtilities.invokeLater(() ->
-                    status.setText(failure == null ? "Connected." : failure));
+            SwingUtilities.invokeLater(() -> {
+                saveAndTest.setEnabled(true);
+                say(failure == null ? "Connected." : failure, failure == null ? OK : FAIL);
+                if (failure == null) {
+                    loadTargets();
+                }
+            });
         }, "rengine-connector-test").start();
     }
 
     private void refresh() {
-        counters.setText(String.format(
-                "%d sent · %d queued · %d repeated · %d dropped · %d failed",
-                sink.sent(), sink.queueDepth(), sink.deduped(), sink.dropped(), sink.failed()));
+        long[] values = {
+            sink.sent(), sink.queueDepth(), sink.deduped(), sink.dropped(), sink.failed()
+        };
+        for (int i = 0; i < counts.length; i++) {
+            counts[i].setText(String.format("%,d", values[i]));
+        }
+        counts[3].setForeground(values[3] > 0 ? WARN : plain);
+        counts[4].setForeground(values[4] > 0 ? FAIL : plain);
+        captureProxy.setEnabled(enabled.isSelected());
+        captureRepeater.setEnabled(enabled.isSelected());
         received.setText(describeReceived());
         result.setText(explain());
+        renderLink();
         renderNotices();
+    }
+
+    /** The header: whether reNgine is answering. */
+    private void renderLink() {
+        String failure = actions.lastError() != null ? actions.lastError() : sink.lastError();
+        if (!settings.isConfigured()) {
+            link(muted, "Not configured", "Paste the endpoint and the token from reNgine.");
+        } else if (failure != null) {
+            link(FAIL, "Not connected", failure);
+        } else if (actions.online(ONLINE_MILLIS)) {
+            String host = Capture.hostOf(settings.endpoint());
+            String detail = (host == null ? "reNgine" : host)
+                    + (settings.enabled() ? " · Capture is on" : " · Capture is off");
+            link(OK, "Connected", Tls.insecure(settings.endpoint())
+                    ? detail + " · Plain HTTP, the token is sent unencrypted" : detail);
+        } else {
+            link(muted, "Connecting", settings.endpoint());
+        }
+    }
+
+    private void link(Color color, String title, String detail) {
+        dot.setForeground(color);
+        state.setText(title);
+        stateDetail.setText(detail);
     }
 
     /** What reNgine handed to Burp. */
@@ -443,7 +599,7 @@ final class ConnectorTab {
             return error;
         }
         String summary = handoff.summary();
-        return summary.isEmpty() ? "Nothing received from reNgine." : "Received: " + summary;
+        return summary.isEmpty() ? "Nothing sent from reNgine." : "From reNgine: " + summary;
     }
 
     private void renderNotices() {
@@ -464,13 +620,10 @@ final class ConnectorTab {
     private String explain() {
         String error = sink.lastError();
         if (error != null) {
-            return error;
+            return sink.queueDepth() > 0 ? error + " Retrying." : error;
         }
         if (!settings.isConfigured()) {
-            return "No endpoint or token configured.";
-        }
-        if (Tls.insecure(settings.endpoint())) {
-            return "The endpoint is plain HTTP. The token is sent unencrypted.";
+            return " ";
         }
         if (!settings.enabled()) {
             return "Capture is off.";

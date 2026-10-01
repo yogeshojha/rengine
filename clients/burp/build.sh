@@ -22,6 +22,7 @@ jar --create --file "$OUT" -C build/classes .
 
 BINARIES="../../binaries"
 mkdir -p "$BINARIES"
+rm -f "$BINARIES"/rengine-connector-*.jar
 cp "$OUT" "$BINARIES/"
 echo "$OUT"
 echo "binaries/$(basename "$OUT")"

@@ -5,13 +5,12 @@ import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.core.Registration;
 import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 
 /** Sends requests observed in Burp to a reNgine connector. */
 public class ReNgineConnector implements BurpExtension {
     static final String NAME = "reNgine Connector";
-    static final String VERSION = "0.2.0";
+    static final String VERSION = "3.0.0";
 
     private Sink sink;
     private Actions actions;
@@ -19,6 +18,7 @@ public class ReNgineConnector implements BurpExtension {
     private Registration handler;
     private Registration tab;
     private Registration menu;
+    private ConnectorTab panel;
 
     @Override
     public void initialize(MontoyaApi api) {
@@ -49,8 +49,10 @@ public class ReNgineConnector implements BurpExtension {
 
         Capture capture = new Capture(api, settings, sink);
         handler = api.http().registerHttpHandler(capture);
-        tab = api.userInterface().registerSuiteTab(
-                "reNgine", buildTab(api, settings, sink, actions, handoff, capture, notices));
+        panel = buildTab(api, settings, sink, actions, handoff, capture, notices);
+        if (panel != null) {
+            tab = api.userInterface().registerSuiteTab("reNgine", panel.component());
+        }
 
         menu = api.userInterface().registerContextMenuItemsProvider(new ReportMenu(api, settings));
 
@@ -58,7 +60,7 @@ public class ReNgineConnector implements BurpExtension {
         api.logging().logToOutput(NAME + " " + VERSION + " loaded.");
     }
 
-    private static JComponent buildTab(
+    private static ConnectorTab buildTab(
             MontoyaApi api,
             Settings settings,
             Sink sink,
@@ -66,10 +68,9 @@ public class ReNgineConnector implements BurpExtension {
             Handoff handoff,
             Capture capture,
             Notices notices) {
-        AtomicReference<JComponent> holder = new AtomicReference<>();
+        AtomicReference<ConnectorTab> holder = new AtomicReference<>();
         Runnable build = () -> holder.set(
-                new ConnectorTab(api, settings, sink, actions, handoff, capture, notices)
-                        .component());
+                new ConnectorTab(api, settings, sink, actions, handoff, capture, notices));
         if (SwingUtilities.isEventDispatchThread()) {
             build.run();
         } else {
@@ -93,6 +94,9 @@ public class ReNgineConnector implements BurpExtension {
         }
         if (menu != null) {
             menu.deregister();
+        }
+        if (panel != null) {
+            panel.dispose();
         }
         if (sink != null) {
             sink.stop();

@@ -59,6 +59,7 @@ final class Actions {
     private volatile boolean running;
     private volatile String lastError;
     private volatile long rejectedAt = -1;
+    private volatile long lastOkAt;
 
     Actions(Sink.Config settings, Sink.Log log, Deliver deliver) {
         this.settings = settings;
@@ -100,20 +101,20 @@ final class Actions {
         while (running) {
             try {
                 Thread.sleep(POLL_MILLIS);
-                if (settings.isConfigured() && rejectedAt != settings.generation()) {
-                    collect();
+                if (settings.isConfigured() && rejectedAt != settings.generation() && collect()) {
                     collectNotices();
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return;
             } catch (Exception e) {
-                lastError = e.getClass().getSimpleName() + ": " + e.getMessage();
+                lastError = Sink.explain(e);
             }
         }
     }
 
-    private void collect() throws Exception {
+    /** False when reNgine refused the request. */
+    private boolean collect() throws Exception {
         HttpRequest request = HttpRequest.newBuilder(URI.create(endpointFor(settings.endpoint())))
                 .timeout(Duration.ofSeconds(15))
                 .header("Authorization", "Bearer " + settings.token())
@@ -124,13 +125,14 @@ final class Actions {
         if (response.statusCode() == UNAUTHORIZED) {
             rejectedAt = settings.generation();
             lastError = "The token was rejected. Collection is stopped.";
-            return;
+            return false;
         }
         if (response.statusCode() / 100 != 2) {
-            lastError = "reNgine returned " + response.statusCode() + " for actions";
-            return;
+            lastError = Sink.refusal(response);
+            return false;
         }
         lastError = null;
+        lastOkAt = System.currentTimeMillis();
         for (Action action : parse(response.body())) {
             try {
                 deliver.action(action);
@@ -139,6 +141,7 @@ final class Actions {
                 log.line("Could not deliver an action: " + e);
             }
         }
+        return true;
     }
 
     private void collectNotices() throws Exception {
@@ -210,5 +213,10 @@ final class Actions {
 
     String lastError() {
         return lastError;
+    }
+
+    /** True while reNgine answered a poll within the window. */
+    boolean online(long withinMillis) {
+        return lastOkAt > 0 && System.currentTimeMillis() - lastOkAt <= withinMillis;
     }
 }

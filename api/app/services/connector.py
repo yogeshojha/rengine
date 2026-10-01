@@ -7,6 +7,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from fastapi import HTTPException, status
+from redis.exceptions import RedisError
 from sqlalchemy import and_, cast, delete, func, or_, select, tuple_, update
 from sqlalchemy.dialects.postgresql import JSONB, array, insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,7 +30,6 @@ from shared.definitions.connectors import (
     MANUAL_RUN_LABEL,
     MAX_ACTION_BATCH,
     MAX_CANDIDATE_SCAN,
-    MAX_CONNECTORS,
     MAX_NOTICE_BATCH,
     MAX_PENDING_ACTIONS,
     MAX_PICKER_TARGETS,
@@ -37,9 +37,11 @@ from shared.definitions.connectors import (
     MAX_SCOPE_HOSTS,
     NOTICE_LABELS,
     NOTICE_ORDER,
+    PRESENCE_SECONDS,
     SAFE_METHODS,
     CandidateState,
     NoticeKind,
+    presence_key,
     state_for,
 )
 from shared.definitions.domains import (
@@ -89,6 +91,7 @@ from shared.models.scan import Scan, ScanCreate, SeedAsset
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.vulnerability import Vulnerability
+from shared.redis import async_client
 from shared.services import proxy_sync
 from shared.services.asset_query.tokens import token
 from shared.services.scan_resolve import redact_message, unseal_headers
@@ -193,22 +196,23 @@ class ConnectorService:
     async def create(
         self, data: ConnectorCreate, created_by: uuid.UUID, base_url: str = ""
     ) -> ConnectorCreated:
-        if connector_for(data.kind) is None:
+        spec = connector_for(data.kind)
+        if spec is None:
             msg = f"Unknown connector {data.kind!r}."
             raise ConnectorError(msg)
-        count = await self.session.scalar(
-            select(func.count())
-            .select_from(Connector)
-            .where(Connector.project_id == data.project_id)
+        existing = await self.session.scalar(
+            select(Connector.id).where(
+                Connector.project_id == data.project_id, Connector.kind == data.kind
+            )
         )
-        if (count or 0) >= MAX_CONNECTORS:
-            msg = f"The connector limit is {MAX_CONNECTORS}."
+        if existing is not None:
+            msg = f"{spec.title} is already connected to this project."
             raise ConnectorError(msg)
         secret, token_hash, prefix = auth.mint()
         row = Connector(
             project_id=data.project_id,
             kind=data.kind,
-            name=data.name.strip(),
+            name=(data.name or "").strip() or spec.title,
             token_hash=token_hash,
             token_prefix=prefix,
             only_known_hosts=data.only_known_hosts,
@@ -255,6 +259,7 @@ class ConnectorService:
         secret, token_hash, prefix = auth.mint()
         row.token_hash, row.token_prefix, row.updated_at = token_hash, prefix, utc_now()
         await self.session.commit()
+        await self._mark_offline(row.id)
         await self.session.refresh(row)
         return ConnectorCreated(
             connector=await self._read(row),
@@ -270,9 +275,35 @@ class ConnectorService:
     async def authenticate(self, secret: str | None) -> Connector | None:
         if not secret or not auth.looks_like_token(secret):
             return None
-        return await self.session.scalar(
+        row = await self.session.scalar(
             select(Connector).where(Connector.token_hash == auth.fingerprint(secret))
         )
+        if row is not None:
+            await self._mark_online(row.id)
+        return row
+
+    @staticmethod
+    async def _mark_online(connector_id: uuid.UUID) -> None:
+        try:
+            await async_client().set(
+                presence_key(connector_id), "1", ex=PRESENCE_SECONDS
+            )
+        except RedisError:
+            return
+
+    @staticmethod
+    async def _online(connector_id: uuid.UUID) -> bool:
+        try:
+            return bool(await async_client().exists(presence_key(connector_id)))
+        except RedisError:
+            return False
+
+    @staticmethod
+    async def _mark_offline(connector_id: uuid.UUID) -> None:
+        try:
+            await async_client().delete(presence_key(connector_id))
+        except RedisError:
+            return
 
     # ingest ---------------------------------------------------------------
 
@@ -844,6 +875,7 @@ class ConnectorService:
         state: str | None = None,
         host: str | None = None,
         notice: str | None = None,
+        flagged: bool | None = None,
         known: bool | None = None,
         search: str | None = None,
         page: int = 1,
@@ -860,6 +892,12 @@ class ConnectorService:
         if notice:
             base = base.where(
                 cast(ConnectorCandidate.notices, JSONB).contains([notice])
+            )
+        if flagged:
+            base = base.where(
+                cast(ConnectorCandidate.notices, JSONB).has_any(
+                    array(tuple(LOUD_NOTICES))
+                )
             )
         if known is not None:
             base = base.where(ConnectorCandidate.known.is_(known))
@@ -1008,6 +1046,7 @@ class ConnectorService:
             queued=queued,
             skipped=len(items) - len(built),
             tool=ACTION_KIND_LABELS.get(body.kind, body.kind),
+            online=await self._online(connector_id),
         )
 
     async def _rows(self, model, ids: list[uuid.UUID], project_id: uuid.UUID) -> list:
@@ -1667,6 +1706,7 @@ class ConnectorService:
                     "detail": step.detail,
                     "code": step.code,
                     "lang": step.lang,
+                    "control": step.control,
                 }
                 for step in spec.setup(endpoint=endpoint, secret=secret)
             ],
@@ -1718,6 +1758,9 @@ class ConnectorService:
                         ConnectorCandidate.state == CandidateState.NEW.value
                     ),
                     func.count().filter(ConnectorCandidate.known.is_(False)),
+                    func.count().filter(
+                        notices.contains([NoticeKind.UNSEEN_BY_SCANS.value])
+                    ),
                     func.count().filter(ConnectorCandidate.target_id.is_(None)),
                     func.count().filter(notices.has_any(array(tuple(LOUD_NOTICES)))),
                     func.count().filter(
@@ -1726,7 +1769,7 @@ class ConnectorService:
                 ).where(ConnectorCandidate.connector_id == row.id)
             )
         ).one()
-        queued, unseen, unassigned, flagged, out_of_scope = counted
+        queued, unseen, missed, unassigned, flagged, out_of_scope = counted
         discovered = len(
             await self.discovered(
                 row.id, row.project_id, owned=owned, forbidden=forbidden
@@ -1747,12 +1790,13 @@ class ConnectorService:
             context_id=row.context_id,
             restore_credentials=row.restore_credentials,
             paused=row.paused,
-            state=state_for(minutes, row.paused),
+            state=state_for(minutes, row.paused, await self._online(row.id)),
             requests_seen=row.requests_seen,
             dropped_out_of_scope=row.dropped_out_of_scope,
             candidates=row.candidates,
             queued=queued or 0,
             unseen=unseen or 0,
+            missed=missed or 0,
             unassigned=unassigned or 0,
             flagged=flagged or 0,
             out_of_scope=out_of_scope or 0,

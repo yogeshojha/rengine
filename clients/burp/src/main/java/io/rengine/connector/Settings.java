@@ -4,7 +4,8 @@ import burp.api.montoya.persistence.Preferences;
 
 /** Extension configuration, persisted in Burp's own preference store. */
 final class Settings implements Sink.Config {
-    static final String DEFAULT_ENDPOINT = "http://localhost:8000/api/v1/connectors/ingest";
+    static final String INGEST_PATH = "/api/v1/connectors/ingest";
+    static final String DEFAULT_ENDPOINT = "http://localhost:8000" + INGEST_PATH;
 
     private static final String KEY_ENDPOINT = "rengine.endpoint";
     private static final String KEY_TOKEN = "rengine.token";
@@ -42,7 +43,7 @@ final class Settings implements Sink.Config {
     private void load() {
         String storedEndpoint = preferences.getString(KEY_ENDPOINT);
         if (storedEndpoint != null && !storedEndpoint.isBlank()) {
-            endpoint = storedEndpoint.trim();
+            endpoint = normalise(storedEndpoint);
         }
         String storedToken = preferences.getString(KEY_TOKEN);
         if (storedToken != null) {
@@ -97,7 +98,21 @@ final class Settings implements Sink.Config {
     }
 
     void endpoint(String value) {
-        endpoint = value == null ? "" : value.trim();
+        endpoint = normalise(value);
+    }
+
+    /** The ingest URL for what was typed: a bare origin gets the ingest path. */
+    static String normalise(String value) {
+        String text = value == null ? "" : value.trim();
+        int scheme = text.indexOf("://");
+        if (scheme < 0) {
+            return text;
+        }
+        int slash = text.indexOf('/', scheme + 3);
+        if (slash < 0) {
+            return text + INGEST_PATH;
+        }
+        return slash == text.length() - 1 ? text.substring(0, slash) + INGEST_PATH : text;
     }
 
     @Override

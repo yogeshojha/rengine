@@ -25,6 +25,7 @@ final class Capture implements HttpHandler {
     static final int MAX_TITLE = 300;
     static final int MAX_PARAMS = 40;
     static final int MAX_URL = 2000;
+    static final int MAX_METHOD = 16;
     static final int MAX_SAMPLE = 4000;
     static final String MASK = "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022";
 
@@ -96,7 +97,7 @@ final class Capture implements HttpHandler {
         lastHost = request.httpService() == null ? lastHost : url;
         sink.offer(new Observation(
                 url,
-                request.method(),
+                trim(request.method(), MAX_METHOD),
                 (int) response.statusCode(),
                 trim(response.headerValue("Content-Type"), 120),
                 response.body() == null ? null : response.body().length(),

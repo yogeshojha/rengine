@@ -9,7 +9,6 @@
 	import LockIcon from '@lucide/svelte/icons/lock';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import ListTreeIcon from '@lucide/svelte/icons/list-tree';
-	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import CopyIcon from '@lucide/svelte/icons/copy';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
@@ -17,20 +16,25 @@
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
-	import PanelHead from '$lib/components/panel-head.svelte';
-	import CountTabs from '$lib/components/count-tabs.svelte';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import SelectionActionBar from '$lib/components/selection-action-bar.svelte';
 	import { writeClipboard } from '$lib/utilities/clipboard';
-	import CodeBlock from '$lib/components/code-block.svelte';
 	import ResultsPagination from '$lib/components/scans/results/table/results-pagination.svelte';
 	import { connectorsApi } from '$lib/api/connectors';
 	import { connectors } from '$lib/stores/connectors.svelte';
 	import ProxySend from '$lib/components/scans/results/endpoints/proxy-send.svelte';
 	import { handoffToProxy } from '$lib/components/scans/results/endpoints/proxy';
+	import RequestDialog from './request-dialog.svelte';
+	import { proxyTool } from '$lib/stores/proxy-tool.svelte';
+	import SendIcon from '@lucide/svelte/icons/send';
 	import {
+		ACTION_KIND_LABELS,
+		CONNECTOR_POLL_MS,
+		LIVE_POLL_MS,
+		NEW_ROW_MS,
 		MAX_HANDOFF,
 		type ActionKind,
 		CANDIDATE_STATES,
@@ -42,33 +46,46 @@
 	} from '$lib/config/connectors';
 	import { ROUTES } from '$lib/config/routes';
 	import { relativeTime } from '$lib/utilities/dates';
-	import type { Candidate, CandidateQuery, Connector } from '$lib/types/connector';
+	import type { Candidate, CandidateQuery, Connector, QueueView } from '$lib/types/connector';
 
 	let {
 		connector,
 		projectId,
-		preset = null,
-		onPresetApplied
+		view,
+		live = false
 	}: {
 		connector: Connector;
 		projectId: string;
-		preset?: CandidateQuery | null;
-		onPresetApplied?: () => void;
+		view: QueueView;
+		live?: boolean;
 	} = $props();
+
+	const VIEW_QUERY: Record<QueueView, CandidateQuery> = {
+		missed: { notice: 'unseen_by_scans' },
+		flagged: { flagged: true },
+		out_of_scope: { notice: 'out_of_scope' },
+		all: {}
+	};
+	const VIEW_EMPTY: Record<QueueView, string> = {
+		missed: 'No missed requests',
+		flagged: 'No flagged requests',
+		out_of_scope: 'No out-of-scope requests',
+		all: 'No requests'
+	};
 
 	const HEAD =
 		'px-4 py-2 text-left text-2xs font-semibold tracking-wider text-muted-foreground uppercase whitespace-nowrap';
 	const PAGE_SIZE = 50;
 	const PARAMS_SHOWN = 3;
 
-	let stateFilter = $state<string>('new');
+	let stateFilter = $state<string>('');
 	let host = $state<string>('');
-	let notice = $state<string>('');
-	let known = $state<'any' | 'yes' | 'no'>('any');
 	let search = $state('');
+	let confirming = $state<{ action: 'scan' | 'ignore'; ids: string[] } | null>(null);
+	let openedId = $state<string | null>(null);
+	let now = $state(Date.now());
 	let pageNumber = $state(0);
 	let picked = new SvelteSet<string>();
-	let opened = new SvelteSet<string>();
 	let scanning = $state(false);
 	let acting = $state(false);
 	let error = $state<string | null>(null);
@@ -77,25 +94,15 @@
 	const rows = $derived(page?.rows ?? []);
 	const hosts = $derived(page?.hosts ?? []);
 	const filters = $derived<CandidateQuery>({
+		...VIEW_QUERY[view],
 		state: stateFilter || undefined,
 		host: host || undefined,
-		notice: notice || undefined,
-		known: known === 'any' ? undefined : known === 'yes',
 		search: search || undefined,
 		page: pageNumber + 1
 	});
-
-	$effect(() => {
-		if (!preset) return;
-		untrack(() => {
-			stateFilter = preset.state ?? '';
-			host = preset.host ?? '';
-			notice = preset.notice ?? '';
-			known = preset.known === undefined ? 'any' : preset.known ? 'yes' : 'no';
-			search = preset.search ?? '';
-			onPresetApplied?.();
-		});
-	});
+	const count = $derived(confirming?.ids.length ?? 0);
+	const noun = $derived(count === 1 ? 'request' : 'requests');
+	const openedRow = $derived(rows.find((r) => r.id === openedId) ?? null);
 
 	$effect(() => {
 		const id = connector.id;
@@ -107,10 +114,9 @@
 	});
 
 	$effect(() => {
+		void view;
 		void stateFilter;
 		void host;
-		void notice;
-		void known;
 		void search;
 		untrack(() => (pageNumber = 0));
 	});
@@ -119,10 +125,12 @@
 		if (typeof document === 'undefined') return;
 		const id = connector.id;
 		const query = filters;
+		const every = live ? LIVE_POLL_MS : CONNECTOR_POLL_MS;
 		const timer = setInterval(() => {
+			now = Date.now();
 			if (document.hidden || picked.size) return;
 			void connectors.loadQueue(id, projectId, query);
-		}, 10_000);
+		}, every);
 		return () => clearInterval(timer);
 	});
 
@@ -137,21 +145,18 @@
 		if (!all) for (const row of rows) picked.add(row.id);
 	}
 
-	function toggleSample(id: string) {
-		if (opened.has(id)) opened.delete(id);
-		else opened.add(id);
-	}
-
 	async function reload() {
 		await connectors.loadQueue(connector.id, projectId, filters);
 		await connectors.load(projectId, true);
 	}
 
-	async function scan() {
+	async function scan(ids: string[]) {
+		confirming = null;
+		openedId = null;
 		scanning = true;
 		error = null;
 		try {
-			const runs = await connectorsApi.scan(connector.id, projectId, [...picked]);
+			const runs = await connectorsApi.scan(connector.id, projectId, ids);
 			picked.clear();
 			await reload();
 			if (runs.length === 1) void goto(ROUTES.scan(runs[0].id));
@@ -175,6 +180,7 @@
 			picked.clear();
 			await reload();
 		}
+		return sent;
 	}
 
 	async function copyPicked() {
@@ -185,10 +191,26 @@
 		else toast.error('Clipboard not available.');
 	}
 
-	async function ignore() {
+	async function sendOne(row: Candidate, kind: ActionKind) {
+		return handoffToProxy({
+			connectorId: connector.id,
+			projectId,
+			body: { kind, candidate_ids: [row.id] },
+			connectors: [connector],
+			catalog: connectors.catalog
+		});
+	}
+
+	function fresh(row: Candidate): boolean {
+		return now - new Date(row.first_seen_at).getTime() < NEW_ROW_MS;
+	}
+
+	async function ignore(ids: string[]) {
+		confirming = null;
+		openedId = null;
 		acting = true;
 		try {
-			await connectorsApi.setState(connector.id, projectId, [...picked], 'ignored');
+			await connectorsApi.setState(connector.id, projectId, ids, 'ignored');
 			picked.clear();
 			await reload();
 		} finally {
@@ -210,25 +232,6 @@
 </script>
 
 <Card.Root class="gap-0 overflow-hidden py-0">
-	<PanelHead title="Queue" description="Request shapes recorded through this connector">
-		<span class="tabular-nums">{page?.total ?? 0} shown</span>
-	</PanelHead>
-
-	<div class="flex flex-wrap items-end justify-between gap-x-4 border-b px-2">
-		<CountTabs
-			tabs={[
-				{ key: 'all', label: 'All' },
-				...CANDIDATE_STATES.map((s) => ({ key: s, label: CANDIDATE_STATE_LABELS[s] }))
-			]}
-			value={stateFilter || 'all'}
-			counts={{
-				all: Object.values(page?.counts ?? {}).reduce((a, b) => a + b, 0),
-				...(page?.counts ?? {})
-			}}
-			onChange={(key) => (stateFilter = key === 'all' ? '' : key)}
-		/>
-	</div>
-
 	<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
 		<div class="relative min-w-52 flex-1">
 			<SearchIcon
@@ -236,35 +239,6 @@
 			/>
 			<Input bind:value={search} placeholder="Filter by URL" class="h-8 pl-8 text-xs" />
 		</div>
-		<Select.Root
-			type="single"
-			value={known}
-			onValueChange={(v) => (known = (v as typeof known) || 'any')}
-		>
-			<Select.Trigger class="h-8 w-44 text-xs">
-				{known === 'any'
-					? 'All shapes'
-					: known === 'yes'
-						? 'Found by a scan'
-						: 'Not found by scans'}
-			</Select.Trigger>
-			<Select.Content>
-				<Select.Item value="any">All shapes</Select.Item>
-				<Select.Item value="yes">Found by a scan</Select.Item>
-				<Select.Item value="no">Not found by scans</Select.Item>
-			</Select.Content>
-		</Select.Root>
-		<Select.Root type="single" value={notice} onValueChange={(v) => (notice = v ?? '')}>
-			<Select.Trigger class="h-8 w-52 text-xs">
-				{notice ? NOTICE_LABELS[notice] : 'Any notice'}
-			</Select.Trigger>
-			<Select.Content>
-				<Select.Item value="">Any notice</Select.Item>
-				{#each Object.entries(NOTICE_LABELS) as [key, label] (key)}
-					<Select.Item value={key}>{label}</Select.Item>
-				{/each}
-			</Select.Content>
-		</Select.Root>
 		{#if hosts.length > 1}
 			<Select.Root type="single" value={host} onValueChange={(v) => (host = v ?? '')}>
 				<Select.Trigger class="h-8 w-64 text-xs">
@@ -278,6 +252,26 @@
 				</Select.Content>
 			</Select.Root>
 		{/if}
+		<Select.Root type="single" value={stateFilter} onValueChange={(v) => (stateFilter = v ?? '')}>
+			<Select.Trigger class="h-8 w-36 text-xs">
+				{stateFilter ? CANDIDATE_STATE_LABELS[stateFilter as Candidate['state']] : 'Any state'}
+			</Select.Trigger>
+			<Select.Content>
+				<Select.Item value="">Any state</Select.Item>
+				{#each CANDIDATE_STATES as s (s)}
+					<Select.Item value={s}>{CANDIDATE_STATE_LABELS[s]}</Select.Item>
+				{/each}
+			</Select.Content>
+		</Select.Root>
+		<span class="text-muted-foreground text-xs tabular-nums">
+			{(page?.total ?? 0).toLocaleString()} shown
+		</span>
+		{#if live}
+			<span class="flex items-center gap-1.5 text-xs">
+				<span class="bg-success size-1.5 rounded-full" aria-hidden="true"></span>
+				Live
+			</span>
+		{/if}
 	</div>
 
 	{#if error}
@@ -285,9 +279,7 @@
 	{/if}
 
 	{#if connector.unassigned > 0 && connector.unassigned === connector.candidates}
-		<p class="text-muted-foreground border-b px-4 py-2 text-xs">
-			No target covers these requests. Add one from Discovered.
-		</p>
+		<p class="text-muted-foreground border-b px-4 py-2 text-xs">No target covers these requests.</p>
 	{/if}
 
 	{#if connectors.queueLoading && rows.length === 0}
@@ -298,7 +290,7 @@
 		</div>
 	{:else if rows.length === 0}
 		<div class="px-4 py-10">
-			<EmptyState icon={RadarIcon} title="No request shapes" />
+			<EmptyState icon={RadarIcon} title={VIEW_EMPTY[view]} />
 		</div>
 	{:else}
 		<table class="w-full table-fixed text-sm">
@@ -318,7 +310,7 @@
 					<th class="{HEAD} w-12 text-right">Hits</th>
 					<th class="{HEAD} w-20">Source</th>
 					<th class="{HEAD} w-20 text-right">Seen</th>
-					<th class="w-20 px-2 py-2"></th>
+					<th class="w-24 px-2 py-2"></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -349,13 +341,16 @@
 										{/snippet}
 									</Hint>
 								{/if}
-								<Hint text={row.url}>
-									{#snippet child(props)}
-										<span {...props} class="min-w-0 truncate font-mono text-xs leading-5"
-											>{row.path}</span
-										>
-									{/snippet}
-								</Hint>
+								<button
+									type="button"
+									class="hover:text-primary min-w-0 truncate text-left font-mono text-xs leading-5 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+									onclick={() => (openedId = row.id)}
+								>
+									{row.path}
+								</button>
+								{#if fresh(row)}
+									<span class="text-info shrink-0 text-2xs font-medium">New</span>
+								{/if}
 							</div>
 							{#if row.notices.length > 0 || row.title || (!host && hosts.length > 1)}
 								<div class="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2">
@@ -378,11 +373,6 @@
 											>{row.title}</span
 										>
 									{/if}
-								</div>
-							{/if}
-							{#if opened.has(row.id) && row.request_sample}
-								<div class="mt-2">
-									<CodeBlock code={row.request_sample} lang="http" maxLines={12} />
 								</div>
 							{/if}
 						</td>
@@ -419,17 +409,18 @@
 						>
 						<td class="px-2 py-2 align-top">
 							<span class="flex h-6 items-center justify-end gap-0.5">
-								{#if row.request_sample}
-									<Hint text="Request sample">
+								{#if !connector.paused}
+									<Hint text="Send to {ACTION_KIND_LABELS[proxyTool.kind]}">
 										{#snippet child(props)}
 											<Button
 												{...props}
 												variant="ghost"
 												size="icon"
 												class="size-6"
-												onclick={() => toggleSample(row.id)}
+												aria-label="Send to {ACTION_KIND_LABELS[proxyTool.kind]}"
+												onclick={() => sendOne(row, proxyTool.kind)}
 											>
-												<FileTextIcon class="size-3.5" />
+												<SendIcon class="size-3.5" />
 											</Button>
 										{/snippet}
 									</Hint>
@@ -492,7 +483,7 @@
 		size="sm"
 		class="gap-2 font-medium"
 		loadingLabel="Starting"
-		onclick={scan}
+		onclick={() => (confirming = { action: 'scan', ids: [...picked] })}
 	>
 		<RadarIcon class="h-3.5 w-3.5 text-muted-foreground" />
 		Scan {picked.size}
@@ -514,9 +505,34 @@
 		size="sm"
 		class="gap-2 font-medium"
 		disabled={acting}
-		onclick={() => ignore()}
+		onclick={() => (confirming = { action: 'ignore', ids: [...picked] })}
 	>
 		<EyeOffIcon class="h-3.5 w-3.5 text-muted-foreground" />
 		Ignore
 	</Button>
 </SelectionActionBar>
+
+<RequestDialog
+	row={openedRow}
+	{connector}
+	onClose={() => (openedId = null)}
+	onSend={(kind) => (openedRow ? sendOne(openedRow, kind) : null)}
+	onScan={(row) => (confirming = { action: 'scan', ids: [row.id] })}
+	onIgnore={(row) => (confirming = { action: 'ignore', ids: [row.id] })}
+	endpointsHref={openedRow?.target_id ? endpointsLink(openedRow) : null}
+/>
+
+<ConfirmDialog
+	open={confirming !== null}
+	title={confirming?.action === 'scan' ? `Scan ${count} ${noun}` : `Ignore ${count} ${noun}`}
+	description={confirming?.action === 'scan' ? 'One scan per target.' : undefined}
+	confirmLabel={confirming?.action === 'scan' ? 'Start scan' : 'Ignore'}
+	onOpenChange={(v) => {
+		if (!v) confirming = null;
+	}}
+	onConfirm={() => {
+		if (!confirming) return;
+		if (confirming.action === 'scan') void scan(confirming.ids);
+		else void ignore(confirming.ids);
+	}}
+/>

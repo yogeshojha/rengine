@@ -227,7 +227,7 @@
 				</Button>
 			{/if}
 			{#if onSend && connectors.length}
-				<ProxySend {connectors} {catalog} {onSend} />
+				<ProxySend {connectors} {catalog} {onSend} variant="outline" />
 			{/if}
 			<Button variant="ghost" size="sm" class="h-8 gap-1.5 text-xs" onclick={onAcross}>
 				<Layers class="size-3" /> Paths across hosts

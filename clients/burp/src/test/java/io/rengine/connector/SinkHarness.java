@@ -46,7 +46,7 @@ public final class SinkHarness {
             }
         };
 
-        Sink sink = new Sink(config, System.out::println, "burp-connector/0.1.0-harness");
+        Sink sink = new Sink(config, System.out::println, "burp-connector/harness");
 
         String failure = sink.verify();
         System.out.println("verify: " + (failure == null ? "connected" : failure));

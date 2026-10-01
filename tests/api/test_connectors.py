@@ -9,12 +9,15 @@ from sqlalchemy import select
 from app.services.connector import ConnectorError, ConnectorService
 from connectors import handoff
 from connectors.notice import notices_for
+from connectors.registry import connector as connector_for
 from shared.definitions.connectors import (
     ACTION_KIND_LABELS,
     SEVERITY_HIGHLIGHT,
     ActionKind,
     CandidateState,
+    ConnectorState,
     NoticeKind,
+    state_for,
 )
 from shared.definitions.endpoints import EndpointSource, shape_for
 from shared.definitions.vulnerabilities import Protocol
@@ -698,3 +701,18 @@ def test_head_and_ipv6_requests():
     assert head.startswith("HEAD /status HTTP/1.1\r\nHost: [2001:db8::1]:8080\r\n")
     assert body == ""
     assert "Content-Length" not in head
+
+
+def test_state_follows_polling_and_traffic():
+    assert state_for(None, False) == ConnectorState.IDLE.value
+    assert state_for(None, False, online=True) == ConnectorState.CONNECTED.value
+    assert state_for(1, False, online=True) == ConnectorState.LIVE.value
+    assert state_for(90, False, online=True) == ConnectorState.CONNECTED.value
+    assert state_for(90, False) == ConnectorState.STALE.value
+    assert state_for(1, True, online=True) == ConnectorState.PAUSED.value
+
+
+def test_catalog_carries_setup_steps():
+    steps = connector_for("burp").spec()["steps"]
+    assert steps[0]["title"] == "Download the extension"
+    assert all(s["detail"] for s in steps)

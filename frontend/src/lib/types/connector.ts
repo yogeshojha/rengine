@@ -1,9 +1,10 @@
 import type { ActionKind } from '$lib/config/connectors';
 import type { EndpointFilter } from '$lib/utilities/endpoints';
 export type ConnectorKind = 'burp';
-export type ConnectorState = 'idle' | 'live' | 'stale' | 'paused';
+export type ConnectorState = 'idle' | 'live' | 'connected' | 'stale' | 'paused';
 export type CandidateState = 'new' | 'queued' | 'scanned' | 'ignored';
 export type SourceTool = 'proxy' | 'repeater' | 'other';
+export type QueueView = 'missed' | 'flagged' | 'out_of_scope' | 'all';
 
 export interface ConnectorSpec {
 	kind: ConnectorKind;
@@ -17,6 +18,7 @@ export interface ConnectorSpec {
 	tools: SourceTool[];
 	supports_scope_push: boolean;
 	available: boolean;
+	steps: SetupStep[];
 }
 
 export interface Connector {
@@ -40,6 +42,7 @@ export interface Connector {
 	candidates: number;
 	queued: number;
 	unseen: number;
+	missed: number;
 	unassigned: number;
 	flagged: number;
 	out_of_scope: number;
@@ -57,6 +60,7 @@ export interface SetupStep {
 	detail: string;
 	code: string | null;
 	lang: string | null;
+	control: 'download' | 'credentials' | null;
 }
 
 export interface ConnectorCreated {
@@ -71,7 +75,7 @@ export interface ConnectorCreated {
 }
 
 export interface ConnectorCreate {
-	name: string;
+	name?: string;
 	kind: ConnectorKind;
 	project_id: string;
 	only_known_hosts?: boolean;
@@ -99,6 +103,7 @@ export interface HandoffResult {
 	queued: number;
 	skipped: number;
 	tool: string;
+	online: boolean;
 }
 
 export type ConnectorUpdate = Partial<Omit<ConnectorCreate, 'project_id' | 'kind'>> & {
@@ -164,6 +169,7 @@ export interface CandidateQuery {
 	state?: string;
 	host?: string;
 	notice?: string;
+	flagged?: boolean;
 	known?: boolean;
 	search?: string;
 	page?: number;

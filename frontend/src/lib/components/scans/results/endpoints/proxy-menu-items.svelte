@@ -2,7 +2,8 @@
 	import Send from '@lucide/svelte/icons/send';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { proxyLabel } from './proxy';
-	import { ACTION_KIND_HELP, ACTION_KIND_LABELS, HANDOFF_KINDS } from '$lib/config/connectors';
+	import { proxyTool } from '$lib/stores/proxy-tool.svelte';
+	import { ACTION_KIND_LABELS, HANDOFF_KINDS } from '$lib/config/connectors';
 	import type { ActionKind } from '$lib/config/connectors';
 	import type { Connector, ConnectorSpec } from '$lib/types/connector';
 
@@ -13,24 +14,30 @@
 	}
 
 	let { connectors, catalog, onSend }: Props = $props();
+
+	const connector = $derived(connectors[0] ?? null);
+
+	function send(kind: ActionKind) {
+		if (!connector) return;
+		proxyTool.set(kind);
+		onSend(connector.id, kind);
+	}
 </script>
 
-{#each connectors as c (c.id)}
+{#if connector}
+	<DropdownMenu.Item onclick={() => send(proxyTool.kind)}>
+		<Send class="size-3.5" />
+		Send to {ACTION_KIND_LABELS[proxyTool.kind]}
+	</DropdownMenu.Item>
 	<DropdownMenu.Sub>
 		<DropdownMenu.SubTrigger>
-			<Send class="size-3.5" />
-			Send to {proxyLabel(c, catalog)}
-			{#if connectors.length > 1}
-				<span class="ml-auto truncate text-xs text-muted-foreground">{c.name}</span>
-			{/if}
+			<span class="size-3.5"></span>
+			Send to {proxyLabel(connector, catalog)}
 		</DropdownMenu.SubTrigger>
-		<DropdownMenu.SubContent class="w-60">
+		<DropdownMenu.SubContent class="w-40">
 			{#each HANDOFF_KINDS as kind (kind)}
-				<DropdownMenu.Item class="flex-col items-start gap-0" onclick={() => onSend(c.id, kind)}>
-					<span>{ACTION_KIND_LABELS[kind]}</span>
-					<span class="text-xs text-muted-foreground">{ACTION_KIND_HELP[kind]}</span>
-				</DropdownMenu.Item>
+				<DropdownMenu.Item onclick={() => send(kind)}>{ACTION_KIND_LABELS[kind]}</DropdownMenu.Item>
 			{/each}
 		</DropdownMenu.SubContent>
 	</DropdownMenu.Sub>
-{/each}
+{/if}

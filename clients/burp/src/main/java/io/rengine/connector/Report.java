@@ -8,6 +8,10 @@ import java.time.Duration;
 /** Sends a finding a person confirmed by hand. */
 final class Report {
     static final int MAX_EVIDENCE = 200_000;
+    static final int MAX_TITLE = 500;
+    static final int MAX_NOTES = 8000;
+    static final int MAX_URL = 2000;
+    static final int MAX_METHOD = 16;
 
     private final Sink.Config settings;
 
@@ -30,24 +34,24 @@ final class Report {
             String request,
             String response) {
         Json json = new Json().object()
-                .field("title", title)
+                .field("title", cut(title, MAX_TITLE))
                 .field("url", url)
                 .field("severity", severity)
-                .field("method", method);
+                .field("method", method == null ? null : cut(method, MAX_METHOD));
         if (notes != null && !notes.isBlank()) {
-            json.field("notes", notes);
+            json.field("notes", cut(notes, MAX_NOTES));
         }
         if (request != null && !request.isBlank()) {
-            json.field("request", cut(request));
+            json.field("request", cut(request, MAX_EVIDENCE));
         }
         if (response != null && !response.isBlank()) {
-            json.field("response", cut(response));
+            json.field("response", cut(response, MAX_EVIDENCE));
         }
         return json.end().toString();
     }
 
-    private static String cut(String value) {
-        return value.length() <= MAX_EVIDENCE ? value : value.substring(0, MAX_EVIDENCE);
+    private static String cut(String value, int max) {
+        return value.length() <= max ? value : value.substring(0, max);
     }
 
     /** Returns null when it worked, otherwise what to tell the tester. */
@@ -69,7 +73,7 @@ final class Report {
                 return null;
             }
             String detail = Json.readString(response.body(), "detail");
-            return detail != null ? detail : "reNgine returned " + response.statusCode() + ".";
+            return detail != null && !detail.isBlank() ? detail : Sink.refusal(response);
         } catch (Exception e) {
             return Sink.explain(e);
         }

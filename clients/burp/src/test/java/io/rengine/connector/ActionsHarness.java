@@ -155,6 +155,42 @@ public final class ActionsHarness {
         check("the notice list is bounded", held.size() == Notices.KEEP);
         check("the newest notice is first", held.recent().get(0).url().endsWith("/16"));
 
+        String ingest = "https://r.example" + Settings.INGEST_PATH;
+        check("a bare origin gets the ingest path",
+                ingest.equals(Settings.normalise("https://r.example")));
+        check("a trailing slash gets the ingest path",
+                ingest.equals(Settings.normalise(" https://r.example/ ")));
+        check("a full endpoint is kept", ingest.equals(Settings.normalise(ingest)));
+        check("a value with no scheme is kept", "r.example".equals(Settings.normalise("r.example")));
+
+        check("plain http uses HTTP/1.1", Tls.plain("http://r.example/x"));
+        check("https negotiates", !Tls.plain("HTTPS://r.example/x"));
+        check("plain http to a remote host is insecure", Tls.insecure("http://10.0.0.5:8000/x"));
+        check("loopback is not insecure", !Tls.insecure("http://127.0.0.1:8000/x"));
+        check("ipv6 loopback is not insecure", !Tls.insecure("http://[::1]:8000/x"));
+
+        check("a detail list is not a string",
+                Json.readString("{\"detail\":[{\"msg\":\"too long\"}]}", "detail") == null);
+        check("a detail string is read",
+                "No target".equals(Json.readString("{\"detail\":\"No target\"}", "detail")));
+
+        check("the first retry waits the minimum", Sink.backoff(1) == Sink.RETRY_MIN_MILLIS);
+        check("the retry wait is capped", Sink.backoff(Sink.MAX_ATTEMPTS) == Sink.RETRY_MAX_MILLIS);
+
+        check("a refused connection reads as unreachable",
+                Sink.explain(new java.net.ConnectException()).startsWith("The endpoint could not"));
+        check("a connect timeout reads as unreachable",
+                Sink.explain(new java.net.http.HttpConnectTimeoutException("x"))
+                        .startsWith("The endpoint could not"));
+        check("a request timeout names the wait",
+                Sink.explain(new java.net.http.HttpTimeoutException("x")).contains("in time"));
+        check("no failure prints null", !Sink.explain(new java.io.IOException()).contains("null"));
+
+        String long_ = "x".repeat(Report.MAX_TITLE + 50);
+        check("a long title is cut to the limit",
+                Json.readString(Report.body(long_, "https://a/", "low", "GET", null, null, null),
+                        "title").length() == Report.MAX_TITLE);
+
         System.out.println(failed == 0 ? "all action checks passed" : failed + " failed");
         System.exit(failed == 0 ? 0 : 1);
     }

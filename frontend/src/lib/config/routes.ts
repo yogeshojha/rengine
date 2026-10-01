@@ -78,7 +78,7 @@ export const REPORT_TABS = ['reports', 'templates', 'themes', 'typefaces', 'bran
 export type ReportTab = (typeof REPORT_TABS)[number];
 
 export const AI_SECTIONS = ['connection', 'features', 'usage'] as const;
-export const CONNECTOR_TABS = ['queue', 'discovered', 'settings'] as const;
+export const CONNECTOR_TABS = ['missed', 'flagged', 'out_of_scope', 'all', 'domains'] as const;
 export const ISSUE_TRACKER_TABS = ['issues', 'trackers', 'routes'] as const;
 export type IssueTrackerTab = (typeof ISSUE_TRACKER_TABS)[number];
 export type ConnectorTab = (typeof CONNECTOR_TABS)[number];

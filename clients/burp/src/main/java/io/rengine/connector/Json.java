@@ -106,7 +106,7 @@ final class Json {
             end++;
         }
         String literal = body.substring(at, end);
-        return "null".equals(literal) ? null : literal;
+        return literal.isEmpty() || "null".equals(literal) ? null : literal;
     }
 
     /** One flat array of strings. */

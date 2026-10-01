@@ -5,52 +5,74 @@
 	import { browser } from '$app/environment';
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import PlugZapIcon from '@lucide/svelte/icons/plug-zap';
-	import PlusIcon from '@lucide/svelte/icons/plus';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
-	import { Button } from '$lib/components/ui/button/index.js';
-	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import * as Card from '$lib/components/ui/card/index.js';
-	import EmptyState from '$lib/components/empty-state.svelte';
-	import ConnectorList from '$lib/components/connectors/connector-list.svelte';
-	import ConnectorStats from '$lib/components/connectors/connector-stats.svelte';
+	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
+	import LinkCard from '$lib/components/connectors/link-card.svelte';
+	import ConnectDialog from '$lib/components/connectors/connect-dialog.svelte';
+	import SettingsDialog from '$lib/components/connectors/settings-dialog.svelte';
 	import QueuePanel from '$lib/components/connectors/queue-panel.svelte';
 	import DiscoveredPanel from '$lib/components/connectors/discovered-panel.svelte';
-	import SettingsPanel from '$lib/components/connectors/settings-panel.svelte';
-	import NewConnectorDialog from '$lib/components/connectors/new-connector-dialog.svelte';
-	import SetupDialog from '$lib/components/connectors/setup-dialog.svelte';
 	import { connectors } from '$lib/stores/connectors.svelte';
 	import { connectorsApi } from '$lib/api/connectors';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { targetsStore } from '$lib/stores/targets.svelte';
-	import { CONNECTOR_POLL_MS } from '$lib/config/connectors';
+	import { CONNECTOR_POLL_MS, LIVE_POLL_MS, ONLINE_STATES } from '$lib/config/connectors';
 	import { CONNECTOR_TABS, routeLabels, type ConnectorTab } from '$lib/config/routes';
-	import type { CandidateQuery, ConnectorCreated } from '$lib/types/connector';
+	import type { Connector, ConnectorSpec, QueueView } from '$lib/types/connector';
+
+	type Action = 'pause' | 'resume' | 'rotate' | 'disconnect';
 
 	const DEFAULT_TAB: ConnectorTab = CONNECTOR_TABS[0];
 	const validTabs = new Set<string>(CONNECTOR_TABS);
 	const TAB_LABELS: Record<ConnectorTab, string> = {
-		queue: 'Queue',
-		discovered: 'Discovered',
-		settings: 'Settings'
+		missed: 'Missed by scans',
+		flagged: 'Flagged',
+		out_of_scope: 'Out of scope',
+		all: 'All requests',
+		domains: 'New domains'
 	};
 
 	const initialTab = page.url.searchParams.get('tab') ?? DEFAULT_TAB;
 	let activeTab = $state<ConnectorTab>(
 		validTabs.has(initialTab) ? (initialTab as ConnectorTab) : DEFAULT_TAB
 	);
-	let newOpen = $state(false);
+	let connecting = $state<string | null>(null);
 	let setupOpen = $state(false);
-	let created = $state<ConnectorCreated | null>(null);
-	let preset = $state<CandidateQuery | null>(null);
+	let secret = $state<string | null>(null);
+	let settingsOpen = $state(false);
+	let pending = $state<Action | null>(null);
+	let working = $state(false);
 
 	const projectId = $derived(projectsStore.activeProject?.id ?? null);
 	const projectSlug = $derived(projectsStore.activeProject?.slug ?? null);
-	const selected = $derived(connectors.selected);
-	const tabCounts = $derived<Partial<Record<ConnectorTab, number | null>>>({
-		queue: selected?.queued ?? null,
-		discovered: selected?.discovered ?? null
+	const specs = $derived(connectors.catalog);
+	const linked = $derived(connectors.selected);
+	const linkedSpec = $derived(specs.find((s) => s.kind === linked?.kind) ?? null);
+	const live = $derived(linked ? ONLINE_STATES.has(linked.state) : false);
+	const ready = $derived(specs.length > 0 && connectors.fetchedProjectId === projectId);
+	const tabCounts = $derived<Record<ConnectorTab, number>>({
+		missed: linked?.missed ?? 0,
+		flagged: linked?.flagged ?? 0,
+		out_of_scope: linked?.out_of_scope ?? 0,
+		all: linked?.candidates ?? 0,
+		domains: linked?.discovered ?? 0
 	});
+
+	const CONFIRM: Record<Action, (title: string, c: Connector) => [string, string, string]> = {
+		pause: (title) => [`Pause ${title}`, 'Incoming requests are discarded.', 'Pause'],
+		resume: (title) => [`Resume ${title}`, '', 'Resume'],
+		rotate: (_title, c) => ['Rotate token', `Token ${c.token_prefix}… is revoked.`, 'Rotate'],
+		disconnect: (title) => [
+			`Disconnect ${title}`,
+			'The connection, its token and its recorded requests are removed.',
+			'Disconnect'
+		]
+	};
+	const confirmCopy = $derived(
+		pending && linked && linkedSpec ? CONFIRM[pending](linkedSpec.title, linked) : null
+	);
 
 	$effect(() => {
 		const id = projectId;
@@ -75,114 +97,146 @@
 		if (!browser) return;
 		const id = projectId;
 		const tab = activeTab;
-		const chosen = selected?.id;
+		const chosen = linked?.id;
+		const every = live ? LIVE_POLL_MS : CONNECTOR_POLL_MS;
 		if (!id) return;
 		const poll = () => {
 			if (document.hidden) return;
 			void connectors.load(id, true);
-			if (!chosen) return;
-			if (tab === 'discovered') void connectors.loadDiscovered(chosen, id);
+			if (chosen && tab === 'domains') void connectors.loadDiscovered(chosen, id);
 		};
-		const timer = setInterval(poll, CONNECTOR_POLL_MS);
+		const timer = setInterval(poll, every);
 		return () => clearInterval(timer);
 	});
 
-	function onCreated(next: ConnectorCreated) {
-		created = next;
-		setupOpen = true;
+	$effect(() => {
+		if (!setupOpen) secret = null;
+	});
+
+	function connectorOf(spec: ConnectorSpec): Connector | null {
+		return connectors.items.find((c) => c.kind === spec.kind) ?? null;
 	}
 
-	function showQueue(query: CandidateQuery) {
-		preset = query;
-		activeTab = 'queue';
-	}
-
-	async function togglePause() {
-		if (!selected || !projectId) return;
-		const paused = !selected.paused;
+	async function connect(spec: ConnectorSpec) {
+		if (!projectId) return;
+		connecting = spec.kind;
 		try {
-			connectors.upsert(await connectorsApi.update(selected.id, projectId, { paused }));
+			const created = await connectorsApi.create({ kind: spec.kind, project_id: projectId });
+			connectors.upsert(created.connector, true);
+			secret = created.secret;
+			setupOpen = true;
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Connector not updated');
+			toast.error(e instanceof Error ? e.message : 'Connection not created');
+		} finally {
+			connecting = null;
 		}
+	}
+
+	async function confirm() {
+		if (!pending || !linked || !projectId) return;
+		const action = pending;
+		working = true;
+		try {
+			if (action === 'disconnect') {
+				await connectorsApi.remove(linked.id, projectId);
+				connectors.drop(linked.id);
+				setupOpen = false;
+			} else if (action === 'rotate') {
+				const created = await connectorsApi.rotate(linked.id, projectId);
+				connectors.upsert(created.connector);
+				secret = created.secret;
+			} else {
+				connectors.upsert(
+					await connectorsApi.update(linked.id, projectId, { paused: action === 'pause' })
+				);
+			}
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : 'Change not applied');
+		} finally {
+			working = false;
+			pending = null;
+			if (action === 'rotate') setupOpen = true;
+		}
+	}
+
+	function dismiss() {
+		if (pending === 'rotate') setupOpen = true;
+		pending = null;
 	}
 </script>
 
 <svelte:head><title>{pageTitle(routeLabels.connectors)}</title></svelte:head>
 
-<div class="space-y-6">
-	<header class="flex flex-wrap items-start justify-between gap-4">
-		<div class="min-w-0">
-			<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.connectors}</h1>
-		</div>
-		<Button size="sm" onclick={() => (newOpen = true)}>
-			<PlusIcon class="size-4" />
-			New connector
-		</Button>
-	</header>
+<div class="flex flex-col gap-5">
+	<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.connectors}</h1>
 
-	{#if connectors.isLoading && connectors.items.length === 0}
-		<Card.Root class="gap-0 overflow-hidden py-0">
-			<RowSkeleton rows={3} avatar="size-9 rounded-md" trailing="h-5 w-24 rounded-full" />
-		</Card.Root>
-	{:else if connectors.items.length === 0}
-		<Card.Root class="gap-0 overflow-hidden py-0">
-			<div class="px-4 py-14">
-				<EmptyState icon={PlugZapIcon} title="No connectors">
-					<Button size="sm" onclick={() => (newOpen = true)}>
-						<PlusIcon class="size-4" />
-						New connector
-					</Button>
-				</EmptyState>
-			</div>
+	{#if !ready}
+		<Card.Root class="gap-3 p-5">
+			<Skeleton class="h-10 w-full" />
 		</Card.Root>
 	{:else}
-		<div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem]">
-			{#if selected && projectId}
-				<div class="min-w-0 space-y-4">
-					<ConnectorStats connector={selected} onTogglePause={togglePause} onPick={showQueue} />
+		{#each specs as spec (spec.kind)}
+			<LinkCard
+				{spec}
+				connector={connectorOf(spec)}
+				connecting={connecting === spec.kind}
+				onConnect={() => connect(spec)}
+				onSetup={() => (setupOpen = true)}
+				onSettings={() => (settingsOpen = true)}
+				onPause={() => (pending = connectorOf(spec)?.paused ? 'resume' : 'pause')}
+				onDisconnect={() => (pending = 'disconnect')}
+			/>
+		{/each}
 
-					<Tabs.Root value={activeTab} onValueChange={(v) => v && (activeTab = v as ConnectorTab)}>
-						<Tabs.List class="w-full sm:w-fit">
-							{#each CONNECTOR_TABS as tab (tab)}
-								{@const n = tabCounts[tab]}
-								<Tabs.Trigger value={tab} class="gap-1.5">
-									{TAB_LABELS[tab]}
-									{#if n}
-										<span class="text-muted-foreground text-2xs tabular-nums">{n}</span>
-									{/if}
-								</Tabs.Trigger>
-							{/each}
-						</Tabs.List>
+		{#if linked && projectId}
+			<Tabs.Root value={activeTab} onValueChange={(v) => v && (activeTab = v as ConnectorTab)}>
+				<Tabs.List class="w-full sm:w-fit">
+					{#each CONNECTOR_TABS as tab (tab)}
+						<Tabs.Trigger value={tab} class="gap-1.5">
+							{TAB_LABELS[tab]}
+							<span class="text-2xs tabular-nums {tabCounts[tab] ? '' : 'text-muted-foreground'}"
+								>{tabCounts[tab].toLocaleString()}</span
+							>
+						</Tabs.Trigger>
+					{/each}
+				</Tabs.List>
 
-						<Tabs.Content value="queue" class="mt-6">
-							<QueuePanel
-								connector={selected}
-								{projectId}
-								{preset}
-								onPresetApplied={() => (preset = null)}
-							/>
-						</Tabs.Content>
-						<Tabs.Content value="discovered" class="mt-6">
-							<DiscoveredPanel connector={selected} {projectId} />
-						</Tabs.Content>
-						<Tabs.Content value="settings" class="mt-6">
-							<SettingsPanel connector={selected} {projectId} onrotated={onCreated} />
-						</Tabs.Content>
-					</Tabs.Root>
+				<div class="mt-4">
+					{#if activeTab === 'domains'}
+						<DiscoveredPanel connector={linked} {projectId} />
+					{:else}
+						<QueuePanel connector={linked} {projectId} view={activeTab as QueueView} {live} />
+					{/if}
 				</div>
-			{:else}
-				<div></div>
-			{/if}
-
-			<div class="lg:sticky lg:top-4 lg:self-start">
-				<ConnectorList selectedId={selected?.id ?? null} projectId={projectId ?? ''} />
-			</div>
-		</div>
+			</Tabs.Root>
+		{/if}
 	{/if}
 </div>
 
-{#if projectId}
-	<NewConnectorDialog bind:open={newOpen} {projectId} oncreated={onCreated} />
+{#if linked && linkedSpec && projectId}
+	<ConnectDialog
+		bind:open={setupOpen}
+		{projectId}
+		spec={linkedSpec}
+		connector={linked}
+		{secret}
+		onRotate={() => {
+			setupOpen = false;
+			pending = 'rotate';
+		}}
+	/>
+	<SettingsDialog bind:open={settingsOpen} spec={linkedSpec} connector={linked} {projectId} />
 {/if}
-<SetupDialog bind:open={setupOpen} {created} />
+
+<ConfirmDialog
+	open={pending !== null}
+	title={confirmCopy?.[0] ?? ''}
+	description={confirmCopy?.[1] || undefined}
+	confirmLabel={confirmCopy?.[2] ?? 'Continue'}
+	destructive={pending === 'rotate' || pending === 'disconnect'}
+	loading={working}
+	onOpenChange={(v) => {
+		if (!v && !working) dismiss();
+	}}
+	onConfirm={confirm}
+/>

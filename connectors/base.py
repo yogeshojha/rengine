@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from shared.definitions.connectors import SourceTool
@@ -17,6 +17,7 @@ class SetupStep:
     detail: str
     code: str | None = None
     lang: str | None = None
+    control: str | None = None
 
 
 class ProxyConnector:
@@ -56,6 +57,7 @@ class ProxyConnector:
             "tools": list(self.tools),
             "supports_scope_push": self.supports_scope_push,
             "available": self.available,
+            "steps": [asdict(step) for step in self.setup(endpoint="", secret="")],
         }
 
 

@@ -2,20 +2,18 @@
 	import { untrack } from 'svelte';
 	import CompassIcon from '@lucide/svelte/icons/compass';
 	import PlusIcon from '@lucide/svelte/icons/plus';
-	import RadarIcon from '@lucide/svelte/icons/radar';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import XIcon from '@lucide/svelte/icons/x';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import EmptyState from '$lib/components/empty-state.svelte';
-	import PanelHead from '$lib/components/panel-head.svelte';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import { connectorsApi } from '$lib/api/connectors';
 	import { connectors } from '$lib/stores/connectors.svelte';
 	import { targetsStore } from '$lib/stores/targets.svelte';
-	import { ROUTES } from '$lib/config/routes';
 	import { relativeTime } from '$lib/utilities/dates';
 	import type { Connector, TargetAdded } from '$lib/types/connector';
 
@@ -24,6 +22,7 @@
 	let working = $state<string | null>(null);
 	let added = $state<Map<string, TargetAdded>>(new Map());
 	let error = $state<string | null>(null);
+	let pending = $state<{ domain: string; action: 'add' | 'dismiss' } | null>(null);
 
 	const rows = $derived(connectors.discovered);
 
@@ -37,11 +36,11 @@
 		await connectors.load(projectId, true);
 	}
 
-	async function add(domain: string, scan = false) {
+	async function add(domain: string) {
 		working = domain;
 		error = null;
 		try {
-			const result = await connectorsApi.addTarget(connector.id, projectId, domain, scan);
+			const result = await connectorsApi.addTarget(connector.id, projectId, domain);
 			added = new Map([...added, [domain, result]]);
 			await reload();
 			const slug = targetsStore.filters?.projectSlug;
@@ -51,6 +50,14 @@
 		} finally {
 			working = null;
 		}
+	}
+
+	function confirm() {
+		if (!pending) return;
+		const { domain, action } = pending;
+		pending = null;
+		if (action === 'dismiss') void dismiss(domain);
+		else void add(domain);
 	}
 
 	async function dismiss(domain: string) {
@@ -67,13 +74,6 @@
 </script>
 
 <Card.Root class="gap-0 overflow-hidden py-0">
-	<PanelHead
-		title="Discovered domains"
-		description="Domains this connector reached that no target covers"
-	>
-		<span class="tabular-nums">{rows.length}</span>
-	</PanelHead>
-
 	{#if error}
 		<p class="text-destructive border-b px-5 py-2.5 text-xs">{error}</p>
 	{/if}
@@ -119,19 +119,13 @@
 									<CheckIcon class="size-3.5" />
 									Added{result.attached ? ` · ${result.attached} attached` : ''}
 								</span>
-								{#if result.scan_id}
-									<a
-										href={ROUTES.scan(result.scan_id)}
-										class="text-primary text-xs hover:text-primary/80">Scan running</a
-									>
-								{/if}
 							</div>
 						{:else if row.out_of_scope}
 							<Button
 								variant="ghost"
 								size="sm"
 								disabled={working === row.domain}
-								onclick={() => dismiss(row.domain)}
+								onclick={() => (pending = { domain: row.domain, action: 'dismiss' })}
 							>
 								<XIcon class="size-3.5" />
 								Dismiss
@@ -141,27 +135,18 @@
 								variant="ghost"
 								size="sm"
 								disabled={working === row.domain}
-								onclick={() => dismiss(row.domain)}
+								onclick={() => (pending = { domain: row.domain, action: 'dismiss' })}
 							>
 								<XIcon class="size-3.5" />
 								Dismiss
 							</Button>
 							<LoadingButton
 								loading={working === row.domain}
-								variant="outline"
 								size="sm"
-								onclick={() => add(row.domain)}
+								onclick={() => (pending = { domain: row.domain, action: 'add' })}
 							>
 								<PlusIcon class="size-3.5" />
 								Add as target
-							</LoadingButton>
-							<LoadingButton
-								loading={working === row.domain}
-								size="sm"
-								onclick={() => add(row.domain, true)}
-							>
-								<RadarIcon class="size-3.5" />
-								Add and scan
 							</LoadingButton>
 						{/if}
 					</div>
@@ -170,3 +155,17 @@
 		</div>
 	{/if}
 </Card.Root>
+
+<ConfirmDialog
+	open={pending !== null}
+	title={pending
+		? pending.action === 'dismiss'
+			? `Dismiss ${pending.domain}`
+			: `Add ${pending.domain} as a target`
+		: ''}
+	confirmLabel={pending?.action === 'dismiss' ? 'Dismiss' : 'Add target'}
+	onOpenChange={(v) => {
+		if (!v) pending = null;
+	}}
+	onConfirm={confirm}
+/>

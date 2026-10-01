@@ -7,7 +7,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 from pydantic import Field as PydanticField
-from sqlalchemy import Column, Text
+from sqlalchemy import Column, Index, Text
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
@@ -32,6 +32,9 @@ def _json_list():
 
 class Connector(SQLModel, table=True):
     __tablename__ = "connectors"
+    __table_args__ = (
+        Index("uq_connector_project_kind", "project_id", "kind", unique=True),
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
@@ -175,6 +178,7 @@ class HandoffResult(BaseModel):
     queued: int
     skipped: int = 0
     tool: str
+    online: bool = False
 
 
 class CandidateIds(BaseModel):
@@ -286,7 +290,7 @@ class DiscoveredDomain(BaseModel):
 class ConnectorCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    name: str = PydanticField(min_length=1, max_length=MAX_NAME)
+    name: str | None = PydanticField(default=None, max_length=MAX_NAME)
     kind: str = PydanticField(default=ConnectorKind.BURP.value, max_length=16)
     project_id: uuid.UUID
     only_known_hosts: bool = False
@@ -335,6 +339,7 @@ class ConnectorRead(BaseModel):
     candidates: int
     queued: int
     unseen: int
+    missed: int = 0
     unassigned: int
     flagged: int
     out_of_scope: int

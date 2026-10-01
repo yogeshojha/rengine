@@ -212,6 +212,7 @@
 			catalog: proxyCatalog
 		});
 		if (sent) selection.clear();
+		return sent;
 	}
 	let selectAllChecked = $derived(selectAllState(checkedCount, items.length));
 	let filtered = $derived(activeFacetCount(query) > 0 || !!query.search);

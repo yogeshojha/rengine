@@ -88,15 +88,24 @@ final class ReportMenu implements ContextMenuItemsProvider {
         c.gridx = 1;
         form.add(new JScrollPane(notes), c);
 
+        Component frame = api.userInterface().swingUtils().suiteFrame();
         int choice = JOptionPane.showConfirmDialog(
-                null, form, "Report to reNgine", JOptionPane.OK_CANCEL_OPTION,
+                frame, form, "Report to reNgine", JOptionPane.OK_CANCEL_OPTION,
                 JOptionPane.PLAIN_MESSAGE);
         if (choice != JOptionPane.OK_OPTION) {
             return;
         }
         if (title.getText().isBlank()) {
             JOptionPane.showMessageDialog(
-                    null, "A title is required.", "Report to reNgine", JOptionPane.WARNING_MESSAGE);
+                    frame, "A title is required.", "Report to reNgine", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        if (selected.request().url().length() > Report.MAX_URL) {
+            JOptionPane.showMessageDialog(
+                    frame,
+                    "Finding not recorded. The URL is longer than " + Report.MAX_URL + " characters.",
+                    "Report to reNgine",
+                    JOptionPane.WARNING_MESSAGE);
             return;
         }
         String payload = Report.body(
@@ -115,7 +124,7 @@ final class ReportMenu implements ContextMenuItemsProvider {
                     : "Finding not recorded. " + failure;
             api.logging().logToOutput(message);
             SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                    null,
+                    frame,
                     message,
                     "Report to reNgine",
                     failure == null ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.ERROR_MESSAGE));
