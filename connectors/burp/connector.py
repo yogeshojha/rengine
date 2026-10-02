@@ -9,6 +9,7 @@ from shared.definitions.connectors import ConnectorKind, SetupControl
 class BurpConnector(ProxyConnector):
     kind = ConnectorKind.BURP.value
     title = "Burp Suite"
+    short_title = "Burp"
     client_pattern = "rengine-connector-*.jar"
 
     def setup(self) -> list[SetupStep]:

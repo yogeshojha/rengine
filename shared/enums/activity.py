@@ -12,7 +12,6 @@ class ActivityEvent(Enum):
     # target events
     TARGET_CREATED = "target.created"
     TARGET_UPDATED = "target.updated"
-    TARGET_DELETED = "target.deleted"
     TARGET_BULK_IMPORTED = "target.bulk_imported"
 
     # target enrichment events
@@ -42,7 +41,6 @@ class ActivityEvent(Enum):
     # project events
     PROJECT_CREATED = "project.created"
     PROJECT_UPDATED = "project.updated"
-    PROJECT_DELETED = "project.deleted"
 
     # system events
     SYSTEM_USER_LOGIN = "system.user.login"

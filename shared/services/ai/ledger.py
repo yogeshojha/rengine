@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 
-from shared.definitions.ai import TASK_FEATURE, price
+from shared.definitions.ai import TASK_FEATURE, Rate, price
 from shared.logging import get_logger
 from shared.utils.datetime import utc_now
 from shared.utils.net import redact_url_queries
@@ -39,6 +39,7 @@ class CallRecord:
     cached: bool = False
     rounds: int = 1
     error: str | None = None
+    listed: Rate | None = None
     source: Source = field(default_factory=Source)
     at: object = field(default_factory=utc_now)
 
@@ -50,7 +51,7 @@ class CallRecord:
     def cost_usd(self) -> float | None:
         if self.cached:
             return 0.0
-        return price(self.model, self.input_tokens, self.output_tokens)
+        return price(self.model, self.input_tokens, self.output_tokens, self.listed)
 
 
 Writer = Callable[[CallRecord], None]
@@ -76,11 +77,16 @@ def source(
         _source.reset(token)
 
 
+def scrub(text: str) -> str:
+    """Error text with no URL query and no URL credentials."""
+    return _USERINFO.sub("://", redact_url_queries(text))
+
+
 def record(rec: CallRecord) -> None:
     if rec.source == _NO_SOURCE:
         rec.source = _source.get()
     if rec.error:
-        rec.error = _USERINFO.sub("://", redact_url_queries(rec.error))[:MAX_ERROR]
+        rec.error = scrub(rec.error)[:MAX_ERROR]
     if _writer is None:
         logger.debug("ai call not recorded", task=rec.task, ok=rec.ok)
         return

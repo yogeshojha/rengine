@@ -11,6 +11,7 @@ ASK_CLIENT = "ask"
 MAX_THREADS_PER_FINDING = 12
 MAX_TITLE = 80
 MAX_QUESTION_CHARS = 4_000
+MAX_STARTERS = 3
 MAX_ANSWER_CHARS = 12_000
 HISTORY_TURNS = 12
 HISTORY_CHARS = 16_000
@@ -121,21 +122,10 @@ SECRET_TAGS: frozenset[str] = frozenset(
     }
 )
 
-STARTERS: dict[str, tuple[str, ...]] = {
-    SurfaceDimension.VULNERABILITIES.value: (
-        "What is the impact of this finding?",
-        "Could this be a false positive?",
-        "How do I reproduce it?",
-        "What is the fix for this version?",
-    ),
-    SurfaceDimension.WEB_ASSETS.value: (
-        "What is this web asset?",
-        "Is this an admin or internal interface?",
-        "What should I test by hand first?",
-        "Which findings and exposures sit on it?",
-    ),
-}
-ASK_DIMENSIONS: tuple[str, ...] = tuple(STARTERS)
+ASK_DIMENSIONS: tuple[str, ...] = (
+    SurfaceDimension.VULNERABILITIES.value,
+    SurfaceDimension.WEB_ASSETS.value,
+)
 
 CITATION = re.compile(r"( ?)\[(F|T|R)(\d{1,3})\]")
 CITATION_MARK = re.compile(r" ?\[\[(\d{1,2})\]\]")

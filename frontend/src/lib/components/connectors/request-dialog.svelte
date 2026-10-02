@@ -27,12 +27,14 @@
 		connector: Connector;
 		endpointsHref: string | null;
 		onClose: () => void;
-		onSend: (kind: ActionKind) => Promise<HandoffResult | null> | null;
+		onSend: (kind: ActionKind, request?: string) => Promise<HandoffResult | null> | null;
+		onPreview: () => Promise<string | null>;
 		onScan: (row: Candidate) => void;
 		onIgnore: (row: Candidate) => void;
 	}
 
-	let { row, connector, endpointsHref, onClose, onSend, onScan, onIgnore }: Props = $props();
+	let { row, connector, endpointsHref, onClose, onSend, onPreview, onScan, onIgnore }: Props =
+		$props();
 
 	const LABEL = 'text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase';
 </script>
@@ -165,7 +167,9 @@
 						<ProxySend
 							connectors={[connector]}
 							catalog={connectors.catalog}
-							onSend={(_id, kind) => onSend(kind)}
+							class="h-8"
+							onSend={(_id, kind, request) => onSend(kind, request)}
+							onPreview={() => onPreview()}
 						/>
 					{/if}
 				</div>

@@ -440,9 +440,14 @@ function appendLang(lines: CodeLine[], code: string, lang: CodeLang) {
 	}
 }
 
-const REQUEST_LINE = /^([A-Z][A-Z-]{1,14})([ \t]+)(\S+)([ \t]+HTTP\/[\d.]+)?([ \t]*)$/;
+const REQUEST_LINE =
+	/^([A-Z][A-Z-]{1,14})([ \t]+)(\S+(?:[ \t]+\S+)*?)(?:([ \t]+)(HTTP\/[\d.]+))?([ \t]*)$/;
 const STATUS_LINE = /^(HTTP\/[\d.]+)([ \t]+)(\d{3})(.*)$/;
-const HEADER_LINE = /^([A-Za-z0-9!#$%&'*+.^_`|~-]+)(:)([ \t]*)(.*)$/;
+const HEADER_LINE = /^(:?[A-Za-z0-9!#$%&'*+.^_`|~-]+)(:)([ \t]*)(.*)$/;
+const FORM_TYPE = /^application\/x-www-form-urlencoded\b/i;
+const MULTIPART_TYPE = /^multipart\/[\w.+-]+\s*;.*?\bboundary=("?)([^";\s]+)\1/i;
+const FORM_BODY = /^[^\s=&]+=[^\s&]*(?:&[^\s=&]+(?:=[^\s&]*)?)*$/;
+const INTEGER = /^\d+$/;
 
 function statusKind(status: number): TokenKind {
 	if (status >= 500) return 'err';
@@ -452,24 +457,76 @@ function statusKind(status: number): TokenKind {
 	return 'meta';
 }
 
+/** Name and value pairs: a query string, a form body or a cookie list. */
+function pushPairs(
+	out: CodeLine,
+	text: string,
+	separator: string,
+	name: TokenKind = 'attr',
+	bare: TokenKind = name
+) {
+	text.split(separator).forEach((part, index) => {
+		if (index) push(out, separator, 'punct');
+		const lead = part.length - part.trimStart().length;
+		push(out, part.slice(0, lead), 'text');
+		const pair = part.slice(lead);
+		const eq = pair.indexOf('=');
+		if (eq < 0) return push(out, pair, bare);
+		push(out, pair.slice(0, eq), name);
+		push(out, '=', 'punct');
+		push(out, pair.slice(eq + 1), 'string');
+	});
+}
+
+/** A header value made of a leading segment and named attributes. */
+function pushAttributes(out: CodeLine, value: string, first: TokenKind | null, rest: TokenKind) {
+	const at = value.indexOf(';');
+	const head = at < 0 ? value : value.slice(0, at);
+	if (first) pushPairs(out, head, ';', first, 'string');
+	else push(out, head, 'string');
+	if (at < 0) return;
+	push(out, ';', 'punct');
+	pushPairs(out, value.slice(at + 1), ';', rest);
+}
+
+function pushTarget(out: CodeLine, target: string) {
+	const at = target.indexOf('?');
+	push(out, at < 0 ? target : target.slice(0, at), 'fn');
+	if (at < 0) return;
+	push(out, '?', 'punct');
+	pushPairs(out, target.slice(at + 1), '&');
+}
+
+function pushHeaderValue(out: CodeLine, name: string, value: string) {
+	const field = name.toLowerCase();
+	if (field === 'cookie') return pushPairs(out, value, ';', 'attr', 'string');
+	if (field === 'set-cookie') return pushAttributes(out, value, 'attr', 'meta');
+	if (field === 'content-disposition') return pushAttributes(out, value, null, 'attr');
+	const trimmed = value.trimEnd();
+	push(out, trimmed, URL_RE.test(trimmed) ? 'link' : INTEGER.test(trimmed) ? 'number' : 'string');
+	push(out, value.slice(trimmed.length), 'text');
+}
+
 function httpHead(line: string): CodeLine | null {
 	const request = REQUEST_LINE.exec(line);
 	if (request) {
 		const out: CodeLine = [];
 		push(out, request[1], 'keyword');
 		push(out, request[2], 'text');
-		push(out, request[3], URL_RE.test(request[3]) ? 'link' : 'string');
-		push(out, request[4] ?? '', 'meta');
-		push(out, request[5], 'text');
+		pushTarget(out, request[3]);
+		push(out, request[4] ?? '', 'text');
+		push(out, request[5] ?? '', 'meta');
+		push(out, request[6], 'text');
 		return out;
 	}
 	const status = STATUS_LINE.exec(line);
 	if (status) {
 		const out: CodeLine = [];
+		const kind = statusKind(Number(status[3]));
 		push(out, status[1], 'meta');
 		push(out, status[2], 'text');
-		push(out, status[3], statusKind(Number(status[3])));
-		push(out, status[4], 'text');
+		push(out, status[3], kind);
+		push(out, status[4], kind);
 		return out;
 	}
 	return null;
@@ -482,8 +539,51 @@ function headerLine(raw: string): CodeLine {
 	push(out, header[1], 'key');
 	push(out, header[2], 'punct');
 	push(out, header[3], 'text');
-	push(out, header[4], URL_RE.test(header[4].trimEnd()) ? 'link' : 'text');
+	pushHeaderValue(out, header[1], header[4]);
 	return out;
+}
+
+/** Tokenizes a body line by line and keeps a trailing CR as text. */
+function appendLines(lines: CodeLine[], body: string, each: (line: CodeLine, raw: string) => void) {
+	body.split('\n').forEach((part, index) => {
+		if (index) lines.push([]);
+		const line = lines[lines.length - 1];
+		const raw = part.endsWith('\r') ? part.slice(0, -1) : part;
+		each(line, raw);
+		if (raw.length < part.length) push(line, '\r', 'text');
+	});
+}
+
+function appendForm(lines: CodeLine[], body: string) {
+	appendLines(lines, body, (line, raw) => {
+		if (raw) pushPairs(line, raw, '&');
+	});
+}
+
+function appendMultipart(lines: CodeLine[], body: string, boundary: string) {
+	const open = `--${boundary}`;
+	let inHeaders = false;
+	appendLines(lines, body, (line, raw) => {
+		if (raw === open || raw === `${open}--`) {
+			push(line, raw, 'meta');
+			inHeaders = raw === open;
+		} else if (inHeaders && raw.trim()) {
+			for (const token of headerLine(raw)) push(line, token.text, token.kind);
+		} else {
+			inHeaders = false;
+			push(line, raw, 'text');
+		}
+	});
+}
+
+function appendBody(lines: CodeLine[], body: string, contentType: string | null) {
+	const type = (contentType ?? '').trim();
+	if (FORM_TYPE.test(type)) return appendForm(lines, body);
+	const multipart = MULTIPART_TYPE.exec(type);
+	if (multipart) return appendMultipart(lines, body, multipart[2]);
+	const lang = langForContentType(contentType, body);
+	if (lang === 'text' && !type && FORM_BODY.test(body.trim())) return appendForm(lines, body);
+	appendLang(lines, body, lang);
 }
 
 function highlightHttp(code: string): CodeLine[] {
@@ -522,9 +622,8 @@ function highlightHttp(code: string): CodeLine[] {
 		if (mode !== 'headers') continue;
 
 		if (index + 1 < source.length) {
-			const body = source.slice(index + 1).join('\n');
 			lines.push([]);
-			appendLang(lines, body, langForContentType(contentType, body));
+			appendBody(lines, source.slice(index + 1).join('\n'), contentType);
 		}
 		return lines;
 	}

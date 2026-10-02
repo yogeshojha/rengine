@@ -6,42 +6,69 @@
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as RadioGroup from '$lib/components/ui/radio-group/index.js';
-	import * as Select from '$lib/components/ui/select/index.js';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import ModelPicker from '$lib/components/settings/model-picker.svelte';
 	import { toast } from 'svelte-sonner';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import FlaskConicalIcon from '@lucide/svelte/icons/flask-conical';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
+	import { aiApi } from '$lib/api/ai';
 	import { ai } from '$lib/stores/ai.svelte';
+	import type { AiConnection, AiModelOption, AiModelsRequest } from '$lib/types/ai';
 	import type { StepProps } from '$lib/types/onboarding';
 
 	let { next, setFooter }: StepProps = $props();
+
+	const SERVER_URL = /^https?:\/\/[^/\s]+/i;
 
 	let enabled = $state(false);
 	let provider = $state('');
 	let apiKey = $state('');
 	let model = $state('');
+	let picked = $state<AiModelOption | null>(null);
 	let baseUrl = $state('');
 	let showKey = $state(false);
 	let features = $state<Record<string, boolean>>({});
 	let testing = $state(false);
+	let saving = $state(false);
+	let saved = $state<AiConnection | null>(null);
 
 	const catalog = $derived(ai.catalog);
-	const spec = $derived(catalog?.providers.find((p) => p.key === provider));
+	const spec = $derived(ai.provider(provider));
+	const serverUrl = $derived(spec?.needs_base_url ? baseUrl.trim() : '');
+	const freshKey = $derived(apiKey.trim());
+	const keyStored = $derived(
+		!!saved?.key_masked &&
+			saved.provider === provider &&
+			(saved.base_url ?? '') === serverUrl.replace(/\/+$/, '')
+	);
+	const keyMissing = $derived(!!spec && !spec.key_optional && !freshKey && !keyStored);
+	const reuse = $derived(saved && keyStored && !freshKey ? { connection_id: saved.id } : {});
+
+	const request = $derived.by((): AiModelsRequest | null => {
+		if (!spec || keyMissing) return null;
+		if (spec.needs_base_url && !SERVER_URL.test(serverUrl)) return null;
+		return {
+			provider,
+			...(serverUrl ? { base_url: serverUrl } : {}),
+			...(freshKey ? { api_key: freshKey } : {}),
+			...reuse
+		};
+	});
 
 	onMount(async () => {
-		await ai.fetch(true);
-		const status = ai.status;
+		const [, step] = await Promise.all([ai.fetch(true), aiApi.onboarding().catch(() => null)]);
 		const loaded = ai.catalog;
-		if (!status || !loaded) return;
-		enabled = status.enabled;
-		provider = status.provider ?? loaded.providers[0]?.key ?? '';
-		model = status.model ?? '';
-		baseUrl = status.base_url ?? '';
+		if (!loaded) return;
+		saved = step?.connection ?? null;
+		enabled = step?.enabled ?? false;
+		provider = saved?.provider ?? loaded.providers[0]?.key ?? '';
+		model = saved?.model ?? ai.provider(provider)?.default_model ?? '';
+		baseUrl = saved?.base_url ?? '';
 		features = Object.fromEntries(
-			loaded.features.map((f) => [f.key, status.features[f.key] ?? f.default])
+			loaded.features.map((f) => [f.key, step?.features[f.key] ?? f.default])
 		);
 	});
 
@@ -49,7 +76,7 @@
 		setFooter({
 			onNext: handleNext,
 			nextLabel: 'Continue',
-			nextLoading: ai.isSaving,
+			nextLoading: saving,
 			nextDisabled: testing,
 			canSkip: true
 		});
@@ -58,11 +85,7 @@
 	function selectProvider(v: string) {
 		if (!v || v === provider) return;
 		provider = v;
-		model = catalog?.providers.find((p) => p.key === v)?.models[0]?.id ?? '';
-	}
-
-	function serverUrl(): string {
-		return spec?.needs_base_url ? baseUrl.trim() : '';
+		model = ai.provider(v)?.default_model ?? '';
 	}
 
 	async function handleTest() {
@@ -70,8 +93,9 @@
 		const result = await ai.test({
 			provider,
 			model: model.trim() || undefined,
-			api_key: apiKey.trim() || undefined,
-			base_url: serverUrl() || undefined
+			...(serverUrl ? { base_url: serverUrl } : {}),
+			...(freshKey ? { api_key: freshKey } : {}),
+			...reuse
 		});
 		testing = false;
 		if (!result) return;
@@ -79,28 +103,50 @@
 		else toast.error(result.message);
 	}
 
+	function listedPrice() {
+		const option = picked?.id === model.trim() ? picked : null;
+		if (option?.input_per_mtok == null || option.output_per_mtok == null) return {};
+		return { input_per_mtok: option.input_per_mtok, output_per_mtok: option.output_per_mtok };
+	}
+
 	async function handleNext() {
-		if (!enabled) {
-			if (await ai.save({ enabled: false })) next();
-			return;
-		}
-		if (spec?.needs_base_url && !serverUrl()) {
+		if (enabled && spec?.needs_base_url && !serverUrl) {
 			toast.error('Server URL is required');
 			return;
 		}
-		if (!spec?.key_optional && !apiKey.trim() && !ai.status?.key_masked) {
+		if (enabled && keyMissing) {
 			toast.error('API key is required');
 			return;
 		}
-		const saved = await ai.save({
-			enabled: true,
-			provider,
-			model: model.trim(),
-			api_key: apiKey.trim() || undefined,
-			base_url: serverUrl(),
-			features
-		});
-		if (saved) next();
+		if (enabled && !model.trim()) {
+			toast.error('Choose a model');
+			return;
+		}
+		saving = true;
+		try {
+			const step = await aiApi.saveOnboarding(
+				enabled
+					? {
+							enabled: true,
+							provider,
+							model: model.trim(),
+							...listedPrice(),
+							features,
+							...(serverUrl ? { base_url: serverUrl } : {}),
+							...(freshKey ? { api_key: freshKey } : {})
+						}
+					: { enabled: false }
+			);
+			saved = step.connection;
+			apiKey = '';
+			void ai.fetch(true);
+			if (saved?.in_use && !saved.last_test_at) void ai.check(saved.id);
+			next();
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : 'AI settings not saved');
+		} finally {
+			saving = false;
+		}
 	}
 </script>
 
@@ -113,7 +159,7 @@
 		<Switch
 			checked={enabled}
 			onCheckedChange={(v) => (enabled = v)}
-			disabled={ai.isSaving || !catalog}
+			disabled={saving || !catalog}
 		/>
 	</div>
 
@@ -154,8 +200,9 @@
 					bind:value={baseUrl}
 					placeholder="https://"
 					autocomplete="off"
+					spellcheck={false}
 					class="h-9 font-mono text-xs"
-					disabled={ai.isSaving}
+					disabled={saving}
 				/>
 				{#if spec.base_url_hint}
 					<p class="text-xs text-muted-foreground">{spec.base_url_hint}</p>
@@ -163,56 +210,43 @@
 			</div>
 		{/if}
 
-		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-			<div class="space-y-1.5">
-				<Label class="text-xs" for="ai-key">
-					API key
-					{#if spec?.key_optional}<span class="text-muted-foreground">Optional</span>{/if}
-				</Label>
-				<div class="relative">
-					<Input
-						id="ai-key"
-						type={showKey ? 'text' : 'password'}
-						bind:value={apiKey}
-						placeholder={ai.status?.key_masked ?? spec?.key_hint ?? ''}
-						autocomplete="off"
-						class="h-9 pr-9 font-mono text-xs"
-						disabled={ai.isSaving}
-					/>
-					<button
-						type="button"
-						class="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
-						onclick={() => (showKey = !showKey)}
-						aria-label={showKey ? 'Hide key' : 'Show key'}
-					>
-						{#if showKey}<EyeOffIcon class="size-4" />{:else}<EyeIcon class="size-4" />{/if}
-					</button>
-				</div>
+		<div class="space-y-1.5">
+			<Label class="text-xs" for="ai-key">
+				API key
+				{#if spec?.key_optional}<span class="text-muted-foreground">Optional</span>{/if}
+			</Label>
+			<div class="relative">
+				<Input
+					id="ai-key"
+					type={showKey ? 'text' : 'password'}
+					bind:value={apiKey}
+					placeholder={keyStored ? (saved?.key_masked ?? '') : (spec?.key_hint ?? '')}
+					autocomplete="off"
+					spellcheck={false}
+					class="h-9 pr-9 font-mono text-xs"
+					disabled={saving}
+				/>
+				<button
+					type="button"
+					class="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+					onclick={() => (showKey = !showKey)}
+					aria-label={showKey ? 'Hide key' : 'Show key'}
+				>
+					{#if showKey}<EyeOffIcon class="size-4" />{:else}<EyeIcon class="size-4" />{/if}
+				</button>
 			</div>
-			<div class="space-y-1.5">
-				<Label class="text-xs" for="ai-model">Model</Label>
-				{#if spec?.models.length}
-					<Select.Root type="single" bind:value={model} disabled={ai.isSaving}>
-						<Select.Trigger id="ai-model" class="h-9 w-full text-xs">
-							{spec.models.find((m) => m.id === model)?.label ?? model}
-						</Select.Trigger>
-						<Select.Content>
-							{#each spec.models as m (m.id)}
-								<Select.Item value={m.id} label={m.label}>{m.label}</Select.Item>
-							{/each}
-						</Select.Content>
-					</Select.Root>
-				{:else}
-					<Input
-						id="ai-model"
-						bind:value={model}
-						placeholder="llama3.1"
-						autocomplete="off"
-						class="h-9 font-mono text-xs"
-						disabled={ai.isSaving}
-					/>
-				{/if}
-			</div>
+		</div>
+
+		<div class="space-y-1.5">
+			<Label class="text-xs" for="ai-model">Model</Label>
+			<ModelPicker
+				id="ai-model"
+				{provider}
+				{request}
+				bind:value={model}
+				bind:selected={picked}
+				disabled={saving}
+			/>
 		</div>
 
 		<div>
@@ -222,8 +256,8 @@
 				class="h-8 text-xs"
 				loading={testing}
 				loadingLabel="Testing"
-				disabled={ai.isSaving}
-				onclick={handleTest}
+				disabled={saving}
+				onclick={() => handleTest()}
 			>
 				<FlaskConicalIcon class="mr-1.5 size-3" />
 				Test connection

@@ -1,9 +1,10 @@
 <script lang="ts">
-	import Send from '@lucide/svelte/icons/send';
+	import Check from '@lucide/svelte/icons/check';
+	import { untrack } from 'svelte';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { proxyLabel } from './proxy';
-	import { proxyTool } from '$lib/stores/proxy-tool.svelte';
-	import { ACTION_KIND_LABELS, HANDOFF_KINDS } from '$lib/config/connectors';
+	import { proxyLabel, proxyName } from './proxy';
+	import { freshenProxyPresence, proxyTool } from '$lib/stores/proxy-tool.svelte';
+	import { ACTION_KIND_LABELS, HANDOFF_KINDS, presenceDot } from '$lib/config/connectors';
 	import type { ActionKind } from '$lib/config/connectors';
 	import type { Connector, ConnectorSpec } from '$lib/types/connector';
 
@@ -17,6 +18,11 @@
 
 	const connector = $derived(connectors[0] ?? null);
 
+	$effect(() => {
+		const id = connector?.project_id;
+		if (id) untrack(() => freshenProxyPresence(id));
+	});
+
 	function send(kind: ActionKind) {
 		if (!connector) return;
 		proxyTool.set(kind);
@@ -26,8 +32,11 @@
 
 {#if connector}
 	<DropdownMenu.Item onclick={() => send(proxyTool.kind)}>
-		<Send class="size-3.5" />
-		Send to {ACTION_KIND_LABELS[proxyTool.kind]}
+		<span class="flex size-3.5 shrink-0 items-center justify-center" aria-hidden="true">
+			<span class="size-1.5 rounded-full {presenceDot(connector.state)}"></span>
+		</span>
+		Send to {proxyName(connector, catalog)}
+		{ACTION_KIND_LABELS[proxyTool.kind]}
 	</DropdownMenu.Item>
 	<DropdownMenu.Sub>
 		<DropdownMenu.SubTrigger>
@@ -36,7 +45,12 @@
 		</DropdownMenu.SubTrigger>
 		<DropdownMenu.SubContent class="w-40">
 			{#each HANDOFF_KINDS as kind (kind)}
-				<DropdownMenu.Item onclick={() => send(kind)}>{ACTION_KIND_LABELS[kind]}</DropdownMenu.Item>
+				<DropdownMenu.Item onclick={() => send(kind)}>
+					{ACTION_KIND_LABELS[kind]}
+					{#if kind === proxyTool.kind}
+						<Check class="ml-auto size-3.5 text-muted-foreground" />
+					{/if}
+				</DropdownMenu.Item>
 			{/each}
 		</DropdownMenu.SubContent>
 	</DropdownMenu.Sub>

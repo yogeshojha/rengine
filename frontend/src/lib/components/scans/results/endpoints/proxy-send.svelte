@@ -1,83 +1,123 @@
 <script lang="ts">
-	import Send from '@lucide/svelte/icons/send';
 	import Check from '@lucide/svelte/icons/check';
 	import Clock from '@lucide/svelte/icons/clock';
 	import Plug from '@lucide/svelte/icons/plug';
+	import Pencil from '@lucide/svelte/icons/pencil';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
+	import { untrack } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { ButtonGroup } from '$lib/components/ui/button-group';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import * as Tooltip from '$lib/components/ui/tooltip';
+	import { Kbd } from '$lib/components/ui/kbd';
 	import { Spinner } from '$lib/components/ui/spinner';
-	import { proxyLabel } from './proxy';
-	import { proxyTool } from '$lib/stores/proxy-tool.svelte';
+	import Hint from '$lib/components/hint.svelte';
+	import ProxyRequestDialog from './proxy-request-dialog.svelte';
+	import { proxyLabel, proxyName } from './proxy';
+	import {
+		freshenProxyPresence,
+		proxyTool,
+		watchProxyPresence
+	} from '$lib/stores/proxy-tool.svelte';
 	import { connectors as connectorStore } from '$lib/stores/connectors.svelte';
 	import { connectorsApi } from '$lib/api/connectors';
 	import { projectsStore } from '$lib/stores/projects.svelte';
-	import { untrack } from 'svelte';
 	import {
 		ACTION_KIND_LABELS,
 		DELIVERY_POLL_MS,
 		DELIVERY_WAIT_MS,
 		HANDOFF_KINDS,
+		HANDOFF_SHOWN_MS,
+		offlineNote,
+		presenceDot,
 		type ActionKind
 	} from '$lib/config/connectors';
 	import { ROUTES } from '$lib/config/routes';
+	import { keyTaken, underLayer } from '$lib/utilities/layers';
+	import { cn } from '$lib/utils';
 	import type { Connector, ConnectorSpec, HandoffResult } from '$lib/types/connector';
 
 	type Outcome = HandoffResult | null | boolean | void;
+	type Phase = 'idle' | 'sending' | 'delivered' | 'queued';
 
 	interface Props {
 		connectors: Connector[];
 		catalog: ConnectorSpec[];
-		onSend: (connectorId: string, kind: ActionKind) => Promise<Outcome> | Outcome;
-		variant?: 'default' | 'outline' | 'ghost';
+		onSend: (connectorId: string, kind: ActionKind, request?: string) => Promise<Outcome> | Outcome;
+		onPreview?: (connectorId: string) => Promise<string | null>;
+		variant?: 'outline' | 'ghost';
 		dense?: boolean;
 		shortcut?: string;
+		class?: string;
 	}
 
 	let {
 		connectors,
 		catalog,
 		onSend,
-		variant = 'default',
+		onPreview,
+		variant = 'outline',
 		dense = false,
-		shortcut
+		shortcut,
+		class: className
 	}: Props = $props();
 
-	const SHOWN_MS = 4000;
-
-	let busy = $state(false);
-	let done = $state<'delivered' | 'queued' | null>(null);
+	let phase = $state<Phase>('idle');
+	let editing = $state(false);
+	let loading = $state(false);
+	let loaded = $state('');
+	let root = $state<HTMLElement | null>(null);
 	let run = 0;
 	let timer: ReturnType<typeof setTimeout> | undefined;
 
 	const connector = $derived(connectors[0] ?? null);
 	const proxy = $derived(connector ? proxyLabel(connector, catalog) : '');
+	const name = $derived(connector ? proxyName(connector, catalog) : '');
 	const tool = $derived(ACTION_KIND_LABELS[proxyTool.kind]);
-	const bar = $derived(variant === 'ghost');
-	const height = $derived(dense ? 'h-7' : 'h-8');
-	const text = $derived(
-		bar ? 'gap-2 font-medium' : dense ? 'gap-1.5 text-xs font-medium' : 'gap-1.5 font-medium'
+	const note = $derived(connector ? offlineNote(connector.state, proxy) : null);
+	const action = $derived(`Send to ${name} ${tool}`);
+	const compact = $derived(variant === 'outline' || dense);
+	const main = $derived(
+		compact
+			? 'h-auto gap-1.5 px-2.5 text-xs font-medium has-[>svg]:px-2.5'
+			: 'h-auto gap-2 px-3 font-medium has-[>svg]:px-3'
 	);
-	const split = $derived(variant === 'default' ? 'border-l border-primary-foreground/25' : '');
-	const icon = $derived(bar ? 'h-3.5 w-3.5' : 'size-3.5');
+	const narrow = $derived(
+		compact ? 'h-auto w-6 px-0 has-[>svg]:px-0' : 'h-auto w-7 px-0 has-[>svg]:px-0'
+	);
+	const square = $derived(
+		compact ? 'h-auto w-7 px-0 has-[>svg]:px-0' : 'h-auto w-8 px-0 has-[>svg]:px-0'
+	);
+	const icon = $derived(compact ? 'size-3' : 'size-3.5');
+	const tone = $derived(
+		phase === 'delivered'
+			? 'text-success hover:text-success'
+			: phase === 'queued'
+				? 'text-warning hover:text-warning'
+				: ''
+	);
+
+	const projectId = $derived(projectsStore.activeProject?.id ?? null);
+	const known = $derived(projectId !== null && connectorStore.fetchedProjectId === projectId);
 
 	$effect(() => () => {
 		run++;
 		clearTimeout(timer);
 	});
 
-	const projectId = $derived(projectsStore.activeProject?.id ?? null);
-	const known = $derived(projectId !== null && connectorStore.fetchedProjectId === projectId);
-
 	$effect(() => {
 		const id = projectId;
-		if (!id || known) return;
-		untrack(() => {
-			void connectorStore.load(id);
-			void connectorStore.loadCatalog();
-		});
+		if (!id) return;
+		if (variant === 'ghost') {
+			untrack(() => freshenProxyPresence(id));
+			return;
+		}
+		return untrack(() => watchProxyPresence(id));
 	});
+
+	function freshen() {
+		if (projectId) freshenProxyPresence(projectId);
+	}
 
 	/** True once the proxy has collected everything queued for it. */
 	async function collected(mine: number, id: string, projectId: string): Promise<boolean> {
@@ -95,32 +135,57 @@
 		return false;
 	}
 
-	async function send(kind: ActionKind) {
-		if (!connector || busy) return;
+	async function settle(mine: number, outcome: Outcome, id: string, projectId: string) {
+		const online = typeof outcome !== 'object' || outcome === null || outcome.online;
+		if (!online) void connectorStore.load(projectId, true);
+		const next = online && (await collected(mine, id, projectId)) ? 'delivered' : 'queued';
+		if (mine !== run) return;
+		phase = next;
+		timer = setTimeout(() => {
+			if (mine === run) phase = 'idle';
+		}, HANDOFF_SHOWN_MS);
+	}
+
+	/** Resolves once the server took the request or refused it. */
+	async function send(kind: ActionKind, request?: string): Promise<boolean> {
+		if (!connector || phase === 'sending') return false;
 		const mine = ++run;
 		const { id, project_id: projectId } = connector;
 		proxyTool.set(kind);
-		busy = true;
 		clearTimeout(timer);
-		done = null;
+		phase = 'sending';
+		let outcome: Outcome = null;
 		try {
-			const outcome = await onSend(id, kind);
-			if (outcome === null || outcome === false) return;
-			const online = typeof outcome !== 'object' || outcome.online;
-			const next = online && (await collected(mine, id, projectId)) ? 'delivered' : 'queued';
-			if (mine !== run) return;
-			done = next;
-			timer = setTimeout(() => (done = null), SHOWN_MS);
+			outcome = await onSend(id, kind, request);
+		} catch {
+			outcome = null;
+		}
+		if (mine !== run) return false;
+		if (outcome === null || outcome === false) {
+			phase = 'idle';
+			return false;
+		}
+		void settle(mine, outcome, id, projectId);
+		return true;
+	}
+
+	async function edit() {
+		if (!connector || !onPreview || loading || phase === 'sending') return;
+		loading = true;
+		try {
+			const text = await onPreview(connector.id);
+			if (text === null) return;
+			loaded = text;
+			editing = true;
 		} finally {
-			if (mine === run) busy = false;
+			loading = false;
 		}
 	}
 
 	function onKey(e: KeyboardEvent) {
-		if (!shortcut || e.key !== shortcut || e.metaKey || e.ctrlKey || e.altKey) return;
-		const t = e.target as HTMLElement | null;
-		if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
-		if (t?.closest('[role=menu], [role=listbox], [role=combobox]')) return;
+		if (!shortcut || e.key !== shortcut || e.repeat || e.defaultPrevented) return;
+		if (e.metaKey || e.ctrlKey || e.altKey || !connector) return;
+		if (keyTaken(e.target) || underLayer(root)) return;
 		e.preventDefault();
 		void send(proxyTool.kind);
 	}
@@ -129,43 +194,61 @@
 <svelte:window onkeydown={onKey} />
 
 {#if connector}
-	<ButtonGroup>
-		<Button
-			{variant}
-			size="sm"
-			class="{height} {text}"
-			disabled={busy}
-			onclick={() => send(proxyTool.kind)}
-		>
-			{#if busy}
-				<Spinner class={icon} />
-				Sending to {tool}
-			{:else if done === 'delivered'}
-				<Check class={icon} />
-				Delivered to {tool}
-			{:else if done === 'queued'}
-				<Clock class={icon} />
-				Queued for {proxy}
-			{:else}
-				<Send class={icon} />
-				Send to {tool}
-				{#if shortcut}
-					<kbd class="hidden font-mono text-2xs opacity-70 sm:inline">{shortcut}</kbd>
-				{/if}
-			{/if}
-		</Button>
+	<ButtonGroup
+		bind:ref={root}
+		class={cn(compact ? 'h-7' : 'h-8', className)}
+		onpointerenter={freshen}
+	>
+		<Tooltip.Root>
+			<Tooltip.Trigger>
+				{#snippet child({ props })}
+					<Button
+						{...props}
+						{variant}
+						size="sm"
+						class="{main} {tone}"
+						aria-label={note ? `${action}. ${note}` : action}
+						aria-busy={phase === 'sending'}
+						onclick={() => send(proxyTool.kind)}
+					>
+						{#if phase === 'sending'}
+							<Spinner class={icon} />
+							{tool}
+						{:else if phase === 'delivered'}
+							<Check class={icon} />
+							{tool}
+						{:else if phase === 'queued'}
+							<Clock class={icon} />
+							Queued
+						{:else}
+							<span class="flex {icon} shrink-0 items-center justify-center" aria-hidden="true">
+								<span class="size-1.5 rounded-full {presenceDot(connector.state)}"></span>
+							</span>
+							{tool}
+						{/if}
+					</Button>
+				{/snippet}
+			</Tooltip.Trigger>
+			<Tooltip.Content class="flex flex-col gap-1">
+				<span class="flex items-center gap-1.5">
+					{action}
+					{#if shortcut}<Kbd>{shortcut}</Kbd>{/if}
+				</span>
+				{#if note}<span class="opacity-70">{note}</span>{/if}
+			</Tooltip.Content>
+		</Tooltip.Root>
 		<DropdownMenu.Root>
 			<DropdownMenu.Trigger>
 				{#snippet child({ props })}
 					<Button
 						{...props}
 						{variant}
-						size="icon-sm"
-						class="{height} w-7 {split}"
-						disabled={busy}
+						size="sm"
+						class={narrow}
+						disabled={phase === 'sending'}
 						aria-label="Choose the {proxy} tool"
 					>
-						<ChevronDown class="size-3.5" />
+						<ChevronDown class={icon} />
 					</Button>
 				{/snippet}
 			</DropdownMenu.Trigger>
@@ -183,10 +266,45 @@
 				{/each}
 			</DropdownMenu.Content>
 		</DropdownMenu.Root>
+		{#if onPreview}
+			<Hint text="Edit and send">
+				{#snippet child(props)}
+					<Button
+						{...props}
+						{variant}
+						size="sm"
+						class={square}
+						disabled={phase === 'sending'}
+						aria-label="Edit and send"
+						onclick={() => edit()}
+					>
+						{#if loading}
+							<Spinner class={icon} />
+						{:else}
+							<Pencil class={icon} />
+						{/if}
+					</Button>
+				{/snippet}
+			</Hint>
+		{/if}
 	</ButtonGroup>
-{:else if !bar && known}
-	<Button variant="outline" size="sm" class="{height} {text}" href={ROUTES.connectors()}>
-		<Plug class={icon} />
+	{#if onPreview}
+		<ProxyRequestDialog
+			bind:open={editing}
+			title="Send to {proxy}"
+			kind={proxyTool.kind}
+			request={loaded}
+			onSend={send}
+		/>
+	{/if}
+{:else if variant !== 'ghost' && known}
+	<Button
+		variant="outline"
+		size="sm"
+		class={cn('h-7 gap-1.5 px-2.5 text-xs font-medium has-[>svg]:px-2.5', className)}
+		href={ROUTES.connectors()}
+	>
+		<Plug class="size-3" />
 		Connect Burp Suite
 	</Button>
 {/if}

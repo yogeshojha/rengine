@@ -12,6 +12,7 @@ from mcp.errors import ToolError
 from mcp.result import ToolResult
 from mcp.tools._scope import operator, resolve
 from mcp.tools.base import Tool, ToolGroup, ToolInput
+from shared.definitions.notes import MAX_NOTE_BODY
 from shared.definitions.surface import SurfaceDimension
 from shared.definitions.vulnerabilities import VULN_STATES
 from shared.utils.text import counted
@@ -25,8 +26,10 @@ class Input(ToolInput):
     state: str = Field(
         description=f"The review decision. One of: {', '.join(VULN_STATES)}."
     )
-    note: str | None = Field(
-        default=None, max_length=2000, description="Note stored with the decision."
+    reason: str | None = Field(
+        default=None,
+        max_length=MAX_NOTE_BODY,
+        description="The reason for the decision. Saved as a note on the finding.",
     )
 
 
@@ -38,21 +41,28 @@ class RecordTriage(Tool):
     description = (
         "Record a review decision against a finding: confirmed, false positive or "
         "accepted risk. The decision is keyed to the fingerprint and applies to "
-        "every later scan of the target. Include a note."
+        "every later scan of the target. Include a reason."
     )
     Input = Input
     examples = (
         "record_triage target=example.com fingerprint=<hash> state=false_positive "
-        "note='Static asset, not the admin panel.'",
+        "reason='Static asset, not the admin panel.'",
     )
 
     async def run(self, ctx: ToolContext, args: Input) -> ToolResult:
         from app.services.vulnerability import VulnerabilityService  # noqa: PLC0415
-        from shared.models.vulnerability import TriageUpdate  # noqa: PLC0415
+        from shared.models.vulnerability import (  # noqa: PLC0415
+            TriageUpdate,
+            check_reason,
+        )
 
         if args.state not in VULN_STATES:
             msg = f"Unknown state {args.state!r}. Use one of: {', '.join(VULN_STATES)}."
             raise ToolError(msg)
+        try:
+            reason = check_reason(args.state, args.reason)
+        except ValueError as exc:
+            raise ToolError(str(exc)) from None
         issued_by = operator(ctx)
 
         dim = dimension(SurfaceDimension.VULNERABILITIES.value)
@@ -62,10 +72,7 @@ class RecordTriage(Tool):
         result = await VulnerabilityService(ctx.session).triage(
             scan_id,
             args.fingerprint.strip(),
-            TriageUpdate(
-                state=args.state,
-                **({"note": args.note} if args.note is not None else {}),
-            ),
+            TriageUpdate(state=args.state, reason=reason),
             issued_by,
         )
         if result is None:
@@ -83,7 +90,7 @@ class RecordTriage(Tool):
             data={
                 "fingerprint": result.fingerprint,
                 "state": result.state,
-                "note": result.note,
+                "reason": result.reason,
                 "observations_updated": result.updated,
             },
             pivot=links.scan_tab(ctx.ui_base_url, scan_id, dim.tab),

@@ -7,10 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentSuperuser, CurrentUser
 from app.core.database import get_session
+from app.services.ai_settings import ONBOARDING_KEY, AiSettingsService
 from app.services.instance_settings import InstanceSettingsService
 from shared.definitions.api_keys import API_PROVIDER_META, RECON_GROUPS
 from shared.definitions.oast import OastMode, off_reason
 from shared.enums.api_key import ProviderGroup
+from shared.models.ai import AiOnboarding, AiOnboardingRead
 from shared.models.api_key import APIKey
 from shared.models.instance_settings import InstanceSettings
 from shared.models.notification_channel import NotificationChannel
@@ -70,7 +72,7 @@ async def _summary(
         channels=channels.scalar_one(),
         integrations=sum(group in RECON_GROUPS for group in groups),
         platforms=groups.count(ProviderGroup.BOUNTY_PLATFORMS.value),
-        ai_enabled=settings.ai_enabled,
+        ai_enabled=settings.ai_enabled and settings.ai_connection_id is not None,
         oast_mode=OastMode.OFF.value if oast_off else settings.oast_mode,
     )
 
@@ -106,8 +108,10 @@ async def update_progress(
     service: Annotated[InstanceSettingsService, Depends(get_service)],
 ):
     settings = await service.get_or_create()
+    state = {k: v for k, v in data.state.items() if k != ONBOARDING_KEY}
+    kept = (settings.onboarding_state or {}).get(ONBOARDING_KEY)
     settings.onboarding_step = data.current_step
-    settings.onboarding_state = dict(data.state)
+    settings.onboarding_state = {**state, ONBOARDING_KEY: kept} if kept else state
     settings.updated_at = utc_now()
     await session.commit()
     return await _status(session, service, can_setup=True)
@@ -127,3 +131,20 @@ async def complete_onboarding(
         settings.updated_at = utc_now()
         await session.commit()
     return await _status(session, service, can_setup=True)
+
+
+@router.get("/ai", response_model=AiOnboardingRead)
+async def get_ai_step(
+    _current_user: CurrentSuperuser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    return await AiSettingsService(session).onboarding()
+
+
+@router.put("/ai", response_model=AiOnboardingRead)
+async def save_ai_step(
+    data: AiOnboarding,
+    _current_user: CurrentSuperuser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    return await AiSettingsService(session).onboard(data)

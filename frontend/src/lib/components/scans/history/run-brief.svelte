@@ -4,7 +4,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import type { ScanRead } from '$lib/types/scan';
 	import { isOpenStatus } from '$lib/utilities/scan-status';
-	import { BRIEF_TABS, BRIEF_TAB_LABELS, historyPrefs, type BriefTab } from './prefs.svelte';
+	import { BRIEF_TABS, BRIEF_TAB_LABELS, runBriefTabs, type BriefTab } from './prefs.svelte';
 	import BriefFindings from './brief-findings.svelte';
 	import BriefChanges from './brief-changes.svelte';
 	import BriefCoverage from './brief-coverage.svelte';
@@ -20,11 +20,16 @@
 
 	let { projectId, scan, now, onChanged, onHover }: Props = $props();
 	let live = $derived(isOpenStatus(scan.status));
+
+	$effect(() => {
+		const id = scan.id;
+		return () => runBriefTabs.close(id);
+	});
 </script>
 
 <Tabs.Root
-	value={historyPrefs.tab}
-	onValueChange={(v) => (historyPrefs.tab = v as BriefTab)}
+	value={runBriefTabs.of(scan.id)}
+	onValueChange={(v) => runBriefTabs.set(scan.id, v as BriefTab)}
 	class="gap-2"
 >
 	<Tabs.List class="h-8">

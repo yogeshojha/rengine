@@ -26,6 +26,8 @@ from shared.services.ai.client import (
     complete,
     post_json,
     provider_proxy,
+    scrub_error,
+    sdk_error,
 )
 from shared.services.ai.config import AIConfig
 from shared.services.ai.ledger import CallRecord
@@ -104,7 +106,7 @@ async def converse(
     max_rounds: int,
     max_calls: int = 3,
 ) -> AsyncIterator[AgentEvent]:
-    model = cfg.model_for_task(fast=False)
+    model = cfg.model
     max_tokens = TASK_OUTPUT_TOKENS.get(task, MAX_OUTPUT_TOKENS)
     effort = TASK_EFFORT.get(task, Effort.LOW.value)
     budget = _Budget(max_rounds, max_calls)
@@ -137,6 +139,7 @@ async def converse(
                         output_tokens=event.output_tokens,
                         latency_ms=int((time.monotonic() - started) * 1000),
                         rounds=event.rounds or 1,
+                        listed=cfg.listed_price(event.model or model),
                     )
                 )
             yield event
@@ -150,7 +153,8 @@ async def converse(
                 input_tokens=exc.input_tokens,
                 output_tokens=exc.output_tokens,
                 latency_ms=int((time.monotonic() - started) * 1000),
-                error=str(exc),
+                error=scrub_error(str(exc), cfg),
+                listed=cfg.listed_price(model),
             )
         )
         raise
@@ -216,11 +220,11 @@ async def _anthropic(
                 final = await stream.get_final_message()
         except anthropic.BadRequestError as exc:
             if not extras:
-                raise AIError(str(exc)) from exc
+                raise sdk_error(exc) from exc
             extras = {}
             continue
         except anthropic.APIError as exc:
-            raise AIError(str(exc)) from exc
+            raise sdk_error(exc) from exc
 
         used_in += final.usage.input_tokens
         used_out += final.usage.output_tokens

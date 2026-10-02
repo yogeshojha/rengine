@@ -8,7 +8,7 @@ import pytest
 import sqlalchemy as sa
 from fastapi import HTTPException, Response
 
-from app.api.v1.ai import ai_status
+from app.api.v1.ai import ai_status, list_connections
 from app.api.v1.api_keys import list_providers, reveal_api_key
 from app.api.v1.users import create_user, delete_user, update_user
 from app.services import ai_settings
@@ -18,7 +18,12 @@ from app.services.proxy import ProxyService, _summarize
 from app.services.scan_context import ScanContextService
 from shared.definitions.retention import KEEP_FOREVER, SCAN_RETENTION_DAYS
 from shared.enums.api_key import APIProvider
-from shared.models.ai import AiSettingsUpdate, AiTestRequest
+from shared.models.ai import (
+    AiConnection,
+    AiConnectionCreate,
+    AiConnectionUpdate,
+    AiTestRequest,
+)
 from shared.models.api_key import APIKey, APIKeyUpdate
 from shared.models.instance_settings import InstanceSettingsRead, InstanceSettingsUpdate
 from shared.models.notification_channel import NotificationChannel
@@ -356,11 +361,9 @@ async def test_a_blank_instance_name_is_refused(estate, flush_only):
 async def test_general_settings_do_not_write_the_ai_connection(estate, flush_only):
     service = InstanceSettingsService(flush_only)
     settings = await service.get_or_create()
-    settings.ai_provider = "openai_compatible"
-    settings.ai_features = {"base_url": "https://llm.example.com/v1"}
-    settings.ai_api_key_encrypted = encrypt_secret("stored")
+    stored = await _stored_ai(flush_only)
+    settings.ai_features = {"ask": True}
     await flush_only.flush()
-    stored = settings.ai_api_key_encrypted
 
     await service.update(
         InstanceSettingsUpdate.model_validate(
@@ -368,37 +371,37 @@ async def test_general_settings_do_not_write_the_ai_connection(estate, flush_onl
                 "instance_name": "ops",
                 "ai_provider": "openai",
                 "ai_api_key": "sk-new",
-                "ai_features": {"ask": True},
+                "ai_connection_id": str(uuid.uuid4()),
+                "ai_features": {"ask": False},
             }
         )
     )
 
-    assert settings.ai_provider == "openai_compatible"
-    assert settings.ai_features == {"base_url": "https://llm.example.com/v1"}
-    assert settings.ai_api_key_encrypted == stored
+    assert settings.ai_connection_id == stored.id
+    assert settings.ai_features == {"ask": True}
     assert "ai_features" not in InstanceSettingsRead.model_fields
+    assert "ai_connection_id" not in InstanceSettingsRead.model_fields
 
 
 # ---------- ai ----------
 
 
 async def _stored_ai(session):
-    settings = await InstanceSettingsService(session).get_or_create()
-    settings.ai_provider = "openai_compatible"
-    settings.ai_features = {
-        "base_url": "https://llm.example.com/v1",
-        "workspace_id": "ws",
-    }
-    settings.ai_api_key_encrypted = encrypt_secret("stored")
-    await session.flush()
-    return settings
+    return await AiSettingsService(session).create_connection(
+        AiConnectionCreate(
+            provider="openai_compatible",
+            base_url="https://llm.example.com/v1",
+            api_key="stored",
+            model="m",
+        )
+    )
 
 
 async def test_an_ai_test_sends_the_stored_key_to_the_stored_server_alone(
     estate, flush_only, monkeypatch
 ):
-    await _stored_ai(flush_only)
-    sent: list[tuple[str, str | None]] = []
+    stored = await _stored_ai(flush_only)
+    sent: list[tuple[str, str]] = []
 
     def fake_complete(cfg, **_k):
         sent.append((cfg.base_url, cfg.api_key))
@@ -407,33 +410,50 @@ async def test_an_ai_test_sends_the_stored_key_to_the_stored_server_alone(
     monkeypatch.setattr(ai_settings, "complete", fake_complete)
     service = AiSettingsService(flush_only)
 
-    await service.test(AiTestRequest(model="m"))
+    await service.test(AiTestRequest(connection_id=stored.id, model="m"))
     await service.test(
-        AiTestRequest(base_url="https://collector.example/v1", model="m")
+        AiTestRequest(
+            connection_id=stored.id, base_url="https://collector.example/v1", model="m"
+        )
     )
-    refused = await service.test(AiTestRequest(provider="openai", model="m"))
+    await service.test(
+        AiTestRequest(
+            provider="openai_compatible",
+            base_url="https://llm.example.com/v1",
+            model="m",
+        )
+    )
+    refused = await service.test(
+        AiTestRequest(connection_id=stored.id, provider="openai", model="m")
+    )
 
     assert sent == [
         ("https://llm.example.com/v1", "stored"),
-        ("https://collector.example/v1", None),
+        ("https://collector.example/v1", ""),
+        ("https://llm.example.com/v1", ""),
     ]
     assert not refused.success
 
 
 async def test_moving_the_ai_server_drops_the_stored_key(estate, flush_only):
-    settings = await _stored_ai(flush_only)
+    stored = await _stored_ai(flush_only)
     service = AiSettingsService(flush_only)
+    row = await flush_only.get(AiConnection, stored.id)
 
     with pytest.raises(HTTPException) as err:
-        await service.update(AiSettingsUpdate(provider="openai"))
+        await service.update_connection(
+            stored.id, AiConnectionUpdate(provider="openai")
+        )
     assert err.value.status_code == 400
-    assert try_decrypt(settings.ai_api_key_encrypted) == "stored"
+    assert try_decrypt(row.api_key_encrypted) == "stored"
 
-    await service.update(AiSettingsUpdate(model="m2"))
-    assert try_decrypt(settings.ai_api_key_encrypted) == "stored"
+    await service.update_connection(stored.id, AiConnectionUpdate(model="m2"))
+    assert try_decrypt(row.api_key_encrypted) == "stored"
 
-    await service.update(AiSettingsUpdate(base_url="https://collector.example/v1"))
-    assert settings.ai_api_key_encrypted is None
+    await service.update_connection(
+        stored.id, AiConnectionUpdate(base_url="https://collector.example/v1")
+    )
+    assert row.api_key_encrypted is None
 
 
 @pytest.mark.parametrize(
@@ -448,9 +468,21 @@ def test_a_server_url_with_credentials_or_a_query_is_refused(url):
 
 async def test_only_an_admin_reads_the_ai_server(estate, flush_only):
     await _stored_ai(flush_only)
+    await AiSettingsService(flush_only).create_connection(
+        AiConnectionCreate(
+            provider="anthropic", api_key="sk-ant-0123456789", workspace_id="ws"
+        )
+    )
 
     member = await ai_status(SimpleNamespace(is_superuser=False), flush_only)
     admin = await ai_status(SimpleNamespace(is_superuser=True), flush_only)
+    listed = await list_connections(SimpleNamespace(is_superuser=False), flush_only)
+    full = await list_connections(SimpleNamespace(is_superuser=True), flush_only)
 
     assert (member.base_url, member.workspace_id) == (None, None)
-    assert (admin.base_url, admin.workspace_id) == ("https://llm.example.com/v1", "ws")
+    assert admin.base_url == "https://llm.example.com/v1"
+    assert [(c.base_url, c.workspace_id) for c in listed] == [(None, None)] * 2
+    assert [(c.base_url, c.workspace_id) for c in full] == [
+        ("https://llm.example.com/v1", None),
+        (None, "ws"),
+    ]

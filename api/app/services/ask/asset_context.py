@@ -144,6 +144,21 @@ def _worst(findings: Counter) -> str | None:
     return None
 
 
+def _titles(bundle: AssetBundle) -> str:
+    joined = " ".join(a.title or "" for a in bundle.assets).lower()
+    return joined or (bundle.sub.page_title or "").lower()
+
+
+def login_page(bundle: AssetBundle) -> bool:
+    title = _titles(bundle)
+    return any(w in title for w in LOGIN_WORDS)
+
+
+def admin_named(bundle: AssetBundle) -> bool:
+    title, name = _titles(bundle), bundle.sub.name.lower()
+    return any(w in name or w in title for w in ADMIN_WORDS)
+
+
 def assess(bundle: AssetBundle) -> tuple[str, list[Fact]]:
     sub, assets = bundle.sub, bundle.assets
     facts: list[Fact] = []
@@ -166,14 +181,9 @@ def assess(bundle: AssetBundle) -> tuple[str, list[Fact]]:
     else:
         add(FactTone.UNKNOWN, "No HTTP answer")
 
-    title = (
-        " ".join(a.title or "" for a in assets).lower()
-        or (sub.page_title or "").lower()
-    )
-    name = sub.name.lower()
-    if any(w in title for w in LOGIN_WORDS):
+    if login_page(bundle):
         add(FactTone.AGAINST, "Login page")
-    if any(w in name or w in title for w in ADMIN_WORDS):
+    if admin_named(bundle):
         add(FactTone.AGAINST, "Admin or internal naming")
 
     worst = _worst(bundle.findings)

@@ -101,7 +101,7 @@ def assess(
             detail=f"Fixed in {software.fixed_in}" if software.fixed_in else None,
         )
     if v.state == VulnState.CONFIRMED.value:
-        add(FactTone.FOR, "Confirmed in triage", detail=mask_secrets(v.note or ""))
+        add(FactTone.FOR, "Confirmed in triage", detail=mask_secrets(v.reason or ""))
 
     asset = v.asset
     if asset and asset.waf:
@@ -112,7 +112,7 @@ def assess(
         add(
             FactTone.AGAINST,
             "Marked false positive in triage",
-            detail=mask_secrets(v.note or ""),
+            detail=mask_secrets(v.reason or ""),
         )
 
     if not v.response:

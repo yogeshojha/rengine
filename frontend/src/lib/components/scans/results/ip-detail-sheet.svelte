@@ -1,11 +1,10 @@
 <script lang="ts">
-	import { SHEET_ROW, SHEET_DT, sheetStep } from './sheet';
+	import { SHEET_ROW, SHEET_DT, SHEET_HEAD, sheetStep } from './sheet';
+	import SheetTop from './sheet-top.svelte';
 	import Network from '@lucide/svelte/icons/network';
 	import Plug from '@lucide/svelte/icons/plug';
 	import Server from '@lucide/svelte/icons/server';
 	import Globe from '@lucide/svelte/icons/globe';
-	import ChevronUp from '@lucide/svelte/icons/chevron-up';
-	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import Fingerprint from '@lucide/svelte/icons/fingerprint';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
@@ -16,7 +15,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-	import { Kbd } from '$lib/components/ui/kbd';
+	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { isPrivateIp } from '$lib/utilities/scan-correlation';
 	import { isSensitivePort } from '$lib/config/service-classes';
 	import { exactToken, filterToken, type IpGroupRead } from '$lib/utilities/scan-insights';
@@ -50,8 +49,9 @@
 		onServices
 	}: Props = $props();
 
+	const IPS = SURFACE[SurfaceDimension.IPS];
+
 	let contentEl = $state<HTMLElement | null>(null);
-	let position = $derived(pageOffset + index + 1);
 	let sensitivePorts = $derived((group?.ports ?? []).filter((p) => isSensitivePort(p.number)));
 	let isPrivate = $derived(group ? isPrivateIp(group.ip) : false);
 	let network = $derived(
@@ -77,62 +77,19 @@
 		}}
 	>
 		{#if group}
-			<Sheet.Header class="gap-3 border-b border-border px-5 pt-5 pr-12 pb-4">
-				<div class="flex items-center gap-2">
+			<Sheet.Header class={SHEET_HEAD}>
+				<SheetTop noun={IPS.noun} {index} {pageOffset} {total} {onStep}>
 					<span
 						class="size-2 shrink-0 rounded-full {group.is_alive
 							? 'bg-success'
 							: 'bg-muted-foreground/40'}"
 					></span>
-					<Sheet.Title class="truncate font-mono text-base font-medium">{group.ip}</Sheet.Title>
+				</SheetTop>
+				<div class="flex min-w-0 items-center gap-1">
+					<Sheet.Title class="min-w-0 truncate font-mono text-base font-medium"
+						>{group.ip}</Sheet.Title
+					>
 					<CopyButton value={group.ip} />
-					<div class="ml-auto flex items-center gap-1">
-						{#if total > 1}
-							<span class="text-xs text-muted-foreground tabular-nums">
-								{position.toLocaleString()} / {total.toLocaleString()}
-							</span>
-							<Tooltip.Root>
-								<Tooltip.Trigger>
-									{#snippet child({ props })}
-										<Button
-											{...props}
-											variant="ghost"
-											size="icon-sm"
-											class="size-7"
-											disabled={position <= 1}
-											onclick={() => onStep?.(-1)}
-											aria-label="Previous address"
-										>
-											<ChevronUp />
-										</Button>
-									{/snippet}
-								</Tooltip.Trigger>
-								<Tooltip.Content class="flex items-center gap-1.5"
-									>Previous <Kbd>k</Kbd></Tooltip.Content
-								>
-							</Tooltip.Root>
-							<Tooltip.Root>
-								<Tooltip.Trigger>
-									{#snippet child({ props })}
-										<Button
-											{...props}
-											variant="ghost"
-											size="icon-sm"
-											class="size-7"
-											disabled={position >= total}
-											onclick={() => onStep?.(1)}
-											aria-label="Next address"
-										>
-											<ChevronDown />
-										</Button>
-									{/snippet}
-								</Tooltip.Trigger>
-								<Tooltip.Content class="flex items-center gap-1.5"
-									>Next <Kbd>j</Kbd></Tooltip.Content
-								>
-							</Tooltip.Root>
-						{/if}
-					</div>
 				</div>
 				<Sheet.Description class="truncate">
 					{#if network}

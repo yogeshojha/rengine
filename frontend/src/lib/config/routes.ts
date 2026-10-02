@@ -79,6 +79,7 @@ export const NEW_PARAM = 'new';
 export const TRACKER_PARAM = 'tracker';
 export const CALLBACK_PANEL = 'callback-server';
 export const BOUNTY_SETTINGS_PANEL = 'settings';
+export const AI_USAGE_PANEL = 'usage';
 export const EXPOSURE_TABS = ['exposures', 'rules', 'dismissed'] as const;
 export type ExposureTab = (typeof EXPOSURE_TABS)[number];
 export const REPORT_TABS = ['reports', 'templates', 'themes', 'typefaces', 'branding'] as const;

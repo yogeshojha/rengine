@@ -1,4 +1,4 @@
-"""Resolve the instance's AI settings into something a client can use."""
+"""Resolve the provider in use into something a client can use."""
 
 from __future__ import annotations
 
@@ -8,12 +8,15 @@ from sqlalchemy import select
 
 from shared.definitions.ai import (
     BASE_URL_PROVIDERS,
-    DEFAULT_AI_FEATURES,
     KEY_OPTIONAL_PROVIDERS,
     REQUEST_TIMEOUT,
-    model_for,
+    WORKSPACE_PROVIDERS,
+    Rate,
+    feature_switches,
+    price,
 )
 from shared.enums.instance import AIProvider
+from shared.models.ai import AiConnection
 from shared.models.instance_settings import InstanceSettings
 from shared.utils.crypto import try_decrypt
 
@@ -25,12 +28,13 @@ class AIConfig:
     provider: str
     api_key: str
     model: str
-    fast_model: str
     features: dict[str, bool]
     enabled: bool = True
     workspace: str = ""
     timeout: float = REQUEST_TIMEOUT
     base_url: str = ""
+    input_per_mtok: float | None = None
+    output_per_mtok: float | None = None
 
     @property
     def available(self) -> bool:
@@ -43,37 +47,68 @@ class AIConfig:
     def allows(self, feature: str) -> bool:
         return self.available and bool(self.features.get(feature, False))
 
-    def model_for_task(self, *, fast: bool) -> str:
-        return (self.fast_model or self.model) if fast else self.model
+    def listed_price(self, model: str) -> Rate | None:
+        """The price the provider listed for its model, for a call on that model."""
+        if model != self.model:
+            return None
+        if self.input_per_mtok is None or self.output_per_mtok is None:
+            return None
+        return (self.input_per_mtok, self.output_per_mtok)
+
+    def cost(self, model: str, input_tokens: int, output_tokens: int) -> float | None:
+        return price(model, input_tokens, output_tokens, self.listed_price(model))
 
 
-def _build(row: InstanceSettings | None) -> AIConfig | None:
-    if row is None:
-        return None
-    provider = (row.ai_provider or AIProvider.ANTHROPIC.value).strip()
-    key = try_decrypt(row.ai_api_key_encrypted) or ""
-    stored = row.ai_features or {}
-    features = {
-        **DEFAULT_AI_FEATURES,
-        **{k: v for k, v in stored.items() if isinstance(v, bool)},
-    }
+def connection_config(
+    row: AiConnection,
+    *,
+    features: dict[str, bool] | None = None,
+    enabled: bool = True,
+    timeout: float = REQUEST_TIMEOUT,
+) -> AIConfig:
+    """A client config for one saved provider."""
+    workspace = row.workspace_id if row.provider in WORKSPACE_PROVIDERS else None
+    base_url = row.base_url if row.provider in BASE_URL_PROVIDERS else None
     return AIConfig(
-        provider=provider,
-        api_key=key,
-        model=model_for(provider, row.ai_model),
-        fast_model=model_for(provider, stored.get("fast_model"), fast=True),
-        features=features,
-        enabled=bool(row.ai_enabled),
-        workspace=str(stored.get("workspace_id") or ""),
-        base_url=str(stored.get("base_url") or "").strip(),
+        provider=row.provider,
+        api_key=try_decrypt(row.api_key_encrypted) or "",
+        model=row.model,
+        features=features if features is not None else feature_switches(None),
+        enabled=enabled,
+        workspace=workspace or "",
+        timeout=timeout,
+        base_url=(base_url or "").strip(),
+        input_per_mtok=row.input_per_mtok,
+        output_per_mtok=row.output_per_mtok,
     )
 
 
+_IN_USE = (
+    select(InstanceSettings.ai_enabled, InstanceSettings.ai_features, AiConnection)
+    .outerjoin(AiConnection, AiConnection.id == InstanceSettings.ai_connection_id)
+    .limit(1)
+)
+
+
+def _build(row) -> AIConfig | None:
+    if row is None:
+        return None
+    enabled, stored, connection = row
+    features = feature_switches(stored)
+    if connection is None:
+        return AIConfig(
+            provider="",
+            api_key="",
+            model="",
+            features=features,
+            enabled=bool(enabled),
+        )
+    return connection_config(connection, features=features, enabled=bool(enabled))
+
+
 def load_config(session) -> AIConfig | None:
-    row = session.execute(select(InstanceSettings).limit(1)).scalars().first()
-    return _build(row)
+    return _build(session.execute(_IN_USE).first())
 
 
 async def load_config_async(session) -> AIConfig | None:
-    result = await session.execute(select(InstanceSettings).limit(1))
-    return _build(result.scalars().first())
+    return _build((await session.execute(_IN_USE)).first())

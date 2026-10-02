@@ -910,7 +910,7 @@ class TargetService:
 
         return self._to_target_read(target, await self._seed_count(target.id))
 
-    async def delete_target(self, target_id: str, user_id: str) -> None:
+    async def delete_target(self, target_id: str) -> None:
         target = await self._get_target_or_404(target_id)
 
         running = (
@@ -929,23 +929,11 @@ class TargetService:
                 ),
             )
 
-        target_value = target.target_value
-        project_id = target.project_id
-
         await self.session.execute(
             sa_delete(TargetBgpSummary).where(TargetBgpSummary.target_id == target.id)
         )
 
         await self.session.delete(target)
-        await self.session.commit()
-
-        await self._activity.log_async(
-            event=ActivityEvent.TARGET_DELETED,
-            title=f"Target deleted: {target_value}",
-            project_id=project_id,
-            user_id=user_id,
-            target_value=target_value,
-        )
         await self.session.commit()
 
     async def import_targets_csv(

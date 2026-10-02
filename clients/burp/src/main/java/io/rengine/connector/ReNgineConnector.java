@@ -10,7 +10,7 @@ import javax.swing.SwingUtilities;
 /** Sends requests observed in Burp to a reNgine connector. */
 public class ReNgineConnector implements BurpExtension {
     static final String NAME = "reNgine Connector";
-    static final String VERSION = "3.0.0";
+    static final String VERSION = "0.1.0";
 
     private Sink sink;
     private Actions actions;

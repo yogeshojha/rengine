@@ -1,14 +1,12 @@
 <script lang="ts">
-	import Check from '@lucide/svelte/icons/check';
+	import { tick, untrack } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Textarea } from '$lib/components/ui/textarea';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import NoteTagInput from './note-tag-input.svelte';
 	import { notes } from '$lib/stores/notes.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
-	import { untrack } from 'svelte';
-	import { SvelteSet } from 'svelte/reactivity';
 	import type { Note, NoteAnchor } from '$lib/types/note';
 
 	interface Props {
@@ -30,43 +28,34 @@
 	}: Props = $props();
 
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
-	let projectSlug = $derived(projectsStore.activeProject?.slug ?? '');
 
 	const editing = untrack(() => note);
 	let body = $state(editing?.body ?? untrack(() => initialBody));
 	let title = $state(editing?.title ?? '');
-	let picked = new SvelteSet<string>(editing?.tags.map((t) => t.id) ?? []);
+	let tags = $state<string[]>(editing ? [...editing.tags] : []);
 	let saving = $state(false);
 	let failed = $state('');
+	let tagError = $state<string | null>(null);
 	let area = $state<HTMLTextAreaElement | null>(null);
-
-	const TAG_SCROLL_AT = 12;
-
-	$effect(() => {
-		if (projectSlug && projectId) void notes.loadTags(projectSlug, projectId);
-	});
+	let tagInput = $state<ReturnType<typeof NoteTagInput> | null>(null);
 
 	$effect(() => {
 		if (autofocus) area?.focus();
 	});
 
-	let ready = $derived(body.trim().length > 0 && picked.size > 0);
-
-	function toggle(id: string) {
-		if (picked.has(id)) picked.delete(id);
-		else picked.add(id);
-	}
+	let ready = $derived(body.trim().length > 0);
 
 	async function save() {
 		if (!ready || saving || !projectId) return;
+		if (tagInput && !tagInput.commit()) return;
 		saving = true;
 		failed = '';
 		try {
-			const saved = note
-				? await notes.update(projectId, note.id, {
-						title: title.trim() || null,
+			const saved = editing
+				? await notes.update(projectId, editing.id, {
+						...(editing.title ? { title: title.trim() } : {}),
 						body: body.trim(),
-						tag_ids: [...picked]
+						tags
 					})
 				: await notes.create(projectId, {
 						target_id: anchor.targetId,
@@ -74,112 +63,92 @@
 						dimension: anchor.dimension ?? null,
 						asset_key: anchor.assetKey ?? null,
 						asset_label: anchor.assetLabel ?? anchor.assetKey ?? null,
-						title: title.trim() || null,
 						body: body.trim(),
-						tag_ids: [...picked]
+						tags
 					});
-			body = note ? body : '';
-			title = note ? title : '';
-			if (!note) picked.clear();
+			if (!editing) {
+				body = '';
+				tags = [];
+			}
 			onSaved?.(saved);
 		} catch (e) {
-			failed = e instanceof Error ? e.message : 'Note not saved';
+			failed = e instanceof Error ? e.message : 'Note not saved.';
 		} finally {
 			saving = false;
 		}
+		await tick();
+		if (area?.isConnected) area.focus();
+	}
+
+	export function focus() {
+		area?.focus();
 	}
 
 	function onKey(e: KeyboardEvent) {
 		if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
 			e.preventDefault();
 			void save();
+		} else if (e.key === 'Escape' && editing && onCancel) {
+			e.preventDefault();
+			e.stopPropagation();
+			onCancel();
 		}
 	}
 </script>
 
-{#snippet tagList()}
-	<div class="flex flex-wrap gap-1.5">
-		{#each notes.tags as tag (tag.id)}
-			<button
-				type="button"
-				class="inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs transition-colors {picked.has(
-					tag.id
-				)
-					? 'border-primary/40 bg-primary/10 text-foreground'
-					: 'bg-background text-muted-foreground hover:text-foreground'}"
-				onclick={() => toggle(tag.id)}
-				disabled={saving}
-				aria-pressed={picked.has(tag.id)}
-			>
-				{#if picked.has(tag.id)}
-					<Check class="size-3" />
-				{:else}
-					<span class="size-2 shrink-0 rounded-full" style="background-color: {tag.color}"></span>
-				{/if}
-				{tag.name}
-			</button>
-		{/each}
-	</div>
-{/snippet}
-
-<div class="flex flex-col gap-2.5">
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="flex flex-col gap-2" onkeydown={onKey}>
+	{#if editing?.title}
+		<Input
+			bind:value={title}
+			placeholder="Title"
+			aria-label="Title"
+			class="h-8 text-sm font-semibold"
+			disabled={saving}
+		/>
+	{/if}
 	<Textarea
 		bind:ref={area}
 		bind:value={body}
-		onkeydown={onKey}
-		rows={3}
-		placeholder="Note"
-		class="resize-y text-sm"
+		placeholder="Write a note"
+		aria-label="Note"
+		class="max-h-64 min-h-16 resize-none text-sm"
 		disabled={saving}
+		oninput={() => (failed = '')}
 	/>
-
-	{#if body.trim()}
-		<Input bind:value={title} placeholder="Title" class="h-8 text-sm" disabled={saving} />
-	{/if}
-
-	<div class="flex flex-col gap-1.5">
-		<span class="text-xs text-muted-foreground">Tags</span>
-		{#if notes.tags.length === 0}
-			<span class="text-xs text-muted-foreground">
-				No tags in this project. A tag is added from a target.
-			</span>
-		{:else if notes.tags.length > TAG_SCROLL_AT}
-			<ScrollArea class="h-[76px]">
-				{@render tagList()}
-			</ScrollArea>
-		{:else}
-			{@render tagList()}
-		{/if}
-	</div>
-
-	{#if failed}
-		<p class="text-xs text-destructive">{failed}</p>
-	{/if}
-
-	<div class="flex items-center gap-2">
-		<LoadingButton
-			size="sm"
-			class="h-7 px-3"
-			loading={saving}
-			disabled={!ready}
-			loadingLabel="Saving"
-			onclick={save}
-		>
-			{note ? 'Save' : 'Add note'}
-		</LoadingButton>
-		{#if onCancel}
-			<Button
-				variant="ghost"
+	<div class="flex items-start gap-2">
+		<NoteTagInput
+			bind:this={tagInput}
+			bind:tags
+			disabled={saving}
+			onError={(message) => (tagError = message)}
+			class="min-w-0 flex-1"
+		/>
+		<div class="flex shrink-0 items-center gap-1">
+			{#if onCancel}
+				<Button
+					variant="ghost"
+					size="sm"
+					class="h-7 px-2 text-muted-foreground"
+					onclick={onCancel}
+					disabled={saving}
+				>
+					Cancel
+				</Button>
+			{/if}
+			<LoadingButton
 				size="sm"
-				class="h-7 px-2 text-muted-foreground"
-				onclick={onCancel}
-				disabled={saving}
+				class="h-7 px-3"
+				loading={saving}
+				disabled={!ready}
+				loadingLabel="Saving"
+				onclick={save}
 			>
-				Cancel
-			</Button>
-		{/if}
-		{#if !ready && body.trim() && picked.size === 0 && notes.tags.length > 0}
-			<span class="text-xs text-muted-foreground">Select at least one tag</span>
-		{/if}
+				{editing ? 'Save' : 'Add note'}
+			</LoadingButton>
+		</div>
 	</div>
+	{#if tagError || failed}
+		<p class="text-xs text-destructive">{tagError ?? failed}</p>
+	{/if}
 </div>

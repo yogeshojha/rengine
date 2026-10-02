@@ -31,12 +31,32 @@ export const USER_COL = {
 } as const;
 
 export const CALL_COL = {
-	when: 'w-[88px] shrink-0',
-	feature: 'w-[140px] shrink-0',
-	model: 'hidden w-[180px] shrink-0 @2xl/calls:block',
-	tokens: 'hidden w-[120px] shrink-0 text-right @xl/calls:block',
-	cost: 'w-[64px] shrink-0 text-right',
-	outcome: 'min-w-0 flex-1'
+	when: 'w-[72px] shrink-0',
+	feature: 'min-w-0 flex-1',
+	model: 'hidden min-w-0 flex-1 @2xl/calls:block',
+	input: 'hidden w-[104px] shrink-0 text-right @xl/calls:block',
+	output: 'hidden w-[104px] shrink-0 text-right @xl/calls:block',
+	cost: 'w-[56px] shrink-0 text-right',
+	outcome: 'w-[56px] shrink-0'
+} as const;
+
+export const CONNECTION_COL = {
+	use: 'flex w-4 shrink-0 items-center gap-2 @md/ai:w-[72px]',
+	provider: 'min-w-0 flex-1',
+	model: 'hidden w-[200px] shrink-0 @lg/ai:block',
+	key: 'hidden w-[150px] shrink-0 @2xl/ai:block',
+	status: 'w-[112px] shrink-0',
+	actions: 'flex w-8 shrink-0 justify-end'
+} as const;
+
+export const USAGE_COL = {
+	feature: 'min-w-0 flex-1',
+	calls: 'w-[64px] shrink-0 text-right',
+	cached: 'hidden w-[64px] shrink-0 text-right @2xl/usage:block',
+	failed: 'hidden w-[64px] shrink-0 text-right @2xl/usage:block',
+	input: 'hidden w-[104px] shrink-0 text-right @xl/usage:block',
+	output: 'hidden w-[104px] shrink-0 text-right @xl/usage:block',
+	cost: 'w-[72px] shrink-0 text-right'
 } as const;
 
 export const HEAD_ROW =

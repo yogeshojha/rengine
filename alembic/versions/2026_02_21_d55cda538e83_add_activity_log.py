@@ -34,7 +34,6 @@ def upgrade() -> None:
             sa.Enum(
                 "TARGET_CREATED",
                 "TARGET_UPDATED",
-                "TARGET_DELETED",
                 "TARGET_BULK_IMPORTED",
                 "TARGET_ENRICHMENT_STARTED",
                 "TARGET_ENRICHMENT_WHOIS_COMPLETED",
@@ -45,7 +44,6 @@ def upgrade() -> None:
                 "TARGET_ENRICHMENT_BGP_FAILED",
                 "PROJECT_CREATED",
                 "PROJECT_UPDATED",
-                "PROJECT_DELETED",
                 "SYSTEM_USER_LOGIN",
                 "SYSTEM_USER_LOGOUT",
                 "SYSTEM_USER_CREATED",

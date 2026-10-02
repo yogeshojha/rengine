@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { EvidenceField, type EvidenceFieldValue } from '$lib/config/ask';
 	import { cn } from '$lib/utils.js';
 
@@ -9,9 +10,10 @@
 		text: string | null;
 		mark: number;
 		onOpen?: () => void;
+		capped?: boolean;
 	}
 
-	let { field, lines, text, mark, onOpen }: Props = $props();
+	let { field, lines, text, mark, onOpen, capped = false }: Props = $props();
 
 	const CONTEXT = 1;
 
@@ -61,27 +63,35 @@
 			>
 		{/if}
 	</div>
-	{#if rows.length}
-		<div class="py-1 font-mono text-2xs leading-5">
-			{#each rows as row, i (row ? row.n : `gap-${i}`)}
-				{#if row}
-					<div
-						class={cn(
-							'grid grid-cols-[2.25rem_minmax(0,1fr)] gap-2 px-2.5 whitespace-pre-wrap wrap-anywhere',
-							row.hit && 'bg-primary/10 shadow-[inset_3px_0_0_var(--primary)]'
-						)}
-					>
-						<span class="text-right text-muted-foreground tabular-nums">{row.n}</span>
-						<span class={row.hit ? 'text-foreground' : 'text-muted-foreground'}>{row.text}</span>
-					</div>
-				{:else}
-					<div class="px-2.5 text-muted-foreground">···</div>
-				{/if}
-			{/each}
-		</div>
+	{#if rows.length && capped}
+		<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-40">
+			{@render body()}
+		</ScrollArea>
+	{:else if rows.length}
+		{@render body()}
 	{:else}
 		<div class="px-2.5 py-2 text-2xs text-muted-foreground">
 			{text ? 'Lines not found in the stored evidence.' : `${label} not stored.`}
 		</div>
 	{/if}
 </div>
+
+{#snippet body()}
+	<div class="py-1 font-mono text-2xs leading-5">
+		{#each rows as row, i (row ? row.n : `gap-${i}`)}
+			{#if row}
+				<div
+					class={cn(
+						'grid grid-cols-[2.25rem_minmax(0,1fr)] gap-2 px-2.5 whitespace-pre-wrap wrap-anywhere',
+						row.hit && 'bg-primary/10 shadow-[inset_3px_0_0_var(--primary)]'
+					)}
+				>
+					<span class="text-right text-muted-foreground tabular-nums">{row.n}</span>
+					<span class={row.hit ? 'text-foreground' : 'text-muted-foreground'}>{row.text}</span>
+				</div>
+			{:else}
+				<div class="px-2.5 text-muted-foreground">···</div>
+			{/if}
+		{/each}
+	</div>
+{/snippet}

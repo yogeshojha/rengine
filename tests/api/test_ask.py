@@ -51,7 +51,7 @@ def _finding(**over) -> VulnerabilityRead:
         "colocated": 0,
         "is_new": True,
         "state": VulnState.OPEN.value,
-        "note": None,
+        "reason": None,
         "asset": None,
         "corroborated_by": [],
         "curl_command": None,

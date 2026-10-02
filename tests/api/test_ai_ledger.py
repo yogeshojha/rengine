@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import json
 import uuid
+from datetime import timedelta
 
 import pytest
+from fastapi import HTTPException
 
-from app.services.ai_settings import AiSettingsService
-from shared.definitions.ai import TEST_FEATURE, AITask
+from app.services.ai_settings import AiSettingsService, call_cursor
+from shared.definitions.ai import TEST_FEATURE, AITask, model_spec, price
 from shared.models.ai import AiCall
 from shared.services.ai import agent, cache, client, ledger
 from shared.services.ai.agent import DONE, TEXT, AgentEvent, converse
@@ -26,16 +29,16 @@ def book():
     ledger.register(None)
 
 
-def _cfg(provider: str = "anthropic") -> AIConfig:
+def _cfg(provider: str = "anthropic", **kw) -> AIConfig:
     return AIConfig(
         provider=provider,
         api_key="k",
-        model="claude-opus-5",
-        fast_model="claude-haiku-4-5",
+        model=kw.pop("model", "claude-opus-5"),
         features={"ask": True},
         base_url="https://user:secret@llm.internal/v1"
         if provider != "anthropic"
         else "",
+        **kw,
     )
 
 
@@ -108,7 +111,7 @@ async def test_narrate_async_records_hits_and_calls_under_the_source(book, monke
     monkeypatch.setattr(client, "_anthropic", lambda *_a, **_k: ("fresh", (10, 5)))
     with ledger.source("scan", uuid.UUID(int=9)):
         text = await cache.narrate_async(
-            Session(), _cfg(), task=task, system="s", prompt="p", fast=True
+            Session(), _cfg(), task=task, system="s", prompt="p"
         )
     assert text == "fresh"
     assert len(stored) == 1
@@ -188,13 +191,7 @@ def test_a_compatible_provider_with_no_base_url_never_sends_the_key(book, monkey
     monkeypatch.setattr(
         client, "post_json", lambda url, *_a, **_k: sent.append(url) or {}
     )
-    cfg = AIConfig(
-        provider="openai_compatible",
-        api_key="k",
-        model="m",
-        fast_model="m",
-        features={},
-    )
+    cfg = AIConfig(provider="openai_compatible", api_key="k", model="m", features={})
     with pytest.raises(AIError):
         complete(cfg, system="s", prompt="p", task=AITask.CONNECTION_TEST.value)
     assert sent == []
@@ -256,11 +253,154 @@ async def test_usage_is_read_from_the_ledger(estate):
     assert features[TEST_FEATURE].label == "Connection tests"
     assert features["report_narrative"].cached == 1
     recent = await AiSettingsService(estate.session).calls(10)
-    assert len(recent) == 4
-    assert recent[0].feature in {"ask", "report_narrative", TEST_FEATURE}
+    assert len(recent.items) == 4
+    assert not recent.has_more
+    assert recent.items[0].feature in {"ask", "report_narrative", TEST_FEATURE}
 
 
 def test_unregistered_ledger_does_not_break_a_call(monkeypatch):
     ledger.register(None)
     monkeypatch.setattr(client, "_anthropic", lambda *_a, **_k: ("ok", (1, 1)))
     assert complete(_cfg(), system="s", prompt="p", task="ask").text == "ok"
+
+
+# ---------- prices ----------
+
+
+def test_a_listed_price_prices_calls_on_the_listed_model_alone(book, monkeypatch):
+    monkeypatch.setattr(client, "_openai", lambda *_a, **_k: ("ok", (1000, 100)))
+    routed = _cfg(
+        "openai_compatible",
+        model="z-ai/glm-5.3",
+        input_per_mtok=1.26,
+        output_per_mtok=3.96,
+    )
+    complete(routed, system="s", prompt="p", task="ask")
+    assert book[-1].cost_usd == pytest.approx((1000 * 1.26 + 100 * 3.96) / 1e6)
+
+    unlisted = _cfg("openai_compatible", model="z-ai/glm-5.3")
+    complete(unlisted, system="s", prompt="p", task="ask")
+    assert book[-1].cost_usd is None
+
+    assert routed.cost("other/model", 1000, 100) is None
+    curated = _cfg(model="claude-opus-5", input_per_mtok=99.0, output_per_mtok=99.0)
+    assert curated.cost("claude-opus-5", 1_000_000, 0) == pytest.approx(5.0)
+
+
+def test_a_dated_snapshot_is_priced_and_shaped_as_its_model():
+    assert price("claude-haiku-4-5-20251001", 1_000_000, 1_000_000) == pytest.approx(
+        6.0
+    )
+    assert model_spec("claude-haiku-4-5-20251001").label == "Claude Haiku 4.5"
+    assert model_spec("claude-3-haiku-20240307") is None
+    assert client.anthropic_extras("claude-haiku-4-5-20251001", "low") == {}
+    assert "thinking" in client.anthropic_extras("unknown-model", "low")
+
+
+# ---------- readable errors ----------
+
+
+@pytest.mark.parametrize(
+    ("body", "message"),
+    [
+        (
+            {
+                "type": "error",
+                "error": {"type": "not_found_error", "message": "model: claude-x"},
+                "request_id": "req_1",
+            },
+            "model: claude-x",
+        ),
+        (
+            {
+                "error": {
+                    "message": "Incorrect API key provided: sk-***2222.",
+                    "type": "invalid_request_error",
+                    "code": "invalid_api_key",
+                }
+            },
+            "Incorrect API key provided: sk-***2222.",
+        ),
+        (
+            {"error": {"code": 400, "message": "API key not valid.", "status": "X"}},
+            "API key not valid.",
+        ),
+        ({"error": {"message": "User not found.", "code": 401}}, "User not found."),
+        (
+            {
+                "error": {
+                    "code": 400,
+                    "message": "Provider returned error",
+                    "metadata": {
+                        "provider_name": "Anthropic",
+                        "raw": '{"type":"error","error":{"message":"prompt is too long"}}',
+                    },
+                }
+            },
+            "Anthropic: prompt is too long",
+        ),
+        ({"error": "model 'llama9' not found"}, "model 'llama9' not found"),
+        (
+            {"object": "error", "message": "The model does not exist."},
+            "The model does not exist.",
+        ),
+        ({"detail": "Not authenticated"}, "Not authenticated"),
+        ([{"error": {"code": 429, "message": "Quota exceeded."}}], "Quota exceeded."),
+        ("<html><body>502 Bad Gateway</body></html>", ""),
+        ("upstream connect error", "upstream connect error"),
+    ],
+)
+def test_the_provider_message_is_read_from_its_error_body(body, message):
+    text = body if isinstance(body, str) else json.dumps(body)
+    assert client.provider_message(text) == message
+
+
+def test_a_failed_call_stores_the_provider_message(book, monkeypatch):
+    def refuse(url, payload, headers, timeout, *, proxy=None):
+        raise client.http_error(
+            403, json.dumps({"error": {"code": "denied", "message": "No access."}})
+        )
+
+    monkeypatch.setattr(client, "post_json", refuse)
+    with pytest.raises(AIError):
+        complete(_cfg("openai_compatible"), system="s", prompt="p", task="ask")
+    assert book[-1].error == "Provider returned 403: No access."
+    assert str(client.http_error(500, "")) == "Provider returned 500."
+
+
+# ---------- paging ----------
+
+
+async def test_recent_calls_page_by_cursor(estate):
+    base = utc_now()
+    estate.session.add_all(
+        [
+            AiCall(
+                at=base - timedelta(seconds=i // 2),
+                task="ask",
+                feature="ask",
+                provider="anthropic",
+                model="m",
+            )
+            for i in range(7)
+        ]
+    )
+    await estate.session.flush()
+    service = AiSettingsService(estate.session)
+
+    seen: list[uuid.UUID] = []
+    page = await service.calls(3)
+    while True:
+        seen.extend(row.id for row in page.items)
+        if not page.has_more:
+            break
+        last = page.items[-1]
+        page = await service.calls(3, call_cursor(f"{last.at.isoformat()},{last.id}"))
+
+    assert len(seen) == len(set(seen)) == 7
+    everything = await service.calls(50)
+    assert [row.id for row in everything.items] == seen
+    assert call_cursor(None) is None
+    with pytest.raises(HTTPException) as err:
+        call_cursor("yesterday,not-an-id")
+    assert err.value.status_code == 422

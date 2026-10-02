@@ -88,7 +88,6 @@ def _cfg() -> AIConfig:
         provider="anthropic",
         api_key="k",
         model="claude-opus-5",
-        fast_model="claude-haiku-4-5",
         features={"ask": True},
     )
 

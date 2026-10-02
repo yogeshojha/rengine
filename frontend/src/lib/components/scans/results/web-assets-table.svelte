@@ -1163,6 +1163,7 @@
 				toneDot={TONE_DOT}
 				toneLabel={TONE_LABEL}
 				selected={query.hygiene}
+				top={barH}
 				onToggle={toggleHygiene}
 				onClose={() => (insightsOpen = false)}
 			/>
@@ -1179,6 +1180,7 @@
 				toneDot={TONE_DOT}
 				toneLabel={TONE_LABEL}
 				selected={query.posture}
+				top={barH}
 				onToggle={togglePosture}
 				onClose={() => (postureOpen = false)}
 			/>

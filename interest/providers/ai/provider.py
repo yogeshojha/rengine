@@ -85,12 +85,11 @@ class AIProvider(InterestProvider):
             system=SYSTEM,
             prompt=prompt,
             subject=f"{len(batch)} assets",
-            fast=True,
         )
         if not answer:
             return
         allowed = {row.name.lower() for row in batch}
-        model = ctx.ai.model_for_task(fast=True)
+        model = ctx.ai.model
         for item in json_array(answer):
             host = str(item.get("host") or "").strip().lower()
             if host not in allowed:

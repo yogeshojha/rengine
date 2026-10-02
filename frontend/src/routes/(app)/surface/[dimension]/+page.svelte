@@ -78,23 +78,25 @@
 			/>
 		</div>
 
-		{#key `${projectId}:${spec.key}`}
-			{#if spec.key === SurfaceDimension.WEB_ASSETS}
-				<WebAssetsTable scanId="" projectWide {projectId} onTab={openTab} />
-			{:else if spec.key === SurfaceDimension.ENDPOINTS}
-				<EndpointsTable scanId="" projectWide {projectId} onTab={openTab} />
-			{:else if spec.key === SurfaceDimension.SERVICES}
-				<ServicesTable scanId="" projectWide {projectId} onTab={openTab} />
-			{:else if spec.key === SurfaceDimension.IPS}
-				<IpsTable scanId="" projectWide {projectId} onTab={openTab} />
-			{:else if spec.key === SurfaceDimension.VULNERABILITIES}
-				<VulnerabilitiesTable scanId="" projectWide onTab={openTab} />
-			{:else if spec.key === SurfaceDimension.SECRETS}
-				<SecretsTable scanId="" projectWide {projectId} />
-			{:else}
-				<SoftwareTable scanId="" projectWide {projectId} />
-			{/if}
-		{/key}
+		<div>
+			{#key `${projectId}:${spec.key}`}
+				{#if spec.key === SurfaceDimension.WEB_ASSETS}
+					<WebAssetsTable scanId="" projectWide {projectId} onTab={openTab} />
+				{:else if spec.key === SurfaceDimension.ENDPOINTS}
+					<EndpointsTable scanId="" projectWide {projectId} onTab={openTab} />
+				{:else if spec.key === SurfaceDimension.SERVICES}
+					<ServicesTable scanId="" projectWide {projectId} onTab={openTab} />
+				{:else if spec.key === SurfaceDimension.IPS}
+					<IpsTable scanId="" projectWide {projectId} onTab={openTab} />
+				{:else if spec.key === SurfaceDimension.VULNERABILITIES}
+					<VulnerabilitiesTable scanId="" projectWide onTab={openTab} />
+				{:else if spec.key === SurfaceDimension.SECRETS}
+					<SecretsTable scanId="" projectWide {projectId} />
+				{:else}
+					<SoftwareTable scanId="" projectWide {projectId} />
+				{/if}
+			{/key}
+		</div>
 	</div>
 
 	<LaunchDialog bind:open={launchOpen} targetIds={launchIds} onClose={afterLaunch} />

@@ -70,7 +70,6 @@ class AiNarrator(Narrator):
         payload: str,
         *,
         subject: str,
-        fast: bool = False,
     ) -> str | None:
         prompt = f"{instruction}\n\nBRIEF:\n{payload}"
         text = narrate(
@@ -80,7 +79,6 @@ class AiNarrator(Narrator):
             system=self._system(),
             prompt=prompt,
             subject=subject,
-            fast=fast,
             usage=self.usage,
         )
         if text:
@@ -167,7 +165,6 @@ class AiNarrator(Narrator):
                 instruction,
                 payload,
                 subject=path.key,
-                fast=True,
             )
             or path.detail
         )
@@ -196,5 +193,4 @@ class AiNarrator(Narrator):
             instruction,
             payload,
             subject=issue.template_id,
-            fast=True,
         )

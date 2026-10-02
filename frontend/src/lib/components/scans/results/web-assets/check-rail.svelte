@@ -37,6 +37,7 @@
 		toneDot: Record<HygieneTone, string>;
 		toneLabel: Record<HygieneTone, string>;
 		selected: string[];
+		top: number;
 		onToggle: (key: string) => void;
 		onClose: () => void;
 	}
@@ -52,6 +53,7 @@
 		toneDot,
 		toneLabel,
 		selected,
+		top,
 		onToggle,
 		onClose
 	}: Props = $props();
@@ -63,7 +65,8 @@
 </script>
 
 <aside
-	class="order-first flex w-full shrink-0 flex-col border-b bg-card md:sticky md:top-[calc(var(--scan-tabs-h,0px)+4rem)] md:order-last md:w-80 md:self-start md:border-b-0 md:border-l"
+	class="order-first flex w-full shrink-0 flex-col border-b bg-card md:sticky md:order-last md:w-80 md:self-start md:border-b-0 md:border-l"
+	style="top: calc(var(--scan-tabs-h, 0px) + {top}px)"
 	aria-label={label}
 >
 	<div class="flex h-10 items-center gap-2 border-b px-4">

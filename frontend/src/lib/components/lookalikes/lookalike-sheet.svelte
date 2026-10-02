@@ -41,7 +41,15 @@
 
 	let overrides = new SvelteMap<string, string>();
 	let tab = $state<string>(LookalikeState.OPEN);
+	let tabFor = '';
 	let bulkPending = $state(false);
+
+	$effect.pre(() => {
+		const key = open ? `${summary.target_id ?? ''}:${summary.apex ?? ''}` : '';
+		if (key === tabFor) return;
+		tabFor = key;
+		if (key) tab = LookalikeState.OPEN;
+	});
 
 	const stateOf = (domain: string, stored: string) => overrides.get(domain) ?? stored;
 

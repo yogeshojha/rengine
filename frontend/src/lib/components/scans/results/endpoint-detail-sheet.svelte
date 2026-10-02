@@ -1,29 +1,34 @@
 <script lang="ts">
-	import type { ActionKind } from '$lib/config/connectors';
-	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import { toast } from 'svelte-sonner';
+	import { SEND_SHORTCUT, type ActionKind } from '$lib/config/connectors';
 	import { exactToken, filterToken } from '$lib/utilities/scan-insights';
 	import { formatResponseTime } from '$lib/utilities/scan-correlation';
 	import { formatBytes } from '$lib/utilities/format';
-	import NoteSection from '$lib/components/notes/note-section.svelte';
-	import { SurfaceDimension } from '$lib/config/surface';
-	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import NotesButton from '$lib/components/notes/notes-button.svelte';
+	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
-	import Copy from '@lucide/svelte/icons/copy';
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 	import Globe from '@lucide/svelte/icons/globe';
 	import ListTree from '@lucide/svelte/icons/list-tree';
 	import Terminal from '@lucide/svelte/icons/terminal';
 
 	import * as Sheet from '$lib/components/ui/sheet';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import Hint from '$lib/components/hint.svelte';
+	import CopyButton from '$lib/components/copy-button.svelte';
 	import TechIcon from './tech-icon.svelte';
 	import StatusMark from './endpoints/status-mark.svelte';
 	import PathBreadcrumb from './endpoints/path-breadcrumb.svelte';
 	import ProxySend from './endpoints/proxy-send.svelte';
+	import { previewHandoff } from './endpoints/proxy';
+	import { SHEET_HEAD, sheetStep, type SheetAction } from './sheet';
+	import SheetTop from './sheet-top.svelte';
+	import SheetBar from './sheet-bar.svelte';
+	import SheetMore from './sheet-more.svelte';
 	import {
 		ENDPOINT_CLASS_LABELS,
 		INTEREST_LABELS,
@@ -36,7 +41,7 @@
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { formatShortDate } from '$lib/utilities/dates';
 	import { curlFor, type EndpointDetail, type EndpointRead } from '$lib/utilities/endpoints';
-	import type { Connector, ConnectorSpec } from '$lib/types/connector';
+	import type { Connector, ConnectorSpec, HandoffResult } from '$lib/types/connector';
 
 	interface Props {
 		endpoint: EndpointRead | null;
@@ -53,7 +58,12 @@
 		onReveal?: (e: EndpointRead) => void;
 		connectors?: Connector[];
 		catalog?: ConnectorSpec[];
-		onSend?: (e: EndpointRead, connectorId: string, kind: ActionKind) => Promise<void> | void;
+		onSend?: (
+			e: EndpointRead,
+			connectorId: string,
+			kind: ActionKind,
+			request?: string
+		) => Promise<HandoffResult | null> | void;
 	}
 
 	let {
@@ -97,17 +107,60 @@
 			});
 	});
 
+	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
+	const EP = SURFACE[SurfaceDimension.ENDPOINTS];
+
+	let contentEl = $state<HTMLElement | null>(null);
 	let row = $derived(detail?.id === endpoint?.id ? detail : null);
-	let position = $derived(index >= 0 ? pageOffset + index + 1 : 0);
 	let sensitive = $derived((endpoint?.interest ?? []).filter((i) => SENSITIVE_INTEREST.has(i)));
 	let testable = $derived((endpoint?.interest ?? []).filter((i) => !SENSITIVE_INTEREST.has(i)));
+	let more = $derived.by((): SheetAction[] => {
+		const e = endpoint;
+		if (!e) return [];
+		const out: SheetAction[] = [
+			{ label: 'Copy curl command', icon: Terminal, run: () => copyCurl(e) }
+		];
+		if (onHost) {
+			out.push({
+				label: `Open in ${WEB.label}`,
+				icon: Globe,
+				run: () => onHost(exactToken('host', e.host))
+			});
+		}
+		if (onReveal) out.push({ label: 'Show in structure', icon: ListTree, run: () => onReveal(e) });
+		return out;
+	});
+
+	async function copyCurl(e: EndpointRead) {
+		if (await writeClipboard(curlFor(e))) toast.success('curl command copied');
+	}
+
+	function preview(e: EndpointRead, connectorId: string) {
+		return previewHandoff({
+			connectorId,
+			projectId,
+			scanId: e.scan_id,
+			body: { endpoint_ids: [e.id] }
+		});
+	}
 </script>
 
+<svelte:window onkeydown={(e) => sheetStep(e, open, onStep)} />
+
 <Sheet.Root {open} {onOpenChange}>
-	<Sheet.Content side="right" class="flex w-full flex-col gap-0 p-0 sm:max-w-2xl">
+	<Sheet.Content
+		bind:ref={contentEl}
+		side="right"
+		tabindex={-1}
+		class="flex w-full flex-col gap-0 p-0 outline-none sm:max-w-2xl"
+		onOpenAutoFocus={(e) => {
+			e.preventDefault();
+			contentEl?.focus();
+		}}
+	>
 		{#if endpoint}
-			<Sheet.Header class="gap-2 border-b px-5 py-4">
-				<div class="flex items-center gap-2">
+			<Sheet.Header class={SHEET_HEAD}>
+				<SheetTop noun={EP.noun} {index} {pageOffset} {total} {capped} {onStep}>
 					<StatusMark status={endpoint.status_code} probed={endpoint.is_probed} />
 					<Badge variant="outline" class="text-2xs">
 						{ENDPOINT_CLASS_LABELS[endpoint.endpoint_class] ?? endpoint.endpoint_class}
@@ -115,97 +168,55 @@
 					{#if endpoint.is_new}
 						<Badge variant="info" class="text-2xs">New</Badge>
 					{/if}
-					{#if total > 0 && position > 0}
-						<div class="ml-auto flex items-center gap-1">
-							<span class="text-xs tabular-nums text-muted-foreground">
-								{position.toLocaleString()} of {total.toLocaleString()}{capped ? '+' : ''}
-							</span>
-							<Button
-								variant="ghost"
-								size="icon"
-								class="size-7"
-								aria-label="Previous endpoint"
-								disabled={position <= 1}
-								onclick={() => onStep(-1)}
-							>
-								<ChevronLeft class="size-4" />
-							</Button>
-							<Button
-								variant="ghost"
-								size="icon"
-								class="size-7"
-								aria-label="Next endpoint"
-								disabled={position >= total}
-								onclick={() => onStep(1)}
-							>
-								<ChevronRight class="size-4" />
-							</Button>
-						</div>
-					{/if}
-				</div>
-				<Sheet.Title class="font-mono text-sm break-all">{endpoint.url}</Sheet.Title>
-				<div class="flex flex-wrap items-center gap-2">
-					<Button
-						variant="outline"
-						size="sm"
-						class="h-7 gap-1.5 text-xs"
-						onclick={() => writeClipboard(endpoint.url)}
-					>
-						<Copy class="size-3" /> Copy
-					</Button>
-					<Hint text="Copy curl command">
-						{#snippet child(props)}
-							<Button
-								{...props}
-								variant="outline"
-								size="sm"
-								class="h-7 gap-1.5 text-xs"
-								onclick={() => writeClipboard(curlFor(endpoint))}
-							>
-								<Terminal class="size-3" /> curl
-							</Button>
-						{/snippet}
-					</Hint>
-					{#if onSend && connectors.length}
-						<ProxySend
-							{connectors}
-							{catalog}
-							dense
-							onSend={(id, kind) => onSend(endpoint, id, kind)}
-						/>
-					{/if}
-					<Button
-						variant="outline"
-						size="sm"
-						class="h-7 gap-1.5 text-xs"
-						href={endpoint.url}
-						target="_blank"
-						rel="noopener noreferrer"
-					>
-						<ExternalLink class="size-3" /> Open
-					</Button>
-					{#if onHost}
-						<Button
-							variant="outline"
-							size="sm"
-							class="h-7 gap-1.5 text-xs"
-							onclick={() => onHost(exactToken('host', endpoint.host))}
-						>
-							<Globe class="size-3" /> Web asset
-						</Button>
-					{/if}
-					{#if onReveal}
-						<Button
-							variant="outline"
-							size="sm"
-							class="h-7 gap-1.5 text-xs"
-							onclick={() => onReveal(endpoint)}
-						>
-							<ListTree class="size-3" /> Show in structure
-						</Button>
-					{/if}
+				</SheetTop>
+				<div class="flex min-w-0 items-start gap-1">
+					<Sheet.Title class="min-w-0 py-1 font-mono text-sm break-all">{endpoint.url}</Sheet.Title>
+					<CopyButton value={endpoint.url} />
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							{#snippet child({ props })}
+								<Button
+									{...props}
+									variant="ghost"
+									size="icon-sm"
+									class="size-7 shrink-0"
+									href={endpoint.url}
+									target="_blank"
+									rel="noopener noreferrer"
+									aria-label="Open in browser"
+								>
+									<ExternalLink />
+								</Button>
+							{/snippet}
+						</Tooltip.Trigger>
+						<Tooltip.Content>Open in browser</Tooltip.Content>
+					</Tooltip.Root>
 				</div>
 			</Sheet.Header>
+
+			<SheetBar>
+				<NotesButton
+					anchor={{
+						targetId: endpoint.target_id,
+						scanId: endpoint.scan_id,
+						dimension: SurfaceDimension.ENDPOINTS,
+						assetKey: endpoint.signature,
+						assetLabel: endpoint.url
+					}}
+					class="h-8"
+				/>
+				{#if onSend && connectors.length}
+					<ProxySend
+						{connectors}
+						{catalog}
+						shortcut={SEND_SHORTCUT}
+						class="h-8"
+						onSend={(id, kind, request) => onSend(endpoint, id, kind, request)}
+						onPreview={(id) => preview(endpoint, id)}
+					/>
+				{/if}
+				<SheetMore actions={more} />
+			</SheetBar>
 
 			<ScrollArea class="min-h-0 flex-1">
 				<div class="space-y-6 px-5 py-4">
@@ -380,16 +391,6 @@
 							{/if}
 						{/if}
 					</section>
-
-					<NoteSection
-						anchor={{
-							targetId: endpoint.target_id,
-							scanId: endpoint.scan_id,
-							dimension: SurfaceDimension.ENDPOINTS,
-							assetKey: endpoint.signature,
-							assetLabel: endpoint.url
-						}}
-					/>
 				</div>
 			</ScrollArea>
 		{/if}

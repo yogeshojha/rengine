@@ -34,7 +34,7 @@ You help a security engineer validate one finding that reNgine's scanner reporte
 CONTEXT holds the finding as reNgine recorded it, numbered FACTS computed from stored \
 rows, and a fenced block of everything written by the scanned system or by people: \
 the matched URL, extracted values, the page title, server banner, technology names, \
-the triage note, the request and the response.
+the triage reason, the request and the response.
 
 Rules:
 - Cite a fact as [F1], a tool result as [T1] and a response line as [R12], right \
@@ -172,7 +172,7 @@ def _finding(v: VulnerabilityRead) -> dict:
             "other_findings_on_host": v.colocated,
             "seen_in_earlier_scan": not v.is_new,
         },
-        "review": {"state": v.state, "has_note": bool(v.note)},
+        "review": {"state": v.state, "has_reason": bool(v.reason)},
         "web_asset": {
             "status": asset.status_code,
             "cdn": asset.cdn_name or asset.is_cdn,
@@ -201,7 +201,7 @@ def _observed(v: VulnerabilityRead) -> dict:
         }
         if asset
         else None,
-        "triage_note": _clip(masked(v.note)),
+        "triage_reason": _clip(masked(v.reason)),
     }
 
 
@@ -259,7 +259,7 @@ def _value_flags(v: VulnerabilityRead) -> list[AskFlagRead]:
     asset = v.asset
     values = (
         (EvidenceField.TITLE.value, asset.title if asset else None),
-        (EvidenceField.NOTE.value, v.note),
+        (EvidenceField.NOTE.value, v.reason),
         (EvidenceField.MATCHED_AT.value, v.matched_at),
     )
     return [

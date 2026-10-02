@@ -45,9 +45,7 @@ export const STORAGE_KEYS = {
 	vulnsPageSize: 'rengine:vulns:pageSize',
 	vulnsView: 'rengine:vulns:view',
 	vulnsHidden: 'rengine:vulns:hidden',
-	vulnsBriefTab: 'rengine:vulns:briefTab',
 	vulnsSummary: 'rengine:vulns:summary',
-	vulnsSheetTab: 'rengine:vulns:sheetTab',
 	launchLastPlan: 'rengine:launch:lastPlan',
 	bountyConnectDismissed: 'rengine:bountyhub:connectDismissed',
 	dashboardWidgets: 'rengine:dashboard:widgets',
@@ -56,6 +54,5 @@ export const STORAGE_KEYS = {
 	paletteRecents: 'rengine:palette:recents',
 	scansShowMedium: 'rengine:scans:showMedium',
 	scansColumns: 'rengine:scans:columns',
-	scansDensity: 'rengine:scans:density',
-	scansBriefTab: 'rengine:scans:briefTab'
+	scansDensity: 'rengine:scans:density'
 } as const;

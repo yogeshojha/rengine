@@ -9,6 +9,7 @@ export type QueueView = 'missed' | 'flagged' | 'out_of_scope' | 'all';
 export interface ConnectorSpec {
 	kind: ConnectorKind;
 	title: string;
+	short_title: string;
 	client_file: string;
 	download_url: string | null;
 	steps: SetupStep[];
@@ -77,6 +78,12 @@ export interface HandoffRequest {
 	candidate_ids?: string[];
 	filter?: EndpointFilter;
 	limit?: number;
+	request?: string;
+}
+
+export interface HandoffPreview {
+	request: string;
+	url: string;
 }
 
 export interface HandoffResult {

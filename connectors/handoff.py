@@ -19,9 +19,12 @@ from shared.definitions.connectors import (
 from shared.definitions.vulnerabilities import SEVERITY_LABELS, Protocol
 from shared.services.scan_resolve import MASK
 from shared.utils.net import authority
+from shared.utils.text import strip_nul
 
 _BODY_METHODS = frozenset({"POST", "PUT", "PATCH"})
 _HEADER_LINE = re.compile(r"^([!#$%&'*+\-.^_`|~0-9A-Za-z]+):[ \t]*(.*)$")
+_REQUEST_LINE = re.compile(r"^[!#$%&'*+\-.^_`|~0-9A-Za-z]+ \S+ HTTP/\d\.\d$")
+_BLANK_LINE = re.compile(r"\r?\n\r?\n")
 _CHARSET = re.compile(r"(charset=)\"?([^\";\s]+)\"?", re.IGNORECASE)
 _TRANSFER_HEADERS = ("transfer-encoding:", "content-encoding:")
 _PATH_SAFE = "/%:@!$&'()*+,;=-._~"
@@ -50,19 +53,19 @@ def _lines(text: str) -> list[str]:
 
 
 def _split(message: str) -> tuple[str, str, str]:
-    head, sep, body = message.partition("\r\n\r\n")
-    if not sep:
-        head, sep, body = message.partition("\n\n")
-    return head, sep, body
+    match = _BLANK_LINE.search(message)
+    if match is None:
+        return message.rstrip("\r\n"), "", ""
+    return message[: match.start()], match.group(), message[match.end() :]
 
 
-def normalise(message: str | None, limit: int) -> str | None:
+def normalise(message: str | None, limit: int | None) -> str | None:
     """CRLF in the head, the body byte for byte, cut at the limit."""
     if not message or not message.strip():
         return None
     head, sep, body = _split(message)
     text = "\r\n".join(_lines(head)) + "\r\n\r\n" + (body if sep else "")
-    return text[:limit]
+    return text if limit is None else text[:limit]
 
 
 def _label(value: str) -> str:
@@ -79,16 +82,21 @@ def _header(head: str, name: str) -> str | None:
 
 
 def _set_header(lines: list[str], name: str, value: str) -> list[str]:
-    """Replace every line carrying the header, or append it."""
-    kept = [
-        line
-        for line in lines
-        if not (
-            _HEADER_LINE.match(line) and line.split(":", 1)[0].lower() == name.lower()
-        )
-    ]
-    kept.append(f"{name}: {value}")
-    return kept
+    """Set the header on its first line and drop its repeats, or append it."""
+    wanted = name.lower()
+    out: list[str] = []
+    placed = False
+    for line in lines:
+        match = _HEADER_LINE.match(line)
+        if match and match.group(1).lower() == wanted:
+            if not placed:
+                out.append(f"{name}: {value}")
+                placed = True
+            continue
+        out.append(line)
+    if not placed:
+        out.append(f"{name}: {value}")
+    return out
 
 
 def request_target(url: str) -> str:
@@ -196,6 +204,38 @@ def request_message(message: str | None) -> str | None:
     if _header(head, "Content-Length") is None:
         return text
     lines = _set_header(head.split("\r\n"), "Content-Length", str(len(body.encode())))
+    return "\r\n".join(lines) + sep + body
+
+
+class RequestError(ValueError):
+    """An edited request a proxy cannot be handed."""
+
+
+def edited_request(text: str) -> str:
+    """An edited raw request: CRLF in the head and the length of the body it ships."""
+    if strip_nul(text) != text:
+        msg = "The request contains a NUL character."
+        raise RequestError(msg)
+    message = normalise(text.lstrip("\r\n"), None)
+    if message is None:
+        msg = "The request is empty."
+        raise RequestError(msg)
+    if len(message) > MAX_HANDOFF_REQUEST:
+        msg = f"The request is longer than {MAX_HANDOFF_REQUEST:,} characters."
+        raise RequestError(msg)
+    head, sep, body = message.partition("\r\n\r\n")
+    lines = head.split("\r\n")
+    lines[0] = lines[0].rstrip(" \t")
+    if not _REQUEST_LINE.match(lines[0]):
+        msg = "The request line must read METHOD target HTTP/1.1."
+        raise RequestError(msg)
+    if not _header(head, "Host"):
+        msg = "The request has no Host header."
+        raise RequestError(msg)
+    if body:
+        lines = _set_header(lines, "Content-Length", str(len(body.encode())))
+    elif _header(head, "Content-Length") is not None:
+        lines = _set_header(lines, "Content-Length", "0")
     return "\r\n".join(lines) + sep + body
 
 

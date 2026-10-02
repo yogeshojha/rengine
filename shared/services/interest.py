@@ -287,7 +287,7 @@ def evaluate(
         scan.interest_signature = signature(resolved)
     if ai_used:
         scan.interest_judged_at = utc_now()
-        scan.interest_model = ai.model_for_task(fast=True) if ai else None
+        scan.interest_model = ai.model if ai else None
     session.add(scan)
     session.commit()
 
@@ -347,7 +347,7 @@ def _summarise(
         bands=bands,
         kinds=kinds,
         ai_used=ai_used,
-        model=(ai.model_for_task(fast=True) if ai and ai_used else None),
+        model=(ai.model if ai and ai_used else None),
         ran=ran,
     )
 

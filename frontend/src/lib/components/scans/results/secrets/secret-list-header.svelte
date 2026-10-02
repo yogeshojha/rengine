@@ -11,6 +11,8 @@
 		selectAllChecked?: boolean | 'indeterminate';
 		onSelectAll?: () => void;
 		onSort: (key: SecretSortKey) => void;
+		sticky?: boolean;
+		top?: number;
 	}
 
 	let {
@@ -19,7 +21,9 @@
 		sortDir,
 		selectAllChecked,
 		onSelectAll,
-		onSort
+		onSort,
+		sticky = false,
+		top = 0
 	}: Props = $props();
 </script>
 
@@ -30,59 +34,64 @@
 {/snippet}
 
 <div
-	class="flex items-center gap-3 border-b border-border bg-muted/30 px-4 py-2 text-xs font-medium tracking-wider text-muted-foreground uppercase"
+	class={sticky ? 'z-10 bg-card md:sticky' : ''}
+	style={sticky ? `top: calc(var(--scan-tabs-h, 0px) + ${top}px)` : undefined}
 >
-	{#if onSelectAll}
-		<div class="hidden shrink-0 sm:flex">
-			<Checkbox
-				checked={selectAllChecked === true}
-				indeterminate={selectAllChecked === 'indeterminate'}
-				onCheckedChange={onSelectAll}
-				aria-label="Select every secret on this page"
-			/>
-		</div>
-	{/if}
-	<div class="min-w-0 flex-1">Secret</div>
-
-	{#if projectWide}
-		<div class={SECRET_WIDTHS.target}>Target</div>
-	{/if}
-
-	<button
-		type="button"
-		class="{SECRET_WIDTHS.kind} items-center gap-1 text-left tracking-wider uppercase hover:text-foreground"
-		onclick={() => onSort('kind')}
+	<div
+		class="flex items-center gap-3 border-b border-border bg-muted/30 px-4 py-2 text-xs font-medium tracking-wider text-muted-foreground uppercase"
 	>
-		Kind
-		{@render arrow('kind')}
-	</button>
+		{#if onSelectAll}
+			<div class="hidden shrink-0 sm:flex">
+				<Checkbox
+					checked={selectAllChecked === true}
+					indeterminate={selectAllChecked === 'indeterminate'}
+					onCheckedChange={onSelectAll}
+					aria-label="Select every secret on this page"
+				/>
+			</div>
+		{/if}
+		<div class="min-w-0 flex-1">Secret</div>
 
-	<button
-		type="button"
-		class="{SECRET_WIDTHS.state} items-center gap-1 tracking-wider uppercase hover:text-foreground"
-		onclick={() => onSort('state')}
-	>
-		State
-		{@render arrow('state')}
-	</button>
+		{#if projectWide}
+			<div class={SECRET_WIDTHS.target}>Target</div>
+		{/if}
 
-	<button
-		type="button"
-		class="{SECRET_WIDTHS.asset} items-center gap-1 text-left tracking-wider uppercase hover:text-foreground"
-		onclick={() => onSort('hosts')}
-	>
-		Web asset
-		{@render arrow('hosts')}
-	</button>
+		<button
+			type="button"
+			class="{SECRET_WIDTHS.kind} items-center gap-1 text-left tracking-wider uppercase hover:text-foreground"
+			onclick={() => onSort('kind')}
+		>
+			Kind
+			{@render arrow('kind')}
+		</button>
 
-	<button
-		type="button"
-		class="{SECRET_WIDTHS.seen} items-center gap-1 tracking-wider uppercase hover:text-foreground"
-		onclick={() => onSort('seen')}
-	>
-		Seen
-		{@render arrow('seen')}
-	</button>
+		<button
+			type="button"
+			class="{SECRET_WIDTHS.state} items-center gap-1 tracking-wider uppercase hover:text-foreground"
+			onclick={() => onSort('state')}
+		>
+			State
+			{@render arrow('state')}
+		</button>
 
-	<div class={SECRET_WIDTHS.actions}></div>
+		<button
+			type="button"
+			class="{SECRET_WIDTHS.asset} items-center gap-1 text-left tracking-wider uppercase hover:text-foreground"
+			onclick={() => onSort('hosts')}
+		>
+			Web asset
+			{@render arrow('hosts')}
+		</button>
+
+		<button
+			type="button"
+			class="{SECRET_WIDTHS.seen} items-center gap-1 tracking-wider uppercase hover:text-foreground"
+			onclick={() => onSort('seen')}
+		>
+			Seen
+			{@render arrow('seen')}
+		</button>
+
+		<div class={SECRET_WIDTHS.actions}></div>
+	</div>
 </div>

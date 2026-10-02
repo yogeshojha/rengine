@@ -1,6 +1,6 @@
 import shared.models._tztypes  # patch datetime->timestamptz first
 from shared.models.activity_log import ActivityLog
-from shared.models.ai import AiCall, AiNarrative
+from shared.models.ai import AiCall, AiConnection, AiNarrative
 from shared.models.api_key import APIKey
 from shared.models.ask import AskMessage, AskThread
 from shared.models.connector import (
@@ -27,7 +27,7 @@ from shared.models.issue_tracker import (
     TrackedIssueFinding,
 )
 from shared.models.lookalike import LookalikeDomain, LookalikeTriage
-from shared.models.note import Note, NoteTag
+from shared.models.note import Note
 from shared.models.notification import Notification, NotificationReceipt
 from shared.models.notification_channel import NotificationChannel
 from shared.models.organization import Organization, OrganizationSummary
@@ -94,6 +94,7 @@ __all__ = [
     "APIKey",
     "ActivityLog",
     "AiCall",
+    "AiConnection",
     "AiNarrative",
     "AskMessage",
     "AskThread",
@@ -122,7 +123,6 @@ __all__ = [
     "LookalikeDomain",
     "LookalikeTriage",
     "Note",
-    "NoteTag",
     "Notification",
     "NotificationChannel",
     "NotificationReceipt",

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from dataclasses import replace
 from datetime import timedelta
 from pathlib import Path
 
@@ -77,6 +78,7 @@ from shared.models.connector import (
     DiscoveredDomain,
     FindingRecorded,
     FindingReport,
+    HandoffPreview,
     HandoffRequest,
     HandoffResult,
     HostFacts,
@@ -123,6 +125,23 @@ _PROXY_ONLY = and_(
 
 class ConnectorError(RuntimeError):
     """The connector configuration is not valid."""
+
+
+class HandoffError(ConnectorError):
+    """The selection or the edited request cannot be handed to the proxy."""
+
+
+def _picked(body: HandoffRequest) -> int:
+    return sum(
+        len(ids)
+        for ids in (
+            body.finding_ids,
+            body.asset_ids,
+            body.host_ids,
+            body.endpoint_ids,
+            body.candidate_ids,
+        )
+    )
 
 
 def _as_url(host: str) -> str:
@@ -964,6 +983,86 @@ class ConnectorService:
         if body.kind not in HANDOFF_KINDS:
             msg = f"Unknown tool {body.kind!r}."
             raise ConnectorError(msg)
+        if body.request is not None:
+            picked, built = 1, [await self._edited(row, project_id, body, scope)]
+        else:
+            picked, built = await self._built(row, project_id, body, scope)
+            built = built[: body.limit]
+        if not built:
+            msg = (
+                "None of the selected rows carries an HTTP request."
+                if picked
+                else "Nothing selected."
+            )
+            raise ConnectorError(msg)
+        queued = await self._queue_actions(
+            row,
+            [
+                ConnectorAction(
+                    connector_id=row.id,
+                    kind=body.kind,
+                    url=item.url[:2000],
+                    method=item.method[:16],
+                    label=item.label,
+                    request=item.request,
+                    response=item.response,
+                    notes=item.notes,
+                    color=item.color,
+                    scan_id=item.scan_id,
+                )
+                for item in built
+            ],
+        )
+        return HandoffResult(
+            queued=queued,
+            skipped=picked - len(built),
+            tool=ACTION_KIND_LABELS.get(body.kind, body.kind),
+            online=await self._online(connector_id),
+        )
+
+    async def preview(
+        self,
+        connector_id: uuid.UUID,
+        project_id: uuid.UUID,
+        body: HandoffRequest,
+        scope=None,
+    ) -> HandoffPreview:
+        """The request a hand-off of one row sends, its masked values left masked."""
+        row = await self.get(connector_id, project_id)
+        item = await self._one(row, project_id, body, scope)
+        return HandoffPreview(request=item.request or "", url=item.url)
+
+    async def _one(
+        self, row: Connector, project_id: uuid.UUID, body: HandoffRequest, scope
+    ) -> Handoff:
+        """The request of the one chosen row."""
+        if body.filter is not None or _picked(body) != 1:
+            msg = "Select exactly one row."
+            raise HandoffError(msg)
+        _, built = await self._built(row, project_id, body, scope)
+        if not built:
+            msg = "The selected row carries no HTTP request."
+            raise HandoffError(msg)
+        if len(built) > 1:
+            msg = "The selection holds more than one request."
+            raise HandoffError(msg)
+        return built[0]
+
+    async def _edited(
+        self, row: Connector, project_id: uuid.UUID, body: HandoffRequest, scope
+    ) -> Handoff:
+        """The chosen row with the edited request in place of the built one."""
+        item = await self._one(row, project_id, body, scope)
+        try:
+            request = handoff.edited_request(body.request or "")
+        except handoff.RequestError as exc:
+            raise HandoffError(str(exc)) from None
+        return replace(item, request=request, method=request.split(" ", 1)[0].upper())
+
+    async def _built(
+        self, row: Connector, project_id: uuid.UUID, body: HandoffRequest, scope
+    ) -> tuple[int, list[Handoff]]:
+        """How many rows were chosen, and the request of each that carries one."""
         items: list[Handoff | None] = []
         items.extend(
             handoff.from_finding(v, link=self._finding_link(v))
@@ -995,38 +1094,7 @@ class ConnectorService:
                 .all()
             )
             items.extend(handoff.from_candidate(c) for c in picked)
-        built = [item for item in items if item is not None][: body.limit]
-        if not built:
-            msg = (
-                "None of the selected rows carries an HTTP request."
-                if items
-                else "Nothing selected."
-            )
-            raise ConnectorError(msg)
-        queued = await self._queue_actions(
-            row,
-            [
-                ConnectorAction(
-                    connector_id=row.id,
-                    kind=body.kind,
-                    url=item.url[:2000],
-                    method=item.method[:16],
-                    label=item.label,
-                    request=item.request,
-                    response=item.response,
-                    notes=item.notes,
-                    color=item.color,
-                    scan_id=item.scan_id,
-                )
-                for item in built
-            ],
-        )
-        return HandoffResult(
-            queued=queued,
-            skipped=len(items) - len(built),
-            tool=ACTION_KIND_LABELS.get(body.kind, body.kind),
-            online=await self._online(connector_id),
-        )
+        return len(items), [item for item in items if item is not None]
 
     async def _rows(self, model, ids: list[uuid.UUID], project_id: uuid.UUID) -> list:
         if not ids:

@@ -1,5 +1,6 @@
 import { STORAGE_KEYS } from '$lib/config/storage-keys';
 import { Severity } from '$lib/config/vulnerabilities';
+import { briefTabs } from '$lib/utilities/brief-tabs.svelte';
 import { readStored, writeStored, type Density } from '$lib/utilities/storage';
 
 export const HISTORY_COLUMNS = ['assets', 'change', 'engine', 'duration'] as const;
@@ -20,6 +21,8 @@ export const BRIEF_TAB_LABELS: Record<BriefTab, string> = {
 	engine: 'Engine'
 };
 
+export const runBriefTabs = briefTabs<BriefTab>(BRIEF_TABS[0]);
+
 const SIGNAL = [Severity.CRITICAL, Severity.HIGH] as const;
 export const STRIP_SEVERITIES: string[] = [...SIGNAL, Severity.MEDIUM];
 
@@ -33,12 +36,6 @@ function createHistoryPrefs() {
 	let density = $state<Density>(
 		readStored(STORAGE_KEYS.scansDensity) === 'compact' ? 'compact' : 'comfortable'
 	);
-	let tab = $state<BriefTab>(
-		(BRIEF_TABS as readonly string[]).includes(readStored(STORAGE_KEYS.scansBriefTab) ?? '')
-			? (readStored(STORAGE_KEYS.scansBriefTab) as BriefTab)
-			: 'findings'
-	);
-
 	const severities = $derived<string[]>(showMedium ? [...SIGNAL, Severity.MEDIUM] : [...SIGNAL]);
 
 	return {
@@ -58,13 +55,6 @@ function createHistoryPrefs() {
 		set density(v: Density) {
 			density = v;
 			writeStored(STORAGE_KEYS.scansDensity, v);
-		},
-		get tab() {
-			return tab;
-		},
-		set tab(v: BriefTab) {
-			tab = v;
-			writeStored(STORAGE_KEYS.scansBriefTab, v);
 		},
 		shows(col: HistoryColumn) {
 			return !hidden.includes(col);

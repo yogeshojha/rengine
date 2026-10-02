@@ -67,6 +67,7 @@
 		BRIEF_TABS,
 		FINDING_COLUMNS,
 		FINDING_COLUMN_LABELS,
+		findingBriefTabs,
 		findingPrefs,
 		type FindingColumn
 	} from './vulnerabilities/findings/prefs.svelte';
@@ -112,6 +113,7 @@
 	import { locationTokensFromUrl } from '$lib/utilities/endpoints';
 	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 	import { afterPause } from '$lib/utilities/debounce';
+	import { topLayer } from '$lib/utilities/layers';
 	import { UrlSync, onPopSearch } from '$lib/utilities/url-history.svelte';
 	import { LiveRefresh } from '$lib/utilities/live-results';
 	import { TabCounts } from '$lib/utilities/tab-counts.svelte';
@@ -622,8 +624,16 @@
 			toast.error('Finding not found');
 		}
 	}
+	let lastAt = $state({ id: '', index: -1 });
+	$effect(() => {
+		if (selected && selectedIndex >= 0) lastAt = { id: selected.id, index: selectedIndex };
+	});
+	let held = $derived(selectedIndex < 0 && selected?.id === lastAt.id ? lastAt.index : -1);
+	let sheetIndex = $derived(
+		selectedIndex >= 0 ? selectedIndex : held >= 0 ? Math.min(held, sheetItems.length - 1) : -1
+	);
 	function step(dir: -1 | 1) {
-		const next = selectedIndex + dir;
+		const next = held >= 0 ? (dir === 1 ? held : held - 1) : selectedIndex + dir;
 		if (next >= 0 && next < sheetItems.length) {
 			selected = sheetItems[next];
 			return;
@@ -751,8 +761,8 @@
 		setView('findings');
 	}
 
-	function applyState(fingerprints: Set<string>, state: string, note?: string | null) {
-		const patch = note === undefined ? { state } : { state, note };
+	function applyState(fingerprints: Set<string>, state: string, reason: string | null = null) {
+		const patch = { state, reason, reason_at: null, reason_by: null };
 		items = items.map((item) =>
 			fingerprints.has(item.fingerprint) ? { ...item, ...patch } : item
 		);
@@ -777,24 +787,21 @@
 		}
 	}
 
-	async function triage(v: VulnerabilityRead, state: string, note?: string | null) {
-		const previous = v.state;
+	async function triage(v: VulnerabilityRead, state: string) {
 		try {
 			const result = await vulnerabilitiesApi.triage(
 				projectId,
 				v.scan_id ?? scanId,
 				v.fingerprint,
-				state,
-				note
+				state
 			);
-			applyState(new Set([v.fingerprint]), result.state, result.note);
+			applyState(new Set([v.fingerprint]), result.state, result.reason);
 			toast.success(`Marked ${VULN_STATE_LABELS[state].toLowerCase()}`, {
 				description: result.updated > 1 ? `${result.updated} observations updated.` : undefined
 			});
 			afterTriage();
 		} catch {
 			toast.error(`Finding not marked ${VULN_STATE_LABELS[state].toLowerCase()}`);
-			applyState(new Set([v.fingerprint]), previous, v.note);
 		}
 	}
 
@@ -921,6 +928,7 @@
 			return;
 		}
 		if (typing) return;
+		if (drawerOpen && topLayer()?.getAttribute('data-slot') !== 'sheet-content') return;
 		const state = TRIAGE_KEYS[e.key];
 		const target = drawerOpen ? selected : isIssues ? null : (items[cursor] ?? null);
 		if (state && target) {
@@ -949,7 +957,7 @@
 		}
 		if (row && expanded.has(row.id) && /^[1-5]$/.test(e.key)) {
 			e.preventDefault();
-			findingPrefs.tab = BRIEF_TABS[Number(e.key) - 1];
+			findingBriefTabs.set(row.id, BRIEF_TABS[Number(e.key) - 1]);
 			return;
 		}
 		if (e.key === 'j' || e.key === 'ArrowDown') {
@@ -1382,46 +1390,52 @@
 	{:else}
 		<div class="@container/findings w-full" role="table" aria-label="Findings">
 			<div
-				class="flex items-center gap-3 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
-				role="row"
+				class="z-10 bg-card md:sticky"
+				style="top: calc(var(--scan-tabs-h, 0px) + {barH}px)"
+				role="rowgroup"
 			>
-				<div class={FCOL.select}>
-					<Checkbox
-						checked={selectAllChecked === true}
-						indeterminate={selectAllChecked === 'indeterminate'}
-						onCheckedChange={toggleSelectAll}
-						aria-label="Select all findings on this page"
-					/>
+				<div
+					class="flex items-center gap-3 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
+					role="row"
+				>
+					<div class={FCOL.select}>
+						<Checkbox
+							checked={selectAllChecked === true}
+							indeterminate={selectAllChecked === 'indeterminate'}
+							onCheckedChange={toggleSelectAll}
+							aria-label="Select all findings on this page"
+						/>
+					</div>
+					{@render sortHead('Severity', 'severity', `${FCOL.severity} flex`)}
+					{@render sortHead('Finding', 'name', `${FCOL.finding} flex`)}
+					{#if projectWide}<div class={FCOL.target}>Target</div>{/if}
+					{#if findingPrefs.shows('asset')}{@render sortHead(
+							FINDING_COLUMN_LABELS.asset,
+							'host',
+							FCOL.asset
+						)}{/if}
+					{#if findingPrefs.shows('related')}<div class={FCOL.related}>
+							{FINDING_COLUMN_LABELS.related}
+						</div>{/if}
+					{#if findingPrefs.shows('risk')}{@render sortHead(
+							FINDING_COLUMN_LABELS.risk,
+							'exploit',
+							FCOL.risk
+						)}{/if}
+					{#if findingPrefs.shows('evidence')}<div class={FCOL.evidence}>
+							{FINDING_COLUMN_LABELS.evidence}
+						</div>{/if}
+					{#if findingPrefs.shows('review')}<div class={FCOL.review}>
+							{FINDING_COLUMN_LABELS.review}
+						</div>{/if}
+					{#if showIssue}<div class={FCOL.issue}>{FINDING_COLUMN_LABELS.issue}</div>{/if}
+					{#if findingPrefs.shows('seen')}{@render sortHead(
+							FINDING_COLUMN_LABELS.seen,
+							'seen',
+							FCOL.seen
+						)}{/if}
+					<div class={FCOL.actions}></div>
 				</div>
-				{@render sortHead('Severity', 'severity', `${FCOL.severity} flex`)}
-				{@render sortHead('Finding', 'name', `${FCOL.finding} flex`)}
-				{#if projectWide}<div class={FCOL.target}>Target</div>{/if}
-				{#if findingPrefs.shows('asset')}{@render sortHead(
-						FINDING_COLUMN_LABELS.asset,
-						'host',
-						FCOL.asset
-					)}{/if}
-				{#if findingPrefs.shows('related')}<div class={FCOL.related}>
-						{FINDING_COLUMN_LABELS.related}
-					</div>{/if}
-				{#if findingPrefs.shows('risk')}{@render sortHead(
-						FINDING_COLUMN_LABELS.risk,
-						'exploit',
-						FCOL.risk
-					)}{/if}
-				{#if findingPrefs.shows('evidence')}<div class={FCOL.evidence}>
-						{FINDING_COLUMN_LABELS.evidence}
-					</div>{/if}
-				{#if findingPrefs.shows('review')}<div class={FCOL.review}>
-						{FINDING_COLUMN_LABELS.review}
-					</div>{/if}
-				{#if showIssue}<div class={FCOL.issue}>{FINDING_COLUMN_LABELS.issue}</div>{/if}
-				{#if findingPrefs.shows('seen')}{@render sortHead(
-						FINDING_COLUMN_LABELS.seen,
-						'seen',
-						FCOL.seen
-					)}{/if}
-				<div class={FCOL.actions}></div>
 			</div>
 			<div class="transition-opacity {loading ? 'opacity-60' : ''}">
 				{#each items as v, i (v.id)}
@@ -1492,9 +1506,10 @@
 	{scanId}
 	open={drawerOpen}
 	onOpenChange={(o) => (drawerOpen = o)}
-	index={selectedIndex}
+	index={sheetIndex}
 	pageOffset={isIssues ? 0 : pageIndex * pageSize}
 	total={sheetTotal}
+	capped={!isIssues && totalCapped}
 	onStep={step}
 	onFilter={applyDsl}
 	onHost={showHost}

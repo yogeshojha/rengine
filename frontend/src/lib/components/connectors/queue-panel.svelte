@@ -26,7 +26,11 @@
 	import { connectorsApi } from '$lib/api/connectors';
 	import { connectors } from '$lib/stores/connectors.svelte';
 	import ProxySend from '$lib/components/scans/results/endpoints/proxy-send.svelte';
-	import { handoffToProxy } from '$lib/components/scans/results/endpoints/proxy';
+	import {
+		handoffToProxy,
+		previewHandoff,
+		proxyName
+	} from '$lib/components/scans/results/endpoints/proxy';
 	import RequestDialog from './request-dialog.svelte';
 	import { proxyTool } from '$lib/stores/proxy-tool.svelte';
 	import SendIcon from '@lucide/svelte/icons/send';
@@ -94,6 +98,7 @@
 	let acting = $state(false);
 	let error = $state<string | null>(null);
 
+	const connectorId = $derived(connector.id);
 	const page = $derived(connectors.queue);
 	const rows = $derived(page?.rows ?? []);
 	const hosts = $derived(page?.hosts ?? []);
@@ -107,6 +112,9 @@
 	const count = $derived(confirming?.ids.length ?? 0);
 	const noun = $derived(pluralWord(count, 'request'));
 	const openedRow = $derived(rows.find((r) => r.id === openedId) ?? null);
+	const sendLabel = $derived(
+		`Send to ${proxyName(connector, connectors.catalog)} ${ACTION_KIND_LABELS[proxyTool.kind]}`
+	);
 
 	$effect(() => {
 		void view;
@@ -123,7 +131,7 @@
 	});
 
 	$effect(() => {
-		const id = connector.id;
+		const id = connectorId;
 		const query = filters;
 		untrack(() => {
 			picked.clear();
@@ -132,13 +140,13 @@
 	});
 
 	$effect(() => {
-		const id = connector.id;
+		const id = connectorId;
 		const query = filters;
 		const every = live ? LIVE_POLL_MS : CONNECTOR_POLL_MS;
 		const timer = setInterval(() => {
 			now = Date.now();
 			if (document.hidden || picked.size) return;
-			void connectors.loadQueue(id, projectId, query);
+			void connectors.loadQueue(id, projectId, query, true);
 		}, every);
 		return () => clearInterval(timer);
 	});
@@ -200,13 +208,21 @@
 		else toast.error('Clipboard not available.');
 	}
 
-	async function sendOne(row: Candidate, kind: ActionKind) {
+	async function sendOne(row: Candidate, kind: ActionKind, request?: string) {
 		return handoffToProxy({
 			connectorId: connector.id,
 			projectId,
-			body: { kind, candidate_ids: [row.id] },
+			body: { kind, candidate_ids: [row.id], request },
 			connectors: [connector],
 			catalog: connectors.catalog
+		});
+	}
+
+	function previewOne(row: Candidate) {
+		return previewHandoff({
+			connectorId: connector.id,
+			projectId,
+			body: { candidate_ids: [row.id] }
 		});
 	}
 
@@ -429,14 +445,14 @@
 						<td class="px-2 py-2 align-top">
 							<span class="flex h-6 items-center justify-end gap-0.5">
 								{#if !connector.paused}
-									<Hint text="Send to {ACTION_KIND_LABELS[proxyTool.kind]}">
+									<Hint text={sendLabel}>
 										{#snippet child(props)}
 											<Button
 												{...props}
 												variant="ghost"
 												size="icon"
 												class="size-6"
-												aria-label="Send to {ACTION_KIND_LABELS[proxyTool.kind]}"
+												aria-label={sendLabel}
 												onclick={() => sendOne(row, proxyTool.kind)}
 											>
 												<SendIcon class="size-3.5" />
@@ -534,7 +550,8 @@
 	row={openedRow}
 	{connector}
 	onClose={() => (openedId = null)}
-	onSend={(kind) => (openedRow ? sendOne(openedRow, kind) : null)}
+	onSend={(kind, request) => (openedRow ? sendOne(openedRow, kind, request) : null)}
+	onPreview={() => (openedRow ? previewOne(openedRow) : Promise.resolve(null))}
 	onScan={(row) => (confirming = { action: 'scan', ids: [row.id] })}
 	onIgnore={(row) => (confirming = { action: 'ignore', ids: [row.id] })}
 	endpointsHref={openedRow?.target_id ? endpointsLink(openedRow) : null}

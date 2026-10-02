@@ -8,13 +8,15 @@
 		aiQuery,
 		aiServiceLabel
 	} from '$lib/config/ai-services';
-	import { SHEET_ROW_TIGHT, SHEET_DT, sheetStep } from './sheet';
+	import { SHEET_ROW_TIGHT, SHEET_DT, SHEET_HEAD, sheetStep } from './sheet';
+	import SheetTop from './sheet-top.svelte';
+	import SheetBar from './sheet-bar.svelte';
 	import Globe from '@lucide/svelte/icons/globe';
 	import Sparkles from '@lucide/svelte/icons/sparkles';
-	import NotePanel from '$lib/components/notes/note-panel.svelte';
+	import NotesButton from '$lib/components/notes/notes-button.svelte';
 	import AskTab from './vulnerabilities/ask/ask-tab.svelte';
-	import AskComposer from './vulnerabilities/ask/ask-composer.svelte';
-	import { notes } from '$lib/stores/notes.svelte';
+	import AskStarters from './vulnerabilities/ask/ask-starters.svelte';
+	import type { AskSubject } from '$lib/types/ask';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import Network from '@lucide/svelte/icons/network';
 	import Plug from '@lucide/svelte/icons/plug';
@@ -23,8 +25,6 @@
 	import Link2 from '@lucide/svelte/icons/link-2';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import Copy from '@lucide/svelte/icons/copy';
-	import ChevronUp from '@lucide/svelte/icons/chevron-up';
-	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import Star from '@lucide/svelte/icons/star';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import Filter from '@lucide/svelte/icons/filter';
@@ -70,16 +70,15 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Progress } from '$lib/components/ui/progress';
-	import { Kbd } from '$lib/components/ui/kbd';
 	import Hint from '$lib/components/hint.svelte';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import ScreenshotThumb from './screenshot-thumb.svelte';
 	import TechIcon from './tech-icon.svelte';
 	import CodeBlock from '$lib/components/code-block.svelte';
 	import ProxySend from './endpoints/proxy-send.svelte';
-	import { handoffToProxy } from './endpoints/proxy';
+	import { handoffToProxy, previewHandoff } from './endpoints/proxy';
 	import { connectors as connectorStore } from '$lib/stores/connectors.svelte';
-	import type { ActionKind } from '$lib/config/connectors';
+	import { SEND_SHORTCUT, type ActionKind } from '$lib/config/connectors';
 	import OverflowPopover from './table/overflow-popover.svelte';
 	import HostStructure from './web-assets/host-structure.svelte';
 	import RecheckHistory from './recheck-history.svelte';
@@ -156,19 +155,37 @@
 	let queued = $state('');
 	let recheckCount = $derived(sub ? rechecks.history(scanId, sub.name).length : 0);
 	let contentEl = $state<HTMLElement | null>(null);
+	let bodyEl = $state<HTMLElement | null>(null);
 	let detail = $state<HttpAssetDetail | null>(null);
 	let detailLoading = $state(false);
 	let httpView = $state('response');
 	let loadedFor = '';
 	let detailFor = '';
+	let tabFor = '';
+	let focusFor: typeof focus = null;
 	let corr = $state<SubdomainCorrelation | null>(null);
 	let corrLoading = $state(false);
 	let corrErrored = $state(false);
 
-	$effect(() => {
-		if (!open || !focus) return;
-		tab = focus.tab;
-		if (focus.pane) httpView = focus.pane;
+	$effect.pre(() => {
+		const name = open && sub ? sub.name : '';
+		const asked = focus;
+		if (name === tabFor && asked === focusFor) return;
+		const fresh = !tabFor || asked !== focusFor;
+		tabFor = name;
+		focusFor = asked;
+		if (!name) return;
+		const target = fresh ? asked : null;
+		untrack(() => {
+			tab = target?.tab ?? 'overview';
+			httpView = target?.pane ?? 'response';
+			queued = '';
+			bodyEl?.scrollTo({ top: 0 });
+			const held = document.activeElement;
+			if (held?.getAttribute('role') === 'tab' && contentEl?.contains(held)) {
+				contentEl.querySelector<HTMLElement>(`[role=tab][data-value="${tab}"]`)?.focus();
+			}
+		});
 	});
 
 	let primaryAsset = $derived(corr?.primary_asset ?? null);
@@ -202,7 +219,6 @@
 		if (loadedFor !== name) {
 			loadedFor = name;
 			detailFor = '';
-			httpView = focus?.pane ?? 'response';
 			detail = null;
 			detailLoading = false;
 			loadCorrelation(name);
@@ -227,6 +243,7 @@
 	});
 
 	let hasHttp = $derived(sub?.http_status != null);
+	let canSend = $derived(hasHttp && (!!detail || corrLoading || detailLoading));
 	let url = $derived(sub?.http_url ?? (sub ? `https://${sub.name}` : ''));
 	let proxies = $derived(connectorStore.items);
 	let proxyCatalog = $derived(connectorStore.catalog);
@@ -238,16 +255,42 @@
 			void connectorStore.loadCatalog();
 		});
 	});
-	async function sendToProxy(connectorId: string, kind: ActionKind) {
+	async function sendToProxy(connectorId: string, kind: ActionKind, request?: string) {
 		if (!detail) return null;
 		return handoffToProxy({
 			connectorId,
 			projectId,
 			scanId: detail.scan_id,
-			body: { kind, asset_ids: [detail.id] },
+			body: { kind, asset_ids: [detail.id], request },
 			connectors: proxies,
 			catalog: proxyCatalog
 		});
+	}
+	async function previewProxy(connectorId: string) {
+		if (!detail) return null;
+		return previewHandoff({
+			connectorId,
+			projectId,
+			scanId: detail.scan_id,
+			body: { asset_ids: [detail.id] }
+		});
+	}
+	let askSubject = $derived<AskSubject | null>(
+		sub
+			? {
+					dimension: SurfaceDimension.WEB_ASSETS,
+					key: sub.name,
+					targetId: sub.target_id,
+					scanId: sub.scan_id,
+					projectId,
+					label: sub.name
+				}
+			: null
+	);
+
+	function ask(question: string) {
+		queued = question;
+		tab = 'ask';
 	}
 	let redirected = $derived(!!sub?.final_url && sub.final_url !== sub.http_url);
 	let cert = $derived(sub ? certState(sub) : null);
@@ -292,8 +335,16 @@
 		httpView = 'hygiene';
 	}
 	let headerText = $derived(headerEntries.map(([k, v]) => `${k}: ${fmtHeader(v)}`).join('\n'));
-	let position = $derived(pageOffset + index + 1);
 	let privateIps = $derived((sub?.resolved_ips ?? []).filter(isPrivateIp));
+	let flagged = $derived(
+		!!sub &&
+			(sub.is_cdn ||
+				!!sub.waf ||
+				(cert !== null && cert !== 'valid') ||
+				privateIps.length > 0 ||
+				sub.is_wildcard ||
+				redirected)
+	);
 	let provider = $derived(providerFor(sub?.cname));
 	let ProviderIcon = $derived(provider ? PROVIDER_KIND_ICONS[provider.kind] : null);
 
@@ -320,12 +371,25 @@
 		}}
 	>
 		{#if sub}
-			<Sheet.Header class="gap-3 border-b border-border px-5 pt-5 pb-4 pr-12">
-				<div class="flex items-center gap-2">
-					<span class="size-2 shrink-0 rounded-full {STATUS_DOT[httpStatusClass(sub.http_status)]}"
-					></span>
+			<Sheet.Header class={SHEET_HEAD}>
+				<SheetTop noun={WEB.noun} {index} {pageOffset} {total} {capped} {onStep}>
+					<span class="flex items-center gap-1.5 text-xs">
+						<span
+							class="size-2 shrink-0 rounded-full {STATUS_DOT[httpStatusClass(sub.http_status)]}"
+						></span>
+						{#if hasHttp}
+							<span class="font-mono font-medium {httpStatusTextClass(sub.http_status)}"
+								>{sub.http_status}</span
+							>
+							<span class="text-muted-foreground">{httpStatusReason(sub.http_status)}</span>
+						{/if}
+					</span>
 					{#if sub.is_important}<Star class="size-3.5 shrink-0 fill-warning text-warning" />{/if}
-					<Sheet.Title class="truncate font-mono text-base font-medium">{sub.name}</Sheet.Title>
+				</SheetTop>
+				<div class="flex min-w-0 items-center gap-1">
+					<Sheet.Title class="min-w-0 truncate font-mono text-base font-medium"
+						>{sub.name}</Sheet.Title
+					>
 					<CopyButton value={sub.name} />
 					{#if hasHttp}
 						<Tooltip.Root>
@@ -335,7 +399,7 @@
 										{...props}
 										variant="ghost"
 										size="icon-sm"
-										class="size-7"
+										class="size-7 shrink-0"
 										href={url}
 										target="_blank"
 										rel="noreferrer noopener"
@@ -348,115 +412,97 @@
 							<Tooltip.Content>Open in browser</Tooltip.Content>
 						</Tooltip.Root>
 					{/if}
-					<div class="ml-auto flex items-center gap-1">
-						{#if total > 1 && index >= 0}
-							<span class="text-xs text-muted-foreground tabular-nums">
-								{position.toLocaleString()} / {total.toLocaleString()}{capped ? '+' : ''}
-							</span>
-							<Tooltip.Root>
-								<Tooltip.Trigger>
-									{#snippet child({ props })}
-										<Button
-											{...props}
-											variant="ghost"
-											size="icon-sm"
-											class="size-7"
-											disabled={position <= 1}
-											onclick={() => onStep?.(-1)}
-											aria-label="Previous web asset"
-										>
-											<ChevronUp />
-										</Button>
-									{/snippet}
-								</Tooltip.Trigger>
-								<Tooltip.Content class="flex items-center gap-1.5"
-									>Previous <Kbd>k</Kbd></Tooltip.Content
-								>
-							</Tooltip.Root>
-							<Tooltip.Root>
-								<Tooltip.Trigger>
-									{#snippet child({ props })}
-										<Button
-											{...props}
-											variant="ghost"
-											size="icon-sm"
-											class="size-7"
-											disabled={position >= total}
-											onclick={() => onStep?.(1)}
-											aria-label="Next web asset"
-										>
-											<ChevronDown />
-										</Button>
-									{/snippet}
-								</Tooltip.Trigger>
-								<Tooltip.Content class="flex items-center gap-1.5"
-									>Next <Kbd>j</Kbd></Tooltip.Content
-								>
-							</Tooltip.Root>
+				</div>
+				{#if !hasHttp || sub.page_title || flagged}
+					<div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+						{#if !hasHttp || sub.page_title}
+							<Sheet.Description class="min-w-0 truncate">
+								{#if hasHttp}
+									{sub.page_title}
+								{:else if sub.resolved_ips?.length}
+									Resolves but no web service answered
+								{:else}
+									Did not resolve to an address
+								{/if}
+							</Sheet.Description>
 						{/if}
+						{#if sub.is_cdn}
+							<Badge variant="info" class="font-normal">{sub.cdn_name ?? 'CDN'}</Badge>
+						{/if}
+						{#if sub.waf}<Badge variant="secondary" class="font-normal">WAF · {sub.waf}</Badge>{/if}
+						{#if cert === 'expired'}
+							<Badge variant="destructive" class="font-normal">Certificate expired</Badge>
+						{:else if cert === 'expiring'}
+							<Badge variant="warning" class="font-normal"
+								>Certificate expires in {expiryDays}d</Badge
+							>
+						{:else if cert === 'self-signed'}
+							<Badge variant="warning" class="font-normal">Self-signed certificate</Badge>
+						{/if}
+						{#if privateIps.length}
+							<Badge variant="warning" class="font-normal">Private address</Badge>
+						{/if}
+						{#if sub.is_wildcard}<Badge variant="outline" class="font-normal">Wildcard</Badge>{/if}
+						{#if redirected}<Badge variant="outline" class="font-normal">Redirects</Badge>{/if}
 					</div>
-				</div>
-				<Sheet.Description class="truncate">
-					{#if hasHttp}
-						<span class="font-mono {httpStatusTextClass(sub.http_status)}">{sub.http_status}</span>
-						<span>{httpStatusReason(sub.http_status)}</span>
-						{#if sub.page_title}<span aria-hidden="true"> · </span><span>{sub.page_title}</span
-							>{/if}
-					{:else if sub.resolved_ips?.length}
-						Resolves but no web service answered
-					{:else}
-						Did not resolve to an address
-					{/if}
-				</Sheet.Description>
-				<div class="flex flex-wrap gap-1">
-					{#if sub.is_cdn}
-						<Badge variant="info" class="font-normal">{sub.cdn_name ?? 'CDN'}</Badge>
-					{/if}
-					{#if sub.waf}<Badge variant="secondary" class="font-normal">WAF · {sub.waf}</Badge>{/if}
-					{#if cert === 'expired'}
-						<Badge variant="destructive" class="font-normal">Certificate expired</Badge>
-					{:else if cert === 'expiring'}
-						<Badge variant="warning" class="font-normal">Certificate expires in {expiryDays}d</Badge
-						>
-					{:else if cert === 'self-signed'}
-						<Badge variant="warning" class="font-normal">Self-signed certificate</Badge>
-					{/if}
-					{#if privateIps.length}
-						<Badge variant="warning" class="font-normal">Private address</Badge>
-					{/if}
-					{#if sub.is_wildcard}<Badge variant="outline" class="font-normal">Wildcard</Badge>{/if}
-					{#if redirected}<Badge variant="outline" class="font-normal">Redirects</Badge>{/if}
-				</div>
+				{/if}
 			</Sheet.Header>
 
-			<Tabs.Root bind:value={tab} class="flex min-h-0 flex-1 flex-col gap-0">
-				<Tabs.List
-					class="h-auto w-full justify-start gap-0 rounded-none border-b border-border bg-transparent p-0 px-2"
-				>
-					{#if recheckCount}
-						{@render tabTrigger('rechecks', 'Re-checks', recheckCount)}
-					{/if}
-					{@render tabTrigger('overview', 'Overview', null)}
-					{@render tabTrigger('http', 'HTTP', null)}
-					{@render tabTrigger('services', 'Services', hostAssets.length + ports.length || null)}
-					{@render tabTrigger('related', 'Related', relatedHosts || null)}
-					{@render tabTrigger('structure', 'Structure', sub.endpoint_count || null)}
-					{@render tabTrigger('notes', 'Notes', null)}
-					<Tabs.Trigger
-						value="ask"
-						class="flex-none gap-1.5 rounded-none border-0 border-b-2 border-transparent px-3 py-2.5 text-xs font-medium text-primary shadow-none hover:text-primary data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none dark:data-[state=active]:border-primary dark:data-[state=active]:bg-transparent"
-					>
-						<Sparkles class="size-3.5" />
-						Ask
-					</Tabs.Trigger>
-				</Tabs.List>
+			<SheetBar>
+				<NotesButton
+					anchor={{
+						targetId: sub.target_id,
+						scanId: sub.scan_id,
+						dimension: SurfaceDimension.WEB_ASSETS,
+						assetKey: sub.name,
+						assetLabel: sub.name
+					}}
+					class="h-8"
+				/>
+				{#if canSend}
+					<ProxySend
+						connectors={proxies}
+						catalog={proxyCatalog}
+						shortcut={SEND_SHORTCUT}
+						class="h-8"
+						onSend={sendToProxy}
+						onPreview={previewProxy}
+					/>
+				{/if}
+			</SheetBar>
 
-				<ScrollArea class="min-h-0 flex-1">
+			<Tabs.Root bind:value={tab} class="flex min-h-0 flex-1 flex-col gap-0">
+				<ScrollArea orientation="horizontal" class="shrink-0 border-b border-border">
+					<Tabs.List
+						class="h-auto w-max min-w-full justify-start gap-0 rounded-none bg-transparent p-0 px-2"
+					>
+						{@render tabTrigger('overview', 'Overview', null)}
+						<Tabs.Trigger
+							value="ask"
+							class="flex-none gap-1.5 rounded-none border-0 border-b-2 border-transparent px-3 py-2.5 text-xs font-medium text-primary shadow-none hover:text-primary data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none dark:data-[state=active]:border-primary dark:data-[state=active]:bg-transparent"
+						>
+							<Sparkles class="size-3.5" />
+							Ask
+						</Tabs.Trigger>
+						{@render tabTrigger('http', 'HTTP', null)}
+						{@render tabTrigger('services', 'Services', hostAssets.length + ports.length || null)}
+						{@render tabTrigger('related', 'Related', relatedHosts || null)}
+						{@render tabTrigger('structure', 'Structure', sub.endpoint_count || null)}
+						{#if recheckCount}
+							{@render tabTrigger('rechecks', 'Re-checks', recheckCount)}
+						{/if}
+					</Tabs.List>
+				</ScrollArea>
+
+				<ScrollArea class="min-h-0 flex-1" bind:viewportRef={bodyEl}>
 					<Tabs.Content value="rechecks" class="m-0 p-5">
 						<RecheckHistory {scanId} assetKey={sub.name} />
 					</Tabs.Content>
 
 					<Tabs.Content value="overview" class="m-0 flex flex-col gap-6 p-5">
+						{#if askSubject}
+							<AskStarters subject={askSubject} onAsk={ask} />
+						{/if}
 						{#if sub.screenshot_path}
 							<ScreenshotThumb
 								path={sub.screenshot_path}
@@ -962,8 +1008,8 @@
 										{#if primaryAsset.tls_fingerprint}
 											<div class={SHEET_ROW_TIGHT}>
 												<dt class={SHEET_DT}>Fingerprint</dt>
-												<dd class="flex items-center gap-1">
-													<span class="truncate font-mono text-xs"
+												<dd class="flex min-w-0 items-center gap-1">
+													<span class="min-w-0 truncate font-mono text-xs"
 														>{primaryAsset.tls_fingerprint}</span
 													>
 													<CopyButton value={primaryAsset.tls_fingerprint} class="size-6" />
@@ -976,39 +1022,9 @@
 						{/if}
 					</Tabs.Content>
 
-					<Tabs.Content value="notes" class="m-0 p-5">
-						{#key notes.version}
-							<div class="overflow-hidden rounded-lg border">
-								<NotePanel
-									anchor={{
-										targetId: sub.target_id,
-										scanId: sub.scan_id,
-										dimension: SurfaceDimension.WEB_ASSETS,
-										assetKey: sub.name,
-										assetLabel: sub.name
-									}}
-									filter={{ dimension: SurfaceDimension.WEB_ASSETS, asset_key: sub.name }}
-									showAnchor={false}
-									emptyTitle="No notes"
-								/>
-							</div>
-						{/key}
-					</Tabs.Content>
-
 					<Tabs.Content value="ask" class="m-0 flex flex-col p-0">
-						{#if tab === 'ask'}
-							<AskTab
-								subject={{
-									dimension: SurfaceDimension.WEB_ASSETS,
-									key: sub.name,
-									targetId: sub.target_id,
-									scanId: sub.scan_id,
-									projectId,
-									label: sub.name
-								}}
-								{queued}
-								onQueued={() => (queued = '')}
-							/>
+						{#if tab === 'ask' && askSubject}
+							<AskTab subject={askSubject} {queued} onQueued={() => (queued = '')} />
 						{/if}
 					</Tabs.Content>
 
@@ -1038,24 +1054,16 @@
 											</ToggleGroup.Item>
 										{/if}
 									</ToggleGroup.Root>
-									<div class="flex items-center gap-1.5">
-										{#if httpView === 'headers'}
-											<Button
-												variant="ghost"
-												size="sm"
-												class="h-7 text-xs"
-												onclick={() => copyHeaders()}
-											>
-												<Copy data-icon="inline-start" /> Copy
-											</Button>
-										{/if}
-										<ProxySend
-											connectors={proxies}
-											catalog={proxyCatalog}
-											dense
-											onSend={sendToProxy}
-										/>
-									</div>
+									{#if httpView === 'headers'}
+										<Button
+											variant="ghost"
+											size="sm"
+											class="h-7 text-xs"
+											onclick={() => copyHeaders()}
+										>
+											<Copy data-icon="inline-start" /> Copy
+										</Button>
+									{/if}
 								</div>
 								{#if httpView === 'hygiene'}
 									<div class="flex flex-col gap-4">
@@ -1326,17 +1334,6 @@
 						{/if}
 					</Tabs.Content>
 				</ScrollArea>
-				{#if tab !== 'ask'}
-					<div class="border-t bg-card px-5 py-3">
-						<AskComposer
-							placeholder="Ask about this web asset"
-							onSend={(question) => {
-								queued = question;
-								tab = 'ask';
-							}}
-						/>
-					</div>
-				{/if}
 			</Tabs.Root>
 		{/if}
 	</Sheet.Content>

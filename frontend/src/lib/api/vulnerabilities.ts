@@ -42,7 +42,12 @@ export const vulnerabilitiesApi = {
 	async triageMany(
 		projectId: string,
 		scanId: string,
-		body: { fingerprints?: string[]; template_ids?: string[]; state: string; note?: string | null }
+		body: {
+			fingerprints?: string[];
+			template_ids?: string[];
+			state: string;
+			reason?: string | null;
+		}
 	): Promise<BulkTriageResult> {
 		return api.post<BulkTriageResult>(
 			`/vulnerabilities/triage/bulk?${scopeQuery({ projectId, scanId })}`,
@@ -96,15 +101,11 @@ export const vulnerabilitiesApi = {
 		projectId: string,
 		scanId: string,
 		fingerprint: string,
-		state: string,
-		note?: string | null
+		state: string
 	): Promise<TriageResult> {
 		return api.patch<TriageResult>(
 			`/vulnerabilities/triage/${fingerprint}?${scopeQuery({ projectId, scanId })}`,
-			{
-				state,
-				note
-			}
+			{ state }
 		);
 	}
 };

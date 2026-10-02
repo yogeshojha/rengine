@@ -42,6 +42,7 @@ import { tripwiresStore } from '$lib/stores/tripwires.svelte';
 import { clearServiceLookup } from '$lib/utilities/service-lookup';
 import { clearFindings } from '$lib/components/scans/history/findings';
 import { forgetPeeks } from '$lib/components/scans/results/vulnerabilities/findings/peek';
+import { forgetBriefs } from '$lib/api/ask';
 
 export const NO_SESSION =
 	'Session not started. Check that the instance is served over HTTPS and the api service is running.';
@@ -149,6 +150,7 @@ function createAuthStore() {
 		clearServiceLookup();
 		clearFindings();
 		forgetPeeks();
+		forgetBriefs();
 	}
 
 	return {

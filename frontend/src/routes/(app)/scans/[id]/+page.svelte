@@ -944,7 +944,7 @@
 				<div class="flex items-center gap-2">
 					{#if condensed}
 						<div
-							class="hidden shrink-0 items-center gap-2 border-r border-border py-2 pr-4 sm:flex"
+							class="hidden shrink-0 items-center gap-2 self-stretch border-r border-border pr-4 sm:flex"
 						>
 							<span class="font-mono text-sm">{scan.execution_config.target_value}</span>
 							<StatusIcon

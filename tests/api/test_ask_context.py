@@ -55,7 +55,7 @@ def test_target_written_values_sit_inside_the_fence():
     )
     v = pure_finding(
         asset=asset,
-        note=f"colleague wrote: {INJECTION}",
+        reason=f"colleague wrote: {INJECTION}",
         matched_at="https://git.example.com/?q=" + INJECTION.replace(" ", "+"),
     )
     _, facts = assess(v)
@@ -67,7 +67,7 @@ def test_target_written_values_sit_inside_the_fence():
     finding_json = ctx.system[: ctx.system.index("VERDICT FROM STORED ROWS")]
     assert "Shop" not in finding_json
     assert "colleague" not in finding_json
-    assert '"has_note": true' in finding_json
+    assert '"has_reason": true' in finding_json
     assert {(f.field, f.line) for f in ctx.flags} == {
         (EvidenceField.TITLE.value, 0),
         (EvidenceField.NOTE.value, 0),
@@ -237,7 +237,11 @@ async def test_ask_on_a_web_asset_builds_its_own_context(
     labels = {f.label for f in brief.facts}
     assert "Login page" in labels
     assert "Admin or internal naming" in labels
-    assert brief.starters[0] == "What is this web asset?"
+    assert brief.starters == [
+        "Is this an admin interface?",
+        "What is this web asset?",
+        "What should I test by hand first?",
+    ]
     assert await service.brief_asset(estate.scans["run"], "nope.example.com") is None
 
     with pytest.raises(HTTPException):

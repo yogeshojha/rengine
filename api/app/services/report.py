@@ -18,11 +18,7 @@ from reports.registry import section as lookup_section
 from reports.theme import ThemeError, builtin_source, builtin_themes, theme_summary
 from reports.theme import parse as parse_theme
 from reports.theme_store import builtin_values
-from shared.definitions.ai import (
-    REPORT_TASKS,
-    TASK_OUTPUT_TOKENS,
-    price,
-)
+from shared.definitions.ai import REPORT_TASKS, TASK_OUTPUT_TOKENS
 from shared.definitions.report_fonts import (
     FONT_ROLE_HELP,
     FONT_ROLE_LABELS,
@@ -799,7 +795,9 @@ class ReportService:
                 sum(TASK_OUTPUT_TOKENS.get(t, 900) for t in REPORT_TASKS)
                 + (calls - len(REPORT_TASKS)) * 500
             )
-            cost = price(cfg.model, estimate.ai_input_tokens, estimate.ai_output_tokens)
+            cost = cfg.cost(
+                cfg.model, estimate.ai_input_tokens, estimate.ai_output_tokens
+            )
             estimate.ai_cost_usd = round(cost, 4) if cost else 0.0
             if cost is None:
                 estimate.warnings.append(

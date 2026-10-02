@@ -25,10 +25,11 @@
 	let error = $state<string | null>(null);
 	let pending = $state<{ domain: string; action: 'add' | 'dismiss' } | null>(null);
 
+	const connectorId = $derived(connector.id);
 	const rows = $derived(connectors.discovered);
 
 	$effect(() => {
-		const id = connector.id;
+		const id = connectorId;
 		untrack(() => void connectors.loadDiscovered(id, projectId));
 	});
 

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import Plus from '@lucide/svelte/icons/plus';
 	import StickyNote from '@lucide/svelte/icons/sticky-note';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { untrack } from 'svelte';
@@ -11,15 +10,13 @@
 	import { notes } from '$lib/stores/notes.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import type { Note, NoteAnchor, NoteFilter } from '$lib/types/note';
-	import { plural } from '$lib/utilities/strings';
 
 	interface Props {
-		anchor: NoteAnchor;
+		anchor?: NoteAnchor;
 		filter: NoteFilter;
 		showAnchor?: boolean;
 		emptyTitle?: string;
 		emptyDescription?: string;
-		composerOpen?: boolean;
 		onCount?: (total: number) => void;
 	}
 
@@ -29,9 +26,10 @@
 		showAnchor = true,
 		emptyTitle = 'No notes',
 		emptyDescription,
-		composerOpen = $bindable(false),
 		onCount
 	}: Props = $props();
+
+	const PANEL_SIZE = 100;
 
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
 	let items = $state<Note[]>([]);
@@ -45,7 +43,7 @@
 		const seq = ++reqId;
 		loading = true;
 		try {
-			const page = await notes.list(projectId, { ...filter, size: 100 });
+			const page = await notes.list(projectId, { ...filter, size: PANEL_SIZE });
 			if (seq !== reqId) return;
 			items = page.items;
 			total = page.total;
@@ -55,7 +53,7 @@
 			if (seq === reqId) {
 				items = [];
 				total = 0;
-				error = e instanceof Error ? e.message : 'Request failed.';
+				error = e instanceof Error ? e.message : 'Notes not loaded.';
 			}
 		} finally {
 			if (seq === reqId) loading = false;
@@ -64,7 +62,7 @@
 
 	let loadedSignature = '';
 	$effect(() => {
-		const signature = JSON.stringify([projectId, filter]);
+		const signature = JSON.stringify([projectId, filter, notes.version]);
 		if (signature === loadedSignature) return;
 		loadedSignature = signature;
 		untrack(() => void load());
@@ -72,41 +70,19 @@
 </script>
 
 <div class="flex flex-col">
-	<div class="flex items-center justify-between gap-2 px-4 py-2.5">
-		<span class="text-xs font-medium text-muted-foreground">
-			{plural(total, 'note')}
-		</span>
-		{#if !composerOpen}
-			<Button
-				variant="outline"
-				size="sm"
-				class="h-7 gap-1.5 px-2"
-				onclick={() => (composerOpen = true)}
-			>
-				<Plus class="size-3.5" />
-				Add note
-			</Button>
-		{/if}
-	</div>
-
-	{#if composerOpen}
-		<div class="border-y bg-muted/20 px-4 py-3">
-			<NoteComposer
-				{anchor}
-				autofocus
-				onSaved={() => {
-					composerOpen = false;
-					void load();
-				}}
-				onCancel={() => (composerOpen = false)}
-			/>
+	{#if anchor}
+		<div class="border-b px-4 py-3">
+			<NoteComposer {anchor} />
 		</div>
 	{/if}
 
 	{#if loading && items.length === 0}
-		<div class="flex flex-col gap-2 px-4 py-3">
+		<div class="flex flex-col gap-4 px-4 py-4" aria-busy="true">
 			{#each Array(2) as _, i (i)}
-				<Skeleton class="h-12 w-full" />
+				<div class="flex flex-col gap-2">
+					<Skeleton class="h-3 w-32" />
+					<Skeleton class="h-4 {i ? 'w-2/3' : 'w-full'}" />
+				</div>
 			{/each}
 		</div>
 	{:else if error}
@@ -114,7 +90,8 @@
 			icon={TriangleAlert}
 			title="Notes not loaded"
 			description={error}
-			class="border-0 bg-transparent py-10"
+			compact
+			class="border-0 bg-transparent"
 		>
 			<Button variant="outline" size="sm" onclick={() => void load()}>Retry</Button>
 		</EmptyState>
@@ -123,13 +100,19 @@
 			icon={StickyNote}
 			title={emptyTitle}
 			description={emptyDescription}
-			class="border-0 bg-transparent py-10"
+			compact
+			class="border-0 bg-transparent"
 		/>
 	{:else}
-		<div class="border-t">
+		<div class="divide-y">
 			{#each items as note (note.id)}
-				<NoteCard {note} {showAnchor} onChanged={load} />
+				<NoteCard {note} {showAnchor} class="px-4" />
 			{/each}
 		</div>
+		{#if total > items.length}
+			<p class="border-t px-4 py-2 text-xs text-muted-foreground">
+				Showing {items.length.toLocaleString()} of {total.toLocaleString()}
+			</p>
+		{/if}
 	{/if}
 </div>

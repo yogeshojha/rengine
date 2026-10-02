@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import math
 import time
 from dataclasses import dataclass, field
 from typing import Any
@@ -10,23 +12,38 @@ import httpx
 
 from shared.definitions.ai import (
     BASE_URL_PROVIDERS,
+    GOOGLE_GENERATE,
+    MAX_MODEL_ID,
     MAX_OUTPUT_TOKENS,
-    MODEL_BY_ID,
+    MODEL_LIST_PAGES,
+    MODELS,
     TASK_EFFORT,
     TASK_OUTPUT_TOKENS,
     Effort,
+    model_spec,
+    openai_chat_model,
 )
 from shared.enums.instance import AIProvider
 from shared.http import egress_proxy
+from shared.models.ai import AiModelList, AiModelOption
 from shared.services.ai import ledger
 from shared.services.ai.config import AIConfig
 from shared.services.ai.ledger import CallRecord
+from shared.services.scan_resolve import MASK
 
-_OPENAI_URL = "https://api.openai.com/v1/chat/completions"
+_ANTHROPIC_API = "https://api.anthropic.com/v1"
+_ANTHROPIC_VERSION = "2023-06-01"
+_OPENAI_API = "https://api.openai.com/v1"
+_OPENAI_URL = f"{_OPENAI_API}/chat/completions"
 _GOOGLE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 _ANTHROPIC_THINKING: dict = {"type": "adaptive"}
 _HTTP_ERROR = 400
+_REDIRECT = 300
+_PAGE_SIZE = 1000
+_ERROR_CHARS = 300
+_NESTED_ERRORS = 2
 _NOT_JSON = "The provider answered with a body that is not JSON. Check the base URL."
+_REDIRECTED = "The provider answered with a redirect. Check the base URL."
 
 
 class AIError(RuntimeError):
@@ -47,6 +64,19 @@ def chat_url(cfg: AIConfig) -> str:
     raise AIError(msg)
 
 
+def models_url(cfg: AIConfig) -> str:
+    if cfg.provider == AIProvider.ANTHROPIC.value:
+        return f"{_ANTHROPIC_API}/models"
+    if cfg.provider == AIProvider.OPENAI.value:
+        return f"{_OPENAI_API}/models"
+    if cfg.provider == AIProvider.GOOGLE.value:
+        return _GOOGLE_URL
+    if cfg.provider == AIProvider.OPENAI_COMPATIBLE.value and cfg.base_url:
+        return f"{cfg.base_url.rstrip('/')}/models"
+    msg = f"Provider '{cfg.provider}' has no model list. Check the AI settings."
+    raise AIError(msg)
+
+
 def provider_proxy(cfg: AIConfig) -> str | None:
     """The egress proxy, for a provider at a fixed public endpoint."""
     return None if cfg.provider in BASE_URL_PROVIDERS else egress_proxy()
@@ -54,6 +84,80 @@ def provider_proxy(cfg: AIConfig) -> str | None:
 
 def chat_headers(cfg: AIConfig) -> dict[str, str]:
     return {"Authorization": f"Bearer {cfg.api_key}"} if cfg.api_key else {}
+
+
+def google_headers(cfg: AIConfig) -> dict[str, str]:
+    return {"x-goog-api-key": cfg.api_key}
+
+
+def models_headers(cfg: AIConfig) -> dict[str, str]:
+    if cfg.provider == AIProvider.ANTHROPIC.value:
+        return {
+            "x-api-key": cfg.api_key,
+            "anthropic-version": _ANTHROPIC_VERSION,
+            **(anthropic_headers(cfg) or {}),
+        }
+    if cfg.provider == AIProvider.GOOGLE.value:
+        return google_headers(cfg)
+    return chat_headers(cfg)
+
+
+def scrub_error(text: str, cfg: AIConfig) -> str:
+    """Provider error text with no URL query, no URL credentials and no key."""
+    clean = ledger.scrub(text)
+    if cfg.api_key:
+        clean = clean.replace(cfg.api_key, MASK)
+    return " ".join(clean.split())[:_ERROR_CHARS]
+
+
+def _text(value: object) -> str:
+    return " ".join(value.split())[:_ERROR_CHARS] if isinstance(value, str) else ""
+
+
+def provider_message(body: object, depth: int = 0) -> str:
+    """The provider's own message from an error body, or an empty string."""
+    if isinstance(body, bytes):
+        body = body.decode(errors="replace")
+    if isinstance(body, str):
+        try:
+            body = json.loads(body)
+        except ValueError:
+            return "" if "<" in body else _text(body)
+    if isinstance(body, str):
+        return _text(body)
+    if isinstance(body, list) and body:
+        body = body[0]
+    if not isinstance(body, dict):
+        return ""
+    error = body.get("error")
+    if isinstance(error, dict):
+        return _upstream(error.get("metadata"), depth) or _text(error.get("message"))
+    return _text(error) or _text(body.get("message")) or _text(body.get("detail"))
+
+
+def _upstream(metadata: object, depth: int) -> str:
+    """The message a routing provider nests from the model's own provider."""
+    if depth >= _NESTED_ERRORS or not isinstance(metadata, dict):
+        return ""
+    inner = provider_message(metadata.get("raw"), depth + 1)
+    name = _text(metadata.get("provider_name"))
+    return f"{name}: {inner}" if inner and name else inner
+
+
+def http_error(status: int, body: object) -> AIError:
+    message = provider_message(body)
+    if not message:
+        return AIError(f"Provider returned {status}.")
+    return AIError(f"Provider returned {status}: {message}")
+
+
+def sdk_error(exc: Exception) -> AIError:
+    """An Anthropic SDK error as the provider's own message."""
+    status = getattr(exc, "status_code", None)
+    if isinstance(status, int):
+        return http_error(status, getattr(exc, "body", None))
+    reason = str(exc) or type(exc).__name__
+    return AIError(f"The provider did not respond: {reason}")
 
 
 @dataclass
@@ -84,15 +188,8 @@ class AIUsage:
         self.output_tokens += result.output_tokens
 
 
-def complete(
-    cfg: AIConfig,
-    *,
-    system: str,
-    prompt: str,
-    task: str,
-    fast: bool = False,
-) -> AIResult:
-    model = cfg.model_for_task(fast=fast)
+def complete(cfg: AIConfig, *, system: str, prompt: str, task: str) -> AIResult:
+    model = cfg.model
     max_tokens = TASK_OUTPUT_TOKENS.get(task, MAX_OUTPUT_TOKENS)
     effort = TASK_EFFORT.get(task, Effort.LOW.value)
     started = time.monotonic()
@@ -112,7 +209,8 @@ def complete(
                 model=model,
                 ok=False,
                 latency_ms=int((time.monotonic() - started) * 1000),
-                error=str(exc),
+                error=scrub_error(str(exc), cfg),
+                listed=cfg.listed_price(model),
             )
         )
         raise
@@ -134,6 +232,7 @@ def complete(
             input_tokens=result.input_tokens,
             output_tokens=result.output_tokens,
             latency_ms=result.latency_ms,
+            listed=cfg.listed_price(model),
         )
     )
     return result
@@ -146,7 +245,7 @@ def anthropic_headers(cfg: AIConfig) -> dict[str, str] | None:
 
 def anthropic_extras(model: str, effort: str) -> dict[str, Any]:
     """Thinking and effort parameters the model accepts."""
-    spec = MODEL_BY_ID.get(model)
+    spec = model_spec(model)
     extras: dict[str, Any] = {}
     if spec is None or spec.adaptive_thinking:
         extras["thinking"] = _ANTHROPIC_THINKING
@@ -183,9 +282,9 @@ def _anthropic(
         try:
             response = client.messages.create(**kwargs)
         except anthropic.APIError as retry_exc:
-            raise AIError(str(retry_exc)) from exc
+            raise sdk_error(retry_exc) from exc
     except anthropic.APIError as exc:
-        raise AIError(str(exc)) from exc
+        raise sdk_error(exc) from exc
 
     if response.stop_reason == "refusal":
         msg = "The model declined the request."
@@ -239,7 +338,7 @@ def _google(
     body = post_json(
         url,
         payload,
-        {"x-goog-api-key": cfg.api_key},
+        google_headers(cfg),
         cfg.timeout,
         proxy=provider_proxy(cfg),
     )
@@ -268,9 +367,7 @@ def post_json(
         with httpx.Client(timeout=timeout, proxy=proxy) as client:
             response = client.post(url, json=payload, headers=headers)
             if response.status_code >= _HTTP_ERROR:
-                detail = response.text[:300]
-                msg = f"Provider returned {response.status_code}: {detail}"
-                raise AIError(msg)
+                raise http_error(response.status_code, response.text)
             body = response.json()
     except httpx.HTTPError as exc:
         msg = f"The provider did not respond: {exc}"
@@ -280,3 +377,184 @@ def post_json(
     if not isinstance(body, dict):
         raise AIError(_NOT_JSON)
     return body
+
+
+# ---------- model listing ----------
+
+
+@dataclass(frozen=True)
+class _Listed:
+    id: str
+    label: str = ""
+    input_per_mtok: float | None = None
+    output_per_mtok: float | None = None
+
+
+def list_models(
+    cfg: AIConfig, *, transport: httpx.BaseTransport | None = None
+) -> AiModelList:
+    """The models the provider lists, merged with the curated catalog."""
+    try:
+        listed = _listed(cfg, transport)
+    except AIError as exc:
+        return AiModelList(error=scrub_error(str(exc), cfg))
+    except Exception as exc:
+        return AiModelList(error=scrub_error(f"{type(exc).__name__}: {exc}", cfg))
+    return AiModelList(models=_ranked(cfg.provider, listed))
+
+
+def _listed(cfg: AIConfig, transport: httpx.BaseTransport | None) -> list[_Listed]:
+    url = models_url(cfg)
+    headers = models_headers(cfg)
+    with httpx.Client(
+        timeout=cfg.timeout,
+        proxy=None if transport else provider_proxy(cfg),
+        transport=transport,
+        follow_redirects=False,
+    ) as client:
+        if cfg.provider == AIProvider.ANTHROPIC.value:
+            return _anthropic_models(client, url, headers)
+        if cfg.provider == AIProvider.GOOGLE.value:
+            return _google_models(client, url, headers)
+        rows = _rows(_get_json(client, url, headers), "data")
+        if cfg.provider == AIProvider.OPENAI.value:
+            return [_Listed(r["id"]) for r in rows if openai_chat_model(r["id"])]
+        return [_compatible(r) for r in rows]
+
+
+def _anthropic_models(
+    client: httpx.Client, url: str, headers: dict[str, str]
+) -> list[_Listed]:
+    out: list[_Listed] = []
+    params: dict[str, Any] = {"limit": _PAGE_SIZE}
+    for _ in range(MODEL_LIST_PAGES):
+        body = _get_json(client, url, headers, params)
+        out.extend(
+            _Listed(r["id"], str(r.get("display_name") or ""))
+            for r in _rows(body, "data")
+        )
+        last = body.get("last_id") if isinstance(body, dict) else None
+        if not (isinstance(body, dict) and body.get("has_more") and last):
+            break
+        params = {"limit": _PAGE_SIZE, "after_id": last}
+    return out
+
+
+def _google_models(
+    client: httpx.Client, url: str, headers: dict[str, str]
+) -> list[_Listed]:
+    out: list[_Listed] = []
+    params: dict[str, Any] = {"pageSize": _PAGE_SIZE}
+    for _ in range(MODEL_LIST_PAGES):
+        body = _get_json(client, url, headers, params)
+        for row in _rows(body, "models", key="name"):
+            if GOOGLE_GENERATE not in (row.get("supportedGenerationMethods") or []):
+                continue
+            model_id = row["name"].removeprefix("models/")
+            if model_id:
+                out.append(_Listed(model_id, str(row.get("displayName") or "")))
+        token = body.get("nextPageToken") if isinstance(body, dict) else None
+        if not token:
+            break
+        params = {"pageSize": _PAGE_SIZE, "pageToken": token}
+    return out
+
+
+def _compatible(row: dict) -> _Listed:
+    pricing = row.get("pricing") if isinstance(row.get("pricing"), dict) else {}
+    return _Listed(
+        row["id"],
+        str(row.get("name") or ""),
+        _per_mtok(pricing.get("prompt")),
+        _per_mtok(pricing.get("completion")),
+    )
+
+
+def _per_mtok(value: object) -> float | None:
+    """A per-token price string as dollars per million tokens."""
+    try:
+        per_token = float(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+    if per_token < 0 or not math.isfinite(per_token):
+        return None
+    return round(per_token * 1_000_000, 4)
+
+
+def _rows(body: object, field_name: str, *, key: str = "id") -> list[dict]:
+    items = body.get(field_name) if isinstance(body, dict) else body
+    if not isinstance(items, list):
+        return []
+    return [
+        item
+        for item in items
+        if isinstance(item, dict) and isinstance(item.get(key), str) and item[key]
+    ]
+
+
+def _get_json(
+    client: httpx.Client,
+    url: str,
+    headers: dict[str, str],
+    params: dict[str, Any] | None = None,
+) -> object:
+    try:
+        response = client.get(url, headers=headers, params=params)
+    except httpx.HTTPError as exc:
+        reason = str(exc) or type(exc).__name__
+        msg = f"The provider did not respond: {reason}"
+        raise AIError(msg) from exc
+    if _REDIRECT <= response.status_code < _HTTP_ERROR:
+        raise AIError(_REDIRECTED)
+    if response.status_code >= _HTTP_ERROR:
+        raise http_error(response.status_code, response.text)
+    try:
+        return response.json()
+    except ValueError as exc:
+        raise AIError(_NOT_JSON) from exc
+
+
+_CATALOG_ORDER = {m.id: i for i, m in enumerate(MODELS)}
+
+
+def _ranked(provider: str, listed: list[_Listed]) -> list[AiModelOption]:
+    ids = {item.id.strip() for item in listed}
+    seen: dict[str, AiModelOption] = {}
+    order: dict[str, int] = {}
+    for item in listed:
+        model_id = item.id.strip()
+        if not model_id or model_id in seen or len(model_id) > MAX_MODEL_ID:
+            continue
+        spec = model_spec(model_id)
+        curated = spec if spec is not None and spec.provider == provider else None
+        recommended = bool(
+            curated
+            and curated.recommended
+            and (curated.id == model_id or curated.id not in ids)
+        )
+        if curated is not None:
+            order[model_id] = _CATALOG_ORDER[curated.id]
+        seen[model_id] = AiModelOption(
+            id=model_id,
+            label=(curated.label if curated else item.label.strip()) or model_id,
+            input_per_mtok=(
+                curated.input_per_mtok
+                if curated and curated.input_per_mtok is not None
+                else item.input_per_mtok
+            ),
+            output_per_mtok=(
+                curated.output_per_mtok
+                if curated and curated.output_per_mtok is not None
+                else item.output_per_mtok
+            ),
+            recommended=recommended,
+        )
+    return sorted(
+        seen.values(),
+        key=lambda m: (
+            not m.recommended,
+            order.get(m.id, 0) if m.recommended else 0,
+            m.label.lower(),
+            m.id,
+        ),
+    )

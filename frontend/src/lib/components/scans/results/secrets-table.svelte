@@ -123,6 +123,7 @@
 
 	let selected = $state<SecretDetail | null>(null);
 	let drawerOpen = $state(false);
+	let barH = $state(0);
 	const selection = new RowSelection<SecretRead>();
 
 	let ready = $derived(Boolean(projectId) && (projectWide || Boolean(scanId)));
@@ -406,7 +407,10 @@
 	}
 </script>
 
-<div class="z-20 bg-background md:sticky md:top-[var(--scan-tabs-h,0px)] md:pt-2">
+<div
+	class="z-20 bg-background md:sticky md:top-[var(--scan-tabs-h,0px)] md:pt-2"
+	bind:clientHeight={barH}
+>
 	<QueryBar
 		bind:this={queryBar}
 		store={secretQuerySchema}
@@ -423,7 +427,7 @@
 	/>
 </div>
 
-<Card.Root class="gap-0 overflow-hidden rounded-t-none border-t-0 py-0">
+<Card.Root class="gap-0 overflow-clip rounded-t-none border-t-0 py-0">
 	<div class="border-b pr-3 pl-2">
 		<CountTabs
 			tabs={STATE_TABS}
@@ -512,6 +516,8 @@
 		</EmptyState>
 	{:else}
 		<SecretListHeader
+			sticky
+			top={barH}
 			{projectWide}
 			sortKey={sort.key}
 			sortDir={sort.dir}

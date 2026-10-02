@@ -1,6 +1,7 @@
 /** Mirror of shared/definitions/ask.py */
 
 export const MAX_QUESTION_CHARS = 4000;
+export const MAX_STARTERS = 3;
 
 export const Verdict = {
 	PROFILE: 'profile',
@@ -44,7 +45,7 @@ export const EVIDENCE_FIELD_LABELS: Record<EvidenceFieldValue, string> = {
 	request: 'request',
 	response: 'response',
 	title: 'page title',
-	note: 'triage note',
+	note: 'triage reason',
 	matched_at: 'matched URL'
 };
 export type EvidenceFieldValue = (typeof EvidenceField)[keyof typeof EvidenceField];

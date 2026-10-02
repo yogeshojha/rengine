@@ -92,7 +92,9 @@ export interface VulnerabilityRead {
 	observed_at: string | null;
 	discovered_at: string;
 	state: string;
-	note: string | null;
+	reason: string | null;
+	reason_at: string | null;
+	reason_by: string | null;
 	is_new: boolean;
 	host_count: number;
 	sets: string[];
@@ -146,6 +148,7 @@ export interface BulkTriageResult {
 	state: string;
 	fingerprints: number;
 	updated: number;
+	reasons: number;
 }
 
 export const VULN_VIEWS = [
@@ -352,7 +355,7 @@ export interface ScanVulnerabilities {
 export interface TriageResult {
 	fingerprint: string;
 	state: string;
-	note: string | null;
+	reason: string | null;
 	updated: number;
 }
 

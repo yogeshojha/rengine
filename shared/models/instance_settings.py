@@ -44,9 +44,9 @@ class InstanceSettings(SQLModel, table=True):
     scan_history_retention_days: int = Field(default=90)
     screenshot_retention_days: int = Field(default=30)
     ai_enabled: bool = Field(default=False)
-    ai_provider: str | None = Field(default=None)
-    ai_model: str | None = Field(default=None)
-    ai_api_key_encrypted: str | None = Field(default=None)
+    ai_connection_id: uuid.UUID | None = Field(
+        default=None, foreign_key="ai_connections.id", ondelete="SET NULL"
+    )
     ai_features: dict = Field(
         default_factory=dict, sa_column=Column(JSON, nullable=False)
     )

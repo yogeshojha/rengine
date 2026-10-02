@@ -8,6 +8,7 @@ export const DELIVERY_POLL_MS = 1000;
 export const DELIVERY_WAIT_MS = 12_000;
 export const NEW_ROW_MS = 60_000;
 export const SEND_SHORTCUT = 'b';
+export const HANDOFF_SHOWN_MS = 4000;
 
 export const CONNECTOR_STATE_LABELS: Record<ConnectorState, string> = {
 	idle: 'Not connected',
@@ -26,6 +27,17 @@ export const CONNECTOR_STATE_DOT: Record<ConnectorState, string> = {
 	stale: 'bg-muted-foreground',
 	paused: 'bg-muted-foreground'
 };
+
+/** Green while the extension polls, grey otherwise. */
+export function presenceDot(state: ConnectorState): string {
+	return CONNECTOR_STATE_DOT[ONLINE_STATES.has(state) ? 'live' : 'idle'];
+}
+
+/** Burp Suite offline, or null while the extension polls. */
+export function offlineNote(state: ConnectorState, proxy: string): string | null {
+	if (ONLINE_STATES.has(state)) return null;
+	return `${proxy} ${state === 'paused' ? 'paused' : 'offline'}`;
+}
 
 export const SOURCE_TOOL_LABELS: Record<SourceTool, string> = {
 	proxy: 'Proxy',

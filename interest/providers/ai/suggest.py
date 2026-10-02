@@ -98,6 +98,5 @@ async def propose_async(
         system=SYSTEM,
         prompt=build_prompt(rows),
         subject=f"{len(rows)} judged assets",
-        fast=True,
     )
     return parse(text) if text else []

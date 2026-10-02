@@ -229,7 +229,7 @@ class DeleteTarget(Tool):
     async def run(self, ctx: ToolContext, args: DeleteInput) -> ToolResult:
         from app.services.target import TargetService  # noqa: PLC0415
 
-        issued_by = operator(ctx)
+        operator(ctx)
         scope = await resolve(ctx, args.target)
         value = scope.target.target_value
         holdings = {
@@ -247,9 +247,7 @@ class DeleteTarget(Tool):
             )
             raise ToolError(msg)
 
-        await _guard(
-            TargetService(ctx.session).delete_target(str(scope.target.id), issued_by)
-        )
+        await _guard(TargetService(ctx.session).delete_target(str(scope.target.id)))
         return ToolResult(
             summary=f"Deleted {value} and everything recorded against it",
             data={"value": value, "scans_deleted": scans, "results_deleted": holdings},

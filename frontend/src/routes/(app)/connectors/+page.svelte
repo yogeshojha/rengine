@@ -50,6 +50,7 @@
 	const projectId = $derived(projectsStore.activeProject?.id ?? null);
 	const specs = $derived(connectors.catalog);
 	const linked = $derived(connectors.selected);
+	const linkedId = $derived(linked?.id ?? null);
 	const linkedSpec = $derived(specs.find((s) => s.kind === linked?.kind) ?? null);
 	const live = $derived(linked ? ONLINE_STATES.has(linked.state) : false);
 	const ready = $derived(specs.length > 0 && connectors.fetchedProjectId === projectId);
@@ -96,7 +97,7 @@
 		if (!browser) return;
 		const id = projectId;
 		const tab = activeTab;
-		const chosen = linked?.id;
+		const chosen = linkedId;
 		const every = live ? LIVE_POLL_MS : CONNECTOR_POLL_MS;
 		if (!id) return;
 		const poll = () => {

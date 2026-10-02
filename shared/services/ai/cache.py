@@ -86,7 +86,6 @@ def narrate(
     system: str,
     prompt: str,
     subject: str = "",
-    fast: bool = False,
     usage: AIUsage | None = None,
     use_cache: bool = True,
 ) -> str | None:
@@ -94,7 +93,7 @@ def narrate(
     if not cfg.available:
         return None
 
-    model = cfg.model_for_task(fast=fast)
+    model = cfg.model
     key = cache_key(task, prompt, model)
 
     if use_cache:
@@ -110,7 +109,7 @@ def narrate(
             return hit.content
 
     try:
-        result = complete(cfg, system=system, prompt=prompt, task=task, fast=fast)
+        result = complete(cfg, system=system, prompt=prompt, task=task)
     except Exception as exc:
         logger.warning("ai narration failed", task=task, error=str(exc)[:200])
         if usage is not None:
@@ -134,13 +133,12 @@ async def narrate_async(
     system: str,
     prompt: str,
     subject: str = "",
-    fast: bool = False,
 ) -> str | None:
     """narrate over an AsyncSession."""
     if not cfg.available:
         return None
 
-    model = cfg.model_for_task(fast=fast)
+    model = cfg.model
     key = cache_key(task, prompt, model)
 
     hit = await session.run_sync(lambda s: lookup(s, task, key))
@@ -154,7 +152,7 @@ async def narrate_async(
 
     try:
         result = await asyncio.to_thread(
-            complete, cfg, system=system, prompt=prompt, task=task, fast=fast
+            complete, cfg, system=system, prompt=prompt, task=task
         )
     except Exception as exc:
         logger.warning("ai narration failed", task=task, error=str(exc)[:200])

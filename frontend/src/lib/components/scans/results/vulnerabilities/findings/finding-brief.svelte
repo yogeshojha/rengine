@@ -24,7 +24,7 @@
 	import { httpStatusTextClass } from '$lib/utilities/scan-correlation';
 	import { exactToken } from '$lib/utilities/scan-insights';
 	import { epssPercent, locationLabel, type VulnerabilityRead } from '$lib/utilities/vulns';
-	import { BRIEF_TABS, BRIEF_TAB_LABELS, findingPrefs, type BriefTab } from './prefs.svelte';
+	import { BRIEF_TABS, BRIEF_TAB_LABELS, findingBriefTabs, type BriefTab } from './prefs.svelte';
 	import AssetTiles from './asset-tiles.svelte';
 	import FindingList from './finding-list.svelte';
 
@@ -51,11 +51,16 @@
 	let hostTotal = $derived(Object.values(v.host_findings ?? {}).reduce((a, n) => a + n, 0));
 
 	let checkTotal = $state(0);
+
+	$effect(() => {
+		const id = v.id;
+		return () => findingBriefTabs.close(id);
+	});
 </script>
 
 <Tabs.Root
-	value={findingPrefs.tab}
-	onValueChange={(t) => (findingPrefs.tab = t as BriefTab)}
+	value={findingBriefTabs.of(v.id)}
+	onValueChange={(t) => findingBriefTabs.set(v.id, t as BriefTab)}
 	class="gap-2"
 >
 	<ScrollArea orientation="horizontal" class="max-w-full">

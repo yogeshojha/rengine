@@ -54,8 +54,6 @@ export interface AskBrief {
 	available: boolean;
 	off_reason: string | null;
 	model: string | null;
-	masked: number;
-	flags: AskFlagRead[];
 	starters: string[];
 }
 
@@ -114,6 +112,7 @@ export interface AskSubject {
 	request?: string | null;
 	response?: string | null;
 	state?: string | null;
+	reason?: string | null;
 }
 
 export interface AskQuestion {

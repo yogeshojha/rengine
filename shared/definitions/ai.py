@@ -2,15 +2,29 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from enum import StrEnum
+from urllib.parse import urlsplit
 
 from shared.enums.instance import AIProvider
 
 MAX_BRIEF_BYTES = 24_000
 MAX_OUTPUT_TOKENS = 2_000
 REQUEST_TIMEOUT = 120.0
+MODEL_LIST_TIMEOUT = 15.0
+MODEL_LIST_PAGES = 10
 CACHE_VERSION = "1"
+
+MAX_CONNECTION_NAME = 60
+MAX_PROVIDER = 32
+MAX_MODEL_ID = 80
+MAX_BASE_URL = 300
+MAX_WORKSPACE_ID = 80
+MAX_API_KEY = 400
+MAX_TEST_MESSAGE = 500
+MAX_PRICE_PER_MTOK = 10_000.0
+MAX_CALLS_PAGE = 50
 
 
 class AITask(StrEnum):
@@ -79,6 +93,7 @@ class ModelSpec:
     adaptive_thinking: bool = False
     supports_effort: bool = False
     note: str = ""
+    recommended: bool = False
 
 
 MODELS: tuple[ModelSpec, ...] = (
@@ -92,6 +107,7 @@ MODELS: tuple[ModelSpec, ...] = (
         True,
         True,
         "Default model.",
+        recommended=True,
     ),
     ModelSpec(
         "claude-sonnet-5",
@@ -103,6 +119,7 @@ MODELS: tuple[ModelSpec, ...] = (
         True,
         True,
         "Lower cost.",
+        recommended=True,
     ),
     ModelSpec(
         "claude-haiku-4-5",
@@ -114,6 +131,7 @@ MODELS: tuple[ModelSpec, ...] = (
         False,
         False,
         "Lowest cost and latency.",
+        recommended=True,
     ),
     ModelSpec(
         "claude-opus-4-8",
@@ -125,27 +143,109 @@ MODELS: tuple[ModelSpec, ...] = (
         True,
         True,
     ),
-    ModelSpec("gpt-4o", "GPT-4o", AIProvider.OPENAI.value),
-    ModelSpec("gpt-4o-mini", "GPT-4o mini", AIProvider.OPENAI.value),
-    ModelSpec("gemini-3.8-flash", "Gemini 3.8 Flash", AIProvider.GOOGLE.value),
     ModelSpec(
-        "gemini-3.5-flash-lite", "Gemini 3.5 Flash-Lite", AIProvider.GOOGLE.value
+        "claude-fable-5-1",
+        "Claude Fable 5.1",
+        AIProvider.ANTHROPIC.value,
+        10.0,
+        50.0,
+        1_000_000,
+        True,
+        True,
+    ),
+    ModelSpec(
+        "claude-fable-5",
+        "Claude Fable 5",
+        AIProvider.ANTHROPIC.value,
+        10.0,
+        50.0,
+        1_000_000,
+        True,
+        True,
+    ),
+    ModelSpec(
+        "claude-opus-5-5",
+        "Claude Opus 5.5",
+        AIProvider.ANTHROPIC.value,
+        4.0,
+        20.0,
+        1_000_000,
+        True,
+        True,
+    ),
+    ModelSpec(
+        "claude-opus-4-7",
+        "Claude Opus 4.7",
+        AIProvider.ANTHROPIC.value,
+        5.0,
+        25.0,
+        1_000_000,
+        True,
+        True,
+    ),
+    ModelSpec(
+        "claude-opus-4-6",
+        "Claude Opus 4.6",
+        AIProvider.ANTHROPIC.value,
+        5.0,
+        25.0,
+        1_000_000,
+        True,
+        True,
+    ),
+    ModelSpec(
+        "claude-sonnet-5-5",
+        "Claude Sonnet 5.5",
+        AIProvider.ANTHROPIC.value,
+        2.0,
+        10.0,
+        1_000_000,
+        True,
+        True,
+    ),
+    ModelSpec(
+        "claude-sonnet-4-6",
+        "Claude Sonnet 4.6",
+        AIProvider.ANTHROPIC.value,
+        3.0,
+        15.0,
+        1_000_000,
+        True,
+        True,
+    ),
+    ModelSpec("gpt-4o", "GPT-4o", AIProvider.OPENAI.value, recommended=True),
+    ModelSpec("gpt-4o-mini", "GPT-4o mini", AIProvider.OPENAI.value, recommended=True),
+    ModelSpec(
+        "gemini-3.8-flash",
+        "Gemini 3.8 Flash",
+        AIProvider.GOOGLE.value,
+        recommended=True,
+    ),
+    ModelSpec(
+        "gemini-3.5-flash-lite",
+        "Gemini 3.5 Flash-Lite",
+        AIProvider.GOOGLE.value,
+        recommended=True,
     ),
 )
 
 MODEL_BY_ID: dict[str, ModelSpec] = {m.id: m for m in MODELS}
 
+MODEL_SNAPSHOT = re.compile(r"^(?P<alias>.+)-\d{8}$")
+
+
+def model_spec(model_id: str) -> ModelSpec | None:
+    """The curated spec for a model id or its dated snapshot."""
+    spec = MODEL_BY_ID.get(model_id)
+    if spec is None and (snapshot := MODEL_SNAPSHOT.match(model_id)):
+        spec = MODEL_BY_ID.get(snapshot["alias"])
+    return spec
+
+
 DEFAULT_MODEL: dict[str, str] = {
     AIProvider.ANTHROPIC.value: "claude-opus-5",
     AIProvider.OPENAI.value: "gpt-4o-mini",
     AIProvider.GOOGLE.value: "gemini-3.8-flash",
-    AIProvider.OPENAI_COMPATIBLE.value: "",
-}
-
-FAST_MODEL: dict[str, str] = {
-    AIProvider.ANTHROPIC.value: "claude-haiku-4-5",
-    AIProvider.OPENAI.value: "gpt-4o-mini",
-    AIProvider.GOOGLE.value: "gemini-3.5-flash-lite",
     AIProvider.OPENAI_COMPATIBLE.value: "",
 }
 
@@ -172,6 +272,24 @@ PROVIDER_HELP: dict[str, str] = {
 BASE_URL_HINT = "http://ollama:11434/v1 or https://openrouter.ai/api/v1"
 BASE_URL_PROVIDERS: frozenset[str] = frozenset({AIProvider.OPENAI_COMPATIBLE.value})
 KEY_OPTIONAL_PROVIDERS: frozenset[str] = frozenset({AIProvider.OPENAI_COMPATIBLE.value})
+WORKSPACE_PROVIDERS: frozenset[str] = frozenset({AIProvider.ANTHROPIC.value})
+
+# ---------- model listing ----------
+
+OPENAI_CHAT_ID = re.compile(r"^(?:gpt-|chatgpt-|o\d)")
+OPENAI_NOT_CHAT: tuple[str, ...] = (
+    "embedding",
+    "tts",
+    "whisper",
+    "dall-e",
+    "moderation",
+    "image",
+    "transcribe",
+    "realtime",
+    "audio",
+    "instruct",
+)
+GOOGLE_GENERATE = "generateContent"
 
 
 @dataclass(frozen=True)
@@ -237,19 +355,55 @@ FEATURE_LABELS: dict[str, str] = {
 }
 
 
-def model_for(provider: str, requested: str | None, *, fast: bool = False) -> str:
+def feature_switches(stored: dict | None) -> dict[str, bool]:
+    """Every feature switch, stored values over the defaults."""
+    saved = stored or {}
+    return {
+        key: saved[key] if isinstance(saved.get(key), bool) else default
+        for key, default in DEFAULT_AI_FEATURES.items()
+    }
+
+
+def model_for(provider: str, requested: str | None) -> str:
     if requested and requested.strip():
         return requested.strip()
-    table = FAST_MODEL if fast else DEFAULT_MODEL
-    if provider in table:
-        return table[provider]
-    return DEFAULT_MODEL[AIProvider.ANTHROPIC.value]
+    return DEFAULT_MODEL.get(provider, "")
 
 
-def price(model: str, input_tokens: int, output_tokens: int) -> float | None:
-    spec = MODEL_BY_ID.get(model)
-    if spec is None or spec.input_per_mtok is None or spec.output_per_mtok is None:
+def connection_name(provider: str, base_url: str | None = None) -> str:
+    """The name a provider gets when none is given."""
+    if provider in BASE_URL_PROVIDERS and base_url:
+        host = urlsplit(base_url).hostname
+        if host:
+            return host[:MAX_CONNECTION_NAME]
+    return PROVIDER_LABELS.get(provider, provider)[:MAX_CONNECTION_NAME]
+
+
+def openai_chat_model(model_id: str) -> bool:
+    value = model_id.lower()
+    return bool(OPENAI_CHAT_ID.match(value)) and not any(
+        token in value for token in OPENAI_NOT_CHAT
+    )
+
+
+Rate = tuple[float, float]
+
+
+def price(
+    model: str,
+    input_tokens: int,
+    output_tokens: int,
+    listed: Rate | None = None,
+) -> float | None:
+    """Dollars for one call: the curated price first, else the listed one."""
+    spec = model_spec(model)
+    rate = (
+        (spec.input_per_mtok, spec.output_per_mtok)
+        if spec is not None
+        and spec.input_per_mtok is not None
+        and spec.output_per_mtok is not None
+        else listed
+    )
+    if rate is None:
         return None
-    return (
-        input_tokens * spec.input_per_mtok + output_tokens * spec.output_per_mtok
-    ) / 1_000_000
+    return (input_tokens * rate[0] + output_tokens * rate[1]) / 1_000_000

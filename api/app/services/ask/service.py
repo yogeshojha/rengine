@@ -15,13 +15,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.core.database import async_db_session
-from app.services.ask import asset_context, budget, citations, context, suggest, tools
+from app.services.ask import (
+    asset_context,
+    budget,
+    citations,
+    context,
+    starters,
+    suggest,
+    tools,
+)
 from app.services.ask.verdict import assess
 from app.services.vulnerability import VulnerabilityService
 from mcp import limits
 from mcp.context import ToolContext
 from mcp.result import UNTRUSTED_NOTE
-from shared.definitions.ai import AITask, price
+from shared.definitions.ai import KEY_OPTIONAL_PROVIDERS, AITask
 from shared.definitions.ask import (
     ASK_CLIENT,
     MAX_ANSWER_CHARS,
@@ -31,7 +39,6 @@ from shared.definitions.ask import (
     MAX_TOOL_ROUNDS,
     QUESTIONS_PER_DAY,
     RATE_PER_MINUTE,
-    STARTERS,
     VERDICT_LABELS,
     MessageRole,
     StreamEvent,
@@ -74,7 +81,9 @@ NO_ANSWER = "The model returned no answer."
 def availability(cfg: AIConfig | None) -> str | None:
     if cfg is None or not cfg.enabled:
         return "AI is switched off."
-    if not cfg.api_key:
+    if not cfg.provider:
+        return "No AI provider is in use."
+    if not cfg.api_key and cfg.provider not in KEY_OPTIONAL_PROVIDERS:
         return "No AI provider key is set."
     if not cfg.available:
         return "The AI provider is not supported."
@@ -240,12 +249,8 @@ class AskService:
             return None
         software = await software_hit(self.session, v)
         verdict, facts = assess(v, software=software)
-        ctx = context.build(
-            v, facts=facts, verdict=VERDICT_LABELS[verdict], target=_target(v)
-        )
-        return await self._brief(
-            verdict, facts, ctx, SurfaceDimension.VULNERABILITIES.value
-        )
+        asks = starters.for_finding(v, verdict=verdict, software=software)
+        return await self._brief(verdict, facts, asks)
 
     async def brief_asset(self, scan_id: uuid.UUID, name: str) -> AskBrief | None:
         row = (
@@ -261,17 +266,14 @@ class AskService:
         if bundle is None:
             return None
         verdict, facts = asset_context.assess(bundle)
-        ctx = asset_context.build(
-            bundle, facts=facts, target=await _target_value(self.session, row)
-        )
-        return await self._brief(verdict, facts, ctx, SurfaceDimension.WEB_ASSETS.value)
+        return await self._brief(verdict, facts, starters.for_asset(bundle))
 
     async def _brief(
-        self, verdict: str, facts: list[Fact], ctx: context.Context, dimension: str
+        self, verdict: str, facts: list[Fact], asks: list[str]
     ) -> AskBrief:
         cfg = await load_config_async(self.session)
         reason = availability(cfg)
-        model = cfg.model_for_task(fast=False) if cfg and reason is None else None
+        model = cfg.model if cfg and reason is None else None
         return AskBrief(
             verdict=verdict,
             label=VERDICT_LABELS[verdict],
@@ -279,9 +281,7 @@ class AskService:
             available=reason is None,
             off_reason=reason,
             model=model,
-            masked=ctx.masked,
-            flags=ctx.flags,
-            starters=list(STARTERS[dimension]),
+            starters=asks,
         )
 
 
@@ -408,7 +408,7 @@ async def _settle(session: AsyncSession, turn: _Turn) -> dict:
     if not clean:
         raise AIError(NO_ANSWER)
     usage = turn.usage
-    cost = price(usage.model, usage.input_tokens, usage.output_tokens)
+    cost = turn.cfg.cost(usage.model, usage.input_tokens, usage.output_tokens)
     answer = AskMessage(
         thread_id=turn.thread.id,
         role=MessageRole.ASSISTANT.value,

@@ -563,7 +563,7 @@ async def update_target(
 @router.delete("/{target_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_target(
     target_id: str,
-    current_user: CurrentUser,
+    _current_user: CurrentUser,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    await service.delete_target(target_id, current_user.id)
+    await service.delete_target(target_id)

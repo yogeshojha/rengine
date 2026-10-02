@@ -45,6 +45,8 @@ export interface SurfaceSpec {
 	children?: string;
 	// page params that list one row per counted row
 	rowView?: Record<string, string>;
+	// page param that opens one row's sheet
+	sheetParam?: string;
 }
 
 export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
@@ -59,7 +61,8 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		recentsKey: STORAGE_KEYS.webAssetsRecentQueries,
 		kinds: ['hosts', 'http_assets'],
 		countColumns: ['subdomains_found', 'http_assets_found'],
-		children: 'stored responses'
+		children: 'stored responses',
+		sheetParam: 'asset'
 	},
 	[SurfaceDimension.ENDPOINTS]: {
 		key: SurfaceDimension.ENDPOINTS,
@@ -96,7 +99,8 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		queryParam: 'ip_q',
 		recentsKey: STORAGE_KEYS.ipsRecentQueries,
 		kinds: ['addresses'],
-		countColumns: ['ips_found']
+		countColumns: ['ips_found'],
+		sheetParam: 'ip'
 	},
 	[SurfaceDimension.VULNERABILITIES]: {
 		key: SurfaceDimension.VULNERABILITIES,
@@ -109,7 +113,8 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		recentsKey: STORAGE_KEYS.vulnsRecentQueries,
 		kinds: ['vulnerabilities'],
 		countColumns: ['vulnerabilities_found'],
-		rowView: { vuln_view: 'findings' }
+		rowView: { vuln_view: 'findings' },
+		sheetParam: 'vuln'
 	},
 	[SurfaceDimension.SOFTWARE]: {
 		key: SurfaceDimension.SOFTWARE,

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { tick, untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
+	import Plus from '@lucide/svelte/icons/plus';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import * as Alert from '$lib/components/ui/alert';
 	import * as Bubble from '$lib/components/ui/bubble';
@@ -12,11 +13,12 @@
 	import NoteComposer from '$lib/components/notes/note-composer.svelte';
 	import AskComposer from './ask-composer.svelte';
 	import AskMessageView from './ask-message.svelte';
+	import AskStarters from './ask-starters.svelte';
 	import AskTrace from './ask-trace.svelte';
 	import EvidencePeek from './evidence-peek.svelte';
 	import ThreadMenu from './thread-menu.svelte';
 	import VerdictStrip from './verdict-strip.svelte';
-	import { askApi } from '$lib/api/ask';
+	import { askApi, askBriefs, briefKey } from '$lib/api/ask';
 	import { LONG_REQUEST_TIMEOUT_MS } from '$lib/api/client';
 	import { Decision, EvidenceField, MessageRole, NextStep, StreamEvent } from '$lib/config/ask';
 	import { ROUTES } from '$lib/config/routes';
@@ -58,6 +60,7 @@
 
 	let brief = $state<AskBrief | null>(null);
 	let briefLoading = $state(false);
+	let threadsLoading = $state(false);
 	let threads = $state<AskThread[]>([]);
 	let active = $state<AskThread | null>(null);
 	let messages = $state<AskMessage[]>([]);
@@ -73,12 +76,18 @@
 	let endEl = $state<HTMLDivElement | null>(null);
 	let composer = $state<AskComposer | null>(null);
 	let loadedFor = '';
+	let briefFor = '';
+	let briefOf = '';
 	let generation = 0;
+	let subjectGeneration = 0;
+	let pickGeneration = 0;
+	let briefGeneration = 0;
 	let controller: AbortController | null = null;
 	let timer: ReturnType<typeof setTimeout> | null = null;
 
 	let key = $derived(`${subject.targetId}:${subject.dimension}:${subject.key}:${subject.scanId}`);
-	let empty = $derived(!messages.length && !pending && !loadingThread);
+	let heldKey = $derived(briefKey(subject));
+	let empty = $derived(!messages.length && !pending && !loadingThread && !threadsLoading);
 	let draftText = $derived(draft ? draft.text.replace(/ ?\[(?:F|T|R)\d{1,3}\]/g, '') : '');
 	let suggestion = $derived(
 		messages.findLast((m) => m.role === MessageRole.ASSISTANT)?.suggestion ?? null
@@ -125,6 +134,12 @@
 	});
 
 	$effect(() => {
+		if (!subject.key || briefFor === heldKey) return;
+		briefFor = heldKey;
+		untrack(() => void loadBrief());
+	});
+
+	$effect(() => {
 		void messages.length;
 		void draft?.text;
 		void draft?.trace.length;
@@ -133,7 +148,8 @@
 	});
 
 	$effect(() => {
-		if (!queued || !brief?.available || pending || briefLoading || loadingThread) return;
+		if (!queued || !brief?.available || pending || briefLoading || threadsLoading || loadingThread)
+			return;
 		const question = queued;
 		onQueued?.();
 		untrack(() => void send(question));
@@ -158,42 +174,71 @@
 
 	async function load() {
 		cancel();
-		briefLoading = true;
+		const mine = ++subjectGeneration;
+		pickGeneration += 1;
+		threadsLoading = true;
+		loadingThread = false;
 		error = '';
-		brief = null;
 		threads = [];
 		active = null;
 		messages = [];
-		factPeek = null;
 		try {
-			const [b, t] = await Promise.all([askApi.brief(subject), askApi.threads(subject)]);
-			brief = b;
-			threads = t;
-			if (t.length) await pick(t[0]);
+			const found = await askApi.threads(subject);
+			if (mine !== subjectGeneration) return;
+			threads = found;
+			if (found.length) void pick(found[0]);
 		} catch (e) {
-			error = (e as Error).message;
+			if (mine === subjectGeneration) error = (e as Error).message;
 		} finally {
+			if (mine === subjectGeneration) threadsLoading = false;
+		}
+	}
+
+	async function loadBrief() {
+		const mine = ++briefGeneration;
+		if (briefOf !== key) {
+			briefOf = key;
+			brief = null;
+		}
+		factPeek = null;
+		const held = askBriefs.peek(subject);
+		if (held) {
+			brief = held;
 			briefLoading = false;
+			return;
+		}
+		briefLoading = true;
+		try {
+			const found = await askBriefs.get(subject);
+			if (mine === briefGeneration) brief = found;
+		} catch (e) {
+			if (mine === briefGeneration) error = (e as Error).message;
+		} finally {
+			if (mine === briefGeneration) briefLoading = false;
 		}
 	}
 
 	async function pick(thread: AskThread) {
+		const mine = ++pickGeneration;
 		active = thread;
 		messages = [];
 		loadingThread = true;
 		try {
 			const detail = await askApi.thread(thread.id);
+			if (mine !== pickGeneration) return;
 			messages = detail.messages;
 			active = detail.thread;
 		} catch (e) {
-			error = (e as Error).message;
+			if (mine === pickGeneration) error = (e as Error).message;
 		} finally {
-			loadingThread = false;
+			if (mine === pickGeneration) loadingThread = false;
 		}
 	}
 
 	function startNew() {
 		cancel();
+		pickGeneration += 1;
+		loadingThread = false;
 		active = null;
 		messages = [];
 		error = '';
@@ -305,55 +350,70 @@
 	}
 </script>
 
-<div class="flex items-center justify-between gap-3 border-b px-5 py-1.5">
-	<ThreadMenu
-		{threads}
-		{active}
-		{noun}
-		onPick={(t) => {
-			cancel();
-			void pick(t);
-		}}
-		onNew={startNew}
-		onClear={() => (confirmClear = true)}
-	/>
-	{#if active}
-		<Hint text="Delete thread">
-			{#snippet child(props)}
+<div class="sticky top-0 z-10 flex flex-col bg-card">
+	<div class="flex items-center justify-between gap-3 border-b px-5 py-1.5">
+		<ThreadMenu
+			{threads}
+			{active}
+			{noun}
+			onPick={(t) => {
+				cancel();
+				void pick(t);
+			}}
+			onNew={startNew}
+			onClear={() => (confirmClear = true)}
+		/>
+		{#if active}
+			<div class="flex shrink-0 items-center gap-1">
 				<Button
-					{...props}
 					variant="ghost"
-					size="icon"
-					class="size-7 text-muted-foreground"
-					onclick={() => (confirmDelete = true)}
-					aria-label="Delete thread"
+					size="sm"
+					class="h-7 gap-1.5 px-2 text-xs"
+					onclick={startNew}
+					aria-label="New thread"
 				>
-					<Trash2 />
+					<Plus />
+					New
 				</Button>
-			{/snippet}
-		</Hint>
+				<Hint text="Delete thread">
+					{#snippet child(props)}
+						<Button
+							{...props}
+							variant="ghost"
+							size="icon"
+							class="size-7 text-muted-foreground"
+							onclick={() => (confirmDelete = true)}
+							aria-label="Delete thread"
+						>
+							<Trash2 />
+						</Button>
+					{/snippet}
+				</Hint>
+			</div>
+		{/if}
+	</div>
+
+	<VerdictStrip
+		{brief}
+		loading={(briefLoading && !brief) || loading}
+		onFact={(f) => (factPeek = factPeek?.n === f.n ? null : f)}
+	/>
+
+	{#if factPeek?.field}
+		<div class="border-b px-5 py-3">
+			<EvidencePeek
+				field={factPeek.field}
+				lines={factPeek.lines}
+				text={factPeek.field === EvidenceField.REQUEST
+					? (subject.request ?? null)
+					: (subject.response ?? null)}
+				mark={factPeek.n}
+				onOpen={onOpenEvidence}
+				capped
+			/>
+		</div>
 	{/if}
 </div>
-
-<VerdictStrip
-	{brief}
-	loading={briefLoading || loading}
-	onFact={(f) => (factPeek = factPeek?.n === f.n ? null : f)}
-/>
-
-{#if factPeek?.field}
-	<div class="px-5 pt-4">
-		<EvidencePeek
-			field={factPeek.field}
-			lines={factPeek.lines}
-			text={factPeek.field === EvidenceField.REQUEST
-				? (subject.request ?? null)
-				: (subject.response ?? null)}
-			mark={factPeek.n}
-			onOpen={onOpenEvidence}
-		/>
-	</div>
-{/if}
 
 <div class="flex flex-col gap-5 p-5">
 	{#if brief && !brief.available}
@@ -372,17 +432,8 @@
 			<Skeleton class="h-4 w-11/12" />
 			<Skeleton class="h-4 w-2/3" />
 		</div>
-	{:else if empty && brief?.available}
-		<div class="flex flex-wrap gap-1.5">
-			{#each brief.starters as starter (starter)}
-				<Button
-					variant="outline"
-					size="sm"
-					class="h-7 rounded-full px-3 text-xs font-normal"
-					onclick={() => void send(starter)}>{starter}</Button
-				>
-			{/each}
-		</div>
+	{:else if empty}
+		<AskStarters {subject} onAsk={(question) => void send(question)} />
 	{/if}
 
 	{#each messages as message (message.id)}

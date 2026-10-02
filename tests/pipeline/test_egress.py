@@ -137,7 +137,5 @@ def test_ai_calls_take_the_egress_proxy_except_a_local_server(
     monkeypatch, provider, expected
 ):
     monkeypatch.setattr(ai_client, "egress_proxy", lambda: PROXY)
-    cfg = AIConfig(
-        provider=provider, api_key="k", model="m", fast_model="m", features={}
-    )
+    cfg = AIConfig(provider=provider, api_key="k", model="m", features={})
     assert ai_client.provider_proxy(cfg) == expected

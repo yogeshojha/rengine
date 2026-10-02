@@ -72,10 +72,13 @@ recorded there, how many of those were opened, and how many were not.
 
 ## Sending back
 
-Findings, web assets, endpoints and browsed requests carry a **Send to Repeater** button: on the
-finding sheet, the web asset sheet, the endpoint rows and branches, and every selection bar. The
-arrow beside it picks another tool, and the button keeps the last one chosen. With Burp offline
-the request is queued and the button reads **Queued for Burp Suite**.
+Findings, web assets, endpoints and browsed requests carry a Burp control named after the tool,
+**Repeater** by default: on the finding sheet, the web asset sheet, the endpoint rows and branches,
+and every selection bar. Its dot is green while the extension polls. The arrow beside it picks
+another tool, and the control keeps the last one chosen. The pencil opens the request in an
+editor first. The edited request is sent in place of the stored one, to the same host, with its
+`Content-Length` recomputed. With Burp offline the request is queued and the control reads
+**Queued**.
 
 | Tool | What arrives |
 |---|---|

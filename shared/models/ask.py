@@ -72,8 +72,6 @@ class AskBrief(BaseModel):
     available: bool
     off_reason: str | None = None
     model: str | None = None
-    masked: int = 0
-    flags: list[AskFlagRead] = []
     starters: list[str] = []
 
 

@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { SHEET_ROW, SHEET_DT, sheetStep } from './sheet';
+	import { SHEET_ROW, SHEET_DT, SHEET_HEAD, sheetStep } from './sheet';
+	import SheetTop from './sheet-top.svelte';
+	import SheetBar from './sheet-bar.svelte';
 	import Network from '@lucide/svelte/icons/network';
-	import NoteSection from '$lib/components/notes/note-section.svelte';
-	import { SurfaceDimension } from '$lib/config/surface';
+	import NotesButton from '$lib/components/notes/notes-button.svelte';
+	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import Plug from '@lucide/svelte/icons/plug';
 	import Globe from '@lucide/svelte/icons/globe';
 	import Server from '@lucide/svelte/icons/server';
 	import Copy from '@lucide/svelte/icons/copy';
-	import ChevronUp from '@lucide/svelte/icons/chevron-up';
-	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import Fingerprint from '@lucide/svelte/icons/fingerprint';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
@@ -19,7 +19,6 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-	import { Kbd } from '$lib/components/ui/kbd';
 	import CodeBlock from '$lib/components/code-block.svelte';
 	import { httpStatusTextClass } from '$lib/utilities/scan-correlation';
 	import { exactToken, filterToken } from '$lib/utilities/scan-insights';
@@ -64,8 +63,9 @@
 		onAddress
 	}: Props = $props();
 
+	const SVC = SURFACE[SurfaceDimension.SERVICES];
+
 	let contentEl = $state<HTMLElement | null>(null);
-	let position = $derived(pageOffset + index + 1);
 	let endpoint = $derived(s ? hostPort(s.ip, s.port) : '');
 	let network = $derived(
 		s ? [s.asn ? `AS${s.asn}` : null, s.asn_org].filter(Boolean).join(' · ') : ''
@@ -91,15 +91,19 @@
 		}}
 	>
 		{#if s}
-			<Sheet.Header class="gap-3 border-b border-border px-5 pt-5 pr-12 pb-4">
-				<div class="flex items-center gap-2">
+			<Sheet.Header class={SHEET_HEAD}>
+				<SheetTop noun={SVC.noun} {index} {pageOffset} {total} {onStep}>
 					<ServiceIcon
 						service={s.service_name}
 						serviceClass={s.service_class}
 						product={s.product}
 						class="size-4 shrink-0"
 					/>
-					<Sheet.Title class="truncate font-mono text-base font-medium">{endpoint}</Sheet.Title>
+				</SheetTop>
+				<div class="flex min-w-0 items-center gap-1">
+					<Sheet.Title class="min-w-0 truncate font-mono text-base font-medium"
+						>{endpoint}</Sheet.Title
+					>
 					<Tooltip.Root>
 						<Tooltip.Trigger>
 							{#snippet child({ props })}
@@ -107,7 +111,7 @@
 									{...props}
 									variant="ghost"
 									size="icon-sm"
-									class="size-7"
+									class="size-7 shrink-0"
 									onclick={() => copy(endpoint)}
 									aria-label="Copy address and port"
 								>
@@ -117,53 +121,6 @@
 						</Tooltip.Trigger>
 						<Tooltip.Content>Copy address and port</Tooltip.Content>
 					</Tooltip.Root>
-					<div class="ml-auto flex items-center gap-1">
-						{#if total > 1}
-							<span class="text-xs text-muted-foreground tabular-nums">
-								{position.toLocaleString()} / {total.toLocaleString()}
-							</span>
-							<Tooltip.Root>
-								<Tooltip.Trigger>
-									{#snippet child({ props })}
-										<Button
-											{...props}
-											variant="ghost"
-											size="icon-sm"
-											class="size-7"
-											disabled={position <= 1}
-											onclick={() => onStep?.(-1)}
-											aria-label="Previous service"
-										>
-											<ChevronUp />
-										</Button>
-									{/snippet}
-								</Tooltip.Trigger>
-								<Tooltip.Content class="flex items-center gap-1.5">
-									Previous <Kbd>k</Kbd>
-								</Tooltip.Content>
-							</Tooltip.Root>
-							<Tooltip.Root>
-								<Tooltip.Trigger>
-									{#snippet child({ props })}
-										<Button
-											{...props}
-											variant="ghost"
-											size="icon-sm"
-											class="size-7"
-											disabled={position >= total}
-											onclick={() => onStep?.(1)}
-											aria-label="Next service"
-										>
-											<ChevronDown />
-										</Button>
-									{/snippet}
-								</Tooltip.Trigger>
-								<Tooltip.Content class="flex items-center gap-1.5">
-									Next <Kbd>j</Kbd>
-								</Tooltip.Content>
-							</Tooltip.Root>
-						{/if}
-					</div>
 				</div>
 				<Sheet.Description class="truncate">
 					{serviceLabel(s)} · {serviceClassLabel(s.service_class)}{network ? ` · ${network}` : ''}
@@ -190,6 +147,21 @@
 					{/if}
 				</div>
 			</Sheet.Header>
+
+			{#if s.target_id}
+				<SheetBar>
+					<NotesButton
+						anchor={{
+							targetId: s.target_id,
+							scanId: s.scan_id,
+							dimension: SurfaceDimension.SERVICES,
+							assetKey: endpoint,
+							assetLabel: endpoint
+						}}
+						class="h-8"
+					/>
+				</SheetBar>
+			{/if}
 
 			<ScrollArea class="min-h-0 flex-1">
 				<div class="flex flex-col gap-6 p-5">
@@ -422,18 +394,6 @@
 							<p class="text-xs text-muted-foreground">No hostname resolves to this address.</p>
 						{/if}
 					</section>
-
-					{#if s.target_id}
-						<NoteSection
-							anchor={{
-								targetId: s.target_id,
-								scanId: s.scan_id,
-								dimension: SurfaceDimension.SERVICES,
-								assetKey: hostPort(s.ip, s.port),
-								assetLabel: hostPort(s.ip, s.port)
-							}}
-						/>
-					{/if}
 				</div>
 			</ScrollArea>
 		{/if}

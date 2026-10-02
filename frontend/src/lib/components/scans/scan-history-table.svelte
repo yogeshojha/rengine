@@ -62,7 +62,8 @@
 		HISTORY_COLUMNS,
 		HISTORY_COLUMN_LABELS,
 		STRIP_SEVERITIES,
-		historyPrefs
+		historyPrefs,
+		runBriefTabs
 	} from './history/prefs.svelte';
 
 	interface Props {
@@ -385,7 +386,7 @@
 				break;
 			default:
 				if (/^[1-4]$/.test(e.key) && focused && expanded.has(focused.id))
-					historyPrefs.tab = BRIEF_TABS[Number(e.key) - 1];
+					runBriefTabs.set(focused.id, BRIEF_TABS[Number(e.key) - 1]);
 		}
 	}
 

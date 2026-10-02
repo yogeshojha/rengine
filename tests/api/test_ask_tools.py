@@ -70,11 +70,11 @@ async def test_call_refuses_secrets_without_invoking(monkeypatch):
     assert step.status == "failed"
 
 
-def test_context_masks_extracted_values_matched_at_and_note(finding):
+def test_context_masks_extracted_values_matched_at_and_reason(finding):
     v = finding(
         extracted_results=[AWS_KEY],
         matched_at=f"https://git.example.com/?token={AWS_KEY}",
-        note=f"key was {AWS_KEY}",
+        reason=f"key was {AWS_KEY}",
         response=f"HTTP/1.1 200 OK\n\nkey={AWS_KEY}",
     )
     _, facts = assess(v)

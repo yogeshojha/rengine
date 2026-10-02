@@ -42,7 +42,7 @@ class ExplainFinding(Tool):
     description = (
         "One finding in full: what the check tests for, impact, remediation, CVE, "
         "CWE, CVSS, EPSS and KEV signals, every location on the target, and the "
-        "triage decision."
+        "triage decision with its reason."
     )
     Input = Input
     examples = (
@@ -132,7 +132,7 @@ class ExplainFinding(Tool):
                     "epss_percentile": detail.epss_percentile,
                     "known_exploited": detail.is_kev,
                 },
-                "review": {"state": detail.state, "note": detail.note},
+                "review": {"state": detail.state, "reason": detail.reason},
                 "occurrences": listed.total,
                 "set_aside": set_aside,
                 "locations": locations,
