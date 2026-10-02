@@ -76,10 +76,12 @@ class ModelSpec:
     output_per_mtok: float | None = None
     context: int = 200_000
     adaptive_thinking: bool = False
+    # sent as the task effort to every provider that reasons before answering
     supports_effort: bool = False
     note: str = ""
 
 
+# Prices are USD per million tokens at the provider's standard paid tier.
 MODELS: tuple[ModelSpec, ...] = (
     ModelSpec(
         "claude-opus-5",
@@ -90,7 +92,29 @@ MODELS: tuple[ModelSpec, ...] = (
         1_000_000,
         True,
         True,
-        "Default model.",
+        "Previous Opus.",
+    ),
+    ModelSpec(
+        "claude-opus-5-5",
+        "Claude Opus 5.5",
+        AIProvider.ANTHROPIC.value,
+        4.0,
+        20.0,
+        1_000_000,
+        True,
+        True,
+        "Default model. Newest Opus, lower price than Opus 5.",
+    ),
+    ModelSpec(
+        "claude-fable-5-1",
+        "Claude Fable 5.1",
+        AIProvider.ANTHROPIC.value,
+        10.0,
+        50.0,
+        1_000_000,
+        True,
+        True,
+        "Most capable, highest cost. Needs 30-day data retention.",
     ),
     ModelSpec(
         "claude-sonnet-5",
@@ -124,26 +148,82 @@ MODELS: tuple[ModelSpec, ...] = (
         True,
         True,
     ),
-    ModelSpec("gpt-4o", "GPT-4o", AIProvider.OPENAI.value),
-    ModelSpec("gpt-4o-mini", "GPT-4o mini", AIProvider.OPENAI.value),
-    ModelSpec("gemini-1.5-pro", "Gemini 1.5 Pro", AIProvider.GOOGLE.value),
-    ModelSpec("gemini-1.5-flash", "Gemini 1.5 Flash", AIProvider.GOOGLE.value),
+    ModelSpec(
+        "gpt-6-sol",
+        "GPT-6 Sol",
+        AIProvider.OPENAI.value,
+        2.0,
+        10.0,
+        1_050_000,
+        supports_effort=True,
+        note="Default model.",
+    ),
+    ModelSpec(
+        "gpt-6-astra",
+        "GPT-6 Astra",
+        AIProvider.OPENAI.value,
+        10.0,
+        50.0,
+        1_050_000,
+        supports_effort=True,
+        note="Most capable, highest cost.",
+    ),
+    ModelSpec(
+        "gpt-6-luna",
+        "GPT-6 Luna",
+        AIProvider.OPENAI.value,
+        0.1,
+        0.5,
+        1_050_000,
+        supports_effort=True,
+        note="Lowest cost and latency.",
+    ),
+    ModelSpec(
+        "gemini-3.8-flash",
+        "Gemini 3.8 Flash",
+        AIProvider.GOOGLE.value,
+        1.5,
+        7.5,
+        1_048_576,
+        supports_effort=True,
+        note="Default model. Introductory $0.75 / $3.75 until 2026-12-31.",
+    ),
+    ModelSpec(
+        "gemini-3.1-pro-preview",
+        "Gemini 3.1 Pro (preview)",
+        AIProvider.GOOGLE.value,
+        2.0,
+        12.0,
+        1_048_576,
+        supports_effort=True,
+        note="Most capable. Preview; prompts over 200k tokens cost more.",
+    ),
+    ModelSpec(
+        "gemini-3.5-flash-lite",
+        "Gemini 3.5 Flash-Lite",
+        AIProvider.GOOGLE.value,
+        0.3,
+        2.5,
+        1_048_576,
+        supports_effort=True,
+        note="Lowest cost and latency.",
+    ),
 )
 
 MODEL_BY_ID: dict[str, ModelSpec] = {m.id: m for m in MODELS}
 
 DEFAULT_MODEL: dict[str, str] = {
-    AIProvider.ANTHROPIC.value: "claude-opus-5",
-    AIProvider.OPENAI.value: "gpt-4o-mini",
-    AIProvider.AZURE_OPENAI.value: "gpt-4o-mini",
-    AIProvider.GOOGLE.value: "gemini-1.5-flash",
+    AIProvider.ANTHROPIC.value: "claude-opus-5-5",
+    AIProvider.OPENAI.value: "gpt-6-sol",
+    AIProvider.AZURE_OPENAI.value: "gpt-6-sol",
+    AIProvider.GOOGLE.value: "gemini-3.8-flash",
 }
 
 FAST_MODEL: dict[str, str] = {
     AIProvider.ANTHROPIC.value: "claude-haiku-4-5",
-    AIProvider.OPENAI.value: "gpt-4o-mini",
-    AIProvider.AZURE_OPENAI.value: "gpt-4o-mini",
-    AIProvider.GOOGLE.value: "gemini-1.5-flash",
+    AIProvider.OPENAI.value: "gpt-6-luna",
+    AIProvider.AZURE_OPENAI.value: "gpt-6-luna",
+    AIProvider.GOOGLE.value: "gemini-3.5-flash-lite",
 }
 
 PROVIDER_LABELS: dict[str, str] = {

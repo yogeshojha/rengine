@@ -15,10 +15,10 @@ export interface AIProviderMeta {
 }
 
 export const AI_PROVIDERS: readonly AIProviderMeta[] = [
-	{ value: AIProvider.OPENAI, name: 'OpenAI', model: 'gpt-4o-mini' },
-	{ value: AIProvider.ANTHROPIC, name: 'Anthropic', model: 'claude-opus-5' },
-	{ value: AIProvider.AZURE_OPENAI, name: 'Azure OpenAI', model: 'gpt-4o-mini' },
-	{ value: AIProvider.GOOGLE, name: 'Google', model: 'gemini-1.5-flash' }
+	{ value: AIProvider.OPENAI, name: 'OpenAI', model: 'gpt-6-sol' },
+	{ value: AIProvider.ANTHROPIC, name: 'Anthropic', model: 'claude-opus-5-5' },
+	{ value: AIProvider.AZURE_OPENAI, name: 'Azure OpenAI', model: 'gpt-6-sol' },
+	{ value: AIProvider.GOOGLE, name: 'Google', model: 'gemini-3.8-flash' }
 ] as const;
 
 export interface AIFeature {

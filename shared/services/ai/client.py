@@ -30,6 +30,10 @@ class AIError(RuntimeError):
     """The provider could not answer."""
 
 
+class AIBadRequestError(AIError):
+    """The provider rejected the request itself, not the call."""
+
+
 @dataclass
 class AIResult:
     text: str
@@ -74,9 +78,9 @@ def complete(
     if cfg.provider == AIProvider.ANTHROPIC.value:
         text, tokens = _anthropic(cfg, model, system, prompt, max_tokens, effort)
     elif cfg.provider == AIProvider.GOOGLE.value:
-        text, tokens = _google(cfg, model, system, prompt, max_tokens)
+        text, tokens = _google(cfg, model, system, prompt, max_tokens, effort)
     else:
-        text, tokens = _openai(cfg, model, system, prompt, max_tokens)
+        text, tokens = _openai(cfg, model, system, prompt, max_tokens, effort)
 
     return AIResult(
         text=text.strip(),
@@ -158,19 +162,34 @@ def _anthropic(
     return text, (response.usage.input_tokens, response.usage.output_tokens)
 
 
+def _supports_effort(model: str) -> bool:
+    spec = MODEL_BY_ID.get(model)
+    return spec is not None and spec.supports_effort
+
+
 def _openai(
-    cfg: AIConfig, model: str, system: str, prompt: str, max_tokens: int
+    cfg: AIConfig, model: str, system: str, prompt: str, max_tokens: int, effort: str
 ) -> tuple[str, tuple[int, int]]:
-    payload = {
+    payload: dict = {
         "model": model,
+        # reasoning tokens count against this cap
         "max_completion_tokens": max_tokens,
         "messages": [
             {"role": "system", "content": system},
             {"role": "user", "content": prompt},
         ],
     }
+    if _supports_effort(model):
+        payload["reasoning_effort"] = effort
     headers = {"Authorization": f"Bearer {cfg.api_key}"}
-    body = _post(_OPENAI_URL, payload, headers, cfg.timeout)
+    # a model that rejects the effort setting is asked again without it
+    try:
+        body = _post(_OPENAI_URL, payload, headers, cfg.timeout)
+    except AIBadRequestError:
+        if "reasoning_effort" not in payload:
+            raise
+        del payload["reasoning_effort"]
+        body = _post(_OPENAI_URL, payload, headers, cfg.timeout)
     choices = body.get("choices") or []
     if not choices:
         msg = "The provider returned no completion."
@@ -184,15 +203,27 @@ def _openai(
 
 
 def _google(
-    cfg: AIConfig, model: str, system: str, prompt: str, max_tokens: int
+    cfg: AIConfig, model: str, system: str, prompt: str, max_tokens: int, effort: str
 ) -> tuple[str, tuple[int, int]]:
     url = f"{_GOOGLE_URL}/{model}:generateContent"
+    # thinking tokens count against maxOutputTokens
+    generation: dict = {"maxOutputTokens": max_tokens}
     payload = {
         "systemInstruction": {"parts": [{"text": system}]},
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-        "generationConfig": {"maxOutputTokens": max_tokens},
+        "generationConfig": generation,
     }
-    body = _post(url, payload, {"x-goog-api-key": cfg.api_key}, cfg.timeout)
+    headers = {"x-goog-api-key": cfg.api_key}
+    if _supports_effort(model):
+        generation["thinkingConfig"] = {"thinkingLevel": effort}
+    # a model that rejects the thinking level is asked again without it
+    try:
+        body = _post(url, payload, headers, cfg.timeout)
+    except AIBadRequestError:
+        if "thinkingConfig" not in generation:
+            raise
+        del generation["thinkingConfig"]
+        body = _post(url, payload, headers, cfg.timeout)
     candidates = body.get("candidates") or []
     if not candidates:
         msg = "The provider returned no completion."
@@ -200,9 +231,11 @@ def _google(
     parts = (candidates[0].get("content") or {}).get("parts") or []
     text = "".join(part.get("text", "") for part in parts)
     usage = body.get("usageMetadata") or {}
+    # thought tokens are billed as output but reported apart
     return text, (
         int(usage.get("promptTokenCount", 0)),
-        int(usage.get("candidatesTokenCount", 0)),
+        int(usage.get("candidatesTokenCount", 0))
+        + int(usage.get("thoughtsTokenCount", 0)),
     )
 
 
@@ -213,6 +246,8 @@ def _post(url: str, payload: dict, headers: dict, timeout: float) -> dict:
             if response.status_code >= _HTTP_ERROR:
                 detail = response.text[:300]
                 msg = f"Provider returned {response.status_code}: {detail}"
+                if response.status_code == _HTTP_ERROR:
+                    raise AIBadRequestError(msg)
                 raise AIError(msg)
             return response.json()
     except httpx.HTTPError as exc:
