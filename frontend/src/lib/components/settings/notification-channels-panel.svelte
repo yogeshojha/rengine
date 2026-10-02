@@ -30,8 +30,8 @@
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import FormField from '$lib/components/form-field.svelte';
-	import Hint from '$lib/components/hint.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import SectionHead from '$lib/components/section-head.svelte';
 	import { notificationChannelsStore } from '$lib/stores/notificationChannels.svelte';
 	import { notificationChannelsApi } from '$lib/api/notificationChannels';
 	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
@@ -54,8 +54,9 @@
 		type NotifProvider
 	} from '$lib/types/notification-channel';
 	import { relativeTime } from '$lib/utilities/dates';
+	import CheckStatus from './check-status.svelte';
 	import { BODY_ROW, CHANNEL_COL, HEAD_ROW } from './columns';
-	import { CHECK_DOT, type CheckState } from './status';
+	import type { CheckState } from './status';
 
 	let loading = $state(true);
 	let loadFailed = $state(false);
@@ -386,21 +387,14 @@
 					<div class="{CHANNEL_COL.events} text-sm">{eventSummary(channel)}</div>
 					<div class="{CHANNEL_COL.level} text-sm">{levelOf(channel)}</div>
 					<div class={CHANNEL_COL.delivery}>
-						<Hint text={sent.message}>
-							{#snippet child(props)}
-								<span {...props} class="inline-flex items-center gap-2 text-sm">
-									{#if testingId === channel.id}
-										<Spinner class="size-3" />
-										<span class="text-muted-foreground">Sending</span>
-									{:else}
-										<span class="size-2 shrink-0 rounded-full {CHECK_DOT[sent.check]}"></span>
-										<span class={sent.check === 'failed' ? '' : 'text-muted-foreground'}>
-											{sent.label}
-										</span>
-									{/if}
-								</span>
-							{/snippet}
-						</Hint>
+						<CheckStatus
+							check={sent.check}
+							label={sent.label}
+							message={sent.message}
+							busy={testingId === channel.id}
+							busyLabel="Sending"
+							muted={sent.check !== 'failed'}
+						/>
 					</div>
 					<div class={CHANNEL_COL.actions}>
 						<DropdownMenu.Root>
@@ -489,9 +483,7 @@
 				<div class="flex flex-col gap-6 p-6">
 					<section class="flex flex-col gap-4">
 						<div class="flex items-center justify-between gap-3">
-							<h3 class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
-								{editingId ? formMeta.name : 'Connection'}
-							</h3>
+							<SectionHead title={editingId ? formMeta.name : 'Connection'} />
 							{#if formMeta.help}
 								<a
 									href={formMeta.help.url}
@@ -538,6 +530,7 @@
 									{@const stored = !!editingId && formMasked[field.key]}
 									<FormField
 										label={field.label}
+										description={field.description}
 										error={fieldErrors[field.key]}
 										class="sm:col-span-2"
 									>
@@ -574,7 +567,11 @@
 										{/snippet}
 									</FormField>
 								{:else}
-									<FormField label={field.label} error={fieldErrors[field.key]}>
+									<FormField
+										label={field.label}
+										description={field.description}
+										error={fieldErrors[field.key]}
+									>
 										{#snippet children({ id })}
 											<Input
 												{id}
@@ -600,9 +597,7 @@
 
 					<section class="flex flex-col gap-3">
 						<div class="flex items-center justify-between gap-3">
-							<h3 class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
-								Events
-							</h3>
+							<SectionHead title="Events" />
 							<Button
 								variant="link"
 								size="sm"

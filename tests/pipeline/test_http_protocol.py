@@ -91,9 +91,9 @@ def test_a_vhost_sweep_follows_the_run_restriction(ffuf, scheme: str):
     assert _vhost_url(probe) == f"{scheme}://10.0.0.1/"
 
 
-def _stage(follow_redirects: bool | None, proxy_url: str | None = None):
+def _stage(follow_redirects: bool | None):
     resolved = SimpleNamespace(
-        proxy_url=proxy_url,
+        proxy_url=None,
         headers={},
         http_protocol="both",
         follow_redirects=follow_redirects,

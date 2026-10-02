@@ -7,6 +7,7 @@ import burp.api.montoya.http.handler.HttpRequestToBeSent;
 import burp.api.montoya.http.handler.HttpResponseReceived;
 import burp.api.montoya.http.handler.RequestToBeSentAction;
 import burp.api.montoya.http.handler.ResponseReceivedAction;
+import burp.api.montoya.http.message.HttpHeader;
 import burp.api.montoya.http.message.params.HttpParameterType;
 import burp.api.montoya.http.message.params.ParsedHttpParameter;
 import burp.api.montoya.http.message.requests.HttpRequest;
@@ -32,13 +33,10 @@ final class Capture implements HttpHandler {
     private static final Pattern TITLE = Pattern.compile(
             "<title[^>]*>(.*?)</title>", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
-    private static final String[] AUTH_HEADERS = {
-        "Authorization", "Cookie", "X-Api-Key", "X-Auth-Token", "X-CSRF-Token"
-    };
-    private static final String[] MASKED_HEADERS = {
-        "Authorization", "Proxy-Authorization", "Cookie", "X-Api-Key", "X-Auth-Token",
-        "X-CSRF-Token", "X-Access-Token", "X-Session-Token"
-    };
+    private static final Pattern CREDENTIAL_HEADER = Pattern.compile(
+            "authorization|proxy-authorization|cookie|set-cookie|x-auth-token|x-csrf-token"
+                    + "|[\\w-]*(?:token|secret|api-?key|session)[\\w-]*",
+            Pattern.CASE_INSENSITIVE);
 
     private static final Set<HttpParameterType> BODY_PARAMS = EnumSet.of(
             HttpParameterType.BODY,
@@ -130,12 +128,7 @@ final class Capture implements HttpHandler {
     }
 
     private static boolean masked(String name) {
-        for (String header : MASKED_HEADERS) {
-            if (header.equalsIgnoreCase(name)) {
-                return true;
-            }
-        }
-        return false;
+        return CREDENTIAL_HEADER.matcher(name).matches();
     }
 
     /** The host most recently captured. */
@@ -147,15 +140,11 @@ final class Capture implements HttpHandler {
         if (value == null) {
             return null;
         }
-        int scheme = value.indexOf("://");
-        if (scheme < 0) {
+        try {
+            return Handoff.origin(value).host();
+        } catch (RuntimeException e) {
             return null;
         }
-        String rest = value.substring(scheme + 3);
-        int cut = rest.indexOf('/');
-        String authority = cut < 0 ? rest : rest.substring(0, cut);
-        int port = authority.lastIndexOf(':');
-        return port > 0 ? authority.substring(0, port) : authority;
     }
 
     private String sourceTool(ToolType type) {
@@ -169,8 +158,8 @@ final class Capture implements HttpHandler {
     }
 
     private static boolean authenticated(HttpRequest request) {
-        for (String header : AUTH_HEADERS) {
-            if (request.hasHeader(header)) {
+        for (HttpHeader header : request.headers()) {
+            if (masked(header.name()) && !"Proxy-Authorization".equalsIgnoreCase(header.name())) {
                 return true;
             }
         }

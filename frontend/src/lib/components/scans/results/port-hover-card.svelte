@@ -133,7 +133,7 @@
 					<p class="leading-snug">{lead.description}</p>
 					{#if lead.registered}
 						<p class="text-muted-foreground">
-							IANA registration for port {port}. Not confirmed by this scan.
+							IANA registration for port {port}. The running service is not identified.
 						</p>
 					{/if}
 				{:else}

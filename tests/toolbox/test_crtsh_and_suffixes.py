@@ -1,5 +1,3 @@
-"""Public suffixes, the crt.sh organization search and the ViewDNS client's errors."""
-
 from __future__ import annotations
 
 import json

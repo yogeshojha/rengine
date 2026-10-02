@@ -7,6 +7,7 @@ import type {
 	DashboardReadiness,
 	DashboardSurfaceRisk,
 	DashboardWindow,
+	DashboardWindowCounts,
 	SurfaceRiskFilters
 } from '$lib/types/dashboard';
 import { appendTargetScope, type TargetScope } from '$lib/utilities/surface-scope';
@@ -22,6 +23,15 @@ export const dashboardApi = {
 	): Promise<DashboardOverview> {
 		return api.get<DashboardOverview>(
 			`/dashboard/overview?${scoped(projectId, scope, { window })}`
+		);
+	},
+	async window(
+		projectId: string,
+		window: DashboardWindow,
+		scope: TargetScope = {}
+	): Promise<DashboardWindowCounts> {
+		return api.get<DashboardWindowCounts>(
+			`/dashboard/window?${scoped(projectId, scope, { window })}`
 		);
 	},
 	async discovery(projectId: string): Promise<DashboardDiscovery> {

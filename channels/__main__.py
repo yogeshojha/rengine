@@ -8,18 +8,18 @@ import signal
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from channels.telegram.listener import DISPATCH_SLOTS, TelegramListener
-from shared.logging import get_logger
+from channels.telegram.listener import TelegramListener
+from shared.config import APP_NAME
+from shared.definitions.channels import POOL_OVERFLOW, POOL_SIZE
+from shared.logging import get_logger, setup_logging
 
 logger = get_logger(__name__)
-
-POOL_SIZE = DISPATCH_SLOTS + 2
-POOL_OVERFLOW = 2
 
 
 async def _serve() -> None:
     from app.config import settings  # noqa: PLC0415
 
+    setup_logging(level=settings.LOG_LEVEL)
     engine = create_async_engine(
         settings.database_url,
         pool_size=POOL_SIZE,
@@ -27,7 +27,7 @@ async def _serve() -> None:
         pool_timeout=settings.DB_POOL_TIMEOUT,
         pool_recycle=settings.DB_POOL_RECYCLE,
         pool_pre_ping=True,
-        connect_args={"server_settings": {"application_name": "reNgine-channels"}},
+        connect_args={"server_settings": {"application_name": f"{APP_NAME}-channels"}},
     )
     sessions = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     ui_base = settings.ui_base_url

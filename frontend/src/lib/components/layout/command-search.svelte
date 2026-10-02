@@ -16,7 +16,7 @@
 	import { setMode, resetMode } from 'mode-watcher';
 	import { toast } from 'svelte-sonner';
 
-	import { ROUTES, projectSwitchRedirect } from '$lib/config/routes';
+	import { ROUTES, UUID_REGEX, projectSwitchRedirect } from '$lib/config/routes';
 	import { SURFACE } from '$lib/config/surface';
 	import { TOOLBOX_ICON } from '$lib/config/toolbox';
 	import {
@@ -39,9 +39,11 @@
 		type PaletteScope
 	} from '$lib/utilities/palette';
 	import { writeClipboard } from '$lib/utilities/clipboard';
+	import { plural } from '$lib/utilities/strings';
 	import { SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 	import { targetsApi } from '$lib/api/targets';
 	import { scansApi } from '$lib/api/scans';
+	import { auth } from '$lib/stores/auth.svelte';
 	import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
 	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
@@ -51,6 +53,7 @@
 	import type { Project } from '$lib/types/project';
 	import type { ScanRead } from '$lib/types/scan';
 	import { TargetType, type Target as TargetEntity } from '$lib/types/target';
+	import { IS_MAC } from '$lib/utils';
 
 	let {
 		onAddTarget,
@@ -65,7 +68,6 @@
 	const MAX_COMMANDS = 6;
 	const MAX_QUERY_DIMENSIONS = 3;
 	const MAX_RECENTS = 5;
-	const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 	let commandOpen = $state(false);
 	let raw = $state('');
@@ -76,13 +78,7 @@
 	let cancelTarget = $state<ScanRead | null>(null);
 	let cancelAllOpen = $state(false);
 
-	const platform =
-		typeof navigator === 'undefined'
-			? ''
-			: ((navigator as { userAgentData?: { platform?: string } }).userAgentData?.platform ??
-				navigator.platform);
-	const isMac = /mac|iphone|ipad|ipod/i.test(platform);
-	const searchShortcut = isMac ? '⌘K' : 'Ctrl+K';
+	const searchShortcut = IS_MAC ? '⌘K' : 'Ctrl+K';
 
 	const activeProject = $derived(projectsStore.activeProject);
 	const projectId = $derived(activeProject?.id ?? '');
@@ -93,9 +89,11 @@
 	const scope = $derived.by<PaletteScope>(() => {
 		const path = page.url.pathname;
 		const id = page.params.id;
-		if (id && UUID.test(id)) {
-			const label = breadcrumbStore.getLabel(id) ?? '';
-			if (path.startsWith('/scans/')) {
+		if (id && UUID_REGEX.test(id)) {
+			const label =
+				breadcrumbStore.getLabel(id) ??
+				(breadcrumbStore.getTrail(id) ?? []).map((crumb) => crumb.label).join(' · ');
+			if (path === ROUTES.scan(id)) {
 				return {
 					kind: 'scan',
 					label: label || 'This run',
@@ -104,7 +102,7 @@
 					targetValue: null
 				};
 			}
-			if (path.startsWith('/targets/')) {
+			if (path === ROUTES.target(id)) {
 				return {
 					kind: 'target',
 					label: label || 'This target',
@@ -123,7 +121,6 @@
 		};
 	});
 
-	// the palette is mounted on every page, so it is where a visit is recorded
 	$effect(() => {
 		const { kind, label, scanId, targetId } = scope;
 		const pid = projectId;
@@ -239,7 +236,7 @@
 		try {
 			const { cancelled } = await scansApi.cancelAll(projectId);
 			liveScans.refresh();
-			toast.success(`Cancelled ${cancelled} scan${cancelled !== 1 ? 's' : ''}`);
+			toast.success(`${plural(cancelled, 'scan')} cancelled`);
 		} catch {
 			toast.error('Scans not cancelled');
 		}
@@ -252,6 +249,7 @@
 			projects: projectsStore.projects,
 			activeProjectId: projectId,
 			has: (capability) => capabilitiesStore.has(capability),
+			isAdmin: auth.user?.is_superuser ?? false,
 			actions: {
 				go: (href) => void goto(href),
 				addTarget: onAddTarget,
@@ -300,9 +298,13 @@
 	);
 </script>
 
+<Button variant="ghost" size="icon" class="@xl/topbar:hidden" onclick={() => (commandOpen = true)}>
+	<SearchIcon class="h-4 w-4" />
+	<span class="sr-only">Search</span>
+</Button>
 <Button
 	variant="outline"
-	class="relative h-9 w-full justify-start rounded-md text-sm text-muted-foreground sm:w-64 md:w-80"
+	class="relative hidden h-9 justify-start rounded-md text-sm text-muted-foreground @xl/topbar:inline-flex @xl/topbar:w-64 @4xl/topbar:w-80"
 	onclick={() => (commandOpen = true)}
 >
 	<SearchIcon class="mr-2 h-4 w-4" />
@@ -538,7 +540,8 @@
 					Open
 				</span>
 				<span class="ml-auto flex items-center gap-1">
-					<kbd class="rounded border bg-muted px-1 font-mono">{isMac ? '⌘⇧K' : 'Ctrl+Shift+K'}</kbd>
+					<kbd class="rounded border bg-muted px-1 font-mono">{IS_MAC ? '⌘⇧K' : 'Ctrl+Shift+K'}</kbd
+					>
 					Toolbox
 				</span>
 			</div>

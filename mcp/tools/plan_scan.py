@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-import uuid
-
 from pydantic import Field
 
 from mcp.capabilities import Capability
 from mcp.context import ToolContext
 from mcp.errors import ToolError
 from mcp.result import ToolResult
-from mcp.tools._scope import project_for
+from mcp.tools._scope import parse_id, project_for
 from mcp.tools.base import Tool, ToolGroup, ToolInput
+from shared.enums.scan import INTENSITIES
 from shared.models.scan_preview import PreviewToolStatus
 from shared.utils.text import counted
 
@@ -31,7 +30,7 @@ class Input(ToolInput):
         ),
     )
     intensity: str | None = Field(
-        default=None, description="passive, normal or aggressive."
+        default=None, description=f"One of: {', '.join(INTENSITIES)}."
     )
     project_id: str | None = Field(
         default=None,
@@ -58,9 +57,7 @@ class PlanScan(Tool):
         from app.services.scan import ScanService  # noqa: PLC0415
         from shared.models.scan import ScanCreate  # noqa: PLC0415
 
-        project_id = await project_for(
-            ctx, uuid.UUID(args.project_id) if args.project_id else None
-        )
+        project_id = await project_for(ctx, parse_id(args.project_id, "project_id"))
         payload = _scan_create(args, ScanCreate)
 
         try:
@@ -115,11 +112,7 @@ def _scan_create(args: Input, model):
     overrides = {stage: {"enabled": True} for stage in args.stages}
     payload: dict = {"target_value": args.target.strip(), "overrides": overrides}
     if args.engine_id:
-        try:
-            payload["engine_id"] = uuid.UUID(args.engine_id)
-        except ValueError as exc:
-            msg = "engine_id must be a UUID."
-            raise ToolError(msg) from exc
+        payload["engine_id"] = parse_id(args.engine_id, "engine_id")
     if args.intensity:
         payload["intensity"] = args.intensity
     try:

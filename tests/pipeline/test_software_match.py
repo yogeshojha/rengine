@@ -5,6 +5,8 @@ import uuid
 import pytest
 import sqlalchemy as sa
 
+from app.services import software as software_service
+from app.services.software import SoftwareService
 from shared.definitions.software import Confidence, VersionSource
 from shared.models.http_asset import HttpAsset
 from shared.models.software import NvdCpeMatch, NvdCve
@@ -190,3 +192,37 @@ def test_match_locks_per_scan() -> None:
     assert (
         locks.SOFTWARE_MATCH <= locks.software_match(b) <= locks.SOFTWARE_MATCH + 0xFFFF
     )
+
+
+async def test_the_cap_keeps_the_known_exploited_match_and_says_so(
+    durable_estate, now, monkeypatch
+):
+    estate = durable_estate
+    await _corpus(estate)
+    other = "CVE-2019-20372"
+    for model in (KevEntry, NvdCpeMatch, NvdCve):
+        await estate.session.execute(sa.delete(model).where(model.cve == other))
+    estate.session.add(NvdCve(cve=other, severity="critical", cvss_score=9.8))
+    estate.session.add(
+        NvdCpeMatch(
+            cve=other,
+            vendor="nginx",
+            product="nginx",
+            version_kind="n",
+            end_key=version_key("1.21.0"),
+            end_incl=False,
+        )
+    )
+    estate.session.add(KevEntry(cve=CVE, name=CVE, cwes=[]))
+    await estate.session.flush()
+    await estate.scan("t", "s1", at=now)
+    await estate.assets("s1", ["www.example.com"], at=now)
+    await _software(estate, "s1", "www.example.com", NGINX)
+    monkeypatch.setattr(software_match, "MAX_MATCHES_PER_SCAN", 1)
+    monkeypatch.setattr(software_service, "MAX_MATCHES_PER_SCAN", 1)
+
+    await _match(estate, "s1")
+    coverage = await SoftwareService(estate.session).coverage(estate.scans["s1"])
+
+    assert [r.cve for r in await _rows(estate, "s1")] == [CVE]
+    assert (coverage.findings, coverage.capped_at) == (1, 1)

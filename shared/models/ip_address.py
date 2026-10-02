@@ -22,7 +22,7 @@ class IpAddress(SQLModel, table=True):
 
     ip: str = Field(max_length=45, index=True)
     version: int = Field(default=4)
-    source: str = Field(max_length=30, index=True)
+    source: str = Field(max_length=30)
     ptr_hostnames: list = Field(
         default_factory=list, sa_column=Column(JSON, nullable=False)
     )
@@ -60,30 +60,3 @@ class IpAddressRead(BaseModel):
     scan_policy: str | None = None
     scan_policy_reason: str | None = None
     discovered_at: datetime
-
-
-class IpAddressSummary(BaseModel):
-    total: int
-    alive: int
-    cdn: int
-    by_source: dict[str, int] = Field(default_factory=dict)
-
-
-class TargetIpAddressRead(BaseModel):
-    ip: str
-    version: int
-    source: str
-    ptr_hostnames: list[str] = Field(default_factory=list)
-    asn: int | None = None
-    asn_org: str | None = None
-    prefix: str | None = None
-    country: str | None = None
-    is_cdn: bool = False
-    cdn_name: str | None = None
-    cdn_type: str | None = None
-    is_alive: bool | None = None
-    scan_policy: str | None = None
-    scan_count: int
-    last_scan_id: uuid.UUID
-    first_seen: datetime
-    last_seen: datetime

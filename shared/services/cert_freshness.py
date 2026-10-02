@@ -3,15 +3,22 @@
 from __future__ import annotations
 
 import json
+from collections import defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import timedelta
 
 from sqlalchemy import case, select, text, update
 from sqlalchemy.orm import Session
 
+from shared.enums.scan import SCAN_TERMINAL_STATUSES
 from shared.logging import get_logger
+from shared.models.scan import Scan
+from shared.models.scan_context import ScanContext
 from shared.models.subdomain import Subdomain
 from shared.services.asset_query.lead_cache import bump_sync
+from shared.services.proxy_resolve import is_socks5, scan_proxy_url
+from shared.services.scan_scope import census_only
 from shared.utils.datetime import utc_now
 from tools.tlsx.client import TlsxClient, TlsxError
 from tools.tlsx.parser import parse_certificate
@@ -51,13 +58,18 @@ def enabled(session: Session) -> bool:
 
 
 def due(session: Session, *, limit: int = MAX_PER_RUN) -> list[Subdomain]:
-    """Hosts due a re-check, nearest expiry first, newest scan of each target only."""
+    """Hosts due a re-check, nearest expiry first, newest settled census run only."""
     now = utc_now()
-    newest = text(
-        "subdomains.scan_id = ("
-        " SELECT s.id FROM scans s"
-        " WHERE s.target_id = subdomains.target_id"
-        " ORDER BY s.created_at DESC LIMIT 1)"
+    newest = Subdomain.scan_id == (
+        select(Scan.id)
+        .where(
+            Scan.target_id == Subdomain.target_id,
+            census_only(),
+            Scan.status.in_(SCAN_TERMINAL_STATUSES),
+        )
+        .order_by(Scan.created_at.desc())
+        .limit(1)
+        .scalar_subquery()
     )
     urgent = Subdomain.tls_not_after <= now + URGENT_WITHIN
     cutoff = case((urgent, now - URGENT_AFTER), else_=now - STALE_AFTER)
@@ -85,22 +97,66 @@ def refresh(session: Session, *, limit: int = MAX_PER_RUN) -> Freshness:
     if not rows:
         return Freshness()
 
-    hosts = sorted({row.name for row in rows})
-    try:
-        client = TlsxClient(timeout=PER_HOST_SECONDS, concurrency=CONCURRENCY)
-    except TlsxError as e:
-        return Freshness(picked=len(rows), skipped=str(e))
-
-    result = client.certificates(hosts, timeout=budget(len(hosts)))
+    probed: list[Subdomain] = []
+    refused: list[Subdomain] = []
     seen: dict[str, dict] = {}
-    for record in _records(result):
-        parsed = parse_certificate(record)
-        if parsed is not None:
-            seen.setdefault(parsed["host"], parsed)
+    timed_out = False
+    error: str | None = None
+    for proxy_url, group in _by_proxy(session, rows).items():
+        if proxy_url and not is_socks5(proxy_url):
+            refused.extend(group)
+            continue
+        if error:
+            continue
+        try:
+            client = TlsxClient(
+                timeout=PER_HOST_SECONDS,
+                concurrency=CONCURRENCY,
+                extra_args=["-proxy", proxy_url] if proxy_url else None,
+            )
+        except TlsxError as e:
+            error = str(e)
+            continue
+        probed.extend(group)
+        hosts = sorted({row.name for row in group})
+        result = client.certificates(hosts, timeout=budget(len(hosts)))
+        timed_out = timed_out or bool(result.timed_out)
+        for record in _records(result):
+            parsed = parse_certificate(record)
+            if parsed is not None:
+                seen.setdefault(parsed["host"], parsed)
 
-    state = _apply(session, rows, seen)
-    state.cut_short = bool(result.timed_out)
+    state = _apply(session, probed, seen, refused)
+    state.picked = len(rows)
+    state.cut_short = timed_out
+    if error:
+        state.skipped = error
+    elif refused:
+        state.skipped = (
+            f"tlsx takes a socks5 proxy. {len(refused)} hosts not re-checked."
+        )
     return state
+
+
+def _by_proxy(
+    session: Session, rows: list[Subdomain]
+) -> dict[str | None, list[Subdomain]]:
+    contexts = dict(
+        session.execute(
+            select(Scan.id, Scan.context_id).where(
+                Scan.id.in_({row.scan_id for row in rows})
+            )
+        ).all()
+    )
+    urls: dict = {}
+    groups: dict[str | None, list[Subdomain]] = defaultdict(list)
+    for row in rows:
+        context_id = contexts.get(row.scan_id)
+        if context_id not in urls:
+            context = session.get(ScanContext, context_id) if context_id else None
+            urls[context_id] = scan_proxy_url(session, context)
+        groups[urls[context_id]].append(row)
+    return groups
 
 
 def _records(result) -> list[dict]:
@@ -115,10 +171,16 @@ def _records(result) -> list[dict]:
     return out
 
 
-def _apply(session: Session, rows: list[Subdomain], seen: dict[str, dict]) -> Freshness:
+def _apply(
+    session: Session,
+    rows: list[Subdomain],
+    seen: dict[str, dict],
+    refused: Sequence[Subdomain] = (),
+) -> Freshness:
     now = utc_now()
     state = Freshness(picked=len(rows), answered=len(seen))
-    payload: list[dict] = []
+    payload: list[dict] = [{"id": row.id, "tls_checked_at": now} for row in refused]
+    touched = set()
     for row in rows:
         fresh = seen.get(row.name)
         if fresh is None:
@@ -129,6 +191,12 @@ def _apply(session: Session, rows: list[Subdomain], seen: dict[str, dict]) -> Fr
             state.changed += 1
             if row.tls_not_after and fresh["not_after"] > row.tls_not_after:
                 state.renewed += 1
+        if (
+            moved
+            or fresh["expired"] != row.tls_expired
+            or fresh["self_signed"] != row.tls_self_signed
+        ):
+            touched.add(row.target_id)
         payload.append(
             {
                 "id": row.id,
@@ -142,7 +210,8 @@ def _apply(session: Session, rows: list[Subdomain], seen: dict[str, dict]) -> Fr
     if payload:
         session.execute(update(Subdomain), payload)
         session.commit()
-        bump_sync({row.target_id for row in rows})
+    if touched:
+        bump_sync(touched)
     logger.info(
         "certificate re-check",
         picked=state.picked,

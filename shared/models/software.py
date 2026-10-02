@@ -3,9 +3,9 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import BigInteger, Column, Text
-from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
+from shared.definitions.asset_query import MAX_QUERY_LENGTH
 from shared.definitions.evidence import Evidence
 from shared.definitions.software import (
     MAX_PRODUCT,
@@ -16,12 +16,9 @@ from shared.definitions.software import (
 from shared.definitions.surface import MAX_SELECTED_ROWS
 from shared.definitions.vulnerabilities import Severity
 from shared.models.asset_query import QueryError
+from shared.models.fields import json_list
 from shared.utils.datetime import utc_now
 from shared.utils.software import MAX_CPE, MAX_NAME, MAX_VERSION
-
-
-def _json_list() -> Field:
-    return Field(default_factory=list, sa_column=Column(JSON, nullable=False))
 
 
 class NvdCve(SQLModel, table=True):
@@ -48,7 +45,7 @@ class NvdCpeMatch(SQLModel, table=True):
     )
     cve: str = Field(max_length=30, index=True)
     vendor: str = Field(max_length=MAX_VENDOR)
-    product: str = Field(max_length=MAX_PRODUCT, index=True)
+    product: str = Field(max_length=MAX_PRODUCT)
     version_kind: str = Field(max_length=1)
     exact_key: str | None = Field(default=None, max_length=160)
     start_key: str | None = Field(default=None, max_length=160)
@@ -59,7 +56,7 @@ class NvdCpeMatch(SQLModel, table=True):
 
 
 class SoftwareCve(SQLModel, table=True):
-    """A CVE inferred from the version an asset reports. Nothing was sent to confirm it."""
+    """A CVE inferred from the version an asset reports."""
 
     __tablename__ = "software_cves"
     __table_args__ = (
@@ -93,9 +90,9 @@ class SoftwareCve(SQLModel, table=True):
     kev_ransomware: bool = Field(default=False)
     kev_due_date: date | None = Field(default=None)
     exploit_score: int = Field(default=0, index=True)
-    intel_kinds: list = _json_list()
+    intel_kinds: list = json_list()
     confidence: str = Field(default=Confidence.HIGH.value, max_length=16)
-    caveats: list = _json_list()
+    caveats: list = json_list()
     evidence: str = Field(default=Evidence.INFERRED.value, max_length=16)
     fixed_in: str | None = Field(default=None, max_length=MAX_VERSION)
     fixed_in_assets: int | None = Field(default=None)
@@ -156,19 +153,6 @@ class SoftwareCveRead(BaseModel):
     is_new: bool = False
 
 
-class SoftwareComponentRead(BaseModel):
-    """One piece of software an asset reports, and whether it could be looked up."""
-
-    name: str
-    version: str | None = None
-    vendor: str | None = None
-    product: str | None = None
-    version_source: str
-    mapped: bool = False
-    cves: int = 0
-    assets: int = 0
-
-
 class SoftwareCoverage(BaseModel):
     """What the inference reached, and what it could not."""
 
@@ -177,10 +161,10 @@ class SoftwareCoverage(BaseModel):
     unmapped: int = 0
     matched: int = 0
     findings: int = 0
+    capped_at: int | None = None
     feed_ready: bool = False
     feed_age_hours: float | None = None
     stale: bool = False
-    unmapped_names: list[SoftwareComponentRead] = []
 
 
 class SoftwareFacet(BaseModel):
@@ -207,9 +191,9 @@ class SoftwarePage(BaseModel):
 
 class SoftwareFilter(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    q: str | None = None
+    q: str | None = Field(default=None, max_length=MAX_QUERY_LENGTH)
     ids: list[uuid.UUID] = Field(default_factory=list, max_length=MAX_SELECTED_ROWS)
-    limit: int = 50
-    offset: int = 0
+    limit: int = Field(default=50, ge=1, le=200)
+    offset: int = Field(default=0, ge=0, le=100_000_000)
     sort: str | None = None
     direction: str | None = None

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from shared.utils.text import plural
+
 
 class DnsxSOAEntry(BaseModel):
     """SOA record parsed from dnsx JSON output."""
@@ -239,7 +241,7 @@ class DnsxReconResponse(BaseModel):
                 {
                     **base,
                     "record_type": "AXFR",
-                    "value": f"open · {count:,} name{'' if count == 1 else 's'} disclosed",
+                    "value": f"open · {count:,} {plural(count, 'name')} disclosed",
                 }
             )
 

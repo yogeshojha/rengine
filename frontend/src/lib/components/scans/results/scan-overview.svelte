@@ -30,7 +30,7 @@
 	import { LiveRefresh, LIVE_OVERVIEW_MS } from '$lib/utilities/live-results';
 	import { targetAssetNoun, TargetType } from '$lib/types/target';
 	import { scanFoundNothing } from '$lib/types/scan';
-	import type { ScanActivityRead, ScanCommandRead, ScanRead } from '$lib/types/scan';
+	import type { ScanActivityRead, ScanRead } from '$lib/types/scan';
 	import type { HygieneSummary, SubdomainInsights } from '$lib/utilities/scan-insights';
 	import type { ScanExposure } from '$lib/utilities/services';
 	import type { ScanStructure } from '$lib/utilities/endpoints';
@@ -45,7 +45,6 @@
 		scanId: string;
 		projectId: string;
 		activities: ScanActivityRead[];
-		commands: ScanCommandRead[];
 		history: ScanRead[];
 		historyLoaded: boolean;
 		previous: ScanRead | null;
@@ -63,7 +62,6 @@
 		scanId,
 		projectId,
 		activities,
-		commands,
 		history,
 		historyLoaded,
 		previous,
@@ -96,7 +94,7 @@
 	let run = $derived(live ? liveScans.runFor(scan.id) : undefined);
 	let catalog = $derived(engineCatalogStore.stages);
 	let type = $derived(scan.execution_config.target_type);
-	let nounPlural = $derived(targetAssetNoun(type));
+	const nounPlural = targetAssetNoun();
 	let isDomain = $derived(type === TargetType.DOMAIN);
 	let signature = $derived([scanId, projectId, scan.status].join(':'));
 
@@ -257,7 +255,6 @@
 		{run}
 		{catalog}
 		{activities}
-		{commands}
 		{previousDuration}
 		{now}
 		{scanId}

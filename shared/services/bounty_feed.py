@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import json
 import time
-import urllib.error
-import urllib.request
-from datetime import timedelta
 
+import httpx
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
@@ -23,7 +21,6 @@ from shared.definitions.bounty_feed import (
 from shared.definitions.bounty_programs import (
     DEFAULT_FEED_INTERVAL,
     MAX_EVENT_DETAIL,
-    SYNC_INTERVAL_HOURS,
     BountyEvent,
     ProgramSource,
     ProgramState,
@@ -32,10 +29,12 @@ from shared.definitions.bounty_programs import (
     scope_tier,
     target_for_scope,
 )
+from shared.http import fetch
 from shared.logging import get_logger
 from shared.models.bounty_program import BountyProgram, BountyScope
 from shared.services.bounty_programs import (
     event_row,
+    interval_due,
     scope_changes,
     scope_snapshot,
     terms_changes,
@@ -47,7 +46,6 @@ logger = get_logger(__name__)
 
 TIMEOUT = 120
 MAX_FEED_BYTES = 64 * 1024 * 1024
-USER_AGENT = "reNgine"
 MAX_INSTRUCTION = 4000
 
 
@@ -57,12 +55,10 @@ class FeedError(RuntimeError):
 
 def _download(spec: FeedSpec) -> list[dict]:
     url = f"{BASE_URL}/{spec.file}"
-    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})  # noqa: S310
     try:
-        with urllib.request.urlopen(request, timeout=TIMEOUT) as response:  # noqa: S310
-            raw = response.read(MAX_FEED_BYTES)
-    except urllib.error.HTTPError as exc:
-        msg = f"{spec.file} returned {exc.code}"
+        raw = fetch(url, timeout=TIMEOUT, max_bytes=MAX_FEED_BYTES)
+    except httpx.HTTPStatusError as exc:
+        msg = f"{spec.file} returned {exc.response.status_code}"
         raise FeedError(msg) from exc
     except Exception as exc:
         raise FeedError(str(exc)) from exc
@@ -80,7 +76,6 @@ def _download(spec: FeedSpec) -> list[dict]:
 
 
 def _submission_state(entry: dict) -> str:
-    """Only report a state the platform actually tells us."""
     if "status" in entry:
         return (
             SubmissionState.OPEN.value
@@ -242,11 +237,7 @@ def feed_settings(session: Session) -> tuple[str, object]:
 
 
 def feed_due(session: Session) -> bool:
-    interval, last = feed_settings(session)
-    hours = SYNC_INTERVAL_HOURS.get(interval)
-    if hours is None:
-        return False
-    return last is None or (utc_now() - last) >= timedelta(hours=hours)
+    return interval_due(*feed_settings(session))
 
 
 def mark_feed_synced(session: Session) -> None:

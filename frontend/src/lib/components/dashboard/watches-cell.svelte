@@ -4,20 +4,21 @@
 	import DailyBars, { type DailyPoint } from './daily-bars.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { relativeTime } from '$lib/utilities/dates';
+	import { plural } from '$lib/utilities/strings';
 	import { WatchHostState } from '$lib/types/watch';
-	import { windowDays, type DashboardWatches, type DashboardWindow } from '$lib/types/dashboard';
+	import { bucketsSince, type DashboardWatches, type DashboardWindow } from '$lib/types/dashboard';
 
 	interface Props {
 		watches: DashboardWatches;
 		window: DashboardWindow;
+		since: string;
 		class?: string;
 	}
 
-	let { watches, window, class: className = '' }: Props = $props();
+	let { watches, window, since, class: className = '' }: Props = $props();
 
-	let days = $derived(windowDays(window));
 	let data = $derived<DailyPoint[]>(
-		watches.daily.slice(-days).map((d) => ({
+		bucketsSince(watches.daily, since).map((d) => ({
 			date: d.date,
 			seen: d.kinds.seen ?? 0,
 			alerted: d.kinds.alerted ?? 0
@@ -35,10 +36,9 @@
 <Cell
 	id="watches"
 	projectWide
-	title="Watched programs"
 	description="Certificate names per day"
 	href={ROUTES.bountyHubTab('watching')}
-	hrefLabel="{watches.total} {watches.total === 1 ? 'watch' : 'watches'}"
+	hrefLabel={plural(watches.total, 'watch', 'watches')}
 	class={className}
 >
 	{#if seen > 0}
@@ -85,8 +85,7 @@
 			<span>
 				{watches.stream_running
 					? 'Stream listening'
-					: 'Stream stopped'}{#if watches.last_certificate_at}
-					· last certificate {relativeTime(watches.last_certificate_at)}{/if}
+					: 'Stream stopped'}{#if watches.last_certificate_at}{` · last certificate ${relativeTime(watches.last_certificate_at)}`}{/if}
 			</span>
 		{/if}
 	{/snippet}

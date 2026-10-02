@@ -5,6 +5,7 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { Spinner } from '$lib/components/ui/spinner';
+	import { PROJECT_NAME_MAX } from '$lib/constants';
 
 	let { open = $bindable(false) }: { open: boolean } = $props();
 
@@ -12,10 +13,9 @@
 	let isSubmitting = $state(false);
 	let error = $state<string | null>(null);
 
-	const MAX_LENGTH = 50;
 	let nameLength = $derived(name.length);
-	let isValid = $derived(name.trim().length > 0 && name.length <= MAX_LENGTH);
-	let isOverLimit = $derived(name.length > MAX_LENGTH);
+	let isValid = $derived(name.trim().length > 0 && name.length <= PROJECT_NAME_MAX);
+	let isOverLimit = $derived(name.length > PROJECT_NAME_MAX);
 
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
@@ -35,8 +35,6 @@
 			} else {
 				error = projectsStore.error || 'Project not created';
 			}
-		} catch (e) {
-			error = e instanceof Error ? e.message : 'Project not created';
 		} finally {
 			isSubmitting = false;
 		}
@@ -77,9 +75,11 @@
 						<span class="text-destructive">Name is too long</span>
 					{/if}
 					<span
-						class="ml-auto {nameLength > MAX_LENGTH ? 'text-destructive' : 'text-muted-foreground'}"
+						class="ml-auto {nameLength > PROJECT_NAME_MAX
+							? 'text-destructive'
+							: 'text-muted-foreground'}"
 					>
-						{nameLength}/{MAX_LENGTH}
+						{nameLength}/{PROJECT_NAME_MAX}
 					</span>
 				</div>
 			</div>

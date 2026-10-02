@@ -9,7 +9,7 @@ from app.api.deps import CurrentUser
 from app.api.pagination import Page
 from app.core.database import get_session
 from app.services.note import NoteService
-from shared.models.note import NoteCount, NoteCreate, NoteRead, NoteUpdate
+from shared.models.note import NoteCreate, NoteRead, NoteUpdate
 
 router = APIRouter(prefix="/notes", tags=["notes"])
 
@@ -50,20 +50,6 @@ async def list_notes(
         query,
         unique=False,
         transformer=lambda rows: [service.to_read(*row) for row in rows],
-    )
-
-
-@router.get("/counts", response_model=list[NoteCount])
-async def note_counts(
-    _current_user: CurrentUser,
-    service: Annotated[NoteService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
-    dimension: Annotated[str | None, Query(description="Result dimension")] = None,
-    target_id: Annotated[UUID | None, Query(description="Filter by target")] = None,
-    scan_id: Annotated[UUID | None, Query(description="Filter by scan")] = None,
-):
-    return await service.counts(
-        project_id, dimension=dimension, target_id=target_id, scan_id=scan_id
     )
 
 

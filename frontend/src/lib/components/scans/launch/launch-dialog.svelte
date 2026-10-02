@@ -86,11 +86,16 @@
 	let whatRunsOpen = $state(false);
 	let previewSeq = 0;
 	let planRestored = false;
+	let prefilledFor = '';
 
 	let project = $derived(projectsStore.activeProject);
 	let enginesReady = $derived(
 		(scanEnginesStore.fetchedProjectId === project?.id || !!scanEnginesStore.error) &&
 			!scanEnginesStore.isLoading
+	);
+	let contextsReady = $derived(
+		(scanContextsStore.fetchedProjectId === project?.id || !!scanContextsStore.error) &&
+			!scanContextsStore.isLoading
 	);
 	let catalogReady = $derived(engineCatalogStore.hasFetched || !!engineCatalogStore.error);
 	let busy = $derived(launching || targetsLoading);
@@ -127,6 +132,7 @@
 		if (!p) return;
 		untrack(() => {
 			planRestored = false;
+			prefilledFor = '';
 			view = 'launch';
 			whatRunsOpen = false;
 			preview = null;
@@ -140,7 +146,7 @@
 	});
 
 	$effect(() => {
-		if (!open || planRestored || !enginesReady || !catalogReady) return;
+		if (!open || planRestored || !enginesReady || !contextsReady || !catalogReady) return;
 		if (rescan && !rechecks.schema) return;
 		planRestored = true;
 		untrack(() => (rescan ? startRescan(rescan) : restorePlan()));
@@ -165,7 +171,7 @@
 		void JSON.stringify(seed.selection);
 		runPreviewLoading = true;
 		const seq = ++runPreviewSeq;
-		const body = { selection: seed.selection, dimension: '' };
+		const body = { selection: seed.selection };
 		void scansApi
 			.rescanPreview(p.id, body)
 			.then((r) => {
@@ -244,8 +250,9 @@
 
 	function restorePlan() {
 		const exists = (id: string) => scanEnginesStore.engines.some((e) => e.id === id);
+		const contextExists = (id: string) => scanContextsStore.contexts.some((c) => c.id === id);
 		if (rerun) {
-			launch.restoreRun(rerun, exists);
+			launch.restoreRun(rerun, exists, (id) => !!scanContextsStore.error || contextExists(id));
 		} else if (presetEngineId && exists(presetEngineId)) {
 			launch.applyEngine(presetEngineId);
 		} else {
@@ -257,14 +264,11 @@
 			if (last) launch.rememberQuick(last.stages, last.intensity);
 			if (engineId) launch.applyEngine(engineId);
 			else launch.useQuick();
-			if (last?.contextId && scanContextsStore.contexts.some((c) => c.id === last.contextId)) {
-				launch.contextId = last.contextId;
-			}
+			if (last?.contextId && contextExists(last.contextId)) launch.contextId = last.contextId;
 		}
 		if (presetContextId) launch.contextId = presetContextId;
 	}
 
-	let prefilledFor = '';
 	$effect(() => {
 		const only = launch.targets.length === 1 ? launch.targets[0] : null;
 		const id = only?.id ?? null;

@@ -1,23 +1,23 @@
 <script lang="ts">
 	import { PinInput } from 'bits-ui';
 	import { cn } from '$lib/utils.js';
+	import { TOTP_DIGITS } from '$lib/constants';
 
 	interface Props {
 		value: string;
 		onValueChange: (v: string) => void;
-		length?: number;
 		disabled?: boolean;
 	}
 
-	let { value, onValueChange, length = 6, disabled = false }: Props = $props();
+	let { value, onValueChange, disabled = false }: Props = $props();
 </script>
 
 <PinInput.Root
 	{value}
 	{disabled}
-	maxlength={length}
+	maxlength={TOTP_DIGITS}
 	inputmode="numeric"
-	onValueChange={(v) => onValueChange(v.replace(/\D/g, '').slice(0, length))}
+	onValueChange={(v) => onValueChange(v.replace(/\D/g, '').slice(0, TOTP_DIGITS))}
 	class="flex w-full items-center gap-1.5 sm:gap-2"
 >
 	{#snippet children({ cells })}

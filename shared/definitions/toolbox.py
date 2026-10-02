@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import json
 from enum import StrEnum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class ToolGroup(StrEnum):
@@ -68,7 +69,6 @@ class RowAction(StrEnum):
 class IdentityKind(StrEnum):
     TECH = "tech"
     FLAG = "flag"
-    FAVICON = "favicon"
     GLYPH = "glyph"
     NAMESERVER = "nameserver"
 
@@ -77,6 +77,7 @@ RUN_TTL_SECONDS = 7 * 24 * 3600
 RUNS_KEPT = 40
 RUNS_PER_MINUTE = 30
 MAX_INPUT_LENGTH = 500
+MAX_TOOL_INPUT_BYTES = 16 * 1024
 
 
 class Identity(BaseModel):
@@ -224,3 +225,11 @@ class ToolRunRequest(BaseModel):
     tool: str
     input: dict = Field(default_factory=dict)
     project_id: str | None = None
+
+    @model_validator(mode="after")
+    def _bounded(self) -> ToolRunRequest:
+        size = len(json.dumps(self.input, default=str).encode())
+        if size > MAX_TOOL_INPUT_BYTES:
+            msg = f"The tool input is larger than {MAX_TOOL_INPUT_BYTES // 1024} KB."
+            raise ValueError(msg)
+        return self

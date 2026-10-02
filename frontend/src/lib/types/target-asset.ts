@@ -12,17 +12,16 @@ export type AssetSort = (typeof ASSET_SORTS)[number]['key'];
 
 export interface TargetAssetRow {
 	name: string;
-	is_active: boolean;
 	is_wildcard: boolean;
 	resolved_ips: string[];
 	cname: string | null;
-	sources: string[];
 	scan_count: number;
 	first_seen: string;
 	last_seen: string;
 	last_scan_id: string;
 	current: boolean;
 	is_new: boolean;
+	url: string | null;
 	status_code: number | null;
 	title: string | null;
 	webserver: string | null;
@@ -31,7 +30,6 @@ export interface TargetAssetRow {
 	asn_org: string | null;
 	is_cdn: boolean;
 	cdn_name: string | null;
-	screenshot_path: string | null;
 }
 
 export interface TargetAssetFilter {

@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import distinct, func, select, text
+from sqlalchemy import distinct, exists, func, select, text, true
 
 from shared.definitions.correlation import (
     COMMON_SHARE,
@@ -21,11 +21,12 @@ from shared.models.http_asset import HttpAsset
 from shared.models.ip_address import IpAddress
 from shared.models.subdomain import Subdomain
 from shared.services.asset_query.errors import NO_JIT, STATEMENT_TIMEOUT
-from shared.services.asset_query.renders import cluster, is_identity
-from shared.services.asset_query.tokens import group_token
+from shared.services.asset_query.renders import RenderCluster, cluster, is_identity
+from shared.services.asset_query.tokens import token
 from shared.services.correlation.kinds import KINDS, asset_join, platform_for
 from shared.utils.imagehash import hex_digest
 from shared.utils.infra import generic_page, shared_edge
+from shared.utils.text import clip
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -34,7 +35,6 @@ if TYPE_CHECKING:
 
 _LABEL_MAX = 60
 _HASH_LABEL = 14
-# loaded past the cut, then re-ranked once the provider test has run
 _PLATFORM_SLACK = 40
 _MEMBER_COLUMNS = (
     Subdomain.id,
@@ -66,7 +66,7 @@ def hub_label(kind: str, value: str) -> str:
         return f"AS{value}"
     if kind in _HASH_KINDS:
         return value if len(value) <= _HASH_LABEL else f"{value[:8]}…{value[-4:]}"
-    return value if len(value) <= _LABEL_MAX else f"{value[: _LABEL_MAX - 1]}…"
+    return clip(value, _LABEL_MAX)
 
 
 @dataclass(frozen=True)
@@ -82,7 +82,7 @@ class Member:
     cname: str | None = None
 
     def vouches(self, kind: str) -> bool:
-        """Whether the identity this row presents is its own rather than a provider's."""
+        """Whether the row's identity is its own, not a provider's."""
         if shared_edge(self.cname):
             return False
         if kind in CROSS_PAGE_KINDS:
@@ -121,20 +121,12 @@ class Hub:
     @property
     def query(self) -> str:
         spec = KINDS[self.kind]
-        return group_token(spec.kind, spec.operator, self.value) + spec.narrows
+        return token(spec.kind, spec.operator, self.value) + spec.narrows
 
 
 @dataclass
 class HubSet:
     hubs: list[Hub] = field(default_factory=list)
-    carriers: dict[str, int] = field(default_factory=dict)
-    discovered: dict[str, int] = field(default_factory=dict)
-
-    def by_kind(self, kind: str) -> list[Hub]:
-        return [h for h in self.hubs if h.kind == kind]
-
-    def holding(self, subdomain_id: UUID) -> list[Hub]:
-        return [h for h in self.hubs if any(m.id == subdomain_id for m in h.members)]
 
 
 class CorrelationFinder:
@@ -165,18 +157,17 @@ class CorrelationFinder:
             wanted = values.get(kind) if values is not None else None
             if values is not None and not wanted:
                 continue
+            clusters: list[RenderCluster] = []
             if spec.derived:
-                hubs, carriers = await self._render_hubs(scope, wanted)
+                hubs, clusters = await self._render_hubs(scope, wanted)
             else:
-                hubs, carriers = await self._column_hubs(scope, kind, wanted)
-            out.carriers[kind] = carriers
-            out.discovered[kind] = len(hubs)
+                hubs = await self._column_hubs(scope, kind, wanted)
             for hub in hubs:
                 hub.platform = platform_for(kind, hub.value, addresses)
             hubs.sort(key=lambda h: self._rank(h, cross))
             kept = hubs[: per_kind + _PLATFORM_SLACK]
             if kept:
-                await self._load_members(scope, kind, kept)
+                await self._load_members(scope, kind, kept, clusters)
                 for hub in kept:
                     hub.platform = hub.platform or _written_by(hub)
                 kept.sort(key=lambda h: self._rank(h, cross))
@@ -200,9 +191,10 @@ class CorrelationFinder:
 
     async def _column_hubs(
         self, scope: QueryScope, kind: str, wanted: set[str] | None
-    ) -> tuple[list[Hub], int]:
+    ) -> list[Hub]:
         spec = KINDS[kind]
-        value = spec.value().label("value")
+        elements = spec.elements()
+        value = spec.value(elements).label("value")
         base = (
             select(
                 value,
@@ -214,6 +206,8 @@ class CorrelationFinder:
         )
         if spec.asset:
             base = base.join(HttpAsset, asset_join())
+        if elements is not None:
+            base = base.join(elements, true())
         if not spec.numeric:
             base = base.where(value != "")
         for condition in spec.conditions():
@@ -238,54 +232,48 @@ class CorrelationFinder:
                 carriers=carriers,
             )
             for row in rows
-        ], carriers
+        ]
 
     async def _carriers(self, scope: QueryScope, kind: str) -> int:
         """Every host in scope carrying this kind, whatever value it carries."""
         spec = KINDS[kind]
+        stmt = select(func.count()).select_from(Subdomain)
         if spec.asset:
-            value = spec.value()
-            stmt = (
-                select(func.count(distinct(Subdomain.id)))
-                .select_from(Subdomain)
-                .join(HttpAsset, asset_join())
-                .where(scope.match(Subdomain.scan_id), value.isnot(None))
-            )
-            if not spec.numeric:
-                stmt = stmt.where(value != "")
+            held = select(1).where(asset_join(), spec.carried(), *spec.conditions())
+            stmt = stmt.where(scope.match(Subdomain.scan_id), exists(held))
         else:
-            stmt = (
-                select(func.count())
-                .select_from(Subdomain)
-                .where(scope.match(Subdomain.scan_id), spec.carried())
-            )
-        for condition in spec.conditions():
-            stmt = stmt.where(condition)
+            stmt = stmt.where(scope.match(Subdomain.scan_id), spec.carried())
+            for condition in spec.conditions():
+                stmt = stmt.where(condition)
         return int(await self.session.scalar(stmt) or 0)
 
     async def _render_hubs(
         self, scope: QueryScope, wanted: set[str] | None
-    ) -> tuple[list[Hub], int]:
+    ) -> tuple[list[Hub], list[RenderCluster]]:
         """Screenshot balls, counted the way `screenshot:` filters."""
         rows = (
             await self.session.execute(
                 select(
                     Subdomain.screenshot_phash,
+                    Subdomain.target_id,
                     func.count(),
-                    func.count(distinct(Subdomain.target_id)),
                 )
                 .where(
                     scope.match(Subdomain.scan_id),
                     Subdomain.screenshot_phash.isnot(None),
                 )
-                .group_by(Subdomain.screenshot_phash)
+                .group_by(Subdomain.screenshot_phash, Subdomain.target_id)
             )
         ).all()
-        histogram = {int(raw): int(n) for raw, n, _ in rows}
-        targets = {int(raw): int(t) for raw, _, t in rows}
+        histogram: dict[int, int] = {}
+        targets_of: dict[int, set[UUID]] = {}
+        for raw, target_id, n in rows:
+            histogram[int(raw)] = histogram.get(int(raw), 0) + int(n)
+            targets_of.setdefault(int(raw), set()).add(target_id)
         carriers = sum(n for h, n in histogram.items() if is_identity(h))
+        clusters = cluster(histogram)
         hubs = []
-        for found in cluster(histogram):
+        for found in clusters:
             if found.count < MIN_SHARED:
                 continue
             digest = found.digest
@@ -298,21 +286,28 @@ class CorrelationFinder:
                     kind=CorrelationKind.SCREENSHOT.value,
                     value=digest,
                     hosts=found.count,
-                    targets=max(targets.get(h, 0) for h in found.hashes),
+                    targets=len(
+                        set().union(*(targets_of.get(h, set()) for h in found.hashes))
+                    ),
                     carriers=carriers,
                 )
             )
-        return hubs, carriers
+        return hubs, clusters
 
     async def _load_members(
-        self, scope: QueryScope, kind: str, hubs: list[Hub]
+        self,
+        scope: QueryScope,
+        kind: str,
+        hubs: list[Hub],
+        clusters: list[RenderCluster],
     ) -> None:
         spec = KINDS[kind]
         by_value = {hub.value: hub for hub in hubs}
         if spec.derived:
-            pairs = await self._render_members(scope, set(by_value))
+            pairs = await self._render_members(scope, set(by_value), clusters)
         else:
-            value = spec.value().label("value")
+            elements = spec.elements()
+            value = spec.value(elements).label("value")
             stmt = (
                 select(value, *_MEMBER_COLUMNS)
                 .select_from(Subdomain)
@@ -323,6 +318,8 @@ class CorrelationFinder:
             )
             if spec.asset:
                 stmt = stmt.join(HttpAsset, asset_join())
+            if elements is not None:
+                stmt = stmt.join(elements, true())
             if (holding := spec.holding(sorted(by_value))) is not None:
                 stmt = stmt.where(holding)
             for condition in spec.conditions():
@@ -340,10 +337,10 @@ class CorrelationFinder:
             hub.members.append(member)
 
     async def _render_members(
-        self, scope: QueryScope, drawn: set[str]
+        self, scope: QueryScope, drawn: set[str], clusters: list[RenderCluster]
     ) -> list[tuple[str, Member]]:
         digests: dict[int, str] = {}
-        for found in cluster(await self._render_histogram(scope)):
+        for found in clusters:
             if found.digest in drawn:
                 for raw in found.hashes:
                     digests.setdefault(raw, found.digest)
@@ -359,19 +356,6 @@ class CorrelationFinder:
         ).all()
         return [(digests[int(row[0])], _member(row[1:])) for row in rows]
 
-    async def _render_histogram(self, scope: QueryScope) -> dict[int, int]:
-        rows = (
-            await self.session.execute(
-                select(Subdomain.screenshot_phash, func.count())
-                .where(
-                    scope.match(Subdomain.scan_id),
-                    Subdomain.screenshot_phash.isnot(None),
-                )
-                .group_by(Subdomain.screenshot_phash)
-            )
-        ).all()
-        return {int(raw): int(n) for raw, n in rows}
-
     async def _cdn_addresses(self, scope: QueryScope) -> dict[str, str]:
         rows = (
             await self.session.execute(
@@ -384,7 +368,7 @@ class CorrelationFinder:
 
 
 def _written_by(hub: Hub) -> str:
-    """The provider that wrote this value, when nothing carrying it speaks for itself."""
+    """The provider behind a value no member vouches for."""
     held = [m for m in hub.members if m.vouches(hub.kind)]
     if hub.kind == CorrelationKind.TITLE.value:
         return generic_page(hub.value, [m.status for m in held]) or ""

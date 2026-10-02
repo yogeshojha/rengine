@@ -4,11 +4,13 @@ import socket
 from collections.abc import Iterable
 from urllib.parse import SplitResult, urlsplit
 
+from shared.definitions.ports import SCHEME_PORTS
+
 _URL_QUERY = re.compile(r"(https?://[^\s'\"?#]+)\?[^\s'\"#]*", re.IGNORECASE)
 
 
 def redact_url_queries(text: str) -> str:
-    """Drop the query string of every URL in a message; queries carry API keys."""
+    """Drop the query string of every URL in a message."""
     return _URL_QUERY.sub(r"\1?…", text)
 
 
@@ -45,7 +47,7 @@ def validate_public_https_url(raw: str, *, label: str = "URL") -> None:
     try:
         infos = socket.getaddrinfo(parts.hostname, None)
     except OSError as exc:
-        msg = f"Cannot resolve {label} host: {exc}"
+        msg = f"{label} host {parts.hostname} does not resolve. Check the host name."
         raise ValueError(msg) from exc
     for info in infos:
         if not is_public_address(ipaddress.ip_address(info[4][0])):
@@ -76,11 +78,21 @@ def cert_covers(
 
 
 def url_port(parts: SplitResult) -> int | None:
-    """A URL's port, or None when absent or unreadable: reading .port is what raises."""
+    """A URL's port, or None when absent or unreadable."""
     try:
         return parts.port
     except ValueError:
         return None
+
+
+def url_host(url: str | None) -> str:
+    """A URL's lowercase hostname, or an empty string when absent or unreadable."""
+    if not url:
+        return ""
+    try:
+        return urlsplit(url).hostname or ""
+    except ValueError:
+        return ""
 
 
 def unreadable_port(parts: SplitResult) -> str | None:
@@ -97,6 +109,19 @@ def bracketed(host: str) -> str:
 def host_port(host: str, port: int | str) -> str:
     """An authority a tool can parse."""
     return f"{bracketed(host)}:{port}"
+
+
+def authority(url: str, host: str | None = None) -> str:
+    """The URL's host, with the port only when it is not the scheme's own."""
+    try:
+        parts = urlsplit(url)
+    except ValueError:
+        return bracketed(host or "")
+    name = host or parts.hostname or ""
+    port = url_port(parts)
+    if name and port and port != SCHEME_PORTS.get(parts.scheme):
+        return host_port(name, port)
+    return bracketed(name)
 
 
 def split_host_port(authority: str) -> tuple[str, str | None]:

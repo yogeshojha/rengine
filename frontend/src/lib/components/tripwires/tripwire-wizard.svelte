@@ -24,6 +24,7 @@
 		ActionKind,
 		FireOn,
 		MAX_NAME,
+		MAX_RUNS_PER_DAY,
 		ScopeKind,
 		TripwireTrigger,
 		actionLabel,
@@ -43,6 +44,8 @@
 	import ConditionPreview from './condition-preview.svelte';
 	import FireOnField from './fire-on-field.svelte';
 	import FlowStrip, { type FlowAction, type FlowNode } from './flow-strip.svelte';
+	import { withArticle } from '$lib/utilities/strings';
+	import { defaultTripwireName, scopeText } from './format';
 	import ScopeField from './scope-field.svelte';
 	import StagePicker from './stage-picker.svelte';
 
@@ -82,7 +85,6 @@
 		{ key: 'then', label: 'Then', node: 'then' },
 		{ key: 'review', label: 'Review', node: null }
 	];
-	const LABEL = 'text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase';
 	const HINTS: Record<string, string> = {
 		[SurfaceDimension.WEB_ASSETS]: 'host:vpn-* status:200',
 		[SurfaceDimension.ENDPOINTS]: 'path:/admin is:live',
@@ -142,7 +144,7 @@
 	});
 	let queryStore = $derived(QUERY_SCHEMAS[dimension as Dimension]);
 	let canSave = $derived(!saving && stepReady.every(Boolean));
-	let scopeText = $derived(scopeSentence(scope, scopeLabels));
+	let scopeLine = $derived(scopeText(scope, scopeLabels));
 	let stageTitles = $derived(stages.map((s) => tripwiresStore.stageTitle(s)));
 	let channelNames = $derived(
 		channelIds.map((id) => tripwiresStore.channelName(id)).filter((n): n is string => !!n)
@@ -213,23 +215,6 @@
 		});
 	});
 
-	function scopeSentence(value: TripwireScope, labels: string[]): string {
-		if (value.kind === ScopeKind.All) return 'All targets';
-		if (labels.length === 0) return 'No target chosen';
-		if (value.kind === ScopeKind.Targets) {
-			return labels.length <= 2
-				? labels.join(', ')
-				: `${labels.slice(0, 2).join(', ')} and ${labels.length - 2} more`;
-		}
-		return `${value.kind === ScopeKind.Organization ? 'Organization' : 'Tag'} ${labels[0]}`;
-	}
-
-	function defaultName(): string {
-		const text = query.trim();
-		const base = text ? `${spec.label} · ${text}` : `New ${spec.nounPlural}`;
-		return base.length > MAX_NAME ? `${base.slice(0, MAX_NAME - 1)}…` : base;
-	}
-
 	function setDimension(next: string) {
 		if (!next || next === dimension) return;
 		dimension = next;
@@ -254,7 +239,7 @@
 
 	function next() {
 		if (!stepReady[step]) return;
-		if (step === STEPS.length - 2 && !name.trim()) name = defaultName();
+		if (step === STEPS.length - 2 && !name.trim()) name = defaultTripwireName(spec, query);
 		step = Math.min(step + 1, STEPS.length - 1);
 		reached = Math.max(reached, step);
 	}
@@ -360,7 +345,7 @@
 			<FlowStrip
 				current={STEPS[step].node}
 				{trigger}
-				{scopeText}
+				scopeText={scopeLine}
 				{dimension}
 				{query}
 				{fireOn}
@@ -371,29 +356,32 @@
 		<ScrollArea class="min-h-0 flex-1">
 			<div class="flex flex-col gap-5 px-6 py-5">
 				{#if step === 0}
-					<div class="flex flex-col gap-2">
-						<span class={LABEL}>Timing</span>
-						<RadioGroup.Root
-							value={trigger}
-							onValueChange={(v) => v && (trigger = v)}
-							class="grid gap-2 sm:grid-cols-2"
-						>
-							{#each catalog?.triggers ?? [] as choice (choice.key)}
-								<Label for="trigger-{choice.key}" class={CARD}>
-									<RadioGroup.Item value={choice.key} id="trigger-{choice.key}" class="mt-0.5" />
-									<span class="flex flex-col gap-0.5">
-										<span class="text-sm font-medium">{choice.label}</span>
-										<span class="text-xs font-normal text-muted-foreground">{choice.help}</span>
-									</span>
-								</Label>
-							{/each}
-						</RadioGroup.Root>
-					</div>
+					<FormField label="Timing">
+						{#snippet children({ id })}
+							<RadioGroup.Root
+								{id}
+								value={trigger}
+								onValueChange={(v) => v && (trigger = v)}
+								class="grid gap-2 sm:grid-cols-2"
+							>
+								{#each catalog?.triggers ?? [] as choice (choice.key)}
+									<Label for="trigger-{choice.key}" class={CARD}>
+										<RadioGroup.Item value={choice.key} id="trigger-{choice.key}" class="mt-0.5" />
+										<span class="flex flex-col gap-0.5">
+											<span class="text-sm font-medium">{choice.label}</span>
+											<span class="text-xs font-normal text-muted-foreground">{choice.help}</span>
+										</span>
+									</Label>
+								{/each}
+							</RadioGroup.Root>
+						{/snippet}
+					</FormField>
 					<FormField label="Targets">
 						{#snippet children({ id })}
 							<ScopeField
 								{projectSlug}
 								{scope}
+								labels={scopeLabels}
 								onChange={(s, labels) => {
 									scope = s;
 									scopeLabels = labels;
@@ -416,10 +404,7 @@
 								</Select.Root>
 							{/snippet}
 						</FormField>
-						<FormField
-							label="Query"
-							description="The {dimensionLabel} search language. Type a field name for suggestions."
-						>
+						<FormField label="Query">
 							{#snippet children({ id: _id })}
 								<div class="[&>div]:rounded-xl">
 									<QueryBar
@@ -442,7 +427,7 @@
 							{/snippet}
 						</FormField>
 					</div>
-					<FormField label="Fires when a {spec.noun}">
+					<FormField label="Fires when {withArticle(spec.noun)}">
 						{#snippet children({ id })}
 							<FireOnField
 								{id}
@@ -482,8 +467,8 @@
 							<span class="flex flex-col gap-0.5">
 								<span class="font-medium">Focused scan</span>
 								<span class="text-xs text-muted-foreground">
-									Runs the chosen stages against the {spec.nounPlural} that fired. {catalog?.max_runs_per_day ??
-										5} runs a day.
+									Runs the chosen stages against the {spec.nounPlural} that fired. At most {catalog?.max_runs_per_day ??
+										MAX_RUNS_PER_DAY} runs a day.
 								</span>
 							</span>
 							<Switch checked={scanOn} onCheckedChange={setScanOn} />

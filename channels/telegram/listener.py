@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
-from datetime import datetime
 from typing import Any
 
 from channels import settings, status
@@ -19,21 +18,15 @@ from channels.telegram.api import (
     TelegramError,
 )
 from channels.telegram.driver import menu
-from shared.definitions.channels import ChannelKind
+from shared.definitions.channels import DISPATCH_SLOTS, ChannelKind
 from shared.logging import get_logger
-from shared.utils.datetime import utc_now
 
 logger = get_logger(__name__)
 
 CONFIG_REFRESH_SECONDS = 5.0
 MAX_BACKOFF_SECONDS = 120
 UNAUTHORIZED_PAUSE_SECONDS = 60
-DISPATCH_SLOTS = 8
 PRIVATE = "private"
-
-
-def _iso(value: datetime | None) -> str | None:
-    return value.isoformat() if value else None
 
 
 class TelegramChannel(Channel):
@@ -47,11 +40,6 @@ class TelegramChannel(Channel):
         sent = await self.api.send_message(external_id, message.text, message.entities)
         message_id = sent.get("message_id") if isinstance(sent, dict) else None
         return str(message_id) if message_id is not None else None
-
-    async def edit(self, external_id: str, message_id: str, message: Message) -> None:
-        await self.api.edit_message_text(
-            external_id, message_id, message.text, message.entities
-        )
 
     async def delete(self, external_id: str, message_id: str) -> None:
         await self.api.delete_message(external_id, message_id)
@@ -67,9 +55,7 @@ def to_inbound(update: dict) -> Inbound | None:
     if not isinstance(text, str) or not text.strip() or "id" not in chat:
         return None
     return Inbound(
-        channel=ChannelKind.TELEGRAM.value,
         external_id=str(chat["id"]),
-        sender_id=str(sender.get("id", "")),
         username=sender.get("username") or None,
         first_name=sender.get("first_name") or None,
         text=text,
@@ -89,11 +75,7 @@ class TelegramListener:
         self._dispatcher: Dispatcher | None = None
         self._bot: BotInfo | None = None
         self._offset = 0
-        self._started_at: datetime | None = None
-        self._last_poll_at: datetime | None = None
-        self._updates_seen = 0
         self._last_error: str | None = None
-        self._last_error_at: datetime | None = None
         self._failures = 0
         self._tasks: set[asyncio.Task] = set()
         self._chats = ChatLocks()
@@ -130,11 +112,9 @@ class TelegramListener:
             )
         else:
             self._dispatcher.channel = TelegramChannel(api)
-        self._offset = await status.load_offset(self.kind)
-        self._started_at = utc_now()
+        self._offset = await status.load_offset(self.kind, self._bot.id)
         self._failures = 0
         self._last_error = None
-        self._last_error_at = None
         logger.info("telegram listener connected", bot=self._bot.username)
         return True
 
@@ -143,7 +123,6 @@ class TelegramListener:
             await self._api.close()
         self._api = None
         self._token = None
-        self._started_at = None
 
     async def _release(self) -> None:
         if self._dispatcher is not None:
@@ -152,7 +131,6 @@ class TelegramListener:
 
     def _note_error(self, message: str) -> None:
         self._last_error = message[:300]
-        self._last_error_at = utc_now()
         logger.warning("telegram listener error", error=self._last_error)
 
     # ---------- status ----------
@@ -162,13 +140,7 @@ class TelegramListener:
             self.kind,
             {
                 "running": enabled and self._api is not None,
-                "bot": self._bot.model_dump() if self._bot else None,
-                "started_at": _iso(self._started_at),
-                "last_poll_at": _iso(self._last_poll_at),
-                "updates_seen": self._updates_seen,
                 "last_error": self._last_error,
-                "last_error_at": _iso(self._last_error_at),
-                "updated_at": _iso(utc_now()),
             },
         )
 
@@ -222,8 +194,8 @@ class TelegramListener:
 
     async def _poll_once(self) -> float:
         """Run one long poll and return the pause before the next."""
-        api = self._api
-        if api is None:
+        api, bot = self._api, self._bot
+        if api is None or bot is None:
             return CONFIG_REFRESH_SECONDS
         try:
             updates = await api.get_updates(self._offset, LONG_POLL_SECONDS)
@@ -241,7 +213,6 @@ class TelegramListener:
             return float(min(MAX_BACKOFF_SECONDS, 2**self._failures))
 
         self._failures = 0
-        self._last_poll_at = utc_now()
         for update in updates:
             update_id = update.get("update_id")
             if isinstance(update_id, int):
@@ -249,10 +220,9 @@ class TelegramListener:
             inbound = to_inbound(update)
             if inbound is None:
                 continue
-            self._updates_seen += 1
             self._spawn(inbound)
         if updates:
-            await status.save_offset(self.kind, self._offset)
+            await status.save_offset(self.kind, bot.id, self._offset)
         return 0.0
 
     def _spawn(self, inbound: Inbound) -> None:

@@ -31,11 +31,9 @@ export interface OriginFinding {
 
 export interface OriginExposure {
 	findings: OriginFinding[];
-	probed_addresses: number;
-	fronted_assets: number;
 }
 
-// mirrors api/app/services/origin_exposure.py
+// mirrors shared/services/origin_exposure.py
 export const ORIGIN_EXPOSED = 'origin_exposed';
 export const DEFAULT_VHOST = 'default_vhost';
 

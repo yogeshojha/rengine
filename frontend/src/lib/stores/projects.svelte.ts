@@ -32,10 +32,6 @@ function createProjectsStore() {
 			return hasFetched;
 		},
 
-		getCurrentProject(): Project | null {
-			return activeProject;
-		},
-
 		async fetchProjects() {
 			if (hasFetched || isLoading) return;
 
@@ -92,27 +88,6 @@ function createProjectsStore() {
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Project not created';
 				return null;
-			}
-		},
-
-		async deleteProject(slug: string): Promise<boolean> {
-			try {
-				await projectsApi.delete(slug);
-				projects = projects.filter((p) => p.slug !== slug);
-
-				if (activeProject?.slug === slug) {
-					activeProject = projects[0] || null;
-
-					if (activeProject) {
-						localStorage.setItem(STORAGE_KEYS.activeProjectSlug, activeProject.slug);
-					} else {
-						localStorage.removeItem(STORAGE_KEYS.activeProjectSlug);
-					}
-				}
-				return true;
-			} catch (e) {
-				error = e instanceof Error ? e.message : 'Project not deleted';
-				return false;
 			}
 		},
 

@@ -74,7 +74,7 @@ final class ConnectorTab {
     private final JCheckBox inScopeOnly = new JCheckBox("Only hosts in Burp's target scope");
     private final JCheckBox captureTitles = new JCheckBox("Read page titles from HTML responses");
     private final JCheckBox sendRequestHead =
-            new JCheckBox("Send request headers. Credential values are masked.");
+            new JCheckBox("Send request headers with credential values masked");
     private final JCheckBox allowSelfSigned = new JCheckBox("Accept a self-signed certificate");
     private final JButton saveAndTest = new JButton("Save and test");
     private final JLabel status = new JLabel(" ");
@@ -93,6 +93,7 @@ final class ConnectorTab {
     private final Timer refreshTimer = new Timer(REFRESH_MILLIS, e -> refresh());
     private final Timer factsTimer = new Timer(FACTS_MILLIS, e -> refreshHostFacts());
     private List<Actions.Notice> shown = List.of();
+    private boolean syncing;
     private Color muted = Color.GRAY;
     private Color plain = Color.BLACK;
 
@@ -335,7 +336,6 @@ final class ConnectorTab {
     private static JLabel title(String text) {
         JLabel label = new JLabel(text);
         label.setFont(label.getFont().deriveFont(Font.BOLD));
-        label.putClientProperty("rengine.title", Boolean.TRUE);
         return label;
     }
 
@@ -415,28 +415,54 @@ final class ConnectorTab {
     private void loadTargets() {
         new Thread(() -> {
             List<Targets.Option> options;
+            String failure;
             try {
                 options = targets.fetch();
+                failure = null;
+            } catch (Targets.Refused e) {
+                options = null;
+                failure = e.getMessage();
             } catch (Exception e) {
-                options = List.of(Targets.AUTO);
+                options = null;
+                failure = Sink.explain(e);
             }
             List<Targets.Option> loaded = options;
+            String refused = failure;
             SwingUtilities.invokeLater(() -> {
-                target.setModel(new DefaultComboBoxModel<>(loaded.toArray(new Targets.Option[0])));
-                String chosen = settings.targetId();
-                String chosenProgram = settings.programId();
-                for (Targets.Option option : loaded) {
-                    boolean match = option.isProgram()
-                            ? chosenProgram != null && chosenProgram.equals(option.id())
-                            : chosen != null && chosen.equals(option.id());
-                    if (match) {
-                        target.setSelectedItem(option);
-                        return;
-                    }
+                if (loaded == null) {
+                    hostLine.setText("Targets not loaded. " + refused);
+                    return;
                 }
-                target.setSelectedItem(Targets.AUTO);
+                syncing = true;
+                try {
+                    select(loaded);
+                } finally {
+                    syncing = false;
+                }
             });
         }, "rengine-connector-targets").start();
+    }
+
+    /** Fills the picker and selects the saved target or program. */
+    private void select(List<Targets.Option> loaded) {
+        target.setModel(new DefaultComboBoxModel<>(loaded.toArray(new Targets.Option[0])));
+        String chosen = settings.targetId();
+        String chosenProgram = settings.programId();
+        for (Targets.Option option : loaded) {
+            boolean match = option.isProgram()
+                    ? chosenProgram != null && chosenProgram.equals(option.id())
+                    : chosen != null && chosen.equals(option.id());
+            if (match) {
+                target.setSelectedItem(option);
+                return;
+            }
+        }
+        target.setSelectedItem(Targets.AUTO);
+        if (chosen != null || chosenProgram != null) {
+            settings.targetId(null);
+            settings.programId(null);
+            settings.save();
+        }
     }
 
     private void applyScope() {
@@ -466,7 +492,10 @@ final class ConnectorTab {
                                     + (scope.exclude().isEmpty()
                                             ? ""
                                             : ", " + scope.exclude().size() + " excluded")
-                                    + (scope.program() == null ? "" : " · " + scope.program());
+                                    + (scope.program() == null ? "" : " · " + scope.program())
+                                    + (scope.truncated()
+                                            ? " · Hostname list capped at " + scope.hostsKnown()
+                                            : "");
                 }
             } catch (Exception e) {
                 message = Sink.explain(e);
@@ -508,6 +537,9 @@ final class ConnectorTab {
     }
 
     private void chooseTarget() {
+        if (syncing) {
+            return;
+        }
         Object selected = target.getSelectedItem();
         if (selected instanceof Targets.Option option) {
             settings.targetId(option.isProgram() ? null : option.id());
@@ -580,7 +612,7 @@ final class ConnectorTab {
             String detail = (host == null ? "reNgine" : host)
                     + (settings.enabled() ? " · Capture is on" : " · Capture is off");
             link(OK, "Connected", Tls.insecure(settings.endpoint())
-                    ? detail + " · Plain HTTP, the token is sent unencrypted" : detail);
+                    ? detail + " · Token sent over plain HTTP" : detail);
         } else {
             link(muted, "Connecting", settings.endpoint());
         }

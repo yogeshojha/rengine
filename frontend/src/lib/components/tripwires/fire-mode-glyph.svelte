@@ -8,7 +8,6 @@
 
 	let { mode, class: klass = '' }: Props = $props();
 
-	// two runs, three rows each; a filled row is one the query matches, the tinted row fires
 	const ROWS = [6, 14, 22];
 	const LEFT = 3;
 	const RIGHT = 41;

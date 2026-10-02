@@ -4,7 +4,12 @@
 	import SurfaceRiskRows from './surface-risk-rows.svelte';
 	import SurfaceRiskDialog from './surface-risk-dialog.svelte';
 	import { Button } from '$lib/components/ui/button';
-	import { SEVERITY_FILL, SEVERITY_ORDER, severityLabel } from '$lib/config/vulnerabilities';
+	import {
+		ACTIONABLE_SEVERITIES,
+		SEVERITY_FILL,
+		SEVERITY_ORDER,
+		severityLabel
+	} from '$lib/config/vulnerabilities';
 	import { ACT_QUERY, SURFACE_RISK_ROWS } from '$lib/config/dashboard';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import type { DashboardSurfaceRisk } from '$lib/types/dashboard';
@@ -34,7 +39,7 @@
 	let findingsHref = $derived(routes.results(VULNS.tab));
 	let actionableHref = $derived(
 		routes.results(VULNS.tab, undefined, {
-			[VULNS.queryParam]: 'severity:[critical,high,medium]'
+			[VULNS.queryParam]: `severity:[${ACTIONABLE_SEVERITIES.join(',')}]`
 		})
 	);
 	let actHref = $derived(routes.results(VULNS.tab, undefined, { [VULNS.queryParam]: ACT_QUERY }));
@@ -44,7 +49,6 @@
 
 <Cell
 	id="surface-risk"
-	title="Surface against risk"
 	description="Live web assets against open findings, per target"
 	loading={loading && !data}
 	class={className}
@@ -53,8 +57,7 @@
 		{#if data}
 			<Button variant="outline" size="sm" class="h-7 text-xs" onclick={() => (open = true)}>
 				All targets
-				<span class="text-muted-foreground tabular-nums">{data.targets_total.toLocaleString()}</span
-				>
+				<span class="text-muted-foreground tabular-nums">{data.scanned.toLocaleString()}</span>
 			</Button>
 		{/if}
 	{/snippet}
@@ -64,24 +67,24 @@
 				<span class="text-lg leading-tight font-semibold tracking-tight tabular-nums">
 					{data.live.toLocaleString()}
 				</span>
-				<span class="truncate text-2xs text-muted-foreground">live web assets</span>
+				<span class="text-2xs text-muted-foreground sm:truncate">live web assets</span>
 			</a>
 			<a href={findingsHref} class={STAT_LINK}>
 				<span class="text-lg leading-tight font-semibold tracking-tight tabular-nums">
 					{data.findings.toLocaleString()}
 				</span>
-				<span class="truncate text-2xs text-muted-foreground">open findings</span>
+				<span class="text-2xs text-muted-foreground sm:truncate">open findings</span>
 			</a>
 			<div class={STAT}>
 				<a
 					href={actionableHref}
 					class="text-lg leading-tight font-semibold tracking-tight tabular-nums hover:text-primary {data.actionable
-						? 'text-[var(--sev-critical-ink)]'
+						? 'text-sev-critical-ink'
 						: ''}"
 				>
 					{data.actionable.toLocaleString()}
 				</a>
-				<span class="truncate text-2xs text-muted-foreground">
+				<span class="text-2xs text-muted-foreground sm:truncate">
 					actionable · <a href={actHref} class="hover:text-primary"
 						>{data.act.toLocaleString()} act now</a
 					>

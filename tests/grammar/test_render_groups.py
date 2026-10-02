@@ -8,7 +8,7 @@ from shared.definitions.correlation import (
     SCREENSHOT_MIN_POPCOUNT,
 )
 from shared.models.subdomain import SubdomainFilter
-from shared.services.asset_query.renders import cluster, cluster_of, is_identity
+from shared.services.asset_query.renders import cluster, is_identity
 from shared.utils.imagehash import distance, hex_digest, to_signed, to_unsigned
 
 pytestmark = pytest.mark.grammar
@@ -62,12 +62,6 @@ def test_a_digest_round_trips():
     assert hex_digest(_PAGE) == "0030242430d41010"
     assert to_signed(to_unsigned(-1)) == -1
     assert len(hex_digest(to_signed(0xFFFFFFFFFFFFFFFF))) == 16
-
-
-def test_cluster_of_prefers_the_largest_reaching_cluster():
-    groups = cluster({_PAGE: 9, _NEAR: 2, _FAR: 1})
-    assert cluster_of(groups, _NEAR).value == _PAGE
-    assert cluster_of(groups, None) is None
 
 
 async def test_the_render_group_count_equals_its_search(estate, now):

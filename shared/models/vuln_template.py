@@ -19,11 +19,8 @@ from shared.definitions.vulnerabilities import (
     TemplateOrigin,
     reject_unknown,
 )
+from shared.models.fields import json_list
 from shared.utils.datetime import utc_now
-
-
-def _json_list() -> Field:
-    return Field(default_factory=list, sa_column=Column(JSON, nullable=False))
 
 
 class VulnTemplate(SQLModel, table=True):
@@ -46,11 +43,11 @@ class VulnTemplate(SQLModel, table=True):
     directory: str = Field(default="", max_length=200, index=True)
     description: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
     remediation: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
-    tags: list = _json_list()
-    authors: list = _json_list()
-    references: list = _json_list()
-    cve_ids: list = _json_list()
-    cwe_ids: list = _json_list()
+    tags: list = json_list()
+    authors: list = json_list()
+    references: list = json_list()
+    cve_ids: list = json_list()
+    cwe_ids: list = json_list()
     cvss_score: float | None = Field(default=None)
     requests: int = Field(default=0)
     paths: list | None = Field(
@@ -86,7 +83,6 @@ class VulnTemplateRead(BaseModel):
     requests: int = 0
     enabled: bool = True
     sets: list[str] = PydanticField(default_factory=list)
-    findings: int = 0
     raw: str | None = None
     created_at: datetime
     updated_at: datetime
@@ -101,6 +97,7 @@ class VulnTemplateUploadRequest(BaseModel):
     files: list[VulnTemplateUpload] = PydanticField(
         default_factory=list, max_length=MAX_TEMPLATE_UPLOAD
     )
+    replace: bool = True
 
 
 class VulnTemplateRejection(BaseModel):
@@ -137,10 +134,7 @@ class TemplateFilter(BaseModel):
     q: str | None = PydanticField(default=None, max_length=200)
     origins: list[str] = PydanticField(default_factory=list, max_length=4)
     severities: list[str] = PydanticField(default_factory=list, max_length=8)
-    protocols: list[str] = PydanticField(default_factory=list, max_length=12)
     sets: list[str] = PydanticField(default_factory=list, max_length=40)
-    tags: list[str] = PydanticField(default_factory=list, max_length=40)
-    fired: bool = False
     callback: bool = False
     new_since: datetime | None = None
     limit: int = PydanticField(default=50, ge=1, le=200)
@@ -201,14 +195,8 @@ class SelectionBreakdown(BaseModel):
 class SelectionPreview(BaseModel):
     """What the current plan would run, counted against the indexed library."""
 
-    ready: bool = False
     total: int = 0
-    official: int = 0
-    custom: int = 0
     by_severity: list[SelectionBreakdown] = PydanticField(default_factory=list)
-    by_set: list[SelectionBreakdown] = PydanticField(default_factory=list)
-    by_protocol: list[SelectionBreakdown] = PydanticField(default_factory=list)
-    estimated_requests: int = 0
     warnings: list[str] = PydanticField(default_factory=list)
 
 
@@ -218,15 +206,11 @@ class TemplateLibraryStats(BaseModel):
     official: int = 0
     custom: int = 0
     by_severity: list[SelectionBreakdown] = PydanticField(default_factory=list)
-    by_protocol: list[SelectionBreakdown] = PydanticField(default_factory=list)
     sets: list[TemplateSetSpec] = PydanticField(default_factory=list)
-    tags: list[SelectionBreakdown] = PydanticField(default_factory=list)
-    fired: int = 0
     callback: int = 0
     new: int = 0
     seen_at: datetime | None = None
     last_synced_at: datetime | None = None
-    syncing: bool = False
 
 
 class TemplateSyncResult(BaseModel):

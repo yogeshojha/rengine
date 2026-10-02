@@ -28,8 +28,6 @@ export const ExportStatus = {
 	EXPIRED: 'expired'
 } as const;
 
-export type ExportStatusValue = (typeof ExportStatus)[keyof typeof ExportStatus];
-
 export const EXPORT_STATUS_LABELS: Record<string, string> = {
 	[ExportStatus.QUEUED]: 'Queued',
 	[ExportStatus.RUNNING]: 'Preparing',
@@ -47,21 +45,10 @@ export const EXPORT_STATUS_TONE: Record<string, string> = {
 };
 
 export const BUNDLE = 'bundle';
+export const BUNDLE_LABEL = 'All dimensions';
 
 const LIVE: string[] = [ExportStatus.QUEUED, ExportStatus.RUNNING];
 
 export function isLive(status: string): boolean {
 	return LIVE.includes(status);
-}
-
-export function formatBytes(bytes: number): string {
-	if (!bytes) return '';
-	const units = ['B', 'KB', 'MB', 'GB'];
-	let value = bytes;
-	let unit = 0;
-	while (value >= 1024 && unit < units.length - 1) {
-		value /= 1024;
-		unit += 1;
-	}
-	return `${value < 10 && unit > 0 ? value.toFixed(1) : Math.round(value)} ${units[unit]}`;
 }

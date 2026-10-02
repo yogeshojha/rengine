@@ -23,8 +23,6 @@ class TargetFilter:
         return bool(self.target_ids or self.organization_id or self.tag_id)
 
 
-NO_FILTER = TargetFilter()
-
 Targets = frozenset[UUID] | None
 
 

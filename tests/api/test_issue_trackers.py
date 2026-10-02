@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import time
 import uuid
 from datetime import timedelta
 from types import SimpleNamespace
 
 import httpx
 import pytest
-from sqlalchemy import select
+import pytest_asyncio
+from sqlalchemy import delete, select
 
 from app.services.issue_tracking import IssueFilingService, ticket_refs
 from app.services.vulnerability import VulnerabilityService
@@ -24,7 +26,9 @@ from shared.definitions.issue_trackers import (
     TrackerKind,
     valid_destination,
 )
+from shared.definitions.oast import OAST_COVERAGE_GROUP
 from shared.definitions.scan_surface import SurfaceState
+from shared.definitions.vulnerabilities import CoverageStatus, Protocol
 from shared.models.issue_tracker import (
     FileSelection,
     IssueTracker,
@@ -34,8 +38,10 @@ from shared.models.issue_tracker import (
     TrackedIssueFinding,
 )
 from shared.models.scan_surface import ScanSurfaceItem
+from shared.models.vuln_template import VulnTemplate
 from shared.models.vulnerability import (
     Vulnerability,
+    VulnerabilityCoverage,
     VulnerabilityFilter,
     VulnerabilityTriage,
 )
@@ -46,6 +52,7 @@ from shared.services.issue_trackers import (
     TrackerError,
     seal_config,
 )
+from shared.services.issue_trackers.base import UNREADABLE
 from shared.services.issue_trackers.document import (
     Doc,
     rendered_size,
@@ -53,12 +60,13 @@ from shared.services.issue_trackers.document import (
     to_markdown,
     to_wiki,
 )
-from shared.services.issue_trackers.github import UNREADABLE, GitHubIssues
+from shared.services.issue_trackers.github import GitHubIssues
 from shared.services.issue_trackers.gitlab import GitLabIssues
 from shared.services.issue_trackers.jira import JiraCloud, JiraDataCenter
 from shared.services.issue_tracking import sync
-from shared.services.issue_tracking.body import issue_body, title_for
+from shared.services.issue_tracking.body import issue_body, mask_secrets, title_for
 from shared.services.issue_tracking.plan import OpenIssue, plan_filing
+from shared.services.scan_resolve import MASK
 
 pytestmark = pytest.mark.api
 
@@ -402,6 +410,35 @@ async def _scanned(estate, scan: str, host: str) -> None:
     await estate.session.flush()
 
 
+_LIBRARY_ROOT = "http/test-issue-trackers/"
+
+
+@pytest_asyncio.fixture
+async def library(durable_estate):
+    yield
+    session = durable_estate.session
+    await session.rollback()
+    await session.execute(
+        delete(VulnTemplate).where(VulnTemplate.path.startswith(_LIBRARY_ROOT))
+    )
+    await session.commit()
+
+
+async def _check(estate, template: str, *, needs_oast: bool = False) -> None:
+    estate.session.add(
+        VulnTemplate(
+            template_id=template,
+            path=f"{_LIBRARY_ROOT}{template}.yaml",
+            name=template.title(),
+            severity="critical",
+            protocol=Protocol.HTTP.value,
+            tags=["cve"],
+            needs_oast=needs_oast,
+        )
+    )
+    await estate.session.flush()
+
+
 async def _file_now(estate) -> int:
     return await estate.session.run_sync(sync.file_pending)
 
@@ -442,7 +479,7 @@ async def test_filing_groups_by_check_files_and_reports_on_the_finding(
     )
     refs = await ticket_refs(estate.session, [(vuln.target_id, "a")])
     [ref] = refs[(vuln.target_id, "a")]
-    assert (ref.state, ref.external_key) == (FilingState.FILED.value, ref.external_key)
+    assert ref.state == FilingState.FILED.value
     assert ref.external_key.startswith("SEC-")
 
 
@@ -452,7 +489,7 @@ async def test_no_route_refuses_and_a_project_route_is_followed(
     estate = durable_estate
     await estate.scan("example.com", "run", at=now)
     await _finding(estate, "run", "a", "high", now)
-    first = await _tracker(estate)
+    await _tracker(estate)
     second = await _tracker(estate)
     await estate.session.commit()
     service = IssueFilingService(estate.session)
@@ -474,7 +511,6 @@ async def test_no_route_refuses_and_a_project_route_is_followed(
     headings = [b.text for b in plan.preview if b.kind == "heading"]
     assert "Reproduction" in headings
     assert {b.lang for b in plan.preview if b.kind == "code"} <= {"shell", "http"}
-    assert first.id != second.id
 
 
 async def test_a_later_location_joins_the_open_grouped_issue_as_a_comment(
@@ -507,11 +543,12 @@ async def test_a_later_location_joins_the_open_grouped_issue_as_a_comment(
 
 
 async def test_a_clean_rescan_comments_on_what_it_no_longer_observes(
-    durable_estate, fake, now
+    durable_estate, fake, library, now
 ):
     estate = durable_estate
     await estate.scan("example.com", "first", at=now)
     await _finding(estate, "first", "a", "critical", now)
+    await _check(estate, "a")
     await _tracker(estate)
     await estate.session.commit()
     service = IssueFilingService(estate.session)
@@ -592,11 +629,12 @@ async def test_done_in_the_tracker_but_still_observed_is_said_once(
 
 
 async def test_absence_is_claimed_only_where_the_run_tested_the_check(
-    durable_estate, fake, now
+    durable_estate, fake, library, now
 ):
     estate = durable_estate
     await estate.scan("example.com", "first", at=now)
     await _finding(estate, "first", "a", "critical", now)
+    await _check(estate, "a")
     await _tracker(estate)
     await estate.session.commit()
     await IssueFilingService(estate.session).file(
@@ -617,6 +655,56 @@ async def test_absence_is_claimed_only_where_the_run_tested_the_check(
             lambda s, n=name: sync.observe_scan(s, estate.scans[n])
         )
     assert fake.comments == []
+
+
+@pytest.mark.parametrize(
+    ("config", "callback"),
+    [
+        ({"template_sets": ["panel"]}, False),
+        ({"exclude_tags": ["cve"]}, False),
+        ({}, True),
+    ],
+    ids=["narrower-sets", "excluded-tag", "callback-unheard"],
+)
+async def test_absence_is_not_claimed_for_a_check_the_run_did_not_select(
+    durable_estate, fake, library, now, config, callback
+):
+    estate = durable_estate
+    await estate.scan("example.com", "first", at=now)
+    await _finding(estate, "first", "a", "critical", now)
+    await _check(estate, "a", needs_oast=callback)
+    await _tracker(estate)
+    await estate.session.commit()
+    await IssueFilingService(estate.session).file(
+        estate.scans["first"], FileSelection(fingerprints=["a"]), estate.user_id
+    )
+    await _file_now(estate)
+
+    sid = await estate.scan(
+        "example.com",
+        "again",
+        at=now,
+        config={"stages": {"vulnerability_scan": config}},
+    )
+    await estate.activity("again", {"vulnerability_scan": "success"}, at=now)
+    await _scanned(estate, "again", "a.example.com")
+    if callback:
+        estate.session.add(
+            VulnerabilityCoverage(
+                scan_id=sid,
+                target_id=await estate._target_of(sid),
+                project_id=estate.project_id,
+                group=OAST_COVERAGE_GROUP,
+                status=CoverageStatus.SKIPPED.value,
+            )
+        )
+    await estate.session.commit()
+    await estate.session.run_sync(lambda s: sync.observe_scan(s, sid))
+    assert fake.comments == []
+    link = await estate.session.scalar(
+        select(TrackedIssueFinding).where(TrackedIssueFinding.fingerprint == "a")
+    )
+    assert link.present is True
 
 
 async def test_a_later_run_is_not_overwritten_by_an_older_one(
@@ -934,3 +1022,19 @@ def test_evidence_in_an_issue_masks_secret_values_and_keeps_their_names():
     assert "DB_PASSWORD=••••••••" in text
     assert "APP_NAME=Shop" in text
     assert "Accept: */*" in text
+
+
+@pytest.mark.parametrize(
+    "text", [" " + "token." * 17000, "token" * 20000], ids=["dotted", "joined"]
+)
+def test_masking_a_long_run_of_credential_words_stays_linear(text):
+    started = time.monotonic()
+    mask_secrets(text)
+    assert time.monotonic() - started < 1
+
+
+def test_a_long_dotted_credential_name_is_masked():
+    masked = mask_secrets(
+        "spring.datasource.hikari.data-source-properties.oracle.jdbc.something.password=xyz"
+    )
+    assert masked.endswith("password=" + MASK)

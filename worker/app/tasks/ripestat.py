@@ -20,7 +20,6 @@ logger = get_logger(__name__)
 
 @celery_app.task(
     name="app.tasks.ripestat.enrich_targets_bgp",
-    queue="default",
     soft_time_limit=600,
     time_limit=900,
 )
@@ -134,6 +133,7 @@ def _enrich_target(
         return count
 
     except Exception:
+        session.rollback()
         target.bgp_status = TaskStatus.FAILED
         session.commit()
         raise

@@ -53,15 +53,3 @@ def cluster(histogram: dict[int, int]) -> list[RenderCluster]:
         )
     clusters.sort(key=lambda c: (-c.count, c.value))
     return clusters
-
-
-def cluster_of(
-    clusters: list[RenderCluster], value: int | None
-) -> RenderCluster | None:
-    """The cluster a row belongs to, preferring the largest that reaches it."""
-    if value is None:
-        return None
-    for found in clusters:
-        if value in found.hashes:
-            return found
-    return None

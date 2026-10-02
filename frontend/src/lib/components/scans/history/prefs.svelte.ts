@@ -1,5 +1,6 @@
 import { STORAGE_KEYS } from '$lib/config/storage-keys';
 import { Severity } from '$lib/config/vulnerabilities';
+import { readStored, writeStored, type Density } from '$lib/utilities/storage';
 
 export const HISTORY_COLUMNS = ['assets', 'change', 'engine', 'duration'] as const;
 export type HistoryColumn = (typeof HISTORY_COLUMNS)[number];
@@ -19,40 +20,22 @@ export const BRIEF_TAB_LABELS: Record<BriefTab, string> = {
 	engine: 'Engine'
 };
 
-export type Density = 'comfortable' | 'compact';
-
 const SIGNAL = [Severity.CRITICAL, Severity.HIGH] as const;
 export const STRIP_SEVERITIES: string[] = [...SIGNAL, Severity.MEDIUM];
 
-function read(key: string): string | null {
-	try {
-		return localStorage.getItem(key);
-	} catch {
-		return null;
-	}
-}
-
-function write(key: string, value: string) {
-	try {
-		localStorage.setItem(key, value);
-	} catch {
-		/* storage unavailable */
-	}
-}
-
 function createHistoryPrefs() {
-	let showMedium = $state(read(STORAGE_KEYS.scansShowMedium) === '1');
+	let showMedium = $state(readStored(STORAGE_KEYS.scansShowMedium) === '1');
 	let hidden = $state<HistoryColumn[]>(
-		(read(STORAGE_KEYS.scansColumns) ?? '')
+		(readStored(STORAGE_KEYS.scansColumns) ?? '')
 			.split(',')
 			.filter((c): c is HistoryColumn => (HISTORY_COLUMNS as readonly string[]).includes(c))
 	);
 	let density = $state<Density>(
-		read(STORAGE_KEYS.scansDensity) === 'compact' ? 'compact' : 'comfortable'
+		readStored(STORAGE_KEYS.scansDensity) === 'compact' ? 'compact' : 'comfortable'
 	);
 	let tab = $state<BriefTab>(
-		(BRIEF_TABS as readonly string[]).includes(read(STORAGE_KEYS.scansBriefTab) ?? '')
-			? (read(STORAGE_KEYS.scansBriefTab) as BriefTab)
+		(BRIEF_TABS as readonly string[]).includes(readStored(STORAGE_KEYS.scansBriefTab) ?? '')
+			? (readStored(STORAGE_KEYS.scansBriefTab) as BriefTab)
 			: 'findings'
 	);
 
@@ -64,7 +47,7 @@ function createHistoryPrefs() {
 		},
 		set showMedium(v: boolean) {
 			showMedium = v;
-			write(STORAGE_KEYS.scansShowMedium, v ? '1' : '0');
+			writeStored(STORAGE_KEYS.scansShowMedium, v ? '1' : '0');
 		},
 		get severities() {
 			return severities;
@@ -74,21 +57,21 @@ function createHistoryPrefs() {
 		},
 		set density(v: Density) {
 			density = v;
-			write(STORAGE_KEYS.scansDensity, v);
+			writeStored(STORAGE_KEYS.scansDensity, v);
 		},
 		get tab() {
 			return tab;
 		},
 		set tab(v: BriefTab) {
 			tab = v;
-			write(STORAGE_KEYS.scansBriefTab, v);
+			writeStored(STORAGE_KEYS.scansBriefTab, v);
 		},
 		shows(col: HistoryColumn) {
 			return !hidden.includes(col);
 		},
 		toggle(col: HistoryColumn) {
 			hidden = hidden.includes(col) ? hidden.filter((c) => c !== col) : [...hidden, col];
-			write(STORAGE_KEYS.scansColumns, hidden.join(','));
+			writeStored(STORAGE_KEYS.scansColumns, hidden.join(','));
 		}
 	};
 }

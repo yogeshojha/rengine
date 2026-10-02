@@ -24,7 +24,6 @@ class DatasetKind(StrEnum):
     PROGRAM_FEED = "program_feed"
 
 
-# weekly refresh
 IP_RANGES_STALE_AFTER_HOURS = 14 * 24
 
 

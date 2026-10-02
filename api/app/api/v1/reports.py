@@ -35,11 +35,6 @@ async def report_catalog(_current_user: CurrentUser, session: Session):
     return await ReportService(session).catalog()
 
 
-@router.get("/themes", response_model=list[ReportThemeRead])
-async def list_themes(_current_user: CurrentUser, session: Session):
-    return await ReportService(session).themes()
-
-
 @router.get("/themes/{slug}/source", response_model=str)
 async def theme_source(
     _current_user: CurrentUser,
@@ -65,11 +60,6 @@ async def delete_theme(
     slug: Annotated[str, Path(description="Theme key")],
 ):
     await ReportService(session).delete_theme(slug)
-
-
-@router.get("/fonts", response_model=list[ReportFontRead])
-async def list_fonts(_current_user: CurrentUser, session: Session):
-    return await ReportService(session).fonts()
 
 
 @router.post(
@@ -161,12 +151,8 @@ async def list_reports(
     _current_user: CurrentUser,
     session: Session,
     project_id: Annotated[UUID, Query(description="Project")],
-    scan_id: Annotated[UUID | None, Query(description="Filter by scan ID")] = None,
-    target_id: Annotated[UUID | None, Query(description="Filter by target ID")] = None,
 ):
-    return await ReportService(session).list(
-        project_id, scan_id=scan_id, target_id=target_id
-    )
+    return await ReportService(session).list(project_id)
 
 
 @router.post("", response_model=ReportRead, status_code=status.HTTP_202_ACCEPTED)

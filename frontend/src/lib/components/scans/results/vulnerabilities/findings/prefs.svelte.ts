@@ -1,4 +1,5 @@
 import { STORAGE_KEYS } from '$lib/config/storage-keys';
+import { readStored, writeStored } from '$lib/utilities/storage';
 
 export const FINDING_COLUMNS = [
 	'asset',
@@ -41,40 +42,24 @@ export const BRIEF_TAB_LABELS: Record<BriefTab, string> = {
 	intel: 'Intel'
 };
 
-function read(key: string): string | null {
-	try {
-		return localStorage.getItem(key);
-	} catch {
-		return null;
-	}
-}
-
-function write(key: string, value: string) {
-	try {
-		localStorage.setItem(key, value);
-	} catch {
-		/* storage unavailable */
-	}
-}
-
 function createFindingPrefs() {
 	let hidden = $state<FindingColumn[]>(
-		(read(STORAGE_KEYS.vulnsHidden) ?? '')
+		(readStored(STORAGE_KEYS.vulnsHidden) ?? '')
 			.split(',')
 			.filter((c): c is FindingColumn => (FINDING_COLUMNS as readonly string[]).includes(c))
 	);
 	let tab = $state<BriefTab>(
-		(BRIEF_TABS as readonly string[]).includes(read(STORAGE_KEYS.vulnsBriefTab) ?? '')
-			? (read(STORAGE_KEYS.vulnsBriefTab) as BriefTab)
+		(BRIEF_TABS as readonly string[]).includes(readStored(STORAGE_KEYS.vulnsBriefTab) ?? '')
+			? (readStored(STORAGE_KEYS.vulnsBriefTab) as BriefTab)
 			: 'asset'
 	);
 
 	let sheetTab = $state<SheetTab>(
-		(SHEET_TABS as readonly string[]).includes(read(STORAGE_KEYS.vulnsSheetTab) ?? '')
-			? (read(STORAGE_KEYS.vulnsSheetTab) as SheetTab)
+		(SHEET_TABS as readonly string[]).includes(readStored(STORAGE_KEYS.vulnsSheetTab) ?? '')
+			? (readStored(STORAGE_KEYS.vulnsSheetTab) as SheetTab)
 			: 'overview'
 	);
-	let summary = $state(read(STORAGE_KEYS.vulnsSummary) !== 'collapsed');
+	let summary = $state(readStored(STORAGE_KEYS.vulnsSummary) !== 'collapsed');
 
 	return {
 		get sheetTab() {
@@ -82,28 +67,28 @@ function createFindingPrefs() {
 		},
 		set sheetTab(v: SheetTab) {
 			sheetTab = v;
-			write(STORAGE_KEYS.vulnsSheetTab, v);
+			writeStored(STORAGE_KEYS.vulnsSheetTab, v);
 		},
 		get summary() {
 			return summary;
 		},
 		set summary(v: boolean) {
 			summary = v;
-			write(STORAGE_KEYS.vulnsSummary, v ? 'open' : 'collapsed');
+			writeStored(STORAGE_KEYS.vulnsSummary, v ? 'open' : 'collapsed');
 		},
 		get tab() {
 			return tab;
 		},
 		set tab(v: BriefTab) {
 			tab = v;
-			write(STORAGE_KEYS.vulnsBriefTab, v);
+			writeStored(STORAGE_KEYS.vulnsBriefTab, v);
 		},
 		shows(col: FindingColumn) {
 			return !hidden.includes(col);
 		},
 		toggle(col: FindingColumn) {
 			hidden = hidden.includes(col) ? hidden.filter((c) => c !== col) : [...hidden, col];
-			write(STORAGE_KEYS.vulnsHidden, hidden.join(','));
+			writeStored(STORAGE_KEYS.vulnsHidden, hidden.join(','));
 		}
 	};
 }

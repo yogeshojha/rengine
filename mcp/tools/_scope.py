@@ -10,6 +10,7 @@ from sqlmodel import col, select
 from mcp.context import ToolContext
 from mcp.dimensions import Dimension
 from mcp.errors import ScopeError, ToolError
+from shared.models.project import Project
 from shared.models.target import Target
 from shared.models.target_summary import SurfaceMetric, TargetSummaryRead
 
@@ -55,9 +56,8 @@ class Scope:
         found = self.coverage(dim.key)
         if not found.usable:
             msg = (
-                f"{dim.label} of {self.target.target_value} has not been scanned. "
-                f"Report it as not scanned, not as zero. "
-                f"Run a scan that produces {dim.noun_plural}."
+                f"{self.target.target_value}: {dim.noun_plural} not scanned. "
+                "Run a scan that produces them."
             )
             raise ToolError(msg)
         return found.scan_id  # type: ignore[return-value]
@@ -97,6 +97,7 @@ async def find_target(ctx: ToolContext, value: str) -> Target:
     scoped = ctx.scoped_projects()
 
     def _scoped(statement):
+        statement = statement.where(col(Target.project_id).in_(active_project_ids()))
         if scoped is None:
             return statement
         return statement.where(col(Target.project_id).in_(scoped))
@@ -143,16 +144,50 @@ def _pick(rows: list[Target], needle: str) -> Target | None:
     return partial[0] if len(partial) == 1 else None
 
 
+def active_projects():
+    return select(Project).where(col(Project.is_active).is_(True))
+
+
+def active_project_ids():
+    return select(Project.id).where(col(Project.is_active).is_(True))
+
+
+async def in_scope(ctx: ToolContext, project_id: uuid.UUID) -> uuid.UUID:
+    """A project inside the token's scope that has not been deleted."""
+    ctx.check_project(project_id)
+    row = await ctx.session.get(Project, project_id)
+    if row is None or not row.is_active:
+        msg = "The project does not exist."
+        raise ScopeError(msg)
+    return project_id
+
+
+def parse_id(value: str | None, field: str) -> uuid.UUID | None:
+    if not value:
+        return None
+    try:
+        return uuid.UUID(value.strip())
+    except ValueError as exc:
+        msg = f"{field} must be a UUID, not {value!r}."
+        raise ToolError(msg) from exc
+
+
+def operator(ctx: ToolContext) -> uuid.UUID:
+    """The user who issued the token, whom a change is attributed to."""
+    if ctx.token.issued_by is None:
+        msg = "This token has no issuing operator to attribute the change to."
+        raise ToolError(msg)
+    return ctx.token.issued_by
+
+
 async def project_for(ctx: ToolContext, project_id: uuid.UUID | None) -> uuid.UUID:
     """Resolve the project a project-wide tool should act on."""
-    from shared.models.project import Project  # noqa: PLC0415
-
     if project_id is not None:
-        return ctx.check_project(project_id)
+        return await in_scope(ctx, project_id)
     if ctx.token.project_id is not None:
         return ctx.token.project_id
 
-    rows = (await ctx.session.execute(select(Project))).scalars().all()
+    rows = (await ctx.session.execute(active_projects())).scalars().all()
     if len(rows) == 1:
         return rows[0].id
     if not rows:

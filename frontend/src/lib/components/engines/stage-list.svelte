@@ -4,7 +4,12 @@
 	import Ban from '@lucide/svelte/icons/ban';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { cn } from '$lib/utils';
-	import { phaseLabel, type StageCatalogEntry, type StageConfig } from '$lib/types/scan-engine';
+	import {
+		DEFAULT_INTENSITY,
+		phaseLabel,
+		type StageCatalogEntry,
+		type StageConfig
+	} from '$lib/types/scan-engine';
 
 	type StageState = 'on' | 'off' | 'blocked';
 
@@ -20,7 +25,7 @@
 	let {
 		stages,
 		config,
-		intensity = 'normal',
+		intensity = DEFAULT_INTENSITY,
 		variant = 'matrix',
 		max = 5,
 		class: className

@@ -5,6 +5,7 @@
 	import RadarIcon from '@lucide/svelte/icons/radar';
 	import { Badge } from '$lib/components/ui/badge';
 	import Hint from '$lib/components/hint.svelte';
+	import ProgramAvatar from './program-avatar.svelte';
 	import { SUBMISSION_STATE_LABELS, formatPayout } from '$lib/config/bounty-programs';
 	import { formatShortDate } from '$lib/utilities/dates';
 	import {
@@ -21,14 +22,6 @@
 
 	let { program, onOpen }: Props = $props();
 
-	const initials = $derived(
-		program.name
-			.split(/\s+/)
-			.slice(0, 2)
-			.map((w) => w[0])
-			.join('')
-			.toUpperCase()
-	);
 	const isPrivate = $derived(program.program_state === ProgramState.Private);
 	const isOpen = $derived(program.submission_state === SubmissionState.Open);
 	const stateKnown = $derived(program.submission_state !== SubmissionState.Unknown);
@@ -45,15 +38,7 @@
 	onclick={() => onOpen(program)}
 	class="group flex w-full items-center gap-3 border-b px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-muted/40"
 >
-	<span
-		class="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted/50 text-2xs font-semibold text-muted-foreground"
-	>
-		{#if program.profile_picture}
-			<img src={program.profile_picture} alt="" class="size-full object-cover" loading="lazy" />
-		{:else}
-			{initials}
-		{/if}
-	</span>
+	<ProgramAvatar name={program.name} picture={program.profile_picture} />
 
 	<span class="flex min-w-0 flex-1 flex-col gap-1">
 		<span class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
@@ -130,8 +115,6 @@
 				{SUBMISSION_STATE_LABELS[program.submission_state]}
 			</Badge>
 		{/if}
-		<ChevronRightIcon
-			class="size-4 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5"
-		/>
+		<ChevronRightIcon class="size-4 text-muted-foreground/50 group-hover:text-foreground" />
 	</span>
 </button>

@@ -13,15 +13,11 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as Pagination from '$lib/components/ui/pagination';
 	import * as Empty from '$lib/components/ui/empty';
-	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import { Button } from '$lib/components/ui/button';
-	import { Badge } from '$lib/components/ui/badge';
-	import * as Tooltip from '$lib/components/ui/tooltip';
 	import Upload from '@lucide/svelte/icons/upload';
 	import Play from '@lucide/svelte/icons/play';
 	import Plus from '@lucide/svelte/icons/plus';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
-	import X from '@lucide/svelte/icons/x';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { toast } from 'svelte-sonner';
 
@@ -30,19 +26,20 @@
 	import TargetViewControls from '$lib/components/targets/target-view-controls.svelte';
 	import TargetsSkeleton from '$lib/components/targets/list/targets-skeleton.svelte';
 	import CountTabs from '$lib/components/count-tabs.svelte';
+	import FilterChips from '$lib/components/scans/results/table/filter-chips.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import CompareSheet from '$lib/components/scans/history/compare-sheet.svelte';
 	import TargetsStrip from '$lib/components/targets/list/targets-strip.svelte';
 	import TargetRow from '$lib/components/targets/list/target-row.svelte';
 	import { TargetRuns } from '$lib/components/targets/list/target-runs.svelte';
-	import { TCOL } from '$lib/components/targets/list/columns';
+	import { FOLDED_INTO_TARGET, TCOL } from '$lib/components/targets/list/columns';
 	import {
 		TARGET_COLUMNS,
 		TARGET_COLUMN_LABELS,
 		targetPrefs
 	} from '$lib/components/targets/list/prefs.svelte';
 	import { TARGET_TYPE_ICONS_COMPACT } from '$lib/config/icons';
-	import { TargetType, formatTargetTypePlural } from '$lib/types/target';
+	import { TargetType, formatTargetTypePlural, type EnrichmentKind } from '$lib/types/target';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Checkbox } from '$lib/components/ui/checkbox';
@@ -53,7 +50,8 @@
 	import Keyboard from '@lucide/svelte/icons/keyboard';
 	import { forgetFindings } from '$lib/components/scans/history/findings';
 	import TargetEmptyState from '$lib/components/targets/target-empty-state.svelte';
-	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
+	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import AddTargetModal from '$lib/components/modals/add-target-modal.svelte';
 	import PageSizeSelector from '$lib/components/targets/page-size-selector.svelte';
 	import ScanHistoryModal from '$lib/components/targets/scan-history-modal.svelte';
@@ -65,15 +63,18 @@
 	import BgpDetailDialog from '$lib/components/bgp-ripestat-modal/bgp-detail-dialog.svelte';
 	import DnsDetailDialog from '$lib/components/dns-modal/dns-detail-dialog.svelte';
 	import { downloadTargets, type ExportFormat } from '$lib/utilities/target-export';
-	import type { SignalFilter, SortDir, SortKey } from '$lib/utilities/target-signals';
+	import {
+		SIGNAL_LABELS,
+		type SignalFilter,
+		type SortDir,
+		type SortKey
+	} from '$lib/utilities/target-signals';
 	import { TaskStatus } from '$lib/types/task-status';
 	import { browser } from '$app/environment';
 	import { goto, replaceState } from '$app/navigation';
 	import { page } from '$app/state';
 	import TargetViewsMenu from '$lib/components/targets/target-views-menu.svelte';
 	import { ROUTES, routeLabels } from '$lib/config/routes';
-
-	type EnrichmentKind = 'whois' | 'dns' | 'bgp';
 
 	let urlReady = $state(false);
 
@@ -82,6 +83,7 @@
 			const parsed = parseInt(v ?? '', 10);
 			return Number.isFinite(parsed) ? parsed : undefined;
 		};
+		const size = n(params.get('size'));
 		return {
 			search: params.get('q') ?? undefined,
 			activeTab: params.get('type') ?? undefined,
@@ -91,7 +93,7 @@
 			selectedOrganizations: params.getAll('org'),
 			selectedTags: params.getAll('tag'),
 			page: n(params.get('page')),
-			pageSize: n(params.get('size'))
+			pageSize: size !== undefined && size >= 1 && size <= 100 ? size : undefined
 		};
 	}
 
@@ -141,6 +143,7 @@
 
 	let showEnrichConfirm = $state(false);
 	let enrichConfirmKind = $state<EnrichmentKind>('whois');
+	const enrichKindLabel = $derived(enrichConfirmKind.toUpperCase());
 
 	$effect(() => {
 		const activeProject = projectsStore.activeProject;
@@ -170,6 +173,7 @@
 		const activeProject = projectsStore.activeProject;
 		if (!activeProject) return;
 
+		let summaryTimer: ReturnType<typeof setTimeout> | undefined;
 		const unsub = sseStore.on<ActivityLog>(
 			SSEChannel.project(activeProject.id),
 			SSEEventType.ACTIVITY,
@@ -177,8 +181,10 @@
 				if (!event.target_id) return;
 				const type = event.event_type ?? '';
 
-				if (!type.includes('.completed')) return;
+				if (!type.endsWith('.completed') && !type.endsWith('.failed')) return;
 
+				clearTimeout(summaryTimer);
+				summaryTimer = setTimeout(() => void targetsStore.refreshSummary(), 500);
 				try {
 					const fresh = await targetsApi.get(event.target_id);
 					targetsStore.optimisticUpdateTarget(event.target_id, fresh);
@@ -188,13 +194,16 @@
 			}
 		);
 
-		return unsub;
+		return () => {
+			clearTimeout(summaryTimer);
+			unsub();
+		};
 	});
 
 	let selectAllChecked = $derived<boolean | 'indeterminate'>(
 		selectedTargetIds.size === 0
 			? false
-			: selectedTargetIds.size >= targetsStore.filteredTargets.length
+			: selectedTargetIds.size >= targetsStore.targets.length
 				? true
 				: 'indeterminate'
 	);
@@ -206,9 +215,7 @@
 	);
 
 	let selectedTargetValues = $derived(
-		targetsStore.filteredTargets
-			.filter((t) => selectedTargetIds.has(t.id))
-			.map((t) => t.target_value)
+		targetsStore.targets.filter((t) => selectedTargetIds.has(t.id)).map((t) => t.target_value)
 	);
 
 	const BULK_PREVIEW_LIMIT = 8;
@@ -247,22 +254,7 @@
 		}))
 	);
 
-	let showPagination = $derived(
-		targetsStore.pagination.pageSize !== -1 && targetsStore.pagination.totalPages > 1
-	);
-
-	const SIGNAL_LABELS: Record<SignalFilter, string> = {
-		expiring: 'Expiring',
-		attention: 'Needs attention',
-		awaiting: 'Enriching',
-		enriched: 'Enriched',
-		monitored: 'New checks',
-		unscanned: 'Not scanned',
-		stale: 'Stale · 30 days',
-		critical: 'Critical findings',
-		high: 'High findings',
-		medium: 'Medium findings'
-	};
+	let showPagination = $derived(targetsStore.pagination.totalPages > 1);
 
 	const TYPE_TABS = [
 		{ key: 'all', label: 'All' },
@@ -279,7 +271,7 @@
 	let compare = $state<{ current: string; baseline: string | null } | null>(null);
 	let shortcutsOpen = $state(false);
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
-	let rows = $derived(targetsStore.filteredTargets);
+	let rows = $derived(targetsStore.targets);
 	let rowIds = $derived(rows.map((t) => t.id).join(','));
 	let liveCount = $derived(rows.filter((t) => liveScans.isTargetLive(t.id)).length);
 
@@ -379,11 +371,11 @@
 	];
 
 	let activeChips = $derived.by(() => {
-		const chips: { key: string; label: string; color?: string; remove: () => void }[] = [];
+		const chips: { id: string; label: string; color?: string; remove: () => void }[] = [];
 		const f = targetsStore.filters;
 		if (f.searchQuery.trim()) {
 			chips.push({
-				key: 'q',
+				id: 'q',
 				label: `"${f.searchQuery.trim()}"`,
 				remove: () => targetsStore.setSearchQuery('')
 			});
@@ -391,7 +383,7 @@
 		for (const id of f.selectedOrganizations) {
 			const org = organizationSummaries.find((o) => o.id === id);
 			chips.push({
-				key: `org-${id}`,
+				id: `org-${id}`,
 				label: org?.name ?? 'Org',
 				remove: () => targetsStore.toggleOrganization(id)
 			});
@@ -399,7 +391,7 @@
 		for (const id of f.selectedTags) {
 			const tag = tagSummaries.find((t) => t.id === id);
 			chips.push({
-				key: `tag-${id}`,
+				id: `tag-${id}`,
 				label: tag?.name ?? 'Tag',
 				color: tag?.color,
 				remove: () => targetsStore.toggleTag(id)
@@ -407,7 +399,7 @@
 		}
 		if (f.signalFilter) {
 			chips.push({
-				key: 'signal',
+				id: 'signal',
 				label: SIGNAL_LABELS[f.signalFilter],
 				remove: () => targetsStore.setSignalFilter(null)
 			});
@@ -436,7 +428,7 @@
 	}
 
 	function handleScanAll() {
-		openLaunchMany(targetsStore.filteredTargets.map((t) => t.id));
+		openLaunchMany(targetsStore.targets.map((t) => t.id));
 	}
 
 	function handleTargetSelect(targetId: string) {
@@ -446,9 +438,9 @@
 
 	function handleSelectAll() {
 		setSelection(
-			selectedTargetIds.size >= targetsStore.filteredTargets.length
+			selectedTargetIds.size >= targetsStore.targets.length
 				? []
-				: targetsStore.filteredTargets.map((t) => t.id)
+				: targetsStore.targets.map((t) => t.id)
 		);
 	}
 
@@ -652,7 +644,7 @@
 	}
 
 	function handleExport(format: ExportFormat) {
-		const rows = targetsStore.filteredTargets;
+		const rows = targetsStore.targets;
 		if (rows.length === 0) {
 			toast.error('No targets to export');
 			return;
@@ -725,7 +717,7 @@
 		</div>
 
 		<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-			<div class="min-w-[240px] flex-1">
+			<div class="min-w-[min(100%,26rem)] flex-1">
 				<TargetFilters
 					searchQuery={targetsStore.filters.searchQuery}
 					onSearchChange={handleSearchChange}
@@ -737,7 +729,7 @@
 					onTagToggle={handleTagToggle}
 				/>
 			</div>
-			<div class="flex flex-wrap items-center gap-2">
+			<div class="ml-auto flex flex-wrap items-center gap-2">
 				<TargetViewsMenu currentQuery={targetsStore.toQueryString()} onApply={handleApplyView} />
 				<TargetViewControls
 					sortKey={targetsStore.filters.sortKey}
@@ -760,14 +752,18 @@
 							</Button>
 						{/snippet}
 					</DropdownMenu.Trigger>
-					<DropdownMenu.Content align="end" class="w-48">
+					<DropdownMenu.Content align="end" class="w-64">
 						<DropdownMenu.Label>Columns</DropdownMenu.Label>
 						{#each TARGET_COLUMNS as c (c)}
 							<DropdownMenu.CheckboxItem
 								checked={targetPrefs.shows(c)}
 								onCheckedChange={() => targetPrefs.toggle(c)}
+								closeOnSelect={false}
 							>
 								{TARGET_COLUMN_LABELS[c]}
+								{#if targetPrefs.folded(c) && !FOLDED_INTO_TARGET.has(c)}
+									<span class="ms-auto text-2xs text-muted-foreground">Hidden at this width</span>
+								{/if}
 							</DropdownMenu.CheckboxItem>
 						{/each}
 						<DropdownMenu.Separator />
@@ -825,35 +821,11 @@
 			</div>
 		</div>
 
-		{#if activeChips.length > 0}
-			<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/10 px-4 py-2">
-				{#each activeChips as chip (chip.key)}
-					<Badge variant="outline" class="gap-1 bg-background font-normal">
-						{#if chip.color}
-							<span class="size-2 rounded-full" style="background-color: {chip.color}"></span>
-						{/if}
-						{chip.label}
-						<Tooltip.Root>
-							<Tooltip.Trigger
-								class="rounded-sm text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-								onclick={chip.remove}
-								aria-label="Remove filter {chip.label}"
-							>
-								<X class="size-3" />
-							</Tooltip.Trigger>
-							<Tooltip.Content>Remove filter {chip.label}</Tooltip.Content>
-						</Tooltip.Root>
-					</Badge>
-				{/each}
-				<button
-					type="button"
-					class="ml-auto text-xs text-muted-foreground hover:text-foreground"
-					onclick={handleClearFilters}
-				>
-					Clear all
-				</button>
-			</div>
-		{/if}
+		<FilterChips
+			chips={activeChips}
+			onRemove={(chip) => chip.remove()}
+			onClear={handleClearFilters}
+		/>
 
 		{#if targetsStore.isLoading || !targetsStore.hasFetched}
 			<TargetsSkeleton />
@@ -879,7 +851,12 @@
 				onClearFilters={handleClearFilters}
 			/>
 		{:else}
-			<div class="@container/targets w-full" role="table" aria-label="Targets">
+			<div
+				class="@container/targets w-full"
+				role="table"
+				aria-label="Targets"
+				bind:clientWidth={targetPrefs.width}
+			>
 				<div
 					class="flex items-center gap-3 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
 					role="row"
@@ -893,14 +870,14 @@
 						/>
 					</div>
 					{@render sortHead('Target', 'name', `${TCOL.target} flex`)}
-					{#if targetPrefs.shows('run')}<div class={TCOL.run}>Last run</div>{/if}
-					{#if targetPrefs.shows('findings')}<div class={TCOL.findings}>Findings</div>{/if}
-					{#if targetPrefs.shows('assets')}<div class={TCOL.assets}>Assets</div>{/if}
-					{#if targetPrefs.shows('change')}<div class={TCOL.change}>Change</div>{/if}
-					{#if targetPrefs.shows('organizations')}<div class={TCOL.organizations}>
+					{#if targetPrefs.fits('run')}<div class={TCOL.run}>Last run</div>{/if}
+					{#if targetPrefs.fits('findings')}<div class={TCOL.findings}>Findings</div>{/if}
+					{#if targetPrefs.fits('assets')}<div class={TCOL.assets}>Assets</div>{/if}
+					{#if targetPrefs.fits('change')}<div class={TCOL.change}>Change</div>{/if}
+					{#if targetPrefs.fits('organizations')}<div class={TCOL.organizations}>
 							Organizations
 						</div>{/if}
-					{#if targetPrefs.shows('tags')}<div class={TCOL.tags}>Tags</div>{/if}
+					{#if targetPrefs.fits('tags')}<div class={TCOL.tags}>Tags</div>{/if}
 					<div class={TCOL.actions}></div>
 				</div>
 				{#each rows as target, i (target.id)}
@@ -1064,9 +1041,6 @@
 	targetType={whoisTarget?.target_type}
 	initialTab={whoisInitialTab}
 	onOpenChange={(open) => (showWhoisDialog = open)}
-	onOpenTargetSummary={() => {
-		goto(ROUTES.target(whoisTarget?.id ?? ''));
-	}}
 />
 
 <BgpDetailDialog
@@ -1074,34 +1048,25 @@
 	targetId={bgpDialogTarget?.id}
 	targetValue={bgpDialogTarget?.target_value}
 	targetType={bgpDialogTarget?.target_type}
-	bgpSummary={bgpDialogTarget?.bgp}
 	onOpenChange={(o) => (showBgpDialog = o)}
 	onAddAsTarget={handleAddAsTarget}
 />
 
 <DnsDetailDialog
-	bind:open={showDnsDialog}
+	open={showDnsDialog}
 	targetId={dnsDialogTarget?.id ?? null}
 	targetValue={dnsDialogTarget?.target_value ?? null}
 	onOpenChange={(v) => (showDnsDialog = v)}
 />
 
-<AlertDialog.Root bind:open={showEnrichConfirm}>
-	<AlertDialog.Content>
-		<AlertDialog.Header>
-			<AlertDialog.Title>
-				Re-run {enrichConfirmKind.toUpperCase()} for {selectedTargetIds.size} targets
-			</AlertDialog.Title>
-			<AlertDialog.Description>
-				{enrichConfirmKind.toUpperCase()} lookups are queued for {selectedTargetIds.size} targets. Lookups
-				are rate-limited.
-			</AlertDialog.Description>
-		</AlertDialog.Header>
-		<AlertDialog.Footer>
-			<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-			<AlertDialog.Action onclick={() => runBulkEnrich(enrichConfirmKind)}>
-				Queue {enrichConfirmKind.toUpperCase()}
-			</AlertDialog.Action>
-		</AlertDialog.Footer>
-	</AlertDialog.Content>
-</AlertDialog.Root>
+<ConfirmDialog
+	bind:open={showEnrichConfirm}
+	title="Re-run {enrichKindLabel} for {selectedTargetIds.size} targets"
+	description="{enrichKindLabel} lookups are queued for {selectedTargetIds.size} targets. Lookups are rate-limited."
+	confirmLabel="Queue {enrichKindLabel}"
+	onOpenChange={(o) => (showEnrichConfirm = o)}
+	onConfirm={() => {
+		showEnrichConfirm = false;
+		runBulkEnrich(enrichConfirmKind);
+	}}
+/>

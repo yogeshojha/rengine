@@ -6,12 +6,14 @@ from pathlib import Path
 from sqlalchemy import select, update
 
 from shared.definitions.intensity import TransportTool
+from shared.definitions.retention import MEDIA_ROOT
 from shared.definitions.surface import SurfaceDimension
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.enums.target import TargetType
 from shared.logging import get_logger
 from shared.models.http_asset import HttpAsset
 from shared.models.subdomain import Subdomain
+from shared.services.screenshot_store import relative
 from shared.utils.imagehash import phash_file
 from shared.utils.validation import validate_ip
 from stages.base import Stage, StageResult
@@ -20,18 +22,7 @@ from tools.httpx.client import HttpxClient, HttpxError
 
 logger = get_logger(__name__)
 
-_MEDIA_ROOT = "/app/scan_media"
 _WRITE_BATCH = 50
-
-
-def _relpath(path: str) -> str:
-    candidate = Path(path)
-    if not candidate.is_absolute():
-        return path
-    try:
-        return str(candidate.relative_to(_MEDIA_ROOT))
-    except ValueError:
-        return path
 
 
 def _is_ip(host: str | None) -> bool:
@@ -100,7 +91,7 @@ class ScreenshotStage(Stage):
         if not live:
             return StageResult(counts={"screenshots": 0})
 
-        store_dir = str(Path(_MEDIA_ROOT) / str(self.ctx.scan_id))
+        store_dir = str(MEDIA_ROOT / str(self.ctx.scan_id))
         try:
             client = HttpxClient(
                 rate_limit=self.transport.rate,
@@ -180,7 +171,7 @@ class ScreenshotStage(Stage):
                 sink.add(
                     {
                         "id": asset_id,
-                        "screenshot_path": _relpath(path)[:500],
+                        "screenshot_path": relative(Path(path))[:500],
                         "screenshot_phash": phash,
                     }
                 )

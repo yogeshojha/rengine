@@ -15,13 +15,16 @@
 		FORMAT_LABELS,
 		REPORT_STATUS_LABELS,
 		REPORT_STATUS_TONE,
+		ReportFormat,
 		ReportStatus,
-		formatBytes,
 		isLive
 	} from '$lib/config/reports';
+	import { formatBytes } from '$lib/utilities/format';
 	import { reportsApi } from '$lib/api/reports';
 	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
+	import { plural } from '$lib/utilities/strings';
+	import Hint from '$lib/components/hint.svelte';
 	import ThemePreview from './theme-preview.svelte';
 	import ReportPreviewDialog from './preview/report-preview-dialog.svelte';
 	import type { Report } from '$lib/types/report';
@@ -29,7 +32,6 @@
 	let {
 		report,
 		projectId,
-		selectable = false,
 		isSelected = false,
 		onSelect,
 		onRetry,
@@ -37,18 +39,22 @@
 	}: {
 		report: Report;
 		projectId: string;
-		selectable?: boolean;
 		isSelected?: boolean;
-		onSelect?: (id: string) => void;
+		onSelect: (id: string) => void;
 		onRetry: (id: string) => void;
 		onDelete: (id: string) => void;
 	} = $props();
 
 	const live = $derived(isLive(report.status));
 	const failed = $derived(report.status === ReportStatus.FAILED);
-	const pdf = $derived(report.files.find((f) => f.format === 'pdf') ?? report.files[0]);
+	const primary = $derived(report.files[0]);
 	const theme = $derived(reportCatalog.theme(report.theme));
-	const previewable = $derived(report.files.some((f) => f.format === 'pdf'));
+	const previewable = $derived(report.files.some((f) => f.format === ReportFormat.PDF));
+	const warnings = $derived(
+		report.status === ReportStatus.COMPLETED && Array.isArray(report.stats.warnings)
+			? (report.stats.warnings as string[])
+			: []
+	);
 
 	let previewOpen = $state(false);
 </script>
@@ -58,18 +64,16 @@
 		? 'bg-primary/5'
 		: ''}"
 >
-	{#if selectable}
-		<div class="flex h-5 shrink-0 items-center sm:h-auto sm:self-center">
-			<Checkbox
-				checked={isSelected}
-				onCheckedChange={() => onSelect?.(report.id)}
-				aria-label="Select {report.title}"
-				class="transition-opacity {isSelected
-					? 'opacity-100'
-					: 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100'}"
-			/>
-		</div>
-	{/if}
+	<div class="flex h-5 shrink-0 items-center sm:h-auto sm:self-center">
+		<Checkbox
+			checked={isSelected}
+			onCheckedChange={() => onSelect(report.id)}
+			aria-label="Select {report.title}"
+			class="transition-opacity {isSelected
+				? 'opacity-100'
+				: 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100'}"
+		/>
+	</div>
 	<div class="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center">
 		{#if theme}
 			<div class="hidden w-9 shrink-0 self-start sm:block">
@@ -113,6 +117,16 @@
 				{#if report.page_count}<span>{report.page_count} pages</span>{/if}
 				{#if report.duration_seconds}<span>{report.duration_seconds.toFixed(1)}s</span>{/if}
 				<span>{relativeTime(report.created_at)}</span>
+				{#if warnings.length}
+					<Hint text={warnings.join(' · ')}>
+						{#snippet child(props)}
+							<span {...props} class="flex items-center gap-1 text-warning">
+								<TriangleAlertIcon class="size-3" />
+								{plural(warnings.length, 'warning')}
+							</span>
+						{/snippet}
+					</Hint>
+				{/if}
 			</div>
 			{#if live}
 				<div class="flex items-center gap-2 pt-1">
@@ -136,17 +150,17 @@
 					Preview
 				</Button>
 			{:else if report.files.length}
-				{@const Icon = FORMAT_ICONS[pdf.format]}
+				{@const Icon = FORMAT_ICONS[primary.format]}
 				<Button
 					variant="outline"
 					size="sm"
-					href={reportsApi.downloadUrl(projectId, report.id, pdf.format)}
+					href={reportsApi.downloadUrl(projectId, report.id, primary.format)}
 					download
 					class="h-8"
 				>
 					<Icon class="mr-1.5 size-3.5" />
-					{FORMAT_LABELS[pdf.format]}
-					<span class="text-muted-foreground ml-1.5">{formatBytes(pdf.bytes)}</span>
+					{FORMAT_LABELS[primary.format]}
+					<span class="text-muted-foreground ml-1.5">{formatBytes(primary.bytes)}</span>
 				</Button>
 			{/if}
 			<DropdownMenu.Root>

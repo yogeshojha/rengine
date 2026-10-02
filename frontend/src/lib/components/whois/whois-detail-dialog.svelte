@@ -5,8 +5,8 @@
 	import { TargetType } from '$lib/types/target';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Tabs from '$lib/components/ui/tabs';
-	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as Empty from '$lib/components/ui/empty';
+	import Hint from '$lib/components/hint.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
@@ -26,24 +26,20 @@
 		open: boolean;
 		recordId?: string | null;
 		targetId?: string;
-		record?: WhoisRecordRead | null;
 		targetValue?: string | null;
 		targetType?: TargetType | null;
 		initialTab?: string;
 		onOpenChange: (open: boolean) => void;
-		onOpenTargetSummary?: () => void;
 	}
 
 	let {
 		open = $bindable(),
 		recordId = null,
 		targetId,
-		record: externalRecord = null,
 		targetValue = null,
 		targetType = null,
 		initialTab = 'overview',
-		onOpenChange,
-		onOpenTargetSummary
+		onOpenChange
 	}: Props = $props();
 
 	let internalRecord = $state<WhoisRecordRead | null>(null);
@@ -61,7 +57,7 @@
 	let correlationLookupType = $state('');
 	let correlationLookupValue = $state('');
 
-	let displayRecord = $derived(internalRecord ?? externalRecord);
+	let displayRecord = $derived(internalRecord);
 
 	let hasEntities = $derived(
 		displayRecord?.parsed_data?.entities != null &&
@@ -82,26 +78,12 @@
 
 	let discoveries = $derived(
 		targetValue && targetId && (targetType === TargetType.DOMAIN || targetType === TargetType.IP)
-			? { value: targetValue, id: targetId, type: targetType }
+			? { value: targetValue, type: targetType }
 			: null
 	);
 	let showDiscoveriesTab = $derived(discoveries !== null);
 
-	let headerEl = $state<HTMLDivElement | null>(null);
-	let tabListEl = $state<HTMLDivElement | null>(null);
-	let scrollHeight = $state(0);
-
-	function measureScrollHeight() {
-		if (!headerEl || !tabListEl) return;
-		requestAnimationFrame(() => {
-			const viewportH = window.innerHeight;
-			const dialogMaxH = Math.min(viewportH * 0.85, viewportH - 40);
-			const headerH = headerEl?.offsetHeight ?? 0;
-			const tabListH = tabListEl?.offsetHeight ?? 0;
-			const available = dialogMaxH - headerH - tabListH;
-			scrollHeight = Math.min(Math.max(available, 200), 500);
-		});
-	}
+	const SCROLL = 'min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(85vh-9rem)]';
 
 	$effect(() => {
 		if (open) {
@@ -112,13 +94,6 @@
 			correlations = [];
 			recordError = null;
 			correlationsError = null;
-			scrollHeight = 0;
-		}
-	});
-
-	$effect(() => {
-		if (open && displayRecord && headerEl && tabListEl) {
-			measureScrollHeight();
 		}
 	});
 
@@ -136,7 +111,7 @@
 	}
 
 	async function loadData() {
-		if (!externalRecord && recordId) {
+		if (recordId) {
 			isLoadingRecord = true;
 			recordError = null;
 			try {
@@ -177,14 +152,14 @@
 
 <Dialog.Root bind:open {onOpenChange}>
 	<Dialog.Content class="sm:max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
-		<div bind:this={headerEl} class="shrink-0">
+		<div class="shrink-0">
 			<Dialog.Header class="px-6 pt-6 pb-4">
 				<div class="flex items-center gap-3">
-					<div class="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/10 shrink-0">
+					<div class="flex items-center justify-center h-10 w-10 rounded-xl bg-muted shrink-0">
 						{#if isLoadingRecord}
-							<Spinner class="h-5 w-5 text-primary" />
+							<Spinner class="h-5 w-5 text-muted-foreground" />
 						{:else}
-							<LookupIcon class="h-5 w-5 text-primary" />
+							<LookupIcon class="h-5 w-5 text-muted-foreground" />
 						{/if}
 					</div>
 					<div class="min-w-0 flex-1">
@@ -204,26 +179,21 @@
 						</Dialog.Description>
 					</div>
 					{#if displayRecord}
-						<Tooltip.Root>
-							<Tooltip.Trigger>
-								{#snippet child({ props })}
-									<Button
-										{...props}
-										variant="ghost"
-										size="icon"
-										class="h-8 w-8 shrink-0"
-										aria-label="Refresh"
-										onclick={handleRefresh}
-										disabled={isRefreshing}
-									>
-										<RefreshCw class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}" />
-									</Button>
-								{/snippet}
-							</Tooltip.Trigger>
-							<Tooltip.Content>
-								<p>Refresh WHOIS record</p>
-							</Tooltip.Content>
-						</Tooltip.Root>
+						<Hint text="Refresh WHOIS record">
+							{#snippet child(props)}
+								<Button
+									{...props}
+									variant="ghost"
+									size="icon"
+									class="h-8 w-8 shrink-0"
+									aria-label="Refresh"
+									onclick={handleRefresh}
+									disabled={isRefreshing}
+								>
+									<RefreshCw class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}" />
+								</Button>
+							{/snippet}
+						</Hint>
 					{/if}
 				</div>
 			</Dialog.Header>
@@ -254,8 +224,8 @@
 				</Empty.Header>
 			</Empty.Root>
 		{:else if displayRecord}
-			<Tabs.Root bind:value={activeTab}>
-				<div class="px-6 shrink-0" bind:this={tabListEl}>
+			<Tabs.Root bind:value={activeTab} class="flex min-h-0 flex-1 flex-col">
+				<div class="px-6 shrink-0">
 					<Tabs.List class="w-full">
 						<Tabs.Trigger value="overview" class="flex-1">Overview</Tabs.Trigger>
 						{#if hasEntities}
@@ -277,57 +247,53 @@
 					</Tabs.List>
 				</div>
 
-				{#if scrollHeight > 0}
-					<Tabs.Content value="overview">
-						<ScrollArea style="height: {scrollHeight}px">
+				<Tabs.Content value="overview" class="flex min-h-0 flex-1 flex-col">
+					<ScrollArea class={SCROLL}>
+						<div class="px-6 py-5">
+							<WhoisOverviewTab
+								record={displayRecord}
+								onCorrelationClick={handleCorrelationClick}
+							/>
+						</div>
+					</ScrollArea>
+				</Tabs.Content>
+
+				{#if hasEntities}
+					<Tabs.Content value="entities" class="flex min-h-0 flex-1 flex-col">
+						<ScrollArea class={SCROLL}>
 							<div class="px-6 py-5">
-								<WhoisOverviewTab
-									record={displayRecord}
-									onCorrelationClick={handleCorrelationClick}
+								<WhoisEntitiesTab record={displayRecord} />
+							</div>
+						</ScrollArea>
+					</Tabs.Content>
+				{/if}
+
+				<Tabs.Content value="related" class="flex min-h-0 flex-1 flex-col">
+					<ScrollArea class={SCROLL}>
+						<div class="px-6 py-5">
+							<WhoisRelatedTab
+								{correlations}
+								isLoading={isLoadingCorrelations}
+								error={correlationsError}
+								currentRecordId={displayRecord.id}
+								onCorrelationClick={handleCorrelationClick}
+							/>
+						</div>
+					</ScrollArea>
+				</Tabs.Content>
+
+				{#if discoveries}
+					<Tabs.Content value="discoveries" class="flex min-h-0 flex-1 flex-col">
+						<ScrollArea class={SCROLL}>
+							<div class="px-6 py-5">
+								<DiscoveriesSummary
+									targetValue={discoveries.value}
+									targetType={discoveries.type}
+									whoisRecord={displayRecord}
 								/>
 							</div>
 						</ScrollArea>
 					</Tabs.Content>
-
-					{#if hasEntities}
-						<Tabs.Content value="entities">
-							<ScrollArea style="height: {scrollHeight}px">
-								<div class="px-6 py-5">
-									<WhoisEntitiesTab record={displayRecord} />
-								</div>
-							</ScrollArea>
-						</Tabs.Content>
-					{/if}
-
-					<Tabs.Content value="related">
-						<ScrollArea style="height: {scrollHeight}px">
-							<div class="px-6 py-5">
-								<WhoisRelatedTab
-									{correlations}
-									isLoading={isLoadingCorrelations}
-									error={correlationsError}
-									currentRecordId={displayRecord.id}
-									onCorrelationClick={handleCorrelationClick}
-								/>
-							</div>
-						</ScrollArea>
-					</Tabs.Content>
-
-					{#if discoveries}
-						<Tabs.Content value="discoveries">
-							<ScrollArea style="height: {scrollHeight}px">
-								<div class="px-6 py-5">
-									<DiscoveriesSummary
-										targetValue={discoveries.value}
-										targetId={discoveries.id}
-										targetType={discoveries.type}
-										whoisRecord={displayRecord}
-										{onOpenTargetSummary}
-									/>
-								</div>
-							</ScrollArea>
-						</Tabs.Content>
-					{/if}
 				{/if}
 			</Tabs.Root>
 		{/if}

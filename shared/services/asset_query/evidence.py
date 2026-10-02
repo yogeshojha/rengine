@@ -24,6 +24,7 @@ from .values import like
 MAX_PROBES = 4
 _WHITESPACE = re.compile(r"\s+")
 _ASSET_COLUMNS = ("body", "header", "path", "redirect", "cert")
+_EXCERPTED = ("body", "header")
 
 _ASSET_SQL = text(
     """
@@ -169,6 +170,6 @@ async def _asset_evidence(
                 value = record[field]
                 if not value:
                     continue
-                snippet = _snippet(value, probe.term)
+                snippet = _snippet(value, probe.term) if field in _EXCERPTED else value
                 for row in by_host.get(record["host"], []):
                     _add(buckets[row.id], field, probe.term, snippet)

@@ -36,7 +36,7 @@
 			<Skeleton class="h-6 w-28" />
 			<Skeleton class="h-6 w-24" />
 		{:else if !brief.facts.length}
-			<span class="text-xs text-muted-foreground">No stored facts bear on it.</span>
+			<span class="text-xs text-muted-foreground">No stored facts</span>
 		{:else}
 			{#each brief.facts as fact (fact.n)}
 				<Hint text={fact.detail}>

@@ -13,12 +13,13 @@ from shared.definitions.ask import (
     Verdict,
 )
 from shared.definitions.evidence import Evidence
+from shared.definitions.oast import OAST_TAG
 from shared.definitions.vulnerabilities import VulnState
 from shared.models.ask import Fact
 from shared.models.software import SoftwareCve
 from shared.models.vulnerability import VulnerabilityRead
 from shared.services.issue_tracking.body import mask_secrets
-from shared.utils.text import counted
+from shared.utils.text import clip_line, counted
 
 BLOCKED_STATUSES = frozenset({401, 403, 429})
 EVIDENCE_TONES = frozenset({FactTone.FOR.value})
@@ -44,10 +45,7 @@ def hides_extracted(v: VulnerabilityRead) -> bool:
 
 
 def _clip(text: str | None) -> str | None:
-    if not text:
-        return None
-    text = " ".join(text.split())
-    return text if len(text) <= MAX_FACT_DETAIL else f"{text[: MAX_FACT_DETAIL - 1]}…"
+    return clip_line(text, MAX_FACT_DETAIL) if text else None
 
 
 def assess(
@@ -75,11 +73,7 @@ def assess(
         )
 
     if v.evidence == Evidence.PROVEN.value:
-        add(
-            FactTone.FOR,
-            "Callback received",
-            detail="The target reached the out-of-band server.",
-        )
+        add(FactTone.FOR, "Callback received")
     if v.matcher_name:
         add(FactTone.FOR, f"Matcher {v.matcher_name} matched")
     if v.extracted_results:
@@ -111,11 +105,7 @@ def assess(
 
     asset = v.asset
     if asset and asset.waf:
-        add(
-            FactTone.AGAINST,
-            f"{asset.waf} in front",
-            detail="A WAF page can satisfy a loose matcher.",
-        )
+        add(FactTone.AGAINST, f"{asset.waf} in front")
     if asset and asset.status_code in BLOCKED_STATUSES:
         add(FactTone.AGAINST, f"Web asset answers {asset.status_code}")
     if v.state == VulnState.FALSE_POSITIVE.value:
@@ -127,7 +117,7 @@ def assess(
 
     if not v.response:
         add(FactTone.UNKNOWN, "Response not stored")
-    if not v.interaction and v.evidence != Evidence.PROVEN.value and "oast" in v.tags:
+    if not v.interaction and v.evidence != Evidence.PROVEN.value and OAST_TAG in v.tags:
         add(FactTone.UNKNOWN, "No callback recorded")
 
     return _verdict(v, facts), facts

@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Self
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+MAX_CHANGE_ITEMS = 200
 
 
 def text(
@@ -85,3 +87,20 @@ def columns(
 
 class SectionConfig(BaseModel):
     model_config = ConfigDict(extra="ignore", validate_assignment=True)
+
+    @model_validator(mode="after")
+    def _in_options(self) -> Self:
+        for name, field in type(self).model_fields.items():
+            extra = field.json_schema_extra
+            if not isinstance(extra, dict) or extra.get("widget") not in (
+                "choice",
+                "multi",
+            ):
+                continue
+            allowed = [o["value"] for o in extra.get("options", [])]
+            value = getattr(self, name)
+            picked = value if isinstance(value, list) else [value]
+            if any(v not in allowed for v in picked):
+                msg = f"{field.title or name} must be one of {', '.join(allowed)}."
+                raise ValueError(msg)
+        return self

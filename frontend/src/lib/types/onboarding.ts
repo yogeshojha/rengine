@@ -34,9 +34,5 @@ export interface StepFooter {
 export interface StepProps {
 	data: WizardData;
 	next: () => void;
-	back: () => void;
-	skip: () => void;
-	isFirst: boolean;
-	isLast: boolean;
 	setFooter: (cfg: StepFooter) => void;
 }

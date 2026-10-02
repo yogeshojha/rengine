@@ -6,6 +6,7 @@
 	import Globe from '@lucide/svelte/icons/globe';
 	import X from '@lucide/svelte/icons/x';
 	import * as Card from '$lib/components/ui/card';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import ExportMenu from '$lib/components/scans/results/export-menu.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -18,7 +19,7 @@
 	import SortMenu from '$lib/components/scans/results/table/sort-menu.svelte';
 	import ResultsPagination from '$lib/components/scans/results/table/results-pagination.svelte';
 	import AssetRow from './web-assets/asset-row.svelte';
-	import { ASSET_COLUMNS, ASSET_LEAD_COLUMNS, DEFAULT_ASSET_COLUMNS } from './web-assets/columns';
+	import { ASSET_COLUMNS, ASSET_LEAD_COLUMNS } from './web-assets/columns';
 	import { targetsApi } from '$lib/api/targets';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
@@ -48,7 +49,7 @@
 	let pageIndex = $state(0);
 	let debounce: ReturnType<typeof setTimeout> | undefined;
 
-	let columns = $derived(ASSET_COLUMNS.filter((c) => DEFAULT_ASSET_COLUMNS.includes(c.key)));
+	const columns = ASSET_COLUMNS;
 	let facets = $derived(page?.facets ?? null);
 	let rows = $derived(page?.items ?? []);
 	let tabs = $derived.by(() => {
@@ -136,7 +137,7 @@
 	</div>
 
 	<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-		<div class="relative min-w-0 flex-1">
+		<div class="relative min-w-[min(100%,16rem)] flex-1">
 			<Search
 				class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
 			/>
@@ -177,7 +178,7 @@
 			onSort={setSort}
 		/>
 		<ExportMenu
-			dimension="web_assets"
+			dimension={SurfaceDimension.WEB_ASSETS}
 			projectId={projectsStore.activeProject?.id ?? ''}
 			{targetId}
 			filters={{}}
@@ -221,18 +222,22 @@
 			<Button class="gap-2" onclick={onScan}>Start scan</Button>
 		</EmptyState>
 	{:else}
-		<ListHeader
-			lead={ASSET_LEAD_COLUMNS}
-			{columns}
-			sortKey={sort}
-			sortDir={order === 'asc' ? 1 : -1}
-			onSort={setSort}
-		/>
-		<div class="divide-y">
-			{#each rows as asset (asset.name)}
-				<AssetRow {asset} {columns} term={debounced.trim()} />
-			{/each}
-		</div>
+		<ScrollArea orientation="horizontal">
+			<div class="min-w-max">
+				<ListHeader
+					lead={ASSET_LEAD_COLUMNS}
+					{columns}
+					sortKey={sort}
+					sortDir={order === 'asc' ? 1 : -1}
+					onSort={setSort}
+				/>
+				<div class="divide-y">
+					{#each rows as asset (asset.name)}
+						<AssetRow {asset} {columns} term={debounced.trim()} />
+					{/each}
+				</div>
+			</div>
+		</ScrollArea>
 		<ResultsPagination
 			total={page?.total ?? 0}
 			page={pageIndex}

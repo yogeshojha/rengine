@@ -2,8 +2,9 @@
 	import type { Snippet } from 'svelte';
 	import { Badge } from '$lib/components/ui/badge';
 	import Hint from '$lib/components/hint.svelte';
+	import { percentLabel } from '$lib/utilities/strings';
 
-	export interface RankedSegment {
+	interface RankedSegment {
 		key: string;
 		count: number;
 		color: string;
@@ -34,10 +35,7 @@
 	const MIN_METER = 1.5;
 
 	const share = (n: number) => (base > 0 ? (n / base) * 100 : 0);
-	const shareLabel = (n: number) => {
-		const p = share(n);
-		return p > 0 && p < 1 ? '<1%' : `${Math.round(p)}%`;
-	};
+	const shareLabel = (n: number) => percentLabel(share(n));
 </script>
 
 <ul class="-mx-2 flex flex-col gap-0.5">

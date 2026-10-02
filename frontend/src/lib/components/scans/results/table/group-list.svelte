@@ -26,6 +26,7 @@
 	} from '$lib/config/hosting-providers';
 	import { httpStatusClass, isPrivateIp, STATUS_DOT } from '$lib/utilities/scan-correlation';
 	import { productBrand } from '$lib/utilities/services';
+	import { percentLabel } from '$lib/utilities/strings';
 	import { SERVICE_CLASS_ICONS } from '$lib/config/service-classes';
 	import type { IconComponent } from '$lib/config/icons';
 	import type { QueryGroup, QueryGroups, QueryGroupSpec } from '$lib/types/asset-query';
@@ -125,8 +126,7 @@
 		return covered ? (count / covered) * 100 : 0;
 	}
 	function shareLabel(count: number): string {
-		const pct = share(count);
-		return pct > 0 && pct < 1 ? '<1%' : `${Math.round(pct)}%`;
+		return percentLabel(share(count));
 	}
 </script>
 

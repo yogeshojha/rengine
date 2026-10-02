@@ -2,11 +2,11 @@
 	import { untrack } from 'svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Badge } from '$lib/components/ui/badge';
+	import SectionHead from '$lib/components/section-head.svelte';
 	import { tripwiresApi } from '$lib/api/tripwires';
 	import {
 		CHECK_STATUS_VARIANT,
 		CheckStatus,
-		FIRE_ON_PARTICIPLE,
 		FIRE_ON_VERB,
 		FireOn,
 		checkStatusLabel,
@@ -34,8 +34,7 @@
 	let seq = 0;
 
 	let spec = $derived(dimensionSpec(request.dimension));
-	let verb = $derived(FIRE_ON_PARTICIPLE[request.fire_on as FireOn] ?? 'fired');
-	let past = $derived(FIRE_ON_VERB[request.fire_on as FireOn] ?? 'fired');
+	let verb = $derived(FIRE_ON_VERB[request.fire_on as FireOn] ?? 'fired');
 	let signature = $derived(JSON.stringify(request));
 	let noun = $derived((n: number) => (n === 1 ? spec.noun : spec.nounPlural));
 	let count = $derived((n: number, capped: boolean) => `${n.toLocaleString()}${capped ? '+' : ''}`);
@@ -76,9 +75,7 @@
 </script>
 
 <div class="flex flex-col gap-3 rounded-lg border bg-muted/20 p-4">
-	<span class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
-		Latest run per target
-	</span>
+	<SectionHead title="Latest run per target" />
 	{#if !enabled}
 		<p class="text-xs text-muted-foreground">Not evaluated until the query is valid.</p>
 	{:else if loading && !preview}
@@ -91,7 +88,8 @@
 		<p class="text-sm">
 			<span class="font-semibold tabular-nums">{count(preview.fired, preview.capped)}</span>
 			<span class="text-muted-foreground">
-				{noun(preview.fired)} would have {verb} · {count(preview.matched, preview.capped)} matching
+				{noun(preview.fired)} would have {verb} · {count(preview.matched, preview.capped)} matching{#if preview.scanned > preview.targets.length}
+					· {preview.targets.length} of {preview.scanned} targets{/if}
 			</span>
 		</p>
 		{#if preview.targets.length === 0}
@@ -123,7 +121,7 @@
 					{/if}
 				</div>
 				<div class="flex min-w-0 flex-col gap-1.5">
-					{#each preview.rows.slice(0, SHOWN_ROWS) as row (row.key)}
+					{#each preview.rows.slice(0, SHOWN_ROWS) as row, i (i)}
 						<div class="flex min-w-0 flex-col">
 							<span class="truncate font-mono text-2xs">{row.label}</span>
 							{#if row.detail}
@@ -132,7 +130,7 @@
 						</div>
 					{/each}
 					{#if preview.rows.length === 0}
-						<span class="text-2xs text-muted-foreground">No row {past}</span>
+						<span class="text-2xs text-muted-foreground">No row {verb}</span>
 					{/if}
 				</div>
 			</div>

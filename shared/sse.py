@@ -9,6 +9,8 @@ from shared.utils.datetime import utc_now
 
 logger = get_logger(__name__)
 
+STREAM_CLOSED = None
+
 
 class SSEManager:
     _instance: "SSEManager | None" = None
@@ -83,22 +85,6 @@ class SSEManager:
         message = self._format_message(channel, event_type, data)
         return await self._deliver(message, subscribers)
 
-    async def publish_multi(
-        self,
-        channels: list[str],
-        event_type: str,
-        data: dict[str, Any],
-    ) -> int:
-        seen: set[asyncio.Queue] = set()
-        for channel in channels:
-            seen |= self._subscriptions.get(channel, set())
-
-        if not seen:
-            return 0
-
-        message = self._format_message(channels[0], event_type, data)
-        return await self._deliver(message, seen)
-
     @asynccontextmanager
     async def stream(self, channels: list[str]) -> AsyncIterator[asyncio.Queue]:
         if self.at_capacity():
@@ -121,7 +107,11 @@ class SSEManager:
                 queue.put_nowait(message)
                 delivered += 1
             except asyncio.QueueFull:
-                logger.warning("SSE queue full, dropping stale connection")
+                logger.warning("SSE queue full, closing the stream")
+                with suppress(asyncio.QueueEmpty):
+                    while not queue.empty():
+                        queue.get_nowait()
+                queue.put_nowait(STREAM_CLOSED)
                 dead.add(queue)
 
         if dead:
@@ -150,12 +140,6 @@ class SSEManager:
         }
         json_data = json.dumps(payload, default=str)
         return f"event: message\ndata: {json_data}\n\n"
-
-    def get_active_connections(self) -> int:
-        return len(self._queue_channels)
-
-    def get_channel_stats(self) -> dict[str, int]:
-        return {ch: len(subs) for ch, subs in self._subscriptions.items()}
 
 
 sse_manager = SSEManager()

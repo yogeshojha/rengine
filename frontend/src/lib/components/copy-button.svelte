@@ -37,6 +37,7 @@
 				variant="ghost"
 				size="icon"
 				class={cn('size-7 shrink-0', className)}
+				aria-label="Copy"
 				onclick={(e) => copy(e)}
 			>
 				{#if copied}

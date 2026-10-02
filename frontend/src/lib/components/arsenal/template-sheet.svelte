@@ -9,13 +9,16 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import YamlEditor from '$lib/components/yaml-editor.svelte';
-	import Hint from '$lib/components/hint.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import SeverityMark from '$lib/components/scans/results/vulnerabilities/severity-mark.svelte';
 	import { vulnTemplatesApi } from '$lib/api/vulnerabilities';
 	import { writeClipboard } from '$lib/utilities/clipboard';
-	import { PROTOCOL_LABELS, TEMPLATE_ORIGIN_LABELS } from '$lib/config/vulnerabilities';
+	import {
+		PROTOCOL_LABELS,
+		TEMPLATE_ORIGIN_LABELS,
+		TemplateOrigin
+	} from '$lib/config/vulnerabilities';
 	import type { TemplateSource, VulnTemplateRead } from '$lib/types/vuln-template';
 
 	interface Props {
@@ -96,9 +99,10 @@ http:
 		error = null;
 		try {
 			if (creating) {
-				const res = await vulnTemplatesApi.upload([
-					{ filename: `${filenameOf(draft)}.yaml`, content: draft }
-				]);
+				const res = await vulnTemplatesApi.upload(
+					[{ filename: `${filenameOf(draft)}.yaml`, content: draft }],
+					false
+				);
 				const rejected = res.rejected[0];
 				if (rejected) {
 					error = rejected.reason;
@@ -163,15 +167,16 @@ http:
 						{creating ? 'New check' : (template?.name ?? '')}
 					</Sheet.Title>
 					<Sheet.Description class="mt-0.5 font-mono text-xs wrap-anywhere">
-						{creating
-							? 'Saved as a custom template'
-							: (source?.path ?? template?.template_id ?? '')}
+						{creating ? 'Custom check' : (source?.path ?? template?.template_id ?? '')}
 					</Sheet.Description>
 				</div>
 			</div>
 			{#if template}
 				<div class="flex flex-wrap items-center gap-2">
-					<Badge variant={template.origin === 'custom' ? 'info' : 'outline'} class="font-normal">
+					<Badge
+						variant={template.origin === TemplateOrigin.CUSTOM ? 'info' : 'outline'}
+						class="font-normal"
+					>
 						{TEMPLATE_ORIGIN_LABELS[template.origin] ?? template.origin}
 					</Badge>
 					<Badge variant="outline" class="font-normal">
@@ -217,13 +222,9 @@ http:
 		</div>
 
 		<Sheet.Footer class="flex-row items-center justify-between gap-2 border-t px-5 py-3">
-			<Hint text="Copy the source">
-				{#snippet child(props)}
-					<Button {...props} variant="ghost" size="sm" class="gap-2" onclick={copy}>
-						<Copy class="size-4" /> Copy
-					</Button>
-				{/snippet}
-			</Hint>
+			<Button variant="ghost" size="sm" class="gap-2" onclick={copy}>
+				<Copy class="size-4" /> Copy
+			</Button>
 			<div class="flex items-center gap-2">
 				<Button variant="outline" size="sm" onclick={() => requestClose(false)}>
 					{editable ? 'Cancel' : 'Close'}

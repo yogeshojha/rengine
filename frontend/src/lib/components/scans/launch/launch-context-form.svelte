@@ -48,14 +48,16 @@
 
 	let validation = $derived(validateDraft(draft));
 
+	const isAdmin = $derived(Boolean(auth.user?.is_superuser));
+
 	$effect(() => {
-		if (auth.user?.is_superuser && !proxiesStore.hasFetched) untrack(() => proxiesStore.fetch());
+		if (isAdmin && !proxiesStore.hasFetched) untrack(() => proxiesStore.fetch());
 	});
 
 	let proxyPreset = false;
 	$effect(() => {
 		const fallback = proxiesStore.defaultId;
-		if (proxyPreset || !proxiesStore.hasFetched) return;
+		if (!isAdmin || proxyPreset || !proxiesStore.hasFetched) return;
 		proxyPreset = true;
 		if (fallback && !draft.proxy_id) untrack(() => (draft.proxy_id = fallback));
 	});
@@ -89,7 +91,7 @@
 		try {
 			const created = await scanContextsStore.createContext(
 				project.id,
-				buildContextPayload(draft, touched)
+				buildContextPayload(draft, touched, isAdmin)
 			);
 			if (created) onCreated(created.id, created.name);
 			else toast.error(scanContextsStore.error ?? 'Context not created');
@@ -109,7 +111,7 @@
 		<ChevronLeft class="size-3.5" /> Back
 	</Button>
 	<Dialog.Title>New context</Dialog.Title>
-	<Dialog.Description>
+	<Dialog.Description class="sr-only">
 		Scope, authentication and rate limits{targetValue ? ` for ${targetValue}` : ''}.
 	</Dialog.Description>
 </Dialog.Header>

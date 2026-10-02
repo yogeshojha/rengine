@@ -1,17 +1,16 @@
-from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import FileResponse
 
 from app.api.deps import CurrentUser
+from shared.definitions.retention import MEDIA_ROOT
 
 router = APIRouter(
     prefix="/media",
     tags=["media"],
 )
 
-_MEDIA_ROOT = Path("/app/scan_media")
 _TYPES = {
     ".png": "image/png",
     ".jpg": "image/jpeg",
@@ -25,8 +24,8 @@ async def get_screenshot(
     _current_user: CurrentUser,
     path: Annotated[str, Query(description="Screenshot path relative to media root")],
 ):
-    candidate = (_MEDIA_ROOT / path).resolve()
-    if not candidate.is_relative_to(_MEDIA_ROOT):
+    candidate = (MEDIA_ROOT / path).resolve()
+    if not candidate.is_relative_to(MEDIA_ROOT):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid path"
         )

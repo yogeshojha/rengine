@@ -34,7 +34,6 @@
 
 <Cell
 	id="ai"
-	title="AI services"
 	description="Services per product"
 	href={link(aiQuery(AI_YES))}
 	hrefLabel={aiQuery(AI_YES)}
@@ -42,7 +41,7 @@
 	class={className}
 >
 	{#if rows.length}
-		<RankedBars {rows} dense>
+		<RankedBars {rows}>
 			{#snippet icon(r)}
 				<TechIcon name={r.label} class="size-4">
 					{#snippet fallback()}

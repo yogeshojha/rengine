@@ -1,11 +1,12 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
 from sqlalchemy import Column, Text
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
+from shared.definitions.stage_counts import stage_figures
 from shared.enums.scan import ScanActivityStatus
 from shared.utils.datetime import utc_now
 
@@ -30,6 +31,12 @@ class ScanActivity(SQLModel, table=True):
     created_at: datetime = Field(default_factory=utc_now)
 
 
+class StageFigure(BaseModel):
+    key: str
+    value: int
+    label: str
+
+
 class ScanActivityRead(BaseModel):
     id: uuid.UUID
     scan_id: uuid.UUID
@@ -38,8 +45,15 @@ class ScanActivityRead(BaseModel):
     status: str
     error: str | None = None
     result: dict = Field(default_factory=dict)
-    command_count: int = 0
     started_at: datetime | None = None
     completed_at: datetime | None = None
     duration_seconds: float | None = None
     created_at: datetime
+
+    @computed_field
+    @property
+    def figures(self) -> list[StageFigure]:
+        return [
+            StageFigure(key=key, value=value, label=label)
+            for key, value, label in stage_figures(self.name, self.result)
+        ]

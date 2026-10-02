@@ -9,35 +9,23 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      TAG: ${{ github.event.release.tag_name }}
+      BODY: ${{ github.event.release.body }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.repository.default_branch }}
           fetch-depth: 0
 
-      - name: Get latest release info
-        id: get_release
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const release = await github.rest.repos.getLatestRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-            });
-            core.setOutput('tag_name', release.data.tag_name);
-            core.setOutput('body', release.data.body);
-
       - name: Update version file
-        run: echo ${{ steps.get_release.outputs.tag_name }} > web/.version
+        run: printf '%s\n' "${TAG#v}" > VERSION
 
       - name: Update CHANGELOG.md
         run: |
-          echo "# Changelog" > CHANGELOG.md.new
-          echo "" >> CHANGELOG.md.new
-          echo "## ${{ steps.get_release.outputs.tag_name }}" >> CHANGELOG.md.new
-          echo "" >> CHANGELOG.md.new
-          echo "${{ steps.get_release.outputs.body }}" >> CHANGELOG.md.new
-          echo "" >> CHANGELOG.md.new
+          printf '%s\n' "# Changelog" "" "## $TAG" "" "$BODY" "" > CHANGELOG.md.new
           if [ -f CHANGELOG.md ]; then
             sed '1,2d' CHANGELOG.md >> CHANGELOG.md.new
           fi
@@ -45,16 +33,16 @@ jobs:
 
       - name: Update README.md
         run: |
-          sed -i 's|https://img.shields.io/badge/version-.*-informational|https://img.shields.io/badge/version-${{ steps.get_release.outputs.tag_name }}-informational|g' README.md
+          sed -i "s|https://img.shields.io/badge/version-.*-informational|https://img.shields.io/badge/version-$TAG-informational|g" README.md
 
       - name: Commit and push changes
         run: |
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add web/.version CHANGELOG.md README.md
+          git add VERSION CHANGELOG.md README.md
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "reNgine release: ${{ steps.get_release.outputs.tag_name }} :rocket:"
-            git push origin HEAD:${{ github.event.repository.default_branch }}
+            git commit -m "reNgine release: $TAG"
+            git push origin "HEAD:$DEFAULT_BRANCH"
           fi

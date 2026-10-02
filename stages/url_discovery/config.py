@@ -37,7 +37,10 @@ class UrlDiscoveryConfig(StageConfig):
         default_factory=lambda: list(DEFAULT_PROVIDERS),
         title="Sources",
         description="Sources URLs are collected from. Response mining reads stored response bodies and sends no request.",
-        json_schema_extra={"options": list(_PROVIDER_LABELS)},
+        json_schema_extra={
+            "options": list(_PROVIDER_LABELS),
+            "option_labels": dict(_PROVIDER_LABELS),
+        },
     )
     crawl_depth: int = Field(
         default=3,
@@ -62,19 +65,22 @@ class UrlDiscoveryConfig(StageConfig):
         CrawlScope.RDN.value,
         title="Crawl scope",
         description="Which hosts the crawler may follow links to.",
-        json_schema_extra={"options": list(CRAWL_SCOPES)},
+        json_schema_extra={
+            "options": list(CRAWL_SCOPES),
+            "option_labels": dict(CRAWL_SCOPES),
+        },
     )
     max_hosts: int = advanced(
         500,
         ge=1,
         le=10000,
-        title="Hosts to crawl",
-        description="Cap the live web assets handed to the crawler.",
+        title="Web asset cap",
+        description="Live web assets handed to each source.",
     )
     drop_noise: bool = advanced(
         True,
         title="Drop noise",
-        description="Static files, crawler artifacts, platform noise and URLs past the family and sibling caps are not stored. Every drop is counted.",
+        description="Static files, crawler artifacts, platform noise and URLs past the family and sibling caps are not stored.",
     )
     static_extensions: list[str] = advanced(
         None,

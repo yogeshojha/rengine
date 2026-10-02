@@ -1,5 +1,11 @@
 <script lang="ts">
-	import { KIND_LABELS, NewKind, type NewKindKey, type SignalKey } from '$lib/config/whats-new';
+	import {
+		KIND_LABELS,
+		NewKind,
+		Signal,
+		type NewKindKey,
+		type SignalKey
+	} from '$lib/config/whats-new';
 	import { Severity, SEVERITY_LABELS } from '$lib/config/vulnerabilities';
 	import type { NewDay } from '$lib/types/whats-new';
 
@@ -265,17 +271,20 @@
 							<circle
 								cx={cx(i)}
 								cy={li * LANE + LANE / 2}
-								r={radius(kind, n) + (hover === i ? 1.5 : 0)}
+								r={radius(kind, n)}
 								style="fill: {fill(
 									kind,
 									day
 								)}; stroke: var(--card); stroke-width: 2; opacity: {active &&
 								active !== kind &&
-								!(kind === NewKind.FINDING && (active === 'critical' || active === 'high'))
+								!(
+									kind === NewKind.FINDING &&
+									(active === Signal.CRITICAL || active === Signal.HIGH)
+								)
 									? 0.3
 									: kind === NewKind.FINDING
 										? 1
-										: 0.75}; transition: r 120ms ease-out"
+										: 0.75}"
 							/>
 						{/if}
 					{/each}
@@ -283,9 +292,9 @@
 
 				{#each ticks as { d, i } (d.date)}
 					<text
-						x={cx(i)}
+						x={i === shown.length - 1 ? width : cx(i)}
 						y={lanes.length * LANE + 14}
-						text-anchor="middle"
+						text-anchor={i === shown.length - 1 ? 'end' : 'middle'}
 						class="text-2xs"
 						style="fill: var(--muted-foreground)">{label(d.date)}</text
 					>

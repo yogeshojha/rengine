@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds the extension jar with nothing but a JDK 17+.
+# Builds the extension jar with nothing but a JDK 17+. --fetch-only downloads the Montoya API and prints its path.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -12,6 +12,11 @@ if [ ! -f "$MONTOYA_JAR" ]; then
   mkdir -p lib
   curl -fsSL -o "$MONTOYA_JAR" \
     "https://repo1.maven.org/maven2/net/portswigger/burp/extensions/montoya-api/${MONTOYA_VERSION}/montoya-api-${MONTOYA_VERSION}.jar"
+fi
+
+if [ "${1:-}" = "--fetch-only" ]; then
+  echo "$MONTOYA_JAR"
+  exit 0
 fi
 
 rm -rf build/classes

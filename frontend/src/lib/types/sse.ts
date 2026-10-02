@@ -1,10 +1,6 @@
 export const SSEChannel = {
 	BROADCAST: 'broadcast',
-	PROJECT: 'project',
-	SCAN: 'scan',
-
-	project: (projectId: string): string => `project:${projectId}`,
-	scan: (scanId: string): string => `scan:${scanId}`
+	project: (projectId: string): string => `project:${projectId}`
 } as const;
 
 export const SSEEventType = {

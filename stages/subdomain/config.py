@@ -4,7 +4,7 @@ from pydantic import Field
 
 from shared.definitions.wordlists import WordlistKind
 from shared.enums.scan import Intensity
-from stages.config import StageConfig, wordlist
+from stages.config import StageConfig, advanced, wordlist
 from stages.subdomain.providers import PASSIVE_PROVIDERS
 
 PASSIVE_TOOLS: tuple[str, ...] = tuple(
@@ -70,6 +70,11 @@ class SubdomainConfig(StageConfig):
         default=False,
         title="Permute discovered names",
         description="Resolve variants of discovered names, such as api-dev and api2.",
+    )
+    skip_address_names: bool = advanced(
+        True,
+        title="Skip address-shaped names",
+        description="Names that spell an IP address, such as 10-20-30-40.example.com, are dropped unless a certificate or DNS answer names them.",
     )
 
     @property

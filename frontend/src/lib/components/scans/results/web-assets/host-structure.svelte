@@ -98,23 +98,31 @@
 		return afterPause(load, search ? SEARCH_DEBOUNCE_MS : 0);
 	});
 
+	let summaryReq = 0;
 	$effect(() => {
 		void host;
 		void scanId;
+		const my = ++summaryReq;
 		untrack(() => {
 			search = '';
 			summary = null;
+			onSummary?.(null);
 			endpointsApi
 				.summary(projectId, scanId, host)
 				.then((s) => {
+					if (my !== summaryReq) return;
 					summary = s;
 					onSummary?.(s);
 				})
 				.catch(() => {
+					if (my !== summaryReq) return;
 					summary = null;
 					onSummary?.(null);
 				});
 		});
+		return () => {
+			summaryReq++;
+		};
 	});
 
 	let segments = $derived.by<Segment[]>(() =>
@@ -187,7 +195,7 @@
 	{#if tree && tree.nodes.length === 0 && !loading}
 		<EmptyState
 			icon={Waypoints}
-			title={search || hideStatic ? 'No paths match' : 'No paths on this host'}
+			title={search || hideStatic ? 'No paths match' : 'No paths'}
 			description={search
 				? 'Widen the search.'
 				: hideStatic
@@ -228,7 +236,6 @@
 <EndpointDetailSheet
 	endpoint={selected}
 	{projectId}
-	{scanId}
 	open={drawerOpen}
 	onOpenChange={(o) => (drawerOpen = o)}
 	index={-1}

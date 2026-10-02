@@ -8,28 +8,30 @@ from pathlib import Path
 from uuid import UUID
 
 from celery import shared_task
+from sqlalchemy import func
 
-from app.config import settings
 from app.database import get_sync_session
 from reports import theme_store
 from reports.pipeline import generate
 from shared.definitions.reports import (
     FORMAT_EXTENSIONS,
+    GENERATING_STATUSES,
     REPORT_ROOT,
     RETENTION_DAYS,
+    STRANDED_ERROR,
     ReportSpec,
     ReportStatus,
+    stranded_after,
 )
 from shared.enums.notification import NotificationSeverity, NotificationType
-from shared.enums.sse import SSEChannel, SSEEventType
 from shared.logging import get_logger
 from shared.models.report import Report
 from shared.models.scan import Scan
 from shared.models.target import Target
 from shared.services.ai import ledger
-from shared.services.event_publisher import SyncEventPublisher
 from shared.services.notification_sync import SyncNotificationPublisher
 from shared.utils.datetime import utc_now
+from shared.utils.files import purge_dir
 from shared.utils.slug import generate_slug
 
 logger = get_logger(__name__)
@@ -41,37 +43,9 @@ def _root(report_id: UUID) -> Path:
     return path
 
 
-def _publisher() -> SyncEventPublisher | None:
-    try:
-        return SyncEventPublisher(settings.celery_broker_url)
-    except Exception:
-        logger.warning("report events unavailable")
-        return None
-
-
-def _announce(publisher, report: Report) -> None:
-    if publisher is None:
-        return
-    payload = {
-        "id": str(report.id),
-        "status": report.status,
-        "progress": report.progress,
-        "step": report.step,
-        "error": report.error,
-        "page_count": report.page_count,
-    }
-    publisher.publish(
-        SSEChannel.report(str(report.id)), SSEEventType.REPORT.value, payload
-    )
-    publisher.publish(
-        SSEChannel.project(str(report.project_id)), SSEEventType.REPORT.value, payload
-    )
-
-
 @shared_task(bind=True, name="app.tasks.reports.generate", max_retries=0)
 def generate_report(self, report_id: str) -> dict:
     started = time.monotonic()
-    publisher = _publisher()
 
     with get_sync_session() as session:
         report = session.get(Report, UUID(report_id))
@@ -87,14 +61,12 @@ def generate_report(self, report_id: str) -> dict:
         report.error = None
         session.add(report)
         session.commit()
-        _announce(publisher, report)
 
         def progress(percent: int, label: str) -> None:
             report.progress = percent
             report.step = label
             session.add(report)
             session.commit()
-            _announce(publisher, report)
 
         try:
             spec = ReportSpec.model_validate(report.spec or {})
@@ -118,7 +90,6 @@ def generate_report(self, report_id: str) -> dict:
             _finish(report, output, files, round(time.monotonic() - started, 2))
             session.add(report)
             session.commit()
-            _announce(publisher, report)
             logger.info(
                 "report ready",
                 report_id=report_id,
@@ -128,14 +99,12 @@ def generate_report(self, report_id: str) -> dict:
             return {"status": report.status, "pages": output.pages, "files": len(files)}
 
         except Exception as exc:
-            _fail(
-                session, publisher, report_id, exc, round(time.monotonic() - started, 2)
-            )
+            _fail(session, report_id, exc, round(time.monotonic() - started, 2))
             logger.exception("report failed", report_id=report_id)
             raise
 
 
-def _fail(session, publisher, report_id: str, exc: Exception, seconds: float) -> None:
+def _fail(session, report_id: str, exc: Exception, seconds: float) -> None:
     session.rollback()
     report = session.get(Report, UUID(report_id))
     if report is None:
@@ -147,7 +116,6 @@ def _fail(session, publisher, report_id: str, exc: Exception, seconds: float) ->
     report.duration_seconds = seconds
     session.add(report)
     session.commit()
-    _announce(publisher, report)
     _notify_failed(session, report)
 
 
@@ -201,7 +169,7 @@ def _finish(report: Report, output, files: list[dict], seconds: float) -> None:
 def _notify_failed(session, report: Report) -> None:
     name = report.title or report.template_name or "Report"
     try:
-        SyncNotificationPublisher(settings.celery_broker_url).publish(
+        SyncNotificationPublisher().publish(
             session,
             NotificationType.SYSTEM,
             NotificationSeverity.ERROR,
@@ -231,11 +199,7 @@ def cleanup() -> dict:
             .all()
         )
         for report in rows:
-            root = Path(REPORT_ROOT) / str(report.id)
-            if root.exists():
-                for item in root.iterdir():
-                    item.unlink(missing_ok=True)
-                root.rmdir()
+            purge_dir(REPORT_ROOT, report.id)
             report.files = []
             report.status = ReportStatus.EXPIRED.value
             report.step = "Expired"
@@ -244,3 +208,27 @@ def cleanup() -> dict:
         if removed:
             session.commit()
     return {"removed": removed}
+
+
+@shared_task(name="app.tasks.reports.reap")
+def reap() -> int:
+    """Fail reports that stopped without finishing."""
+    cutoff = utc_now() - stranded_after()
+    with get_sync_session() as session:
+        rows = (
+            session.query(Report)
+            .filter(
+                Report.status.in_(GENERATING_STATUSES),
+                func.coalesce(Report.started_at, Report.created_at) <= cutoff,
+            )
+            .all()
+        )
+        for report in rows:
+            report.status = ReportStatus.FAILED.value
+            report.step = "Failed"
+            report.error = STRANDED_ERROR
+            report.completed_at = utc_now()
+            session.add(report)
+        if rows:
+            session.commit()
+    return len(rows)

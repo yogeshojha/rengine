@@ -58,13 +58,13 @@
 {#snippet toggle(label: string, n: number, on: boolean, click: () => void, tone: string)}
 	<button
 		type="button"
-		class="group/t flex flex-col items-start gap-0.5 rounded-md text-left focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+		class="-mx-1.5 flex flex-col items-start gap-0.5 rounded-md px-1.5 text-left transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 		aria-pressed={on}
 		onclick={click}
 	>
 		<span class="text-2xs tracking-wide text-muted-foreground uppercase">{label}</span>
 		<span
-			class="font-mono text-2xl font-semibold tabular-nums underline-offset-4 group-hover/t:underline {n
+			class="font-mono text-2xl font-semibold tabular-nums underline-offset-4 {n
 				? tone
 				: 'text-muted-foreground/60'} {on ? 'underline decoration-2' : ''}"
 		>
@@ -250,7 +250,7 @@
 								aria-pressed={on}
 								onclick={() => onHost(h.host)}
 							>
-								<span class="truncate font-mono text-xs group-hover/h:underline">{h.host}</span>
+								<span class="truncate font-mono text-xs group-hover/h:text-primary">{h.host}</span>
 								<Hint
 									text={h.counts.map((c) => `${c.count} ${c.label.toLowerCase()}`).join(' · ') ||
 										`${h.total} lower severity`}

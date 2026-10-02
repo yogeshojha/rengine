@@ -1,11 +1,26 @@
 import re
 from functools import lru_cache
+from pathlib import Path
 from urllib.parse import quote
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _UNSAFE_IN_ARGV = re.compile(r"[\s\"'\\]")
+PUBLISHED_SECRET_KEY = "change-me-in-production-use-openssl-rand-hex-32"  # noqa: S105
+SECRET_KEY_MIN_LENGTH = 32
+_VERSION_FILE = Path(__file__).resolve().parents[1] / "VERSION"
+
+
+def _release() -> str:
+    try:
+        return _VERSION_FILE.read_text().strip() or "unknown"
+    except OSError:
+        return "unknown"
+
+
+APP_NAME = "reNgine"
+APP_VERSION = _release()
 
 
 class BaseAppSettings(BaseSettings):
@@ -13,14 +28,14 @@ class BaseAppSettings(BaseSettings):
         env_file=".env", case_sensitive=True, extra="ignore"
     )
 
-    APP_NAME: str = "reNgine"
     DEBUG: bool = False
     SQL_ECHO: bool = False
-    APP_VERSION: str = "3.0.0"
 
     LOG_LEVEL: str = "INFO"
 
     CORS_ORIGINS: list[str] = ["http://localhost:5173"]
+
+    SECRET_KEY: str = ""
 
     POSTGRES_HOST: str = "db"
     POSTGRES_PORT: int = 5432
@@ -89,6 +104,20 @@ class BaseAppSettings(BaseSettings):
         if _UNSAFE_IN_ARGV.search(v):
             msg = (
                 "REDIS_PASSWORD must not contain whitespace, quotes or backslashes. "
+                "Generate one with: openssl rand -hex 32"
+            )
+            raise ValueError(msg)
+        return v
+
+    @field_validator("SECRET_KEY")
+    @classmethod
+    def validate_secret_key(cls, v: str, info) -> str:
+        if not v or info.data.get("DEBUG", False):
+            return v
+        if v == PUBLISHED_SECRET_KEY or len(v) < SECRET_KEY_MIN_LENGTH:
+            msg = (
+                f"SECRET_KEY must be a generated value of at least "
+                f"{SECRET_KEY_MIN_LENGTH} characters. "
                 "Generate one with: openssl rand -hex 32"
             )
             raise ValueError(msg)

@@ -21,6 +21,7 @@ def build(raw: str) -> dict[str, list[str]]:
     suffixes: set[str] = set()
     wildcards: set[str] = set()
     exceptions: set[str] = set()
+    tlds: set[str] = set()
     inside = False
     for line in raw.splitlines():
         if BEGIN in line:
@@ -33,6 +34,7 @@ def build(raw: str) -> dict[str, list[str]]:
             continue
         rule = rule.encode("idna").decode("ascii") if not rule.isascii() else rule
         rule = rule.lower()
+        tlds.add(rule.rsplit(".", 1)[-1])
         if rule.startswith("*."):
             wildcards.add(rule[2:])
         elif rule.startswith("!"):
@@ -43,6 +45,7 @@ def build(raw: str) -> dict[str, list[str]]:
         "suffixes": sorted(suffixes),
         "wildcards": sorted(wildcards),
         "exceptions": sorted(exceptions),
+        "tlds": sorted(tlds),
     }
 
 
@@ -63,7 +66,8 @@ def main() -> int:
     )
     print(
         f"{TARGET}: {len(data['suffixes'])} suffixes, "
-        f"{len(data['wildcards'])} wildcards, {len(data['exceptions'])} exceptions"
+        f"{len(data['wildcards'])} wildcards, {len(data['exceptions'])} exceptions, "
+        f"{len(data['tlds'])} tlds"
     )
     return 0
 

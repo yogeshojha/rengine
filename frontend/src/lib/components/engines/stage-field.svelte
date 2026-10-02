@@ -33,12 +33,13 @@
 		Array.isArray(field.default) ? field.default.join(', ') || 'none' : String(field.default)
 	);
 
-	const optionLabel = (option: string) => field.option_labels?.[option] ?? option ?? 'Select…';
+	const optionLabel = (option: string) => field.option_labels?.[option] ?? option;
 
 	function commitNumber(raw: string) {
 		const parsed = Number(raw);
 		if (raw === '' || Number.isNaN(parsed)) return;
 		let next = parsed;
+		if (field.type === 'integer') next = Math.round(next);
 		if (field.minimum !== null) next = Math.max(field.minimum, next);
 		if (field.maximum !== null) next = Math.min(field.maximum, next);
 		onChange(next);
@@ -143,6 +144,7 @@
 					class="h-8 w-24 text-sm tabular-nums"
 					min={field.minimum ?? undefined}
 					max={field.maximum ?? undefined}
+					step={field.type === 'integer' ? 1 : 'any'}
 					value={String(value ?? field.default ?? '')}
 					onchange={(e) => commitNumber(e.currentTarget.value)}
 				/>

@@ -1,4 +1,4 @@
-import { api, API_PREFIX } from './client';
+import { api, API_PREFIX, toQuery } from './client';
 import type {
 	Report,
 	ReportCatalog,
@@ -11,77 +11,67 @@ import type {
 	ReportTheme
 } from '$lib/types/report';
 
-function q(params: Record<string, string | undefined>): string {
-	const search = new URLSearchParams();
-	for (const [key, value] of Object.entries(params)) if (value) search.set(key, value);
-	const text = search.toString();
-	return text ? `?${text}` : '';
-}
-
 export const reportsApi = {
 	catalog(): Promise<ReportCatalog> {
 		return api.get<ReportCatalog>('/reports/catalog');
 	},
 
 	templates(projectId: string): Promise<ReportTemplate[]> {
-		return api.get<ReportTemplate[]>(`/reports/templates${q({ project_id: projectId })}`);
+		return api.get<ReportTemplate[]>(`/reports/templates${toQuery({ project_id: projectId })}`);
 	},
 
 	createTemplate(projectId: string, body: unknown): Promise<ReportTemplate> {
-		return api.post<ReportTemplate>(`/reports/templates${q({ project_id: projectId })}`, body);
+		return api.post<ReportTemplate>(
+			`/reports/templates${toQuery({ project_id: projectId })}`,
+			body
+		);
 	},
 
 	updateTemplate(projectId: string, id: string, body: unknown): Promise<ReportTemplate> {
 		return api.patch<ReportTemplate>(
-			`/reports/templates/${id}${q({ project_id: projectId })}`,
+			`/reports/templates/${id}${toQuery({ project_id: projectId })}`,
 			body
 		);
 	},
 
 	deleteTemplate(projectId: string, id: string): Promise<void> {
-		return api.delete<void>(`/reports/templates/${id}${q({ project_id: projectId })}`);
+		return api.delete<void>(`/reports/templates/${id}${toQuery({ project_id: projectId })}`);
 	},
 
-	list(projectId: string, opts: { scanId?: string; targetId?: string } = {}): Promise<Report[]> {
-		return api.get<Report[]>(
-			`/reports${q({ project_id: projectId, scan_id: opts.scanId, target_id: opts.targetId })}`
-		);
+	list(projectId: string): Promise<Report[]> {
+		return api.get<Report[]>(`/reports${toQuery({ project_id: projectId })}`);
 	},
 
 	get(projectId: string, id: string): Promise<Report> {
-		return api.get<Report>(`/reports/${id}${q({ project_id: projectId })}`);
+		return api.get<Report>(`/reports/${id}${toQuery({ project_id: projectId })}`);
 	},
 
 	create(projectId: string, body: ReportCreate): Promise<Report> {
-		return api.post<Report>(`/reports${q({ project_id: projectId })}`, body);
+		return api.post<Report>(`/reports${toQuery({ project_id: projectId })}`, body);
 	},
 
 	estimate(projectId: string, body: ReportCreate): Promise<ReportEstimate> {
-		return api.post<ReportEstimate>(`/reports/estimate${q({ project_id: projectId })}`, body);
+		return api.post<ReportEstimate>(`/reports/estimate${toQuery({ project_id: projectId })}`, body);
 	},
 
 	retry(projectId: string, id: string): Promise<Report> {
-		return api.post<Report>(`/reports/${id}/retry${q({ project_id: projectId })}`);
+		return api.post<Report>(`/reports/${id}/retry${toQuery({ project_id: projectId })}`);
 	},
 
 	remove(projectId: string, id: string): Promise<void> {
-		return api.delete<void>(`/reports/${id}${q({ project_id: projectId })}`);
+		return api.delete<void>(`/reports/${id}${toQuery({ project_id: projectId })}`);
 	},
 
 	downloadUrl(projectId: string, id: string, format: string): string {
-		return `${API_PREFIX}/reports/${id}/download${q({ project_id: projectId, format })}`;
+		return `${API_PREFIX}/reports/${id}/download${toQuery({ project_id: projectId, format })}`;
 	},
 
 	previewUrl(projectId: string, id: string): string {
-		return `${API_PREFIX}/reports/${id}/preview${q({ project_id: projectId })}`;
+		return `${API_PREFIX}/reports/${id}/preview${toQuery({ project_id: projectId })}`;
 	},
 
 	pdf(projectId: string, id: string): Promise<ArrayBuffer> {
-		return api.bytes(`/reports/${id}/preview${q({ project_id: projectId })}`);
-	},
-
-	fonts(): Promise<ReportFont[]> {
-		return api.get<ReportFont[]>('/reports/fonts');
+		return api.bytes(`/reports/${id}/preview${toQuery({ project_id: projectId })}`);
 	},
 
 	uploadFont(body: ReportFontUpload): Promise<ReportFont> {
@@ -100,16 +90,12 @@ export const reportsApi = {
 		return api.put<ReportDefaults>('/reports/defaults', body);
 	},
 
-	themes(): Promise<ReportTheme[]> {
-		return api.get<ReportTheme[]>('/reports/themes');
-	},
-
 	themeSource(slug: string): Promise<string> {
 		return api.get<string>(`/reports/themes/${slug}/source`);
 	},
 
-	uploadTheme(content: string, filename = ''): Promise<ReportTheme> {
-		return api.post<ReportTheme>('/reports/themes', { content, filename });
+	uploadTheme(content: string): Promise<ReportTheme> {
+		return api.post<ReportTheme>('/reports/themes', { content });
 	},
 
 	deleteTheme(slug: string): Promise<void> {

@@ -18,19 +18,10 @@
 		options: PickOption[];
 		heading?: PickOption[];
 		placeholder?: string;
-		empty?: string;
 		onChange: (value: string) => void;
 	}
 
-	let {
-		label,
-		value,
-		options,
-		heading = [],
-		placeholder = 'Filter',
-		empty = 'No matches',
-		onChange
-	}: Props = $props();
+	let { label, value, options, heading = [], placeholder = 'Filter', onChange }: Props = $props();
 
 	let open = $state(false);
 	let current = $derived([...heading, ...options].find((o) => o.value === value));
@@ -62,12 +53,12 @@
 		<Command.Root>
 			<Command.Input {placeholder} class="h-9 text-xs" />
 			<Command.List class="max-h-64">
-				<Command.Empty class="py-4 text-xs">{empty}</Command.Empty>
+				<Command.Empty class="py-4 text-xs">No matches</Command.Empty>
 				{#if heading.length}
 					<Command.Group>
 						{#each heading as option (option.value)}
 							<Command.Item
-								value={option.label}
+								value="{option.label} {option.hint ?? ''} {option.value}"
 								onSelect={() => pick(option.value)}
 								class="text-xs"
 							>
@@ -80,7 +71,11 @@
 				{/if}
 				<Command.Group>
 					{#each options as option (option.value)}
-						<Command.Item value={option.label} onSelect={() => pick(option.value)} class="text-xs">
+						<Command.Item
+							value="{option.label} {option.hint ?? ''} {option.value}"
+							onSelect={() => pick(option.value)}
+							class="text-xs"
+						>
 							<Check class="size-3.5 {value === option.value ? '' : 'opacity-0'}" />
 							<span class="min-w-0 flex-1 truncate {option.mono ? 'font-mono' : ''}"
 								>{option.label}</span

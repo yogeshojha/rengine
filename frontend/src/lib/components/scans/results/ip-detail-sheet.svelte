@@ -4,7 +4,6 @@
 	import Plug from '@lucide/svelte/icons/plug';
 	import Server from '@lucide/svelte/icons/server';
 	import Globe from '@lucide/svelte/icons/globe';
-	import Copy from '@lucide/svelte/icons/copy';
 	import ChevronUp from '@lucide/svelte/icons/chevron-up';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
@@ -21,7 +20,8 @@
 	import { isPrivateIp } from '$lib/utilities/scan-correlation';
 	import { isSensitivePort } from '$lib/config/service-classes';
 	import { exactToken, filterToken, type IpGroupRead } from '$lib/utilities/scan-insights';
-	import { writeClipboard } from '$lib/utilities/clipboard';
+	import CopyButton from '$lib/components/copy-button.svelte';
+	import { plural } from '$lib/utilities/strings';
 	import CountryFlag from './country-flag.svelte';
 
 	interface Props {
@@ -61,10 +61,6 @@
 					.join(' · ')
 			: ''
 	);
-
-	function copy(text: string) {
-		writeClipboard(text);
-	}
 </script>
 
 <svelte:window onkeydown={(e) => sheetStep(e, open, onStep)} />
@@ -89,23 +85,7 @@
 							: 'bg-muted-foreground/40'}"
 					></span>
 					<Sheet.Title class="truncate font-mono text-base font-medium">{group.ip}</Sheet.Title>
-					<Tooltip.Root>
-						<Tooltip.Trigger>
-							{#snippet child({ props })}
-								<Button
-									{...props}
-									variant="ghost"
-									size="icon-sm"
-									class="size-7"
-									onclick={() => copy(group.ip)}
-									aria-label="Copy address"
-								>
-									<Copy />
-								</Button>
-							{/snippet}
-						</Tooltip.Trigger>
-						<Tooltip.Content>Copy address</Tooltip.Content>
-					</Tooltip.Root>
+					<CopyButton value={group.ip} />
 					<div class="ml-auto flex items-center gap-1">
 						{#if total > 1}
 							<span class="text-xs text-muted-foreground tabular-nums">
@@ -158,7 +138,7 @@
 					{#if network}
 						{network}{group.prefix ? ` · ${group.prefix}` : ''}
 					{:else}
-						{group.is_alive ? 'Responding' : 'No response observed'} · no network data
+						{group.is_alive ? 'Responding' : 'No response'} · no network data
 					{/if}
 				</Sheet.Description>
 				<div class="flex flex-wrap gap-1">
@@ -178,7 +158,7 @@
 					{/if}
 					{#if group.asset_count}
 						<Badge variant="secondary" class="font-normal">
-							{group.asset_count} web {group.asset_count === 1 ? 'service' : 'services'}
+							{plural(group.asset_count, 'web service')}
 						</Badge>
 					{/if}
 				</div>
@@ -244,7 +224,7 @@
 							<div class={SHEET_ROW}>
 								<dt class={SHEET_DT}>Responding</dt>
 								<dd class="text-sm">
-									{group.is_alive ? 'Yes' : 'No response observed'}
+									{group.is_alive ? 'Yes' : 'No'}
 								</dd>
 							</div>
 						</dl>
@@ -290,7 +270,7 @@
 
 					<section class="flex flex-col gap-2">
 						<div class="flex items-center justify-between">
-							{@render heading(Server, 'Hosts')}
+							{@render heading(Server, 'Web assets')}
 							{#if group.host_count}
 								<Button
 									variant="outline"
@@ -299,7 +279,7 @@
 									onclick={() => onHosts?.(filterToken('ip', group.ip))}
 								>
 									<Globe data-icon="inline-start" />
-									{group.host_count} in Web assets
+									{group.host_count.toLocaleString()} in Web assets
 								</Button>
 							{/if}
 						</div>
@@ -326,7 +306,7 @@
 							</Item.Group>
 							{#if group.host_count > group.hosts.length}
 								<p class="px-3 text-xs text-muted-foreground">
-									{group.hosts.length} of {group.host_count} shown.
+									{group.hosts.length.toLocaleString()} of {group.host_count.toLocaleString()} shown.
 								</p>
 							{/if}
 						{:else}

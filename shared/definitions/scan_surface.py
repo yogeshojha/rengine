@@ -24,14 +24,6 @@ SURFACE_CLASS_LABELS: dict[str, str] = {
     SurfaceClass.REQUEST.value: "Request",
 }
 
-SURFACE_CLASS_HELP: dict[str, str] = {
-    SurfaceClass.ROOT.value: "One per web asset, any status. HTTP checks run here.",
-    SurfaceClass.NAME.value: "One per resolved name. DNS checks run here.",
-    SurfaceClass.SERVICE.value: "One per open port. TLS and network checks run here.",
-    SurfaceClass.BASE.value: "One per directory. Exposure checks run here.",
-    SurfaceClass.REQUEST.value: "One per parameter set. Fuzzing runs here.",
-}
-
 
 class DropReason(StrEnum):
     OUT_OF_SCOPE = "out_of_scope"
@@ -718,7 +710,6 @@ __all__ = [
     "MAX_TECH_GROUPS",
     "ONE_REQUEST_PATHS",
     "ROOT_TIERS",
-    "SURFACE_CLASS_HELP",
     "SURFACE_CLASS_LABELS",
     "SURFACE_STATE_LABELS",
     "SWEEP_REQUEST_CAP",

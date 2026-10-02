@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { compareApi } from '$lib/api/compare';
 	import ChangeBar from '$lib/components/scans/compare/change-bar.svelte';
 	import { COMPARABILITY_LABEL } from '$lib/config/compare';
 	import { ROUTES } from '$lib/config/routes';
 	import { COMPARABILITY, type ScanComparison } from '$lib/types/compare';
 	import { formatDateTime } from '$lib/utilities/dates';
-	import type { ScanRead } from '$lib/types/scan';
+	import { SCAN_STATUS_LABEL } from '$lib/utilities/scan-status';
+	import type { ScanRead, ScanStatus } from '$lib/types/scan';
 
 	interface Props {
 		projectId: string;
@@ -23,12 +25,20 @@
 		const id = scan.id;
 		const against = baseline;
 		if (scan.is_first_scan) return;
+		let live = true;
 		data = null;
 		error = null;
 		compareApi
 			.comparison(projectId, id, against)
-			.then((c) => (data = c))
-			.catch((e) => (error = e instanceof Error ? e.message : 'Comparison not loaded.'));
+			.then((c) => {
+				if (live) data = c;
+			})
+			.catch((e) => {
+				if (live) error = e instanceof Error ? e.message : 'Comparison not loaded.';
+			});
+		return () => {
+			live = false;
+		};
 	});
 
 	const n = (v: number) => v.toLocaleString();
@@ -41,7 +51,7 @@
 {:else if !data}
 	<div class="space-y-2 py-3">
 		{#each { length: 4 } as _, i (i)}
-			<div class="h-7 animate-pulse rounded bg-muted/60"></div>
+			<Skeleton class="h-7 rounded" />
 		{/each}
 	</div>
 {:else}
@@ -52,7 +62,7 @@
 				<div class="text-xs text-muted-foreground">
 					Against {data.baseline.engine_name}
 					{#if data.baseline.started_at}· {formatDateTime(data.baseline.started_at)}{/if}
-					· {data.baseline.status}
+					· {SCAN_STATUS_LABEL[data.baseline.status as ScanStatus]}
 				</div>
 			</div>
 			<span

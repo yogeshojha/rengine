@@ -4,20 +4,16 @@ from sqlalchemy import select
 
 from reports.base import RenderContext, Section
 from reports.config import SectionConfig, limit
-from shared.definitions.domains import PRIVATE_TLDS, registrable_domain
+from shared.definitions.domains import (
+    PRIVATE_TLDS,
+    owning_zone,
+    registrable_domain,
+    target_zone,
+)
+from shared.definitions.estate import provider_of
 from shared.definitions.reports import SectionGroup
 from shared.definitions.surface import SurfaceDimension
 from shared.models.http_asset import HttpAsset
-
-_VENDOR_HINTS = (
-    "amazonaws",
-    "cloudfront",
-    "akamai",
-    "azure",
-    "googleusercontent",
-    "fastly",
-    "sni.cloudflare",
-)
 
 
 class ScopeRecommendationsConfig(SectionConfig):
@@ -41,7 +37,7 @@ class ScopeRecommendationsSection(Section):
         scan_id = ctx.data.scan_for(SurfaceDimension.WEB_ASSETS.value)
         if scan_id is None:
             return None
-        own = registrable_domain(ctx.data.subject) or ctx.data.subject
+        own = {target_zone(ctx.data.subject)}
         rows = ctx.data.session.execute(
             select(HttpAsset.host, HttpAsset.tls_sans)
             .where(HttpAsset.scan_id == scan_id, HttpAsset.tls_sans.is_not(None))
@@ -55,11 +51,11 @@ class ScopeRecommendationsSection(Section):
                 if not cleaned or "." not in cleaned:
                     continue
                 apex = registrable_domain(cleaned)
-                if not apex or apex == own:
+                if not apex or owning_zone(apex, own) is not None:
                     continue
                 if apex.rsplit(".", 1)[-1] in PRIVATE_TLDS:
                     continue
-                if any(hint in apex for hint in _VENDOR_HINTS):
+                if provider_of(cleaned):
                     continue
                 entry = found.setdefault(
                     apex, {"domain": apex, "names": set(), "seen_on": set()}
@@ -82,6 +78,5 @@ class ScopeRecommendationsSection(Section):
         suggestions.sort(key=lambda row: -row["count"])
         return {
             "rows": suggestions[: cfg.max_rows],
-            "own": own,
             "total": len(suggestions),
         }

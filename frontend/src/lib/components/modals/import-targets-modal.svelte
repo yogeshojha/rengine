@@ -18,8 +18,6 @@
 	import ImportPreview from '$lib/components/targets/import-preview.svelte';
 	import ImportResults from '$lib/components/targets/import-results.svelte';
 	import { targetsApi } from '$lib/api/targets';
-	import { organizationsApi } from '$lib/api/organizations';
-	import { tagsApi } from '$lib/api/tags';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { targetsStore } from '$lib/stores/targets.svelte';
 	import { scansStore } from '$lib/stores/scans.svelte';
@@ -31,13 +29,14 @@
 	import QuickScanFields from '$lib/components/scans/quick-scan-fields.svelte';
 	import { MAX_SCAN_BATCH } from '$lib/types/scan';
 	import { ROUTES } from '$lib/config/routes';
-	import { SELECT_NONE } from '$lib/constants';
+	import { MAX_TARGETS_IMPORT, SELECT_NONE } from '$lib/constants';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 	import {
 		quickScanPlan,
 		rememberQuickScanChoice,
 		type QuickScanSelection
 	} from '$lib/utilities/quick-scan';
+	import { plural } from '$lib/utilities/strings';
 	import { goto } from '$app/navigation';
 	import type {
 		TargetImportItem,
@@ -53,6 +52,13 @@
 
 	type ImportMode = 'input' | 'preview' | 'results';
 	type ImportMethod = 'manual' | 'json' | 'csv';
+
+	// CSV columns, mirroring api/app/services/target.py
+	const CSV_TARGET = ['target_value', 'target', 'value', 'domain', 'ip'];
+	const CSV_TAGS = ['tags', 'tag'];
+	const CSV_ORGANIZATIONS = ['organizations', 'organization', 'orgs', 'org'];
+	const CSV_NAME = ['display_name', 'name'];
+	const CSV_POSITIONS = ['target_value', 'tags', 'organizations', 'display_name'];
 
 	let mode = $state<ImportMode>('input');
 	let activeTab = $state<ImportMethod>('manual');
@@ -93,14 +99,6 @@
 
 	let busy = $derived(isProcessing || isImporting);
 
-	let organizationItems = $derived(
-		targetsStore.organizations.map((org) => ({ id: org.id, label: org.name }))
-	);
-
-	let tagItems = $derived(
-		targetsStore.tags.map((tag) => ({ id: tag.id, label: tag.name, color: tag.color }))
-	);
-
 	let appliedOrganizations = $derived(selectedOrganizations.map((o) => o.label));
 	let appliedTags = $derived(selectedTags.map((t) => t.label));
 
@@ -116,14 +114,13 @@
 		const projectSlug = projectsStore.activeProject?.slug;
 		if (!projectSlug) return;
 
-		try {
-			const newOrg = await organizationsApi.create({ name, project_slug: projectSlug });
-			selectedOrganizations = [...selectedOrganizations, { id: newOrg.id, label: newOrg.name }];
-			await targetsStore.fetchOrganizations();
-			toast.success(`Organization "${name}" created`);
-		} catch {
+		const newOrg = await targetsStore.createOrganization(projectSlug, name);
+		if (!newOrg) {
 			toast.error('Organization not created');
+			return;
 		}
+		selectedOrganizations = [...selectedOrganizations, { id: newOrg.id, label: newOrg.name }];
+		toast.success(`Organization "${name}" created`);
 	}
 
 	function handleSelectTag(item: { id: string; label: string; color: string }) {
@@ -138,14 +135,13 @@
 		const projectSlug = projectsStore.activeProject?.slug;
 		if (!projectSlug) return;
 
-		try {
-			const newTag = await tagsApi.create({ name, color, project_slug: projectSlug });
-			selectedTags = [...selectedTags, { id: newTag.id, label: newTag.name, color: newTag.color }];
-			await targetsStore.fetchTags();
-			toast.success(`Tag "${name}" created`);
-		} catch {
+		const newTag = await targetsStore.createTag(projectSlug, name, color);
+		if (!newTag) {
 			toast.error('Tag not created');
+			return;
 		}
+		selectedTags = [...selectedTags, { id: newTag.id, label: newTag.name, color: newTag.color }];
+		toast.success(`Tag "${name}" created`);
 	}
 
 	function merge(existing: string[] | undefined, applied: string[]) {
@@ -180,6 +176,15 @@
 		if (open) untrack(resetModal);
 	});
 
+	$effect(() => {
+		const projectSlug = projectsStore.activeProject?.slug;
+		if (open && projectSlug)
+			untrack(() => {
+				void targetsStore.fetchOrganizations(projectSlug);
+				void targetsStore.fetchTags(projectSlug);
+			});
+	});
+
 	function handleOpenChange(isOpen: boolean) {
 		open = isOpen;
 	}
@@ -195,18 +200,18 @@
 	function parseJsonInput(text: string): TargetImportItem[] {
 		try {
 			const parsed = JSON.parse(text);
+			const list: unknown[] | null = Array.isArray(parsed)
+				? parsed
+				: Array.isArray(parsed?.targets)
+					? parsed.targets
+					: null;
+			if (!list) throw new Error('Invalid JSON format');
 
-			if (Array.isArray(parsed)) {
-				return parsed.map((item) =>
+			return list
+				.map((item) =>
 					typeof item === 'string' ? { target_value: item } : (item as TargetImportItem)
-				);
-			}
-
-			if (parsed.targets && Array.isArray(parsed.targets)) {
-				return parsed.targets as TargetImportItem[];
-			}
-
-			throw new Error('Invalid JSON format');
+				)
+				.filter((item) => typeof item?.target_value === 'string' && item.target_value.trim());
 		} catch {
 			throw new Error(
 				'Invalid JSON. Expected an array of targets or an object with a "targets" array.'
@@ -214,68 +219,67 @@
 		}
 	}
 
-	async function parseCsvFile(file: File): Promise<TargetImportItem[]> {
-		return new Promise((resolve, reject) => {
-			const reader = new FileReader();
+	function csvRows(text: string): string[][] {
+		const rows: string[][] = [];
+		let row: string[] = [];
+		let cell = '';
+		let quoted = false;
+		for (let i = 0; i < text.length; i++) {
+			const ch = text[i];
+			if (quoted) {
+				if (ch !== '"') cell += ch;
+				else if (text[i + 1] === '"') {
+					cell += '"';
+					i++;
+				} else quoted = false;
+			} else if (ch === '"' && cell === '') {
+				quoted = true;
+			} else if (ch === ',') {
+				row.push(cell);
+				cell = '';
+			} else if (ch === '\n' || ch === '\r') {
+				if (ch === '\r' && text[i + 1] === '\n') i++;
+				rows.push(row.length || cell ? [...row, cell] : []);
+				row = [];
+				cell = '';
+			} else {
+				cell += ch;
+			}
+		}
+		if (row.length || cell) rows.push([...row, cell]);
+		return rows;
+	}
 
-			reader.onload = (e) => {
-				try {
-					const text = e.target?.result as string;
-					const lines = text.split('\n').filter((line) => line.trim());
+	function parseCsv(text: string): TargetImportItem[] {
+		const rows = csvRows(text);
+		if (rows.length === 0) return [];
+		const header = rows[0].map((c) => c.trim().toLowerCase());
+		const named = header.some((c) => CSV_TARGET.includes(c));
+		const columns = named ? header : CSV_POSITIONS;
+		const value = (row: string[], keys: string[]) => {
+			const key = keys.find((k) => columns.includes(k));
+			return key === undefined ? '' : (row[columns.indexOf(key)] ?? '').trim();
+		};
+		const list = (row: string[], keys: string[]) =>
+			value(row, keys)
+				.split(',')
+				.map((part) => part.trim())
+				.filter(Boolean);
 
-					if (lines.length === 0) {
-						reject(new Error('CSV file is empty'));
-						return;
-					}
-
-					const firstLine = lines[0].toLowerCase();
-					const hasHeaders =
-						firstLine.includes('target') ||
-						firstLine.includes('domain') ||
-						firstLine.includes('value') ||
-						firstLine.includes('ip');
-
-					const dataLines = hasHeaders ? lines.slice(1) : lines;
-
-					const items = dataLines.map((line) => {
-						const parts = line.split(',').map((p) => p.trim().replace(/^["']|["']$/g, ''));
-
-						const item: TargetImportItem = {
-							target_value: parts[0]
-						};
-
-						if (parts[1]) {
-							const tags = parts[1]
-								.split(',')
-								.map((t) => t.trim())
-								.filter(Boolean);
-							if (tags.length > 0) item.tags = tags;
-						}
-
-						if (parts[2]) {
-							const orgs = parts[2]
-								.split(',')
-								.map((o) => o.trim())
-								.filter(Boolean);
-							if (orgs.length > 0) item.organizations = orgs;
-						}
-
-						if (parts[3]) {
-							item.display_name = parts[3];
-						}
-
-						return item;
-					});
-
-					resolve(items.filter((item) => item.target_value));
-				} catch {
-					reject(new Error('CSV file not read'));
-				}
-			};
-
-			reader.onerror = () => reject(new Error('File not read'));
-			reader.readAsText(file);
-		});
+		const items: TargetImportItem[] = [];
+		for (const row of named ? rows.slice(1) : rows) {
+			const target_value = value(row, CSV_TARGET);
+			if (!target_value) continue;
+			const item: TargetImportItem = { target_value };
+			const tags = list(row, CSV_TAGS);
+			const organizations = list(row, CSV_ORGANIZATIONS);
+			const display_name = value(row, CSV_NAME);
+			if (tags.length > 0) item.tags = tags;
+			if (organizations.length > 0) item.organizations = organizations;
+			if (display_name) item.display_name = display_name;
+			items.push(item);
+		}
+		return items;
 	}
 
 	async function readTextFile(file: File): Promise<string> {
@@ -321,7 +325,7 @@
 				toast.error('Select a CSV file');
 				return [];
 			}
-			items = await parseCsvFile(csvFile);
+			items = parseCsv(await readTextFile(csvFile));
 		}
 
 		if (items.length === 0) {
@@ -329,30 +333,32 @@
 			return [];
 		}
 
-		if (items.length > 500) {
-			toast.error('Maximum 500 targets per import');
+		if (items.length > MAX_TARGETS_IMPORT) {
+			toast.error(`Maximum ${MAX_TARGETS_IMPORT} targets per import`);
 			return [];
 		}
 
 		return items;
 	}
 
-	async function validateItem(item: TargetImportItem): Promise<TargetPreviewItem> {
-		const withApplied = {
+	function withApplied(item: TargetImportItem) {
+		return {
 			...item,
 			organizations: merge(item.organizations, appliedOrganizations),
 			tags: merge(item.tags, appliedTags)
 		};
+	}
 
+	async function validateChunk(chunk: TargetImportItem[]): Promise<TargetPreviewItem[]> {
 		try {
-			const result = await targetsApi.validate({ target_value: item.target_value });
-			return {
-				...withApplied,
-				target_type: result.valid ? result.target_type : null,
-				error: result.valid ? undefined : result.error || 'Invalid target'
-			};
+			const results = await targetsApi.validateBatch(chunk.map((item) => item.target_value));
+			return chunk.map((item, i) => ({
+				...withApplied(item),
+				target_type: results[i].valid ? results[i].target_type : null,
+				error: results[i].valid ? undefined : results[i].error || 'Invalid target'
+			}));
 		} catch {
-			return { ...withApplied, error: 'Validation failed' };
+			return chunk.map((item) => ({ ...withApplied(item), error: 'Target not validated' }));
 		}
 	}
 
@@ -369,13 +375,10 @@
 			}
 
 			validateTotal = items.length;
-			const CHUNK = 10;
 			const validated: TargetPreviewItem[] = [];
 
-			for (let i = 0; i < items.length; i += CHUNK) {
-				const chunk = items.slice(i, i + CHUNK);
-				const results = await Promise.all(chunk.map(validateItem));
-				validated.push(...results);
+			for (let i = 0; i < items.length; i += MAX_TARGETS_IMPORT) {
+				validated.push(...(await validateChunk(items.slice(i, i + MAX_TARGETS_IMPORT))));
 				validateDone = validated.length;
 			}
 
@@ -402,7 +405,7 @@
 
 			await executeImport(items);
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Import failed');
+			toast.error(e instanceof Error ? e.message : 'Targets not imported');
 			isImporting = false;
 		}
 	}
@@ -414,7 +417,7 @@
 			const validItems = previewItems.filter((item) => !item.error);
 			await executeImport(validItems);
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Import failed');
+			toast.error(e instanceof Error ? e.message : 'Targets not imported');
 			isImporting = false;
 		}
 	}
@@ -458,14 +461,14 @@
 			await targetsStore.refresh();
 
 			if (response.imported > 0) {
-				toast.success(`Imported ${response.imported} target${response.imported !== 1 ? 's' : ''}`);
+				toast.success(`${plural(response.imported, 'target')} imported`);
 				if (wantsScan) await launchImported();
 			} else if (wantsScan) {
 				toast.warning('No new targets imported. No scan queued.');
 			}
 
 			if (response.failed > 0) {
-				toast.warning(`${response.failed} target${response.failed !== 1 ? 's' : ''} not imported`);
+				toast.warning(`${plural(response.failed, 'target')} not imported`);
 			}
 		} finally {
 			isImporting = false;
@@ -508,7 +511,7 @@
 		if (scans && scans.length > 0) {
 			rememberQuickScanChoice(selection, contextId === SELECT_NONE ? null : contextId, presets);
 			queuedScans = scans.length;
-			toast.success(`${scans.length} scan${scans.length !== 1 ? 's' : ''} queued`);
+			toast.success(`${plural(scans.length, 'scan')} queued`);
 		} else {
 			toast.error(
 				scansStore.error
@@ -586,8 +589,8 @@
 								<Label>Target values</Label>
 								<FileUpload
 									accept=".txt"
-									bind:file={manualFile}
-									bind:textValue={manualText}
+									file={manualFile}
+									textValue={manualText}
 									bind:mode={manualMode}
 									onFileSelect={(file) => (manualFile = file)}
 									onFileRemove={() => (manualFile = null)}
@@ -606,8 +609,8 @@ https://app.example.com"
 								<Label>JSON</Label>
 								<FileUpload
 									accept=".json"
-									bind:file={jsonFile}
-									bind:textValue={jsonText}
+									file={jsonFile}
+									textValue={jsonText}
 									bind:mode={jsonMode}
 									onFileSelect={(file) => (jsonFile = file)}
 									onFileRemove={() => (jsonFile = null)}
@@ -623,10 +626,9 @@ https://app.example.com"
 								<Label>CSV file</Label>
 								<FileUpload
 									accept=".csv"
-									bind:file={csvFile}
+									file={csvFile}
 									onFileSelect={(file) => (csvFile = file)}
 									onFileRemove={() => (csvFile = null)}
-									onTextChange={() => {}}
 									showTextInput={false}
 								/>
 								<ImportHelpText type="csv" />
@@ -651,7 +653,7 @@ https://app.example.com"
 						<div class="space-y-2">
 							<Label class="text-xs text-muted-foreground">Organizations</Label>
 							<MultiSelectCombobox
-								items={organizationItems}
+								items={targetsStore.organizationItems}
 								selected={selectedOrganizations}
 								onSelect={handleSelectOrganization}
 								onRemove={handleRemoveOrganization}
@@ -664,7 +666,7 @@ https://app.example.com"
 						<div class="space-y-2">
 							<Label class="text-xs text-muted-foreground">Tags</Label>
 							<TagMultiSelect
-								items={tagItems}
+								items={targetsStore.tagItems}
 								selected={selectedTags}
 								onSelect={handleSelectTag}
 								onRemove={handleRemoveTag}
@@ -676,7 +678,7 @@ https://app.example.com"
 				</div>
 			{:else if mode === 'preview'}
 				<div class="p-6 space-y-4">
-					<ImportPreview items={previewItems} maxHeight="400px" />
+					<ImportPreview items={previewItems} />
 				</div>
 			{:else if mode === 'results' && importResults}
 				<div class="p-6">
@@ -772,7 +774,7 @@ https://app.example.com"
 						</span>
 					{:else if queuedScans > 0}
 						<span class="text-xs text-muted-foreground">
-							{queuedScans} scan{queuedScans !== 1 ? 's' : ''} queued
+							{plural(queuedScans, 'scan')} queued
 						</span>
 					{/if}
 					<Button variant="outline" onclick={() => (open = false)} disabled={isImporting}>
@@ -783,7 +785,7 @@ https://app.example.com"
 						<Button onclick={viewScans} disabled={isImporting}>View scans</Button>
 					{:else if importedIds.length > 0}
 						<Button onclick={scanImported} disabled={isImporting}>
-							Scan {importedIds.length} target{importedIds.length !== 1 ? 's' : ''}
+							Scan {plural(importedIds.length, 'target')}
 						</Button>
 					{/if}
 				</div>

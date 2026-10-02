@@ -6,10 +6,6 @@ export const proxiesApi = {
 		return api.get<ProxyRead[]>('/proxies');
 	},
 
-	get: (id: string): Promise<ProxyRead> => {
-		return api.get<ProxyRead>(`/proxies/${id}`);
-	},
-
 	create: (data: ProxyCreate): Promise<ProxyRead> => {
 		return api.post<ProxyRead>('/proxies', data);
 	},

@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from shared.definitions.wordlists import (
-    BUILTIN_WORDLISTS,
     KIND_LABELS,
     MAX_WORDLIST_BYTES,
     WordlistOrigin,
@@ -18,71 +17,30 @@ from shared.models.wordlist import (
     Wordlist,
     WordlistRead,
     WordlistRejection,
-    WordlistUpdate,
     WordlistUploadRequest,
     WordlistUploadResult,
 )
 from shared.services.wordlists import (
     WordlistError,
-    builtin_root,
-    clean_words,
     delete_custom,
+    ensure_builtin,
+    prepare_custom,
+    read_lines,
     resolve_path,
-    store_custom,
+    write_custom,
 )
 from shared.utils.datetime import utc_now
 
 router = APIRouter(prefix="/wordlists", tags=["wordlists"])
 
 
-async def _index_builtin(session: AsyncSession) -> None:
-    """Shipped lists are indexed on read."""
-    root = builtin_root()
-    now = utc_now()
-    changed = False
-    for spec in BUILTIN_WORDLISTS:
-        path = root / spec.filename
-        if not path.is_file():
-            continue
-        words = len(clean_words(path.read_text(encoding="utf-8", errors="replace")))
-        row = await session.scalar(select(Wordlist).where(Wordlist.slug == spec.slug))
-        values = {
-            "name": spec.name,
-            "description": spec.description,
-            "origin": WordlistOrigin.BUILTIN.value,
-            "kind": spec.kind,
-            "filename": spec.filename,
-            "words": words,
-            "bytes": path.stat().st_size,
-            "updated_at": now,
-        }
-        if row is None:
-            session.add(Wordlist(slug=spec.slug, **values))
-            changed = True
-        elif row.words != words or row.bytes != values["bytes"]:
-            for key, value in values.items():
-                setattr(row, key, value)
-            session.add(row)
-            changed = True
-    if changed:
-        await session.commit()
-
-
-@router.get("/kinds", response_model=dict[str, str])
-async def wordlist_kinds(_current_user: CurrentUser):
-    return KIND_LABELS
-
-
 @router.get("", response_model=list[WordlistRead])
 async def list_wordlists(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
-    kind: Annotated[str | None, Query(description="Filter by kind")] = None,
 ):
-    await _index_builtin(session)
+    await session.run_sync(ensure_builtin)
     query = select(Wordlist).order_by(Wordlist.origin, Wordlist.name)
-    if kind:
-        query = query.where(Wordlist.kind == kind)
     rows = (await session.execute(query)).scalars().all()
     return [WordlistRead.model_validate(row, from_attributes=True) for row in rows]
 
@@ -98,7 +56,7 @@ async def upload_wordlists(
     kind = body.kind
     if kind not in KIND_LABELS:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Unknown wordlist kind. Kinds: {', '.join(sorted(KIND_LABELS))}.",
         )
     result = WordlistUploadResult()
@@ -112,7 +70,7 @@ async def upload_wordlists(
             )
             continue
         try:
-            filename, words = store_custom(item.filename, item.content)
+            filename, words = prepare_custom(item.filename, item.content)
         except (WordlistError, OSError) as exc:
             result.rejected.append(
                 WordlistRejection(filename=item.filename, reason=str(exc))
@@ -135,6 +93,13 @@ async def upload_wordlists(
                     filename=item.filename,
                     reason=f"The name {slug!r} is used by another wordlist.",
                 )
+            )
+            continue
+        try:
+            write_custom(filename, words)
+        except (WordlistError, OSError) as exc:
+            result.rejected.append(
+                WordlistRejection(filename=item.filename, reason=str(exc))
             )
             continue
 
@@ -189,38 +154,7 @@ async def preview_wordlist(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="The file for this wordlist is missing.",
         )
-    out: list[str] = []
-    with path.open(encoding="utf-8", errors="replace") as handle:
-        for line in handle:
-            word = line.strip()
-            if word and not word.startswith("#"):
-                out.append(word)
-            if len(out) >= limit:
-                break
-    return out
-
-
-@router.patch("/{wordlist_id}", response_model=WordlistRead)
-async def update_wordlist(
-    _current_user: CurrentUser,
-    session: Annotated[AsyncSession, Depends(get_session)],
-    wordlist_id: Annotated[UUID, Path(description="Wordlist ID")],
-    data: WordlistUpdate,
-):
-    row = await _get(session, wordlist_id)
-    if row.origin == WordlistOrigin.BUILTIN.value:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Default wordlists are read-only.",
-        )
-    for key, value in data.model_dump(exclude_unset=True).items():
-        if value is not None:
-            setattr(row, key, value)
-    row.updated_at = utc_now()
-    session.add(row)
-    await session.commit()
-    await session.refresh(row)
-    return WordlistRead.model_validate(row, from_attributes=True)
+    return read_lines(path, limit)
 
 
 @router.delete("/{wordlist_id}", status_code=status.HTTP_204_NO_CONTENT)

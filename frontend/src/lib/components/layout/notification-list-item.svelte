@@ -5,18 +5,10 @@
 	import X from '@lucide/svelte/icons/x';
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
 	import { relativeTime } from '$lib/utilities/dates.js';
-	import { headline } from '$lib/utilities/notifications';
+	import { headline, SEVERITY_TILE_CLASS } from '$lib/utilities/notifications';
 	import { getTypeIcon } from '$lib/utilities/notification-icons';
 	import { NOTIFICATION_TYPE_LABELS, type Notification } from '$lib/types/notification';
-	import type { MessageLevel } from '$lib/types/message-level';
 	import { cn } from '$lib/utils.js';
-
-	const TILE_CLASS: Record<MessageLevel, string> = {
-		info: 'bg-muted text-muted-foreground',
-		success: 'bg-muted text-muted-foreground',
-		warning: 'bg-warning/10 text-warning',
-		error: 'bg-destructive/10 text-destructive'
-	};
 
 	interface Props {
 		notification: Notification;
@@ -65,7 +57,7 @@
 		class={cn(
 			'mt-0.5 flex shrink-0 items-center justify-center rounded-md',
 			full ? 'size-8' : 'size-7',
-			TILE_CLASS[notification.severity]
+			SEVERITY_TILE_CLASS[notification.severity]
 		)}
 	>
 		<TypeIcon class={full ? 'size-4' : 'size-3.5'} />
@@ -75,8 +67,7 @@
 		<div class="flex items-start gap-2">
 			<p
 				class={cn(
-					'min-w-0 flex-1 leading-snug',
-					full ? 'text-sm' : 'text-sm',
+					'min-w-0 flex-1 text-sm leading-snug',
 					unread ? 'font-medium text-foreground' : 'text-foreground/85',
 					!full && 'line-clamp-1'
 				)}
@@ -112,7 +103,7 @@
 					class="inline-flex items-center gap-0.5 text-2xs font-medium text-primary hover:text-primary/80"
 					onclick={(e) => onAction(notification.id, e)}
 				>
-					{meta.action_label ?? 'Open'}
+					Open
 					<ArrowUpRight class="size-3" />
 				</button>
 			{/if}

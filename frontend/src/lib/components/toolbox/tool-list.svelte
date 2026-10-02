@@ -73,7 +73,7 @@
 								)}
 							>
 								<Icon class="size-3.5 shrink-0" />
-								<span class="min-w-0 flex-1 truncate">{tool.title}</span>
+								<span class="min-w-0 flex-1">{tool.title}</span>
 								<span class="shrink-0 text-2xs {MODE_CLASS[mode]}">{MODE_LABELS[mode]}</span>
 							</button>
 						{/snippet}

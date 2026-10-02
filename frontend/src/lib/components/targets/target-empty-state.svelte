@@ -9,11 +9,9 @@
 		hasFilters: boolean;
 		onAddTarget: () => void;
 		onClearFilters?: () => void;
-		onImport?: () => void;
-		filterSummary?: string;
 	}
 
-	let { hasFilters, onAddTarget, onClearFilters, onImport, filterSummary }: Props = $props();
+	let { hasFilters, onAddTarget, onClearFilters }: Props = $props();
 </script>
 
 <Empty.Root>
@@ -26,15 +24,11 @@
 			{/if}
 		</Empty.Media>
 		<Empty.Title>{hasFilters ? 'No matching targets' : 'No targets'}</Empty.Title>
-		<Empty.Description>
-			{#if hasFilters}
-				{#if filterSummary}
-					<p class="mt-1 text-xs">Filtered by: {filterSummary}</p>
-				{/if}
-			{:else}
+		{#if !hasFilters}
+			<Empty.Description>
 				<p>Add a domain, IP address, IP range, URL or ASN.</p>
-			{/if}
-		</Empty.Description>
+			</Empty.Description>
+		{/if}
 	</Empty.Header>
 	<Empty.Content>
 		<div class="flex gap-2">
@@ -42,9 +36,6 @@
 				<Button variant="outline" onclick={onClearFilters}>Clear filters</Button>
 			{:else}
 				<Button onclick={onAddTarget}>Add target</Button>
-				{#if onImport}
-					<Button variant="outline" onclick={onImport}>Import targets</Button>
-				{/if}
 			{/if}
 		</div>
 	</Empty.Content>

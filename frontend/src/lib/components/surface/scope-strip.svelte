@@ -68,9 +68,6 @@
 			<Popover.Content class="w-96 p-0" align="start">
 				<div class="border-b px-3 py-2">
 					<p class="text-sm font-medium">Coverage</p>
-					<p class="text-xs text-muted-foreground">
-						The most recent scan per target that produced {coverage.noun_plural}.
-					</p>
 				</div>
 				<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-80">
 					<div class="divide-y">
@@ -109,7 +106,6 @@
 							<p class="text-2xs font-medium text-warning">
 								{uncovered.length} not scanned for {coverage.noun_plural}
 							</p>
-							<p class="mt-0.5 text-2xs text-muted-foreground">Absent from the counts above.</p>
 						</div>
 						<div class="divide-y">
 							{#each uncovered as row (row.target_id)}

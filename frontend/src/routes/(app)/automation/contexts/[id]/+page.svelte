@@ -23,24 +23,27 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import * as Empty from '$lib/components/ui/empty';
-	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import * as Kbd from '$lib/components/ui/kbd';
 	import * as Resizable from '$lib/components/ui/resizable';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
-	import LoadingButton from '@/components/loading-button.svelte';
-	import UnsavedChangesDialog from '@/components/unsaved-changes-dialog.svelte';
-	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
+	import LoadingButton from '$lib/components/loading-button.svelte';
+	import Hint from '$lib/components/hint.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
+	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 
 	import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { proxiesStore } from '$lib/stores/proxies.svelte';
+	import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
 	import { scanContextsApi } from '$lib/api/scan-contexts';
 	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
+	import { MOD_KEY } from '$lib/utils';
 
 	import ContextSections from '$lib/components/contexts/context-sections.svelte';
 	import ContextEffect from '$lib/components/contexts/context-effect.svelte';
@@ -69,7 +72,6 @@
 	let contextId = $derived(page.params.id);
 	let isNew = $derived(contextId === 'new');
 	const isNarrow = new IsMobile(1100);
-	const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
 	let loaded = $state<ScanContextRead | null>(null);
 	let draft = $state<Draft | null>(null);
@@ -119,14 +121,16 @@
 			: null
 	);
 
+	const isAdmin = $derived(Boolean(auth.user?.is_superuser));
+
 	$effect(() => {
-		if (!proxiesStore.hasFetched) untrack(() => proxiesStore.fetch());
+		if (isAdmin && !proxiesStore.hasFetched) untrack(() => proxiesStore.fetch());
 	});
 
 	let proxyPreset = false;
 	$effect(() => {
 		const fallback = proxiesStore.defaultId;
-		if (!isNew || !draft || proxyPreset || !proxiesStore.hasFetched) return;
+		if (!isAdmin || !isNew || !draft || proxyPreset || !proxiesStore.hasFetched) return;
 		proxyPreset = true;
 		if (fallback && !draft.proxy_id) {
 			untrack(() => {
@@ -147,6 +151,13 @@
 
 	$effect(() => {
 		if (isNew && nameInputEl) nameInputEl.focus();
+	});
+
+	$effect(() => {
+		const current = loaded;
+		if (!current) return;
+		breadcrumbStore.set(current.id, current.name);
+		return () => breadcrumbStore.remove(current.id);
 	});
 
 	beforeNavigate((nav) => {
@@ -285,7 +296,7 @@
 			if (isNew) {
 				const created = await scanContextsStore.createContext(
 					project.id,
-					buildContextPayload(draft!, touchedSecrets)
+					buildContextPayload(draft!, touchedSecrets, isAdmin)
 				);
 				if (created) {
 					toast.success('Context created');
@@ -300,7 +311,7 @@
 					toast.error(scanContextsStore.error ?? 'Context not created');
 				}
 			} else {
-				const update: ScanContextUpdate = buildContextPayload(draft!, touchedSecrets);
+				const update: ScanContextUpdate = buildContextPayload(draft!, touchedSecrets, isAdmin);
 				const updated = await scanContextsStore.updateContext(contextId!, project.id, update);
 				if (updated) {
 					loaded = updated;
@@ -388,8 +399,8 @@
 	<section class="side">
 		<div class="side-head">
 			<GitCompare size={13} class="text-muted-foreground" />
-			<span class="side-title">Effect on an engine</span>
-			<span class="side-sub">Engine settings this context overrides at scan time</span>
+			<span class="side-title text-xs">Effect on an engine</span>
+			<span class="side-sub text-2xs">Engine settings this context overrides at scan time</span>
 		</div>
 		<div class="side-body">
 			<ContextEffect {draft} />
@@ -445,16 +456,11 @@
 						: 'border-transparent bg-transparent shadow-none hover:border-input focus-visible:border-input focus-visible:bg-background dark:bg-transparent'}"
 				/>
 				{#if hasUnsavedChanges}
-					<Tooltip.Root>
-						<Tooltip.Trigger>
-							{#snippet child({ props })}
-								<span {...props} class="dot" aria-label="Unsaved changes"></span>
-							{/snippet}
-						</Tooltip.Trigger>
-						<Tooltip.Content class="text-xs">
-							{isNew ? 'Not saved' : 'Unsaved changes'}
-						</Tooltip.Content>
-					</Tooltip.Root>
+					<Hint text={isNew ? 'Not saved' : 'Unsaved changes'}>
+						{#snippet child(props)}
+							<span {...props} class="dot" aria-label="Unsaved changes"></span>
+						{/snippet}
+					</Hint>
 				{/if}
 			</div>
 
@@ -494,47 +500,42 @@
 							Run
 						</Button>
 					{/if}
-					<Tooltip.Root>
-						<Tooltip.Trigger>
-							{#snippet child({ props })}
-								<span {...props} class="inline-flex">
-									<LoadingButton
-										size="sm"
-										variant={hasUnsavedChanges ? 'default' : 'outline'}
-										class="h-8 gap-1.5 text-xs {isNew ? '' : 'rounded-l-none border-l-0'}"
-										loading={isSaving}
-										loadingLabel="Saving…"
-										disabled={!hasUnsavedChanges || !hasName || (!isValid && attemptedSave)}
-										onclick={handleSave}
-									>
-										{#if hasUnsavedChanges}
-											<Save size={13} />
-											{isNew ? 'Create' : 'Save'}
-											<Kbd.Group class="ml-0.5 hidden sm:inline-flex">
-												<Kbd.Root class="bg-primary-foreground/15 text-primary-foreground">
-													{isMac ? '⌘' : 'Ctrl'}
-												</Kbd.Root>
-												<Kbd.Root class="bg-primary-foreground/15 text-primary-foreground">
-													S
-												</Kbd.Root>
-											</Kbd.Group>
-										{:else}
-											<Check size={13} />
-											Saved
-										{/if}
-									</LoadingButton>
-								</span>
-							{/snippet}
-						</Tooltip.Trigger>
-						{#if validationIssue}
-							<Tooltip.Content class="text-xs">{validationIssue.message}</Tooltip.Content>
-						{/if}
-					</Tooltip.Root>
+					<Hint text={validationIssue?.message}>
+						{#snippet child(props)}
+							<span {...props} class="inline-flex">
+								<LoadingButton
+									size="sm"
+									variant={hasUnsavedChanges ? 'default' : 'outline'}
+									class="h-8 gap-1.5 text-xs {isNew ? '' : 'rounded-l-none border-l-0'}"
+									loading={isSaving}
+									loadingLabel="Saving…"
+									disabled={!hasUnsavedChanges || !hasName || (!isValid && attemptedSave)}
+									onclick={handleSave}
+								>
+									{#if hasUnsavedChanges}
+										<Save size={13} />
+										{isNew ? 'Create' : 'Save'}
+										<Kbd.Group class="ml-0.5 hidden sm:inline-flex">
+											<Kbd.Root class="bg-primary-foreground/15 text-primary-foreground">
+												{MOD_KEY}
+											</Kbd.Root>
+											<Kbd.Root class="bg-primary-foreground/15 text-primary-foreground">
+												S
+											</Kbd.Root>
+										</Kbd.Group>
+									{:else}
+										<Check size={13} />
+										Saved
+									{/if}
+								</LoadingButton>
+							</span>
+						{/snippet}
+					</Hint>
 				</ButtonGroup.Root>
 			</div>
 		</header>
 
-		<div class="summary">
+		<div class="summary text-xs">
 			<ContextFacets context={draft} {proxyName} variant="inline" class="min-w-0 flex-1" />
 			{#if showIssue && validationIssue}
 				<span class="issue"><AlertTriangle size={12} /> {validationIssue.message}</span>
@@ -594,9 +595,7 @@
 	<DeleteConfirmationDialog
 		bind:open={showDeleteDialog}
 		title="Delete context"
-		description={loaded?.usage?.schedules
-			? `Context ${draft?.name ?? ''} is removed. ${loaded.usage.schedules} schedule${loaded.usage.schedules === 1 ? '' : 's'} that use it stop launching.`
-			: `Context ${draft?.name ?? ''} is removed.`}
+		description={`Context ${draft?.name ?? ''} is removed.`}
 		{isDeleting}
 		onOpenChange={(open) => (showDeleteDialog = open)}
 		onConfirm={handleDelete}
@@ -678,7 +677,6 @@
 		padding: 6px 16px;
 		border-bottom: 1px solid var(--border);
 		background: color-mix(in oklch, var(--muted) 45%, var(--background));
-		font-size: 12px;
 	}
 	.issue {
 		display: inline-flex;
@@ -748,11 +746,9 @@
 		border-bottom: 1px solid var(--border);
 	}
 	.side-title {
-		font-size: 12px;
 		font-weight: 600;
 	}
 	.side-sub {
-		font-size: 11px;
 		color: var(--muted-foreground);
 	}
 	.side-body {

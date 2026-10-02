@@ -19,6 +19,7 @@
 		type HygieneRow
 	} from '$lib/config/hygiene';
 	import type { HygieneSummary } from '$lib/utilities/scan-insights';
+	import { plural } from '$lib/utilities/strings';
 
 	interface Props {
 		summary: HygieneSummary | null;
@@ -29,8 +30,6 @@
 	let { summary, loading, onFilter }: Props = $props();
 
 	const MIN_METER = 1.5;
-	const plural = (n: number, one: string, many: string) =>
-		`${n.toLocaleString()} ${n === 1 ? one : many}`;
 
 	let breakdown = $derived(hygieneBreakdown(summary));
 	let warnings = $derived(breakdown.warnings);

@@ -18,9 +18,8 @@ from shared.definitions.connectors import (
 )
 from shared.definitions.vulnerabilities import SEVERITY_LABELS, Protocol
 from shared.services.scan_resolve import MASK
-from shared.utils.net import host_port
+from shared.utils.net import authority
 
-_DEFAULT_PORTS = {"http": 80, "https": 443}
 _BODY_METHODS = frozenset({"POST", "PUT", "PATCH"})
 _HEADER_LINE = re.compile(r"^([!#$%&'*+\-.^_`|~0-9A-Za-z]+):[ \t]*(.*)$")
 _CHARSET = re.compile(r"(charset=)\"?([^\";\s]+)\"?", re.IGNORECASE)
@@ -98,15 +97,6 @@ def request_target(url: str) -> str:
     return f"{path}?{quote(parts.query, safe=_QUERY_SAFE)}" if parts.query else path
 
 
-def authority(url: str) -> str:
-    """The Host header value: the port only when it is not the scheme's own."""
-    parts = urlsplit(url)
-    host = parts.hostname or ""
-    if parts.port and parts.port != _DEFAULT_PORTS.get(parts.scheme, 0):
-        return host_port(host, parts.port)
-    return host
-
-
 def with_body(message: str, body: str | None, content_type: str = _FORM) -> str:
     """The message with this body, its type stated once and its length exact."""
     head, _, _ = _split(message)
@@ -126,7 +116,6 @@ def build_request(
     method: str,
     url: str,
     *,
-    headers: dict[str, str] | None = None,
     body: str | None = None,
     content_type: str = _FORM,
 ) -> str:
@@ -137,7 +126,6 @@ def build_request(
         f"User-Agent: {HANDOFF_USER_AGENT}",
         "Accept: */*",
     ]
-    lines.extend(f"{name}: {value}" for name, value in (headers or {}).items())
     return with_body("\r\n".join(lines) + "\r\n\r\n", body, content_type)
 
 
@@ -193,11 +181,6 @@ def body_for(
         for name in names
     )
     return body, _FORM
-
-
-def form_body(params: list[str], samples: list[dict], skip: set[str]) -> str | None:
-    """name=value pairs for the parameters the URL does not already carry."""
-    return body_for(params, samples, skip)[0]
 
 
 def _query_names(url: str) -> set[str]:
@@ -268,13 +251,11 @@ def _note(*lines: str | None) -> str:
 def from_finding(finding, *, link: str | None = None) -> Handoff | None:
     """The request a scanner sent, or None for a finding with no HTTP exchange."""
     url = finding.url or finding.matched_at
-    request = request_message(finding.request)
-    if request is None:
-        if finding.protocol != Protocol.HTTP.value or not str(url).startswith(
-            ("http://", "https://")
-        ):
-            return None
-        request = build_request("GET", url)
+    if finding.protocol != Protocol.HTTP.value or not str(url).startswith(
+        ("http://", "https://")
+    ):
+        return None
+    request = request_message(finding.request) or build_request("GET", url)
     method = request.split(" ", 1)[0].upper() or "GET"
     severity = SEVERITY_LABELS.get(finding.severity, finding.severity)
     cves = ", ".join(finding.cve_ids or []) or None

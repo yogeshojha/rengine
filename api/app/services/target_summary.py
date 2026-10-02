@@ -6,7 +6,6 @@ from sqlalchemy import Select, cast, func, not_, select
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.asset_query.predicates import vuln_suppressed
 from app.services.scan import ScanService
 from app.services.surface_scope import TABLES
 from shared.definitions.ports import SENSITIVE_PORTS
@@ -36,7 +35,8 @@ from shared.models.target_summary import (
     TargetSummaryRead,
 )
 from shared.models.vulnerability import SeverityCount, Vulnerability
-from shared.services.scan_scope import census_only, covering_stages
+from shared.services.asset_query import vuln_suppressed
+from shared.services.scan_scope import census_only, covering_stages, covers
 from shared.services.schedule_timing import describe_schedule
 
 _MAX_RUNS = 25
@@ -60,7 +60,6 @@ class TargetSummaryService:
             1 for r in runs if r.status == ScanStatus.FAILED.value
         )
         summary.first_scan_at = _started(runs[-1])
-        summary.last_scan_at = _started(runs[0])
         completed = [r for r in runs if r.status == ScanStatus.COMPLETED.value]
         summary.last_completed_at = completed[0].completed_at if completed else None
 
@@ -79,9 +78,7 @@ class TargetSummaryService:
         if service_scan is not None:
             summary.sensitive_services = await self._sensitive(service_scan.id)
 
-        total, first_seen = await self._inventory(target_id)
-        summary.inventory_total = total
-        summary.inventory_first_seen = first_seen
+        summary.inventory_total = await self._inventory(target_id)
         summary.monitoring = await self._monitoring(target_id, project_id)
         return summary
 
@@ -116,7 +113,7 @@ class TargetSummaryService:
     async def _covered(
         self, runs: list[Scan], counts: dict[str, dict[UUID, int]]
     ) -> dict[str, list[UUID]]:
-        """Per dimension, the scans that ran it, newest first — rows count as proof."""
+        """Per dimension, the scans that ran it or hold its rows, newest first."""
         ids = [r.id for r in runs]
         result = await self.session.execute(
             select(ScanActivity.scan_id, ScanActivity.name).where(
@@ -128,8 +125,16 @@ class TargetSummaryService:
         for scan_id, name in result.all():
             ran[scan_id].add(name)
 
+        vuln = SurfaceDimension.VULNERABILITIES.value
+        vuln_covered = set(
+            (
+                await self.session.execute(
+                    select(Scan.id).where(Scan.id.in_(ids), covers(Vulnerability, vuln))
+                )
+            ).scalars()
+        )
         by_dimension = covering_stages()
-        return {
+        out = {
             key: [
                 r.id
                 for r in runs
@@ -137,6 +142,8 @@ class TargetSummaryService:
             ]
             for key, names in by_dimension.items()
         }
+        out[vuln] = [r.id for r in runs if r.id in vuln_covered]
+        return out
 
     def _surface(
         self,
@@ -223,15 +230,13 @@ class TargetSummaryService:
         )
         return int(value or 0)
 
-    async def _inventory(self, target_id: UUID) -> tuple[int, datetime | None]:
-        row = await self.session.execute(
-            select(
-                func.count(func.distinct(Subdomain.name)),
-                func.min(Subdomain.discovered_at),
-            ).where(Subdomain.target_id == target_id)
+    async def _inventory(self, target_id: UUID) -> int:
+        total = await self.session.scalar(
+            select(func.count(func.distinct(Subdomain.name))).where(
+                Subdomain.target_id == target_id
+            )
         )
-        total, first_seen = row.one()
-        return int(total or 0), first_seen
+        return int(total or 0)
 
     async def _monitoring(
         self, target_id: UUID, project_id: UUID
@@ -250,12 +255,8 @@ class TargetSummaryService:
         if schedule is None:
             return None
         return TargetMonitoring(
-            schedule_id=schedule.id,
-            name=schedule.name,
             cadence=describe_schedule(schedule),
-            status=schedule.status,
             next_run_at=schedule.next_run_at,
-            last_run_at=schedule.last_run_at,
         )
 
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	activitySummary,
 	scanCountPills,
 	formatSeconds,
 	elapsedSeconds,
@@ -101,5 +102,17 @@ describe('scanStatusTabCount', () => {
 		expect(scanStatusTabCount('all', counts, 99)).toBe(99);
 		expect(scanStatusTabCount('active', counts, 99)).toBe(3);
 		expect(scanStatusTabCount('paused', counts, 99)).toBe(3);
+	});
+});
+
+describe('activitySummary', () => {
+	it('prints the labels the server sent, never the raw keys', () => {
+		expect(
+			activitySummary([
+				{ key: 'endpoints', value: 1200, label: 'endpoints' },
+				{ key: 'endpoints_new', value: 0, label: 'new endpoints' }
+			])
+		).toBe('1,200 endpoints · 0 new endpoints');
+		expect(activitySummary(undefined)).toBe('');
 	});
 });

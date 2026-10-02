@@ -22,7 +22,7 @@ class Input(ToolInput):
     )
     include_empty: bool = Field(
         default=False,
-        description="Include queries that matched nothing on this scan.",
+        description="Include queries that matched nothing.",
     )
 
 

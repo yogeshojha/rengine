@@ -6,6 +6,7 @@
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { SERVICE_CLASS_FILL, SERVICE_CLASS_LABELS } from '$lib/config/service-classes';
 	import type { DashboardExposure } from '$lib/types/dashboard';
+	import { plural } from '$lib/utilities/strings';
 
 	const routes = useScopedRoutes();
 
@@ -53,7 +54,6 @@
 
 <Cell
 	id="services"
-	title="Services"
 	description="By class"
 	href={routes.results(SPEC.tab, scanId)}
 	hrefLabel="{exposure.services.toLocaleString()} services"
@@ -114,14 +114,12 @@
 		</ul>
 	</div>
 	{#if top.length}
-		<RankedBars rows={top} dense />
+		<RankedBars rows={top} />
 	{/if}
 	{#snippet footer()}
 		{#if exposure.sensitive > 0}
 			<a href={link('is:sensitive')} class="font-medium text-foreground">
-				{exposure.sensitive.toLocaleString()} sensitive{#if !scanId}
-					on {exposure.sensitive_targets}
-					{exposure.sensitive_targets === 1 ? 'target' : 'targets'}{/if}
+				{exposure.sensitive.toLocaleString()} sensitive{#if !scanId}{` on ${plural(exposure.sensitive_targets, 'target')}`}{/if}
 			</a>
 		{:else}
 			<span>No sensitive service</span>

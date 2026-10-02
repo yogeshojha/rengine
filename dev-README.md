@@ -30,4 +30,5 @@ make lint    # ruff over every package, then prettier and eslint
 make test    # pytest in the api container, then svelte-check and vitest
 ```
 
-Both are what CI runs.
+Both are what CI runs. `make lint` runs the pinned ruff through `uvx`, which needs uv on the
+host. `make lint RUFF=ruff` uses a ruff already on the PATH.

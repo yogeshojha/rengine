@@ -12,6 +12,7 @@
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import Hint from '$lib/components/hint.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
+	import { plural } from '$lib/utilities/strings';
 	import { SCHEDULE_STATUS_LABELS, type ScanScheduleRead } from '$lib/types/scan-schedule';
 
 	interface Props {
@@ -39,20 +40,20 @@
 
 	function formatNext(iso: string | null): string {
 		if (!iso) return '—';
+		const date = new Date(iso);
 		return new Intl.DateTimeFormat(undefined, {
 			timeZone: schedule.timezone,
+			year: date.getFullYear() === new Date().getFullYear() ? undefined : 'numeric',
 			month: 'short',
 			day: 'numeric',
 			hour: '2-digit',
 			minute: '2-digit',
 			hourCycle: 'h23'
-		}).format(new Date(iso));
+		}).format(date);
 	}
 </script>
 
-<div
-	class="group relative flex flex-col rounded-lg border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
->
+<div class="flex flex-col rounded-lg border border-border bg-card p-4">
 	<div class="mb-2 flex items-start justify-between gap-2">
 		<div class="flex min-w-0 flex-1 items-center gap-2">
 			{#if onCheck}
@@ -138,10 +139,7 @@
 			variant="secondary"
 			class="rounded-sm border border-border bg-muted px-2 py-0.5 text-2xs font-medium text-muted-foreground"
 		>
-			{schedule.targets.length || schedule.target_ids.length} target{(schedule.targets.length ||
-				schedule.target_ids.length) === 1
-				? ''
-				: 's'}
+			{plural(schedule.targets.length || schedule.target_ids.length, 'target')}
 		</Badge>
 		<Badge
 			variant="secondary"
@@ -175,12 +173,12 @@
 		<span>
 			{#if isCompleted}
 				Completed
-			{:else}
+			{:else if !isPaused}
 				Next: {formatNext(schedule.next_run_at)}
 			{/if}
 		</span>
 		<span>
-			{schedule.total_run_count} run{schedule.total_run_count === 1 ? '' : 's'}
+			{plural(schedule.total_run_count, 'run')}
 			{#if schedule.last_run_at}
 				· {relativeTime(schedule.last_run_at)}
 			{/if}

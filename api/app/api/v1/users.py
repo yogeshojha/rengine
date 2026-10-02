@@ -8,6 +8,7 @@ from sqlmodel import select
 
 from app.api.deps import CurrentSuperuser, CurrentUser
 from app.core.database import get_session
+from app.core.ratelimit import revoke_user_tokens
 from app.core.security import hash_password
 from app.utils.validation import validate_password_strength, validate_username
 from shared.models.user import (
@@ -61,11 +62,11 @@ async def create_user(
         validate_password_strength(data.password, user_inputs=[email, username])
     except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(e)
         ) from e
     if "@" not in email:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Enter a valid email address.",
         )
     taken = await session.scalar(
@@ -111,33 +112,9 @@ async def update_user(
     if data.is_superuser is not None:
         user.is_superuser = data.is_superuser
     await session.commit()
+    if data.is_active is False:
+        await revoke_user_tokens(user.id)
     await session.refresh(user)
-    return user
-
-
-@router.get("/{user_id}", response_model=UserRead)
-async def get_user(
-    user_id: str,
-    session: Annotated[AsyncSession, Depends(get_session)],
-    current_user: CurrentSuperuser,  # noqa: ARG001
-):
-    try:
-        uuid_id = UUID(user_id)
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid user ID",
-        ) from e
-
-    result = await session.execute(select(User).where(User.id == uuid_id))
-    user = result.scalar_one_or_none()
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
-        )
-
     return user
 
 

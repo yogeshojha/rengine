@@ -21,6 +21,8 @@
 	import OverflowPopover from '../table/overflow-popover.svelte';
 	import SeverityMark from './severity-mark.svelte';
 	import { stopProp } from '$lib/utilities';
+	import { plural } from '$lib/utilities/strings';
+	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { formatShortDate } from '$lib/utilities/dates';
 	import { excludeToken, exactToken } from '$lib/utilities/scan-insights';
@@ -80,8 +82,8 @@
 	}: Props = $props();
 
 	const MAX_HOSTS = 3;
-	const plural = (n: number, one: string, many: string) =>
-		`${n.toLocaleString()} ${n === 1 ? one : many}`;
+	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
+	const IPS = SURFACE[SurfaceDimension.IPS];
 
 	let fill = $derived(SEVERITY_FILL[it.severity] ?? SEVERITY_FILL.unknown);
 	let tone = $derived(rowTone(expanded || checked, focused));
@@ -100,16 +102,16 @@
 		!allReviewed && (it.severity === Severity.CRITICAL || it.severity === Severity.HIGH)
 	);
 	let reach = $derived.by(() => {
-		const hosts = plural(it.hosts, 'web asset', 'web assets');
+		const hosts = plural(it.hosts, WEB.noun, WEB.nounPlural);
 		if (it.addresses > 0 && it.addresses < it.hosts) {
-			return `${hosts} on ${plural(it.addresses, 'address', 'addresses')}`;
+			return `${hosts} on ${plural(it.addresses, IPS.noun, IPS.nounPlural)}`;
 		}
 		return hosts;
 	});
 	let hostFilter = $derived(
 		it.sample_hosts.length === 1
 			? exactToken('host', it.sample_hosts[0])
-			: `host:[${it.sample_hosts.map((h) => JSON.stringify(h)).join(',')}]`
+			: `host=[${it.sample_hosts.map((h) => JSON.stringify(h)).join(',')}]`
 	);
 
 	function pivot(e: Event, token: string) {
@@ -204,7 +206,7 @@
 					<Hint
 						text={it.new_count === it.findings
 							? 'Not reported by an earlier scan of this target'
-							: `${it.new_count} of ${it.findings} findings are new since the previous scan`}
+							: `${it.new_count} of ${it.findings} findings not reported by an earlier scan of this target`}
 					>
 						{#snippet child(props)}
 							<button
@@ -442,9 +444,9 @@
 					<DropdownMenu.Item onclick={() => onFindings(exactToken('template', it.template_id))}>
 						<Filter class="mr-2 size-3.5" /> Open as findings list
 					</DropdownMenu.Item>
-					{#if it.sample_hosts.length}
+					{#if it.sample_hosts.length && it.sample_hosts.length === it.hosts}
 						<DropdownMenu.Item onclick={() => onHosts(hostFilter)}>
-							<Globe class="mr-2 size-3.5" /> Open affected web assets
+							<Globe class="mr-2 size-3.5" /> Open affected {WEB.nounPlural}
 						</DropdownMenu.Item>
 					{/if}
 					<DropdownMenu.Item onclick={() => onFilter(excludeToken('template', it.template_id))}>

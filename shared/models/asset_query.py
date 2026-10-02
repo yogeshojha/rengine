@@ -11,9 +11,7 @@ class QueryFieldSpec(BaseModel):
     values: list[str] = Field(default_factory=list)
     facet: str | None = None
     operators: list[str] = Field(default_factory=list)
-    free_text: bool = False
     unit: str | None = None
-    dynamic_sub: str | None = None
 
 
 class QueryOperatorSpec(BaseModel):
@@ -80,7 +78,6 @@ class QueryFlagSpec(BaseModel):
 
 class QuerySchema(BaseModel):
     max_length: int = 0
-    max_terms: int = 0
     noun: str = "host"
     noun_plural: str = "hosts"
     groups: list[str] = Field(default_factory=list)

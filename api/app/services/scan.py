@@ -1,8 +1,7 @@
 import asyncio
 import copy
 import logging
-from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import replace
 from datetime import datetime, timedelta
 from typing import Literal
@@ -12,30 +11,30 @@ from fastapi import HTTPException, status
 from pydantic import ValidationError
 from sqlalchemy import (
     Select,
+    and_,
     case,
     cast,
     column,
     exists,
-    false,
     func,
     not_,
     nullslast,
     or_,
     select,
     true,
+    tuple_,
     update,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from app.services import scan_deltas as stored_deltas
 from app.services.proxy import ProxyService
 from app.services.scan_context import ScanContextService
 from app.services.scan_engine import ScanEngineService, stage_effects
 from app.services.target import TargetService
-from shared.config import BaseAppSettings
 from shared.definitions.compare import Tone
-from shared.definitions.new_checks import NEW_CHECKS_KEY
 from shared.definitions.rescan import change_dimension, rescan_label
 from shared.definitions.surface import SurfaceDimension
 from shared.definitions.vulnerabilities import ACTIONABLE_SEVERITIES, Severity
@@ -49,6 +48,7 @@ from shared.enums.scan import (
     ScanScope,
     ScanStatus,
 )
+from shared.enums.scan_context import AuthType
 from shared.models.api_key import APIKey
 from shared.models.instance_settings import SINGLETON_KEY, InstanceSettings
 from shared.models.recheck import AssetRecheck
@@ -60,10 +60,9 @@ from shared.models.scan import (
     Scan,
     ScanBatchCreate,
     ScanCancelAll,
-    ScanChanges,
     ScanCreate,
+    ScanDaily,
     ScanDay,
-    ScanExportRow,
     ScanFacet,
     ScanFindings,
     ScanRead,
@@ -72,6 +71,7 @@ from shared.models.scan import (
     ScanTargetTrend,
     ScanTrendPoint,
     fold_pause,
+    run_seconds,
 )
 from shared.models.scan_activity import ScanActivity, ScanActivityRead
 from shared.models.scan_command import (
@@ -87,7 +87,6 @@ from shared.models.scan_preview import (
     PreviewToolStatus,
     ScanPreview,
 )
-from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.vulnerability import Vulnerability
 from shared.services import scan_admission, scan_deltas, target_seeds
@@ -97,6 +96,7 @@ from shared.services.celery_dispatch import (
     dispatch_scan_admission,
     dispatch_scan_finalize,
     dispatch_scan_resume,
+    dispatch_scan_run,
     revoke_scan_tasks,
 )
 from shared.services.launch_plan import AdHocEngine, plan_label
@@ -106,33 +106,22 @@ from shared.services.scan_resolve import (
     MASK,
     ResolvedScanConfig,
     _auth_summary,
+    is_sealed,
     mask_proxy_url,
     merge_engine_context,
     redact_command,
 )
 from shared.services.scan_scope import census_only, covering_stages, covers
-from shared.utils.datetime import utc_now
+from shared.utils.datetime import duration_text, utc_now
 from shared.utils.validation import unrecognised_target, validate_target
 from stages.registry import resume_point
 
 logger = logging.getLogger(__name__)
 
 _SECONDS_PER_MINUTE = 60
-_MINUTES_PER_HOUR = 60
 
 ScanSortKey = Literal["started", "duration", "status", "subdomains", "vulnerabilities"]
 ScanSortDir = Literal["asc", "desc"]
-
-_WINDOW_DELTAS = {
-    "6h": timedelta(hours=6),
-    "12h": timedelta(hours=12),
-    "24h": timedelta(days=1),
-    "7d": timedelta(days=7),
-    "14d": timedelta(days=14),
-    "30d": timedelta(days=30),
-}
-
-MAX_SCAN_EXPORT = 50000
 
 _RAN = (ScanActivityStatus.SUCCESS.value, ScanActivityStatus.PARTIAL.value)
 _SHORT = (ScanActivityStatus.PARTIAL.value, ScanActivityStatus.FAILED.value)
@@ -187,11 +176,13 @@ def _mask_config_headers(config: dict) -> dict:
     out["headers"] = {
         name: (MASK if value else value) for name, value in headers.items()
     }
-    if out.get("proxy_url"):
-        out["proxy_url"] = mask_proxy_url(out["proxy_url"])
+    proxy = out.get("proxy_url")
+    if proxy:
+        out["proxy_url"] = MASK if is_sealed(proxy) else mask_proxy_url(proxy)
     if isinstance(out.get("tool_options"), dict):
         out["tool_options"] = {
-            t: redact_command(v) for t, v in out["tool_options"].items()
+            t: MASK if is_sealed(v) else redact_command(v)
+            for t, v in out["tool_options"].items()
         }
 
     return out
@@ -209,42 +200,17 @@ _UNSETTLED_ACTIVITY_STATUSES = (
 )
 
 
-def _scan_duration(scan: Scan) -> float | None:
+def scan_duration(scan: Scan) -> float | None:
     if scan.started_at is None:
         return None
-    end = scan.completed_at or _open_end(scan)
-    if end is None:
-        return None
-    ran = (end - scan.started_at).total_seconds() - (scan.paused_seconds or 0.0)
-    return round(max(ran, 0.0), 1)
+    ran = run_seconds(scan, scan.completed_at or _open_end(scan))
+    return None if ran is None else round(ran, 1)
 
 
 def _open_end(scan: Scan) -> datetime | None:
     if scan.status == ScanStatus.RUNNING.value:
         return utc_now()
     return scan.paused_at if scan.status == ScanStatus.PAUSED.value else None
-
-
-def _human_duration(seconds: int) -> str:
-    if seconds < _SECONDS_PER_MINUTE:
-        return f"{seconds}s"
-    minutes = seconds // _SECONDS_PER_MINUTE
-    if minutes < _MINUTES_PER_HOUR:
-        return f"{minutes}m"
-    hours = minutes // _MINUTES_PER_HOUR
-    rem = minutes % _MINUTES_PER_HOUR
-    return f"{hours}h {rem}m" if rem else f"{hours}h"
-
-
-def _scans_writing_since(project_id: UUID, since, target_id: UUID | None = None):
-    """Scans that could have written a row at or after `since`."""
-    conds = [
-        Scan.project_id == project_id,
-        or_(Scan.completed_at.is_(None), Scan.completed_at >= since),
-    ]
-    if target_id is not None:
-        conds.append(Scan.target_id == target_id)
-    return select(Scan.id).where(*conds)
 
 
 class ScanService:
@@ -449,8 +415,8 @@ class ScanService:
         live = await self._live_runs(target.id, project_id)
         if live:
             warnings.append(
-                f"{target.target_value} already has {live} run"
-                f"{'' if live == 1 else 's'} in flight. Both send traffic to it."
+                f"{live} run{'' if live == 1 else 's'} in progress on "
+                f"{target.target_value}."
             )
 
         will_run = sum(
@@ -467,7 +433,9 @@ class ScanService:
         if resolved.global_rate_limit_ceiling is not None:
             rate_summary += f", ceiling {resolved.global_rate_limit_ceiling}/s per tool"
 
-        auth = context.auth if context is not None else {"auth_type": "none"}
+        auth = (
+            context.auth if context is not None else {"auth_type": AuthType.NONE.value}
+        )
         extra_headers = context.extra_headers if context is not None else []
         custom_header_names = [
             h.get("name") for h in (extra_headers or []) if h.get("name")
@@ -494,7 +462,7 @@ class ScanService:
             seed_count=0 if resolved.seed_only else len(resolved.seed_assets),
             proxy_name=proxy_name,
             estimated_duration_seconds=est_seconds,
-            estimated_duration_human=_human_duration(est_seconds),
+            estimated_duration_human=duration_text(est_seconds),
         )
 
         return ScanPreview(
@@ -602,8 +570,6 @@ class ScanService:
         return [self._to_read(scan) for scan in scans]
 
     def _dispatch_scan(self, scan: Scan) -> None:
-        from shared.services.celery_dispatch import dispatch_scan_run  # noqa: PLC0415
-
         dispatch_scan_run(str(scan.id), scan.run_epoch)
 
     def _dispatch_each(self, scans: list[Scan]) -> list[Scan]:
@@ -628,10 +594,14 @@ class ScanService:
 
     def _sort_expr(self, sort_by: ScanSortKey):
         if sort_by == "duration":
-            return func.extract(
-                "epoch",
-                func.coalesce(Scan.completed_at, utc_now()) - Scan.started_at,
-            ) - func.coalesce(Scan.paused_seconds, 0.0)
+            end = func.coalesce(
+                Scan.completed_at,
+                case((Scan.status == ScanStatus.PAUSED.value, Scan.paused_at)),
+                utc_now(),
+            )
+            return func.extract("epoch", end - Scan.started_at) - func.coalesce(
+                Scan.paused_seconds, 0.0
+            )
         if sort_by == "status":
             return _STATUS_RANK
         if sort_by == "subdomains":
@@ -645,46 +615,27 @@ class ScanService:
         m,
         statuses: list[str] | None,
         engines: list[str] | None,
-        contexts: list[str] | None,
-        time_range: str | None,
         include_focused: bool = False,
-        new_checks: bool | None = None,
     ) -> list:
         conds: list = []
-        follow_up = cast(m.execution_config, JSONB).has_key(NEW_CHECKS_KEY)
-        if new_checks is True:
-            conds.append(follow_up)
-        elif not include_focused:
+        if not include_focused:
             conds.append(census_only(m))
-        if new_checks is False:
-            conds.append(not_(func.coalesce(follow_up, false())))
         if statuses:
             conds.append(m.status.in_(statuses))
         if engines:
             conds.append(m.engine_name.in_(engines))
-        if contexts:
-            conds.append(m.context_name.in_(contexts))
-        if time_range and time_range in _WINDOW_DELTAS:
-            cutoff = utc_now() - _WINDOW_DELTAS[time_range]
-            conds.append(func.coalesce(m.started_at, m.created_at) >= cutoff)
         return conds
 
     def build_list_query(
         self,
         project_id: UUID,
-        target_id: UUID | None = None,
+        target_ids: list[UUID] | None = None,
         statuses: list[str] | None = None,
         engines: list[str] | None = None,
-        contexts: list[str] | None = None,
         search: str | None = None,
-        time_range: str | None = None,
         sort_by: ScanSortKey = "started",
         sort_dir: ScanSortDir = "desc",
-        schedule_id: UUID | None = None,
-        scheduled: bool | None = None,
         include_focused: bool = False,
-        parent_id: UUID | None = None,
-        new_checks: bool | None = None,
         severities: list[str] | None = None,
         short: bool | None = None,
         added: bool | None = None,
@@ -694,15 +645,7 @@ class ScanService:
     ) -> Select:
         query = select(Scan).where(
             Scan.project_id == project_id,
-            *self._filter_conditions(
-                Scan,
-                statuses,
-                engines,
-                contexts,
-                time_range,
-                include_focused or parent_id is not None,
-                new_checks,
-            ),
+            *self._filter_conditions(Scan, statuses, engines, include_focused),
         )
         started = func.coalesce(Scan.started_at, Scan.created_at)
         if started_from is not None:
@@ -728,24 +671,19 @@ class ScanService:
             )
             query = query.where(fell_short if short else not_(fell_short))
         if added is not None:
-            grew = exists(
-                select(1).where(
-                    ScanDelta.scan_id == Scan.id,
-                    ScanDelta.dimension == SurfaceDimension.WEB_ASSETS.value,
-                    ScanDelta.first_seen > 0,
-                )
+            grew = and_(
+                exists(
+                    select(1).where(
+                        ScanDelta.scan_id == Scan.id,
+                        ScanDelta.dimension == SurfaceDimension.WEB_ASSETS.value,
+                        ScanDelta.first_seen > 0,
+                    )
+                ),
+                self._has_earlier_run(),
             )
             query = query.where(grew if added else not_(grew))
-        if parent_id is not None:
-            query = query.where(Scan.parent_scan_id == parent_id)
-        if target_id is not None:
-            query = query.where(Scan.target_id == target_id)
-        if schedule_id is not None:
-            query = query.where(Scan.schedule_id == schedule_id)
-        if scheduled is True:
-            query = query.where(Scan.schedule_type.is_not(None))
-        elif scheduled is False:
-            query = query.where(Scan.schedule_type.is_(None))
+        if target_ids:
+            query = query.where(Scan.target_id.in_(target_ids))
         if search and search.strip():
             term = f"%{search.strip().lower()}%"
             query = query.join(Target, Scan.target_id == Target.id).where(
@@ -776,56 +714,6 @@ class ScanService:
     def to_read(self, scan: Scan) -> ScanRead:
         return self._to_read(scan)
 
-    async def export_rows(
-        self,
-        project_id: UUID,
-        target_id: UUID | None = None,
-        statuses: list[str] | None = None,
-        engines: list[str] | None = None,
-        contexts: list[str] | None = None,
-        search: str | None = None,
-        time_range: str | None = None,
-        sort_by: ScanSortKey = "started",
-        sort_dir: ScanSortDir = "desc",
-        scheduled: bool | None = None,
-        include_focused: bool = False,
-        new_checks: bool | None = None,
-    ) -> list[ScanExportRow]:
-        query = self.build_list_query(
-            project_id=project_id,
-            target_id=target_id,
-            statuses=statuses,
-            engines=engines,
-            contexts=contexts,
-            search=search,
-            time_range=time_range,
-            sort_by=sort_by,
-            sort_dir=sort_dir,
-            scheduled=scheduled,
-            include_focused=include_focused,
-            new_checks=new_checks,
-        ).limit(MAX_SCAN_EXPORT)
-        result = await self.session.execute(query)
-        return [
-            ScanExportRow(
-                target=(scan.execution_config or {}).get("target_value", ""),
-                status=scan.status,
-                engine=scan.engine_name,
-                context=scan.context_name,
-                schedule_type=scan.schedule_type,
-                subdomains=scan.subdomains_found,
-                ips=scan.ips_found,
-                open_ports=scan.open_ports_found,
-                vulnerabilities=scan.vulnerabilities_found,
-                endpoints=scan.endpoints_found,
-                duration_seconds=_scan_duration(scan),
-                started_at=scan.started_at,
-                completed_at=scan.completed_at,
-                created_at=scan.created_at,
-            )
-            for scan in result.scalars().all()
-        ]
-
     async def new_subdomain_counts(
         self, scan_ids: list[UUID], live: Iterable[UUID] = ()
     ) -> dict[UUID, int]:
@@ -835,12 +723,12 @@ class ScanService:
         )
 
     async def prepare_growth(
-        self, project_id: UUID, target_id: UUID | None = None
+        self, project_id: UUID, target_ids: list[UUID] | None = None
     ) -> None:
         """Store a current first-seen count for every run the list can filter on."""
         conds = [Scan.project_id == project_id]
-        if target_id is not None:
-            conds.append(Scan.target_id == target_id)
+        if target_ids:
+            conds.append(Scan.target_id.in_(target_ids))
         rows = (
             await self.session.execute(select(Scan.id, Scan.status).where(*conds))
         ).all()
@@ -878,6 +766,24 @@ class ScanService:
             )
         ).all()
         return {sid: p for sid, p in rows if p is not None}
+
+    @staticmethod
+    def _has_earlier_run():
+        """Whether a census run of the same target started before this one."""
+        earlier = aliased(Scan)
+        return exists(
+            select(1).where(
+                earlier.target_id == Scan.target_id,
+                census_only(earlier),
+                tuple_(
+                    func.coalesce(earlier.started_at, earlier.created_at),
+                    earlier.created_at,
+                )
+                < tuple_(
+                    func.coalesce(Scan.started_at, Scan.created_at), Scan.created_at
+                ),
+            )
+        )
 
     async def first_scan_ids(self, target_ids: list[UUID]) -> set[UUID]:
         """The earliest scan id for each target."""
@@ -921,133 +827,17 @@ class ScanService:
         )
         return {scan_id: n for (scan_id, _), n in counts.items()}
 
-    async def retired_subdomain_total(
-        self, project_id: UUID, cutoff: datetime, target_id: UUID | None = None
-    ) -> int:
-        """Subdomains dropped by each target's latest completed scan that ran in the window."""
-        ordering = func.coalesce(Scan.started_at, Scan.created_at)
-        rn = (
-            func.row_number()
-            .over(partition_by=Scan.target_id, order_by=ordering.desc())
-            .label("rn")
-        )
-        conds = [
-            Scan.project_id == project_id,
-            Scan.status == ScanStatus.COMPLETED.value,
-        ]
-        if target_id is not None:
-            conds.append(Scan.target_id == target_id)
-        latest = (
-            select(
-                Scan.id.label("id"),
-                Scan.target_id.label("tid"),
-                ordering.label("t"),
-                rn,
-            )
-            .where(*conds)
-            .subquery()
-        )
-        rows = (
-            await self.session.execute(
-                select(latest.c.id, latest.c.tid).where(
-                    latest.c.rn == 1, latest.c.t >= cutoff
-                )
-            )
-        ).all()
-        if not rows:
-            return 0
-        scan_ids = [r[0] for r in rows]
-        target_ids = list({r[1] for r in rows})
-        gone = await self.gone_subdomain_counts(scan_ids, target_ids)
-        return sum(gone.values())
-
-    async def _first_seen_since(
-        self, project_id: UUID, cutoff: datetime, target_id: UUID | None
-    ) -> tuple[int, int]:
-        """Names first reported at or after the cutoff, and the targets they belong to."""
-        runs = (
-            await self.session.execute(
-                select(
-                    Scan.id,
-                    Scan.target_id,
-                    Scan.status,
-                    func.coalesce(Scan.started_at, Scan.created_at),
-                ).where(
-                    Scan.id.in_(_scans_writing_since(project_id, cutoff, target_id))
-                )
-            )
-        ).all()
-        inside = [r for r in runs if r[3] >= cutoff]
-        counts = await self.new_subdomain_counts(
-            [r.id for r in inside],
-            [r.id for r in inside if r.status in SCAN_OPEN_STATUSES],
-        )
-        per_target: dict[UUID, int] = defaultdict(int)
-        for r in inside:
-            per_target[r.target_id] += counts.get(r.id, 0)
-        straddling = [r.id for r in runs if r[3] < cutoff]
-        if straddling:
-            rows = await self.session.execute(
-                select(Subdomain.target_id, func.count())
-                .where(
-                    Subdomain.scan_id.in_(straddling),
-                    Subdomain.discovered_at >= cutoff,
-                    not_(scan_deltas.seen_earlier(SurfaceDimension.WEB_ASSETS.value)),
-                )
-                .group_by(Subdomain.target_id)
-            )
-            for tid, n in rows.all():
-                per_target[tid] += int(n)
-        return sum(per_target.values()), sum(1 for n in per_target.values() if n)
-
-    async def changes(
-        self, project_id: UUID, window: str, target_id: UUID | None = None
-    ) -> ScanChanges:
-        cutoff = utc_now() - _WINDOW_DELTAS.get(window, timedelta(days=7))
-
-        new_subdomains, targets_changed = await self._first_seen_since(
-            project_id, cutoff, target_id
-        )
-
-        scan_conds = [Scan.project_id == project_id, Scan.created_at >= cutoff]
-        if target_id is not None:
-            scan_conds.append(Scan.target_id == target_id)
-        scans_run = (
-            await self.session.execute(select(func.count()).where(*scan_conds))
-        ).scalar_one()
-        failed_runs = (
-            await self.session.execute(
-                select(func.count()).where(
-                    *scan_conds,
-                    Scan.status.in_(
-                        [ScanStatus.FAILED.value, ScanStatus.CANCELLED.value]
-                    ),
-                )
-            )
-        ).scalar_one()
-
-        retired = await self.retired_subdomain_total(project_id, cutoff, target_id)
-
-        return ScanChanges(
-            window=window,
-            new_subdomains=new_subdomains,
-            retired_subdomains=retired,
-            targets_changed=targets_changed,
-            scans_run=scans_run,
-            failed_runs=failed_runs,
-        )
-
     async def stats(
         self,
         project_id: UUID,
-        target_id: UUID | None = None,
+        target_ids: list[UUID] | None = None,
         include_focused: bool = False,
     ) -> ScanStats:
         conds = [Scan.project_id == project_id]
         if not include_focused:
             conds.append(census_only())
-        if target_id is not None:
-            conds.append(Scan.target_id == target_id)
+        if target_ids:
+            conds.append(Scan.target_id.in_(target_ids))
 
         status_rows = (
             await self.session.execute(
@@ -1061,35 +851,6 @@ class ScanService:
                 counts[st] = n
             total += n
 
-        last_scan_at = (
-            await self.session.execute(select(func.max(Scan.created_at)).where(*conds))
-        ).scalar_one_or_none()
-
-        avg_duration = (
-            await self.session.execute(
-                select(
-                    func.avg(
-                        func.extract("epoch", Scan.completed_at - Scan.started_at)
-                        - func.coalesce(Scan.paused_seconds, 0.0)
-                    )
-                ).where(
-                    *conds,
-                    Scan.status == ScanStatus.COMPLETED.value,
-                    Scan.started_at.is_not(None),
-                    Scan.completed_at.is_not(None),
-                )
-            )
-        ).scalar_one_or_none()
-
-        finished = (
-            counts[ScanStatus.COMPLETED.value]
-            + counts[ScanStatus.FAILED.value]
-            + counts[ScanStatus.CANCELLED.value]
-        )
-        success_rate = (
-            counts[ScanStatus.COMPLETED.value] / finished if finished else None
-        )
-
         engine_rows = (
             await self.session.execute(
                 select(Scan.engine_name, func.count())
@@ -1100,27 +861,10 @@ class ScanService:
         ).all()
         engines = [ScanFacet(name=name, count=n) for name, n in engine_rows if name]
 
-        context_rows = (
-            await self.session.execute(
-                select(Scan.context_name, func.count())
-                .where(*conds, Scan.context_name.is_not(None))
-                .group_by(Scan.context_name)
-                .order_by(func.count().desc())
-            )
-        ).all()
-        contexts = [ScanFacet(name=name, count=n) for name, n in context_rows if name]
-
         return ScanStats(
             total=total,
-            running=counts[ScanStatus.RUNNING.value],
             by_status=ScanStatusCounts(**counts),
-            last_scan_at=last_scan_at,
-            avg_duration_seconds=(
-                round(avg_duration, 1) if avg_duration is not None else None
-            ),
-            success_rate=round(success_rate, 3) if success_rate is not None else None,
             engines=engines,
-            contexts=contexts,
         )
 
     async def get(self, id: UUID, project_id: UUID) -> ScanRead:
@@ -1372,17 +1116,17 @@ class ScanService:
         self,
         project_id: UUID,
         days: int,
-        target_id: UUID | None = None,
+        target_ids: list[UUID] | None = None,
         include_focused: bool = False,
-    ) -> list[ScanDay]:
-        """Runs started per UTC day, and how many found open findings of each severity."""
+    ) -> ScanDaily:
+        """Runs per UTC day over the days a sliding window touches, and its totals."""
         days = max(1, min(days, MAX_DAILY_WINDOW))
-        today = utc_now().replace(hour=0, minute=0, second=0, microsecond=0)
-        since = today - timedelta(days=days - 1)
+        cutoff = utc_now() - timedelta(days=days)
+        since = cutoff.replace(hour=0, minute=0, second=0, microsecond=0)
         started = func.coalesce(Scan.started_at, Scan.created_at)
         conds = [Scan.project_id == project_id, started >= since]
-        if target_id is not None:
-            conds.append(Scan.target_id == target_id)
+        if target_ids:
+            conds.append(Scan.target_id.in_(target_ids))
         if not include_focused:
             conds.append(census_only())
         runs = (
@@ -1393,22 +1137,26 @@ class ScanService:
         counts = await self.finding_counts([r.id for r in runs])
         out = {
             (since + timedelta(days=n)).date(): ScanDay(day=since + timedelta(days=n))
-            for n in range(days)
+            for n in range(days + 1)
         }
+        window = ScanDay(day=cutoff)
         for r in runs:
-            day = out.get(r.at.astimezone(since.tzinfo).date())
-            if day is None:
-                continue
-            day.runs += 1
-            if r.status == ScanStatus.FAILED.value:
-                day.failed += 1
-            c = counts.get(r.id)
-            if c is None:
-                continue
-            for severity in ACTIONABLE_SEVERITIES:
-                if getattr(c, severity):
-                    setattr(day, severity, getattr(day, severity) + 1)
-        return list(out.values())
+            buckets = [out.get(r.at.astimezone(since.tzinfo).date())]
+            if r.at >= cutoff:
+                buckets.append(window)
+            for day in buckets:
+                if day is None:
+                    continue
+                day.runs += 1
+                if r.status == ScanStatus.FAILED.value:
+                    day.failed += 1
+                c = counts.get(r.id)
+                if c is None:
+                    continue
+                for severity in ACTIONABLE_SEVERITIES:
+                    if getattr(c, severity):
+                        setattr(day, severity, getattr(day, severity) + 1)
+        return ScanDaily(since=cutoff, days=list(out.values()), window=window)
 
     async def recheck_tallies(self, scan_ids: list[UUID]) -> dict[UUID, RecheckTally]:
         """Per focused run, the assets it rechecked and which fields moved."""
@@ -1549,11 +1297,11 @@ class ScanService:
         return self._to_read(scan)
 
     async def cancel_all(
-        self, project_id: UUID, target_id: UUID | None = None
+        self, project_id: UUID, target_ids: list[UUID] | None = None
     ) -> ScanCancelAll:
         conds = [Scan.project_id == project_id, Scan.status.in_(SCAN_OPEN_STATUSES)]
-        if target_id is not None:
-            conds.append(Scan.target_id == target_id)
+        if target_ids:
+            conds.append(Scan.target_id.in_(target_ids))
         ids = (
             (await self.session.execute(select(Scan.id).where(*conds))).scalars().all()
         )
@@ -1567,7 +1315,7 @@ class ScanService:
     async def pause(self, id: UUID, project_id: UUID) -> ScanRead:
         """Stop the run where it stands."""
         scan = await self._get_scan(id, project_id, lock=True)
-        if scan.status not in SCAN_LIVE_STATUSES:
+        if scan.status != ScanStatus.RUNNING.value:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT, detail="The scan is not running."
             )
@@ -1600,14 +1348,14 @@ class ScanService:
         await self._log_paused(scan, stopped)
         await self.session.commit()
 
-        revoke_scan_tasks(scan.celery_task_ids or [])
+        await asyncio.to_thread(revoke_scan_tasks, scan.celery_task_ids or [])
         await self._admit_waiting()
-        self._announce_paused(scan, stopped)
+        await self._announce_paused(scan, stopped)
         await self.session.refresh(scan)
         return self._to_read(scan)
 
     async def resume(self, id: UUID, project_id: UUID) -> ScanRead:
-        """Move the run back to RUNNING here, so the answer is true before the worker acts."""
+        """Move the run back to RUNNING and dispatch the resume."""
         scan = await self._get_scan(id, project_id, lock=True)
         if scan.status != ScanStatus.PAUSED.value:
             raise HTTPException(
@@ -1621,13 +1369,11 @@ class ScanService:
         scan.status = ScanStatus.RUNNING.value
         scan.error = None
         scan.run_epoch = epoch = (scan.run_epoch or 0) + 1
-        if scan.started_at is None:
-            scan.started_at = now
         await self._log_resumed(scan, left)
         await self.session.commit()
 
         try:
-            dispatch_scan_resume(str(scan.id), epoch)
+            await asyncio.to_thread(dispatch_scan_resume, str(scan.id), epoch)
         except Exception:
             logger.warning("scan resume dispatch failed", exc_info=True)
             scan.status = ScanStatus.PAUSED.value
@@ -1638,7 +1384,7 @@ class ScanService:
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="The scan was not resumed. Check that the worker service is running.",
             ) from None
-        self._announce_resumed(scan, left)
+        await self._announce_resumed(scan, left)
         await self.session.refresh(scan)
         return self._to_read(scan)
 
@@ -1667,15 +1413,24 @@ class ScanService:
             target_value=target_value,
         )
 
-    def _announce_resumed(self, scan: Scan, left: int) -> None:
+    async def _announce(
+        self, scan: Scan, emit: Callable[[ScanEventPublisher], None]
+    ) -> None:
+        scan_id, project_id = str(scan.id), str(scan.project_id)
+
+        def publish() -> None:
+            emit(ScanEventPublisher(scan_id=scan_id, project_id=project_id))
+
         try:
-            ScanEventPublisher(
-                BaseAppSettings().redis_url,
-                scan_id=str(scan.id),
-                project_id=str(scan.project_id),
-            ).scan_resumed(status=ScanStatus.RUNNING.value, stages_left=left)
+            await asyncio.to_thread(publish)
         except Exception:
-            logger.debug("resume event emit failed", exc_info=True)
+            logger.debug("scan event emit failed", exc_info=True)
+
+    async def _announce_resumed(self, scan: Scan, left: int) -> None:
+        await self._announce(
+            scan,
+            lambda p: p.scan_resumed(status=ScanStatus.RUNNING.value, stages_left=left),
+        )
 
     async def _log_paused(self, scan: Scan, stopped: int) -> None:
         target_value = (scan.execution_config or {}).get("target_value", "")
@@ -1692,25 +1447,18 @@ class ScanService:
             target_value=target_value,
         )
 
-    def _announce_paused(self, scan: Scan, stopped: int) -> None:
-        try:
-            ScanEventPublisher(
-                BaseAppSettings().redis_url,
-                scan_id=str(scan.id),
-                project_id=str(scan.project_id),
-            ).scan_paused(status=ScanStatus.PAUSED.value, stages_stopped=stopped)
-        except Exception:
-            logger.debug("pause event emit failed", exc_info=True)
+    async def _announce_paused(self, scan: Scan, stopped: int) -> None:
+        await self._announce(
+            scan,
+            lambda p: p.scan_paused(
+                status=ScanStatus.PAUSED.value, stages_stopped=stopped
+            ),
+        )
 
     async def _announce_cancelled(self, scan: Scan) -> None:
-        try:
-            ScanEventPublisher(
-                BaseAppSettings().redis_url,
-                scan_id=str(scan.id),
-                project_id=str(scan.project_id),
-            ).scan_cancelled(status=ScanStatus.CANCELLED.value)
-        except Exception:
-            logger.debug("cancel event emit failed", exc_info=True)
+        await self._announce(
+            scan, lambda p: p.scan_cancelled(status=ScanStatus.CANCELLED.value)
+        )
 
     async def list_activities(
         self, scan_id: UUID, project_id: UUID
@@ -1727,19 +1475,9 @@ class ScanService:
             .scalars()
             .all()
         )
-        counts = dict(
-            (
-                await self.session.execute(
-                    select(ScanCommand.activity_id, func.count())
-                    .where(ScanCommand.scan_id == scan_id)
-                    .group_by(ScanCommand.activity_id)
-                )
-            ).all()
-        )
         out: list[ScanActivityRead] = []
         for a in rows:
             read = ScanActivityRead.model_validate(a, from_attributes=True)
-            read.command_count = counts.get(a.id, 0)
             read.duration_seconds = (
                 round((a.completed_at - a.started_at).total_seconds(), 1)
                 if a.started_at and a.completed_at
@@ -1790,7 +1528,7 @@ class ScanService:
         scan = await self._get_scan(id, project_id)
         held = scan.status == ScanStatus.RUNNING.value
         if scan.status in SCAN_OPEN_STATUSES:
-            revoke_scan_tasks(scan.celery_task_ids or [])
+            await asyncio.to_thread(revoke_scan_tasks, scan.celery_task_ids or [])
         await self.session.delete(scan)
         await self.session.commit()
         if held:
@@ -1805,7 +1543,7 @@ class ScanService:
     def _to_read(self, scan: Scan) -> ScanRead:
         cfg = copy.deepcopy(scan.execution_config or {})
         cfg.pop("_auth_header_names", None)
-        auth = cfg.pop("_auth", None) or {"auth_type": "none"}
+        auth = cfg.pop("_auth", None) or {"auth_type": AuthType.NONE.value}
         masked = _mask_config_headers(cfg)
         resolved = _resolved_config(scan.id, masked)
         return ScanRead(
@@ -1838,5 +1576,5 @@ class ScanService:
             completed_at=scan.completed_at,
             paused_at=scan.paused_at,
             paused_seconds=scan.paused_seconds or 0.0,
-            duration_seconds=_scan_duration(scan),
+            duration_seconds=scan_duration(scan),
         )

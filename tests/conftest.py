@@ -18,6 +18,7 @@ import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from shared.config import BaseAppSettings
+from shared.definitions.vulnerabilities import Scanner
 from shared.enums.target import TargetType
 from shared.models.endpoint import Endpoint
 from shared.models.http_asset import HttpAsset
@@ -32,7 +33,7 @@ from shared.models.vulnerability import Vulnerability
 from shared.utils.datetime import utc_now
 
 TEST_DB = os.environ.get("POSTGRES_TEST_DB", "rengine_test")
-# one run of the suite at a time per database; a second waits rather than dropping it
+# one suite run per database at a time
 _RUN_LOCK = zlib.crc32(TEST_DB.encode()) - 2**31
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ALEMBIC = shutil.which("alembic") or str(Path(sys.executable).parent / "alembic")
@@ -342,6 +343,7 @@ class Estate:
         at: datetime,
         host: str = "www.example.com",
         kev: bool = False,
+        scanner: str = Scanner.NUCLEI.value,
     ) -> None:
         sid = self.scans[scan]
         target_id = await self._target_of(sid)
@@ -358,6 +360,7 @@ class Estate:
                     matched_at=f"https://{host}/",
                     host=host,
                     is_kev=kev,
+                    scanner=scanner,
                     discovered_at=at,
                 )
             )

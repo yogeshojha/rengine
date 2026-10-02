@@ -1,14 +1,14 @@
-"""Connect to a listening port, read what it says, and name the service."""
-
 from __future__ import annotations
 
 import contextlib
 import socket
 import ssl
+import threading
+import time
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
-from shared.logging import get_logger
 from tools.banner.proxy import (
     SUPPORTED_SCHEMES,
     ProxyError,
@@ -22,12 +22,9 @@ from tools.banner.signatures import (
     identify,
     readable,
 )
+from tools.runner.abort import active_abort
 
-logger = get_logger(__name__)
-
-
-class BannerError(Exception):
-    """The prober could not be configured for the requested transport."""
+_STOP_POLL_SECONDS = 1.0
 
 
 def unusable_proxy(proxy_url: str | None) -> str | None:
@@ -74,23 +71,46 @@ class BannerClient:
         timeout: float = 4.0,
         concurrency: int = 32,
         proxy_url: str | None = None,
+        rate: int | None = None,
     ) -> None:
         self.timeout = timeout
         self.concurrency = max(1, concurrency)
         self.proxy_url = proxy_url
         self.proxy_warning = unusable_proxy(proxy_url)
+        self._gap = 1.0 / rate if rate and rate > 0 else 0.0
+        self._next_start = 0.0
+        self._lock = threading.Lock()
 
     def probe_all(self, endpoints: list[Endpoint]) -> list[Fingerprint]:
         if not endpoints or self.proxy_warning:
             return []
+        stop = active_abort()
+
+        def _run(endpoint: Endpoint) -> Fingerprint | None:
+            if not self._turn(stop):
+                return None
+            return self.probe(endpoint)
+
         with ThreadPoolExecutor(max_workers=self.concurrency) as pool:
-            return [f for f in pool.map(self.probe, endpoints) if f is not None]
+            return [f for f in pool.map(_run, endpoints) if f is not None]
+
+    def _turn(self, stop: Callable[[], bool] | None) -> bool:
+        if self._gap:
+            with self._lock:
+                now = time.monotonic()
+                start = max(now, self._next_start)
+                self._next_start = start + self._gap
+            while (left := start - time.monotonic()) > 0:
+                if stop is not None and stop():
+                    return False
+                time.sleep(min(left, _STOP_POLL_SECONDS))
+        return stop is None or not stop()
 
     def probe(self, endpoint: Endpoint) -> Fingerprint | None:
         result = Fingerprint(ip=endpoint.ip, port=endpoint.port, tls=endpoint.tls)
         try:
             data, tls = self._read(endpoint)
-        except (OSError, ssl.SSLError, BannerError, ProxyError, IndexError, ValueError):
+        except (OSError, ProxyError, IndexError, ValueError):
             return None
         result.tls = tls
         if not data:

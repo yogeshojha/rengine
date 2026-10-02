@@ -20,6 +20,7 @@ export interface QueryProblem {
 	end: number;
 	message: string;
 	level: 'error' | 'warning';
+	code?: 'unknown_field';
 }
 
 export interface LexResult {
@@ -185,7 +186,8 @@ export function lex(source: string, known: FieldLookup): LexResult {
 				start: i,
 				end: i + text.indexOf(':'),
 				message: `"${text.slice(0, text.indexOf(':'))}" is not a field, searched as text`,
-				level: 'warning'
+				level: 'warning',
+				code: 'unknown_field'
 			});
 		}
 		push('term', i, end);

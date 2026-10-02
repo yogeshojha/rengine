@@ -28,7 +28,6 @@ from shared.models.subdomain import Subdomain
 from shared.models.watch import ProgramWatch, WatchEvent, WatchHost, WatchUpdate
 from shared.services import watch_sync
 from shared.utils.datetime import utc_now
-from tests.conftest import Estate
 
 pytestmark = pytest.mark.api
 
@@ -156,11 +155,6 @@ async def _watch(estate, program: BountyProgram, **kw) -> ProgramWatch:
     estate.session.add(watch)
     await estate.session.flush()
     return watch
-
-
-@pytest.fixture
-async def estate(session):
-    return await Estate(session).setup()
 
 
 async def test_match_and_place_host_into_a_watching_run(estate):

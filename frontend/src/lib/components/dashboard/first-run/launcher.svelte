@@ -24,11 +24,9 @@
 
 	interface Props {
 		heading: string;
-		sub?: string;
-		onStarted?: () => void;
 	}
 
-	let { heading, sub, onStarted }: Props = $props();
+	let { heading }: Props = $props();
 
 	let value = $state('');
 	let selection = $state<QuickScanSelection | null>(null);
@@ -86,7 +84,6 @@
 			value = '';
 			toast.success(`Scan started for ${scans[0].execution_config.target_value}`);
 			dashboardStore.refresh();
-			onStarted?.();
 		} catch (e) {
 			problem = e instanceof Error ? e.message : 'Scan not started.';
 		} finally {
@@ -96,10 +93,7 @@
 </script>
 
 <div class="flex flex-col gap-4">
-	<div class="flex flex-col gap-1">
-		<h2 class="text-xl font-semibold tracking-tight sm:text-2xl">{heading}</h2>
-		{#if sub}<p class="text-sm text-muted-foreground">{sub}</p>{/if}
-	</div>
+	<h2 class="text-xl font-semibold tracking-tight sm:text-2xl">{heading}</h2>
 
 	<div class="flex flex-wrap items-center gap-2">
 		<div class="relative min-w-[16rem] flex-1">

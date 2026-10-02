@@ -1,32 +1,24 @@
 <script lang="ts">
 	import EvidenceMark from '$lib/components/evidence-mark.svelte';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { SEVERITY_CHIP, SEVERITY_LABELS, VULN_STATE_LABELS } from '$lib/config/vulnerabilities';
 	import type { VulnerabilityRead } from '$lib/utilities/vulns';
 	import { peek } from './peek';
+
+	const LIMIT = 25;
 
 	interface Props {
 		projectId: string;
 		scanId: string;
 		q: string;
 		exclude: string;
-		limit?: number;
 		sort?: string;
 		main: (f: VulnerabilityRead) => string;
 		onOpen: (f: VulnerabilityRead) => void;
 		onTotal?: (n: number) => void;
 	}
 
-	let {
-		projectId,
-		scanId,
-		q,
-		exclude,
-		limit = 25,
-		sort = 'severity',
-		main,
-		onOpen,
-		onTotal
-	}: Props = $props();
+	let { projectId, scanId, q, exclude, sort = 'severity', main, onOpen, onTotal }: Props = $props();
 
 	let rows = $state<VulnerabilityRead[] | null>(null);
 	let failed = $state(false);
@@ -35,10 +27,10 @@
 		const key = `${q}|${exclude}`;
 		rows = null;
 		failed = false;
-		peek(projectId, scanId, q, limit + 1, sort)
+		peek(projectId, scanId, q, LIMIT + 1, sort)
 			.then((r) => {
 				if (key !== `${q}|${exclude}`) return;
-				rows = r.items.filter((f) => f.id !== exclude).slice(0, limit);
+				rows = r.items.filter((f) => f.id !== exclude).slice(0, LIMIT);
 				onTotal?.(r.total);
 			})
 			.catch(() => (failed = true));
@@ -50,7 +42,7 @@
 {:else if rows === null}
 	<div class="space-y-2 p-3">
 		{#each { length: 3 } as _, i (i)}
-			<div class="h-8 animate-pulse rounded bg-muted/60"></div>
+			<Skeleton class="h-8" />
 		{/each}
 	</div>
 {:else if rows.length === 0}

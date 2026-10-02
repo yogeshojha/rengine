@@ -108,7 +108,20 @@ def test_evidence_columns_are_absent_until_asked_for():
 
 
 def test_only_findings_offer_evidence():
-    assert columns.offers_evidence("vulnerabilities") is True
     for dimension in ("web_assets", "endpoints", "services", "ips"):
-        assert columns.offers_evidence(dimension) is False
         assert columns.headers(dimension, evidence=True) == columns.headers(dimension)
+
+
+@pytest.mark.parametrize(
+    ("dimension", "subject", "stem"),
+    [
+        ("web_assets", "rengine", "web-assets-rengine"),
+        ("web_assets", "Web assets", "web-assets"),
+        ("ips", "IP addresses", "ip-addresses"),
+        ("vulnerabilities", "tigo.com.co", "vulnerabilities-tigo-com-co"),
+        ("bundle", "gov.np", "all-dimensions-gov-np"),
+        ("bundle", "", "all-dimensions"),
+    ],
+)
+def test_a_file_name_names_the_dimension_once(dimension, subject, stem):
+    assert writer.file_stem(dimension, subject) == stem

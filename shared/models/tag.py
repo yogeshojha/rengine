@@ -11,6 +11,9 @@ from shared.utils.validation import validate_hex_color
 if TYPE_CHECKING:
     from shared.models.target import Target
 
+MAX_TAG_LEN = 50
+DEFAULT_TAG_COLOR = "#64748B"
+
 
 class TagSummary(BaseModel):
     id: uuid.UUID
@@ -31,9 +34,11 @@ class TargetTag(SQLModel, table=True):
 
 
 class TagBase(SQLModel):
-    name: str = Field(max_length=50)
+    name: str = Field(max_length=MAX_TAG_LEN)
     color: str = Field(
-        max_length=7, description="Hex color code such as #FF5733", default="#6B7280"
+        max_length=7,
+        description="Hex color code such as #FF5733",
+        default=DEFAULT_TAG_COLOR,
     )
 
     @field_validator("color")
@@ -67,17 +72,13 @@ class TagCreate(TagBase):
 
 
 class TagUpdate(SQLModel):
-    name: str | None = Field(default=None, max_length=50)
-    color: str | None = Field(
-        default=None, max_length=7, description="Hex color code such as #FF5733"
-    )
+    name: str | None = Field(default=None, max_length=MAX_TAG_LEN)
+    color: str | None = Field(default=None, max_length=7)
 
     @field_validator("color")
     @classmethod
     def validate_color_format(cls, v: str | None) -> str | None:
-        if v is None:
-            return v
-        return validate_hex_color(v)
+        return None if v is None else validate_hex_color(v)
 
 
 class TagRead(TagBase):
@@ -86,12 +87,4 @@ class TagRead(TagBase):
     project_id: uuid.UUID
     created_at: datetime
     created_by: uuid.UUID
-
-
-PREDEFINED_TAGS = [
-    {"name": "production", "color": "#DC2626"},
-    {"name": "staging", "color": "#F59E0B"},
-    {"name": "dev", "color": "#3B82F6"},
-    {"name": "internal", "color": "#8B5CF6"},
-    {"name": "external", "color": "#10B981"},
-]
+    target_count: int = 0

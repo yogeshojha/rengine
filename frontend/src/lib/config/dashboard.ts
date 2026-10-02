@@ -4,8 +4,19 @@ export enum QueueTier {
 	Attend = 'attend',
 	Track = 'track'
 }
+export const STALE_DAYS = 30;
+export const EXPIRING_DAYS = 30;
 export const TIER_ACT_EPSS = 0.088;
+export const TIER_ATTEND_EPSS = 0.01;
 export const ACT_QUERY = `is:kev or is:ransomware or evidence:proven or epss:>=${TIER_ACT_EPSS} or severity:critical`;
+const ATTEND_BASE = `severity:[high,medium] or epss:>=${TIER_ATTEND_EPSS}`;
+export const TIER_QUERY: Record<QueueTier, string> = {
+	[QueueTier.Act]: ACT_QUERY,
+	[QueueTier.Attend]: `not (${ACT_QUERY}) and (${ATTEND_BASE})`,
+	[QueueTier.Track]: `not (${ACT_QUERY}) and not (${ATTEND_BASE})`
+};
+export const INTEL_CHANGE_ROWS = 200;
+export const SIGNAL_ROWS = 500;
 export const TIER_ORDER: QueueTier[] = [QueueTier.Act, QueueTier.Attend, QueueTier.Track];
 export const TIER_LABELS: Record<QueueTier, string> = {
 	[QueueTier.Act]: 'Act',
@@ -14,7 +25,7 @@ export const TIER_LABELS: Record<QueueTier, string> = {
 };
 export const TIER_HELP: Record<QueueTier, string> = {
 	[QueueTier.Act]: 'Known exploited, proven, likely exploited or critical',
-	[QueueTier.Attend]: 'High or medium, corroborated, or a possible exploit',
+	[QueueTier.Attend]: 'High or medium, or a possible exploit',
 	[QueueTier.Track]: 'Everything else'
 };
 
@@ -25,6 +36,12 @@ export enum ActivityKind {
 	Feeds = 'feeds',
 	Intel = 'intel',
 	Connector = 'connector'
+}
+
+export enum ActivityTone {
+	Neutral = 'neutral',
+	Hot = 'hot',
+	New = 'new'
 }
 
 export const SCAN_OUTCOME_ORDER = ['completed', 'failed', 'cancelled'] as const;

@@ -33,9 +33,6 @@ class RootCandidate:
     tls_fingerprint: str | None = None
     favicon_hash: str | None = None
     not_found: list | None = None
-    tech: list[str] = field(default_factory=list)
-    cpe: list[str] = field(default_factory=list)
-    software: list = field(default_factory=list)
     endpoints: int = 0
     covered_before: bool = False
     rank: float = 0.0
@@ -179,4 +176,4 @@ def cluster_roots(candidates: list[RootCandidate]) -> list[Cluster]:
     return clusters
 
 
-__all__ = ["Cluster", "RootCandidate", "body_key", "cluster_roots", "same_origin"]
+__all__ = ["Cluster", "RootCandidate", "cluster_roots", "same_origin"]

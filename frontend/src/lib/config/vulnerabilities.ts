@@ -19,6 +19,8 @@ import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
 import Unlink from '@lucide/svelte/icons/unlink';
 import type { IconComponent } from './icons';
 
+export const CVE_ID = /^CVE-\d{4}-\d{4,7}$/i;
+
 export enum Severity {
 	CRITICAL = 'critical',
 	HIGH = 'high',
@@ -65,12 +67,12 @@ export const SEVERITY_FILL: Record<string, string> = {
 };
 
 export const SEVERITY_TEXT: Record<string, string> = {
-	[Severity.CRITICAL]: 'text-[var(--sev-critical-ink)]',
-	[Severity.HIGH]: 'text-[var(--sev-high-ink)]',
-	[Severity.MEDIUM]: 'text-[var(--sev-medium-ink)]',
-	[Severity.LOW]: 'text-[var(--sev-low-ink)]',
-	[Severity.INFO]: 'text-[var(--sev-info-ink)]',
-	[Severity.UNKNOWN]: 'text-[var(--sev-info-ink)]'
+	[Severity.CRITICAL]: 'text-sev-critical-ink',
+	[Severity.HIGH]: 'text-sev-high-ink',
+	[Severity.MEDIUM]: 'text-sev-medium-ink',
+	[Severity.LOW]: 'text-sev-low-ink',
+	[Severity.INFO]: 'text-sev-info-ink',
+	[Severity.UNKNOWN]: 'text-sev-info-ink'
 };
 
 export const SEVERITY_CHIP: Record<string, { chip: string; edge: string; ink: string }> = {
@@ -155,13 +157,6 @@ export const VULN_STATE_KEYS: Record<string, string> = {
 	[VulnState.ACCEPTED]: 'a'
 };
 
-export const VULN_STATE_HELP: Record<string, string> = {
-	[VulnState.OPEN]: 'Not reviewed.',
-	[VulnState.CONFIRMED]: 'Reviewed and reproduced.',
-	[VulnState.FALSE_POSITIVE]: 'Reviewed and rejected. Suppressed on later scans of this target.',
-	[VulnState.ACCEPTED]: 'Reviewed and accepted. Not alerted.'
-};
-
 export const SUPPRESSED_STATES: string[] = [VulnState.FALSE_POSITIVE, VulnState.ACCEPTED];
 
 // mirrors shared/definitions/vulnerabilities.py:Protocol
@@ -232,15 +227,11 @@ export const TEMPLATE_SET_LABELS: Record<string, string> = {
 	headless: 'Browser checks'
 };
 
-export const SURFACE_LABELS: Record<string, string> = {
-	web: 'Web assets',
-	services: 'Web assets and network services',
-	full: 'Everything, including hostnames'
-};
+export const TemplateOrigin = { OFFICIAL: 'official', CUSTOM: 'custom' } as const;
 
 export const TEMPLATE_ORIGIN_LABELS: Record<string, string> = {
-	official: 'Default checks',
-	custom: 'Custom checks'
+	[TemplateOrigin.OFFICIAL]: 'Default checks',
+	[TemplateOrigin.CUSTOM]: 'Custom checks'
 };
 
 export const COVERAGE_STATUS_LABELS: Record<string, string> = {
@@ -250,15 +241,7 @@ export const COVERAGE_STATUS_LABELS: Record<string, string> = {
 	skipped: 'Not run'
 };
 
-export const RISK_SIGNAL_LABELS: Record<string, string> = {
-	kev: 'Known exploited',
-	epss: 'Likely to be exploited',
-	new: 'New',
-	origin: 'Origin exposed'
-};
-
 export const MAX_TEMPLATE_UPLOAD = 50;
 export const EPSS_HIGH = 0.5;
-export const CVSS_HIGH = 7.0;
 
 export const VULN_STAGE = 'vulnerability_scan';

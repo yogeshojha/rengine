@@ -11,12 +11,11 @@
 	interface Props {
 		section: SectionCatalogEntry;
 		plan: ReportPlan;
-		hideLaunchFields?: boolean;
 	}
 
-	let { section, plan, hideLaunchFields = false }: Props = $props();
+	let { section, plan }: Props = $props();
 
-	let fields = $derived(section.fields.filter((f) => !(hideLaunchFields && f.launch)));
+	let fields = $derived(section.fields.filter((f) => !f.launch));
 	let changed = $derived(plan.changedFields(section.name));
 	let values = $derived(plan.config(section.name));
 </script>

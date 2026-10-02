@@ -28,7 +28,6 @@ class CveLocation(BaseModel):
     port: int | None = None
     url: str | None = None
     evidence: str
-    evidence_label: str
     basis: str
     detail: str | None = None
     severity: str

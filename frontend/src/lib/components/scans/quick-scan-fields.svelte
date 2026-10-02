@@ -21,7 +21,7 @@
 	interface Props {
 		id: string;
 		title: string;
-		description: string;
+		description?: string;
 		fallbackNote: string;
 		enabled: boolean;
 		selection: QuickScanSelection | null;
@@ -137,7 +137,9 @@
 	<div class="flex items-start justify-between gap-4">
 		<div class="space-y-0.5">
 			<Label for={id}>{title}</Label>
-			<p class="text-xs text-muted-foreground">{description}</p>
+			{#if description}
+				<p class="text-xs text-muted-foreground">{description}</p>
+			{/if}
 		</div>
 		<span class="flex h-5 shrink-0 items-center">
 			<Switch {id} checked={enabled} onCheckedChange={toggle} {disabled} />

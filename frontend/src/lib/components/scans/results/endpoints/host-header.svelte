@@ -21,6 +21,7 @@
 		statusClassOf
 	} from '$lib/config/endpoints';
 	import { formatShortDate } from '$lib/utilities/dates';
+	import { bracketed } from '$lib/utilities/net';
 	import type { HostBrief, ParamStat } from '$lib/utilities/endpoints';
 	import type { Connector, ConnectorSpec } from '$lib/types/connector';
 
@@ -69,7 +70,7 @@
 	);
 	let hiddenParams = $derived(Math.max(0, (brief?.params_total ?? 0) - shownParams.length));
 	let unchecked = $derived(brief ? Math.max(0, brief.total - brief.probed) : 0);
-	let openUrl = $derived(`https://${host}/`);
+	let openUrl = $derived(`https://${bracketed(host)}/`);
 
 	const n = (v: number) => v.toLocaleString();
 
@@ -144,7 +145,8 @@
 			{/if}
 			{#if brief.with_params}
 				<button type="button" class="hover:text-primary" onclick={() => onPivot('is:param')}>
-					<b class="font-semibold text-foreground tabular-nums">{n(brief.with_params)}</b> take input
+					<b class="font-semibold text-foreground tabular-nums">{n(brief.with_params)}</b>
+					{brief.with_params === 1 ? 'takes' : 'take'} input
 				</button>
 			{/if}
 			{#if brief.api}

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
+import socket
 from urllib.parse import urlsplit
 from uuid import UUID
 
@@ -9,10 +11,13 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.crypto import encrypt_secret, try_decrypt
 from shared.enums.api_key import APIProvider
 from shared.enums.notification import NotificationSeverity, NotificationType
-from shared.enums.notification_channel import URL_PROVIDERS, NotificationProvider
+from shared.enums.notification_channel import (
+    APPRISE_SCHEMES,
+    URL_PROVIDERS,
+    NotificationProvider,
+)
 from shared.models.notification_channel import (
     PROVIDERS,
     NotificationChannel,
@@ -23,12 +28,17 @@ from shared.models.notification_channel import (
     NotificationPreference,
 )
 from shared.services.api_key.async_api_key import APIKeyService
-from shared.services.notifier import Outbound, send_one, with_shared_bot
-from shared.services.scan_resolve import MASK
+from shared.services.notifier import (
+    Outbound,
+    apprise_url_allowed,
+    send_one,
+    with_shared_bot,
+)
+from shared.services.scan_resolve import MASK, mask_tail
+from shared.utils.crypto import encrypt_secret, try_decrypt
 from shared.utils.datetime import utc_now
 from shared.utils.net import host_port, url_port, validate_public_https_url
-
-_TOKEN_TAIL = 4
+from shared.utils.validation import scannable_address
 
 SECRET_FIELDS: dict[str, set[str]] = {
     NotificationProvider.SLACK.value: {"webhook_url"},
@@ -51,11 +61,11 @@ REQUIRED_FIELDS: dict[str, tuple[str, ...]] = {
 }
 
 _URL_FIELDS = {"webhook_url", "apprise_url"}
+_UNTAILED_FIELDS = {"password"}
+_EMAIL_SERVER_FIELDS = ("smtp_host", "smtp_port", "username")
 _HTTP_SCHEMES = frozenset({"http", "https"})
-
-_DISALLOWED_CUSTOM_SCHEMES = frozenset(
-    {"http", "https", "json", "jsons", "xml", "xmls", "form", "forms"}
-)
+_SMTP_HOST = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9.-]{0,251}[A-Za-z0-9])?")
+_MAX_PORT = 65535
 
 
 def _bad(detail: str) -> HTTPException:
@@ -78,15 +88,39 @@ def _validate_config(provider: str, config: dict) -> None:
             msg = f"{provider} config requires a non-empty '{field}'."
             raise _bad(msg)
     if provider == NotificationProvider.CUSTOM.value:
-        scheme = urlsplit(str(config.get("apprise_url", ""))).scheme.lower()
-        if scheme in _DISALLOWED_CUSTOM_SCHEMES:
-            msg = (
-                f"Apprise scheme '{scheme}://' is not allowed for custom channels. "
-                "Use the 'Webhook' channel type for raw HTTP endpoints."
-            )
-            raise _bad(msg)
+        _validate_custom_url(str(config.get("apprise_url", "")))
+    if provider == NotificationProvider.EMAIL.value:
+        _validate_smtp_server(config)
     if provider in URL_PROVIDERS:
         _validate_public_https_url(str(config.get("webhook_url", "")))
+
+
+def _validate_custom_url(raw: str) -> None:
+    if not apprise_url_allowed(raw):
+        msg = (
+            "Apprise URL scheme is not supported. Supported schemes: "
+            f"{', '.join(sorted(APPRISE_SCHEMES))}."
+        )
+        raise _bad(msg)
+
+
+def _validate_smtp_server(config: dict) -> None:
+    host = str(config.get("smtp_host", "")).strip()
+    if not _SMTP_HOST.fullmatch(host):
+        msg = "SMTP host must be a host name or an IPv4 address."
+        raise _bad(msg)
+    port = str(config.get("smtp_port") or "")
+    if port and not (port.isdigit() and 0 < int(port) <= _MAX_PORT):
+        msg = f"SMTP port must be a number from 1 to {_MAX_PORT}."
+        raise _bad(msg)
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except OSError as exc:
+        msg = f"SMTP host {host} does not resolve."
+        raise _bad(msg) from exc
+    if not all(scannable_address(info[4][0]) for info in infos):
+        msg = "SMTP host resolves to a disallowed address."
+        raise _bad(msg)
 
 
 def _mask_url(url: str) -> str:
@@ -101,8 +135,8 @@ def _mask_url(url: str) -> str:
     return f"{scheme}://{host}/{MASK}"
 
 
-def _mask_value(value: str) -> str:
-    return f"{MASK}{value[-_TOKEN_TAIL:]}" if len(value) >= _TOKEN_TAIL else MASK
+def _mask_value(key: str, value: str) -> str:
+    return MASK if key in _UNTAILED_FIELDS else mask_tail(value)
 
 
 def _mask_config(provider: str, config: dict) -> dict:
@@ -110,10 +144,21 @@ def _mask_config(provider: str, config: dict) -> dict:
     masked: dict = {}
     for key, value in (config or {}).items():
         if key in secret and isinstance(value, str):
-            masked[key] = _mask_url(value) if key in _URL_FIELDS else _mask_value(value)
+            masked[key] = (
+                _mask_url(value) if key in _URL_FIELDS else _mask_value(key, value)
+            )
         else:
             masked[key] = value
     return masked
+
+
+def _server_moved(provider: str, stored: dict, incoming: dict) -> bool:
+    if provider != NotificationProvider.EMAIL.value:
+        return False
+    return any(
+        str(incoming.get(field) or "") != str(stored.get(field) or "")
+        for field in _EMAIL_SERVER_FIELDS
+    )
 
 
 def _merge_config(provider: str, stored: dict, incoming: dict) -> dict:
@@ -182,10 +227,6 @@ class NotificationChannelService:
         )
         return [_to_read(c) for c in result.scalars().all()]
 
-    async def get(self, id: UUID) -> NotificationChannelRead:
-        channel = await self._get_or_404(id)
-        return _to_read(channel)
-
     async def create(
         self, data: NotificationChannelCreate, created_by: UUID
     ) -> NotificationChannelRead:
@@ -222,6 +263,8 @@ class NotificationChannelService:
         if data.config is not None:
             stored = _decrypt_config(channel)
             incoming = {k: v for k, v in data.config.items() if v is not None}
+            if _server_moved(channel.provider, stored, incoming):
+                stored = {}
             merged = _merge_config(channel.provider, stored, incoming)
             _validate_config(channel.provider, merged)
             channel.config_encrypted = encrypt_secret(json.dumps(merged))
@@ -231,11 +274,10 @@ class NotificationChannelService:
         await self.session.refresh(channel)
         return _to_read(channel)
 
-    async def delete(self, id: UUID) -> bool:
+    async def delete(self, id: UUID) -> None:
         channel = await self._get_or_404(id)
         await self.session.delete(channel)
         await self.session.commit()
-        return True
 
     async def _with_shared_bot(self, provider: str, config: dict) -> dict:
         keys = APIKeyService(self.session)

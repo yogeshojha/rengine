@@ -18,7 +18,6 @@ export interface VulnTemplateRead {
 	requests: number;
 	enabled: boolean;
 	sets: string[];
-	findings: number;
 	raw: string | null;
 	created_at: string;
 	updated_at: string;
@@ -28,10 +27,7 @@ export interface TemplateFilter {
 	q: string | null;
 	origins: string[];
 	severities: string[];
-	protocols: string[];
 	sets: string[];
-	tags: string[];
-	fired: boolean;
 	callback: boolean;
 	new_since: string | null;
 	limit: number;
@@ -43,10 +39,7 @@ export function emptyTemplateFilter(): TemplateFilter {
 		q: null,
 		origins: [],
 		severities: [],
-		protocols: [],
 		sets: [],
-		tags: [],
-		fired: false,
 		callback: false,
 		new_since: null,
 		limit: 50,
@@ -84,14 +77,8 @@ export interface SelectionBreakdown {
 }
 
 export interface SelectionPreview {
-	ready: boolean;
 	total: number;
-	official: number;
-	custom: number;
 	by_severity: SelectionBreakdown[];
-	by_set: SelectionBreakdown[];
-	by_protocol: SelectionBreakdown[];
-	estimated_requests: number;
 	warnings: string[];
 }
 
@@ -101,15 +88,11 @@ export interface TemplateLibraryStats {
 	official: number;
 	custom: number;
 	by_severity: SelectionBreakdown[];
-	by_protocol: SelectionBreakdown[];
 	sets: TemplateSetSpec[];
-	tags: SelectionBreakdown[];
-	fired: number;
 	callback: number;
 	new: number;
 	seen_at: string | null;
 	last_synced_at: string | null;
-	syncing: boolean;
 }
 
 export interface TemplateSeen {

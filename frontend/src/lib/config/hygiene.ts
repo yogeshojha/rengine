@@ -5,6 +5,7 @@ import Globe from '@lucide/svelte/icons/globe';
 import Eye from '@lucide/svelte/icons/eye';
 import type { IconComponent } from './icons';
 import type { HygieneCheckCount, HygieneSummary } from '$lib/utilities/scan-insights';
+import { percentLabel } from '$lib/utilities/strings';
 
 // mirrors shared/definitions/hygiene.py
 export const HygieneCheck = {
@@ -169,7 +170,7 @@ export const CHECKS: CheckSpec[] = [
 		help: 'Private IP address or internal hostname in a header, load balancer cookie or page link.',
 		applies: 'Every response.',
 		fix: 'Remove private addresses and internal hostnames from responses.',
-		header: 'Content-Security-Policy',
+		header: '',
 		group: 'disclosure',
 		tone: 'warning'
 	},
@@ -298,11 +299,6 @@ export function sortChecks(keys: string[]): string[] {
 	);
 }
 
-export function worstTone(keys: string[]): HygieneTone | null {
-	if (!keys.length) return null;
-	return keys.some((k) => CHECK_BY_KEY[k]?.tone === 'warning') ? 'warning' : 'info';
-}
-
 export function toneCounts(keys: string[]): { warning: number; info: number } {
 	let warning = 0;
 	let info = 0;
@@ -352,8 +348,7 @@ export function hygieneShare(row: HygieneRow): number {
 }
 
 export function hygieneShareLabel(row: HygieneRow): string {
-	const p = hygieneShare(row);
-	return p > 0 && p < 1 ? '<1%' : `${Math.round(p)}%`;
+	return percentLabel(hygieneShare(row));
 }
 
 export function hygieneBreakdown(summary: HygieneSummary | null): HygieneBreakdown {

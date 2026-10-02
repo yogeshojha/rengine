@@ -1,6 +1,5 @@
 """Decide which assets are exposures after a scan."""
 
-import contextlib
 import uuid
 from contextlib import contextmanager
 
@@ -10,7 +9,6 @@ from sqlalchemy.exc import OperationalError
 
 from app.database import get_sync_session
 from app.orchestrator.finalize import notify_digest
-from shared.config import BaseAppSettings
 from shared.enums.scan import SCAN_TERMINAL_STATUSES, ScanStatus
 from shared.logging import get_logger
 from shared.models.scan import Scan
@@ -33,21 +31,16 @@ LIVE_LOCK_TIMEOUT_S = 5
 
 @contextmanager
 def _yield_to_scans(session):
-    """Bound how long a judgement may hold host-row locks, then put the connection back as found."""
-    session.execute(text(f"SET SESSION lock_timeout = '{LIVE_LOCK_TIMEOUT_S}s'"))
-    try:
-        yield
-    finally:
-        with contextlib.suppress(Exception):
-            session.execute(text("RESET lock_timeout"))
+    """Bound how long a judgement waits on row locks."""
+    session.execute(text(f"SET LOCAL lock_timeout = '{LIVE_LOCK_TIMEOUT_S}s'"))
+    yield
 
 
 def _publish(scan: Scan, result) -> None:
     try:
-        redis_url = BaseAppSettings().redis_url
-        bump_sync((scan.target_id,), redis_url)
+        bump_sync((scan.target_id,))
         events = ScanEventPublisher(
-            redis_url, scan_id=str(scan.id), project_id=str(scan.project_id)
+            scan_id=str(scan.id), project_id=str(scan.project_id)
         )
         events.interest_ready(
             hosts=result.hosts,
@@ -104,8 +97,8 @@ def evaluate_live(scan_id: str) -> dict:
         if scan is None or scan.status in SCAN_TERMINAL_STATUSES:
             return {"skipped": "run is over"}
         try:
+            ensure_builtin(session)
             with _yield_to_scans(session):
-                ensure_builtin(session)
                 result = evaluate(session, scan, include_ai=False, only=LIVE_SOURCES)
         except OperationalError:
             session.rollback()
@@ -127,7 +120,7 @@ def _digest(session, scan: Scan, *, scored: bool) -> None:
 
 @shared_task(name="app.tasks.interest.refresh_project")
 def refresh_project(project_id: str) -> dict:
-    """A rule change re-labels history."""
+    """Re-evaluate a project's recent completed scans."""
     refreshed = 0
     with get_sync_session() as session:
         scans = (

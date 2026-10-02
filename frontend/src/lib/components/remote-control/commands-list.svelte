@@ -1,4 +1,5 @@
 <script lang="ts">
+	import SectionHead from '$lib/components/section-head.svelte';
 	import { CHAT_GROUP_LABELS, CHAT_GROUP_ORDER } from '$lib/config/channels';
 	import type { ChannelCommand } from '$lib/types/remote-control';
 
@@ -7,8 +8,6 @@
 	}
 
 	let { commands }: Props = $props();
-
-	const LABEL = 'text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase';
 
 	const groups = $derived(
 		CHAT_GROUP_ORDER.map((group) => ({
@@ -24,13 +23,13 @@
 <div class="grid gap-x-8 gap-y-5 px-4 py-5 sm:grid-cols-2 xl:grid-cols-3">
 	{#each groups as group (group.group)}
 		<div class="min-w-0">
-			<h4 class="mb-1.5 {LABEL}">{group.label}</h4>
+			<div class="mb-1.5"><SectionHead title={group.label} /></div>
 			<ul class="flex flex-col">
 				{#each group.rows as command (command.name)}
 					<li class="flex items-baseline gap-2 py-1 leading-5">
 						<code class="shrink-0 font-mono text-xs">{short(command.usage)}</code>
 						<span class="min-w-0 text-xs text-muted-foreground">{command.title}</span>
-						{#if command.capability !== 'read'}
+						{#if command.steps_up}
 							<span
 								class="shrink-0 text-2xs {command.touches_target
 									? 'text-warning'

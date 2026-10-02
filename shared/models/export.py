@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 from pydantic import Field as PydanticField
-from sqlalchemy import Column
+from sqlalchemy import BigInteger, Column
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
@@ -51,7 +51,7 @@ class Export(SQLModel, table=True):
     task_id: str | None = Field(default=None, max_length=100)
 
     filename: str | None = Field(default=None, max_length=MAX_FILENAME_LEN)
-    bytes_written: int = Field(default=0)
+    bytes_written: int = Field(default=0, sa_type=BigInteger)
     row_count: int = Field(default=0)
     total_rows: int = Field(default=0)
     capped: bool = Field(default=False)

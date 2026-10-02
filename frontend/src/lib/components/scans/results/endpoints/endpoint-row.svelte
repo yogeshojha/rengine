@@ -2,7 +2,7 @@
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import { excludeToken, filterToken } from '$lib/utilities/scan-insights';
-	import { formatBytes } from '$lib/utilities/scan-correlation';
+	import { formatBytes } from '$lib/utilities/format';
 	import Copy from '@lucide/svelte/icons/copy';
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 	import Webhook from '@lucide/svelte/icons/webhook';
@@ -17,7 +17,7 @@
 	import StatusMark from './status-mark.svelte';
 	import { ACTIONS_BODY, ACTIONS_PIN, pinTone, rowTone } from '../table/columns';
 	import { ENDPOINT_COLUMNS, ENDPOINT_LEAD_COLUMNS, OUTLINE_LEAD_COLUMNS } from './columns';
-	import { GUIDE_WIDTH, OUTLINE_ROW_ATTR } from './outline-context';
+	import { GUIDE, OUTLINE_ROW_ATTR } from './outline-context';
 	import {
 		ENDPOINT_CLASS_ICONS,
 		ENDPOINT_CLASS_LABELS,
@@ -109,7 +109,7 @@
 	{#if isApi || sensitive.length || testable.length || endpoint.is_new || gone || endpoint.sources.includes(EndpointSource.ROBOTS)}
 		<div class="flex flex-wrap items-center gap-1 {compact ? '' : 'mt-1'}">
 			{#if isApi}
-				<Hint text="Declared by the service's own API schema.">
+				<Hint text="Declared in an API schema.">
 					{#snippet child(props)}
 						<span {...props} class="inline-flex">
 							<Badge
@@ -148,7 +148,7 @@
 			{/if}
 			{#if gone}
 				<Badge variant="outline" class="h-4 px-1.5 text-2xs font-normal text-muted-foreground">
-					Not found this scan
+					Not in this scan
 				</Badge>
 			{/if}
 		</div>
@@ -194,8 +194,7 @@
 		<div class="min-w-0 flex-1 {OUTLINE_LEAD_COLUMNS[0].width}">
 			<div class="flex items-start gap-x-1.5 leading-5">
 				{#each Array(depth) as _, i (i)}
-					<span class="{GUIDE_WIDTH} -ml-1.5 h-5 shrink-0 border-l border-border/70 ml-[7px]"
-					></span>
+					<span class={GUIDE}></span>
 				{/each}
 				<span class="size-4 shrink-0"></span>
 				<span class="flex h-5 shrink-0 items-center {dim ? 'text-muted-foreground/70' : classTone}">

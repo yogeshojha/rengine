@@ -1,12 +1,20 @@
+import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
 from app.core.database import get_session
+from app.services.target_labels import (
+    get_label,
+    refuse_if_in_use,
+    rename,
+    target_counts,
+)
+from shared.definitions.tripwires import ScopeKind
 from shared.models.organization import (
     Organization,
     OrganizationCreate,
@@ -14,7 +22,15 @@ from shared.models.organization import (
     OrganizationUpdate,
 )
 from shared.models.project import Project
-from shared.utils.slug import add_with_unique_slug, unique_slug
+from shared.models.target import TargetOrganization
+from shared.utils.slug import add_with_unique_slug
+
+
+def _read(org: Organization, counts: dict[uuid.UUID, int]) -> OrganizationRead:
+    return OrganizationRead.model_validate(org).model_copy(
+        update={"target_count": counts.get(org.id, 0)}
+    )
+
 
 router = APIRouter(
     prefix="/organizations",
@@ -26,24 +42,25 @@ router = APIRouter(
 async def list_organizations(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
-    project_slug: Annotated[
-        str | None, Query(description="Filter by project slug")
-    ] = None,
+    project_slug: Annotated[str, Query(description="Project slug")],
 ):
-    query = select(Organization)
+    project_result = await session.execute(
+        select(Project.id).where(Project.slug == project_slug)
+    )
+    project_id = project_result.scalar_one_or_none()
+    if not project_id:
+        return []
 
-    if project_slug:
-        project_result = await session.execute(
-            select(Project.id).where(Project.slug == project_slug)
-        )
-        project_id = project_result.scalar_one_or_none()
-        if project_id:
-            query = query.where(Organization.project_id == project_id)
-        else:
-            return []
-
-    result = await session.execute(query)
-    return result.scalars().all()
+    result = await session.execute(
+        select(Organization)
+        .where(Organization.project_id == project_id)
+        .order_by(Organization.name)
+    )
+    orgs = result.scalars().all()
+    counts = await target_counts(
+        session, TargetOrganization.organization_id, [o.id for o in orgs]
+    )
+    return [_read(o, counts) for o in orgs]
 
 
 @router.post("", response_model=OrganizationRead, status_code=status.HTTP_201_CREATED)
@@ -97,97 +114,18 @@ async def create_organization(
     return organization
 
 
-@router.get("/{project_slug}/{slug}", response_model=OrganizationRead)
-async def get_organization(
-    project_slug: str,
-    slug: str,
-    _current_user: CurrentUser,
-    session: Annotated[AsyncSession, Depends(get_session)],
-):
-    project_result = await session.execute(
-        select(Project.id).where(Project.slug == project_slug)
-    )
-    project_id = project_result.scalar_one_or_none()
-
-    if not project_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
-        )
-
-    result = await session.execute(
-        select(Organization).where(
-            Organization.slug == slug,
-            Organization.project_id == project_id,
-        )
-    )
-    organization = result.scalar_one_or_none()
-
-    if not organization:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found"
-        )
-
-    return organization
-
-
-@router.patch("/{project_slug}/{slug}", response_model=OrganizationRead)
+@router.patch("/{organization_id}", response_model=OrganizationRead)
 async def update_organization(
-    project_slug: str,
-    slug: str,
+    organization_id: uuid.UUID,
     organization_in: OrganizationUpdate,
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    project_result = await session.execute(
-        select(Project.id).where(Project.slug == project_slug)
-    )
-    project_id = project_result.scalar_one_or_none()
-
-    if not project_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
-        )
-
-    result = await session.execute(
-        select(Organization).where(
-            Organization.slug == slug,
-            Organization.project_id == project_id,
-        )
-    )
-    organization = result.scalar_one_or_none()
-
-    if not organization:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found"
-        )
-
-    update_data = organization_in.model_dump(exclude_unset=True)
-
-    if "name" in update_data:
-        normalized_name = update_data["name"].strip().lower()
-        update_data["name"] = normalized_name
-
-        duplicate = await session.execute(
-            select(Organization).where(
-                Organization.name == normalized_name,
-                Organization.project_id == project_id,
-                Organization.id != organization.id,
-            )
-        )
-        if duplicate.scalar_one_or_none():
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="An organization with this name exists in this project",
-            )
-
-        organization.slug = await unique_slug(
-            session, Organization, normalized_name, project_id=project_id
-        )
-
-    for field, value in update_data.items():
-        if field in Organization.model_fields:
-            setattr(organization, field, value)
-
+    org = await get_label(session, Organization, organization_id, "Organization")
+    if organization_in.name is not None:
+        await rename(session, org, organization_in.name, "Organization")
+    if "description" in organization_in.model_fields_set:
+        org.description = organization_in.description
     try:
         await session.commit()
     except IntegrityError as e:
@@ -196,39 +134,18 @@ async def update_organization(
             status_code=status.HTTP_409_CONFLICT,
             detail="An organization with this name exists in this project",
         ) from e
-    await session.refresh(organization)
-    return organization
+    counts = await target_counts(session, TargetOrganization.organization_id, [org.id])
+    return _read(org, counts)
 
 
-@router.delete("/{project_slug}/{slug}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{organization_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_organization(
-    project_slug: str,
-    slug: str,
+    organization_id: uuid.UUID,
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    project_result = await session.execute(
-        select(Project.id).where(Project.slug == project_slug)
-    )
-    project_id = project_result.scalar_one_or_none()
-
-    if not project_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
-        )
-
-    result = await session.execute(
-        select(Organization).where(
-            Organization.slug == slug,
-            Organization.project_id == project_id,
-        )
-    )
-    organization = result.scalar_one_or_none()
-
-    if not organization:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found"
-        )
-
-    await session.delete(organization)
+    org = await get_label(session, Organization, organization_id, "Organization")
+    await refuse_if_in_use(session, org, ScopeKind.ORGANIZATION)
+    await session.delete(org)
     await session.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

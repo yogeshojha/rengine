@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 from reports.base import RenderContext, Section
-from reports.config import SectionConfig, flag, limit
+from reports.config import MAX_CHANGE_ITEMS, SectionConfig, flag, limit
 from shared.definitions.reports import SectionGroup
-from shared.definitions.surface import SURFACE_LABELS, SURFACE_NOUN
+from shared.definitions.surface import SURFACE_LABELS
 
 
 class ChangesConfig(SectionConfig):
     list_added: bool = flag(True, title="List added")
     list_gone: bool = flag(True, title="List removed")
     max_items: int = limit(
-        20, title="Items listed per dimension", minimum=1, maximum=200
+        20, title="Items listed per dimension", minimum=1, maximum=MAX_CHANGE_ITEMS
     )
     show_new_findings: bool = flag(True, title="List new findings")
 
@@ -29,7 +29,6 @@ class ChangesSection(Section):
         rows = [
             {
                 "label": SURFACE_LABELS[line.dimension],
-                "noun": SURFACE_NOUN[line.dimension][1],
                 "added": line.added,
                 "gone": line.gone,
                 "added_sample": line.added_sample[: cfg.max_items]

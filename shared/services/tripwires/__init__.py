@@ -3,7 +3,6 @@ from shared.services.tripwires.evaluate import (
     applicable,
     check_scan,
     evaluate,
-    previous_scan,
     validate_query,
 )
 
@@ -12,6 +11,5 @@ __all__ = [
     "applicable",
     "check_scan",
     "evaluate",
-    "previous_scan",
     "validate_query",
 ]

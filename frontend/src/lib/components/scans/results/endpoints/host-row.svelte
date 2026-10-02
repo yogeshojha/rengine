@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { excludeToken } from '$lib/utilities/scan-insights';
+	import { stopProp } from '$lib/utilities';
+	import { bracketed } from '$lib/utilities/net';
 	import Globe from '@lucide/svelte/icons/globe';
 	import Copy from '@lucide/svelte/icons/copy';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
@@ -79,14 +81,11 @@
 
 	let identity = $derived(node.identity);
 	let firstTech = $derived(identity?.tech[0] ?? '');
-	let verifiedMix = $derived(
-		Object.fromEntries(Object.entries(node.status_mix).filter(([k]) => k !== 'none'))
-	);
 	let why = $derived(whyReasons(node.interest));
 	let moreFolders = $derived(
 		Math.max(0, node.folders - node.chips.filter((c) => c.path !== '/').length)
 	);
-	let openUrl = $derived(node.sample_url ?? `https://${node.name}/`);
+	let openUrl = $derived(node.sample_url ?? `https://${bracketed(node.name)}/`);
 
 	function chipClass(chip: FolderChip): string {
 		const tone = CHIP_TONE[chip.glyph] ?? 'border-border/70 bg-muted/40';
@@ -94,12 +93,8 @@
 	}
 	function chipHint(chip: FolderChip): string {
 		const parts = [FOLDER_GLYPH_LABELS[chip.glyph] ?? 'Folder'];
-		if (chip.archive_only)
-			parts.push('Known only to an archive. No endpoint here answered this scan.');
+		if (chip.archive_only) parts.push('Known only to an archive. No endpoint here answered.');
 		return parts.join(' · ');
-	}
-	function stop(e: Event) {
-		e.stopPropagation();
 	}
 </script>
 
@@ -157,7 +152,7 @@
 									chip
 								)}"
 								onclick={(e) => {
-									stop(e);
+									stopProp(e);
 									onEnterFolder(node.name, chip);
 								}}
 							>
@@ -197,7 +192,7 @@
 		</div>
 		{#if node.verified > 0}
 			<div class="mt-1.5 flex h-2 items-center">
-				<StatusBar mix={verifiedMix} total={node.verified} />
+				<StatusBar mix={node.status_mix} total={node.verified} />
 			</div>
 		{/if}
 	</div>
@@ -270,7 +265,7 @@
 						size="icon"
 						class="hidden size-7 sm:inline-flex"
 						onclick={(e) => {
-							stop(e);
+							stopProp(e);
 							onCopy(node);
 						}}
 					>
@@ -287,13 +282,13 @@
 							size="icon"
 							class="size-7"
 							aria-label="More actions"
-							onclick={stop}
+							onclick={stopProp}
 						>
 							<Ellipsis class="size-3.5" />
 						</Button>
 					{/snippet}
 				</DropdownMenu.Trigger>
-				<DropdownMenu.Content align="end" class="w-60" onclick={stop}>
+				<DropdownMenu.Content align="end" class="w-60" onclick={stopProp}>
 					<DropdownMenu.Item onclick={() => onEnter(node.name)}>
 						<ArrowRight class="size-3.5" /> Open sitemap
 					</DropdownMenu.Item>

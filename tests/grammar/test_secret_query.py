@@ -3,7 +3,10 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 
 import pytest
+from fastapi import Response
+from sqlalchemy import select
 
+from app.api.v1.secrets import get_secret
 from app.services.secret import SecretService
 from shared.definitions.secrets import SecretGroup, SecretSource, SecretState
 from shared.models.secret import Secret, SecretFilter
@@ -140,3 +143,23 @@ async def test_a_group_count_equals_its_drilldown(estate, now) -> None:
     for group in groups.groups:
         total, _ = await _search(estate, "run", group.query)
         assert total == group.count, group.query
+
+
+async def test_a_secret_detail_is_not_cached(estate, now) -> None:
+    await estate.scan("example.com", "run", at=now)
+    await _add(estate, "run", at=now, value="d")
+    secret_id = await estate.session.scalar(
+        select(Secret.id).where(Secret.scan_id == estate.scans["run"])
+    )
+    response = Response()
+
+    detail = await get_secret(
+        _current_user=None,
+        service=SecretService(estate.session),
+        scope=estate.scans["run"],
+        secret_id=secret_id,
+        response=response,
+    )
+
+    assert detail.value == "AKIAd"
+    assert response.headers["Cache-Control"] == "no-store"

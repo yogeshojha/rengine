@@ -2,51 +2,19 @@ import { api } from './client';
 import { scopeQuery, type TargetScope } from '$lib/utilities/surface-scope';
 import type { HostingComposition } from '$lib/types/hosting';
 import type { CorrelationGraph } from '$lib/types/correlation';
-import type { RenderGroups, SubdomainSummary, TargetSubdomainRead } from '$lib/types/subdomain';
+import type { RenderGroups } from '$lib/types/subdomain';
 import type { QueryCounts, QueryGroups, QueryLeads } from '$lib/types/asset-query';
 import type {
 	Facet,
 	SubdomainFilter,
 	SubdomainSearchResult,
 	SubdomainFacetSet,
-	SubdomainRelation,
 	SubdomainInsights,
 	SubdomainCorrelation,
 	HygieneSummary
 } from '$lib/utilities/scan-insights';
 
-interface ListParams {
-	active_only?: boolean;
-	search?: string;
-	limit?: number;
-	offset?: number;
-}
-
-function buildQuery(base: Record<string, string>, params: ListParams): string {
-	const sp = new URLSearchParams(base);
-	if (params.active_only) sp.append('active_only', 'true');
-	if (params.search) sp.append('search', params.search);
-	if (params.limit != null) sp.append('limit', String(params.limit));
-	if (params.offset != null) sp.append('offset', String(params.offset));
-	return sp.toString();
-}
-
 export const subdomainsApi = {
-	async rollup(
-		projectId: string,
-		targetId: string,
-		params: ListParams = {}
-	): Promise<TargetSubdomainRead[]> {
-		const q = buildQuery({ project_id: projectId, target_id: targetId }, params);
-		return api.get<TargetSubdomainRead[]>(`/subdomains/rollup?${q}`);
-	},
-
-	async rollupSummary(projectId: string, targetId: string): Promise<SubdomainSummary> {
-		return api.get<SubdomainSummary>(
-			`/subdomains/rollup/summary?project_id=${projectId}&target_id=${targetId}`
-		);
-	},
-
 	async search(
 		projectId: string,
 		scanId: string,
@@ -69,6 +37,13 @@ export const subdomainsApi = {
 			{
 				queries
 			}
+		);
+	},
+
+	async tabs(projectId: string, scanId: string, filter: SubdomainFilter): Promise<QueryCounts> {
+		return api.post<QueryCounts>(
+			`/subdomains/search/tabs?${scopeQuery({ projectId, scanId })}`,
+			filter
 		);
 	},
 
@@ -119,12 +94,6 @@ export const subdomainsApi = {
 	): Promise<SubdomainFacetSet> {
 		return api.get<SubdomainFacetSet>(
 			`/subdomains/facets?${scopeQuery({ projectId, scanId, ...scope })}`
-		);
-	},
-
-	async related(projectId: string, scanId: string, name: string): Promise<SubdomainRelation[]> {
-		return api.get<SubdomainRelation[]>(
-			`/subdomains/related?${scopeQuery({ projectId, scanId })}&name=${encodeURIComponent(name)}`
 		);
 	},
 

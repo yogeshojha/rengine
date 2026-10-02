@@ -5,18 +5,20 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass, field
 
-from sqlalchemy import cast, func, select
+from sqlalchemy import cast, func, not_, select, text
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.dialects.postgresql import array as pg_array
 
+from shared.definitions.surface import SurfaceDimension
 from shared.models.http_asset import HttpAsset
 from shared.models.ip_address import IpAddress
 from shared.models.port import Port
 from shared.models.software import SoftwareCve
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
+from shared.models.vuln_template import VulnTemplate
 from shared.models.vulnerability import Vulnerability
 from shared.models.whois import WhoisRecord
+from shared.services.asset_query import NO_JIT, vuln_suppressed
 
 
 @dataclass
@@ -35,29 +37,19 @@ class NetworkEstate:
 
 
 @dataclass
-class HostEstate:
-    known: set[str] = field(default_factory=set)
-
-
-@dataclass
 class DomainEstate:
     targets: dict[str, uuid.UUID] = field(default_factory=dict)
     seen: set[str] = field(default_factory=set)
 
 
 def _asn_hosts(project_id: uuid.UUID, asn: int):
-    return (
-        select(
-            func.count(func.distinct(Subdomain.name)),
-            func.count(func.distinct(IpAddress.ip)),
-        )
-        .select_from(IpAddress)
-        .outerjoin(
-            Subdomain,
-            (Subdomain.project_id == IpAddress.project_id)
-            & (Subdomain.asn == IpAddress.asn),
-        )
+    return select(
+        select(func.count(func.distinct(Subdomain.name)))
+        .where(Subdomain.project_id == project_id, Subdomain.asn == asn)
+        .scalar_subquery(),
+        select(func.count(func.distinct(IpAddress.ip)))
         .where(IpAddress.project_id == project_id, IpAddress.asn == asn)
+        .scalar_subquery(),
     )
 
 
@@ -109,13 +101,6 @@ def _targets_by_value(project_id: uuid.UUID, values: list[str]):
     )
 
 
-def _cve_findings(project_id: uuid.UUID, cve: str):
-    return select(func.count(Vulnerability.id)).where(
-        Vulnerability.project_id == project_id,
-        func.jsonb_exists_any(cast(Vulnerability.cve_ids, JSONB), pg_array([cve])),
-    )
-
-
 def _registrant_domains(project_id: uuid.UUID, registrant: str, exclude: str):
     return (
         select(func.count(func.distinct(WhoisRecord.query_value)))
@@ -151,23 +136,50 @@ async def network(
     return NetworkEstate(hosts=int(row[0] or 0), addresses=int(row[1] or 0))
 
 
-async def cve_findings(session, project_id: uuid.UUID | None, cve: str) -> int:
+async def cve_counts(
+    session, project_id: uuid.UUID | None, cve: str
+) -> tuple[int, int]:
+    """Findings and software matches for a CVE in the exposure page's scope."""
     if project_id is None:
-        return 0
-    return int(await session.scalar(_cve_findings(project_id, cve)) or 0)
+        return 0, 0
+    from app.services.surface_scope import SurfaceScopeService  # noqa: PLC0415
 
-
-async def cve_software(session, project_id: uuid.UUID | None, cve: str) -> int:
-    if project_id is None:
-        return 0
-    return int(
-        await session.scalar(
-            select(func.count(SoftwareCve.id)).where(
-                SoftwareCve.project_id == project_id, SoftwareCve.cve == cve
+    scopes = SurfaceScopeService(session)
+    found = await scopes.scope(project_id, SurfaceDimension.VULNERABILITIES.value)
+    software = await scopes.scope(project_id, SurfaceDimension.SOFTWARE.value)
+    findings = inferred = 0
+    if found.ids:
+        await session.execute(text(NO_JIT))
+        findings = await session.scalar(
+            select(func.count()).where(
+                found.match(Vulnerability.scan_id),
+                func.jsonb_exists(cast(Vulnerability.cve_ids, JSONB), cve),
+                not_(vuln_suppressed(found)),
             )
         )
-        or 0
-    )
+    if software.ids:
+        inferred = await session.scalar(
+            select(func.count()).where(
+                software.match(SoftwareCve.scan_id), SoftwareCve.cve == cve
+            )
+        )
+    return int(findings or 0), int(inferred or 0)
+
+
+async def library_checks(session, cve: str) -> tuple[int, bool]:
+    """Enabled library checks naming a CVE, and whether the library holds any check."""
+    named, total = (
+        await session.execute(
+            select(
+                func.count().filter(
+                    VulnTemplate.enabled.is_(True),
+                    func.jsonb_exists(cast(VulnTemplate.cve_ids, JSONB), cve),
+                ),
+                func.count(),
+            ).select_from(VulnTemplate)
+        )
+    ).one()
+    return int(named or 0), bool(total)
 
 
 async def registrant_domains(
@@ -201,15 +213,6 @@ async def classify_domains(
         (await session.execute(_known_hosts(project_id, values))).scalars().all()
     )
     return DomainEstate(targets=targets, seen=seen)
-
-
-def network_sync(
-    session, project_id: uuid.UUID | None, asn: int | None
-) -> NetworkEstate:
-    if project_id is None or asn is None:
-        return NetworkEstate()
-    row = session.execute(_asn_hosts(project_id, asn)).first()
-    return NetworkEstate(hosts=int(row[0] or 0), addresses=int(row[1] or 0))
 
 
 async def certificates(

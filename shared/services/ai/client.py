@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
+from typing import Any
 
 import httpx
 
 from shared.definitions.ai import (
+    BASE_URL_PROVIDERS,
     MAX_OUTPUT_TOKENS,
     MODEL_BY_ID,
     TASK_EFFORT,
@@ -15,17 +17,16 @@ from shared.definitions.ai import (
     Effort,
 )
 from shared.enums.instance import AIProvider
-from shared.logging import get_logger
+from shared.http import egress_proxy
 from shared.services.ai import ledger
 from shared.services.ai.config import AIConfig
 from shared.services.ai.ledger import CallRecord
-
-logger = get_logger(__name__)
 
 _OPENAI_URL = "https://api.openai.com/v1/chat/completions"
 _GOOGLE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 _ANTHROPIC_THINKING: dict = {"type": "adaptive"}
 _HTTP_ERROR = 400
+_NOT_JSON = "The provider answered with a body that is not JSON. Check the base URL."
 
 
 class AIError(RuntimeError):
@@ -38,9 +39,17 @@ class AIError(RuntimeError):
 
 
 def chat_url(cfg: AIConfig) -> str:
+    if cfg.provider == AIProvider.OPENAI.value:
+        return _OPENAI_URL
     if cfg.provider == AIProvider.OPENAI_COMPATIBLE.value and cfg.base_url:
         return f"{cfg.base_url.rstrip('/')}/chat/completions"
-    return _OPENAI_URL
+    msg = f"Provider '{cfg.provider}' has no chat endpoint. Check the AI settings."
+    raise AIError(msg)
+
+
+def provider_proxy(cfg: AIConfig) -> str | None:
+    """The egress proxy, for a provider at a fixed public endpoint."""
+    return None if cfg.provider in BASE_URL_PROVIDERS else egress_proxy()
 
 
 def chat_headers(cfg: AIConfig) -> dict[str, str]:
@@ -130,34 +139,20 @@ def complete(
     return result
 
 
-def count_tokens(cfg: AIConfig, *, system: str, prompt: str, fast: bool = False) -> int:
-    model = cfg.model_for_task(fast=fast)
-    if cfg.provider == AIProvider.ANTHROPIC.value:
-        try:
-            import anthropic  # noqa: PLC0415
-
-            client = _anthropic_client(anthropic, cfg)
-            counted = client.messages.count_tokens(
-                model=model,
-                system=system,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            return int(counted.input_tokens)
-        except Exception:
-            logger.debug("token count unavailable, estimating")
-    return _estimate_tokens(system) + _estimate_tokens(prompt)
+def anthropic_headers(cfg: AIConfig) -> dict[str, str] | None:
+    """The workspace header when one is configured."""
+    return {"anthropic-workspace-id": cfg.workspace} if cfg.workspace else None
 
 
-def _estimate_tokens(text: str) -> int:
-    return max(1, len(text) // 4)
-
-
-def _anthropic_client(anthropic, cfg: AIConfig):
-    """Anthropic client with the workspace header when one is configured."""
-    headers = {"anthropic-workspace-id": cfg.workspace} if cfg.workspace else None
-    return anthropic.Anthropic(
-        api_key=cfg.api_key, timeout=cfg.timeout, default_headers=headers
-    )
+def anthropic_extras(model: str, effort: str) -> dict[str, Any]:
+    """Thinking and effort parameters the model accepts."""
+    spec = MODEL_BY_ID.get(model)
+    extras: dict[str, Any] = {}
+    if spec is None or spec.adaptive_thinking:
+        extras["thinking"] = _ANTHROPIC_THINKING
+    if spec is None or spec.supports_effort:
+        extras["output_config"] = {"effort": effort}
+    return extras
 
 
 def _anthropic(
@@ -165,19 +160,21 @@ def _anthropic(
 ) -> tuple[str, tuple[int, int]]:
     import anthropic  # noqa: PLC0415
 
-    spec = MODEL_BY_ID.get(model)
     kwargs: dict = {
         "model": model,
         "max_tokens": max_tokens,
         "system": system,
         "messages": [{"role": "user", "content": prompt}],
+        **anthropic_extras(model, effort),
     }
-    if spec is None or spec.adaptive_thinking:
-        kwargs["thinking"] = _ANTHROPIC_THINKING
-    if spec is None or spec.supports_effort:
-        kwargs["output_config"] = {"effort": effort}
 
-    client = _anthropic_client(anthropic, cfg)
+    proxy = provider_proxy(cfg)
+    client = anthropic.Anthropic(
+        api_key=cfg.api_key,
+        timeout=cfg.timeout,
+        default_headers=anthropic_headers(cfg),
+        http_client=anthropic.DefaultHttpxClient(proxy=proxy) if proxy else None,
+    )
     try:
         response = client.messages.create(**kwargs)
     except anthropic.BadRequestError as exc:
@@ -211,7 +208,13 @@ def _openai(
             {"role": "user", "content": prompt},
         ],
     }
-    body = _post(chat_url(cfg), payload, chat_headers(cfg), cfg.timeout)
+    body = post_json(
+        chat_url(cfg),
+        payload,
+        chat_headers(cfg),
+        cfg.timeout,
+        proxy=provider_proxy(cfg),
+    )
     choices = body.get("choices") or []
     if not choices:
         msg = "The provider returned no completion."
@@ -233,7 +236,13 @@ def _google(
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
         "generationConfig": {"maxOutputTokens": max_tokens},
     }
-    body = _post(url, payload, {"x-goog-api-key": cfg.api_key}, cfg.timeout)
+    body = post_json(
+        url,
+        payload,
+        {"x-goog-api-key": cfg.api_key},
+        cfg.timeout,
+        proxy=provider_proxy(cfg),
+    )
     candidates = body.get("candidates") or []
     if not candidates:
         msg = "The provider returned no completion."
@@ -247,15 +256,27 @@ def _google(
     )
 
 
-def _post(url: str, payload: dict, headers: dict, timeout: float) -> dict:
+def post_json(
+    url: str,
+    payload: dict,
+    headers: dict,
+    timeout: float,
+    *,
+    proxy: str | None = None,
+) -> dict:
     try:
-        with httpx.Client(timeout=timeout) as client:
+        with httpx.Client(timeout=timeout, proxy=proxy) as client:
             response = client.post(url, json=payload, headers=headers)
             if response.status_code >= _HTTP_ERROR:
                 detail = response.text[:300]
                 msg = f"Provider returned {response.status_code}: {detail}"
                 raise AIError(msg)
-            return response.json()
+            body = response.json()
     except httpx.HTTPError as exc:
         msg = f"The provider did not respond: {exc}"
         raise AIError(msg) from exc
+    except ValueError as exc:
+        raise AIError(_NOT_JSON) from exc
+    if not isinstance(body, dict):
+        raise AIError(_NOT_JSON)
+    return body

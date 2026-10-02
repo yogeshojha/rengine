@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from functools import partial
 
-from pydantic import BaseModel, field_validator
+from pydantic import field_validator
 from sqlmodel import Field, SQLModel
 
 from shared.utils.datetime import utc_now
@@ -40,8 +40,3 @@ class ProjectRead(ProjectBase):
     is_active: bool
     created_at: datetime
     created_by: uuid.UUID
-
-
-class ProjectSummary(BaseModel):
-    project: ProjectRead
-    stats: dict[str, int]

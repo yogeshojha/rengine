@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from shared.definitions.domains import registrable_domain
-from shared.enums.target import TargetType
+from shared.enums.target import HOSTNAME_TARGET_TYPES, TargetType
 from shared.enums.whois import WhoisLookupType
 from shared.logging import get_logger
 from shared.models.whois import WhoisNameserver, WhoisRecord
@@ -102,7 +102,8 @@ class WhoisService:
                 asn_number = extract_asn_number(query)
                 return self.lookup_asn(asn_number, query)
             case TargetType.URL:
-                host = normalize_domain(query)
+                bare = query.strip()
+                host = bare if validate_ip(bare) else normalize_domain(query)
                 return (
                     self.lookup_ip(host)
                     if validate_ip(host)
@@ -112,11 +113,15 @@ class WhoisService:
                 msg = f"Unsupported target type for WHOIS: {target_type}"
                 raise WhoisValidationError(msg)
 
+    def _fresh_lookup(self, query: str, target_type) -> WhoisResponse:
+        self.ensure_ready()
+        return self.do_lookup(query, target_type)
+
     @staticmethod
     def lookup_key(query: str, target_type) -> str:
         """The value a registry is asked for, also the cache and record key."""
         normalized = normalize_query(query, target_type)
-        if target_type in (TargetType.DOMAIN, TargetType.URL):
+        if target_type in HOSTNAME_TARGET_TYPES:
             return registrable_domain(normalized) or normalized
         return normalized
 
@@ -177,7 +182,7 @@ class WhoisService:
                     cache_hit=True,
                 )
 
-        response = await asyncio.to_thread(self.do_lookup, normalized, target_type)
+        response = await asyncio.to_thread(self._fresh_lookup, normalized, target_type)
 
         if store_in_db and session:
             await self._store_record(session, response, normalized)
@@ -386,7 +391,7 @@ class WhoisService:
         registrant_name: str,
         limit: int = MAX_CORRELATION_RECORDS,
     ) -> list[WhoisRecord]:
-        """Punctuation, case and the company suffix are not part of the name."""
+        """Records whose registrant matches by registrant_key."""
         key = registrant_key(registrant_name)
         if not key:
             return []
@@ -426,20 +431,6 @@ class WhoisService:
         )
         return list(result.scalars().all())
 
-    async def find_by_country(
-        self,
-        session: AsyncSession,
-        country: str,
-        limit: int = MAX_CORRELATION_RECORDS,
-    ) -> list[WhoisRecord]:
-        result = await session.execute(
-            select(WhoisRecord)
-            .where(WhoisRecord.country == country.upper())
-            .where(WhoisRecord.country != "")
-            .limit(limit)
-        )
-        return list(result.scalars().all())
-
     async def find_by_nameserver(
         self,
         session: AsyncSession,
@@ -458,7 +449,7 @@ class WhoisService:
     async def get_correlations_for_target(
         self, session: AsyncSession, whois_record_id: uuid.UUID
     ) -> dict[str, list[WhoisRecord]]:
-        """Correlation groups for a record. A registrar is not one: it registers for anyone."""
+        """Correlation groups for a record."""
         result = await session.execute(
             select(WhoisRecord).where(WhoisRecord.id == whois_record_id)
         )
@@ -508,15 +499,10 @@ class WhoisService:
         return list(result.scalars().all())
 
     def ensure_ready(self) -> None:
-        self.refresh_bootstrap()
         try:
-            self._provider.ensure_bootstrapped()
+            self._provider.refresh_if_stale(BOOTSTRAP_MAX_AGE_DAYS)
         except RDAPProviderError as e:
-            msg = f"Failed to initialize WHOIS service: {e}"
-            raise WhoisLookupError(msg) from e
-
-    def refresh_bootstrap(self, max_age_days: int = BOOTSTRAP_MAX_AGE_DAYS) -> None:
-        try:
-            self._provider.refresh_if_stale(max_age_days)
-        except RDAPProviderError as e:
+            if not self._provider.is_bootstrapped:
+                msg = f"Failed to initialize WHOIS service: {e}"
+                raise WhoisLookupError(msg) from e
             logger.warning(f"Failed to refresh bootstrap data: {e}")

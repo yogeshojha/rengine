@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import uuid
+from datetime import timedelta
 
-from sqlalchemy import select, text
+from sqlalchemy import case, exists, func, literal_column, not_, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.target_scope import Targets
+from shared.definitions.asset_query import VULN_FLAGS, VULN_QUERY
 from shared.definitions.threat_intel import (
     BANDS_BY_KEY,
     EXPLOIT_BANDS,
@@ -21,12 +22,14 @@ from shared.definitions.threat_intel import (
 )
 from shared.enums.api_key import APIProvider
 from shared.models.api_key import APIKey
+from shared.models.target import Target
 from shared.models.threat_intel import (
     CveIntelRead,
     ExposureProduct,
     FindingIntel,
     IntelChange,
     IntelCoverage,
+    IntelSignal,
     KevDetail,
     PocRef,
     SignalFinding,
@@ -35,68 +38,53 @@ from shared.models.threat_intel import (
     ThreatIntelStatus,
     ThreatProviderRead,
 )
-from shared.services.threat_intel import feed_age_hours, feed_status
-from shared.utils.datetime import utc_now
-
-_COVERAGE_SQL = """
-SELECT count(*)                                                              AS findings,
-       count(*) FILTER (WHERE jsonb_array_length(cve_ids::jsonb) > 0)        AS with_cve,
-       count(*) FILTER (WHERE epss_score IS NOT NULL)                        AS scored,
-       count(*) FILTER (WHERE is_kev)                                        AS kev,
-       count(*) FILTER (WHERE kev_ransomware)                                AS ransomware,
-       count(*) FILTER (WHERE kev_due_date IS NOT NULL
-                          AND kev_due_date < current_date)                   AS overdue,
-       count(*) FILTER (WHERE coalesce(poc_count, 0) > 0)                    AS weaponised,
-       count(*) FILTER (WHERE template_available IS FALSE)                   AS untestable,
-       count(*) FILTER (WHERE intel_at IS NOT NULL)                          AS enriched,
-       max(intel_at)                                                         AS last_applied_at
-FROM vulnerabilities
-{scope}
-"""
-
-_BAND_CASE = "CASE {arms} ELSE '{floor}' END".format(
-    arms=" ".join(
-        f"WHEN epss_score >= {band.floor} THEN '{band.key}'"
-        for band in EXPLOIT_BANDS[:-1]
-    ),
-    floor=EXPLOIT_BANDS[-1].key,
+from shared.models.vulnerability import Vulnerability
+from shared.services.asset_query import (
+    QueryScope,
+    VulnQueryContext,
+    compile_vuln_query,
+    parse_query,
+    vuln_suppressed,
 )
-
-_BANDS_SQL = """
-SELECT {case} AS band, count(*) AS n
-FROM vulnerabilities
-WHERE epss_score IS NOT NULL {and_scope}
-GROUP BY 1
-"""
-
-_SIGNAL_FINDINGS_SQL = """
-SELECT DISTINCT ON (v.id)
-       v.id, v.scan_id, v.target_id, v.template_name, v.severity, v.host, v.matched_at,
-       v.epss_score, v.exploit_score, v.cve_ids::jsonb AS cve_ids,
-       s.reason, s.created_at, t.target_value
-FROM intel_signals s
-JOIN vulnerabilities v ON v.id = s.vulnerability_id
-JOIN targets t ON t.id = v.target_id
-WHERE s.kind = ANY(:kinds) {and_scope}
-ORDER BY v.id, v.exploit_score DESC, v.epss_score DESC NULLS LAST
-LIMIT :limit
-"""
+from shared.services.threat_intel import feed_status
+from shared.utils.datetime import utc_now
 
 STALE_INTEL_DAYS = 2
 
-_CHANGES_SQL = """
-SELECT s.vulnerability_id, s.kind, s.created_at, s.reason,
-       v.scan_id, v.target_id, v.template_name, v.severity, v.host, v.matched_at,
-       v.epss_score, v.cve_ids::jsonb AS cve_ids, t.target_value
-FROM intel_signals s
-JOIN vulnerabilities v ON v.id = s.vulnerability_id
-JOIN targets t ON t.id = v.target_id
-WHERE s.kind = ANY(:kinds)
-  AND s.created_at > now() - make_interval(days => :days)
-  {and_scope}
-ORDER BY s.created_at DESC
-LIMIT :limit
-"""
+_CHANGE_KINDS = (
+    ExploitSignal.KEV.value,
+    ExploitSignal.RANSOM_PATH.value,
+    ExploitSignal.FRESH_EXPLOIT.value,
+    ExploitSignal.WEAPONISED.value,
+)
+
+
+def _band():
+    return case(
+        *[
+            (Vulnerability.epss_score >= band.floor, band.key)
+            for band in EXPLOIT_BANDS[:-1]
+        ],
+        else_=EXPLOIT_BANDS[-1].key,
+    )
+
+
+def _flag(name: str, scope: QueryScope):
+    """The vulnerability grammar's `is:<name>`."""
+    return compile_vuln_query(
+        parse_query(f"is:{name}", VULN_QUERY),
+        VulnQueryContext(scope=scope, now=utc_now()),
+    )
+
+
+def _signalled(kind: str, scope: QueryScope):
+    if kind in VULN_FLAGS:
+        return _flag(kind, scope)
+    return exists(
+        select(1).where(
+            IntelSignal.vulnerability_id == Vulnerability.id, IntelSignal.kind == kind
+        )
+    )
 
 
 class ThreatIntelService:
@@ -104,43 +92,43 @@ class ThreatIntelService:
         self.session = session
 
     @staticmethod
-    def _scope(
-        project_id: uuid.UUID | None, targets: Targets, alias: str = ""
-    ) -> tuple[str, dict]:
-        """`AND …` clauses for the project and the target filter."""
-        clauses, params = [], {}
-        if project_id:
-            clauses.append(f"{alias}project_id = :project_id")
-            params["project_id"] = project_id
-        if targets is not None:
-            clauses.append(f"{alias}target_id = ANY(:target_ids)")
-            params["target_ids"] = list(targets)
-        return "".join(f" AND {c}" for c in clauses), params
+    def _reach(scope: QueryScope | None) -> list:
+        """The findings a scope's vulnerabilities page lists."""
+        if scope is None:
+            return []
+        return [scope.match(Vulnerability.scan_id), not_(vuln_suppressed(scope))]
 
-    async def coverage(
-        self, project_id: uuid.UUID | None = None, targets: Targets = None
-    ) -> IntelCoverage:
-        and_scope, params = self._scope(project_id, targets)
-        where = f"WHERE TRUE{and_scope}" if and_scope else ""
+    async def coverage(self, scope: QueryScope | None = None) -> IntelCoverage:
+        reach = self._reach(scope)
+        flags = scope or QueryScope(())
+        n = func.count()
         row = (
-            await self.session.execute(text(_COVERAGE_SQL.format(scope=where)), params)
+            await self.session.execute(
+                select(
+                    n,
+                    n.filter(Vulnerability.epss_score.isnot(None)),
+                    n.filter(_flag("kev", flags)),
+                    n.filter(_flag("ransomware", flags)),
+                    n.filter(_flag("weaponised", flags)),
+                ).where(*reach)
+            )
         ).one()
+        band = _band().label("band")
         bands = {
-            r.band: int(r.n)
-            for r in await self.session.execute(
-                text(_BANDS_SQL.format(case=_BAND_CASE, and_scope=and_scope)), params
+            key: int(count)
+            for key, count in await self.session.execute(
+                select(band, func.count())
+                .where(Vulnerability.epss_score.isnot(None), *reach)
+                .group_by(literal_column("band"))
             )
         }
+        findings, scored, kev, ransomware, weaponised = (int(v or 0) for v in row)
         return IntelCoverage(
-            findings=int(row.findings or 0),
-            with_cve=int(row.with_cve or 0),
-            scored=int(row.scored or 0),
-            kev=int(row.kev or 0),
-            ransomware=int(row.ransomware or 0),
-            overdue=int(row.overdue or 0),
-            weaponised=int(row.weaponised or 0),
-            untestable=int(row.untestable or 0),
-            enriched=int(row.enriched or 0),
+            findings=findings,
+            scored=scored,
+            kev=kev,
+            ransomware=ransomware,
+            weaponised=weaponised,
             bands=bands,
         )
 
@@ -184,33 +172,41 @@ class ThreatIntelService:
                     duration_ms=int(row.duration_ms) if row else 0,
                     error=row.error if row else None,
                     last_synced_at=row.last_synced_at if row else None,
-                    age_hours=feed_age_hours(row),
                 )
             )
         return out
 
     async def changes(
         self,
-        project_id: uuid.UUID | None,
+        scope: QueryScope | None,
         *,
         days: int = 7,
         limit: int = 20,
-        targets: Targets = None,
     ) -> list[IntelChange]:
-        and_scope, scoped = self._scope(project_id, targets, "v.")
-        params: dict = {
-            "kinds": [
-                ExploitSignal.KEV.value,
-                ExploitSignal.RANSOM_PATH.value,
-                ExploitSignal.FRESH_EXPLOIT.value,
-                ExploitSignal.WEAPONISED.value,
-            ],
-            "days": days,
-            "limit": limit,
-            **scoped,
-        }
         rows = await self.session.execute(
-            text(_CHANGES_SQL.format(and_scope=and_scope)), params
+            select(
+                IntelSignal.vulnerability_id,
+                IntelSignal.kind,
+                IntelSignal.created_at,
+                Vulnerability.scan_id,
+                Vulnerability.target_id,
+                Vulnerability.template_name,
+                Vulnerability.severity,
+                Vulnerability.host,
+                Vulnerability.matched_at,
+                Vulnerability.epss_score,
+                Vulnerability.cve_ids,
+                Target.target_value,
+            )
+            .join(Vulnerability, Vulnerability.id == IntelSignal.vulnerability_id)
+            .join(Target, Target.id == Vulnerability.target_id)
+            .where(
+                IntelSignal.kind.in_(_CHANGE_KINDS),
+                IntelSignal.created_at > utc_now() - timedelta(days=days),
+                *self._reach(scope),
+            )
+            .order_by(IntelSignal.created_at.desc())
+            .limit(limit)
         )
         return [
             IntelChange(
@@ -233,17 +229,48 @@ class ThreatIntelService:
     async def signal_findings(
         self,
         kind: str,
-        project_id: uuid.UUID | None,
+        scope: QueryScope | None,
         *,
         limit: int = 100,
-        targets: Targets = None,
     ) -> list[SignalFinding]:
         """`kind` may name several signals."""
         kinds = [k.strip() for k in kind.split(",") if k.strip()]
-        and_scope, scoped = self._scope(project_id, targets, "v.")
-        params: dict = {"kinds": kinds, "limit": limit, **scoped}
+        if not kinds:
+            return []
+        flags = scope or QueryScope(())
+        reason = (
+            select(IntelSignal.reason)
+            .where(
+                IntelSignal.vulnerability_id == Vulnerability.id,
+                IntelSignal.kind.in_(kinds),
+            )
+            .order_by(IntelSignal.created_at.desc())
+            .limit(1)
+            .scalar_subquery()
+        )
         rows = await self.session.execute(
-            text(_SIGNAL_FINDINGS_SQL.format(and_scope=and_scope)), params
+            select(
+                Vulnerability.id,
+                Vulnerability.scan_id,
+                Vulnerability.target_id,
+                Vulnerability.template_name,
+                Vulnerability.severity,
+                Vulnerability.host,
+                Vulnerability.matched_at,
+                Vulnerability.epss_score,
+                Vulnerability.exploit_score,
+                Vulnerability.cve_ids,
+                Target.target_value,
+                reason.label("reason"),
+            )
+            .join(Target, Target.id == Vulnerability.target_id)
+            .where(or_(*[_signalled(k, flags) for k in kinds]), *self._reach(scope))
+            .order_by(
+                Vulnerability.exploit_score.desc().nulls_last(),
+                Vulnerability.epss_score.desc().nulls_last(),
+                Vulnerability.id,
+            )
+            .limit(limit)
         )
         return [
             SignalFinding(
@@ -258,16 +285,14 @@ class ThreatIntelService:
                 cve=(r.cve_ids or [""])[0] if r.cve_ids else "",
                 epss_score=r.epss_score,
                 exploit_score=int(r.exploit_score or 0),
-                reason=r.reason,
+                reason=r.reason or "",
             )
             for r in rows
         ]
 
-    async def status(
-        self, project_id: uuid.UUID | None = None, targets: Targets = None
-    ) -> ThreatIntelStatus:
+    async def status(self, scope: QueryScope | None = None) -> ThreatIntelStatus:
         feeds = await self.feeds()
-        coverage = await self.coverage(project_id, targets)
+        coverage = await self.coverage(scope)
         cached, fetched = (
             await self.session.execute(
                 text("SELECT count(*), max(fetched_at) FROM cve_intel")
@@ -283,11 +308,6 @@ class ThreatIntelService:
                 .limit(1)
             )
         )
-        last_applied = (
-            await self.session.execute(
-                text("SELECT max(intel_at) FROM vulnerabilities")
-            )
-        ).scalar()
         auto = (
             await self.session.execute(
                 text("SELECT threat_intel_auto_sync FROM instance_settings LIMIT 1")
@@ -316,8 +336,6 @@ class ThreatIntelService:
                     last_fetched_at=fetched,
                 )
             ],
-            last_applied_at=last_applied,
-            recent_changes=await self.changes(project_id, targets=targets),
         )
 
     async def set_auto_sync(self, enabled: bool) -> bool:

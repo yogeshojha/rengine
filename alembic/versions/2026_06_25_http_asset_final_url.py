@@ -4,8 +4,6 @@ Revision ID: f1a3c5e7d9b2
 Revises: e7c9a1b3d5f8
 Create Date: 2026-06-25 16:00:00.000000+00:00
 
-Keeps `host`/`url` as the probed key (correlation) and records where a
-followed redirect actually landed.
 """
 
 from collections.abc import Sequence

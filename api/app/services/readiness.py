@@ -5,18 +5,13 @@ import asyncio
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.definitions.constants import (
-    CRITICAL_QUEUE,
-    DEFAULT_QUEUE,
-    SCAN_CONTROL_QUEUE,
-    SCANS_QUEUE,
-)
+from shared.definitions.constants import SCANS_QUEUE
+from shared.definitions.workers import INSPECT_TIMEOUT, QUEUES
 from shared.models.dashboard import DashboardReadiness
 from shared.models.vuln_template import VulnTemplate
 from shared.services.celery_dispatch import get_celery_client
 
-INSPECT_TIMEOUT = 1.0
-REQUIRED_QUEUES = {CRITICAL_QUEUE, DEFAULT_QUEUE, SCANS_QUEUE, SCAN_CONTROL_QUEUE}
+REQUIRED_QUEUES = frozenset(spec.name for spec in QUEUES)
 
 
 def _workers() -> tuple[bool, int | None]:

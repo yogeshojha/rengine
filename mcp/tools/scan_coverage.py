@@ -7,6 +7,7 @@ from pydantic import Field
 from mcp import links
 from mcp.context import ToolContext
 from mcp.dimensions import DIMENSIONS, dimension
+from mcp.errors import ToolError
 from mcp.result import ToolResult
 from mcp.tools._scope import resolve
 from mcp.tools.base import Tool, ToolGroup, ToolInput
@@ -43,6 +44,12 @@ class ScanCoverage(Tool):
 
     async def run(self, ctx: ToolContext, args: Input) -> ToolResult:
         dim = dimension(args.dimension)
+        if dim.key not in _COVERAGE_DIMENSIONS:
+            msg = (
+                f"Coverage is not recorded for {dim.noun_plural}. "
+                f"Use one of: {', '.join(_COVERAGE_DIMENSIONS)}."
+            )
+            raise ToolError(msg)
         scope = await resolve(ctx, args.target)
         scan_id = scope.require(dim)
 

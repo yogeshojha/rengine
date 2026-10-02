@@ -5,17 +5,13 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import ProgramAvatar from './program-avatar.svelte';
+	import SubmissionBadge from './submission-badge.svelte';
 	import { CADENCE_LABELS } from '$lib/config/watch';
-	import { SUBMISSION_STATE_LABELS } from '$lib/config/bounty-programs';
 	import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
-	import { SubmissionState } from '$lib/types/bounty-program';
 	import { relativeTime } from '$lib/utilities/dates';
-	import {
-		WatchStatus,
-		type StreamStatus,
-		type Watch,
-		type WatchHostFilter
-	} from '$lib/types/watch';
+	import { plural } from '$lib/utilities/strings';
+	import { WatchHostFilter, WatchStatus, type StreamStatus, type Watch } from '$lib/types/watch';
 
 	interface Props {
 		watches: Watch[];
@@ -27,14 +23,7 @@
 
 	let { watches, loading, stream, onOpen, onBrowsePrograms }: Props = $props();
 
-	function initials(name: string): string {
-		return name
-			.split(/\s+/)
-			.slice(0, 2)
-			.map((w) => w[0])
-			.join('')
-			.toUpperCase();
-	}
+	const COLS = 'sm:grid-cols-[minmax(0,1.8fr)_repeat(3,minmax(0,1fr))_auto]';
 
 	function baselineLine(w: Watch): string {
 		if (!w.baseline.status) return 'No baseline';
@@ -65,6 +54,18 @@
 	</button>
 {/snippet}
 
+{#snippet header()}
+	<div
+		class="hidden {COLS} gap-3 border-b px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase sm:grid"
+	>
+		<span>Program</span>
+		<span>New hosts</span>
+		<span>Alerts</span>
+		<span>Scope changes</span>
+		<span class="w-32">Last certificate</span>
+	</div>
+{/snippet}
+
 <div class="flex flex-col gap-3">
 	{#if stream}
 		<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
@@ -79,8 +80,7 @@
 			</span>
 			{#if stream.running}
 				<span>
-					Certificate stream connected · {stream.items}
-					{stream.items === 1 ? 'apex' : 'apexes'}
+					Certificate stream connected · {plural(stream.items, 'apex', 'apexes')}
 				</span>
 				{#if stream.last_certificate_at}
 					<span>Last certificate {relativeTime(stream.last_certificate_at)}</span>
@@ -104,18 +104,10 @@
 	<Card.Root class="gap-0 overflow-hidden py-0">
 		{#if loading && watches.length === 0}
 			<div aria-busy="true">
-				<div
-					class="hidden grid-cols-[minmax(0,1.8fr)_repeat(3,minmax(0,1fr))_auto] gap-3 border-b px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase sm:grid"
-				>
-					<span>Program</span>
-					<span>New hosts</span>
-					<span>Alerts</span>
-					<span>Scope changes</span>
-					<span class="w-32">Last certificate</span>
-				</div>
+				{@render header()}
 				{#each Array(5) as _, i (i)}
 					<div
-						class="grid grid-cols-1 items-center gap-3 border-b px-4 py-3 last:border-b-0 sm:grid-cols-[minmax(0,1.8fr)_repeat(3,minmax(0,1fr))_auto]"
+						class="grid grid-cols-1 items-center gap-3 border-b px-4 py-3 last:border-b-0 {COLS}"
 					>
 						<div class="flex flex-col gap-1.5">
 							<Skeleton class="h-4 w-48 max-w-full" />
@@ -129,49 +121,21 @@
 				{/each}
 			</div>
 		{:else if watches.length === 0}
-			<EmptyState
-				icon={RadarIcon}
-				title="No watched programs"
-				description="Watch a program to follow its scope and probe every new in-scope host."
-				class="p-12"
-			>
+			<EmptyState icon={RadarIcon} title="No watched programs" class="p-12">
 				<Button variant="outline" size="sm" onclick={onBrowsePrograms}>Programs</Button>
 			</EmptyState>
 		{:else}
-			<div
-				class="hidden grid-cols-[minmax(0,1.8fr)_repeat(3,minmax(0,1fr))_auto] gap-3 border-b px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase sm:grid"
-			>
-				<span>Program</span>
-				<span>New hosts</span>
-				<span>Alerts</span>
-				<span>Scope changes</span>
-				<span class="w-32">Last certificate</span>
-			</div>
+			{@render header()}
 			{#each watches as watch (watch.id)}
 				{@const paused = watch.status === WatchStatus.Paused}
 				{@const since = watch.seen_at ? 'since last visit' : 'total'}
-				<div
-					class="grid grid-cols-1 items-center gap-3 border-b px-4 py-3 last:border-b-0 sm:grid-cols-[minmax(0,1.8fr)_repeat(3,minmax(0,1fr))_auto]"
-				>
+				<div class="grid grid-cols-1 items-center gap-3 border-b px-4 py-3 last:border-b-0 {COLS}">
 					<button
 						type="button"
 						onclick={() => onOpen(watch)}
 						class="flex min-w-0 items-center gap-3 rounded-md text-left hover:text-primary"
 					>
-						<span
-							class="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted/50 text-2xs font-semibold text-muted-foreground"
-						>
-							{#if watch.profile_picture}
-								<img
-									src={watch.profile_picture}
-									alt=""
-									class="size-full object-cover"
-									loading="lazy"
-								/>
-							{:else}
-								{initials(watch.program_name)}
-							{/if}
-						</span>
+						<ProgramAvatar name={watch.program_name} picture={watch.profile_picture} />
 						<span class="flex min-w-0 flex-col gap-0.5">
 							<span class="flex min-w-0 items-center gap-2">
 								<span class="truncate text-sm font-medium text-foreground"
@@ -180,25 +144,24 @@
 								{#if paused}
 									<Badge variant="secondary">Paused</Badge>
 								{/if}
-								{#if watch.submission_state !== SubmissionState.Open && watch.submission_state !== SubmissionState.Unknown}
-									<Badge variant="warning">
-										Submissions {SUBMISSION_STATE_LABELS[
-											watch.submission_state as SubmissionState
-										]?.toLowerCase() ?? watch.submission_state}
-									</Badge>
-								{/if}
+								<SubmissionBadge submission={watch.submission_state} />
 							</span>
 							<span class="truncate text-xs text-muted-foreground">
-								{bountyVocabulary.label(watch.platform)} · {watch.targets}
-								{watch.targets === 1 ? 'target' : 'targets'} · {baselineLine(watch)}
+								{bountyVocabulary.label(watch.platform)} · {plural(watch.targets, 'target')} · {baselineLine(
+									watch
+								)}
 							</span>
 						</span>
 					</button>
 
-					{@render count(watch.new_hosts, 'New hosts', since, () => onOpen(watch, 'arrived'))}
-					{@render count(watch.new_alerts, 'Alerts', since, () => onOpen(watch, 'alerted'))}
+					{@render count(watch.new_hosts, 'New hosts', since, () =>
+						onOpen(watch, WatchHostFilter.Arrived)
+					)}
+					{@render count(watch.new_alerts, 'Alerts', since, () =>
+						onOpen(watch, WatchHostFilter.Alerted)
+					)}
 					{@render count(watch.scope_changes, 'Scope changes', since, () =>
-						onOpen(watch, 'all', 'activity')
+						onOpen(watch, WatchHostFilter.All, 'activity')
 					)}
 
 					<span class="flex w-32 flex-col leading-tight">
@@ -208,7 +171,7 @@
 								{watch.hosts_seen} seen · {watch.hosts_alerted} alerted
 							</span>
 						{:else}
-							<span class="text-xs text-muted-foreground">None yet</span>
+							<span class="text-xs text-muted-foreground">None</span>
 						{/if}
 					</span>
 				</div>

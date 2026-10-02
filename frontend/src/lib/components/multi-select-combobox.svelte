@@ -1,6 +1,5 @@
 <script lang="ts">
 	import X from '@lucide/svelte/icons/x';
-	import Check from '@lucide/svelte/icons/check';
 	import Plus from '@lucide/svelte/icons/plus';
 	import Search from '@lucide/svelte/icons/search';
 	import { Badge } from '$lib/components/ui/badge';
@@ -12,7 +11,6 @@
 	interface Item {
 		id: string;
 		label: string;
-		color?: string;
 	}
 
 	interface Props {
@@ -21,10 +19,10 @@
 		onSelect: (item: Item) => void;
 		onRemove: (item: Item) => void;
 		onCreate?: (value: string) => void;
+		onSearch?: (q: string) => void;
 		placeholder?: string;
 		emptyText?: string;
 		allowCreate?: boolean;
-		showColors?: boolean;
 		id?: string;
 	}
 
@@ -34,10 +32,10 @@
 		onSelect,
 		onRemove,
 		onCreate,
+		onSearch,
 		placeholder = 'Search',
 		emptyText = 'No matches',
 		allowCreate = true,
-		showColors = false,
 		id
 	}: Props = $props();
 
@@ -47,7 +45,7 @@
 	let filteredItems = $derived(
 		items.filter(
 			(item) =>
-				item.label.toLowerCase().includes(searchValue.toLowerCase()) &&
+				(onSearch || item.label.toLowerCase().includes(searchValue.toLowerCase())) &&
 				!selected.some((s) => s.id === item.id)
 		)
 	);
@@ -61,6 +59,7 @@
 	function handleSelect(item: Item) {
 		onSelect(item);
 		searchValue = '';
+		onSearch?.('');
 	}
 
 	function handleCreate() {
@@ -82,17 +81,7 @@
 	{#if selected.length > 0}
 		<div class="flex flex-wrap gap-1.5">
 			{#each selected as item (item.id)}
-				<Badge
-					variant="secondary"
-					class="gap-1 pr-1 font-normal"
-					style={showColors && item.color
-						? `background-color: ${item.color}15; color: ${item.color}; border: 1px solid ${item.color}30;`
-						: ''}
-				>
-					{#if showColors && item.color}
-						<span class="h-2 w-2 rounded-full shrink-0" style="background-color: {item.color}"
-						></span>
-					{/if}
+				<Badge variant="secondary" class="gap-1 pr-1 font-normal">
 					{item.label}
 					<button
 						type="button"
@@ -106,7 +95,7 @@
 		</div>
 	{/if}
 
-	<Popover.Root bind:open>
+	<Popover.Root bind:open onOpenChange={(next) => next && onSearch?.(searchValue.trim())}>
 		<Popover.Trigger class="w-full">
 			{#snippet child({ props })}
 				<Button
@@ -121,9 +110,14 @@
 				</Button>
 			{/snippet}
 		</Popover.Trigger>
-		<Popover.Content class="w-[--radix-popover-trigger-width] p-0" align="start">
+		<Popover.Content class="w-(--bits-popover-anchor-width) p-0" align="start">
 			<Command.Root shouldFilter={false}>
-				<Command.Input {placeholder} bind:value={searchValue} onkeydown={handleKeydown} />
+				<Command.Input
+					{placeholder}
+					bind:value={searchValue}
+					oninput={() => onSearch?.(searchValue.trim())}
+					onkeydown={handleKeydown}
+				/>
 				<Command.List class="max-h-none overflow-visible">
 					<Command.Empty>
 						{#if !showCreateOption}
@@ -138,16 +132,7 @@
 									onSelect={() => handleSelect(item)}
 									class="flex items-center gap-2"
 								>
-									{#if showColors && item.color}
-										<span
-											class="h-2.5 w-2.5 rounded-full shrink-0"
-											style="background-color: {item.color}"
-										></span>
-									{/if}
 									<span class="flex-1 truncate">{item.label}</span>
-									{#if selected.some((s) => s.id === item.id)}
-										<Check class="h-4 w-4 text-primary" />
-									{/if}
 								</Command.Item>
 							{/each}
 						</Command.Group>

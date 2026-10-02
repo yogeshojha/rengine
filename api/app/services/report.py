@@ -10,20 +10,20 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from reports.fonts import vendored
+from app.services.instance_settings import InstanceSettingsService
+from reports.fonts import font_read, vendored
 from reports.presets import PRESETS, Preset
 from reports.registry import catalog as section_catalog
 from reports.registry import section as lookup_section
 from reports.theme import ThemeError, builtin_source, builtin_themes, theme_summary
 from reports.theme import parse as parse_theme
+from reports.theme_store import builtin_values
 from shared.definitions.ai import (
     REPORT_TASKS,
     TASK_OUTPUT_TOKENS,
     price,
 )
-from shared.definitions.compliance import FRAMEWORKS
 from shared.definitions.report_fonts import (
-    DEFAULT_WEIGHT,
     FONT_ROLE_HELP,
     FONT_ROLE_LABELS,
     MAX_FACES,
@@ -32,12 +32,8 @@ from shared.definitions.report_fonts import (
     FontRole,
 )
 from shared.definitions.report_theme import (
-    COVER_ART_LABELS,
     COVER_LAYOUT_LABELS,
-    FINDING_STYLE_LABELS,
-    HEADING_STYLE_LABELS,
     MAX_THEME_BYTES,
-    TABLE_STYLE_LABELS,
     ThemeOrigin,
     ThemeTokens,
 )
@@ -47,7 +43,9 @@ from shared.definitions.reports import (
     DENSITY_LABELS,
     DEPTH_LABELS,
     FORMAT_LABELS,
+    GENERATING_STATUSES,
     MAX_SECTIONS,
+    NOT_QUEUED_ERROR,
     PAGE_SIZE_LABELS,
     REPORT_ROOT,
     SCOPE_HELP,
@@ -63,12 +61,11 @@ from shared.definitions.reports import (
     ReportStyle,
     SectionEntry,
     coerce_scope,
+    stranded_after,
+    subject_scope,
 )
 from shared.definitions.vulnerabilities import SEVERITY_ORDER, Severity
-from shared.models.instance_settings import InstanceSettings
 from shared.models.report import (
-    FontFace,
-    FrameworkSummary,
     Report,
     ReportCatalog,
     ReportCreate,
@@ -100,9 +97,11 @@ from shared.services.report_fonts import (
     store_face,
 )
 from shared.utils.datetime import utc_now
+from shared.utils.files import purge_dir
 from shared.utils.slug import generate_slug
 
 _MAX_LIST = 200
+_GENERATING = frozenset(GENERATING_STATUSES)
 
 
 class ReportService:
@@ -134,33 +133,8 @@ class ReportService:
                 for k, v in SCOPE_LABELS.items()
             ],
             slot_tokens=[{"token": t.token, "label": t.label} for t in SLOT_TOKENS],
-            frameworks=[
-                FrameworkSummary(
-                    key=f.key,
-                    name=f.name,
-                    version=f.version,
-                    description=f.description,
-                    url=f.url,
-                    scope_note=f.scope_note,
-                    controls=[
-                        {"id": c.id, "title": c.title, "note": c.note}
-                        for c in f.controls
-                    ],
-                )
-                for f in FRAMEWORKS
-            ],
             cover_layouts=[
                 {"key": k, "label": v} for k, v in COVER_LAYOUT_LABELS.items()
-            ],
-            cover_art=[{"key": k, "label": v} for k, v in COVER_ART_LABELS.items()],
-            table_styles=[
-                {"key": k, "label": v} for k, v in TABLE_STYLE_LABELS.items()
-            ],
-            finding_styles=[
-                {"key": k, "label": v} for k, v in FINDING_STYLE_LABELS.items()
-            ],
-            heading_styles=[
-                {"key": k, "label": v} for k, v in HEADING_STYLE_LABELS.items()
             ],
             audiences=[
                 {"key": k, "label": v, "help": AUDIENCE_HELP.get(k, "")}
@@ -169,7 +143,6 @@ class ReportService:
             depths=[{"key": k, "label": v} for k, v in DEPTH_LABELS.items()],
             densities=[{"key": k, "label": v} for k, v in DENSITY_LABELS.items()],
             ai_available=bool(cfg and cfg.allows("report_narrative")),
-            ai_model=cfg.model if cfg else "",
         )
 
     async def _theme_summaries(self) -> list[ThemeSummary]:
@@ -206,16 +179,7 @@ class ReportService:
                 .scalars()
                 .first()
             )
-            values = {
-                "name": tokens.name,
-                "description": tokens.description,
-                "author": tokens.author,
-                "version": tokens.version,
-                "origin": ThemeOrigin.BUILTIN.value,
-                "tokens": tokens.model_dump(),
-                "source": source,
-                "updated_at": utc_now(),
-            }
+            values = builtin_values(tokens, source)
             if row is None:
                 self.session.add(ReportTheme(slug=slug, **values))
                 changed = True
@@ -225,24 +189,12 @@ class ReportService:
                 self.session.add(row)
                 changed = True
         if changed:
-            await self.session.commit()
+            try:
+                await self.session.commit()
+            except IntegrityError:
+                await self.session.rollback()
 
     # ---------- themes ----------
-
-    async def themes(self) -> list[ReportThemeRead]:
-        await self.sync_themes()
-        rows = (
-            (
-                await self.session.execute(
-                    select(ReportTheme).order_by(ReportTheme.origin, ReportTheme.name)
-                )
-            )
-            .scalars()
-            .all()
-        )
-        return [
-            ReportThemeRead.model_validate(row, from_attributes=True) for row in rows
-        ]
 
     async def theme_source(self, slug: str) -> str:
         row = (
@@ -258,16 +210,14 @@ class ReportService:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Theme not found")
         return row.source or builtin_source(slug)
 
-    async def upload_theme(
-        self, content: str, user_id: UUID, *, slug: str = ""
-    ) -> ReportThemeRead:
+    async def upload_theme(self, content: str, user_id: UUID) -> ReportThemeRead:
         if len(content.encode("utf-8", errors="ignore")) > MAX_THEME_BYTES:
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST,
                 f"Theme file exceeds {MAX_THEME_BYTES} bytes.",
             )
         try:
-            tokens = parse_theme(content, slug=slug)
+            tokens = parse_theme(content)
         except ThemeError as exc:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
 
@@ -335,7 +285,7 @@ class ReportService:
             .scalars()
             .all()
         )
-        return [*vendored(), *[_font_read(row) for row in rows]]
+        return [*vendored(), *[font_read(row) for row in rows]]
 
     async def upload_font(
         self, data: ReportFontUpload, user_id: UUID
@@ -411,7 +361,7 @@ class ReportService:
             self.session.add(row)
         await self.session.commit()
         await self.session.refresh(row)
-        return _font_read(row)
+        return font_read(row)
 
     async def delete_font(self, slug: str) -> None:
         row = (
@@ -434,25 +384,12 @@ class ReportService:
 
     # ---------- instance defaults ----------
 
-    async def _settings(self) -> InstanceSettings:
-        row = (
-            (await self.session.execute(select(InstanceSettings).limit(1)))
-            .scalars()
-            .first()
-        )
-        if row is None:
-            row = InstanceSettings()
-            self.session.add(row)
-            await self.session.commit()
-            await self.session.refresh(row)
-        return row
-
     async def defaults(self) -> ReportDefaults:
-        row = await self._settings()
+        row = await InstanceSettingsService(self.session).get_or_create()
         return ReportDefaults.model_validate(row.report_defaults or {})
 
     async def set_defaults(self, data: ReportDefaults) -> ReportDefaults:
-        row = await self._settings()
+        row = await InstanceSettingsService(self.session).get_or_create()
         row.report_defaults = data.model_dump()
         row.updated_at = utc_now()
         self.session.add(row)
@@ -578,6 +515,9 @@ class ReportService:
             value = payload.pop(key, None)
             if value is not None:
                 setattr(row, key, value)
+        scope = payload.pop("scope", None)
+        if scope is not None:
+            row.scope = coerce_scope(scope)
         for key, value in payload.items():
             if value is not None:
                 setattr(row, key, value)
@@ -596,7 +536,7 @@ class ReportService:
         row = await self.template(template_id, project_id)
         if row.is_builtin:
             raise HTTPException(
-                status.HTTP_400_BAD_REQUEST, "Shipped templates are read-only."
+                status.HTTP_400_BAD_REQUEST, "Default templates are read-only."
             )
         await self.session.delete(row)
         await self.session.commit()
@@ -704,8 +644,9 @@ class ReportService:
             ReportSpec(
                 title=title,
                 subtitle=subtitle,
-                scope=coerce_scope(
-                    data.scope or (template.scope if template else None)
+                scope=subject_scope(
+                    data.scope or (template.scope if template else None),
+                    has_scan=data.scan_id is not None,
                 ),
                 sections=sections,
                 style=style,
@@ -744,62 +685,97 @@ class ReportService:
         await self.session.commit()
         await self.session.refresh(report)
 
-        dispatch_report(str(report.id))
+        await self._dispatch(report)
         return self.to_read(report)
 
+    async def _dispatch(self, report: Report) -> None:
+        if dispatch_report(str(report.id)):
+            return
+        report.status = ReportStatus.FAILED.value
+        report.step = "Failed"
+        report.error = NOT_QUEUED_ERROR
+        report.completed_at = utc_now()
+        self.session.add(report)
+        await self.session.commit()
+        await self.session.refresh(report)
+
     async def _volumes(
-        self, scan: Scan | None, severities: list[str] | None = None
+        self,
+        spec: ReportSpec,
+        scan: Scan | None,
+        target: Target,
+        severities: list[str] | None = None,
     ) -> tuple[int, int, int, dict[str, int]]:
-        """Finding, issue and asset counts, filtered the way the sections filter."""
-        if scan is None:
-            return (0, 0, 0, {})
+        """Finding, issue and asset counts from the runs the report reads."""
+        from reports.data.source import ReportSource  # noqa: PLC0415
+        from shared.definitions.surface import SurfaceDimension  # noqa: PLC0415
         from shared.models.subdomain import Subdomain  # noqa: PLC0415
         from shared.models.vulnerability import Vulnerability  # noqa: PLC0415
 
-        scoped = [Vulnerability.scan_id == scan.id]
-        if severities is not None:
-            scoped.append(Vulnerability.severity.in_(severities))
-        findings = int(
-            await self.session.scalar(
-                select(func.count(Vulnerability.id)).where(*scoped)
+        def runs(session) -> tuple[UUID | None, UUID | None]:
+            source = ReportSource(session, scope=spec.scope, scan=scan, target=target)
+            return (
+                source.scan_for(SurfaceDimension.VULNERABILITIES.value),
+                source.scan_for(SurfaceDimension.WEB_ASSETS.value),
             )
-            or 0
-        )
-        issues = int(
-            await self.session.scalar(
-                select(func.count(func.distinct(Vulnerability.template_id))).where(
-                    *scoped
+
+        finding_run, asset_run = await self.session.run_sync(runs)
+        findings = issues = assets = 0
+        by_severity: dict[str, int] = {}
+        if finding_run is not None:
+            scoped = [
+                Vulnerability.scan_id == finding_run,
+                ReportSource._not_suppressed(),
+            ]
+            if severities is not None:
+                scoped.append(Vulnerability.severity.in_(severities))
+            findings = int(
+                await self.session.scalar(
+                    select(func.count(Vulnerability.id)).where(*scoped)
                 )
+                or 0
             )
-            or 0
-        )
-        rows = (
-            await self.session.execute(
-                select(
-                    Vulnerability.severity,
-                    func.count(func.distinct(Vulnerability.template_id)),
+            rows = (
+                await self.session.execute(
+                    select(
+                        Vulnerability.severity,
+                        func.count(func.distinct(Vulnerability.template_id)),
+                    )
+                    .where(*scoped)
+                    .group_by(Vulnerability.severity)
                 )
-                .where(*scoped)
-                .group_by(Vulnerability.severity)
+            ).all()
+            by_severity = {str(severity): int(count) for severity, count in rows}
+            issues = int(
+                await self.session.scalar(
+                    select(func.count(func.distinct(Vulnerability.template_id))).where(
+                        *scoped
+                    )
+                )
+                or 0
             )
-        ).all()
-        by_severity = {str(severity): int(count) for severity, count in rows}
-        assets = int(
-            await self.session.scalar(
-                select(func.count(Subdomain.id)).where(Subdomain.scan_id == scan.id)
+        if asset_run is not None:
+            assets = int(
+                await self.session.scalar(
+                    select(func.count(Subdomain.id)).where(
+                        Subdomain.scan_id == asset_run
+                    )
+                )
+                or 0
             )
-            or 0
-        )
         return (findings, issues, assets, by_severity)
 
     async def estimate(self, data: ReportCreate, project_id: UUID) -> ReportEstimate:
-        scan, _target = await self._subject(data, project_id)
+        scan, target = await self._subject(data, project_id)
         spec, _ = await self.build_spec(data, project_id)
         cfg = await load_config_async(self.session)
         enabled = [s for s in spec.sections if s.enabled]
         findings_cfg = _section_config(enabled, "findings_detail")
         findings, issues, assets, by_severity = await self._volumes(
-            scan, findings_cfg.get("severities") if findings_cfg else None
+            spec,
+            scan,
+            target,
+            findings_cfg.get("severities") if findings_cfg else None,
         )
         estimate = ReportEstimate(
             sections=len(enabled),
@@ -835,18 +811,8 @@ class ReportService:
                 estimate.warnings.append(f"Unknown section '{entry.section}'. Skipped.")
         return estimate
 
-    async def list(
-        self,
-        project_id: UUID,
-        *,
-        scan_id: UUID | None = None,
-        target_id: UUID | None = None,
-    ) -> list[ReportRead]:
+    async def list(self, project_id: UUID) -> list[ReportRead]:
         query = select(Report).where(Report.project_id == project_id)
-        if scan_id is not None:
-            query = query.where(Report.scan_id == scan_id)
-        if target_id is not None:
-            query = query.where(Report.target_id == target_id)
         rows = (
             (
                 await self.session.execute(
@@ -866,26 +832,28 @@ class ReportService:
 
     async def delete(self, report_id: UUID, project_id: UUID) -> None:
         row = await self.get(report_id, project_id)
-        root = Path(REPORT_ROOT) / str(row.id)
-        if root.exists():
-            for item in root.iterdir():
-                item.unlink(missing_ok=True)
-            root.rmdir()
+        purge_dir(REPORT_ROOT, row.id)
         await self.session.delete(row)
         await self.session.commit()
 
     async def retry(self, report_id: UUID, project_id: UUID) -> ReportRead:
         row = await self.get(report_id, project_id)
+        if (
+            row.status in _GENERATING
+            and utc_now() - (row.started_at or row.created_at) < stranded_after()
+        ):
+            raise HTTPException(status.HTTP_409_CONFLICT, "Report is still generating.")
         row.status = ReportStatus.QUEUED.value
         row.progress = 0
         row.step = "Queued"
         row.error = None
-        row.started_at = None
+        # queue time until the worker stamps the start
+        row.started_at = utc_now()
         row.completed_at = None
         self.session.add(row)
         await self.session.commit()
         await self.session.refresh(row)
-        dispatch_report(str(row.id))
+        await self._dispatch(row)
         return self.to_read(row)
 
     def file_path(self, report: Report, fmt: str) -> tuple[Path, str]:
@@ -946,22 +914,6 @@ _PAGE_SAVED_PER_RUN_ON = 0.4
 _PAGE_TAIL_PER_CHAPTER = 0.3
 
 
-def _font_read(row: ReportFont) -> ReportFontRead:
-    faces = list(row.faces or [])
-    return ReportFontRead(
-        id=row.id,
-        slug=row.slug,
-        name=row.name,
-        role=row.role,
-        origin=row.origin,
-        note=row.note,
-        faces=[FontFace.model_validate(f) for f in faces],
-        weights=sorted({int(f.get("weight", DEFAULT_WEIGHT)) for f in faces}),
-        bytes=row.bytes,
-        created_at=row.created_at,
-    )
-
-
 def _section_config(sections: list[SectionEntry], name: str) -> dict | None:
     entry = next((e for e in sections if e.section == name), None)
     if entry is None:
@@ -1019,8 +971,6 @@ def _pages(
         elif name == "screenshots":
             per_page = max(1, int(config.get("columns", 2) or 2)) * 3
             total += max(1.0, int(config.get("max_images", 12)) / per_page)
-        elif name == "cover":
-            total += 1
         else:
             total += 1
     tails = max(0, len(sections) - 2)

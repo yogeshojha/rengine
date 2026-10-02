@@ -8,7 +8,6 @@ from mcp import auth, limits, protocol, server, telemetry
 from mcp.context import ToolContext
 from mcp.errors import FORBIDDEN, AuthError, McpError
 from mcp.service import McpService
-from mcp.settings import HTTP_PATH
 from shared.logging import get_logger
 
 logger = get_logger(__name__)
@@ -36,7 +35,7 @@ async def handle_request(
     try:
         config = await service.config()
         if not config.enabled:
-            raise _stopped()
+            raise AuthError(DISABLED_MESSAGE)
 
         identity, row = await service.authenticate(auth.from_header(authorization))
 
@@ -56,21 +55,8 @@ async def handle_request(
 
     try:
         await service.mark_used(row, ctx.client)
-        await telemetry.touch(
-            token_id=identity.id,
-            token_name=identity.name,
-            client=ctx.client,
-            capabilities=sorted(identity.capabilities),
-            tool=None,
-        )
+        await telemetry.touch(token_id=identity.id, client=ctx.client)
     except Exception as exc:
         logger.debug("mcp bookkeeping skipped", error=str(exc))
 
     return response
-
-
-def _stopped() -> McpError:
-    return AuthError(DISABLED_MESSAGE)
-
-
-__all__ = ["HTTP_PATH", "handle_request"]

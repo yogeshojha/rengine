@@ -4,7 +4,6 @@ from sqlalchemy import Integer, String, bindparam, select, text
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Session
 
-from shared.config import BaseAppSettings
 from shared.definitions.domain_posture import SPOOFABLE_KEYS
 from shared.definitions.notifications import (
     SCAN_COUNT_COLUMNS,
@@ -28,7 +27,7 @@ from shared.enums.scan import (
     ScanStatus,
 )
 from shared.logging import get_logger
-from shared.models.scan import Scan
+from shared.models.scan import Scan, run_seconds
 from shared.models.scan_activity import ScanActivity
 from shared.models.vulnerability import VulnerabilityCoverage
 from shared.services import (
@@ -104,7 +103,11 @@ def _notify(
 def _finalize_user_cancelled(
     session: Session, scan: Scan, events: ScanEventPublisher
 ) -> None:
-    counts = _settled_counts(session, scan)
+    counts = (
+        _settled_counts(session, scan)
+        if scan.started_at
+        else derived_counts(session, scan.id)
+    )
     locked = session.get(Scan, scan.id, with_for_update=True)
     if locked is None:
         session.commit()
@@ -139,23 +142,26 @@ def _log_cancelled(activity_log: ActivityLogService, scan: Scan) -> None:
     )
 
 
-_HOST_BASELINE_SQL = """
+_FULL = ScanScope.FULL.value
+_COMPLETED = ScanStatus.COMPLETED.value
+
+_HOST_BASELINE_SQL = f"""
 SELECT EXISTS (
     SELECT 1 FROM subdomains b
-    JOIN scans bs ON bs.id = b.scan_id AND bs.scope = 'full'
+    JOIN scans bs ON bs.id = b.scan_id AND bs.scope = '{_FULL}'
                  AND bs.id <> :sid AND bs.started_at < :started
     WHERE b.target_id = :tid
 )
-"""
+"""  # noqa: S608
 
-_SERVICE_BASELINE_SQL = """
+_SERVICE_BASELINE_SQL = f"""
 SELECT EXISTS (
     SELECT 1 FROM ports b
-    JOIN scans bs ON bs.id = b.scan_id AND bs.scope = 'full'
+    JOIN scans bs ON bs.id = b.scan_id AND bs.scope = '{_FULL}'
                  AND bs.id <> :sid AND bs.started_at < :started
     WHERE b.target_id = :tid
 )
-"""
+"""  # noqa: S608
 
 _VULN_BASELINE_SQL = """
 SELECT EXISTS (
@@ -166,18 +172,18 @@ SELECT EXISTS (
 )
 """
 
-_RUN_BASELINE_SQL = """
+_RUN_BASELINE_SQL = f"""
 SELECT EXISTS (
     SELECT 1 FROM scans bs
-    WHERE bs.target_id = :tid AND bs.scope = 'full' AND bs.status = 'completed'
+    WHERE bs.target_id = :tid AND bs.scope = '{_FULL}' AND bs.status = '{_COMPLETED}'
       AND bs.id <> :sid AND bs.started_at < :started
 )
-"""
+"""  # noqa: S608
 
-_NEW_SUBDOMAINS_SQL = """
+_NEW_SUBDOMAINS_SQL = f"""
 WITH seen AS (
     SELECT DISTINCT b.name FROM subdomains b
-    JOIN scans bs ON bs.id = b.scan_id AND bs.scope = 'full'
+    JOIN scans bs ON bs.id = b.scan_id AND bs.scope = '{_FULL}'
                  AND bs.id <> :sid AND bs.started_at < :started
     WHERE b.target_id = :tid
 )
@@ -185,12 +191,12 @@ SELECT count(*) AS total
 FROM subdomains p
 WHERE p.scan_id = :sid
   AND NOT EXISTS (SELECT 1 FROM seen s WHERE s.name = p.name)
-"""
+"""  # noqa: S608
 
-_NEW_SERVICES_SQL = """
+_NEW_SERVICES_SQL = f"""
 WITH seen AS (
     SELECT DISTINCT b.ip, b.number FROM ports b
-    JOIN scans bs ON bs.id = b.scan_id AND bs.scope = 'full'
+    JOIN scans bs ON bs.id = b.scan_id AND bs.scope = '{_FULL}'
                  AND bs.id <> :sid AND bs.started_at < :started
     WHERE b.target_id = :tid
 )
@@ -201,7 +207,7 @@ WHERE p.scan_id = :sid
   AND NOT EXISTS (
       SELECT 1 FROM seen s WHERE s.ip = p.ip AND s.number = p.number
   )
-"""
+"""  # noqa: S608
 
 _NEW_VULNS_SQL = """
 WITH seen AS (
@@ -225,10 +231,10 @@ GROUP BY v.severity
 """
 
 
-_NEW_SECRETS_SQL = """
+_NEW_SECRETS_SQL = f"""
 WITH seen AS (
     SELECT DISTINCT b.fingerprint FROM secrets b
-    JOIN scans bs ON bs.id = b.scan_id AND bs.scope = 'full'
+    JOIN scans bs ON bs.id = b.scan_id AND bs.scope = '{_FULL}'
                  AND bs.id <> :sid AND bs.started_at < :started
     WHERE b.target_id = :tid
 )
@@ -238,14 +244,14 @@ WHERE p.scan_id = :sid
   AND p.is_secret
   AND p.state = :exposed
   AND NOT EXISTS (SELECT 1 FROM seen s WHERE s.fingerprint = p.fingerprint)
-"""
+"""  # noqa: S608
 
 
-_POSTURE_REGRESSIONS_SQL = """
+_POSTURE_REGRESSIONS_SQL = f"""
 WITH prev AS (
     SELECT DISTINCT ON (b.zone) b.zone, b.posture_issues
     FROM domain_posture b
-    JOIN scans bs ON bs.id = b.scan_id AND bs.scope = 'full'
+    JOIN scans bs ON bs.id = b.scan_id AND bs.scope = '{_FULL}'
                  AND bs.id <> :sid AND bs.started_at < :started
     WHERE b.target_id = :tid
     ORDER BY b.zone, bs.started_at DESC
@@ -259,7 +265,7 @@ WHERE p.scan_id = :sid
       WHERE k.value = ANY(:keys)
         AND NOT (prev.posture_issues::jsonb ? k.value)
   )
-"""
+"""  # noqa: S608
 
 
 def _has_baseline(session: Session, scan: Scan, sql: str) -> bool:
@@ -354,7 +360,7 @@ def notify_digest(session: Session, scan: Scan, exposures: int = 0) -> None:
     counts = {col: getattr(scan, col, 0) or 0 for col in SCAN_COUNT_COLUMNS}
     target_value = (scan.execution_config or {}).get("target_value", "")
     _notify(
-        SyncNotificationPublisher(BaseAppSettings().redis_url),
+        SyncNotificationPublisher(),
         session,
         scan,
         scan_digest(
@@ -417,7 +423,7 @@ def _settled_counts(session: Session, scan: Scan) -> dict:
 
 
 def _measure(session: Session, scan: Scan, exposures: int = 0) -> ScanDeltas:
-    """Deltas are measured against every earlier run, a clean earlier run included."""
+    """Measure the run's deltas against every earlier run."""
     hosts, services, vulns, run = (
         _guard(session, lambda sql=sql: _has_baseline(session, scan, sql), False)
         for sql in (
@@ -487,11 +493,9 @@ def _admit_next(session: Session) -> None:
         logger.warning("queued scans not started", exc_info=True)
 
 
-def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
-    events = ScanEventPublisher(
-        redis_url, scan_id=str(scan.id), project_id=str(scan.project_id)
-    )
-    notifier = SyncNotificationPublisher(redis_url)
+def finalize_scan_run(session: Session, scan: Scan) -> None:
+    events = ScanEventPublisher(scan_id=str(scan.id), project_id=str(scan.project_id))
+    notifier = SyncNotificationPublisher()
     target_value = (scan.execution_config or {}).get("target_value", "")
 
     if scan.status in _FINALIZE_SKIPPED:
@@ -529,12 +533,7 @@ def finalize_scan_run(session: Session, scan: Scan, *, redis_url: str) -> None:
         setattr(locked, column, value)
     locked.status = status
     locked.completed_at = utc_now()
-    duration = (
-        (locked.completed_at - locked.started_at).total_seconds()
-        - (locked.paused_seconds or 0.0)
-        if locked.started_at
-        else None
-    )
+    duration = run_seconds(locked)
 
     if status == ScanStatus.FAILED.value:
         failed = next(

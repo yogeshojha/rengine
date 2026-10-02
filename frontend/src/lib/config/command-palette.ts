@@ -31,7 +31,7 @@ import Zap from '@lucide/svelte/icons/zap';
 import type { IconComponent } from './icons';
 import { CALLBACK_SERVER } from './oast';
 import { Capability, type CapabilityKey } from './capabilities';
-import { ROUTES, routeLabels, SETTINGS_SECTIONS } from './routes';
+import { ADMIN_SETTINGS, ROUTES, routeLabels, SETTINGS_SECTIONS } from './routes';
 import { SURFACE_ORDER } from './surface';
 import type { PaletteScope } from '$lib/utilities/palette';
 import { isOpenStatus } from '$lib/utilities/scan-status';
@@ -78,6 +78,7 @@ export interface PaletteContext {
 	projects: Project[];
 	activeProjectId: string;
 	has: (capability: CapabilityKey) => boolean;
+	isAdmin: boolean;
 	actions: PaletteActions;
 }
 
@@ -136,7 +137,7 @@ function runCommands(ctx: PaletteContext): PaletteCommand[] {
 				keywords: label,
 				run: () => actions.resume(scan)
 			});
-		} else {
+		} else if (scan.status === 'running') {
 			out.push({
 				id: `scan:pause:${scan.id}`,
 				label: 'Pause scan',
@@ -189,7 +190,7 @@ function createCommands(ctx: PaletteContext): PaletteCommand[] {
 			icon: Cog,
 			group: 'create',
 			keywords: 'configuration stages',
-			run: () => ctx.actions.go(ROUTES.engine('new'))
+			run: () => ctx.actions.go(ROUTES.newEngine())
 		},
 		{
 			id: 'create:context',
@@ -211,7 +212,7 @@ interface Destination {
 	capability?: CapabilityKey;
 }
 
-function destinations(): Destination[] {
+function destinations(isAdmin: boolean): Destination[] {
 	const surfaces: Destination[] = SURFACE_ORDER.map((spec) => ({
 		id: `page:${spec.tab}`,
 		label: spec.label,
@@ -220,7 +221,9 @@ function destinations(): Destination[] {
 		keywords: spec.nounPlural
 	}));
 
-	const settings: Destination[] = SETTINGS_SECTIONS.map((section) => ({
+	const settings: Destination[] = SETTINGS_SECTIONS.filter(
+		(section) => isAdmin || !ADMIN_SETTINGS.includes(section)
+	).map((section) => ({
 		id: `page:settings:${section}`,
 		label: `${routeLabels.settings} · ${routeLabels[section] ?? section}`,
 		href: ROUTES.settings(section),
@@ -369,7 +372,7 @@ function destinations(): Destination[] {
 }
 
 function pageCommands(ctx: PaletteContext): PaletteCommand[] {
-	return destinations()
+	return destinations(ctx.isAdmin)
 		.filter((d) => !d.capability || ctx.has(d.capability))
 		.map((d) => ({
 			id: d.id,

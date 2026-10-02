@@ -1,5 +1,3 @@
-"""A chat's messages are handled one at a time, and the lock is not kept after."""
-
 from __future__ import annotations
 
 import asyncio

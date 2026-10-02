@@ -30,7 +30,7 @@ from shared.models.http_asset import HttpAsset
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.services.asset_query.scope import QueryScope
-from shared.services.asset_query.tokens import group_token
+from shared.services.asset_query.tokens import token
 from shared.utils.infra import generic_page, shared_edge
 from shared.utils.net import cert_covers
 
@@ -70,7 +70,7 @@ class Carrier:
     sans: tuple[str, ...] = ()
 
     def vouches(self, kind: str) -> bool:
-        """Whether the identity this host presents is its own rather than a platform's."""
+        """Whether the identity this host presents is its own."""
         if shared_edge(self.cname):
             return False
         if kind in CROSS_PAGE_KINDS:
@@ -331,7 +331,7 @@ class CrossLinkService:
             kind=kind,
             label=CORRELATION_KIND_LABELS[kind],
             value=value,
-            query=group_token(kind, "=", value),
+            query=token(kind, "=", value),
             peers=[
                 CrossLinkPeer(
                     host=c.host,

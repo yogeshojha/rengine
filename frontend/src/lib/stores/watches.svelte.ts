@@ -4,8 +4,9 @@ import type { Watch } from '$lib/types/watch';
 function createWatchesStore() {
 	let watches = $state<Watch[]>([]);
 	let isLoading = $state(false);
-	let error = $state<string | null>(null);
 	let fetchedProjectId = $state<string | null>(null);
+	let seq = 0;
+	let loadingFor: string | null = null;
 
 	return {
 		get watches() {
@@ -14,34 +15,36 @@ function createWatchesStore() {
 		get isLoading() {
 			return isLoading;
 		},
-		get error() {
-			return error;
-		},
 		get fetchedProjectId() {
 			return fetchedProjectId;
 		},
 
 		async fetch(projectId: string) {
-			if (isLoading) return;
+			if (isLoading && loadingFor === projectId) return;
+			const my = ++seq;
+			loadingFor = projectId;
 			isLoading = true;
-			error = null;
 			try {
-				watches = await watchesApi.list(projectId);
+				const rows = await watchesApi.list(projectId);
+				if (my !== seq) return;
+				watches = rows;
 				fetchedProjectId = projectId;
-			} catch (e) {
-				error = e instanceof Error ? e.message : 'Watches not loaded';
+			} catch {
 			} finally {
-				isLoading = false;
+				if (my === seq) {
+					isLoading = false;
+					loadingFor = null;
+				}
 			}
 		},
 
 		async refresh() {
 			if (!fetchedProjectId) return;
+			const my = seq;
 			try {
-				watches = await watchesApi.list(fetchedProjectId);
-			} catch (e) {
-				error = e instanceof Error ? e.message : 'Watches not loaded';
-			}
+				const rows = await watchesApi.list(fetchedProjectId);
+				if (my === seq) watches = rows;
+			} catch {}
 		},
 
 		upsert(watch: Watch) {
@@ -54,9 +57,10 @@ function createWatchesStore() {
 		},
 
 		clear() {
+			seq++;
 			watches = [];
 			isLoading = false;
-			error = null;
+			loadingFor = null;
 			fetchedProjectId = null;
 		}
 	};

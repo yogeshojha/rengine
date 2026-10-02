@@ -18,6 +18,7 @@ from shared.definitions.toolbox import (
     RunStatus,
     ToolRunRead,
 )
+from shared.utils.text import clip
 from toolbox.base import ToolOutcome
 
 BOLD = "bold"
@@ -103,10 +104,6 @@ def line(*spans: Span | str) -> Line:
 
 def text_lines(text: str) -> list[Line]:
     return [line(part) for part in text.splitlines()] or [line("")]
-
-
-def error_lines(message: str) -> list[Line]:
-    return text_lines(message)
 
 
 # ---------- packing ----------
@@ -225,9 +222,7 @@ def _fmt_scalar(key: str, value: Any) -> Span:  # noqa: PLR0911
     stamp = _ISO.match(text)
     if stamp:
         return plain(f"{stamp.group(1)} {stamp.group(2)}")
-    if len(text) > MAX_VALUE:
-        text = text[: MAX_VALUE - 1] + "…"
-    return plain(text)
+    return plain(clip(text, MAX_VALUE))
 
 
 def _is_scalar(value: Any) -> bool:
@@ -467,7 +462,7 @@ def outcome_lines(outcome: ToolOutcome, ui_base: str) -> list[Line]:
 def run_lines(run: ToolRunRead, ui_base: str) -> list[Line]:
     """A finished toolbox run, read back from its record."""
     if run.status != RunStatus.COMPLETED.value:
-        return error_lines(run.error or "The run failed.")
+        return text_lines(run.error or "The run failed.")
     return _assemble(
         run.summary or run.title,
         block_lines(run.blocks),

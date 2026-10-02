@@ -282,7 +282,6 @@ def _row(
 
 
 def test_a_costly_universal_check_is_not_swept_across_every_origin():
-    """zip-backup-files was 1,305 requests a host, 84% of the universal tier."""
     cheap = _row("git-config", ["exposure", "config"], simple=False, requests=2)
     heavy = _row(
         "zip-backup-files", ["exposure", "backup"], simple=False, requests=1305
@@ -337,7 +336,6 @@ def test_split_assigns_every_check_to_one_tier():
     assert [r.template_id for r in plan.services] == ["t-ssl"]
     assert [r.template_id for r in plan.names] == ["t-dns"]
     assert [r.template_id for r in plan.unrunnable] == ["t-whois"]
-    assert plan.http_count == 4
 
 
 def test_one_request_is_the_top_paths_of_simple_checks():

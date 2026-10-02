@@ -9,7 +9,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import UnsavedChangesDialog from '@/components/unsaved-changes-dialog.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import { Separator } from '$lib/components/ui/separator';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import MultiSelectCombobox from '$lib/components/multi-select-combobox.svelte';
@@ -21,8 +21,6 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { scansStore } from '$lib/stores/scans.svelte';
 	import { targetsApi } from '$lib/api/targets';
-	import { organizationsApi } from '$lib/api/organizations';
-	import { tagsApi } from '$lib/api/tags';
 	import { TargetType, formatTargetType } from '$lib/types/target';
 	import { getTargetTypeIcon } from '$lib/config/icons';
 	import { ROUTES } from '$lib/config/routes';
@@ -35,7 +33,7 @@
 	} from '$lib/utilities/quick-scan';
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
-	import { tick } from 'svelte';
+	import { tick, untrack } from 'svelte';
 
 	interface Props {
 		open: boolean;
@@ -68,21 +66,6 @@
 
 	let validateTimeout: ReturnType<typeof setTimeout>;
 
-	let organizationItems = $derived(
-		targetsStore.organizations.map((org) => ({
-			id: org.id,
-			label: org.name
-		}))
-	);
-
-	let tagItems = $derived(
-		targetsStore.tags.map((tag) => ({
-			id: tag.id,
-			label: tag.name,
-			color: tag.color
-		}))
-	);
-
 	let seedLines = $derived(
 		seedText
 			.split(/[\s,]+/)
@@ -108,7 +91,7 @@
 				const result = await targetsApi.validate({ target_value: value });
 				validationResult = result;
 			} catch {
-				validationResult = { valid: false, target_type: null, error: 'Validation failed' };
+				validationResult = { valid: false, target_type: null, error: 'Target not validated' };
 			} finally {
 				isValidating = false;
 			}
@@ -133,14 +116,13 @@
 		const projectSlug = projectsStore.activeProject?.slug;
 		if (!projectSlug) return;
 
-		try {
-			const newOrg = await organizationsApi.create({ name, project_slug: projectSlug });
-			selectedOrganizations = [...selectedOrganizations, { id: newOrg.id, label: newOrg.name }];
-			await targetsStore.refresh();
-			toast.success(`Organization "${name}" created`);
-		} catch {
+		const newOrg = await targetsStore.createOrganization(projectSlug, name);
+		if (!newOrg) {
 			toast.error('Organization not created');
+			return;
 		}
+		selectedOrganizations = [...selectedOrganizations, { id: newOrg.id, label: newOrg.name }];
+		toast.success(`Organization "${name}" created`);
 	}
 
 	function handleSelectTag(item: { id: string; label: string; color: string }) {
@@ -155,14 +137,13 @@
 		const projectSlug = projectsStore.activeProject?.slug;
 		if (!projectSlug) return;
 
-		try {
-			const newTag = await tagsApi.create({ name, color, project_slug: projectSlug });
-			selectedTags = [...selectedTags, { id: newTag.id, label: newTag.name, color: newTag.color }];
-			await targetsStore.refresh();
-			toast.success(`Tag "${name}" created`);
-		} catch {
+		const newTag = await targetsStore.createTag(projectSlug, name, color);
+		if (!newTag) {
 			toast.error('Tag not created');
+			return;
 		}
+		selectedTags = [...selectedTags, { id: newTag.id, label: newTag.name, color: newTag.color }];
+		toast.success(`Tag "${name}" created`);
 	}
 
 	async function handleSubmit(e?: Event) {
@@ -196,7 +177,7 @@
 					const stored = await targetsApi.writeSeeds(result.id, seedLines);
 					if (stored.rejected.length > 0) {
 						toast.warning(
-							`${stored.rejected.length} of ${seedLines.length} lines not stored. ` +
+							`${stored.rejected.length} of ${seedLines.length} seed assets not stored. ` +
 								stored.rejected[0].reason
 						);
 					}
@@ -293,6 +274,15 @@
 		open = false;
 	}
 
+	$effect(() => {
+		const projectSlug = projectsStore.activeProject?.slug;
+		if (open && projectSlug)
+			untrack(() => {
+				void targetsStore.fetchOrganizations(projectSlug);
+				void targetsStore.fetchTags(projectSlug);
+			});
+	});
+
 	let prefilled = false;
 	$effect(() => {
 		if (open) {
@@ -317,6 +307,10 @@
 		showCloseButton={false}
 		interactOutsideBehavior={isDirty ? 'ignore' : 'close'}
 		escapeKeydownBehavior={isDirty ? 'ignore' : 'close'}
+		onOpenAutoFocus={(e) => {
+			e.preventDefault();
+			targetInput?.focus();
+		}}
 		class="grid max-h-[90vh] grid-rows-[auto_auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:max-w-[500px]"
 	>
 		<button
@@ -398,7 +392,7 @@
 					<div class="space-y-2">
 						<Label>Organizations</Label>
 						<MultiSelectCombobox
-							items={organizationItems}
+							items={targetsStore.organizationItems}
 							selected={selectedOrganizations}
 							onSelect={handleSelectOrganization}
 							onRemove={handleRemoveOrganization}
@@ -411,7 +405,7 @@
 					<div class="space-y-2">
 						<Label>Tags</Label>
 						<TagMultiSelect
-							items={tagItems}
+							items={targetsStore.tagItems}
 							selected={selectedTags}
 							onSelect={handleSelectTag}
 							onRemove={handleRemoveTag}
@@ -427,7 +421,6 @@
 			<QuickScanFields
 				id="add-target-scan"
 				title="Scan after adding"
-				description="Queues a scan after the target is added."
 				fallbackNote="The target is added without a scan."
 				bind:enabled={scanAfterAdd}
 				bind:selection

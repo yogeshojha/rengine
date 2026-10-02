@@ -9,7 +9,6 @@ from shared.enums.subdomain import SubdomainSource
 from stages.subdomain.providers.base import SubdomainProvider
 
 _CRTNAME_URL = "https://crt.name/v1/search"
-_USER_AGENT = "reNgine/3.0 (+https://rengine.wiki)"
 _APEX_HINT_RE = re.compile(r"eTLD\+1 is ([a-z0-9.-]+)", re.IGNORECASE)
 _MAX_BYTES = 32 * 1024 * 1024
 _BAD_APEX = 400
@@ -28,17 +27,9 @@ class CrtNameProvider(SubdomainProvider):
 
     def _fetch(self, apex: str, *, retry_apex: bool = True) -> str:
         query = urllib.parse.urlencode({"apex": apex})
-        proxy = self.ctx.proxy_url
-        opener = urllib.request.build_opener(
-            urllib.request.ProxyHandler({"http": proxy, "https": proxy})
-            if proxy
-            else urllib.request.ProxyHandler({})
-        )
-        req = urllib.request.Request(  # noqa: S310
-            f"{_CRTNAME_URL}?{query}", headers={"User-Agent": _USER_AGENT}
-        )
+        req = urllib.request.Request(f"{_CRTNAME_URL}?{query}")  # noqa: S310
         try:
-            with opener.open(req, timeout=self.ctx.timeout) as resp:
+            with self._opener().open(req, timeout=self.ctx.timeout) as resp:
                 raw = resp.read(_MAX_BYTES + 1)
         except urllib.error.HTTPError as e:
             detail = e.read().decode("utf-8", errors="replace").strip()

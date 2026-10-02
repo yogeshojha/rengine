@@ -34,6 +34,14 @@ class Comparability(StrEnum):
     NOT_COVERED = "not_covered"
 
 
+COMPARABILITY_LABELS: dict[str, str] = {
+    Comparability.LIKE_FOR_LIKE.value: "Comparable",
+    Comparability.SETTINGS_DIFFER.value: "Settings differ",
+    Comparability.QUALITY_DIFFERS.value: "Runs differ in depth",
+    Comparability.NOT_COVERED.value: "Coverage differs",
+}
+
+
 class FieldKind(StrEnum):
     SCALAR = "scalar"
     LIST = "list"

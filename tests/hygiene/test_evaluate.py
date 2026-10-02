@@ -23,6 +23,10 @@ def _run(headers, *, scheme="https", status=200, content_type="text/html", raw=N
     )
 
 
+def _evidence(found, key):
+    return next(v.evidence for v in found.verdicts if v.key == key and v.failed)
+
+
 def test_no_response_applies_nothing():
     found = _run({"server": "nginx/1.2"}, status=None)
     assert found.checked == []
@@ -51,7 +55,7 @@ def test_http_redirecting_to_https_passes():
 def test_hsts_short_reads_max_age():
     short = _run({"strict_transport_security": "max-age=300"})
     assert C.HSTS_SHORT in short.issues
-    assert short.evidence[C.HSTS_SHORT] == "max-age=300"
+    assert _evidence(short, C.HSTS_SHORT) == "max-age=300"
     long = _run({"strict_transport_security": "max-age=63072000; includeSubDomains"})
     assert C.HSTS_SHORT in long.checked
     assert C.HSTS_SHORT not in long.issues
@@ -129,7 +133,7 @@ def test_cookies_read_from_raw_header_lines_not_joined_map():
 def test_cookie_secure_and_httponly_verdicts():
     found = _run({"set_cookie": "x"}, raw=_RAW_COOKIES)
     assert C.COOKIE_NO_SECURE in found.issues
-    assert found.evidence[C.COOKIE_NO_SECURE] == "cpsession, _ga"
+    assert _evidence(found, C.COOKIE_NO_SECURE) == "cpsession, _ga"
     assert C.COOKIE_NO_HTTPONLY in found.checked
     assert C.COOKIE_NO_HTTPONLY not in found.issues
     assert C.CACHEABLE_SESSION in found.issues
@@ -178,8 +182,8 @@ def test_cors_wildcard_and_credentials():
 def test_disclosure_checks():
     found = _run({"server": "nginx/1.18.0", "x_powered_by": "PHP/8.1"})
     assert C.SERVER_VERSION in found.issues
-    assert found.evidence[C.SERVER_VERSION] == "nginx/1.18.0"
-    assert found.evidence[C.RUNTIME_DISCLOSED] == "x-powered-by: PHP/8.1"
+    assert _evidence(found, C.SERVER_VERSION) == "nginx/1.18.0"
+    assert _evidence(found, C.RUNTIME_DISCLOSED) == "x-powered-by: PHP/8.1"
     bare = _run({"server": "cloudflare"})
     assert C.SERVER_VERSION in bare.checked
     assert C.SERVER_VERSION not in bare.issues

@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 import uuid
+from types import SimpleNamespace
 
 import pytest
-from sqlalchemy import cast, delete, func, not_, or_, select, update
-from sqlalchemy.dialects.postgresql import JSONB
+from pydantic import ValidationError
+from sqlalchemy import func, select, update
 
-from shared.definitions.rescan import SEED_SOURCES, SeedKind
+from shared.definitions.endpoints import EndpointSource, parse_url
+from shared.definitions.rescan import RESCAN_SOURCE, SeedKind
 from shared.enums.subdomain import SubdomainSource
 from shared.enums.target import TargetType
+from shared.models.scan import SeedAsset
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.target_seed import TargetSeed
@@ -16,6 +19,7 @@ from shared.services import target_seeds
 from shared.services.scan_resolve import ResolvedScanConfig
 from stages.asset_seed.stage import AssetSeedStage
 from stages.base import StageContext
+from stages.subdomain.stage import SubdomainStage
 
 pytestmark = pytest.mark.pipeline
 
@@ -157,12 +161,14 @@ async def test_a_discovery_rerun_keeps_the_rows_it_did_not_write(estate, now):
     )
     await estate.hosts("run", ["picked.example.com"], at=now, sources=["rescan"])
 
-    seeded = or_(
-        *[cast(Subdomain.sources, JSONB).contains([source]) for source in SEED_SOURCES]
-    )
-    await estate.session.execute(
-        delete(Subdomain).where(Subdomain.scan_id == scan_id, not_(seeded))
-    )
+    def clear(sync_session):
+        stage = SubdomainStage.__new__(SubdomainStage)
+        stage.session = sync_session
+        stage.ctx = SimpleNamespace(scan_id=scan_id)
+        stage._cleared = False
+        stage._clear_once()
+
+    await estate.session.run_sync(clear)
 
     rows = (
         await estate.session.execute(
@@ -264,12 +270,47 @@ def test_a_url_seed_counts_for_its_host():
     assert target_seeds.seeded_hosts(assets) == ["app.example.com", "www.example.com"]
 
 
+def test_only_a_connector_seed_is_a_proxy_endpoint():
+    proxied = "https://app.example.com/a"
+    launched = "https://www.example.com/b"
+    resolved = _resolved()
+    resolved.seed_assets = [
+        {
+            "kind": SeedKind.URL.value,
+            "value": proxied,
+            "source": EndpointSource.PROXY.value,
+        },
+        {"kind": SeedKind.URL.value, "value": launched},
+    ]
+    stage = AssetSeedStage.__new__(AssetSeedStage)
+    stage.ctx = StageContext(
+        scan_id=uuid.uuid4(),
+        target_id=uuid.uuid4(),
+        project_id=uuid.uuid4(),
+        target_value="example.com",
+        target_type=TargetType.DOMAIN.value,
+        resolved=resolved,
+    )
+
+    _, _, urls = stage._seeds()
+
+    assert dict(urls) == {
+        parse_url(proxied).url: EndpointSource.PROXY.value,
+        parse_url(launched).url: EndpointSource.IMPORT.value,
+    }
+    assert stage._sources["app.example.com"] == RESCAN_SOURCE
+
+
+def test_a_seed_source_is_proxy_or_nothing():
+    with pytest.raises(ValidationError):
+        SeedAsset(kind=SeedKind.URL.value, value="https://a.example.com/", source="x")
+
+
 def test_a_run_with_no_seeds_has_no_seeded_hosts():
     assert target_seeds.seeded_hosts(None) == []
 
 
-def _seed_stage(monkeypatch, passes: list[dict[str, dict]]):
-    """A stage whose dnsx passes are scripted, so the silent-drop retry is observable."""
+def _seed_stage(passes: list[dict[str, dict]]):
     stage = AssetSeedStage.__new__(AssetSeedStage)
     stage._recovered = 0
     calls: list[list[str]] = []
@@ -283,9 +324,9 @@ def _seed_stage(monkeypatch, passes: list[dict[str, dict]]):
     return stage, calls
 
 
-def test_a_name_the_first_pass_dropped_is_asked_again(monkeypatch):
+def test_a_name_the_first_pass_dropped_is_asked_again():
     answer = {"ips": ["203.0.113.10"], "cname": None}
-    stage, calls = _seed_stage(monkeypatch, [{}, {"www.example.com": answer}])
+    stage, calls = _seed_stage([{}, {"www.example.com": answer}])
 
     answers, unanswered = stage._resolve(["www.example.com"])
 
@@ -295,8 +336,8 @@ def test_a_name_the_first_pass_dropped_is_asked_again(monkeypatch):
     assert stage._recovered == 1
 
 
-def test_a_name_that_does_not_exist_is_not_a_drop(monkeypatch):
-    stage, _calls = _seed_stage(monkeypatch, [{}, {}])
+def test_a_name_that_does_not_exist_is_not_a_drop():
+    stage, _calls = _seed_stage([{}, {}])
 
     answers, unanswered = stage._resolve(["gone.example.com"])
 
@@ -305,9 +346,9 @@ def test_a_name_that_does_not_exist_is_not_a_drop(monkeypatch):
     assert stage._recovered == 0
 
 
-def test_only_the_unanswered_names_are_asked_again(monkeypatch):
+def test_only_the_unanswered_names_are_asked_again():
     answer = {"ips": ["203.0.113.10"], "cname": None}
-    stage, calls = _seed_stage(monkeypatch, [{"a.example.com": answer}, {}])
+    stage, calls = _seed_stage([{"a.example.com": answer}, {}])
 
     stage._resolve(["a.example.com", "b.example.com"])
 
@@ -398,7 +439,6 @@ def test_an_asn_takes_a_public_address():
 
 
 def test_a_scope_paste_only_keeps_what_falls_under_each_target():
-    """One pasted scope, sorted by apex: the bulk import relies on this."""
     one = _target("one.example.com", TargetType.DOMAIN)
     two = _target("two.example.com", TargetType.DOMAIN)
     pasted = [

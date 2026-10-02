@@ -9,16 +9,13 @@
 	import BotIcon from '@lucide/svelte/icons/bot';
 	import { ROUTES } from '$lib/config/routes';
 	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
+	import { catalogLabel } from '$lib/config/reports';
 	import type { NarrativeOptions } from '$lib/types/report';
 
 	let { narrative = $bindable() }: { narrative: NarrativeOptions } = $props();
 
 	const catalog = $derived(reportCatalog.catalog);
 	const aiAvailable = $derived(reportCatalog.aiAvailable);
-
-	function label(list: { key: string; label: string }[] | undefined, key: string): string {
-		return list?.find((i) => i.key === key)?.label ?? key;
-	}
 
 	const audienceHelp = $derived(
 		catalog?.audiences.find((a) => a.key === narrative.audience)?.help ?? ''
@@ -31,7 +28,7 @@
 			<Label class="text-xs">Audience</Label>
 			<Select.Root type="single" bind:value={narrative.audience}>
 				<Select.Trigger class="h-9 w-full"
-					>{label(catalog?.audiences, narrative.audience)}</Select.Trigger
+					>{catalogLabel(catalog?.audiences, narrative.audience)}</Select.Trigger
 				>
 				<Select.Content>
 					{#each catalog?.audiences ?? [] as item (item.key)}
@@ -44,7 +41,8 @@
 		<div class="space-y-1.5">
 			<Label class="text-xs">Length</Label>
 			<Select.Root type="single" bind:value={narrative.depth}>
-				<Select.Trigger class="h-9 w-full">{label(catalog?.depths, narrative.depth)}</Select.Trigger
+				<Select.Trigger class="h-9 w-full"
+					>{catalogLabel(catalog?.depths, narrative.depth)}</Select.Trigger
 				>
 				<Select.Content>
 					{#each catalog?.depths ?? [] as item (item.key)}
@@ -62,7 +60,7 @@
 			<BotIcon />
 			<Alert.Title>AI is not connected</Alert.Title>
 			<Alert.Description>
-				Connect a provider on the <a href={ROUTES.ai()} class="underline">AI page</a> to draft the narrative.
+				Connect a provider on the <a href={ROUTES.ai()} class="underline">AI page</a>.
 			</Alert.Description>
 		</Alert.Root>
 	{/if}

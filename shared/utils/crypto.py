@@ -1,13 +1,9 @@
 import base64
 import hashlib
-import os
 
 from cryptography.fernet import Fernet, InvalidToken
 
-_DEFAULT_SECRET = "change-me-in-production-use-openssl-rand-hex-32"  # noqa: S105
-
-# a Fernet token opens with a 0x80 version byte and a zero-padded timestamp
-_FERNET_PREFIX = "gAAAAA"
+from shared.config import base_settings
 
 
 class SecretDecryptionError(RuntimeError):
@@ -15,7 +11,10 @@ class SecretDecryptionError(RuntimeError):
 
 
 def _fernet() -> Fernet:
-    secret = os.environ.get("SECRET_KEY", _DEFAULT_SECRET)
+    secret = base_settings().SECRET_KEY
+    if not secret:
+        msg = "SECRET_KEY is not set. Generate one with: openssl rand -hex 32"
+        raise RuntimeError(msg)
     key = hashlib.sha256(secret.encode()).digest()
     return Fernet(base64.urlsafe_b64encode(key))
 
@@ -41,15 +40,10 @@ def try_decrypt(token: str | None) -> str | None:
         return None
 
 
-def is_sealed(value: str) -> bool:
-    """Whether a stored value carries a Fernet token."""
-    return value.startswith(_FERNET_PREFIX)
-
-
 def decrypt_stored(value: str, *, label: str) -> str:
-    """Open a sealed value. A value written before sealing shipped is returned as it is."""
-    if not is_sealed(value):
-        return value
+    """Open a sealed value."""
+    if not value:
+        return ""
     try:
         return decrypt_secret(value)
     except ValueError as exc:

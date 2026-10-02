@@ -5,7 +5,8 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import func, select, update
+from sqlalchemy import cast, func, select, update
+from sqlalchemy.dialects.postgresql import JSONB
 
 from shared.definitions.connectors import BROWSING_RUN_LABEL, CandidateState
 from shared.definitions.endpoints import EndpointSource
@@ -20,9 +21,11 @@ from shared.services.endpoint_inventory import EndpointObservation, UpsertResult
 from shared.services.endpoint_noise import NoisePolicy
 from shared.services.scan_scope import census_only, covers
 from shared.utils.datetime import utc_now
+from shared.utils.text import counted
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
+    from sqlmodel import SQLModel
 
 _DIMENSION = SurfaceDimension.ENDPOINTS.value
 
@@ -31,8 +34,14 @@ def _started():
     return func.coalesce(Scan.started_at, Scan.created_at)
 
 
-def covering_scan(session: Session, project_id: uuid.UUID, target_id: uuid.UUID):
-    """The settled census scan the target's Endpoints view reads."""
+def covering_scan(
+    session: Session,
+    project_id: uuid.UUID,
+    target_id: uuid.UUID,
+    model: type[SQLModel],
+    dimension: str,
+) -> Scan | None:
+    """The settled census scan the target's view of the dimension reads."""
     return session.scalar(
         select(Scan)
         .where(
@@ -40,7 +49,7 @@ def covering_scan(session: Session, project_id: uuid.UUID, target_id: uuid.UUID)
             Scan.target_id == target_id,
             Scan.status.in_(SCAN_TERMINAL_STATUSES),
             census_only(),
-            covers(Endpoint, _DIMENSION),
+            covers(model, dimension),
         )
         .order_by(_started().desc())
         .limit(1)
@@ -65,16 +74,24 @@ def census_in_flight(
     ) > 0
 
 
-def browsing_run(session: Session, connector: Connector, target_id: uuid.UUID) -> Scan:
-    """The run that holds browsing for a target without a census scan."""
-    label = f"{BROWSING_RUN_LABEL} · {connector.name}"[:200]
+def holding_run(
+    session: Session,
+    *,
+    project_id: uuid.UUID,
+    target_id: uuid.UUID,
+    label: str,
+    owner: str,
+    config: dict,
+    created_by: uuid.UUID | None,
+) -> Scan:
+    """The completed full run keyed on config[owner] that holds rows for a target."""
     existing = session.scalar(
         select(Scan)
         .where(
-            Scan.project_id == connector.project_id,
+            Scan.project_id == project_id,
             Scan.target_id == target_id,
-            Scan.engine_name == label,
             Scan.scope == ScanScope.FULL.value,
+            cast(Scan.execution_config, JSONB)[owner].astext == config[owner],
         )
         .order_by(Scan.created_at.desc())
         .limit(1)
@@ -83,26 +100,39 @@ def browsing_run(session: Session, connector: Connector, target_id: uuid.UUID) -
         return existing
     now = utc_now()
     run = Scan(
-        project_id=connector.project_id,
+        project_id=project_id,
         target_id=target_id,
         engine_id=None,
-        engine_name=label,
+        engine_name=label[:200],
         scope=ScanScope.FULL.value,
         status=ScanStatus.COMPLETED.value,
-        execution_config={"manual": True, "connector": str(connector.id)},
+        execution_config=config,
         started_at=now,
         completed_at=now,
-        created_by=connector.created_by,
+        created_by=created_by,
     )
     session.add(run)
     session.flush()
     return run
 
 
+def browsing_run(session: Session, connector: Connector, target_id: uuid.UUID) -> Scan:
+    """The run that holds browsing for a target without a census scan."""
+    return holding_run(
+        session,
+        project_id=connector.project_id,
+        target_id=target_id,
+        label=f"{BROWSING_RUN_LABEL} · {connector.name}",
+        owner="connector",
+        config={"manual": True, "connector": str(connector.id)},
+        created_by=connector.created_by,
+    )
+
+
 def _observation(candidate: ConnectorCandidate) -> EndpointObservation:
     return EndpointObservation(
         url=candidate.url,
-        detail=f"{candidate.hits} request(s) through {candidate.source_tool}",
+        detail=f"{counted(candidate.hits, 'request')} through {candidate.source_tool}",
         observed_at=candidate.last_seen_at,
         methods=list(candidate.methods or []),
         is_probed=candidate.status_code is not None,
@@ -148,7 +178,7 @@ def sync_target(
     candidates: list[ConnectorCandidate],
 ) -> UpsertResult | None:
     """Write into the covering scan. Defer while a census scan is running."""
-    scan = covering_scan(session, connector.project_id, target_id)
+    scan = covering_scan(session, connector.project_id, target_id, Endpoint, _DIMENSION)
     if scan is None:
         if census_in_flight(session, connector.project_id, target_id):
             return None

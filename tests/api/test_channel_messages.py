@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import socket
 from typing import ClassVar
 
+import httpcore
+import httpx
 import pytest
 
+from shared import http
 from shared.services import notifier
 from shared.services.notifier import Outbound, build_apprise_url, send_one
 
@@ -46,6 +50,8 @@ class _Client:
 def posts(monkeypatch):
     _Client.posts = []
     monkeypatch.setattr(notifier, "get_sync_client", lambda **_k: _Client())
+    monkeypatch.setattr(notifier, "get_public_client", lambda **_k: _Client())
+    monkeypatch.setattr(notifier, "validate_public_https_url", lambda *_a, **_k: None)
     return _Client.posts
 
 
@@ -160,3 +166,98 @@ def test_a_failed_post_reports_the_status_and_nothing_else(posts, monkeypatch):
         False,
         notifier.INVALID_CONFIG,
     )
+
+
+def test_a_stored_webhook_on_a_private_address_is_not_posted(monkeypatch):
+    _Client.posts = []
+    monkeypatch.setattr(notifier, "get_public_client", lambda **_k: _Client())
+    ok, reason = send_one("webhook", {"webhook_url": "https://127.0.0.1/h"}, _message())
+    assert ok is False
+    assert "disallowed address" in reason
+    assert _Client.posts == []
+
+
+def test_a_name_that_resolves_private_at_connect_time_is_refused(monkeypatch):
+    monkeypatch.setattr(
+        http.socket,
+        "getaddrinfo",
+        lambda *_a, **_k: [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("10.0.0.5", 443))
+        ],
+    )
+    with (
+        httpx.Client(transport=http.PublicTransport()) as client,
+        pytest.raises(httpx.ConnectError, match="not public"),
+    ):
+        client.post("https://hooks.example.com/h", json={})
+
+
+async def test_the_async_transport_refuses_a_private_answer(monkeypatch):
+    monkeypatch.setattr(
+        http.socket,
+        "getaddrinfo",
+        lambda *_a, **_k: [
+            (socket.AF_INET6, socket.SOCK_STREAM, 6, "", ("::1", 443, 0, 0))
+        ],
+    )
+    async with httpx.AsyncClient(transport=http.AsyncPublicTransport()) as client:
+        with pytest.raises(httpx.ConnectError, match="not public"):
+            await client.get("https://oast.example.com/poll")
+
+
+def _two_public_answers(monkeypatch):
+    monkeypatch.setattr(
+        http.socket,
+        "getaddrinfo",
+        lambda *_a, **_k: [
+            (
+                socket.AF_INET6,
+                socket.SOCK_STREAM,
+                6,
+                "",
+                ("2606:4700::1111", 443, 0, 0),
+            ),
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("1.1.1.1", 443)),
+        ],
+    )
+
+
+def test_the_next_public_address_is_dialled_when_one_does_not_connect(monkeypatch):
+    _two_public_answers(monkeypatch)
+    dialled: list[str] = []
+
+    def connect(_self, host, *_a, **_k):
+        dialled.append(host)
+        if ":" in host:
+            raise httpcore.ConnectError(host)
+        return "stream"
+
+    monkeypatch.setattr(httpcore.SyncBackend, "connect_tcp", connect)
+    assert http._PublicBackend().connect_tcp("hooks.example.com", 443) == "stream"
+    assert dialled == ["2606:4700::1111", "1.1.1.1"]
+
+
+async def test_the_async_backend_dials_the_next_public_address(monkeypatch):
+    _two_public_answers(monkeypatch)
+
+    async def connect(_self, host, *_a, **_k):
+        if ":" in host:
+            raise httpcore.ConnectTimeout(host)
+        return "stream"
+
+    monkeypatch.setattr(httpcore.AnyIOBackend, "connect_tcp", connect)
+    backend = http._AsyncPublicBackend()
+    assert await backend.connect_tcp("oast.example.com", 443) == "stream"
+
+
+def test_a_user_url_goes_through_the_egress_proxy_when_one_is_set(monkeypatch):
+    url = httpx.URL("https://hooks.example.com/h")
+    monkeypatch.setattr(http, "egress_proxy", lambda: "http://10.0.0.5:3128")
+    with http.get_public_client() as client:
+        transport = client._transport_for_url(url)
+        assert not isinstance(transport, http.PublicTransport)
+        assert isinstance(transport._pool, httpcore.HTTPProxy)
+        assert client.follow_redirects is False
+    monkeypatch.setattr(http, "egress_proxy", lambda: None)
+    with http.get_public_client() as client:
+        assert isinstance(client._transport_for_url(url), http.PublicTransport)

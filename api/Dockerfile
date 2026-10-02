@@ -16,12 +16,13 @@ COPY --from=ghcr.io/astral-sh/uv:0.12.13 /uv /usr/local/bin/uv
 
 FROM base AS development
 
+COPY VERSION /app/VERSION
 COPY shared /app/shared
 COPY tools /app/tools
 
-COPY api/pyproject.toml api/uv.lock* ./
+COPY api/pyproject.toml api/uv.lock ./
 
-RUN uv sync --no-install-project
+RUN uv sync --no-install-project --locked
 
 EXPOSE 8000
 
@@ -31,10 +32,12 @@ CMD ["/app/entrypoint.sh"]
 
 
 ##################################################################
-# Production: what dev mounts from the host is copied in
+# Production
 ##################################################################
 
 FROM development AS production
+
+RUN uv sync --no-install-project --locked --no-dev
 
 COPY api/app /app/app
 COPY stages /app/stages

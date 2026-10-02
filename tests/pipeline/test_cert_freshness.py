@@ -160,6 +160,36 @@ async def test_an_older_scans_rows_are_a_record_not_a_claim(estate, now):
     assert [r.scan_id for r in rows] == [estate.scans["new"]]
 
 
+async def test_a_newer_focused_run_does_not_displace_the_census(estate, now):
+    await _on(estate)
+    await estate.scan("example.com", "census", at=now - timedelta(days=1))
+    await estate.scan("example.com", "focused", at=now, scope="focused")
+    await _host(
+        estate, "census", "a.example.com", expires=now + timedelta(days=9), at=now
+    )
+    await _host(
+        estate, "focused", "b.example.com", expires=now + timedelta(days=9), at=now
+    )
+
+    rows = await estate.session.run_sync(lambda s: cert_freshness.due(s, limit=50))
+    assert [r.scan_id for r in rows] == [estate.scans["census"]]
+
+
+async def test_a_newer_running_census_does_not_displace_the_settled_one(estate, now):
+    await _on(estate)
+    await estate.scan("example.com", "settled", at=now - timedelta(days=1))
+    await estate.scan("example.com", "running", at=now, status="running")
+    await _host(
+        estate, "settled", "a.example.com", expires=now + timedelta(days=9), at=now
+    )
+    await _host(
+        estate, "running", "b.example.com", expires=now + timedelta(days=9), at=now
+    )
+
+    rows = await estate.session.run_sync(lambda s: cert_freshness.due(s, limit=50))
+    assert [r.scan_id for r in rows] == [estate.scans["settled"]]
+
+
 def _seen(host: str, *, expires, expired=False, self_signed=False) -> dict:
     return {
         "host": host,
@@ -240,6 +270,29 @@ async def test_a_host_that_did_not_answer_keeps_what_the_scan_found(estate, now)
     await estate.session.refresh(row)
     assert row.tls_not_after == expires, "the scan's observation stands"
     assert row.tls_checked_at is not None, "but it is not asked again in four hours"
+    assert await _due(estate) == []
+
+
+async def test_a_host_behind_a_proxy_tlsx_cannot_use_is_not_asked_again(
+    estate, now, monkeypatch
+):
+    await _on(estate)
+    await estate.scan("example.com", "run", at=now)
+    expires = now - timedelta(days=3)
+    row = await _host(estate, "run", "a.example.com", expires=expires, at=now)
+    monkeypatch.setattr(
+        cert_freshness,
+        "_by_proxy",
+        lambda _session, rows: {"http://proxy.example:8080": rows},
+    )
+
+    state = await estate.session.run_sync(cert_freshness.refresh)
+
+    assert state.picked == 1
+    assert "1 hosts not re-checked" in state.skipped
+    await estate.session.refresh(row)
+    assert row.tls_not_after == expires
+    assert row.tls_checked_at is not None
     assert await _due(estate) == []
 
 

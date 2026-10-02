@@ -13,7 +13,6 @@
 		label: string;
 		busy?: boolean;
 		total?: number | null;
-		capped?: boolean;
 		noun?: string;
 		nounPlural?: string;
 		mono?: boolean;
@@ -28,7 +27,6 @@
 		label,
 		busy = false,
 		total = null,
-		capped = false,
 		noun = 'result',
 		nounPlural = 'results',
 		mono = false,
@@ -111,7 +109,7 @@
 					<Separator orientation="vertical" />
 				</div>
 				<span class="px-1 text-xs text-muted-foreground tabular-nums max-sm:hidden">
-					{total.toLocaleString()}{capped ? '+' : ''}
+					{total.toLocaleString()}
 					{total === 1 ? noun : nounPlural}
 				</span>
 			{/if}

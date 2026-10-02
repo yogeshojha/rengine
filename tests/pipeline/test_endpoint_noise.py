@@ -251,7 +251,7 @@ async def test_a_disabled_policy_stores_everything_as_given(estate, now):
             _seen("https://www.example.com/logo.png?ver=2"),
             _seen("https://www.example.com/feed/"),
         ],
-        policy=NoisePolicy.off(),
+        policy=NoisePolicy(enabled=False, drops=False, strip_params=False),
     )
     assert result.created == 2
     rows = await estate.session.scalars(

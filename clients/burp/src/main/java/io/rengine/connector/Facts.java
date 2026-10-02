@@ -1,25 +1,20 @@
 package io.rengine.connector;
 
-import java.net.URI;
 import java.net.URLEncoder;
-import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.List;
 
 /** Scope rules and host facts read from reNgine. */
 final class Facts {
-    record Host(
-            String host,
-            String target,
-            boolean covered,
-            int known,
-            int visited,
-            int unvisited,
-            int flagged) {}
+    record Host(String host, String target, boolean covered, int known, int visited, int unvisited) {}
 
-    record Scope(List<String> include, List<String> exclude, int hostsKnown, String program) {}
+    record Scope(
+            List<String> include,
+            List<String> exclude,
+            int hostsKnown,
+            boolean truncated,
+            String program) {}
 
     private final Sink.Config settings;
 
@@ -27,20 +22,9 @@ final class Facts {
         this.settings = settings;
     }
 
-    private static String base(String ingest) {
-        String value = ingest == null ? "" : ingest.trim();
-        int cut = value.lastIndexOf('/');
-        return cut < 0 ? value : value.substring(0, cut);
-    }
-
     private String get(String path) throws Exception {
-        HttpRequest request = HttpRequest.newBuilder(URI.create(base(settings.endpoint()) + path))
-                .timeout(Duration.ofSeconds(15))
-                .header("Authorization", "Bearer " + settings.token())
-                .GET()
-                .build();
-        HttpResponse<String> response = Tls.clientFor(settings)
-                .send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response =
+                Tls.get(settings, Settings.beside(settings.endpoint(), path));
         return response.statusCode() / 100 == 2 ? response.body() : null;
     }
 
@@ -48,7 +32,7 @@ final class Facts {
         if (!settings.isConfigured() || name == null || name.isBlank()) {
             return null;
         }
-        String body = get("/host?host=" + URLEncoder.encode(name, StandardCharsets.UTF_8));
+        String body = get("host?host=" + URLEncoder.encode(name, StandardCharsets.UTF_8));
         if (body == null) {
             return null;
         }
@@ -56,38 +40,25 @@ final class Facts {
                 name,
                 Json.readString(body, "target_value"),
                 "true".equals(Json.readString(body, "covered")),
-                number(body, "known_endpoints"),
-                number(body, "visited"),
-                number(body, "unvisited"),
-                number(body, "flagged"));
+                Json.integer(body, "known_endpoints"),
+                Json.integer(body, "visited"),
+                Json.integer(body, "unvisited"));
     }
 
     Scope scope(String id, boolean program) throws Exception {
         if (!settings.isConfigured() || id == null || id.isBlank()) {
             return null;
         }
-        String body = get("/scope?" + (program ? "program_id=" : "target_id=")
+        String body = get("scope?" + (program ? "program_id=" : "target_id=")
                 + URLEncoder.encode(id, StandardCharsets.UTF_8));
         if (body == null) {
             return null;
         }
         return new Scope(
-                strings(body, "include"),
-                strings(body, "exclude"),
-                number(body, "hosts_known"),
+                Json.strings(body, "include"),
+                Json.strings(body, "exclude"),
+                Json.integer(body, "hosts_known"),
+                "true".equals(Json.readString(body, "truncated")),
                 Json.readString(body, "from_program"));
-    }
-
-    private static int number(String body, String field) {
-        String value = Json.readString(body, field);
-        try {
-            return value == null ? 0 : Integer.parseInt(value.trim());
-        } catch (NumberFormatException e) {
-            return 0;
-        }
-    }
-
-    static List<String> strings(String body, String field) {
-        return Json.strings(body, field);
     }
 }

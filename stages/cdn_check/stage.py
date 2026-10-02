@@ -7,9 +7,10 @@ from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.logging import get_logger
 from shared.models.ip_address import IpAddress
 from shared.services import ip_inventory
+from shared.utils.text import plural
 from stages.base import ALL_TARGETS, Stage, StageResult
 from stages.cdn_check.config import CdnCheckConfig
-from tools.cdncheck.client import CdncheckClient, CdncheckError
+from tools.cdncheck import CdncheckClient, CdncheckError
 
 logger = get_logger(__name__)
 
@@ -86,4 +87,17 @@ class CdnCheckStage(Stage):
         self.emit_progress(
             f"{cdn} of {len(ips)} addresses fronted by a CDN or WAF, {cloud} on cloud infrastructure"
         )
-        return StageResult(counts={"addresses": len(ips), "cdn": cdn, "cloud": cloud})
+        over = len(ips) - _MAX_IPS
+        warnings = (
+            [
+                f"{over:,} {plural(over, 'address', 'addresses')} over the "
+                f"{_MAX_IPS:,} cap not checked."
+            ]
+            if over > 0
+            else []
+        )
+        return StageResult(
+            counts={"addresses": len(ips), "cdn": cdn, "cloud": cloud},
+            warnings=warnings,
+            partial=bool(warnings),
+        )

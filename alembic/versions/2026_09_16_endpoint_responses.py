@@ -29,10 +29,6 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["scan_id"], ["scans.id"], ondelete="CASCADE"),
     )
     op.create_index("ix_endpoint_responses_scan_id", "endpoint_responses", ["scan_id"])
-    op.execute(
-        "UPDATE secret_coverage SET source = 'web_asset_responses' "
-        "WHERE source = 'stored_responses'"
-    )
 
 
 def downgrade() -> None:

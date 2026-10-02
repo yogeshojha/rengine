@@ -16,5 +16,5 @@ class ScreenshotConfig(StageConfig):
         ge=0,
         le=100000,
         title="Screenshot budget",
-        description="Most web assets to render, best first. 0 renders every one. Each is a full headless browser render.",
+        description="Most web assets to render, best first. 0 renders every one.",
     )

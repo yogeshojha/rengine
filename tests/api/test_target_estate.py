@@ -141,7 +141,6 @@ async def test_a_platform_certificate_makes_neighbours_not_relatives(estate, now
     assert out.domains == []
     assert [n.subject for n in out.neighbours] == ["servicedesk.vendor.ie"]
     assert out.neighbours[0].names == 8
-    assert out.counts.neighbour_names == 8
 
 
 async def test_a_name_on_the_targets_own_certificate_is_a_relative(estate, now):
@@ -177,10 +176,10 @@ async def test_a_tracked_domain_is_marked_and_ranked_after_candidates(estate, no
     tracked = next(d for d in out.domains if d.domain == "childcom.org.cy")
     assert tracked.target_id == estate.targets["childcom.org.cy"]
     assert [d.domain for d in out.domains] == ["other.cy", "childcom.org.cy"]
-    assert out.counts.tracked == 1
+    assert sum(1 for d in out.domains if d.target_id is not None) == 1
 
 
-async def test_dns_records_name_providers_and_own_infrastructure(estate, now):
+async def test_dns_records_name_providers_and_skip_own_infrastructure(estate, now):
     await estate.scan("gov.cy", "a", at=now)
     await _dns(
         estate,
@@ -199,7 +198,6 @@ async def test_dns_records_name_providers_and_own_infrastructure(estate, now):
 
     out = await _estate(estate, "gov.cy", "a")
 
-    assert sorted(out.own) == ["212.31.118.0/24", "mail03.gov.cy", "ns01.gov.cy"]
     assert {(p.name, p.kind) for p in out.providers} == {
         ("ClouDNS", "dns"),
         ("Microsoft 365", "mail"),

@@ -12,7 +12,7 @@ from urllib.parse import urlsplit
 
 from sqlalchemy import delete, select, update
 
-from shared.definitions.domains import registrable_domain
+from shared.definitions.domains import registrable_domain, target_zone
 from shared.definitions.endpoints import (
     ARCHIVE_SOURCES,
     CANARY_LENGTH,
@@ -27,8 +27,10 @@ from shared.definitions.ports import SCHEME_PORTS
 from shared.logging import get_logger
 from shared.models.endpoint import Endpoint
 from shared.models.http_asset import HttpAsset
+from shared.models.scan import Scan
 from shared.models.subdomain import Subdomain
-from shared.utils.net import bracketed
+from shared.models.target import Target
+from shared.utils.validation import normalize_domain
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -106,13 +108,6 @@ def canary_urls(root: str) -> list[str]:
     """Three paths no site has, under one root."""
     token = secrets.token_hex(CANARY_LENGTH // 2)
     return [f"{root}/{token}", f"{root}/{token}.php", f"{root}/{token}/"]
-
-
-def root_of(scheme: str, host: str, port: int) -> str:
-    literal = bracketed(host)
-    if port and port != SCHEME_PORTS.get(scheme):
-        return f"{scheme}://{literal}:{port}"
-    return f"{scheme}://{literal}"
 
 
 def store_fingerprints(
@@ -400,8 +395,16 @@ def _scope(session: Session, scan_id: uuid.UUID) -> Callable[[str], bool]:
         ).scalars()
     }
     apexes = {registrable_domain(h) for h in known} - {""}
+    value = session.execute(
+        select(Target.target_value)
+        .join(Scan, Scan.target_id == Target.id)
+        .where(Scan.id == scan_id)
+    ).scalar()
+    zone = target_zone(normalize_domain(value)) if value else ""
 
     def in_scope(host: str) -> bool:
+        if zone and (host == zone or host.endswith(f".{zone}")):
+            return True
         return host in known or registrable_domain(host) in apexes
 
     return in_scope

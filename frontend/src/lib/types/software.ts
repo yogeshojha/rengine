@@ -68,27 +68,16 @@ export interface SoftwareFacets {
 	product: SoftwareFacet[];
 }
 
-export interface SoftwareComponent {
-	name: string;
-	version: string | null;
-	vendor: string | null;
-	product: string | null;
-	version_source: string;
-	mapped: boolean;
-	cves: number;
-	assets: number;
-}
-
 export interface SoftwareCoverage {
 	components: number;
 	mapped: number;
 	unmapped: number;
 	matched: number;
 	findings: number;
+	capped_at: number | null;
 	feed_ready: boolean;
 	feed_age_hours: number | null;
 	stale: boolean;
-	unmapped_names: SoftwareComponent[];
 }
 
 export interface SoftwareFilter {

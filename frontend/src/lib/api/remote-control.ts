@@ -2,7 +2,6 @@ import { api } from './client';
 import type { ChannelKind } from '$lib/config/channels';
 import type {
 	ChannelCall,
-	ChannelCatalogEntry,
 	ChannelChat,
 	ChannelChatUpdate,
 	ChannelCommand,
@@ -15,10 +14,6 @@ import type {
 const base = (channel: ChannelKind) => `/remote-control/channels/${channel}`;
 
 export const remoteControlApi = {
-	channels(): Promise<ChannelCatalogEntry[]> {
-		return api.get<ChannelCatalogEntry[]>('/remote-control/channels');
-	},
-
 	status(channel: ChannelKind): Promise<ChannelStatus> {
 		return api.get<ChannelStatus>(`${base(channel)}/status`);
 	},

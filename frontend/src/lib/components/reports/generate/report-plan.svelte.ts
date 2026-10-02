@@ -24,7 +24,7 @@ export class ReportPlan {
 		return this.catalog.filter((s) => s.role === SectionRole.FURNITURE && this.enabled(s.name));
 	}
 
-	/** Content sections only, matching what the pill grid renders. */
+	/** Enabled content sections. */
 	get enabledContentCount() {
 		return this.content.filter((s) => this.enabled(s.name)).length;
 	}

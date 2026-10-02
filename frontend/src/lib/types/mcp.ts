@@ -8,8 +8,8 @@ export const MCP_CAPABILITY_LABELS: Record<McpCapability, string> = {
 	launch: 'Launch'
 };
 
-export const ALWAYS_GRANTED: McpCapability[] = ['read'];
 export const TOUCHES_TARGETS: McpCapability[] = ['launch'];
+export const MAX_TOKENS = 50;
 export const MCP_DEFAULT_GRANTS: McpCapability[] = ['read', 'plan'];
 
 export const MCP_EXPIRY_CHOICES: { value: number | null; label: string }[] = [
@@ -42,13 +42,8 @@ export interface McpClientSnippet extends McpClientSpec {
 
 export interface McpSession {
 	token_id: string;
-	token_name: string;
 	client: string;
-	capabilities: string[];
-	first_seen: string;
 	last_seen: string;
-	calls: number;
-	last_tool: string | null;
 }
 
 export interface McpStatus {
@@ -59,13 +54,7 @@ export interface McpStatus {
 	protocol_version: string;
 	rate_limit_per_minute: number;
 	ceiling: Record<string, boolean>;
-	tools_total: number;
-	tools_available: number;
-	tokens_total: number;
-	tokens_active: number;
 	sessions: McpSession[];
-	calls_today: number;
-	last_call_at: string | null;
 	capabilities: McpCapabilitySpec[];
 	clients: McpClientSpec[];
 }
@@ -192,4 +181,12 @@ export function ladderLevel(capabilities: readonly string[]): number {
 
 export function grantsUpTo(level: number, allowed: Set<string>): McpCapability[] {
 	return MCP_CAPABILITIES.slice(0, level + 1).filter((c) => allowed.has(c));
+}
+
+export function regrant(
+	level: number,
+	held: readonly string[],
+	allowed: Set<string>
+): McpCapability[] | undefined {
+	return level === ladderLevel(held) ? undefined : grantsUpTo(level, allowed);
 }

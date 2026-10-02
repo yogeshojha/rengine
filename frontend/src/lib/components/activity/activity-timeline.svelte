@@ -44,8 +44,8 @@
 		if (activityFeed.search.trim())
 			return {
 				icon: SearchX,
-				title: 'No matches',
-				sub: `Nothing for “${activityFeed.search.trim()}”`
+				title: `No activity matches “${activityFeed.search.trim()}”`,
+				sub: ''
 			};
 		if (activityFeed.errorsOnly) return { icon: ShieldX, title: 'No errors', sub: '' };
 		if (activityFeed.filter !== 'all')

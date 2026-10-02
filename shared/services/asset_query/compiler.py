@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -34,6 +33,7 @@ from . import predicates as preds
 from .ast import Compare, Or, QuerySyntaxError, Term
 from .scope import QueryScope
 from .terms import (
+    cdn_match,
     date_match,
     folded_match,
     int_coerce,
@@ -45,10 +45,17 @@ from .terms import (
     target_match,
     tri_state,
 )
-from .values import asn_number, like, network, render_hash, status_range, tsquery
-from .walk import as_compare, free_text_fields, walker
+from .values import (
+    IPV4_RE,
+    asn_number,
+    like,
+    network,
+    render_hash,
+    status_range,
+    tsquery,
+)
+from .walk import as_compare, flags, free_text_fields, walker
 
-_IPV4_RE = re.compile(r"^[0-9]{1,3}(\.[0-9]{1,3}){3}$")
 _HEADER_WEIGHT = "A"
 _BODY_WEIGHT = "B"
 
@@ -77,7 +84,7 @@ def _ip(cmp: Compare):
         cidr = network(raw)
         if cidr is not None:
             branches.append(_within(str(cidr)))
-        elif cmp.op is Op.EQ or _IPV4_RE.match(raw):
+        elif cmp.op is Op.EQ or IPV4_RE.match(raw):
             branches.append(func.jsonb_exists(cast(Subdomain.resolved_ips, JSONB), raw))
         else:
             branches.append(preds.ip_text().ilike(like(raw), escape="\\"))
@@ -161,19 +168,6 @@ def _status(cmp: Compare):
     return matched
 
 
-def _flag(cmp: Compare, ctx: QueryContext):
-    branches = []
-    for raw in cmp.values:
-        name = raw.lower()
-        builder = _FLAG_BUILDERS.get(name)
-        if builder is None:
-            msg = f"Unknown flag {raw!r}."
-            hint = f"Try one of: {', '.join(FLAGS)}"
-            raise QuerySyntaxError(msg, cmp.start, cmp.end, hint)
-        branches.append(builder(ctx))
-    return or_(*branches)
-
-
 _FLAG_BUILDERS = {
     "live": lambda _ctx: preds.live(),
     "web": lambda _ctx: preds.answered(),
@@ -199,13 +193,6 @@ _FLAG_BUILDERS = {
     "interesting": lambda _ctx: preds.interesting(),
     "kev": lambda ctx: preds.host_vuln(ctx.scope, Vulnerability.is_kev.is_(True)),
 }
-
-
-def _cdn(cmp: Compare):
-    state = tri_state(cmp)
-    if state is None:
-        return string_match(Subdomain.cdn_name, cmp)
-    return Subdomain.is_cdn.is_(state)
 
 
 def _waf(cmp: Compare):
@@ -340,7 +327,7 @@ _SUBDOMAIN_BUILDERS = {
         Subdomain.asn, c, lambda raw: asn_number(raw, c.start, c.end)
     ),
     "org": lambda c, _ctx: string_match(Subdomain.asn_org, c),
-    "cdn": lambda c, _ctx: _cdn(c),
+    "cdn": lambda c, _ctx: cdn_match(Subdomain.cdn_name, Subdomain.is_cdn, c),
     "waf": lambda c, _ctx: _waf(c),
     "port": lambda c, ctx: preds.port_match(
         number_match(Port.number, c, int_coerce(c)), ctx.scope
@@ -364,7 +351,7 @@ _SUBDOMAIN_BUILDERS = {
     "cve": lambda c, ctx: preds.host_vuln(
         ctx.scope, json_array_match(Vulnerability.cve_ids, c)
     ),
-    "is": _flag,
+    "is": flags(_FLAG_BUILDERS, FLAGS),
 }
 
 _ASSET_BUILDERS = {

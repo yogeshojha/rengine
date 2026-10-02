@@ -7,49 +7,19 @@ import type {
 	BountyProgramDetail,
 	BountyProgramFilters,
 	BountyStatus,
-	BountyVocabulary,
-	ScopeState
+	BountyVocabulary
 } from '$lib/types/bounty-program';
 import { BountyPlatform } from '$lib/types/bounty-program';
-import { api } from './client';
-
-export interface Paged<T> {
-	items: T[];
-	total: number;
-	page: number;
-	size: number;
-	pages: number;
-}
-
-export interface ProgramPage {
-	items: BountyProgram[];
-	total: number;
-	page: number;
-	size: number;
-	pages: number;
-}
-
-function query(params: Record<string, unknown>): string {
-	const search = new URLSearchParams();
-	for (const [key, value] of Object.entries(params)) {
-		if (value === undefined || value === null || value === '') continue;
-		if (Array.isArray(value)) {
-			for (const item of value) search.append(key, String(item));
-			continue;
-		}
-		search.set(key, String(value));
-	}
-	const qs = search.toString();
-	return qs ? `?${qs}` : '';
-}
+import type { PaginatedResponse } from '$lib/types/pagination';
+import { api, toQuery } from './client';
 
 export const bountyProgramsApi = {
 	async vocabulary(): Promise<BountyVocabulary> {
 		return api.get<BountyVocabulary>('/bounty-programs/vocabulary');
 	},
 
-	async status(platform: string = BountyPlatform.HackerOne): Promise<BountyStatus> {
-		return api.get<BountyStatus>(`/bounty-programs/status${query({ platform })}`);
+	async status(): Promise<BountyStatus> {
+		return api.get<BountyStatus>('/bounty-programs/status');
 	},
 
 	async list(
@@ -57,22 +27,20 @@ export const bountyProgramsApi = {
 		page: number,
 		size: number,
 		projectId?: string
-	): Promise<ProgramPage> {
-		return api.get<ProgramPage>(
-			`/bounty-programs${query({ ...filters, page, size, project_id: projectId })}`
+	): Promise<PaginatedResponse<BountyProgram>> {
+		return api.get<PaginatedResponse<BountyProgram>>(
+			`/bounty-programs${toQuery({ ...filters, page, size, project_id: projectId })}`
 		);
 	},
 
 	async detail(
 		handle: string,
 		projectId?: string,
-		scope?: ScopeState | null,
 		platform: string = BountyPlatform.HackerOne
 	): Promise<BountyProgramDetail> {
 		return api.get<BountyProgramDetail>(
-			`/bounty-programs/${platform}/${encodeURIComponent(handle)}${query({
-				project_id: projectId,
-				scope
+			`/bounty-programs/${platform}/${encodeURIComponent(handle)}${toQuery({
+				project_id: projectId
 			})}`
 		);
 	},
@@ -80,12 +48,10 @@ export const bountyProgramsApi = {
 	async events(
 		page: number,
 		size: number,
-		kind?: string | null,
-		handle?: string | null,
-		platform?: string | null
-	): Promise<Paged<BountyEvent>> {
-		return api.get<Paged<BountyEvent>>(
-			`/bounty-programs/events${query({ platform, page, size, kind, handle })}`
+		kind?: string | null
+	): Promise<PaginatedResponse<BountyEvent>> {
+		return api.get<PaginatedResponse<BountyEvent>>(
+			`/bounty-programs/events${toQuery({ page, size, kind })}`
 		);
 	},
 
@@ -93,15 +59,12 @@ export const bountyProgramsApi = {
 		return api.post('/bounty-programs/events/seen', {});
 	},
 
-	async settings(platform: string = BountyPlatform.HackerOne): Promise<BountySettings> {
-		return api.get<BountySettings>(`/bounty-programs/settings${query({ platform })}`);
+	async settings(): Promise<BountySettings> {
+		return api.get<BountySettings>('/bounty-programs/settings');
 	},
 
-	async saveSettings(
-		patch: BountySettingsUpdate,
-		platform: string = BountyPlatform.HackerOne
-	): Promise<BountySettings> {
-		return api.put<BountySettings>(`/bounty-programs/settings${query({ platform })}`, patch);
+	async saveSettings(patch: BountySettingsUpdate): Promise<BountySettings> {
+		return api.put<BountySettings>('/bounty-programs/settings', patch);
 	},
 
 	async syncFeed(): Promise<unknown> {
@@ -109,7 +72,7 @@ export const bountyProgramsApi = {
 	},
 
 	async sync(scopes = true, platform?: string): Promise<unknown> {
-		return api.post(`/bounty-programs/sync${query({ platform, scopes })}`, {});
+		return api.post(`/bounty-programs/sync${toQuery({ platform, scopes })}`, {});
 	},
 
 	async syncProgram(handle: string, platform: string = BountyPlatform.HackerOne): Promise<unknown> {

@@ -3,12 +3,13 @@ from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel
-from sqlalchemy import BigInteger, Column, Computed, Text
+from sqlalchemy import BigInteger, Column, Computed
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
 from shared.definitions.ai_services import MAX_ENDPOINT_LENGTH, MAX_SERVICE_LENGTH
+from shared.models.fields import json_list, optional_json_list, text_column
 from shared.models.scan_surface import AssetSurface
 from shared.utils.datetime import utc_now
 
@@ -20,18 +21,6 @@ SEARCH_TSV_SQL = (
     "setweight(to_tsvector('simple', "
     f"left(coalesce(response_body, ''), {BODY_SEARCH_LIMIT})), 'B')"
 )
-
-
-def _json_list() -> Field:
-    return Field(default_factory=list, sa_column=Column(JSON, nullable=False))
-
-
-def _text() -> Field:
-    return Field(default=None, sa_column=Column(Text, nullable=True))
-
-
-def _json_optional_list() -> Field:
-    return Field(default=None, sa_column=Column(JSON(none_as_null=True), nullable=True))
 
 
 class HttpAsset(SQLModel, table=True):
@@ -56,7 +45,7 @@ class HttpAsset(SQLModel, table=True):
 
     # response
     status_code: int | None = Field(default=None, index=True)
-    chain_status_codes: list = _json_list()
+    chain_status_codes: list = json_list()
     title: str | None = Field(default=None, max_length=1000)
     webserver: str | None = Field(default=None, max_length=255)
     content_type: str | None = Field(default=None, max_length=255)
@@ -67,9 +56,9 @@ class HttpAsset(SQLModel, table=True):
     lines: int | None = Field(default=None)
 
     # fingerprint
-    tech: list = _json_list()
-    cpe: list = _json_list()
-    software: list | None = _json_optional_list()
+    tech: list = json_list()
+    cpe: list = json_list()
+    software: list | None = optional_json_list()
     favicon_hash: str | None = Field(default=None, max_length=64)
     favicon_path: str | None = Field(default=None, max_length=2000)
     content_hash: str | None = Field(default=None, max_length=80)
@@ -80,8 +69,8 @@ class HttpAsset(SQLModel, table=True):
 
     # network
     ip: str | None = Field(default=None, max_length=45, index=True)
-    a_records: list = _json_list()
-    aaaa_records: list = _json_list()
+    a_records: list = json_list()
+    aaaa_records: list = json_list()
     cname: str | None = Field(default=None, max_length=500)
     asn: int | None = Field(default=None, sa_type=BigInteger)
     asn_org: str | None = Field(default=None, max_length=255)
@@ -95,7 +84,7 @@ class HttpAsset(SQLModel, table=True):
     tls_cipher: str | None = Field(default=None, max_length=100)
     tls_subject_cn: str | None = Field(default=None, max_length=500)
     tls_subject_dn: str | None = Field(default=None, max_length=1000)
-    tls_sans: list = _json_list()
+    tls_sans: list = json_list()
     tls_issuer: str | None = Field(default=None, max_length=500)
     tls_issuer_cn: str | None = Field(default=None, max_length=500)
     tls_issuer_org: str | None = Field(default=None, max_length=500)
@@ -112,23 +101,23 @@ class HttpAsset(SQLModel, table=True):
     )
 
     # raw capture (httpx -irr)
-    raw_request: str | None = _text()
-    raw_response_header: str | None = _text()
-    response_body: str | None = _text()
+    raw_request: str | None = text_column()
+    raw_response_header: str | None = text_column()
+    response_body: str | None = text_column()
     response_headers: dict = Field(
         default_factory=dict, sa_column=Column(JSON, nullable=False)
     )
     body_preview: str | None = Field(default=None, max_length=512)
-    hygiene_issues: list | None = _json_optional_list()
-    hygiene_checked: list | None = _json_optional_list()
-    tracking_ids: list | None = _json_optional_list()
+    hygiene_issues: list | None = optional_json_list()
+    hygiene_checked: list | None = optional_json_list()
+    tracking_ids: list | None = optional_json_list()
     # ai
     ai_checked: bool = Field(default=False)
     ai_service: str | None = Field(default=None, max_length=MAX_SERVICE_LENGTH)
     ai_category: str | None = Field(default=None, max_length=32)
     ai_endpoint: str | None = Field(default=None, max_length=MAX_ENDPOINT_LENGTH)
-    ai_models: list | None = _json_optional_list()
-    not_found: list | None = _json_optional_list()
+    ai_models: list | None = optional_json_list()
+    not_found: list | None = optional_json_list()
     search_tsv: Any | None = Field(
         default=None,
         sa_column=Column(TSVECTOR, Computed(SEARCH_TSV_SQL, persisted=True)),
@@ -216,10 +205,3 @@ class HttpAssetDetail(HttpAssetRead):
     response_headers: dict = Field(default_factory=dict)
     hygiene: list[HygieneVerdict] = Field(default_factory=list)
     surface: AssetSurface | None = None
-
-
-class HttpAssetSummary(BaseModel):
-    total: int
-    by_status: dict[str, int] = Field(default_factory=dict)
-    by_tech: dict[str, int] = Field(default_factory=dict)
-    cdn: int = 0

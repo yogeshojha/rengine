@@ -7,7 +7,8 @@ function createScanEnginesStore() {
 	let error = $state<string | null>(null);
 	let hasFetched = $state(false);
 	let fetchedProjectId = $state<string | null>(null);
-	let activeEngine = $state<ScanEngine | null>(null);
+	let seq = 0;
+	let loadingFor: string | null = null;
 
 	return {
 		get engines() {
@@ -25,22 +26,26 @@ function createScanEnginesStore() {
 		get fetchedProjectId() {
 			return fetchedProjectId;
 		},
-		get activeEngine() {
-			return activeEngine;
-		},
 
 		async fetchEngines(projectId: string) {
-			if (isLoading) return;
+			if (isLoading && loadingFor === projectId) return;
+			const my = ++seq;
+			loadingFor = projectId;
 			isLoading = true;
 			error = null;
 			try {
-				engines = await scanEnginesApi.list(projectId);
+				const rows = await scanEnginesApi.list(projectId);
+				if (my !== seq) return;
+				engines = rows;
 				hasFetched = true;
 				fetchedProjectId = projectId;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Scan engines not loaded';
+				if (my === seq) error = e instanceof Error ? e.message : 'Scan engines not loaded';
 			} finally {
-				isLoading = false;
+				if (my === seq) {
+					isLoading = false;
+					loadingFor = null;
+				}
 			}
 		},
 
@@ -65,9 +70,6 @@ function createScanEnginesStore() {
 			try {
 				const updated = await scanEnginesApi.update(id, projectId, data);
 				engines = engines.map((e) => (e.id === id ? updated : e));
-				if (activeEngine?.id === id) {
-					activeEngine = updated;
-				}
 				return updated;
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Scan engine not saved';
@@ -81,9 +83,6 @@ function createScanEnginesStore() {
 				const pid = projectId ?? engines.find((e) => e.id === id)?.project_id ?? '';
 				await scanEnginesApi.delete(id, pid);
 				engines = engines.filter((e) => e.id !== id);
-				if (activeEngine?.id === id) {
-					activeEngine = null;
-				}
 				return true;
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Scan engine not deleted';
@@ -101,10 +100,6 @@ function createScanEnginesStore() {
 				error = e instanceof Error ? e.message : 'Scan engine not duplicated';
 				return null;
 			}
-		},
-
-		setActiveEngine(engine: ScanEngine | null) {
-			activeEngine = engine;
 		},
 
 		async exportYaml(id: string, projectId: string): Promise<string | null> {
@@ -131,8 +126,10 @@ function createScanEnginesStore() {
 		},
 
 		clear() {
+			seq++;
 			engines = [];
-			activeEngine = null;
+			isLoading = false;
+			loadingFor = null;
 			error = null;
 			hasFetched = false;
 			fetchedProjectId = null;

@@ -4,9 +4,6 @@ Revision ID: a4c6e8f0b2d4
 Revises: f1a3c5e7d9b2
 Create Date: 2026-06-25 17:00:00.000000+00:00
 
-Capture the full httpx field set (method/path/chain/response-time/words/lines/
-cpe/http2/all-IPs/richer-TLS) on HttpAsset, and denormalize the primary web
-service summary onto Subdomain for the 2.x-style table.
 """
 
 from collections.abc import Sequence

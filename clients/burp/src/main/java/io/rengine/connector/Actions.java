@@ -1,36 +1,22 @@
 package io.rengine.connector;
 
-import java.net.URI;
-import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 /** Collects work reNgine has queued for this proxy. */
 final class Actions {
     static final long POLL_MILLIS = 3000;
-    static final int UNAUTHORIZED = 401;
 
-    /** A request reNgine queued: the raw message when one was stored, else the URL and method. */
+    /** A request reNgine queued. */
     record Action(
             String kind,
             String url,
-            String method,
             String label,
             String request,
             String response,
             String notes,
             String color) {
-        Action(String kind, String url, String method, String label) {
-            this(kind, url, method, label, null, null, null, null);
-        }
-
-        boolean hasRequest() {
-            return request != null && !request.isBlank();
-        }
-
         boolean hasResponse() {
             return response != null && !response.isBlank();
         }
@@ -52,7 +38,6 @@ final class Actions {
     private final Sink.Config settings;
     private final Sink.Log log;
     private final Deliver deliver;
-    private final AtomicLong delivered = new AtomicLong();
 
     private volatile Thread worker;
     private volatile boolean running;
@@ -68,17 +53,11 @@ final class Actions {
 
     /** The actions endpoint beside the ingest endpoint. */
     static String endpointFor(String ingest) {
-        return beside(ingest, "actions");
+        return Settings.beside(ingest, "actions");
     }
 
     static String noticesFor(String ingest) {
-        return beside(ingest, "notices");
-    }
-
-    private static String beside(String ingest, String name) {
-        String value = ingest == null ? "" : ingest.trim();
-        int cut = value.lastIndexOf('/');
-        return cut < 0 ? value : value.substring(0, cut) + "/" + name;
+        return Settings.beside(ingest, "notices");
     }
 
     void start() {
@@ -114,14 +93,8 @@ final class Actions {
 
     /** False when reNgine refused the request. */
     private boolean collect() throws Exception {
-        HttpRequest request = HttpRequest.newBuilder(URI.create(endpointFor(settings.endpoint())))
-                .timeout(Duration.ofSeconds(15))
-                .header("Authorization", "Bearer " + settings.token())
-                .GET()
-                .build();
-        HttpResponse<String> response = Tls.clientFor(settings)
-                .send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() == UNAUTHORIZED) {
+        HttpResponse<String> response = Tls.get(settings, endpointFor(settings.endpoint()));
+        if (response.statusCode() == Sink.UNAUTHORIZED) {
             rejectedAt = settings.generation();
             lastError = "The token was rejected. Collection is stopped.";
             return false;
@@ -135,7 +108,6 @@ final class Actions {
         for (Action action : parse(response.body())) {
             try {
                 deliver.action(action);
-                delivered.incrementAndGet();
             } catch (Exception e) {
                 log.line("Could not deliver an action: " + e);
             }
@@ -144,13 +116,7 @@ final class Actions {
     }
 
     private void collectNotices() throws Exception {
-        HttpRequest request = HttpRequest.newBuilder(URI.create(noticesFor(settings.endpoint())))
-                .timeout(Duration.ofSeconds(15))
-                .header("Authorization", "Bearer " + settings.token())
-                .GET()
-                .build();
-        HttpResponse<String> response = Tls.clientFor(settings)
-                .send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = Tls.get(settings, noticesFor(settings.endpoint()));
         if (response.statusCode() / 100 != 2) {
             return;
         }
@@ -184,25 +150,20 @@ final class Actions {
         List<Action> out = new ArrayList<>();
         for (String chunk : Json.objects(body)) {
             String url = Json.readString(chunk, "url");
-            if (url == null || url.isBlank()) {
+            String request = Json.readString(chunk, "request");
+            if (url == null || url.isBlank() || request == null || request.isBlank()) {
                 continue;
             }
-            String method = Json.readString(chunk, "method");
             out.add(new Action(
                     Json.readString(chunk, "kind"),
                     url,
-                    method == null || method.isBlank() ? "GET" : method,
                     Json.readString(chunk, "label"),
-                    Json.readString(chunk, "request"),
+                    request,
                     Json.readString(chunk, "response"),
                     Json.readString(chunk, "notes"),
                     Json.readString(chunk, "color")));
         }
         return out;
-    }
-
-    long delivered() {
-        return delivered.get();
     }
 
     String lastError() {

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { WhoisRecordRead, WhoisEntity, WhoisEntityRole } from '$lib/types/whois';
 	import { ENTITY_ROLE_LABELS } from '$lib/types/whois';
+	import type { IconComponent } from '$lib/config/icons';
 	import { Badge } from '$lib/components/ui/badge';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import UserRound from '@lucide/svelte/icons/user-round';
@@ -22,7 +23,7 @@
 
 	let { record }: Props = $props();
 
-	const ROLE_ICONS: Record<WhoisEntityRole, typeof UserRound> = {
+	const ROLE_ICONS: Record<WhoisEntityRole, IconComponent> = {
 		registrant: UserRound,
 		administrative: Building,
 		technical: Wrench,

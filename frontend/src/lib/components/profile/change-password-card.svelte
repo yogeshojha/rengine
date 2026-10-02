@@ -10,7 +10,8 @@
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
-	import { formatDate } from '$lib/utilities';
+	import { formatDate } from '$lib/utilities/dates';
+	import { MIN_PASSWORD_LENGTH } from '$lib/constants';
 
 	let currentPassword = $state('');
 	let newPassword = $state('');
@@ -23,8 +24,8 @@
 	let passwordSavedAt = $state<Date | null>(null);
 
 	const newPasswordError = $derived(
-		passwordDirty.next && newPassword.length > 0 && newPassword.length < 8
-			? 'At least 8 characters'
+		passwordDirty.next && newPassword.length > 0 && newPassword.length < MIN_PASSWORD_LENGTH
+			? `At least ${MIN_PASSWORD_LENGTH} characters`
 			: ''
 	);
 	const confirmPasswordError = $derived(
@@ -34,7 +35,7 @@
 	);
 	const passwordValid = $derived(
 		!!currentPassword &&
-			newPassword.length >= 8 &&
+			newPassword.length >= MIN_PASSWORD_LENGTH &&
 			confirmPassword === newPassword &&
 			confirmPassword.length > 0
 	);
@@ -49,8 +50,8 @@
 			toast.error('New passwords do not match');
 			return;
 		}
-		if (newPassword.length < 8) {
-			toast.error('Password must be at least 8 characters');
+		if (newPassword.length < MIN_PASSWORD_LENGTH) {
+			toast.error(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
 			return;
 		}
 
@@ -149,7 +150,7 @@
 				{#if newPasswordError}
 					<p class="text-xs text-destructive">{newPasswordError}</p>
 				{:else}
-					<p class="text-xs text-muted-foreground">At least 8 characters</p>
+					<p class="text-xs text-muted-foreground">At least {MIN_PASSWORD_LENGTH} characters</p>
 				{/if}
 			</div>
 

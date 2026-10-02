@@ -13,7 +13,6 @@ import sqlmodel
 
 from alembic import op
 
-# revision identifiers, used by Alembic.
 revision: str = "a7c1e9f2b3d4"
 down_revision: str | None = "d4e5f6a7b8c9"
 branch_labels: str | Sequence[str] | None = None
@@ -176,13 +175,8 @@ def downgrade() -> None:
     op.drop_column("users", "totp_enabled")
     op.drop_column("users", "totp_secret_encrypted")
 
-    op.drop_index(
-        op.f("ix_notification_channels_id"), table_name="notification_channels"
-    )
     op.drop_table("notification_channels")
 
-    op.drop_index(op.f("ix_proxies_id"), table_name="proxies")
     op.drop_table("proxies")
 
-    op.drop_index(op.f("ix_instance_settings_id"), table_name="instance_settings")
     op.drop_table("instance_settings")

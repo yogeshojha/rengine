@@ -36,10 +36,8 @@ from shared.models.scan import (
     RunPreview,
     ScanBatchCreate,
     ScanCancelAll,
-    ScanChanges,
     ScanCreate,
-    ScanDay,
-    ScanExportRow,
+    ScanDaily,
     ScanRead,
     ScanStats,
     ScanTargetTrend,
@@ -121,18 +119,6 @@ async def preview_scan(
     return await service.preview(data=data, project_id=project_id)
 
 
-@router.post("", response_model=ScanRead, status_code=status.HTTP_201_CREATED)
-async def create_scan(
-    data: ScanCreate,
-    current_user: CurrentUser,
-    service: Annotated[ScanService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
-):
-    return await service.create(
-        data=data, project_id=project_id, created_by=current_user.id
-    )
-
-
 @router.post(
     "/batch", response_model=list[ScanRead], status_code=status.HTTP_201_CREATED
 )
@@ -153,34 +139,23 @@ async def list_scans(
     session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[ScanService, Depends(get_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
-    target_id: Annotated[UUID | None, Query(description="Filter by target ID")] = None,
+    target_id: Annotated[
+        list[UUID] | None, Query(description="Filter by target ID")
+    ] = None,
     status: Annotated[
         list[ScanStatus] | None, Query(description="Filter by status")
     ] = None,
     engine: Annotated[
         list[str] | None, Query(description="Filter by engine name")
     ] = None,
-    context: Annotated[
-        list[str] | None, Query(description="Filter by context name")
-    ] = None,
     search: Annotated[
         str | None, Query(description="Search target, engine or context")
     ] = None,
-    time_range: Annotated[
-        str | None, Query(description="Time window: 24h, 7d, 30d")
-    ] = None,
     sort_by: Annotated[ScanSortKey, Query(description="Sort field")] = "started",
     sort_dir: Annotated[ScanSortDir, Query(description="Sort direction")] = "desc",
-    scheduled: Annotated[
-        bool | None, Query(description="Scheduled only, or manual only")
-    ] = None,
     include_focused: Annotated[
         bool, Query(description="Include focused rescans")
     ] = False,
-    parent_id: Annotated[UUID | None, Query(description="Rescans of this scan")] = None,
-    new_checks: Annotated[
-        bool | None, Query(description="New checks runs only, or none of them")
-    ] = None,
     severity: Annotated[
         list[Severity] | None, Query(description="Runs with open findings of these")
     ] = None,
@@ -202,18 +177,13 @@ async def list_scans(
         await service.prepare_growth(project_id, target_id)
     query = service.build_list_query(
         project_id=project_id,
-        target_id=target_id,
-        parent_id=parent_id,
+        target_ids=target_id,
         statuses=[s.value for s in status] if status else None,
         engines=engine,
-        contexts=context,
         search=search,
-        time_range=time_range,
         sort_by=sort_by,
         sort_dir=sort_dir,
-        scheduled=scheduled,
         include_focused=include_focused,
-        new_checks=new_checks,
         severities=[s.value for s in severity] if severity else None,
         short=short,
         added=added,
@@ -256,13 +226,15 @@ async def finding_trends(
     return await service.finding_trends(project_id, target_id)
 
 
-@router.get("/daily", response_model=list[ScanDay])
+@router.get("/daily", response_model=ScanDaily)
 async def daily_runs(
     _current_user: CurrentUser,
     service: Annotated[ScanService, Depends(get_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
     days: Annotated[int, Query(ge=1, le=MAX_DAILY_WINDOW)] = 30,
-    target_id: Annotated[UUID | None, Query(description="Filter by target ID")] = None,
+    target_id: Annotated[
+        list[UUID] | None, Query(description="Filter by target ID")
+    ] = None,
     include_focused: Annotated[bool, Query()] = False,
 ):
     return await service.daily(project_id, days, target_id, include_focused)
@@ -273,59 +245,15 @@ async def scan_stats(
     _current_user: CurrentUser,
     service: Annotated[ScanService, Depends(get_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
-    target_id: Annotated[UUID | None, Query(description="Filter by target ID")] = None,
+    target_id: Annotated[
+        list[UUID] | None, Query(description="Filter by target ID")
+    ] = None,
     include_focused: Annotated[
         bool, Query(description="Include focused rescans")
     ] = False,
 ):
     return await service.stats(
-        project_id=project_id, target_id=target_id, include_focused=include_focused
-    )
-
-
-@router.get("/changes", response_model=ScanChanges)
-async def scan_changes(
-    _current_user: CurrentUser,
-    service: Annotated[ScanService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
-    window: Annotated[str, Query(description="Window: 24h, 7d, 30d")] = "7d",
-    target_id: Annotated[UUID | None, Query(description="Filter by target ID")] = None,
-):
-    return await service.changes(
-        project_id=project_id, window=window, target_id=target_id
-    )
-
-
-@router.get("/export", response_model=list[ScanExportRow])
-async def export_scans(
-    _current_user: CurrentUser,
-    service: Annotated[ScanService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
-    target_id: Annotated[UUID | None, Query(description="Filter by target ID")] = None,
-    status: Annotated[list[ScanStatus] | None, Query()] = None,
-    engine: Annotated[list[str] | None, Query()] = None,
-    context: Annotated[list[str] | None, Query()] = None,
-    search: Annotated[str | None, Query()] = None,
-    time_range: Annotated[str | None, Query()] = None,
-    sort_by: Annotated[ScanSortKey, Query()] = "started",
-    sort_dir: Annotated[ScanSortDir, Query()] = "desc",
-    scheduled: Annotated[bool | None, Query()] = None,
-    include_focused: Annotated[bool, Query()] = False,
-    new_checks: Annotated[bool | None, Query()] = None,
-):
-    return await service.export_rows(
-        project_id=project_id,
-        target_id=target_id,
-        statuses=[s.value for s in status] if status else None,
-        engines=engine,
-        contexts=context,
-        search=search,
-        time_range=time_range,
-        sort_by=sort_by,
-        sort_dir=sort_dir,
-        scheduled=scheduled,
-        include_focused=include_focused,
-        new_checks=new_checks,
+        project_id=project_id, target_ids=target_id, include_focused=include_focused
     )
 
 
@@ -400,9 +328,9 @@ async def cancel_all_scans(
     _current_user: CurrentUser,
     service: Annotated[ScanService, Depends(get_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
-    target_id: Annotated[UUID | None, Query(description="Target ID")] = None,
+    target_id: Annotated[list[UUID] | None, Query(description="Target ID")] = None,
 ):
-    return await service.cancel_all(project_id=project_id, target_id=target_id)
+    return await service.cancel_all(project_id=project_id, target_ids=target_id)
 
 
 @router.get("/{id}/comparable", response_model=list[ComparableRun])

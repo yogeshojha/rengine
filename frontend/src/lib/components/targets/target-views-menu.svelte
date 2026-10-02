@@ -3,7 +3,7 @@
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import ConfirmDialog from '@/components/confirm-dialog.svelte';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import Bookmark from '@lucide/svelte/icons/bookmark';

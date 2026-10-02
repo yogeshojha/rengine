@@ -8,6 +8,8 @@
 	import { COMPARABILITY_LABEL, COMPARABILITY_TONE, facetRank } from '$lib/config/compare';
 	import { COMPARABILITY } from '$lib/types/compare';
 	import type { ScanComparison } from '$lib/types/compare';
+	import { formatDateTime } from '$lib/utilities/dates';
+	import { plural, pluralWord } from '$lib/utilities/strings';
 
 	interface Props {
 		comparison: ScanComparison;
@@ -20,16 +22,6 @@
 
 	let open = $state(false);
 
-	const fmt = (iso: string | null) =>
-		iso
-			? new Date(iso).toLocaleString('en-US', {
-					month: 'short',
-					day: 'numeric',
-					hour: 'numeric',
-					minute: '2-digit'
-				})
-			: '';
-
 	const MARK = {
 		success: 'bg-success',
 		warning: 'bg-warning',
@@ -39,28 +31,23 @@
 	let tone = $derived(COMPARABILITY_TONE[comparison.comparability]);
 	let label = $derived(COMPARABILITY_LABEL[comparison.comparability]);
 
-	let notes = $derived(
-		comparison.dimensions
-			.filter(
-				(d) =>
-					d.verdict.compared &&
-					d.verdict.comparability !== COMPARABILITY.LIKE_FOR_LIKE &&
-					d.verdict.note &&
-					d.verdict.comparability !== COMPARABILITY.SETTINGS_DIFFER
-			)
-			.map((d) => ({ dimension: d.dimension, label: d.label, note: d.verdict.note }))
-			.slice(0, NOTE_LIMIT)
-	);
-
-	let hiddenNotes = $derived(
+	let noted = $derived(
 		comparison.dimensions.filter(
 			(d) =>
 				d.verdict.compared &&
 				d.verdict.comparability !== COMPARABILITY.LIKE_FOR_LIKE &&
 				d.verdict.note &&
 				d.verdict.comparability !== COMPARABILITY.SETTINGS_DIFFER
-		).length - notes.length
+		)
 	);
+
+	let notes = $derived(
+		noted
+			.slice(0, NOTE_LIMIT)
+			.map((d) => ({ dimension: d.dimension, label: d.label, note: d.verdict.note }))
+	);
+
+	let hiddenNotes = $derived(noted.length - notes.length);
 
 	let coverage = $derived(
 		comparison.dimensions.flatMap((d) =>
@@ -97,8 +84,7 @@
 
 		{#if intelMoved > 0}
 			<p class="text-xs text-muted-foreground">
-				{intelMoved.toLocaleString()}
-				{intelMoved === 1 ? 'finding' : 'findings'} re-ranked by exploitation intelligence.
+				{plural(intelMoved, 'finding')} re-ranked by exploitation intelligence.
 			</p>
 		{/if}
 
@@ -122,8 +108,7 @@
 
 		{#if comparison.runs_between > 0}
 			<p class="text-xs text-muted-foreground">
-				{comparison.runs_between}
-				{comparison.runs_between === 1 ? 'run' : 'runs'} of this target ran between these two.
+				{plural(comparison.runs_between, 'run')} of this target ran between these two.
 			</p>
 		{/if}
 
@@ -135,16 +120,18 @@
 		{/each}
 		{#if hiddenNotes > 0}
 			<p class="text-xs text-muted-foreground">
-				{hiddenNotes} more {hiddenNotes === 1 ? 'dimension' : 'dimensions'} carry a note.
+				{hiddenNotes} more {pluralWord(hiddenNotes, 'dimension')}
+				{pluralWord(hiddenNotes, 'carries', 'carry')} a note.
 			</p>
 		{/if}
 
 		{#if comparison.suggestion}
 			<div class="mt-1 flex flex-wrap items-center gap-2">
 				<span class="text-xs text-muted-foreground">
-					A like-for-like run exists: {comparison.suggestion.engine_name} on {fmt(
-						comparison.suggestion.started_at
-					)}.
+					A like-for-like run exists: {comparison.suggestion.engine_name} on {comparison.suggestion
+						.started_at
+						? formatDateTime(comparison.suggestion.started_at)
+						: ''}.
 				</span>
 				<Button
 					variant="outline"

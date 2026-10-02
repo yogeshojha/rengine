@@ -10,12 +10,10 @@
 
 	interface Props {
 		kind: string;
-		reason?: string;
-		compact?: boolean;
 		onFilter?: (token: string) => void;
 	}
 
-	let { kind, reason = '', compact = false, onFilter }: Props = $props();
+	let { kind, onFilter }: Props = $props();
 
 	let Icon = $derived(SIGNAL_ICONS[kind]);
 	let label = $derived(SIGNAL_LABELS[kind] ?? kind);
@@ -23,7 +21,7 @@
 	let variant = $derived(signalVariant(kind));
 </script>
 
-<Hint text={reason || label}>
+<Hint text={label}>
 	{#snippet child(props)}
 		<button
 			{...props}
@@ -38,7 +36,6 @@
 		>
 			<Badge {variant} class="gap-1 px-1.5 text-2xs font-normal">
 				{#if Icon}<Icon class="size-2.5" />{/if}
-				{#if !compact}{label}{/if}
 			</Badge>
 		</button>
 	{/snippet}

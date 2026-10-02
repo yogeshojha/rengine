@@ -1,7 +1,11 @@
 import { targetsApi } from '$lib/api/targets';
-import { organizationsApi, type Organization } from '$lib/api/organizations';
-import { tagsApi, type Tag } from '$lib/api/tags';
-import { TargetType, type Target } from '$lib/types/target';
+import {
+	organizationsApi,
+	type Organization,
+	type OrganizationUpdate
+} from '$lib/api/organizations';
+import { tagsApi, type Tag, type TagUpdate } from '$lib/api/tags';
+import { TargetType, type EnrichmentKind, type Target } from '$lib/types/target';
 import { TaskStatus } from '$lib/types/task-status';
 import type { PaginatedResponse, TargetCounts } from '$lib/types/pagination';
 import {
@@ -37,6 +41,8 @@ function createTargetsStore() {
 	let targets = $state<Target[]>([]);
 	let organizations = $state<Organization[]>([]);
 	let tags = $state<Tag[]>([]);
+	let organizationsSlug: string | undefined;
+	let tagsSlug: string | undefined;
 
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
@@ -79,14 +85,31 @@ function createTargetsStore() {
 			filters.signalFilter !== null
 	);
 
-	const isInitialLoad = $derived(isLoading && targets.length === 0);
-	const isRefetching = $derived(isLoading && targets.length > 0);
+	const organizationItems = $derived(organizations.map((o) => ({ id: o.id, label: o.name })));
+	const tagItems = $derived(tags.map((t) => ({ id: t.id, label: t.name, color: t.color })));
+
+	function scopeFilters(projectSlug: string) {
+		return {
+			project_slug: projectSlug,
+			search: filters.searchQuery || undefined,
+			organization_ids: filters.selectedOrganizations.length
+				? filters.selectedOrganizations
+				: undefined,
+			tag_ids: filters.selectedTags.length ? filters.selectedTags : undefined,
+			target_type: filters.activeTab !== 'all' ? (filters.activeTab as TargetType) : undefined
+		};
+	}
+
+	function countFilters(projectSlug: string) {
+		return {
+			...scopeFilters(projectSlug),
+			target_type: undefined,
+			signal: filters.signalFilter
+		};
+	}
 
 	return {
 		get targets() {
-			return targets;
-		},
-		get filteredTargets() {
 			return targets;
 		},
 		get signalSummary() {
@@ -97,6 +120,12 @@ function createTargetsStore() {
 		},
 		get tags() {
 			return tags;
+		},
+		get organizationItems() {
+			return organizationItems;
+		},
+		get tagItems() {
+			return tagItems;
 		},
 		get counts() {
 			return counts;
@@ -109,12 +138,6 @@ function createTargetsStore() {
 		},
 		get isLoading() {
 			return isLoading;
-		},
-		get isInitialLoad() {
-			return isInitialLoad;
-		},
-		get isRefetching() {
-			return isRefetching;
 		},
 		get error() {
 			return error;
@@ -139,7 +162,7 @@ function createTargetsStore() {
 				organizations = [];
 				tags = [];
 				hasFetched = false;
-				pagination.currentPage = 1;
+				if (filters.projectSlug !== undefined) pagination.currentPage = 1;
 			}
 
 			if (page !== undefined) {
@@ -151,20 +174,13 @@ function createTargetsStore() {
 			filters.projectSlug = projectSlug;
 
 			try {
-				const targetType =
-					filters.activeTab !== 'all' ? (filters.activeTab as TargetType) : undefined;
+				const baseFilters = scopeFilters(projectSlug);
 
-				const baseFilters = {
-					project_slug: projectSlug,
-					search: filters.searchQuery || undefined,
-					organization_ids: filters.selectedOrganizations.length
-						? filters.selectedOrganizations
-						: undefined,
-					tag_ids: filters.selectedTags.length ? filters.selectedTags : undefined,
-					target_type: targetType
-				};
-
-				const shouldFetchOrgsAndTags = !hasFetched || projectChanged;
+				const shouldFetchOrgsAndTags =
+					!hasFetched ||
+					projectChanged ||
+					organizationsSlug !== projectSlug ||
+					tagsSlug !== projectSlug;
 
 				const promises: Promise<unknown>[] = [
 					targetsApi.list({
@@ -173,16 +189,16 @@ function createTargetsStore() {
 						sort_by: filters.sortKey,
 						sort_dir: filters.sortDir,
 						page: pagination.currentPage,
-						size: pagination.pageSize === -1 ? undefined : pagination.pageSize
+						size: pagination.pageSize
 					}),
-					targetsApi.getStats(baseFilters)
+					targetsApi.getStats(baseFilters),
+					targetsApi.getCounts(countFilters(projectSlug))
 				];
 
 				if (shouldFetchOrgsAndTags) {
 					promises.push(
 						organizationsApi.list({ project_slug: projectSlug }),
-						tagsApi.list({ project_slug: projectSlug }),
-						targetsApi.getCounts(projectSlug)
+						tagsApi.list({ project_slug: projectSlug })
 					);
 				}
 
@@ -193,11 +209,12 @@ function createTargetsStore() {
 				pagination.totalItems = targetsResponse.total;
 				pagination.totalPages = targetsResponse.pages;
 				signalSummary = results[1] as TargetSummary;
+				counts = results[2] as TargetCounts;
 
 				if (shouldFetchOrgsAndTags) {
-					organizations = results[2] as Organization[];
-					tags = results[3] as Tag[];
-					counts = results[4] as TargetCounts;
+					organizations = results[3] as Organization[];
+					tags = results[4] as Tag[];
+					organizationsSlug = tagsSlug = projectSlug;
 				}
 
 				hasFetched = true;
@@ -252,16 +269,13 @@ function createTargetsStore() {
 
 		async refresh() {
 			if (!filters.projectSlug) return;
-			await Promise.all([
-				this.fetchAll(filters.projectSlug, pagination.currentPage, true),
-				this.refreshCounts()
-			]);
+			await this.fetchAll(filters.projectSlug, pagination.currentPage, true);
 		},
 
-		async refreshCounts() {
+		async refreshSummary() {
 			if (!filters.projectSlug) return;
 			try {
-				counts = await targetsApi.getCounts(filters.projectSlug);
+				signalSummary = await targetsApi.getStats(scopeFilters(filters.projectSlug));
 			} catch {}
 		},
 
@@ -295,11 +309,6 @@ function createTargetsStore() {
 			} else {
 				filters.selectedTags = filters.selectedTags.filter((id) => id !== tagId);
 			}
-			this.reload();
-		},
-
-		toggleSignalFilter(signal: SignalFilter) {
-			filters.signalFilter = filters.signalFilter === signal ? null : signal;
 			this.reload();
 		},
 
@@ -400,7 +409,7 @@ function createTargetsStore() {
 			});
 		},
 
-		async bulkEnrich(ids: string[], kind: 'whois' | 'dns' | 'bgp'): Promise<number> {
+		async bulkEnrich(ids: string[], kind: EnrichmentKind): Promise<number> {
 			const res = await targetsApi.bulkEnrich(ids, kind);
 			const set = new Set(ids);
 			targets = targets.map((t) => {
@@ -448,28 +457,81 @@ function createTargetsStore() {
 			return ok;
 		},
 
-		async fetchTags() {
-			if (!filters.projectSlug) return;
+		async fetchTags(projectSlug = filters.projectSlug) {
+			if (!projectSlug) return;
+			if (projectSlug !== tagsSlug) {
+				tags = [];
+				tagsSlug = undefined;
+			}
 			try {
-				tags = await tagsApi.list({ project_slug: filters.projectSlug });
+				tags = await tagsApi.list({ project_slug: projectSlug });
+				tagsSlug = projectSlug;
+			} catch {}
+		},
+
+		async fetchOrganizations(projectSlug = filters.projectSlug) {
+			if (!projectSlug) return;
+			if (projectSlug !== organizationsSlug) {
+				organizations = [];
+				organizationsSlug = undefined;
+			}
+			try {
+				organizations = await organizationsApi.list({ project_slug: projectSlug });
+				organizationsSlug = projectSlug;
+			} catch {}
+		},
+
+		async createOrganization(projectSlug: string, name: string): Promise<Organization | null> {
+			try {
+				const row = await organizationsApi.create({ name, project_slug: projectSlug });
+				void this.fetchOrganizations(projectSlug);
+				return row;
 			} catch {
-				// non critical
+				return null;
 			}
 		},
 
-		async fetchOrganizations() {
-			if (!filters.projectSlug) return;
+		async createTag(projectSlug: string, name: string, color: string): Promise<Tag | null> {
 			try {
-				organizations = await organizationsApi.list({ project_slug: filters.projectSlug });
+				const row = await tagsApi.create({ name, color, project_slug: projectSlug });
+				void this.fetchTags(projectSlug);
+				return row;
 			} catch {
-				// non critical
+				return null;
 			}
+		},
+
+		async updateTag(id: string, data: TagUpdate): Promise<void> {
+			await tagsApi.update(id, data);
+			await this.fetchTags(filters.projectSlug);
+			void this.refresh();
+		},
+
+		async deleteTag(id: string): Promise<void> {
+			await tagsApi.remove(id);
+			filters.selectedTags = filters.selectedTags.filter((t) => t !== id);
+			await this.fetchTags(filters.projectSlug);
+			void this.refresh();
+		},
+
+		async updateOrganization(id: string, data: OrganizationUpdate): Promise<void> {
+			await organizationsApi.update(id, data);
+			await this.fetchOrganizations(filters.projectSlug);
+			void this.refresh();
+		},
+
+		async deleteOrganization(id: string): Promise<void> {
+			await organizationsApi.remove(id);
+			filters.selectedOrganizations = filters.selectedOrganizations.filter((o) => o !== id);
+			await this.fetchOrganizations(filters.projectSlug);
+			void this.refresh();
 		},
 
 		clear() {
 			targets = [];
 			organizations = [];
 			tags = [];
+			organizationsSlug = tagsSlug = undefined;
 			counts = {
 				all: 0,
 				domain: 0,

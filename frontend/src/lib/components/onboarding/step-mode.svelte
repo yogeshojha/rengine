@@ -3,10 +3,10 @@
 	import * as RadioGroup from '$lib/components/ui/radio-group/index.js';
 	import { instanceSettingsApi } from '$lib/api/instanceSettings';
 	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
-	import { InstanceMode, coerceInstanceMode } from '$lib/config/capabilities';
+	import { InstanceMode, MODE_LABELS, coerceInstanceMode } from '$lib/config/capabilities';
+	import type { IconComponent } from '$lib/config/icons';
 	import { toast } from 'svelte-sonner';
 	import type { StepProps } from '$lib/types/onboarding';
-	import type { Component } from 'svelte';
 	import TargetIcon from '@lucide/svelte/icons/target';
 	import Building2Icon from '@lucide/svelte/icons/building-2';
 	import InfoIcon from '@lucide/svelte/icons/info';
@@ -16,23 +16,23 @@
 	const MODES: {
 		value: InstanceMode;
 		title: string;
-		icon: Component;
+		icon: IconComponent;
 		desc: string;
 		adds: string;
 	}[] = [
 		{
 			value: InstanceMode.BugBounty,
-			title: 'Bug bounty',
+			title: MODE_LABELS[InstanceMode.BugBounty],
 			icon: TargetIcon,
 			desc: 'Researching public and private bug bounty programs.',
 			adds: 'Bug bounty platform connections, program import, program watches and recon presets.'
 		},
 		{
 			value: InstanceMode.Corporate,
-			title: 'Corporate',
+			title: MODE_LABELS[InstanceMode.Corporate],
 			icon: Building2Icon,
 			desc: "Managing an organization's own attack surface.",
-			adds: 'Asset inventory, scope governance and internal monitoring. Bug bounty platforms, programs and watches are hidden.'
+			adds: 'Bug bounty platforms, programs and watches are hidden.'
 		}
 	];
 
@@ -49,7 +49,7 @@
 			await instanceSettingsApi.update({ mode: selected });
 			data.mode = selected;
 			capabilitiesStore.setMode(selected);
-			toast.success(`Mode set to ${MODES.find((m) => m.value === selected)?.title ?? selected}`);
+			toast.success(`Mode set to ${MODE_LABELS[coerceInstanceMode(selected)]}`);
 			next();
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Mode not saved');
@@ -87,6 +87,6 @@
 
 	<p class="flex items-start gap-2 text-xs text-muted-foreground">
 		<InfoIcon class="mt-px size-4 shrink-0" />
-		<span>One mode is active at a time. It can be changed in Settings.</span>
+		<span>One mode is active at a time. The mode can be changed in Settings.</span>
 	</p>
 </div>

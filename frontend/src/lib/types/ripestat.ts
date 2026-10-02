@@ -44,12 +44,6 @@ export interface NetworkInfoRead {
 	asn: number;
 }
 
-export interface AbuseContactRead {
-	resource: string;
-	abuse_emails: string[];
-	rir: string | null;
-}
-
 export interface PrefixOverviewRead {
 	prefix: string;
 	asn: number;

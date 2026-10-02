@@ -1,4 +1,4 @@
-import { SESSION_EXPIRED_EVENT, API_PREFIX } from './client';
+import { api, API_PREFIX } from './client';
 
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'reconnecting';
 
@@ -14,14 +14,20 @@ type StateCallback = (state: ConnectionState) => void;
 
 const REFRESH_ATTEMPT_AFTER_FAILURES = 3;
 const MAX_REFRESHES = 3;
+const HIDDEN_PAUSE_MS = 30_000;
 
-export class SSEClient {
+class SSEClient {
 	private eventSource: EventSource | null = null;
 	private channels: Set<string> = new Set();
 
 	private subscriptions: Map<string, Set<MessageCallback>> = new Map();
 
 	private stateListeners: Set<StateCallback> = new Set();
+	private resumeListeners: Set<() => void> = new Set();
+
+	private paused = false;
+	private resyncPending = false;
+	private hiddenTimer: ReturnType<typeof setTimeout> | null = null;
 
 	private _state: ConnectionState = 'disconnected';
 	private reconnectAttempts = 0;
@@ -32,6 +38,23 @@ export class SSEClient {
 	private readonly baseDelay = 1000; // 1s
 	private readonly maxDelay = 30_000; // 30s
 
+	constructor() {
+		if (typeof window === 'undefined') return;
+		window.addEventListener('pagehide', () => this.pause());
+		window.addEventListener('pageshow', (e) => {
+			if (e.persisted) this.resume();
+		});
+		document.addEventListener('visibilitychange', () => {
+			if (this.hiddenTimer) clearTimeout(this.hiddenTimer);
+			this.hiddenTimer = null;
+			if (document.visibilityState === 'hidden') {
+				this.hiddenTimer = setTimeout(() => this.pause(), HIDDEN_PAUSE_MS);
+			} else {
+				this.resume();
+			}
+		});
+	}
+
 	connect(channels: string[]): void {
 		const incoming = new Set(channels);
 		const changed = !this.setsEqual(this.channels, incoming);
@@ -41,39 +64,10 @@ export class SSEClient {
 		}
 
 		this.channels = incoming;
+		this.paused = false;
 		this.reconnectAttempts = 0;
 		this.refreshAttempts = 0;
 		this.openConnection();
-	}
-
-	addChannels(channels: string[]): void {
-		let changed = false;
-		for (const ch of channels) {
-			if (!this.channels.has(ch)) {
-				this.channels.add(ch);
-				changed = true;
-			}
-		}
-		if (changed && this._state !== 'disconnected') {
-			this.openConnection();
-		}
-	}
-
-	removeChannels(channels: string[]): void {
-		let changed = false;
-		for (const ch of channels) {
-			if (this.channels.delete(ch)) {
-				changed = true;
-				this.subscriptions.delete(ch);
-			}
-		}
-		if (changed && this._state !== 'disconnected') {
-			if (this.channels.size === 0) {
-				this.disconnect();
-			} else {
-				this.openConnection();
-			}
-		}
 	}
 
 	subscribe(channel: string, callback: MessageCallback): () => void {
@@ -102,23 +96,38 @@ export class SSEClient {
 		};
 	}
 
+	onResume(callback: () => void): () => void {
+		this.resumeListeners.add(callback);
+		return () => {
+			this.resumeListeners.delete(callback);
+		};
+	}
+
 	disconnect(): void {
+		this.paused = false;
+		this.resyncPending = false;
 		this.clearReconnectTimer();
 		this.closeEventSource();
 		this.channels.clear();
 		this.setState('disconnected');
 	}
 
-	get state(): ConnectionState {
-		return this._state;
+	private pause(): void {
+		if (this.paused || (!this.eventSource && !this.reconnectTimer)) return;
+		this.paused = true;
+		this.clearReconnectTimer();
+		this.closeEventSource();
+		this.setState('disconnected');
 	}
 
-	get isConnected(): boolean {
-		return this._state === 'connected';
-	}
-
-	get activeChannels(): ReadonlySet<string> {
-		return this.channels;
+	private resume(): void {
+		if (!this.paused) return;
+		this.paused = false;
+		if (this.channels.size === 0) return;
+		this.reconnectAttempts = 0;
+		this.refreshAttempts = 0;
+		this.resyncPending = true;
+		this.openConnection();
 	}
 
 	private openConnection(): void {
@@ -150,6 +159,16 @@ export class SSEClient {
 			this.reconnectAttempts = 0;
 			this.refreshAttempts = 0;
 			this.setState('connected');
+			if (this.resyncPending) {
+				this.resyncPending = false;
+				for (const cb of this.resumeListeners) {
+					try {
+						cb();
+					} catch (err) {
+						console.error('[SSE] Resume listener error:', err);
+					}
+				}
+			}
 		};
 
 		es.onerror = () => {
@@ -195,6 +214,7 @@ export class SSEClient {
 
 	private handleError(): void {
 		this.closeEventSource();
+		this.resyncPending = true;
 
 		if (this.reconnectAttempts >= this.maxReconnectAttempts) {
 			console.error(`[SSE] Giving up after ${this.maxReconnectAttempts} attempts`);
@@ -215,28 +235,17 @@ export class SSEClient {
 
 	private async refreshAndReconnect(): Promise<void> {
 		this.refreshAttempts++;
-		try {
-			const response = await fetch(`${API_PREFIX}/auth/refresh`, {
-				method: 'POST',
-				credentials: 'include'
-			});
-
-			if (!response.ok) {
-				console.error('[SSE] Token refresh failed, session expired');
-				window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
-				this.setState('disconnected');
-				return;
-			}
-
-			if (this.refreshAttempts < MAX_REFRESHES) this.reconnectAttempts = 0;
-		} catch {
-			/* empty */
+		const result = await api.refreshSession();
+		if (result === 'expired') {
+			this.setState('disconnected');
+			return;
 		}
-
+		if (result === 'ok' && this.refreshAttempts < MAX_REFRESHES) this.reconnectAttempts = 0;
 		this.scheduleReconnect();
 	}
 
 	private scheduleReconnect(): void {
+		if (this.paused) return;
 		const exponential = this.baseDelay * Math.pow(2, this.reconnectAttempts);
 		const capped = Math.min(exponential, this.maxDelay);
 		const jitter = capped * 0.2 * Math.random();

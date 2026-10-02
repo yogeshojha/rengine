@@ -42,6 +42,14 @@ def _unavailable(source: str, reason: str) -> EndpointCoverage:
     )
 
 
+def _queued(result, context: ProviderContext):
+    """Hand a finished source's observations to the stage's inbox."""
+    if result.observations and context.on_batch is not None:
+        context.on_batch((result.source, result.observations))
+        result.observations = []
+    return result
+
+
 def _named_host(target_type: str, target_value: str) -> str:
     """The hostname a domain or URL target names."""
     if target_type not in (TargetType.DOMAIN.value, TargetType.URL.value):
@@ -93,10 +101,6 @@ class UrlDiscoveryStage(Stage):
         context = ProviderContext(
             session=self.session,
             scan_id=self.ctx.scan_id,
-            target_id=self.ctx.target_id,
-            project_id=self.ctx.project_id,
-            target_value=self.ctx.target_value,
-            target_type=self.ctx.target_type,
             hosts=hosts,
             apex_domains=self._apex_domains(hosts),
             cfg=cfg,
@@ -160,8 +164,9 @@ class UrlDiscoveryStage(Stage):
         return written.created + written.updated
 
     def _collect(self, sources, context, passive: bool, coverage: list, drain):
-        """Sources are independent."""
+        """Run each source: session readers inline, the rest in a pool, endpoint readers last."""
         pooled = []
+        last = []
         results = []
         for source in sources:
             self._check_abort()
@@ -179,24 +184,25 @@ class UrlDiscoveryStage(Stage):
                     )
                 )
                 continue
-            if provider_cls.uses_session:
-                results.append(provider_cls(context).run())
+            if provider_cls.reads_endpoints:
+                last.append(provider_cls)
+            elif provider_cls.uses_session:
+                results.append(_queued(provider_cls(context).run(), context))
             else:
                 pooled.append(provider_cls)
-        if not pooled:
-            return results
-        workers = min(_MAX_PROVIDER_WORKERS, len(pooled))
-        with ThreadPoolExecutor(max_workers=workers) as pool:
-            remaining = {pool.submit(cls(context).run) for cls in pooled}
-            while remaining:
-                done, remaining = wait(remaining, timeout=_DRAIN_SECONDS)
-                for future in done:
-                    result = future.result()
-                    results.append(result)
-                    if result.observations and context.on_batch is not None:
-                        context.on_batch((result.source, result.observations))
-                        result.observations = []
-                drain()
+        if pooled:
+            workers = min(_MAX_PROVIDER_WORKERS, len(pooled))
+            with ThreadPoolExecutor(max_workers=workers) as pool:
+                remaining = {pool.submit(cls(context).run) for cls in pooled}
+                while remaining:
+                    done, remaining = wait(remaining, timeout=_DRAIN_SECONDS)
+                    for future in done:
+                        results.append(_queued(future.result(), context))
+                    drain()
+        for provider_cls in last:
+            self._check_abort()
+            drain()
+            results.append(_queued(provider_cls(context).run(), context))
         return results
 
     def _in_scope(self, observations: list) -> list:
@@ -228,7 +234,6 @@ class UrlDiscoveryStage(Stage):
                 host=row.host,
                 port=int(row.port or 0),
                 scheme=row.scheme,
-                status_code=row.status_code,
             )
             for row in rows
             if row.status_code is not None and row.status_code < _LIVE_MAX
@@ -263,7 +268,6 @@ class UrlDiscoveryStage(Stage):
             status=status,
             hosts_total=result.hosts_total,
             hosts_scanned=result.hosts_scanned,
-            hosts_dropped=list(result.hosts_dropped),
             urls_found=result.urls_found,
             urls_stored=written.created + written.updated,
             urls_dropped=dict(written.dropped),
@@ -272,7 +276,6 @@ class UrlDiscoveryStage(Stage):
             errors=result.errors,
             capped=result.capped,
             cap_reason=result.cap_reason,
-            command=result.command,
             error=result.error,
             started_at=result.started_at,
             ended_at=result.ended_at,

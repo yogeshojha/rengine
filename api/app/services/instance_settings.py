@@ -6,14 +6,16 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.crypto import encrypt_secret, try_decrypt
-from shared.definitions.mode_features import VALID_MODES, capabilities_for
+from shared.definitions.mode_features import (
+    VALID_MODES,
+    capabilities_for,
+    has_capability,
+)
 from shared.definitions.retention import (
     KEEP_FOREVER,
     SCAN_RETENTION_DAYS,
     SCREENSHOT_RETENTION_DAYS,
 )
-from shared.enums.instance import AIProvider
 from shared.logging import get_logger
 from shared.models.instance_settings import (
     SINGLETON_KEY,
@@ -23,25 +25,9 @@ from shared.models.instance_settings import (
 )
 from shared.services import scan_admission
 from shared.services.celery_dispatch import dispatch_scan_admission
-from shared.services.scan_resolve import MASK
 from shared.utils.datetime import utc_now
-from shared.utils.net import validate_public_https_url
 
 logger = get_logger(__name__)
-
-_VALID_AI_PROVIDERS = frozenset(p.value for p in AIProvider)
-_TAIL = 4
-
-
-def _mask_ai_key(key: str) -> str:
-    if len(key) <= _TAIL:
-        return MASK
-    return f"{MASK}{key[-_TAIL:]}"
-
-
-def _validate_public_https_url(raw: str) -> str:
-    validate_public_https_url(raw, label="Azure endpoint")
-    return raw
 
 
 def _apply_limit(settings: InstanceSettings, value: int | None) -> bool:
@@ -96,8 +82,10 @@ class InstanceSettingsService:
                 settings = result.scalar_one()
         return settings
 
+    async def has_capability(self, cap: str) -> bool:
+        return has_capability((await self.get_or_create()).mode, cap)
+
     def to_read(self, settings: InstanceSettings) -> InstanceSettingsRead:
-        key = try_decrypt(settings.ai_api_key_encrypted)
         return InstanceSettingsRead(
             id=settings.id,
             singleton_key=settings.singleton_key,
@@ -113,12 +101,6 @@ class InstanceSettingsService:
             screenshot_retention_days=settings.screenshot_retention_days,
             cert_recheck_enabled=settings.cert_recheck_enabled,
             concurrent_scans=settings.concurrent_scans,
-            ai_enabled=settings.ai_enabled,
-            ai_provider=settings.ai_provider,
-            ai_model=settings.ai_model,
-            ai_api_key_masked=_mask_ai_key(key) if key else None,
-            ai_configured=bool(settings.ai_api_key_encrypted),
-            ai_features=settings.ai_features or {},
             capabilities=capabilities_for(settings.mode),
             created_at=settings.created_at,
             updated_at=settings.updated_at,
@@ -164,26 +146,6 @@ class InstanceSettingsService:
         if data.cert_recheck_enabled is not None:
             settings.cert_recheck_enabled = data.cert_recheck_enabled
         limit_changed = _apply_limit(settings, data.concurrent_scans)
-        if data.ai_enabled is not None:
-            settings.ai_enabled = data.ai_enabled
-        if data.ai_provider is not None:
-            if data.ai_provider not in _VALID_AI_PROVIDERS:
-                msg = (
-                    f"Invalid ai_provider '{data.ai_provider}'. "
-                    f"Must be one of {', '.join(sorted(_VALID_AI_PROVIDERS))}."
-                )
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
-            settings.ai_provider = data.ai_provider
-        if data.ai_model is not None:
-            settings.ai_model = data.ai_model
-        if data.ai_features is not None:
-            settings.ai_features = dict(data.ai_features)
-
-        if data.ai_api_key is not None and MASK not in data.ai_api_key:
-            settings.ai_api_key_encrypted = (
-                encrypt_secret(data.ai_api_key) if data.ai_api_key else None
-            )
-
         settings.updated_at = utc_now()
         await self.session.commit()
         await self.session.refresh(settings)

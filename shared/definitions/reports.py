@@ -4,9 +4,13 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from datetime import timedelta
 from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from shared.config import base_settings
+from shared.definitions.report_theme import FontKey, HexColor, SeverityKey
 
 MAX_SECTIONS = 60
 MAX_TITLE_LENGTH = 200
@@ -70,6 +74,21 @@ TERMINAL_STATUSES: tuple[str, ...] = (
     ReportStatus.EXPIRED.value,
 )
 
+GENERATING_STATUSES: tuple[str, ...] = (
+    ReportStatus.QUEUED.value,
+    ReportStatus.RUNNING.value,
+)
+
+STRANDED_ERROR = "The report stopped without finishing. Generate it again."
+NOT_QUEUED_ERROR = (
+    "The report was not queued. Check that the worker and redis services are running."
+)
+
+
+def stranded_after() -> timedelta:
+    """How long a report may stay queued or running before it is failed."""
+    return timedelta(seconds=base_settings().TASK_HARD_TIME_LIMIT)
+
 
 class ReportScope(StrEnum):
     SCAN = "scan"
@@ -85,7 +104,7 @@ SCOPE_LABELS: dict[str, str] = {
 
 SCOPE_HELP: dict[str, str] = {
     ReportScope.SCAN.value: "Everything one run observed.",
-    ReportScope.TARGET.value: "The target's current surface, from the latest run covering each dimension.",
+    ReportScope.TARGET.value: "The target's current surface.",
 }
 
 
@@ -111,8 +130,6 @@ SECTION_GROUP_LABELS: dict[str, str] = {
 
 
 class SectionRole(StrEnum):
-    """Section role."""
-
     CONTENT = "content"
     FURNITURE = "furniture"
 
@@ -190,14 +207,6 @@ DENSITY_SCALE: dict[str, float] = {
     Density.NORMAL.value: 1.0,
     Density.RELAXED.value: 1.18,
 }
-
-
-class Classification(StrEnum):
-    NONE = ""
-    PUBLIC = "Public"
-    INTERNAL = "Internal"
-    CONFIDENTIAL = "Confidential"
-    RESTRICTED = "Restricted"
 
 
 @dataclass(frozen=True)
@@ -339,13 +348,13 @@ class ReportStyle(BaseModel):
     density: str = Field(default=Density.NORMAL.value, max_length=10)
     base_font_size: float = Field(default=10.5, ge=6, le=16)
     line_height: float = Field(default=1.6, ge=1.0, le=2.4)
-    heading_font: str = Field(default="", max_length=40)
-    body_font: str = Field(default="", max_length=40)
-    mono_font: str = Field(default="", max_length=40)
-    accent: str = Field(default="", max_length=9)
-    accent_soft: str = Field(default="", max_length=9)
-    severity_colors: dict[str, str] = Field(default_factory=dict)
-    chart_palette: list[str] = Field(default_factory=list, max_length=8)
+    heading_font: FontKey = Field(default="", max_length=40)
+    body_font: FontKey = Field(default="", max_length=40)
+    mono_font: FontKey = Field(default="", max_length=40)
+    accent: HexColor = Field(default="", max_length=9)
+    accent_soft: HexColor = Field(default="", max_length=9)
+    severity_colors: dict[SeverityKey, HexColor] = Field(default_factory=dict)
+    chart_palette: list[HexColor] = Field(default_factory=list, max_length=8)
     mono_safe: bool = False
     table_zebra: bool = True
     section_numbering: bool = True
@@ -454,3 +463,8 @@ class ReportSpec(BaseModel):
 def coerce_scope(value: str | None) -> str:
     key = (value or "").strip().lower()
     return key if key in REPORT_SCOPES else ReportScope.SCAN.value
+
+
+def subject_scope(value: str | None, *, has_scan: bool) -> str:
+    """The scope a report reads, the current surface for a target subject."""
+    return coerce_scope(value) if has_scan else ReportScope.TARGET.value

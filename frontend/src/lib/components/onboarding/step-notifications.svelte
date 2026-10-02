@@ -14,8 +14,6 @@
 	import InfoIcon from '@lucide/svelte/icons/info';
 	import { notificationChannelsApi } from '$lib/api/notificationChannels';
 	import {
-		NOTIF_CATEGORIES,
-		NOTIF_SEVERITIES,
 		defaultNotificationPreference,
 		type NotifProvider
 	} from '$lib/types/notification-channel';
@@ -25,15 +23,18 @@
 		SHARED_BOT_KEY,
 		SHARED_BOT_PROVIDER
 	} from '$lib/config/notification-providers';
+	import {
+		CHANNEL_LEVELS,
+		DEFAULT_CHANNEL_LEVEL,
+		channelEventsFor
+	} from '$lib/config/notification-events';
 	import { apiKeysApi } from '$lib/api/api-keys';
 	import type { StepProps } from '$lib/types/onboarding';
 	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 
 	let { next, setFooter }: StepProps = $props();
-	const categories = $derived(
-		NOTIF_CATEGORIES.filter((c) => !c.capability || capabilitiesStore.has(c.capability))
-	);
+	const categories = $derived(channelEventsFor((c) => capabilitiesStore.has(c)));
 
 	interface ChannelDraft {
 		enabled: boolean;
@@ -47,22 +48,17 @@
 		return { enabled: false, config: {}, createdId: null, testing: false, tested: false };
 	}
 
-	let drafts = $state<Record<NotifProvider, ChannelDraft>>({
-		slack: blankDraft(),
-		discord: blankDraft(),
-		teams: blankDraft(),
-		telegram: blankDraft(),
-		email: blankDraft(),
-		webhook: blankDraft(),
-		custom: blankDraft()
-	});
+	let drafts = $state(
+		Object.fromEntries(PROVIDERS.map((m) => [m.provider, blankDraft()])) as Record<
+			NotifProvider,
+			ChannelDraft
+		>
+	);
 
 	let pref = $state(defaultNotificationPreference());
 	let busy = $state(false);
 
-	let severityLabel = $derived(
-		NOTIF_SEVERITIES.find((s) => s.value === pref.min_severity)?.label ?? 'Everything'
-	);
+	let severityLabel = $derived(CHANNEL_LEVELS.find((s) => s.value === pref.min_severity)?.label);
 	let anyEnabled = $derived(PROVIDERS.some((m) => drafts[m.provider].enabled));
 
 	$effect(() => {
@@ -119,17 +115,11 @@
 		}
 	}
 
-	async function saveSharedBot(token: string) {
-		const existing = (await apiKeysApi.list()).find((k) => k.provider === SHARED_BOT_KEY);
-		if (existing) await apiKeysApi.update(existing.id, { key_value: token });
-		else await apiKeysApi.create({ provider: SHARED_BOT_KEY, key_value: token });
-	}
-
 	async function channelConfig(p: NotifProvider): Promise<Record<string, string>> {
 		const config = buildConfig(p);
 		const token = config[SHARED_BOT_FIELD];
 		if (p !== SHARED_BOT_PROVIDER || !token) return config;
-		await saveSharedBot(token);
+		await apiKeysApi.upsert(SHARED_BOT_KEY, token);
 		return { ...config, [SHARED_BOT_FIELD]: '' };
 	}
 
@@ -250,14 +240,14 @@
 				<div class="space-y-2">
 					<Label class="text-xs">Event categories</Label>
 					<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-						{#each categories as cat (cat.value)}
+						{#each categories as cat (cat.type)}
 							<Label
 								class="flex cursor-pointer items-start gap-2 rounded-md border border-input px-2.5 py-2 text-xs data-[active=true]:border-primary data-[active=true]:bg-muted"
-								data-active={pref.types.includes(cat.value)}
+								data-active={pref.types.includes(cat.type)}
 							>
 								<Checkbox
-									checked={pref.types.includes(cat.value)}
-									onCheckedChange={(v) => toggleCategory(cat.value, v === true)}
+									checked={pref.types.includes(cat.type)}
+									onCheckedChange={(v) => toggleCategory(cat.type, v === true)}
 									class="mt-0.5"
 								/>
 								<span class="min-w-0">
@@ -273,11 +263,11 @@
 					<Select.Root
 						type="single"
 						value={pref.min_severity}
-						onValueChange={(v) => (pref = { ...pref, min_severity: v ?? 'info' })}
+						onValueChange={(v) => (pref = { ...pref, min_severity: v ?? DEFAULT_CHANNEL_LEVEL })}
 					>
 						<Select.Trigger class="h-9 w-full text-sm sm:max-w-xs">{severityLabel}</Select.Trigger>
 						<Select.Content>
-							{#each NOTIF_SEVERITIES as s (s.value)}
+							{#each CHANNEL_LEVELS as s (s.value)}
 								<Select.Item value={s.value} label={s.label}>{s.label}</Select.Item>
 							{/each}
 						</Select.Content>

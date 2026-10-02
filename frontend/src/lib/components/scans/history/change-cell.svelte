@@ -1,11 +1,12 @@
 <script lang="ts">
 	import * as HoverCard from '$lib/components/ui/hover-card';
-	import TrendingUp from '@lucide/svelte/icons/trending-up';
-	import TrendingDown from '@lucide/svelte/icons/trending-down';
+	import { Skeleton } from '$lib/components/ui/skeleton';
+	import VerbRail from '$lib/components/scans/compare/verb-rail.svelte';
 	import { subdomainsApi } from '$lib/api/subdomains';
 	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { isOpenStatus } from '$lib/utilities/scan-status';
+	import { CHANGE_VERB } from '$lib/types/compare';
 	import type { ScanRead } from '$lib/types/scan';
 	import { compactCount } from '$lib/utilities/numbers';
 
@@ -67,13 +68,13 @@
 			aria-label="{added} new and {gone} gone {WEB.nounPlural}"
 		>
 			{#if added}
-				<span class="inline-flex items-center gap-0.5 font-semibold text-success">
-					<TrendingUp class="size-3.5" />{compactCount(added)}
+				<span class="inline-flex items-center gap-1 font-semibold">
+					<VerbRail verb={CHANGE_VERB.APPEARED} size="dot" />{compactCount(added)}
 				</span>
 			{/if}
 			{#if gone}
-				<span class="inline-flex items-center gap-0.5 font-semibold text-destructive">
-					<TrendingDown class="size-3.5" />{compactCount(gone)}
+				<span class="inline-flex items-center gap-1 font-semibold">
+					<VerbRail verb={CHANGE_VERB.DISAPPEARED} size="dot" />{compactCount(gone)}
 				</span>
 			{/if}
 		</HoverCard.Trigger>
@@ -89,7 +90,7 @@
 				{:else if !names}
 					<div class="space-y-2 px-3 py-3">
 						{#each { length: Math.min(added, 3) } as _, i (i)}
-							<div class="h-3 animate-pulse rounded bg-muted"></div>
+							<Skeleton class="h-3 rounded" />
 						{/each}
 					</div>
 				{:else}

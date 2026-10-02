@@ -1,4 +1,4 @@
-"""connector_actions: work reNgine hands back to the proxy, delivered once
+"""connector_actions: requests queued for the proxy
 
 Revision ID: f2b8d3e64a17
 Revises: e7a4c1d9b520

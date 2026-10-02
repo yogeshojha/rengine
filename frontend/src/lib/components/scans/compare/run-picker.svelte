@@ -1,14 +1,13 @@
 <script lang="ts">
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
-	import Check from '@lucide/svelte/icons/check';
 	import * as Popover from '$lib/components/ui/popover';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import PanelHead from '$lib/components/panel-head.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { durationText } from '$lib/utilities/scan-status';
-	import { SURFACE_ORDER } from '$lib/config/surface';
+	import { formatDateTime } from '$lib/utilities/dates';
 	import type { Snippet } from 'svelte';
-	import type { ComparableRun } from '$lib/types/compare';
+	import { runRows, type ComparableRun } from '$lib/types/compare';
 
 	interface Props {
 		label: string;
@@ -28,16 +27,6 @@
 	);
 	let blocked = $derived(runs.filter((r) => !r.comparable));
 
-	const when = (iso: string | null) =>
-		iso
-			? new Date(iso).toLocaleString('en-US', {
-					month: 'short',
-					day: 'numeric',
-					hour: 'numeric',
-					minute: '2-digit'
-				})
-			: 'not started';
-
 	function choose(scanId: string) {
 		open = false;
 		onPick(scanId);
@@ -46,15 +35,15 @@
 
 {#snippet meta(run: ComparableRun)}
 	<span class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-		<span class="tabular-nums">{when(run.started_at)}</span>
+		<span class="tabular-nums"
+			>{run.started_at ? formatDateTime(run.started_at) : 'not started'}</span
+		>
 		{#if run.duration_seconds != null}
 			<span class="opacity-40">·</span>
 			<span class="tabular-nums">{durationText(run.duration_seconds)}</span>
 		{/if}
 		<span class="opacity-40">·</span>
-		<span class="tabular-nums"
-			>{SURFACE_ORDER.reduce((n, s) => n + (run.counts[s.key] ?? 0), 0).toLocaleString()} rows</span
-		>
+		<span class="tabular-nums">{runRows(run.counts).toLocaleString()} rows</span>
 	</span>
 {/snippet}
 
@@ -92,9 +81,6 @@
 					>
 						<span class="flex items-center gap-2 text-sm leading-5 font-medium">
 							{run.engine_name}
-							{#if run.scan_id === selected}
-								<Check class="size-3.5 text-primary" />
-							{/if}
 						</span>
 						{@render meta(run)}
 					</button>

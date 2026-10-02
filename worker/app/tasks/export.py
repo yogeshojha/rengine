@@ -11,11 +11,11 @@ from uuid import UUID
 from celery import shared_task
 from sqlalchemy import select
 
-from app.config import settings
 from app.database import get_sync_session
 from shared.definitions.exports import (
     BUNDLE,
     BUNDLE_EXTENSION,
+    BUNDLE_LABEL,
     EXPORT_ROOT,
     FORMAT_EXTENSIONS,
     RETENTION_DAYS,
@@ -25,22 +25,22 @@ from shared.definitions.exports import (
 from shared.definitions.surface import (
     EXPORTABLE_DIMENSIONS,
     SURFACE_LABELS,
+    SURFACE_NOUN,
     SurfaceDimension,
 )
 from shared.enums.notification import NotificationSeverity, NotificationType
 from shared.logging import get_logger
 from shared.models.export import Export
-from shared.services.asset_export import runner
+from shared.services.asset_export import runner, writer
 from shared.services.asset_query import QueryScope
 from shared.services.notification_sync import SyncNotificationPublisher
 from shared.services.surface_scope_sync import project_scope, target_scope
 from shared.utils.datetime import utc_now
-from shared.utils.slug import generate_slug
+from shared.utils.files import purge_dir
 
 logger = get_logger(__name__)
 
 _CLEANUP_BATCH = 500
-_BUNDLE_DIMENSIONS = EXPORTABLE_DIMENSIONS
 
 
 def _root(export_id: UUID) -> Path:
@@ -50,8 +50,7 @@ def _root(export_id: UUID) -> Path:
 
 
 def _stem(row: Export) -> str:
-    subject = row.subject or row.dimension
-    return generate_slug(f"{row.dimension}-{subject}")[:80] or "export"
+    return writer.file_stem(row.dimension, row.subject)
 
 
 @shared_task(bind=True, name="app.tasks.export.run", max_retries=0)
@@ -139,10 +138,10 @@ def _write_bundle(session, row, scope, now, directory: Path, progress) -> tuple:
     written = total = 0
     capped = False
     with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as bundle:
-        for index, dimension in enumerate(_BUNDLE_DIMENSIONS):
+        for index, dimension in enumerate(EXPORTABLE_DIMENSIONS):
             progress(
-                10 + int(80 * index / len(_BUNDLE_DIMENSIONS)),
-                f"Writing {dimension.replace('_', ' ')}",
+                10 + int(80 * index / len(EXPORTABLE_DIMENSIONS)),
+                f"Writing {SURFACE_NOUN[dimension][1]}",
             )
             part = directory / f"{dimension}.{extension}"
             part_scope = (
@@ -173,9 +172,9 @@ def _dimension_scope(session, row: Export, dimension: str) -> QueryScope:
 
 
 def _notify_failed(session, row: Export) -> None:
-    label = SURFACE_LABELS.get(row.dimension, "All dimensions")
+    label = SURFACE_LABELS.get(row.dimension, BUNDLE_LABEL)
     try:
-        SyncNotificationPublisher(settings.celery_broker_url).publish(
+        SyncNotificationPublisher().publish(
             session,
             NotificationType.SYSTEM,
             NotificationSeverity.ERROR,
@@ -224,7 +223,7 @@ def cleanup() -> int:
             .all()
         )
         for row in rows:
-            _purge(row.id)
+            purge_dir(EXPORT_ROOT, row.id)
             row.status = ExportStatus.EXPIRED.value
             row.filename = None
             row.bytes_written = 0
@@ -237,7 +236,7 @@ def cleanup() -> int:
 
 @shared_task(name="app.tasks.export.reap")
 def reap() -> int:
-    """A run the worker lost never finishes on its own."""
+    """Fail exports that stopped without finishing."""
     session = get_sync_session()
     try:
         cutoff = utc_now() - timedelta(seconds=STALE_AFTER_SECONDS)
@@ -262,12 +261,3 @@ def reap() -> int:
         return len(rows)
     finally:
         session.close()
-
-
-def _purge(export_id: UUID) -> None:
-    directory = Path(EXPORT_ROOT) / str(export_id)
-    if not directory.exists():
-        return
-    for item in directory.iterdir():
-        item.unlink(missing_ok=True)
-    directory.rmdir()

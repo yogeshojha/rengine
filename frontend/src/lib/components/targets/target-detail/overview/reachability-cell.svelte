@@ -57,6 +57,8 @@
 
 	interface Props {
 		counts: Record<string, number>;
+		capped?: Record<string, boolean>;
+		rowCount?: number | null;
 		isDomain: boolean;
 		scanId: string;
 		observedAt?: string | null;
@@ -66,6 +68,8 @@
 
 	let {
 		counts,
+		capped = {},
+		rowCount = null,
 		isDomain,
 		scanId,
 		observedAt = null,
@@ -78,20 +82,27 @@
 		ROUTES.results(WEB.tab, scanId, q ? { [WEB.queryParam]: q } : undefined);
 
 	let states = $derived(reachabilityStates(isDomain));
-	let total = $derived(states.reduce((n, s) => n + (counts[s.query] ?? 0), 0));
+	let exact = $derived.by(() => {
+		const over = states.filter((s) => capped[s.query]);
+		if (over.length !== 1 || rowCount == null) return counts;
+		const rest = states.reduce((n, s) => (capped[s.query] ? n : n + (counts[s.query] ?? 0)), 0);
+		const q = over[0].query;
+		return { ...counts, [q]: Math.max(rowCount - rest, counts[q] ?? 0) };
+	});
+	let total = $derived(states.reduce((n, s) => n + (exact[s.query] ?? 0), 0));
 	let segments = $derived<Segment[]>(
 		states
 			.map((s) => ({
 				key: s.key,
 				label: s.label,
-				count: counts[s.query] ?? 0,
+				count: exact[s.query] ?? 0,
 				color: s.fill,
 				filter: s.query
 			}))
 			.filter((s) => s.count > 0)
 	);
 	let reachable = $derived(
-		states.filter((s) => s.reachable).reduce((n, s) => n + (counts[s.query] ?? 0), 0)
+		states.filter((s) => s.reachable).reduce((n, s) => n + (exact[s.query] ?? 0), 0)
 	);
 </script>
 

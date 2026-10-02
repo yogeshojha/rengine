@@ -18,7 +18,8 @@
 	import PdfDocument from './pdf-document.svelte';
 	import PdfRail from './pdf-rail.svelte';
 	import { reportsApi } from '$lib/api/reports';
-	import { FORMAT_ICONS, FORMAT_LABELS, formatBytes } from '$lib/config/reports';
+	import { FORMAT_ICONS, FORMAT_LABELS, ReportFormat } from '$lib/config/reports';
+	import { formatBytes } from '$lib/utilities/format';
 	import {
 		loadDocument,
 		pageSizes,
@@ -54,8 +55,8 @@
 	let content = $state<HTMLElement | null>(null);
 	let session = 0;
 
-	const pdfFile = $derived(report.files.find((file) => file.format === 'pdf'));
-	const otherFiles = $derived(report.files.filter((file) => file.format !== 'pdf'));
+	const pdfFile = $derived(report.files.find((file) => file.format === ReportFormat.PDF));
+	const otherFiles = $derived(report.files.filter((file) => file.format !== ReportFormat.PDF));
 
 	$effect(() => {
 		if (!open) return;
@@ -172,7 +173,7 @@
 					variant="outline"
 					size="sm"
 					class="h-8"
-					href={reportsApi.downloadUrl(projectId, report.id, 'pdf')}
+					href={reportsApi.downloadUrl(projectId, report.id, ReportFormat.PDF)}
 					download
 				>
 					<DownloadIcon class="mr-1.5 size-3.5" />
@@ -230,7 +231,7 @@
 						<Button
 							variant="outline"
 							size="sm"
-							href={reportsApi.downloadUrl(projectId, report.id, 'pdf')}
+							href={reportsApi.downloadUrl(projectId, report.id, ReportFormat.PDF)}
 							download
 						>
 							<DownloadIcon class="mr-1.5 size-3.5" />

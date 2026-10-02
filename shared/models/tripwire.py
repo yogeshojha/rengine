@@ -22,6 +22,7 @@ from shared.definitions.tripwires import (
     ScopeKind,
     Trigger,
 )
+from shared.enums.scan import INTENSITIES
 from shared.models.asset_query import QueryError
 from shared.utils.datetime import utc_now
 from shared.utils.validation import clean_name, clean_optional_name
@@ -111,6 +112,14 @@ class ScanAction(BaseModel):
     kind: Literal["scan"] = ActionKind.SCAN.value
     stages: list[str] = PField(default_factory=list, max_length=MAX_STAGES)
     intensity: str | None = PField(default=None, max_length=16)
+
+    @field_validator("intensity")
+    @classmethod
+    def _known_intensity(cls, value: str | None) -> str | None:
+        if value is not None and value not in INTENSITIES:
+            msg = "Unknown intensity."
+            raise ValueError(msg)
+        return value
 
 
 TripwireAction = Annotated[NotifyAction | ScanAction, PField(discriminator="kind")]
@@ -337,6 +346,7 @@ class TripwirePreview(BaseModel):
     matched: int = 0
     fired: int = 0
     rows: list[FiredRow] = PField(default_factory=list)
+    scanned: int = 0
     unscanned: int = 0
     capped: bool = False
     error: QueryError | None = None

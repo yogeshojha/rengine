@@ -32,14 +32,13 @@
 
 <Cell
 	id="tech"
-	title="Technology"
 	description="Web assets per technology"
 	href={routes.results(SPEC.tab, scanId)}
 	hrefLabel={SPEC.label}
 	loading={loading && !tech}
 	class={className}
 >
-	<RankedBars {rows} dense>
+	<RankedBars {rows}>
 		{#snippet icon(r)}
 			<TechIcon name={r.key} class="size-4">
 				{#snippet fallback()}

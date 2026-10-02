@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING
 from sqlalchemy import func, select, text
 from sqlalchemy.exc import DBAPIError
 
-from app.services.asset_query.ast import QuerySyntaxError
 from app.services.target_names import target_names
 from shared.definitions.rescan import RESCANNABLE_STAGES, stages_for
 from shared.definitions.surface import SURFACE_LABELS, SURFACE_NOUN, SURFACE_ORDER
@@ -66,9 +65,10 @@ from shared.models.tripwire import (
     TripwireScopeRead,
     TripwireUpdate,
 )
-from shared.services.asset_query.errors import (
+from shared.services.asset_query import (
     NO_JIT,
     STATEMENT_TIMEOUT,
+    QuerySyntaxError,
     query_error_for,
     syntax_error,
 )
@@ -81,7 +81,6 @@ from shared.utils.datetime import utc_now
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
-QUERY_FAILED = "The query did not run."
 PREVIEW_ROWS = 20
 
 
@@ -443,12 +442,11 @@ class TripwireService:
             .distinct(Scan.target_id)
             .order_by(Scan.target_id, _started().desc())
         )
-        scans = sorted(
+        return sorted(
             rows.scalars().all(),
             key=lambda s: s.started_at or s.created_at,
             reverse=True,
         )
-        return scans[:MAX_PREVIEW_TARGETS]
 
     async def _recent_scans(
         self, dimension: str, targets: list[uuid.UUID]
@@ -512,9 +510,10 @@ class TripwireService:
         if error:
             return TripwirePreview(error=error)
         targets = await self._scoped_targets(payload.scope, project_id)
-        scans = await self._latest_scans(payload.dimension, targets)
+        latest = await self._latest_scans(payload.dimension, targets)
+        scans = latest[:MAX_PREVIEW_TARGETS]
         names = await target_names(self.session, [s.target_id for s in scans])
-        out = TripwirePreview(unscanned=len(targets) - len(scans))
+        out = TripwirePreview(scanned=len(latest), unscanned=len(targets) - len(latest))
         for scan in scans:
             try:
                 result = await self._evaluate(payload, scan)

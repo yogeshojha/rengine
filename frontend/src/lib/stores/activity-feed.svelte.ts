@@ -43,7 +43,7 @@ function isTerminal(eventType: string): boolean {
 }
 
 export type ActivityFilter = 'all' | 'scan' | 'enrichment' | 'alert' | 'system';
-export type ActivityScopeMode = 'current' | 'project';
+type ActivityScopeMode = 'current' | 'project';
 
 export const FILTERS: ActivityFilter[] = ['all', 'scan', 'enrichment', 'alert', 'system'];
 export const FILTER_LABELS: Record<ActivityFilter, string> = {
@@ -54,7 +54,7 @@ export const FILTER_LABELS: Record<ActivityFilter, string> = {
 	system: 'System'
 };
 
-export function categorize(t: string): ActivityFilter {
+function categorize(t: string): ActivityFilter {
 	const s = t.toLowerCase();
 	if (/scan|recon|nuclei|task/.test(s)) return 'scan';
 	if (/enrich|whois|dns|bgp|geoip|ssl/.test(s)) return 'enrichment';
@@ -102,6 +102,7 @@ function createActivityFeed() {
 	let scopeMode = $state<ActivityScopeMode>('project');
 	let targetId = $state<string | undefined>(undefined);
 	let loadError = $state<string | null>(null);
+	let seq = 0;
 
 	const scoped = $derived(
 		scopeMode === 'project' || !targetId ? items : items.filter((a) => a.target_id === targetId)
@@ -123,7 +124,6 @@ function createActivityFeed() {
 	const targetGroups = $derived(groupByTarget(clusters));
 	const hasMore = $derived(page < totalPages);
 	const latest = $derived(items[0] ?? null);
-	const isLive = $derived(freshIds.size > 0);
 	const errorCount = $derived(scoped.filter((a) => a.level === 'error').length);
 
 	const runningIds = $derived.by(() => {
@@ -158,9 +158,6 @@ function createActivityFeed() {
 	});
 
 	return {
-		get items() {
-			return items;
-		},
 		get days() {
 			return days;
 		},
@@ -214,9 +211,6 @@ function createActivityFeed() {
 		},
 		get latest() {
 			return latest;
-		},
-		get isLive() {
-			return isLive;
 		},
 		get counts() {
 			return counts;
@@ -287,8 +281,10 @@ function createActivityFeed() {
 		async load(projectId: string, p: number) {
 			if (loading) return;
 			loading = true;
+			const my = ++seq;
 			try {
 				const res = await activityApi.list({ project_id: projectId }, p, 50);
+				if (my !== seq) return;
 				if (p === 1) {
 					items = res.items;
 				} else {
@@ -299,10 +295,13 @@ function createActivityFeed() {
 				page = p;
 				loadError = null;
 			} catch (e) {
+				if (my !== seq) return;
 				loadError = e instanceof Error ? e.message : 'Activity not loaded';
 			} finally {
-				loading = false;
-				initialLoad = false;
+				if (my === seq) {
+					loading = false;
+					initialLoad = false;
+				}
 			}
 		},
 		get page() {
@@ -320,6 +319,8 @@ function createActivityFeed() {
 		},
 
 		reset() {
+			seq++;
+			loading = false;
 			collapsedGroups.clear();
 			items = [];
 			page = 1;

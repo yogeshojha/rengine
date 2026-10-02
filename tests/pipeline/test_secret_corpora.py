@@ -106,7 +106,7 @@ async def _upsert(estate, scan: str, urls: list[str]) -> None:
             project_id=estate.project_id,
             source=EndpointSource.SEED.value,
             observations=[EndpointObservation(url=u) for u in urls],
-            policy=NoisePolicy.off(),
+            policy=NoisePolicy(enabled=False, drops=False, strip_params=False),
         )
     )
 
@@ -118,7 +118,7 @@ async def _verify(estate, scan: str, observations: list[EndpointObservation]):
     )
 
 
-async def _responses(estate, scan: str) -> dict[str, EndpointResponse]:
+async def _responses(estate, scan: str) -> dict[str, tuple[str | None, str | None]]:
     rows = await estate.session.execute(
         sa.text(
             "SELECT e.url, r.response_body, r.raw_response_header "

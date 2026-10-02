@@ -10,10 +10,6 @@ export const notificationChannelsApi = {
 		return api.get<NotificationChannelRead[]>('/notification-channels');
 	},
 
-	get: (id: string): Promise<NotificationChannelRead> => {
-		return api.get<NotificationChannelRead>(`/notification-channels/${id}`);
-	},
-
 	create: (data: NotificationChannelCreate): Promise<NotificationChannelRead> => {
 		return api.post<NotificationChannelRead>('/notification-channels', data);
 	},

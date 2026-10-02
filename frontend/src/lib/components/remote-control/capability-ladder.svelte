@@ -1,7 +1,7 @@
 <script lang="ts">
 	import RungMeter from '$lib/components/access/rung-meter.svelte';
-	import { MCP_CAPABILITIES, MCP_CAPABILITY_LABELS } from '$lib/types/mcp';
-	import { ladderLevel, type ChannelChat } from '$lib/types/remote-control';
+	import { MCP_CAPABILITIES, MCP_CAPABILITY_LABELS, ladderLevel } from '$lib/types/mcp';
+	import type { ChannelChat } from '$lib/types/remote-control';
 
 	interface Props {
 		chat: ChannelChat;

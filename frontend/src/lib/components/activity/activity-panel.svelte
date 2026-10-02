@@ -30,7 +30,6 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
-	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import { Toggle } from '$lib/components/ui/toggle/index.js';
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
@@ -170,14 +169,15 @@
 		const ok = await liveScans.cancel(scan);
 		cancelling = false;
 		cancelTarget = null;
-		if (ok) toast.success(`Cancelling scan of ${scan.execution_config.target_value}`);
+		if (ok) toast.success('Scan cancelled');
 		else toast.error('Scan not cancelled');
 	}
 </script>
 
 <svelte:window
 	onkeydown={(e) => {
-		if (e.key === 'Escape' && activityFeed.open && !docked) activityFeed.setOpen(false);
+		if (e.key === 'Escape' && !e.defaultPrevented && activityFeed.open && !docked)
+			activityFeed.setOpen(false);
 	}}
 	onpointerdown={onWindowPointerDown}
 />
@@ -225,32 +225,27 @@
 
 		<div class="flex shrink-0 items-center">
 			{#if !sidebar.isMobile}
-				<Tooltip.Root>
-					<Tooltip.Trigger>
-						{#snippet child({ props })}
-							<Button
-								{...props}
-								variant="ghost"
-								size="icon-sm"
-								onclick={() => activityFeed.setPinned(!activityFeed.pinned)}
-								aria-label={activityFeed.pinned ? 'Unpin panel' : 'Pin panel'}
-								aria-pressed={activityFeed.pinned}
-								class="size-6 {activityFeed.pinned
-									? 'text-foreground'
-									: 'text-muted-foreground hover:text-foreground'}"
-							>
-								{#if activityFeed.pinned}
-									<PinOff class="size-3.5" />
-								{:else}
-									<Pin class="size-3.5" />
-								{/if}
-							</Button>
-						{/snippet}
-					</Tooltip.Trigger>
-					<Tooltip.Content side="bottom">
-						{activityFeed.pinned ? 'Unpin' : 'Pin'}
-					</Tooltip.Content>
-				</Tooltip.Root>
+				<Hint text={activityFeed.pinned ? 'Unpin' : 'Pin'} side="bottom">
+					{#snippet child(props)}
+						<Button
+							{...props}
+							variant="ghost"
+							size="icon-sm"
+							onclick={() => activityFeed.setPinned(!activityFeed.pinned)}
+							aria-label={activityFeed.pinned ? 'Unpin panel' : 'Pin panel'}
+							aria-pressed={activityFeed.pinned}
+							class="size-6 {activityFeed.pinned
+								? 'text-foreground'
+								: 'text-muted-foreground hover:text-foreground'}"
+						>
+							{#if activityFeed.pinned}
+								<PinOff class="size-3.5" />
+							{:else}
+								<Pin class="size-3.5" />
+							{/if}
+						</Button>
+					{/snippet}
+				</Hint>
 			{/if}
 			<Button
 				variant="ghost"
@@ -350,25 +345,23 @@
 
 		<div class="ml-auto flex items-center gap-0.5">
 			{#if !scopedToTarget}
-				<Tooltip.Root>
-					<Tooltip.Trigger>
-						{#snippet child({ props })}
-							<Toggle
-								{...props}
-								size="sm"
-								pressed={activityFeed.grouping === 'target'}
-								onPressedChange={(v) => activityFeed.setGrouping(v ? 'target' : 'timeline')}
-								aria-label="Group by target"
-								class="h-6 min-w-6 rounded-full px-1.5 text-muted-foreground data-[state=on]:text-foreground"
-							>
-								<Layers class="size-3" />
-							</Toggle>
-						{/snippet}
-					</Tooltip.Trigger>
-					<Tooltip.Content side="bottom">
-						{activityFeed.grouping === 'target' ? 'Grouped by target' : 'Group by target'}
-					</Tooltip.Content>
-				</Tooltip.Root>
+				<Hint
+					text={activityFeed.grouping === 'target' ? 'Grouped by target' : 'Group by target'}
+					side="bottom"
+				>
+					{#snippet child(props)}
+						<Toggle
+							{...props}
+							size="sm"
+							pressed={activityFeed.grouping === 'target'}
+							onPressedChange={(v) => activityFeed.setGrouping(v ? 'target' : 'timeline')}
+							aria-label="Group by target"
+							class="h-6 min-w-6 rounded-full px-1.5 text-muted-foreground data-[state=on]:text-foreground"
+						>
+							<Layers class="size-3" />
+						</Toggle>
+					{/snippet}
+				</Hint>
 			{/if}
 			<Hint text="Errors only">
 				{#snippet child(props)}

@@ -1,4 +1,4 @@
-"""One search tool over the five dimensions."""
+"""One search tool over every result dimension."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from mcp.context import ToolContext
 from mcp.dimensions import DEFAULT_ROWS, DIMENSION_KEYS, MAX_ROWS, dimension
 from mcp.errors import ToolError
 from mcp.result import ToolResult
-from mcp.tools._scope import project_for, resolve
+from mcp.tools._scope import parse_id, project_for, resolve
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from toolbox.base import cell, hero, table
 
@@ -38,6 +38,10 @@ class Input(ToolInput):
         default=DEFAULT_ROWS, ge=1, le=MAX_ROWS, description="Rows to return."
     )
     offset: int = Field(default=0, ge=0, description="Rows to skip.")
+    project_id: str | None = Field(
+        default=None,
+        description="Project to search. Omit when the token is scoped to one.",
+    )
 
 
 class QueryAssets(Tool):
@@ -72,15 +76,12 @@ class QueryAssets(Tool):
         else:
             from app.services.surface_scope import SurfaceScopeService  # noqa: PLC0415
 
-            project_id = await project_for(ctx, None)
+            project_id = await project_for(ctx, parse_id(args.project_id, "project_id"))
             query_scope = await SurfaceScopeService(ctx.session).scope(
                 project_id, dim.key
             )
             if not query_scope:
-                msg = (
-                    f"No settled scan in this project has produced {dim.noun_plural}. "
-                    "Report it as not scanned, not as zero."
-                )
+                msg = f"No settled scan in this project has produced {dim.noun_plural}."
                 raise ToolError(msg)
             where = f"{len(query_scope.ids)} targets"
             pivot = links.surface(ctx.ui_base_url, dim.tab, args.query)
@@ -96,7 +97,7 @@ class QueryAssets(Tool):
         capped = bool(page.total_capped)
 
         shown = f"showing {len(rows)}" if total > len(rows) else "all shown"
-        headline = f"{total}{'+' if capped else ''} {dim.noun_plural} match on {where} ({shown})"
+        headline = f"{total}{'+' if capped else ''} {dim.noun_plural} match on {where} · {shown}"
 
         if capped:
             caveats.append(

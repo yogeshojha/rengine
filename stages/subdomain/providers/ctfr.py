@@ -7,7 +7,6 @@ from shared.enums.subdomain import SubdomainSource
 from stages.subdomain.providers.base import SubdomainProvider
 
 _CRTSH_URL = "https://crt.sh/?q=%25.{domain}&output=json"
-_USER_AGENT = "reNgine/3.0 (+https://rengine.wiki)"
 
 
 class CtfrProvider(SubdomainProvider):
@@ -19,14 +18,8 @@ class CtfrProvider(SubdomainProvider):
 
     def discover(self) -> set[str]:
         url = _CRTSH_URL.format(domain=self.ctx.domain)
-        proxy = self.ctx.proxy_url
-        opener = urllib.request.build_opener(
-            urllib.request.ProxyHandler({"http": proxy, "https": proxy})
-            if proxy
-            else urllib.request.ProxyHandler({})
-        )
-        req = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})  # noqa: S310
-        with opener.open(req, timeout=self.ctx.timeout) as resp:
+        req = urllib.request.Request(url)  # noqa: S310
+        with self._opener().open(req, timeout=self.ctx.timeout) as resp:
             payload = resp.read().decode("utf-8", errors="replace")
 
         try:

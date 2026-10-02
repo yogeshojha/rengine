@@ -46,6 +46,9 @@
 	} from '$lib/config/connectors';
 	import { ROUTES } from '$lib/config/routes';
 	import { relativeTime } from '$lib/utilities/dates';
+	import { afterPause } from '$lib/utilities/debounce';
+	import { httpStatusTextClass } from '$lib/utilities/scan-correlation';
+	import { plural, pluralWord } from '$lib/utilities/strings';
 	import type { Candidate, CandidateQuery, Connector, QueueView } from '$lib/types/connector';
 
 	let {
@@ -81,6 +84,7 @@
 	let stateFilter = $state<string>('');
 	let host = $state<string>('');
 	let search = $state('');
+	let applied = $state('');
 	let confirming = $state<{ action: 'scan' | 'ignore'; ids: string[] } | null>(null);
 	let openedId = $state<string | null>(null);
 	let now = $state(Date.now());
@@ -97,12 +101,26 @@
 		...VIEW_QUERY[view],
 		state: stateFilter || undefined,
 		host: host || undefined,
-		search: search || undefined,
+		search: applied || undefined,
 		page: pageNumber + 1
 	});
 	const count = $derived(confirming?.ids.length ?? 0);
-	const noun = $derived(count === 1 ? 'request' : 'requests');
+	const noun = $derived(pluralWord(count, 'request'));
 	const openedRow = $derived(rows.find((r) => r.id === openedId) ?? null);
+
+	$effect(() => {
+		void view;
+		untrack(() => (pageNumber = 0));
+	});
+
+	$effect(() => {
+		const next = search;
+		return afterPause(() => {
+			if (applied === next) return;
+			applied = next;
+			pageNumber = 0;
+		});
+	});
 
 	$effect(() => {
 		const id = connector.id;
@@ -114,15 +132,6 @@
 	});
 
 	$effect(() => {
-		void view;
-		void stateFilter;
-		void host;
-		void search;
-		untrack(() => (pageNumber = 0));
-	});
-
-	$effect(() => {
-		if (typeof document === 'undefined') return;
 		const id = connector.id;
 		const query = filters;
 		const every = live ? LIVE_POLL_MS : CONNECTOR_POLL_MS;
@@ -209,20 +218,16 @@
 		confirming = null;
 		openedId = null;
 		acting = true;
+		error = null;
 		try {
 			await connectorsApi.setState(connector.id, projectId, ids, 'ignored');
 			picked.clear();
 			await reload();
+		} catch (e) {
+			error = e instanceof Error ? e.message : 'Requests not ignored.';
 		} finally {
 			acting = false;
 		}
-	}
-
-	function statusTone(code: number | null): string {
-		if (code === null) return 'text-muted-foreground';
-		if (code >= 500) return 'text-destructive';
-		if (code >= 400) return 'text-warning';
-		return 'text-success';
 	}
 
 	function endpointsLink(row: Candidate): string {
@@ -240,9 +245,16 @@
 			<Input bind:value={search} placeholder="Filter by URL" class="h-8 pl-8 text-xs" />
 		</div>
 		{#if hosts.length > 1}
-			<Select.Root type="single" value={host} onValueChange={(v) => (host = v ?? '')}>
+			<Select.Root
+				type="single"
+				value={host}
+				onValueChange={(v) => {
+					host = v ?? '';
+					pageNumber = 0;
+				}}
+			>
 				<Select.Trigger class="h-8 w-64 text-xs">
-					{host || `All hosts (${hosts.length})`}
+					{host || `All hosts · ${hosts.length}`}
 				</Select.Trigger>
 				<Select.Content>
 					<Select.Item value="">All hosts</Select.Item>
@@ -252,7 +264,14 @@
 				</Select.Content>
 			</Select.Root>
 		{/if}
-		<Select.Root type="single" value={stateFilter} onValueChange={(v) => (stateFilter = v ?? '')}>
+		<Select.Root
+			type="single"
+			value={stateFilter}
+			onValueChange={(v) => {
+				stateFilter = v ?? '';
+				pageNumber = 0;
+			}}
+		>
 			<Select.Trigger class="h-8 w-36 text-xs">
 				{stateFilter ? CANDIDATE_STATE_LABELS[stateFilter as Candidate['state']] : 'Any state'}
 			</Select.Trigger>
@@ -264,7 +283,7 @@
 			</Select.Content>
 		</Select.Root>
 		<span class="text-muted-foreground text-xs tabular-nums">
-			{(page?.total ?? 0).toLocaleString()} shown
+			{plural(page?.total ?? 0, 'request')}
 		</span>
 		{#if live}
 			<span class="flex items-center gap-1.5 text-xs">
@@ -392,7 +411,7 @@
 							{/if}
 						</td>
 						<td
-							class="px-4 py-2.5 text-right align-top font-mono text-xs leading-5 tabular-nums {statusTone(
+							class="px-4 py-2.5 text-right align-top font-mono text-xs leading-5 tabular-nums {httpStatusTextClass(
 								row.status_code
 							)}">{row.status_code ?? '—'}</td
 						>
@@ -468,8 +487,7 @@
 				total={page?.total ?? 0}
 				page={pageNumber}
 				pageSize={PAGE_SIZE}
-				noun="shape"
-				plural="shapes"
+				noun="request"
 				onPage={(next) => (pageNumber = next)}
 			/>
 		</div>

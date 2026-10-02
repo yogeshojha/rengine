@@ -50,7 +50,7 @@
 
 <div class="bar">
 	<span class="lens">
-		<span class="dim">Against a</span>
+		<span class="dim">Target type</span>
 		<Select.Root type="single" value={targetType} onValueChange={(v) => v && onTargetTypeChange(v)}>
 			<Select.Trigger
 				class="h-6 w-auto min-w-[88px] gap-1 border-0 bg-muted px-2 text-xs font-medium shadow-none"
@@ -66,7 +66,6 @@
 				{/each}
 			</Select.Content>
 		</Select.Root>
-		<span class="dim">target</span>
 	</span>
 
 	<Separator orientation="vertical" class="hidden data-[orientation=vertical]:h-4 sm:block" />

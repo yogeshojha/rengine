@@ -14,8 +14,11 @@
 {#if valid}
 	<span class="inline-flex items-center gap-1.5 {className}">
 		<span class="fi fi-{iso} shrink-0 rounded-[2px] leading-none" aria-hidden="true"></span>
-		{#if showCode}<span class="uppercase">{iso}</span>{/if}
-		<span class="sr-only">{iso.toUpperCase()}</span>
+		{#if showCode}
+			<span class="uppercase">{iso}</span>
+		{:else}
+			<span class="sr-only">{iso.toUpperCase()}</span>
+		{/if}
 	</span>
 {:else}
 	<span class="text-muted-foreground {className}">—</span>

@@ -6,16 +6,14 @@ import type {
 	ScanCommandDetail,
 	ScanCommandRead,
 	ScanCreate,
-	ScanDay,
-	ScanExportRow,
+	ScanDaily,
 	ScanPreview,
 	ScanRead,
 	ScanSortDir,
 	ScanSortKey,
 	ScanStats,
 	ScanStatus,
-	ScanTargetTrend,
-	ScanTimeRange
+	ScanTargetTrend
 } from '$lib/types/scan';
 import type { PaginatedResponse } from '$lib/types/pagination';
 import type {
@@ -27,18 +25,13 @@ import type {
 } from '$lib/types/recheck';
 
 interface ScanFilterParams {
-	target_id?: string;
-	parent_id?: string;
+	target_id?: string | string[];
 	status?: ScanStatus[];
 	engine?: string[];
-	context?: string[];
 	search?: string;
-	time_range?: ScanTimeRange;
 	sort_by?: ScanSortKey;
 	sort_dir?: ScanSortDir;
-	scheduled?: boolean | null;
 	include_focused?: boolean;
-	new_checks?: boolean | null;
 	severity?: string[];
 	short?: boolean | null;
 	added?: boolean | null;
@@ -54,18 +47,13 @@ interface ListScansParams extends ScanFilterParams {
 
 function buildScanQuery(projectId: string, params: ScanFilterParams): URLSearchParams {
 	const sp = new URLSearchParams({ project_id: projectId });
-	if (params.target_id) sp.append('target_id', params.target_id);
-	if (params.parent_id) sp.append('parent_id', params.parent_id);
+	for (const id of [params.target_id ?? []].flat()) sp.append('target_id', id);
 	for (const s of params.status ?? []) sp.append('status', s);
 	for (const e of params.engine ?? []) sp.append('engine', e);
-	for (const c of params.context ?? []) sp.append('context', c);
 	if (params.search?.trim()) sp.append('search', params.search.trim());
-	if (params.time_range && params.time_range !== 'all') sp.append('time_range', params.time_range);
 	if (params.sort_by) sp.append('sort_by', params.sort_by);
 	if (params.sort_dir) sp.append('sort_dir', params.sort_dir);
-	if (params.scheduled != null) sp.append('scheduled', String(params.scheduled));
 	if (params.include_focused) sp.append('include_focused', 'true');
-	if (params.new_checks != null) sp.append('new_checks', String(params.new_checks));
 	for (const v of params.severity ?? []) sp.append('severity', v);
 	if (params.short != null) sp.append('short', String(params.short));
 	if (params.added != null) sp.append('added', String(params.added));
@@ -110,14 +98,13 @@ export const scansApi = {
 		return api.get<PaginatedResponse<ScanRead>>(`/scans?${sp.toString()}`);
 	},
 
-	async exportRows(projectId: string, params: ScanFilterParams = {}): Promise<ScanExportRow[]> {
-		const sp = buildScanQuery(projectId, params);
-		return api.get<ScanExportRow[]>(`/scans/export?${sp.toString()}`);
-	},
-
-	async stats(projectId: string, targetId?: string, includeFocused = false): Promise<ScanStats> {
+	async stats(
+		projectId: string,
+		targetIds: string[] = [],
+		includeFocused = false
+	): Promise<ScanStats> {
 		const sp = new URLSearchParams({ project_id: projectId });
-		if (targetId) sp.append('target_id', targetId);
+		for (const id of targetIds) sp.append('target_id', id);
 		if (includeFocused) sp.append('include_focused', 'true');
 		return api.get<ScanStats>(`/scans/stats?${sp.toString()}`);
 	},
@@ -134,10 +121,10 @@ export const scansApi = {
 		return api.get<ScanTargetTrend[]>(`/scans/trends?${sp}`);
 	},
 
-	async daily(projectId: string, days: number, targetId?: string): Promise<ScanDay[]> {
+	async daily(projectId: string, days: number, targetIds: string[] = []): Promise<ScanDaily> {
 		const sp = new URLSearchParams({ project_id: projectId, days: String(days) });
-		if (targetId) sp.append('target_id', targetId);
-		return api.get<ScanDay[]>(`/scans/daily?${sp}`);
+		for (const id of targetIds) sp.append('target_id', id);
+		return api.get<ScanDaily>(`/scans/daily?${sp}`);
 	},
 
 	async get(id: string, projectId: string): Promise<ScanRead> {
@@ -148,9 +135,9 @@ export const scansApi = {
 		return api.post<ScanRead>(`/scans/${id}/cancel?project_id=${projectId}`);
 	},
 
-	async cancelAll(projectId: string, targetId?: string): Promise<ScanCancelAll> {
+	async cancelAll(projectId: string, targetIds: string[] = []): Promise<ScanCancelAll> {
 		const sp = new URLSearchParams({ project_id: projectId });
-		if (targetId) sp.append('target_id', targetId);
+		for (const id of targetIds) sp.append('target_id', id);
 		return api.post<ScanCancelAll>(`/scans/cancel-all?${sp.toString()}`);
 	},
 

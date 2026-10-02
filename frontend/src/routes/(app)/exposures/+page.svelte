@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { pageTitle } from '$lib/utilities/page-title';
 	import { page } from '$app/state';
-	import { replaceState } from '$app/navigation';
+	import { goto, replaceState } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import { untrack } from 'svelte';
 	import ListFilterIcon from '@lucide/svelte/icons/list-filter';
@@ -11,9 +11,13 @@
 	import RulesPanel from '$lib/components/interest/rules-panel.svelte';
 	import DismissedPanel from '$lib/components/interest/dismissed-panel.svelte';
 	import ExposuresTable from '$lib/components/scans/results/interesting/interesting-table.svelte';
+	import ScopeBar from '$lib/components/dashboard/scope-bar.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { EXPOSURE_TABS, routeLabels, type ExposureTab } from '$lib/config/routes';
+	import { EXPOSURE_PARAMS } from '$lib/config/interest';
 	import type { IconComponent } from '$lib/config/icons';
+	import { scopeFromParams, scopeToParams } from '$lib/utilities/dashboard-scope';
+	import type { TargetScope } from '$lib/utilities/surface-scope';
 
 	const TAB_META: Record<ExposureTab, { label: string; icon: IconComponent }> = {
 		exposures: { label: 'Exposures', icon: ScanEyeIcon },
@@ -29,6 +33,16 @@
 		validTabs.has(initialTab) ? (initialTab as ExposureTab) : DEFAULT_TAB
 	);
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
+	let scope = $derived(scopeFromParams(page.url.searchParams));
+	let initialBand = $derived(page.url.searchParams.get(EXPOSURE_PARAMS.band));
+	let initialKinds = $derived(page.url.searchParams.getAll(EXPOSURE_PARAMS.kind).filter(Boolean));
+	let filterKey = $derived(JSON.stringify([projectId, scope, initialBand, initialKinds]));
+
+	function setScope(next: TargetScope) {
+		const params = scopeToParams(page.url.searchParams, next);
+		const qs = params.toString();
+		void goto(qs ? `?${qs}` : page.url.pathname, { keepFocus: true, noScroll: true });
+	}
 
 	$effect(() => {
 		const tab = activeTab;
@@ -66,9 +80,24 @@
 			{/each}
 		</Tabs.List>
 
-		<Tabs.Content value="exposures" class="mt-6">
-			{#key projectId}
-				<ExposuresTable {projectId} projectWide active={activeTab === 'exposures'} />
+		<Tabs.Content value="exposures" class="mt-6 space-y-4">
+			{#if projectsStore.activeProject}
+				<ScopeBar
+					projectSlug={projectsStore.activeProject.slug}
+					{scope}
+					known={[]}
+					onChange={setScope}
+				/>
+			{/if}
+			{#key filterKey}
+				<ExposuresTable
+					{projectId}
+					projectWide
+					active={activeTab === 'exposures'}
+					{initialBand}
+					{initialKinds}
+					{scope}
+				/>
 			{/key}
 		</Tabs.Content>
 		<Tabs.Content value="rules" class="mt-6">

@@ -6,7 +6,7 @@ from shared.definitions.reports import SectionGroup, SectionRole
 
 _DEFAULT_CONFIDENTIALITY = (
     "This document contains information about security weaknesses in systems operated by "
-    "the client named on the cover. Distribute it only to the people listed below."
+    "the client named on the cover. Distribution is restricted to authorised recipients."
 )
 
 

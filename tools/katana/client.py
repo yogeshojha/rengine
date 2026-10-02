@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 import contextlib
+import re
 from collections.abc import Callable, Iterator
 
-from shared.logging import get_logger
 from tools.runner import CLIToolRunner, ToolNotFoundError
 from tools.runner.models import CommandRecorder
-
-logger = get_logger(__name__)
 
 KATANA_BINARY = "katana"
 DEFAULT_TIMEOUT = 1800
@@ -30,6 +28,17 @@ class KatanaError(Exception):
     pass
 
 
+def url_pattern(host_regex: str, scheme: str | None = None) -> str:
+    """A -crawl-scope or -crawl-out-scope regex for URLs whose host matches host_regex."""
+    lead = re.escape(scheme) if scheme else "[a-z][a-z0-9+.-]*"
+    return f"(?i)^{lead}://([^/?#@]*@)?{host_regex}(:[0-9]+)?([/?#]|$)"
+
+
+def _scope_values(patterns: list[str] | None) -> list[str]:
+    # goflags splits a value on commas
+    return [p for p in patterns or [] if p and "," not in p]
+
+
 class KatanaClient:
     def __init__(
         self,
@@ -40,6 +49,8 @@ class KatanaClient:
         max_duration_minutes: int = 0,
         rate_limit: int | None = None,
         crawl_scope: str = "subs",
+        crawl_in_scope: list[str] | None = None,
+        crawl_out_scope: list[str] | None = None,
         include_js: bool = True,
         headless: bool = False,
         form_extraction: bool = True,
@@ -58,6 +69,8 @@ class KatanaClient:
         self.max_duration_minutes = max_duration_minutes
         self.rate_limit = rate_limit
         self.crawl_scope = crawl_scope
+        self.crawl_in_scope = _scope_values(crawl_in_scope)
+        self.crawl_out_scope = _scope_values(crawl_out_scope)
         self.include_js = include_js
         self.headless = headless
         self.form_extraction = form_extraction
@@ -79,9 +92,14 @@ class KatanaClient:
         args += ["-concurrency", str(self.threads)]
         args += ["-timeout", str(self.timeout)]
         args += ["-field-scope", self.crawl_scope]
+        in_scope = getattr(self, "crawl_in_scope", None) or []
+        for pattern in in_scope:
+            args += ["-crawl-scope", pattern]
         scheme = getattr(self, "scheme", None)
-        if scheme:
+        if scheme and not in_scope:
             args += ["-crawl-scope", f"^{scheme}://"]
+        for pattern in getattr(self, "crawl_out_scope", None) or []:
+            args += ["-crawl-out-scope", pattern]
         if self.max_duration_minutes:
             args += ["-crawl-duration", f"{self.max_duration_minutes}m"]
         if self.rate_limit:

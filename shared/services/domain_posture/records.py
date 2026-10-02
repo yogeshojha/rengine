@@ -147,6 +147,8 @@ def gather(
     _spf_lookups(out, live, lookup)
 
     def _probe(zone: str) -> tuple[str, str, PolicyFetch | None]:
+        if should_stop and should_stop():
+            return zone, DnssecState.UNKNOWN.value, None
         rec = out[zone]
         state = lookup.dnssec(zone)
         fetched = lookup.policy(zone) if fetch_policy and rec.mta_sts else None
@@ -154,8 +156,6 @@ def gather(
 
     with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
         for zone, state, fetched in pool.map(_probe, live):
-            if should_stop and should_stop():
-                break
             rec = out[zone]
             rec.dnssec = state
             if fetched is not None:

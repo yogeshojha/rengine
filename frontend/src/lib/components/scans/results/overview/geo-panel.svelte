@@ -7,6 +7,7 @@
 	import { countryName } from '$lib/config/country-geo';
 	import { cn } from '$lib/utils';
 	import type { InsightTally } from '$lib/utilities/scan-insights';
+	import { percentLabel } from '$lib/utilities/strings';
 
 	interface Props {
 		geography: InsightTally[];
@@ -32,7 +33,7 @@
 	let more = $derived(rest.length - chips.length);
 	let elsewhere = $derived(rest.reduce((n, t) => n + t.count, 0));
 	let share = $derived(total > 0 && dominant ? (dominant.count / total) * 100 : 0);
-	let shareLabel = $derived(share > 0 && share < 1 ? '<1%' : `${Math.round(share)}%`);
+	let shareLabel = $derived(percentLabel(share));
 	let entries = $derived(ranked.map((t) => ({ code: t.name, count: t.count })));
 </script>
 

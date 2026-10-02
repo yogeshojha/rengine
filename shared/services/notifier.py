@@ -1,42 +1,50 @@
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 
 import apprise
+import httpx
+from apprise.utils.parse import parse_urls
 from sqlalchemy import Engine, bindparam, select, update
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import Session
 
 from shared.config import base_settings
+from shared.definitions.notification_events import (
+    CHANNEL_LEVELS,
+    DEFAULT_CHANNEL_LEVEL,
+)
 from shared.enums.api_key import APIProvider
 from shared.enums.notification import NotificationSeverity, NotificationType
 from shared.enums.notification_channel import (
+    APPRISE_SCHEMES,
     DIRECT_POST_PROVIDERS,
     NotificationProvider,
 )
-from shared.http import get_sync_client
+from shared.http import get_public_client, get_sync_client
 from shared.models.notification_channel import NotificationChannel
 from shared.utils.crypto import try_decrypt
 from shared.utils.datetime import utc_now
+from shared.utils.net import validate_public_https_url
 
 logger = logging.getLogger(__name__)
 
-_RANK = {"info": 0, "warning": 1, "error": 2}
+_RANK = {level.value: rank for rank, level in enumerate(CHANNEL_LEVELS)}
 _NOTIFY_TYPE = {
-    "info": apprise.NotifyType.INFO,
-    "warning": apprise.NotifyType.WARNING,
-    "error": apprise.NotifyType.FAILURE,
+    NotificationSeverity.INFO.value: apprise.NotifyType.INFO,
+    NotificationSeverity.WARNING.value: apprise.NotifyType.WARNING,
+    NotificationSeverity.ERROR.value: apprise.NotifyType.FAILURE,
 }
-_CARD_COLOR = {"error": "Attention", "warning": "Warning"}
+_CARD_COLOR = {
+    NotificationSeverity.ERROR.value: "Attention",
+    NotificationSeverity.WARNING.value: "Warning",
+}
 _TELEGRAM_API = "https://api.telegram.org/bot{token}/{method}"
-NOT_SENT = "Not sent"
-INVALID_CONFIG = "invalid configuration"
+INVALID_CONFIG = "Invalid channel settings"
 
 
 @dataclass(frozen=True)
@@ -103,7 +111,9 @@ def wants(pref: dict, ntype: NotificationType, severity: NotificationSeverity) -
     types = (pref or {}).get("types") or []
     if ntype.value not in types:
         return False
-    return severity_passes((pref or {}).get("min_severity", "info"), severity.value)
+    return severity_passes(
+        (pref or {}).get("min_severity", DEFAULT_CHANNEL_LEVEL), severity.value
+    )
 
 
 SHARED_BOT_PROVIDER = NotificationProvider.TELEGRAM.value
@@ -137,8 +147,16 @@ def build_apprise_url(provider: str, config: dict) -> str | None:
     if provider == NotificationProvider.EMAIL.value:
         return _email_url(config)
     if provider == NotificationProvider.CUSTOM.value:
-        return config.get("apprise_url") or None
+        url = config.get("apprise_url") or ""
+        return url if apprise_url_allowed(url) else None
     return None
+
+
+def apprise_url_allowed(raw: str) -> bool:
+    urls = parse_urls(raw)
+    return bool(urls) and all(
+        urlsplit(url).scheme.lower() in APPRISE_SCHEMES for url in urls
+    )
 
 
 def _email_url(config: dict) -> str | None:
@@ -176,14 +194,22 @@ def send_one(provider: str, config: dict, message: Outbound) -> tuple[bool, str]
             notify_type=_NOTIFY_TYPE.get(message.severity, apprise.NotifyType.INFO),
             attach=message.attach or None,
         )
-        return (True, "") if ok else (False, "no response")
+        return (True, "") if ok else (False, "Provider did not accept the message")
     except Exception as exc:
         logger.warning("notifier send error (%s): %s", provider, type(exc).__name__)
-        return False, type(exc).__name__
+        return False, _failure(exc)
+
+
+def _failure(exc: Exception) -> str:
+    if isinstance(exc, (httpx.TimeoutException, TimeoutError)):
+        return "Timed out"
+    if isinstance(exc, (httpx.TransportError, OSError)):
+        return "Connection failed"
+    return "Send failed"
 
 
 def _apprise_text(provider: str, message: Outbound) -> tuple[str, str]:
-    """Discord renders markdown in plain content; the rest take a title of their own."""
+    """Title and body for an Apprise provider."""
     if provider == NotificationProvider.DISCORD.value:
         return "", message.text(title=f"**{message.title}**")
     body = "\n".join([*message.lines, *([message.url] if message.url else [])])
@@ -198,12 +224,16 @@ def _send_direct(provider: str, config: dict, message: Outbound) -> tuple[bool, 
     url = (config or {}).get("webhook_url")
     if not url:
         return False, INVALID_CONFIG
+    try:
+        validate_public_https_url(str(url), label="Webhook URL")
+    except ValueError as exc:
+        return False, str(exc)
     payload = (
         _teams_card(message)
         if provider == NotificationProvider.TEAMS.value
         else _webhook_payload(message)
     )
-    with get_sync_client(follow_redirects=False) as client:
+    with get_public_client() as client:
         resp = client.post(url, json=payload)
     return (True, "") if resp.is_success else (False, f"HTTP {resp.status_code}")
 
@@ -266,7 +296,7 @@ def _utf16_len(text: str) -> int:
 
 
 def _send_telegram(config: dict, message: Outbound) -> tuple[bool, str]:
-    """Plain text with a bold entity for the title; nothing is parsed."""
+    """Plain text with a bold entity for the title."""
     token, chat = config.get("bot_token"), config.get("chat_id")
     if not (token and chat):
         return False, INVALID_CONFIG
@@ -370,20 +400,6 @@ def _record_sync(session: Session, sent: list[tuple]) -> None:
         logger.warning("channel delivery status not recorded", exc_info=True)
 
 
-async def _record_async(session: AsyncSession, sent: list[tuple]) -> None:
-    if not sent:
-        return
-    try:
-        bind = session.bind
-        if isinstance(bind, AsyncEngine):
-            async with bind.begin() as conn:
-                await conn.execute(_RECORD_DELIVERY, _delivery_rows(sent))
-        else:
-            await session.execute(_RECORD_DELIVERY, _delivery_rows(sent))
-    except Exception:
-        logger.warning("channel delivery status not recorded", exc_info=True)
-
-
 def _channel_query(channel_ids=None):
     stmt = select(NotificationChannel).where(NotificationChannel.is_active.is_(True))
     if channel_ids:
@@ -414,28 +430,3 @@ def dispatch_sync(
     sent = _fan_out(targets, message, explicit=bool(channel_ids))
     _record_sync(session, sent)
     return sent
-
-
-async def dispatch_async(
-    session: AsyncSession,
-    ntype: NotificationType,
-    severity: NotificationSeverity,
-    title: str,
-    body: str,
-    *,
-    channel_ids=None,
-    attach: str | None = None,
-    metadata: dict | None = None,
-) -> None:
-    from shared.services.api_key.async_api_key import APIKeyService  # noqa: PLC0415
-
-    result = await session.execute(_channel_query(channel_ids))
-    targets = _channels_to_targets(list(result.scalars().all()))
-    if targets:
-        token = await APIKeyService(session).get_key_for_provider(APIProvider.TELEGRAM)
-        _shared_bot_targets(targets, lambda _provider: token)
-        message = Outbound.build(ntype, severity, title, body, metadata, attach)
-        sent = await asyncio.to_thread(
-            _fan_out, targets, message, explicit=bool(channel_ids)
-        )
-        await _record_async(session, sent)

@@ -5,6 +5,7 @@
 	import LookalikeSheet from './lookalike-sheet.svelte';
 	import { LookalikeState, THREAT_VERDICTS, VERDICTS, Verdict } from '$lib/config/lookalikes';
 	import type { LookalikeSummary } from '$lib/types/lookalike';
+	import { pluralWord } from '$lib/utilities/strings';
 
 	interface Props {
 		summary: LookalikeSummary;
@@ -17,12 +18,11 @@
 	const SHOWN = 3;
 	let open = $state(false);
 
-	let active = $derived(
-		summary.rows.filter((r) => r.verdict !== Verdict.LINKED && r.state === LookalikeState.OPEN)
-	);
+	let openRows = $derived(summary.rows.filter((r) => r.state === LookalikeState.OPEN));
+	let active = $derived(openRows.filter((r) => r.verdict !== Verdict.LINKED));
 	let threats = $derived(active.filter((r) => THREAT_VERDICTS.has(r.verdict)));
 	let detail = $derived(
-		VERDICTS.map((v) => ({ label: v.label, n: active.filter((r) => r.verdict === v.key).length }))
+		VERDICTS.map((v) => ({ label: v.label, n: openRows.filter((r) => r.verdict === v.key).length }))
 			.filter((v) => v.n > 0)
 			.map((v) => `${v.label} ${v.n.toLocaleString()}`)
 			.join(' · ')
@@ -40,9 +40,9 @@
 		</span>
 		<span class="flex min-w-0 flex-col">
 			<span class="text-sm">
-				<span class="font-semibold tabular-nums">{active.length.toLocaleString()}</span>
-				{active.length === 1 ? 'lookalike domain' : 'lookalike domains'} of
-				<span class="font-mono">{summary.apex}</span> registered
+				<span class="font-semibold tabular-nums">{openRows.length.toLocaleString()}</span>
+				open {pluralWord(openRows.length, 'lookalike domain')} of
+				<span class="font-mono">{summary.apex}</span>
 			</span>
 			{#if detail}
 				<span class="text-xs text-muted-foreground">{detail}</span>

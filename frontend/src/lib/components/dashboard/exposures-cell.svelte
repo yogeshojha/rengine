@@ -5,8 +5,9 @@
 	import RankedBars, { type BarRow } from './ranked-bars.svelte';
 	import { interestCatalog } from '$lib/stores/interest-catalog.svelte';
 	import { ROUTES } from '$lib/config/routes';
-	import { BAND_RAIL, INTEREST_TAB } from '$lib/config/interest';
+	import { BAND_RAIL, EXPOSURE_PARAMS, INTEREST_TAB } from '$lib/config/interest';
 	import { INTEREST_BAND, type InterestPage } from '$lib/types/interest';
+	import { scopeToParams } from '$lib/utilities/dashboard-scope';
 
 	interface Props {
 		page: InterestPage | null;
@@ -18,12 +19,10 @@
 	let { page, scanId = null, loading = false, class: className = '' }: Props = $props();
 
 	const routes = useScopedRoutes();
-	const link = (q = '') => {
-		if (scanId) return ROUTES.scanTab(scanId, INTEREST_TAB);
-		const scoped = routes.query(q);
-		return ROUTES.exposures(undefined, scoped ? { q: scoped } : undefined);
-	};
-	const rowLink = (q: string) => (scanId ? undefined : link(q));
+	const scoped = (filter: Record<string, string> = {}) =>
+		ROUTES.exposures(undefined, scopeToParams(new URLSearchParams(filter), routes.scope));
+	const link = () => (scanId ? ROUTES.scanTab(scanId, INTEREST_TAB) : scoped());
+	const rowLink = (filter: Record<string, string>) => (scanId ? undefined : scoped(filter));
 
 	const BANDS = [INTEREST_BAND.CRITICAL, INTEREST_BAND.HIGH, INTEREST_BAND.NOTABLE] as const;
 	const TOP = 6;
@@ -41,9 +40,9 @@
 			.slice(0, TOP)
 			.map(([kind, count]) => ({
 				key: kind,
-				label: interestCatalog.kind(kind)?.label ?? kind.replace(/_/g, ' '),
+				label: interestCatalog.label(kind),
 				count,
-				href: rowLink(`exposure:${kind}`)
+				href: rowLink({ [EXPOSURE_PARAMS.kind]: kind })
 			}))
 	);
 	let total = $derived(page?.summary.total ?? 0);
@@ -51,7 +50,6 @@
 
 <Cell
 	id="exposures"
-	title="Exposures"
 	description="Web assets flagged, by reason"
 	href={link()}
 	hrefLabel="{total.toLocaleString()} flagged"
@@ -61,12 +59,13 @@
 	{#if bands.length}
 		<div class="grid grid-cols-3 gap-2">
 			{#each bands as b (b.key)}
+				{@const href = rowLink({ [EXPOSURE_PARAMS.band]: b.key })}
 				<svelte:element
-					this={scanId ? 'div' : 'a'}
-					href={rowLink(`exposure_band:${b.key}`)}
-					class="flex flex-col gap-0.5 rounded-lg border bg-muted/20 px-2.5 py-2 transition-colors {scanId
-						? ''
-						: 'hover:bg-muted/50'}"
+					this={href ? 'a' : 'div'}
+					{href}
+					class="flex flex-col gap-0.5 rounded-lg border bg-muted/20 px-2.5 py-2 {href
+						? 'transition-colors hover:bg-muted/50'
+						: ''}"
 				>
 					<span class="flex items-center gap-1.5 text-2xs text-muted-foreground">
 						<span class="size-1.5 rounded-full {BAND_RAIL[b.key]}"></span>
@@ -80,6 +79,6 @@
 		</div>
 	{/if}
 	{#if kinds.length}
-		<RankedBars rows={kinds} dense />
+		<RankedBars rows={kinds} />
 	{/if}
 </Cell>

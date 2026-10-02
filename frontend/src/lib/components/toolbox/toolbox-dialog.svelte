@@ -194,7 +194,7 @@
 						onSelect={(name) => (selected = name)}
 					/>
 					<RecentRuns
-						runs={toolbox.history}
+						runs={toolbox.runs}
 						error={toolbox.historyError}
 						activeId={run?.id ?? null}
 						onOpen={replay}

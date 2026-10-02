@@ -38,7 +38,7 @@ def read(row: ChannelConfig | None) -> ChannelSettings:
     return ChannelSettings(
         enabled=bool(row.enabled),
         rate_limit_per_minute=int(blob.get(_RATE, DEFAULT_RATE_LIMIT)),
-        ceiling={**DEFAULT_CEILING, **(blob.get(_CEILING) or {})},
+        ceiling=blob.get(_CEILING) or {},
         bot=BotInfo(**bot) if isinstance(bot, dict) and bot.get("username") else None,
         started_at=row.started_at,
     )

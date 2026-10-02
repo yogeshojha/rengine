@@ -1,7 +1,13 @@
 <script lang="ts">
 	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
-	import type { ScanContextRead, ScanContextCreate, HttpProtocol } from '$lib/types/scan-context';
+	import {
+		HTTP_PROTOCOLS,
+		type ScanContextRead,
+		type ScanContextCreate,
+		type HttpProtocol
+	} from '$lib/types/scan-context';
+	import { HTTP_PROTOCOL_LABELS } from './context-summary';
 
 	type CtxLike = ScanContextRead | ScanContextCreate;
 
@@ -12,11 +18,10 @@
 
 	let { context, onChange }: Props = $props();
 
-	const PROTOCOL_OPTS: { value: HttpProtocol; label: string }[] = [
-		{ value: 'both', label: 'Both' },
-		{ value: 'https_only', label: 'HTTPS only' },
-		{ value: 'http_only', label: 'HTTP only' }
-	];
+	const PROTOCOL_OPTS = HTTP_PROTOCOLS.map((value) => ({
+		value,
+		label: HTTP_PROTOCOL_LABELS[value]
+	}));
 
 	const REDIRECT_OPTS = [
 		{ value: 'null', label: 'Engine default' },
@@ -43,7 +48,7 @@
 		<Label class="text-xs">HTTP protocol</Label>
 		<Select.Root type="single" value={context.http_protocol} onValueChange={setProtocol}>
 			<Select.Trigger class="h-9 w-full text-sm">
-				{PROTOCOL_OPTS.find((o) => o.value === context.http_protocol)?.label ?? 'Both'}
+				{HTTP_PROTOCOL_LABELS[context.http_protocol] ?? HTTP_PROTOCOL_LABELS.both}
 			</Select.Trigger>
 			<Select.Content>
 				{#each PROTOCOL_OPTS as opt (opt.value)}

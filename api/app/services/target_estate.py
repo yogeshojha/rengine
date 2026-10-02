@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-import ipaddress
-import re
 import uuid as uuid_module
 from collections import defaultdict
 from dataclasses import dataclass, field
-from urllib.parse import urlsplit
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -25,6 +22,7 @@ from shared.definitions.domains import (
     target_zone,
 )
 from shared.definitions.estate import (
+    EDGE_PROVIDERS,
     ESTATE_REASON_LABELS,
     ESTATE_REASON_ORDER,
     MAX_ESTATE_DOMAINS,
@@ -42,7 +40,7 @@ from shared.definitions.name_ownership import CLAIM_TEMPLATES
 from shared.definitions.relations import TargetRelation
 from shared.definitions.surface import SurfaceDimension
 from shared.enums.dns import DnsRecordType
-from shared.enums.target import TargetType
+from shared.enums.target import HOSTNAME_TARGET_TYPES, TargetType
 from shared.models.dns import DnsRecord
 from shared.models.estate import (
     EstateCandidate,
@@ -62,25 +60,11 @@ from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.vulnerability import Vulnerability
 from shared.services.asset_query import lead_cache
+from shared.services.domain_posture import spf
 from shared.utils.datetime import utc_now
-from shared.utils.net import cert_covers
+from shared.utils.net import cert_covers, url_host
+from shared.utils.validation import validate_ip
 
-_EDGE_PROVIDERS = frozenset(
-    {
-        "Azure Front Door",
-        "Azure CDN",
-        "Azure Traffic Manager",
-        "CloudFront",
-        "Cloudflare",
-        "Akamai",
-        "Fastly",
-        "Imperva",
-        "Sucuri",
-    }
-)
-_SPF_INCLUDE = re.compile(r"include:([^\s]+)")
-_SPF_NETWORK = re.compile(r"ip[46]:([^\s]+)")
-_DOMAIN_TYPES = (TargetType.DOMAIN, TargetType.URL)
 _SHARED_KINDS = frozenset({EstateReason.ADDRESS.value, TargetRelation.FAVICON.value})
 
 
@@ -94,8 +78,20 @@ class _Signal:
     def add(self, host: str, detail: str) -> None:
         self.hosts.add(host)
         self.details.add(detail)
-        if not _is_address(host):
+        if not validate_ip(host):
             self.named = True
+
+
+@dataclass
+class _Cert:
+    """What one certificate says, whichever host presents it."""
+
+    subject: str
+    subject_inside: bool
+    neighbour: EstateNeighbourCert | None = None
+    provider: str | None = None
+    subject_apex: str | None = None
+    sans: list[tuple[str, str]] = field(default_factory=list)
 
 
 @dataclass
@@ -112,14 +108,6 @@ def _clean(value: str | None) -> str:
     return host if "." in host and " " not in host else ""
 
 
-def _is_address(host: str) -> bool:
-    try:
-        ipaddress.ip_address(host)
-    except ValueError:
-        return False
-    return True
-
-
 def _inside(apex: str, root: str) -> bool:
     return bool(root) and (apex == root or apex.endswith(f".{root}"))
 
@@ -129,16 +117,7 @@ def _private(apex: str) -> bool:
 
 
 def _kind_for(provider: str) -> ProviderKind:
-    return ProviderKind.EDGE if provider in _EDGE_PROVIDERS else ProviderKind.HOSTING
-
-
-def _url_host(url: str | None) -> str:
-    if not url:
-        return ""
-    try:
-        return _clean(urlsplit(url).hostname or "")
-    except ValueError:
-        return ""
+    return ProviderKind.EDGE if provider in EDGE_PROVIDERS else ProviderKind.HOSTING
 
 
 class TargetEstateService:
@@ -174,14 +153,13 @@ class TargetEstateService:
         )
         providers: dict[tuple[str, str], _Provider] = defaultdict(_Provider)
         neighbours: list[EstateNeighbourCert] = []
-        own: list[str] = []
 
         if scan_id is not None:
             await self._assets(scan_id, root, signals, providers, neighbours)
             await self._cnames(scan_id, root, signals, providers)
             await self._drop_claimed(scan_id, signals)
-        if TargetType(target.target_type) in _DOMAIN_TYPES:
-            await self._dns(target_id, root, providers, own)
+        if TargetType(target.target_type) in HOSTNAME_TARGET_TYPES:
+            await self._dns(target_id, root, providers)
         if relations:
             await self._relations(project_id, target_id, targets, signals)
             if scan_id is not None:
@@ -204,24 +182,17 @@ class TargetEstateService:
                 project_id,
                 [d.domain for d in open_domains if d.target_id is None],
             )
-        out = TargetEstate(
+        return TargetEstate(
             target_id=target_id,
             scan_id=scan_id,
             root=root,
+            counts=EstateCounts(
+                untracked=sum(1 for d in open_domains if d.target_id is None)
+            ),
             domains=shown,
             providers=self._providers(providers),
             neighbours=sorted(neighbours, key=lambda n: -n.names),
-            own=list(dict.fromkeys(own)),
-            considered_targets=len(targets),
         )
-        out.counts = EstateCounts(
-            untracked=sum(1 for d in open_domains if d.target_id is None),
-            tracked=sum(1 for d in domains if d.target_id is not None),
-            providers=len(out.providers),
-            neighbour_names=sum(n.names for n in neighbours),
-            by_reason=self._by_reason(open_domains),
-        )
-        return out
 
     async def for_project(self, project_id: UUID) -> ProjectEstate:
         covering = await self.scopes.scans_by_target(
@@ -247,7 +218,10 @@ class TargetEstateService:
         examined = 0
         for target_id, scan_id in covering.items():
             target = targets.get(target_id)
-            if target is None or TargetType(target.target_type) not in _DOMAIN_TYPES:
+            if (
+                target is None
+                or TargetType(target.target_type) not in HOSTNAME_TARGET_TYPES
+            ):
                 continue
             examined += 1
             estate = await self.for_target(
@@ -451,90 +425,83 @@ class TargetEstateService:
             )
         ).all()
         seen_neighbour: set[str] = set()
+        redirects: dict[str | None, tuple | None] = {}
+        certificates: dict[tuple, _Cert] = {}
         for host, final_url, location, subject_cn, sans in rows:
             for url in (final_url, location):
-                self._redirect(host, _url_host(url), root, signals, providers)
-            self._certificate(
+                if url not in redirects:
+                    redirects[url] = self._redirect(_clean(url_host(url)), root)
+                self._apply_redirect(host, redirects[url], signals, providers)
+            raw = sans or []
+            key = (subject_cn, tuple(str(s) for s in raw))
+            cert = certificates.get(key)
+            if cert is None:
+                cert = certificates[key] = self._certificate(subject_cn, raw, root)
+            self._apply_certificate(
                 host,
+                cert,
                 subject_cn,
-                sans or [],
-                root,
+                raw,
                 signals,
                 providers,
                 neighbours,
                 seen_neighbour,
             )
 
-    def _redirect(
+    @staticmethod
+    def _redirect(to: str, root: str) -> tuple | None:
+        """Where a redirect lands: a provider, a domain or nothing."""
+        if not to or validate_ip(to):
+            return None
+        apex = registrable_domain(to)
+        if not apex or _inside(apex, root) or _private(apex):
+            return None
+        provider = provider_of(to)
+        if provider:
+            return (provider, None, None)
+        if apex in IGNORED_DOMAINS:
+            return None
+        return (None, apex, to)
+
+    def _apply_redirect(
         self,
         host: str,
-        to: str,
-        root: str,
+        landing: tuple | None,
         signals: dict[str, dict[str, _Signal]],
         providers: dict[tuple[str, str], _Provider],
     ) -> None:
-        if not to or _is_address(to):
+        if landing is None:
             return
-        apex = registrable_domain(to)
-        if not apex or _inside(apex, root) or _private(apex):
-            return
-        provider = provider_of(to)
+        provider, apex, to = landing
         if provider:
             self._provider(providers, provider, _kind_for(provider), host)
             return
-        if apex in IGNORED_DOMAINS:
-            return
         signals[apex][EstateReason.REDIRECT.value].add(host, to)
 
-    def _certificate(
-        self,
-        host: str,
-        subject_cn: str | None,
-        sans: list,
-        root: str,
-        signals: dict[str, dict[str, _Signal]],
-        providers: dict[tuple[str, str], _Provider],
-        neighbours: list[EstateNeighbourCert],
-        seen_neighbour: set[str],
-    ) -> None:
+    @staticmethod
+    def _certificate(subject_cn: str | None, sans: list, root: str) -> _Cert:
         names = {_clean(str(s)) for s in sans}
         names.discard("")
         subject = _clean(subject_cn)
         subject_apex = registrable_domain(subject) if subject else ""
         apexes = {registrable_domain(n) for n in names}
         apexes.discard("")
-        if (
-            subject_apex
-            and not _inside(subject_apex, root)
-            and len(apexes) > NEIGHBOUR_MAX_NAMES
-        ):
-            key = f"{host}:{subject}"
-            if key not in seen_neighbour:
-                seen_neighbour.add(key)
-                neighbours.append(
-                    EstateNeighbourCert(
-                        host=host,
-                        subject=subject,
-                        names=sum(1 for a in apexes if not _inside(a, root)),
-                        provider=provider_of(subject),
-                    )
-                )
-            return
-        if (
-            subject_apex
-            and not _inside(subject_apex, root)
-            and not _private(subject_apex)
-        ):
+        outside = bool(subject_apex) and not _inside(subject_apex, root)
+        cert = _Cert(subject=subject, subject_inside=_inside(subject_apex, root))
+        if outside and len(apexes) > NEIGHBOUR_MAX_NAMES:
+            cert.neighbour = EstateNeighbourCert(
+                host="",
+                subject=subject,
+                names=sum(1 for a in apexes if not _inside(a, root)),
+                provider=provider_of(subject),
+            )
+            return cert
+        if outside and not _private(subject_apex):
             provider = provider_of(subject)
             if provider:
-                self._provider(providers, provider, _kind_for(provider), host)
+                cert.provider = provider
             elif subject_apex not in IGNORED_DOMAINS:
-                signals[subject_apex][EstateReason.CERT_SUBJECT.value].add(
-                    host, subject
-                )
-        ours = _inside(subject_apex, root) or cert_covers(host, subject_cn, sans)
-        if not ours:
-            return
+                cert.subject_apex = subject_apex
         for name in names:
             apex = registrable_domain(name)
             if (
@@ -546,6 +513,35 @@ class TargetEstateService:
                 or provider_of(name)
             ):
                 continue
+            cert.sans.append((apex, name))
+        return cert
+
+    def _apply_certificate(
+        self,
+        host: str,
+        cert: _Cert,
+        subject_cn: str | None,
+        sans: list,
+        signals: dict[str, dict[str, _Signal]],
+        providers: dict[tuple[str, str], _Provider],
+        neighbours: list[EstateNeighbourCert],
+        seen_neighbour: set[str],
+    ) -> None:
+        if cert.neighbour is not None:
+            key = f"{host}:{cert.subject}"
+            if key not in seen_neighbour:
+                seen_neighbour.add(key)
+                neighbours.append(cert.neighbour.model_copy(update={"host": host}))
+            return
+        if cert.provider:
+            self._provider(providers, cert.provider, _kind_for(cert.provider), host)
+        elif cert.subject_apex:
+            signals[cert.subject_apex][EstateReason.CERT_SUBJECT.value].add(
+                host, cert.subject
+            )
+        if not (cert.subject_inside or cert_covers(host, subject_cn, sans)):
+            return
+        for apex, name in cert.sans:
             signals[apex][EstateReason.CERT_SAN.value].add(host, name)
 
     async def _cnames(
@@ -585,7 +581,6 @@ class TargetEstateService:
         target_id: UUID,
         root: str,
         providers: dict[tuple[str, str], _Provider],
-        own: list[str],
     ) -> None:
         rows = (
             await self.session.execute(
@@ -598,30 +593,27 @@ class TargetEstateService:
             )
         ).all()
         for kind, value in rows:
-            record = str(kind).upper().removeprefix("DNSRECORDTYPE.")
             host = _clean(value)
-            if record in ("NS", "MX"):
+            if kind in (DnsRecordType.NS, DnsRecordType.MX):
                 if not host:
                     continue
                 apex = registrable_domain(host)
                 if _inside(apex, root):
-                    own.append(host)
                     continue
                 name = provider_of(host) or apex
-                role = ProviderKind.DNS if record == "NS" else ProviderKind.MAIL
+                role = (
+                    ProviderKind.DNS if kind is DnsRecordType.NS else ProviderKind.MAIL
+                )
                 self._provider(providers, name, role, host)
-            elif record == "TXT" and (value or "").lower().startswith("v=spf1"):
-                for m in _SPF_INCLUDE.finditer(value.lower()):
-                    include = _clean(m.group(1))
+            elif kind is DnsRecordType.TXT and value and spf.is_spf(value):
+                for zone in spf.include_zones(value):
+                    include = _clean(zone)
                     if not include:
                         continue
                     if _inside(registrable_domain(include), root):
-                        own.append(include)
                         continue
                     name = provider_of(include) or registrable_domain(include)
                     self._provider(providers, name, ProviderKind.MAIL, include)
-                for m in _SPF_NETWORK.finditer(value.lower()):
-                    own.append(m.group(1))
 
     async def _relations(
         self,
@@ -768,11 +760,3 @@ class TargetEstateService:
             )
         out.sort(key=lambda d: (-d.strength, d.target_id is not None, d.domain))
         return out
-
-    @staticmethod
-    def _by_reason(domains: list[EstateDomain]) -> dict[str, int]:
-        tally: dict[str, int] = defaultdict(int)
-        for d in domains:
-            for s in d.signals:
-                tally[s.kind] += 1
-        return dict(tally)

@@ -16,12 +16,13 @@ import LifeBuoy from '@lucide/svelte/icons/life-buoy';
 import Route from '@lucide/svelte/icons/route';
 import Network from '@lucide/svelte/icons/network';
 import type { IconComponent } from '$lib/config/icons';
+import type { ScanRead } from '$lib/types/scan';
 import type { Target } from '$lib/types/target';
 import type { TargetDetailRead, DnsRecordRead } from '$lib/types/target-detail';
-import { TargetType } from '$lib/types/target';
+import { TargetType, bgpApplies } from '$lib/types/target';
 import { DnsRecordType } from '$lib/types/dns';
 import { TaskStatus } from '$lib/types/task-status';
-import { describeDomainStatus, isRedactedName } from '$lib/types/whois';
+import { describeDomainStatus } from '$lib/types/whois';
 import {
 	mailProvider,
 	nameserverProvider,
@@ -82,10 +83,21 @@ export interface TargetIntel {
 	checks: Check[];
 }
 const YOUNG_DOMAIN_DAYS = 90;
-const VALID_RIR = /^(arin|ripe|apnic|lacnic|afrinic)/i;
+export const VALID_RIR = /^(arin|ripe|apnic|lacnic|afrinic)/i;
 const PREVIEW = 1;
+const TREND_RUNS = 12;
 
-const isDomainLike = (t: TargetType) => t === TargetType.DOMAIN || t === TargetType.URL;
+export function completedCensusRuns(history: ScanRead[], limit = TREND_RUNS): ScanRead[] {
+	return history
+		.filter((s) => s.status === 'completed' && s.scope !== 'focused')
+		.sort(
+			(a, b) =>
+				new Date(a.started_at ?? a.created_at).getTime() -
+				new Date(b.started_at ?? b.created_at).getTime()
+		)
+		.slice(-limit);
+}
+
 const pendingFor = (s: TaskStatus) => s === TaskStatus.PENDING || s === TaskStatus.QUERYING;
 
 function ofType(records: DnsRecordRead[], type: string): string[] {
@@ -116,6 +128,9 @@ function buildDomain(target: Target, detail: TargetDetailRead | null): TargetInt
 	const wsum = target.whois;
 	const registrarName = whois?.registrar_name || wsum?.registrar_name || '';
 	const registrantName = whois?.registrant_name || wsum?.registrant_name || '';
+	const registrantRedacted = whois?.registrant_name
+		? whois.registrant_redacted
+		: !!wsum?.registrant_redacted;
 	const registrationDate = whois?.registration_date || wsum?.registration_date || null;
 	const expirationDate = whois?.expiration_date || wsum?.expiration_date || null;
 	const dnsStatus = target.dns_status;
@@ -244,7 +259,7 @@ function buildDomain(target: Target, detail: TargetDetailRead | null): TargetInt
 			key: 'registrant',
 			label: 'Registrant',
 			value: registrantName,
-			sub: isRedactedName(registrantName) ? 'identity redacted' : undefined
+			sub: registrantRedacted ? 'identity redacted' : undefined
 		});
 	if (registrationDate)
 		registration.rows.push({
@@ -388,7 +403,7 @@ function buildDomain(target: Target, detail: TargetDetailRead | null): TargetInt
 			});
 	}
 
-	if (registrantName && isRedactedName(registrantName))
+	if (registrantName && registrantRedacted)
 		checks.push({
 			key: 'privacy',
 			status: 'info',
@@ -761,7 +776,7 @@ function buildNetwork(target: Target, detail: TargetDetailRead | null): TargetIn
 }
 
 export function buildTargetIntel(target: Target, detail: TargetDetailRead | null): TargetIntel {
-	return isDomainLike(target.target_type)
-		? buildDomain(target, detail)
-		: buildNetwork(target, detail);
+	return bgpApplies(target.target_type)
+		? buildNetwork(target, detail)
+		: buildDomain(target, detail);
 }

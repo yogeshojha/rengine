@@ -29,7 +29,6 @@ if TYPE_CHECKING:
 
     from shared.services.asset_query import QueryScope
 
-# an export is a background job, so it does not take the api's 20s read ceiling
 EXPORT_TIMEOUT = "SET LOCAL statement_timeout = '600s'"
 
 
@@ -43,7 +42,7 @@ class ExportResult:
 
 @contextmanager
 def _stream(session: Session, statement, chunk: int):
-    """A cursor of its own: a commit or a join on the session would invalidate it."""
+    """Stream the statement on a connection of its own."""
     connection = session.get_bind().connect()
     try:
         connection.execute(text(EXPORT_TIMEOUT))

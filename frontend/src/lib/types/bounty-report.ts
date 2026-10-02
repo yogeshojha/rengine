@@ -45,7 +45,6 @@ export interface ProgramReports {
 	high: number;
 	paid_reports: number;
 	earned: Money[];
-	first_submitted_at: string | null;
 	last_submitted_at: string | null;
 }
 
@@ -66,7 +65,6 @@ export interface BountyAccountSummary {
 	severities: { severity: string; count: number }[];
 	earned: Money[];
 	paid_reports: number;
-	first_submitted_at: string | null;
 	last_submitted_at: string | null;
 	monthly: MonthPoint[];
 	chart_currency: string | null;
@@ -92,7 +90,6 @@ export interface BountyReport {
 	submitted_at: string | null;
 	triaged_at: string | null;
 	closed_at: string | null;
-	bounty_awarded_at: string | null;
 	disclosed_at: string | null;
 	last_program_activity_at: string | null;
 	awarded: Money[];

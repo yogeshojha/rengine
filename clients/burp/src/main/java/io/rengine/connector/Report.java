@@ -20,9 +20,7 @@ final class Report {
     }
 
     static String endpointFor(String ingest) {
-        String value = ingest == null ? "" : ingest.trim();
-        int cut = value.lastIndexOf('/');
-        return cut < 0 ? value : value.substring(0, cut) + "/findings";
+        return Settings.beside(ingest, "findings");
     }
 
     static String body(

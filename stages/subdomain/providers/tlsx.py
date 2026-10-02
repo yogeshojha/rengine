@@ -7,11 +7,12 @@ from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError
 
 
 class TlsxProvider(SubdomainProvider):
-    """TLS certificate SAN extraction via tlsx (cert-transparency style discovery)."""
+    """Subject alternative names from the target's served certificate."""
 
     tool = "tlsx"
     source = SubdomainSource.TLSX
     binary = "tlsx"
+    touches_target = True
 
     def availability(self) -> tuple[bool, str | None]:
         ok, reason = super().availability()
@@ -42,4 +43,5 @@ class TlsxProvider(SubdomainProvider):
             )
         except ToolNotFoundError:
             return set()
+        self._checked(result)
         return {line.strip() for line in result.output_lines if line.strip()}

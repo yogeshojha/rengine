@@ -12,6 +12,7 @@
 	import { VISUAL_FIELD_LABELS } from '$lib/config/whats-new';
 	import { screenshotUrl } from '$lib/utilities/media';
 	import { screenshotDiff, type ScreenshotDiff } from '$lib/utilities/screenshot-diff';
+	import { visualChange } from '$lib/utilities/whats-new';
 	import { SvelteMap } from 'svelte/reactivity';
 	import type { VisualPair } from '$lib/types/whats-new';
 
@@ -90,27 +91,6 @@
 	function onKeyUp(e: KeyboardEvent) {
 		if (e.key === ' ') holdBefore = false;
 	}
-
-	function change(p: VisualPair, field: string): string {
-		switch (field) {
-			case 'http_status':
-				return `${p.before_status ?? '—'} → ${p.after_status ?? '—'}`;
-			case 'page_title':
-				return `${p.before_title ?? 'No title'} → ${p.after_title ?? 'No title'}`;
-			case 'webserver':
-				return `${p.before_server ?? '—'} → ${p.after_server ?? '—'}`;
-			case 'tech': {
-				const before = new Set(p.before_tech);
-				const after = new Set(p.after_tech);
-				return [
-					...p.after_tech.filter((t) => !before.has(t)).map((t) => `+${t}`),
-					...p.before_tech.filter((t) => !after.has(t)).map((t) => `−${t}`)
-				].join(' ');
-			}
-			default:
-				return field;
-		}
-	}
 </script>
 
 <svelte:window onkeydown={onKey} onkeyup={onKeyUp} onpointerup={up} onpointermove={move} />
@@ -133,7 +113,7 @@
 					{:else}
 						{#each pair.moved as field (field)}
 							<Badge variant="secondary" class="font-normal">
-								{VISUAL_FIELD_LABELS[field] ?? field} · {change(pair, field)}
+								{VISUAL_FIELD_LABELS[field] ?? field} · {visualChange(pair, field)}
 							</Badge>
 						{/each}
 					{/if}

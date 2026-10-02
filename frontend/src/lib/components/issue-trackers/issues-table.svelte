@@ -8,7 +8,8 @@
 	import { relativeTime } from '$lib/utilities/dates';
 	import { ROUTES } from '$lib/config/routes';
 	import type { TrackedIssue } from '$lib/types/issue-tracker';
-	import { BODY_ROW, HEAD_ROW, ISSUE_COL } from './columns';
+	import { HEAD_ROW } from '$lib/components/settings/columns';
+	import { BODY_ROW, ISSUE_COL } from './columns';
 
 	interface Props {
 		issues: TrackedIssue[];

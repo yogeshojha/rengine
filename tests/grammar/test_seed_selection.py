@@ -120,7 +120,6 @@ async def test_exclude_removes_a_row_the_query_matched(estate, now):
 
 
 async def test_an_older_scan_does_not_seed_the_project_view(estate, now):
-    """A project-wide selection reads each target's latest covering scan, not its history."""
     old = now - timedelta(days=7)
     await estate.scan("a.example", "old_a", at=old)
     await estate.hosts("old_a", ["gone.a.example"], at=old, status=200, tech=["nginx"])
@@ -157,8 +156,9 @@ def test_a_selection_takes_one_form_or_the_other():
             picks=[SeedPick(value="a.example")],
             query=QuerySelection(filter={}),
         )
-    with pytest.raises(ValueError, match="not both"):
+    with pytest.raises(ValueError, match="Provide picks or a query") as empty:
         SeedSelection(dimension=SurfaceDimension.WEB_ASSETS.value)
+    assert "not both" not in str(empty.value)
 
 
 def test_the_cap_is_a_field_bound_not_a_silent_truncation():

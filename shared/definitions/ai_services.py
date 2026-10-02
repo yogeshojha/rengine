@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from enum import StrEnum
 
 AI_FIELD = "ai"
 AI_MODEL_FIELD = "ai.model"
-AI_STAGE = "ai_detection"
 
 MAX_MODELS = 100
 MAX_MODEL_LENGTH = 200
@@ -160,11 +160,14 @@ def service_label(key: str) -> str:
 
 
 def normalise_category(raw: str | None, service: str) -> str:
-    """Our category for a julius result, the catalog's when the service is known."""
+    """The category of a julius result, the catalog's when the service is known."""
     spec = SERVICE_BY_KEY.get(service)
     if spec is not None:
         return spec.category
     return JULIUS_CATEGORIES.get((raw or "").strip().lower(), AiCategory.GENERIC.value)
+
+
+_MODEL_NEEDS_QUOTE = re.compile(r'[\s:,"\\\[\]()]')
 
 
 def ai_query(service: str) -> str:
@@ -172,8 +175,9 @@ def ai_query(service: str) -> str:
 
 
 def model_query(model: str) -> str:
-    quoted = f'"{model}"' if any(c in model for c in ' :,"[]()') else model
-    return f"{AI_MODEL_FIELD}:{quoted}"
+    if _MODEL_NEEDS_QUOTE.search(model):
+        model = '"' + model.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    return f"{AI_MODEL_FIELD}:{model}"
 
 
 __all__ = [
@@ -182,7 +186,6 @@ __all__ = [
     "AI_NO",
     "AI_PORTS",
     "AI_QUERY_VALUES",
-    "AI_STAGE",
     "AI_YES",
     "CATEGORY_LABELS",
     "CATEGORY_ORDER",

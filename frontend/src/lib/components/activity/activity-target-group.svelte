@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
-	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
+	import Hint from '$lib/components/hint.svelte';
 	import Crosshair from '@lucide/svelte/icons/crosshair';
 	import FolderKanban from '@lucide/svelte/icons/folder-kanban';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
@@ -41,8 +41,7 @@
 	});
 	let eventCount = $derived(group.clusters.reduce((n, c) => n + c.items.length, 0));
 
-	function openTarget(e: MouseEvent) {
-		e.stopPropagation();
+	function openTarget() {
 		if (group.targetId) {
 			goto(ROUTES.target(group.targetId));
 			activityFeed.setOpen(false);
@@ -51,76 +50,74 @@
 </script>
 
 <section class="mb-1" aria-label={group.label}>
-	<button
-		type="button"
-		onclick={() => activityFeed.toggleGroup(group.key)}
-		aria-expanded={!collapsed}
-		class="group/head sticky top-0 z-10 -mx-1 flex w-[calc(100%+8px)] items-center gap-2 rounded-md bg-background/95 px-1 py-1.5 text-left backdrop-blur transition-colors hover:bg-accent/50"
+	<div
+		class="group/head sticky top-0 z-10 -mx-1 flex w-[calc(100%+8px)] items-center gap-1 rounded-md bg-background/95 backdrop-blur transition-colors hover:bg-accent/50"
 	>
-		<span
-			class="flex size-5 shrink-0 items-center justify-center rounded-md {live
-				? 'bg-info/10 text-info'
-				: 'bg-muted text-muted-foreground'}"
+		<button
+			type="button"
+			onclick={() => activityFeed.toggleGroup(group.key)}
+			aria-expanded={!collapsed}
+			class="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1 py-1.5 text-left"
 		>
-			{#if live}
-				<Spinner class="size-3" />
-			{:else if unscoped}
-				<FolderKanban class="size-3" />
-			{:else}
-				<Crosshair class="size-3" />
-			{/if}
-		</span>
-
-		<span
-			class="min-w-0 flex-1 truncate text-xs font-medium text-foreground {unscoped
-				? ''
-				: 'font-mono'}"
-		>
-			{group.label}
-		</span>
-
-		<span class="flex shrink-0 items-center gap-1.5">
-			{#if group.errors > 0}
-				<span
-					class="rounded-full bg-destructive/10 px-1.5 font-mono text-2xs font-semibold text-destructive tabular-nums"
-				>
-					{group.errors} err
-				</span>
-			{/if}
-			{#if fresh}
-				<span class="size-1.5 rounded-full bg-info"></span>
-			{/if}
-			<span class="font-mono text-2xs text-muted-foreground tabular-nums">
-				{collapsed ? `${eventCount} · ${timeAgo}` : timeAgo}
+			<span
+				class="flex size-5 shrink-0 items-center justify-center rounded-md {live
+					? 'bg-info/10 text-info'
+					: 'bg-muted text-muted-foreground'}"
+			>
+				{#if live}
+					<Spinner class="size-3" />
+				{:else if unscoped}
+					<FolderKanban class="size-3" />
+				{:else}
+					<Crosshair class="size-3" />
+				{/if}
 			</span>
-			{#if group.targetId}
-				<Tooltip.Root>
-					<Tooltip.Trigger>
-						{#snippet child({ props })}
-							<span
-								{...props}
-								role="link"
-								tabindex="0"
-								onclick={openTarget}
-								onkeydown={(e) => {
-									if (e.key === 'Enter') openTarget(e as unknown as MouseEvent);
-								}}
-								class="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity group-hover/head:opacity-100 hover:text-foreground focus-visible:opacity-100"
-							>
-								<ArrowUpRight class="size-3" />
-							</span>
-						{/snippet}
-					</Tooltip.Trigger>
-					<Tooltip.Content side="left">Open target</Tooltip.Content>
-				</Tooltip.Root>
-			{/if}
-			<ChevronDown
-				class="size-3 text-muted-foreground transition-transform duration-150 {collapsed
-					? '-rotate-90'
-					: ''}"
-			/>
-		</span>
-	</button>
+
+			<span
+				class="min-w-0 flex-1 truncate text-xs font-medium text-foreground {unscoped
+					? ''
+					: 'font-mono'}"
+			>
+				{group.label}
+			</span>
+
+			<span class="flex shrink-0 items-center gap-1.5">
+				{#if group.errors > 0}
+					<span
+						class="rounded-full bg-destructive/10 px-1.5 font-mono text-2xs font-semibold text-destructive tabular-nums"
+					>
+						{group.errors} err
+					</span>
+				{/if}
+				{#if fresh}
+					<span class="size-1.5 rounded-full bg-info"></span>
+				{/if}
+				<span class="font-mono text-2xs text-muted-foreground tabular-nums">
+					{collapsed ? `${eventCount} · ${timeAgo}` : timeAgo}
+				</span>
+				<ChevronDown
+					class="size-3 text-muted-foreground transition-transform duration-150 {collapsed
+						? '-rotate-90'
+						: ''}"
+				/>
+			</span>
+		</button>
+		{#if group.targetId}
+			<Hint text="Open target" side="left">
+				{#snippet child(props)}
+					<button
+						{...props}
+						type="button"
+						aria-label="Open target"
+						onclick={openTarget}
+						class="mr-1 shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity group-hover/head:opacity-100 hover:text-foreground focus-visible:opacity-100"
+					>
+						<ArrowUpRight class="size-3" />
+					</button>
+				{/snippet}
+			</Hint>
+		{/if}
+	</div>
 
 	{#if !collapsed}
 		<div class="relative pt-1 pl-1">

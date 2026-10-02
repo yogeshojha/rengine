@@ -7,6 +7,7 @@
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { countryName } from '$lib/config/country-geo';
 	import type { Facet } from '$lib/utilities/scan-insights';
+	import { pluralWord } from '$lib/utilities/strings';
 
 	const routes = useScopedRoutes();
 
@@ -35,7 +36,6 @@
 
 <Cell
 	id="geo"
-	title="Geography"
 	description="IP addresses by country"
 	href={routes.results(SPEC.tab, scanId)}
 	hrefLabel={SPEC.label}
@@ -72,7 +72,7 @@
 						</span>
 						<span class="h-0.5 w-full overflow-hidden rounded-full bg-muted">
 							<span
-								class="block h-full rounded-full bg-chart-1 transition-opacity {active &&
+								class="block h-full rounded-full bg-series transition-opacity {active &&
 								active !== e.code
 									? 'opacity-40'
 									: ''}"
@@ -87,7 +87,7 @@
 	{#snippet footer()}
 		{#if rest > 0}
 			<span>
-				{restCount.toLocaleString()} more in {rest} other {rest === 1 ? 'country' : 'countries'}
+				{restCount.toLocaleString()} more in {rest} other {pluralWord(rest, 'country', 'countries')}
 			</span>
 		{:else}
 			<span>{total.toLocaleString()} addresses with a country</span>

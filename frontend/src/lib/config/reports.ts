@@ -35,7 +35,6 @@ export const ReportFormat = {
 	MARKDOWN: 'markdown',
 	JSON: 'json'
 } as const;
-export type ReportFormatValue = (typeof ReportFormat)[keyof typeof ReportFormat];
 
 export const FORMAT_ICONS: Record<string, IconComponent> = {
 	pdf: FileTextIcon,
@@ -51,11 +50,6 @@ export const FORMAT_LABELS: Record<string, string> = {
 	json: 'JSON'
 };
 
-export const ReportScope = {
-	SCAN: 'scan',
-	TARGET: 'target'
-} as const;
-
 export const TERMINAL_STATUSES = new Set<string>([
 	ReportStatus.COMPLETED,
 	ReportStatus.FAILED,
@@ -66,10 +60,25 @@ export function isLive(status: string): boolean {
 	return !TERMINAL_STATUSES.has(status);
 }
 
-export function formatBytes(bytes: number): string {
-	if (bytes < 1024) return `${bytes} B`;
-	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-	return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+/** Mirrors shared/definitions/reports.py:MAX_LOGO_BYTES */
+export const MAX_EMBEDDED_IMAGE = 512_000;
+export const MAX_EMBEDDED_IMAGE_KB = Math.floor((MAX_EMBEDDED_IMAGE * 3) / 4 / 1024);
+
+export async function readEmbeddedImage(file: File): Promise<string | null> {
+	const dataUrl = await new Promise<string>((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = () => resolve(String(reader.result));
+		reader.onerror = reject;
+		reader.readAsDataURL(file);
+	});
+	return dataUrl.length > MAX_EMBEDDED_IMAGE ? null : dataUrl;
+}
+
+export function catalogLabel(
+	list: { key: string; label: string }[] | undefined,
+	key: string
+): string {
+	return list?.find((i) => i.key === key)?.label ?? key;
 }
 
 export const FONT_ROLE_STACKS: Record<string, string> = {

@@ -31,9 +31,6 @@ class SecretMiningStage(Stage):
     touches_target = False
     config_model = SecretMiningConfig
 
-    def _aborted(self) -> bool:
-        return self.ctx.is_aborted is not None and self.ctx.is_aborted()
-
     def run(self) -> StageResult:
         self._check_abort()
         outcome = mine_scan(
@@ -42,7 +39,7 @@ class SecretMiningStage(Stage):
             target_id=self.ctx.target_id,
             project_id=self.ctx.project_id,
             sources=STAGE_SOURCES,
-            aborted=self._aborted,
+            aborted=self.aborted,
             on_progress=self.emit_progress,
             announce=lambda: self.publish_results(SurfaceDimension.SECRETS.value),
         )

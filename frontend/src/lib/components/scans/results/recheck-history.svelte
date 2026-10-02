@@ -5,7 +5,8 @@
 	import { rechecks } from '$lib/stores/rechecks.svelte';
 	import type { Recheck } from '$lib/types/recheck';
 	import { relativeTime } from '$lib/utilities/dates';
-	import { isRecheckLive, recheckFailed } from '$lib/utilities/rechecks';
+	import { isRecheckLive, recheckFailed, recheckPaused } from '$lib/utilities/rechecks';
+	import { durationText } from '$lib/utilities/scan-status';
 
 	interface Props {
 		scanId: string;
@@ -21,12 +22,11 @@
 			? 'bg-primary'
 			: recheckFailed(r)
 				? 'bg-destructive'
-				: r.changed
-					? 'bg-primary'
-					: 'bg-muted-foreground/50';
-
-	const seconds = (n: number | null) =>
-		n == null ? '' : n < 60 ? `${Math.round(n)}s` : `${Math.floor(n / 60)}m ${Math.round(n % 60)}s`;
+				: recheckPaused(r)
+					? 'bg-muted-foreground/50'
+					: r.changed
+						? 'bg-primary'
+						: 'bg-muted-foreground/50';
 </script>
 
 {#if entries.length}
@@ -44,6 +44,8 @@
 						<RefreshCw class="size-3 animate-spin text-primary" />
 					{:else if recheckFailed(entry)}
 						<span class="text-xs font-medium text-destructive">recheck failed</span>
+					{:else if recheckPaused(entry)}
+						<span class="text-xs text-muted-foreground">recheck paused</span>
 					{:else if entry.changed}
 						<span
 							class="rounded-full border border-primary/40 bg-primary/10 px-[7px] text-2xs font-semibold text-primary"
@@ -56,7 +58,7 @@
 					{/if}
 					<span class="ml-auto text-xs text-muted-foreground">
 						{entry.stage_titles.join(' · ')}{entry.duration_seconds != null
-							? ` · ${seconds(entry.duration_seconds)}`
+							? ` · ${durationText(entry.duration_seconds)}`
 							: ''}
 					</span>
 				</div>

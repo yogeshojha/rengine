@@ -1,12 +1,10 @@
-"""What every provider is handed: the scan, its rules, and the estate it sits in."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
 from functools import cached_property
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from shared.models.interest import InterestRule
@@ -26,11 +24,6 @@ class HostRow:
     http_status: int | None
     page_title: str | None
     tech: list
-    webserver: str | None
-    is_cdn: bool
-    asn: int | None
-    asn_org: str | None
-    favicon_hash: str | None
 
     @property
     def shape(self) -> tuple:
@@ -50,18 +43,6 @@ class InterestContext:
     now: datetime = field(default_factory=utc_now)
 
     @cached_property
-    def host_total(self) -> int:
-        return int(
-            self.session.execute(
-                select(func.count(Subdomain.id)).where(
-                    Subdomain.scan_id == self.scan.id,
-                    Subdomain.is_excluded.is_(False),
-                )
-            ).scalar()
-            or 0
-        )
-
-    @cached_property
     def answered_hosts(self) -> list[HostRow]:
         rows = (
             self.session.execute(
@@ -71,11 +52,6 @@ class InterestContext:
                     Subdomain.http_status,
                     Subdomain.page_title,
                     Subdomain.tech,
-                    Subdomain.webserver,
-                    Subdomain.is_cdn,
-                    Subdomain.asn,
-                    Subdomain.asn_org,
-                    Subdomain.favicon_hash,
                 )
                 .where(
                     Subdomain.scan_id == self.scan.id,
@@ -89,8 +65,8 @@ class InterestContext:
         )
         return [HostRow(**dict(r)) for r in rows]
 
-    def judgeable(self, limit: int = MAX_JUDGE_HOSTS) -> list[HostRow]:
-        """Bulk parked pages are one answer, not five hundred."""
+    def judgeable(self) -> list[HostRow]:
+        """Answered hosts, at most SHAPE_KEEP per response shape."""
         seen: dict[tuple, int] = {}
         kept: list[HostRow] = []
         for row in self.answered_hosts:
@@ -100,6 +76,6 @@ class InterestContext:
             if count >= SHAPE_KEEP:
                 continue
             kept.append(row)
-            if len(kept) >= limit:
+            if len(kept) >= MAX_JUDGE_HOSTS:
                 break
         return kept

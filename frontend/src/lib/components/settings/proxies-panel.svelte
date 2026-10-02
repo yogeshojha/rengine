@@ -16,12 +16,10 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
-	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import FormField from '$lib/components/form-field.svelte';
-	import Hint from '$lib/components/hint.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import { proxiesStore } from '$lib/stores/proxies.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
@@ -34,8 +32,9 @@
 		type ProxyEndpoint,
 		type ProxyRead
 	} from '$lib/types/proxy';
+	import CheckStatus from './check-status.svelte';
 	import { BODY_ROW, HEAD_ROW, PROXY_COL } from './columns';
-	import { CHECK_DOT, checkState, type CheckState } from './status';
+	import { checkState, type CheckState } from './status';
 
 	type Scheme = (typeof PROXY_SCHEMES)[number];
 
@@ -162,8 +161,10 @@
 			const result = await proxiesStore.test(proxy.id);
 			if (!result) return;
 			if (result.success) {
-				const ms = result.latency_ms != null ? ` · ${result.latency_ms} ms` : '';
-				toast.success(`${result.message}${ms}`);
+				toast.success(
+					result.message,
+					result.latency_ms != null ? { description: `${result.latency_ms} ms` } : undefined
+				);
 			} else {
 				toast.error(result.message);
 			}
@@ -197,13 +198,9 @@
 	}
 
 	function removeDescription(proxy: ProxyRead): string {
-		const direct =
-			proxy.contexts === 1
-				? ' 1 scan context using it sends traffic direct.'
-				: proxy.contexts > 1
-					? ` ${proxy.contexts} scan contexts using it send traffic direct.`
-					: '';
-		return `Proxy ${proxy.name} is removed.${direct}`;
+		const n = proxy.contexts;
+		if (!n) return `Proxy ${proxy.name} is removed.`;
+		return `Proxy ${proxy.name} is removed and cleared from ${n} scan context${n === 1 ? '' : 's'}.`;
 	}
 
 	$effect(() => {
@@ -283,23 +280,14 @@
 						{proxy.contexts || '—'}
 					</div>
 					<div class="{PROXY_COL.status} flex flex-col">
-						<Hint text={check === 'failed' ? proxy.last_test_message : null}>
-							{#snippet child(props)}
-								<span {...props} class="inline-flex items-center gap-2 text-sm">
-									{#if testing === proxy.id}
-										<Spinner class="size-3" />
-										<span class="text-muted-foreground">Testing</span>
-									{:else}
-										<span class="size-2 shrink-0 rounded-full {CHECK_DOT[check]}"></span>
-										<span
-											class={check === 'ok' || check === 'failed' ? '' : 'text-muted-foreground'}
-										>
-											{STATUS_LABEL[check]}
-										</span>
-									{/if}
-								</span>
-							{/snippet}
-						</Hint>
+						<CheckStatus
+							{check}
+							label={STATUS_LABEL[check]}
+							message={check === 'failed' ? proxy.last_test_message : null}
+							busy={testing === proxy.id}
+							busyLabel="Testing"
+							muted={check !== 'ok' && check !== 'failed'}
+						/>
 						{#if proxy.last_test_at && testing !== proxy.id}
 							<span class="pl-4 text-2xs text-muted-foreground tabular-nums">
 								{relativeTime(proxy.last_test_at)}

@@ -16,7 +16,6 @@ export interface ThreatFeedRead {
 	duration_ms: number;
 	error: string | null;
 	last_synced_at: string | null;
-	age_hours: number | null;
 }
 
 export interface ThreatProviderRead {
@@ -34,14 +33,10 @@ export interface ThreatProviderRead {
 
 export interface IntelCoverage {
 	findings: number;
-	with_cve: number;
 	scored: number;
 	kev: number;
 	ransomware: number;
-	overdue: number;
 	weaponised: number;
-	untestable: number;
-	enriched: number;
 	bands: Record<string, number>;
 }
 
@@ -83,8 +78,6 @@ export interface ThreatIntelStatus {
 	ready: boolean;
 	syncing: boolean;
 	providers: ThreatProviderRead[];
-	last_applied_at: string | null;
-	recent_changes: IntelChange[];
 }
 
 export interface SyncResult {

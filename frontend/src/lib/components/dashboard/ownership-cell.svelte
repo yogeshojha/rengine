@@ -6,7 +6,9 @@
 	import { targetsApi } from '$lib/api/targets';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { ROUTES } from '$lib/config/routes';
+	import { EXPIRING_DAYS, STALE_DAYS } from '$lib/config/dashboard';
 	import { MS_PER_DAY, relativeTime } from '$lib/utilities/dates';
+	import { plural } from '$lib/utilities/strings';
 	import type { DashboardDiscovery, DashboardOverview } from '$lib/types/dashboard';
 
 	interface Props {
@@ -21,10 +23,9 @@
 	interface SheetState {
 		kind?: 'discovery';
 		title: string;
+		description?: string;
 		rows: SheetRow[];
 	}
-	const plural = (n: number, one: string, many: string) =>
-		`${n.toLocaleString()} ${n === 1 ? one : many}`;
 	function expiryText(iso: string): string {
 		const days = Math.round((new Date(iso).getTime() - Date.now()) / MS_PER_DAY);
 		if (days < 0) return `expired ${plural(-days, 'day', 'days')} ago`;
@@ -79,6 +80,8 @@
 		})
 	);
 	let sheetRows = $derived(sheet?.kind === 'discovery' ? discoveryRows : (sheet?.rows ?? []));
+	const shownOf = (shown: number, total: number, noun: string, nouns: string) =>
+		shown < total ? `${shown.toLocaleString()} of ${plural(total, noun, nouns)}` : undefined;
 
 	interface Tile {
 		key: string;
@@ -102,6 +105,7 @@
 				open: () =>
 					show({
 						title: 'Takeover candidates',
+						description: shownOf(takeover.items.length, takeover.count, 'name', 'names'),
 						rows: takeover.items.map((c) => ({
 							key: c.name,
 							primary: c.name,
@@ -122,6 +126,7 @@
 				open: () =>
 					show({
 						title: 'Spoofable domains',
+						description: shownOf(spoof.items.length, spoof.count, 'zone', 'zones'),
 						rows: spoof.items.map((d) => ({
 							key: `${d.target_id}:${d.zone}`,
 							primary: d.zone || d.target_value,
@@ -137,11 +142,11 @@
 				key: 'domains',
 				label: 'Domains expiring',
 				count: overview.expiring.length,
-				detail: 'within 30 days',
+				detail: `within ${EXPIRING_DAYS} days`,
 				tone: null,
 				open: () =>
 					show({
-						title: 'Domains expiring within 30 days',
+						title: `Domains expiring within ${EXPIRING_DAYS} days`,
 						rows: overview.expiring.map((t) => ({
 							key: t.target_id,
 							primary: t.target_value,
@@ -174,11 +179,11 @@
 				key: 'stale',
 				label: 'Stale',
 				count: overview.targets_stale,
-				detail: 'no run in 30 days',
+				detail: `no run in ${STALE_DAYS} days`,
 				tone: null,
 				open: () =>
 					show({
-						title: 'Targets not scanned in 30 days',
+						title: `Targets not scanned in ${STALE_DAYS} days`,
 						rows: overview.stale.map((t) => ({
 							key: t.target_id,
 							primary: t.target_value,
@@ -191,7 +196,7 @@
 	});
 </script>
 
-<Cell id="ownership" title="Ownership" class={className}>
+<Cell id="ownership" class={className}>
 	{#if tiles.length}
 		<div class="grid grid-cols-2 gap-2">
 			{#each tiles as t (t.key)}
@@ -220,5 +225,6 @@
 	open={sheetOpen}
 	onOpenChange={(o) => (sheetOpen = o)}
 	title={sheet?.title ?? ''}
+	description={sheet?.description}
 	rows={sheetRows}
 />

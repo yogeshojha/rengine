@@ -1,4 +1,4 @@
-"""a connector is a pipe: scope moves to the moment of testing, not to the connection
+"""connectors: only_known_hosts replaces import_mode and target_id
 
 Revision ID: a5d19c7e4b83
 Revises: f2b8d3e64a17
@@ -23,10 +23,6 @@ def upgrade() -> None:
         sa.Column(
             "only_known_hosts", sa.Boolean(), nullable=False, server_default="false"
         ),
-    )
-    # a connector that only kept known hosts keeps that behaviour
-    op.execute(
-        "UPDATE connectors SET only_known_hosts = true WHERE import_mode <> 'everything'"
     )
     op.drop_column("connectors", "import_mode")
     op.drop_column("connectors", "target_id")

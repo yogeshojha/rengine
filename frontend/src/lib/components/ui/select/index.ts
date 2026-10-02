@@ -4,10 +4,8 @@ import Label from './select-label.svelte';
 import Item from './select-item.svelte';
 import Content from './select-content.svelte';
 import Trigger from './select-trigger.svelte';
-import Separator from './select-separator.svelte';
 import ScrollDownButton from './select-scroll-down-button.svelte';
 import ScrollUpButton from './select-scroll-up-button.svelte';
-import GroupHeading from './select-group-heading.svelte';
 import Portal from './select-portal.svelte';
 
 export {
@@ -17,10 +15,8 @@ export {
 	Item,
 	Content,
 	Trigger,
-	Separator,
 	ScrollDownButton,
 	ScrollUpButton,
-	GroupHeading,
 	Portal,
 	//
 	Root as Select,
@@ -29,9 +25,7 @@ export {
 	Item as SelectItem,
 	Content as SelectContent,
 	Trigger as SelectTrigger,
-	Separator as SelectSeparator,
 	ScrollDownButton as SelectScrollDownButton,
 	ScrollUpButton as SelectScrollUpButton,
-	GroupHeading as SelectGroupHeading,
 	Portal as SelectPortal
 };

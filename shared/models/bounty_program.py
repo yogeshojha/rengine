@@ -121,7 +121,6 @@ class BountyScopeRead(BaseModel):
     id: uuid.UUID
     asset_type: str
     asset_type_label: str
-    asset_group: str
     icon: str
     asset_identifier: str
     scope_state: str
@@ -152,11 +151,8 @@ class BountyProgramRead(BaseModel):
     raw_state: str | None
     raw_state_label: str = ""
     joined: bool
-    joined_at: datetime | None
     submission_state: str
     offers_bounties: bool
-    open_scope: bool | None
-    gold_standard_safe_harbor: bool | None
     currency: str | None
     started_accepting_at: datetime | None
     bookmarked: bool
@@ -207,10 +203,7 @@ class PlatformCount(BaseModel):
     source: str
     programs: int
     private_programs: int = 0
-    feed_programs: int = 0
-    has_feed: bool = False
     api_provider: str | None = None
-    supports_private: bool = False
     credential: str = ""
     note: str = ""
     configured: bool = False
@@ -218,20 +211,13 @@ class PlatformCount(BaseModel):
 
 
 class BountyStatus(BaseModel):
-    configured: bool
-    platform: str
-    username: str | None
     programs: int
     private_programs: int
     last_synced_at: datetime | None
     sync_interval: str
-    next_sync_at: datetime | None = None
     unseen_events: int = 0
     platforms: list[PlatformCount] = []
     source_counts: dict[str, int] = {}
-    feed_interval: str = ""
-    feed_synced_at: datetime | None = None
-    error: str | None = None
 
 
 class BountySettingsRead(BaseModel):
@@ -240,7 +226,6 @@ class BountySettingsRead(BaseModel):
     feed_interval: str
     feed_synced_at: datetime | None
     feed_next_sync_at: datetime | None
-    feed_programs: int
     feed_source: str
     feed_url: str
     feed_license: str
@@ -249,7 +234,6 @@ class BountySettingsRead(BaseModel):
     notifiable_events: list[str]
     last_synced_at: datetime | None
     next_sync_at: datetime | None
-    programs: int
     events_recorded: int
 
 

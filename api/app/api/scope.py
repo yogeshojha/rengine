@@ -8,10 +8,10 @@ from fastapi import Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
-from app.services.asset_query import QueryScope
 from app.services.surface_scope import SurfaceScopeService
 from app.services.target_scope import TargetFilter, resolve_targets
 from shared.definitions.surface import SurfaceDimension
+from shared.services.asset_query import QueryScope
 
 _MISSING = "Pass scan_id for one run, or project_id for the whole project."
 
@@ -44,7 +44,7 @@ async def resolve_scope(
         return QueryScope((scan_id,), project_id=project_id)
     if project_id is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=_MISSING
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=_MISSING
         )
     targets = await resolve_targets(session, project_id, spec)
     return await SurfaceScopeService(session).scope(

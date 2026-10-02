@@ -31,32 +31,42 @@
 	const handleToolbox = (value: string) => toolbox.open({ value });
 </script>
 
-<header class="sticky top-0 z-50 flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4">
+<header
+	class="@container/topbar sticky top-0 z-50 flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4"
+>
 	<Sidebar.Trigger class="-ms-1" />
 	<Separator orientation="vertical" class="mx-2 data-[orientation=vertical]:h-4" />
 
 	{#if breadcrumbs.length > 0}
-		<nav class="flex shrink-0 items-center gap-1.5 text-sm whitespace-nowrap">
-			{#each breadcrumbs as crumb, i (crumb.href ?? crumb.label)}
+		<nav class="flex min-w-0 items-center gap-1.5 text-sm whitespace-nowrap">
+			{#each breadcrumbs as crumb, i (`${i}:${crumb.href ?? crumb.label}`)}
+				{@const last = i === breadcrumbs.length - 1}
 				{#if i > 0}
-					<ChevronRight class="size-3.5 text-muted-foreground/50" />
+					<ChevronRight
+						class="hidden size-3.5 shrink-0 text-muted-foreground/50 @3xl/topbar:block"
+					/>
 				{/if}
 
-				{#if crumb.href && i < breadcrumbs.length - 1}
+				{#if crumb.href && !last}
 					<a
 						href={crumb.href}
-						class="text-muted-foreground hover:text-foreground transition-colors"
+						class="hidden shrink-0 text-muted-foreground transition-colors hover:text-foreground @3xl/topbar:inline"
 					>
 						{crumb.label}
 					</a>
 				{:else}
-					<span class="text-foreground font-medium">{crumb.label}</span>
+					<span
+						class={[
+							'font-medium text-foreground',
+							last ? 'truncate' : 'hidden shrink-0 @3xl/topbar:inline'
+						]}>{crumb.label}</span
+					>
 				{/if}
 			{/each}
 		</nav>
 	{/if}
 
-	<div class="ml-3 hidden md:block">
+	<div class="ml-3 hidden @5xl/topbar:block">
 		<ActivityGlance />
 	</div>
 

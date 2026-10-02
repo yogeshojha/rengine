@@ -14,7 +14,9 @@
 	import { FEED_STATUS_DOT, FEED_STATUS_TONE } from '$lib/config/threat-intel';
 	import { threatIntelApi } from '$lib/api/threat-intel';
 	import { projectsStore } from '$lib/stores/projects.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
 	import { ROUTES } from '$lib/config/routes';
+	import { formatBytes } from '$lib/utilities/format';
 	import type { ThreatFeedRead, ThreatIntelStatus } from '$lib/types/threat-intel';
 
 	const POLL_MS = 4000;
@@ -26,6 +28,7 @@
 	let fetchedProjectId = $state<string | null>(null);
 	let togglingAuto = $state(false);
 
+	const isAdmin = $derived(auth.user?.is_superuser ?? false);
 	let projectId = $derived(projectsStore.activeProject?.id ?? null);
 	let feeds = $derived(status?.feeds ?? []);
 	let providers = $derived(status?.providers ?? []);
@@ -45,8 +48,8 @@
 
 	function transfer(feed: ThreatFeedRead): string {
 		if (!feed.bytes) return '';
-		const mb = `${(feed.bytes / 1e6).toFixed(1)} MB`;
-		return feed.duration_ms ? `${mb} in ${(feed.duration_ms / 1000).toFixed(1)}s` : mb;
+		const size = formatBytes(feed.bytes);
+		return feed.duration_ms ? `${size} in ${(feed.duration_ms / 1000).toFixed(1)}s` : size;
 	}
 
 	async function load(id: string | null) {
@@ -141,7 +144,7 @@
 {:else if !status}
 	<EmptyState
 		icon={Flame}
-		title="Exploit intel not loaded"
+		title="Threat intel not loaded"
 		description="The API did not respond. Check that the api service is running."
 	/>
 {:else}
@@ -155,7 +158,7 @@
 				<label class="flex cursor-pointer items-center gap-2 text-sm">
 					<Switch
 						checked={autoSync}
-						disabled={togglingAuto}
+						disabled={togglingAuto || !isAdmin}
 						onCheckedChange={toggleAuto}
 						aria-label="Nightly sync"
 					/>
@@ -166,6 +169,7 @@
 					loadingLabel="Syncing"
 					variant="outline"
 					size="sm"
+					disabled={!isAdmin}
 					onclick={sync}
 				>
 					<RefreshCw class="mr-1.5 size-3.5" />

@@ -10,6 +10,7 @@
 	import { BAND_RAIL } from '$lib/config/interest';
 	import { INTEREST_SOURCE, type InterestRow } from '$lib/types/interest';
 	import { stopProp } from '$lib/utilities';
+	import { httpStatusTextClass } from '$lib/utilities/scan-correlation';
 	import SignalChip from './signal-chip.svelte';
 
 	interface Props {
@@ -20,25 +21,15 @@
 		onOpen: (row: InterestRow) => void;
 		onKind: (kind: string) => void;
 		onDismiss: (row: InterestRow) => void;
-		onHost: (host: string) => void;
 	}
 
-	let { row, rank, checked = false, onCheck, onOpen, onKind, onDismiss, onHost }: Props = $props();
+	let { row, rank, checked = false, onCheck, onOpen, onKind, onDismiss }: Props = $props();
 
 	const MAX_CHIPS = 4;
 	let lead = $derived(row.signals.find((s) => s.reason) ?? null);
 	let chips = $derived(row.signals.slice(0, MAX_CHIPS));
 	let rest = $derived(Math.max(0, row.signals.length - MAX_CHIPS));
-	let fromAi = $derived(row.sources.includes(INTEREST_SOURCE.AI));
-	let statusTone = $derived(
-		row.http_status == null
-			? 'text-muted-foreground'
-			: row.http_status < 300
-				? 'text-success'
-				: row.http_status < 400
-					? 'text-info'
-					: 'text-warning'
-	);
+	let statusTone = $derived(httpStatusTextClass(row.http_status));
 </script>
 
 <div
@@ -105,7 +96,7 @@
 
 		{#if lead?.reason}
 			<p class="max-w-[80ch] text-xs text-foreground/80">
-				{#if fromAi && lead.source === INTEREST_SOURCE.AI}
+				{#if lead.source === INTEREST_SOURCE.AI}
 					<Sparkle class="mr-1 inline size-3 align-[-1px] text-info" />
 				{/if}{lead.reason}
 			</p>
@@ -123,14 +114,7 @@
 				>
 			{/if}
 			{#if row.asn_org}
-				<button
-					type="button"
-					class="text-2xs text-muted-foreground hover:text-foreground"
-					onclick={(e) => {
-						e.stopPropagation();
-						onHost(row.host);
-					}}>{row.asn_org}</button
-				>
+				<span class="text-2xs text-muted-foreground">{row.asn_org}</span>
 			{/if}
 		</div>
 	</div>

@@ -3,23 +3,26 @@
 from __future__ import annotations
 
 import re
+import uuid
 
 from pydantic import Field
+from sqlmodel import select
 
 from mcp import links
 from mcp.context import ToolContext
-from mcp.dimensions import dimension
+from mcp.dimensions import Dimension, dimension
 from mcp.errors import ToolError
 from mcp.result import ToolResult
 from mcp.tools._scope import resolve
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.definitions.surface import SurfaceDimension
+from shared.definitions.vulnerabilities import CVE_ID
+from shared.models.vulnerability import Vulnerability
 from shared.utils.text import counted
 
 MAX_LOCATIONS = 25
 MAX_EVIDENCE_CHARS = 1200
 _FINGERPRINT = re.compile(r"^[0-9a-f]{64}$")
-_CVE = re.compile(r"^CVE-\d{4}-\d{4,}$", re.IGNORECASE)
 
 
 class Input(ToolInput):
@@ -55,11 +58,8 @@ class ExplainFinding(Tool):
         scan_id = scope.require(dim)
 
         needle = args.finding.strip()
-        query = _query_for(needle)
-        f = dim.build_filter(query, limit=MAX_LOCATIONS, offset=0)
-        page = await dim.search(ctx.session, scan_id, f, scope.project_id)
-
-        if getattr(page, "error", None) or not page.items:
+        found = await _finding(ctx, dim, scan_id, scope.project_id, needle)
+        if found is None:
             msg = (
                 f"No finding on {scope.target.target_value} matches {needle!r}. "
                 "query_assets with dimension=vulnerabilities lists the findings."
@@ -67,10 +67,33 @@ class ExplainFinding(Tool):
             raise ToolError(msg)
 
         service = VulnerabilityService(ctx.session)
-        detail = await service.get(scan_id, page.items[0].id)
+        detail = await service.get(scan_id, found)
         if detail is None:
             msg = "The finding could not be loaded."
             raise ToolError(msg)
+
+        query = f'template="{_quoted(detail.template_id)}"'
+        page = await dim.search(
+            ctx.session,
+            scan_id,
+            dim.build_filter(
+                query, limit=MAX_LOCATIONS, offset=0, include_suppressed=True
+            ),
+            scope.project_id,
+        )
+        listed = await dim.search(
+            ctx.session,
+            scan_id,
+            dim.build_filter(query, limit=1, offset=0),
+            scope.project_id,
+        )
+        set_aside = max(0, page.total - listed.total)
+        caveats = scope.caveat(dim)
+        if set_aside:
+            caveats.append(
+                "Set aside by a reviewer and not counted in occurrences: "
+                f"{counted(set_aside, 'location')}."
+            )
 
         locations = [
             {
@@ -87,7 +110,7 @@ class ExplainFinding(Tool):
         return ToolResult(
             summary=(
                 f"{detail.severity.upper()}: {detail.template_name} on "
-                f"{scope.target.target_value}, {counted(page.total, 'occurrence')}"
+                f"{scope.target.target_value}, {counted(listed.total, 'occurrence')}"
             ),
             data={
                 "check": {
@@ -110,7 +133,8 @@ class ExplainFinding(Tool):
                     "known_exploited": detail.is_kev,
                 },
                 "review": {"state": detail.state, "note": detail.note},
-                "occurrences": page.total,
+                "occurrences": listed.total,
+                "set_aside": set_aside,
                 "locations": locations,
                 "evidence": {
                     "matched_at": detail.matched_at,
@@ -118,19 +142,39 @@ class ExplainFinding(Tool):
                     "curl": _trim(detail.curl_command, 600),
                 },
             },
-            pivot=links.scan_tab(
-                ctx.ui_base_url, scan_id, dim.tab, f"template:{detail.template_id}"
-            ),
-            caveats=scope.caveat(dim),
+            pivot=links.scan_tab(ctx.ui_base_url, scan_id, dim.tab, query),
+            caveats=caveats,
             untrusted=True,
         )
 
 
-def _query_for(needle: str) -> str:
-    quoted = needle.replace('"', '\\"')
+async def _finding(
+    ctx: ToolContext,
+    dim: Dimension,
+    scan_id: uuid.UUID,
+    project_id: uuid.UUID,
+    needle: str,
+) -> uuid.UUID | None:
+    """The one finding a needle names, set-aside findings included."""
     if _FINGERPRINT.match(needle):
-        return f'name:"{quoted}" or template:"{quoted}"'
-    if _CVE.match(needle):
+        statement = select(Vulnerability.id).where(
+            Vulnerability.scan_id == scan_id, Vulnerability.fingerprint == needle
+        )
+        return (await ctx.session.execute(statement.limit(1))).scalar_one_or_none()
+    f = dim.build_filter(_query_for(needle), limit=1, offset=0, include_suppressed=True)
+    page = await dim.search(ctx.session, scan_id, f, project_id)
+    if getattr(page, "error", None) or not page.items:
+        return None
+    return page.items[0].id
+
+
+def _quoted(value: str) -> str:
+    return value.replace('"', '\\"')
+
+
+def _query_for(needle: str) -> str:
+    quoted = _quoted(needle)
+    if CVE_ID.match(needle):
         return f'cve:"{quoted}"'
     return f'template:"{quoted}" or name:"{quoted}"'
 

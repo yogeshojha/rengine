@@ -11,7 +11,6 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import LoadingButton from '$lib/components/loading-button.svelte';
-	import Hint from '$lib/components/hint.svelte';
 	import ThemePreview from './theme-preview.svelte';
 	import SectionPill from './generate/section-pill.svelte';
 	import SectionConfigPopover from './generate/section-config-popover.svelte';
@@ -145,6 +144,8 @@
 		title = selected?.title || selected?.name || 'Security Assessment Report';
 		theme = selected?.theme ?? '';
 		formats = selected?.formats?.length ? [...selected.formats] : [ReportFormat.PDF];
+		useAi = selected?.narrative.ai_enabled ?? false;
+		explainFindings = selected?.narrative.explain_findings ?? false;
 		baseEstimate = null;
 	});
 
@@ -156,13 +157,11 @@
 		theme: theme || undefined,
 		sections: plan.entries,
 		formats,
-		narrative: selected
-			? {
-					...selected.narrative,
-					ai_enabled: useAi && aiAvailable,
-					explain_findings: explainFindings && useAi && aiAvailable
-				}
-			: undefined
+		narrative: {
+			...(selected?.narrative ?? {}),
+			ai_enabled: useAi && aiAvailable,
+			explain_findings: explainFindings && useAi && aiAvailable
+		}
 	});
 
 	const signature = $derived(
@@ -176,9 +175,12 @@
 		})
 	);
 
+	let estimateSeq = 0;
+
 	$effect(() => {
 		void signature;
 		if (!open || !hasSubject) return;
+		const mine = ++estimateSeq;
 		estimating = true;
 		estimateError = null;
 		reportsApi
@@ -187,14 +189,18 @@
 				untrack(() => body)
 			)
 			.then((result) => {
+				if (mine !== estimateSeq) return;
 				estimate = result;
 				if (!plan.changed) baseEstimate = result;
 			})
 			.catch((e) => {
+				if (mine !== estimateSeq) return;
 				estimate = null;
 				estimateError = e instanceof Error ? e.message : 'Request failed.';
 			})
-			.finally(() => (estimating = false));
+			.finally(() => {
+				if (mine === estimateSeq) estimating = false;
+			});
 	});
 
 	const STATS: [string, 'sections' | 'findings' | 'assets' | 'pages_estimated'][] = [
@@ -230,9 +236,9 @@
 				<FileTextIcon class="size-4" />
 				Generate report
 			</Dialog.Title>
-			<Dialog.Description>
-				{subject ? `Report on ${subject}.` : 'Select the subject, the contents and the output.'}
-			</Dialog.Description>
+			{#if subject}
+				<Dialog.Description>Report on {subject}.</Dialog.Description>
+			{/if}
 		</Dialog.Header>
 
 		<div class="grid min-h-0 flex-1 md:grid-cols-[minmax(0,1fr)_16rem]">
@@ -258,7 +264,7 @@
 											{#if pickedScan}
 												{@const picked = scanOptions.find((o) => o.id === pickedScan)}
 												{picked
-													? `${targetName(picked.target_id)} · ${formatShortDate(picked.created_at)}`
+													? `${picked.execution_config.target_value} · ${formatShortDate(picked.created_at)}`
 													: 'Select a scan'}
 											{:else}
 												Select a scan
@@ -268,9 +274,9 @@
 											{#each scanOptions as option (option.id)}
 												<Select.Item
 													value={option.id}
-													label={`${targetName(option.target_id)} · ${formatShortDate(option.created_at)}`}
+													label={`${option.execution_config.target_value} · ${formatShortDate(option.created_at)}`}
 												>
-													<span class="truncate">{targetName(option.target_id)}</span>
+													<span class="truncate">{option.execution_config.target_value}</span>
 													<span class="ml-auto shrink-0 pl-3 text-xs text-muted-foreground">
 														{formatShortDate(option.created_at)}
 													</span>
@@ -352,7 +358,7 @@
 												onToggle={() => plan.toggle(section.name)}
 											>
 												{#if section.fields.length}
-													<SectionConfigPopover {section} {plan} hideLaunchFields />
+													<SectionConfigPopover {section} {plan} />
 												{/if}
 											</SectionPill>
 										{/each}
@@ -456,17 +462,11 @@
 										: 'Connect a provider on the AI page.'}
 								</p>
 							</div>
-							<Hint text={aiAvailable ? '' : 'AI is not connected.'}>
-								{#snippet child(props)}
-									<span class="inline-flex" {...props}>
-										<Switch
-											checked={useAi}
-											disabled={!aiAvailable}
-											onCheckedChange={(v) => (useAi = v)}
-										/>
-									</span>
-								{/snippet}
-							</Hint>
+							<Switch
+								checked={useAi && aiAvailable}
+								disabled={!aiAvailable}
+								onCheckedChange={(v) => (useAi = v)}
+							/>
 						</div>
 
 						{#if useAi && aiAvailable}

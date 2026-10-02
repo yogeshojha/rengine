@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { formatMonthYear } from '$lib/utilities/dates';
+	import { plural } from '$lib/utilities/strings';
 	import { REPORT_STAGE_FILL, REPORT_STAGE_ORDER, formatMoney } from '$lib/config/bounty-reports';
 	import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
 	import type { MonthPoint } from '$lib/types/bounty-report';
@@ -133,16 +134,17 @@
 				</div>
 				{#if tip.awards && currency}
 					<div class="font-mono">
-						{formatMoney(tip.earned, currency)} · {tip.awards}
-						{tip.awards === 1 ? 'payment' : 'payments'}
+						{formatMoney(tip.earned, currency)} · {plural(tip.awards, 'payment')}
 					</div>
 				{/if}
 			</div>
 		{/if}
 	</div>
-	<div class="flex justify-between font-mono text-2xs text-muted-foreground">
+	<div
+		class="flex flex-wrap justify-between gap-x-3 gap-y-1 font-mono text-2xs text-muted-foreground"
+	>
 		<span>{months.length ? monthLabel(months[0].month) : ''}</span>
-		<span class="flex items-center gap-3">
+		<span class="flex flex-wrap items-center gap-x-3 gap-y-1">
 			{#each REPORT_STAGE_ORDER as stage (stage)}
 				<span class="flex items-center gap-1">
 					<span class="size-1.5 rounded-full" style="background: {REPORT_STAGE_FILL[stage]}"></span>

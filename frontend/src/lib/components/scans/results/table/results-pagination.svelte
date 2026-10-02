@@ -2,13 +2,16 @@
 	import * as Pagination from '$lib/components/ui/pagination';
 	import PageSizeSelector from '$lib/components/targets/page-size-selector.svelte';
 
+	const SIZES = [25, 50, 100, 200];
+
 	interface Props {
 		total: number;
 		page: number;
 		pageSize: number;
 		capped?: boolean;
-		noun?: string;
+		noun: string;
 		plural?: string;
+		sizes?: number[];
 		onPage: (page: number) => void;
 		onPageSize?: (size: number) => void;
 	}
@@ -18,13 +21,12 @@
 		page,
 		pageSize,
 		capped = false,
-		noun = 'host',
+		noun,
 		plural = '',
+		sizes = SIZES,
 		onPage,
 		onPageSize
 	}: Props = $props();
-
-	const SIZES = [25, 50, 100, 200];
 
 	let from = $derived(total === 0 ? 0 : page * pageSize + 1);
 	let to = $derived(Math.min((page + 1) * pageSize, total));
@@ -39,7 +41,7 @@
 			{total === 1 ? noun : plural || `${noun}s`}
 		</span>
 		{#if onPageSize}
-			<PageSizeSelector {pageSize} options={SIZES} onPageSizeChange={onPageSize} />
+			<PageSizeSelector {pageSize} options={sizes} onPageSizeChange={onPageSize} />
 		{/if}
 	</div>
 	{#if total > pageSize}

@@ -4,7 +4,7 @@ import hashlib
 import re
 from dataclasses import dataclass
 from enum import StrEnum
-from urllib.parse import parse_qsl, urlsplit
+from urllib.parse import parse_qsl, quote, urlencode, urlsplit
 
 from shared.definitions.ports import SCHEME_PORTS
 from shared.utils.net import bracketed
@@ -18,7 +18,6 @@ MAX_PARAM_SAMPLES = 10
 MAX_DEPTH = 30
 MAX_TREE_NODES = 5000
 MAX_TREE_ROWS = 60_000
-DEFAULT_PROBE_CAP = 5000
 
 
 class CrawlScope(StrEnum):
@@ -143,10 +142,6 @@ LINKED_SOURCES: frozenset[str] = frozenset(
         EndpointSource.SITEMAP.value,
         EndpointSource.JS.value,
     }
-)
-
-PASSIVE_SOURCES: frozenset[str] = frozenset(
-    s for s, kind in SOURCE_KIND.items() if kind != SourceKind.ACTIVE.value
 )
 
 
@@ -370,19 +365,6 @@ PARAM_INTEREST_LABELS: dict[str, str] = {
     ParamInterest.SSTI.value: "Template injection",
     ParamInterest.UPLOAD.value: "File upload",
     ParamInterest.DEBUG.value: "Debug switch",
-}
-
-PARAM_INTEREST_HELP: dict[str, str] = {
-    ParamInterest.IDOR.value: "Names an object directly.",
-    ParamInterest.OPEN_REDIRECT.value: "Carries a destination the application redirects to.",
-    ParamInterest.SSRF.value: "Carries a location the server fetches server-side.",
-    ParamInterest.TRAVERSAL.value: "Carries a file or path the server reads.",
-    ParamInterest.SQLI.value: "Reaches a database query.",
-    ParamInterest.XSS.value: "Reflected into the page.",
-    ParamInterest.RCE.value: "Names a command or process the server runs.",
-    ParamInterest.SSTI.value: "Names a template the server renders.",
-    ParamInterest.UPLOAD.value: "Carries a file name or upload target.",
-    ParamInterest.DEBUG.value: "Switches on diagnostic behaviour.",
 }
 
 PARAM_INTEREST: dict[str, frozenset[str]] = {
@@ -619,17 +601,6 @@ PATH_INTEREST_LABELS: dict[str, str] = {
     PathInterest.INFRA.value: "Infrastructure service",
 }
 
-PATH_INTEREST_HELP: dict[str, str] = {
-    PathInterest.VCS.value: "A version control directory served over HTTP.",
-    PathInterest.SECRETS.value: "A file that conventionally holds credentials or keys.",
-    PathInterest.BACKUP.value: "A backup or editor file in the web root.",
-    PathInterest.ADMIN.value: "An administrative interface reachable from the internet.",
-    PathInterest.API_DOC.value: "A machine-readable description of the API surface.",
-    PathInterest.DEBUG_ENDPOINT.value: "A diagnostic route.",
-    PathInterest.AUTH.value: "An authentication boundary.",
-    PathInterest.INFRA.value: "A management or infrastructure service mounted on the web root.",
-}
-
 PATH_INTEREST: dict[str, tuple[str, ...]] = {
     PathInterest.VCS.value: ("/.git/", "/.git", "/.svn/", "/.hg/", "/.bzr/"),
     PathInterest.SECRETS.value: (
@@ -725,7 +696,6 @@ PATH_INTEREST: dict[str, tuple[str, ...]] = {
 }
 
 INTEREST_LABELS: dict[str, str] = {**PARAM_INTEREST_LABELS, **PATH_INTEREST_LABELS}
-INTEREST_HELP: dict[str, str] = {**PARAM_INTEREST_HELP, **PATH_INTEREST_HELP}
 INTEREST_KEYS: tuple[str, ...] = tuple(INTEREST_LABELS)
 
 SENSITIVE_INTERESTS: frozenset[str] = frozenset(
@@ -737,26 +707,6 @@ ADMIN_INTERESTS: frozenset[str] = frozenset(
         PathInterest.DEBUG_ENDPOINT.value,
         PathInterest.INFRA.value,
     }
-)
-
-WHY_INTERESTS: tuple[str, ...] = (
-    PathInterest.VCS.value,
-    PathInterest.SECRETS.value,
-    PathInterest.BACKUP.value,
-    PathInterest.ADMIN.value,
-    PathInterest.DEBUG_ENDPOINT.value,
-    PathInterest.INFRA.value,
-    PathInterest.API_DOC.value,
-    PathInterest.AUTH.value,
-    ParamInterest.RCE.value,
-    ParamInterest.SQLI.value,
-    ParamInterest.SSRF.value,
-    ParamInterest.TRAVERSAL.value,
-    ParamInterest.OPEN_REDIRECT.value,
-    ParamInterest.IDOR.value,
-    ParamInterest.UPLOAD.value,
-    ParamInterest.SSTI.value,
-    ParamInterest.DEBUG.value,
 )
 
 ROOT_NOISE_FILES: frozenset[str] = frozenset(
@@ -809,8 +759,6 @@ def normalize_path(raw: str) -> str:
         path = "/" + path
     if trailing and not path.endswith("/"):
         path += "/"
-    if not path:
-        path = "/"
     return path[:MAX_PATH_LENGTH]
 
 
@@ -865,7 +813,7 @@ def parse_url(raw: str, *, default_scheme: str = "https") -> ParsedUrl | None:
 
     literal = bracketed(host)
     authority = literal if port == SCHEME_PORTS[scheme] else f"{literal}:{port}"
-    query = "&".join(f"{n}={values[n]}" for n in params)
+    query = urlencode([(n, values[n]) for n in params], quote_via=quote, safe="/:")
     url = f"{scheme}://{authority}{path}" + (f"?{query}" if query else "")
     return ParsedUrl(
         url=url[:MAX_URL_LENGTH],
@@ -1050,38 +998,6 @@ class NoiseRule(StrEnum):
     ARCHIVE_ROT = "archive_rot"
     OFF_SCOPE = "off_scope"
 
-
-NOISE_RULE_LABELS: dict[str, str] = {
-    NoiseRule.STATIC.value: "Static files",
-    NoiseRule.ARTIFACT.value: "Crawler artifacts",
-    NoiseRule.PLATFORM.value: "Platform noise",
-    NoiseRule.FAMILY.value: "Past the family cap",
-    NoiseRule.LOCALE.value: "Other languages",
-    NoiseRule.SIBLINGS.value: "Past the sibling cap",
-    NoiseRule.NOT_FOUND.value: "Not found",
-    NoiseRule.SAME_RESPONSE.value: "Same response",
-    NoiseRule.SAME_REDIRECT.value: "Same redirect",
-    NoiseRule.CATCH_ALL.value: "Same as the site root",
-    NoiseRule.SIMILAR_RESPONSE.value: "Similar response",
-    NoiseRule.ARCHIVE_ROT.value: "Archive rot",
-    NoiseRule.OFF_SCOPE.value: "Redirect out of scope",
-}
-
-NOISE_RULE_HELP: dict[str, str] = {
-    NoiseRule.STATIC.value: "Images, fonts, media and stylesheets.",
-    NoiseRule.ARTIFACT.value: "Template literals, quotes and JavaScript values read as URLs.",
-    NoiseRule.PLATFORM.value: "Feeds, oEmbed, print views, comment replies and CDN paths.",
-    NoiseRule.FAMILY.value: "URLs that differ from a kept one only by an identifier.",
-    NoiseRule.LOCALE.value: "The same path under another language prefix.",
-    NoiseRule.SIBLINGS.value: "Children of one folder past the cap, of one kind.",
-    NoiseRule.NOT_FOUND.value: "The response matches what the host answers for a path that does not exist.",
-    NoiseRule.SAME_RESPONSE.value: "Byte-identical to a kept response on the host.",
-    NoiseRule.SAME_REDIRECT.value: "Redirects where a kept URL on the host already redirects.",
-    NoiseRule.CATCH_ALL.value: "The site root's response served at another path.",
-    NoiseRule.SIMILAR_RESPONSE.value: "Same status, title and size as ten or more kept responses.",
-    NoiseRule.ARCHIVE_ROT.value: "Known only from archives and gone.",
-    NoiseRule.OFF_SCOPE.value: "Redirects to a host outside the scan.",
-}
 
 NOT_FOUND_TOLERANCE = 0.02
 SAME_RESPONSE_MIN = 3

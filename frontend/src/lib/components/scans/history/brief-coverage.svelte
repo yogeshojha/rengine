@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { scansApi } from '$lib/api/scans';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import {
@@ -27,7 +28,10 @@
 		const id = scan.id;
 		scansApi
 			.activities(id, projectId)
-			.then((a) => (activities = a))
+			.then((a) => {
+				activities = a;
+				error = null;
+			})
 			.catch((e) => (error = e instanceof Error ? e.message : 'Stages not loaded.'));
 	});
 
@@ -82,7 +86,7 @@
 {:else if !activities}
 	<div class="space-y-1.5 py-3">
 		{#each { length: 6 } as _, i (i)}
-			<div class="h-5 animate-pulse rounded bg-muted/60"></div>
+			<Skeleton class="h-5 rounded" />
 		{/each}
 	</div>
 {:else if rows.length === 0}

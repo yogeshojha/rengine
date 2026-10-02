@@ -2,7 +2,7 @@ from typing import Any
 
 import httpx
 
-from shared.http import get_async_client, get_sync_client
+from shared.http import get_async_client
 from shared.logging import get_logger
 
 logger = get_logger(__name__)
@@ -11,7 +11,7 @@ BASE_URL = "https://api.viewdns.info"
 
 
 class ViewDNSAPIError(Exception):
-    """Base error for ViewDNS API calls. Messages never carry the request URL."""
+    """Base error for ViewDNS API calls."""
 
 
 class ViewDNSAuthError(ViewDNSAPIError):
@@ -45,7 +45,9 @@ class ViewDNSClient:
             msg = f"Authentication failed for {endpoint}"
             raise ViewDNSAuthError(msg)
         if 400 <= resp.status_code < 500:  # noqa: PLR2004
-            msg = f"ViewDNS refused the query on {endpoint} (HTTP {resp.status_code})"
+            msg = (
+                f"ViewDNS refused the query on {endpoint} with HTTP {resp.status_code}"
+            )
             raise ViewDNSRejectedError(msg)
         if resp.status_code != httpx.codes.OK:
             msg = f"ViewDNS returned HTTP {resp.status_code} on {endpoint}"
@@ -85,17 +87,6 @@ class ViewDNSClient:
             raise ViewDNSAPIError(msg) from None
         return self._handle_response(resp, endpoint)
 
-    def _get_sync(self, endpoint: str, **params) -> dict[str, Any]:
-        try:
-            with get_sync_client() as client:
-                resp = client.get(
-                    f"{BASE_URL}/{endpoint}/", params=self._build_params(**params)
-                )
-        except httpx.HTTPError as exc:
-            msg = f"ViewDNS could not be reached on {endpoint}: {type(exc).__name__}"
-            raise ViewDNSAPIError(msg) from None
-        return self._handle_response(resp, endpoint)
-
     async def ip_history(self, domain: str) -> dict[str, Any]:
         return await self._get("iphistory", domain=domain)
 
@@ -107,17 +98,3 @@ class ViewDNSClient:
 
     async def reverse_whois(self, q: str) -> dict[str, Any]:
         return await self._get("reversewhois", q=q)
-
-    # Sync variants for Celery workers
-
-    def ip_history_sync(self, domain: str) -> dict[str, Any]:
-        return self._get_sync("iphistory", domain=domain)
-
-    def reverse_ip_sync(self, host: str) -> dict[str, Any]:
-        return self._get_sync("reverseip", host=host)
-
-    def reverse_ns_sync(self, ns: str) -> dict[str, Any]:
-        return self._get_sync("reversens", ns=ns)
-
-    def reverse_whois_sync(self, q: str) -> dict[str, Any]:
-        return self._get_sync("reversewhois", q=q)

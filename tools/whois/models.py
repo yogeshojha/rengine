@@ -77,7 +77,7 @@ class WhoisBaseResponse(BaseModel):
     parent_handle: str = ""
     name: str = ""
     whois_server: str = ""
-    object_class: str = ""  # RDAP objectClassName e.g. "domain", "ip network", "autnum"
+    object_class: str = ""  # RDAP objectClassName
 
     terms_of_service_url: str = ""
     copyright_notice: str = ""
@@ -129,7 +129,6 @@ class WhoisDomainResponse(WhoisBaseResponse):
                 "nameservers": self.nameservers,
                 "domain_status": self.status,
                 "dnssec": self.dnssec,
-                # IP/ASN fields stay as defaults
                 "country": "",
                 "ip_version": None,
                 "assignment_type": "",

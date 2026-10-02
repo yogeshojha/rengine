@@ -9,15 +9,12 @@ from shared.definitions.tripwires import (
     ACTION_LABELS,
     CHECK_STATUS_LABELS,
     FIRE_ON_LABELS,
-    FIRE_ON_PARTICIPLE,
     FIRE_ON_VERB,
     MAX_NAME,
     MAX_RUNS_PER_DAY,
     RECENT_DAYS,
-    SAMPLE_ROWS,
     SCOPE_LABELS,
     TRIGGER_LABELS,
-    TRIPWIRE_KEY,
     ActionKind,
     CheckStatus,
     FireOn,
@@ -78,7 +75,6 @@ def test_enum_mirror(ts_name, members):
         ("TRIGGER_LABELS", TRIGGER_LABELS),
         ("FIRE_ON_LABELS", FIRE_ON_LABELS),
         ("FIRE_ON_VERB", FIRE_ON_VERB),
-        ("FIRE_ON_PARTICIPLE", FIRE_ON_PARTICIPLE),
         ("SCOPE_LABELS", SCOPE_LABELS),
         ("ACTION_LABELS", ACTION_LABELS),
         ("CHECK_STATUS_LABELS", CHECK_STATUS_LABELS),
@@ -92,5 +88,3 @@ def test_limit_mirror():
     assert int(_const("MAX_NAME")) == MAX_NAME
     assert int(_const("MAX_RUNS_PER_DAY")) == MAX_RUNS_PER_DAY
     assert int(_const("RECENT_DAYS")) == RECENT_DAYS
-    assert int(_const("SAMPLE_ROWS")) == SAMPLE_ROWS
-    assert _const("TRIPWIRE_KEY") == TRIPWIRE_KEY

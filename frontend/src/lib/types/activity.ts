@@ -1,4 +1,3 @@
-import { MS_PER_DAY } from '$lib/utilities/dates';
 import type { MessageLevel } from '$lib/types/message-level';
 
 export interface ActivityLog {
@@ -175,18 +174,16 @@ function clusterLabel(items: ActivityLog[]): string {
 	if (items.length === 1) return items[0].title;
 	const parsed = parseEventType(items[0].event_type);
 	const groupName = parsed.group ?? parsed.entity;
-	const noun = pluralize(groupName, items.length);
-
 	const failed = items.filter((i) => i.level === 'error').length;
 	const succeeded = items.length - failed;
 
 	if (failed > 0 && succeeded > 0) {
-		return `${succeeded} ${noun} completed, ${failed} failed`;
+		return `${succeeded} ${pluralize(groupName, succeeded)} completed, ${failed} failed`;
 	}
 	if (failed > 0) {
-		return `${failed} ${noun} failed`;
+		return `${failed} ${pluralize(groupName, failed)} failed`;
 	}
-	return `${items.length} ${noun} completed`;
+	return `${items.length} ${pluralize(groupName, items.length)} completed`;
 }
 
 function titleSuffix(title: string): string | null {
@@ -309,18 +306,21 @@ export function clusterEvents(events: ActivityLog[]): ActivityCluster[] {
 
 export function groupByDay(clusters: ActivityCluster[]): ActivityDayGroup[] {
 	const groups: Map<string, ActivityCluster[]> = new Map();
+	const dayKey = (d: Date) => d.toLocaleDateString('en-CA');
 
 	for (const cluster of clusters) {
-		const date = new Date(cluster.timestamp);
-		const key = date.toISOString().split('T')[0];
+		const key = dayKey(new Date(cluster.timestamp));
 		if (!groups.has(key)) {
 			groups.set(key, []);
 		}
 		groups.get(key)!.push(cluster);
 	}
 
-	const today = new Date().toISOString().split('T')[0];
-	const yesterday = new Date(Date.now() - MS_PER_DAY).toISOString().split('T')[0];
+	const now = new Date();
+	const today = dayKey(now);
+	const prev = new Date(now);
+	prev.setDate(prev.getDate() - 1);
+	const yesterday = dayKey(prev);
 
 	return Array.from(groups.entries()).map(([date, dayClusters]) => ({
 		label:

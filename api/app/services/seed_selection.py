@@ -8,7 +8,6 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.asset_query import QueryScope
 from app.services.endpoint import EndpointService
 from app.services.ip_address import IpAddressService
 from app.services.port import PortService
@@ -21,7 +20,7 @@ from shared.definitions.rescan import (
     SeedKind,
     seed_kind_for,
 )
-from shared.definitions.surface import SurfaceDimension
+from shared.definitions.surface import SURFACE_LABELS, SurfaceDimension
 from shared.models.endpoint import EndpointFilter
 from shared.models.ip_address import IpAddress
 from shared.models.scan import (
@@ -34,6 +33,7 @@ from shared.models.scan_correlation import IpGroupFilter, ServiceFilter
 from shared.models.subdomain import Subdomain, SubdomainFilter
 from shared.models.target import Target
 from shared.models.vulnerability import VulnerabilityFilter
+from shared.services.asset_query import QueryScope
 
 FILTERS = {
     SurfaceDimension.WEB_ASSETS.value: SubdomainFilter,
@@ -117,6 +117,10 @@ class SeedSelectionService:
     ) -> list[tuple[str, UUID]]:
         query = selection.query
         dimension = selection.dimension
+        model = FILTERS.get(dimension)
+        if model is None:
+            msg = f"{SURFACE_LABELS[dimension]} cannot be selected by query."
+            raise ValueError(msg)
         scope = (
             QueryScope(tuple(query.scan_ids), project_id=project_id)
             if query.scan_ids
@@ -125,7 +129,7 @@ class SeedSelectionService:
         if not scope:
             return []
         try:
-            f = FILTERS[dimension].model_validate(query.filter)
+            f = model.model_validate(query.filter)
         except ValidationError as exc:
             msg = f"Invalid {dimension} filter."
             raise ValueError(msg) from exc

@@ -3,7 +3,7 @@ package io.rengine.connector;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Minimal JSON writer and reader for flat objects. The extension ships no dependencies. */
+/** Minimal JSON writer and reader for flat objects. */
 final class Json {
     private final StringBuilder out = new StringBuilder();
     private boolean first = true;
@@ -107,6 +107,16 @@ final class Json {
         }
         String literal = body.substring(at, end);
         return literal.isEmpty() || "null".equals(literal) ? null : literal;
+    }
+
+    /** One top-level integer field, 0 when absent or not a number. */
+    static int integer(String body, String field) {
+        String value = readString(body, field);
+        try {
+            return value == null ? 0 : Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     /** One flat array of strings. */

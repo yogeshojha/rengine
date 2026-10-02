@@ -1,15 +1,22 @@
 """Alembic environment configuration."""
 
 import asyncio
+import importlib
+import pkgutil
 from logging.config import fileConfig
 
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 from sqlmodel import SQLModel
 
-import shared.models  # noqa: F401
+import channels.models  # noqa: F401
+import mcp.models  # noqa: F401
+import shared.models
 from alembic import context
 from shared.config import BaseAppSettings
+
+for _module in pkgutil.iter_modules(shared.models.__path__):
+    importlib.import_module(f"shared.models.{_module.name}")
 
 config = context.config
 
@@ -23,7 +30,7 @@ target_metadata = SQLModel.metadata
 
 
 def run_migrations_offline() -> None:
-    """Run migrations in 'offline' mode — generates SQL script."""
+    """Run migrations in offline mode."""
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,

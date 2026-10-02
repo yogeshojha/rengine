@@ -7,7 +7,6 @@
 	import CircleSlash from '@lucide/svelte/icons/circle-slash';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Button } from '$lib/components/ui/button';
-	import { Badge } from '$lib/components/ui/badge';
 	import Hint from '$lib/components/hint.svelte';
 	import TechIcon from '$lib/components/scans/results/tech-icon.svelte';
 	import OverflowPopover from '$lib/components/scans/results/table/overflow-popover.svelte';
@@ -42,13 +41,11 @@
 
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 	const MAX_TECH = 3;
-	const MAX_SOURCES = 2;
 
 	let shown = $derived(new Set(columns.map((c) => c.key)));
 	let scanHref = $derived(
 		ROUTES.scanTab(asset.last_scan_id, WEB.tab, { [WEB.queryParam]: `host:${asset.name}` })
 	);
-	let url = $derived(`https://${asset.name}`);
 	const width = (key: string) => columns.find((c) => c.key === key)?.width ?? '';
 	const grow = (key: string) =>
 		columns.find((c) => c.key === key)?.grow ? 'min-w-0 flex-1' : 'shrink-0';
@@ -179,19 +176,6 @@
 		</div>
 	{/if}
 
-	{#if shown.has('sources')}
-		<div class="hidden {width('sources')} shrink-0 items-center gap-1 sm:flex">
-			{#each asset.sources.slice(0, MAX_SOURCES) as source (source)}
-				<Badge variant="outline" class="font-normal">{source}</Badge>
-			{/each}
-			{#if asset.sources.length > MAX_SOURCES}
-				<OverflowPopover items={asset.sources} shown={MAX_SOURCES} label="discovery sources" />
-			{:else if asset.sources.length === 0}
-				<span class="text-xs text-muted-foreground">—</span>
-			{/if}
-		</div>
-	{/if}
-
 	{#if shown.has('scans')}
 		<div class="hidden {width('scans')} shrink-0 justify-end text-sm tabular-nums sm:flex">
 			{asset.scan_count.toLocaleString()}
@@ -253,7 +237,8 @@
 					<DropdownMenu.Item onclick={copyHost}>
 						<Copy class="mr-2 size-3.5" /> Copy host
 					</DropdownMenu.Item>
-					{#if asset.status_code != null}
+					{#if asset.url}
+						{@const url = asset.url}
 						<DropdownMenu.Separator />
 						<DropdownMenu.Item onclick={() => window.open(url, '_blank', 'noopener,noreferrer')}>
 							<ExternalLink class="mr-2 size-3.5" /> Visit site

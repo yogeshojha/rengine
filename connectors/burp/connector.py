@@ -9,16 +9,9 @@ from shared.definitions.connectors import ConnectorKind, SetupControl
 class BurpConnector(ProxyConnector):
     kind = ConnectorKind.BURP.value
     title = "Burp Suite"
-    vendor = "PortSwigger"
-    description = "Burp Suite Community and Professional."
-    docs_url = (
-        "https://portswigger.net/burp/documentation/desktop/extend-burp/extensions"
-    )
-    source_path = "clients/burp"
     client_pattern = "rengine-connector-*.jar"
-    supports_scope_push = True
 
-    def setup(self, **_: str) -> list[SetupStep]:
+    def setup(self) -> list[SetupStep]:
         return [
             SetupStep(
                 title="Download the extension",

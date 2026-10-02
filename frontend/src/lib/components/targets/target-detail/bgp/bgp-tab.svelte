@@ -2,6 +2,7 @@
 	import Search from '@lucide/svelte/icons/search';
 	import Copy from '@lucide/svelte/icons/copy';
 	import Check from '@lucide/svelte/icons/check';
+	import CirclePlus from '@lucide/svelte/icons/circle-plus';
 	import { toast } from 'svelte-sonner';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { Button } from '$lib/components/ui/button';
@@ -10,6 +11,7 @@
 	import Hint from '$lib/components/hint.svelte';
 	import RecordShell from '../record-shell.svelte';
 	import RecordGroup from '../record-group.svelte';
+	import { VALID_RIR } from '../overview/derive';
 	import { TargetType } from '$lib/types/target';
 	import { TaskStatus } from '$lib/types/task-status';
 	import type { TargetBgpDetailResponse } from '$lib/types/target-detail';
@@ -26,14 +28,25 @@
 		targetType: TargetType;
 		bgp: TargetBgpDetailResponse | null;
 		status: TaskStatus;
+		error?: string | null;
 		loading: boolean;
 		refreshing: boolean;
 		onRefresh: () => void;
+		onAddAsTarget?: (value: string) => void;
 	}
 
-	let { targetValue, targetType, bgp, status, loading, refreshing, onRefresh }: Props = $props();
+	let {
+		targetValue,
+		targetType,
+		bgp,
+		status,
+		error = null,
+		loading,
+		refreshing,
+		onRefresh,
+		onAddAsTarget
+	}: Props = $props();
 
-	const VALID_RIR = /^(arin|ripe|apnic|lacnic|afrinic)/i;
 	const PREFIX_PAGE = 100;
 	const PEER_PAGE = 60;
 	const PEER_GROUPS: PeerRelationship[] = ['upstream', 'downstream', 'uncertain'];
@@ -72,6 +85,7 @@
 		sub?: string;
 		mono?: boolean;
 		copy?: string;
+		add?: string;
 		tone?: 'warn';
 	}
 	let facts = $derived.by<Fact[]>(() => {
@@ -131,7 +145,8 @@
 					label: isRange ? 'Prefix' : 'Covering prefix',
 					value: prefix,
 					mono: true,
-					copy: prefix
+					copy: prefix,
+					add: prefix === targetValue ? undefined : prefix
 				});
 			if (asn)
 				out.push({
@@ -140,7 +155,8 @@
 					value: `AS${asn}`,
 					sub: holder || undefined,
 					mono: true,
-					copy: `AS${asn}`
+					copy: `AS${asn}`,
+					add: `AS${asn}`
 				});
 			if (rir) out.push({ key: 'rir', label: 'Registry', value: rir });
 			const announced = prefixOverview?.is_announced ?? (networkInfo ? true : as?.announced);
@@ -197,9 +213,27 @@
 		f === 'all' ? prefixes.length : prefixes.filter((p) => String(p.ip_version) === f).length;
 </script>
 
+{#snippet addButton(value: string)}
+	<Hint text="Add as target">
+		{#snippet child(props)}
+			<Button
+				{...props}
+				variant="ghost"
+				size="icon"
+				class="size-5 shrink-0"
+				aria-label="Add {value} as target"
+				onclick={() => onAddAsTarget?.(value)}
+			>
+				<CirclePlus class="size-3.5 text-muted-foreground" />
+			</Button>
+		{/snippet}
+	</Hint>
+{/snippet}
+
 <RecordShell
 	name="BGP"
 	{status}
+	{error}
 	queriedAt={bgp?.summary?.queried_at ?? null}
 	{refreshing}
 	{loading}
@@ -228,11 +262,12 @@
 							<span class="min-w-0 wrap-anywhere {f.mono ? 'font-mono text-xs' : ''}">
 								{f.value}
 							</span>
-							{#if f.copy}
+							{#if f.copy || (f.add && onAddAsTarget)}
 								<span
 									class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
 								>
-									<CopyButton value={f.copy} class="size-5" />
+									{#if f.copy}<CopyButton value={f.copy} class="size-5" />{/if}
+									{#if f.add && onAddAsTarget}{@render addButton(f.add)}{/if}
 								</span>
 							{/if}
 						</span>
@@ -301,6 +336,7 @@
 								class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
 							>
 								<CopyButton value={p.prefix} class="size-5" />
+								{#if onAddAsTarget}{@render addButton(p.prefix)}{/if}
 							</span>
 						</div>
 					{/each}
@@ -359,12 +395,25 @@
 											text="{n.power.toLocaleString()} observed {n.power === 1 ? 'path' : 'paths'}"
 										>
 											{#snippet child(props)}
-												<span
-													{...props}
-													class="inline-flex h-6 items-center rounded-md border bg-muted/40 px-2 font-mono text-xs tabular-nums"
-												>
-													AS{n.neighbour_asn}
-												</span>
+												{#if onAddAsTarget}
+													<button
+														{...props}
+														type="button"
+														aria-label="Add AS{n.neighbour_asn} as target"
+														class="inline-flex h-6 items-center gap-1 rounded-md border bg-muted/40 px-2 font-mono text-xs tabular-nums hover:bg-muted"
+														onclick={() => onAddAsTarget?.(`AS${n.neighbour_asn}`)}
+													>
+														AS{n.neighbour_asn}
+														<CirclePlus class="size-3 text-muted-foreground" />
+													</button>
+												{:else}
+													<span
+														{...props}
+														class="inline-flex h-6 items-center rounded-md border bg-muted/40 px-2 font-mono text-xs tabular-nums"
+													>
+														AS{n.neighbour_asn}
+													</span>
+												{/if}
 											{/snippet}
 										</Hint>
 									{/each}
@@ -400,6 +449,7 @@
 							class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
 						>
 							<CopyButton value={r.related_prefix} class="size-5" />
+							{#if onAddAsTarget}{@render addButton(r.related_prefix)}{/if}
 						</span>
 					</div>
 				{/each}
@@ -407,7 +457,7 @@
 		{/if}
 
 		{#if abuse.length}
-			<RecordGroup label="Abuse contacts" mono={false} sub="from the registry">
+			<RecordGroup label="Abuse contacts" mono={false}>
 				{#each abuse as a (`${a.resource}-${a.abuse_email}`)}
 					<div class="group flex items-center gap-3 py-1.5 text-sm">
 						<code class="w-36 shrink-0 truncate font-mono text-xs text-muted-foreground">

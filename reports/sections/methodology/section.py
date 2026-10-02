@@ -38,20 +38,15 @@ class MethodologySection(Section):
         scan = source.scan
         stages = []
         if cfg.show_stages:
-            try:
-                from stages.registry import stages as specs  # noqa: PLC0415
+            from stages.registry import stage_by_name  # noqa: PLC0415
 
-                table = {spec.name: spec for spec in specs()}
-            except ImportError:
-                table = {}
+            table = stage_by_name()
             for name in source.planned_stages:
                 spec = table.get(name)
                 stages.append(
                     {
-                        "name": name,
                         "title": spec.title if spec else name.replace("_", " ").title(),
                         "description": spec.description if spec else "",
-                        "phase": spec.phase if spec else "",
                     }
                 )
         return {

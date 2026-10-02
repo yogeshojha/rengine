@@ -23,7 +23,6 @@ def upgrade() -> None:
         "CREATE INDEX ix_http_assets_tracking_gin ON http_assets "
         "USING gin ((tracking_ids::jsonb))"
     )
-    op.execute("UPDATE http_assets SET hygiene_checked = NULL")
 
 
 def downgrade() -> None:

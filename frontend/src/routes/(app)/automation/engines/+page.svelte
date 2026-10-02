@@ -2,37 +2,35 @@
 	import { pageTitle } from '$lib/utilities/page-title';
 	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
-	import { goto } from '$app/navigation';
+	import { goto, replaceState } from '$app/navigation';
+	import { page } from '$app/state';
 	import { toast } from 'svelte-sonner';
 	import Plus from '@lucide/svelte/icons/plus';
 	import Upload from '@lucide/svelte/icons/upload';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import AlertCircle from '@lucide/svelte/icons/alert-circle';
-	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import ListChecks from '@lucide/svelte/icons/list-checks';
 	import Search from '@lucide/svelte/icons/search';
 	import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
-	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 	import SearchX from '@lucide/svelte/icons/search-x';
 
+	import { scanEnginesApi } from '$lib/api/scan-engines';
 	import { scanEnginesStore } from '$lib/stores/scan-engines.svelte';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
-	import { ROUTES, routeLabels } from '$lib/config/routes';
+	import { NEW_PARAM, ROUTES, routeLabels } from '$lib/config/routes';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Alert from '$lib/components/ui/alert';
 	import * as InputGroup from '$lib/components/ui/input-group';
 	import * as Select from '$lib/components/ui/select';
-	import EmptyState from '@/components/empty-state.svelte';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import EngineListCard from '$lib/components/engines/engine-list-card.svelte';
-	import StageList from '$lib/components/engines/stage-list.svelte';
-	import FootprintMeter from '$lib/components/engines/footprint-meter.svelte';
 	import NewEngineDialog from '$lib/components/engines/new-engine-dialog.svelte';
 	import ImportEngineDialog from '$lib/components/engines/import-engine-dialog.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
-	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
-	import SelectionActionBar from '@/components/selection-action-bar.svelte';
+	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
+	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
 	import { summarize } from '$lib/utilities/engine-summary';
 	import { downloadBlob } from '$lib/utilities/download';
 	import type { EnginePreset, ScanEngine } from '$lib/types/scan-engine';
@@ -48,10 +46,8 @@
 	let engineToDelete = $state<ScanEngine | null>(null);
 	let showDeleteDialog = $state(false);
 	let isDeleting = $state(false);
-	let deleteMode = $state<'single' | 'bulk'>('single');
 	const selectedIds = new SvelteSet<string>();
-	let showNewDialog = $state(false);
-	let initialPreset = $state<string | null>(null);
+	let showNewDialog = $state(page.url.searchParams.has(NEW_PARAM));
 	let isCreating = $state(false);
 	let showImportDialog = $state(false);
 	let isImporting = $state(false);
@@ -62,6 +58,21 @@
 
 	$effect(() => {
 		untrack(() => engineCatalogStore.fetch());
+	});
+
+	$effect(() => {
+		if (page.url.searchParams.has(NEW_PARAM)) untrack(() => (showNewDialog = true));
+	});
+
+	$effect(() => {
+		if (showNewDialog) return;
+		const params = untrack(() => new URLSearchParams(page.url.searchParams));
+		if (!params.has(NEW_PARAM)) return;
+		params.delete(NEW_PARAM);
+		const qs = params.toString();
+		try {
+			replaceState(qs ? `?${qs}` : location.pathname, {});
+		} catch {}
 	});
 
 	$effect(() => {
@@ -108,11 +119,6 @@
 		});
 		return list.sort(compare);
 	});
-
-	function openNew(preset: string | null = null) {
-		initialPreset = preset;
-		showNewDialog = true;
-	}
 
 	async function handleCreate(name: string, preset: EnginePreset) {
 		const project = projectsStore.activeProject;
@@ -196,63 +202,23 @@
 		else for (const e of all) selectedIds.add(e.id);
 	}
 
-	function requestBulkDelete() {
-		if (selectedIds.size === 0) return;
-		deleteMode = 'bulk';
-		showDeleteDialog = true;
-	}
-
 	async function confirmDelete() {
+		if (!engineToDelete) return;
 		isDeleting = true;
 		try {
-			if (deleteMode === 'single') {
-				if (!engineToDelete) return;
-				const ok = await scanEnginesStore.deleteEngine(engineToDelete.id);
-				if (ok) {
-					toast.success('Engine deleted');
-					selectedIds.delete(engineToDelete.id);
-					showDeleteDialog = false;
-					engineToDelete = null;
-				} else {
-					toast.error(scanEnginesStore.error ?? 'Engine not deleted');
-				}
-				return;
+			const ok = await scanEnginesStore.deleteEngine(engineToDelete.id);
+			if (ok) {
+				toast.success('Engine deleted');
+				selectedIds.delete(engineToDelete.id);
+				showDeleteDialog = false;
+				engineToDelete = null;
+			} else {
+				toast.error(scanEnginesStore.error ?? 'Engine not deleted');
 			}
-
-			const ids = Array.from(selectedIds);
-			let failed = 0;
-			let lastError = '';
-			for (const id of ids) {
-				const ok = await scanEnginesStore.deleteEngine(id);
-				if (ok) selectedIds.delete(id);
-				else {
-					failed++;
-					lastError = scanEnginesStore.error ?? '';
-				}
-			}
-			const deleted = ids.length - failed;
-			if (deleted) toast.success(`${deleted} engine${deleted !== 1 ? 's' : ''} deleted`);
-			if (failed) {
-				toast.error(
-					`${failed} engine${failed !== 1 ? 's' : ''} not deleted${lastError ? `. ${lastError}` : ''}`
-				);
-			}
-			showDeleteDialog = false;
 		} finally {
 			isDeleting = false;
 		}
 	}
-
-	const deleteTitle = $derived(
-		deleteMode === 'single'
-			? 'Delete engine'
-			: `Delete ${selectedIds.size} engine${selectedIds.size !== 1 ? 's' : ''}`
-	);
-	const deleteDescription = $derived(
-		deleteMode === 'single'
-			? `Engine ${engineToDelete?.name ?? ''} is removed.`
-			: 'The selected engines are removed. Engines used by a schedule or a running scan are skipped.'
-	);
 
 	async function handleRefresh() {
 		const project = projectsStore.activeProject;
@@ -282,8 +248,9 @@
 		<div class="max-w-2xl">
 			<h1 class="text-2xl font-semibold tracking-tight">Scan engines</h1>
 			<p class="mt-1 text-sm text-muted-foreground">
-				Stage selection and settings for a scan{#if stageCount}
-					· {stageCount} stages available{/if}
+				Stage selection and settings for a scan{stageCount
+					? ` · ${stageCount} stages available`
+					: ''}
 			</p>
 		</div>
 		<div class="flex items-center gap-2">
@@ -301,7 +268,7 @@
 				<Upload class="h-4 w-4" />
 				Import
 			</Button>
-			<Button class="gap-2" onclick={() => openNew()}>
+			<Button class="gap-2" onclick={() => (showNewDialog = true)}>
 				<Plus class="h-4 w-4" />
 				New engine
 			</Button>
@@ -340,55 +307,7 @@
 				</div>
 			{/each}
 		</div>
-	{:else if total === 0}
-		<section class="rounded-xl border border-border bg-muted/20 p-6 sm:p-8">
-			<div class="max-w-xl">
-				<h2 class="text-lg font-semibold tracking-tight">No scan engines</h2>
-				<p class="mt-1 text-sm text-muted-foreground">Start from a preset or use New engine.</p>
-			</div>
-			{#if engineCatalogStore.presets.length}
-				<div class="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-					{#each engineCatalogStore.presets as preset (preset.name)}
-						{@const summary = summarize(preset.stages, stages, preset.intensity)}
-						<button
-							type="button"
-							class="group flex flex-col gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:border-foreground/25 hover:bg-card focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-							onclick={() => openNew(preset.name)}
-						>
-							<span class="flex items-start justify-between gap-2">
-								<span class="text-sm font-medium">{preset.title}</span>
-								<ArrowRight
-									size={14}
-									class="mt-0.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
-								/>
-							</span>
-							<span class="text-xs text-muted-foreground">{preset.description}</span>
-							<StageList {stages} config={preset.stages} variant="inline" max={4} class="mt-auto" />
-							<span class="flex items-center justify-between gap-2 text-2xs">
-								<span class="text-muted-foreground tabular-nums">
-									{summary.activeStages} of {summary.totalStages} stages
-								</span>
-								<FootprintMeter
-									footprint={summary.footprint}
-									requestsPerSecond={summary.requestsPerSecond}
-									class="text-2xs"
-								/>
-							</span>
-						</button>
-					{/each}
-				</div>
-			{/if}
-			<p class="mt-5 text-xs text-muted-foreground">
-				<button
-					type="button"
-					class="font-medium text-foreground hover:text-primary"
-					onclick={() => (showImportDialog = true)}
-				>
-					Import a YAML file
-				</button>
-			</p>
-		</section>
-	{:else}
+	{:else if total > 0}
 		<div class="flex flex-wrap items-center gap-2">
 			<InputGroup.Root class="h-9 w-full sm:max-w-xs">
 				<InputGroup.Addon>
@@ -440,7 +359,6 @@
 						onDuplicate={() => handleDuplicate(engine)}
 						onExport={() => handleExport(engine)}
 						onDelete={() => {
-							deleteMode = 'single';
 							engineToDelete = engine;
 							showDeleteDialog = true;
 						}}
@@ -466,31 +384,31 @@
 	presets={engineCatalogStore.presets}
 	{stages}
 	{isCreating}
-	{initialPreset}
 	onOpenChange={(o) => (showNewDialog = o)}
 	onCreate={handleCreate}
 />
 
-<SelectionActionBar selectedCount={selectedIds.size} noun="engine" onClear={clearSelection}>
+<SelectionDeleteBar
+	ids={[...selectedIds]}
+	noun="engine"
+	remove={(id) => scanEnginesApi.delete(id, projectsStore.activeProject?.id ?? '')}
+	onDone={() => {
+		selectedIds.clear();
+		const project = projectsStore.activeProject;
+		if (project) void scanEnginesStore.fetchEngines(project.id);
+	}}
+	onClear={clearSelection}
+>
 	<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={toggleSelectAll}>
 		<ListChecks class="h-3.5 w-3.5 text-muted-foreground" />
 		{selectedIds.size >= selectable ? 'Deselect all' : 'Select all'}
 	</Button>
-	<Button
-		variant="ghost"
-		size="sm"
-		class="gap-2 font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
-		onclick={requestBulkDelete}
-	>
-		<Trash2 class="h-3.5 w-3.5" />
-		Delete
-	</Button>
-</SelectionActionBar>
+</SelectionDeleteBar>
 
 <DeleteConfirmationDialog
 	bind:open={showDeleteDialog}
-	title={deleteTitle}
-	description={deleteDescription}
+	title="Delete engine"
+	description={`Engine ${engineToDelete?.name ?? ''} is removed.`}
 	{isDeleting}
 	onOpenChange={(open) => {
 		showDeleteDialog = open;

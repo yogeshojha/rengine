@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.api.scope import TargetFilterDep
 from app.core.database import get_session
-from app.services.asset_query import QueryScope
 from app.services.interest import InterestError, InterestReadService, catalog
 from app.services.surface_scope import SurfaceScopeService
 from app.services.target_scope import resolve_targets
@@ -28,6 +27,7 @@ from shared.models.interest import (
 )
 from shared.models.scan import Scan
 from shared.models.target import Target
+from shared.services.asset_query import QueryScope
 from shared.services.celery_dispatch import (
     dispatch_interest_evaluation,
     dispatch_interest_refresh,
@@ -102,10 +102,7 @@ async def delete_rule(
     project_id: Annotated[UUID, Query()],
 ) -> None:
     if not await InterestReadService(session).delete(rule_id, project_id):
-        raise HTTPException(
-            status.HTTP_404_NOT_FOUND,
-            "Rule not found. Default rules cannot be deleted.",
-        )
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Rule not found or read-only.")
     dispatch_interest_refresh(str(project_id))
 
 
@@ -222,14 +219,9 @@ async def dismiss_many(
 async def list_dismissals(
     session: SessionDep,
     _user: CurrentUser,
-    target_id: Annotated[UUID | None, Query()] = None,
-    project_id: Annotated[UUID | None, Query()] = None,
+    project_id: Annotated[UUID, Query()],
 ) -> list[dict]:
-    if target_id is None and project_id is None:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Pass target_id or project_id")
-    rows = await InterestReadService(session).dismissals(
-        target_id=target_id, project_id=project_id
-    )
+    rows = await InterestReadService(session).dismissals(project_id=project_id)
     return [
         {
             "id": str(row.id),

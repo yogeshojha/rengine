@@ -32,7 +32,7 @@ def advanced(default: Any = None, **kwargs: Any) -> Any:
 
 
 def wordlist(kind: str, *, title: str, description: str = "") -> Any:
-    """A named list from the library, picked in the UI — never a path off the disk."""
+    """A named list from the library."""
     return Field(
         DEFAULT_WORDLIST[kind],
         max_length=MAX_SLUG_LENGTH,

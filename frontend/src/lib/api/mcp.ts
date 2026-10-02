@@ -45,9 +45,5 @@ export const mcpApi = {
 
 	deleteToken(id: string): Promise<void> {
 		return api.delete<void>(`/mcp/tokens/${id}`);
-	},
-
-	disconnect(tokenId: string): Promise<{ dropped: number }> {
-		return api.post<{ dropped: number }>(`/mcp/sessions/${tokenId}/disconnect`);
 	}
 };

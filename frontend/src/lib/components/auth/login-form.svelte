@@ -10,17 +10,14 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { ROUTES } from '$lib/config/routes';
-	import { auth } from '$lib/stores/auth.svelte';
+	import { auth, NO_SESSION } from '$lib/stores/auth.svelte';
 	import { twoFactorApi } from '$lib/api/twoFactor';
+	import { TOTP_DIGITS } from '$lib/constants';
 
-	import { cn } from '$lib/utils.js';
-	import type { HTMLAttributes } from 'svelte/elements';
 	import Eye from '@lucide/svelte/icons/eye';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
-
-	let { class: className, ...restProps }: HTMLAttributes<HTMLDivElement> = $props();
 
 	let username = $state('');
 	let password = $state('');
@@ -38,7 +35,7 @@
 	let useBackupCode = $state(false);
 
 	let inMfa = $derived(mfaToken !== null);
-	let canVerify = $derived(useBackupCode ? code.trim().length > 0 : code.length === 6);
+	let canVerify = $derived(useBackupCode ? code.trim().length > 0 : code.length === TOTP_DIGITS);
 
 	onMount(() => usernameEl?.focus());
 
@@ -62,7 +59,7 @@
 			return;
 		}
 		if (!result.success) {
-			error = result.error || 'Login failed';
+			error = result.error || 'Not signed in';
 			isLoading = false;
 			password = '';
 			passwordEl?.focus();
@@ -76,6 +73,11 @@
 		try {
 			await twoFactorApi.loginVerify(mfaToken, code.trim());
 			await auth.checkAuth();
+			if (!auth.isAuthenticated) {
+				mfaError = NO_SESSION;
+				code = '';
+				verifying = false;
+			}
 		} catch (err) {
 			mfaError = err instanceof Error ? err.message : 'Invalid code';
 			code = '';
@@ -86,7 +88,7 @@
 	function onCodeChange(v: string) {
 		code = v;
 		mfaError = '';
-		if (v.length === 6) verifyMfa();
+		if (v.length === TOTP_DIGITS) verifyMfa();
 	}
 
 	function backToPassword() {
@@ -104,7 +106,7 @@
 	}
 </script>
 
-<div class={cn('flex w-full flex-col gap-6', className)} {...restProps}>
+<div class="flex w-full flex-col gap-6">
 	<Card.Root>
 		{#if inMfa}
 			<Card.Header class="text-center">
@@ -115,7 +117,7 @@
 				<Card.Description>
 					{useBackupCode
 						? 'Enter one of the backup codes saved at enrollment'
-						: 'Enter the 6-digit code from the authenticator app'}
+						: `Enter the ${TOTP_DIGITS}-digit code from the authenticator app`}
 				</Card.Description>
 			</Card.Header>
 			<Card.Content>
@@ -184,9 +186,7 @@
 							/>
 						</Field>
 						<Field>
-							<div class="flex items-center">
-								<FieldLabel for="password">Password</FieldLabel>
-							</div>
+							<FieldLabel for="password">Password</FieldLabel>
 							<div class="relative">
 								<Input
 									id="password"

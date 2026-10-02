@@ -19,9 +19,7 @@ export interface QueryFieldSpec {
 	values: string[];
 	facet: string | null;
 	operators: string[];
-	free_text: boolean;
 	unit: string | null;
-	dynamic_sub: string | null;
 }
 
 export interface QueryOperatorSpec {
@@ -86,7 +84,6 @@ export interface QueryGroups {
 
 export interface QuerySchema {
 	max_length: number;
-	max_terms: number;
 	noun: string;
 	noun_plural: string;
 	groups: string[];
@@ -115,7 +112,6 @@ export interface MatchEvidence {
 
 export const EMPTY_QUERY_SCHEMA: QuerySchema = {
 	max_length: 2000,
-	max_terms: 8,
 	noun: '',
 	noun_plural: '',
 	groups: [],

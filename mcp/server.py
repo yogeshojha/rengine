@@ -19,6 +19,7 @@ from mcp.errors import (
 from mcp.protocol import Method, Request, failure, success
 from mcp.result import ToolResult, error_content
 from mcp.settings import PROTOCOL_VERSION, SERVER_NAME, SUPPORTED_PROTOCOLS
+from shared.config import APP_VERSION
 from shared.logging import get_logger
 
 logger = get_logger(__name__)
@@ -70,7 +71,7 @@ async def _initialize(request: Request, ctx: ToolContext) -> dict:
     return {
         "protocolVersion": version,
         "capabilities": {"tools": {"listChanged": False}},
-        "serverInfo": {"name": SERVER_NAME, "version": _version()},
+        "serverInfo": {"name": SERVER_NAME, "version": APP_VERSION},
         "instructions": INSTRUCTIONS,
     }
 
@@ -84,12 +85,7 @@ async def _list(_request: Request, ctx: ToolContext) -> dict:
 
 
 def _tools(ctx: ToolContext) -> list[dict]:
-    allowed = ctx.token.capabilities
-    return [
-        spec.descriptor()
-        for spec in registry.registry().values()
-        if spec.capability in allowed
-    ]
+    return [spec.descriptor() for spec in registry.specs_for(ctx.token.capabilities)]
 
 
 async def _call(request: Request, ctx: ToolContext) -> dict:
@@ -101,7 +97,7 @@ async def _call(request: Request, ctx: ToolContext) -> dict:
     raw = request.params.get("arguments") or {}
     if not isinstance(raw, dict):
         msg = "arguments must be an object."
-        raise ToolError(msg)
+        raise InvalidParamsError(msg)
 
     try:
         result = await invoke(ctx, name, raw)
@@ -116,7 +112,7 @@ async def invoke(ctx: ToolContext, name: str, raw: dict) -> ToolResult:
     spec = registry.get(name)
     if spec is None:
         known = ", ".join(sorted(registry.registry()))
-        msg = f"Unknown tool {name!r}. Available: {known}."
+        msg = f"Unknown tool {name[: telemetry.TOOL_NAME_MAX]!r}. Available: {known}."
         await _observe(ctx, name, ok=False, started=started, detail=msg)
         raise ToolError(msg)
 
@@ -226,7 +222,7 @@ async def _observe(
             token_id=ctx.token.id,
             token_name=ctx.token.name,
             client=ctx.client,
-            tool=tool,
+            tool=telemetry.clip(tool, telemetry.TOOL_NAME_MAX) or "",
             ok=ok,
             duration_ms=int((time.monotonic() - started) * 1000),
             detail=detail[:300] if detail else None,
@@ -238,22 +234,7 @@ async def _observe(
             refused=refused,
         )
     )
-    await telemetry.touch(
-        token_id=ctx.token.id,
-        token_name=ctx.token.name,
-        client=ctx.client,
-        capabilities=sorted(ctx.token.capabilities),
-        tool=tool,
-    )
-
-
-def _version() -> str:
-    try:
-        from app.config import settings  # noqa: PLC0415
-
-        return settings.APP_VERSION
-    except Exception:
-        return "3.0.0"
+    await telemetry.touch(token_id=ctx.token.id, client=ctx.client)
 
 
 _HANDLERS: dict[str, Any] = {

@@ -8,22 +8,20 @@ import time
 from collections.abc import Awaitable, Callable, Iterable
 from uuid import UUID, uuid4
 
-import redis
-import redis.asyncio as aioredis
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.config import BaseAppSettings
 from shared.enums.scan import SCAN_TERMINAL_STATUSES
 from shared.logging import get_logger
 from shared.models.asset_query import QueryLeads
 from shared.models.scan import Scan
+from shared.redis import async_client, sync_client
 
 logger = get_logger(__name__)
 
 # bumped when the shape of a cached entry changes
-VERSION = "3"
+VERSION = "5"
 
 TTL_SECONDS = 6 * 3600
 SEARCH_TTL_SECONDS = 600
@@ -38,21 +36,16 @@ _RELEASE = (
 )
 _GLOBAL_KEY = "rev:global"
 
-_client: aioredis.Redis | None = None
-
-
-def _redis() -> aioredis.Redis:
-    global _client  # noqa: PLW0603
-    if _client is None:
-        _client = aioredis.from_url(BaseAppSettings().redis_url, decode_responses=True)
-    return _client
-
-
-_IGNORED = {"q", "page", "size", "limit", "offset", "sort", "direction", "order"}
+_PAGING = {"page", "size", "limit", "offset", "sort", "direction", "order"}
+_IGNORED = {"q", *_PAGING}
 
 
 def facets_of(model) -> str:
     return model.model_dump_json(exclude=_IGNORED)
+
+
+def filter_of(model) -> str:
+    return model.model_dump_json(exclude=_PAGING)
 
 
 def fingerprint(*parts: object) -> str:
@@ -82,14 +75,16 @@ def _revision_key(target_id: UUID | str) -> str:
 
 
 async def _revisions(targets: list[UUID]) -> list[str]:
-    values = await _redis().mget([_GLOBAL_KEY, *(_revision_key(t) for t in targets)])
+    values = await async_client().mget(
+        [_GLOBAL_KEY, *(_revision_key(t) for t in targets)]
+    )
     return [value or "0" for value in values]
 
 
 async def bump(targets: Iterable[UUID]) -> None:
     """Retire every cached aggregate of the targets."""
     try:
-        async with _redis().pipeline() as pipe:
+        async with async_client().pipeline() as pipe:
             for target_id in set(targets):
                 pipe.incr(_revision_key(target_id))
             await pipe.execute()
@@ -97,29 +92,12 @@ async def bump(targets: Iterable[UUID]) -> None:
         logger.debug("aggregate cache revision bump failed", exc_info=True)
 
 
-async def bump_global() -> None:
-    """Retire every cached aggregate."""
+def bump_sync(targets: Iterable[UUID]) -> None:
     try:
-        await _redis().incr(_GLOBAL_KEY)
-    except Exception:
-        logger.debug("aggregate cache revision bump failed", exc_info=True)
-
-
-def bump_sync(targets: Iterable[UUID], redis_url: str | None = None) -> None:
-    try:
-        url = redis_url or BaseAppSettings().redis_url
-        with redis.from_url(url) as client, client.pipeline() as pipe:
+        with sync_client().pipeline() as pipe:
             for target_id in set(targets):
                 pipe.incr(_revision_key(target_id))
             pipe.execute()
-    except Exception:
-        logger.debug("aggregate cache revision bump failed", exc_info=True)
-
-
-def bump_global_sync(redis_url: str | None = None) -> None:
-    try:
-        with redis.from_url(redis_url or BaseAppSettings().redis_url) as client:
-            client.incr(_GLOBAL_KEY)
     except Exception:
         logger.debug("aggregate cache revision bump failed", exc_info=True)
 
@@ -174,7 +152,7 @@ async def cached[T: BaseModel](
 
 async def _read[T: BaseModel](key: str, model: type[T], name: str) -> T | None:
     try:
-        hit = await _redis().get(key)
+        hit = await async_client().get(key)
     except Exception:
         logger.debug("aggregate cache unavailable on read", name=name, exc_info=True)
         return None
@@ -183,7 +161,7 @@ async def _read[T: BaseModel](key: str, model: type[T], name: str) -> T | None:
 
 async def _write(key: str, value: BaseModel, ttl: int, name: str) -> None:
     try:
-        await _redis().set(key, value.model_dump_json(), ex=ttl)
+        await async_client().set(key, value.model_dump_json(), ex=ttl)
     except Exception:
         logger.debug("aggregate cache unavailable on write", name=name, exc_info=True)
 
@@ -192,7 +170,7 @@ async def _claim(key: str, name: str) -> str | None:
     """Whether this request builds the value; None when another one already is."""
     token = uuid4().hex
     try:
-        claimed = await _redis().set(
+        claimed = await async_client().set(
             f"building:{key}", token, nx=True, ex=BUILD_LOCK_SECONDS
         )
     except Exception:
@@ -203,7 +181,7 @@ async def _claim(key: str, name: str) -> str | None:
 
 async def _release(key: str, token: str) -> None:
     try:
-        await _redis().eval(_RELEASE, 1, f"building:{key}", token)
+        await async_client().eval(_RELEASE, 1, f"building:{key}", token)
     except Exception:
         logger.debug("aggregate cache build lock not released", exc_info=True)
 
@@ -217,7 +195,7 @@ async def _await_build[T: BaseModel](key: str, model: type[T], name: str) -> T |
         if hit is not None:
             return hit
         try:
-            if not await _redis().exists(f"building:{key}"):
+            if not await async_client().exists(f"building:{key}"):
                 return None
         except Exception:
             return None

@@ -61,4 +61,7 @@ def test_the_check_applies_to_every_response():
         body='<a href="http://10.1.15.10/">Gate pass</a>',
     )
     assert C.INTERNAL_ADDRESS.value in found.checked
-    assert found.evidence[C.INTERNAL_ADDRESS.value] == "page: 10.1.15.10"
+    evidence = next(
+        v.evidence for v in found.verdicts if v.key == C.INTERNAL_ADDRESS and v.failed
+    )
+    assert evidence == "page: 10.1.15.10"

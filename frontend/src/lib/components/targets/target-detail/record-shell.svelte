@@ -7,7 +7,7 @@
 	import { Spinner } from '$lib/components/ui/spinner';
 	import Hint from '$lib/components/hint.svelte';
 	import { TaskStatus } from '$lib/types/task-status';
-	import { relativeTime } from '$lib/utilities/dates';
+	import { formatDateTime, relativeTime } from '$lib/utilities/dates';
 
 	interface Props {
 		name: string;
@@ -48,7 +48,7 @@
 		{/if}
 		<div class="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
 			{#if queriedAt && !pending}
-				<Hint text="Last refreshed {new Date(queriedAt).toLocaleString()}">
+				<Hint text="Last refreshed {formatDateTime(queriedAt)}">
 					{#snippet child(props)}
 						<span {...props} class="tabular-nums">queried {relativeTime(queriedAt)}</span>
 					{/snippet}

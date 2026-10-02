@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getInitials, plural, pluralWord } from './strings';
+import { cappedCount, cappedPlural, getInitials, plural, pluralWord, withArticle } from './strings';
 
 describe('plural', () => {
 	it('agrees with the count', () => {
@@ -24,9 +24,28 @@ describe('pluralWord', () => {
 	});
 });
 
+describe('withArticle', () => {
+	it('picks the article from the first letter', () => {
+		expect(withArticle('web asset')).toBe('a web asset');
+		expect(withArticle('address')).toBe('an address');
+		expect(withArticle('endpoint')).toBe('an endpoint');
+	});
+});
+
 describe('getInitials', () => {
 	it('takes two letters at most', () => {
 		expect(getInitials('ada lovelace')).toBe('AL');
 		expect(getInitials('grace brewster murray hopper')).toBe('GB');
+	});
+});
+
+describe('cappedCount', () => {
+	it('marks a count that stopped at its cap', () => {
+		expect(cappedCount(10000, true)).toBe('10,000+');
+		expect(cappedCount(143)).toBe('143');
+	});
+	it('keeps the plural noun on a capped one', () => {
+		expect(cappedPlural(1, false, 'web asset')).toBe('1 web asset');
+		expect(cappedPlural(10000, true, 'web asset')).toBe('10,000+ web assets');
 	});
 });

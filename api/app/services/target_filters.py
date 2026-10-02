@@ -5,9 +5,10 @@ from uuid import UUID
 from sqlalchemy import Select, and_, case, exists, func, or_, select
 from sqlalchemy.sql.elements import ColumnElement
 
+from shared.definitions.dashboard import EXPIRING_DAYS, STALE_DAYS
 from shared.definitions.surface import SurfaceDimension
 from shared.definitions.vulnerabilities import SUPPRESSED_STATES, Severity
-from shared.enums.target import TargetType
+from shared.enums.target import HOSTNAME_TARGET_TYPES, NETWORK_TARGET_TYPES, TargetType
 from shared.enums.task_status import TaskStatus
 from shared.models import Target
 from shared.models.scan import Scan
@@ -33,11 +34,6 @@ SignalName = Literal[
 SortKey = Literal["updated", "created", "name", "type", "expiry", "enrichment"]
 SortDir = Literal["asc", "desc"]
 
-EXPIRY_WINDOW_DAYS = 30
-STALE_DAYS = 30
-
-_DNS_TYPES = (TargetType.DOMAIN, TargetType.URL)
-_BGP_TYPES = (TargetType.IP, TargetType.IP_RANGE, TargetType.ASN)
 _AWAITING_STATUSES = (TaskStatus.PENDING, TaskStatus.QUERYING)
 
 
@@ -48,15 +44,15 @@ def with_whois_join(query: Select) -> Select:
 
 
 def _dns_applies() -> ColumnElement[bool]:
-    return Target.target_type.in_(_DNS_TYPES)
+    return Target.target_type.in_(tuple(HOSTNAME_TARGET_TYPES))
 
 
 def _bgp_applies() -> ColumnElement[bool]:
-    return Target.target_type.in_(_BGP_TYPES)
+    return Target.target_type.in_(tuple(NETWORK_TARGET_TYPES))
 
 
 def expiring_expr() -> ColumnElement[bool]:
-    cutoff = utc_now() + timedelta(days=EXPIRY_WINDOW_DAYS)
+    cutoff = utc_now() + timedelta(days=EXPIRING_DAYS)
     return and_(
         WhoisRecord.expiration_date.is_not(None),
         WhoisRecord.expiration_date <= cutoff,
@@ -222,11 +218,11 @@ def apply_filters(
         query = query.where(Target.target_type == target_type)
 
     if search and search.strip():
-        pattern = f"%{search.strip()}%"
+        term = search.strip()
         query = query.where(
             or_(
-                Target.target_value.ilike(pattern),
-                Target.display_name.ilike(pattern),
+                Target.target_value.icontains(term, autoescape=True),
+                Target.display_name.icontains(term, autoescape=True),
             )
         )
 
@@ -257,34 +253,11 @@ def apply_filters(
 
 
 def signal_count_columns() -> list:
-    return [
-        func.count().label("total"),
-        func.coalesce(func.sum(case((expiring_expr(), 1), else_=0)), 0).label(
-            "expiring"
-        ),
-        func.coalesce(func.sum(case((attention_expr(), 1), else_=0)), 0).label(
-            "attention"
-        ),
-        func.coalesce(func.sum(case((awaiting_expr(), 1), else_=0)), 0).label(
-            "awaiting"
-        ),
-        func.coalesce(func.sum(case((enriched_expr(), 1), else_=0)), 0).label(
-            "enriched"
-        ),
-        func.coalesce(func.sum(case((monitored_expr(), 1), else_=0)), 0).label(
-            "monitored"
-        ),
-        func.coalesce(func.sum(case((unscanned_expr(), 1), else_=0)), 0).label(
-            "unscanned"
-        ),
-        func.coalesce(func.sum(case((stale_expr(), 1), else_=0)), 0).label("stale"),
-        func.coalesce(
-            func.sum(case((severity_expr(Severity.CRITICAL.value), 1), else_=0)), 0
-        ).label("critical"),
-        func.coalesce(
-            func.sum(case((severity_expr(Severity.HIGH.value), 1), else_=0)), 0
-        ).label("high"),
-        func.coalesce(
-            func.sum(case((severity_expr(Severity.MEDIUM.value), 1), else_=0)), 0
-        ).label("medium"),
+    return [func.count().label("total")] + [
+        func.coalesce(func.sum(case((expr(), 1), else_=0)), 0).label(name)
+        for name, expr in _SIGNAL_EXPR.items()
     ]
+
+
+def empty_signal_counts() -> dict[str, int]:
+    return {"total": 0} | dict.fromkeys(_SIGNAL_EXPR, 0)

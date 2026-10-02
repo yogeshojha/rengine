@@ -8,11 +8,10 @@
 
 	interface Props {
 		recheck: Recheck | null;
-		onclick?: () => void;
-		class?: string;
+		onclick: () => void;
 	}
 
-	let { recheck, onclick, class: className }: Props = $props();
+	let { recheck, onclick }: Props = $props();
 
 	let tone = $derived(recheck ? recheckTone(recheck) : 'quiet');
 	let live = $derived(!!recheck && isRecheckLive(recheck));
@@ -41,13 +40,11 @@
 				type="button"
 				onclick={(e) => {
 					e.stopPropagation();
-					onclick?.();
+					onclick();
 				}}
 				class={cn(
-					'inline-flex shrink-0 items-center gap-1 rounded-full border px-[7px] py-px text-2xs font-medium whitespace-nowrap transition-colors',
-					TONES[tone],
-					onclick && 'hover:brightness-95',
-					className
+					'inline-flex shrink-0 items-center gap-1 rounded-full border px-[7px] py-px text-2xs font-medium whitespace-nowrap transition-colors hover:brightness-95',
+					TONES[tone]
 				)}
 			>
 				<RefreshCw class={cn('size-2.5', live && 'animate-spin')} />

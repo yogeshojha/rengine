@@ -171,7 +171,7 @@
 				<div class="flex flex-wrap gap-1">
 					<Badge variant="outline" class="font-normal">{s.protocol.toUpperCase()}</Badge>
 					{#if s.is_new}
-						<Badge variant="info" class="font-normal">New this scan</Badge>
+						<Badge variant="info" class="font-normal">New</Badge>
 					{/if}
 					{#if s.is_http}
 						<Badge variant="secondary" class="font-normal">HTTP</Badge>
@@ -224,7 +224,7 @@
 										<span class="text-sm">{s.description}</span>
 										{#if s.registered}
 											<span class="text-xs text-muted-foreground">
-												IANA registration for port {s.port}. Not confirmed by this scan.
+												IANA registration for port {s.port}. The running service is not identified.
 											</span>
 										{/if}
 									</dd>
@@ -256,7 +256,7 @@
 							{/if}
 							<div class={SHEET_ROW}>
 								<dt class={SHEET_DT}>Evidence</dt>
-								<dd class="flex flex-col gap-1">
+								<dd class="flex flex-col items-start gap-1">
 									{@render chip(
 										PORT_SOURCE_LABELS[s.source] ?? s.source,
 										exactToken('source', s.source),
@@ -322,7 +322,7 @@
 								{/if}
 								{#if s.web_count > 1}
 									<div class={SHEET_ROW}>
-										<dt class={SHEET_DT}>Hostnames served</dt>
+										<dt class={SHEET_DT}>Web assets</dt>
 										<dd class="text-sm tabular-nums">{s.web_count}</dd>
 									</div>
 								{/if}
@@ -391,7 +391,7 @@
 					</section>
 
 					<section class="flex flex-col gap-2">
-						{@render heading(Globe, 'Hosts on this address')}
+						{@render heading(Globe, 'Web assets on this address')}
 						{#if s.hosts.length}
 							<Item.Group class="rounded-lg border">
 								{#each s.hosts as host (host)}

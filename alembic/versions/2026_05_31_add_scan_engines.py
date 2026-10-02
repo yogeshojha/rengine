@@ -1,7 +1,7 @@
 """add scan engines
 
 Revision ID: a1b2c3d4e5f6
-Revises: d55cda538e83
+Revises: 4c5deccf464f
 Create Date: 2026-05-31 00:00:00.000000+00:00
 
 """
@@ -13,7 +13,6 @@ import sqlmodel
 
 from alembic import op
 
-# revision identifiers, used by Alembic.
 revision: str = "a1b2c3d4e5f6"
 down_revision: str | None = "4c5deccf464f"
 branch_labels: str | Sequence[str] | None = None
@@ -58,5 +57,4 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_index(op.f("ix_scan_engines_project_id"), table_name="scan_engines")
-    op.drop_index(op.f("ix_scan_engines_id"), table_name="scan_engines")
     op.drop_table("scan_engines")

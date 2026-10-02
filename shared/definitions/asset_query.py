@@ -51,7 +51,7 @@ from shared.definitions.software import (
     VERSION_SOURCE_LABELS,
 )
 from shared.definitions.surface import SURFACE_NOUN, SurfaceDimension
-from shared.definitions.threat_intel import SIGNAL_ORDER
+from shared.definitions.threat_intel import BANDS_BY_KEY, SIGNAL_ORDER
 from shared.definitions.vulnerabilities import (
     PROTOCOLS,
     SCANNER_LABELS,
@@ -66,6 +66,7 @@ MAX_QUERY_NODES = 40
 MAX_FREE_TERMS = 8
 MAX_NUMBER = 2_147_483_647
 COUNT_CAP = 10_000
+ALL_TAB = "all"
 SNIPPET_RADIUS = 70
 SNIPPET_LENGTH = 190
 
@@ -168,8 +169,8 @@ STATUS_CLASSES: tuple[str, ...] = ("2xx", "3xx", "4xx", "5xx", "none")
 
 FLAGS: dict[str, str] = {
     "live": "Responded with 2xx or 3xx",
-    "web": "Answered on HTTP at all",
-    "new": "Absent from the previous scan of this target",
+    "web": "Answered on HTTP with any status",
+    "new": "Absent from every earlier scan of this target",
     "resolved": "Resolves to at least one IP",
     "auth": "Login wall or 401/403",
     "cdn": "Served through a CDN",
@@ -192,7 +193,7 @@ FIELDS: tuple[QueryField, ...] = (
         name="target",
         type=FieldType.STRING,
         group="Scope",
-        description="Target this host belongs to.",
+        description="Target this web asset belongs to.",
         example="target:acme.com",
         aliases=("scope",),
         facet="target",
@@ -228,7 +229,7 @@ FIELDS: tuple[QueryField, ...] = (
         name="cname",
         type=FieldType.STRING,
         group="Host",
-        description="CNAME target the host points at.",
+        description="CNAME target the hostname points at.",
         example="cname:s3.amazonaws.com",
         free_text=True,
         evidence="cname",
@@ -237,8 +238,8 @@ FIELDS: tuple[QueryField, ...] = (
         name="source",
         type=FieldType.ENUM,
         group="Host",
-        description="Tool or feed that discovered the host.",
-        example="source:crtsh",
+        description="Tool or feed that discovered the web asset.",
+        example="source:ctfr",
         facet="source",
         free_text=True,
         evidence="source",
@@ -247,7 +248,7 @@ FIELDS: tuple[QueryField, ...] = (
         name="discovered",
         type=FieldType.DATE,
         group="Host",
-        description="When the host was first seen in this scan.",
+        description="When the web asset was recorded.",
         example="discovered:<7d",
         aliases=("found", "seen"),
     ),
@@ -318,7 +319,7 @@ FIELDS: tuple[QueryField, ...] = (
         name="paths",
         type=FieldType.NUMBER,
         group="HTTP",
-        description="Number of endpoints discovered on the host.",
+        description="Number of endpoints discovered on the web asset.",
         example="paths:>50",
         aliases=("endpoints",),
     ),
@@ -362,7 +363,7 @@ FIELDS: tuple[QueryField, ...] = (
         type=FieldType.STRING,
         group="HTTP",
         description=(
-            "Perceptual hash of the rendered page. Matches every host whose "
+            "Perceptual hash of the rendered page. Matches every web asset whose "
             "screenshot renders the same way."
         ),
         example="screenshot:0030242430d41010",
@@ -425,7 +426,7 @@ FIELDS: tuple[QueryField, ...] = (
         name="cdn",
         type=FieldType.STRING,
         group="Network",
-        description="CDN in front of the host. yes or no filters on presence.",
+        description="CDN in front of the web asset. yes or no filters on presence.",
         example="cdn:cloudflare",
         free_text=True,
         evidence="cdn",
@@ -434,7 +435,7 @@ FIELDS: tuple[QueryField, ...] = (
         name="waf",
         type=FieldType.STRING,
         group="Network",
-        description="WAF fingerprinted on the host. yes or no filters on presence.",
+        description="WAF fingerprinted on the web asset. yes or no filters on presence.",
         example="waf:no",
         free_text=True,
         evidence="waf",
@@ -459,7 +460,7 @@ FIELDS: tuple[QueryField, ...] = (
         type=FieldType.ENUM,
         group="Hygiene",
         description=(
-            "A hardening check the host fails on any of its responses. "
+            "A hardening check the web asset fails on any of its responses. "
             "Also takes warning, info, any or none."
         ),
         example="hygiene:cookie_no_secure",
@@ -472,7 +473,7 @@ FIELDS: tuple[QueryField, ...] = (
         type=FieldType.ENUM,
         group="Hygiene",
         description=(
-            "A domain posture check the host's zone fails: SPF, DMARC, DKIM, "
+            "A domain posture check the web asset's zone fails: SPF, DMARC, DKIM, "
             "MTA-STS, DNSSEC or CAA. Also takes warning, info, any or none."
         ),
         example="posture:dmarc_missing",
@@ -485,7 +486,7 @@ FIELDS: tuple[QueryField, ...] = (
         type=FieldType.ENUM,
         group="AI",
         description=(
-            "AI service identified on any of the host's web assets. "
+            "AI service identified on any port of the web asset. "
             "Takes a service, a category, yes or no."
         ),
         example="ai:ollama",
@@ -496,7 +497,7 @@ FIELDS: tuple[QueryField, ...] = (
         name=AI_MODEL_FIELD,
         type=FieldType.STRING,
         group="AI",
-        description="Model an AI service on the host listed. yes or no filters on presence.",
+        description="Model an AI service on the web asset listed. yes or no filters on presence.",
         example="ai.model~llama",
     ),
     QueryField(
@@ -589,7 +590,7 @@ FIELDS: tuple[QueryField, ...] = (
         name="is",
         type=FieldType.FLAG,
         group="Flags",
-        description="Property of the host.",
+        description="Property of the web asset.",
         example="is:live",
         aliases=("has",),
         values=tuple(FLAGS),
@@ -598,7 +599,7 @@ FIELDS: tuple[QueryField, ...] = (
         name="vuln",
         type=FieldType.ENUM,
         group="Findings",
-        description="Severity of a finding recorded on this host.",
+        description="Severity of a finding recorded on this web asset.",
         example="vuln:critical",
         aliases=("finding", "severity"),
         values=SEVERITY_ORDER,
@@ -608,14 +609,14 @@ FIELDS: tuple[QueryField, ...] = (
         name="cve",
         type=FieldType.STRING,
         group="Findings",
-        description="Published vulnerability identifier reported on this host.",
+        description="Published vulnerability identifier reported on this web asset.",
         example="cve:CVE-2021-44228",
     ),
     QueryField(
         name="exposure",
         type=FieldType.ENUM,
         group="Findings",
-        description="The reason this host was flagged as an exposure.",
+        description="The reason this web asset was flagged as an exposure.",
         example="exposure:admin_interface",
         aliases=("interest", "worth"),
         values=KIND_KEYS,
@@ -634,7 +635,7 @@ FIELDS: tuple[QueryField, ...] = (
         name="exposure_band",
         type=FieldType.ENUM,
         group="Findings",
-        description="Strength of the exposure on this host.",
+        description="Strength of the exposure on this web asset.",
         example="exposure_band:critical",
         aliases=("interest_band", "band"),
         values=BAND_ORDER,
@@ -653,7 +654,6 @@ EVIDENCE_LABELS: dict[str, str] = {
     "content_type": "Content type",
     "redirect": "Redirect",
     "favicon": "Favicon",
-    "screenshot": "Rendered page",
     "body": "Response body",
     "header": "Response headers",
     "ip": "IP",
@@ -788,7 +788,7 @@ class QueryExample:
 EXAMPLES: tuple[QueryExample, ...] = (
     QueryExample(
         query="is:resolved and not is:web",
-        description="Resolving hosts with no HTTP service",
+        description="Resolving hostnames with no HTTP service",
         group="Takeover risk",
         generic=True,
     ),
@@ -817,7 +817,7 @@ EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="is:wildcard",
-        description="Hosts matched only by a wildcard record",
+        description="Hostnames matched only by a wildcard record",
         group="Takeover risk",
     ),
     QueryExample(
@@ -828,11 +828,6 @@ EXAMPLES: tuple[QueryExample, ...] = (
     QueryExample(
         query="port:[3306,5432,27017,6379,9200,11211,5984]",
         description="Database ports reachable from the internet",
-        group="Exposed services",
-    ),
-    QueryExample(
-        query="port:[3306,5432,1433,27017,6379,9200,11211,5984] and hosts:>10",
-        description="Database ports on addresses shared by more than ten hostnames",
         group="Exposed services",
     ),
     QueryExample(
@@ -901,7 +896,7 @@ EXAMPLES: tuple[QueryExample, ...] = (
         query=(
             "host:[staging,dev,test,uat,qa,sandbox,preprod] and is:live and not is:auth"
         ),
-        description="Non-production hosts served without authentication",
+        description="Non-production web assets served without authentication",
         group="Non-production",
     ),
     QueryExample(
@@ -916,7 +911,7 @@ EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="is:auth",
-        description="Hosts requiring authentication",
+        description="Web assets requiring authentication",
         group="Access control",
     ),
     QueryExample(
@@ -926,7 +921,7 @@ EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="cert:expired and is:live",
-        description="Reachable hosts serving an expired certificate",
+        description="Reachable web assets serving an expired certificate",
         group="Certificates",
     ),
     QueryExample(
@@ -957,7 +952,7 @@ EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="is:live and not cdn:yes and waf:no",
-        description="Hosts served without CDN or WAF",
+        description="Web assets served without CDN or WAF",
         group="Origin exposure",
         generic=True,
     ),
@@ -973,7 +968,7 @@ EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="hygiene:warning",
-        description="Hosts failing a warning-level hardening check",
+        description="Web assets failing a warning-level hardening check",
         group="Hygiene",
         generic=True,
     ),
@@ -1014,33 +1009,33 @@ EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="hygiene:none and is:live",
-        description="Reachable hosts passing every hardening check",
+        description="Reachable web assets passing every hardening check",
         group="Hygiene",
     ),
     QueryExample(
         query="is:new and (status:2xx or status:3xx)",
-        description="Newly reachable since the previous scan",
+        description="Reachable web assets absent from every earlier scan",
         group="Change",
         generic=True,
     ),
     QueryExample(
         query="is:new and is:auth",
-        description="New authenticated interfaces since the previous scan",
+        description="Authenticated interfaces absent from every earlier scan",
         group="Change",
     ),
     QueryExample(
         query="is:new and cert:expired",
-        description="New hosts serving an expired certificate",
+        description="New web assets serving an expired certificate",
         group="Change",
     ),
     QueryExample(
         query="is:new",
-        description="Hosts absent from the previous scan",
+        description="Web assets absent from every earlier scan",
         group="Change",
     ),
     QueryExample(
         query="discovered:<7d and is:live",
-        description="Reachable hosts discovered in the last 7 days",
+        description="Reachable web assets discovered in the last 7 days",
         group="Change",
     ),
     QueryExample(
@@ -1077,7 +1072,7 @@ EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="is:exposed and is:new",
-        description="Flagged for the first time by this scan",
+        description="New web assets flagged as an exposure",
         group="Exposures",
     ),
     QueryExample(
@@ -1199,6 +1194,14 @@ IP_FIELDS: tuple[QueryField, ...] = (
         example="ptr:.internal",
         aliases=("reverse", "rdns"),
         free_text=True,
+    ),
+    QueryField(
+        name="seen",
+        type=FieldType.DATE,
+        group="Address",
+        description="When these scans first recorded the address.",
+        example="seen:<7d",
+        aliases=("discovered",),
     ),
     QueryField(
         name="asn",
@@ -1377,13 +1380,13 @@ IP_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="is:new",
-        description="Addresses not recorded by the previous scan",
+        description="Addresses absent from every earlier scan",
         group="Change",
         generic=True,
     ),
     QueryExample(
         query="is:new and is:sensitive",
-        description="Administrative ports on addresses that are new this scan",
+        description="Administrative ports on new addresses",
         group="Change",
     ),
     QueryExample(
@@ -1489,8 +1492,8 @@ SERVICE_FLAGS: dict[str, str] = {
     "tls": "Negotiates TLS",
     "sensitive": "An administrative or datastore port",
     "named": "Software identified",
-    "passive": "Reported by an internet-wide scanner, not confirmed by this scan",
-    "confirmed": "Observed directly by this scan",
+    "passive": "Reported by an internet-wide scanner, not observed directly",
+    "confirmed": "Observed directly",
     "cdn": "On a CDN-fronted address",
     "hosted": "A hostname resolves to the address",
     "private": "In a private address range",
@@ -1499,8 +1502,6 @@ SERVICE_FLAGS: dict[str, str] = {
     "vulnerable": "A vulnerability scan reported a finding on it",
     "kev": "A known-exploited weakness was found on it",
 }
-
-SERVICE_EXPOSURE: dict[str, str] = dict(SERVICE_CLASS_LABELS)
 
 SERVICE_FIELDS: tuple[QueryField, ...] = (
     QueryField(
@@ -1521,6 +1522,14 @@ SERVICE_FIELDS: tuple[QueryField, ...] = (
         facet="port",
     ),
     QueryField(
+        name="seen",
+        type=FieldType.DATE,
+        group="Service",
+        description="When the service was recorded.",
+        example="seen:<7d",
+        aliases=("discovered",),
+    ),
+    QueryField(
         name="service",
         type=FieldType.STRING,
         group="Service",
@@ -1536,7 +1545,7 @@ SERVICE_FIELDS: tuple[QueryField, ...] = (
         description="Service class.",
         example="class:database",
         aliases=("kind",),
-        values=tuple(SERVICE_EXPOSURE),
+        values=tuple(SERVICE_CLASS_LABELS),
         facet="class",
     ),
     QueryField(
@@ -1769,13 +1778,13 @@ SERVICE_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="is:new",
-        description="Ports that were closed at the previous scan",
+        description="Ports not open in any earlier scan",
         group="Change",
         generic=True,
     ),
     QueryExample(
         query="is:new and is:sensitive",
-        description="Administrative ports opened since the previous scan",
+        description="Administrative ports not open in any earlier scan",
         group="Change",
     ),
     QueryExample(
@@ -1916,7 +1925,6 @@ VULN_FIELDS: tuple[QueryField, ...] = (
         example="name:log4j",
         aliases=("title",),
         free_text=True,
-        evidence="name",
     ),
     QueryField(
         name="template",
@@ -1927,7 +1935,6 @@ VULN_FIELDS: tuple[QueryField, ...] = (
         aliases=("check", "rule", "id"),
         facet="template",
         free_text=True,
-        evidence="template",
     ),
     QueryField(
         name="severity",
@@ -1981,7 +1988,6 @@ VULN_FIELDS: tuple[QueryField, ...] = (
         description="Value the check pulled out of the response.",
         example="extracted:admin",
         free_text=True,
-        evidence="extracted",
     ),
     QueryField(
         name="author",
@@ -2023,7 +2029,6 @@ VULN_FIELDS: tuple[QueryField, ...] = (
         example="cve:CVE-2021-44228",
         facet="cve",
         free_text=True,
-        evidence="cve",
     ),
     QueryField(
         name="cwe",
@@ -2055,7 +2060,6 @@ VULN_FIELDS: tuple[QueryField, ...] = (
         aliases=("name.host", "subdomain"),
         facet="host",
         free_text=True,
-        evidence="host",
     ),
     QueryField(
         name="location",
@@ -2065,7 +2069,6 @@ VULN_FIELDS: tuple[QueryField, ...] = (
         example="location:/actuator",
         aliases=("matched", "url", "path"),
         free_text=True,
-        evidence="location",
     ),
     QueryField(
         name="ip",
@@ -2086,7 +2089,7 @@ VULN_FIELDS: tuple[QueryField, ...] = (
         name="status",
         type=FieldType.NUMBER,
         group="Asset",
-        description="HTTP status the asset returned to this scan.",
+        description="HTTP status the asset returned.",
         example="status:200",
     ),
     QueryField(
@@ -2140,7 +2143,7 @@ VULN_FIELDS: tuple[QueryField, ...] = (
         name="seen",
         type=FieldType.DATE,
         group="Review",
-        description="When this scan recorded the finding.",
+        description="When the finding was recorded.",
         example="seen:<24h",
         aliases=("discovered", "age"),
     ),
@@ -2273,13 +2276,13 @@ VULN_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="is:new",
-        description="Findings absent from the previous scan of this target",
+        description="Findings absent from every earlier scan of this target",
         group="Change",
         generic=True,
     ),
     QueryExample(
         query="is:new and severity:[critical,high]",
-        description="Severe findings that appeared since the previous scan",
+        description="Severe findings absent from every earlier scan",
         group="Change",
     ),
     QueryExample(
@@ -2387,9 +2390,9 @@ ENDPOINT_GROUPS: tuple[str, ...] = (
 )
 
 ENDPOINT_FLAGS: dict[str, str] = {
-    "new": "Absent from the previous scan of this target",
+    "new": "Absent from every earlier scan of this target",
     "param": "Accepts at least one query parameter",
-    "probed": "Requested by this scan",
+    "probed": "Requested directly",
     "live": "Answered with 2xx or 3xx",
     "redirect": "Answered with a redirect",
     "auth": "Answered 401 or 403",
@@ -2400,7 +2403,7 @@ ENDPOINT_FLAGS: dict[str, str] = {
     "interesting": "Matched an interest pattern in the path or a parameter",
     "sensitive": "A credential, backup or version control path",
     "orphan": "Not linked from any crawled page",
-    "archive-only": "Recorded by an archive and unreachable in this scan",
+    "archive-only": "Recorded by an archive and unreachable when requested",
     "linked": "Reached from a page on the live site",
     "crawled": "Reached by the crawler",
     "root": "The site root",
@@ -2426,7 +2429,6 @@ ENDPOINT_FIELDS: tuple[QueryField, ...] = (
         description="Full URL.",
         example="url:/wp-admin",
         free_text=True,
-        evidence="URL",
     ),
     QueryField(
         name="path",
@@ -2435,7 +2437,6 @@ ENDPOINT_FIELDS: tuple[QueryField, ...] = (
         description="Path, without the host or the query string.",
         example="path:/api/v1/users",
         free_text=True,
-        evidence="Path",
     ),
     QueryField(
         name="dir",
@@ -2471,7 +2472,6 @@ ENDPOINT_FIELDS: tuple[QueryField, ...] = (
         example="host:api.example.com",
         facet="host",
         free_text=True,
-        evidence="Host",
     ),
     QueryField(
         name="port",
@@ -2553,7 +2553,6 @@ ENDPOINT_FIELDS: tuple[QueryField, ...] = (
         description="Page title.",
         example='title:"index of"',
         free_text=True,
-        evidence="Title",
     ),
     QueryField(
         name="length",
@@ -2607,7 +2606,7 @@ ENDPOINT_FIELDS: tuple[QueryField, ...] = (
         name="seen",
         type=FieldType.DATE,
         group="Evidence",
-        description="When this scan recorded the endpoint.",
+        description="When the endpoint was recorded.",
         example="seen:<7d",
     ),
     QueryField(
@@ -2738,7 +2737,7 @@ ENDPOINT_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="is:archive-only",
-        description="Recorded by an archive and unreachable in this scan",
+        description="Recorded by an archive and unreachable when requested",
         group="Hidden surface",
     ),
     QueryExample(
@@ -2753,13 +2752,13 @@ ENDPOINT_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="is:new",
-        description="Endpoints absent from the previous scan",
+        description="Endpoints absent from every earlier scan",
         group="Change",
         generic=True,
     ),
     QueryExample(
         query="is:new and is:param",
-        description="New input surface since the last scan",
+        description="Input surface absent from every earlier scan",
         group="Change",
     ),
     QueryExample(
@@ -2780,7 +2779,7 @@ ENDPOINT_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="not is:probed",
-        description="Endpoints not requested by this scan",
+        description="Endpoints not requested directly",
         group="Evidence",
         generic=True,
     ),
@@ -2808,11 +2807,6 @@ ENDPOINT_EXAMPLES: tuple[QueryExample, ...] = (
     QueryExample(
         query="status:500..599",
         description="Endpoints answering with a server error",
-        group="Hygiene",
-    ),
-    QueryExample(
-        query="is:redirect and not is:live",
-        description="Redirects ending in an error",
         group="Hygiene",
     ),
     QueryExample(
@@ -2852,16 +2846,16 @@ SOFTWARE_FLAGS: dict[str, str] = {
     "kev": "Listed in CISA KEV",
     "ransomware": "Listed in CISA ransomware campaigns",
     "overdue": "Past the CISA remediation deadline",
-    "likely": "EPSS score of 0.088 or above",
+    "likely": f"EPSS score of {BANDS_BY_KEY['likely'].floor} or above",
     "firm": "Every part of the match is verified",
-    "conditional": "NVD names a further component this scan did not identify",
+    "conditional": "NVD names a further component not identified on the asset",
     "backport": "A distribution build. Fixes may land without a version change",
     "fingerprinted": "Version read from the page body",
     "stated": "Version stated in a server header",
     "web": "Inferred from a web asset",
     "service": "Inferred from a service banner",
     "corroborated": "A check at the same host names the same CVE",
-    "fixable": "A newer release in this scan is not affected",
+    "fixable": "A newer release on the same target is not affected",
 }
 
 SOFTWARE_FIELDS: tuple[QueryField, ...] = (
@@ -2872,7 +2866,6 @@ SOFTWARE_FIELDS: tuple[QueryField, ...] = (
         description="Published identifier of the weakness.",
         example="cve:CVE-2021-23017",
         free_text=True,
-        evidence="cve",
     ),
     QueryField(
         name="software",
@@ -2882,7 +2875,6 @@ SOFTWARE_FIELDS: tuple[QueryField, ...] = (
         example="software:nginx",
         aliases=("name",),
         free_text=True,
-        evidence="software",
     ),
     QueryField(
         name="product",
@@ -2957,7 +2949,7 @@ SOFTWARE_FIELDS: tuple[QueryField, ...] = (
         name="caveat",
         type=FieldType.ENUM,
         group="Confidence",
-        description="A part of the match this scan did not verify.",
+        description="A part of the match that is not verified.",
         example="caveat:backport",
         values=tuple(CAVEAT_KEYS),
         facet="caveat",
@@ -2985,7 +2977,6 @@ SOFTWARE_FIELDS: tuple[QueryField, ...] = (
         description="Hostname running the software.",
         example="host:www.example.com",
         free_text=True,
-        evidence="host",
     ),
     QueryField(
         name="ip",
@@ -3005,7 +2996,7 @@ SOFTWARE_FIELDS: tuple[QueryField, ...] = (
         name="seen",
         type=FieldType.DATE,
         group="Asset",
-        description="When this scan inferred it.",
+        description="When the CVE was inferred.",
         example="seen:<24h",
         aliases=("discovered", "age"),
     ),
@@ -3087,19 +3078,19 @@ SOFTWARE_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="is:kev and is:fixable",
-        description="Known exploited CVEs with an unaffected release in this scan",
+        description="Known exploited CVEs with an unaffected release on the same target",
         group="Priority",
         generic=True,
     ),
     QueryExample(
         query="is:new",
-        description="Matches absent from the previous scan of this target",
+        description="Matches absent from every earlier scan of this target",
         group="Change",
         generic=True,
     ),
     QueryExample(
         query="is:new and severity:[critical,high]",
-        description="Severe matches that appeared since the previous scan",
+        description="Severe matches absent from every earlier scan",
         group="Change",
     ),
     QueryExample(
@@ -3115,7 +3106,7 @@ SOFTWARE_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="software:wordpress and is:new",
-        description="WordPress matches absent from the previous scan",
+        description="WordPress matches absent from every earlier scan",
         group="Software",
     ),
     QueryExample(
@@ -3169,7 +3160,7 @@ SECRET_FLAGS: dict[str, str] = {
     "public": "A value meant to be in the page",
     "expired": "A token whose expiry is in the past",
     "secret": "A private value, not a public identifier",
-    "shared": "Read on more than one host",
+    "shared": "Read on more than one web asset",
 }
 
 SECRET_FIELDS: tuple[QueryField, ...] = (
@@ -3207,7 +3198,6 @@ SECRET_FIELDS: tuple[QueryField, ...] = (
         description="Who or what the value names, such as an email domain or DSN host.",
         example="subject:acme.com",
         free_text=True,
-        evidence="subject",
         facet="subject",
     ),
     QueryField(
@@ -3249,7 +3239,6 @@ SECRET_FIELDS: tuple[QueryField, ...] = (
         description="Hostname the value was read on.",
         example="host:www.example.com",
         free_text=True,
-        evidence="host",
     ),
     QueryField(
         name="url",
@@ -3258,13 +3247,12 @@ SECRET_FIELDS: tuple[QueryField, ...] = (
         description="URL the value was read from.",
         example="url:/config.json",
         free_text=True,
-        evidence="url",
     ),
     QueryField(
         name="seen",
         type=FieldType.DATE,
         group="Asset",
-        description="When this scan read it.",
+        description="When the value was read.",
         example="seen:<24h",
         aliases=("discovered", "age"),
     ),
@@ -3325,7 +3313,7 @@ SECRET_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="is:exposed and is:new",
-        description="Exposed values absent from the previous scan",
+        description="Exposed values absent from every earlier scan",
         group="Change",
     ),
     QueryExample(
@@ -3374,7 +3362,3 @@ REGISTRIES: dict[str, QueryRegistry] = {
     SurfaceDimension.SOFTWARE.value: SOFTWARE_QUERY,
     SurfaceDimension.SECRETS.value: SECRET_QUERY,
 }
-
-
-def registry_for(dimension: str) -> QueryRegistry:
-    return REGISTRIES[dimension]

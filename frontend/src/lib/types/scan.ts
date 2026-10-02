@@ -44,6 +44,12 @@ export const SCAN_COUNT_COLUMNS = {
 export const scanFoundNothing = (scan: ScanRead) =>
 	Object.values(SCAN_COUNT_COLUMNS).every((c) => !scan[c]);
 
+export interface StageFigure {
+	key: string;
+	value: number;
+	label: string;
+}
+
 export interface ScanActivityRead {
 	id: string;
 	scan_id: string;
@@ -52,7 +58,7 @@ export interface ScanActivityRead {
 	status: ScanActivityStatus;
 	error: string | null;
 	result: Record<string, number | string>;
-	command_count: number;
+	figures: StageFigure[];
 	started_at: string | null;
 	completed_at: string | null;
 	duration_seconds: number | null;
@@ -89,11 +95,11 @@ export type ScanSortKey = (typeof SCAN_SORT_KEYS)[number];
 export type ScanSortDir = 'asc' | 'desc';
 
 export const SCAN_TIME_RANGES = [
-	{ key: 'all', label: 'All time' },
-	{ key: '24h', label: 'Last 24 hours' },
-	{ key: '7d', label: 'Last 7 days' },
-	{ key: '14d', label: 'Last 14 days' },
-	{ key: '30d', label: 'Last 30 days' }
+	{ key: 'all', label: 'All time', days: null },
+	{ key: '24h', label: 'Last 24 hours', days: 1 },
+	{ key: '7d', label: 'Last 7 days', days: 7 },
+	{ key: '14d', label: 'Last 14 days', days: 14 },
+	{ key: '30d', label: 'Last 30 days', days: 30 }
 ] as const;
 export type ScanTimeRange = (typeof SCAN_TIME_RANGES)[number]['key'];
 
@@ -207,6 +213,12 @@ export interface ScanDay {
 	medium: number;
 }
 
+export interface ScanDaily {
+	since: string;
+	days: ScanDay[];
+	window: ScanDay;
+}
+
 export type StageOverrides = Record<string, Record<string, unknown>>;
 
 export interface ScanCreate {
@@ -291,22 +303,6 @@ export interface ScanFacet {
 	count: number;
 }
 
-export interface ScanExportRow {
-	target: string;
-	status: string;
-	engine: string;
-	context: string | null;
-	subdomains: number;
-	ips: number;
-	open_ports: number;
-	vulnerabilities: number;
-	endpoints: number;
-	duration_seconds: number | null;
-	started_at: string | null;
-	completed_at: string | null;
-	created_at: string;
-}
-
 export interface RecheckFieldCount {
 	field: string;
 	label: string;
@@ -333,13 +329,8 @@ export interface ScanCancelAll {
 
 export interface ScanStats {
 	total: number;
-	running: number;
 	by_status: ScanStatusCounts;
-	last_scan_at: string | null;
-	avg_duration_seconds: number | null;
-	success_rate: number | null;
 	engines: ScanFacet[];
-	contexts: ScanFacet[];
 }
 
 export interface ScanPreview {

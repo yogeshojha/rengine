@@ -1,7 +1,11 @@
 package io.rengine.connector;
 
+import java.io.IOException;
 import java.net.Socket;
+import java.net.URI;
 import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
@@ -10,7 +14,7 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509ExtendedTrustManager;
 
-/** HTTP clients for the connector, including the self-signed case a self-hosted reNgine needs. */
+/** HTTP clients for the connector. */
 final class Tls {
     private static volatile HttpClient cached;
     private static volatile boolean cachedPermissive;
@@ -34,6 +38,17 @@ final class Tls {
             }
         }
         return current;
+    }
+
+    /** A GET carrying the connector token. */
+    static HttpResponse<String> get(Sink.Config settings, String url)
+            throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(url))
+                .timeout(Duration.ofSeconds(15))
+                .header("Authorization", "Bearer " + settings.token())
+                .GET()
+                .build();
+        return clientFor(settings).send(request, HttpResponse.BodyHandlers.ofString());
     }
 
     /** HTTP/2 over TLS with HTTP/1.1 as the negotiated fallback, HTTP/1.1 over plain HTTP. */

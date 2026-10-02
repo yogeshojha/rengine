@@ -35,10 +35,6 @@ class FrameworkSpec:
         return {c.id: c for c in self.controls}
 
 
-_UNMAPPED_NOTE = (
-    "Checks that fired without a weakness classification are listed as unmapped."
-)
-
 OWASP = FrameworkSpec(
     key=Framework.OWASP.value,
     name="OWASP Top 10",

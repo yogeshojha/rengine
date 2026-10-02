@@ -16,15 +16,9 @@
 
 	let { total, imported, failed, skipped_duplicates, results }: Props = $props();
 
-	const DUPLICATE_REASON = /duplicate|exists in this project/i;
-
-	function isDuplicate(result: TargetImportResult): boolean {
-		return !result.success && !!result.error && DUPLICATE_REASON.test(result.error);
-	}
-
 	let successResults = $derived(results.filter((r) => r.success));
-	let failedResults = $derived(results.filter((r) => !r.success && !isDuplicate(r)));
-	let duplicateResults = $derived(results.filter((r) => isDuplicate(r)));
+	let failedResults = $derived(results.filter((r) => !r.success && !r.duplicate));
+	let duplicateResults = $derived(results.filter((r) => !r.success && r.duplicate));
 
 	let availableTabs = $derived.by(() => {
 		const tabs: { value: string; label: string; count: number; color: string }[] = [];
@@ -72,8 +66,6 @@
 				return 'Already exists';
 			case 'Duplicate within import batch':
 				return 'Duplicate in batch';
-			case 'Invalid target format':
-				return 'Invalid format';
 			case 'Empty target value':
 				return 'Empty value';
 			default:

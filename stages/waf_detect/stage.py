@@ -18,7 +18,7 @@ _MAX_URLS = 500
 class WafDetectStage(Stage):
     name = "waf_detect"
     title = "WAF Detection"
-    description = "Fingerprint web application firewalls in front of live services."
+    description = "Fingerprint web application firewalls in front of live web assets."
     phase = Phase.EXPANSION.value
     depends_on = frozenset({"http_probe"})
     group = StageGroup.WEB.value
@@ -49,9 +49,9 @@ class WafDetectStage(Stage):
                 recorder=self.ctx.recorder,
                 extra_args=self.ctx.resolved.tool_args("wafw00f"),
             )
-        except Wafw00fError:
+        except Wafw00fError as exc:
             logger.warning("wafw00f unavailable, skipping WAF detection")
-            return StageResult(counts={"waf": 0})
+            return StageResult(counts={"waf": 0}, warnings=[str(exc)], partial=True)
 
         by_url = {url: asset_id for asset_id, url in live}
         scan = client.detect([url for _, url in live][:_MAX_URLS])
@@ -63,23 +63,23 @@ class WafDetectStage(Stage):
         if updates:
             self.session.execute(update(HttpAsset), updates)
             self.session.commit()
-        self.emit_progress(f"flagged {len(updates)} WAF-protected services")
+        self.emit_progress(f"{len(updates)} web assets behind a WAF")
         skipped = max(0, len(live) - _MAX_URLS)
         warnings = []
         if client.unreadable_headers:
             names = ", ".join(client.unreadable_headers)
             warnings.append(
-                f"wafw00f cannot read a header value holding a colon, so {names} "
-                "was not sent with these requests."
+                f"{names} not sent to wafw00f. A header value holding a colon is "
+                "unreadable by wafw00f."
             )
         if scan.unfinished:
             warnings.append(
                 f"wafw00f did not finish {scan.unfinished:,} of "
-                f"{scan.scanned + scan.unfinished:,} services. Those are unchecked"
+                f"{scan.scanned + scan.unfinished:,} web assets."
             )
         if skipped:
             warnings.append(
-                f"{skipped:,} services beyond the {_MAX_URLS:,} budget were not checked"
+                f"{skipped:,} web assets not checked. Limit is {_MAX_URLS:,} per scan."
             )
         return StageResult(
             counts={"waf": len(updates), "checked": scan.scanned},

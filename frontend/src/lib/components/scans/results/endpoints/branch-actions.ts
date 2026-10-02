@@ -3,7 +3,7 @@ import { endpointsApi } from '$lib/api/scan-results';
 import { writeClipboard } from '$lib/utilities/clipboard';
 import type { EndpointFilter, EndpointRead, TreeNode } from '$lib/utilities/endpoints';
 
-export const COPY_CAP = 5000;
+const COPY_CAP = 5000;
 const COPY_PAGE = 200;
 
 export interface BranchScope {
@@ -13,10 +13,10 @@ export interface BranchScope {
 	merged?: boolean;
 }
 
-export function branchFilter(scope: BranchScope, node: TreeNode): EndpointFilter {
+function branchFilter(scope: BranchScope, node: TreeNode): EndpointFilter {
 	return {
 		...scope.filter,
-		host: scope.merged ? null : node.host,
+		host: scope.merged ? (scope.filter.host ?? null) : node.host,
 		dir_path: node.kind === 'host' ? null : node.path,
 		subtree: true,
 		sort: 'path',
@@ -40,7 +40,7 @@ export async function collectRows(
 	return { rows: rows.slice(0, COPY_CAP), capped: rows.length >= COPY_CAP };
 }
 
-export async function collectUrls(
+async function collectUrls(
 	scope: BranchScope,
 	node: TreeNode
 ): Promise<{ urls: string[]; capped: boolean }> {

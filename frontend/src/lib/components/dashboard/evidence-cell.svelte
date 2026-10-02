@@ -3,9 +3,9 @@
 	import { SvelteMap } from 'svelte/reactivity';
 	import Cell from './cell.svelte';
 	import Hint from '$lib/components/hint.svelte';
-	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
-	import { EVIDENCE_LABELS, EVIDENCE_ORDER } from '$lib/config/evidence';
-	import { SEVERITY_LABELS, SEVERITY_ORDER } from '$lib/config/vulnerabilities';
+	import { SurfaceDimension } from '$lib/config/surface';
+	import { EVIDENCE_LABELS, EVIDENCE_ORDER, Evidence, evidenceToken } from '$lib/config/evidence';
+	import { SEVERITY_LABELS, SEVERITY_ORDER, Severity } from '$lib/config/vulnerabilities';
 	import type { DashboardRisk } from '$lib/types/dashboard';
 
 	const routes = useScopedRoutes();
@@ -17,9 +17,9 @@
 
 	let { risk, class: className = '' }: Props = $props();
 
-	const VULN = SURFACE[SurfaceDimension.VULNERABILITIES];
-	const SEVERITIES = SEVERITY_ORDER.filter((s) => s !== 'unknown');
-	const RUNGS = EVIDENCE_ORDER.filter((r) => r !== 'inferred');
+	const SEVERITIES = SEVERITY_ORDER.filter((s) => s !== Severity.UNKNOWN);
+	const RUNGS = EVIDENCE_ORDER.filter((r) => r !== Evidence.INFERRED);
+	const PROVEN_QUERY = evidenceToken(Evidence.PROVEN);
 
 	let cells = $derived.by(() => {
 		const map = new SvelteMap<string, number>();
@@ -28,22 +28,21 @@
 	});
 	let max = $derived(Math.max(1, ...risk.evidence.map((c) => c.count)));
 	let proven = $derived(
-		risk.evidence.filter((c) => c.evidence === 'proven').reduce((n, c) => n + c.count, 0)
+		risk.evidence.filter((c) => c.evidence === Evidence.PROVEN).reduce((n, c) => n + c.count, 0)
 	);
 	const wash = (n: number) =>
 		n
 			? `color-mix(in oklch, var(--series) ${8 + Math.round(Math.sqrt(n / max) * 58)}%, var(--muted))`
 			: 'var(--muted)';
 	const link = (sev: string, rung: string) =>
-		routes.surface(VULN.tab, { [VULN.queryParam]: `severity:${sev} and evidence:${rung}` });
+		routes.rows(SurfaceDimension.VULNERABILITIES, `severity:${sev} and ${evidenceToken(rung)}`);
 </script>
 
 <Cell
 	id="evidence"
-	title="Evidence"
 	description="Findings by severity and rung"
-	href={routes.surface(VULN.tab, { [VULN.queryParam]: 'evidence:proven' })}
-	hrefLabel="evidence:proven"
+	href={routes.rows(SurfaceDimension.VULNERABILITIES, PROVEN_QUERY)}
+	hrefLabel={PROVEN_QUERY}
 	class={className}
 >
 	<div

@@ -7,7 +7,7 @@ from shared.enums.scan import Intensity
 DEFAULT_ENGINE_NAME = "Default"
 DEFAULT_ENGINE_DESCRIPTION = (
     "Subdomain discovery on subfinder and crt.name, HTTP probe, screenshots, "
-    "response mining and a nuclei vulnerability scan at Normal intensity. Built in."
+    "response mining and a nuclei vulnerability scan at Normal intensity."
 )
 DEFAULT_ENGINE_INTENSITY = Intensity.NORMAL.value
 VULNERABILITY_STAGE = "vulnerability_scan"

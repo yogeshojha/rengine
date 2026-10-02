@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
 _CONSTRAINT = "uq_port_scan_ip_num_proto"
+_BATCH = 1000
 
 
 @dataclass
@@ -91,7 +92,6 @@ def upsert(
     project_id: uuid.UUID,
     source: str,
     observations: list[ServiceObservation],
-    batch: int = 1000,
     keep_source: bool = False,
     replace: bool = False,
 ) -> int:
@@ -120,8 +120,8 @@ def upsert(
         for obs in ordered
     ]
 
-    for start in range(0, len(rows), batch):
-        statement = insert(Port).values(rows[start : start + batch])
+    for start in range(0, len(rows), _BATCH):
+        statement = insert(Port).values(rows[start : start + _BATCH])
         excluded = statement.excluded
         stronger = _rank(excluded.source) >= _rank(Port.source)
         origin = (

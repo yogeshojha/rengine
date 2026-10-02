@@ -19,18 +19,17 @@
 	} from '$lib/utilities/scan-status';
 	import { plannedStages, stageRows } from '$lib/utilities/scan-progress';
 	import type { StageStepState } from '$lib/utilities/scan-progress';
-	import { targetTypePhrase } from '$lib/types/scan-engine';
 	import { cn } from '$lib/utils';
-	import type { ScanActivityRead, ScanCommandRead, ScanRead } from '$lib/types/scan';
+	import type { ScanActivityRead, ScanRead } from '$lib/types/scan';
 	import type { StageCatalogEntry } from '$lib/types/scan-engine';
 	import type { LiveRun } from '$lib/stores/live-scans.svelte';
+	import { formatClock } from '$lib/utilities/dates';
 
 	interface Props {
 		scan: ScanRead;
 		run: LiveRun | undefined;
 		catalog: StageCatalogEntry[];
 		activities: ScanActivityRead[];
-		commands: ScanCommandRead[];
 		now: number;
 		previousDuration: number | null;
 		scanId: string;
@@ -43,7 +42,6 @@
 		run,
 		catalog,
 		activities,
-		commands,
 		now,
 		previousDuration,
 		scanId,
@@ -67,8 +65,6 @@
 		paused: 'color-mix(in oklch, var(--muted-foreground) 55%, transparent)',
 		pending: 'color-mix(in oklch, var(--muted-foreground) 25%, transparent)'
 	};
-	const fmtTime = (iso: string) =>
-		new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
 	interface Segment {
 		name: string;
@@ -91,9 +87,15 @@
 	let byName = $derived(new Map(activities.map((a) => [a.name, a])));
 	let rows = $derived(stageRows(planned, activities, run));
 	let done = $derived(rows.filter((r) => r.state === 'done').length);
-	let skipped = $derived(activities.filter((a) => a.status === 'skipped'));
+	let skipped = $derived(
+		activities.filter(
+			(a) =>
+				a.status === 'skipped' &&
+				byName.get(a.name) === a &&
+				!planned.some((p) => p.name === a.name)
+		)
+	);
 	let degradedStages = $derived(activities.filter((a) => a.status === 'partial'));
-	let typePhrase = $derived(targetTypePhrase(scan.execution_config.target_type));
 
 	let segments = $derived.by<Segment[]>(() => {
 		const measured = rows.map((r) => {
@@ -192,15 +194,13 @@
 				`${degradedStages.length} ${degradedStages.length === 1 ? 'stage' : 'stages'} returned a partial result`
 			);
 		if (skipped.length > 0)
-			parts.push(
-				`${skipped.length} ${skipped.length === 1 ? 'stage does' : 'stages do'} not apply to ${typePhrase} target`
-			);
+			parts.push(`${skipped.length} ${skipped.length === 1 ? 'stage' : 'stages'} skipped`);
 		return parts.join(' · ');
 	});
 
 	function tooltip(s: Segment): string {
 		const parts = [s.title];
-		if (s.startedAt) parts.push(fmtTime(s.startedAt));
+		if (s.startedAt) parts.push(formatClock(s.startedAt));
 		if (s.state === 'running') parts.push(`running ${elapsedText(s.seconds ?? 0)}`);
 		else if (s.paused) parts.push(`${durationText(s.seconds)} · paused`);
 		else if (s.state === 'pending') parts.push(unfinished ? 'queued' : 'did not run');
@@ -216,9 +216,6 @@
 	let selected = $state<string | null>(null);
 	let dialogOpen = $state(false);
 	let selectedActivity = $derived(selected ? (byName.get(selected) ?? null) : null);
-	let selectedCommands = $derived(
-		selectedActivity ? commands.filter((c) => c.activity_id === selectedActivity.id) : []
-	);
 	let selectedEntry = $derived(catalog.find((s) => s.name === selected));
 
 	function select(name: string, hasActivity: boolean) {
@@ -313,7 +310,11 @@
 											<span class="text-xs leading-4 text-muted-foreground">{s.summary}</span>
 										{/if}
 										{#if s.error}
-											<span class="text-xs leading-4 break-words text-destructive">{s.error}</span>
+											<span
+												class="text-xs leading-4 break-words {s.state === 'failed' && !s.stopped
+													? 'text-destructive'
+													: 'text-warning'}">{s.error}</span
+											>
 										{/if}
 									</span>
 									{#if s.seconds != null && slowest > 0}
@@ -359,7 +360,7 @@
 										<CircleSlash class="size-3.5 text-muted-foreground/40" />
 									</span>
 									<span class="min-w-0 flex-1 text-sm leading-5 text-muted-foreground">
-										{catalog.find((s) => s.name === a.name)?.title ?? a.name}
+										{catalog.find((s) => s.name === a.name)?.title ?? a.title ?? a.name}
 									</span>
 									<span class="hidden h-5 w-24 shrink-0 sm:block"></span>
 									<span
@@ -382,7 +383,6 @@
 	title={selectedEntry?.title ?? ''}
 	description={selectedEntry?.description ?? ''}
 	activity={selectedActivity}
-	commands={selectedCommands}
 	{scanId}
 	{projectId}
 />

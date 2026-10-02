@@ -5,12 +5,21 @@ from sqlalchemy import update
 
 from app.services.port import PortService
 from app.services.subdomain import SubdomainService
+from shared.definitions.ai_services import model_query
+from shared.definitions.asset_query import SERVICE_QUERY
 from shared.models.http_asset import HttpAsset
 from shared.models.scan_correlation import ServiceFilter
 from shared.models.subdomain import SubdomainFilter
 from shared.services.ai_services import _FOLD_SQL
+from shared.services.asset_query import parse_query
 
 pytestmark = pytest.mark.grammar
+
+
+@pytest.mark.parametrize("model", ['a"b', "a\\b", 'x "y":z', "llama3:8b", "plain"])
+def test_model_query_parses_back_to_the_model(model):
+    node = parse_query(model_query(model), SERVICE_QUERY)
+    assert node.values == (model,)
 
 
 async def _seed(estate, now):

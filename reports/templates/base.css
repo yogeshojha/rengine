@@ -1,5 +1,3 @@
-/* structural stylesheet: every colour, size and face comes from a theme token */
-
 * { box-sizing: border-box; }
 
 html { font-size: var(--r-size); background: var(--r-page); }
@@ -14,7 +12,7 @@ body {
   font-variant-numeric: tabular-nums;
   font-kerning: normal;
   hyphens: manual;
-  /* the vendored faces have no U+2010, so the soft break uses a plain hyphen */
+  /* vendored faces lack U+2010 */
   hyphenate-character: "-";
 }
 
@@ -49,8 +47,6 @@ hr { border: 0; border-top: var(--r-rule-w) solid var(--r-rule); margin: var(--r
 
 /* ---------- page furniture ---------- */
 
-.running { position: running(none); }
-
 .watermark {
   position: fixed;
   top: 45%;
@@ -73,7 +69,6 @@ hr { border: 0; border-top: var(--r-rule-w) solid var(--r-rule); margin: var(--r
   page: cover;
   break-after: page;
   position: relative;
-  /* the page box is the containing block once @page cover drops its margins */
   height: 100vh;
   overflow: hidden;
   color: var(--r-cover-ink);
@@ -153,7 +148,7 @@ hr { border: 0; border-top: var(--r-rule-w) solid var(--r-rule); margin: var(--r
   opacity: 0.6;
 }
 
-/* the grade mark: the verdict, before the first page */
+/* grade */
 .cover__grade { position: absolute; top: 26mm; right: 24mm; text-align: center; width: 36mm; }
 .cover__grade-ring {
   width: 33mm;
@@ -185,7 +180,7 @@ hr { border: 0; border-top: var(--r-rule-w) solid var(--r-rule); margin: var(--r
 /* full bleed */
 .cover--full { background: var(--r-cover-bg); }
 
-/* band: the band holds the identity and the title; the body holds the record */
+/* band */
 .cover--band { background: var(--r-page); color: var(--r-ink); }
 .cover--band .cover__band {
   position: absolute;
@@ -203,7 +198,7 @@ hr { border: 0; border-top: var(--r-rule-w) solid var(--r-rule); margin: var(--r
 .cover--band .cover__subtitle { margin-bottom: 10mm; }
 .cover--band .cover__class { color: var(--r-ink); }
 
-/* rule: a light cover with a drawn instrument */
+/* rule */
 .cover--rule { background: var(--r-page); color: var(--r-ink); }
 .cover--rule .cover__accent { display: none; }
 .cover--rule .cover__title { border-top: 1.6pt solid var(--r-accent); padding-top: 7mm; }
@@ -212,7 +207,7 @@ hr { border: 0; border-top: var(--r-rule-w) solid var(--r-rule); margin: var(--r
 .cover--rule .cover__grade-letter { color: var(--r-ink); }
 .cover--rule .cover__grade-label { color: var(--r-ink-soft); opacity: 1; }
 
-/* split: a panel on the right carries the art and the grade */
+/* split */
 .cover--split { background: var(--r-page); color: var(--r-ink); }
 .cover--split .cover__panel { position: absolute; inset: 0 0 0 58%; background: var(--r-cover-bg); }
 .cover--split .cover__art { left: 58%; color: var(--r-cover-ink); }
@@ -231,12 +226,10 @@ hr { border: 0; border-top: var(--r-rule-w) solid var(--r-rule); margin: var(--r
 
 /* ---------- sections ---------- */
 
-/* a chapter starts a page, unless the document asks them to run on — then a rule separates them */
 .section { break-before: var(--r-chapter-break); }
 .section + .section { border-top: var(--r-chapter-rule); padding-top: var(--r-chapter-pad); }
 .section--flow { break-before: auto; }
 .section--flow, .section + .section { margin-top: calc(var(--r-block-gap) * 2.4); }
-.section--avoid { break-inside: avoid; }
 
 .section__head {
   margin-bottom: calc(var(--r-block-gap) * 1.5);
@@ -265,15 +258,6 @@ hr { border: 0; border-top: var(--r-rule-w) solid var(--r-rule); margin: var(--r
 .section--rule .section__head { border-top: 1.6pt solid var(--r-accent); border-bottom: 0; padding-top: 3.4mm; }
 .section--kicker .section__head { border-bottom: 0; }
 
-.section__lede {
-  font-size: var(--r-h4);
-  line-height: 1.5;
-  color: var(--r-ink-soft);
-  margin-bottom: var(--r-block-gap);
-  text-align: var(--r-align);
-  hyphens: var(--r-hyphens);
-}
-
 .sub { margin-top: calc(var(--r-block-gap) * 1.5); }
 .sub__title { font-size: var(--r-h3); margin-bottom: 0.45rem; break-after: avoid; }
 
@@ -285,7 +269,6 @@ hr { border: 0; border-top: var(--r-rule-w) solid var(--r-rule); margin: var(--r
   text-transform: var(--r-label-case);
   color: var(--r-ink-faint);
 }
-.label--accent { color: var(--r-accent); }
 
 .muted { color: var(--r-ink-soft); }
 .faint { color: var(--r-ink-faint); }
@@ -329,19 +312,8 @@ hr { border: 0; border-top: var(--r-rule-w) solid var(--r-rule); margin: var(--r
 .grid > * { flex: 1 1 0; min-width: 0; }
 .grid--2 > * { flex-basis: 46%; }
 .grid--3 > * { flex-basis: 29%; }
-.grid--4 > * { flex-basis: 21%; }
-.stack > * + * { margin-top: var(--r-block-gap); }
 .block { margin-bottom: var(--r-block-gap); }
 .avoid { break-inside: avoid; }
-
-.panel {
-  border: var(--r-rule-w) solid var(--r-rule);
-  border-radius: var(--r-radius);
-  padding: 3.6mm 4mm;
-  background: var(--r-surface-soft);
-}
-.panel--plain { background: transparent; }
-.panel__title { font-size: var(--r-small); font-weight: 600; margin-bottom: 1.8mm; }
 
 /* ---------- verdict band ---------- */
 
@@ -437,46 +409,13 @@ hr { border: 0; border-top: var(--r-rule-w) solid var(--r-rule); margin: var(--r
 
 .prose { max-width: none; }
 .prose p,
-.prose li,
-.section__lede { text-align: var(--r-align); hyphens: var(--r-hyphens); }
+.prose li { text-align: var(--r-align); hyphens: var(--r-hyphens); }
 .prose p { margin-bottom: calc(var(--r-gap) * 1.05); }
 .prose p strong:first-child { color: var(--r-ink); }
 .prose a, .prose .mono, .prose code { hyphens: manual; }
 
-/* ---------- KPI ---------- */
-
-.kpi { break-inside: avoid; }
-.kpi__value {
-  font-family: var(--r-font-heading);
-  font-size: calc(var(--r-h1) * 1.02);
-  font-weight: var(--r-h-weight);
-  line-height: 1;
-  letter-spacing: -0.03em;
-}
-.kpi__label {
-  font-size: var(--r-micro);
-  font-weight: 600;
-  letter-spacing: var(--r-label-track);
-  text-transform: var(--r-label-case);
-  color: var(--r-ink-faint);
-  margin-top: 1.8mm;
-}
-.kpi__note { font-size: var(--r-micro); color: var(--r-ink-soft); margin-top: 1mm; }
-.kpi--dash .kpi__value { color: var(--r-ink-faint); font-weight: 400; }
-
-/* ---------- score ---------- */
-
-.score { display: flex; align-items: center; gap: 5.5mm; break-inside: avoid; }
-.score__dial { width: 33mm; flex: none; }
-.score__grade {
-  font-family: var(--r-font-heading);
-  font-size: calc(var(--r-h1) * 1.1);
-  line-height: 1;
-}
-
 /* ---------- badges and chips ---------- */
 
-/* a severity is a wash and its own ink, never a saturated slab */
 .badge {
   display: inline-block;
   padding: 0.55mm 2.1mm 0.75mm;
@@ -505,15 +444,12 @@ hr { border: 0; border-top: var(--r-rule-w) solid var(--r-rule); margin: var(--r
 .badge--low::before      { background: var(--r-sev-low); }
 .badge--info::before     { background: var(--r-sev-info); }
 .badge--unknown::before  { background: var(--r-sev-unknown); }
-.badge--accent::before   { background: var(--r-accent); }
 .badge--critical { background: var(--r-sev-critical-wash); color: var(--r-sev-critical-ink); }
 .badge--high     { background: var(--r-sev-high-wash);     color: var(--r-sev-high-ink); }
 .badge--medium   { background: var(--r-sev-medium-wash);   color: var(--r-sev-medium-ink); }
 .badge--low      { background: var(--r-sev-low-wash);      color: var(--r-sev-low-ink); }
 .badge--info     { background: var(--r-sev-info-wash);     color: var(--r-sev-info-ink); }
 .badge--unknown  { background: var(--r-sev-unknown-wash);  color: var(--r-sev-unknown-ink); }
-.badge--accent   { background: var(--r-accent-wash);       color: var(--r-accent-ink-on-wash); }
-.badge--plain::before { display: none; }
 
 .chip {
   display: inline-block;
@@ -527,8 +463,6 @@ hr { border: 0; border-top: var(--r-rule-w) solid var(--r-rule); margin: var(--r
 }
 .chip--solid { background: var(--r-surface); border-color: transparent; }
 .chip--accent { border-color: var(--r-accent); color: var(--r-accent); }
-.chip--quiet { border: 0; padding-left: 0; padding-right: 2.6mm; }
-.chip--quiet .dot { margin-right: 1.4mm; vertical-align: 0.15mm; }
 .chips { display: flex; flex-wrap: wrap; gap: 1.4mm; }
 
 /* ---------- tables ---------- */
@@ -558,25 +492,18 @@ hr { border: 0; border-top: var(--r-rule-w) solid var(--r-rule); margin: var(--r
   vertical-align: top;
 }
 .table tbody tr:last-child td { border-bottom: 0; }
-.table .rank { color: var(--r-ink-faint); font-variant-numeric: tabular-nums; }
 .table tr { break-inside: avoid; }
 .table thead { display: table-header-group; }
 .table .num { text-align: right; font-variant-numeric: tabular-nums; }
 .table .nowrap { white-space: nowrap; }
-.table--zebra tbody tr:nth-child(even) { background: var(--r-surface-soft); }
-.table--zebra td { border-bottom: 0; }
-.table--boxed th, .table--boxed td { border: var(--r-rule-w) solid var(--r-rule); padding-left: 2.4mm; padding-right: 2.4mm; }
-.table--boxed th { background: var(--r-surface); }
-.table--open td, .table--open th { padding-left: 0; padding-right: 3.4mm; }
-.table--open td { border-bottom-color: var(--r-rule); }
-.table__caption {
-  font-size: var(--r-micro);
-  color: var(--r-ink-faint);
-  margin-bottom: 1.8mm;
-}
+.doc--table-zebra .table tbody tr:nth-child(even) { background: var(--r-surface-soft); }
+.doc--table-zebra .table td { border-bottom: 0; }
+.doc--table-boxed .table th, .doc--table-boxed .table td { border: var(--r-rule-w) solid var(--r-rule); padding-left: 2.4mm; padding-right: 2.4mm; }
+.doc--table-boxed .table th { background: var(--r-surface); }
+.doc--table-open .table td, .doc--table-open .table th { padding-left: 0; padding-right: 3.4mm; }
+.doc--table-open .table td { border-bottom-color: var(--r-rule); }
 .table--fixed { table-layout: fixed; }
 
-/* an action and the sentence under it are one row of the plan */
 .table--plan tbody tr td { border-bottom: 0; padding-bottom: 0.8mm; }
 .table--plan tbody tr.detail td { padding-top: 0; padding-bottom: 2.6mm; }
 .table--plan tbody { border-bottom: var(--r-rule-w) solid var(--r-rule); }
@@ -605,7 +532,6 @@ hr { border: 0; border-top: var(--r-rule-w) solid var(--r-rule); margin: var(--r
 }
 .finding__body { font-size: var(--r-small); }
 .finding__body p { text-align: var(--r-align); hyphens: var(--r-hyphens); }
-/* a heading inside a finding, not a label: it must not read like the table header under it */
 .finding__body h5 {
   font-size: var(--r-small);
   font-weight: 600;
@@ -671,7 +597,6 @@ hr { border: 0; border-top: var(--r-rule-w) solid var(--r-rule); margin: var(--r
 
 .finding--plain { border: 0; padding: 0; }
 
-/* a location list, for when every row would carry the same two empty columns */
 .locations {
   columns: 2;
   column-gap: 8mm;
@@ -705,7 +630,6 @@ hr { border: 0; border-top: var(--r-rule-w) solid var(--r-rule); margin: var(--r
   break-inside: avoid;
 }
 .evidence--tall { max-height: 70mm; overflow: hidden; }
-.evidence mark { background: var(--r-accent-wash); color: var(--r-accent-ink-on-wash); }
 
 .shot {
   border: var(--r-rule-w) solid var(--r-rule);
@@ -713,11 +637,8 @@ hr { border: 0; border-top: var(--r-rule-w) solid var(--r-rule); margin: var(--r
   width: 100%;
   break-inside: avoid;
 }
-.shots { display: flex; gap: 3.4mm; }
-.shots > figure { flex: 1 1 0; min-width: 0; margin: 0; }
 
 .figure { break-inside: avoid; margin: 0 0 var(--r-block-gap); }
-.figure svg { width: 100%; height: auto; }
 .figcaption { font-size: var(--r-micro); color: var(--r-ink-faint); margin-top: 1.8mm; }
 
 /* ---------- callouts ---------- */
@@ -731,36 +652,15 @@ hr { border: 0; border-top: var(--r-rule-w) solid var(--r-rule); margin: var(--r
   break-inside: avoid;
 }
 .callout--warn { border-left-color: var(--r-sev-high); background: var(--r-sev-high-wash); }
-.callout--danger { border-left-color: var(--r-sev-critical); background: var(--r-sev-critical-wash); }
 .callout--quiet { border-left-color: var(--r-rule-strong); background: var(--r-surface-soft); color: var(--r-ink-soft); }
 .callout__title { font-weight: 600; margin-bottom: 1mm; }
 
 /* ---------- meters and bars ---------- */
 
 .meter { display: flex; align-items: center; gap: 3mm; margin-bottom: 2mm; break-inside: avoid; }
-.meter__label { flex: 0 0 38mm; font-size: var(--r-small); }
 .meter__track { flex: 1 1 auto; height: 2.2mm; background: var(--r-rule); border-radius: 1.1mm; overflow: hidden; }
 .meter__fill { height: 100%; background: var(--r-accent); border-radius: 1.1mm; }
 .meter__value { flex: 0 0 16mm; text-align: right; font-size: var(--r-small); font-variant-numeric: tabular-nums; }
-
-.stackbar { display: flex; height: 4mm; border-radius: 1.2mm; overflow: hidden; gap: 0.5mm; }
-.stackbar span { display: block; height: 100%; border-radius: 0.6mm; }
-
-/* ---------- timeline rail ---------- */
-
-.rail { list-style: none; margin: 0; padding: 0 0 0 5.5mm; border-left: var(--r-rule-w) solid var(--r-rule); }
-.rail li { position: relative; padding-bottom: 3mm; break-inside: avoid; }
-.rail li::before {
-  content: '';
-  position: absolute;
-  left: -6.6mm;
-  top: 1.6mm;
-  width: 2mm;
-  height: 2mm;
-  border-radius: 50%;
-  background: var(--r-accent);
-}
-.rail li.is-quiet::before { background: var(--r-rule-strong); }
 
 /* ---------- markdown body ---------- */
 
@@ -787,8 +687,7 @@ hr { border: 0; border-top: var(--r-rule-w) solid var(--r-rule); margin: var(--r
 }
 
 /* ---------- on screen ---------- */
-/* WeasyPrint renders the print media, so none of this reaches the PDF: it gives the
-   standalone HTML the page geometry that @page provides to the printed document */
+/* standalone HTML only */
 @media screen {
   body { background: var(--r-surface); }
 
@@ -804,6 +703,4 @@ hr { border: 0; border-top: var(--r-rule-w) solid var(--r-rule); margin: var(--r
   .section { margin-top: calc(var(--r-block-gap) * 3.2); padding-top: 26mm; }
   .cover + .section { margin-top: 0; }
   .section--flow { padding-top: 0; }
-
-  .watermark { position: fixed; }
 }

@@ -16,10 +16,10 @@ STAGE_GROUP_LABELS: dict[str, str] = {
 }
 
 ASSET_KIND_LABELS: dict[str, str] = {
-    AssetKind.HOSTS.value: "hosts",
+    AssetKind.HOSTS.value: "host names",
     AssetKind.ADDRESSES.value: "addresses",
     AssetKind.PORTS.value: "open ports",
-    AssetKind.HTTP_ASSETS.value: "HTTP assets",
+    AssetKind.HTTP_ASSETS.value: "web assets",
     AssetKind.ENDPOINTS.value: "endpoints",
     AssetKind.VULNERABILITIES.value: "findings",
     AssetKind.SECRETS.value: "secrets",

@@ -12,7 +12,6 @@ from shared.definitions.connectors import (
 )
 from shared.definitions.endpoints import (
     MAX_PARAMS,
-    STATIC_CLASSES,
     ParsedUrl,
     classify,
     interests_for,
@@ -21,13 +20,8 @@ from shared.definitions.endpoints import (
     shape_for,
     signature_for,
 )
+from shared.services.scan_resolve import redact_message
 from shared.utils.text import strip_control
-
-NOISE_CLASSES = STATIC_CLASSES
-
-
-def _is_noise(endpoint_class: str | None, extension: str | None) -> bool:
-    return endpoint_class in NOISE_CLASSES or is_static(endpoint_class, extension)
 
 
 @dataclass
@@ -38,7 +32,6 @@ class Prepared:
     signature: str
     params: tuple[str, ...]
     shape: str = "/"
-    collapsed: int = 0
     methods: list[str] = field(default_factory=list)
     status_code: int | None = None
     content_type: str | None = None
@@ -58,7 +51,6 @@ class Batch:
     prepared: list[Prepared] = field(default_factory=list)
     seen: int = 0
     rejected: int = 0
-    hosts: set[str] = field(default_factory=set)
     hosts_seen: dict[str, int] = field(default_factory=dict)
 
 
@@ -70,7 +62,7 @@ def _merge(into: Prepared, item) -> None:
     if item.status_code is not None:
         into.status_code = item.status_code
     if item.content_type and not into.content_type:
-        into.content_type = item.content_type[:120]
+        into.content_type = strip_control(item.content_type)[:120]
     if item.content_length is not None:
         into.content_length = item.content_length
     if item.title and not into.title:
@@ -79,7 +71,9 @@ def _merge(into: Prepared, item) -> None:
     if item.source_tool == SourceTool.REPEATER.value:
         into.source_tool = SourceTool.REPEATER.value
     if item.request_sample and not into.request_sample:
-        into.request_sample = strip_control(item.request_sample)[:MAX_BODY_SAMPLE]
+        into.request_sample = redact_message(strip_control(item.request_sample))[
+            :MAX_BODY_SAMPLE
+        ]
     if item.observed_at and (
         into.observed_at is None or item.observed_at > into.observed_at
     ):
@@ -112,9 +106,9 @@ def prepare(items, *, include_static: bool, ingest_tools: list[str]) -> Batch:
                 if p and strip_control(p).strip()
             ]
             params = tuple(sorted({*params, *extra})[:MAX_PARAMS])
-        shape, collapsed = shape_for(parsed.path)
+        shape, _ = shape_for(parsed.path)
         endpoint_class = classify(parsed.path, parsed.extension, item.content_type)
-        if not include_static and _is_noise(endpoint_class, parsed.extension):
+        if not include_static and is_static(endpoint_class, parsed.extension):
             batch.rejected += 1
             continue
         signature = signature_for(
@@ -129,7 +123,6 @@ def prepare(items, *, include_static: bool, ingest_tools: list[str]) -> Batch:
             signature=signature,
             params=params,
             shape=shape,
-            collapsed=collapsed,
             methods=[strip_control(item.method or "GET").upper()[:16]],
             status_code=item.status_code,
             content_type=(
@@ -147,12 +140,11 @@ def prepare(items, *, include_static: bool, ingest_tools: list[str]) -> Batch:
                 extension=parsed.extension,
             ),
             request_sample=(
-                strip_control(item.request_sample)[:MAX_BODY_SAMPLE]
+                redact_message(strip_control(item.request_sample))[:MAX_BODY_SAMPLE]
                 if item.request_sample
                 else None
             ),
             observed_at=item.observed_at,
         )
-        batch.hosts.add(parsed.host)
     batch.prepared = list(folded.values())
     return batch

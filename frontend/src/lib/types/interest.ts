@@ -27,7 +27,6 @@ export interface InterestCatalog {
 	modes: Record<string, string>;
 	keyword_fields: Record<string, string>;
 	max_score: number;
-	providers: string[];
 }
 
 export interface InterestSignal {

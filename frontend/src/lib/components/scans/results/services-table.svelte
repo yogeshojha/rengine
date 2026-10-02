@@ -10,9 +10,7 @@
 	import Settings2 from '@lucide/svelte/icons/settings-2';
 
 	import * as Card from '$lib/components/ui/card';
-	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button } from '$lib/components/ui/button';
-	import { Badge } from '$lib/components/ui/badge';
 	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import EmptyState from '$lib/components/empty-state.svelte';
@@ -29,6 +27,7 @@
 	import { RowSelection } from './table/selection.svelte';
 	import type { SeedPick, SeedSelection } from '$lib/types/recheck';
 	import GroupList from './table/group-list.svelte';
+	import FilterChips from './table/filter-chips.svelte';
 	import FilterBar from './services/filter-bar.svelte';
 	import ServiceRow from './services/service-row.svelte';
 	import ServiceDetailSheet from './service-detail-sheet.svelte';
@@ -70,6 +69,7 @@
 	import { afterPause } from '$lib/utilities/debounce';
 	import { UrlSync, onPopSearch } from '$lib/utilities/url-history.svelte';
 	import { LiveRefresh } from '$lib/utilities/live-results';
+	import { TabCounts } from '$lib/utilities/tab-counts.svelte';
 
 	interface Props {
 		scanId: string;
@@ -168,7 +168,11 @@
 	let classTab = $derived(
 		query.classes.length === 0 ? 'all' : query.classes.length === 1 ? query.classes[0] : ''
 	);
+	const tabCounts = new TabCounts();
+	let tabQuery = $derived({ ...query, classes: [] });
+	let tabFiltered = $derived(serviceActiveFacetCount(tabQuery) > 0 || !!tabQuery.search.trim());
 	let classCounts = $derived.by(() => {
+		if (tabFiltered) return tabCounts.counts;
 		if (!facetsLoaded) return null;
 		const m: Record<string, number> = { all: scanTotal };
 		for (const f of facets['class']) m[f.value] = f.count;
@@ -300,6 +304,7 @@
 		refreshing = !quiet;
 		try {
 			if (!quiet) loadedLeadSig = '';
+			tabCounts.refresh();
 			await Promise.all([runSearch(), loadFacets(), loadGroups()]);
 		} finally {
 			if (!quiet) refreshing = false;
@@ -311,6 +316,18 @@
 		liveRefresh.notify(revision, active);
 	});
 	onDestroy(() => liveRefresh.stop());
+	onDestroy(() => tabCounts.clear());
+
+	$effect(() => {
+		const filter = compileServiceQuery(tabQuery, 'ip', 1, 0, 1);
+		const key = `${projectId}|${scanId}|${JSON.stringify(filter)}`;
+		const filtered = tabFiltered;
+		if (!ready || !seen || !queryReady) return;
+		untrack(() => {
+			if (filtered) tabCounts.track(key, () => servicesApi.tabs(projectId, scanId, filter));
+			else tabCounts.clear();
+		});
+	});
 
 	$effect(() => {
 		void JSON.stringify(query);
@@ -365,9 +382,7 @@
 					: null
 			);
 			urlSync.write(sp);
-		} catch {
-			// ignore
-		}
+		} catch {}
 	}
 	const urlSync = new UrlSync(['svc_q', 'svc_group']);
 
@@ -591,6 +606,7 @@
 			tabs={SERVICE_CLASS_TABS}
 			value={classTab}
 			counts={classCounts}
+			capped={tabFiltered ? tabCounts.capped : null}
 			onChange={setClassTab}
 		/>
 	</div>
@@ -618,33 +634,11 @@
 		onGroupBy={(key) => (groupBy = key)}
 	/>
 
-	{#if chips.length > 0}
-		<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/10 px-4 py-2">
-			{#each chips as chip (chip.id)}
-				<Badge variant="outline" class="gap-1 bg-background font-normal">
-					{chip.label}
-					<Tooltip.Root>
-						<Tooltip.Trigger
-							class="rounded-sm text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-							onclick={() => setQuery(chip.remove(query))}
-							aria-label="Remove filter {chip.label}"
-						>
-							<X class="h-3 w-3" />
-							<span class="sr-only">Remove filter {chip.label}</span>
-						</Tooltip.Trigger>
-						<Tooltip.Content>Remove filter {chip.label}</Tooltip.Content>
-					</Tooltip.Root>
-				</Badge>
-			{/each}
-			<button
-				class="ml-1 rounded-sm text-xs text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-				onclick={() => setQuery({ ...emptyServiceQuery(), search: query.search })}
-				aria-label="Clear all filters"
-			>
-				Clear all
-			</button>
-		</div>
-	{/if}
+	<FilterChips
+		{chips}
+		onRemove={(chip) => setQuery(chip.remove(query))}
+		onClear={() => setQuery({ ...emptyServiceQuery(), search: query.search })}
+	/>
 
 	{#if !groupBy}
 		<SelectionBar
@@ -698,7 +692,6 @@
 			<EmptyState
 				icon={SearchX}
 				title="No services match"
-				description="Widen the search or remove a filter."
 				class="rounded-none border-0 bg-transparent py-16"
 			>
 				<Button
@@ -713,7 +706,7 @@
 		{:else}
 			<EmptyState
 				icon={Plug}
-				title="No services in this scan"
+				title={projectWide ? 'No services' : 'No services in this scan'}
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
 		{/if}

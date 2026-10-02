@@ -105,7 +105,7 @@ class DnsPostureStage(Stage):
             selectors=self.cfg.dkim_selectors,
             fetch_policy=not passive,
             on_progress=self.emit_progress,
-            should_stop=self._aborted,
+            should_stop=self.aborted,
             workers=self.transport.threads,
         )
         self._check_abort()
@@ -169,9 +169,6 @@ class DnsPostureStage(Stage):
                 logger.warning("posture fold retried", attempt=attempt + 1)
                 time.sleep(_FOLD_RETRY_SECONDS)
         logger.warning("posture fold left to finalize", scan_id=str(self.ctx.scan_id))
-
-    def _aborted(self) -> bool:
-        return self.ctx.is_aborted is not None and self.ctx.is_aborted()
 
     def _names(self) -> list[str]:
         rows = self.session.execute(

@@ -80,11 +80,11 @@ async def get(user_id: uuid.UUID, run_id: str) -> ToolRunRead | None:
     return _load(raw)
 
 
-async def recent(user_id: uuid.UUID, limit: int = RUNS_KEPT) -> list[ToolRunRead]:
+async def recent(user_id: uuid.UUID) -> list[ToolRunRead]:
     index = INDEX_KEY.format(user_id=user_id)
     try:
         redis = async_client()
-        ids = await redis.lrange(index, 0, limit - 1)
+        ids = await redis.lrange(index, 0, RUNS_KEPT - 1)
         if not ids:
             return []
         rows = await redis.mget(

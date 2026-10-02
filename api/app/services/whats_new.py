@@ -32,11 +32,11 @@ from shared.definitions.bounty_programs import (
     event_spec,
 )
 from shared.definitions.vulnerabilities import (
+    ALERT_SEVERITIES,
     SEVERITY_RANK,
 )
 from shared.definitions.watch import ARRIVED_STATES, CT_SOURCE, WatchHostState
 from shared.definitions.whats_new import (
-    ALERT_SEVERITIES,
     BOUNTY_ROWS_PER_SECTION,
     DEFAULT_NEW_WINDOW,
     DEFAULT_ZONE,
@@ -81,29 +81,17 @@ from shared.models.whats_new import (
     VisualFeed,
     VisualPair,
 )
-from shared.services.asset_query import vuln_suppressed
+from shared.services.asset_query import vuln_seen_earlier, vuln_suppressed
 from shared.services.asset_query.tokens import token
 from shared.services.scan_scope import census_only
 from shared.utils.datetime import utc_now
-
-
-def _seen_earlier():
-    earlier = aliased(Vulnerability)
-    return exists(
-        select(1).where(
-            earlier.target_id == Vulnerability.target_id,
-            earlier.fingerprint == Vulnerability.fingerprint,
-            earlier.scan_id != Vulnerability.scan_id,
-            earlier.discovered_at < Vulnerability.discovered_at,
-        )
-    )
 
 
 def _new_conds(baseline: list[UUID]) -> list:
     return [
         Vulnerability.scan_id.in_(baseline),
         Vulnerability.severity.in_(ALERT_SEVERITIES),
-        not_(_seen_earlier()),
+        not_(vuln_seen_earlier()),
         not_(vuln_suppressed(tuple(baseline))),
     ]
 
@@ -256,7 +244,6 @@ class WhatsNewService:
         ring: str = ProgramRing.ENGAGED.value,
         q: str | None = None,
         bounty: bool = True,
-        rows: bool = True,
         grid: bool = True,
         visual: bool = True,
         tz: str = DEFAULT_ZONE,
@@ -300,7 +287,6 @@ class WhatsNewService:
             target_ids,
             wanted,
             q,
-            rows,
         )
         if visual:
             out.visual = await self._visual_count(
@@ -319,7 +305,6 @@ class WhatsNewService:
                 ring,
                 wanted,
                 q,
-                rows,
             )
 
         groups = sorted(
@@ -328,8 +313,7 @@ class WhatsNewService:
             reverse=True,
         )
         truncated = len(groups) > GROUP_LIMIT
-        if rows:
-            self._evidence(out, groups)
+        self._evidence(out, groups)
         return NewFeed(
             since=cutoff,
             until=until,
@@ -476,7 +460,6 @@ class WhatsNewService:
         target_ids,
         wanted: set[str],
         q: str | None,
-        rows: bool,
     ) -> None:
         conds = [
             Scan.project_id == project_id,
@@ -543,7 +526,7 @@ class WhatsNewService:
             .scalars()
             .all()
         }
-        show = rows and kind in wanted
+        show = kind in wanted
         for sid, found in by_run.items():
             scan = scans[sid]
             at = scan.completed_at or max(r[6] for r in found)
@@ -618,7 +601,7 @@ class WhatsNewService:
         return [(r[0], r[1]) for r in rows.all()]
 
     @staticmethod
-    def _pairs_source(pairs: list[tuple[UUID, UUID]], q: str | None):
+    def _pairs_join(pairs: list[tuple[UUID, UUID]], q: str | None):
         table = values(
             column("cur", Uuid), column("prev", Uuid), name="run_pairs"
         ).data(pairs)
@@ -632,17 +615,23 @@ class WhatsNewService:
             b.screenshot_phash.is_not(None),
             a.screenshot_path.is_not(None),
             b.screenshot_path.is_not(None),
+            distance > VISUAL_DISTANCE,
         ]
         if q:
             conds.append(a.name.ilike(f"%{q}%"))
-        return (
-            select(a.id)
+        stmt = (
+            select()
             .select_from(table)
             .join(a, a.scan_id == table.c.cur)
             .join(b, (b.scan_id == table.c.prev) & (b.name == a.name))
-            .where(*conds, distance > VISUAL_DISTANCE)
-            .subquery()
+            .where(*conds)
         )
+        return stmt, a, b, table.c.prev, distance
+
+    @classmethod
+    def _pairs_source(cls, pairs: list[tuple[UUID, UUID]], q: str | None):
+        stmt, a, *_ = cls._pairs_join(pairs, q)
+        return stmt.add_columns(a.id).subquery()
 
     async def visual(
         self,
@@ -655,7 +644,6 @@ class WhatsNewService:
         day_to: date | None = None,
         target_id: UUID | None = None,
         q: str | None = None,
-        limit: int = VISUAL_LIMIT,
         tz: str = DEFAULT_ZONE,
     ) -> VisualFeed:
         now = utc_now()
@@ -674,37 +662,17 @@ class WhatsNewService:
         )
         if not pairs:
             return feed
-        table = values(
-            column("cur", Uuid), column("prev", Uuid), name="run_pairs"
-        ).data(pairs)
-        a = aliased(Subdomain)
-        b = aliased(Subdomain)
-        distance = func.bit_count(
-            cast(a.screenshot_phash.op("#")(b.screenshot_phash), BIT(64))
-        ).label("distance")
-        conds = [
-            a.screenshot_phash.is_not(None),
-            b.screenshot_phash.is_not(None),
-            a.screenshot_path.is_not(None),
-            b.screenshot_path.is_not(None),
-            distance > VISUAL_DISTANCE,
-        ]
-        if q:
-            conds.append(a.name.ilike(f"%{q}%"))
+        stmt, a, b, prev_id, distance = self._pairs_join(pairs, q)
         rows = (
             await self.session.execute(
-                select(a, b, table.c.prev, distance, Target)
-                .select_from(table)
-                .join(a, a.scan_id == table.c.cur)
-                .join(b, (b.scan_id == table.c.prev) & (b.name == a.name))
+                stmt.add_columns(a, b, prev_id, distance, Target)
                 .join(Target, Target.id == a.target_id)
-                .where(*conds)
                 .order_by(distance.desc(), a.name)
-                .limit(limit + 1)
+                .limit(VISUAL_LIMIT + 1)
             )
         ).all()
-        feed.truncated = len(rows) > limit
-        for cur, prev, prev_scan, dist, target in rows[:limit]:
+        feed.truncated = len(rows) > VISUAL_LIMIT
+        for cur, prev, prev_scan, dist, target in rows[:VISUAL_LIMIT]:
             moved = [
                 field
                 for field in VISUAL_FIELDS
@@ -862,7 +830,6 @@ class WhatsNewService:
         ring: str,
         wanted: set[str],
         q: str | None,
-        rows: bool,
     ) -> None:
         await self._events(
             out,
@@ -875,7 +842,6 @@ class WhatsNewService:
             ring,
             wanted,
             q,
-            rows,
         )
         await self._hosts(
             out,
@@ -887,21 +853,19 @@ class WhatsNewService:
             program,
             wanted,
             q,
-            rows,
         )
         await self._targets(
-            out, project_id, since, until, grid_start, target_ids, wanted, q, rows
+            out, project_id, since, until, grid_start, target_ids, wanted, q
         )
 
-    def _program_subject(self, e_or_p, watch_id: UUID | None) -> NewSubject:
+    @staticmethod
+    def _program_subject(e: BountyEventRow, watch_id: UUID | None) -> NewSubject:
         return NewSubject(
             kind=SubjectKind.PROGRAM.value,
-            id=str(e_or_p.program_id if hasattr(e_or_p, "program_id") else e_or_p.id),
-            label=e_or_p.program_name
-            if hasattr(e_or_p, "program_name")
-            else e_or_p.name,
-            platform=e_or_p.platform,
-            handle=e_or_p.handle,
+            id=str(e.program_id),
+            label=e.program_name,
+            platform=e.platform,
+            handle=e.handle,
             watched=watch_id is not None,
             watch_id=watch_id,
         )
@@ -938,7 +902,6 @@ class WhatsNewService:
         ring: str,
         wanted: set[str],
         q: str | None,
-        rows: bool,
     ) -> None:
         base = [
             BountyEventRow.kind.in_(list(EVENT_KIND)),
@@ -984,7 +947,7 @@ class WhatsNewService:
             per_kind[EVENT_KIND[kind]] += int(n)
         for kind, n in per_kind.items():
             out.count(kind, n)
-        if rows and per_kind:
+        if per_kind:
             await self._event_rows(out, project_id, window, wanted)
 
     async def _event_rows(self, out: _Groups, project_id: UUID, window, wanted):
@@ -1180,7 +1143,6 @@ class WhatsNewService:
         program,
         wanted: set[str],
         q: str | None,
-        rows: bool,
     ) -> None:
         kind = NewKind.CERT_HOST.value
         base = [
@@ -1222,7 +1184,7 @@ class WhatsNewService:
         ).one()
         out.count(kind, int(total))
         out.fact(kind, Fact.ANSWERING.value, int(answering))
-        if not rows or kind not in wanted or not total:
+        if kind not in wanted or not total:
             return
 
         stmt = (
@@ -1290,7 +1252,6 @@ class WhatsNewService:
         target_ids,
         wanted: set[str],
         q: str | None,
-        rows: bool,
     ) -> None:
         kind = NewKind.TARGET.value
         base = [
@@ -1335,7 +1296,7 @@ class WhatsNewService:
         out.fact(
             kind, Fact.NOT_SCANNED.value, sum(1 for t in targets if t.id not in scanned)
         )
-        if not rows or kind not in wanted:
+        if kind not in wanted:
             return
         watched = {
             r[0]

@@ -2,24 +2,50 @@
 	import MoreVerticalIcon from '@lucide/svelte/icons/more-vertical';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Button } from '$lib/components/ui/button';
-	import Hint from '$lib/components/hint.svelte';
-	import { CHECK_DOT, checkState } from '$lib/components/settings/status';
+	import CheckStatus from '$lib/components/settings/check-status.svelte';
+	import { checkState } from '$lib/components/settings/status';
 	import { TRACKERS_BY_KIND, trackerLabel } from '$lib/config/issue-trackers';
 	import { relativeTime } from '$lib/utilities/dates';
-	import type { IssueTracker } from '$lib/types/issue-tracker';
-	import { BODY_ROW, HEAD_ROW, TRACKER_COL } from './columns';
+	import { FilingState } from '$lib/config/issue-trackers';
+	import type { IssueTracker, TrackedIssue } from '$lib/types/issue-tracker';
+	import { HEAD_ROW } from '$lib/components/settings/columns';
+	import { BODY_ROW, TRACKER_COL } from './columns';
 
 	interface Props {
 		trackers: IssueTracker[];
+		issues: TrackedIssue[];
+		capped: boolean;
 		canAdmin: boolean;
 		testing: string | null;
 		onEdit: (tracker: IssueTracker) => void;
 		onTest: (tracker: IssueTracker) => void;
 		onToggle: (tracker: IssueTracker) => void;
 		onRemove: (tracker: IssueTracker) => void;
+		onOpenIssues: (tracker: IssueTracker) => void;
 	}
 
-	let { trackers, canAdmin, testing, onEdit, onTest, onToggle, onRemove }: Props = $props();
+	let {
+		trackers,
+		issues,
+		capped,
+		canAdmin,
+		testing,
+		onEdit,
+		onTest,
+		onToggle,
+		onRemove,
+		onOpenIssues
+	}: Props = $props();
+
+	const tally = $derived.by(() => {
+		const out: Record<string, { total: number; failed: number }> = {};
+		for (const issue of issues) {
+			const row = (out[issue.tracker_id] ??= { total: 0, failed: 0 });
+			row.total += 1;
+			if (issue.state === FilingState.FAILED) row.failed += 1;
+		}
+		return out;
+	});
 
 	const CHECK_LABEL = {
 		ok: 'Connected',
@@ -40,6 +66,7 @@
 	{#each trackers as tracker (tracker.id)}
 		{@const spec = TRACKERS_BY_KIND[tracker.kind]}
 		{@const check = checkState(tracker.is_active, tracker.last_test_ok)}
+		{@const count = tally[tracker.id] ?? { total: 0, failed: 0 }}
 		<div class="{BODY_ROW} {tracker.is_active ? '' : 'text-muted-foreground'}" role="row">
 			<div class={TRACKER_COL.tracker}>
 				{#if canAdmin}
@@ -68,22 +95,27 @@
 				{/if}
 			</div>
 			<div class="{TRACKER_COL.issues} text-sm leading-5 tabular-nums">
-				{tracker.issues_filed.toLocaleString()}
-				{#if tracker.issues_failed}
-					<div class="text-2xs text-destructive">{tracker.issues_failed} not filed</div>
+				{#if count.total}
+					<button
+						type="button"
+						class="hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+						onclick={() => onOpenIssues(tracker)}
+					>
+						{count.total.toLocaleString()}{capped ? '+' : ''}
+					</button>
+				{:else}
+					<span class="text-muted-foreground">0{capped ? '+' : ''}</span>
+				{/if}
+				{#if count.failed}
+					<div class="text-2xs text-destructive">{count.failed.toLocaleString()} not filed</div>
 				{/if}
 			</div>
 			<div class="{TRACKER_COL.check} text-sm leading-5">
-				<Hint text={check === 'failed' ? (tracker.last_test_message ?? '') : ''}>
-					{#snippet child(props)}
-						<span {...props} class="inline-flex items-center gap-2">
-							<span class="flex h-5 items-center">
-								<span class="size-2 rounded-full {CHECK_DOT[check]}" aria-hidden="true"></span>
-							</span>
-							{CHECK_LABEL[check]}
-						</span>
-					{/snippet}
-				</Hint>
+				<CheckStatus
+					{check}
+					label={CHECK_LABEL[check]}
+					message={check === 'failed' ? tracker.last_test_message : null}
+				/>
 				{#if tracker.last_test_at}
 					<div class="text-2xs text-muted-foreground">{relativeTime(tracker.last_test_at)}</div>
 				{/if}

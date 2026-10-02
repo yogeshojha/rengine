@@ -12,6 +12,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import SectionHead from '$lib/components/section-head.svelte';
 	import { oastApi } from '$lib/api/oast';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { ROUTES } from '$lib/config/routes';
@@ -35,8 +36,6 @@
 	}
 
 	let { open = $bindable(), settings, onSaved }: Props = $props();
-
-	const LABEL = 'text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase';
 
 	let mode = $state<OastMode>(OastMode.OFF);
 	let server = $state('');
@@ -161,7 +160,7 @@
 			<ScrollArea class="min-h-0 flex-1">
 				<div class="flex flex-col divide-y px-5">
 					<section class="flex flex-col gap-2.5 py-5">
-						<h3 class={LABEL}>Mode</h3>
+						<SectionHead title="Mode" />
 						<ToggleGroup.Root
 							type="single"
 							variant="outline"
@@ -187,7 +186,7 @@
 
 					{#if mode === OastMode.SELF_HOSTED}
 						<section class="flex flex-col gap-2.5 py-5">
-							<h3 class={LABEL}>Server</h3>
+							<SectionHead title="Server" />
 							<Input
 								placeholder="oast.example.com"
 								bind:value={server}
@@ -217,7 +216,7 @@
 
 					{#if mode === OastMode.PUBLIC}
 						<section class="flex flex-col gap-2.5 py-5">
-							<h3 class={LABEL}>Public server</h3>
+							<SectionHead title="Public server" />
 							<div class="flex items-start gap-2 text-xs">
 								<TriangleAlertIcon class="mt-px size-3.5 shrink-0 text-warning" />
 								<span>{PUBLIC_ACK}</span>
@@ -239,7 +238,7 @@
 
 					{#if mode !== OastMode.OFF}
 						<section class="flex flex-col gap-2.5 py-5">
-							<h3 class={LABEL}>Wait after each out-of-band batch</h3>
+							<SectionHead title="Wait after each out-of-band batch" />
 							<Select.Root
 								type="single"
 								value={String(wait)}

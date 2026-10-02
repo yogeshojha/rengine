@@ -11,6 +11,7 @@
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import { MAX_IMPORT_TAGS } from '$lib/config/bounty-programs';
 	import type { BountyProgram } from '$lib/types/bounty-program';
+	import { plural } from '$lib/utilities/strings';
 
 	interface Props {
 		program: BountyProgram;
@@ -69,7 +70,7 @@
 <Dialog.Root {open} {onOpenChange}>
 	<Dialog.Content class="sm:max-w-lg">
 		<Dialog.Header>
-			<Dialog.Title>Add {count} {count === 1 ? 'target' : 'targets'}</Dialog.Title>
+			<Dialog.Title>Add {plural(count, 'target')}</Dialog.Title>
 			<Dialog.Description>
 				From {program.name} on {program.platform_label}.
 				{#if outOfScopeCount > 0}
@@ -137,8 +138,7 @@
 						tags
 					})}
 			>
-				Add {count}
-				{count === 1 ? 'target' : 'targets'}
+				Add {plural(count, 'target')}
 			</LoadingButton>
 		</Dialog.Footer>
 	</Dialog.Content>

@@ -8,7 +8,6 @@ import burp.api.montoya.http.HttpService;
 import burp.api.montoya.http.message.HttpRequestResponse;
 import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.api.montoya.http.message.responses.HttpResponse;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Map;
@@ -40,17 +39,54 @@ final class Handoff {
 
     /** Host, port and TLS from a URL, the scheme's own port when none is written. */
     static Origin origin(String url) {
-        URI uri = URI.create(url.trim());
-        boolean secure = "https".equalsIgnoreCase(uri.getScheme());
-        int port = uri.getPort() > 0 ? uri.getPort() : secure ? 443 : 80;
-        String host = uri.getHost();
-        if (host == null || host.isBlank()) {
+        String value = url == null ? "" : url.trim();
+        int scheme = value.indexOf("://");
+        if (scheme <= 0) {
+            throw new IllegalArgumentException("No scheme in " + url);
+        }
+        boolean secure = "https".equalsIgnoreCase(value.substring(0, scheme));
+        String rest = value.substring(scheme + 3);
+        int end = rest.length();
+        for (char stop : new char[] {'/', '?', '#'}) {
+            int at = rest.indexOf(stop);
+            if (at >= 0 && at < end) {
+                end = at;
+            }
+        }
+        String authority = rest.substring(0, end);
+        authority = authority.substring(authority.lastIndexOf('@') + 1);
+        String host;
+        String port;
+        if (authority.startsWith("[")) {
+            int close = authority.indexOf(']');
+            if (close < 0) {
+                throw new IllegalArgumentException("No host in " + url);
+            }
+            host = authority.substring(1, close);
+            String tail = authority.substring(close + 1);
+            if (!tail.isEmpty() && !tail.startsWith(":")) {
+                throw new IllegalArgumentException("Invalid port in " + url);
+            }
+            port = tail.isEmpty() ? "" : tail.substring(1);
+        } else {
+            int colon = authority.lastIndexOf(':');
+            host = colon < 0 ? authority : authority.substring(0, colon);
+            port = colon < 0 ? "" : authority.substring(colon + 1);
+        }
+        if (host.isBlank()) {
             throw new IllegalArgumentException("No host in " + url);
         }
-        if (host.startsWith("[") && host.endsWith("]")) {
-            host = host.substring(1, host.length() - 1);
+        if (port.isEmpty()) {
+            return new Origin(host, secure ? 443 : 80, secure);
         }
-        return new Origin(host, port, secure);
+        if (port.length() > 5 || !port.chars().allMatch(c -> c >= '0' && c <= '9')) {
+            throw new IllegalArgumentException("Invalid port in " + url);
+        }
+        int number = Integer.parseInt(port);
+        if (number < 1 || number > 65535) {
+            throw new IllegalArgumentException("Invalid port in " + url);
+        }
+        return new Origin(host, number, secure);
     }
 
     static String tool(String kind) {
@@ -82,9 +118,7 @@ final class Handoff {
     void deliver(Actions.Action action) {
         Origin origin = origin(action.url());
         HttpService service = HttpService.httpService(origin.host(), origin.port(), origin.secure());
-        HttpRequest request = action.hasRequest()
-                ? HttpRequest.httpRequest(service, bytes(action.request()))
-                : HttpRequest.httpRequestFromUrl(action.url()).withMethod(action.method());
+        HttpRequest request = HttpRequest.httpRequest(service, bytes(action.request()));
         String tool = tool(action.kind());
         switch (tool) {
             case INTRUDER -> api.intruder().sendToIntruder(request, label(action));
@@ -113,14 +147,6 @@ final class Handoff {
     long delivered(String tool) {
         AtomicLong count = delivered.get(tool);
         return count == null ? 0 : count.get();
-    }
-
-    long delivered() {
-        long total = 0;
-        for (AtomicLong count : delivered.values()) {
-            total += count.get();
-        }
-        return total;
     }
 
     /** One line: what reached each tool. */

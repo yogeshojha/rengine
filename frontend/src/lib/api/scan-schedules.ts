@@ -5,15 +5,10 @@ import type {
 	ScanScheduleUpdate
 } from '$lib/types/scan-schedule';
 import type { ScanRead } from '$lib/types/scan';
-import type { PaginatedResponse } from '$lib/types/pagination';
 
 export const scanSchedulesApi = {
 	async list(projectId: string): Promise<ScanScheduleRead[]> {
 		return api.get<ScanScheduleRead[]>(`/schedules?project_id=${projectId}`);
-	},
-
-	async get(id: string, projectId: string): Promise<ScanScheduleRead> {
-		return api.get<ScanScheduleRead>(`/schedules/${id}?project_id=${projectId}`);
 	},
 
 	async create(projectId: string, data: ScanScheduleCreate): Promise<ScanScheduleRead> {
@@ -38,16 +33,5 @@ export const scanSchedulesApi = {
 
 	async runNow(id: string, projectId: string): Promise<ScanRead[]> {
 		return api.post<ScanRead[]>(`/schedules/${id}/run-now?project_id=${projectId}`);
-	},
-
-	async listScans(
-		id: string,
-		projectId: string,
-		page = 1,
-		size = 20
-	): Promise<PaginatedResponse<ScanRead>> {
-		return api.get<PaginatedResponse<ScanRead>>(
-			`/schedules/${id}/scans?project_id=${projectId}&page=${page}&size=${size}`
-		);
 	}
 };

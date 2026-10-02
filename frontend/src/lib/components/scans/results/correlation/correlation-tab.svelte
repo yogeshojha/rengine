@@ -20,6 +20,7 @@
 	import { kindColor } from '$lib/config/correlation';
 	import { exactToken } from '$lib/utilities/scan-insights';
 	import { LiveRefresh } from '$lib/utilities/live-results';
+	import { plural } from '$lib/utilities/strings';
 	import type {
 		CorrelationGraph as Graph,
 		CorrelationHost,
@@ -40,8 +41,6 @@
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 
 	const HEIGHT = 600;
-	const plural = (n: number, one: string, many: string) =>
-		`${n.toLocaleString()} ${n === 1 ? one : many}`;
 
 	let graph = $state<Graph | null>(null);
 	let loading = $state(false);
@@ -49,7 +48,6 @@
 	let enabled = new SvelteSet<string>();
 	let hideCommon = $state(true);
 	let hidePlatform = $state(true);
-	let crossOnly = $state(false);
 	let settled = false;
 	let selected = $state<GraphNode | null>(null);
 	let search = $state('');
@@ -73,8 +71,6 @@
 			if (!settled) {
 				settled = true;
 				for (const k of res.kinds) if (k.default) enabled.add(k.key);
-				// a scope over several targets opens on what crosses them
-				crossOnly = res.targets_total > 1;
 			}
 		} catch {
 			if (my === req) errored = true;
@@ -95,22 +91,18 @@
 	});
 	onDestroy(() => liveRefresh.stop());
 
-	let manyTargets = $derived((graph?.targets_total ?? 1) > 1);
 	let visible = $derived(
-		(h: CorrelationHub) =>
-			(!hideCommon || !h.common) && (!hidePlatform || !h.platform) && (!crossOnly || h.targets > 1)
+		(h: CorrelationHub) => (!hideCommon || !h.common) && (!hidePlatform || !h.platform)
 	);
 	let hubs = $derived((graph?.hubs ?? []).filter((h) => enabled.has(h.kind) && visible(h)));
 	let hosts = $derived(graph?.hosts ?? []);
 	let sharing = $derived(new Set(hubs.flatMap((h) => h.members)).size);
-	// badge equals the head count
 	$effect(() => {
 		if (graph) onTotal?.(sharing);
 	});
 	let hidden = $derived(
 		(graph?.hubs ?? []).filter((h) => enabled.has(h.kind) && !visible(h)).length
 	);
-	// a chip counts what it would draw
 	let byKind = $derived.by(() => {
 		const shown: Record<string, number> = {};
 		const hid: Record<string, number> = {};
@@ -174,6 +166,11 @@
 		for (const v of values) enabled.add(v);
 		if (selected?.hub && !enabled.has(selected.hub.kind)) selected = null;
 	}
+	function showAll() {
+		hideCommon = false;
+		hidePlatform = false;
+		setKinds(kinds.map((k) => k.key));
+	}
 </script>
 
 <Card.Root class="gap-0 overflow-hidden py-0">
@@ -182,9 +179,7 @@
 			{#if graph}
 				<p class="text-sm">
 					<b class="font-semibold tabular-nums">{sharing.toLocaleString()}</b> of
-					{plural(graph.estate_hosts, 'web asset', 'web assets')} share an identity{crossOnly
-						? ' across targets'
-						: ''}
+					{plural(graph.estate_hosts, 'web asset', 'web assets')} share an identity
 					<span class="text-muted-foreground"
 						>· {plural(hubs.length, 'shared identity', 'shared identities')}{hidden
 							? ` · ${hidden.toLocaleString()} hidden`
@@ -194,11 +189,7 @@
 				{#if graph.truncated}
 					<p class="text-xs text-muted-foreground">
 						{graph.total_hosts.toLocaleString()} of {graph.shared_hosts.toLocaleString()} correlating
-						web assets graphed, the ones that answered first.
-					</p>
-				{:else if manyTargets}
-					<p class="text-xs text-muted-foreground">
-						Across {graph.targets_total.toLocaleString()} targets.
+						web assets graphed.
 					</p>
 				{/if}
 			{:else}
@@ -257,15 +248,10 @@
 				size="sm"
 				variant="outline"
 				class="ml-auto"
-				value={[
-					...(hideCommon ? ['common'] : []),
-					...(hidePlatform ? ['platform'] : []),
-					...(crossOnly ? ['crossing'] : [])
-				]}
+				value={[...(hideCommon ? ['common'] : []), ...(hidePlatform ? ['platform'] : [])]}
 				onValueChange={(v) => {
 					hideCommon = v.includes('common');
 					hidePlatform = v.includes('platform');
-					crossOnly = v.includes('crossing');
 				}}
 				aria-label="Hidden identities"
 			>
@@ -289,17 +275,6 @@
 						</span>
 					{/snippet}
 				</Hint>
-				{#if manyTargets}
-					<Hint text="Identities carried by web assets under more than one target">
-						{#snippet child(props)}
-							<span {...props} class="inline-flex">
-								<ToggleGroup.Item value="crossing" class="h-7 px-2 text-xs font-normal"
-									>Crosses targets</ToggleGroup.Item
-								>
-							</span>
-						{/snippet}
-					</Hint>
-				{/if}
 			</ToggleGroup.Root>
 		</div>
 	{/if}
@@ -324,12 +299,20 @@
 			title="No shared identities"
 			class="rounded-none border-0 bg-transparent py-16"
 		/>
-	{:else if graph && hubs.length === 0}
+	{:else if graph && enabled.size === 0}
 		<EmptyState
 			icon={Share2}
 			title="No identity types selected"
 			class="rounded-none border-0 bg-transparent py-16"
 		/>
+	{:else if graph && hubs.length === 0}
+		<EmptyState
+			icon={Share2}
+			title="Shared identities hidden"
+			class="rounded-none border-0 bg-transparent py-16"
+		>
+			<Button variant="outline" onclick={showAll}>Show all identities</Button>
+		</EmptyState>
 	{:else if graph}
 		<div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_18rem]">
 			<CorrelationGraph

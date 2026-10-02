@@ -11,7 +11,11 @@ from shared.definitions.domain_posture import PostureCheck as C
 from shared.services.domain_posture import evaluate, gather
 from shared.services.domain_posture.evaluate import dkim_key_bits, dmarc_tags
 from shared.services.domain_posture.records import PolicyFetch, ZoneRecords, mx_host
-from shared.services.domain_posture.spf import all_qualifier, lookup_count
+from shared.services.domain_posture.spf import (
+    all_qualifier,
+    include_zones,
+    lookup_count,
+)
 from shared.services.domain_posture.write import zone_of
 
 pytestmark = pytest.mark.posture
@@ -59,6 +63,11 @@ def test_spf_all_qualifiers():
     assert all_qualifier("v=spf1 ?all") == "neutral"
     assert all_qualifier("v=spf1 +all") == "pass"
     assert all_qualifier("v=spf1 include:x.example") == "absent"
+
+
+def test_spf_include_zones_skip_redirect():
+    record = "v=spf1 +include:A.example. ~include:b.example redirect=c.example -all"
+    assert include_zones(record) == {"a.example", "b.example"}
 
 
 def test_spf_any_sender_is_the_warning_and_softfail_the_note():
@@ -192,7 +201,7 @@ def test_every_check_has_one_spec_and_the_spoofable_set_is_a_subset():
 
 
 class _Fake:
-    """A lookup that answers from a table and never for names outside it."""
+    """A lookup that answers from a table."""
 
     def __init__(self, table: dict[str, dict[str, list[str]]]):
         self.table = table

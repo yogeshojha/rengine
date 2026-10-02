@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { SvelteMap } from 'svelte/reactivity';
 	import * as Select from '$lib/components/ui/select';
 	import MultiSelectCombobox from '$lib/components/multi-select-combobox.svelte';
 	import { organizationsApi, type Organization } from '$lib/api/organizations';
@@ -11,11 +12,12 @@
 	interface Props {
 		projectSlug: string;
 		scope: TripwireScope;
+		labels?: string[];
 		onChange: (scope: TripwireScope, labels: string[]) => void;
 		ids?: { kind: string; select: string };
 	}
 
-	let { projectSlug, scope, onChange, ids }: Props = $props();
+	let { projectSlug, scope, labels = [], onChange, ids }: Props = $props();
 
 	interface Item {
 		id: string;
@@ -27,8 +29,21 @@
 	let organizations = $state<Organization[]>([]);
 	let tags = $state<Tag[]>([]);
 	let loaded = $state<string | null>(null);
+	let ready = $state(false);
 
 	const KINDS = Object.values(ScopeKind);
+	const SEARCH_ROWS = 50;
+	const SEARCH_DEBOUNCE_MS = 200;
+	const names = new SvelteMap<string, string>(
+		untrack(() =>
+			labels.length === scope.ids.length
+				? scope.ids.map((id, i): [string, string] => [id, labels[i]])
+				: []
+		)
+	);
+	const asked: string[] = [];
+	let seq = 0;
+	let timer: ReturnType<typeof setTimeout> | undefined;
 
 	$effect(() => {
 		const slug = projectSlug;
@@ -36,19 +51,52 @@
 		untrack(() => void load(slug));
 	});
 
+	$effect(() => {
+		if (!ready || scope.kind !== ScopeKind.Targets) return;
+		const missing = scope.ids.filter((id) => !untrack(() => names.has(id)) && !asked.includes(id));
+		for (const id of missing) {
+			asked.push(id);
+			targetsApi
+				.get(id)
+				.then((t) => names.set(t.id, t.target_value))
+				.catch(() => {});
+		}
+	});
+
 	async function load(slug: string) {
 		loaded = slug;
-		const [t, o, g] = await Promise.all([
-			targetsApi.list({ project_slug: slug, size: 100 }).catch(() => null),
+		const [o, g] = await Promise.all([
 			organizationsApi.list({ project_slug: slug }).catch(() => []),
-			tagsApi.list({ project_slug: slug }).catch(() => [])
+			tagsApi.list({ project_slug: slug }).catch(() => []),
+			runSearch('')
 		]);
-		targets = (t?.items ?? []).map((x) => ({ id: x.id, label: x.target_value }));
 		organizations = o;
 		tags = g;
+		ready = true;
 	}
 
-	let selectedTargets = $derived(targets.filter((t) => scope.ids.includes(t.id)));
+	function searchTargets(q: string) {
+		clearTimeout(timer);
+		timer = setTimeout(() => void runSearch(q), q ? SEARCH_DEBOUNCE_MS : 0);
+	}
+
+	async function runSearch(q: string) {
+		const mySeq = ++seq;
+		const page = await targetsApi
+			.list({
+				project_slug: projectSlug,
+				search: q,
+				sort_by: 'name',
+				sort_dir: 'asc',
+				size: SEARCH_ROWS
+			})
+			.catch(() => null);
+		if (mySeq !== seq) return;
+		targets = (page?.items ?? []).map((x) => ({ id: x.id, label: x.target_value }));
+		for (const x of targets) names.set(x.id, x.label);
+	}
+
+	let selectedTargets = $derived(scope.ids.map((id) => ({ id, label: names.get(id) ?? '…' })));
 	let single = $derived(scope.ids[0] ?? '');
 	let orgLabel = $derived(
 		organizations.find((o) => o.id === single)?.name ?? 'Choose an organization'
@@ -57,7 +105,7 @@
 
 	function labelsOf(next: TripwireScope): string[] {
 		if (next.kind === ScopeKind.Targets) {
-			return next.ids.map((id) => targets.find((t) => t.id === id)?.label ?? id);
+			return next.ids.flatMap((id) => names.get(id) ?? []);
 		}
 		if (next.kind === ScopeKind.Organization) {
 			return next.ids.map((id) => organizations.find((o) => o.id === id)?.name ?? id);
@@ -100,9 +148,10 @@
 					ids: scope.ids.includes(item.id) ? scope.ids : [...scope.ids, item.id]
 				})}
 			onRemove={(item) => change({ ...scope, ids: scope.ids.filter((id) => id !== item.id) })}
+			onSearch={searchTargets}
 			allowCreate={false}
 			placeholder="Search targets"
-			emptyText="No targets in this project"
+			emptyText="No targets"
 		/>
 	{:else if scope.kind === ScopeKind.Organization}
 		<Select.Root

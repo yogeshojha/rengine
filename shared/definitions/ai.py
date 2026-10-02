@@ -34,11 +34,6 @@ REPORT_TASKS: tuple[str, ...] = (
     AITask.ATTACK_PATH.value,
 )
 
-GLOBAL_CACHE_TASKS: tuple[str, ...] = (
-    AITask.ISSUE_EXPLAINER.value,
-    AITask.ASSET_JUDGEMENT.value,
-)
-
 TASK_OUTPUT_TOKENS: dict[str, int] = {
     AITask.EXECUTIVE_SUMMARY.value: 1400,
     AITask.RISK_NARRATIVE.value: 900,
@@ -132,8 +127,10 @@ MODELS: tuple[ModelSpec, ...] = (
     ),
     ModelSpec("gpt-4o", "GPT-4o", AIProvider.OPENAI.value),
     ModelSpec("gpt-4o-mini", "GPT-4o mini", AIProvider.OPENAI.value),
-    ModelSpec("gemini-1.5-pro", "Gemini 1.5 Pro", AIProvider.GOOGLE.value),
-    ModelSpec("gemini-1.5-flash", "Gemini 1.5 Flash", AIProvider.GOOGLE.value),
+    ModelSpec("gemini-3.8-flash", "Gemini 3.8 Flash", AIProvider.GOOGLE.value),
+    ModelSpec(
+        "gemini-3.5-flash-lite", "Gemini 3.5 Flash-Lite", AIProvider.GOOGLE.value
+    ),
 )
 
 MODEL_BY_ID: dict[str, ModelSpec] = {m.id: m for m in MODELS}
@@ -141,23 +138,20 @@ MODEL_BY_ID: dict[str, ModelSpec] = {m.id: m for m in MODELS}
 DEFAULT_MODEL: dict[str, str] = {
     AIProvider.ANTHROPIC.value: "claude-opus-5",
     AIProvider.OPENAI.value: "gpt-4o-mini",
-    AIProvider.AZURE_OPENAI.value: "gpt-4o-mini",
-    AIProvider.GOOGLE.value: "gemini-1.5-flash",
+    AIProvider.GOOGLE.value: "gemini-3.8-flash",
     AIProvider.OPENAI_COMPATIBLE.value: "",
 }
 
 FAST_MODEL: dict[str, str] = {
     AIProvider.ANTHROPIC.value: "claude-haiku-4-5",
     AIProvider.OPENAI.value: "gpt-4o-mini",
-    AIProvider.AZURE_OPENAI.value: "gpt-4o-mini",
-    AIProvider.GOOGLE.value: "gemini-1.5-flash",
+    AIProvider.GOOGLE.value: "gemini-3.5-flash-lite",
     AIProvider.OPENAI_COMPATIBLE.value: "",
 }
 
 PROVIDER_LABELS: dict[str, str] = {
     AIProvider.ANTHROPIC.value: "Anthropic",
     AIProvider.OPENAI.value: "OpenAI",
-    AIProvider.AZURE_OPENAI.value: "Azure OpenAI",
     AIProvider.GOOGLE.value: "Google",
     AIProvider.OPENAI_COMPATIBLE.value: "OpenAI-compatible",
 }
@@ -165,7 +159,6 @@ PROVIDER_LABELS: dict[str, str] = {
 PROVIDER_KEY_HINT: dict[str, str] = {
     AIProvider.OPENAI.value: "sk-...",
     AIProvider.ANTHROPIC.value: "sk-ant-...",
-    AIProvider.AZURE_OPENAI.value: "Azure resource key",
     AIProvider.GOOGLE.value: "AIza...",
     AIProvider.OPENAI_COMPATIBLE.value: "Key, or blank for a local server",
 }
@@ -214,9 +207,9 @@ AI_FEATURES: tuple[AIFeature, ...] = (
     AIFeature(
         "ask",
         "Ask",
-        "Answers questions about a finding in its sheet. Sends the finding, its "
-        "request and response with secrets masked, and what the read-only tools "
-        "return.",
+        "Answers questions about a finding or a web asset in its sheet. Sends the "
+        "record, a finding's request and response, and what the read-only tools "
+        "return, with secrets masked.",
         True,
     ),
 )

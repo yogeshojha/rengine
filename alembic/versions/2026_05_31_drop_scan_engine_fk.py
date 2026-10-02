@@ -1,4 +1,4 @@
-"""drop scans.engine_id FK so engines stay deletable; scan keeps engine_name snapshot
+"""drop scans.engine_id FK
 
 Revision ID: d4e5f6a7b8c9
 Revises: c3d4e5f6a7b8
@@ -10,7 +10,6 @@ from collections.abc import Sequence
 
 from alembic import op
 
-# revision identifiers, used by Alembic.
 revision: str = "d4e5f6a7b8c9"
 down_revision: str | None = "c3d4e5f6a7b8"
 branch_labels: str | Sequence[str] | None = None

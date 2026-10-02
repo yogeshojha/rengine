@@ -10,13 +10,11 @@ from mcp.context import ToolContext
 from mcp.dimensions import dimension
 from mcp.errors import ToolError
 from mcp.result import ToolResult
-from mcp.tools._scope import resolve
+from mcp.tools._scope import operator, resolve
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.definitions.surface import SurfaceDimension
-from shared.definitions.vulnerabilities import VulnState
+from shared.definitions.vulnerabilities import VULN_STATES
 from shared.utils.text import counted
-
-STATES = tuple(s.value for s in VulnState)
 
 
 class Input(ToolInput):
@@ -24,7 +22,9 @@ class Input(ToolInput):
     fingerprint: str = Field(
         description="The finding's fingerprint, as returned by query_assets."
     )
-    state: str = Field(description=f"The review decision. One of: {', '.join(STATES)}.")
+    state: str = Field(
+        description=f"The review decision. One of: {', '.join(VULN_STATES)}."
+    )
     note: str | None = Field(
         default=None, max_length=2000, description="Note stored with the decision."
     )
@@ -50,12 +50,10 @@ class RecordTriage(Tool):
         from app.services.vulnerability import VulnerabilityService  # noqa: PLC0415
         from shared.models.vulnerability import TriageUpdate  # noqa: PLC0415
 
-        if args.state not in STATES:
-            msg = f"Unknown state {args.state!r}. Use one of: {', '.join(STATES)}."
+        if args.state not in VULN_STATES:
+            msg = f"Unknown state {args.state!r}. Use one of: {', '.join(VULN_STATES)}."
             raise ToolError(msg)
-        if ctx.token.issued_by is None:
-            msg = "This token has no issuing operator to attribute the decision to."
-            raise ToolError(msg)
+        issued_by = operator(ctx)
 
         dim = dimension(SurfaceDimension.VULNERABILITIES.value)
         scope = await resolve(ctx, args.target)
@@ -64,8 +62,11 @@ class RecordTriage(Tool):
         result = await VulnerabilityService(ctx.session).triage(
             scan_id,
             args.fingerprint.strip(),
-            TriageUpdate(state=args.state, note=args.note),
-            ctx.token.issued_by,
+            TriageUpdate(
+                state=args.state,
+                **({"note": args.note} if args.note is not None else {}),
+            ),
+            issued_by,
         )
         if result is None:
             msg = (

@@ -16,14 +16,6 @@ down_revision: str | None = "c8f31a06e5b4"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
-# the tag is the fallback the indexer also applies
-_SEED = """
-UPDATE vuln_templates
-   SET needs_oast = true
- WHERE raw ~* 'interactsh[-_](url|protocol|request|response|ip)'
-    OR tags::jsonb ? 'oast'
-"""
-
 
 def upgrade() -> None:
     op.add_column(
@@ -32,7 +24,6 @@ def upgrade() -> None:
             "needs_oast", sa.Boolean(), nullable=False, server_default=sa.text("false")
         ),
     )
-    op.execute(_SEED)
     op.alter_column("vuln_templates", "needs_oast", server_default=None)
 
 

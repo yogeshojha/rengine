@@ -4,6 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import settings
+from shared.config import APP_NAME
 
 engine = create_engine(
     settings.database_url,
@@ -13,7 +14,7 @@ engine = create_engine(
     max_overflow=settings.WORKER_DB_MAX_OVERFLOW,
     pool_timeout=settings.WORKER_DB_POOL_TIMEOUT,
     pool_recycle=settings.DB_POOL_RECYCLE,
-    connect_args={"application_name": f"{settings.APP_NAME}-worker"},
+    connect_args={"application_name": f"{APP_NAME}-worker"},
 )
 
 SyncSessionLocal = sessionmaker(

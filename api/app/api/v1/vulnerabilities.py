@@ -7,11 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.api.scope import VulnScope
 from app.core.database import get_session
-from app.services.scan_surface import ScanSurfaceService
 from app.services.vulnerability import VulnerabilityService
 from shared.definitions.vulnerabilities import VULN_STATES
-from shared.models.asset_query import QueryGroups, QueryLeads
-from shared.models.scan_surface import SurfaceSummary
+from shared.models.asset_query import QueryCounts, QueryGroups, QueryLeads
 from shared.models.vulnerability import (
     BulkTriageResult,
     BulkTriageUpdate,
@@ -39,7 +37,7 @@ def get_service(
 def _check_state(state: str) -> None:
     if state not in VULN_STATES:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Unknown review state '{state}'. Expected one of "
             f"{', '.join(sorted(VULN_STATES))}.",
         )
@@ -72,6 +70,16 @@ async def search_issues(
     body: VulnerabilityFilter,
 ):
     return await service.issues(scope, body)
+
+
+@router.post("/search/tabs", response_model=QueryCounts)
+async def vulnerability_tabs(
+    _current_user: CurrentUser,
+    service: Annotated[VulnerabilityService, Depends(get_service)],
+    scope: VulnScope,
+    body: VulnerabilityFilter,
+):
+    return await service.tabs(scope, body)
 
 
 @router.post("/search/leads", response_model=QueryLeads)
@@ -134,15 +142,6 @@ async def vulnerability_coverage(
     scope: VulnScope,
 ):
     return await service.coverage(scope)
-
-
-@router.get("/surface", response_model=SurfaceSummary)
-async def vulnerability_surface(
-    _current_user: CurrentUser,
-    service: Annotated[VulnerabilityService, Depends(get_service)],
-    scope: VulnScope,
-):
-    return await ScanSurfaceService(service.session).summary(scope)
 
 
 @router.get("/{vulnerability_id}", response_model=VulnerabilityRead)

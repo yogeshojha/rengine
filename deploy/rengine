@@ -4,6 +4,8 @@ set -euo pipefail
 
 SELF="$(readlink -f "${BASH_SOURCE[0]}")"
 RENGINE_HOME="$(dirname "$(dirname "$SELF")")"
+CALLER_PWD="$PWD"
+abs() { case "$1" in /*) printf '%s' "$1" ;; *) printf '%s/%s' "$CALLER_PWD" "$1" ;; esac; }
 cd "$RENGINE_HOME"
 
 REPO="yogeshojha/rengine"
@@ -68,15 +70,26 @@ cmd_update() {
   curl -fsSL "https://github.com/$REPO/archive/refs/tags/$tag.tar.gz" | tar -xz -C "$WORK"
   src="$(find "$WORK" -maxdepth 1 -mindepth 1 -type d | head -1)"
   [ -f "$src/docker-compose.prod.yml" ] || die "the $tag archive has no docker-compose.prod.yml"
-  cp "$src/docker-compose.prod.yml" .
+  cp "$src/docker-compose.prod.yml" docker-compose.prod.yml.new
+  RENGINE_TAG="$image_tag" docker compose -f docker-compose.prod.yml.new -f ports.yml pull \
+    || { rm -f docker-compose.prod.yml.new; die "the image pull failed. The install stays on $current."; }
+  mv docker-compose.prod.yml.new docker-compose.prod.yml
   mkdir -p scripts bin
   install -m 755 "$src/scripts/backup.sh" scripts/backup.sh
   install -m 755 "$src/deploy/rengine" bin/rengine
-  RENGINE_TAG="$image_tag" docker compose pull \
-    || die "the image pull failed. The install stays on $current."
   sed -i "s|^RENGINE_TAG=.*|RENGINE_TAG=$image_tag|" .env
   docker compose up -d --remove-orphans
   printf 'Updated to %s.\n' "$image_tag"
+}
+
+cmd_scale() {
+  [[ "${1:-}" =~ ^[0-9]+$ ]] || die "usage: rengine scale <n>"
+  if grep -q '^WORKER_SCANS_REPLICAS=' .env; then
+    sed -i "s|^WORKER_SCANS_REPLICAS=.*|WORKER_SCANS_REPLICAS=$1|" .env
+  else
+    printf 'WORKER_SCANS_REPLICAS=%s\n' "$1" >>.env
+  fi
+  docker compose up -d worker-scans
 }
 
 cmd_uninstall() {
@@ -101,12 +114,11 @@ case "$cmd" in
   restart)   docker compose down && docker compose up -d ;;
   status)    cmd_status ;;
   logs)      docker compose logs -f --tail 200 "$@" ;;
-  scale)     [ -n "${1:-}" ] || die "usage: rengine scale <n>"
-             docker compose up -d --scale "worker-scans=$1" worker-scans ;;
+  scale)     cmd_scale "${1:-}" ;;
   update)    cmd_update "${1:-}" ;;
-  backup)    exec scripts/backup.sh dump "${1:-./backups}" ;;
+  backup)    exec scripts/backup.sh dump "$(abs "${1:-$RENGINE_HOME/backups}")" ;;
   restore)   [ -n "${1:-}" ] || die "usage: rengine restore <archive>"
-             exec scripts/backup.sh restore "$1" ;;
+             exec scripts/backup.sh restore "$(abs "$1")" ;;
   uninstall) cmd_uninstall ;;
   version)   env_get RENGINE_TAG ;;
   ''|help|-h|--help) usage ;;

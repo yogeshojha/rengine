@@ -1,7 +1,7 @@
 from typing import Annotated
 
 import anyio
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentSuperuser
@@ -9,20 +9,27 @@ from app.core.database import get_session
 from channels.service import ChannelService
 from channels.telegram.driver import TelegramError, valid_token
 from channels.telegram.driver import verify as verify_bot
+from shared.definitions.api_keys import API_PROVIDER_META
 from shared.definitions.channels import PROVIDER_CHANNELS
 from shared.enums.api_key import APIProvider
-from shared.models.api_key import APIKeyCreate, APIKeyRead, APIKeyUpdate, ProviderInfo
+from shared.models.api_key import (
+    APIKey,
+    APIKeyCreate,
+    APIKeyRead,
+    APIKeyUpdate,
+    ProviderInfo,
+)
 from shared.services.api_key.async_api_key import APIKeyService
 from shared.services.bounty_providers import HackerOneProvider, IntigritiProvider
 from shared.services.scan_resolve import MASK
-from shared.utils.crypto import try_decrypt
+from shared.utils.crypto import decrypt_stored
 from tools.viewdns.client import ViewDNSClient
 
 
 async def _test_viewdns(key_value: str, _key_meta: dict | None) -> dict:
     client = ViewDNSClient(key_value)
     _ = await client.ip_history("rengine.wiki")
-    return {"message": "API Key is valid."}
+    return {"message": "API key is valid."}
 
 
 def _programs_seen(result: dict) -> str:
@@ -142,14 +149,21 @@ async def delete_api_key(
         await ChannelService(service.session, channel).disconnect(None, keep_key=True)
 
 
+def _plain(api_key: APIKey) -> str:
+    name = API_PROVIDER_META[api_key.provider]["name"]
+    return decrypt_stored(api_key.key_value, label=f"The {name} API key")
+
+
 @router.get("/{key_id}/reveal")
 async def reveal_api_key(
     key_id: str,
     _current_user: CurrentSuperuser,
     service: Annotated[APIKeyService, Depends(get_api_key_service)],
+    response: Response,
 ):
     api_key = await service._get_key_or_404(key_id)
-    return {"key_value": try_decrypt(api_key.key_value) or api_key.key_value}
+    response.headers["Cache-Control"] = "no-store"
+    return {"key_value": _plain(api_key)}
 
 
 @router.post("/{key_id}/test")
@@ -168,7 +182,7 @@ async def test_api_key(
             "message": f"No key test for {api_key.provider.value}.",
         }
 
-    key_value = try_decrypt(api_key.key_value) or api_key.key_value
+    key_value = _plain(api_key)
     try:
         result = await tester(key_value, api_key.key_meta)
     except Exception as e:

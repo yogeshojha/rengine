@@ -9,10 +9,11 @@ from pydantic import ValidationError
 from sqlalchemy import select
 
 from app.services.note import NoteService
-from shared.definitions.notes import NoteStatus
 from shared.definitions.surface import SurfaceDimension
 from shared.models.note import Note, NoteCreate, NoteUpdate
 from shared.models.tag import Tag
+
+pytestmark = pytest.mark.api
 
 
 async def _tag(estate, name: str = "lead") -> Tag:
@@ -36,7 +37,6 @@ async def _two_runs(estate, now):
     await estate.hosts("first", ["api.example.com", "gone.example.com"], at=earlier)
     await estate.scan("example.com", "second", at=now)
     await estate.hosts("second", ["api.example.com"], at=now)
-    return estate
 
 
 async def _write(estate, scan: str, host: str, tag: Tag, body: str = "Worth a look"):
@@ -104,46 +104,6 @@ async def test_the_target_carries_every_note_its_scans_hold(estate, now):
     assert len(rows) == 2
 
 
-async def test_the_count_equals_the_rows_it_opens(estate, now):
-    await _two_runs(estate, now)
-    tag = await _tag(estate)
-    await _write(estate, "second", "api.example.com", tag)
-    await _write(estate, "second", "api.example.com", tag, body="And another")
-    service = NoteService(estate.session)
-
-    counts = await service.counts(
-        estate.project_id, dimension=SurfaceDimension.WEB_ASSETS.value
-    )
-    assert [(c.key, c.total, c.open) for c in counts] == [("api.example.com", 2, 2)]
-
-    rows = (
-        await estate.session.execute(
-            await service.list(
-                estate.project_id,
-                dimension=SurfaceDimension.WEB_ASSETS.value,
-                asset_key="api.example.com",
-            )
-        )
-    ).all()
-    assert len(rows) == counts[0].total
-
-
-async def test_resolving_a_note_leaves_the_total_and_lowers_the_open_count(estate, now):
-    await _two_runs(estate, now)
-    tag = await _tag(estate)
-    note = await _write(estate, "second", "api.example.com", tag)
-    service = NoteService(estate.session)
-
-    await service.update(
-        note.id, NoteUpdate(status=NoteStatus.RESOLVED.value), estate.project_id
-    )
-    counts = await service.counts(
-        estate.project_id, dimension=SurfaceDimension.WEB_ASSETS.value
-    )
-    assert counts[0].total == 1
-    assert counts[0].open == 0
-
-
 async def test_a_tag_outside_the_project_is_refused(estate, now):
     await _two_runs(estate, now)
     stranger = Tag(
@@ -201,3 +161,18 @@ def test_an_empty_body_is_refused():
 def test_an_update_cannot_strip_the_last_tag():
     with pytest.raises(ValidationError, match="at least one tag"):
         NoteUpdate(tag_ids=[])
+
+
+def test_ask_citation_marks_are_not_stored_in_a_note():
+    created = NoteCreate(
+        target_id=uuid.uuid4(),
+        body="Apache 2.4.41 [[1]][[2]], see arr[1] and [[x]].",
+        tag_ids=[uuid.uuid4()],
+    )
+    assert created.body == "Apache 2.4.41, see arr[1] and [[x]]."
+    assert NoteUpdate(body="No findings [[1]].").body == "No findings."
+
+
+def test_a_body_of_citation_marks_alone_is_refused():
+    with pytest.raises(ValidationError, match="body is required"):
+        NoteCreate(target_id=uuid.uuid4(), body="[[1]] [[2]]", tag_ids=[uuid.uuid4()])

@@ -113,7 +113,7 @@ export function stageRows(
 			title: s.title,
 			phase: s.phase,
 			state,
-			summary: a && activityRan(a.status) ? activitySummary(a.result) : '',
+			summary: a && activityRan(a.status) ? activitySummary(a.figures) : '',
 			duration: a?.duration_seconds ?? null,
 			error: a?.error ?? null
 		};

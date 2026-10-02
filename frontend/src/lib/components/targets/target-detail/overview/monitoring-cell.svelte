@@ -63,8 +63,7 @@
 			<dd class="tabular-nums">
 				{summary.scans_total.toLocaleString()}{#if summary.first_scan_at}<span
 						class="text-muted-foreground"
-					>
-						· first {formatShortDate(summary.first_scan_at)}</span
+						>{` · first ${formatShortDate(summary.first_scan_at)}`}</span
 					>{/if}
 			</dd>
 		</div>

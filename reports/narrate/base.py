@@ -1,5 +1,3 @@
-"""Two narrators write the same sections from the same brief."""
-
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -10,7 +8,7 @@ from shared.services.ai.client import AIUsage
 
 
 class Narrator(ABC):
-    ai_used: bool = False
+    used_model: bool = False
 
     def __init__(self) -> None:
         self.usage = AIUsage()

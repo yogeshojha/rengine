@@ -4,7 +4,7 @@ from reports.base import RenderContext, Section
 from reports.config import SectionConfig, flag
 from reports.data.source import REPORT_DIMENSIONS
 from shared.definitions.reports import SectionGroup
-from shared.definitions.surface import SURFACE_LABELS, SURFACE_NOUN
+from shared.definitions.surface import SURFACE_LABELS
 
 
 class SurfaceOverviewConfig(SectionConfig):
@@ -32,7 +32,6 @@ class SurfaceOverviewSection(Section):
             rows.append(
                 {
                     "label": SURFACE_LABELS[dimension],
-                    "noun": SURFACE_NOUN[dimension][1],
                     "covered": entry.covered,
                     "count": entry.count,
                     "previous": entry.previous,
@@ -54,5 +53,4 @@ class SurfaceOverviewSection(Section):
             "no_response": next(
                 (f.count for f in ctx.data.status_classes if f.name == "none"), 0
             ),
-            "hosting": ctx.brief.hosting,
         }

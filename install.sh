@@ -126,6 +126,7 @@ env_get() { grep -E "^$1=" "$2" 2>/dev/null | head -1 | cut -d= -f2-; }
 MODE=""
 RENGINE_HOST=""
 SERVER_IP=""
+SERVER_HOST=""
 UI_PORT=""
 API_PORT=""
 ADMIN_USERNAME=""
@@ -157,7 +158,7 @@ Options
   --no-api-port         stop publishing the API on its own port
   --admin-user <name>   first administrator, default rengine
   --admin-email <mail>
-  --admin-password <pw> default is a generated one, shown once
+  --admin-password <pw> default is a generated one
   --acme-email <mail>   Let's Encrypt account email
   --dir <path>          install directory
   --tag <tag>           release to install, default the latest
@@ -212,6 +213,9 @@ if [ -z "$RENGINE_HOME" ]; then
   if [ "$(id -u)" -eq 0 ]; then RENGINE_HOME="/opt/rengine"; else RENGINE_HOME="$HOME/rengine"; fi
 fi
 [ "$CHECKOUT" -eq 1 ] && [ "$RENGINE_HOME" = "$SCRIPT_DIR" ] && die "the install directory cannot be the checkout. Pass another --dir."
+
+CLI="rengine"
+[ "$(id -u)" -eq 0 ] && [ -n "${SUDO_USER:-}" ] && CLI="sudo rengine"
 
 ensure_docker() {
   if ! command -v docker >/dev/null 2>&1; then
@@ -303,6 +307,8 @@ load_existing() {
   [ -f "$env_file" ] || return 0
   grep -q '^COMPOSE_FILE=docker-compose.prod.yml' "$env_file" \
     || die "$RENGINE_HOME holds a .env this installer did not write. Pass an empty directory with --dir."
+  [ -z "$ADMIN_USERNAME$ADMIN_EMAIL$ADMIN_PASSWORD" ] \
+    || die "admin credentials of an existing install are changed in Settings"
   say ""
   say "An install exists in $RENGINE_HOME."
   if [ "$INTERACTIVE" -eq 1 ]; then
@@ -319,22 +325,16 @@ load_existing() {
   REDIS_PASSWORD="$(env_get REDIS_PASSWORD "$env_file")"
   FLOWER_PASSWORD="$(env_get FLOWER_PASSWORD "$env_file")"
   # a flag wins over the stored value
-  [ -n "$ADMIN_USERNAME" ] || ADMIN_USERNAME="$(env_get ADMIN_USERNAME "$env_file")"
-  [ -n "$ADMIN_EMAIL" ] || ADMIN_EMAIL="$(env_get ADMIN_EMAIL "$env_file")"
-  [ -n "$ADMIN_PASSWORD" ] || ADMIN_PASSWORD="$(env_get ADMIN_PASSWORD "$env_file")"
   [ -n "$ACME_EMAIL" ] || ACME_EMAIL="$(env_get ACME_EMAIL "$env_file")"
 }
 
-# reconfigure rewrites the reachability keys alone; tag, sizing and edits stay
+# reconfigure rewrites the reachability keys
 update_env() {
   sed -i \
     -e "s|^PUBLIC_ORIGIN=.*|PUBLIC_ORIGIN=$PUBLIC_ORIGIN|" \
     -e "s|^RENGINE_HOST=.*|RENGINE_HOST=$RENGINE_HOST|" \
     -e "s|^ACME_EMAIL=.*|ACME_EMAIL=$ACME_EMAIL|" \
     -e "s|^CORS_ORIGINS=.*|CORS_ORIGINS=[\"$PUBLIC_ORIGIN\"]|" \
-    -e "s|^ADMIN_EMAIL=.*|ADMIN_EMAIL=$ADMIN_EMAIL|" \
-    -e "s|^ADMIN_USERNAME=.*|ADMIN_USERNAME=$ADMIN_USERNAME|" \
-    -e "s|^ADMIN_PASSWORD=.*|ADMIN_PASSWORD=$ADMIN_PASSWORD|" \
     "$RENGINE_HOME/.env"
 }
 
@@ -346,7 +346,7 @@ GENERATED_PASSWORD=0
 ask_mode() {
   [ -n "$MODE" ] && return 0
   [ "$INTERACTIVE" -eq 1 ] || die "no terminal for the guided setup. Download install.sh and run it, or pass --domain, --ip or --local."
-  choose "Where is this instance reached?" \
+  choose "Reachability" \
     "Public domain, HTTPS certificate from Let's Encrypt" \
     "Server address, self-signed certificate" \
     "This machine only, no TLS"
@@ -380,13 +380,15 @@ ask_reachability() {
         ask "Server address" "$(detect_ip)"
         SERVER_IP="$ANSWER"
       fi
+      SERVER_IP="${SERVER_IP#\[}"; SERVER_IP="${SERVER_IP%\]}"
       [ -n "$SERVER_IP" ] || die "no server address"
+      case "$SERVER_IP" in *:*) SERVER_HOST="[$SERVER_IP]" ;; *) SERVER_HOST="$SERVER_IP" ;; esac
       if [ -z "$UI_PORT" ]; then
         ask "UI port" "443"
         UI_PORT="$ANSWER"
       fi
       valid_port "$UI_PORT" || die "not a port: $UI_PORT"
-      if [ "$UI_PORT" = "443" ]; then PUBLIC_ORIGIN="https://$SERVER_IP"; else PUBLIC_ORIGIN="https://$SERVER_IP:$UI_PORT"; fi
+      if [ "$UI_PORT" = "443" ]; then PUBLIC_ORIGIN="https://$SERVER_HOST"; else PUBLIC_ORIGIN="https://$SERVER_HOST:$UI_PORT"; fi
       ;;
     local)
       if [ -z "$UI_PORT" ]; then
@@ -396,7 +398,7 @@ ask_reachability() {
       valid_port "$UI_PORT" || die "not a port: $UI_PORT"
       if [ "$UI_PORT" = "80" ]; then PUBLIC_ORIGIN="http://localhost"; else PUBLIC_ORIGIN="http://localhost:$UI_PORT"; fi
       say "Published on 127.0.0.1 only."
-      say "Home uplinks behind CGNAT drop scan connections. A VPS is the reliable place to scan from."
+      say "Home uplinks behind CGNAT drop scan connections."
       ;;
   esac
 
@@ -457,7 +459,7 @@ ask_admin() {
     fi
   fi
   [[ "$ADMIN_PASSWORD" =~ ^[A-Za-z0-9@._%+=:,^~/-]+$ ]] \
-    || die "the admin password takes letters, digits and @._%+=:,^~/- here. Set a simple one and change it in Settings."
+    || die "the admin password accepts letters, digits and @._%+=:,^~/- only."
 }
 
 # ---------- files ----------
@@ -465,6 +467,20 @@ ask_admin() {
 write_caddyfile() {
   local email_line=""
   [ -n "$ACME_EMAIL" ] && email_line="	email $ACME_EMAIL"
+  local headers
+  headers="$(
+    cat <<'EOF'
+(headers) {
+	header {
+		Content-Security-Policy "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+		X-Frame-Options DENY
+		X-Content-Type-Options nosniff
+		Referrer-Policy same-origin
+		-Server
+	}
+}
+EOF
+  )"
   case "$MODE" in
     domain)
       cat >"$RENGINE_HOME/Caddyfile" <<EOF
@@ -473,10 +489,17 @@ write_caddyfile() {
 $email_line
 }
 
+$headers
+
 $RENGINE_HOST {
+	import headers
+	header Strict-Transport-Security "max-age=31536000"
 	encode zstd gzip
 
 	handle /api/* {
+		request_body {
+			max_size 128MB
+		}
 		reverse_proxy api:8000 {
 			flush_interval -1
 		}
@@ -495,11 +518,17 @@ EOF
 	default_sni $SERVER_IP
 }
 
-https://$SERVER_IP {
+$headers
+
+https://$SERVER_HOST {
+	import headers
 	tls internal
 	encode zstd gzip
 
 	handle /api/* {
+		request_body {
+			max_size 128MB
+		}
 		reverse_proxy api:8000 {
 			flush_interval -1
 		}
@@ -511,21 +540,28 @@ https://$SERVER_IP {
 }
 
 http://:80 {
+	import headers
 	redir https://{host}{uri}
 }
 EOF
       ;;
     local)
-      cat >"$RENGINE_HOME/Caddyfile" <<'EOF'
+      cat >"$RENGINE_HOME/Caddyfile" <<EOF
 {
 	admin off
 	auto_https off
 }
 
+$headers
+
 http://:80 {
+	import headers
 	encode zstd gzip
 
 	handle /api/* {
+		request_body {
+			max_size 128MB
+		}
 		reverse_proxy api:8000 {
 			flush_interval -1
 		}
@@ -727,7 +763,7 @@ deploy() {
     docker compose pull || die "the image pull failed. Check the network and the release tag: $(env_get RENGINE_TAG .env)"
   fi
   step "Starting"
-  docker compose up -d --remove-orphans || die "the stack did not start. Check the output above and the logs: rengine logs"
+  docker compose up -d --remove-orphans || die "the stack did not start. Check the output above and the logs: $CLI logs"
 }
 
 wait_healthy() {
@@ -746,10 +782,10 @@ wait_healthy() {
     tries=$((tries + 1))
   done
   printf '\n'
-  say "The API did not respond within three minutes. Check the logs: rengine logs api"
+  say "The API did not respond within three minutes. Check the logs: $CLI logs api"
   [ "$MODE" = "domain" ] && say "For a domain, DNS must point here and port 80 must be reachable from the internet."
   if [ "$GENERATED_PASSWORD" -eq 1 ]; then
-    say "Sign in at $PUBLIC_ORIGIN once the API answers. Username $ADMIN_USERNAME, password $ADMIN_PASSWORD. Shown once."
+    say "Sign in at $PUBLIC_ORIGIN once the API answers. Username $ADMIN_USERNAME, password $ADMIN_PASSWORD. Stored in $RENGINE_HOME/.env."
   fi
   exit 1
 }
@@ -765,13 +801,13 @@ summary() {
     say "  Username  $ADMIN_USERNAME"
     if [ "$GENERATED_PASSWORD" -eq 1 ]; then
       say "  Password  $ADMIN_PASSWORD"
-      say "            Shown once. Change it in Settings."
+      say "            Stored in $RENGINE_HOME/.env. Change it in Settings."
     fi
   fi
   [ "$MODE" = "ip" ] && say "  The certificate is self-signed. The browser shows a warning for it."
   [ -n "$API_PORT" ] && say "  API       port $API_PORT"
   say ""
-  say "  Manage    rengine status, rengine logs, rengine update, rengine backup"
+  say "  Manage    $CLI status, $CLI logs, $CLI update, $CLI backup"
   say "  Files     $RENGINE_HOME"
   say ""
   say "Setup continues in the browser after the first sign-in."
@@ -813,7 +849,7 @@ main() {
   ask_mode
   ask_reachability
   ask_api
-  ask_admin
+  [ "$RECONFIGURE" -eq 1 ] || ask_admin
 
   if [ "$RECONFIGURE" -eq 1 ]; then
     update_env
@@ -830,7 +866,7 @@ main() {
 
   if [ "$NO_START" -eq 1 ]; then
     say ""
-    say "Configuration written. Start with: rengine start"
+    say "Configuration written. Start with: $CLI start"
     return 0
   fi
 

@@ -61,5 +61,3 @@ def test_the_frontend_mirror_carries_the_same_kinds():
     text = MIRROR.read_text()
     declared = set(re.findall(r"^\t[A-Z_]+ = '([^']+)',?$", text, re.M))
     assert declared == set(CORRELATION_KIND_ORDER)
-    for kind in CORRELATION_KIND_ORDER:
-        assert f"'{kind}'" in text

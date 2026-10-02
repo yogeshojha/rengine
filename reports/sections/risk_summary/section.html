@@ -1,7 +1,7 @@
 {% import 'macros.html' as m with context %}
 {% if narrative %}<div class="md prose block">{{ narrative|md|safe }}</div>{% endif %}
 
-{% if actionable_rows or quiet %}
+{% if actionable_rows or other_rows %}
 <div class="grid block">
   {% if show_donut and actionable_rows|length > 1 %}
   {% set items = [] %}
@@ -21,15 +21,15 @@
           <td><div class="meter__track"><div class="meter__fill" style="width:{{ (row.count / actionable_total * 100)|round(1) if actionable_total else 0 }}%;background:{{ ctx.sev(row.severity) }}"></div></div></td>
         </tr>
         {% endfor %}
-        {% if quiet %}
-        <tr class="faint"><td>{{ m.sev('info', 'Info') }}</td><td class="num">{{ quiet|num }}</td><td class="micro">Not counted as actionable.</td></tr>
-        {% endif %}
+        {% for row in other_rows %}
+        <tr class="faint"><td>{{ m.sev(row.severity, row.label) }}</td><td class="num">{{ row.count|num }}</td><td class="micro">Not counted as actionable.</td></tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
 {% endif %}
-{% if kev %}<p class="small block">{{ kev|num }} of the actionable findings are on the Known Exploited Vulnerabilities catalogue.</p>{% endif %}
+{% if kev %}<p class="small block">{{ kev|num }} of the ranked weaknesses are on the CISA Known Exploited Vulnerabilities catalogue.</p>{% endif %}
 
 {% if risks %}
 <div class="sub">

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from shared.definitions.default_engine import VULNERABILITY_STAGE
 from shared.definitions.domains import takeover_provider
@@ -94,21 +94,23 @@ class TakeoverStage(Stage):
         self._check_abort()
         rows = (
             self.session.execute(
-                select(Subdomain.name, Subdomain.cname, Subdomain.resolved_ips)
+                select(Subdomain.name, Subdomain.cname)
                 .where(
                     Subdomain.scan_id == self.ctx.scan_id,
                     Subdomain.cname.isnot(None),
                     Subdomain.cname != "",
+                    func.json_array_length(Subdomain.resolved_ips) == 0,
                     Subdomain.is_excluded.is_(False),
                 )
-                .limit(_CAP)
+                .order_by(Subdomain.name)
+                .limit(_CAP + 1)
             )
         ).all()
+        capped = len(rows) > _CAP
+        rows = rows[:_CAP]
 
         findings: list[Finding] = []
-        for name, cname, ips in rows:
-            if ips:
-                continue
+        for name, cname in rows:
             provider = takeover_provider(cname or "")
             if provider is None:
                 continue
@@ -128,4 +130,13 @@ class TakeoverStage(Stage):
                 f"{stored} hostname{'' if stored == 1 else 's'} point at a provider "
                 "and resolve nowhere"
             )
-        return StageResult(counts={"vulnerabilities": stored, "checked": len(rows)})
+        warnings = (
+            [f"Takeover check capped at {_CAP:,} names with a CNAME and no address."]
+            if capped
+            else []
+        )
+        return StageResult(
+            counts={"vulnerabilities": stored, "checked": len(rows)},
+            warnings=warnings,
+            partial=capped,
+        )

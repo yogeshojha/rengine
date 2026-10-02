@@ -1,18 +1,5 @@
 export type ViewDNSLookupType = 'ip_history' | 'reverse_ip' | 'reverse_ns' | 'reverse_whois';
 
-export interface IPHistoryRecord {
-	ip: string;
-	location: string;
-	owner: string;
-	last_seen: string | null;
-}
-
-export interface IPHistoryResponse {
-	lookup_type: 'ip_history';
-	domain: string;
-	records: IPHistoryRecord[];
-}
-
 export interface ReverseIPDomain {
 	name: string;
 	last_resolved: string | null;
@@ -49,11 +36,7 @@ export interface ReverseWhoisResponse {
 	matches: ReverseWhoisMatch[];
 }
 
-export type ViewDNSResponse =
-	| IPHistoryResponse
-	| ReverseIPResponse
-	| ReverseNSResponse
-	| ReverseWhoisResponse;
+export type ViewDNSResponse = ReverseIPResponse | ReverseNSResponse | ReverseWhoisResponse;
 
 export interface ViewDNSCacheRead {
 	lookup_type: ViewDNSLookupType;
@@ -65,6 +48,18 @@ export interface ViewDNSCacheRead {
 }
 
 export type DiscoverySourceType = 'reverse_whois' | 'reverse_ip' | 'reverse_ns';
+
+export interface CachedCountQuery {
+	source: DiscoverySourceType;
+	query: string;
+	exclude: string;
+}
+
+export interface CachedCount {
+	source: DiscoverySourceType;
+	query: string;
+	count: number | null;
+}
 
 export const DISCOVERY_SOURCE_LABELS: Record<DiscoverySourceType, string> = {
 	reverse_whois: 'Reverse WHOIS',

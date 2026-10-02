@@ -16,7 +16,7 @@ from shared.definitions.toolbox import (
     ToolExecution,
     ToolGroup,
 )
-from shared.services.ip_asn import ADDRESS_LOOKUP_SQL
+from shared.services.ip_asn import ADDRESS_LOOKUP_SQL, ranges_ready
 from toolbox import estate
 from toolbox.base import (
     Tool,
@@ -87,7 +87,7 @@ class IpIntel(Tool):
                 identity=flag(country) if country else glyph("network"),
                 metric=metric(seen.ports or "", "Open ports recorded")
                 or metric(
-                    net.hosts or "", "Hosts on this network", tone=Tone.INFO.value
+                    net.hosts or "", "Web assets on this network", tone=Tone.INFO.value
                 )
                 or metric(f"AS{asn}" if asn else "", "Network"),
                 marks=[
@@ -137,7 +137,7 @@ class IpIntel(Tool):
                 fact("Last seen", (seen.last_seen or "")[:10]),
                 fact(
                     "On this network",
-                    f"{net.hosts} host{'s' if net.hosts != 1 else ''} across "
+                    f"{net.hosts} web asset{'s' if net.hosts != 1 else ''} across "
                     f"{net.addresses} address{'es' if net.addresses != 1 else ''}"
                     if net.addresses
                     else "",
@@ -147,7 +147,11 @@ class IpIntel(Tool):
                 empty="Not recorded by any scan in this project",
             ),
         ]
-        if asn is None and country is None:
+        if (
+            asn is None
+            and country is None
+            and not await ctx.session.run_sync(ranges_ready)
+        ):
             blocks.append(
                 note(
                     "IP range feeds have not been loaded on this instance.",

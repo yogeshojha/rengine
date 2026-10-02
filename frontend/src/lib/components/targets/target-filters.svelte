@@ -10,6 +10,8 @@
 	import * as Command from '$lib/components/ui/command';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Checkbox } from '$lib/components/ui/checkbox';
+	import Settings2 from '@lucide/svelte/icons/settings-2';
+	import TargetLabelsDialog from './target-labels-dialog.svelte';
 	import type { OrganizationSummary, TagSummary } from '$lib/types/target';
 
 	interface Props {
@@ -36,6 +38,15 @@
 
 	let orgPopoverOpen = $state(false);
 	let tagPopoverOpen = $state(false);
+	let managing = $state<'tag' | 'organization' | null>(null);
+	let manageKind = $state<'tag' | 'organization'>('tag');
+
+	function manage(kind: 'tag' | 'organization') {
+		orgPopoverOpen = false;
+		tagPopoverOpen = false;
+		manageKind = kind;
+		managing = kind;
+	}
 </script>
 
 <div class="flex flex-wrap items-center gap-3 gap-y-2">
@@ -102,6 +113,17 @@
 					</ScrollArea>
 				</Command.List>
 			</Command.Root>
+			<div class="border-t p-1">
+				<Button
+					variant="ghost"
+					size="sm"
+					class="w-full justify-start gap-2"
+					onclick={() => manage('organization')}
+				>
+					<Settings2 class="size-4" />
+					Manage organizations
+				</Button>
+			</div>
 		</Popover.Content>
 	</Popover.Root>
 
@@ -145,6 +167,25 @@
 					</ScrollArea>
 				</Command.List>
 			</Command.Root>
+			<div class="border-t p-1">
+				<Button
+					variant="ghost"
+					size="sm"
+					class="w-full justify-start gap-2"
+					onclick={() => manage('tag')}
+				>
+					<Settings2 class="size-4" />
+					Manage tags
+				</Button>
+			</div>
 		</Popover.Content>
 	</Popover.Root>
 </div>
+
+<TargetLabelsDialog
+	kind={manageKind}
+	open={managing !== null}
+	onOpenChange={(open) => {
+		if (!open) managing = null;
+	}}
+/>

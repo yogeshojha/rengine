@@ -14,7 +14,7 @@ is served at `GET /api/v1/connectors/client/burp` from `binaries/`.
 POST /api/v1/connectors/ingest
 Authorization: Bearer rngconn_…
 
-{"client": "burp-connector/0.1.0", "items": [
+{"client": "burp-connector/3.0.0", "items": [
   {"url": "https://target/admin/", "method": "GET", "status_code": 200,
    "authenticated": true, "source_tool": "proxy", "body_params": ["id"]}
 ]}
@@ -78,8 +78,8 @@ connectors/<name>/
   connector.py   # a ProxyConnector subclass
 ```
 
-Set `kind` (a `ConnectorKind` member), `title`, `vendor`, `description` and `client_file` (a file
-under `binaries/`), and return the setup steps from `setup()`.
+Set `kind` (a `ConnectorKind` member), `title` and `client_pattern` (a glob under `binaries/`), and
+return the setup steps from `setup()`.
 
 The vocabulary is one file: `shared/definitions/connectors.py`, mirrored by
 `frontend/src/lib/config/connectors.ts`.

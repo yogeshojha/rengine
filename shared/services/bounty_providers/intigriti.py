@@ -18,6 +18,7 @@ from shared.definitions.bounty_programs import (
 )
 from shared.enums.api_key import APIProvider
 from shared.models.bounty_program import BountyProgram
+from shared.services.api_key.sync_api_key import open_key
 from shared.services.bounty_providers.base import (
     HTTP_FORBIDDEN,
     HTTP_TOO_MANY,
@@ -28,7 +29,6 @@ from shared.services.bounty_providers.base import (
     ScopeFetch,
     api_key_row,
     as_float,
-    decrypted,
 )
 from shared.utils.datetime import utc_now
 from shared.utils.text import strip_control
@@ -87,7 +87,7 @@ class IntigritiProvider(BountyProvider):
         row = api_key_row(session, cls.api_provider)
         if not row:
             return None
-        token = decrypted(row)
+        token = open_key(row)
         return cls(token) if token else None
 
     def _paged(self, path: str, params: dict | None = None) -> list[dict]:

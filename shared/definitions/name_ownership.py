@@ -29,13 +29,6 @@ CLAIM_TITLES: dict[str, str] = {
     NameClaim.UNHOSTED.value: "Dangling A record",
 }
 
-CLAIM_EVIDENCE_LABELS: dict[str, str] = {
-    ClaimEvidence.REDIRECT.value: "Redirect",
-    ClaimEvidence.CERTIFICATE.value: "Certificate",
-    ClaimEvidence.LINKS.value: "Links",
-    ClaimEvidence.ADDRESS_DEFAULT.value: "IP address response",
-}
-
 # independent kinds of evidence a claim needs
 MIN_EVIDENCE = 2
 # links to one domain that attribute the page to it
@@ -47,16 +40,3 @@ ALIAS_OVERLAP = 0.5
 MIN_ALIAS_LABEL = 4
 BODY_SCAN_BYTES = 300_000
 STREAM_BATCH = 200
-LOCAL_SUFFIXES: frozenset[str] = frozenset(
-    {
-        "local",
-        "localdomain",
-        "localhost",
-        "internal",
-        "lan",
-        "home",
-        "test",
-        "default",
-        "invalid",
-    }
-)

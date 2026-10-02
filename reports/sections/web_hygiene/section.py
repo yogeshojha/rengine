@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from reports.base import RenderContext, Section
 from reports.config import SectionConfig, flag, limit
+from reports.sections import check_rows
 from shared.definitions.hygiene import CHECKS, GROUP_LABELS
-from shared.definitions.interest import TONE_WARNING
 from shared.definitions.reports import SectionGroup
 from shared.definitions.surface import SurfaceDimension
 
@@ -27,27 +27,9 @@ class WebHygieneSection(Section):
         hygiene = ctx.data.hygiene
         if hygiene is None or hygiene.evaluated == 0:
             return None
-        counts = {c.key: c for c in hygiene.checks}
-        rows = []
-        for spec in CHECKS:
-            count = counts.get(spec.key)
-            if count is None or count.applicable == 0:
-                continue
-            if cfg.warnings_only and spec.tone != TONE_WARNING:
-                continue
-            rows.append(
-                {
-                    "label": spec.label,
-                    "help": spec.help,
-                    "group": GROUP_LABELS[spec.group],
-                    "tone": spec.tone,
-                    "failing": count.failing,
-                    "applicable": count.applicable,
-                    "share": round(count.failing / count.applicable * 100)
-                    if count.applicable
-                    else 0,
-                }
-            )
+        rows = check_rows(
+            CHECKS, GROUP_LABELS, hygiene.checks, warnings_only=cfg.warnings_only
+        )
         hosts = hygiene.hosts[: cfg.max_hosts] if cfg.show_hosts else []
         return {
             "evaluated": hygiene.evaluated,

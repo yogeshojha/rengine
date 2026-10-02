@@ -1,4 +1,4 @@
-"""Batches: the unit of coverage. The time cut lands between them, never inside a host."""
+"""Host batches, one scanner invocation each."""
 
 from __future__ import annotations
 

@@ -31,12 +31,6 @@
 		Object.keys(launch.patch[stage.name] ?? {}).filter((f) => f !== 'enabled')
 	);
 	let advancedChanged = $derived(advanced.filter((f) => changedFields.includes(f.name)).length);
-	function applyVulnPlan(overrides: Record<string, Record<string, unknown>>) {
-		const next = overrides[stage.name] ?? {};
-		for (const field of VULN_PLAN_FIELDS) {
-			launch.setStageField(stage.name, field, next[field] ?? launch.baseline[stage.name]?.[field]);
-		}
-	}
 
 	function reset() {
 		for (const field of changedFields) {
@@ -80,9 +74,8 @@
 		</div>
 		{#if isVuln}
 			<VulnPlan
-				engineStages={launch.engine?.stages ?? null}
-				showEnabled={false}
-				onChange={applyVulnPlan}
+				config={launch.effective[stage.name]}
+				onField={(field, value) => launch.setStageField(stage.name, field, value)}
 			/>
 		{/if}
 		{#if basic.length}

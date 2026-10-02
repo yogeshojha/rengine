@@ -106,10 +106,6 @@ class EstateNeighbourCert(BaseModel):
 
 class EstateCounts(BaseModel):
     untracked: int = 0
-    tracked: int = 0
-    providers: int = 0
-    neighbour_names: int = 0
-    by_reason: dict[str, int] = Field(default_factory=dict)
 
 
 class TargetEstate(BaseModel):
@@ -120,8 +116,6 @@ class TargetEstate(BaseModel):
     domains: list[EstateDomain] = Field(default_factory=list)
     providers: list[EstateProvider] = Field(default_factory=list)
     neighbours: list[EstateNeighbourCert] = Field(default_factory=list)
-    own: list[str] = Field(default_factory=list)
-    considered_targets: int = 0
 
 
 class ProjectEstate(BaseModel):

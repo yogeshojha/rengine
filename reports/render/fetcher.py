@@ -5,15 +5,13 @@ from __future__ import annotations
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
+from reports.fonts import ASSETS, CUSTOM_ROOT
+from shared.definitions.retention import MEDIA_ROOT
 from shared.logging import get_logger
 
 logger = get_logger(__name__)
 
-ASSETS = Path(__file__).resolve().parent.parent / "assets"
-CUSTOM_FONTS = Path("/app/report-fonts")
-SCAN_MEDIA = Path("/app/scan_media")
-
-ALLOWED_ROOTS: tuple[Path, ...] = (ASSETS, CUSTOM_FONTS, SCAN_MEDIA)
+ALLOWED_ROOTS: tuple[Path, ...] = (ASSETS, CUSTOM_ROOT, MEDIA_ROOT)
 ALLOWED_PROTOCOLS: tuple[str, ...] = ("data", "file")
 
 
@@ -49,10 +47,7 @@ def build_fetcher():
         def fetch(self, url, headers=None):
             if not permitted(url):
                 logger.warning("report blocked a resource", url=url[:200])
-                msg = (
-                    "Only embedded data and files shipped with the instance are "
-                    f"loaded. Refused: {url[:120]}"
-                )
+                msg = f"Resource refused: {url[:120]}"
                 raise BlockedResourceError(msg)
             return super().fetch(url, headers)
 

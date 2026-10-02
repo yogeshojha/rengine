@@ -41,10 +41,10 @@
 		PROVIDER_KIND_LABELS
 	} from '$lib/config/hosting-providers';
 	import { stopProp } from '$lib/utilities';
+	import { plural } from '$lib/utilities/strings';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { formatShortDate, relativeTime } from '$lib/utilities/dates';
 	import {
-		formatBytes,
 		formatResponseTime,
 		httpStatusClass,
 		httpStatusReason,
@@ -52,6 +52,7 @@
 		isPrivateIp,
 		STATUS_DOT
 	} from '$lib/utilities/scan-correlation';
+	import { formatBytes } from '$lib/utilities/format';
 	import { isSensitivePort } from '$lib/config/service-classes';
 	import {
 		excludeToken,
@@ -229,7 +230,7 @@
 			{@const pageTitle = s.page_title}
 			<SamePagePopover
 				count={s.title_count ?? 0}
-				title="{s.title_count} hosts show “{pageTitle}”{acrossTargets(s.title_targets)}"
+				title="{s.title_count} web assets show “{pageTitle}”{acrossTargets(s.title_targets)}"
 				load={() => hostsWithTitle(pageTitle)}
 				{onHost}
 				onFilter={() => onFilter(exactToken('title', pageTitle))}
@@ -308,11 +309,7 @@
 				</Hint>
 			{/if}
 			{#if onStructure && (s.endpoint_count ?? 0) > 0}
-				<Hint
-					text="{s.endpoint_count?.toLocaleString()} {s.endpoint_count === 1
-						? 'endpoint'
-						: 'endpoints'}"
-				>
+				<Hint text={plural(s.endpoint_count ?? 0, 'endpoint')}>
 					{#snippet child(props)}
 						<button
 							{...props}
@@ -732,8 +729,7 @@
 					</div>
 				{:else if hygieneChecked.length}
 					<span class="text-xs text-muted-foreground">
-						Passes {hygieneChecked.length}
-						{hygieneChecked.length === 1 ? 'check' : 'checks'}
+						Passes {plural(hygieneChecked.length, 'check')}
 					</span>
 				{:else}
 					<span class="text-xs text-muted-foreground">—</span>

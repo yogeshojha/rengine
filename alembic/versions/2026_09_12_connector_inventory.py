@@ -10,58 +10,27 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 
 from alembic import op
-from shared.definitions.endpoints import shape_for
 
 revision: str = "e52a8c1d7b30"
 down_revision: str | None = "b93d4e17c5a2"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
-_BATCH = 5000
-
-
-def _backfill_shapes() -> None:
-    conn = op.get_bind()
-    last: str | None = None
-    while True:
-        query = sa.text(
-            "SELECT id, path FROM endpoints"  # noqa: S608
-            + (" WHERE id > :last" if last else "")
-            + " ORDER BY id LIMIT :n"
-        )
-        params = {"n": _BATCH, **({"last": last} if last else {})}
-        rows = conn.execute(query, params).fetchall()
-        if not rows:
-            return
-        conn.execute(
-            sa.text("UPDATE endpoints SET shape = :shape WHERE id = :id"),
-            [{"id": row.id, "shape": shape_for(row.path)[0]} for row in rows],
-        )
-        last = str(rows[-1].id)
-
 
 def upgrade() -> None:
-    bind = op.get_bind()
-    inspector = sa.inspect(bind)
-    if inspector.has_table("connector_sessions"):
-        op.drop_table("connector_sessions")
-    present = {c["name"] for c in inspector.get_columns("connectors")}
+    op.drop_table("connector_sessions")
     for column in (
-        "import_mode",
-        "target_id",
         "sync_trigger",
         "quiet_minutes",
         "queue_threshold",
         "capture_sessions",
     ):
-        if column in present:
-            op.drop_column("connectors", column)
+        op.drop_column("connectors", column)
 
     op.add_column(
         "endpoints",
         sa.Column("shape", sa.String(length=1500), nullable=False, server_default=""),
     )
-    _backfill_shapes()
     op.create_index(
         "ix_endpoints_project_host_shape", "endpoints", ["project_id", "host", "shape"]
     )
@@ -89,19 +58,6 @@ def downgrade() -> None:
             sa.String(length=16),
             nullable=False,
             server_default="manual",
-        ),
-    )
-    op.add_column(
-        "connectors",
-        sa.Column("target_id", sa.dialects.postgresql.UUID(), nullable=True),
-    )
-    op.add_column(
-        "connectors",
-        sa.Column(
-            "import_mode",
-            sa.String(length=16),
-            nullable=False,
-            server_default="in_scope",
         ),
     )
     op.create_table(

@@ -72,7 +72,6 @@ class AskBrief(BaseModel):
     available: bool
     off_reason: str | None = None
     model: str | None = None
-    estimate_usd: float | None = None
     masked: int = 0
     flags: list[AskFlagRead] = []
     starters: list[str] = []
@@ -179,7 +178,6 @@ class AskThreadRead(BaseModel):
 
 class AskMessageRead(BaseModel):
     id: uuid.UUID
-    thread_id: uuid.UUID
     role: str
     text: str
     citations: list[Citation] = []

@@ -25,11 +25,11 @@
 		FireOn,
 		fireOnLabel,
 		OutcomeStatus,
-		ScopeKind,
 		triggerLabel
 	} from '$lib/config/tripwires';
 	import type { Outcome, Tripwire, TripwireRun, TripwireRunCounts } from '$lib/types/tripwire';
 	import { formatDateTime, relativeTime } from '$lib/utilities/dates';
+	import { scopeText } from './format';
 	import QueryChip from './query-chip.svelte';
 
 	interface Props {
@@ -58,6 +58,7 @@
 	let loading = $state(false);
 	let expanded = $state<string | null>(null);
 	let loadedFor = $state<string | null>(null);
+	let pinned = $state<TripwireRun | null>(null);
 
 	let spec = $derived(tripwire ? dimensionSpec(tripwire.dimension) : null);
 	let verb = $derived(tripwire ? (FIRE_ON_VERB[tripwire.fire_on as FireOn] ?? 'fired') : 'fired');
@@ -66,6 +67,11 @@
 			? { [CheckStatus.Fired]: counts.fired, [CheckStatus.Quiet]: counts.quiet, all: counts.total }
 			: null
 	);
+	let shown = $derived.by(() => {
+		const focus = pinned;
+		if (!focus || page !== 1 || (tab !== 'all' && tab !== focus.status)) return runs;
+		return runs.some((r) => r.id === focus.id) ? runs : [focus, ...runs];
+	});
 
 	$effect(() => {
 		const row = tripwire;
@@ -79,10 +85,25 @@
 			tab = CheckStatus.Fired;
 			page = 1;
 			expanded = focusRunId;
+			pinned = null;
+			const focus = focusRunId;
 			void loadCounts(row.id);
-			void load(row.id);
+			void load(row.id).then(() => {
+				if (focus && loadedFor === row.id && !runs.some((r) => r.id === focus)) {
+					void loadFocus(row.id, focus);
+				}
+			});
 		});
 	});
+
+	async function loadFocus(id: string, runId: string) {
+		try {
+			const run = await tripwiresApi.run(runId, projectId);
+			if (loadedFor === id && run.tripwire_id === id) pinned = run;
+		} catch {
+			pinned = null;
+		}
+	}
 
 	async function loadCounts(id: string) {
 		try {
@@ -121,11 +142,6 @@
 		if (tripwire) void load(tripwire.id);
 	}
 
-	function scopeText(t: Tripwire): string {
-		if (t.scope.kind === ScopeKind.All) return 'All targets';
-		return t.scope.labels.join(', ');
-	}
-
 	function outcomeTone(o: Outcome): string {
 		if (o.status === OutcomeStatus.Done) return 'bg-success';
 		if (o.status === OutcomeStatus.Failed) return 'bg-destructive';
@@ -156,7 +172,7 @@
 	<Sheet.Content side="right" class="flex w-full flex-col gap-0 p-0 sm:max-w-2xl">
 		{#if tripwire && spec}
 			<Sheet.Header class="gap-2 border-b px-5 py-4">
-				<div class="flex items-center gap-3">
+				<div class="flex items-center gap-3 pr-8">
 					<Sheet.Title class="min-w-0 flex-1 truncate">{tripwire.name}</Sheet.Title>
 					<Switch
 						checked={tripwire.enabled}
@@ -169,9 +185,8 @@
 					<span>{spec.label}</span>
 					<QueryChip dimension={tripwire.dimension} query={tripwire.query} wrap />
 					<span
-						>· {fireOnLabel(tripwire.fire_on)} · {scopeText(tripwire)} · {triggerLabel(
-							tripwire.trigger
-						)}</span
+						>· {fireOnLabel(tripwire.fire_on)} · {scopeText(tripwire.scope, tripwire.scope.labels)} ·
+						{triggerLabel(tripwire.trigger)}</span
 					>
 				</Sheet.Description>
 			</Sheet.Header>
@@ -202,9 +217,9 @@
 			</div>
 
 			<ScrollArea class="min-h-0 flex-1">
-				{#if loading && runs.length === 0}
+				{#if loading && shown.length === 0}
 					<RowSkeleton rows={5} class="px-5" />
-				{:else if runs.length === 0}
+				{:else if shown.length === 0}
 					<EmptyState
 						icon={Zap}
 						title={tab === CheckStatus.Fired ? 'No firings' : 'No checks'}
@@ -212,7 +227,7 @@
 					/>
 				{:else}
 					<div class="flex flex-col divide-y divide-border/60">
-						{#each runs as run (run.id)}
+						{#each shown as run (run.id)}
 							{@const open = expanded === run.id}
 							{@const fired = run.status === CheckStatus.Fired}
 							<div class="px-5 py-3 {focusRunId === run.id ? 'bg-primary/5' : ''}">

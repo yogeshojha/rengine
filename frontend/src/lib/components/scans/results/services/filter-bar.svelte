@@ -1,5 +1,6 @@
 <script lang="ts">
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import FacetedFilter from '../faceted-filter.svelte';
 	import { SurfaceDimension } from '$lib/config/surface';
 	import ViewControls from '../table/view-controls.svelte';
@@ -131,22 +132,28 @@
 				onChange={(v) => setList('country', v)}
 			/>
 		{/if}
-		<ToggleGroup.Root
-			type="multiple"
-			value={quick}
-			onValueChange={setQuick}
-			variant="outline"
-			aria-label="Filters"
+		<ScrollArea
+			orientation="horizontal"
+			class="max-lg:max-w-full max-lg:min-w-0"
+			scrollbarXClasses="h-1"
 		>
-			{#each QUICK as q (q.value)}
-				<ToggleGroup.Item value={q.value} class="h-9 px-3 text-sm font-normal">
-					{q.label}
-				</ToggleGroup.Item>
-			{/each}
-		</ToggleGroup.Root>
+			<ToggleGroup.Root
+				type="multiple"
+				value={quick}
+				onValueChange={setQuick}
+				variant="outline"
+				aria-label="Filters"
+			>
+				{#each QUICK as q (q.value)}
+					<ToggleGroup.Item value={q.value} class="h-9 px-3 text-sm font-normal">
+						{q.label}
+					</ToggleGroup.Item>
+				{/each}
+			</ToggleGroup.Root>
+		</ScrollArea>
 	</div>
 
-	<div class="flex items-center gap-2">
+	<div class="flex min-w-0 flex-wrap items-center gap-2">
 		<ViewControls
 			dimension={SurfaceDimension.SERVICES}
 			{dimensions}

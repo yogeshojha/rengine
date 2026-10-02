@@ -21,42 +21,6 @@ export const STATE_BADGE: Record<string, BadgeVariant> = {
 	[SecretState.EXPIRED]: 'info'
 };
 
-export enum SecretGroup {
-	CLOUD = 'cloud',
-	CODE = 'code',
-	PAYMENTS = 'payments',
-	MESSAGING = 'messaging',
-	AI = 'ai',
-	AUTH = 'auth',
-	DATA = 'data',
-	PLATFORM = 'platform',
-	CONTACT = 'contact'
-}
-
-export const GROUP_ORDER: string[] = [
-	SecretGroup.CLOUD,
-	SecretGroup.CODE,
-	SecretGroup.PAYMENTS,
-	SecretGroup.MESSAGING,
-	SecretGroup.AI,
-	SecretGroup.AUTH,
-	SecretGroup.DATA,
-	SecretGroup.PLATFORM,
-	SecretGroup.CONTACT
-];
-
-export const GROUP_LABELS: Record<string, string> = {
-	[SecretGroup.CLOUD]: 'Cloud',
-	[SecretGroup.CODE]: 'Source control and packages',
-	[SecretGroup.PAYMENTS]: 'Payments',
-	[SecretGroup.MESSAGING]: 'Messaging',
-	[SecretGroup.AI]: 'AI providers',
-	[SecretGroup.AUTH]: 'Authentication',
-	[SecretGroup.DATA]: 'Data stores',
-	[SecretGroup.PLATFORM]: 'Platform and tooling',
-	[SecretGroup.CONTACT]: 'Contacts'
-};
-
 export enum SecretSource {
 	BODY = 'body',
 	HEADER = 'header',
@@ -82,7 +46,8 @@ export const DROP_REASON_LABELS: Record<string, string> = {
 	hex_local_part: 'Hex local part',
 	undecodable: 'Token did not decode',
 	template: 'Template expression',
-	too_long: 'Over the length cap'
+	too_long: 'Over the length cap',
+	link_scheme: 'Link scheme, not a user'
 };
 
 export const STATE_TABS: { key: string; label: string }[] = [

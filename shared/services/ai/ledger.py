@@ -76,10 +76,6 @@ def source(
         _source.reset(token)
 
 
-def current_source() -> Source:
-    return _source.get()
-
-
 def record(rec: CallRecord) -> None:
     if rec.source == _NO_SOURCE:
         rec.source = _source.get()

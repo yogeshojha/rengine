@@ -4,7 +4,6 @@
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { toast } from 'svelte-sonner';
-	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Progress } from '$lib/components/ui/progress';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
@@ -13,13 +12,15 @@
 	import * as Sheet from '$lib/components/ui/sheet';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import {
+		BUNDLE,
+		BUNDLE_LABEL,
 		EXPORT_STATUS_LABELS,
 		EXPORT_STATUS_TONE,
 		ExportStatus,
 		FORMAT_LABELS,
-		formatBytes,
 		isLive
 	} from '$lib/config/exports';
+	import { formatBytes } from '$lib/utilities/format';
 	import { surfaceSpec } from '$lib/config/surface';
 	import { exportsStore } from '$lib/stores/exports.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
@@ -45,7 +46,7 @@
 	});
 
 	function label(dimension: string): string {
-		if (dimension === 'bundle') return 'All dimensions';
+		if (dimension === BUNDLE) return BUNDLE_LABEL;
 		return surfaceSpec(dimension)?.label ?? dimension;
 	}
 
@@ -88,11 +89,7 @@
 						<Skeleton class="h-12 w-full" />
 					</div>
 				{:else if exportsStore.rows.length === 0}
-					<EmptyState
-						icon={FileDown}
-						title="No exports yet"
-						description="An export keeps the filter it was run with."
-					/>
+					<EmptyState icon={FileDown} title="No exports" />
 				{:else}
 					{#each exportsStore.rows as row (row.id)}
 						{@const live = isLive(row.status)}
@@ -100,7 +97,9 @@
 							<div class="flex items-start justify-between gap-3">
 								<div class="flex min-w-0 flex-col gap-0.5">
 									<span class="truncate text-sm font-medium">{label(row.dimension)}</span>
-									<span class="truncate text-xs text-muted-foreground">{row.subject}</span>
+									{#if row.subject !== label(row.dimension)}
+										<span class="truncate text-xs text-muted-foreground">{row.subject}</span>
+									{/if}
 								</div>
 								<div class="flex shrink-0 items-center gap-1">
 									{#if row.status === ExportStatus.COMPLETED}
@@ -179,10 +178,6 @@
 									<TriangleAlert class="mt-px size-3 shrink-0" />
 									<span>{row.error}</span>
 								</p>
-							{/if}
-
-							{#if row.status === ExportStatus.EXPIRED}
-								<Badge variant="outline" class="w-fit font-normal">Run again for a new file</Badge>
 							{/if}
 						</div>
 					{/each}

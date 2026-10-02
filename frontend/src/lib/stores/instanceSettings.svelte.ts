@@ -11,9 +11,6 @@ function createInstanceSettingsStore() {
 		get settings() {
 			return settings;
 		},
-		get isLoading() {
-			return isLoading;
-		},
 		get hasFetched() {
 			return hasFetched;
 		},
@@ -37,19 +34,6 @@ function createInstanceSettingsStore() {
 				return settings;
 			} catch (e) {
 				toast.error(e instanceof Error ? e.message : 'Instance settings not saved');
-				return null;
-			}
-		},
-
-		async testAi(data: {
-			provider: string;
-			model?: string;
-			api_key?: string;
-		}): Promise<{ success: boolean; message: string } | null> {
-			try {
-				return await instanceSettingsApi.testAi(data);
-			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'AI connection test failed');
 				return null;
 			}
 		},

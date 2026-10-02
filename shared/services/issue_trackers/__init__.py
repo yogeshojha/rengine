@@ -7,7 +7,6 @@ import json
 from shared.models.issue_tracker import IssueTracker
 from shared.services.issue_trackers.base import (
     CredentialsError,
-    Option,
     RateLimitedError,
     RemoteIssue,
     RemoteNotFoundError,
@@ -53,9 +52,7 @@ def tracker_client(row: IssueTracker) -> Tracker:
 
 
 __all__ = [
-    "CLIENTS",
     "CredentialsError",
-    "Option",
     "RateLimitedError",
     "RemoteIssue",
     "RemoteNotFoundError",

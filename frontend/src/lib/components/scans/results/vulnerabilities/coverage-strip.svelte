@@ -9,14 +9,16 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { COVERAGE_STATUS_LABELS } from '$lib/config/vulnerabilities';
 	import { TIER_HELP, TIER_LABELS, TIER_ORDER } from '$lib/config/scan-surface';
-	import type { CoverageRead } from '$lib/utilities/vulns';
+	import type { CoverageRead, ScanVulnerabilities } from '$lib/utilities/vulns';
 
 	interface Props {
-		coverage: CoverageRead[];
+		vulns: ScanVulnerabilities;
 		compact?: boolean;
 	}
 
-	let { coverage, compact = false }: Props = $props();
+	let { vulns, compact = false }: Props = $props();
+
+	let coverage = $derived(vulns.coverage);
 
 	interface TierRow {
 		key: string;
@@ -24,7 +26,7 @@
 		help: string | null;
 		status: string;
 		batches: number;
-		checks: number;
+		checks: number | null;
 		targets: number;
 		covered: number;
 		requests: number | null;
@@ -74,13 +76,16 @@
 							: 0),
 					0
 				);
+				const selected = rows
+					.map((r) => r.templates_selected)
+					.filter((v): v is number => v != null);
 				return {
 					key,
 					label: TIER_LABELS[key] ?? key,
 					help: TIER_HELP[key] ?? null,
 					status: worst(rows.map((r) => r.status)),
 					batches: rows.length,
-					checks: Math.max(0, ...rows.map((r) => r.templates_selected ?? 0)),
+					checks: selected.length ? Math.max(...selected) : null,
 					targets: rows.reduce((a, c) => a + c.hosts_total, 0),
 					covered: rows.reduce((a, c) => a + c.hosts_covered, 0),
 					requests: sum(rows.map((r) => r.requests_sent)),
@@ -93,16 +98,12 @@
 				};
 			});
 	});
-	let checks = $derived(
-		Math.max(0, ...coverage.filter((c) => c.tier).map((c) => c.templates_selected ?? 0))
-	);
-	let targets = $derived(
-		Math.max(0, ...tiers.filter((t) => t.key !== 'replay').map((t) => t.targets))
-	);
-	let covered = $derived(Math.max(0, ...tiers.map((t) => t.covered)));
-	let requests = $derived(sum(coverage.map((c) => c.requests_sent)));
+	let checks = $derived(vulns.templates_run ?? 0);
+	let targets = $derived(vulns.scanned_hosts);
+	let covered = $derived(vulns.surface?.covered ?? 0);
+	let requests = $derived(vulns.requests_sent);
 	let errors = $derived(sum(coverage.map((c) => c.errors)));
-	let dropped = $derived(coverage.reduce((a, c) => a + c.hosts_dropped_count, 0));
+	let dropped = $derived(vulns.targets_dropped);
 	let filtered = $derived(coverage.reduce((a, c) => a + (c.echo_filtered ?? 0), 0));
 	let partial = $derived(ran && coverage.some((c) => c.status !== 'completed'));
 	let Icon = $derived(!ran ? CircleSlash : partial ? TriangleAlert : CircleCheck);
@@ -151,7 +152,7 @@
 					<p class="text-sm font-medium">Scanner coverage</p>
 					<p class="text-xs text-muted-foreground">A dash is a count the scanner did not report.</p>
 				</div>
-				<ScrollArea class="max-h-96">
+				<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-96">
 					<div class="divide-y">
 						{#each tiers as row (row.key)}
 							<div class="space-y-2 px-3 py-2.5">

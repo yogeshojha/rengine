@@ -45,8 +45,6 @@ WITH hosts AS (
     FROM ip_addresses WHERE scan_id = ANY(:sids)
     ORDER BY ip, discovered_at DESC
 ), web_top AS (
-    -- the origin probe stores assets whose host is the address itself; a hostname
-    -- describes the service, the default virtual host does not
     SELECT DISTINCT ON (ip, port) ip, port, status_code, url, title, screenshot_path
     FROM http_assets
     WHERE scan_id = ANY(:sids) AND ip IS NOT NULL

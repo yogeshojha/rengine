@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from shared.definitions.surface import SurfaceDimension
+from shared.definitions.surface import SURFACE_NOUN, SurfaceDimension
 from shared.enums.subdomain import SubdomainSource
 
 
@@ -16,6 +16,7 @@ class SeedKind(StrEnum):
 
 MAX_RUN_ASSETS = 5000
 MAX_RUN_SCANS = 25
+MAX_RUN_TEMPLATES = 50
 RESCAN_LABEL = "Rescan"
 ASSET_SEED_STAGE = "asset_seed"
 RESCAN_SOURCE = "rescan"
@@ -66,8 +67,8 @@ def change_dimension(field: str) -> str:
 
 
 SEED_KIND_NOUN: dict[str, tuple[str, str]] = {
-    SeedKind.HOST.value: ("host", "hosts"),
-    SeedKind.ADDRESS.value: ("address", "addresses"),
+    SeedKind.HOST.value: SURFACE_NOUN[SurfaceDimension.WEB_ASSETS.value],
+    SeedKind.ADDRESS.value: SURFACE_NOUN[SurfaceDimension.IPS.value],
     SeedKind.URL.value: ("URL", "URLs"),
 }
 
@@ -81,8 +82,6 @@ def stages_for(dimension: str) -> tuple[str, ...]:
 
 
 def rescan_label(dimension: str, count: int) -> str:
-    from shared.definitions.surface import SURFACE_NOUN  # noqa: PLC0415
-
     singular, plural = SURFACE_NOUN.get(dimension, ("asset", "assets"))
     noun = singular if count == 1 else plural
     return f"{RESCAN_LABEL} · {count} {noun}"

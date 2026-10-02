@@ -1,6 +1,5 @@
 import { api } from './client';
 import type { OnboardingStatus } from '$lib/types/onboarding';
-import type { Project } from '$lib/types/project';
 
 export const onboardingApi = {
 	getStatus: (): Promise<OnboardingStatus> => {
@@ -19,13 +18,5 @@ export const onboardingApi = {
 
 	complete: (): Promise<OnboardingStatus> => {
 		return api.post<OnboardingStatus>('/onboarding/complete');
-	},
-
-	createFirstProject: (data: {
-		name: string;
-		description?: string | null;
-		label?: string | null;
-	}): Promise<Project> => {
-		return api.post<Project>('/onboarding/first-project', data);
 	}
 };

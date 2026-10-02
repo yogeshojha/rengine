@@ -7,6 +7,7 @@
 	import { COMPARE_TAB_ALL } from '$lib/config/compare';
 	import { surfaceSpec } from '$lib/config/surface';
 	import { COMPARABILITY, listedCount, type DimensionDelta } from '$lib/types/compare';
+	import { pluralWord } from '$lib/utilities/strings';
 
 	interface Props {
 		dimensions: DimensionDelta[];
@@ -53,7 +54,7 @@
 						count === 0 && 'text-muted-foreground/60'
 					)}>{count.toLocaleString()}</span
 				>
-				<span class="text-xs text-muted-foreground">{count === 1 ? 'change' : 'changes'}</span>
+				<span class="text-xs text-muted-foreground">{pluralWord(count, 'change')}</span>
 			{/if}
 		</span>
 		{#if delta}

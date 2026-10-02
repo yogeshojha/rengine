@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from reports.base import RenderContext, Section
 from reports.config import SectionConfig, choice, flag, limit
+from reports.render.media import image_data_uri
 from shared.definitions.reports import MAX_SCREENSHOTS, SectionGroup
 from shared.definitions.surface import SurfaceDimension
 
@@ -41,8 +42,17 @@ class ScreenshotsSection(Section):
             if cfg.order == "findings"
             else sorted(rows, key=lambda h: h.name)
         )
+        shown: list[dict] = []
+        for host in rows:
+            src = image_data_uri(host.screenshot)
+            if src:
+                shown.append({"host": host, "src": src})
+                if len(shown) >= cfg.max_images:
+                    break
+        if not shown:
+            return None
         return {
-            "hosts": rows[: cfg.max_images],
+            "shots": shown,
             "columns": int(cfg.columns),
             "show_title": cfg.show_title,
             "total": len(rows),

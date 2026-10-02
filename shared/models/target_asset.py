@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 MAX_ASSET_SEARCH = 200
 
@@ -9,19 +9,32 @@ ASSET_STATES: tuple[str, ...] = ("all", "current", "new", "gone")
 ASSET_SORTS: tuple[str, ...] = ("name", "first_seen", "last_seen", "scans", "status")
 
 
+def _check_state(v: str) -> str:
+    if v not in ASSET_STATES:
+        msg = "Unknown state."
+        raise ValueError(msg)
+    return v
+
+
+def _check_sort(v: str) -> str:
+    if v not in ASSET_SORTS:
+        msg = "Unknown sort."
+        raise ValueError(msg)
+    return v
+
+
 class TargetAssetRow(BaseModel):
     name: str
-    is_active: bool = False
     is_wildcard: bool = False
     resolved_ips: list[str] = Field(default_factory=list)
     cname: str | None = None
-    sources: list[str] = Field(default_factory=list)
     scan_count: int = 0
     first_seen: datetime
     last_seen: datetime
     last_scan_id: uuid.UUID
     current: bool = True
     is_new: bool = False
+    url: str | None = None
     status_code: int | None = None
     title: str | None = None
     webserver: str | None = None
@@ -30,7 +43,6 @@ class TargetAssetRow(BaseModel):
     asn_org: str | None = None
     is_cdn: bool = False
     cdn_name: str | None = None
-    screenshot_path: str | None = None
 
 
 class TargetAssetFilter(BaseModel):
@@ -42,6 +54,9 @@ class TargetAssetFilter(BaseModel):
     order: str = Field(default="asc", max_length=4)
     limit: int = Field(default=50, ge=1, le=200)
     offset: int = Field(default=0, ge=0, le=100_000_000)
+
+    _state = field_validator("state")(_check_state)
+    _sort = field_validator("sort")(_check_sort)
 
 
 class TargetAssetFacets(BaseModel):

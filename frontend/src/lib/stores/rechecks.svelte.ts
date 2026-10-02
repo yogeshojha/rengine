@@ -1,4 +1,4 @@
-import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+import { SvelteMap } from 'svelte/reactivity';
 import { scansApi } from '$lib/api/scans';
 import type { FocusedRun, Recheck, RescanCreate, RescanSchema } from '$lib/types/recheck';
 import { isRecheckLive } from '$lib/utilities/rechecks';
@@ -35,10 +35,6 @@ class RechecksStore {
 
 	history(scanId: string, assetKey: string): Recheck[] {
 		return this.byScan.get(scanId)?.get(assetKey) ?? [];
-	}
-
-	touched(scanId: string): SvelteSet<string> {
-		return new SvelteSet(this.byScan.get(scanId)?.keys() ?? []);
 	}
 
 	async load(scanId: string, projectId: string): Promise<void> {

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { SvelteMap } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
 	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
@@ -58,10 +59,16 @@
 	let targets = $state<Target[]>([]);
 	let targetsLoading = $state(false);
 	let targetsError = $state<string | null>(null);
+	const TARGET_ROWS = 50;
+	const TARGET_SEARCH_DEBOUNCE_MS = 200;
+	const targetNames = new SvelteMap<string, string>();
+	let targetSeq = 0;
+	let searchTimer: ReturnType<typeof setTimeout> | undefined;
 	let saving = $state(false);
 
 	let isEdit = $derived(!!schedule);
 	let timezone = $derived(instanceSettingsStore.settings?.timezone ?? 'UTC');
+	let zone = $derived(schedule?.timezone ?? timezone);
 
 	let enginesReady = $derived(
 		(scanEnginesStore.hasFetched || !!scanEnginesStore.error) && !scanEnginesStore.isLoading
@@ -82,7 +89,7 @@
 	let selectedTargetItems = $derived(
 		targetIds.map((id) => ({
 			id,
-			label: targets.find((t) => t.id === id)?.target_value ?? id
+			label: targetNames.get(id) ?? schedule?.targets.find((t) => t.id === id)?.target_value ?? id
 		}))
 	);
 	let unitLabel = $derived(INTERVAL_UNIT_LABELS[intervalUnit] ?? 'Unit');
@@ -119,7 +126,7 @@
 			engineId = schedule.engine_id;
 			contextId = schedule.context_id ?? SELECT_NONE;
 			scheduleType = schedule.schedule_type;
-			onceLocal = schedule.run_at ? toLocalInput(schedule.run_at, timezone) : '';
+			onceLocal = schedule.run_at ? toLocalInput(schedule.run_at, schedule.timezone) : '';
 			intervalEvery = schedule.interval_every ? String(schedule.interval_every) : '6';
 			intervalUnit = schedule.interval_unit ?? 'hours';
 			dailyTime = schedule.daily_at_time ?? '10:00';
@@ -153,17 +160,40 @@
 		});
 	});
 
+	async function fetchTargets(projectSlug: string, q: string): Promise<Target[] | null> {
+		const mine = ++targetSeq;
+		const res = await targetsApi.list({
+			project_slug: projectSlug,
+			search: q,
+			sort_by: 'name',
+			sort_dir: 'asc',
+			size: TARGET_ROWS
+		});
+		if (mine !== targetSeq) return null;
+		for (const t of res.items) targetNames.set(t.id, t.target_value);
+		return res.items;
+	}
+
 	async function loadTargets(projectSlug: string) {
 		targetsLoading = true;
 		targetsError = null;
 		try {
-			const res = await targetsApi.list({ project_slug: projectSlug, size: 100 });
-			targets = res.items;
+			targets = (await fetchTargets(projectSlug, '')) ?? targets;
 		} catch (e) {
 			targetsError = e instanceof Error ? e.message : 'Targets not loaded';
 		} finally {
 			targetsLoading = false;
 		}
+	}
+
+	function searchTargets(q: string) {
+		const slug = projectsStore.activeProject?.slug;
+		if (!slug) return;
+		clearTimeout(searchTimer);
+		searchTimer = setTimeout(async () => {
+			const found = await fetchTargets(slug, q).catch(() => null);
+			if (found) targets = found;
+		}, TARGET_SEARCH_DEBOUNCE_MS);
 	}
 
 	function buildPayload(): ScanScheduleCreate {
@@ -238,14 +268,16 @@
 						</div>
 					{:else}
 						<MultiSelectCombobox
+							id="schedule-targets"
 							items={targetItems}
 							selected={selectedTargetItems}
 							onSelect={(item) =>
 								(targetIds = targetIds.includes(item.id) ? targetIds : [...targetIds, item.id])}
 							onRemove={(item) => (targetIds = targetIds.filter((id) => id !== item.id))}
+							onSearch={searchTargets}
 							allowCreate={false}
 							placeholder="Search targets"
-							emptyText="No targets in this project"
+							emptyText="No targets"
 						/>
 					{/if}
 				</div>
@@ -355,11 +387,17 @@
 					<div class="flex items-start gap-1.5 text-2xs text-muted-foreground">
 						<CalendarClock class="mt-px h-3.5 w-3.5 shrink-0" />
 						<span>
-							Scheduled times use the instance timezone
-							<span class="font-medium text-foreground">{timezone}</span>. Change it in
-							<a href={ROUTES.settings()} class="underline underline-offset-2 hover:text-foreground"
-								>Settings</a
-							>.
+							{#if isEdit}
+								Scheduled times use the timezone
+								<span class="font-medium text-foreground">{zone}</span>.
+							{:else}
+								Scheduled times use the instance timezone
+								<span class="font-medium text-foreground">{zone}</span>. Change it in
+								<a
+									href={ROUTES.settings()}
+									class="underline underline-offset-2 hover:text-foreground">Settings</a
+								>.
+							{/if}
 						</span>
 					</div>
 				</div>

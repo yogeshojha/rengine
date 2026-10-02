@@ -9,6 +9,7 @@
 	import type { ProviderInfo } from '$lib/types/api-key';
 	import { getProviderIcon } from '$lib/config/icons';
 	import { RECON_GROUPS, type ProviderGroup } from '$lib/config/api-keys';
+	import { plural } from '$lib/utilities/strings';
 	import { toast } from 'svelte-sonner';
 	import type { StepProps } from '$lib/types/onboarding';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
@@ -87,7 +88,7 @@
 				else ok = false;
 			}
 			if (!ok) return;
-			if (saved > 0) toast.success(`${saved} API key${saved > 1 ? 's' : ''} saved`);
+			if (saved > 0) toast.success(`${plural(saved, 'API key')} saved`);
 			next();
 		} finally {
 			busy = false;

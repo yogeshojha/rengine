@@ -66,14 +66,14 @@ def test_a_session_that_changes_nothing_is_reported():
     result = _stage([same, same]).run()
 
     assert result.partial is True
-    assert "nothing in this scan is authenticated" in result.warnings[0]
+    assert "are not authenticated" in result.warnings[0]
 
 
 def test_credentials_the_target_refuses_are_reported():
     result = _stage([_answer(401), _answer(200)]).run()
 
     assert result.partial is True
-    assert "wrong, expired or not accepted" in result.warnings[0]
+    assert "refused the scan context's credentials" in result.warnings[0]
 
 
 def test_a_forbidden_answer_counts_as_refused():
@@ -96,14 +96,14 @@ def test_a_target_that_does_not_answer_is_not_a_pass():
     result = _stage([None, None, None, None]).run()
 
     assert result.partial is True
-    assert "could not be checked" in result.warnings[0]
+    assert "The session was not checked" in result.warnings[0]
 
 
 def test_one_request_failing_decides_nothing():
     result = _stage([_answer(200), None, None, None]).run()
 
     assert result.partial is True
-    assert "could not be checked" in result.warnings[0]
+    assert "The session was not checked" in result.warnings[0]
 
 
 def test_a_target_with_no_url_says_so_rather_than_passing():

@@ -14,12 +14,6 @@ export interface InstanceSettings {
 	cert_recheck_enabled: boolean;
 	concurrent_scans: number;
 	concurrent_scans_auto: number | null;
-	ai_enabled: boolean;
-	ai_provider: string | null;
-	ai_model: string | null;
-	ai_api_key_masked: string | null;
-	ai_configured: boolean;
-	ai_features: Record<string, boolean>;
 	capabilities: string[];
 	created_at: string;
 	updated_at: string;
@@ -33,9 +27,4 @@ export interface InstanceSettingsUpdate {
 	screenshot_retention_days?: number;
 	cert_recheck_enabled?: boolean;
 	concurrent_scans?: number;
-	ai_enabled?: boolean;
-	ai_provider?: string | null;
-	ai_model?: string | null;
-	ai_api_key?: string | null;
-	ai_features?: Record<string, boolean>;
 }

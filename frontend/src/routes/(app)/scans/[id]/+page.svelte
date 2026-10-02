@@ -37,12 +37,12 @@
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Kbd } from '$lib/components/ui/kbd';
-	import ScanStatusBadge from '@/components/scan-status-badge.svelte';
+	import ScanStatusBadge from '$lib/components/scan-status-badge.svelte';
 	import { queueLabel } from '$lib/config/scan-admission';
 	import Hint from '$lib/components/hint.svelte';
-	import ConfirmDialog from '@/components/confirm-dialog.svelte';
-	import EmptyState from '@/components/empty-state.svelte';
-	import LoadingButton from '@/components/loading-button.svelte';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
+	import EmptyState from '$lib/components/empty-state.svelte';
+	import LoadingButton from '$lib/components/loading-button.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import ScanOverview from '$lib/components/scans/results/scan-overview.svelte';
 	import WebAssetsTable from '$lib/components/scans/results/web-assets-table.svelte';
@@ -89,11 +89,13 @@
 	import { plannedStages, stageProgress } from '$lib/utilities/scan-progress';
 	import type { TargetType } from '$lib/types/target';
 	import { SCAN_COUNT_COLUMNS } from '$lib/types/scan';
-	import type { ScanRead, ScanActivityRead, ScanCommandRead } from '$lib/types/scan';
+	import type { ScanRead, ScanActivityRead } from '$lib/types/scan';
 	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import { REFUSAL } from '$lib/config/compare';
 	import GenerateReportDialog from '$lib/components/reports/generate-dialog.svelte';
 	import { NOW_TICK_MS } from '$lib/constants';
+	import { pageTitle } from '$lib/utilities/page-title';
+	import { plural } from '$lib/utilities/strings';
 
 	const HISTORY_SIZE = 12;
 	const STATUS_TEXT: Record<string, string> = {
@@ -106,7 +108,6 @@
 
 	let scan = $state<ScanRead | null>(null);
 	let activities = $state<ScanActivityRead[]>([]);
-	let commands = $state<ScanCommandRead[]>([]);
 	let history = $state<ScanRead[]>([]);
 	let historyLoaded = $state(false);
 	let loading = $state(true);
@@ -120,6 +121,7 @@
 	let headerEl = $state<HTMLElement | null>(null);
 	let condensed = $state(false);
 	let tabsHeight = $state(0);
+	let tabStripEl = $state<HTMLElement | null>(null);
 	let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 	let now = $state(Date.now());
 	const initialSearch = (key: string) => page.url.searchParams.get(key) ?? '';
@@ -167,6 +169,22 @@
 		return v && (SCAN_TABS as readonly string[]).includes(v) ? (v as ScanTab) : 'overview';
 	}
 	let activeTab = $state<ScanTab>(resolveTab(page.url.searchParams.get('tab')));
+
+	$effect(() => {
+		void activeTab;
+		const strip = tabStripEl;
+		if (!strip) return;
+		const frame = requestAnimationFrame(() => {
+			const tab = strip.querySelector<HTMLElement>('[role=tab][data-state=active]');
+			const view = tab?.closest<HTMLElement>('[data-slot=scroll-area-viewport]');
+			if (!tab || !view) return;
+			const t = tab.getBoundingClientRect();
+			const v = view.getBoundingClientRect();
+			if (t.right > v.right) view.scrollLeft += t.right - v.right;
+			else if (t.left < v.left) view.scrollLeft -= v.left - t.left;
+		});
+		return () => cancelAnimationFrame(frame);
+	});
 
 	function setTab(v: string, params: Record<string, string> = {}) {
 		activeTab = v as ScanTab;
@@ -325,13 +343,11 @@
 	let runningStages = $derived(activities.filter((a) => a.status === 'running').length);
 	let pauseNote = $derived(
 		runningStages
-			? `${runningStages} running ${runningStages === 1 ? 'stage' : 'stages'} stop and run again from the start on resume.`
+			? `${plural(runningStages, 'running stage')} restart${runningStages === 1 ? 's' : ''} on resume.`
 			: 'The scan stops before its next stage.'
 	);
 	let focused = $derived(scan?.scope === 'focused');
-	let seedNoun = $derived(
-		(scan?.seed_count ?? 0) === 1 ? '1 asset' : `${scan?.seed_count ?? 0} assets`
-	);
+	let seedNoun = $derived(plural(scan?.seed_count ?? 0, 'asset'));
 	let shouldPoll = $derived(live && !sseStore.isConnected);
 	let TargetIcon = $derived(
 		scan ? (TARGET_TYPE_ICONS[scan.execution_config.target_type as TargetType] ?? Globe) : Globe
@@ -385,6 +401,7 @@
 	let vulnsTotal = $state<number | null>(null);
 	let notesTotal = $state<number | null>(null);
 	let softwareTotal = $state<number | null>(null);
+	let softwareCapped = $state(false);
 	let softwareSearch = $state('');
 	let secretsTotal = $state<number | null>(null);
 	let secretSearch = $state('');
@@ -419,7 +436,6 @@
 			}).map((t) => t.key)
 		)
 	);
-	// a tab offered once stays offered
 	let offered = new SvelteSet<string>();
 	let offeredFor = $state('');
 	$effect(() => {
@@ -514,10 +530,7 @@
 
 	async function loadPipeline(projectId: string) {
 		try {
-			[activities, commands] = await Promise.all([
-				scansApi.activities(scanId, projectId),
-				scansApi.commands(scanId, projectId)
-			]);
+			activities = await scansApi.activities(scanId, projectId);
 		} catch {}
 	}
 
@@ -689,7 +702,8 @@
 </script>
 
 <svelte:head
-	><title>{scan ? `${scan.execution_config.target_value} scan` : routeLabels.scans} · reNgine</title
+	><title
+		>{pageTitle(scan ? `${scan.execution_config.target_value} scan` : routeLabels.scans)}</title
 	></svelte:head
 >
 
@@ -766,25 +780,27 @@
 					</p>
 				</div>
 			</div>
-			<div class="flex items-center gap-2">
+			<div class="flex flex-wrap items-center gap-2">
 				{#if live}
-					<Hint text={pauseNote}>
-						{#snippet child(props)}
-							<span {...props} class="inline-flex">
-								<LoadingButton
-									variant="outline"
-									size="sm"
-									class="gap-1.5"
-									loading={pausing}
-									loadingLabel="Pausing…"
-									onclick={() => pause()}
-								>
-									<Pause class="size-3.5" />
-									Pause
-								</LoadingButton>
-							</span>
-						{/snippet}
-					</Hint>
+					{#if scan.status === 'running'}
+						<Hint text={pauseNote}>
+							{#snippet child(props)}
+								<span {...props} class="inline-flex">
+									<LoadingButton
+										variant="outline"
+										size="sm"
+										class="gap-1.5"
+										loading={pausing}
+										loadingLabel="Pausing…"
+										onclick={() => pause()}
+									>
+										<Pause class="size-3.5" />
+										Pause
+									</LoadingButton>
+								</span>
+							{/snippet}
+						</Hint>
+					{/if}
 					<Button variant="outline" size="sm" class="gap-1.5" onclick={() => (cancelOpen = true)}>
 						<Ban class="size-3.5" />
 						Cancel
@@ -921,6 +937,7 @@
 
 		<Tabs.Root value={activeTab} onValueChange={setTab} style="--scan-tabs-h: {tabsHeight}px">
 			<div
+				bind:this={tabStripEl}
 				bind:clientHeight={tabsHeight}
 				class="sticky top-0 z-30 -mx-4 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:-mx-6 md:px-6"
 			>
@@ -980,7 +997,10 @@
 													<span
 														class="text-xs tabular-nums {n === 0
 															? 'text-muted-foreground/50'
-															: 'text-muted-foreground'}">{n.toLocaleString()}</span
+															: 'text-muted-foreground'}"
+														>{n.toLocaleString()}{t.key === 'software' && softwareCapped
+															? '+'
+															: ''}</span
 													>
 												{/if}
 											</Tabs.Trigger>
@@ -995,7 +1015,7 @@
 						</Tabs.List>
 					</ScrollArea>
 					{#if activeTab in NEW_PARAM}
-						<Hint text="Absent from the previous scan of this target">
+						<Hint text="Not recorded by an earlier scan of this target">
 							{#snippet child(props)}
 								<Button
 									{...props}
@@ -1031,7 +1051,6 @@
 							scanId={scan.id}
 							{projectId}
 							{activities}
-							{commands}
 							{history}
 							{historyLoaded}
 							{previous}
@@ -1176,7 +1195,6 @@
 								anchor={{ targetId: scan.target_id, scanId: scan.id }}
 								filter={{ scan_id: scan.id }}
 								emptyTitle="No notes on this run"
-								emptyDescription="Add a note from one of its assets."
 								onCount={(n) => (notesTotal = n)}
 							/>
 						</div>
@@ -1215,7 +1233,11 @@
 								projectId={scan.project_id}
 								active={activeTab === 'software'}
 								revision={resultTicks[SurfaceDimension.SOFTWARE] ?? 0}
-								onScanTotal={(n) => (softwareTotal = n)}
+								onScanTotal={(n, capped) => {
+									softwareTotal = n;
+									softwareCapped = capped;
+								}}
+								onSearch={(q) => (softwareSearch = q)}
 							/>
 						{/key}
 					</svelte:boundary>
@@ -1234,6 +1256,7 @@
 								active={activeTab === 'secrets'}
 								revision={resultTicks[SurfaceDimension.SECRETS] ?? 0}
 								onScanTotal={(n) => (secretsTotal = n)}
+								onSearch={(q) => (secretSearch = q)}
 							/>
 						{/key}
 					</svelte:boundary>

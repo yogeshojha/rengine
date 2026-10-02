@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import re
 from datetime import UTC, datetime
 from typing import Any
 
-from shared.services.scan_resolve import MASK
+from shared.services.scan_resolve import redact_message
 from shared.services.web_hygiene import evaluate as evaluate_hygiene
 from shared.utils.datetime import utc_now
 from shared.utils.net import split_host_port
@@ -12,16 +11,11 @@ from shared.utils.software import components_of
 from shared.utils.tracking import tracking_ids
 from tools.runner.fieldmap import F, parse_record
 
-_REQUEST_SECRET_HEADER = re.compile(
-    r"(?im)^((?:authorization|proxy-authorization|cookie|x-api-key|"
-    r"[\w-]*(?:token|secret|api-?key)[\w-]*)\s*:\s*).+$"
-)
-
 
 def _redact_request(value: Any) -> str | None:
     if not value or not isinstance(value, str):
         return None
-    return _REQUEST_SECRET_HEADER.sub(rf"\1{MASK}", value)
+    return redact_message(value)
 
 
 def _int(value: Any) -> int | None:

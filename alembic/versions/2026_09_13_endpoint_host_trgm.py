@@ -1,4 +1,4 @@
-"""endpoints.host is a free-text field and needs its trigram index
+"""trigram index on endpoints.host
 
 Revision ID: c7e41d9a2f60
 Revises: f2a7c93e1b48

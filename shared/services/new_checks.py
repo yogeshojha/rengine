@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import uuid
-from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import exists, func, not_, or_, select, text
+from sqlalchemy import func, not_, or_, select, text
 from sqlalchemy.orm import Session
 
 from shared.definitions.new_checks import (
@@ -21,7 +20,7 @@ from shared.definitions.notifications import NewChecksResult
 from shared.definitions.rescan import ASSET_SEED_STAGE, SeedKind
 from shared.definitions.scan_surface import DropReason, SurfaceClass
 from shared.definitions.surface import SurfaceDimension
-from shared.definitions.vulnerabilities import SUPPRESSED_STATES, TemplateOrigin
+from shared.definitions.vulnerabilities import TemplateOrigin
 from shared.enums.scan import SCAN_OPEN_STATUSES, ScanScope, ScanStatus
 from shared.logging import get_logger
 from shared.models.instance_settings import InstanceSettings
@@ -31,8 +30,9 @@ from shared.models.scan_engine import ScanEngine
 from shared.models.scan_surface import ScanSurfaceItem
 from shared.models.target import Target
 from shared.models.vuln_template import VulnTemplate
-from shared.models.vulnerability import Vulnerability, VulnerabilityTriage
+from shared.models.vulnerability import Vulnerability
 from shared.services import locks
+from shared.services.asset_query import vuln_suppressed
 from shared.services.celery_dispatch import dispatch_scan_run
 from shared.services.focused import focused_overrides
 from shared.services.launch_plan import AdHocEngine
@@ -62,7 +62,7 @@ SELECT DISTINCT ON (s.target_id) s.id
 """
 
 _WAITING_TARGETS = """
-SELECT t.project_id, count(*)
+SELECT count(*)
   FROM targets t
  WHERE t.new_checks
    AND NOT EXISTS (
@@ -73,34 +73,31 @@ SELECT t.project_id, count(*)
        SELECT 1 FROM scans o
         WHERE o.target_id = t.id AND o.status = ANY(:open)
    )
- GROUP BY t.project_id
 """
 
 _BUSY_TARGETS = """
-SELECT t.project_id, count(*)
+SELECT count(*)
   FROM targets t
  WHERE t.new_checks
    AND EXISTS (
        SELECT 1 FROM scans o
         WHERE o.target_id = t.id AND o.status = ANY(:open)
    )
- GROUP BY t.project_id
 """
 
 
 @dataclass
 class SweepResult:
     templates: int = 0
-    started: Counter = field(default_factory=Counter)
-    busy: Counter = field(default_factory=Counter)
-    waiting: Counter = field(default_factory=Counter)
-    skipped: Counter = field(default_factory=Counter)
+    started: int = 0
+    busy: int = 0
+    waiting: int = 0
+    skipped: int = 0
     failed: int = 0
-    scans: list[uuid.UUID] = field(default_factory=list)
 
     @property
     def targets(self) -> int:
-        return sum(self.started.values())
+        return self.started
 
 
 # ---------- reads ----------
@@ -150,22 +147,24 @@ def covering_scans(session: Session) -> list[Scan]:
     return sorted(scans, key=lambda s: str(s.target_id))
 
 
-def waiting_targets(session: Session) -> Counter:
+def waiting_targets(session: Session) -> int:
     """Following targets with no completed census run and no scan in flight."""
-    rows = session.execute(
+    count = session.execute(
         text(_WAITING_TARGETS),
         {
             "completed": ScanStatus.COMPLETED.value,
             "full": ScanScope.FULL.value,
             "open": list(SCAN_OPEN_STATUSES),
         },
-    )
-    return Counter({project_id: int(n) for project_id, n in rows.all()})
+    ).scalar()
+    return int(count or 0)
 
 
-def busy_targets(session: Session) -> Counter:
-    rows = session.execute(text(_BUSY_TARGETS), {"open": list(SCAN_OPEN_STATUSES)})
-    return Counter({project_id: int(n) for project_id, n in rows.all()})
+def busy_targets(session: Session) -> int:
+    count = session.execute(
+        text(_BUSY_TARGETS), {"open": list(SCAN_OPEN_STATUSES)}
+    ).scalar()
+    return int(count or 0)
 
 
 def seeds_of(session: Session, target_id: uuid.UUID) -> list[dict]:
@@ -293,18 +292,16 @@ def _sweep(session: Session) -> SweepResult:
     if arrived:
         result.busy = busy_targets(session)
         result.waiting = waiting_targets(session)
-        windows: dict[datetime, list[tuple[str, datetime]]] = {since: arrived}
-        for covering in covering_scans(session):
-            target = session.get(Target, covering.target_id)
-            if target is None:
-                continue
-            start = target.new_checks_swept_at or since
-            rows = windows.get(start)
-            if rows is None:
-                rows = windows[start] = new_templates(session, start, now)
-            _follow(
-                session, result, target, covering, rows, start, window_end(rows, now)
-            )
+    windows: dict[datetime, list[tuple[str, datetime]]] = {since: arrived}
+    for covering in covering_scans(session):
+        target = session.get(Target, covering.target_id)
+        if target is None:
+            continue
+        start = target.new_checks_swept_at or since
+        rows = windows.get(start)
+        if rows is None:
+            rows = windows[start] = new_templates(session, start, now)
+        _follow(session, result, target, covering, rows, start, window_end(rows, now))
     settings.new_checks_swept_at = window_end(arrived, now)
     settings.updated_at = now
     session.commit()
@@ -340,7 +337,7 @@ def _follow(
         )
         return
     if scan is None:
-        result.skipped[target.project_id] += 1
+        result.skipped += 1
         target.new_checks_swept_at = end
         session.commit()
         return
@@ -357,8 +354,7 @@ def _follow(
         result.failed += 1
         logger.warning("new checks run not queued", scan=str(scan.id), error=str(exc))
         return
-    result.started[target.project_id] += 1
-    result.scans.append(scan.id)
+    result.started += 1
 
 
 # ---------- result ----------
@@ -368,21 +364,11 @@ def is_follow_up(scan: Scan) -> bool:
     return bool((scan.execution_config or {}).get(NEW_CHECKS_KEY))
 
 
-def _suppressed():
-    return exists(
-        select(1).where(
-            VulnerabilityTriage.target_id == Vulnerability.target_id,
-            VulnerabilityTriage.fingerprint == Vulnerability.fingerprint,
-            VulnerabilityTriage.state.in_(SUPPRESSED_STATES),
-        )
-    )
-
-
 def result_of(session: Session, scan: Scan) -> NewChecksResult:
     """What a follow-up run found, by severity, suppressed findings left out."""
     rows = session.execute(
         select(Vulnerability.severity, func.count())
-        .where(Vulnerability.scan_id == scan.id, not_(_suppressed()))
+        .where(Vulnerability.scan_id == scan.id, not_(vuln_suppressed(scan.id)))
         .group_by(Vulnerability.severity)
     ).all()
     by_severity = {str(sev): int(n) for sev, n in rows}

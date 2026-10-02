@@ -6,6 +6,7 @@ import { ipsApi, servicesApi, softwareApi } from '$lib/api/scan-results';
 import { threatIntelApi } from '$lib/api/threat-intel';
 import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
 import { Capability } from '$lib/config/capabilities';
+import { INTEL_CHANGE_ROWS } from '$lib/config/dashboard';
 import type { Facet } from '$lib/utilities/scan-insights';
 import type { IpFacetSet } from '$lib/utilities/ip-groups';
 import type { InterestPage } from '$lib/types/interest';
@@ -29,11 +30,11 @@ import {
 	type DashboardReadiness,
 	type DashboardSurfaceRisk,
 	type DashboardWindow,
+	type DashboardWindowCounts,
 	type HostingSplit
 } from '$lib/types/dashboard';
 
 const EXPOSURE_ROWS = 6;
-const CHANGE_ROWS = 200;
 
 function hostingCounts(projectId: string, scope: TargetScope): Promise<HostingSplit> {
 	const queries = Object.values(HOSTING_QUERIES);
@@ -66,6 +67,8 @@ function createDashboardStore() {
 	let activity = $state<DashboardActivity | null>(null);
 	let programs = $state<DashboardPrograms | null>(null);
 	let surfaceRisk = $state<DashboardSurfaceRisk | null>(null);
+	let windowCounts = $state<DashboardWindowCounts | null>(null);
+	let windowLoading = $state(false);
 	let extrasLoading = $state(false);
 	let changeWindow = $state<DashboardWindow>(DEFAULT_DASHBOARD_WINDOW);
 	let scope = $state<TargetScope>({});
@@ -82,10 +85,12 @@ function createDashboardStore() {
 		if (!pid) return;
 		const mySeq = ++seq;
 		loading = true;
-		void loadDiscovery(pid, mySeq);
+		const pending = dashboardApi.overview(pid, win, sc);
+		void loadWindow(pid, win, sc, mySeq);
 		void loadExtras(pid, win, sc, mySeq);
+		void loadDiscovery(pid, mySeq);
 		try {
-			const data = await dashboardApi.overview(pid, win, sc);
+			const data = await pending;
 			if (mySeq !== seq) return;
 			overview = data;
 			error = null;
@@ -99,7 +104,6 @@ function createDashboardStore() {
 		if (overview?.first_run) void loadReadiness(mySeq);
 	}
 
-	// worker ping only on first run
 	async function loadReadiness(mySeq: number) {
 		try {
 			const data = await dashboardApi.readiness();
@@ -109,7 +113,22 @@ function createDashboardStore() {
 		}
 	}
 
-	// slow rollup, loaded after first paint
+	async function loadWindow(pid: string, win: DashboardWindow, sc: TargetScope, mySeq: number) {
+		windowLoading = true;
+		try {
+			const data = await dashboardApi.window(pid, win, sc);
+			if (mySeq !== seq) return;
+			windowCounts = data;
+			failed.delete('window');
+		} catch {
+			if (mySeq !== seq) return;
+			windowCounts = null;
+			failed.add('window');
+		} finally {
+			if (mySeq === seq) windowLoading = false;
+		}
+	}
+
 	async function loadDiscovery(pid: string, mySeq: number) {
 		try {
 			const data = await dashboardApi.discovery(pid);
@@ -123,7 +142,6 @@ function createDashboardStore() {
 		}
 	}
 
-	// each cell reads its result page's own endpoint
 	async function loadExtras(pid: string, win: DashboardWindow, sc: TargetScope, mySeq: number) {
 		extrasLoading = true;
 		const keep = () => mySeq === seq;
@@ -145,6 +163,10 @@ function createDashboardStore() {
 		};
 		const bounty = capabilitiesStore.has(Capability.BOUNTY_PROGRAMS);
 		await Promise.all([
+			settle('surfaceRisk', dashboardApi.surfaceRisk(pid, sc), (v) => (surfaceRisk = v)),
+			bounty
+				? settle('programs', dashboardApi.programs(pid, win), (v) => (programs = v))
+				: Promise.resolve(),
 			settle(
 				'tech',
 				subdomainsApi.facets(pid, '', sc).then((f) => f.tech),
@@ -154,7 +176,7 @@ function createDashboardStore() {
 			settle('intel', threatIntelApi.status(pid, sc), (v) => (intel = v)),
 			settle(
 				'changes',
-				threatIntelApi.changes(pid, windowDays(win), CHANGE_ROWS, sc),
+				threatIntelApi.changes(pid, windowDays(win), INTEL_CHANGE_ROWS, sc),
 				(v) => (changes = v)
 			),
 			settle('hosting', hostingCounts(pid, sc), (v) => (hosting = v)),
@@ -172,14 +194,18 @@ function createDashboardStore() {
 			),
 			settle('hygiene', subdomainsApi.hygiene(pid, '', sc), (v) => (hygiene = v)),
 			settle('ai', servicesApi.ai(pid, '', sc), (v) => (ai = v)),
-			settle('posture', domainPostureApi.project(pid, sc), (v) => (posture = v)),
-			settle('posture', subdomainsApi.posture(pid, '', sc), (v) => (postureHosts = v)),
-			settle('shared', subdomainsApi.correlationGraph(pid, '', sc), (v) => (shared = v)),
+			settle(
+				'posture',
+				Promise.all([domainPostureApi.project(pid, sc), subdomainsApi.posture(pid, '', sc)]).then(
+					([zones, hosts]) => ({ zones, hosts })
+				),
+				(v) => {
+					posture = v?.zones ?? null;
+					postureHosts = v?.hosts ?? null;
+				}
+			),
 			settle('activity', dashboardApi.activity(pid, win, sc), (v) => (activity = v)),
-			settle('surfaceRisk', dashboardApi.surfaceRisk(pid, sc), (v) => (surfaceRisk = v)),
-			bounty
-				? settle('programs', dashboardApi.programs(pid, win), (v) => (programs = v))
-				: Promise.resolve()
+			settle('shared', subdomainsApi.correlationGraph(pid, '', sc), (v) => (shared = v))
 		]);
 		if (keep()) extrasLoading = false;
 	}
@@ -203,6 +229,8 @@ function createDashboardStore() {
 		activity = null;
 		programs = null;
 		surfaceRisk = null;
+		windowCounts = null;
+		windowLoading = false;
 		extrasLoading = false;
 		error = null;
 		hasFetched = false;
@@ -264,6 +292,12 @@ function createDashboardStore() {
 		get surfaceRisk() {
 			return surfaceRisk;
 		},
+		get windowCounts() {
+			return windowCounts;
+		},
+		get windowLoading() {
+			return windowLoading;
+		},
 		get extrasLoading() {
 			return extrasLoading;
 		},
@@ -278,9 +312,6 @@ function createDashboardStore() {
 		},
 		get error() {
 			return error;
-		},
-		get hasFetched() {
-			return hasFetched;
 		},
 		get failedSlices(): DashboardSlice[] {
 			return DASHBOARD_SLICES.filter((slice) => failed.has(slice));

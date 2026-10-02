@@ -15,7 +15,7 @@
 	import StatusMark from './status-mark.svelte';
 	import { ACTIONS_BODY, ACTIONS_PIN, pinTone, rowTone, type TableColumn } from '../table/columns';
 	import { OUTLINE_LEAD_COLUMNS } from './columns';
-	import { GUIDE_WIDTH, OUTLINE_ROW_ATTR } from './outline-context';
+	import { GUIDE, OUTLINE_ROW_ATTR } from './outline-context';
 	import {
 		ENDPOINT_CLASS_ICONS,
 		ENDPOINT_CLASS_LABELS,
@@ -62,9 +62,6 @@
 	let sensitive = $derived(leaf.interest.filter((i) => SENSITIVE_INTEREST.has(i)));
 	let testable = $derived(leaf.interest.filter((i) => !SENSITIVE_INTEREST.has(i)));
 	let verified = $derived(leaf.endpoints - leaf.unprobed);
-	let verifiedMix = $derived(
-		Object.fromEntries(Object.entries(leaf.status_mix).filter(([k]) => k !== 'none'))
-	);
 	let attrs = $derived({
 		[OUTLINE_ROW_ATTR]: leaf.key,
 		'data-outline-kind': 'leaf',
@@ -92,7 +89,7 @@
 	<div class="min-w-0 flex-1 {OUTLINE_LEAD_COLUMNS[0].width}">
 		<div class="flex items-start gap-x-1.5 leading-5">
 			{#each Array(depth) as _, i (i)}
-				<span class="{GUIDE_WIDTH} -ml-1.5 h-5 shrink-0 border-l border-border/70 ml-[7px]"></span>
+				<span class={GUIDE}></span>
 			{/each}
 			<span class="size-4 shrink-0"></span>
 			<span class="flex h-5 shrink-0 items-center {dim ? 'text-muted-foreground/70' : classTone}">
@@ -203,21 +200,10 @@
 			<StatusMark status={leaf.sample_status} probed={verified > 0} />
 		{:else if verified > 0}
 			<div class="flex h-5 items-center">
-				<StatusBar mix={verifiedMix} total={verified} />
+				<StatusBar mix={leaf.status_mix} total={verified} />
 			</div>
 		{:else}
-			<Hint text="Not requested in this scan.">
-				{#snippet child(props)}
-					<span
-						{...props}
-						class="flex h-5 shrink-0 items-center gap-1.5 text-xs text-muted-foreground"
-					>
-						<span class="size-1.5 rounded-full border border-dashed border-muted-foreground/60"
-						></span>
-						<span class="italic">not checked</span>
-					</span>
-				{/snippet}
-			</Hint>
+			<StatusMark status={null} probed={false} />
 		{/if}
 	</div>
 

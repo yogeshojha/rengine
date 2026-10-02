@@ -31,7 +31,7 @@
 	$effect(() => {
 		const tab = activeTab;
 		if (!browser) return;
-		const params = untrack(() => new URLSearchParams(page.url.searchParams));
+		const params = untrack(() => new URLSearchParams(location.search));
 		if (tab === DEFAULT_TAB) params.delete('tab');
 		else params.set('tab', tab);
 		const qs = params.toString();

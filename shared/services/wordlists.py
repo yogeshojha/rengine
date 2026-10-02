@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import select
 
@@ -12,17 +12,17 @@ from shared.definitions.wordlists import (
     BUILTIN_WORDLISTS,
     CUSTOM_ROOT,
     MAX_WORD_LENGTH,
+    BuiltinWordlist,
     WordlistOrigin,
     slugify,
 )
-from shared.logging import get_logger
 from shared.models.wordlist import Wordlist
 from shared.utils.datetime import utc_now
 
 if TYPE_CHECKING:
-    from sqlalchemy.orm import Session
+    from datetime import datetime
 
-logger = get_logger(__name__)
+    from sqlalchemy.orm import Session
 
 
 class WordlistError(Exception):
@@ -51,37 +51,67 @@ def resolve_path(row: Wordlist) -> Path:
     return target
 
 
+def _word(line: str) -> str | None:
+    word = line.strip().lower()
+    if not word or word.startswith("#") or len(word) > MAX_WORD_LENGTH:
+        return None
+    return word
+
+
 def clean_words(raw: str) -> list[str]:
     """One word per line, deduped, order kept."""
     seen: set[str] = set()
     words: list[str] = []
     for line in raw.splitlines():
-        word = line.strip().lower()
-        if not word or word.startswith("#") or len(word) > MAX_WORD_LENGTH:
-            continue
-        if word in seen:
+        word = _word(line)
+        if word is None or word in seen:
             continue
         seen.add(word)
         words.append(word)
     return words
 
 
-def store_custom(filename: str, raw: str) -> tuple[str, list[str]]:
-    """Validate an upload and write it under the custom root."""
+def read_lines(path: Path, limit: int) -> list[str]:
+    """The first `limit` words of a file."""
+    words: list[str] = []
+    with path.open(encoding="utf-8", errors="replace") as handle:
+        for line in handle:
+            word = _word(line)
+            if word is not None:
+                words.append(word)
+            if len(words) >= limit:
+                break
+    return words
+
+
+def _custom_target(relative: str) -> Path:
+    root = custom_root().resolve()
+    target = (root / relative).resolve()
+    if not target.is_relative_to(root):
+        msg = "The filename resolves outside the wordlist root."
+        raise WordlistError(msg)
+    return target
+
+
+def prepare_custom(filename: str, raw: str) -> tuple[str, list[str]]:
+    """Validate an upload: its file under the custom root and its words."""
     words = clean_words(raw)
     if not words:
-        msg = "No usable words. Every line is blank, a comment or over 63 characters."
+        msg = (
+            "No usable words. Every line is blank, a comment or over "
+            f"{MAX_WORD_LENGTH} characters."
+        )
         raise WordlistError(msg)
     stem = slugify(Path(filename).stem) or "wordlist"
     relative = f"{stem}.txt"
-    root = custom_root()
-    root.mkdir(parents=True, exist_ok=True)
-    target = (root / relative).resolve()
-    if not target.is_relative_to(root.resolve()):
-        msg = "The filename resolves outside the wordlist root."
-        raise WordlistError(msg)
-    target.write_text("\n".join(words) + "\n", encoding="utf-8")
+    _custom_target(relative)
     return relative, words
+
+
+def write_custom(relative: str, words: list[str]) -> None:
+    """Write a prepared upload under the custom root."""
+    custom_root().mkdir(parents=True, exist_ok=True)
+    _custom_target(relative).write_text("\n".join(words) + "\n", encoding="utf-8")
 
 
 def delete_custom(row: Wordlist) -> None:
@@ -93,35 +123,47 @@ def delete_custom(row: Wordlist) -> None:
     path.unlink(missing_ok=True)
 
 
+def builtin_values(spec: BuiltinWordlist, path: Path, now: datetime) -> dict[str, Any]:
+    """The row columns for a shipped list."""
+    return {
+        "name": spec.name,
+        "description": spec.description,
+        "origin": WordlistOrigin.BUILTIN.value,
+        "kind": spec.kind,
+        "filename": spec.filename,
+        "words": len(clean_words(path.read_text(encoding="utf-8", errors="replace"))),
+        "bytes": path.stat().st_size,
+        "updated_at": now,
+    }
+
+
 def ensure_builtin(session: Session) -> int:
     """Index the shipped lists."""
     root = builtin_root()
     now = utc_now()
     indexed = 0
+    changed = False
     for spec in BUILTIN_WORDLISTS:
         path = root / spec.filename
         if not path.is_file():
             continue
-        words = len(clean_words(path.read_text(encoding="utf-8", errors="replace")))
+        indexed += 1
         row = session.scalar(select(Wordlist).where(Wordlist.slug == spec.slug))
-        values = {
-            "name": spec.name,
-            "description": spec.description,
-            "origin": WordlistOrigin.BUILTIN.value,
-            "kind": spec.kind,
-            "filename": spec.filename,
-            "words": words,
-            "bytes": path.stat().st_size,
-            "updated_at": now,
-        }
+        values = builtin_values(spec, path, now)
         if row is None:
             session.add(Wordlist(slug=spec.slug, **values))
-        else:
+            changed = True
+        elif any(
+            getattr(row, key) != value
+            for key, value in values.items()
+            if key != "updated_at"
+        ):
             for key, value in values.items():
                 setattr(row, key, value)
             session.add(row)
-        indexed += 1
-    session.commit()
+            changed = True
+    if changed:
+        session.commit()
     return indexed
 
 
@@ -158,26 +200,21 @@ def read_words(session: Session, reference: str, limit: int) -> tuple[list[str],
     if not path.is_file():
         msg = f"The file for {row.name} is missing."
         raise WordlistError(msg)
-    words: list[str] = []
-    with path.open(encoding="utf-8", errors="replace") as handle:
-        for line in handle:
-            word = line.strip().lower()
-            if word and not word.startswith("#") and len(word) <= MAX_WORD_LENGTH:
-                words.append(word)
-            if len(words) >= limit:
-                break
-    return words, row.name
+    return read_lines(path, limit), row.name
 
 
 __all__ = [
     "WordlistError",
     "builtin_root",
+    "builtin_values",
     "clean_words",
     "custom_root",
     "delete_custom",
     "ensure_builtin",
     "lookup",
+    "prepare_custom",
+    "read_lines",
     "read_words",
     "resolve_path",
-    "store_custom",
+    "write_custom",
 ]

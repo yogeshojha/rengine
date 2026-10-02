@@ -64,13 +64,6 @@ export function httpStatusReason(code: number | null | undefined): string {
 	return STATUS_REASON[code] ?? CLASS_LABEL[httpStatusClass(code)];
 }
 
-export function formatBytes(n: number | null | undefined): string {
-	if (n == null) return '—';
-	if (n < 1024) return `${n} B`;
-	if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-	return `${(n / (1024 * 1024)).toFixed(1)} MB`;
-}
-
 export function formatResponseTime(seconds: number | null | undefined): string {
 	if (seconds == null) return '—';
 	if (seconds < 1) return `${Math.round(seconds * 1000)}ms`;

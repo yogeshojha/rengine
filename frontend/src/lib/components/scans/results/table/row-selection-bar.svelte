@@ -14,12 +14,12 @@
 	import { SURFACE, type SurfaceDimension } from '$lib/config/surface';
 	import type { SurfaceDeleteResult } from '$lib/types/surface';
 
-	export interface CopyOption {
+	interface CopyOption {
 		label: string;
 		values: () => string[];
 	}
 
-	export interface HideOption {
+	interface HideOption {
 		label: string;
 		tokens: () => string[];
 	}
@@ -39,8 +39,6 @@
 		deleteKey?: string;
 		exportIds?: () => string[];
 		exportFilters?: Record<string, unknown>;
-		removable?: boolean;
-		exportable?: boolean;
 		onDeleted?: (result: SurfaceDeleteResult) => void;
 		onClear: () => void;
 		actions?: Snippet;
@@ -61,8 +59,6 @@
 		deleteKey,
 		exportIds,
 		exportFilters = {},
-		removable = true,
-		exportable = true,
 		onDeleted,
 		onClear,
 		actions
@@ -176,28 +172,24 @@
 		</DropdownMenu.Root>
 	{/if}
 
-	{#if exportable}
-		<ExportMenu
-			{dimension}
-			{projectId}
-			{scanId}
-			filters={exportFilters}
-			ids={(exportIds ?? ids)()}
-			compact
-		/>
-	{/if}
+	<ExportMenu
+		{dimension}
+		{projectId}
+		{scanId}
+		filters={exportFilters}
+		ids={(exportIds ?? ids)()}
+		compact
+	/>
 
-	{#if removable}
-		<Button
-			variant="ghost"
-			size="sm"
-			class="gap-2 font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
-			onclick={openConfirm}
-		>
-			<Trash2 class="h-3.5 w-3.5" />
-			Delete
-		</Button>
-	{/if}
+	<Button
+		variant="ghost"
+		size="sm"
+		class="gap-2 font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
+		onclick={openConfirm}
+	>
+		<Trash2 class="h-3.5 w-3.5" />
+		Delete
+	</Button>
 </SelectionActionBar>
 
 <ConfirmDialog

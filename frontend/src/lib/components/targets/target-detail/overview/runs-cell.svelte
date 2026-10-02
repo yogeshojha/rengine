@@ -6,15 +6,16 @@
 	import { SURFACE, SURFACE_ORDER, SurfaceDimension } from '$lib/config/surface';
 	import { formatShortDate } from '$lib/utilities/dates';
 	import type { ScanRead } from '$lib/types/scan';
+	import { completedCensusRuns } from './derive';
 
 	interface Props {
 		history: ScanRead[];
+		targetId: string;
 		class?: string;
 	}
 
-	let { history, class: className = '' }: Props = $props();
+	let { history, targetId, class: className = '' }: Props = $props();
 
-	const RUNS = 12;
 	const W = 320;
 	const H = 150;
 	const PAD = { top: 6, left: 34, right: 8, bottom: 22 };
@@ -23,16 +24,7 @@
 	let spec = $derived(SURFACE[dimension]);
 	let dimensions = $derived(SURFACE_ORDER.filter((s) => s.countColumns.length > 0));
 
-	let runs = $derived(
-		history
-			.filter((s) => s.status === 'completed' && s.scope !== 'focused')
-			.sort(
-				(a, b) =>
-					new Date(a.started_at ?? a.created_at).getTime() -
-					new Date(b.started_at ?? b.created_at).getTime()
-			)
-			.slice(-RUNS)
-	);
+	let runs = $derived(completedCensusRuns(history));
 	let points = $derived(
 		runs.map((s) => ({
 			scan: s,
@@ -58,8 +50,8 @@
 	skeleton="bars"
 	id="runs"
 	title="Surface by run"
-	description="{spec.label} each completed run"
-	href={ROUTES.scansForTarget(runs[0]?.target_id ?? '')}
+	description="{spec.label} per completed run"
+	href={ROUTES.scansForTarget(targetId)}
 	hrefLabel="All runs"
 	class={className}
 >

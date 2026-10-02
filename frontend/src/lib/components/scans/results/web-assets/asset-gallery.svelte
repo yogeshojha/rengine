@@ -8,6 +8,7 @@
 	import { httpStatusClass, STATUS_DOT } from '$lib/utilities/scan-correlation';
 	import { certState } from '$lib/utilities/scan-insights';
 	import type { SubdomainRead } from '$lib/types/subdomain';
+	import { stopProp } from '$lib/utilities';
 	import { SvelteSet } from 'svelte/reactivity';
 
 	interface Props {
@@ -20,7 +21,6 @@
 	let { items, loading, selectedId, onOpen }: Props = $props();
 
 	const MAX_TECH = 2;
-	const stop = (e: Event) => e.stopPropagation();
 	const broken = new SvelteSet<string>();
 </script>
 
@@ -88,7 +88,7 @@
 						href={s.http_url}
 						target="_blank"
 						rel="noreferrer noopener"
-						onclick={stop}
+						onclick={stopProp}
 						class="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-md border border-border/60 bg-background/90 text-muted-foreground opacity-0 backdrop-blur transition-opacity group-hover:opacity-100 hover:text-foreground focus-visible:opacity-100"
 						aria-label="Open {s.name} in browser"
 					>

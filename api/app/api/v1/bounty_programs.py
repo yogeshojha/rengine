@@ -3,15 +3,15 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
-from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.capability import require_capability
 from app.api.deps import CurrentSuperuser, CurrentUser
+from app.api.pagination import Page
 from app.core.database import get_session
 from app.services.bounty_program import BountyProgramService
-from app.services.instance_settings import InstanceSettingsService
 from app.services.watch import WatchService, validate_alert_query
 from shared.definitions.bounty_programs import (
     ASSET_TYPES,
@@ -20,18 +20,13 @@ from shared.definitions.bounty_programs import (
     PLATFORMS,
     PLATFORMS_BY_KEY,
     AssetGroup,
-    BountyPlatform,
     ProgramState,
     ScopeState,
     SubmissionState,
     SyncInterval,
 )
 from shared.definitions.bounty_reports import REPORT_STAGE_LABELS, REPORT_STATES
-from shared.definitions.mode_features import (
-    CAP_BOUNTY_PROGRAMS,
-    CAP_PROGRAM_WATCHES,
-    has_capability,
-)
+from shared.definitions.mode_features import CAP_BOUNTY_PROGRAMS, CAP_PROGRAM_WATCHES
 from shared.models.bounty_program import (
     BountyEventRead,
     BountyImportRequest,
@@ -79,16 +74,6 @@ def get_watches(
 WatchDep = Annotated[WatchService, Depends(get_watches)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 PlatformPath = Annotated[str, Path(description="Bug bounty platform key")]
-
-
-async def _require_mode(session: AsyncSession) -> None:
-    """Bug bounty mode gate."""
-    settings = await InstanceSettingsService(session).get_or_create()
-    if not has_capability(settings.mode, CAP_BOUNTY_PROGRAMS):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Bug bounty programs require bug bounty mode.",
-        )
 
 
 @router.get("/vocabulary")
@@ -153,15 +138,11 @@ async def list_events(
     session: SessionDep,
     service: ServiceDep,
     _current_user: CurrentUser,
-    platform: str | None = Query(None),
     kind: str | None = Query(None),
-    handle: str | None = Query(None),
 ) -> Page[BountyEventRead]:
     """Program library events, newest first."""
-    await _require_mode(session)
-    if platform:
-        BountyProgramService.require_platform(platform)
-    query = await service.events(platform, kind=kind, handle=handle)
+    await require_capability(session, CAP_BOUNTY_PROGRAMS)
+    query = await service.events(kind=kind)
     page = await paginate(session, query)
     page.items = [BountyProgramService.event_read(r) for r in page.items]
     return page
@@ -174,7 +155,7 @@ async def mark_events_seen(
     _current_user: CurrentUser,
 ) -> dict:
     """Mark every event seen."""
-    await _require_mode(session)
+    await require_capability(session, CAP_BOUNTY_PROGRAMS)
     await service.mark_events_seen()
     return {"ok": True}
 
@@ -184,11 +165,9 @@ async def read_settings(
     session: SessionDep,
     service: ServiceDep,
     _current_user: CurrentUser,
-    platform: str = Query(BountyPlatform.HACKERONE.value),
 ) -> BountySettingsRead:
     """Sync interval and alert settings."""
-    await _require_mode(session)
-    BountyProgramService.require_platform(platform)
+    await require_capability(session, CAP_BOUNTY_PROGRAMS)
     return await service.read_settings()
 
 
@@ -198,10 +177,8 @@ async def write_settings(
     service: ServiceDep,
     _current_user: CurrentSuperuser,
     data: BountySettingsUpdate,
-    platform: str = Query(BountyPlatform.HACKERONE.value),
 ) -> BountySettingsRead:
-    await _require_mode(session)
-    BountyProgramService.require_platform(platform)
+    await require_capability(session, CAP_BOUNTY_PROGRAMS)
     return await service.write_settings(data)
 
 
@@ -210,10 +187,9 @@ async def get_status(
     session: SessionDep,
     service: ServiceDep,
     _current_user: CurrentUser,
-    platform: str = Query(BountyPlatform.HACKERONE.value),
 ) -> BountyStatus:
-    await _require_mode(session)
-    return await service.status(BountyProgramService.require_platform(platform))
+    await require_capability(session, CAP_BOUNTY_PROGRAMS)
+    return await service.status()
 
 
 def _not_connected(platform: str | None) -> str:
@@ -240,7 +216,7 @@ async def sync(
     scopes: bool = Query(True, description="Refresh every program's scope"),
 ) -> dict:
     """Queue a refresh of the program library."""
-    await _require_mode(session)
+    await require_capability(session, CAP_BOUNTY_PROGRAMS)
     if platform:
         BountyProgramService.require_platform(platform)
     counts = await service.platform_counts()
@@ -261,7 +237,7 @@ async def sync_feed(
     _current_user: CurrentSuperuser,
 ) -> dict:
     """Queue a refresh of the public program feed."""
-    await _require_mode(session)
+    await require_capability(session, CAP_BOUNTY_PROGRAMS)
     return {"queued": dispatch_bounty_feed_sync()}
 
 
@@ -283,7 +259,7 @@ async def list_programs(
     sort: str = Query("age"),
     project_id: Annotated[UUID | None, Query()] = None,
 ) -> Page[BountyProgramRead]:
-    await _require_mode(session)
+    await require_capability(session, CAP_BOUNTY_PROGRAMS)
     if platform:
         BountyProgramService.require_platform(platform)
     query = service.list_query(
@@ -304,16 +280,6 @@ async def list_programs(
     return page
 
 
-async def _require_watches(session: AsyncSession) -> None:
-    """Program watches are a bug bounty mode capability."""
-    settings = await InstanceSettingsService(session).get_or_create()
-    if not has_capability(settings.mode, CAP_PROGRAM_WATCHES):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Program watches require bug bounty mode.",
-        )
-
-
 # ---------- watches ----------
 
 
@@ -325,7 +291,7 @@ class AlertQueryCheck(BaseModel):
 async def validate_query(
     body: AlertQueryCheck, _current_user: CurrentUser, session: SessionDep
 ) -> dict:
-    await _require_watches(session)
+    await require_capability(session, CAP_PROGRAM_WATCHES)
     return {"error": validate_alert_query(body.query)}
 
 
@@ -333,7 +299,7 @@ async def validate_query(
 async def stream_status(
     _current_user: CurrentUser, session: SessionDep
 ) -> StreamStatus:
-    await _require_watches(session)
+    await require_capability(session, CAP_PROGRAM_WATCHES)
     return await WatchService.stream_status()
 
 
@@ -341,7 +307,7 @@ async def stream_status(
 async def list_watches(
     project_id: UUID, current_user: CurrentUser, watches: WatchDep, session: SessionDep
 ) -> list[WatchRead]:
-    await _require_watches(session)
+    await require_capability(session, CAP_PROGRAM_WATCHES)
     return await watches.list(project_id, current_user.id)
 
 
@@ -353,7 +319,7 @@ async def get_watch(
     watches: WatchDep,
     session: SessionDep,
 ) -> WatchRead:
-    await _require_watches(session)
+    await require_capability(session, CAP_PROGRAM_WATCHES)
     return await watches.get(watch_id, project_id, current_user.id)
 
 
@@ -366,7 +332,7 @@ async def update_watch(
     watches: WatchDep,
     session: SessionDep,
 ) -> WatchRead:
-    await _require_watches(session)
+    await require_capability(session, CAP_PROGRAM_WATCHES)
     return await watches.update(watch_id, project_id, data, current_user.id)
 
 
@@ -378,7 +344,7 @@ async def delete_watch(
     watches: WatchDep,
     session: SessionDep,
 ) -> None:
-    await _require_watches(session)
+    await require_capability(session, CAP_PROGRAM_WATCHES)
     await watches.delete(watch_id, project_id)
 
 
@@ -390,21 +356,9 @@ async def mark_watch_seen(
     watches: WatchDep,
     session: SessionDep,
 ) -> dict:
-    await _require_watches(session)
+    await require_capability(session, CAP_PROGRAM_WATCHES)
     at = await watches.mark_seen(watch_id, project_id, current_user.id)
     return {"seen_at": at}
-
-
-@router.post("/watches/{watch_id}/reconcile")
-async def reconcile_watch(
-    watch_id: UUID,
-    project_id: UUID,
-    _current_user: CurrentUser,
-    watches: WatchDep,
-    session: SessionDep,
-) -> dict:
-    await _require_watches(session)
-    return await watches.reconcile(watch_id, project_id)
 
 
 @router.get("/watches/{watch_id}/hosts", response_model=Page[WatchHostRead])
@@ -418,7 +372,7 @@ async def list_watch_hosts(
     since: datetime | None = None,
     q: Annotated[str | None, Query(max_length=200)] = None,
 ) -> Page[WatchHostRead]:
-    await _require_watches(session)
+    await require_capability(session, CAP_PROGRAM_WATCHES)
     await watches.ensure(watch_id, project_id)
     return await paginate(
         session,
@@ -436,7 +390,7 @@ async def watch_host_counts(
     session: SessionDep,
     since: datetime | None = None,
 ) -> WatchHostCounts:
-    await _require_watches(session)
+    await require_capability(session, CAP_PROGRAM_WATCHES)
     return await watches.host_counts(watch_id, project_id, since)
 
 
@@ -449,7 +403,7 @@ async def mute_watch_host(
     watches: WatchDep,
     session: SessionDep,
 ) -> WatchHostRead:
-    await _require_watches(session)
+    await require_capability(session, CAP_PROGRAM_WATCHES)
     return await watches.mute_host(watch_id, host_id, project_id)
 
 
@@ -463,7 +417,7 @@ async def list_watch_events(
     kind: Annotated[str | None, Query(max_length=32)] = None,
     since: datetime | None = None,
 ) -> Page[WatchEventRead]:
-    await _require_watches(session)
+    await require_capability(session, CAP_PROGRAM_WATCHES)
     await watches.ensure(watch_id, project_id)
     return await paginate(
         session,
@@ -481,7 +435,7 @@ async def watch_preview(
     watches: WatchDep,
     session: SessionDep,
 ) -> WatchPreview:
-    await _require_watches(session)
+    await require_capability(session, CAP_PROGRAM_WATCHES)
     return await watches.preview(
         BountyProgramService.require_platform(platform), handle, project_id
     )
@@ -496,7 +450,7 @@ async def create_watch(
     watches: WatchDep,
     session: SessionDep,
 ) -> WatchRead:
-    await _require_watches(session)
+    await require_capability(session, CAP_PROGRAM_WATCHES)
     return await watches.create(
         BountyProgramService.require_platform(platform), handle, data, current_user.id
     )
@@ -510,14 +464,10 @@ async def program_detail(
     platform: PlatformPath,
     handle: str,
     project_id: Annotated[UUID | None, Query()] = None,
-    scope: str | None = Query(None, description="in_scope or out_of_scope"),
-    asset_type: str | None = Query(None),
 ) -> BountyProgramDetail:
-    await _require_mode(session)
+    await require_capability(session, CAP_BOUNTY_PROGRAMS)
     BountyProgramService.require_platform(platform)
-    return await service.detail(
-        platform, handle, project_id=project_id, scope=scope, asset_type=asset_type
-    )
+    return await service.detail(platform, handle, project_id=project_id)
 
 
 @router.post("/{platform}/{handle}/sync")
@@ -529,7 +479,7 @@ async def sync_program(
     handle: str,
 ) -> dict:
     """Refresh one program's scope."""
-    await _require_mode(session)
+    await require_capability(session, CAP_BOUNTY_PROGRAMS)
     BountyProgramService.require_platform(platform)
     await service.get_program(platform, handle)
     return {"queued": dispatch_bounty_program_sync(handle, platform)}
@@ -545,6 +495,6 @@ async def import_program(
     request: BountyImportRequest,
 ) -> BountyImportResult:
     """Add the program's scannable assets to a project as targets."""
-    await _require_mode(session)
+    await require_capability(session, CAP_BOUNTY_PROGRAMS)
     BountyProgramService.require_platform(platform)
     return await service.import_scopes(platform, handle, request, current_user.id)

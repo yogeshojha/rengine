@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from typing import Any
 
 from sqlalchemy.exc import StatementError
@@ -35,6 +36,16 @@ def scrub(value: Any) -> Any:
     return value
 
 
+def clip(text: str, limit: int) -> str:
+    """Cut to the limit with an ellipsis."""
+    return text if len(text) <= limit else f"{text[: limit - 1]}…"
+
+
+def clip_line(text: str, limit: int) -> str:
+    """clip after collapsing whitespace to single spaces."""
+    return clip(" ".join(text.split()), limit)
+
+
 def plural(count: int, word: str, many: str | None = None) -> str:
     """The form of a word that matches a count."""
     return word if count == 1 else (many or f"{word}s")
@@ -42,4 +53,10 @@ def plural(count: int, word: str, many: str | None = None) -> str:
 
 def counted(count: int, word: str, many: str | None = None) -> str:
     """A count and the form of its word that matches it."""
-    return f"{count} {plural(count, word, many)}"
+    return f"{count:,} {plural(count, word, many)}"
+
+
+def sentences(parts: Iterable[str]) -> str:
+    """Sentences joined by a space, each closed by a full stop."""
+    out = [text.strip() for text in parts if text and text.strip()]
+    return " ".join(t if t[-1] in ".?!…" else f"{t}." for t in out)

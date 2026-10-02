@@ -29,7 +29,7 @@ import type {
 } from '$lib/utilities/endpoints';
 import type { HttpAssetDetail } from '$lib/types/http-asset';
 import type { AiSummary } from '$lib/utilities/scan-insights';
-import type { QueryGroups, QueryLeads } from '$lib/types/asset-query';
+import type { QueryCounts, QueryGroups, QueryLeads } from '$lib/types/asset-query';
 import type { IpFacetSet, IpGroupFilter, IpSearchResult } from '$lib/utilities/ip-groups';
 import type { OriginExposure } from '$lib/utilities/origins';
 import type {
@@ -48,6 +48,10 @@ export const httpAssetsApi = {
 export const ipsApi = {
 	async search(projectId: string, scanId: string, filter: IpGroupFilter): Promise<IpSearchResult> {
 		return api.post<IpSearchResult>(`/ips/search?${scopeQuery({ projectId, scanId })}`, filter);
+	},
+
+	async tabs(projectId: string, scanId: string, filter: IpGroupFilter): Promise<QueryCounts> {
+		return api.post<QueryCounts>(`/ips/search/tabs?${scopeQuery({ projectId, scanId })}`, filter);
 	},
 
 	async leads(projectId: string, scanId: string, filter: IpGroupFilter): Promise<QueryLeads> {
@@ -81,6 +85,10 @@ export const servicesApi = {
 			`/ports/search?${scopeQuery({ projectId, scanId })}`,
 			filter
 		);
+	},
+
+	async tabs(projectId: string, scanId: string, filter: ServiceFilter): Promise<QueryCounts> {
+		return api.post<QueryCounts>(`/ports/search/tabs?${scopeQuery({ projectId, scanId })}`, filter);
 	},
 
 	async leads(projectId: string, scanId: string, filter: ServiceFilter): Promise<QueryLeads> {
@@ -119,6 +127,13 @@ export const servicesApi = {
 export const endpointsApi = {
 	async search(projectId: string, scanId: string, filter: EndpointFilter): Promise<EndpointPage> {
 		return api.post<EndpointPage>(`/endpoints/search?${scopeQuery({ projectId, scanId })}`, filter);
+	},
+
+	async tabs(projectId: string, scanId: string, filter: EndpointFilter): Promise<QueryCounts> {
+		return api.post<QueryCounts>(
+			`/endpoints/search/tabs?${scopeQuery({ projectId, scanId })}`,
+			filter
+		);
 	},
 
 	async leads(projectId: string, scanId: string, filter: EndpointFilter): Promise<QueryLeads> {
@@ -224,6 +239,12 @@ export const softwareApi = {
 		return api.post<SoftwarePage>(`/software/search?${scopeQuery({ projectId, scanId })}`, filter);
 	},
 
+	async counts(projectId: string, scanId: string, queries: string[]): Promise<QueryCounts> {
+		return api.post<QueryCounts>(`/software/search/counts?${scopeQuery({ projectId, scanId })}`, {
+			queries
+		});
+	},
+
 	async facets(
 		projectId: string,
 		scanId: string,
@@ -242,23 +263,18 @@ export const softwareApi = {
 		return api.get<SoftwareCoverage>(
 			`/software/coverage?${scopeQuery({ projectId, scanId, ...scope })}`
 		);
-	},
-
-	async counts(
-		projectId: string,
-		scanId: string,
-		queries: string[]
-	): Promise<Record<string, number>> {
-		return api.post<Record<string, number>>(
-			`/software/search/counts?${scopeQuery({ projectId, scanId })}`,
-			{ queries }
-		);
 	}
 };
 
 export const secretsApi = {
 	async search(projectId: string, scanId: string, filter: SecretFilter): Promise<SecretPage> {
 		return api.post<SecretPage>(`/secrets/search?${scopeQuery({ projectId, scanId })}`, filter);
+	},
+
+	async counts(projectId: string, scanId: string, queries: string[]): Promise<QueryCounts> {
+		return api.post<QueryCounts>(`/secrets/search/counts?${scopeQuery({ projectId, scanId })}`, {
+			queries
+		});
 	},
 
 	async facets(projectId: string, scanId: string): Promise<SecretFacets> {

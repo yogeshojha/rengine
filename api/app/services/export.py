@@ -1,5 +1,3 @@
-"""Exports: creating one, listing them, and handing the file back."""
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -10,6 +8,7 @@ from sqlalchemy import func, select
 
 from shared.definitions.exports import (
     BUNDLE,
+    BUNDLE_LABEL,
     EXPORT_FORMATS,
     EXPORT_ROOT,
     LIVE_STATUSES,
@@ -19,9 +18,11 @@ from shared.definitions.exports import (
 )
 from shared.definitions.surface import EXPORTABLE_DIMENSIONS, SURFACE_LABELS
 from shared.models.export import Export, ExportCreate, ExportRead
+from shared.models.project import Project
 from shared.models.scan import Scan
 from shared.models.target import Target
 from shared.services.celery_dispatch import dispatch_export
+from shared.utils.files import purge_dir
 
 MAX_LIST = 100
 
@@ -111,7 +112,7 @@ class ExportService:
 
     async def delete(self, export_id: UUID, project_id: UUID) -> None:
         row = await self._get(export_id, project_id)
-        _purge(row.id)
+        purge_dir(EXPORT_ROOT, row.id)
         await self.session.delete(row)
         await self.session.commit()
 
@@ -144,13 +145,11 @@ class ExportService:
         if running >= MAX_RUNNING_PER_PROJECT:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=(
-                    f"{running} exports are already running. Wait for one to finish."
-                ),
+                detail=f"{running} exports are running. Wait for one to finish.",
             )
 
     async def _subject(self, data: ExportCreate, project_id: UUID) -> tuple[str, str]:
-        label = SURFACE_LABELS.get(data.dimension, "All dimensions")
+        label = SURFACE_LABELS.get(data.dimension, BUNDLE_LABEL)
         if data.scan_id is not None:
             scan = await self.session.get(Scan, data.scan_id)
             if scan is None or scan.project_id != project_id:
@@ -166,7 +165,8 @@ class ExportService:
                     status_code=status.HTTP_404_NOT_FOUND, detail="Target not found"
                 )
             return ExportScope.TARGET.value, target.target_value
-        return ExportScope.PROJECT.value, label
+        project = await self.session.get(Project, project_id)
+        return ExportScope.PROJECT.value, project.name if project else label
 
     async def _get(self, export_id: UUID, project_id: UUID) -> Export:
         row = await self.session.get(Export, export_id)
@@ -188,12 +188,3 @@ def _resolve(export_id: UUID, filename: str) -> Path | None:
     if not path.is_relative_to(root) or not path.exists():
         return None
     return path
-
-
-def _purge(export_id: UUID) -> None:
-    directory = Path(EXPORT_ROOT) / str(export_id)
-    if not directory.exists():
-        return
-    for item in directory.iterdir():
-        item.unlink(missing_ok=True)
-    directory.rmdir()

@@ -1,5 +1,3 @@
-"""Stage registry — every Stage subclass under stages/ is discovered automatically."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -38,9 +36,6 @@ class StageSpec:
     group: str
     role: str
     transport_tool: str | None
-    rate_weight: float
-    thread_weight: float
-    transport_timeout: int | None
     check_of: str | None
     finding_severities: tuple[str, ...]
     stage_cls: type[Stage]
@@ -74,7 +69,7 @@ def _stage_classes() -> list[type[Stage]]:
     found: dict[str, type[Stage]] = {}
     for root in stages_pkg.__path__:
         for obj in classes_in_packages(
-            "stages", Path(root), Stage, submodules=("stage", "engine")
+            "stages", Path(root), Stage, submodules=("stage",)
         ):
             name = getattr(obj, "name", None)
             if not name:
@@ -138,9 +133,6 @@ def _spec(stage_cls: type[Stage], level: int) -> StageSpec:
         group=stage_cls.group,
         role=stage_cls.role,
         transport_tool=stage_cls.transport_tool,
-        rate_weight=stage_cls.rate_weight,
-        thread_weight=stage_cls.thread_weight,
-        transport_timeout=stage_cls.transport_timeout,
         check_of=stage_cls.check_of,
         finding_severities=tuple(sorted(severities, key=SEVERITY_RANK.__getitem__)),
         stage_cls=stage_cls,
@@ -160,7 +152,7 @@ def _check_hosts(specs: list[StageSpec]) -> None:
 
 
 def _levels(classes: list[type[Stage]]) -> dict[str, int]:
-    """Longest-path depth per stage — the barrier a stage may not start before."""
+    """Longest-path depth per stage."""
     by_name = {cls.name: cls for cls in classes}
     depth: dict[str, int] = {}
     resolving: set[str] = set()
@@ -206,7 +198,7 @@ def get_stage(name: str) -> StageSpec | None:
 
 
 def ordered_levels() -> list[list[StageSpec]]:
-    """Stages grouped by dependency depth, ascending — the canvas execution order."""
+    """Stages grouped by dependency depth, ascending."""
     groups: dict[int, list[StageSpec]] = {}
     for spec in stages():
         groups.setdefault(spec.level, []).append(spec)

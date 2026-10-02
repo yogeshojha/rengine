@@ -1,16 +1,14 @@
 import { ROUTES } from '$lib/config/routes';
 import { SURFACE, SURFACE_ORDER, SurfaceDimension } from '$lib/config/surface';
-import { lex, quoteValue } from '$lib/utilities/query-lexer';
+import { CVE_ID } from '$lib/config/vulnerabilities';
+import { lex, quoteValue, type FieldLookup } from '$lib/utilities/query-lexer';
 import { TargetType } from '$lib/types/target';
 
 export const COMMAND_PREFIX = '>';
 
-// mirrors toolbox/tools/cve.py:CVE_PATTERN
-const CVE = /^CVE-\d{4}-\d{4,7}$/i;
 const HEX = /^[0-9a-f]{32,64}$/i;
-const NOT_A_FIELD = /is not a field/;
 
-export const isCve = (value: string) => CVE.test(value.trim());
+export const isCve = (value: string) => CVE_ID.test(value.trim());
 export const isHexHash = (value: string) => HEX.test(value.trim());
 export const cveId = (value: string) => value.trim().toUpperCase();
 
@@ -23,8 +21,6 @@ export interface PaletteScope {
 	targetId: string | null;
 	targetValue: string | null;
 }
-
-export type FieldLookup = (name: string) => boolean;
 
 export interface QueryMatch {
 	dimension: SurfaceDimension;
@@ -43,13 +39,13 @@ export function queryDimensions(
 		const result = lex(source, known(spec.key));
 		const fields = result.tokens.filter((t) => t.kind === 'field').length;
 		if (!fields) continue;
-		if (result.problems.some((p) => NOT_A_FIELD.test(p.message))) continue;
+		if (result.problems.some((p) => p.code === 'unknown_field')) continue;
 		matches.push({ dimension: spec.key, fields });
 	}
 	return matches.sort((a, b) => b.fields - a.fields);
 }
 
-/** Narrows a query to one target, for pages that carry no target scope. */
+/** Narrows a query to one target. */
 export function scopedQuery(query: string, targetValue: string | null): string {
 	if (!targetValue) return query;
 	const anchor = `target:${quoteValue(targetValue)}`;
@@ -134,12 +130,4 @@ export function hashLookups(value: string): AssetLookup[] {
 		{ dimension: D.WEB_ASSETS, query: `content_hash:${hash}` },
 		{ dimension: D.WEB_ASSETS, query: `cert.fingerprint:${hash}` }
 	];
-}
-
-export function hostOf(value: string): string | null {
-	try {
-		return new URL(value).hostname || null;
-	} catch {
-		return null;
-	}
 }

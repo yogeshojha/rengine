@@ -2,23 +2,26 @@
 
 from __future__ import annotations
 
-import ipaddress
 import re
 from collections import Counter, defaultdict
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from urllib.parse import urlsplit
 from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from shared.definitions.correlation import MIN_BODY_BYTES
-from shared.definitions.domains import IGNORED_DOMAINS, registrable_domain, target_zone
+from shared.definitions.domains import (
+    IGNORED_DOMAINS,
+    PRIVATE_TLDS,
+    registrable_domain,
+    target_zone,
+)
 from shared.definitions.estate import provider_of
 from shared.definitions.name_ownership import (
     ALIAS_OVERLAP,
     BODY_SCAN_BYTES,
-    LOCAL_SUFFIXES,
     MAX_CERT_DOMAINS,
     MIN_ALIAS_LABEL,
     MIN_EVIDENCE,
@@ -30,7 +33,8 @@ from shared.definitions.name_ownership import (
 from shared.models.http_asset import HttpAsset
 from shared.models.target import Target
 from shared.utils.infra import generic_page
-from shared.utils.net import cert_covers
+from shared.utils.net import cert_covers, url_host
+from shared.utils.validation import validate_ip
 
 _LINK = re.compile(r"""(?:href|src|action)\s*=\s*["']https?://([a-z0-9.-]+)""", re.I)
 _HTTP_OK = 200
@@ -73,23 +77,6 @@ class Claim:
     siblings: int = 0
 
 
-def _is_address(host: str) -> bool:
-    try:
-        ipaddress.ip_address(host)
-    except ValueError:
-        return False
-    return True
-
-
-def _url_host(url: str | None) -> str:
-    if not url:
-        return ""
-    try:
-        return (urlsplit(url).hostname or "").lower()
-    except ValueError:
-        return ""
-
-
 def _inside(name: str, root: str) -> bool:
     return name == root or name.endswith(f".{root}")
 
@@ -122,7 +109,7 @@ def _alias(host: str, domain: str, root: str, title: str | None) -> bool:
 
 
 def _foreign(domain: str, root: str, owned: set[str]) -> bool:
-    if not domain or domain.rsplit(".", 1)[-1] in LOCAL_SUFFIXES:
+    if not domain or domain.rsplit(".", 1)[-1] in PRIVATE_TLDS:
         return False
     if _inside(domain, root) or any(_inside(domain, r) for r in owned):
         return False
@@ -134,7 +121,7 @@ def _foreign(domain: str, root: str, owned: set[str]) -> bool:
 def _evidence(asset: Asset, default: Asset | None) -> dict[str, list[tuple[str, str]]]:
     found: dict[str, list[tuple[str, str]]] = defaultdict(list)
     for url in (asset.final_url, asset.location):
-        domain = registrable_domain(_url_host(url))
+        domain = registrable_domain(url_host(url))
         if domain and all(k != ClaimEvidence.REDIRECT.value for k, _ in found[domain]):
             found[domain].append((ClaimEvidence.REDIRECT.value, url or ""))
     if asset.tls_subject_cn and not cert_covers(
@@ -181,7 +168,7 @@ def _judge_one(
     asset: Asset, default: Asset | None, root: str, owned: set[str]
 ) -> Claim | None:
     host = asset.host.lower()
-    if asset.is_cdn or _is_address(host) or not _inside(host, root):
+    if asset.is_cdn or validate_ip(host) or not _inside(host, root):
         return None
     if asset.body and root in asset.body.lower():
         return None
@@ -236,7 +223,7 @@ def _rank(claim: Claim) -> tuple[int, int, bool]:
 
 
 def _defaults(assets: list[Asset]) -> dict[tuple[str | None, int | None], Asset]:
-    return {(a.ip, a.port): a for a in assets if _is_address(a.host) and a.content_hash}
+    return {(a.ip, a.port): a for a in assets if validate_ip(a.host) and a.content_hash}
 
 
 def _keep(best: dict[str, Claim], claim: Claim | None) -> None:
@@ -308,16 +295,25 @@ def _asset(r, body: str | None) -> Asset:
     )
 
 
+def owned_zones(values: Iterable[str], root: str) -> set[str]:
+    """Zones of the project's targets other than the root."""
+    zones = set()
+    for value in values:
+        host = (url_host(value) or value).strip().lower().rstrip(".")
+        if host != root:
+            zones.add(target_zone(host))
+    return zones
+
+
 def claims(session: Session, scan_id: UUID, root: str, project_id: UUID) -> list[Claim]:
     """Claims for a scan's web assets against the target root and the project's other targets."""
     root = root.lower().rstrip(".")
-    owned = {
-        value.lower()
-        for value in session.execute(
+    owned = owned_zones(
+        session.execute(
             select(Target.target_value).where(Target.project_id == project_id)
-        ).scalars()
-    }
-    owned.discard(root)
+        ).scalars(),
+        root,
+    )
     light = session.execute(
         select(*_COLUMNS).where(
             HttpAsset.scan_id == scan_id, HttpAsset.content_hash.is_not(None)

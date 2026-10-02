@@ -20,6 +20,7 @@ from shared.services.endpoint_inventory import EndpointObservation
 from shared.services.endpoint_noise import NoisePolicy
 from shared.services.scope_filter import matches_any
 from shared.services.wordlists import WordlistError, read_words
+from shared.utils.text import counted, plural
 from stages.base import ALL_TARGETS, Stage, StageResult
 from stages.config import share_rate
 from stages.content_discovery.config import ContentDiscoveryConfig
@@ -80,8 +81,8 @@ class ContentDiscoveryStage(Stage):
                 )
             word_file, tried, label = prepared
             self.emit_progress(
-                f"guessing {tried:,} paths from {label} against {len(hosts)} site"
-                f"{'' if len(hosts) == 1 else 's'}"
+                f"guessing {tried:,} {plural(tried, 'path')} from {label} "
+                f"against {counted(len(hosts), 'site')}"
             )
             return self._fuzz(cfg, hosts, word_file, tried, label)
 
@@ -159,9 +160,6 @@ class ContentDiscoveryStage(Stage):
             return outcome
         outcome.settle(tried)
         return outcome
-
-    def aborted(self) -> bool:
-        return bool(self.ctx.is_aborted and self.ctx.is_aborted())
 
     def _write(self, batch: list[EndpointObservation]) -> int:
         result = endpoint_inventory.upsert(
@@ -241,11 +239,13 @@ class _Run:
     uncalibrated: int = 0
     cut_short: int = 0
     failed: int = 0
+    first_error: str = ""
     dropped: list[str] = field(default_factory=list)
 
     def absorb(self, outcome: _Outcome) -> None:
         if outcome.error:
             self.failed += 1
+            self.first_error = self.first_error or outcome.error
             return
         if outcome.cut_short:
             self.cut_short += 1
@@ -254,11 +254,12 @@ class _Run:
             self.dropped.append(outcome.host)
 
     def note(self, written: int, tried: int, hosts: int) -> str:
-        text = f"{written:,} paths answered out of {tried:,} guessed on {hosts} sites"
+        text = (
+            f"{written:,} {plural(written, 'path')} answered out of {tried:,} "
+            f"guessed on {counted(hosts, 'site')}"
+        )
         if self.uncalibrated:
-            text += (
-                f", {self.uncalibrated} sites answered to everything and were dropped"
-            )
+            text += f", {counted(self.uncalibrated, 'site')} dropped as catch-all"
         return text
 
     def warnings(self, cfg, tried: int) -> list[str]:
@@ -268,17 +269,18 @@ class _Run:
             extra = len(self.dropped) - _NAMED
             more = f" and {extra} more" if extra > 0 else ""
             out.append(
-                f"{self.uncalibrated} sites answered at least "
-                f"{int(MAX_HIT_SHARE * 100)}% of {tried:,} guessed paths and were "
-                f"dropped as catch-all: {shown}{more}."
+                f"{counted(self.uncalibrated, 'site')} answered at least "
+                f"{int(MAX_HIT_SHARE * 100)}% of {tried:,} guessed paths and "
+                f"{plural(self.uncalibrated, 'was', 'were')} dropped as catch-all: "
+                f"{shown}{more}."
             )
         if self.cut_short:
             out.append(
-                f"{self.cut_short} sites reached the {cfg.max_minutes}-minute "
+                f"{counted(self.cut_short, 'site')} reached the {cfg.max_minutes}-minute "
                 "budget with wordlist remaining."
             )
         if self.failed:
-            out.append(f"{self.failed} sites could not be guessed against.")
+            out.append(f"{counted(self.failed, 'site')} not tested. {self.first_error}")
         return out
 
 

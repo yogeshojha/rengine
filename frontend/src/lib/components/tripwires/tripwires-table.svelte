@@ -13,7 +13,6 @@
 		actionLabel,
 		dimensionSpec,
 		fireOnLabel,
-		ScopeKind,
 		triggerLabel,
 		TripwireTrigger
 	} from '$lib/config/tripwires';
@@ -21,6 +20,7 @@
 	import { relativeTime } from '$lib/utilities/dates';
 	import QueryChip from './query-chip.svelte';
 	import { TRIPWIRE_COL } from './columns';
+	import { SHOWN_LABELS, scopeText } from './format';
 
 	interface Props {
 		tripwires: Tripwire[];
@@ -31,16 +31,6 @@
 	}
 
 	let { tripwires, onOpen, onEdit, onToggle, onDelete }: Props = $props();
-
-	function scopeText(t: Tripwire): string {
-		if (t.scope.kind === ScopeKind.All) return 'All targets';
-		const labels = t.scope.labels;
-		if (t.scope.kind === ScopeKind.Targets) {
-			if (labels.length <= 2) return labels.join(', ');
-			return `${labels.slice(0, 2).join(', ')} and ${labels.length - 2} more`;
-		}
-		return labels[0] ?? '';
-	}
 
 	interface ThenChip {
 		label: string;
@@ -89,16 +79,22 @@
 					/>
 				</div>
 			</div>
-			<div class="{TRIPWIRE_COL.fires} flex flex-col items-start gap-1">
-				<Badge variant="outline" class="font-normal">{fireOnLabel(tripwire.fire_on)}</Badge>
-				{#if tripwire.trigger === TripwireTrigger.ScanLive}
-					<span class="text-2xs text-muted-foreground">{triggerLabel(tripwire.trigger)}</span>
-				{/if}
+			<div class={TRIPWIRE_COL.fires}>
+				<div class="flex flex-col items-start gap-1">
+					<Badge variant="outline" class="font-normal">{fireOnLabel(tripwire.fire_on)}</Badge>
+					{#if tripwire.trigger === TripwireTrigger.ScanLive}
+						<span class="text-2xs text-muted-foreground">{triggerLabel(tripwire.trigger)}</span>
+					{/if}
+				</div>
 			</div>
 			<div class="{TRIPWIRE_COL.scope} truncate text-sm">
-				<Hint text={tripwire.scope.labels.length > 2 ? tripwire.scope.labels.join(', ') : null}>
+				<Hint
+					text={tripwire.scope.labels.length > SHOWN_LABELS
+						? tripwire.scope.labels.join(', ')
+						: null}
+				>
 					{#snippet child(props)}
-						<span {...props}>{scopeText(tripwire)}</span>
+						<span {...props}>{scopeText(tripwire.scope, tripwire.scope.labels)}</span>
 					{/snippet}
 				</Hint>
 			</div>

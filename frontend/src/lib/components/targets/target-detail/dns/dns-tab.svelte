@@ -16,6 +16,7 @@
 	import type { DnsLookupRead, DnsRecordRead } from '$lib/types/target-detail';
 	import { isPrivateIp } from '$lib/utilities/scan-correlation';
 	import { filterToken } from '$lib/utilities/scan-insights';
+	import { plural } from '$lib/utilities/strings';
 
 	interface Props {
 		host: string;
@@ -131,7 +132,6 @@
 		ipsScanId
 			? ROUTES.scanTab(ipsScanId, IPS.tab, { [IPS.queryParam]: filterToken('ip', ip) })
 			: null;
-	const plural = (n: number) => `${n} ${n === 1 ? 'record' : 'records'}`;
 </script>
 
 <RecordShell
@@ -191,7 +191,7 @@
 	{:else}
 		<div class="flex flex-col">
 			{#each groups as [key, rows] (key)}
-				<RecordGroup label={key} sub={plural(rows.length)}>
+				<RecordGroup label={key} sub={plural(rows.length, 'record')}>
 					{#each rows as r (r.id)}
 						{@const note = noteFor(r)}
 						{@const href = isAddress(r) ? ipsHref(r.value) : null}

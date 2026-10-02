@@ -8,16 +8,18 @@ import lzma
 import shutil
 import tempfile
 import time
-import urllib.request
 from collections.abc import Iterator
 from datetime import UTC, datetime
+from http import HTTPStatus
 from pathlib import Path
 from typing import Any
 
+import httpx
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from shared.definitions.vulnerabilities import Severity
+from shared.http import download, fetch
 from shared.logging import get_logger
 from shared.utils.software import version_key, version_kind
 from shared.utils.text import strip_control
@@ -31,7 +33,6 @@ FETCH_ATTEMPTS = 3
 MAX_FILE_BYTES = 64 * 1024 * 1024
 MAX_DESCRIPTION = 2000
 RETRY_PAUSE = 2
-USER_AGENT = "reNgine"
 
 _CHUNK = 1 << 20
 _ITEMS_KEY = '"cve_items"'
@@ -56,40 +57,25 @@ _SEVERITIES = {
 
 
 def _fetch(name: str, target: Path) -> int:
-    """A stalled mirror connection is retried rather than waited out."""
+    """Download one mirror file, retrying a stalled connection."""
     last: Exception | None = None
     for attempt in range(FETCH_ATTEMPTS):
-        request = urllib.request.Request(  # noqa: S310
-            f"{RELEASE}/{name}", headers={"User-Agent": USER_AGENT}
-        )
         try:
-            with (
-                urllib.request.urlopen(  # noqa: S310
-                    request, timeout=DOWNLOAD_TIMEOUT
-                ) as response,
-                target.open("wb") as handle,
-            ):
-                copied = 0
-                while chunk := response.read(_CHUNK):
-                    copied += len(chunk)
-                    if copied > MAX_FILE_BYTES:
-                        msg = f"{name} exceeded {MAX_FILE_BYTES} bytes"
-                        raise ValueError(msg)
-                    handle.write(chunk)
-        except urllib.error.HTTPError:
-            raise
-        except (TimeoutError, OSError) as exc:
+            return download(
+                f"{RELEASE}/{name}",
+                target,
+                timeout=DOWNLOAD_TIMEOUT,
+                max_bytes=MAX_FILE_BYTES,
+            )
+        except (httpx.TransportError, OSError) as exc:
             last = exc
             logger.warning("nvd file retry", file=name, attempt=attempt + 1)
             time.sleep(RETRY_PAUSE)
-            continue
-        else:
-            return copied
     raise last if last else RuntimeError(name)
 
 
 def _iter_items(path: Path) -> Iterator[dict]:
-    """Year files reach 250 MB decoded, so items are decoded one at a time."""
+    """The CVE items of one year file, decoded one at a time."""
     decoder = json.JSONDecoder()
     with lzma.open(path, "rt", encoding="utf-8", errors="replace") as handle:
         buf = ""
@@ -165,7 +151,7 @@ def _nodes(node: dict, out: list[dict]) -> None:
 def _bounds(
     match: dict,
 ) -> tuple[str, str | None, str | None, bool, str | None, bool] | None:
-    """A criteria with no version statement matches every release, so it is not a match."""
+    """Version bounds of one CPE match, None for a criteria with no version statement."""
     parts = match["criteria"].split(":")
     if len(parts) < _MIN_CPE_FIELDS or parts[2] not in _PARTS:
         return None
@@ -231,6 +217,24 @@ def _copy(session: Session, table: str, columns: str, path: Path) -> None:
         )
 
 
+def _unpublished(exc: Exception, year: int, last_year: int) -> bool:
+    """The current year's file before the mirror publishes it."""
+    return (
+        isinstance(exc, httpx.HTTPStatusError)
+        and exc.response.status_code == HTTPStatus.NOT_FOUND
+        and year == last_year
+    )
+
+
+def _require_complete(missing: list[int], cve_count: int) -> None:
+    if missing:
+        msg = f"NVD year feeds unavailable: {', '.join(map(str, missing))}"
+        raise RuntimeError(msg)
+    if not cve_count:
+        msg = "NVD year feeds held no CVEs"
+        raise RuntimeError(msg)
+
+
 def load(
     session: Session, current_version: str | None = None
 ) -> tuple[int, str | None, int]:
@@ -251,6 +255,7 @@ def load(
         cve_path = workdir / "cves.csv"
         match_path = workdir / "matches.csv"
         seen: set[str] = set()
+        missing: list[int] = []
         with (
             cve_path.open("w", encoding="utf-8", newline="") as cve_file,
             match_path.open("w", encoding="utf-8", newline="") as match_file,
@@ -262,8 +267,10 @@ def load(
                 target = workdir / name
                 try:
                     downloaded += _fetch(name, target)
-                except Exception:
+                except Exception as exc:
                     logger.warning("nvd year feed unavailable", year=year)
+                    if not _unpublished(exc, year, last_year):
+                        missing.append(year)
                     continue
                 for item in _iter_items(target):
                     if item.get("vulnStatus") == _REJECTED:
@@ -295,6 +302,7 @@ def load(
                     "nvd year loaded", year=year, cves=cve_count, matches=match_count
                 )
 
+        _require_complete(missing, cve_count)
         session.execute(text("TRUNCATE TABLE nvd_cpe_matches"))
         session.execute(text("TRUNCATE TABLE nvd_cves"))
         _copy(
@@ -317,15 +325,14 @@ def load(
 
 
 def _release_stamp() -> str | None:
-    """The mirror publishes the release date beside the files."""
+    """The mirror's last-modified stamp."""
     try:
-        request = urllib.request.Request(  # noqa: S310
-            f"{RELEASE}/CVE-modified.meta", headers={"User-Agent": USER_AGENT}
+        meta = fetch(
+            f"{RELEASE}/CVE-modified.meta", timeout=DOWNLOAD_TIMEOUT, max_bytes=4096
         )
-        with urllib.request.urlopen(request, timeout=DOWNLOAD_TIMEOUT) as response:  # noqa: S310
-            for line in response.read(4096).decode("utf-8", "replace").splitlines():
-                if line.startswith("lastModifiedDate:"):
-                    return line.split(":", 1)[1].strip()[:100]
+        for line in meta.decode("utf-8", "replace").splitlines():
+            if line.startswith("lastModifiedDate:"):
+                return line.split(":", 1)[1].strip()[:100]
     except Exception:
         logger.debug("nvd release stamp unavailable", exc_info=True)
     return None

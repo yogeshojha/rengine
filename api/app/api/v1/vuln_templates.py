@@ -7,16 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.services.vuln_template import VulnTemplateService
-from shared.definitions.vulnerabilities import (
-    PROTOCOL_LABELS,
-    SEVERITY_HELP,
-    SEVERITY_LABELS,
-    SEVERITY_ORDER,
-    SURFACE_LABELS,
-    TEMPLATE_ORIGIN_LABELS,
-    VULN_STATE_HELP,
-    VULN_STATE_LABELS,
-)
+from shared.definitions.vulnerabilities import TemplateOrigin
 from shared.models.vuln_template import (
     SelectionPreview,
     TemplateFilter,
@@ -41,39 +32,6 @@ def get_service(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> VulnTemplateService:
     return VulnTemplateService(session)
-
-
-@router.get("/vocabulary")
-async def template_vocabulary(_current_user: CurrentUser) -> dict:
-    """Vulnerability vocabulary."""
-    return {
-        "severities": [
-            {
-                "value": name,
-                "label": SEVERITY_LABELS[name],
-                "description": SEVERITY_HELP[name],
-            }
-            for name in SEVERITY_ORDER
-        ],
-        "protocols": [
-            {"value": value, "label": label} for value, label in PROTOCOL_LABELS.items()
-        ],
-        "states": [
-            {
-                "value": value,
-                "label": label,
-                "description": VULN_STATE_HELP.get(value, ""),
-            }
-            for value, label in VULN_STATE_LABELS.items()
-        ],
-        "origins": [
-            {"value": value, "label": label}
-            for value, label in TEMPLATE_ORIGIN_LABELS.items()
-        ],
-        "surfaces": [
-            {"value": value, "label": label} for value, label in SURFACE_LABELS.items()
-        ],
-    }
 
 
 @router.get("/stats", response_model=TemplateLibraryStats)
@@ -133,20 +91,6 @@ async def upload_templates(
     return await service.upload(body, current_user.id)
 
 
-@router.get("/{template_id}", response_model=VulnTemplateRead)
-async def get_template(
-    _current_user: CurrentUser,
-    service: Annotated[VulnTemplateService, Depends(get_service)],
-    template_id: Annotated[UUID, Path(description="Template ID")],
-):
-    found = await service.get(template_id)
-    if found is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Check not found"
-        )
-    return found
-
-
 @router.patch("/{template_id}", response_model=VulnTemplateRead)
 async def update_template(
     _current_user: CurrentUser,
@@ -168,7 +112,6 @@ async def read_source(
     service: Annotated[VulnTemplateService, Depends(get_service)],
     template_id: Annotated[UUID, Path(description="Template ID")],
 ):
-    """Template source."""
     found = await service.source(template_id)
     if found is None:
         raise HTTPException(
@@ -203,8 +146,13 @@ async def delete_template(
     service: Annotated[VulnTemplateService, Depends(get_service)],
     template_id: Annotated[UUID, Path(description="Template ID")],
 ):
-    if not await service.delete(template_id):
+    found = await service.get(template_id)
+    if found is not None and found.origin != TemplateOrigin.CUSTOM.value:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Only custom templates can be deleted.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Default checks are read-only.",
+        )
+    if found is None or not await service.delete(template_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Check not found"
         )

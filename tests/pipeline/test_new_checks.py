@@ -13,7 +13,7 @@ from shared.definitions.new_checks import (
 )
 from shared.definitions.notifications import NewChecksResult, new_checks_result
 from shared.enums.notification import NotificationSeverity, NotificationType
-from shared.models.notification_channel import DEFAULT_PREFERENCE_TYPES
+from shared.models.notification_channel import NotificationPreference
 from shared.models.vuln_template import TemplateSelection
 from shared.services.new_checks import window_end
 from shared.services.vuln_templates import selection_predicate
@@ -72,4 +72,4 @@ def test_the_run_notice_is_sent_only_with_findings():
 
 
 def test_new_checks_is_a_default_channel_category():
-    assert NotificationType.NEW_CHECKS.value in DEFAULT_PREFERENCE_TYPES
+    assert NotificationType.NEW_CHECKS.value in NotificationPreference().types

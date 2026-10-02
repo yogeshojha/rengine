@@ -39,9 +39,6 @@ function createToolboxStore() {
 	}
 
 	return {
-		get catalog() {
-			return catalog;
-		},
 		get tools() {
 			return catalog?.tools ?? [];
 		},
@@ -55,9 +52,6 @@ function createToolboxStore() {
 			return catalogError;
 		},
 		get runs() {
-			return runs;
-		},
-		get history() {
 			return runs;
 		},
 		get historyError() {

@@ -8,6 +8,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Kbd } from '$lib/components/ui/kbd';
 	import CodeBlock from '$lib/components/code-block.svelte';
+	import SectionHead from '$lib/components/section-head.svelte';
 	import { contextLabel, schemaArgs } from '$lib/utilities/mcp';
 	import {
 		MCP_CAPABILITIES,
@@ -107,12 +108,7 @@
 					<p class="text-sm leading-relaxed whitespace-pre-line">{tool.description}</p>
 
 					<section class="flex flex-col gap-2">
-						<h4 class="flex items-baseline gap-2 {LABEL}">
-							Arguments
-							<span class="text-xs font-medium tracking-normal normal-case tabular-nums">
-								{args.length}
-							</span>
-						</h4>
+						<SectionHead title="Arguments" count={args.length} />
 						{#if args.length}
 							<div class="divide-y rounded-md border">
 								{#each args as arg (arg.name)}
@@ -150,7 +146,7 @@
 
 					{#if tool.examples.length}
 						<section class="flex flex-col gap-2">
-							<h4 class={LABEL}>Examples</h4>
+							<SectionHead title="Examples" />
 							<div class="flex flex-col gap-2">
 								{#each tool.examples as example (example)}
 									<CodeBlock code={example} lang="shell" numbers={false} maxLines={0} />

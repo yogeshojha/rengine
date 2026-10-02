@@ -11,7 +11,13 @@
 	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
 	import { toast } from 'svelte-sonner';
 	import UploadIcon from '@lucide/svelte/icons/upload';
-	import type { ReportStyle } from '$lib/types/report';
+	import {
+		LibraryOrigin,
+		MAX_EMBEDDED_IMAGE_KB,
+		catalogLabel,
+		readEmbeddedImage
+	} from '$lib/config/reports';
+	import type { ReportFont, ReportStyle } from '$lib/types/report';
 	import ThemePreview from '../theme-preview.svelte';
 	import { cn } from '$lib/utils.js';
 
@@ -22,26 +28,19 @@
 	const monoFonts = $derived((catalog?.fonts ?? []).filter((f) => f.role === 'mono'));
 	const activeTheme = $derived(reportCatalog.theme(style.theme));
 
-	const MAX_COVER = 512_000;
 	let coverInput = $state<HTMLInputElement | null>(null);
 
 	async function pickCover(event: Event) {
-		const file = (event.target as HTMLInputElement).files?.[0];
+		const input = event.target as HTMLInputElement;
+		const file = input.files?.[0];
+		input.value = '';
 		if (!file) return;
-		if (file.size > MAX_COVER) {
-			toast.error('Cover image exceeds 500 KB. Choose a smaller file.');
+		const image = await readEmbeddedImage(file);
+		if (image === null) {
+			toast.error(`Cover image exceeds ${MAX_EMBEDDED_IMAGE_KB} KB. Choose a smaller file.`);
 			return;
 		}
-		style.cover_image = await new Promise<string>((resolve, reject) => {
-			const reader = new FileReader();
-			reader.onload = () => resolve(String(reader.result));
-			reader.onerror = reject;
-			reader.readAsDataURL(file);
-		});
-	}
-
-	function label(list: { key: string; label: string }[] | undefined, key: string): string {
-		return list?.find((i) => i.key === key)?.label ?? key;
+		style.cover_image = image;
 	}
 
 	function severity(key: string): string {
@@ -52,6 +51,33 @@
 		style.severity_colors = { ...style.severity_colors, [key]: value };
 	}
 </script>
+
+{#snippet fontSelect(
+	name: string,
+	key: 'heading_font' | 'body_font' | 'mono_font',
+	fonts: ReportFont[]
+)}
+	<div class="space-y-1.5">
+		<Label class="text-xs">{name}</Label>
+		<Select.Root type="single" value={style[key]} onValueChange={(v) => (style[key] = v)}>
+			<Select.Trigger class="h-9 w-full">
+				{style[key]
+					? (fonts.find((f) => f.slug === style[key])?.name ?? style[key])
+					: 'From the theme'}
+			</Select.Trigger>
+			<Select.Content>
+				<Select.Item value="">From the theme</Select.Item>
+				{#each fonts as font (font.slug)}
+					<Select.Item value={font.slug}>
+						{font.name}{#if font.origin === LibraryOrigin.CUSTOM}<span
+								class="ml-1.5 text-xs text-muted-foreground">custom</span
+							>{/if}
+					</Select.Item>
+				{/each}
+			</Select.Content>
+		</Select.Root>
+	</div>
+{/snippet}
 
 <div class="space-y-6">
 	<div class="space-y-2">
@@ -92,7 +118,7 @@
 			<Label class="text-xs">Page size</Label>
 			<Select.Root type="single" bind:value={style.page_size}>
 				<Select.Trigger class="h-9 w-full"
-					>{label(catalog?.page_sizes, style.page_size)}</Select.Trigger
+					>{catalogLabel(catalog?.page_sizes, style.page_size)}</Select.Trigger
 				>
 				<Select.Content>
 					{#each catalog?.page_sizes ?? [] as item (item.key)}
@@ -105,7 +131,7 @@
 			<Label class="text-xs">Density</Label>
 			<Select.Root type="single" bind:value={style.density}>
 				<Select.Trigger class="h-9 w-full"
-					>{label(catalog?.densities, style.density)}</Select.Trigger
+					>{catalogLabel(catalog?.densities, style.density)}</Select.Trigger
 				>
 				<Select.Content>
 					{#each catalog?.densities ?? [] as item (item.key)}
@@ -119,7 +145,7 @@
 			<Select.Root type="single" bind:value={style.cover_layout}>
 				<Select.Trigger class="h-9 w-full">
 					{style.cover_layout
-						? label(catalog?.cover_layouts, style.cover_layout)
+						? catalogLabel(catalog?.cover_layouts, style.cover_layout)
 						: 'From the theme'}
 				</Select.Trigger>
 				<Select.Content>
@@ -141,70 +167,13 @@
 				class="h-9"
 			/>
 		</div>
-		<div class="space-y-1.5">
-			<Label class="text-xs">Heading font</Label>
-			<Select.Root type="single" bind:value={style.heading_font}>
-				<Select.Trigger class="h-9 w-full">
-					{style.heading_font
-						? (textFonts.find((f) => f.slug === style.heading_font)?.name ?? style.heading_font)
-						: 'From the theme'}
-				</Select.Trigger>
-				<Select.Content>
-					<Select.Item value="">From the theme</Select.Item>
-					{#each textFonts as font (font.slug)}
-						<Select.Item value={font.slug}>
-							{font.name}{#if font.origin === 'custom'}<span
-									class="ml-1.5 text-xs text-muted-foreground">custom</span
-								>{/if}
-						</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
-		</div>
-		<div class="space-y-1.5">
-			<Label class="text-xs">Body font</Label>
-			<Select.Root type="single" bind:value={style.body_font}>
-				<Select.Trigger class="h-9 w-full">
-					{style.body_font
-						? (textFonts.find((f) => f.slug === style.body_font)?.name ?? style.body_font)
-						: 'From the theme'}
-				</Select.Trigger>
-				<Select.Content>
-					<Select.Item value="">From the theme</Select.Item>
-					{#each textFonts as font (font.slug)}
-						<Select.Item value={font.slug}>
-							{font.name}{#if font.origin === 'custom'}<span
-									class="ml-1.5 text-xs text-muted-foreground">custom</span
-								>{/if}
-						</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
-		</div>
-		<div class="space-y-1.5">
-			<Label class="text-xs">Code font</Label>
-			<Select.Root type="single" bind:value={style.mono_font}>
-				<Select.Trigger class="h-9 w-full">
-					{style.mono_font
-						? (monoFonts.find((f) => f.slug === style.mono_font)?.name ?? style.mono_font)
-						: 'From the theme'}
-				</Select.Trigger>
-				<Select.Content>
-					<Select.Item value="">From the theme</Select.Item>
-					{#each monoFonts as font (font.slug)}
-						<Select.Item value={font.slug}>
-							{font.name}{#if font.origin === 'custom'}<span
-									class="ml-1.5 text-xs text-muted-foreground">custom</span
-								>{/if}
-						</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
-		</div>
+		{@render fontSelect('Heading font', 'heading_font', textFonts)}
+		{@render fontSelect('Body font', 'body_font', textFonts)}
+		{@render fontSelect('Code font', 'mono_font', monoFonts)}
 	</div>
 
 	<div class="space-y-2">
-		<Label class="text-xs">Margins (mm)</Label>
+		<Label class="text-xs">Margins in mm</Label>
 		<div class="grid grid-cols-4 gap-2">
 			{#each [['margin_top', 'Top'], ['margin_right', 'Right'], ['margin_bottom', 'Bottom'], ['margin_left', 'Left']] as [key, name] (key)}
 				<div class="space-y-1">
@@ -327,7 +296,7 @@
 	<Separator />
 
 	<div class="space-y-3">
-		{#each [['section_numbering', 'Number the sections', 'Prints 1., 2., 3. before each heading.'], ['chapter_breaks', 'Start each chapter on a new page', 'Off separates chapters with a rule.'], ['justify', 'Justify body text', 'Flush on both edges.'], ['hyphenate', 'Hyphenate body text', ''], ['table_zebra', 'Shade alternate table rows', ''], ['mono_safe', 'Ink saving', 'Greys every fill.']] as [key, name, help] (key)}
+		{#each [['section_numbering', 'Number the sections', 'Prints 1., 2., 3. before each heading.'], ['chapter_breaks', 'Start each chapter on a new page', 'Off separates chapters with a rule.'], ['justify', 'Justify body text', ''], ['hyphenate', 'Hyphenate body text', ''], ['table_zebra', 'Shade alternate table rows', ''], ['mono_safe', 'Ink saving', 'Greys every fill.']] as [key, name, help] (key)}
 			<div class="flex items-start justify-between gap-4">
 				<div class="space-y-0.5">
 					<span class="text-sm">{name}</span>
@@ -371,7 +340,9 @@
 				onchange={pickCover}
 			/>
 		</div>
-		<p class="text-xs text-muted-foreground">Fills the cover behind the title. Under 500 KB.</p>
+		<p class="text-xs text-muted-foreground">
+			Fills the cover behind the title. Under {MAX_EMBEDDED_IMAGE_KB} KB.
+		</p>
 	</div>
 
 	<Separator />

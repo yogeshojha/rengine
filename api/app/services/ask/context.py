@@ -22,7 +22,7 @@ from shared.models.ask import AskFlagRead, AskMessage, Fact
 from shared.models.vulnerability import VulnerabilityRead
 from shared.services.issue_tracking.body import mask_secrets
 from shared.services.scan_resolve import MASK, redact_credentials, redact_message
-from shared.utils.text import strip_control
+from shared.utils.text import clip_line, strip_control
 
 MAX_PROSE = 800
 MAX_TITLE = 160
@@ -118,10 +118,7 @@ def _fact_line(f: Fact) -> str:
 
 
 def _clip(text: str | None, limit: int = MAX_PROSE) -> str | None:
-    if not text:
-        return None
-    text = " ".join(strip_control(text).split())
-    return text if len(text) <= limit else f"{text[: limit - 1]}…"
+    return clip_line(strip_control(text), limit) if text else None
 
 
 def masked(text: str | None) -> str | None:

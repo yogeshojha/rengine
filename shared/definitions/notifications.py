@@ -5,7 +5,10 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from shared.definitions.bounty_programs import BountyEvent, event_spec
+from shared.definitions.stage_counts import HTTP_SERVICE_NOUN, stage_figures
+from shared.definitions.stage_counts import noun as _noun
 from shared.definitions.surface import SURFACE_NOUN, SurfaceDimension
+from shared.definitions.threat_intel import ExploitSignal
 from shared.definitions.tripwires import FIRE_ON_VERB
 from shared.definitions.tripwires import SAMPLE_ROWS as TRIPWIRE_SAMPLE_ROWS
 from shared.definitions.vulnerabilities import (
@@ -32,19 +35,6 @@ def _scan_meta(scan_id: str, tab: str | None = None) -> dict:
     return {"scan_id": str(scan_id), "url": url}
 
 
-def _noun(
-    dimension: SurfaceDimension, *, before: str = "", after: str = ""
-) -> tuple[str, str]:
-    singular, plural = SURFACE_NOUN[dimension.value]
-    return (
-        " ".join(w for w in (before, singular, after) if w),
-        " ".join(w for w in (before, plural, after) if w),
-    )
-
-
-HTTP_SERVICE_NOUN = ("HTTP service", "HTTP services")
-
-
 _SCAN_COUNT_LABELS: dict[str, tuple[str, str]] = {
     "subdomains_found": _noun(SurfaceDimension.WEB_ASSETS),
     "ips_found": _noun(SurfaceDimension.IPS),
@@ -68,53 +58,9 @@ def scan_count_summary(counts: dict) -> str:
     return ", ".join(parts) if parts else "no results"
 
 
-_STAGE_COUNT_LABELS: dict[str, tuple[str, str]] = {
-    "active": _noun(SurfaceDimension.WEB_ASSETS, before="resolving"),
-    "addresses": _noun(SurfaceDimension.IPS),
-    "alive": _noun(SurfaceDimension.WEB_ASSETS, before="responsive"),
-    "answered": ("answered", "answered"),
-    "bgp": ("BGP record", "BGP records"),
-    "cdn": ("CDN-fronted address", "CDN-fronted addresses"),
-    "checked": _noun(SurfaceDimension.SERVICES, after="checked"),
-    "checks": ("check run", "checks run"),
-    "cloud": ("cloud-hosted address", "cloud-hosted addresses"),
-    "dns_records": ("DNS record", "DNS records"),
-    "edge_only": ("CDN edge address", "CDN edge addresses"),
-    "endpoints": _noun(SurfaceDimension.ENDPOINTS),
-    "endpoints_new": _noun(SurfaceDimension.ENDPOINTS, before="new"),
-    "endpoints_probed": _noun(SurfaceDimension.ENDPOINTS, after="requested"),
-    "enriched": _noun(SurfaceDimension.IPS, after="enriched"),
-    "fingerprinted": _noun(SurfaceDimension.SERVICES, after="identified"),
-    "http_assets": HTTP_SERVICE_NOUN,
-    "ips": _noun(SurfaceDimension.IPS),
-    "known_ports": _noun(SurfaceDimension.SERVICES, before="known"),
-    "new": ("new", "new"),
-    "open_ports": _noun(SurfaceDimension.SERVICES, before="open"),
-    "posture_issues": ("posture check failing", "posture checks failing"),
-    "probed": _noun(SurfaceDimension.WEB_ASSETS, after="probed"),
-    "ptr": ("PTR record", "PTR records"),
-    "scanned": _noun(SurfaceDimension.IPS, after="scanned"),
-    "screenshots": ("screenshot", "screenshots"),
-    "secrets": _noun(SurfaceDimension.SECRETS),
-    "documents": ("response read", "responses read"),
-    "skipped": ("skipped", "skipped"),
-    "subdomains": _noun(SurfaceDimension.WEB_ASSETS),
-    "targets": ("target", "targets"),
-    "vulnerabilities": _noun(SurfaceDimension.VULNERABILITIES),
-    "waf": ("firewall identified", "firewalls identified"),
-    "web_services": _noun(SurfaceDimension.SERVICES, before="web"),
-    "whois": ("WHOIS record", "WHOIS records"),
-    "zones": ("zone checked", "zones checked"),
-}
-
-
-def stage_count_summary(counts: dict) -> str:
+def stage_count_summary(counts: dict, stage: str | None = None) -> str:
     """Label every figure a stage reports."""
-    parts = [
-        _count(n, *_STAGE_COUNT_LABELS[key])
-        for key, n in counts.items()
-        if isinstance(n, int) and n and key in _STAGE_COUNT_LABELS
-    ]
+    parts = [f"{n:,} {label}" for _, n, label in stage_figures(stage, counts) if n]
     return ", ".join(parts) if parts else "no results"
 
 
@@ -156,8 +102,6 @@ class ScanDeltas:
 
 _FINDING = _noun(SurfaceDimension.VULNERABILITIES)
 _WEB_ASSET = _noun(SurfaceDimension.WEB_ASSETS)
-_SERVICE = _noun(SurfaceDimension.SERVICES)
-_SECRET = _noun(SurfaceDimension.SECRETS)
 
 
 def _severity_phrase(counts: dict) -> str:
@@ -387,13 +331,29 @@ class IntelShift:
     finding: str
     kind: str
     scan_id: str
+    vulnerability_id: str = ""
+
+
+_KNOWN_EXPLOITED = frozenset({ExploitSignal.KEV.value, ExploitSignal.RANSOM_PATH.value})
+
+
+def distinct_findings(shifts: list["IntelShift"]) -> list["IntelShift"]:
+    seen: set[str] = set()
+    out: list[IntelShift] = []
+    for s in shifts:
+        if s.vulnerability_id and s.vulnerability_id in seen:
+            continue
+        seen.add(s.vulnerability_id)
+        out.append(s)
+    return out
 
 
 def intel_changed(shifts: list["IntelShift"], shown: int = 5) -> dict | None:
     """Findings that gained an exploitation signal since the last refresh."""
     if not shifts:
         return None
-    exploited = [s for s in shifts if s.kind in {"kev", "ransom_path", "fresh_exploit"}]
+    exploited = any(s.kind in _KNOWN_EXPLOITED for s in shifts)
+    shifts = distinct_findings(shifts)
     head = _count(len(shifts), *_FINDING)
     lines = [f"{s.cve} · {s.target} · {s.finding}" for s in shifts[:shown]]
     query = "is%3Aexploitable" if exploited else "is%3Aweaponised"
@@ -448,7 +408,7 @@ def software_exposed(
     url = (
         f"/surface/cve/{cves[0]}"
         if len(cves) == 1
-        else "/surface/software?sw_q=seen%3A%3C24h"
+        else "/surface/software?sw_q=is%3Akev%20seen%3A%3C24h"
     )
     return {
         "type": NotificationType.VULNERABILITY,

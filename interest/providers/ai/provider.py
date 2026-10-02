@@ -1,5 +1,3 @@
-"""A judgement, clearly labelled as one."""
-
 from __future__ import annotations
 
 from collections.abc import Iterable
@@ -18,7 +16,7 @@ from interest.providers.ai.prompt import (
     json_array,
     render,
 )
-from shared.definitions.ai import AITask
+from shared.definitions.ai import TASK_FEATURE, AITask
 from shared.definitions.interest import (
     MAX_EVIDENCE,
     InterestKind,
@@ -26,13 +24,10 @@ from shared.definitions.interest import (
     coerce_kind,
     kind_weight,
 )
-from shared.logging import get_logger
 from shared.services.ai.cache import narrate
 from shared.utils.text import strip_control
 
-logger = get_logger(__name__)
-
-FEATURE = "asset_judgement"
+FEATURE = TASK_FEATURE[AITask.ASSET_JUDGEMENT.value]
 SECONDARY_SCALE = 0.4
 MAX_KINDS = 3
 
@@ -62,10 +57,6 @@ class AIProvider(InterestProvider):
     name = "ai"
     source = InterestSource.AI.value
     title = "AI"
-    description = (
-        "Reads the hostname, status, page title and technology of each responding "
-        "web asset and flags the ones to review. A judgement, not an observation."
-    )
     requires_ai = True
     order = 30
 
@@ -104,9 +95,7 @@ class AIProvider(InterestProvider):
             host = str(item.get("host") or "").strip().lower()
             if host not in allowed:
                 continue
-            row = by_host.get(host)
-            if row is None:
-                continue
+            row = by_host[host]
             reason = strip_control(str(item.get("reason") or ""))[:MAX_REASON_CHARS]
             if not reason:
                 continue
@@ -123,7 +112,7 @@ class AIProvider(InterestProvider):
                     key=f"ai:{kind}",
                     kind=kind,
                     weight=max(1, round(weight)),
-                    label="AI",
+                    label=self.title,
                     reason=reason if index == 0 else "",
                     evidence=(row.page_title or "")[:MAX_EVIDENCE] or None,
                     model=model,

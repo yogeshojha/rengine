@@ -1,3 +1,4 @@
+import re
 from uuid import UUID
 
 import yaml
@@ -6,8 +7,10 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services.scan_context import usage_counts
 from app.services.scan_engine.validation import (
     _MAX_YAML_LEN,
+    _check_tool_options_access,
     _full_stages,
     _mask_global_headers,
     _mask_tool_options,
@@ -25,7 +28,7 @@ from shared.definitions.default_engine import (
     DEFAULT_ENGINE_NAME,
     default_engine_stages,
 )
-from shared.enums.scan import SCAN_OPEN_STATUSES
+from shared.enums.scan import SCAN_OPEN_STATUSES, Intensity
 from shared.models.scan import Scan
 from shared.models.scan_engine import (
     EngineUsage,
@@ -34,12 +37,8 @@ from shared.models.scan_engine import (
     ScanEngineRead,
     ScanEngineUpdate,
 )
-from shared.models.scan_schedule import ScanSchedule
 from shared.utils.datetime import utc_now
 from shared.utils.yaml_safe import DocumentTooLargeError, load_document
-
-# documents exported before these settings were removed still import
-_RETIRED_KEYS = frozenset({"global_threads", "global_http_crawl"})
 
 _ENGINE_KEYS = frozenset(
     {
@@ -48,9 +47,21 @@ _ENGINE_KEYS = frozenset(
         "intensity",
         "global_headers",
         "stages",
+        "transport_overrides",
         "tool_options",
     }
 )
+
+_NAME_LINE = re.compile(r"^name:[^\n]*(?:\n[ \t]+[^\n]*)*", re.MULTILINE)
+
+
+def _renamed_source(source: str | None, name: str) -> str | None:
+    """Rewrite the top-level name of a stored engine document."""
+    if not source:
+        return source
+    line = yaml.safe_dump({"name": name}, allow_unicode=True, width=1 << 16).rstrip()
+    renamed, count = _NAME_LINE.subn(lambda _: line, source, count=1)
+    return renamed if count else None
 
 
 def _to_read(engine: ScanEngine, usage: EngineUsage | None = None) -> ScanEngineRead:
@@ -86,19 +97,7 @@ async def _running_scans_for(session: AsyncSession, engine_id: UUID) -> int:
 async def _usage_for(
     session: AsyncSession, engine_ids: list[UUID]
 ) -> dict[UUID, EngineUsage]:
-    """Schedules and scans per engine."""
-    out = {eid: EngineUsage() for eid in engine_ids}
-    if not engine_ids:
-        return out
-    for model, field in ((ScanSchedule, "schedules"), (Scan, "scans")):
-        rows = await session.execute(
-            select(model.engine_id, func.count())
-            .where(model.engine_id.in_(engine_ids))
-            .group_by(model.engine_id)
-        )
-        for engine_id, count in rows.all():
-            setattr(out[engine_id], field, count)
-    return out
+    return await usage_counts(session, "engine_id", engine_ids, EngineUsage)
 
 
 class ScanEngineService:
@@ -110,9 +109,13 @@ class ScanEngineService:
         project_id: UUID,
         created_by: UUID,
         data: ScanEngineCreate,
+        *,
+        superuser: bool = False,
     ) -> ScanEngineRead:
         _validate_global_headers(data.global_headers)
         _validate_intensity(data.intensity)
+        tool_options = _validate_tool_options(data.tool_options)
+        _check_tool_options_access(superuser, None, tool_options)
 
         engine = ScanEngine(
             project_id=project_id,
@@ -124,7 +127,7 @@ class ScanEngineService:
             stages=_validate_stages(data.stages),
             transport_overrides=dict(data.transport_overrides or {}),
             yaml_source=_validate_yaml_source(data.yaml_source),
-            tool_options=_validate_tool_options(data.tool_options),
+            tool_options=tool_options,
         )
         self.session.add(engine)
         await self.session.commit()
@@ -189,8 +192,16 @@ class ScanEngineService:
         id: UUID,
         project_id: UUID,
         data: ScanEngineUpdate,
+        *,
+        superuser: bool = False,
     ) -> ScanEngineRead:
         engine = await self._get_or_404(id, project_id)
+        tool_options = None
+        if data.tool_options is not None:
+            tool_options = _validate_tool_options(
+                _unmask_tool_options(data.tool_options, engine.tool_options)
+            )
+            _check_tool_options_access(superuser, engine.tool_options, tool_options)
 
         if data.name is not None:
             engine.name = data.name
@@ -211,10 +222,8 @@ class ScanEngineService:
             engine.transport_overrides = dict(data.transport_overrides)
         if data.yaml_source is not None:
             engine.yaml_source = _validate_yaml_source(data.yaml_source)
-        if data.tool_options is not None:
-            engine.tool_options = _validate_tool_options(
-                _unmask_tool_options(data.tool_options, engine.tool_options)
-            )
+        if tool_options is not None:
+            engine.tool_options = tool_options
 
         engine.updated_at = utc_now()
         await self.session.commit()
@@ -266,7 +275,7 @@ class ScanEngineService:
             global_headers=list(original.global_headers or []),
             stages=dict(original.stages or {}),
             transport_overrides=dict(original.transport_overrides or {}),
-            yaml_source=original.yaml_source,
+            yaml_source=_renamed_source(original.yaml_source, copy_name),
             tool_options=dict(original.tool_options or {}),
         )
         self.session.add(engine)
@@ -282,17 +291,23 @@ class ScanEngineService:
             "intensity": engine.intensity,
             "global_headers": _mask_global_headers(engine.global_headers or []),
             "stages": _full_stages(engine.stages),
+            "transport_overrides": dict(engine.transport_overrides or {}),
             "tool_options": _mask_tool_options(engine.tool_options),
         }
         return yaml.safe_dump(data, sort_keys=False, allow_unicode=True)
 
     async def import_yaml(
-        self, project_id: UUID, created_by: UUID, yaml_str: str
+        self,
+        project_id: UUID,
+        created_by: UUID,
+        yaml_str: str,
+        *,
+        superuser: bool = False,
     ) -> ScanEngineRead:
         if yaml_str and len(yaml_str) > _MAX_YAML_LEN:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"YAML payload may not exceed {_MAX_YAML_LEN} bytes.",
+                detail=f"Engine YAML may not exceed {_MAX_YAML_LEN} characters.",
             )
         try:
             data = load_document(yaml_str)
@@ -318,7 +333,7 @@ class ScanEngineService:
                 detail="YAML must include a 'name' field",
             )
 
-        unknown = [k for k in data if k not in _ENGINE_KEYS | _RETIRED_KEYS]
+        unknown = [k for k in data if k not in _ENGINE_KEYS]
         if unknown:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -332,21 +347,21 @@ class ScanEngineService:
             create_data = ScanEngineCreate(
                 name=str(data["name"]),
                 description=data.get("description"),
-                intensity=data.get("intensity", "normal"),
+                intensity=data.get("intensity", Intensity.NORMAL.value),
                 global_headers=list(data.get("global_headers") or []),
                 stages=dict(data.get("stages") or {}),
-                yaml_source=yaml_str,
+                transport_overrides=dict(data.get("transport_overrides") or {}),
                 tool_options=dict(data.get("tool_options") or {}),
             )
-        except HTTPException:
-            raise
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid engine config: {e}",
             ) from e
 
-        return await self.create(project_id, created_by, create_data)
+        return await self.create(
+            project_id, created_by, create_data, superuser=superuser
+        )
 
     async def touch(self, id: UUID, project_id: UUID) -> None:
         engine = await self._get_or_404(id, project_id)

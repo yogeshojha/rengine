@@ -3,9 +3,8 @@
 from datetime import date
 from typing import Any
 
+from shared.utils.coerce import safe_int
 from tools.viewdns.models import (
-    IPHistoryRecord,
-    IPHistoryResponse,
     ReverseIPDomain,
     ReverseIPResponse,
     ReverseNSDomain,
@@ -20,31 +19,8 @@ def _safe_date(value: Any) -> date | None:
         return None
     try:
         return date.fromisoformat(value)
-    except (ValueError, TypeError):
+    except ValueError:
         return None
-
-
-def _safe_int(value: Any) -> int:
-    if value is None:
-        return 0
-    try:
-        return int(value)
-    except (ValueError, TypeError):
-        return 0
-
-
-def parse_ip_history(raw: dict[str, Any], domain: str) -> IPHistoryResponse:
-    records = []
-    for r in raw.get("records") or []:
-        records.append(
-            IPHistoryRecord(
-                ip=r.get("ip", ""),
-                location=r.get("location", ""),
-                owner=r.get("owner", ""),
-                last_seen=_safe_date(r.get("lastseen")),
-            )
-        )
-    return IPHistoryResponse(domain=domain, records=records)
 
 
 def parse_reverse_ip(raw: dict[str, Any], host: str) -> ReverseIPResponse:
@@ -58,7 +34,7 @@ def parse_reverse_ip(raw: dict[str, Any], host: str) -> ReverseIPResponse:
         )
     return ReverseIPResponse(
         host=host,
-        domain_count=_safe_int(raw.get("domain_count")),
+        domain_count=safe_int(raw.get("domain_count"), 0),
         domains=domains,
     )
 
@@ -69,7 +45,7 @@ def parse_reverse_ns(raw: dict[str, Any], nameserver: str) -> ReverseNSResponse:
         domains.append(ReverseNSDomain(domain=d.get("domain", "")))
     return ReverseNSResponse(
         nameserver=nameserver,
-        domain_count=_safe_int(raw.get("domain_count")),
+        domain_count=safe_int(raw.get("domain_count"), 0),
         domains=domains,
     )
 
@@ -86,6 +62,6 @@ def parse_reverse_whois(raw: dict[str, Any], query: str) -> ReverseWhoisResponse
         )
     return ReverseWhoisResponse(
         query=query,
-        result_count=_safe_int(raw.get("result_count")),
+        result_count=safe_int(raw.get("result_count"), 0),
         matches=matches,
     )

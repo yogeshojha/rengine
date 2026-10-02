@@ -1,4 +1,4 @@
-"""a certificate is re-checked between scans, and the row says when
+"""subdomains.tls_checked_at and the certificate recheck switch
 
 Revision ID: c19a5f3b7d84
 Revises: b4c81e77a250

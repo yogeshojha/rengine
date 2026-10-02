@@ -8,6 +8,8 @@ from shared.definitions.tools import TOOL_NAMES
 from shared.definitions.vulnerabilities import Scanner, Severity
 from stages.dast_scan.scanners.dalfox import _mark_url, _marker
 from tools.dalfox import DalfoxClient, DalfoxOptions, parse_finding
+from tools.dalfox.client import DALFOX_ALIASES
+from tools.runner.executor import merge_extra_args
 
 pytestmark = pytest.mark.pipeline
 
@@ -96,7 +98,5 @@ def test_dalfox_takes_tool_args():
     assert "dalfox" in TOOL_NAMES
 
 
-def test_the_client_passes_the_blind_callback_when_set():
-    args = _args(blind_url="https://oob.example")
-    assert args[args.index("--blind") + 1] == "https://oob.example"
-    assert "--blind" not in _args()
+def test_a_short_flag_cannot_restate_a_stage_flag():
+    assert merge_extra_args(_args(rate=5), ["-r", "9999"], aliases=DALFOX_ALIASES) == []

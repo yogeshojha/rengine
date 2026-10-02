@@ -15,7 +15,6 @@
 		hrefLabel?: string;
 		loading?: boolean;
 		skeleton?: SkeletonShape;
-		skeletonRows?: number;
 		class?: string;
 		bodyClass?: string;
 		onHide?: () => void;
@@ -32,7 +31,6 @@
 		hrefLabel = 'Open',
 		loading = false,
 		skeleton = 'text',
-		skeletonRows = 5,
 		class: className = '',
 		bodyClass = '',
 		onHide,
@@ -83,7 +81,7 @@
 	</div>
 	{#if loading}
 		<div class="flex min-h-0 flex-1 flex-col px-4 pt-3 pb-4 {bodyClass}">
-			<CellSkeleton shape={skeleton} rows={skeletonRows} />
+			<CellSkeleton shape={skeleton} />
 		</div>
 	{:else}
 		<div class="flex min-h-0 flex-1 flex-col gap-3 px-4 pt-3 pb-4 {bodyClass}">

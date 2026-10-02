@@ -12,7 +12,6 @@ from shared.definitions.scan_surface import (
     MAX_TECH_GROUPS,
     ONE_REQUEST_PATHS,
     SWEEP_REQUEST_CAP,
-    Tier,
     is_universal,
     product_tags,
 )
@@ -34,7 +33,6 @@ NAME_PROTOCOLS: frozenset[str] = frozenset({Protocol.DNS.value})
 # nuclei -type values per protocol group
 SERVICE_TYPES: tuple[str, ...] = ("tcp", "ssl", "javascript")
 NAME_TYPES: tuple[str, ...] = ("dns",)
-HTTP_TYPES: tuple[str, ...] = ("http", "headless")
 
 
 @dataclass
@@ -53,15 +51,6 @@ class TierPlan:
         if not wanted:
             return []
         return [row for row in self.product if product_tags(row.tags) & wanted]
-
-    @property
-    def http_count(self) -> int:
-        return (
-            len(self.one_request)
-            + len(self.universal)
-            + len(self.product)
-            + len(self.oast)
-        )
 
 
 def top_paths(rows: Iterable, limit: int = ONE_REQUEST_PATHS) -> list[str]:
@@ -183,23 +172,12 @@ def cost(rows: Iterable) -> int:
     return sum(requests_of(row) for row in rows)
 
 
-TIER_OF_GROUP: dict[str, str] = {
-    "one_request": Tier.ONE_REQUEST.value,
-    "oast": Tier.OAST.value,
-    "universal": Tier.UNIVERSAL.value,
-    "product": Tier.BLIND.value,
-    "services": Tier.SERVICES.value,
-    "names": Tier.NAMES.value,
-}
-
 __all__ = [
     "HTTP_PROTOCOLS",
-    "HTTP_TYPES",
     "NAME_PROTOCOLS",
     "NAME_TYPES",
     "SERVICE_PROTOCOLS",
     "SERVICE_TYPES",
-    "TIER_OF_GROUP",
     "TechGroup",
     "TierPlan",
     "blind_core",

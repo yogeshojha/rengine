@@ -1,12 +1,3 @@
-export interface AskUsage {
-	questions: number;
-	threads: number;
-	input_tokens: number;
-	output_tokens: number;
-	cost_usd: number | null;
-	since: string | null;
-}
-
 export interface AiFeatureUsage {
 	feature: string;
 	label: string;
@@ -22,32 +13,23 @@ export interface AiFeatureUsage {
 export interface AiCall {
 	id: string;
 	at: string;
-	task: string;
 	feature: string;
 	provider: string;
 	model: string;
 	ok: boolean;
 	cached: boolean;
-	rounds: number;
 	input_tokens: number;
 	output_tokens: number;
 	cost_usd: number | null;
 	latency_ms: number;
 	error: string | null;
-	source_kind: string | null;
-	source_id: string | null;
 }
 
 export interface AiUsage {
 	calls: number;
-	cached: number;
-	input_tokens: number;
-	output_tokens: number;
 	cost_usd: number | null;
-	reports: number;
 	failed: number;
 	since: string | null;
-	ask: AskUsage;
 	by_feature: AiFeatureUsage[];
 }
 

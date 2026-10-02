@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-from shared.logging import get_logger
 from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError
 from tools.runner.models import CommandRecorder
-
-logger = get_logger(__name__)
 
 URLFINDER_BINARY = "urlfinder"
 DEFAULT_TIMEOUT = 900

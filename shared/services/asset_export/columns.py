@@ -96,10 +96,6 @@ def headers(dimension: str, *, evidence: bool = False) -> list[str]:
     return names
 
 
-def offers_evidence(dimension: str) -> bool:
-    return bool(EVIDENCE.get(dimension))
-
-
 def source_key(dimension: str, header: str) -> str:
     return RENAMED.get(dimension, {}).get(header, header)
 
@@ -111,7 +107,7 @@ def selectables(
     *,
     evidence: bool = False,
 ) -> list[Any]:
-    """Exactly the columns the file needs, so no row carries a body it will not write."""
+    """The columns the file writes."""
     joined = JOINED.get(dimension, frozenset())
     computed = _expressions(dimension, scope, source)
     model = _MODELS.get(dimension)
@@ -129,7 +125,7 @@ def selectables(
 
 
 def columns_for(dimension: str, scope: QueryScope, *, evidence: bool = False):
-    """The CTE dimensions only know their columns once built, so they come as a callable."""
+    """Selectables for a model dimension, a callable over the built CTE for the rest."""
     if dimension in _MODELS:
         return selectables(dimension, scope, evidence=evidence)
     return lambda d: selectables(dimension, scope, d, evidence=evidence)

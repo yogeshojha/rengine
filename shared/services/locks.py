@@ -7,7 +7,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import TYPE_CHECKING
 
-from sqlalchemy import text
+from sqlalchemy import Engine, text
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -31,6 +31,9 @@ ISSUE_FILING = 0x49460001
 ISSUE_OBSERVE = 0x494F0001
 # issue_tracker() spans ISSUE_TRACKER .. ISSUE_TRACKER + 0xFFFF
 ISSUE_TRACKER = 0x49540001
+# tripwire_check() spans TRIPWIRE_CHECK .. TRIPWIRE_CHECK + 0xFFFF
+TRIPWIRE_CHECK = 0x54570001
+PROXY_DEFAULT = 0x70726F78
 
 
 def bounty_platform(platform: str) -> int:
@@ -68,18 +71,42 @@ def issue_observe(target_id: object) -> int:
     return ISSUE_OBSERVE + (zlib.crc32(str(target_id).encode()) & 0xFFFF)
 
 
+def tripwire_check(tripwire_id: object, scan_id: object) -> int:
+    """One lock per tripwire and scan."""
+    return TRIPWIRE_CHECK + (zlib.crc32(f"{tripwire_id}:{scan_id}".encode()) & 0xFFFF)
+
+
 @contextmanager
 def sync_lock(session: Session, key: int) -> Iterator[bool]:
     """Session-level advisory lock. Yields False when another session holds it."""
-    held = bool(
-        session.execute(
-            text("SELECT pg_try_advisory_lock(:key)"), {"key": key}
-        ).scalar_one()
-    )
+    bind = session.get_bind()
+    if not isinstance(bind, Engine):
+        held = bool(
+            session.execute(
+                text("SELECT pg_try_advisory_lock(:key)"), {"key": key}
+            ).scalar_one()
+        )
+        try:
+            yield held
+        finally:
+            if held:
+                session.rollback()
+                session.execute(text("SELECT pg_advisory_unlock(:key)"), {"key": key})
+                session.commit()
+        return
+    conn = bind.connect()
     try:
-        yield held
+        held = bool(
+            conn.execute(
+                text("SELECT pg_try_advisory_lock(:key)"), {"key": key}
+            ).scalar_one()
+        )
+        conn.commit()
+        try:
+            yield held
+        finally:
+            if held:
+                conn.execute(text("SELECT pg_advisory_unlock(:key)"), {"key": key})
+                conn.commit()
     finally:
-        if held:
-            session.rollback()
-            session.execute(text("SELECT pg_advisory_unlock(:key)"), {"key": key})
-            session.commit()
+        conn.close()

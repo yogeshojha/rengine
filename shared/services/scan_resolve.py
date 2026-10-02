@@ -9,12 +9,20 @@ from pydantic import BaseModel, Field, PrivateAttr, ValidationError
 
 from shared.definitions.constants import MAX_RATE
 from shared.definitions.intensity import tool_rate
-from shared.definitions.tools import parse_tool_args
+from shared.definitions.tools import denied_flag, parse_tool_args
+from shared.enums.scan_context import AuthType, HttpProtocol
 
 if TYPE_CHECKING:
     from fastapi import HTTPException
 
 MASK = "••••••••"
+MASK_TAIL = 4
+
+
+def mask_tail(value: str) -> str:
+    """MASK and the last four characters when the value has more than eight."""
+    return f"{MASK}{value[-MASK_TAIL:]}" if len(value) > MASK_TAIL * 2 else MASK
+
 
 SECRET_FIELDS = {
     "bearer_token",
@@ -24,13 +32,15 @@ SECRET_FIELDS = {
     "api_key_value",
 }
 
-_SENSITIVE_HEADER = re.compile(
-    r"^(authorization|cookie|x-api-key)$|token|secret", re.IGNORECASE
+_CREDENTIAL_NAME = (
+    r"(?:authorization|proxy-authorization|cookie|set-cookie|x-auth-token"
+    r"|x-csrf-token|(?!access-control-)"
+    r"(?=[^\s:\"']*(?:token|secret|key|session|passw|credential))[^\s:\"']*+)"
 )
+CREDENTIAL_HEADER = re.compile(rf"^{_CREDENTIAL_NAME}$", re.IGNORECASE)
 
-PROXY_CREDS_RE = re.compile(r"(\w+://)[^/\s]*@")
+PROXY_CREDS_RE = re.compile(r"(\w+://)([^/\s]*)@")
 
-# httpx, katana and nuclei take -header; ffuf takes -H
 _HEADER_FLAG = r"-{1,2}(?:headers|header|H)"
 _HEADER_VALUE = re.compile(
     rf'({_HEADER_FLAG}\s+["\']?[\w-]+\s*:\s*)([^"\'\n]+?)'
@@ -72,7 +82,7 @@ def _mask_headers(headers: list) -> list:
     for h in headers or []:
         name = h.get("name", "")
         value = h.get("value", "")
-        if value and _SENSITIVE_HEADER.search(name):
+        if value and CREDENTIAL_HEADER.match(name.strip()):
             value = MASK
         out.append({"name": name, "value": value})
     return out
@@ -80,18 +90,6 @@ def _mask_headers(headers: list) -> list:
 
 def mask_proxy_url(value: str | None) -> str | None:
     return PROXY_CREDS_RE.sub(rf"\1{MASK}@", value) if value else value
-
-
-def secret_runs(text: str | None) -> list[str]:
-    """The values redact_command would mask, in the order they appear."""
-    if not text:
-        return []
-    found: list[tuple[int, str]] = []
-    for pattern, group in ((_CRED_FLAG, 2), (_HEADER_VALUE, 2), (PROXY_CREDS_RE, 0)):
-        for match in pattern.finditer(text):
-            if group and match.group(group):
-                found.append((match.start(group), match.group(group)))
-    return [value for _, value in sorted(found)]
 
 
 def redact_command(command: str) -> str:
@@ -125,6 +123,47 @@ def unseal_headers(headers: dict[str, str] | None) -> dict[str, str]:
     return out
 
 
+_SEALED = re.compile(r"gAAAAA[\w-]+=*")
+
+
+def is_sealed(value) -> bool:
+    return isinstance(value, str) and _SEALED.fullmatch(value) is not None
+
+
+def seal_run_config(config: dict) -> dict:
+    """Encrypt the header values, proxy and tool arguments a run is stored with."""
+    from shared.utils.crypto import encrypt_secret  # noqa: PLC0415
+
+    config["headers"] = seal_headers(config.get("headers"))
+    if config.get("proxy_url"):
+        config["proxy_url"] = encrypt_secret(config["proxy_url"])
+    config["tool_options"] = {
+        tool: encrypt_secret(value) if value else ""
+        for tool, value in (config.get("tool_options") or {}).items()
+    }
+    return config
+
+
+def unseal_run_config(config: dict) -> dict:
+    """Decrypt what seal_run_config encrypted."""
+    from shared.utils.crypto import decrypt_stored  # noqa: PLC0415
+
+    config["headers"] = unseal_headers(config.get("headers"))
+    if is_sealed(config.get("proxy_url")):
+        config["proxy_url"] = decrypt_stored(
+            config["proxy_url"], label="The proxy on this run"
+        )
+    config["tool_options"] = {
+        tool: (
+            decrypt_stored(value, label=f"The {tool} command line on this run")
+            if is_sealed(value)
+            else value
+        )
+        for tool, value in (config.get("tool_options") or {}).items()
+    }
+    return config
+
+
 MIN_SECRET_LENGTH = 8
 
 
@@ -145,18 +184,18 @@ def redact_recorded(text: str | None, secrets: Iterable[str] = ()) -> str:
 
 def _auth_summary(auth: dict, extra_headers: list) -> str:  # noqa: PLR0911
     auth = auth or {}
-    auth_type = auth.get("auth_type", "none")
-    if auth_type == "bearer":
+    auth_type = auth.get("auth_type", AuthType.NONE.value)
+    if auth_type == AuthType.BEARER.value:
         return "Bearer ••••"
-    if auth_type == "basic":
+    if auth_type == AuthType.BASIC.value:
         user = auth.get("basic_username") or ""
-        return f"Basic ({user})" if user else "Basic"
-    if auth_type == "cookie":
+        return f"Basic · {user}" if user else "Basic"
+    if auth_type == AuthType.COOKIE.value:
         return "Cookie ••••"
-    if auth_type == "header":
+    if auth_type == AuthType.HEADER.value:
         return auth.get("header_name") or "Header"
-    if auth_type == "api_key":
-        return auth.get("api_key_name") or "API Key"
+    if auth_type == AuthType.API_KEY.value:
+        return auth.get("api_key_name") or "API key"
     n = len(extra_headers or [])
     if n:
         return f"{n} header{'s' if n != 1 else ''}"
@@ -169,29 +208,29 @@ def resolve_headers(ctx_or_auth, extra_headers: list | None = None) -> dict[str,
             return ctx_or_auth.get(key)
         return getattr(ctx_or_auth, key, None)
 
-    auth_type = _get("auth_type") or "none"
+    auth_type = _get("auth_type") or AuthType.NONE.value
     headers: dict[str, str] = {}
 
-    if auth_type == "bearer":
+    if auth_type == AuthType.BEARER.value:
         token = _get("bearer_token")
         if token:
             headers["Authorization"] = f"Bearer {token}"
-    elif auth_type == "basic":
+    elif auth_type == AuthType.BASIC.value:
         user = _get("basic_username") or ""
         password = _get("basic_password") or ""
         if user or password:
             raw = f"{user}:{password}".encode()
             headers["Authorization"] = "Basic " + base64.b64encode(raw).decode()
-    elif auth_type == "header":
+    elif auth_type == AuthType.HEADER.value:
         name = _get("header_name")
         value = _get("header_value")
         if name:
             headers[name] = value or ""
-    elif auth_type == "cookie":
+    elif auth_type == AuthType.COOKIE.value:
         cookie = _get("cookie_value")
         if cookie:
             headers["Cookie"] = cookie
-    elif auth_type == "api_key":
+    elif auth_type == AuthType.API_KEY.value:
         name = _get("api_key_name")
         value = _get("api_key_value")
         if name:
@@ -221,7 +260,7 @@ def _clamp(value, lo, hi):
 
 
 class _NeutralContext:
-    auth: ClassVar[dict] = {"auth_type": "none"}
+    auth: ClassVar[dict] = {"auth_type": AuthType.NONE.value}
     extra_headers: ClassVar[list] = []
     global_rate_limit_override = None
     per_tool_rate_overrides: ClassVar[dict] = {}
@@ -232,7 +271,7 @@ class _NeutralContext:
     excluded_ips: ClassVar[list] = []
     included_subdomains: ClassVar[list] = []
     follow_redirects_override = None
-    http_protocol = "both"
+    http_protocol = HttpProtocol.BOTH.value
 
 
 class ResolvedScanConfig(BaseModel):
@@ -250,7 +289,7 @@ class ResolvedScanConfig(BaseModel):
     excluded_ips: list[str] = Field(default_factory=list)
     included_subdomains: list[str] = Field(default_factory=list)
     follow_redirects: bool | None = None
-    http_protocol: str = "both"
+    http_protocol: str = HttpProtocol.BOTH.value
     intensity: str = "normal"
     proxy_url: str | None = None
     tool_options: dict[str, str] = Field(default_factory=dict)
@@ -261,7 +300,8 @@ class ResolvedScanConfig(BaseModel):
     _auth_header_names: list[str] = PrivateAttr(default_factory=list)
 
     def tool_args(self, tool: str) -> list[str]:
-        return parse_tool_args((self.tool_options or {}).get(tool, ""))
+        args = parse_tool_args((self.tool_options or {}).get(tool, ""))
+        return [] if denied_flag(tool, args) else args
 
     def stage(self, name: str) -> dict:
         return self.stages.get(name) or {}
@@ -304,7 +344,7 @@ def _build_headers(engine, ctx) -> tuple[dict[str, str], list[str]]:
         if name:
             headers[name] = value
 
-    auth = _ctx_get(ctx, "auth") or {"auth_type": "none"}
+    auth = _ctx_get(ctx, "auth") or {"auth_type": AuthType.NONE.value}
     extra_headers = _ctx_get(ctx, "extra_headers") or []
     ctx_headers = resolve_headers(auth, extra_headers)
 
@@ -382,7 +422,7 @@ def merge_engine_context(
 
     run_intensity = intensity or engine.intensity
     if run_intensity not in INTENSITIES:
-        msg = f"intensity must be one of {sorted(INTENSITIES)}."
+        msg = f"Intensity must be one of {', '.join(INTENSITIES)}."
         raise _bad(msg)
     passive = run_intensity == Intensity.PASSIVE.value
 
@@ -459,7 +499,10 @@ def merge_engine_context(
     included_subdomains = list(_ctx_get(ctx, "included_subdomains") or [])
 
     follow_redirects = _ctx_get(ctx, "follow_redirects_override")
-    http_protocol = _ctx_get(ctx, "http_protocol", "both") or "both"
+    http_protocol = (
+        _ctx_get(ctx, "http_protocol", HttpProtocol.BOTH.value)
+        or HttpProtocol.BOTH.value
+    )
 
     config = ResolvedScanConfig(
         target_value=target_value,
@@ -486,16 +529,12 @@ def merge_engine_context(
     return config
 
 
-_CREDENTIAL_HEADER = (
-    r"(?:authorization|proxy-authorization|cookie|set-cookie|x-auth-token"
-    r"|x-csrf-token|[\w-]*(?:token|secret|api-?key|session)[\w-]*)"
-)
 _MESSAGE_HEADER = re.compile(
-    rf"^({_CREDENTIAL_HEADER}\s*:\s*)(.+?)\s*$",
+    rf"^({_CREDENTIAL_NAME}\s*:\s*)(.+?)\s*$",
     re.IGNORECASE | re.MULTILINE,
 )
 _CREDENTIAL_HEADER_VALUE = re.compile(
-    rf'({_HEADER_FLAG}\s+["\']?{_CREDENTIAL_HEADER}\s*:\s*)([^"\'\n]+?)'
+    rf'({_HEADER_FLAG}\s+["\']?{_CREDENTIAL_NAME}\s*:\s*)([^"\'\n]+?)'
     r'(?=["\']|\s+-{1,2}[A-Za-z]|\s*$)',
     re.IGNORECASE,
 )

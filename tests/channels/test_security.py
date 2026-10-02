@@ -1,5 +1,3 @@
-"""The bot token never leaves the box, and a chat cannot outrun its account."""
-
 from __future__ import annotations
 
 import uuid

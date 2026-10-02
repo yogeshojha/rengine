@@ -27,6 +27,7 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/toolbox", tags=["toolbox"])
 
 INLINE_TIMEOUT = 45
+REJECTED_VALUE_CHARS = 200
 UNEXPECTED_FAILURE = (
     "The lookup failed with an unexpected error. It is recorded in the api log."
 )
@@ -77,11 +78,7 @@ async def run_tool(
             detail=f"No tool called {body.tool!r}.",
         )
     await _check_rate(current_user)
-    ctx = ToolContext(
-        session=session,
-        user_id=current_user.id,
-        project_id=_project_id(body.project_id),
-    )
+    ctx = ToolContext(session=session, project_id=_project_id(body.project_id))
     return await _start(spec, body.input, ctx, current_user)
 
 
@@ -91,11 +88,12 @@ async def _start(
     try:
         args = validate(spec, payload)
     except ToolError as exc:
+        kept = _kept_input(spec, payload)
         rejected = store.new_run(
             tool=spec.name,
             title=spec.title,
-            label=_first_value(payload) or spec.title,
-            payload=payload,
+            label=_first_value(kept) or spec.title,
+            payload=kept,
             status=RunStatus.FAILED.value,
         )
         fail(rejected, str(exc))
@@ -152,6 +150,15 @@ async def _check_rate(current_user: User) -> None:
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Too many toolbox runs. Try again in a minute.",
         )
+
+
+def _kept_input(spec: ToolSpec, payload: dict) -> dict:
+    fields = spec.tool_cls.Input.model_fields
+    return {
+        key: value[:REJECTED_VALUE_CHARS] if isinstance(value, str) else value
+        for key, value in payload.items()
+        if key in fields and (value is None or isinstance(value, str | int | float))
+    }
 
 
 def _first_value(payload: dict) -> str:

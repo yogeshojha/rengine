@@ -21,8 +21,4 @@ final class Notices {
     synchronized List<Actions.Notice> recent() {
         return new ArrayList<>(recent);
     }
-
-    synchronized int size() {
-        return recent.size();
-    }
 }

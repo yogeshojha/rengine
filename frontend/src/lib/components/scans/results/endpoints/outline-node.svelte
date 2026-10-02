@@ -6,7 +6,7 @@
 	import MergedLeafRow from './merged-leaf-row.svelte';
 	import Self from './outline-node.svelte';
 	import {
-		GUIDE_WIDTH,
+		GUIDE,
 		LEAF_PAGE,
 		AUTO_OPEN_ROWS,
 		nodeCost,
@@ -67,7 +67,7 @@
 
 	let leafFilter = $derived({
 		...ctx.filter,
-		host: ctx.merged ? null : node.host,
+		host: ctx.merged ? (ctx.filter.host ?? null) : node.host,
 		dir_path: node.path,
 		subtree: false
 	});
@@ -255,8 +255,7 @@
 			{#each Array(Math.min(node.direct_count, 3)) as _, i (i)}
 				<div class="flex items-center gap-3 border-b px-4 py-3">
 					{#each Array(childDepth) as _g, j (j)}
-						<span class="{GUIDE_WIDTH} -ml-1.5 h-5 shrink-0 border-l border-border/70 ml-[7px]"
-						></span>
+						<span class={GUIDE}></span>
 					{/each}
 					<Skeleton class="h-5 flex-1" />
 					<Skeleton class="hidden h-5 w-16 sm:block" />
@@ -281,8 +280,7 @@
 		{:else if remaining > 0}
 			<div class="flex items-center gap-x-1.5 border-b px-4 py-2 text-xs">
 				{#each Array(childDepth) as _g, j (j)}
-					<span class="{GUIDE_WIDTH} -ml-1.5 h-5 shrink-0 border-l border-border/70 ml-[7px]"
-					></span>
+					<span class={GUIDE}></span>
 				{/each}
 				<span class="size-4 shrink-0"></span>
 				<button

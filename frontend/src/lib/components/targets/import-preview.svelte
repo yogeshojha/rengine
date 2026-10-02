@@ -5,24 +5,15 @@
 	import CircleAlert from '@lucide/svelte/icons/circle-alert';
 	import Tag from '@lucide/svelte/icons/tag';
 	import Landmark from '@lucide/svelte/icons/landmark';
-	import { TargetType, formatTargetType } from '$lib/types/target';
+	import { formatTargetType, type TargetPreviewItem } from '$lib/types/target';
 	import { TARGET_TYPE_ICONS_COMPACT } from '$lib/config/icons';
-
-	interface PreviewItem {
-		target_value: string;
-		target_type?: TargetType | null;
-		tags?: string[];
-		organizations?: string[];
-		display_name?: string | null;
-		error?: string;
-	}
+	import { plural } from '$lib/utilities/strings';
 
 	interface Props {
-		items: PreviewItem[];
-		maxHeight?: string;
+		items: TargetPreviewItem[];
 	}
 
-	let { items, maxHeight = '400px' }: Props = $props();
+	let { items }: Props = $props();
 
 	let filterTab = $state<'all' | 'valid' | 'invalid'>('all');
 
@@ -41,30 +32,41 @@
 
 <div class="space-y-3">
 	<div class="flex items-center justify-between px-1">
-		<span class="text-sm font-medium">{items.length} targets</span>
+		<span class="text-sm font-medium">{plural(items.length, 'target')}</span>
 
 		<Tabs.Root bind:value={filterTab} class="w-auto">
 			<Tabs.List class="h-8">
 				<Tabs.Trigger value="all" class="text-xs h-7 px-3">
-					All ({items.length})
+					<div class="flex items-center gap-1.5">
+						All
+						<span class="font-mono text-2xs text-muted-foreground tabular-nums">
+							{items.length}
+						</span>
+					</div>
 				</Tabs.Trigger>
 				<Tabs.Trigger value="valid" class="text-xs h-7 px-3">
 					<div class="flex items-center gap-1.5">
 						<div class="h-1.5 w-1.5 rounded-full bg-muted-foreground"></div>
-						Valid ({validCount})
+						Valid
+						<span class="font-mono text-2xs text-muted-foreground tabular-nums">
+							{validCount}
+						</span>
 					</div>
 				</Tabs.Trigger>
 				<Tabs.Trigger value="invalid" class="text-xs h-7 px-3">
 					<div class="flex items-center gap-1.5">
 						<div class="h-1.5 w-1.5 rounded-full bg-destructive"></div>
-						Invalid ({invalidCount})
+						Invalid
+						<span class="font-mono text-2xs text-muted-foreground tabular-nums">
+							{invalidCount}
+						</span>
 					</div>
 				</Tabs.Trigger>
 			</Tabs.List>
 		</Tabs.Root>
 	</div>
 
-	<ScrollArea class="rounded-md border" style="height:{maxHeight}">
+	<ScrollArea class="h-[400px] rounded-md border">
 		<div class="divide-y">
 			{#each filteredItems as item, i (i)}
 				<div

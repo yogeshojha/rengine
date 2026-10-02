@@ -5,8 +5,6 @@ export const MULTIPLIERS = [0.5, 1.0, 2.0] as const;
 export type AuthType = (typeof AUTH_TYPES)[number];
 export type HttpProtocol = (typeof HTTP_PROTOCOLS)[number];
 
-export { MASK } from '$lib/constants';
-
 export const NO_CONTEXT_LABEL = 'No scan context';
 
 export interface AuthHeader {
@@ -70,8 +68,10 @@ export type ScanContextCreate = Omit<
 	| 'last_used_at'
 	| 'last_used_scan_id'
 	| 'usage'
+	| 'proxy_id'
 > & {
 	auth?: Partial<AuthConfig>;
+	proxy_id?: string | null;
 };
 
 export type ScanContextUpdate = Partial<ScanContextCreate>;

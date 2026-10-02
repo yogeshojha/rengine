@@ -11,6 +11,7 @@
 
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import CompareUnavailable from '$lib/components/scans/compare/compare-unavailable.svelte';
 	import RunHeader from '$lib/components/scans/compare/run-header.svelte';
@@ -23,13 +24,13 @@
 
 	import { compareApi } from '$lib/api/compare';
 	import { projectsStore } from '$lib/stores/projects.svelte';
-	import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
 	import { rechecks } from '$lib/stores/rechecks.svelte';
 	import { seedKindFor } from '$lib/utilities/rechecks';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { durationText } from '$lib/utilities/scan-status';
-	import { ROUTES } from '$lib/config/routes';
-	import { cn } from '$lib/utils';
+	import { pageTitle } from '$lib/utilities/page-title';
+	import { plural } from '$lib/utilities/strings';
+	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import {
 		COMPARE_DIGEST_SIZE,
 		COMPARE_MODES,
@@ -147,7 +148,11 @@
 	// ---------- loading ----------
 
 	async function loadComparison() {
-		if (!currentId || !projectId) return;
+		if (!currentId) {
+			loading = false;
+			return;
+		}
+		if (!projectId) return;
 		loading = true;
 		error = null;
 		try {
@@ -323,11 +328,12 @@
 					...new Set(
 						rows
 							.filter(
-								(r) => r.verb !== CHANGE_VERB.DISAPPEARED && r.verb !== CHANGE_VERB.UNCONFIRMED
+								(r) =>
+									r.dimension === activeTab &&
+									r.verb !== CHANGE_VERB.DISAPPEARED &&
+									r.verb !== CHANGE_VERB.UNCONFIRMED
 							)
-							.map((r) =>
-								r.dimension === SurfaceDimension.SERVICES ? r.title.split(':')[0] : r.title
-							)
+							.map((r) => r.title)
 					)
 				].slice(0, rechecks.schema?.max_assets || 500)
 			: []
@@ -365,17 +371,15 @@
 			void loadComparison().then(() => loadRows());
 		});
 	});
-
-	$effect(() => {
-		breadcrumbStore.set('compare', 'Compare runs');
-	});
 </script>
 
 <svelte:window onkeydown={onKey} />
 
 <svelte:head>
 	<title
-		>{comparison ? `Compare runs · ${comparison.target_value}` : 'Compare runs'} · reNgine</title
+		>{pageTitle(
+			comparison ? `${routeLabels.compare} · ${comparison.target_value}` : routeLabels.compare
+		)}</title
 	>
 </svelte:head>
 
@@ -389,7 +393,7 @@
 		</div>
 	{:else if error || !comparison}
 		<CompareUnavailable
-			reason={error ?? runsError ?? 'Pick two finished runs of the same target.'}
+			reason={error ?? runsError ?? 'No run selected.'}
 			{currentId}
 			{runs}
 			loading={runsLoading}
@@ -410,28 +414,24 @@
 				<span class="font-medium">{comparison.target_value}</span>
 			</span>
 			<div class="ml-auto flex flex-wrap items-center gap-2">
-				<div class="flex rounded-md border p-0.5" role="group" aria-label="View">
+				<ToggleGroup.Root
+					type="single"
+					variant="outline"
+					size="sm"
+					value={mode}
+					onValueChange={(v) => v && setMode(v as CompareMode)}
+					aria-label="View"
+				>
 					{#each COMPARE_MODES as key (key)}
-						<button
-							type="button"
-							aria-pressed={mode === key}
-							onclick={() => setMode(key)}
-							class={cn(
-								'rounded px-2.5 py-1 text-xs font-medium capitalize transition-colors',
-								mode === key
-									? 'bg-accent text-foreground'
-									: 'text-muted-foreground hover:text-foreground'
-							)}
-						>
+						<ToggleGroup.Item value={key} class="px-2.5 capitalize">
 							{key}
-						</button>
+						</ToggleGroup.Item>
 					{/each}
-				</div>
+				</ToggleGroup.Root>
 				{#if rescanSeed}
 					<Button variant="outline" size="sm" class="gap-1.5" onclick={() => (rescanOpen = true)}>
 						<Play class="size-3.5" />
-						Rescan {rescanAssets.length}
-						{rescanAssets.length === 1 ? 'asset' : 'assets'}
+						Rescan {plural(rescanAssets.length, 'asset')}
 					</Button>
 				{/if}
 				<Button variant="outline" size="sm" class="gap-1.5" onclick={copyLink}>
@@ -455,13 +455,7 @@
 		<div class="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 pt-4 pb-3 sm:px-5">
 			<h1 class="text-xl font-semibold tracking-tight">{comparison.headline}</h1>
 			<span class="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
-				{#if totalChanges > 0}
-					<span>highest signal first</span>
-				{/if}
-				{#if apart}
-					{#if totalChanges > 0}<span class="opacity-40">·</span>{/if}
-					<span class="tabular-nums">{apart}</span>
-				{/if}
+				{#if apart}<span class="tabular-nums">{apart}</span>{/if}
 			</span>
 		</div>
 

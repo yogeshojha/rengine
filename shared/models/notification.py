@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timedelta
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, field_validator
 from sqlalchemy import Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Column, SQLModel
@@ -15,10 +15,8 @@ MAX_URL_LENGTH = 500
 
 class NotificationMetadata(BaseModel):
     url: str | None = None
-    open_new_tab: bool = False
     scan_id: str | None = None
     target_id: str | None = None
-    action_label: str | None = Field(default=None, max_length=50)
 
     @field_validator("url")
     @classmethod
@@ -73,10 +71,6 @@ class NotificationReceipt(SQLModel, table=True):
     )
     read_at: datetime | None = SQLField(default=None)
     dismissed_at: datetime | None = SQLField(default=None)
-
-
-class NotificationCreate(NotificationBase):
-    notification_metadata: NotificationMetadata | None = None
 
 
 class NotificationRead(NotificationBase):

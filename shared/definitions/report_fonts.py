@@ -13,7 +13,6 @@ MAX_FAMILIES = 24
 MAX_FAMILY_NAME = 80
 FONT_SLUG_LENGTH = 48
 
-WEIGHTS: tuple[int, ...] = (100, 200, 300, 400, 500, 600, 700, 800, 900)
 DEFAULT_WEIGHT = 400
 
 
@@ -80,7 +79,7 @@ def clean_family_name(value: str) -> str:
         msg = "A typeface name may not contain quotes, brackets, semicolons or control characters."
         raise ValueError(msg)
     if len(name) > MAX_FAMILY_NAME:
-        msg = f"A typeface name must be under {MAX_FAMILY_NAME} characters."
+        msg = f"A typeface name may be at most {MAX_FAMILY_NAME} characters."
         raise ValueError(msg)
     return name
 

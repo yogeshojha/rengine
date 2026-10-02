@@ -1,8 +1,9 @@
 <script lang="ts">
 	import type { ActionKind } from '$lib/config/connectors';
 	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
-	import { filterToken } from '$lib/utilities/scan-insights';
-	import { formatBytes, formatResponseTime } from '$lib/utilities/scan-correlation';
+	import { exactToken, filterToken } from '$lib/utilities/scan-insights';
+	import { formatResponseTime } from '$lib/utilities/scan-correlation';
+	import { formatBytes } from '$lib/utilities/format';
 	import NoteSection from '$lib/components/notes/note-section.svelte';
 	import { SurfaceDimension } from '$lib/config/surface';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
@@ -40,12 +41,12 @@
 	interface Props {
 		endpoint: EndpointRead | null;
 		projectId: string;
-		scanId: string;
 		open: boolean;
 		onOpenChange: (open: boolean) => void;
 		index: number;
 		pageOffset: number;
 		total: number;
+		capped?: boolean;
 		onStep: (dir: -1 | 1) => void;
 		onFilter?: (token: string) => void;
 		onHost?: (filter: string) => void;
@@ -58,12 +59,12 @@
 	let {
 		endpoint,
 		projectId,
-		scanId,
 		open,
 		onOpenChange,
 		index,
 		pageOffset,
 		total,
+		capped = false,
 		onStep,
 		onFilter,
 		onHost,
@@ -79,6 +80,7 @@
 
 	$effect(() => {
 		const id = endpoint?.id ?? '';
+		const scanId = endpoint?.scan_id ?? '';
 		if (!open || !id || id === loadedId) return;
 		loadedId = id;
 		loading = true;
@@ -116,7 +118,7 @@
 					{#if total > 0 && position > 0}
 						<div class="ml-auto flex items-center gap-1">
 							<span class="text-xs tabular-nums text-muted-foreground">
-								{position} of {total.toLocaleString()}
+								{position.toLocaleString()} of {total.toLocaleString()}{capped ? '+' : ''}
 							</span>
 							<Button
 								variant="ghost"
@@ -182,14 +184,16 @@
 					>
 						<ExternalLink class="size-3" /> Open
 					</Button>
-					<Button
-						variant="outline"
-						size="sm"
-						class="h-7 gap-1.5 text-xs"
-						onclick={() => onHost?.(endpoint.host)}
-					>
-						<Globe class="size-3" /> View host
-					</Button>
+					{#if onHost}
+						<Button
+							variant="outline"
+							size="sm"
+							class="h-7 gap-1.5 text-xs"
+							onclick={() => onHost(exactToken('host', endpoint.host))}
+						>
+							<Globe class="size-3" /> Web asset
+						</Button>
+					{/if}
 					{#if onReveal}
 						<Button
 							variant="outline"
@@ -210,10 +214,7 @@
 						<PathBreadcrumb
 							host={endpoint.host}
 							path={endpoint.dir_path}
-							onSelect={(h, p) =>
-								onFilter?.(
-									[filterToken('dir', p), h ? filterToken('host', h) : ''].filter(Boolean).join(' ')
-								)}
+							onSelect={(h, p) => onFilter?.(`${filterToken('dir', p)} ${filterToken('host', h)}`)}
 						/>
 						<dl class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
 							<div class="flex justify-between gap-2">
@@ -340,10 +341,10 @@
 					<section class="space-y-2">
 						<h3 class="text-xs font-medium text-muted-foreground uppercase">Response</h3>
 						{#if !endpoint.is_probed}
-							<p class="text-xs text-muted-foreground">Not requested in this scan.</p>
+							<p class="text-xs text-muted-foreground">Not requested.</p>
 						{:else}
 							<dl class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
-								{#each [['Status', endpoint.status_code], ['Content type', endpoint.content_type], ['Size', formatBytes(endpoint.content_length)], ['Words', endpoint.words], ['Lines', endpoint.lines], ['Response time', endpoint.response_time ? formatResponseTime(endpoint.response_time) : null]] as [label, value] (label)}
+								{#each [['Status', endpoint.status_code], ['Content type', endpoint.content_type], ['Size', formatBytes(endpoint.content_length)], ['Words', endpoint.words?.toLocaleString()], ['Lines', endpoint.lines?.toLocaleString()], ['Response time', endpoint.response_time ? formatResponseTime(endpoint.response_time) : null]] as [label, value] (label)}
 									{#if value !== null && value !== undefined}
 										<div class="flex justify-between gap-2">
 											<dt class="text-muted-foreground">{label}</dt>

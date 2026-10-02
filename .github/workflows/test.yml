@@ -19,7 +19,7 @@ jobs:
     name: 🧹 Lint
     runs-on: ubuntu-latest
     env:
-      PACKAGES: api shared reports worker stages tools toolbox interest mcp channels connectors tests
+      PACKAGES: api shared reports worker stages tools toolbox interest mcp channels connectors tests scripts
       RUFF: ruff@0.14.14
     steps:
       - name: 📥 Checkout the git repo

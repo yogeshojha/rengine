@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { SURFACE, SurfaceDimension, type ResultTab } from '$lib/config/surface';
 	import { onDestroy, untrack } from 'svelte';
 	import { LiveRefresh } from '$lib/utilities/live-results';
@@ -27,7 +28,14 @@
 	import { INTEREST_SORTS, kindIcon, sourceIcon } from '$lib/config/interest';
 	import { ROUTES } from '$lib/config/routes';
 	import { relativeTime } from '$lib/utilities/dates';
-	import type { InterestPage, InterestRow, RuleSuggestion } from '$lib/types/interest';
+	import {
+		INTEREST_SOURCE,
+		type InterestPage,
+		type InterestRow,
+		type RuleSuggestion
+	} from '$lib/types/interest';
+	import { exactToken } from '$lib/utilities/scan-insights';
+	import type { TargetScope } from '$lib/utilities/surface-scope';
 	import SelectionActionBar from '$lib/components/selection-action-bar.svelte';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { SvelteMap } from 'svelte/reactivity';
@@ -37,24 +45,28 @@
 
 	interface Props {
 		scanId?: string;
-		targetId?: string;
 		projectId: string;
 		projectWide?: boolean;
 		active: boolean;
 		onTab?: (tab: ResultTab, filter?: string) => void;
 		revision?: number;
 		onTotal?: (total: number) => void;
+		initialBand?: string | null;
+		initialKinds?: string[];
+		scope?: TargetScope;
 	}
 
 	let {
 		scanId = '',
-		targetId = '',
 		projectId,
 		projectWide = false,
 		active,
 		revision = 0,
 		onTab,
-		onTotal
+		onTotal,
+		initialBand = null,
+		initialKinds = [],
+		scope = {}
 	}: Props = $props();
 
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
@@ -71,11 +83,11 @@
 	let data = $state<InterestPage | null>(null);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
-	let band = $state(ALL);
+	let band = $state(untrack(() => initialBand) || ALL);
 	let q = $state('');
 	let sources = $state<string[]>([]);
-	let kinds = $state<string[]>([]);
-	let sort = $state<string>('score');
+	let kinds = $state<string[]>(untrack(() => [...initialKinds]));
+	let sort = $state<string>(INTEREST_SORTS[0].value);
 	let page = $state(1);
 	let judging = $state(false);
 	let retry: ReturnType<typeof setTimeout> | null = null;
@@ -104,6 +116,7 @@
 	let filtered = $derived(q.trim() !== '' || sources.length > 0 || kinds.length > 0);
 
 	$effect(() => {
+		if (!active) return;
 		untrack(() => interestCatalog.load());
 	});
 
@@ -148,7 +161,7 @@
 				offset: (page - 1) * PAGE_SIZE
 			};
 			const result = projectWide
-				? await interestApi.project(projectId, filter)
+				? await interestApi.project(projectId, filter, scope)
 				: await interestApi.scan(scanId, filter);
 			data = result;
 			error = null;
@@ -190,7 +203,7 @@
 
 	async function dismiss(row: InterestRow): Promise<void> {
 		try {
-			await interestApi.dismiss({ host: row.host, target_id: row.target_id || targetId });
+			await interestApi.dismiss({ host: row.host, target_id: row.target_id });
 			toast.success(`${row.host} dismissed`);
 			await run();
 		} catch {
@@ -209,7 +222,7 @@
 		dismissing = true;
 		try {
 			const result = await interestApi.dismissMany(
-				rows.map((row) => ({ host: row.host, target_id: row.target_id || targetId }))
+				rows.map((row) => ({ host: row.host, target_id: row.target_id }))
 			);
 			picked.clear();
 			toast.success(
@@ -241,7 +254,9 @@
 	});
 
 	function openInAssets(row: InterestRow): void {
-		onTab?.(WEB.tab, `host="${row.host}"`);
+		const filter = exactToken('host', row.host);
+		if (onTab) onTab(WEB.tab, filter);
+		else void goto(ROUTES.surface(WEB.tab, { [WEB.queryParam]: filter }));
 	}
 </script>
 
@@ -255,14 +270,14 @@
 				{#if summary && summary.total > 0}
 					<p class="text-xs text-muted-foreground">
 						{summary.total.toLocaleString()}
-						{summary.total === 1 ? 'asset' : 'assets'} flagged
-						{#each activeSources as s (s.key)}
-							· {(summary.sources[s.key] ?? 0).toLocaleString()}
-							{s.key === 'ai' ? 'judged by AI' : `from ${s.label.toLowerCase()}`}{/each}
+						{summary.total === 1 ? WEB.noun : WEB.nounPlural} flagged
+						{#each activeSources as s (s.key)}{` · ${(summary.sources[s.key] ?? 0).toLocaleString()} ${
+								s.key === INTEREST_SOURCE.AI ? 'judged by AI' : `from ${s.label.toLowerCase()}`
+							}`}{/each}
 					</p>
 				{/if}
 			</div>
-			<div class="flex shrink-0 items-center gap-2">
+			<div class="flex min-w-0 flex-wrap items-center gap-2">
 				{#if !projectWide && summary?.ai_enabled}
 					<LoadingButton
 						variant="outline"
@@ -354,7 +369,7 @@
 								<Icon class="size-3.5 text-muted-foreground" />
 								<span class="flex-1 truncate">{k.label}</span>
 								<span class="text-xs tabular-nums text-muted-foreground"
-									>{summary?.kinds?.[k.key] ?? 0}</span
+									>{(summary?.kinds?.[k.key] ?? 0).toLocaleString()}</span
 								>
 							</DropdownMenu.CheckboxItem>
 						{/each}
@@ -384,7 +399,7 @@
 							<Icon class="size-3.5 text-muted-foreground" />
 							<span class="flex-1 truncate">{s.label}</span>
 							<span class="text-xs tabular-nums text-muted-foreground"
-								>{summary?.sources?.[s.key] ?? 0}</span
+								>{(summary?.sources?.[s.key] ?? 0).toLocaleString()}</span
 							>
 						</DropdownMenu.CheckboxItem>
 					{/each}
@@ -437,7 +452,7 @@
 
 		{#if summary?.stale}
 			<p class="border-b bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
-				A rule changed after this scan was evaluated. Refreshing.
+				A rule changed after the last evaluation. Refreshing.
 			</p>
 		{/if}
 
@@ -464,7 +479,6 @@
 						onOpen={(r) => (selected = r)}
 						onKind={pickKind}
 						onDismiss={dismiss}
-						onHost={() => openInAssets(row)}
 					/>
 				{/each}
 			</div>
@@ -473,8 +487,8 @@
 					total={data.total}
 					page={page - 1}
 					pageSize={PAGE_SIZE}
-					noun="asset"
-					plural="assets"
+					noun={WEB.noun}
+					plural={WEB.nounPlural}
 					onPage={(p) => (page = p + 1)}
 				/>
 			</div>
@@ -492,7 +506,7 @@
 					</span>
 				{/if}
 				{#if summary.dismissed > 0}
-					<span>{summary.dismissed} dismissed on this target</span>
+					<span>{summary.dismissed.toLocaleString()} dismissed</span>
 				{/if}
 			</div>
 		{/if}

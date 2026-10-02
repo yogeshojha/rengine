@@ -51,25 +51,13 @@ class CertificatesSection(Section):
                 key=lambda c: c.days_left if c.days_left is not None else 9999,
             )
         )
-        if cfg.problems_only and not rows:
-            return {
-                "rows": [],
-                "clean": True,
-                "total": len(certificates),
-                "expired": 0,
-                "expiring": 0,
-                "self_signed": 0,
-                "issuers": [],
-                "hidden": 0,
-                "window": cfg.expiring_days,
-            }
         issuers: dict[str, int] = {}
         for certificate in certificates:
             key = certificate.issuer or "Unknown"
             issuers[key] = issuers.get(key, 0) + 1
         return {
             "rows": rows[: cfg.max_rows],
-            "clean": False,
+            "clean": cfg.problems_only and not rows,
             "total": len(certificates),
             "expired": len(expired),
             "expiring": len(expiring),

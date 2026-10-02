@@ -29,6 +29,7 @@ from shared.definitions.endpoints import (
     sibling_key,
     strip_session_path,
 )
+from shared.definitions.ports import SCHEME_PORTS
 from shared.models.endpoint import Endpoint
 from shared.models.http_asset import HttpAsset
 
@@ -36,7 +37,6 @@ if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
 _CHUNK = 500
-_HTTP_PORT = 80
 
 
 def _children_of(parent: str):
@@ -76,12 +76,8 @@ class NoisePolicy:
 
     @classmethod
     def protected(cls) -> NoisePolicy:
-        """Nothing is dropped and parameters stay as seen. For URLs a person chose or a tool answered."""
+        """Nothing is dropped and parameters stay as seen."""
         return cls(drops=False, strip_params=False)
-
-    @classmethod
-    def off(cls) -> NoisePolicy:
-        return cls(enabled=False, drops=False, strip_params=False)
 
 
 @dataclass
@@ -136,11 +132,11 @@ class Sifter:
         host = (parts.hostname or "").lower()
         if (
             scheme == "http"
-            and port in (None, _HTTP_PORT)
+            and port in (None, SCHEME_PORTS["http"])
             and host in self._https_only()
         ):
             scheme = "https"
-            netloc = parts.netloc.removesuffix(f":{_HTTP_PORT}")
+            netloc = parts.netloc.removesuffix(f":{SCHEME_PORTS['http']}")
         else:
             netloc = parts.netloc
         return urlunsplit((scheme, netloc, path, urlencode(pairs), ""))

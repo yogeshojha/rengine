@@ -26,6 +26,7 @@ from shared.definitions.oast import (
     off_reason,
 )
 from shared.enums.api_key import APIProvider
+from shared.http import AsyncPublicTransport
 from shared.logging import get_logger
 from shared.models.api_key import APIKey
 from shared.models.instance_settings import SINGLETON_KEY, InstanceSettings
@@ -105,9 +106,13 @@ class OastService:
             server = normalize_server(data.server)
             if data.server.strip() and server is None:
                 raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                     detail="That is not a hostname. Use the server's domain.",
                 )
+            stored = normalize_server(row.oast_server)
+            if stored and server != stored:
+                for key in await self._keys():
+                    await self.session.delete(key)
             row.oast_server = server
         if data.wait_seconds is not None:
             row.oast_wait_seconds = max(
@@ -119,7 +124,7 @@ class OastService:
             row.oast_server
         ):
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="Set the server before choosing self-hosted.",
             )
         row.updated_at = utc_now()
@@ -140,7 +145,7 @@ class OastService:
         return await self.read()
 
     async def test(self) -> OastTest:
-        """Ask the configured server whether it answers. Nothing is scanned."""
+        """Ask the configured server whether it answers."""
         row = await self._row()
         server = normalize_server(row.oast_server)
         if row.oast_mode == OastMode.PUBLIC.value:
@@ -170,17 +175,16 @@ class OastService:
             return None, unresolved
         for parsed in addresses:
             if not is_public_address(parsed):
-                return (
-                    None,
-                    f"{host} resolves to {parsed}, which is not a public address.",
-                )
+                return None, f"{host} resolves to {parsed}. The address is not public."
         return str(addresses[0]), None
 
     async def _probe(self, server: str, address: str) -> OastTest:
         url = f"https://{server}{_PROBE_PATH}"
         try:
             async with httpx.AsyncClient(
-                timeout=_PROBE_TIMEOUT, follow_redirects=False, verify=True
+                timeout=_PROBE_TIMEOUT,
+                follow_redirects=False,
+                transport=AsyncPublicTransport(),
             ) as client:
                 answer = await client.get(url)
         except httpx.HTTPError as exc:
@@ -239,7 +243,7 @@ class OastService:
         )
 
     async def _proven(self) -> tuple[int, datetime | None]:
-        """Findings a callback confirmed, and the newest. `proven` is that set by definition."""
+        """Findings a callback confirmed, and the newest."""
         row = (
             await self.session.execute(
                 select(

@@ -12,8 +12,9 @@ from sqlalchemy import and_, cast, delete, func, or_, select, tuple_, update
 from sqlalchemy.dialects.postgresql import JSONB, array, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import settings
+from app.config import API_V1_PREFIX, settings
 from connectors import auth, handoff
+from connectors.base import CLIENT_DIR
 from connectors.handoff import Handoff
 from connectors.ingest import Prepared, prepare
 from connectors.notice import notices_for
@@ -90,6 +91,7 @@ from shared.models.http_asset import HttpAsset
 from shared.models.scan import Scan, ScanCreate, SeedAsset
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
+from shared.models.user import User
 from shared.models.vulnerability import Vulnerability
 from shared.redis import async_client
 from shared.services import proxy_sync
@@ -121,10 +123,6 @@ _PROXY_ONLY = and_(
 
 class ConnectorError(RuntimeError):
     """The connector configuration is not valid."""
-
-
-def _guard(exc: ConnectorError) -> HTTPException:
-    return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
 
 def _as_url(host: str) -> str:
@@ -159,14 +157,14 @@ class ConnectorService:
         spec = connector_for(kind)
         if spec is None or not spec.client_file:
             return None
-        return f"{settings.API_V1_PREFIX}/connectors/client/{kind}"
+        return f"{API_V1_PREFIX}/connectors/client/{kind}"
 
     @staticmethod
     def client_path(kind: str) -> Path | None:
         spec = connector_for(kind)
         if spec is None or not spec.client_file:
             return None
-        path = Path(settings.CLIENTS_DIR) / spec.client_file
+        path = CLIENT_DIR / spec.client_file
         return path if path.is_file() else None
 
     async def list(self, project_id: uuid.UUID) -> list[ConnectorRead]:
@@ -219,7 +217,6 @@ class ConnectorService:
             ingest_tools=[t for t in data.ingest_tools if t in INGESTED_TOOLS]
             or sorted(INGESTED_TOOLS),
             capture_bodies=data.capture_bodies,
-            record_hosts=data.record_hosts,
             include_static=data.include_static,
             scan_safe_methods_only=data.scan_safe_methods_only,
             context_id=data.context_id,
@@ -276,8 +273,13 @@ class ConnectorService:
         row = await self.session.scalar(
             select(Connector).where(Connector.token_hash == auth.fingerprint(secret))
         )
-        if row is not None:
-            await self._mark_online(row.id)
+        if row is None:
+            return None
+        if row.created_by is not None:
+            issuer = await self.session.get(User, row.created_by)
+            if issuer is None or not issuer.is_active:
+                return None
+        await self._mark_online(row.id)
         return row
 
     @staticmethod
@@ -1216,7 +1218,8 @@ class ConnectorService:
             .where(
                 Scan.project_id == row.project_id,
                 Scan.target_id == target_id,
-                Scan.engine_name == label,
+                Scan.scope == ScanScope.FOCUSED.value,
+                cast(Scan.execution_config, JSONB)["connector"].astext == str(row.id),
             )
             .order_by(Scan.created_at.desc())
             .limit(1)
@@ -1374,7 +1377,12 @@ class ConnectorService:
                     target_id=target_id,
                     overrides=focused_overrides(list(stages_for(_DIMENSION))),
                     seed_assets=[
-                        SeedAsset(kind=SeedKind.URL.value, value=c.url) for c in group
+                        SeedAsset(
+                            kind=SeedKind.URL.value,
+                            value=c.url,
+                            source=EndpointSource.PROXY.value,
+                        )
+                        for c in group
                     ],
                     dimension=_DIMENSION,
                 ),
@@ -1599,28 +1607,6 @@ class ConnectorService:
                 )
             ).all()
         }
-        flagged = await self.session.scalar(
-            select(func.count())
-            .select_from(ConnectorCandidate)
-            .where(
-                ConnectorCandidate.connector_id == row.id,
-                ConnectorCandidate.host == name,
-                cast(ConnectorCandidate.notices, JSONB).has_any(
-                    array(tuple(LOUD_NOTICES))
-                ),
-            )
-        )
-        last_scan = (
-            await self.session.scalar(
-                select(func.max(Scan.completed_at)).where(
-                    Scan.project_id == row.project_id,
-                    Scan.target_id == target_id,
-                    census_only(),
-                )
-            )
-            if target_id
-            else None
-        )
         visited = len(scanned & seen)
         return HostFacts(
             host=name,
@@ -1629,8 +1615,6 @@ class ConnectorService:
             known_endpoints=len(scanned),
             visited=visited,
             unvisited=len(scanned) - visited,
-            flagged=flagged or 0,
-            last_scan_at=last_scan,
         )
 
     def _resolve_target(
@@ -1667,7 +1651,6 @@ class ConnectorService:
             params=list(row.params or []),
             param_count=row.param_count,
             endpoint_class=row.endpoint_class,
-            interests=list(row.interests or []),
             notices=list(row.notices or []),
             status_code=row.status_code,
             content_type=row.content_type,
@@ -1728,7 +1711,6 @@ class ConnectorService:
             only_known_hosts=row.only_known_hosts,
             ingest_tools=list(row.ingest_tools or []),
             capture_bodies=row.capture_bodies,
-            record_hosts=row.record_hosts,
             include_static=row.include_static,
             scan_safe_methods_only=row.scan_safe_methods_only,
             context_id=row.context_id,
@@ -1736,7 +1718,6 @@ class ConnectorService:
             paused=row.paused,
             state=state_for(minutes, row.paused, await self._online(row.id)),
             requests_seen=row.requests_seen,
-            dropped_out_of_scope=row.dropped_out_of_scope,
             candidates=row.candidates,
             queued=queued or 0,
             unseen=unseen or 0,
@@ -1745,10 +1726,8 @@ class ConnectorService:
             flagged=flagged or 0,
             out_of_scope=out_of_scope or 0,
             discovered=discovered,
-            scans_launched=row.scans_launched,
             pending_actions=await self._pending_actions(row.id),
             last_seen_at=row.last_seen_at,
             last_client=row.last_client,
-            last_scan_at=row.last_scan_at,
             created_at=row.created_at,
         )

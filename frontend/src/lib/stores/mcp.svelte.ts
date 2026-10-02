@@ -24,7 +24,6 @@ function createMcpStore() {
 	let isLoading = $state(false);
 	let isSaving = $state(false);
 	let hasFetched = $state(false);
-	let callsLoadedAt = $state<number | null>(null);
 	let tokensLoaded = $state(false);
 
 	async function refreshStatus(silent = false) {
@@ -48,23 +47,11 @@ function createMcpStore() {
 		get calls() {
 			return calls;
 		},
-		get isLoading() {
-			return isLoading;
-		},
 		get isSaving() {
 			return isSaving;
 		},
-		get hasFetched() {
-			return hasFetched;
-		},
-		get callsLoadedAt() {
-			return callsLoadedAt;
-		},
 		get tokensLoaded() {
 			return tokensLoaded;
-		},
-		get running() {
-			return status?.enabled ?? false;
 		},
 
 		async fetch(force = false) {
@@ -96,7 +83,6 @@ function createMcpStore() {
 		async loadCalls(silent = false) {
 			try {
 				calls = await mcpApi.calls(TRAIL_CAP);
-				callsLoadedAt = Date.now();
 			} catch (e) {
 				if (!silent) toast.error(message(e, 'Recent calls not loaded'));
 			}
@@ -179,17 +165,6 @@ function createMcpStore() {
 			}
 		},
 
-		async disconnect(tokenId: string): Promise<boolean> {
-			try {
-				await mcpApi.disconnect(tokenId);
-				await refreshStatus();
-				return true;
-			} catch (e) {
-				toast.error(message(e, 'Agent not disconnected'));
-				return false;
-			}
-		},
-
 		reset() {
 			status = null;
 			tools = [];
@@ -198,7 +173,6 @@ function createMcpStore() {
 			isLoading = false;
 			isSaving = false;
 			hasFetched = false;
-			callsLoadedAt = null;
 			tokensLoaded = false;
 		}
 	};

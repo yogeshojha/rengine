@@ -1,5 +1,5 @@
 export const RCOL = {
-	report: 'min-w-[240px] flex-1',
+	report: 'min-w-[240px] flex-1 contain-inline-size',
 	program: 'hidden w-[180px] shrink-0 md:block',
 	severity: 'w-[92px] shrink-0',
 	state: 'w-[124px] shrink-0',
@@ -9,7 +9,7 @@ export const RCOL = {
 } as const;
 
 export const PCOL = {
-	program: 'min-w-[200px] flex-1',
+	program: 'min-w-[200px] flex-1 contain-inline-size',
 	outcome: 'w-[220px] shrink-0',
 	severity: 'hidden w-[120px] shrink-0 md:flex',
 	paid: 'hidden w-[64px] shrink-0 justify-end sm:flex',

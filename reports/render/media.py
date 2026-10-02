@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import base64
 from functools import lru_cache
-from pathlib import Path
 
 from shared.definitions.reports import MAX_SCREENSHOTS
+from shared.definitions.retention import MEDIA_ROOT
 
-MEDIA_ROOT = Path("/app/scan_media")
 _TYPES = {
     ".png": "image/png",
     ".jpg": "image/jpeg",

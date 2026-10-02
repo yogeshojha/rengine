@@ -1,4 +1,3 @@
-from datetime import timedelta
 from uuid import UUID
 
 from sqlalchemy import case, cast, func, select, true
@@ -6,32 +5,19 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.domain_posture import DomainPostureService
+from app.services.target_names import target_names
 from app.services.target_scope import Targets, keeps
 from shared.definitions import domain_posture as posture_defs
+from shared.definitions.dashboard import ITEMS_CAP
 from shared.definitions.domains import takeover_provider
-from shared.enums.scan import ScanStatus
-from shared.enums.target import TargetType
-from shared.logging import get_logger
 from shared.models.dashboard import (
     DashboardSignals,
     SpoofableDomain,
     SpoofableSignal,
-    StaleSignal,
-    StaleTarget,
     TakeoverCandidate,
     TakeoverSignal,
 )
-from shared.models.scan import Scan
 from shared.models.subdomain import Subdomain
-from shared.models.target import Target
-from shared.utils.datetime import utc_now
-
-logger = get_logger(__name__)
-
-_ITEMS_CAP = 100
-_STALE_DAYS = 30
-
-_DOMAIN_TYPES = (TargetType.DOMAIN, TargetType.URL)
 
 
 class DashboardService:
@@ -44,7 +30,6 @@ class DashboardService:
         return DashboardSignals(
             takeover=await self._takeover_candidates(project_id, targets),
             spoofable=await self._spoofable_domains(project_id, targets),
-            stale=await self._stale_targets(project_id, targets),
         )
 
     async def _takeover_candidates(
@@ -100,7 +85,7 @@ class DashboardService:
             )
         candidates.sort(key=lambda c: c.name)
         candidates.sort(key=lambda c: c.last_seen, reverse=True)
-        return TakeoverSignal(count=len(candidates), items=candidates[:_ITEMS_CAP])
+        return TakeoverSignal(count=len(candidates), items=candidates[:ITEMS_CAP])
 
     async def _spoofable_domains(
         self, project_id: UUID, targets: Targets = None
@@ -113,15 +98,7 @@ class DashboardService:
         ]
         if not hits:
             return SpoofableSignal(count=0, items=[])
-        names = dict(
-            (
-                await self.session.execute(
-                    select(Target.id, Target.target_value).where(
-                        Target.id.in_({tid for tid, *_ in hits})
-                    )
-                )
-            ).all()
-        )
+        names = await target_names(self.session, (tid for tid, *_ in hits))
         items = [
             SpoofableDomain(
                 target_id=tid,
@@ -134,64 +111,4 @@ class DashboardService:
             if tid in names
         ]
         items.sort(key=lambda d: (d.zone, d.target_value))
-        return SpoofableSignal(count=len(items), items=items[:_ITEMS_CAP])
-
-    async def _stale_targets(
-        self, project_id: UUID, targets: Targets = None
-    ) -> StaleSignal:
-        cutoff = utc_now() - timedelta(days=_STALE_DAYS)
-        last_completed = (
-            select(
-                Scan.target_id.label("tid"),
-                func.max(func.coalesce(Scan.completed_at, Scan.started_at)).label(
-                    "last"
-                ),
-            )
-            .where(
-                Scan.project_id == project_id,
-                Scan.status == ScanStatus.COMPLETED.value,
-            )
-            .group_by(Scan.target_id)
-            .subquery()
-        )
-        rows = (
-            await self.session.execute(
-                select(
-                    Target.id,
-                    Target.target_value,
-                    Target.target_type,
-                    last_completed.c.last,
-                )
-                .join(last_completed, last_completed.c.tid == Target.id, isouter=True)
-                .where(Target.project_id == project_id)
-            )
-        ).all()
-
-        never: list[StaleTarget] = []
-        stale: list[StaleTarget] = []
-        for tid, value, ttype, last in rows:
-            if not keeps(targets, tid):
-                continue
-            tt = getattr(ttype, "value", ttype)
-            if last is None:
-                never.append(
-                    StaleTarget(
-                        target_id=tid,
-                        target_value=value,
-                        target_type=tt,
-                        last_scanned_at=None,
-                    )
-                )
-            elif last < cutoff:
-                stale.append(
-                    StaleTarget(
-                        target_id=tid,
-                        target_value=value,
-                        target_type=tt,
-                        last_scanned_at=last,
-                    )
-                )
-        never.sort(key=lambda t: t.target_value)
-        stale.sort(key=lambda t: t.last_scanned_at or utc_now())
-        items = (never + stale)[:_ITEMS_CAP]
-        return StaleSignal(never_scanned=len(never), stale=len(stale), items=items)
+        return SpoofableSignal(count=len(items), items=items[:ITEMS_CAP])

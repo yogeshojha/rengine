@@ -19,7 +19,22 @@ export interface FieldMeta {
 	kind: FieldKind;
 	required?: boolean;
 	default?: string | number | boolean;
+	description?: string;
 }
+
+// mirrors shared/enums/notification_channel.py:APPRISE_SCHEMES
+export const APPRISE_SCHEMES = [
+	'discord',
+	'gchat',
+	'opsgenie',
+	'pagerduty',
+	'pbul',
+	'pover',
+	'ses',
+	'slack',
+	'sns',
+	'tgram'
+] as const;
 
 export interface ProviderMeta {
 	provider: NotifProvider;
@@ -100,7 +115,7 @@ export const NOTIFICATION_PROVIDERS: ProviderMeta[] = [
 	},
 	{
 		provider: 'email',
-		name: 'Email (SMTP)',
+		name: 'Email',
 		icon: MailIcon,
 		fields: [
 			{
@@ -120,7 +135,7 @@ export const NOTIFICATION_PROVIDERS: ProviderMeta[] = [
 			},
 			{
 				key: 'password',
-				label: 'Password / app password',
+				label: 'Password',
 				placeholder: MASK,
 				kind: 'secret',
 				required: true
@@ -157,21 +172,18 @@ export const NOTIFICATION_PROVIDERS: ProviderMeta[] = [
 	},
 	{
 		provider: 'custom',
-		name: 'Custom (Apprise)',
+		name: 'Apprise',
 		icon: SlidersHorizontalIcon,
 		fields: [
 			{
 				key: 'apprise_url',
 				label: 'Apprise URL',
-				placeholder: 'ntfy://user:pass@ntfy.sh/topic',
+				placeholder: 'pover://user_key@token',
 				kind: 'secret',
-				required: true
+				required: true,
+				description: `Supported schemes: ${APPRISE_SCHEMES.join(', ')}.`
 			}
-		],
-		help: {
-			label: 'Apprise URL formats',
-			url: 'https://github.com/caronc/apprise/wiki'
-		}
+		]
 	}
 ];
 

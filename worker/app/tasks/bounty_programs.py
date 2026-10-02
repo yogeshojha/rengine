@@ -4,7 +4,6 @@ from celery import shared_task
 from sqlalchemy import and_, exists, func, or_, select, text
 from sqlmodel import col
 
-from app.config import settings
 from app.database import get_sync_session
 from shared.definitions.bounty_feed import FEEDS_BY_PLATFORM
 from shared.definitions.bounty_programs import (
@@ -118,7 +117,7 @@ def _notify(session, since) -> int:
     if payload is None:
         return 0
     try:
-        SyncNotificationPublisher(settings.redis_url).publish(
+        SyncNotificationPublisher().publish(
             session=session,
             type=payload["type"],
             severity=payload["severity"],
@@ -248,7 +247,7 @@ def sync_reports(platform: str | None = None, force: bool = True) -> dict:
 
 @shared_task(name="app.tasks.bounty_programs.sync_program")
 def sync_program(handle: str, platform: str = BountyPlatform.HACKERONE.value) -> dict:
-    """Refresh one program's scope, for a program opened before the sweep reached it."""
+    """Refresh one program's scope."""
     with get_sync_session() as session:
         program = session.execute(
             select(BountyProgram).where(

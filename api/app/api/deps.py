@@ -3,15 +3,21 @@ from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from app.core.database import async_db_session, get_session
-from app.core.ratelimit import is_token_revoked
-from app.core.security import TOKEN_TYPE_ACCESS, decode_token
+from app.core.ratelimit import is_token_revoked, tokens_valid_after
+from app.core.security import (
+    ACCESS_TOKEN_COOKIE,
+    ISSUED_MS_CLAIM,
+    TOKEN_TYPE_ACCESS,
+    decode_token,
+)
 from shared.models.user import User
 
-security = HTTPBearer(auto_error=False)
+security = HTTPBearer(auto_error=False, bearerFormat="JWT")
 
 BEARER_HEADERS = {"WWW-Authenticate": "Bearer"}
 
@@ -24,8 +30,6 @@ async def get_token_from_request(
 ) -> str:
     if credentials:
         return credentials.credentials
-
-    from app.api.v1.auth import ACCESS_TOKEN_COOKIE  # noqa: PLC0415
 
     token = request.cookies.get(ACCESS_TOKEN_COOKIE)
     if not token:
@@ -84,6 +88,16 @@ async def user_for_payload(payload: dict, session: AsyncSession) -> User:
             headers=BEARER_HEADERS,
         ) from e
 
+    cutoff = await tokens_valid_after(user_id)
+    if cutoff is not None:
+        issued = payload.get(ISSUED_MS_CLAIM)
+        if not isinstance(issued, int) or issued < cutoff:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked",
+                headers=BEARER_HEADERS,
+            )
+
     user = await session.scalar(select(User).where(User.id == user_id))
     if not user:
         raise HTTPException(
@@ -140,7 +154,16 @@ async def token_still_valid(token: str) -> bool:
     if payload is None or payload.get("type") != TOKEN_TYPE_ACCESS:
         return False
     jti = payload.get("jti")
-    return not (jti and await is_token_revoked(jti))
+    if jti and await is_token_revoked(jti):
+        return False
+    try:
+        async with async_db_session() as session:
+            user = await user_for_payload(payload, session)
+    except HTTPException:
+        return False
+    except (SQLAlchemyError, TimeoutError):
+        return True
+    return user.is_active
 
 
 CurrentUser = Annotated[User, Depends(get_current_active_user)]

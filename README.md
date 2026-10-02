@@ -47,7 +47,6 @@ Detailed documentation is available at [rengine.wiki](https://rengine.wiki).
 * [Quick Installation](#quick-installation)
 * [Updating](#updating)
 * [Upgrading from reNgine 2.x](#upgrading-from-rengine-2x)
-* [Screenshots](#screenshots)
 * [What's new in reNgine](https://github.com/yogeshojha/rengine/releases)
 * [Contributing](#contributing)
 * [reNgine Support](#rengine-support)
@@ -61,7 +60,7 @@ Detailed documentation is available at [rengine.wiki](https://rengine.wiki).
 
 **Scan engines.** A scan engine is a saved set of stages: subdomain discovery, host discovery, port scanning, HTTP probing, screenshots, URL discovery, content discovery, vulnerability scanning, DAST fuzzing, secret mining and more. Each stage has its own settings, every engine can run at passive, normal or aggressive intensity, and a scan context supplies authentication headers, scope exclusions, proxies and rate limits for the target. Any stage can be overridden for a single run, and a focused rescan runs selected stages against selected assets.
 
-**Query language.** All results are searchable with the same query syntax. `is:live tech:nginx` finds live nginx hosts, `severity:critical is:new` finds critical findings that were not in the previous scan, `port:22` finds SSH services and `cve:CVE-2024-3400` finds every asset affected by one CVE. Queries drive filters, saved rules, dashboard counts, exports and notifications.
+**Query language.** All results are searchable with the same query syntax. `is:live tech:nginx` finds live nginx web assets, `severity:critical is:new` finds critical findings not seen in any earlier scan of the target, `port:22` finds SSH services and `cve:CVE-2024-3400` finds every asset affected by one CVE. Queries drive filters, saved rules, dashboard counts, exports and notifications.
 
 **Correlation.** Hosts that share an IP address, certificate, page title, favicon, body hash, JARM fingerprint, technology or CDN are grouped and drawn as a graph. Links are drawn across targets in a project, and targets are related to each other by certificate, registrant, network and nameserver. Provider infrastructure such as CDN edges and shared platform hostnames is recognised and not drawn as a relation.
 
@@ -120,7 +119,7 @@ Detailed documentation is available at [rengine.wiki](https://rengine.wiki).
   * MCP server for AI agents
   * Remote control over Telegram
   * Burp Suite connector
-  * OpenAI, Anthropic, Azure OpenAI and Google AI providers
+  * OpenAI, Anthropic, Google and OpenAI-compatible AI providers
   * Notifications on Slack, Discord, Telegram, Microsoft Teams, email and webhooks
 * Reporting
   * PDF reports from configurable sections and themes
@@ -152,10 +151,10 @@ sudo bash install.sh --local --ui-port 8080
 After the install, the `rengine` command manages the instance:
 
 ```bash
-rengine status      # services and API health
-rengine logs api    # follow one service
-rengine backup      # archive the database, scan media and settings
-rengine update      # move to the latest release
+sudo rengine status      # services and API health
+sudo rengine logs api    # follow one service
+sudo rengine backup      # archive the database, scan media and settings
+sudo rengine update      # move to the latest release
 ```
 
 ### From source
@@ -172,7 +171,7 @@ For development with hot reload, copy `.env.example` to `.env`, set a secret key
 ## Updating
 
 ```bash
-rengine update
+sudo rengine update
 ```
 
 A source install updates with `git pull`, then `install.sh --build`.
@@ -180,10 +179,6 @@ A source install updates with `git pull`, then `install.sh --build`.
 ## Upgrading from reNgine 2.x
 
 reNgine 3.0 uses a new data model and does not import a 2.x database. Install 3.0 as a new instance and add targets again.
-
-## Screenshots
-
-<!-- 3.0 screenshots: .github/screenshots/3.0/ -->
 
 ## Contributing
 

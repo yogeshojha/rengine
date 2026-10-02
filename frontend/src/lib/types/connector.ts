@@ -9,15 +9,8 @@ export type QueueView = 'missed' | 'flagged' | 'out_of_scope' | 'all';
 export interface ConnectorSpec {
 	kind: ConnectorKind;
 	title: string;
-	vendor: string;
-	description: string;
-	docs_url: string;
-	source_path: string;
 	client_file: string;
 	download_url: string | null;
-	tools: SourceTool[];
-	supports_scope_push: boolean;
-	available: boolean;
 	steps: SetupStep[];
 }
 
@@ -30,7 +23,6 @@ export interface Connector {
 	only_known_hosts: boolean;
 	ingest_tools: SourceTool[];
 	capture_bodies: boolean;
-	record_hosts: boolean;
 	include_static: boolean;
 	scan_safe_methods_only: boolean;
 	context_id: string | null;
@@ -38,7 +30,6 @@ export interface Connector {
 	paused: boolean;
 	state: ConnectorState;
 	requests_seen: number;
-	dropped_out_of_scope: number;
 	candidates: number;
 	queued: number;
 	unseen: number;
@@ -47,19 +38,15 @@ export interface Connector {
 	flagged: number;
 	out_of_scope: number;
 	discovered: number;
-	scans_launched: number;
 	pending_actions: number;
 	last_seen_at: string | null;
 	last_client: string | null;
-	last_scan_at: string | null;
 	created_at: string;
 }
 
 export interface SetupStep {
 	title: string;
 	detail: string;
-	code: string | null;
-	lang: string | null;
 	control: 'download' | 'credentials' | null;
 }
 
@@ -75,7 +62,6 @@ export interface ConnectorCreate {
 	only_known_hosts?: boolean;
 	ingest_tools?: SourceTool[];
 	capture_bodies?: boolean;
-	record_hosts?: boolean;
 	include_static?: boolean;
 	scan_safe_methods_only?: boolean;
 	context_id?: string | null;
@@ -114,7 +100,6 @@ export interface Candidate {
 	params: string[];
 	param_count: number;
 	endpoint_class: string | null;
-	interests: string[];
 	notices: string[];
 	status_code: number | null;
 	content_type: string | null;

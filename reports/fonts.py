@@ -1,4 +1,4 @@
-"""Vendored and uploaded typefaces, merged into one list the themes and the CSS read from."""
+"""Vendored and uploaded typefaces."""
 
 from __future__ import annotations
 
@@ -17,11 +17,43 @@ ASSETS = Path(__file__).resolve().parent / "assets"
 VENDORED_CSS = ASSETS / "fonts.css"
 CUSTOM_ROOT = Path(FONT_ROOT)
 
-_ROLE_BY_KEY = {f.key: f.role for f in FONT_FAMILIES}
+
+def _face_path(slug: str, filename: str) -> Path | None:
+    directory = (CUSTOM_ROOT / slug).resolve()
+    candidate = (directory / filename).resolve()
+    if not directory.is_relative_to(CUSTOM_ROOT.resolve()):
+        return None
+    if not candidate.is_relative_to(directory) or not candidate.is_file():
+        return None
+    return candidate
+
+
+_VENDORED_FACE_RE = re.compile(
+    r"font-family:'([^']+)';font-style:(\w+);font-weight:(\d+);.*?url\('fonts/([^']+)'\)"
+)
+
+
+def _vendored_faces() -> dict[str, list[FontFace]]:
+    faces: dict[str, list[FontFace]] = {}
+    if not VENDORED_CSS.is_file():
+        return faces
+    for found in _VENDORED_FACE_RE.finditer(VENDORED_CSS.read_text(encoding="utf-8")):
+        family, style, weight, filename = found.groups()
+        path = ASSETS / "fonts" / filename
+        faces.setdefault(family, []).append(
+            FontFace(
+                weight=int(weight),
+                italic=style == "italic",
+                filename=filename,
+                bytes=path.stat().st_size if path.is_file() else 0,
+            )
+        )
+    return faces
 
 
 @lru_cache(maxsize=1)
 def vendored() -> list[ReportFontRead]:
+    faces = _vendored_faces()
     return [
         ReportFontRead(
             slug=spec.key,
@@ -29,52 +61,37 @@ def vendored() -> list[ReportFontRead]:
             role=spec.role,
             origin=FontOrigin.BUILTIN.value,
             note=spec.note,
+            faces=faces.get(spec.label, []),
+            weights=sorted({f.weight for f in faces.get(spec.label, [])}),
+            bytes=sum(f.bytes for f in faces.get(spec.label, [])),
         )
         for spec in FONT_FAMILIES
     ]
 
 
+def font_read(row: ReportFont) -> ReportFontRead:
+    faces = [FontFace.model_validate(f) for f in (row.faces or [])]
+    return ReportFontRead(
+        id=row.id,
+        slug=row.slug,
+        name=row.name,
+        role=row.role if row.role in FONT_ROLES else FontRole.SANS.value,
+        origin=row.origin,
+        note=row.note,
+        faces=faces,
+        weights=sorted({f.weight for f in faces}),
+        bytes=row.bytes,
+        created_at=row.created_at,
+    )
+
+
 def custom(session) -> list[ReportFontRead]:
     rows = session.execute(select(ReportFont).order_by(ReportFont.name)).scalars().all()
-    out: list[ReportFontRead] = []
-    for row in rows:
-        faces = [FontFace.model_validate(f) for f in (row.faces or [])]
-        out.append(
-            ReportFontRead(
-                id=row.id,
-                slug=row.slug,
-                name=row.name,
-                role=row.role if row.role in FONT_ROLES else FontRole.SANS.value,
-                origin=row.origin,
-                note=row.note,
-                faces=faces,
-                weights=sorted({f.weight for f in faces}),
-                bytes=row.bytes,
-                created_at=row.created_at,
-            )
-        )
-    return out
+    return [font_read(row) for row in rows]
 
 
 def families(session) -> list[ReportFontRead]:
     return [*vendored(), *custom(session)]
-
-
-def stack_for(session, key: str) -> str:
-    """The CSS family name a token key resolves to."""
-    for family in families(session):
-        if family.slug == key:
-            return family.name
-    return key
-
-
-def role_of(session, key: str) -> str:
-    if key in _ROLE_BY_KEY:
-        return _ROLE_BY_KEY[key]
-    for family in custom(session):
-        if family.slug == key:
-            return family.role
-    return FontRole.SANS.value
 
 
 def _face_css(
@@ -90,7 +107,6 @@ _FAMILY_RE = re.compile(r"font-family:'([^']+)'")
 
 
 def vendored_css(*, embed: bool, only: frozenset[str] | None = None) -> str:
-    """The shipped faces, as file references for print or as data for a standalone file."""
     if not VENDORED_CSS.is_file():
         return ""
     wanted = None
@@ -125,8 +141,8 @@ def custom_css(session, *, embed: bool, only: frozenset[str] | None = None) -> s
         if only is not None and family.slug not in only:
             continue
         for face in family.faces:
-            path = CUSTOM_ROOT / family.slug / face.filename
-            if not path.is_file():
+            path = _face_path(family.slug, face.filename)
+            if path is None:
                 continue
             style = "italic" if face.italic else "normal"
             if embed:
@@ -141,7 +157,6 @@ def custom_css(session, *, embed: bool, only: frozenset[str] | None = None) -> s
 def font_faces(
     session=None, *, embed: bool = False, only: frozenset[str] | None = None
 ) -> str:
-    """Every face for print."""
     css = vendored_css(embed=embed, only=only)
     if session is not None:
         extra = custom_css(session, embed=embed, only=only)

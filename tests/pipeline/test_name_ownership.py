@@ -4,7 +4,7 @@ import pytest
 
 from shared.definitions.name_ownership import CLAIM_TEMPLATES, NameClaim
 from shared.definitions.vulnerabilities import Scanner, Severity
-from shared.services.name_ownership import Asset, judge
+from shared.services.name_ownership import Asset, judge, owned_zones
 from stages.name_ownership.finding import claim_finding
 from stages.name_ownership.stage import NameOwnershipStage
 
@@ -78,6 +78,23 @@ def test_another_target_of_the_project_is_not_claimed():
     assert judge([_asset("dado.gov.example")], ROOT, {"tenant.shop"}) == []
 
 
+def test_a_parent_target_of_the_project_is_not_claimed():
+    root = "api.ibm.com"
+    owned = owned_zones(["ibm.com", "API.ibm.com."], root)
+    asset = _asset(
+        "x.api.ibm.com",
+        title="IBM | Home",
+        final_url="https://www.ibm.com/",
+        tls_subject_cn="www.ibm.com",
+        tls_sans=["www.ibm.com"],
+        body='<a href="https://www.ibm.com/x">x</a>' * 4 + "x" * 600,
+    )
+
+    assert owned == {"ibm.com"}
+    assert judge([asset], root, set())
+    assert judge([asset], root, owned) == []
+
+
 def test_a_sign_in_redirect_is_not_claimed():
     asset = _asset(
         "git.gov.example",
@@ -100,7 +117,7 @@ def test_a_default_page_on_a_foreign_certificate_is_unhosted():
         status_code=403,
         final_url=None,
         body="forbidden " * 80,
-        tls_subject_cn="host123.hosting.example",
+        tls_subject_cn="host123.hosting.shop",
         tls_sans=[],
     )
     named = _asset(
@@ -109,13 +126,13 @@ def test_a_default_page_on_a_foreign_certificate_is_unhosted():
         status_code=403,
         final_url=None,
         body="forbidden " * 80,
-        tls_subject_cn="host123.hosting.example",
+        tls_subject_cn="host123.hosting.shop",
         tls_sans=[],
     )
     found = judge([default, named], ROOT, set())
 
     assert [(c.host, c.kind, c.domain) for c in found] == [
-        ("office.gov.example", NameClaim.UNHOSTED.value, "hosting.example")
+        ("office.gov.example", NameClaim.UNHOSTED.value, "hosting.shop")
     ]
 
 
@@ -126,15 +143,15 @@ def test_a_certificate_alone_is_not_enough():
 
 def test_a_same_tld_redirect_to_an_error_page_is_not_claimed():
     asset = _asset(
-        "eservices.gov.example",
+        "eservices.gov.shop",
         title="ERROR: The request could not be satisfied",
         status_code=403,
-        final_url="https://platform.example/",
-        tls_subject_cn="platform.example",
+        final_url="https://platform.shop/",
+        tls_subject_cn="platform.shop",
         tls_sans=[],
         body="error " * 100,
     )
-    assert judge([asset], ROOT, set()) == []
+    assert judge([asset], "gov.shop", set()) == []
 
 
 def test_the_finding_names_the_domain_and_is_stable():

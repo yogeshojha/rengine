@@ -219,7 +219,7 @@
 					</Hint>
 				{/if}
 				{#each signals as kind (kind)}
-					<SignalChip {kind} compact onFilter={(t) => onFilter(t)} />
+					<SignalChip {kind} onFilter={(t) => onFilter(t)} />
 				{/each}
 				<CorroborationBadge
 					peers={v.corroborated_by}

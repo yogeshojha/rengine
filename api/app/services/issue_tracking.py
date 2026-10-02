@@ -68,11 +68,10 @@ from shared.services.issue_trackers import (
 from shared.services.issue_tracking import body as bodies
 from shared.services.issue_tracking.plan import OpenIssue, Plan, plan_filing
 from shared.services.issue_tracking.sync import NOT_FOUND
-from shared.services.scan_resolve import MASK
+from shared.services.scan_resolve import MASK, mask_tail
 from shared.utils.datetime import utc_now
 from shared.utils.net import validate_public_https_url
 
-_TAIL = 4
 _OPEN_STATES = (FilingState.PENDING.value, FilingState.FILED.value)
 
 
@@ -108,7 +107,7 @@ def _mask(kind: str, config: dict) -> dict:
     out: dict = {}
     for key, value in config.items():
         if key in hidden and isinstance(value, str):
-            out[key] = f"{MASK}{value[-_TAIL:]}" if len(value) > _TAIL * 2 else MASK
+            out[key] = mask_tail(value)
         else:
             out[key] = value
     return out
@@ -195,9 +194,7 @@ async def _verify(kind: str, url: str, config: dict) -> IssueTrackerTestResult:
     return IssueTrackerTestResult(success=True, message=message)
 
 
-def _tracker_read(
-    row: IssueTracker, counts: dict[str, int], *, reveal: bool
-) -> IssueTrackerRead:
+def _tracker_read(row: IssueTracker, *, reveal: bool) -> IssueTrackerRead:
     return IssueTrackerRead(
         id=row.id,
         name=row.name,
@@ -212,8 +209,6 @@ def _tracker_read(
         last_test_at=row.last_test_at,
         last_test_ok=row.last_test_ok,
         last_test_message=row.last_test_message if reveal else None,
-        issues_filed=counts.get(FilingState.FILED.value, 0),
-        issues_failed=counts.get(FilingState.FAILED.value, 0),
     )
 
 
@@ -227,17 +222,6 @@ class IssueTrackerService:
             raise _missing(_TRACKER_MISSING)
         return row
 
-    async def _counts(self) -> dict[uuid.UUID, dict[str, int]]:
-        rows = await self.session.execute(
-            select(TrackedIssue.tracker_id, TrackedIssue.state, func.count()).group_by(
-                TrackedIssue.tracker_id, TrackedIssue.state
-            )
-        )
-        out: dict[uuid.UUID, dict[str, int]] = defaultdict(dict)
-        for tracker_id, state, n in rows.all():
-            out[tracker_id][state] = int(n)
-        return out
-
     async def list(self, *, reveal: bool) -> list[IssueTrackerRead]:
         rows = (
             (
@@ -248,13 +232,10 @@ class IssueTrackerService:
             .scalars()
             .all()
         )
-        counts = await self._counts()
-        return [_tracker_read(r, counts.get(r.id, {}), reveal=reveal) for r in rows]
+        return [_tracker_read(r, reveal=reveal) for r in rows]
 
     async def get(self, id: uuid.UUID, *, reveal: bool) -> IssueTrackerRead:
-        row = await self._row(id)
-        counts = await self._counts()
-        return _tracker_read(row, counts.get(row.id, {}), reveal=reveal)
+        return _tracker_read(await self._row(id), reveal=reveal)
 
     async def create(
         self, data: IssueTrackerCreate, user_id: uuid.UUID
@@ -280,7 +261,7 @@ class IssueTrackerService:
         self.session.add(row)
         await self.session.commit()
         await self.session.refresh(row)
-        return _tracker_read(row, {}, reveal=True)
+        return _tracker_read(row, reveal=True)
 
     async def update(self, id: uuid.UUID, data: IssueTrackerUpdate) -> IssueTrackerRead:
         row = await self._row(id)
@@ -929,19 +910,8 @@ class IssueFilingService:
             for issue, tracker, n, present in rows
         ]
 
-    async def list(
-        self,
-        project_id: uuid.UUID,
-        *,
-        state: str | None = None,
-        tracker_id: uuid.UUID | None = None,
-    ) -> list[TrackedIssueRead]:
-        where = [TrackedIssue.project_id == project_id]
-        if state:
-            where.append(TrackedIssue.state == state)
-        if tracker_id:
-            where.append(TrackedIssue.tracker_id == tracker_id)
-        return await self._list(*where)
+    async def list(self, project_id: uuid.UUID) -> list[TrackedIssueRead]:
+        return await self._list(TrackedIssue.project_id == project_id)
 
     async def _issue(self, id: uuid.UUID) -> TrackedIssue:
         row = await self.session.get(TrackedIssue, id)

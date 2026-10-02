@@ -9,6 +9,7 @@ from enum import StrEnum
 
 from shared.definitions.bounty_programs import ScopeState
 from shared.enums.scan_schedule import IntervalUnit
+from shared.enums.subdomain import SubdomainSource
 from shared.enums.target import TargetType
 from shared.services.scope_filter import backtracks_badly, matches_any
 
@@ -29,6 +30,14 @@ class WatchHostState(StrEnum):
     MUTED = "muted"
 
 
+class WatchHostFilter(StrEnum):
+    ALL = "all"
+    ARRIVED = "arrived"
+    ALERTED = "alerted"
+    UNRESOLVED = "unresolved"
+    OUT_OF_SCOPE = WatchHostState.OUT_OF_SCOPE.value
+
+
 class WatchEventKind(StrEnum):
     WATCH_STARTED = "watch_started"
     WATCH_PAUSED = "watch_paused"
@@ -42,6 +51,9 @@ class WatchEventKind(StrEnum):
     STREAM_ERROR = "stream_error"
 
 
+WATCH_EVENT_SCOPE = "scope"
+
+
 class WatchCadence(StrEnum):
     OFF = "off"
     DAILY = "daily"
@@ -53,13 +65,6 @@ CADENCE_INTERVAL: dict[str, tuple[int, str]] = {
     WatchCadence.DAILY.value: (1, IntervalUnit.DAYS.value),
     WatchCadence.WEEKLY.value: (1, IntervalUnit.WEEKS.value),
     WatchCadence.MONTHLY.value: (30, IntervalUnit.DAYS.value),
-}
-
-CADENCE_LABELS: dict[str, str] = {
-    WatchCadence.OFF.value: "Off",
-    WatchCadence.DAILY.value: "Daily",
-    WatchCadence.WEEKLY.value: "Weekly",
-    WatchCadence.MONTHLY.value: "Monthly",
 }
 
 HOST_STATE_LABELS: dict[str, str] = {
@@ -86,7 +91,6 @@ EVENT_LABELS: dict[str, str] = {
     WatchEventKind.STREAM_ERROR.value: "Stream error",
 }
 
-# the states a hunter reads as "a new host arrived"
 FIELD_LABELS: dict[str, str] = {
     "engine_id": "engine",
     "cadence": "repeat",
@@ -110,7 +114,7 @@ ARRIVED_STATES: tuple[str, ...] = (
 WATCH_RUN_LABEL = "Watching"
 PROBE_RUN_LABEL = "Watch probe"
 WATCH_TAG = "watch"
-CT_SOURCE = "ct_log"
+CT_SOURCE = SubdomainSource.CT_LOG.value
 WATCH_HOST_KEY = "_watch_host"
 
 DEFAULT_RATE_LIMIT = 5

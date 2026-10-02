@@ -32,7 +32,7 @@ async def _upsert(
             project_id=estate.project_id,
             source=source,
             observations=observations,
-            policy=NoisePolicy.off(),
+            policy=NoisePolicy(enabled=False, drops=False, strip_params=False),
         )
     )
 

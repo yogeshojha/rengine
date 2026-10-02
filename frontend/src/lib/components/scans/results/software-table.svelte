@@ -5,7 +5,6 @@
 	import SearchX from '@lucide/svelte/icons/search-x';
 	import Package from '@lucide/svelte/icons/package';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
-	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 
 	import * as Card from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
@@ -15,7 +14,7 @@
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import CountTabs from '$lib/components/count-tabs.svelte';
-	import SortMenu from './table/sort-menu.svelte';
+	import ViewControls from './table/view-controls.svelte';
 	import { Toggle } from '$lib/components/ui/toggle';
 
 	import QueryBar from './query-bar/query-bar.svelte';
@@ -31,8 +30,6 @@
 	} from './table/columns';
 	import RowSelectionBar from './table/row-selection-bar.svelte';
 	import { RowSelection } from './table/selection.svelte';
-	import ExportMenu from './export-menu.svelte';
-	import TripwireButton from '$lib/components/tripwires/tripwire-button.svelte';
 	import SoftwareRow from './software/software-row.svelte';
 	import SoftwareDetailSheet from './software/software-detail-sheet.svelte';
 	import {
@@ -50,11 +47,14 @@
 		excludeToken,
 		appendTokens,
 		appendToken,
+		hasToken,
+		withoutToken,
 		type Facet
 	} from '$lib/utilities/scan-insights';
 	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 	import { UrlSync, onPopSearch } from '$lib/utilities/url-history.svelte';
 	import { LiveRefresh } from '$lib/utilities/live-results';
+	import { ALL_TAB, TabCounts, countTabs, withTab } from '$lib/utilities/tab-counts.svelte';
 	import { SEVERITY_TABS } from '$lib/utilities/vulns';
 	import type { QueryError } from '$lib/types/asset-query';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
@@ -71,7 +71,8 @@
 		projectWide?: boolean;
 		active?: boolean;
 		revision?: number;
-		onScanTotal?: (total: number) => void;
+		onScanTotal?: (total: number, capped: boolean) => void;
+		onSearch?: (query: string) => void;
 	}
 
 	let {
@@ -80,7 +81,8 @@
 		projectWide = false,
 		active = true,
 		revision = 0,
-		onScanTotal
+		onScanTotal,
+		onSearch
 	}: Props = $props();
 
 	const SW = SURFACE[SurfaceDimension.SOFTWARE];
@@ -155,7 +157,10 @@
 	let rowPad = $derived(rowPadding(density));
 	let term = $derived(search.trim().includes(':') ? '' : search.trim());
 	let filtered = $derived(Boolean(search.trim()));
+	const tabCounts = new TabCounts();
+	let tabSearch = $derived(withTab(search, 'severity', ALL_TAB));
 	let severityCounts = $derived.by(() => {
+		if (tabSearch) return tabCounts.counts;
 		if (!sideLoaded) return null;
 		const out: Record<string, number> = { all: coverage?.findings ?? 0 };
 		for (const f of facets.severity) out[f.key] = f.count;
@@ -165,6 +170,15 @@
 		const m = search.match(/(?:^|\s)severity:([a-z]+)(?:\s|$)/);
 		return m ? m[1] : 'all';
 	});
+	let severityTabs = $derived(
+		SEVERITY_TABS.filter(
+			(t) =>
+				t.key === 'all' ||
+				t.key === severityTab ||
+				!severityCounts ||
+				(severityCounts[t.key] ?? 0) > 0
+		)
+	);
 	let barFacets = $derived<Record<string, Facet[]>>({
 		severity: facets.severity.map((f) => ({ value: f.key, label: f.label, count: f.count })),
 		confidence: facets.confidence.map((f) => ({ value: f.key, label: f.label, count: f.count })),
@@ -237,13 +251,12 @@
 			facets = f;
 			coverage = c;
 			sideLoaded = true;
-			onScanTotal?.(c.findings);
-		} catch {
-			// ignore
-		}
+			onScanTotal?.(c.findings, c.capped_at != null);
+		} catch {}
 	}
 
 	const live = new LiveRefresh(() => {
+		tabCounts.refresh();
 		void runSearch();
 		void loadSide();
 	});
@@ -252,6 +265,25 @@
 		untrack(() => live.notify(tick, active && seen));
 	});
 	onDestroy(() => live.stop());
+	onDestroy(() => tabCounts.clear());
+
+	$effect(() => {
+		const base = tabSearch;
+		const key = `${projectId}|${scanId}|${base}`;
+		if (!ready || !seen || !queryReady) return;
+		untrack(() => {
+			if (!base) {
+				tabCounts.clear();
+				return;
+			}
+			const queries = Object.fromEntries(
+				SEVERITY_TABS.map((t) => [t.key, withTab(base, 'severity', t.key)])
+			);
+			tabCounts.track(key, () =>
+				countTabs(queries, (q) => softwareApi.counts(projectId, scanId, q))
+			);
+		});
+	});
 
 	let primed = false;
 	$effect(() => {
@@ -280,6 +312,7 @@
 		urlSync.write(params);
 	}
 	const urlSync = new UrlSync(['sw_q'], true);
+	$effect(() => onSearch?.(search.trim()));
 
 	function restoreUrl(sp: URLSearchParams) {
 		const nextSearch = sp.get('sw_q') ?? '';
@@ -317,20 +350,7 @@
 	}
 
 	function setSeverityTab(key: string) {
-		const without = search.replace(/(?:^|\s)severity:[a-z]+/g, '').trim();
-		onQuery(key === 'all' ? without : `${without} severity:${key}`.trim());
-	}
-
-	function hasToken(token: string) {
-		return new RegExp(`(?:^|\\s)${token}(?:\\s|$)`).test(search);
-	}
-
-	function toggleToken(token: string) {
-		if (!hasToken(token)) {
-			onQuery(appendToken(search, token));
-			return;
-		}
-		onQuery(search.replace(new RegExp(`(?:^|\\s)${token}`, 'g'), '').trim());
+		onQuery(withTab(search, 'severity', key));
 	}
 
 	function onToken(token: string) {
@@ -344,6 +364,10 @@
 
 	function toggleSelectAll() {
 		selection.toggleAll(items);
+	}
+
+	function toggleColumn(key: string) {
+		visiblePref = visible.includes(key) ? visible.filter((k) => k !== key) : [...visible, key];
 	}
 
 	function onSort(key: string) {
@@ -392,9 +416,10 @@
 	<div class="flex items-center gap-3 border-b pr-3 pl-2">
 		<div class="min-w-0 flex-1">
 			<CountTabs
-				tabs={SEVERITY_TABS}
+				tabs={severityTabs}
 				value={severityTab}
 				counts={severityCounts}
+				capped={tabSearch ? tabCounts.capped : coverage?.capped_at != null ? { all: true } : null}
 				onChange={setSeverityTab}
 			/>
 		</div>
@@ -418,46 +443,58 @@
 			map to an NVD product.
 		</div>
 	{/if}
+	{#if coverage?.capped_at != null}
+		<div class="flex items-start gap-2 border-b bg-muted/10 px-4 py-2 text-xs">
+			<TriangleAlert class="mt-0.5 size-3.5 shrink-0 text-warning" />
+			<span class="text-muted-foreground">
+				Matching stopped at {coverage.capped_at.toLocaleString()} software CVEs per scan. Known-exploited
+				and higher-severity matches are stored first.
+			</span>
+		</div>
+	{/if}
 
 	<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/10 px-4 py-2">
 		{#each QUICK_FILTERS as filter (filter.token)}
 			<Toggle
 				size="sm"
 				variant="outline"
-				pressed={hasToken(filter.token)}
-				onPressedChange={() => toggleToken(filter.token)}
+				pressed={hasToken(search, filter.token)}
+				onPressedChange={() =>
+					onQuery(
+						hasToken(search, filter.token)
+							? withoutToken(search, filter.token)
+							: appendToken(search, filter.token)
+					)}
 				class="h-7 px-2.5 text-xs font-normal"
 			>
 				{filter.label}
 			</Toggle>
 		{/each}
-		<div class="ml-auto flex items-center gap-1.5">
-			<SortMenu sorts={SOFTWARE_SORTS} sortKey={sort.key} sortDir={sort.dir} {onSort} />
-			<ExportMenu
+		<div class="ml-auto flex flex-wrap items-center gap-1.5">
+			<ViewControls
 				dimension={SurfaceDimension.SOFTWARE}
-				{projectId}
-				{scanId}
-				filters={exportFilters}
-			/>
-			<TripwireButton
-				dimension={SurfaceDimension.SOFTWARE}
-				{projectId}
-				scanId={scanId || null}
-				query={search}
-				class="h-7 px-2 text-xs"
-			/>
-			<Button
-				variant="ghost"
-				size="icon"
-				class="size-7"
-				aria-label="Refresh"
-				onclick={() => {
+				dimensions={[]}
+				groupBy=""
+				onGroupBy={() => {}}
+				showGroupBy={false}
+				sorts={SOFTWARE_SORTS}
+				sortKey={sort.key}
+				sortDir={sort.dir}
+				{onSort}
+				columns={SOFTWARE_COLUMNS}
+				{visible}
+				onToggleColumn={toggleColumn}
+				{density}
+				onDensity={(d) => (density = d)}
+				{refreshing}
+				onRefresh={() => {
 					void runSearch();
 					void loadSide();
 				}}
-			>
-				<RefreshCw class="size-3.5 {refreshing ? 'animate-spin' : ''}" />
-			</Button>
+				{projectId}
+				{scanId}
+				{exportFilters}
+			/>
 		</div>
 	</div>
 
@@ -510,7 +547,6 @@
 							{term}
 							columns={shownColumns}
 							selected={selected?.id === row.id}
-							focused={false}
 							checked={selection.has(row.id)}
 							{projectWide}
 							pad={rowPad}

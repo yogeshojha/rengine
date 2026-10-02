@@ -1,26 +1,20 @@
-"""One dalfox v3 JSONL finding into the shape reNgine stores."""
-
 from __future__ import annotations
 
 from typing import Any
 from urllib.parse import urlsplit
 
 from shared.definitions.ports import SCHEME_PORTS
-from shared.definitions.vulnerabilities import Protocol, Scanner, Severity
+from shared.definitions.vulnerabilities import (
+    Protocol,
+    Scanner,
+    Severity,
+    coerce_severity,
+)
 from shared.utils.net import url_port
 from shared.utils.text import strip_control
 from tools.nuclei.parser import Finding, fingerprint
 
-# dalfox v3 finding type -> whether it is an assertion we treat as a finding
 _CLAIM_TYPES = frozenset({"V", "A", "R"})
-_SEVERITY = {
-    "critical": Severity.CRITICAL.value,
-    "high": Severity.HIGH.value,
-    "medium": Severity.MEDIUM.value,
-    "low": Severity.LOW.value,
-    "info": Severity.INFO.value,
-}
-# dalfox oob is the strongest signal it produces
 _PROVEN_METHODS = frozenset({"oob"})
 
 
@@ -34,11 +28,12 @@ def _text(value: Any, limit: int = 0) -> str | None:
 
 
 def _severity(value: Any) -> str:
-    return _SEVERITY.get((str(value or "").strip().lower()), Severity.LOW.value)
+    key = coerce_severity(str(value or ""))
+    return Severity.LOW.value if key == Severity.UNKNOWN.value else key
 
 
 def _template_id(record: dict) -> str:
-    """A stable id per (finding type, injection context, cwe) so instances group."""
+    """Stable id per injection type and CWE."""
     parts = [
         str(record.get("inject_type") or record.get("detection_method") or ""),
         str(record.get("cwe") or "CWE-79"),

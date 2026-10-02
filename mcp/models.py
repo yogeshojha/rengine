@@ -17,7 +17,6 @@ from shared.utils.datetime import utc_now
 
 MAX_NAME = 80
 MAX_TOKENS = 50
-EXPIRY_CHOICES: tuple[int | None, ...] = (7, 30, 90, 365, None)
 
 
 class McpToken(SQLModel, table=True):
@@ -133,13 +132,8 @@ class McpToolRead(BaseModel):
 
 class McpSessionRead(BaseModel):
     token_id: uuid.UUID
-    token_name: str
     client: str
-    capabilities: list[str]
-    first_seen: datetime
     last_seen: datetime
-    calls: int
-    last_tool: str | None = None
 
 
 class McpCallRead(BaseModel):
@@ -167,12 +161,6 @@ class McpStatus(BaseModel):
     protocol_version: str
     rate_limit_per_minute: int
     ceiling: dict[str, bool]
-    tools_total: int
-    tools_available: int
-    tokens_total: int
-    tokens_active: int
     sessions: list[McpSessionRead]
-    calls_today: int
-    last_call_at: datetime | None
     capabilities: list[dict]
     clients: list[dict]

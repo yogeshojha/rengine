@@ -218,7 +218,7 @@ KINDS: tuple[KindSpec, ...] = (
     KindSpec(
         InterestKind.NEWLY_APPEARED.value,
         "New",
-        "Absent from the previous scan of this target.",
+        "Absent from every earlier scan of this target.",
         10,
         TONE_NEUTRAL,
     ),
@@ -233,8 +233,6 @@ KINDS: tuple[KindSpec, ...] = (
 
 KIND_BY_KEY: dict[str, KindSpec] = {k.key: k for k in KINDS}
 KIND_KEYS: tuple[str, ...] = tuple(k.key for k in KINDS)
-KIND_LABELS: dict[str, str] = {k.key: k.label for k in KINDS}
-KIND_WEIGHTS: dict[str, int] = {k.key: k.weight for k in KINDS}
 
 
 def kind_weight(kind: str) -> int:

@@ -1,4 +1,4 @@
-"""Secrets read out of stored HTTP responses. Nothing is sent to verify one."""
+"""Secrets read out of stored HTTP responses."""
 
 from __future__ import annotations
 
@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from shared.definitions.constants import HTTPX_RESPONSE_CAP
-from shared.definitions.interest import TONE_INFO, TONE_NEUTRAL, TONE_WARNING
 
 MAX_VALUE_LENGTH = 8192
 MAX_SUBJECT_LENGTH = 500
@@ -62,12 +61,6 @@ STATE_LABELS: dict[str, str] = {
     SecretState.EXPIRED.value: "Expired",
 }
 
-STATE_TONES: dict[str, str] = {
-    SecretState.EXPOSED.value: TONE_WARNING,
-    SecretState.PUBLIC.value: TONE_NEUTRAL,
-    SecretState.EXPIRED.value: TONE_INFO,
-}
-
 
 class SecretSource(StrEnum):
     BODY = "body"
@@ -116,6 +109,7 @@ class DropReason(StrEnum):
     UNDECODABLE = "undecodable"
     TEMPLATE = "template"
     TOO_LONG = "too_long"
+    LINK_SCHEME = "link_scheme"
 
 
 DROP_REASON_LABELS: dict[str, str] = {
@@ -128,6 +122,7 @@ DROP_REASON_LABELS: dict[str, str] = {
     DropReason.UNDECODABLE.value: "Token did not decode",
     DropReason.TEMPLATE.value: "Template expression",
     DropReason.TOO_LONG.value: "Over the length cap",
+    DropReason.LINK_SCHEME.value: "Link scheme, not a user",
 }
 
 
@@ -671,6 +666,22 @@ FILE_EXTENSIONS: frozenset[str] = frozenset(
 
 TEMPLATE_MARKS: tuple[str, ...] = ("{{", "${", "<%", "%7b", "[[", "{%")
 
+# http://mailto:name@example.org is a broken link
+LINK_SCHEMES: frozenset[str] = frozenset(
+    {
+        "mailto",
+        "tel",
+        "callto",
+        "sms",
+        "fax",
+        "skype",
+        "whatsapp",
+        "viber",
+        "javascript",
+        "data",
+    }
+)
+
 __all__ = [
     "ALL_SOURCES",
     "BACKFILL_SCANS_PER_TICK",
@@ -686,6 +697,7 @@ __all__ = [
     "FINALIZE_SOURCES",
     "GROUP_LABELS",
     "GROUP_ORDER",
+    "LINK_SCHEMES",
     "MAX_CONTEXT_LENGTH",
     "MAX_SIGHTINGS_PER_SECRET",
     "MAX_SIGHTINGS_SHOWN",
@@ -701,7 +713,6 @@ __all__ = [
     "STAGE_SOURCES",
     "STATE_LABELS",
     "STATE_ORDER",
-    "STATE_TONES",
     "TEMPLATE_MARKS",
     "WRITE_BATCH",
     "DetectorSpec",

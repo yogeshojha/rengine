@@ -3,7 +3,13 @@
 	import CountTabs, { type Tab } from '$lib/components/count-tabs.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { surfaceStore } from '$lib/stores/surface.svelte';
-	import { FINDINGS_ROOT, FINDINGS_TABS, SURFACE, type FindingsTab } from '$lib/config/surface';
+	import {
+		FINDINGS_ROOT,
+		FINDINGS_TABS,
+		SURFACE,
+		SurfaceDimension,
+		type FindingsTab
+	} from '$lib/config/surface';
 	import { findingsHref } from '$lib/config/routes';
 
 	let { value }: { value: FindingsTab } = $props();
@@ -25,11 +31,20 @@
 		}))
 	);
 
+	function covered(dimension: string): boolean {
+		return (surfaceStore.coverage(dimension)?.targets_covered ?? 0) > 0;
+	}
+
 	let counts = $derived.by(() => {
 		if (!overview) return null;
-		const out: Record<string, number> = {};
+		const cves =
+			covered(SurfaceDimension.VULNERABILITIES) || covered(SurfaceDimension.SOFTWARE)
+				? overview.cves
+				: null;
+		const out: Record<string, number | null> = {};
 		for (const tab of FINDINGS_TABS) {
-			out[tab.key] = tab.key === 'cve' ? overview.cves : (surfaceStore.total(tab.key) ?? 0);
+			if (tab.key === 'cve') out[tab.key] = cves;
+			else out[tab.key] = covered(tab.key) ? (surfaceStore.total(tab.key) ?? null) : null;
 		}
 		return out;
 	});

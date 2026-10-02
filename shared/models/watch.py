@@ -138,7 +138,7 @@ class UserMark(SQLModel, table=True):
 
 
 def _clean_query(v: str | None) -> str | None:
-    return None if v is None else strip_control(v).strip()[:MAX_ALERT_QUERY]
+    return None if v is None else strip_control(v).strip()
 
 
 def _check_cadence(v: str | None) -> str | None:
@@ -173,7 +173,7 @@ class WatchSettings(BaseModel):
     probe_engine_id: uuid.UUID | None = None
     follow_scope: bool = True
     alert_unresolved: bool = False
-    alert_query: str = ""
+    alert_query: str = Field(default="", max_length=MAX_ALERT_QUERY)
     channel_ids: list[uuid.UUID] = Field(default_factory=list, max_length=MAX_CHANNELS)
     notify_in_app: bool = True
 
@@ -200,7 +200,7 @@ class WatchUpdate(BaseModel):
     probe_engine_id: uuid.UUID | None = None
     follow_scope: bool | None = None
     alert_unresolved: bool | None = None
-    alert_query: str | None = None
+    alert_query: str | None = Field(default=None, max_length=MAX_ALERT_QUERY)
     channel_ids: list[uuid.UUID] | None = Field(default=None, max_length=MAX_CHANNELS)
     notify_in_app: bool | None = None
 

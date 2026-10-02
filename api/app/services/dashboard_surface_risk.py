@@ -6,7 +6,6 @@ from uuid import UUID
 from sqlalchemy import and_, func, not_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.asset_query.predicates import live
 from app.services.dashboard_overview import (
     VULNS,
     WEB,
@@ -22,9 +21,8 @@ from shared.definitions.vulnerabilities import (
 from shared.models.dashboard import DashboardSurfaceRisk, SurfaceRiskTarget
 from shared.models.scan import Scan
 from shared.models.subdomain import Subdomain
-from shared.models.tag import TargetTag
-from shared.models.target import TargetOrganization
 from shared.models.vulnerability import Vulnerability
+from shared.services.asset_query.predicates import live
 from shared.utils.datetime import utc_now
 
 
@@ -42,20 +40,19 @@ class SurfaceRiskService:
         out = DashboardSurfaceRisk(targets_total=len(targets))
         if not targets:
             return out
-        ids = {t.id for t in targets}
         runs_by_target, _ = await self.overview._runs(project_id, utc_now(), scoped)
         scans: dict[UUID, Scan] = {
             s.id: s for runs in runs_by_target.values() for s in runs
         }
         counts = await self.overview._counts(scans)
         ran = await self.overview._ran(list(scans))
-        covered = self.overview._covered(runs_by_target, counts, ran)
+        vuln_covered = await self.overview._vuln_covered(list(scans))
+        covered = self.overview._covered(runs_by_target, counts, ran, vuln_covered)
         web_cover = {tid: ids[0] for tid, ids in covered[WEB].items() if ids}
         vuln_cover = {tid: ids[0] for tid, ids in covered[VULNS].items() if ids}
 
         live_by_scan = await self._live(list(web_cover.values()))
         findings = await self._findings(list(vuln_cover.values()))
-        orgs, tags = await self._labels(list(ids))
 
         for t in targets:
             runs = runs_by_target.get(t.id)
@@ -79,8 +76,6 @@ class SurfaceRiskService:
                 scan_id=latest.id,
                 scan_status=latest.status,
                 last_at=latest.completed_at or latest.started_at or latest.created_at,
-                organizations=orgs.get(t.id, []),
-                tags=tags.get(t.id, []),
             )
             out.rows.append(row)
 
@@ -129,24 +124,3 @@ class SurfaceRiskService:
             out["act"][scan_id] = int(act or 0)
             out["kev"][scan_id] = int(kev or 0)
         return out
-
-    async def _labels(
-        self, target_ids: list[UUID]
-    ) -> tuple[dict[UUID, list[UUID]], dict[UUID, list[UUID]]]:
-        orgs: dict[UUID, list[UUID]] = defaultdict(list)
-        tags: dict[UUID, list[UUID]] = defaultdict(list)
-        result = await self.session.execute(
-            select(
-                TargetOrganization.target_id, TargetOrganization.organization_id
-            ).where(TargetOrganization.target_id.in_(target_ids))
-        )
-        for tid, oid in result.all():
-            orgs[tid].append(oid)
-        result = await self.session.execute(
-            select(TargetTag.target_id, TargetTag.tag_id).where(
-                TargetTag.target_id.in_(target_ids)
-            )
-        )
-        for tid, gid in result.all():
-            tags[tid].append(gid)
-        return orgs, tags

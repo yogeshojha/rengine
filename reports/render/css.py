@@ -15,7 +15,6 @@ from shared.definitions.reports import (
     ReportStyle,
 )
 
-ASSETS = Path(__file__).resolve().parent.parent / "assets"
 TEMPLATES = Path(__file__).resolve().parent.parent / "templates"
 
 _TOKEN_RE = re.compile("(" + "|".join(re.escape(t) for t in SLOT_TOKEN_VALUES) + ")")
@@ -35,7 +34,7 @@ def base_css() -> str:
 
 
 def _escape(value: str) -> str:
-    return value.replace("\\", "\\\\").replace('"', '\\"')
+    return value.replace("\\", "\\\\").replace('"', '\\"').replace("<", "\\3c ")
 
 
 def slot_content(template: str, values: dict[str, str]) -> str:
@@ -104,7 +103,6 @@ def page_css(style: ReportStyle, values: dict[str, str]) -> str:
     return (
         f"@page{{size:{size} {orientation};margin:{margins};background:var(--r-page);{''.join(boxes)}}}"
         f"@page cover{{margin:0;background:var(--r-page);{blank}}}"
-        f"@page appendix{{{''.join(boxes)}}}"
         "h1{bookmark-level:1;bookmark-label:content(text)}"
         ".section__title{string-set:section attr(data-run);bookmark-level:1;bookmark-label:attr(data-run)}"
         ".sub__title{bookmark-level:2;bookmark-label:content(text)}"
@@ -128,4 +126,4 @@ def stylesheet(
             page_css(style, values),
             tokens.css or "",
         )
-    )
+    ).replace("</", "<\\/")

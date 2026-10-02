@@ -4,6 +4,7 @@
 	import { TraceStatus } from '$lib/config/ask';
 	import type { AskTraceStep } from '$lib/types/ask';
 	import { cn } from '$lib/utils.js';
+	import { inAppHref } from '$lib/utilities/mcp';
 
 	interface Props {
 		steps: AskTraceStep[];
@@ -49,9 +50,11 @@
 					{#if step.status === TraceStatus.RUNNING}
 						reading
 					{:else if step.pivot && step.rows != null}
-						<a href={step.pivot} class="text-primary">{step.rows} rows</a>
+						<a href={inAppHref(step.pivot)} class="text-primary"
+							>{step.rows} {step.rows === 1 ? 'row' : 'rows'}</a
+						>
 					{:else if step.rows != null}
-						{step.rows} rows
+						{step.rows} {step.rows === 1 ? 'row' : 'rows'}
 					{:else if step.status === TraceStatus.FAILED}
 						no rows
 					{/if}

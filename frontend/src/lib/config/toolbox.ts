@@ -10,7 +10,7 @@ import Globe from '@lucide/svelte/icons/globe';
 import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 import Building2 from '@lucide/svelte/icons/building-2';
 import type { IconComponent } from './icons';
-import type { RowAction, Tone } from '$lib/types/toolbox';
+import type { Tone } from '$lib/types/toolbox';
 
 export const TOOL_ICONS: Record<string, IconComponent> = {
 	'scroll-text': ScrollText,
@@ -27,7 +27,6 @@ export const TOOLBOX_ICON = ToolCase;
 export const ORG_DOMAINS_TOOL = 'org_domains';
 export const ORG_DOMAINS_ICON = Building2;
 
-export const ROW_ACTION: Record<'addTargets', RowAction> = { addTargets: 'add_targets' };
 export const ADD_TARGETS_BATCH = 500;
 export const SELECT_ROW_PAGE = 25;
 export const SELECT_FILTER_AT = 10;
@@ -54,6 +53,24 @@ export const TONE_TEXT: Record<Tone, string> = {
 	info: 'text-info',
 	muted: 'text-muted-foreground'
 };
+
+export const TONE_TINT: Record<Tone, string> = { ...TONE_TEXT, info: TONE_TEXT.neutral };
+
+export const isExternalHref = (href: string) => /^https?:/i.test(href);
+
+const LOCAL_ORIGIN = 'http://local.invalid';
+
+const isLocalPath = (href: string) => {
+	if (!href.startsWith('/')) return false;
+	try {
+		return new URL(href, LOCAL_ORIGIN).origin === LOCAL_ORIGIN;
+	} catch {
+		return false;
+	}
+};
+
+export const safeHref = (href: string | null) =>
+	href && (isExternalHref(href) || isLocalPath(href)) ? href : null;
 
 export const TONE_DOT: Record<Tone, string> = {
 	neutral: 'bg-muted-foreground/40',

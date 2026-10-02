@@ -7,30 +7,30 @@
 	import Plus from '@lucide/svelte/icons/plus';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import AlertCircle from '@lucide/svelte/icons/alert-circle';
-	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import ListChecks from '@lucide/svelte/icons/list-checks';
 	import Search from '@lucide/svelte/icons/search';
 	import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 	import SearchX from '@lucide/svelte/icons/search-x';
 
+	import { scanContextsApi } from '$lib/api/scan-contexts';
 	import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { proxiesStore } from '$lib/stores/proxies.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
 	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Alert from '$lib/components/ui/alert';
 	import * as InputGroup from '$lib/components/ui/input-group';
 	import * as Select from '$lib/components/ui/select';
-	import EmptyState from '@/components/empty-state.svelte';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import ContextListCard from '$lib/components/contexts/context-list-card.svelte';
-	import ContextFacets from '$lib/components/contexts/context-facets.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
-	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
-	import SelectionActionBar from '@/components/selection-action-bar.svelte';
-	import { contextFacets, facetLine } from '$lib/components/contexts/context-summary';
-	import { CONTEXT_TEMPLATES, templateDraft } from '$lib/components/contexts/context-templates';
+	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
+	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
+	import { contextFacets } from '$lib/components/contexts/context-summary';
+	import { CONTEXT_TEMPLATES, templateFacet } from '$lib/components/contexts/context-templates';
 	import type { ScanContextRead } from '$lib/types/scan-context';
 
 	type SortKey = 'recent' | 'name' | 'usage';
@@ -46,7 +46,6 @@
 	let contextToDelete = $state<ScanContextRead | null>(null);
 	let showDeleteDialog = $state(false);
 	let isDeleting = $state(false);
-	let deleteMode = $state<'single' | 'bulk'>('single');
 	const selectedIds = new SvelteSet<string>();
 	let query = $state('');
 	let sortKey = $state<SortKey>('recent');
@@ -65,7 +64,7 @@
 	});
 
 	$effect(() => {
-		if (!proxiesStore.hasFetched) untrack(() => proxiesStore.fetch());
+		if (auth.user?.is_superuser && !proxiesStore.hasFetched) untrack(() => proxiesStore.fetch());
 	});
 
 	function proxyName(context: ScanContextRead): string | null {
@@ -134,67 +133,26 @@
 		else for (const c of all) selectedIds.add(c.id);
 	}
 
-	function requestBulkDelete() {
-		if (selectedIds.size === 0) return;
-		deleteMode = 'bulk';
-		showDeleteDialog = true;
-	}
-
 	async function confirmDelete() {
+		if (!contextToDelete?.id) return;
 		isDeleting = true;
 		try {
-			if (deleteMode === 'single') {
-				if (!contextToDelete?.id) return;
-				const ok = await scanContextsStore.deleteContext(
-					contextToDelete.id,
-					contextToDelete.project_id
-				);
-				if (ok) {
-					toast.success('Context deleted');
-					selectedIds.delete(contextToDelete.id);
-					showDeleteDialog = false;
-					contextToDelete = null;
-				} else {
-					toast.error(scanContextsStore.error ?? 'Context not deleted');
-				}
-				return;
+			const ok = await scanContextsStore.deleteContext(
+				contextToDelete.id,
+				contextToDelete.project_id
+			);
+			if (ok) {
+				toast.success('Context deleted');
+				selectedIds.delete(contextToDelete.id);
+				showDeleteDialog = false;
+				contextToDelete = null;
+			} else {
+				toast.error(scanContextsStore.error ?? 'Context not deleted');
 			}
-
-			const byId = new Map(scanContextsStore.contexts.map((c) => [c.id, c]));
-			const ids = Array.from(selectedIds);
-			let failed = 0;
-			let lastError = '';
-			for (const id of ids) {
-				const ok = await scanContextsStore.deleteContext(id, byId.get(id)?.project_id);
-				if (ok) selectedIds.delete(id);
-				else {
-					failed++;
-					lastError = scanContextsStore.error ?? '';
-				}
-			}
-			const deleted = ids.length - failed;
-			if (deleted) toast.success(`${deleted} context${deleted !== 1 ? 's' : ''} deleted`);
-			if (failed) {
-				toast.error(
-					`${failed} context${failed !== 1 ? 's' : ''} not deleted${lastError ? `. ${lastError}` : ''}`
-				);
-			}
-			showDeleteDialog = false;
 		} finally {
 			isDeleting = false;
 		}
 	}
-
-	const deleteTitle = $derived(
-		deleteMode === 'single'
-			? 'Delete context'
-			: `Delete ${selectedIds.size} context${selectedIds.size !== 1 ? 's' : ''}`
-	);
-	const deleteDescription = $derived(
-		deleteMode === 'single'
-			? `Context ${contextToDelete?.name ?? ''} is removed.`
-			: 'The selected contexts are removed. Contexts used by a schedule or a running scan are skipped.'
-	);
 
 	async function handleRefresh() {
 		const project = projectsStore.activeProject;
@@ -275,12 +233,10 @@
 		<section class="rounded-xl border border-border bg-muted/20 p-6 sm:p-8">
 			<div class="max-w-xl">
 				<h2 class="text-lg font-semibold tracking-tight">No scan contexts</h2>
-				<p class="mt-1 text-sm text-muted-foreground">Start from a template or use New context.</p>
 			</div>
 			<div class="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
 				{#each CONTEXT_TEMPLATES as template (template.key)}
-					{@const draft = templateDraft(template.key)}
-					{@const line = facetLine(draft)}
+					{@const facet = templateFacet(template)}
 					<button
 						type="button"
 						class="group flex flex-col gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:border-foreground/25 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
@@ -293,9 +249,9 @@
 								class="mt-0.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
 							/>
 						</span>
-						<span class="text-xs text-muted-foreground">{template.description}</span>
-						<ContextFacets context={draft} variant="inline" class="mt-auto text-2xs" />
-						<span class="sr-only">{line}</span>
+						{#if facet}
+							<p class="mt-auto text-2xs leading-relaxed text-foreground">{facet}</p>
+						{/if}
 					</button>
 				{/each}
 			</div>
@@ -351,7 +307,6 @@
 						}}
 						onDuplicate={() => handleDuplicate(context)}
 						onDelete={() => {
-							deleteMode = 'single';
 							contextToDelete = context;
 							showDeleteDialog = true;
 						}}
@@ -362,26 +317,27 @@
 	{/if}
 </div>
 
-<SelectionActionBar selectedCount={selectedIds.size} noun="context" onClear={clearSelection}>
+<SelectionDeleteBar
+	ids={[...selectedIds]}
+	noun="context"
+	remove={(id) => scanContextsApi.remove(id, projectsStore.activeProject?.id ?? '')}
+	onDone={() => {
+		selectedIds.clear();
+		const project = projectsStore.activeProject;
+		if (project) void scanContextsStore.fetchContexts(project.id);
+	}}
+	onClear={clearSelection}
+>
 	<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={toggleSelectAll}>
 		<ListChecks class="h-3.5 w-3.5 text-muted-foreground" />
 		{selectedIds.size >= total ? 'Deselect all' : 'Select all'}
 	</Button>
-	<Button
-		variant="ghost"
-		size="sm"
-		class="gap-2 font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
-		onclick={requestBulkDelete}
-	>
-		<Trash2 class="h-3.5 w-3.5" />
-		Delete
-	</Button>
-</SelectionActionBar>
+</SelectionDeleteBar>
 
 <DeleteConfirmationDialog
 	bind:open={showDeleteDialog}
-	title={deleteTitle}
-	description={deleteDescription}
+	title="Delete context"
+	description={`Context ${contextToDelete?.name ?? ''} is removed.`}
 	{isDeleting}
 	onOpenChange={(open) => {
 		showDeleteDialog = open;

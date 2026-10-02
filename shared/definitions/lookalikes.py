@@ -42,7 +42,6 @@ class VerdictSpec:
     key: str
     label: str
     help: str
-    tone: str
 
 
 VERDICTS: tuple[VerdictSpec, ...] = (
@@ -50,37 +49,31 @@ VERDICTS: tuple[VerdictSpec, ...] = (
         Verdict.SIMILAR_PAGE.value,
         "Similar page",
         f"Page similarity to the target's page at or above {SIMILAR_AT}%.",
-        "critical",
     ),
     VerdictSpec(
         Verdict.MAIL.value,
         "MX configured",
         "Publishes an MX record.",
-        "high",
     ),
     VerdictSpec(
         Verdict.LIVE.value,
         "Web content",
         "Answers HTTP with a 2xx or 3xx status.",
-        "medium",
     ),
     VerdictSpec(
         Verdict.PARKED.value,
         "Parked",
         "Parking nameservers, a parking page or a domain marketplace.",
-        "low",
     ),
     VerdictSpec(
         Verdict.REGISTERED.value,
         "Registered",
         "Resolves or has nameservers. No 2xx or 3xx HTTP answer.",
-        "low",
     ),
     VerdictSpec(
         Verdict.LINKED.value,
         "Linked to target",
         "Redirects to the target, shares its nameservers or is a project target.",
-        "none",
     ),
 )
 

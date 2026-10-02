@@ -30,8 +30,3 @@ ASSET_IDENTITY: dict[str, str] = {
     SurfaceDimension.SOFTWARE.value: "fingerprint",
     SurfaceDimension.SECRETS.value: "fingerprint",
 }
-
-STATUS_LABELS: dict[str, str] = {
-    NoteStatus.OPEN.value: "Open",
-    NoteStatus.RESOLVED.value: "Resolved",
-}

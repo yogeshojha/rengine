@@ -23,4 +23,3 @@ class ScheduleStatus(Enum):
 
 SCHEDULE_TYPES = tuple(t.value for t in ScheduleType)
 INTERVAL_UNITS = tuple(u.value for u in IntervalUnit)
-SCHEDULE_STATUSES = tuple(s.value for s in ScheduleStatus)

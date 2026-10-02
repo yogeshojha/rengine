@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import json
 from collections import Counter
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import Text, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.definitions.scan_surface import (
@@ -37,6 +38,22 @@ def _outcome(stamp) -> str:
     return str(stamp or "").split("@", 1)[0]
 
 
+def _tally_tiers(
+    tiers: dict[str, SurfaceTierCount], planned: list, outcomes: dict, n: int
+) -> None:
+    for tier in planned:
+        count = tiers.setdefault(
+            tier, SurfaceTierCount(tier=tier, label=TIER_LABELS.get(tier, tier))
+        )
+        result = _outcome(outcomes.get(tier))
+        if result == CoverageStatus.COMPLETED.value:
+            count.scanned += n
+        elif result in _RAN:
+            count.partial += n
+        else:
+            count.not_scanned += n
+
+
 class ScanSurfaceService:
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -45,15 +62,24 @@ class ScanSurfaceService:
         scope = QueryScope.of(scope)
         if not scope:
             return SurfaceSummary()
+        held = [
+            cast(column, Text)
+            for column in (
+                ScanSurfaceItem.tiers_planned,
+                ScanSurfaceItem.tiers_done,
+                ScanSurfaceItem.unmapped_tech,
+            )
+        ]
         rows = (
             await self.session.execute(
                 select(
                     ScanSurfaceItem.class_,
                     ScanSurfaceItem.drop_reason,
-                    ScanSurfaceItem.tiers_planned,
-                    ScanSurfaceItem.tiers_done,
-                    ScanSurfaceItem.unmapped_tech,
-                ).where(scope.match(ScanSurfaceItem.scan_id))
+                    *held,
+                    func.count(),
+                )
+                .where(scope.match(ScanSurfaceItem.scan_id))
+                .group_by(ScanSurfaceItem.class_, ScanSurfaceItem.drop_reason, *held)
             )
         ).all()
         if not rows:
@@ -63,43 +89,36 @@ class ScanSurfaceService:
         dropped: Counter[str] = Counter()
         unmapped: Counter[str] = Counter()
         tiers: dict[str, SurfaceTierCount] = {}
-        for class_, reason, planned, done, missing in rows:
-            unmapped.update(missing or [])
+        for class_, reason, planned_text, done_text, missing_text, n in rows:
+            planned, done, missing = (
+                json.loads(raw) if raw is not None else None
+                for raw in (planned_text, done_text, missing_text)
+            )
+            for name in missing or []:
+                unmapped[name] += n
             if class_ == SurfaceClass.ROOT.value:
-                summary.roots += 1
+                summary.roots += n
             elif class_ == SurfaceClass.NAME.value:
-                summary.names += 1
+                summary.names += n
             elif class_ == SurfaceClass.SERVICE.value:
-                summary.services += 1
+                summary.services += n
             elif class_ == SurfaceClass.REQUEST.value:
-                summary.requests += 1
+                summary.requests += n
             elif class_ == SurfaceClass.BASE.value:
-                summary.bases += 1
+                summary.bases += n
             if reason == DropReason.COVERED_BY_ORIGIN.value:
-                summary.covered += 1
+                summary.covered += n
                 continue
             if reason:
-                dropped[reason] += 1
+                dropped[reason] += n
                 continue
             if class_ == SurfaceClass.ROOT.value:
-                summary.origins += 1
-            outcomes = dict(done or {})
-            for tier in planned or []:
-                count = tiers.setdefault(
-                    tier, SurfaceTierCount(tier=tier, label=TIER_LABELS.get(tier, tier))
-                )
-                result = _outcome(outcomes.get(tier))
-                if result == CoverageStatus.COMPLETED.value:
-                    count.scanned += 1
-                elif result in _RAN:
-                    count.partial += 1
-                else:
-                    count.not_scanned += 1
+                summary.origins += n
+            _tally_tiers(tiers, planned or [], dict(done or {}), n)
         summary.dropped = dict(dropped)
         summary.tiers = [tiers[t] for t in TIER_ORDER if t in tiers]
-        summary.unmapped_tech = [
-            name for name, _ in unmapped.most_common(_MAX_UNMAPPED)
-        ]
+        ranked = sorted(unmapped.items(), key=lambda item: (-item[1], item[0]))
+        summary.unmapped_tech = [name for name, _ in ranked[:_MAX_UNMAPPED]]
         return summary
 
     async def for_asset(self, scan_id: UUID, asset_id: UUID) -> AssetSurface | None:
@@ -128,7 +147,9 @@ class ScanSurfaceService:
             members = int(
                 await self.session.scalar(
                     select(func.count()).where(
-                        ScanSurfaceItem.cluster_id == item.cluster_id
+                        ScanSurfaceItem.scan_id == scan_id,
+                        ScanSurfaceItem.cluster_id == item.cluster_id,
+                        ScanSurfaceItem.class_ == SurfaceClass.ROOT.value,
                     )
                 )
                 or 1

@@ -71,8 +71,8 @@
 	let groups = $derived.by(() => {
 		const out: { label: string | undefined; rows: SheetRow[] }[] = [];
 		for (const r of rows) {
-			const last = out[out.length - 1];
-			if (last && last.label === r.group) last.rows.push(r);
+			const group = out.find((g) => g.label === r.group);
+			if (group) group.rows.push(r);
 			else out.push({ label: r.group, rows: [r] });
 		}
 		return out;

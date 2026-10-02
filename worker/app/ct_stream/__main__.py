@@ -22,14 +22,14 @@ from shared.definitions.watch import (
     CT_STATUS_TTL,
     WatchItem,
 )
-from shared.logging import get_logger
+from shared.logging import get_logger, setup_logging
 from shared.services import watch_sync
 from shared.services.celery_dispatch import dispatch_watch_certificate
 from shared.utils.datetime import utc_now
 
 logger = get_logger(__name__)
 
-STATE_DIR = Path(os.environ.get("CT_STATE_DIR", "/app/ct-state"))
+STATE_DIR = Path("/app/ct-state")
 SPOOL_DIR = STATE_DIR / "spool"
 CERT_DIR = STATE_DIR / "certspotter"
 WATCHLIST = STATE_DIR / "watchlist"
@@ -314,4 +314,5 @@ class Supervisor:
 
 
 if __name__ == "__main__":
+    setup_logging(level=settings.LOG_LEVEL)
     Supervisor().run()

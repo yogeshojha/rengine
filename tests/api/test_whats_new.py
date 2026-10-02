@@ -485,7 +485,7 @@ async def test_the_mark_moves_and_unseen_reads_it(estate, now):
     assert feed.marked_at == marked
 
 
-async def test_the_route_rejects_a_bad_window_and_ring(estate):
+async def test_the_route_rejects_a_bad_window(estate):
     with pytest.raises(HTTPException) as bad_window:
         await whats_new(
             current_user=None,
@@ -495,12 +495,3 @@ async def test_the_route_rejects_a_bad_window_and_ring(estate):
             window="1y",
         )
     assert bad_window.value.status_code == 422
-    with pytest.raises(HTTPException) as bad_ring:
-        await whats_new(
-            current_user=None,
-            service=None,
-            session=None,
-            project_id=uuid.uuid4(),
-            ring="everyone",
-        )
-    assert bad_ring.value.status_code == 422

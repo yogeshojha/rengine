@@ -1,16 +1,38 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime, timedelta
 
-from sqlalchemy import Text, and_, cast, exists, false, func, not_, or_, select
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import (
+    BigInteger,
+    Text,
+    and_,
+    cast,
+    exists,
+    false,
+    func,
+    literal,
+    not_,
+    or_,
+    select,
+    true,
+)
+from sqlalchemy.dialects.postgresql import INET, JSONB
 from sqlalchemy.dialects.postgresql import array as pg_array
 
 from shared.definitions.asset_query import FieldType, Op
 from shared.models.target import Target
 
-from .ast import Compare
-from .values import is_relative, like, moment, scaled_number, split_range
+from .ast import Compare, QuerySyntaxError
+from .values import (
+    IPV4_RE,
+    is_relative,
+    like,
+    moment,
+    network,
+    scaled_number,
+    split_range,
+)
 
 _ONE_DAY = timedelta(days=1)
 _FLIPPED = {Op.GT: Op.LT, Op.GTE: Op.LTE, Op.LT: Op.GT, Op.LTE: Op.GTE}
@@ -97,6 +119,9 @@ def number_match(col, cmp: Compare, coerce):
 
 
 def date_match(col, cmp: Compare, now: datetime, *, future: bool):
+    if cmp.op is Op.NE:
+        matched = date_match(col, replace(cmp, op=Op.MATCH), now, future=future)
+        return or_(col.is_(None), negate(matched))
     raw = cmp.values[0]
     instant = moment(raw, cmp.start, cmp.end)
     if not is_relative(raw):
@@ -109,6 +134,42 @@ def date_match(col, cmp: Compare, now: datetime, *, future: bool):
         return col <= boundary if future else col >= boundary
     op = cmp.op if future else _FLIPPED.get(cmp.op, cmp.op)
     return threshold(col, op, boundary)
+
+
+def array_elements(col, name: str):
+    """A JSON array column's elements, joined LATERAL on true."""
+    return (
+        func.jsonb_array_elements_text(cast(col, JSONB))
+        .table_valued("value")
+        .lateral(name)
+    )
+
+
+def element_counts(rows, col, *keys, distinct: bool = True):
+    """Rows per array element, or occurrences without `distinct`; equal arrays are grouped first."""
+    held = cast(col, Text).label("held")
+    grouped = (
+        rows.with_only_columns(*keys, held, func.count().label("n"))
+        .group_by(*keys, held)
+        .order_by(None)
+        .subquery("arrays")
+    )
+    elements = func.jsonb_array_elements_text(cast(grouped.c.held, JSONB)).table_valued(
+        "value"
+    )
+    picked = select(elements.c.value)
+    element = (picked.distinct() if distinct else picked).lateral("element")
+    outer = [grouped.c[key.key] for key in keys]
+    return (
+        select(
+            *outer,
+            element.c.value.label("value"),
+            cast(func.sum(grouped.c.n), BigInteger).label("n"),
+        )
+        .select_from(grouped)
+        .join(element, true())
+        .group_by(*outer, element.c.value)
+    )
 
 
 def json_array_match(col, cmp: Compare):
@@ -142,9 +203,41 @@ def tri_state(cmp: Compare) -> bool | None:
     return False if value in _FALSY else None
 
 
+def address_match(column, inet, cmp: Compare):
+    branches = []
+    for raw in cmp.values:
+        cidr = network(raw)
+        if cidr is not None:
+            branches.append(inet.op("<<=")(cast(literal(str(cidr)), INET)))
+        elif cmp.op is Op.EQ or IPV4_RE.match(raw):
+            branches.append(column == raw)
+        else:
+            branches.append(column.ilike(like(raw), escape="\\"))
+    matched = or_(*branches)
+    return negate(matched) if cmp.op is Op.NE else matched
+
+
+def cdn_match(name, flag, cmp: Compare):
+    state = tri_state(cmp)
+    if state is None:
+        return string_match(name, cmp)
+    return flag.is_(state)
+
+
 def int_coerce(cmp: Compare):
     def coerce(raw: str) -> int:
         return int(scaled_number(raw, FieldType.NUMBER, cmp.start, cmp.end))
+
+    return coerce
+
+
+def float_coerce(cmp: Compare):
+    def coerce(raw: str) -> float:
+        try:
+            return float(raw)
+        except ValueError as exc:
+            msg = f"{raw!r} is not a number."
+            raise QuerySyntaxError(msg, cmp.start, cmp.end) from exc
 
     return coerce
 

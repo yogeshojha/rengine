@@ -14,6 +14,7 @@
 	import { FEED_STATUS_DOT, FEED_STATUS_TONE, FeedStatus } from '$lib/config/threat-intel';
 	import { SCAN_RETENTION, SCREENSHOT_RETENTION, retentionLabel } from '$lib/config/retention';
 	import type { DatasetRead, QueueHealth } from '$lib/types/dataset';
+	import type { InstanceSettingsUpdate } from '$lib/types/instance-settings';
 	import type { StepProps } from '$lib/types/onboarding';
 
 	let { next, setFooter }: StepProps = $props();
@@ -27,8 +28,9 @@
 	let checking = $state(false);
 	let autoSync = $state<boolean | null>(null);
 	let togglingAuto = $state(false);
-	let scanRetention = $state('90');
-	let shotRetention = $state('30');
+	let scanRetention = $state('');
+	let shotRetention = $state('');
+	let storedRetention = $state<{ scan: string; shot: string } | null>(null);
 	let busy = $state(false);
 	let destroyed = false;
 	let timer: ReturnType<typeof setTimeout> | null = null;
@@ -86,15 +88,20 @@
 		}
 	}
 
-	async function loadSettings() {
+	async function loadRetention() {
 		try {
-			const [settings, intel] = await Promise.all([
-				instanceSettingsApi.get(),
-				threatIntelApi.status()
-			]);
+			const settings = await instanceSettingsApi.get();
 			scanRetention = String(settings.scan_history_retention_days);
 			shotRetention = String(settings.screenshot_retention_days);
-			autoSync = intel.auto_sync;
+			storedRetention = { scan: scanRetention, shot: shotRetention };
+		} catch {
+			storedRetention = null;
+		}
+	}
+
+	async function loadAutoSync() {
+		try {
+			autoSync = (await threatIntelApi.status()).auto_sync;
 		} catch {
 			autoSync = null;
 		}
@@ -103,7 +110,8 @@
 	onMount(() => {
 		void loadDatasets();
 		void checkWorkers();
-		void loadSettings();
+		void loadRetention();
+		void loadAutoSync();
 	});
 
 	onDestroy(() => {
@@ -145,12 +153,22 @@
 	}
 
 	async function handleNext() {
+		const patch: InstanceSettingsUpdate = {};
+		if (storedRetention && scanRetention !== storedRetention.scan)
+			patch.scan_history_retention_days = Number(scanRetention);
+		if (storedRetention && shotRetention !== storedRetention.shot)
+			patch.screenshot_retention_days = Number(shotRetention);
+		if (Object.keys(patch).length === 0) {
+			next();
+			return;
+		}
 		busy = true;
 		try {
-			await instanceSettingsApi.update({
-				scan_history_retention_days: Number(scanRetention),
-				screenshot_retention_days: Number(shotRetention)
-			});
+			const saved = await instanceSettingsApi.update(patch);
+			storedRetention = {
+				scan: String(saved.scan_history_retention_days),
+				shot: String(saved.screenshot_retention_days)
+			};
 			next();
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Retention not saved');
@@ -293,9 +311,9 @@
 		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 			<div class="space-y-1.5">
 				<Label class="text-xs">Scan history</Label>
-				<Select.Root type="single" bind:value={scanRetention}>
+				<Select.Root type="single" bind:value={scanRetention} disabled={!storedRetention}>
 					<Select.Trigger class="h-9 w-full text-sm">
-						{retentionLabel(SCAN_RETENTION, scanRetention)}
+						{scanRetention ? retentionLabel(SCAN_RETENTION, scanRetention) : ''}
 					</Select.Trigger>
 					<Select.Content>
 						{#each SCAN_RETENTION as o (o.value)}

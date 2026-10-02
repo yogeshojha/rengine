@@ -35,8 +35,8 @@
 	});
 
 	const userData = $derived({
-		name: auth.user?.username ?? 'Unknown user',
-		email: auth.user?.email ?? 'admin@rengine.local',
+		name: auth.user?.username ?? '',
+		email: auth.user?.email ?? '',
 		is_superuser: auth.user?.is_superuser ?? false
 	});
 </script>

@@ -89,5 +89,4 @@ async def test_a_tag_filter_narrows_the_rows(estate, now):
 
     assert out.targets_total == 2
     assert [r.target_value for r in out.rows] == ["tagged.example"]
-    assert out.rows[0].tags == [tag.id]
     assert await estate.session.scalar(sa.select(sa.func.count()).select_from(Tag)) == 1

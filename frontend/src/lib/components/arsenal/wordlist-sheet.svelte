@@ -9,7 +9,12 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { wordlistsApi } from '$lib/api/wordlists';
 	import { writeClipboard } from '$lib/utilities/clipboard';
-	import { WORDLIST_KIND_LABELS, type Wordlist } from '$lib/types/wordlist';
+	import {
+		WORDLIST_KIND_LABELS,
+		WORDLIST_ORIGIN_BADGE,
+		WORDLIST_ORIGIN_LABELS,
+		type Wordlist
+	} from '$lib/types/wordlist';
 
 	interface Props {
 		wordlist: Wordlist | null;
@@ -49,10 +54,12 @@
 		{#if wordlist}
 			<Sheet.Header class="space-y-2 border-b px-6 py-5">
 				<Sheet.Title>{wordlist.name}</Sheet.Title>
-				<Sheet.Description>{wordlist.description || 'No description'}</Sheet.Description>
+				{#if wordlist.description}
+					<Sheet.Description>{wordlist.description}</Sheet.Description>
+				{/if}
 				<div class="flex flex-wrap items-center gap-2 pt-1">
-					<Badge variant={wordlist.origin === 'builtin' ? 'secondary' : 'info'}>
-						{wordlist.origin === 'builtin' ? 'Default' : 'Custom'}
+					<Badge variant={WORDLIST_ORIGIN_BADGE[wordlist.origin]}>
+						{WORDLIST_ORIGIN_LABELS[wordlist.origin]}
 					</Badge>
 					<Badge variant="outline">{WORDLIST_KIND_LABELS[wordlist.kind]}</Badge>
 					<span class="font-mono text-xs tabular-nums text-muted-foreground">

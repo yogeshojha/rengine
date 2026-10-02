@@ -1,3 +1,5 @@
+import { STALE_DAYS } from '$lib/config/dashboard';
+
 export type SortKey = 'updated' | 'created' | 'name' | 'type' | 'expiry' | 'enrichment';
 export type SortDir = 'asc' | 'desc';
 export type SignalFilter =
@@ -11,6 +13,19 @@ export type SignalFilter =
 	| 'critical'
 	| 'high'
 	| 'medium';
+
+export const SIGNAL_LABELS: Record<SignalFilter, string> = {
+	expiring: 'Expiring',
+	attention: 'Needs attention',
+	awaiting: 'Enriching',
+	enriched: 'Enriched',
+	monitored: 'New checks',
+	unscanned: 'Not scanned',
+	stale: `Stale · ${STALE_DAYS} days`,
+	critical: 'Critical findings',
+	high: 'High findings',
+	medium: 'Medium findings'
+};
 
 export interface TargetSummary {
 	total: number;

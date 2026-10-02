@@ -2,52 +2,58 @@ import { whatsNewApi } from '$lib/api/whats-new';
 
 function createWhatsNewStore() {
 	let unseen = $state(0);
-	let since = $state<string | null>(null);
 	let fetchedProjectId = $state<string | null>(null);
 	let pending: Promise<void> | null = null;
+	let pendingId: string | null = null;
+	let wanted: string | null = null;
+	let seq = 0;
 
 	return {
 		get unseen() {
 			return unseen;
 		},
-		get since() {
-			return since;
-		},
-		get fetchedProjectId() {
-			return fetchedProjectId;
-		},
 
 		async fetch(projectId: string, force = false) {
+			wanted = projectId;
 			if (!force && fetchedProjectId === projectId) return;
-			if (pending) return pending;
-			pending = (async () => {
-				try {
-					const res = await whatsNewApi.unseen(projectId);
-					unseen = res.count;
-					since = res.since;
-					fetchedProjectId = projectId;
-				} catch {
-					unseen = 0;
-				} finally {
+			if (!force && pending && pendingId === projectId) return pending;
+			const my = ++seq;
+			const current = () => my === seq && wanted === projectId;
+			const request: Promise<void> = whatsNewApi
+				.unseen(projectId)
+				.then(
+					(res) => {
+						if (!current()) return;
+						unseen = res.count;
+						fetchedProjectId = projectId;
+					},
+					() => {
+						if (current()) unseen = 0;
+					}
+				)
+				.finally(() => {
+					if (pending !== request) return;
 					pending = null;
-				}
-			})();
-			return pending;
+					pendingId = null;
+				});
+			pending = request;
+			pendingId = projectId;
+			return request;
 		},
 
-		async caughtUp(projectId: string): Promise<string> {
-			const mark = await whatsNewApi.caughtUp(projectId);
+		async caughtUp(projectId: string): Promise<void> {
+			await whatsNewApi.caughtUp(projectId);
 			unseen = 0;
-			since = mark.marked_at;
 			fetchedProjectId = projectId;
-			return mark.marked_at;
 		},
 
 		clear() {
+			seq++;
 			unseen = 0;
-			since = null;
 			fetchedProjectId = null;
 			pending = null;
+			pendingId = null;
+			wanted = null;
 		}
 	};
 }

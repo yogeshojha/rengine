@@ -7,7 +7,8 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Button } from '$lib/components/ui/button';
-	import SelectionActionBar from '@/components/selection-action-bar.svelte';
+	import SelectionActionBar from '$lib/components/selection-action-bar.svelte';
+	import type { EnrichmentKind } from '$lib/types/target';
 
 	interface Props {
 		selectedCount: number;
@@ -16,7 +17,7 @@
 		onScan: () => void;
 		onDelete: () => void;
 		onClear: () => void;
-		onEnrich: (kind: 'whois' | 'dns' | 'bgp') => void;
+		onEnrich: (kind: EnrichmentKind) => void;
 		onAddTag: (name: string) => void;
 		onAddOrg: (name: string) => void;
 	}
@@ -87,7 +88,7 @@
 			{#snippet child({ props })}
 				<Button {...props} variant="ghost" size="sm" class="gap-2 font-medium">
 					<Building2 class="h-3.5 w-3.5 text-muted-foreground" />
-					Org
+					Organization
 				</Button>
 			{/snippet}
 		</DropdownMenu.Trigger>

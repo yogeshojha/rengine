@@ -5,7 +5,13 @@
 	import Filter from '@lucide/svelte/icons/filter';
 	import Bell from '@lucide/svelte/icons/bell';
 	import type { IconComponent } from '$lib/config/icons';
-	import { dimensionSpec, fireOnLabel, triggerLabel } from '$lib/config/tripwires';
+	import {
+		FIRE_ON_CLAUSE,
+		dimensionSpec,
+		fireOnLabel,
+		triggerLabel,
+		type FireOn
+	} from '$lib/config/tripwires';
 	import QueryChip from './query-chip.svelte';
 
 	export type FlowNode = 'when' | 'if' | 'then';
@@ -75,7 +81,10 @@
 						<span class="text-sm">{triggerLabel(trigger)}</span>
 						<span class="truncate text-xs text-muted-foreground">{scopeText}</span>
 					{:else if node.key === 'if'}
-						<span class="text-sm">A {spec.noun} {fireOnLabel(fireOn).toLowerCase()}</span>
+						<span class="text-sm"
+							>A {spec.noun}
+							{FIRE_ON_CLAUSE[fireOn as FireOn] ?? fireOnLabel(fireOn).toLowerCase()}</span
+						>
 						<QueryChip {dimension} {query} class="max-w-full" />
 					{:else}
 						{#each actions as action (action.label)}

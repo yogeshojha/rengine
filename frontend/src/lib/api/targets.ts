@@ -1,4 +1,4 @@
-import { api, API_PREFIX } from './client';
+import { api } from './client';
 import type {
 	Target,
 	TargetCreate,
@@ -11,6 +11,7 @@ import type {
 	TargetBulkCreateRequest,
 	TargetBulkCreateResponse,
 	TargetImportRequest,
+	EnrichmentKind,
 	EnrichmentRefreshResponse
 } from '$lib/types/target';
 
@@ -18,7 +19,7 @@ import type {
 	TargetDetailRead,
 	TargetBgpDetailResponse,
 	TargetDnsDetailResponse
-} from '@/types/target-detail';
+} from '$lib/types/target-detail';
 import type { TargetSummaryRead } from '$lib/types/target-summary';
 import type { TargetAssetFilter, TargetAssetPage } from '$lib/types/target-asset';
 import type { TargetPrograms, TargetRelations } from '$lib/types/relations';
@@ -43,6 +44,11 @@ interface ListTargetsParams {
 type TargetStatsParams = Pick<
 	ListTargetsParams,
 	'project_slug' | 'search' | 'organization_ids' | 'tag_ids' | 'target_type'
+>;
+
+type TargetCountParams = Pick<
+	ListTargetsParams,
+	'project_slug' | 'search' | 'organization_ids' | 'tag_ids' | 'signal'
 >;
 
 function buildTargetQuery(params: ListTargetsParams | TargetStatsParams): URLSearchParams {
@@ -124,10 +130,7 @@ export const targetsApi = {
 		return api.get<string[]>(`/targets/ids?${sp.toString()}`);
 	},
 
-	async bulkEnrich(
-		targetIds: string[],
-		kind: 'whois' | 'dns' | 'bgp'
-	): Promise<{ queued: number }> {
+	async bulkEnrich(targetIds: string[], kind: EnrichmentKind): Promise<{ queued: number }> {
 		return api.post<{ queued: number }>('/targets/enrich/bulk', {
 			target_ids: targetIds,
 			kind
@@ -151,8 +154,10 @@ export const targetsApi = {
 		});
 	},
 
-	async getCounts(projectSlug: string): Promise<TargetCounts> {
-		return api.get<TargetCounts>(`/targets/counts?project_slug=${projectSlug}`);
+	async getCounts(params: TargetCountParams): Promise<TargetCounts> {
+		const sp = buildTargetQuery(params);
+		if (params.signal) sp.append('signal', params.signal);
+		return api.get<TargetCounts>(`/targets/counts?${sp.toString()}`);
 	},
 
 	async get(targetId: string): Promise<Target> {
@@ -182,6 +187,13 @@ export const targetsApi = {
 		return api.post<TargetValidationResponse>('/targets/validate', data);
 	},
 
+	async validateBatch(values: string[], projectSlug?: string): Promise<TargetValidationResponse[]> {
+		return api.post<TargetValidationResponse[]>('/targets/validate/batch', {
+			values,
+			project_slug: projectSlug ?? null
+		});
+	},
+
 	async bulkCreate(data: TargetBulkCreateRequest): Promise<TargetBulkCreateResponse> {
 		return api.post<TargetBulkCreateResponse>('/targets/bulk', data);
 	},
@@ -200,19 +212,10 @@ export const targetsApi = {
 		formData.append('file', file);
 		for (const name of organizationNames) formData.append('organization_names', name);
 		for (const name of tagNames) formData.append('tag_names', name);
-
-		const response = await fetch(`${API_PREFIX}/targets/import/csv?project_slug=${projectSlug}`, {
-			method: 'POST',
-			body: formData,
-			credentials: 'include'
-		});
-
-		if (!response.ok) {
-			const errorData = await response.json().catch(() => ({}));
-			throw new Error(errorData.detail || `Request failed with status ${response.status}`);
-		}
-
-		return response.json();
+		return api.upload<TargetBulkCreateResponse>(
+			`/targets/import/csv?project_slug=${encodeURIComponent(projectSlug)}`,
+			formData
+		);
 	},
 
 	async getDns(targetId: string): Promise<TargetDnsDetailResponse> {

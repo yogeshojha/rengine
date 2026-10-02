@@ -17,6 +17,7 @@
 	import { ROUTES } from '$lib/config/routes';
 	import { screenshotUrl } from '$lib/utilities/media';
 	import { durationText } from '$lib/utilities/scan-status';
+	import { formatDateTime } from '$lib/utilities/dates';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { cn } from '$lib/utils';
 	import { CHANGE_VERB, type ChangeRow, type RunSide } from '$lib/types/compare';
@@ -44,15 +45,6 @@
 	let rightShot = $derived(screenshotUrl(row?.screenshots?.current));
 	let hasShots = $derived(Boolean(leftShot || rightShot));
 
-	const when = (iso: string | null) =>
-		iso
-			? new Date(iso).toLocaleString('en-US', {
-					month: 'short',
-					day: 'numeric',
-					hour: 'numeric',
-					minute: '2-digit'
-				})
-			: '';
 	const tabTarget = (dimension: string) => surfaceSpec(dimension)?.tab ?? 'overview';
 </script>
 
@@ -68,7 +60,7 @@
 		</a>
 		<span class="truncate text-2xs text-muted-foreground tabular-nums">
 			{[
-				when(side.started_at),
+				side.started_at ? formatDateTime(side.started_at) : '',
 				side.duration_seconds != null ? durationText(side.duration_seconds) : ''
 			]
 				.filter(Boolean)
@@ -91,15 +83,17 @@
 				<div class="flex flex-wrap items-center gap-2">
 					<VerbRail verb={row.verb} size="dot" />
 					<Badge variant="outline" class="h-5 px-2 text-2xs">{verb.label}</Badge>
-					<span
-						class={cn(
-							'flex items-center gap-1.5 text-xs font-medium',
-							SIGNAL_TONE_CLASS[signal.tone]
-						)}
-					>
-						<signal.icon class="size-3.5" />
-						{signal.label}
-					</span>
+					{#if row.verb !== CHANGE_VERB.UNCHANGED}
+						<span
+							class={cn(
+								'flex items-center gap-1.5 text-xs font-medium',
+								SIGNAL_TONE_CLASS[signal.tone]
+							)}
+						>
+							<signal.icon class="size-3.5" />
+							{signal.label}
+						</span>
+					{/if}
 					{#if spec}
 						<span class="flex items-center gap-1.5 text-xs text-muted-foreground">
 							<span class="opacity-40">·</span>

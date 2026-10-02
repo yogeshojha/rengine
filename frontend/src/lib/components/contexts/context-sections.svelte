@@ -21,40 +21,24 @@
 	import { contextFacets } from './context-summary';
 	import type { ScanContextCreate, AuthConfig, AuthHeader } from '$lib/types/scan-context';
 
-	const ALL_SECTIONS: ContextFormSection[] = [
-		'auth',
-		'rate',
-		'scope',
-		'runtime',
-		'proxy',
-		'identity'
-	];
-
 	interface Props {
 		draft: ScanContextCreate;
 		open: Record<ContextFormSection, boolean>;
 		touched: SvelteSet<string>;
 		onPatch: (updates: Partial<ScanContextCreate>) => void;
-		sections?: ContextFormSection[];
+		sections: ContextFormSection[];
 		seedKey?: number;
 	}
 
-	let {
-		draft,
-		open = $bindable(),
-		touched,
-		onPatch,
-		sections = ALL_SECTIONS,
-		seedKey = 0
-	}: Props = $props();
+	let { draft, open = $bindable(), touched, onPatch, sections, seedKey = 0 }: Props = $props();
 
-	const META: Record<ContextFormSection, { title: string; subtitle: string }> = {
-		identity: { title: 'Description', subtitle: 'Notes' },
+	const META: Record<ContextFormSection, { title: string; subtitle?: string }> = {
+		identity: { title: 'Description' },
 		auth: { title: 'Authentication', subtitle: 'Credentials and headers sent with every request' },
 		rate: { title: 'Rate limiting', subtitle: 'Request rate caps and concurrency multipliers' },
-		scope: { title: 'Scope', subtitle: 'Included and excluded assets' },
+		scope: { title: 'Scope' },
 		runtime: { title: 'Runtime', subtitle: 'Protocol and redirect behavior' },
-		proxy: { title: 'Proxy', subtitle: 'Route scan traffic through a proxy' }
+		proxy: { title: 'Proxy' }
 	};
 
 	const proxyName = $derived(
@@ -107,7 +91,9 @@
 			>
 				<span class="titles">
 					<span class="title">{META[key].title}</span>
-					<span class="subtitle">{META[key].subtitle}</span>
+					{#if META[key].subtitle}
+						<span class="subtitle">{META[key].subtitle}</span>
+					{/if}
 				</span>
 				<span class="value" class:muted={!facet.set}>{facet.value}</span>
 				<ChevronRight size={14} class="chev" />

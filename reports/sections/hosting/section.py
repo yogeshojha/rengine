@@ -29,7 +29,6 @@ class HostingSection(Section):
             return None
         edge, cloud, direct = hosting["edge"], hosting["cloud"], hosting["direct"]
         return {
-            "hosting": hosting,
             "fronting": [
                 {"label": "CDN or WAF edge", "count": edge, "hue": 0},
                 {"label": "Cloud provider", "count": cloud, "hue": 2},

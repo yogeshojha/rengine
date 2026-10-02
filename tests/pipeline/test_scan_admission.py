@@ -3,8 +3,10 @@ from __future__ import annotations
 from datetime import timedelta
 
 import pytest
+from fastapi import HTTPException
 from sqlalchemy import func, select
 
+from app.services.scan import ScanService
 from shared.definitions.watch import WATCH_HOST_KEY
 from shared.models.scan import Scan
 from shared.services import scan_admission
@@ -69,6 +71,14 @@ async def test_a_paused_scan_frees_its_slot(estate, now, limit):
     limit(await _busy(estate) + 1)
 
     assert await _admits(estate, waiting)
+
+
+async def test_a_queued_scan_cannot_be_paused(estate, now):
+    held = await _scan(estate, "held", now, 1)
+
+    with pytest.raises(HTTPException) as refused:
+        await ScanService(estate.session).pause(held, estate.project_id)
+    assert refused.value.status_code == 409
 
 
 async def test_a_watch_probe_never_waits(estate, now, limit):

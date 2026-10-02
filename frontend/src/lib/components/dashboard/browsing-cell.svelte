@@ -3,19 +3,23 @@
 	import DailyBars, { type DailyPoint } from './daily-bars.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { relativeTime } from '$lib/utilities/dates';
-	import { windowDays, type DashboardBrowsing, type DashboardWindow } from '$lib/types/dashboard';
+	import { plural } from '$lib/utilities/strings';
+	import { bucketsSince, type DashboardBrowsing, type DashboardWindow } from '$lib/types/dashboard';
 
 	interface Props {
 		browsing: DashboardBrowsing;
 		window: DashboardWindow;
+		since: string;
 		class?: string;
 	}
 
-	let { browsing, window, class: className = '' }: Props = $props();
+	let { browsing, window, since, class: className = '' }: Props = $props();
 
-	let days = $derived(windowDays(window));
 	let data = $derived<DailyPoint[]>(
-		browsing.daily.slice(-days).map((d) => ({ date: d.date, browsed: d.kinds.browsed ?? 0 }))
+		bucketsSince(browsing.daily, since).map((d) => ({
+			date: d.date,
+			browsed: d.kinds.browsed ?? 0
+		}))
 	);
 	let inWindow = $derived(data.reduce((n, d) => n + (d.browsed as number), 0));
 	const series = [{ key: 'browsed', label: 'Browsed', color: 'var(--series)' }];
@@ -56,7 +60,6 @@
 <Cell
 	id="connectors"
 	projectWide
-	title="Browsing"
 	description="Proxy traffic"
 	href={ROUTES.connectors()}
 	hrefLabel="Connectors"
@@ -87,9 +90,10 @@
 	{/if}
 	{#snippet footer()}
 		<span>
-			{browsing.connectors}
-			{browsing.connectors === 1 ? 'connector' : 'connectors'}{#if browsing.last_seen_at}
-				· last traffic {relativeTime(browsing.last_seen_at)}{/if}
+			{plural(
+				browsing.connectors,
+				'connector'
+			)}{#if browsing.last_seen_at}{` · last traffic ${relativeTime(browsing.last_seen_at)}`}{/if}
 		</span>
 	{/snippet}
 </Cell>

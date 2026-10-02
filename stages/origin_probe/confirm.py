@@ -1,25 +1,26 @@
-"""Ask the address for the fronted site by name, and keep only what answers with it."""
-
 from __future__ import annotations
 
 import hashlib
 import re
 from dataclasses import dataclass
 from enum import StrEnum
+from urllib.parse import urlsplit
 
 import httpx
 
+from shared.definitions.ports import likely_tls
 from shared.logging import get_logger
 from shared.models.scan_correlation import OriginFinding
 from shared.services.origin_exposure import HTTPS_PORT, ORIGIN_EXPOSED
 from shared.utils.infra import generic_page
+from shared.utils.net import host_port
 
 logger = get_logger(__name__)
 
 BODY_CAP = 200_000
 LENGTH_TOLERANCE = 1.25
 _TITLE = re.compile(rb"<title[^>]*>(.{0,200}?)</title>", re.I | re.S)
-_TLS_PORTS = frozenset({HTTPS_PORT, 8443, 2083, 2087})
+_SCHEMES = frozenset({"http", "https"})
 
 
 class Verdict(StrEnum):
@@ -96,9 +97,11 @@ class OriginConfirmer:
         name = next((s.host for s in found.fronted if s.host), "")
         if not address or not name or name == address:
             return Verdict.UNCHECKED
-        scheme = "https" if port in _TLS_PORTS else "http"
-        named = self._fetch(f"{scheme}://{name}:{port}/")
-        origin = self._fetch(f"{scheme}://{address}:{port}/", host=name)
+        scheme = urlsplit(found.exposed.url or "").scheme.lower()
+        if scheme not in _SCHEMES:
+            scheme = "https" if likely_tls(port) else "http"
+        named = self._fetch(f"{scheme}://{host_port(name, port)}/")
+        origin = self._fetch(f"{scheme}://{host_port(address, port)}/", host=name)
         if named is None or origin is None:
             return Verdict.UNCHECKED
         return Verdict.CONFIRMED if same_site(named, origin) else Verdict.REFUTED
@@ -111,6 +114,6 @@ class OriginConfirmer:
             extensions["sni_hostname"] = host
         try:
             return read(self._client.get(url, headers=headers, extensions=extensions))
-        except httpx.HTTPError as exc:
+        except (httpx.HTTPError, httpx.InvalidURL) as exc:
             logger.debug("origin confirmation failed", url=url, error=str(exc))
             return None

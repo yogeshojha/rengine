@@ -3,6 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
+from shared.definitions.dashboard import ActivityTone
 from shared.models.vulnerability import SeverityCount
 
 
@@ -39,16 +40,9 @@ class StaleTarget(BaseModel):
     last_scanned_at: datetime | None = None
 
 
-class StaleSignal(BaseModel):
-    never_scanned: int
-    stale: int
-    items: list[StaleTarget] = Field(default_factory=list)
-
-
 class DashboardSignals(BaseModel):
     takeover: TakeoverSignal
     spoofable: SpoofableSignal
-    stale: StaleSignal
 
 
 class DashboardTargetCount(BaseModel):
@@ -64,21 +58,10 @@ class ExpiringTarget(BaseModel):
     expires_at: datetime
 
 
-class FailedRun(BaseModel):
-    target_id: uuid.UUID
-    target_value: str
-    scan_id: uuid.UUID
-    engine_name: str
-    error: str | None = None
-    at: datetime
-
-
 class DashboardSurfaceMetric(BaseModel):
     key: str
     label: str
     value: int = 0
-    targets_covered: int = 0
-    new_in_window: int = 0
 
 
 class DashboardEvidenceCell(BaseModel):
@@ -126,12 +109,6 @@ class DashboardRisk(BaseModel):
     queue: list[DashboardFinding] = Field(default_factory=list)
 
 
-class DashboardGeo(BaseModel):
-    code: str
-    count: int
-    targets: list[DashboardTargetCount] = Field(default_factory=list)
-
-
 class DashboardExposureBand(BaseModel):
     key: str
     label: str
@@ -156,7 +133,6 @@ class DashboardExposure(BaseModel):
     targets: int = 0
     sensitive: int = 0
     sensitive_targets: int = 0
-    non_web: int = 0
     bands: list[DashboardExposureBand] = Field(default_factory=list)
     top: list[DashboardExposedService] = Field(default_factory=list)
 
@@ -169,9 +145,7 @@ class DashboardCertBucket(BaseModel):
 
 
 class DashboardCertSignal(BaseModel):
-    count: int = 0
     query: str
-    targets: list[DashboardTargetCount] = Field(default_factory=list)
 
 
 class DashboardCerts(BaseModel):
@@ -189,7 +163,6 @@ class DashboardChangeRow(BaseModel):
     last_status: str
     last_at: datetime
     new: dict[str, int] = Field(default_factory=dict)
-    new_scan: dict[str, uuid.UUID | None] = Field(default_factory=dict)
     first: list[str] = Field(default_factory=list)
     gone_web_assets: int = 0
 
@@ -221,52 +194,58 @@ class DashboardReadiness(BaseModel):
 class DashboardOverview(BaseModel):
     generated_at: datetime
     window: str
+    since: datetime
     first_run: bool = False
     targets_total: int = 0
     targets_scanned: int = 0
     targets_never_scanned: int = 0
     targets_stale: int = 0
     targets_monitored: int = 0
-    targets_by_type: dict[str, int] = Field(default_factory=dict)
     runs_total: int = 0
     runs_in_window: int = 0
     failed_in_window: int = 0
-    last_completed_at: datetime | None = None
+    outcomes_in_window: dict[str, int] = Field(default_factory=dict)
+    retired_in_window: dict[str, int] = Field(default_factory=dict)
     surface: list[DashboardSurfaceMetric] = Field(default_factory=list)
     answering_hosts: int = 0
     risk: DashboardRisk = Field(default_factory=DashboardRisk)
     signals: DashboardSignals
-    never_scanned: list[StaleTarget] = Field(default_factory=list)
     stale: list[StaleTarget] = Field(default_factory=list)
-    sensitive: list[DashboardTargetCount] = Field(default_factory=list)
     expiring: list[ExpiringTarget] = Field(default_factory=list)
-    failed_runs: list[FailedRun] = Field(default_factory=list)
     exposure: DashboardExposure = Field(default_factory=DashboardExposure)
     certs: DashboardCerts
-    geography: list[DashboardGeo] = Field(default_factory=list)
-    geo_total: int = 0
     changes: list[DashboardChangeRow] = Field(default_factory=list)
     daily: list[DashboardDay] = Field(default_factory=list)
     targets: list[DashboardTargetRow] = Field(default_factory=list)
 
 
+class DashboardWindowCount(BaseModel):
+    key: str
+    query: str
+    count: int = 0
+    capped: bool = False
+
+
+class DashboardWindowCounts(BaseModel):
+    window: str
+    since: datetime
+    new: list[DashboardWindowCount] = Field(default_factory=list)
+    findings: dict[str, int] = Field(default_factory=dict)
+    targets_with_new_web_assets: int = 0
+
+
 class DashboardDiscoverySource(BaseModel):
     target_id: uuid.UUID
     target_value: str
-    scan_id: uuid.UUID
-    seen_on: str
-    hostname_count: int = 0
 
 
 class DashboardDiscoveredDomain(BaseModel):
     domain: str
     hostname_count: int = 0
-    hostnames: list[str] = Field(default_factory=list)
     sources: list[DashboardDiscoverySource] = Field(default_factory=list)
 
 
 class DashboardDiscovery(BaseModel):
-    targets_examined: int = 0
     domains: list[DashboardDiscoveredDomain] = Field(default_factory=list)
 
 
@@ -276,13 +255,11 @@ class DashboardEvent(BaseModel):
     label: str
     title: str
     detail: str | None = None
-    tone: str = "neutral"
+    tone: str = ActivityTone.NEUTRAL.value
     scan_id: uuid.UUID | None = None
-    target_id: uuid.UUID | None = None
     watch_id: uuid.UUID | None = None
     platform: str | None = None
     handle: str | None = None
-    connector_id: uuid.UUID | None = None
 
 
 class DashboardActivity(BaseModel):
@@ -310,7 +287,6 @@ class DashboardLadderStep(BaseModel):
 
 class DashboardWatches(BaseModel):
     total: int = 0
-    active: int = 0
     daily: list[DashboardDayKinds] = Field(default_factory=list)
     ladder: list[DashboardLadderStep] = Field(default_factory=list)
     latest_alert: DashboardWatchAlert | None = None
@@ -321,8 +297,6 @@ class DashboardWatches(BaseModel):
 
 class DashboardBrowsing(BaseModel):
     connectors: int = 0
-    live: int = 0
-    requests_seen: int = 0
     browsed: int = 0
     unseen: int = 0
     new_params: int = 0
@@ -333,9 +307,9 @@ class DashboardBrowsing(BaseModel):
 
 class DashboardPrograms(BaseModel):
     window: str
+    since: datetime
     programs_total: int = 0
     by_platform: dict[str, int] = Field(default_factory=dict)
-    watched: int = 0
     events_in_window: dict[str, int] = Field(default_factory=dict)
     events_daily: list[DashboardDayKinds] = Field(default_factory=list)
     watches: DashboardWatches = Field(default_factory=DashboardWatches)
@@ -356,8 +330,6 @@ class SurfaceRiskTarget(BaseModel):
     scan_id: uuid.UUID | None = None
     scan_status: str | None = None
     last_at: datetime | None = None
-    organizations: list[uuid.UUID] = Field(default_factory=list)
-    tags: list[uuid.UUID] = Field(default_factory=list)
 
 
 class DashboardSurfaceRisk(BaseModel):

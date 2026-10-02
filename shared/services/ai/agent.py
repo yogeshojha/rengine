@@ -11,7 +11,6 @@ from typing import Any
 
 from shared.definitions.ai import (
     MAX_OUTPUT_TOKENS,
-    MODEL_BY_ID,
     TASK_EFFORT,
     TASK_OUTPUT_TOKENS,
     Effort,
@@ -19,12 +18,14 @@ from shared.definitions.ai import (
 from shared.enums.instance import AIProvider
 from shared.services.ai import ledger
 from shared.services.ai.client import (
-    _ANTHROPIC_THINKING,
     AIError,
-    _post,
+    anthropic_extras,
+    anthropic_headers,
     chat_headers,
     chat_url,
     complete,
+    post_json,
+    provider_proxy,
 )
 from shared.services.ai.config import AIConfig
 from shared.services.ai.ledger import CallRecord
@@ -188,21 +189,19 @@ async def _anthropic(
 ) -> AsyncIterator[AgentEvent]:
     import anthropic  # noqa: PLC0415
 
-    spec = MODEL_BY_ID.get(model)
-    headers = {"anthropic-workspace-id": cfg.workspace} if cfg.workspace else None
+    proxy = provider_proxy(cfg)
     client = anthropic.AsyncAnthropic(
-        api_key=cfg.api_key, timeout=cfg.timeout, default_headers=headers
+        api_key=cfg.api_key,
+        timeout=cfg.timeout,
+        default_headers=anthropic_headers(cfg),
+        http_client=anthropic.DefaultAsyncHttpxClient(proxy=proxy) if proxy else None,
     )
     history: list[dict[str, Any]] = [dict(m) for m in messages]
     specs = [
         {"name": t.name, "description": t.description, "input_schema": t.schema}
         for t in tools
     ]
-    extras: dict[str, Any] = {}
-    if spec is None or spec.adaptive_thinking:
-        extras["thinking"] = _ANTHROPIC_THINKING
-    if spec is None or spec.supports_effort:
-        extras["output_config"] = {"effort": effort}
+    extras = anthropic_extras(model, effort)
     used_in = used_out = 0
     voice = _Voice()
 
@@ -288,6 +287,7 @@ async def _openai(
     ]
     headers = chat_headers(cfg)
     url = chat_url(cfg)
+    proxy = provider_proxy(cfg)
     used_in = used_out = 0
     voice = _Voice()
 
@@ -299,7 +299,9 @@ async def _openai(
         }
         if specs:
             payload["tools"] = specs
-        body = await asyncio.to_thread(_post, url, payload, headers, cfg.timeout)
+        body = await asyncio.to_thread(
+            post_json, url, payload, headers, cfg.timeout, proxy=proxy
+        )
         choices = body.get("choices") or []
         if not choices:
             msg = "The provider returned no completion."

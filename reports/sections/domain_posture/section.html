@@ -4,7 +4,7 @@
   <tbody>
     {% for row in rows %}
     <tr>
-      <td class="micro wrap"><span class="badge badge--{{ 'medium' if row.tone == 'warning' else 'info' }}">{{ row.label }}</span><div class="micro muted" style="margin-top:0.6mm">{{ row.help }}</div></td>
+      <td class="micro wrap"><span class="badge badge--{{ row.badge }}">{{ row.label }}</span><div class="micro muted" style="margin-top:0.6mm">{{ row.help }}</div></td>
       <td class="micro muted">{{ row.group }}</td>
       <td class="num micro">{% if row.failing %}{{ row.failing|num }}{% else %}<span class="faint">0</span>{% endif %}</td>
       <td class="num micro muted">{{ row.applicable|num }}</td>

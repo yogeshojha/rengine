@@ -1,5 +1,3 @@
-"""The built-in engine resolves to the stage defaults plus the nuclei scan."""
-
 from __future__ import annotations
 
 from typing import ClassVar

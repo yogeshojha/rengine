@@ -14,6 +14,7 @@
 	import SectionFieldControl from './section-field.svelte';
 	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
 	import type { SectionEntry } from '$lib/types/report';
+	import { SURFACE, type SurfaceDimension } from '$lib/config/surface';
 
 	let { sections = $bindable() }: { sections: SectionEntry[] } = $props();
 
@@ -111,13 +112,17 @@
 						onCheckedChange={(v) => setEntry(index, { enabled: v })}
 					/>
 					<div class="min-w-0 flex-1">
-						<div class="flex items-center gap-2">
+						<div class="flex flex-wrap items-center gap-x-2 gap-y-1">
 							<span class="truncate text-sm font-medium">
 								{entry.title || spec?.title || entry.section}
 							</span>
 							{#if spec?.requires.length}
 								<Badge variant="outline" class="text-2xs">
-									needs {spec.requires.join(', ').replaceAll('_', ' ')}
+									needs {spec.requires
+										.map(
+											(d) => SURFACE[d as SurfaceDimension]?.nounPlural ?? d.replaceAll('_', ' ')
+										)
+										.join(', ')}
 								</Badge>
 							{/if}
 							{#if !spec}

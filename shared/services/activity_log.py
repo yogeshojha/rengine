@@ -2,28 +2,16 @@ from __future__ import annotations
 
 import uuid
 
-from shared.config import BaseAppSettings
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.sse import SSEChannel, SSEEventType
 from shared.logging import get_logger
 from shared.models.activity_log import ActivityLog
 from shared.models.target import Target
-from shared.services.event_publisher import SyncEventPublisher
-from shared.sse import sse_manager
+from shared.services.event_publisher import SyncEventPublisher, publish_async
 from shared.utils.coerce import safe_uuid
 from shared.utils.text import strip_control
 
 logger = get_logger(__name__)
-
-_sync_publisher = None
-
-
-def _get_sync_publisher():
-    global _sync_publisher  # noqa: PLW0603
-    if _sync_publisher is None:
-        settings = BaseAppSettings()
-        _sync_publisher = SyncEventPublisher(settings.redis_url)
-    return _sync_publisher
 
 
 def _entry_to_sse_payload(entry: ActivityLog) -> dict:
@@ -143,8 +131,7 @@ class ActivityLogService:
     @staticmethod
     def _publish_sync(entry: ActivityLog) -> None:
         try:
-            publisher = _get_sync_publisher()
-            publisher.publish(
+            SyncEventPublisher().publish(
                 channel=SSEChannel.project(str(entry.project_id)),
                 event_type=SSEEventType.ACTIVITY,
                 data=_entry_to_sse_payload(entry),
@@ -155,7 +142,7 @@ class ActivityLogService:
     @staticmethod
     async def _publish_async(entry: ActivityLog) -> None:
         try:
-            await sse_manager.publish(
+            await publish_async(
                 channel=SSEChannel.project(str(entry.project_id)),
                 event_type=SSEEventType.ACTIVITY,
                 data=_entry_to_sse_payload(entry),

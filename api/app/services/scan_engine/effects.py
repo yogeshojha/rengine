@@ -8,7 +8,6 @@ from app.services.scan_engine.validation import (
 )
 from shared.definitions.intensity import (
     RATE_TOOLS,
-    clean_transport_overrides,
     tool_rate,
     tool_threads,
 )
@@ -113,14 +112,10 @@ class _DraftEngine:
         self.global_headers = []
         self.tool_options = {}
         self.stages = _validate_stages(data.stages)
-        self.transport_overrides = clean_transport_overrides(
-            getattr(data, "transport_overrides", None)
-        )
+        self.transport_overrides = data.transport_overrides
 
 
-async def preview_engine(
-    data, session: AsyncSession | None = None
-) -> EnginePreviewResult:
+async def preview_engine(data, session: AsyncSession) -> EnginePreviewResult:
     if data.target_type not in {t.value for t in TargetType}:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -130,7 +125,7 @@ async def preview_engine(
     context: object | None = None
     if data.context is not None:
         context = data.context.model_dump()
-    elif data.context_id is not None and session is not None:
+    elif data.context_id is not None:
         context = (
             await session.execute(
                 select(ScanContext).where(ScanContext.id == data.context_id)

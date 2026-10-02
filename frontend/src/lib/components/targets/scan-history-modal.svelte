@@ -3,7 +3,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import History from '@lucide/svelte/icons/history';
-	import CopyButton from '@/components/copy-button.svelte';
+	import CopyButton from '$lib/components/copy-button.svelte';
 	import ScanHistoryTable from '$lib/components/scans/scan-history-table.svelte';
 
 	interface Props {

@@ -16,8 +16,6 @@ class ProviderRegistrationError(RuntimeError):
 
 
 def _classes() -> list[type[InterestProvider]]:
-    if not PROVIDER_DIR.is_dir():
-        return []
     found: dict[str, type[InterestProvider]] = {}
     for obj in classes_in_packages(
         "interest.providers", PROVIDER_DIR, InterestProvider, submodules=("provider",)
@@ -37,7 +35,3 @@ def providers() -> tuple[InterestProvider, ...]:
     instances = [cls() for cls in _classes()]
     instances.sort(key=lambda p: (p.order, p.name))
     return tuple(instances)
-
-
-def provider_names() -> tuple[str, ...]:
-    return tuple(p.name for p in providers())

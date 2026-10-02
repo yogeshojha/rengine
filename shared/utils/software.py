@@ -44,13 +44,13 @@ DISTRO_MARKERS: frozenset[str] = frozenset(
 
 
 def _numeric_segment(run: str) -> str:
-    """A run wider than the pad clamps rather than truncating, which would invert the order."""
+    """A numeric run zero-padded to the pad width, clamped above it."""
     trimmed = run.lstrip("0") or "0"
     return trimmed.zfill(_PAD) if len(trimmed) <= _PAD else "9" * _PAD
 
 
 def version_key(version: str | None) -> str | None:
-    """Zero-padded so a string comparison in SQL orders versions correctly."""
+    """A version key that orders releases under string comparison."""
     if not version:
         return None
     parts: list[str] = []
@@ -68,7 +68,7 @@ def version_key(version: str | None) -> str | None:
 
 
 def version_kind(key: str | None) -> str | None:
-    """Numeric and alphabetic version schemes are never ordered against each other."""
+    """The scheme of a version key, numeric or alphabetic."""
     if not key:
         return None
     return KIND_ALPHA if key.startswith(_ALPHA_PREFIX) else KIND_NUMERIC
@@ -95,7 +95,7 @@ def parse_tech(entry: str) -> tuple[str, str | None]:
 
 
 def parse_banner(banner: str | None) -> tuple[str | None, str | None, str | None]:
-    """A Server header states product, version and often the distribution that built it."""
+    """Product, version and distribution from a Server header."""
     if not banner:
         return None, None, None
     head = _BANNER.match(banner.strip())
@@ -119,22 +119,8 @@ def normalize_product(name: str) -> str:
     return collapsed.strip("_")
 
 
-def cpe23(vendor: str, product: str, version: str | None) -> str:
-    """A CPE 2.3 string with the version filled in, escaped as the dictionary escapes it."""
-    field = _cpe_escape(version) if version else "*"
-    return (
-        f"cpe:2.3:a:{_cpe_escape(vendor)}:{_cpe_escape(product)}:{field}:*:*:*:*:*:*:*"[
-            :MAX_CPE
-        ]
-    )
-
-
-def _cpe_escape(value: str) -> str:
-    return re.sub(r"([:\\*?!\"#$%&'()+,/;<=>@\[\]^`{|}~])", r"\\\1", value)
-
-
 def components_of(tech: list[str], webserver: str | None) -> list[dict]:
-    """A technology that names its version is the only one a CVE lookup can use."""
+    """The versioned components of an asset's technologies and Server header."""
     seen: set[tuple[str, str]] = set()
     out: list[dict] = []
     for entry in tech:

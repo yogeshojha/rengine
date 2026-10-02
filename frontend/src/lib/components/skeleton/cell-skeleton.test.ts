@@ -13,7 +13,6 @@ const SHAPES: SkeletonShape[] = [
 	'meters',
 	'donut',
 	'map',
-	'stat',
 	'board'
 ];
 

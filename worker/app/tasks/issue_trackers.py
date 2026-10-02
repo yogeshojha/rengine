@@ -21,14 +21,12 @@ def file_issues(issue_ids: list[str] | None = None) -> dict:
 
 
 @shared_task(name="app.tasks.issue_trackers.refresh", max_retries=0)
-def refresh(issue_ids: list[str] | None = None, force: bool = False) -> dict:
-    ids = [UUID(i) for i in issue_ids] if issue_ids else None
+def refresh() -> dict:
     with get_sync_session() as session:
-        if ids is None:
-            sync.sweep_pending(session)
-        read = sync.refresh_statuses(session, issue_ids=ids, force=force)
-        sync.announce(session, ids)
-        sent = sync.send_comments(session, ids)
+        sync.sweep_pending(session)
+        read = sync.refresh_statuses(session)
+        sync.announce(session, None)
+        sent = sync.send_comments(session, None)
     return {"read": read, "comments": sent}
 
 

@@ -17,6 +17,7 @@ from shared.definitions.toolbox import (
     ToolExecution,
     ToolGroup,
 )
+from shared.http import egress_proxy
 from shared.logging import get_logger
 from shared.utils.net import cert_covers
 from shared.utils.privacy import is_redacted_name
@@ -177,7 +178,7 @@ class OrgDomains(Tool):
                 [_row(n, merged[n], found) for n in names],
                 title="Domains",
                 total=len(names),
-                empty="No domains found.",
+                empty="No domains found",
                 action=RowAction.ADD_TARGETS.value,
                 keys=[None if n in targets else n for n in names],
             ),
@@ -237,16 +238,14 @@ class OrgDomains(Tool):
         if registrant:
             return Owner(name=registrant, source="whois")
         msg = (
-            f"The owner of {query.value} is not published. Its WHOIS registrant is "
-            "redacted and no scan in this project has read a certificate naming "
-            "an organization. Enter the organization name."
+            f"The owner of {query.value} is not published in WHOIS or in a "
+            "certificate a scan read. Enter the organization name."
         )
         raise ToolError(msg)
 
     async def _registrant(self, ctx: ToolContext, domain: str) -> str:
-        service = WhoisService()
+        service = WhoisService(proxy_url=egress_proxy())
         try:
-            service.ensure_ready()
             result = await asyncio.wait_for(
                 service.lookup(query=domain, store_in_db=True, session=ctx.session),
                 timeout=WHOIS_TIMEOUT,

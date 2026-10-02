@@ -119,7 +119,6 @@ class ProgramReports(BaseModel):
     high: int
     paid_reports: int
     earned: list[Money] = []
-    first_submitted_at: datetime | None
     last_submitted_at: datetime | None
 
 
@@ -140,7 +139,6 @@ class BountyAccountSummary(BaseModel):
     severities: list[SeverityCount]
     earned: list[Money]
     paid_reports: int
-    first_submitted_at: datetime | None
     last_submitted_at: datetime | None
     monthly: list[MonthPoint] = []
     chart_currency: str | None = None
@@ -166,7 +164,6 @@ class BountyReportRead(BaseModel):
     submitted_at: datetime | None
     triaged_at: datetime | None = None
     closed_at: datetime | None
-    bounty_awarded_at: datetime | None
     disclosed_at: datetime | None = None
     last_program_activity_at: datetime | None = None
     awarded: list[Money] = []

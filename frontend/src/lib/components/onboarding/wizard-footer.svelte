@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { Spinner } from '$lib/components/ui/spinner/index.js';
+	import LoadingButton from '$lib/components/loading-button.svelte';
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 
 	interface Props {
@@ -12,7 +12,6 @@
 		nextDisabled?: boolean;
 		canSkip?: boolean;
 		isFirst?: boolean;
-		backLabel?: string;
 	}
 
 	let {
@@ -23,8 +22,7 @@
 		nextLoading = false,
 		nextDisabled = false,
 		canSkip = false,
-		isFirst = false,
-		backLabel = 'Back'
+		isFirst = false
 	}: Props = $props();
 </script>
 
@@ -32,7 +30,7 @@
 	{#if !isFirst}
 		<Button variant="ghost" onclick={onBack}>
 			<ChevronLeftIcon class="mr-1 size-4" />
-			{backLabel}
+			Back
 		</Button>
 	{/if}
 
@@ -44,10 +42,12 @@
 		</Button>
 	{/if}
 
-	<Button onclick={onNext} disabled={nextDisabled || nextLoading}>
-		{#if nextLoading}
-			<Spinner class="mr-2" />
-		{/if}
+	<LoadingButton
+		onclick={onNext}
+		loading={nextLoading}
+		loadingLabel={nextLabel}
+		disabled={nextDisabled}
+	>
 		{nextLabel}
-	</Button>
+	</LoadingButton>
 </div>

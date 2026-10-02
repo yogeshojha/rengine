@@ -5,10 +5,9 @@
 	interface Props {
 		shape?: SkeletonShape;
 		rows?: number;
-		class?: string;
 	}
 
-	let { shape = 'text', rows = 5, class: className = '' }: Props = $props();
+	let { shape = 'text', rows = 5 }: Props = $props();
 
 	const BAR_HEIGHT = [
 		'h-10',
@@ -26,7 +25,7 @@
 	const LABEL = ['w-32', 'w-24', 'w-40', 'w-28', 'w-36', 'w-20'];
 </script>
 
-<div class="flex min-w-0 flex-1 flex-col gap-3 {className}" aria-busy="true">
+<div class="flex min-w-0 flex-1 flex-col gap-3" aria-busy="true">
 	{#if shape === 'bars'}
 		<div class="flex h-32 items-end gap-1.5">
 			{#each Array(12) as _, i (i)}
@@ -81,15 +80,6 @@
 		<div class="flex flex-wrap gap-2">
 			{#each Array(4) as _, i (i)}
 				<Skeleton class="h-5 w-20 rounded-full" />
-			{/each}
-		</div>
-	{:else if shape === 'stat'}
-		<div class="flex flex-wrap gap-6">
-			{#each Array(rows) as _, i (i)}
-				<div class="flex flex-col gap-2">
-					<Skeleton class="h-7 w-16" />
-					<Skeleton class="h-3 w-20" />
-				</div>
 			{/each}
 		</div>
 	{:else if shape === 'board'}

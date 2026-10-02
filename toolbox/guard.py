@@ -6,27 +6,41 @@ import ipaddress
 import socket
 from urllib.parse import urlsplit
 
+from shared.utils.net import is_public_address, split_host_port
 from toolbox.base import ToolError
+
+DENIED_NETWORKS = (
+    "0.0.0.0/8",
+    "10.0.0.0/8",
+    "100.64.0.0/10",
+    "127.0.0.0/8",
+    "169.254.0.0/16",
+    "172.16.0.0/12",
+    "192.0.0.0/24",
+    "192.0.2.0/24",
+    "192.168.0.0/16",
+    "198.18.0.0/15",
+    "198.51.100.0/24",
+    "203.0.113.0/24",
+    "224.0.0.0/4",
+    "240.0.0.0/4",
+    "::/128",
+    "::1/128",
+    "64:ff9b::/96",
+    "64:ff9b:1::/48",
+    "100::/64",
+    "2001:db8::/32",
+    "fc00::/7",
+    "fe80::/10",
+    "ff00::/8",
+)
 
 
 def hostname_of(value: str) -> str:
     raw = value.strip()
     if "://" in raw:
         return (urlsplit(raw).hostname or "").strip()
-    return (
-        raw.split("/", 1)[0].rsplit(":", 1)[0].strip() if raw.count(":") <= 1 else raw
-    )
-
-
-def _blocked(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
-    return (
-        ip.is_private
-        or ip.is_loopback
-        or ip.is_link_local
-        or ip.is_reserved
-        or ip.is_multicast
-        or ip.is_unspecified
-    )
+    return split_host_port(raw.split("/", 1)[0])[0].strip()
 
 
 def require_public(value: str) -> list[str]:
@@ -41,7 +55,7 @@ def require_public(value: str) -> list[str]:
         msg = f"{host} does not resolve: {exc.strerror or exc}."
         raise ToolError(msg) from exc
     for address in addresses:
-        if _blocked(ipaddress.ip_address(address)):
+        if not is_public_address(ipaddress.ip_address(address)):
             msg = (
                 f"{host} resolves to {address}. "
                 "Only publicly routable addresses can be probed."

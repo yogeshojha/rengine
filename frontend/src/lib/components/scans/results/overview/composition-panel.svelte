@@ -15,6 +15,7 @@
 	import { isPrivateIp } from '$lib/utilities/scan-correlation';
 	import { targetAssetNoun } from '$lib/types/target';
 	import { exactToken, filterToken } from '$lib/utilities/scan-insights';
+	import { plural } from '$lib/utilities/strings';
 	import type { IconComponent } from '$lib/config/icons';
 	import type { ScanRead } from '$lib/types/scan';
 	import type { InsightTally, SubdomainInsights } from '$lib/utilities/scan-insights';
@@ -61,8 +62,6 @@
 	let techOpen = $state(false);
 
 	const stat = (key: string) => insights?.surface.find((s) => s.key === key)?.value ?? 0;
-	const plural = (n: number, one: string, many: string) =>
-		`${n.toLocaleString()} ${n === 1 ? one : many}`;
 	const tallies = (xs: InsightTally[], field: string): RankedRow[] =>
 		xs.slice(0, TOP).map((t) => ({
 			key: t.name,
@@ -72,7 +71,7 @@
 		}));
 
 	let webHosts = $derived(stat('web'));
-	let nounPlural = $derived(targetAssetNoun(scan.execution_config.target_type));
+	const nounPlural = targetAssetNoun();
 
 	let cells = $derived.by<Cell[]>(() => {
 		if (!insights) return [];

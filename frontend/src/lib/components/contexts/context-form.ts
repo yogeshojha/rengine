@@ -1,48 +1,74 @@
-import { MASK, type ScanContextCreate, type AuthConfig } from '$lib/types/scan-context';
+import { MASK } from '$lib/constants';
+import type { AuthConfig, AuthType, ScanContextCreate } from '$lib/types/scan-context';
 import type { SvelteSet } from 'svelte/reactivity';
 
 export type ContextFormSection = 'identity' | 'auth' | 'rate' | 'scope' | 'runtime' | 'proxy';
 
-const SECRET_KEYS = [
-	'bearer_token',
-	'basic_password',
-	'header_value',
-	'cookie_value',
-	'api_key_value'
-] as const;
+const AUTH_SECRET_FIELD = {
+	bearer: 'bearer_token',
+	basic: 'basic_password',
+	header: 'header_value',
+	cookie: 'cookie_value',
+	api_key: 'api_key_value'
+} as const satisfies Partial<Record<AuthType, keyof AuthConfig>>;
 
-function isPathValid(v: string): boolean {
-	return v.startsWith('/');
+export type SecretField = (typeof AUTH_SECRET_FIELD)[keyof typeof AUTH_SECRET_FIELD];
+
+const SECRET_KEYS: SecretField[] = Object.values(AUTH_SECRET_FIELD);
+
+export function secretFieldFor(type: AuthType): SecretField | undefined {
+	return (AUTH_SECRET_FIELD as Partial<Record<AuthType, SecretField>>)[type];
 }
 
-function isIpValid(v: string): boolean {
+const PATTERN_METACHARS = /[*?^$()[\]{}+|\\]/;
+
+export function patternError(v: string): string | null {
+	if (v.includes('.') && !PATTERN_METACHARS.test(v)) {
+		return 'Domain names are not patterns. Enter a keyword, wildcard or regex';
+	}
+	return null;
+}
+
+export function pathError(v: string): string | null {
+	return v.startsWith('/') ? null : 'Path must start with /';
+}
+
+export function ipError(v: string): string | null {
 	const cidr = v.split('/');
-	if (cidr.length > 2) return false;
+	if (cidr.length > 2) return 'Enter a valid IP or CIDR';
 	const ip = cidr[0];
 	const v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
 	const v6 = /^[0-9a-fA-F:]+$/;
 	const isV4 = v4.test(ip) && ip.split('.').every((o) => Number(o) <= 255);
 	const isV6 = v6.test(ip) && ip.includes(':');
-	if (!isV4 && !isV6) return false;
+	if (!isV4 && !isV6) return 'Enter a valid IP or CIDR';
 	if (cidr.length === 2) {
 		const n = Number(cidr[1]);
 		const maxPrefix = isV6 ? 128 : 32;
-		if (cidr[1].trim() === '' || !Number.isInteger(n) || n < 0 || n > maxPrefix) return false;
+		if (cidr[1].trim() === '' || !Number.isInteger(n) || n < 0 || n > maxPrefix) {
+			return 'Invalid CIDR prefix';
+		}
 	}
-	return true;
+	return null;
 }
 
 export function validateDraft(
 	draft: ScanContextCreate
 ): { message: string; section: ContextFormSection } | null {
 	if (!draft.name.trim()) return { message: 'Name is required', section: 'identity' };
-	const badPaths = draft.excluded_paths.filter((p) => !isPathValid(p)).length;
+	const badPatterns = draft.excluded_subdomains.filter((v) => patternError(v) !== null).length;
+	if (badPatterns > 0)
+		return {
+			message: `${badPatterns} invalid pattern${badPatterns === 1 ? '' : 's'} in Scope`,
+			section: 'scope'
+		};
+	const badPaths = draft.excluded_paths.filter((p) => pathError(p) !== null).length;
 	if (badPaths > 0)
 		return {
 			message: `${badPaths} invalid path${badPaths === 1 ? '' : 's'} in Scope`,
 			section: 'scope'
 		};
-	const badIps = draft.excluded_ips.filter((ip) => !isIpValid(ip)).length;
+	const badIps = draft.excluded_ips.filter((ip) => ipError(ip) !== null).length;
 	if (badIps > 0)
 		return { message: `${badIps} invalid IP${badIps === 1 ? '' : 's'} in Scope`, section: 'scope' };
 	const badHeader = draft.extra_headers.some((h) => !h.name.trim() && h.value.trim());
@@ -81,9 +107,10 @@ function buildAuthPayload(
 
 export function buildContextPayload(
 	draft: ScanContextCreate,
-	touched: SvelteSet<string>
+	touched: SvelteSet<string>,
+	withProxy: boolean
 ): ScanContextCreate {
-	return {
+	const payload: ScanContextCreate = {
 		name: draft.name,
 		description: draft.description,
 		auth_type: draft.auth_type,
@@ -98,7 +125,8 @@ export function buildContextPayload(
 		excluded_ips: draft.excluded_ips,
 		included_subdomains: draft.included_subdomains,
 		follow_redirects_override: draft.follow_redirects_override,
-		http_protocol: draft.http_protocol,
-		proxy_id: draft.proxy_id
+		http_protocol: draft.http_protocol
 	};
+	if (withProxy) payload.proxy_id = draft.proxy_id;
+	return payload;
 }

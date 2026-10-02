@@ -63,9 +63,8 @@ export const issueTrackersApi = {
 		return api.delete<void>(`${BASE}/routes/${id}`);
 	},
 
-	issues(projectId: string, state?: string): Promise<TrackedIssue[]> {
+	issues(projectId: string): Promise<TrackedIssue[]> {
 		const sp = new URLSearchParams({ project_id: projectId });
-		if (state) sp.set('state', state);
 		return api.get<TrackedIssue[]>(`${BASE}/issues?${sp.toString()}`);
 	},
 

@@ -33,7 +33,6 @@
 		variant?: 'default' | 'outline' | 'ghost';
 		dense?: boolean;
 		shortcut?: string;
-		class?: string;
 	}
 
 	let {
@@ -42,8 +41,7 @@
 		onSend,
 		variant = 'default',
 		dense = false,
-		shortcut,
-		class: className = ''
+		shortcut
 	}: Props = $props();
 
 	const SHOWN_MS = 4000;
@@ -54,7 +52,7 @@
 	let timer: ReturnType<typeof setTimeout> | undefined;
 
 	const connector = $derived(connectors[0] ?? null);
-	const proxy = $derived(connector ? proxyLabel(connector, catalog) : 'Burp Suite');
+	const proxy = $derived(connector ? proxyLabel(connector, catalog) : '');
 	const tool = $derived(ACTION_KIND_LABELS[proxyTool.kind]);
 	const bar = $derived(variant === 'ghost');
 	const height = $derived(dense ? 'h-7' : 'h-8');
@@ -131,7 +129,7 @@
 <svelte:window onkeydown={onKey} />
 
 {#if connector}
-	<ButtonGroup class={className}>
+	<ButtonGroup>
 		<Button
 			{variant}
 			size="sm"
@@ -187,12 +185,7 @@
 		</DropdownMenu.Root>
 	</ButtonGroup>
 {:else if !bar && known}
-	<Button
-		variant="outline"
-		size="sm"
-		class="{height} {text} {className}"
-		href={ROUTES.connectors()}
-	>
+	<Button variant="outline" size="sm" class="{height} {text}" href={ROUTES.connectors()}>
 		<Plug class={icon} />
 		Connect Burp Suite
 	</Button>

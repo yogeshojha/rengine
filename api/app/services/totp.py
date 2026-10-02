@@ -5,20 +5,39 @@ from io import BytesIO
 import pyotp
 import qrcode
 from fastapi import HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.crypto import decrypt_secret, encrypt_secret
 from app.core.security import hash_password, verify_password
+from shared.logging import get_logger
 from shared.models.user import User
+from shared.redis import async_client
+from shared.utils.crypto import decrypt_secret, encrypt_secret
 from shared.utils.datetime import utc_now
+
+logger = get_logger(__name__)
 
 _ISSUER = "reNgine"
 _BACKUP_CODE_COUNT = 10
+_STEP_OFFSETS = (-1, 0, 1)
+_USED_STEP_TTL = 120
 
 
 def _backup_code() -> str:
     raw = secrets.token_hex(4)
     return f"{raw[:4]}-{raw[4:]}"
+
+
+async def _claim_step(user: User, step: int) -> bool:
+    """True once per user and time step."""
+    try:
+        claimed = await async_client().set(
+            f"totp:used:{user.id}:{step}", "1", nx=True, ex=_USED_STEP_TTL
+        )
+    except Exception as exc:
+        logger.warning("totp replay guard unavailable", error=str(exc))
+        return True
+    return bool(claimed)
 
 
 def _qr_data_uri(otpauth_uri: str) -> str:
@@ -81,18 +100,34 @@ class TOTPService:
     async def verify_code(self, user: User, code: str) -> bool:
         if not user.totp_enabled or not user.totp_secret_encrypted:
             return False
-        secret = decrypt_secret(user.totp_secret_encrypted)
-        if pyotp.TOTP(secret).verify(code, valid_window=1):
-            return True
+        try:
+            secret = decrypt_secret(user.totp_secret_encrypted)
+        except ValueError:
+            if await self._consume_backup_code(user, code):
+                return True
+            raise
+        totp = pyotp.TOTP(secret)
+        step = totp.timecode(utc_now())
+        for offset in _STEP_OFFSETS:
+            if pyotp.utils.strings_equal(str(code), totp.generate_otp(step + offset)):
+                return await _claim_step(user, step + offset)
         return await self._consume_backup_code(user, code)
 
     async def _consume_backup_code(self, user: User, code: str) -> bool:
-        stored = user.totp_backup_codes or []
+        locked = await self.session.scalar(
+            select(User)
+            .where(User.id == user.id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        if locked is None:
+            return False
+        stored = locked.totp_backup_codes or []
         for i, hashed in enumerate(stored):
             if verify_password(code, hashed):
-                user.totp_backup_codes = [h for j, h in enumerate(stored) if j != i]
-                user.updated_at = utc_now()
-                self.session.add(user)
+                locked.totp_backup_codes = [h for j, h in enumerate(stored) if j != i]
+                locked.updated_at = utc_now()
+                self.session.add(locked)
                 await self.session.commit()
                 return True
         return False

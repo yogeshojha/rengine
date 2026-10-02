@@ -1,3 +1,5 @@
+import type { TagSummary } from './target';
+
 export type NoteStatus = 'open' | 'resolved';
 
 export const NOTE_STATUSES: NoteStatus[] = ['open', 'resolved'];
@@ -6,13 +8,6 @@ export const NOTE_STATUS_LABELS: Record<NoteStatus, string> = {
 	open: 'Open',
 	resolved: 'Resolved'
 };
-
-export interface NoteTag {
-	id: string;
-	name: string;
-	slug: string;
-	color: string;
-}
 
 export interface Note {
 	id: string;
@@ -26,7 +21,7 @@ export interface Note {
 	title: string | null;
 	body: string;
 	status: NoteStatus;
-	tags: NoteTag[];
+	tags: TagSummary[];
 	created_by: string;
 	author: string | null;
 	created_at: string;
@@ -58,12 +53,6 @@ export interface NoteUpdate {
 	body?: string;
 	status?: NoteStatus;
 	tag_ids?: string[];
-}
-
-export interface NoteCount {
-	key: string;
-	total: number;
-	open: number;
 }
 
 export interface NoteFilter {

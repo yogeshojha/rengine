@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import httpx
 
+from shared.definitions.constants import SCAN_USER_AGENT
 from shared.definitions.domain_posture import (
     POLICY_FETCH_TIMEOUT,
     POLICY_MAX_BYTES,
@@ -18,7 +19,6 @@ from tools.dnsx.client import DnsxClient
 logger = get_logger(__name__)
 
 _POLICY_PATH = "/.well-known/mta-sts.txt"
-_USER_AGENT = "reNgine/3.0 (+https://rengine.wiki)"
 
 
 def _host(value: str) -> str:
@@ -59,7 +59,7 @@ class DnsxLookup:
                     timeout=POLICY_FETCH_TIMEOUT,
                     follow_redirects=False,
                     proxy=self._net.proxy_url or None,
-                    headers={"User-Agent": _USER_AGENT},
+                    headers={"User-Agent": SCAN_USER_AGENT},
                 ) as client,
                 client.stream("GET", url) as response,
             ):

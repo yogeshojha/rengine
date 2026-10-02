@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from html import escape
 
 from shared.definitions.report_theme import CoverArt
 
@@ -143,6 +144,6 @@ _ART = {
 }
 
 
-def cover_art(kind: str, accent: str = "#4f46e5") -> str:
+def cover_art(kind: str, accent: str) -> str:
     builder = _ART.get(kind)
-    return builder(accent) if builder else ""
+    return builder(escape(accent, quote=True)) if builder else ""

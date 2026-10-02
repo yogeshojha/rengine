@@ -367,7 +367,6 @@ def test_the_scanner_is_registered_under_its_enum_name():
 
 
 def test_blind_and_deep_together_cover_every_product_check(monkeypatch):
-    """A reduced blind budget must not strand checks between the blind core and deep."""
     monkeypatch.setattr(nuclei_scanner, "WAF_RATE_DIVISOR", 1)
     scanner = _scanner(_Writes())
     plan = SurfacePlan(roots=[_item("https://rep.example")])
@@ -388,7 +387,7 @@ def test_blind_and_deep_together_cover_every_product_check(monkeypatch):
         rows=rows, paths={r.id: f"/t/{r.template_id}.yaml" for r in rows}
     )
     tiers = split(rows)
-    core = nuclei_scanner.blind_core(list(tiers.product), 2)  # smaller than the tier
+    core = nuclei_scanner.blind_core(list(tiers.product), 2)
     blind = scanner._schedule(plan, tiers, library, core)[STANDARD]
     deep = scanner._schedule_deep(plan, tiers, library, core)[STANDARD]
     covered = {
@@ -399,10 +398,9 @@ def test_blind_and_deep_together_cover_every_product_check(monkeypatch):
 
 
 def test_blind_is_scheduled_even_when_the_budget_is_zero(monkeypatch):
-    """A zero budget must still schedule the top check, or settle marks blind done unrun."""
     monkeypatch.setattr(nuclei_scanner, "WAF_RATE_DIVISOR", 1)
     scanner = _scanner(_Writes())
-    scanner._deadline = time.monotonic() - 1  # no time left
+    scanner._deadline = time.monotonic() - 1
     plan = SurfacePlan(roots=[_item("https://rep.example")])
     rows = [
         SimpleNamespace(

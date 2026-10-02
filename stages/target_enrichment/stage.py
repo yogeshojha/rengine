@@ -4,9 +4,10 @@ from datetime import datetime, timedelta
 
 from sqlalchemy import select
 
+from shared.definitions.endpoints import parse_url
 from shared.definitions.intensity import TransportTool
 from shared.enums.scan import Phase, StageGroup, StageRole
-from shared.enums.target import TargetType
+from shared.enums.target import HOSTNAME_TARGET_TYPES, TargetType
 from shared.enums.task_status import TaskStatus
 from shared.logging import get_logger
 from shared.models.bgp_summary import TargetBgpSummary
@@ -14,7 +15,7 @@ from shared.models.dns import DnsLookup
 from shared.models.target import Target
 from shared.models.whois import WhoisRecord
 from shared.utils.datetime import utc_now
-from shared.utils.validation import normalize_domain
+from shared.utils.validation import validate_ip
 from stages.base import Stage, StageResult
 from stages.target_enrichment.config import TargetEnrichmentConfig
 from tools.dnsx.service import DnsxService
@@ -23,7 +24,7 @@ from tools.whois.service import WhoisNotApplicableError, WhoisService
 logger = get_logger(__name__)
 
 _STALE = timedelta(days=7)
-_DNS_TYPES = {TargetType.DOMAIN.value, TargetType.URL.value}
+_DNS_TYPES = {t.value for t in HOSTNAME_TARGET_TYPES}
 
 
 def _is_stale(queried_at: datetime | None) -> bool:
@@ -74,13 +75,16 @@ class TargetEnrichmentStage(Stage):
     def _ensure_dns(self, target: Target) -> int:
         if self.ctx.target_type not in _DNS_TYPES:
             return 0
+        parsed = parse_url(self.ctx.target_value)
+        host = parsed.host if parsed else ""
+        if not host or validate_ip(host):
+            return 0
         lookup = (
             self.session.get(DnsLookup, target.dns_lookup_id)
             if target.dns_lookup_id
             else None
         )
         if lookup is None or _is_stale(lookup.queried_at):
-            host = normalize_domain(self.ctx.target_value)
             try:
                 lookup = DnsxService(
                     timeout=max(120, self.transport.timeout),

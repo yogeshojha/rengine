@@ -7,13 +7,14 @@
 	import Eye from '@lucide/svelte/icons/eye';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import X from '@lucide/svelte/icons/x';
+	import { MASK } from '$lib/constants';
 	import {
 		AUTH_TYPES,
-		MASK,
 		type AuthConfig,
 		type AuthHeader,
 		type AuthType
 	} from '$lib/types/scan-context';
+	import type { SecretField } from './context-form';
 
 	interface Props {
 		auth: AuthConfig;
@@ -31,13 +32,6 @@
 		cookie: 'Cookie',
 		api_key: 'API key'
 	};
-
-	type SecretField =
-		| 'bearer_token'
-		| 'basic_password'
-		| 'header_value'
-		| 'cookie_value'
-		| 'api_key_value';
 
 	// svelte-ignore state_referenced_locally
 	const wasSet: Record<SecretField, boolean> = {
@@ -157,7 +151,7 @@
 			<Input
 				type={show[field] ? 'text' : 'password'}
 				value={local[field] ?? ''}
-				placeholder={secretHint(field) ? 'Leave blank to keep current value' : ph}
+				placeholder={secretHint(field) ? 'Stored' : ph}
 				class="h-9 flex-1 font-mono text-xs"
 				autocomplete="off"
 				oninput={(e) => onSecretInput(field, e.currentTarget.value)}
@@ -217,7 +211,7 @@
 				placeholder="username"
 				class="h-9 font-mono text-xs"
 				autocomplete="off"
-				oninput={(e) => setField('basic_username', e.currentTarget.value || null)}
+				oninput={(e) => setField('basic_username', e.currentTarget.value)}
 			/>
 		</div>
 		{@render secretInput('basic_password', 'Password', SECRET_PLACEHOLDER)}
@@ -229,7 +223,7 @@
 				placeholder="Authorization"
 				class="h-9 font-mono text-xs"
 				autocomplete="off"
-				oninput={(e) => setField('header_name', e.currentTarget.value || null)}
+				oninput={(e) => setField('header_name', e.currentTarget.value)}
 			/>
 		</div>
 		{@render secretInput('header_value', 'Header value', SECRET_PLACEHOLDER)}
@@ -243,7 +237,7 @@
 				placeholder="X-API-Key"
 				class="h-9 font-mono text-xs"
 				autocomplete="off"
-				oninput={(e) => setField('api_key_name', e.currentTarget.value || null)}
+				oninput={(e) => setField('api_key_name', e.currentTarget.value)}
 			/>
 		</div>
 		{@render secretInput('api_key_value', 'Key value', SECRET_PLACEHOLDER)}

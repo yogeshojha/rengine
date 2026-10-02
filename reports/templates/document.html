@@ -9,7 +9,7 @@
 </head>
 <body>
 {% if spec.style.watermark_text %}<div class="watermark">{{ spec.style.watermark_text }}</div>{% endif %}
-<main class="doc">
+<main class="doc doc--table-{{ table_style }}">
 {% for block in blocks %}
 {{ block|safe }}
 {% endfor %}

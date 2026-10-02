@@ -22,11 +22,9 @@ from shared.models.scan_correlation import (
     CorrelationKindStat,
 )
 from shared.models.subdomain import Subdomain
+from shared.services.asset_query import predicates as preds
 from shared.services.asset_query.scope import QueryScope, ScopeLike
 from shared.services.correlation import CorrelationFinder, Hub, Member
-
-_HTTP_OK = 200
-_HTTP_CLIENT = 400
 
 
 def _rank(member: Member) -> tuple:
@@ -41,7 +39,7 @@ class CorrelationGraphService:
     async def build(self, scope: ScopeLike) -> CorrelationGraph:
         scope = QueryScope.of(scope)
         if not scope:
-            return CorrelationGraph(kinds=_kinds([], {}, 0, {}))
+            return CorrelationGraph(kinds=_kinds([], {}, 0))
         found = await CorrelationFinder(self.session).find(scope)
         estate = await self._estate(scope)
         carrying: dict[UUID, Member] = {}
@@ -50,7 +48,7 @@ class CorrelationGraphService:
                 carrying.setdefault(member.id, member)
         if not carrying:
             return CorrelationGraph(
-                kinds=_kinds([], {}, 0, found.discovered),
+                kinds=_kinds([], {}, 0),
                 estate_hosts=estate,
                 targets_total=len(scope.ids),
             )
@@ -68,7 +66,7 @@ class CorrelationGraphService:
                 id=member.id,
                 name=member.name,
                 live=member.status is not None
-                and _HTTP_OK <= member.status < _HTTP_CLIENT,
+                and preds.HTTP_OK <= member.status < preds.HTTP_CLIENT,
                 status=member.status,
                 title=member.title,
                 target=names.get(member.target_id, ""),
@@ -81,9 +79,6 @@ class CorrelationGraphService:
             for hub in (_hub(found_hub, index) for found_hub in found.hubs)
             if hub is not None
         ]
-        for hub in hubs:
-            for i in hub.members:
-                hosts[i].hubs += 1
 
         per_kind: dict[str, int] = {}
         for kind in CORRELATION_KIND_ORDER:
@@ -93,7 +88,7 @@ class CorrelationGraphService:
         return CorrelationGraph(
             hosts=hosts,
             hubs=hubs,
-            kinds=_kinds(hubs, per_kind, len(hosts), found.discovered),
+            kinds=_kinds(hubs, per_kind, len(hosts)),
             total_hosts=len(hosts),
             estate_hosts=estate,
             shared_hosts=len(carrying),
@@ -121,7 +116,6 @@ def _hub(hub: Hub, index: dict[UUID, int]) -> CorrelationHub | None:
         label=hub.label,
         count=hub.hosts,
         targets=hub.targets,
-        share=round(hub.share, 4),
         common=hub.common,
         platform=bool(hub.platform),
         platform_label=hub.platform,
@@ -131,27 +125,17 @@ def _hub(hub: Hub, index: dict[UUID, int]) -> CorrelationHub | None:
 
 
 def _kinds(
-    hubs: list[CorrelationHub],
-    covered: dict[str, int],
-    total: int,
-    discovered: dict[str, int],
+    hubs: list[CorrelationHub], covered: dict[str, int], total: int
 ) -> list[CorrelationKindStat]:
-    drawn: dict[str, list[CorrelationHub]] = {}
-    for hub in hubs:
-        drawn.setdefault(hub.kind, []).append(hub)
+    drawn = {hub.kind for hub in hubs}
     return [
         CorrelationKindStat(
             key=kind,
             label=CORRELATION_KIND_LABELS[kind],
             help=CORRELATION_KIND_HELP[kind],
             default=kind in CORRELATION_DEFAULT_KINDS,
-            hubs=len(drawn.get(kind, [])),
-            total=discovered.get(kind, 0),
-            common=sum(1 for h in drawn.get(kind, []) if h.common),
-            platform=sum(1 for h in drawn.get(kind, []) if h.platform),
-            crossing=sum(1 for h in drawn.get(kind, []) if h.targets > 1),
             hosts=covered.get(kind, 0),
         )
         for kind in CORRELATION_KIND_ORDER
-        if total == 0 or drawn.get(kind)
+        if total == 0 or kind in drawn
     ]

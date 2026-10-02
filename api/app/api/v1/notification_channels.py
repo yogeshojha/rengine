@@ -55,15 +55,6 @@ async def test_channel_config(
     return await service.test_config(data.provider, data.config)
 
 
-@router.get("/{id}", response_model=NotificationChannelRead)
-async def get_channel(
-    id: UUID,
-    _current_user: CurrentSuperuser,
-    service: Annotated[NotificationChannelService, Depends(get_service)],
-):
-    return await service.get(id)
-
-
 @router.patch("/{id}", response_model=NotificationChannelRead)
 async def update_channel(
     id: UUID,

@@ -22,7 +22,6 @@ export interface SectionField {
 	minimum: number | null;
 	maximum: number | null;
 	widget: string;
-	depends_on: string;
 	launch: boolean;
 }
 
@@ -224,22 +223,6 @@ export interface ReportTheme {
 	updated_at: string;
 }
 
-export interface FrameworkControl {
-	id: string;
-	title: string;
-	note: string;
-}
-
-export interface FrameworkSummary {
-	key: string;
-	name: string;
-	version: string;
-	description: string;
-	url: string;
-	scope_note: string;
-	controls: FrameworkControl[];
-}
-
 export interface KeyLabel {
 	key: string;
 	label: string;
@@ -284,7 +267,6 @@ export interface ReportFont {
 }
 
 export interface FontFaceUpload {
-	filename: string;
 	content: string;
 	weight: number;
 	italic: boolean;
@@ -300,7 +282,6 @@ export interface ReportFontUpload {
 export interface ReportDefaults {
 	branding: ReportBranding;
 	theme: string;
-	footer_note: string;
 }
 
 export interface ReportCatalog {
@@ -314,17 +295,11 @@ export interface ReportCatalog {
 	formats: KeyLabel[];
 	scopes: KeyLabel[];
 	slot_tokens: { token: string; label: string }[];
-	frameworks: FrameworkSummary[];
 	cover_layouts: KeyLabel[];
-	cover_art: KeyLabel[];
-	table_styles: KeyLabel[];
-	finding_styles: KeyLabel[];
-	heading_styles: KeyLabel[];
 	audiences: KeyLabel[];
 	depths: KeyLabel[];
 	densities: KeyLabel[];
 	ai_available: boolean;
-	ai_model: string;
 }
 
 export interface ReportEstimate {
@@ -336,7 +311,6 @@ export interface ReportEstimate {
 	ai_input_tokens: number;
 	ai_output_tokens: number;
 	ai_cost_usd: number;
-	ai_cached: number;
 	warnings: string[];
 }
 
@@ -351,6 +325,6 @@ export interface ReportCreate {
 	theme?: string;
 	style?: ReportStyle;
 	branding?: ReportBranding;
-	narrative?: NarrativeOptions;
+	narrative?: Partial<NarrativeOptions>;
 	formats?: string[];
 }

@@ -1,4 +1,4 @@
-"""Ask: a read-only conversation on one finding."""
+"""Ask: a read-only conversation on a finding or a web asset."""
 
 from __future__ import annotations
 
@@ -22,8 +22,6 @@ MAX_FACT_DETAIL = 200
 RATE_PER_MINUTE = 10
 QUESTIONS_PER_DAY = 200
 MAX_CALLS_PER_ROUND = 3
-ANSWER_TOKENS = 1_200
-CHARS_PER_TOKEN = 4
 
 
 class Verdict(StrEnum):
@@ -125,7 +123,7 @@ SECRET_TAGS: frozenset[str] = frozenset(
 
 STARTERS: dict[str, tuple[str, ...]] = {
     SurfaceDimension.VULNERABILITIES.value: (
-        "What is the impact on this host?",
+        "What is the impact of this finding?",
         "Could this be a false positive?",
         "How do I reproduce it?",
         "What is the fix for this version?",
@@ -140,7 +138,13 @@ STARTERS: dict[str, tuple[str, ...]] = {
 ASK_DIMENSIONS: tuple[str, ...] = tuple(STARTERS)
 
 CITATION = re.compile(r"( ?)\[(F|T|R)(\d{1,3})\]")
-CITATION_MARK = re.compile(r"\[\[(\d{1,2})\]\]")
+CITATION_MARK = re.compile(r" ?\[\[(\d{1,2})\]\]")
+
+
+def plain_answer(text: str) -> str:
+    """Answer text without its citation marks."""
+    return CITATION_MARK.sub("", text)
+
 
 INSTRUCTION_TEXT = re.compile(
     r"(?i)(ignore (?:all |any )?(?:previous|prior|above) instructions"

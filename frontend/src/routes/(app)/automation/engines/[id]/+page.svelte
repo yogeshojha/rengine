@@ -27,8 +27,8 @@
 	import * as Resizable from '$lib/components/ui/resizable';
 	import * as InputGroup from '$lib/components/ui/input-group';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
-	import * as Tooltip from '$lib/components/ui/tooltip';
-	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
+	import Hint from '$lib/components/hint.svelte';
+	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
 	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 
 	import EngineTopbar from '$lib/components/engines/engine-topbar.svelte';
@@ -45,6 +45,8 @@
 	import { scanEnginesStore } from '$lib/stores/scan-engines.svelte';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
+	import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
 	import { scanEnginesApi } from '$lib/api/scan-engines';
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
 	import { ROUTES, routeLabels } from '$lib/config/routes';
@@ -276,10 +278,17 @@
 		const id = engineId;
 		if (!project || !id) return;
 		if (id === 'new') {
-			untrack(() => goto(ROUTES.engines, { replaceState: true }));
+			untrack(() => goto(ROUTES.newEngine(), { replaceState: true }));
 			return;
 		}
 		untrack(() => loadEngine(id, project.id));
+	});
+
+	$effect(() => {
+		const current = engine;
+		if (!current) return;
+		breadcrumbStore.set(current.id, current.name);
+		return () => breadcrumbStore.remove(current.id);
 	});
 
 	$effect(() => {
@@ -343,6 +352,12 @@
 		loadError = null;
 		try {
 			const fresh = await scanEnginesApi.get(id, projectId);
+			if (engine && engine.id !== fresh.id) {
+				yamlSource = '';
+				pendingToolOptions = null;
+				pendingTransport = null;
+				saveError = null;
+			}
 			engine = fresh;
 			if (!yamlSource && engineCatalogStore.hasFetched) {
 				yamlSource = fresh.yaml_source ?? engineToYaml(fresh, engineCatalogStore.catalog);
@@ -458,7 +473,7 @@
 		if (!draft) return;
 		isDeleting = true;
 		try {
-			const ok = await scanEnginesStore.deleteEngine(draft.id);
+			const ok = await scanEnginesStore.deleteEngine(draft.id, draft.project_id);
 			if (ok) {
 				toast.success('Engine deleted');
 				showDeleteDialog = false;
@@ -493,6 +508,7 @@
 			return;
 		}
 		if (!hasUnsavedChanges || pendingNav) return;
+		if (nav.willUnload) return;
 		nav.cancel();
 		pendingNav = () => {
 			allowNavigation = true;
@@ -583,40 +599,35 @@
 			>
 				Modified
 				{#if modifiedCount}
-					<span class="count">{modifiedCount}</span>
+					<span class="count text-2xs">{modifiedCount}</span>
 				{/if}
 			</Toggle>
 			{#if !isNarrow.current}
-				<Tooltip.Root>
-					<Tooltip.Trigger>
-						{#snippet child({ props })}
-							<Button
-								{...props}
-								variant="ghost"
-								size="icon-sm"
-								class="h-7 w-7 text-muted-foreground"
-								onclick={toggleSidePane}
-								aria-label="{showSidePane ? 'Hide' : 'Show'} code panel"
-							>
-								{#if showSidePane}<PanelRightClose size={14} />{:else}<PanelRightOpen
-										size={14}
-									/>{/if}
-							</Button>
-						{/snippet}
-					</Tooltip.Trigger>
-					<Tooltip.Content class="text-xs"
-						>{showSidePane ? 'Hide' : 'Show'} code panel</Tooltip.Content
-					>
-				</Tooltip.Root>
+				<Hint text="{showSidePane ? 'Hide' : 'Show'} code panel">
+					{#snippet child(props)}
+						<Button
+							{...props}
+							variant="ghost"
+							size="icon-sm"
+							class="h-7 w-7 text-muted-foreground"
+							onclick={toggleSidePane}
+							aria-label="{showSidePane ? 'Hide' : 'Show'} code panel"
+						>
+							{#if showSidePane}<PanelRightClose size={14} />{:else}<PanelRightOpen
+									size={14}
+								/>{/if}
+						</Button>
+					{/snippet}
+				</Hint>
 			{/if}
 		</div>
 
 		<ScrollArea class="min-h-0 flex-1">
 			<div class="stages">
 				{#if !parsed}
-					<p class="none">The YAML has a syntax error. Fix it in the editor.</p>
+					<p class="none text-xs">The YAML has a syntax error. Fix it in the editor.</p>
 				{:else if visibleGroups.length === 0}
-					<p class="none">No stages match.</p>
+					<p class="none text-xs">No stages match.</p>
 				{/if}
 
 				{#if parsed}
@@ -624,9 +635,9 @@
 						{@const on = group.capabilities.filter((s) => stageStates[s.name]).length}
 						<div class="group">
 							<header class="group-head">
-								<h2>{group.label}</h2>
+								<h2 class="text-2xs">{group.label}</h2>
 								{#if group.capabilities.length}
-									<span class="group-count">{on}/{group.capabilities.length} on</span>
+									<span class="group-count text-2xs">{on}/{group.capabilities.length} on</span>
 								{/if}
 							</header>
 							<div class="group-body">
@@ -637,7 +648,7 @@
 									{@render stageRow(stage, true)}
 								{/each}
 								{#if group.automatic.length}
-									<p class="automatic">
+									<p class="automatic text-2xs">
 										Runs automatically: {group.automatic.map((s) => s.title).join(', ')}
 									</p>
 								{/if}
@@ -671,57 +682,48 @@
 
 				{#if sideTab === 'yaml'}
 					<div class="side-actions">
-						<Tooltip.Root>
-							<Tooltip.Trigger>
-								{#snippet child({ props })}
-									<Button
-										{...props}
-										variant="ghost"
-										size="icon-sm"
-										class="h-7 w-7 text-muted-foreground"
-										onclick={handleFormatYaml}
-										aria-label="Format document"
-									>
-										<IndentIncrease size={13} />
-									</Button>
-								{/snippet}
-							</Tooltip.Trigger>
-							<Tooltip.Content class="text-xs">Format document</Tooltip.Content>
-						</Tooltip.Root>
-						<Tooltip.Root>
-							<Tooltip.Trigger>
-								{#snippet child({ props })}
-									<Button
-										{...props}
-										variant="ghost"
-										size="icon-sm"
-										class="h-7 w-7 text-muted-foreground"
-										onclick={handleCopyYaml}
-										aria-label="Copy YAML"
-									>
-										<Copy size={13} />
-									</Button>
-								{/snippet}
-							</Tooltip.Trigger>
-							<Tooltip.Content class="text-xs">Copy YAML</Tooltip.Content>
-						</Tooltip.Root>
-						<Tooltip.Root>
-							<Tooltip.Trigger>
-								{#snippet child({ props })}
-									<Button
-										{...props}
-										variant="ghost"
-										size="icon-sm"
-										class="h-7 w-7 text-muted-foreground"
-										onclick={handleExportYaml}
-										aria-label="Download YAML"
-									>
-										<Download size={13} />
-									</Button>
-								{/snippet}
-							</Tooltip.Trigger>
-							<Tooltip.Content class="text-xs">Download .yaml</Tooltip.Content>
-						</Tooltip.Root>
+						<Hint text="Format document">
+							{#snippet child(props)}
+								<Button
+									{...props}
+									variant="ghost"
+									size="icon-sm"
+									class="h-7 w-7 text-muted-foreground"
+									onclick={handleFormatYaml}
+									aria-label="Format document"
+								>
+									<IndentIncrease size={13} />
+								</Button>
+							{/snippet}
+						</Hint>
+						<Hint text="Copy YAML">
+							{#snippet child(props)}
+								<Button
+									{...props}
+									variant="ghost"
+									size="icon-sm"
+									class="h-7 w-7 text-muted-foreground"
+									onclick={handleCopyYaml}
+									aria-label="Copy YAML"
+								>
+									<Copy size={13} />
+								</Button>
+							{/snippet}
+						</Hint>
+						<Hint text="Download .yaml">
+							{#snippet child(props)}
+								<Button
+									{...props}
+									variant="ghost"
+									size="icon-sm"
+									class="h-7 w-7 text-muted-foreground"
+									onclick={handleExportYaml}
+									aria-label="Download YAML"
+								>
+									<Download size={13} />
+								</Button>
+							{/snippet}
+						</Hint>
 					</div>
 				{/if}
 			</div>
@@ -840,7 +842,7 @@
 		/>
 
 		{#if saveError}
-			<div class="save-error" role="alert">
+			<div class="save-error text-xs" role="alert">
 				<AlertTriangle size={13} class="shrink-0" />
 				<span class="flex-1 truncate">{saveError}</span>
 				<Button
@@ -906,6 +908,7 @@
 			open={showToolOptions}
 			toolOptions={draft?.tool_options ?? {}}
 			tools={engineCatalogStore.toolOptions}
+			readonly={!auth.user?.is_superuser}
 			onOpenChange={(o) => (showToolOptions = o)}
 			onChange={setToolOptions}
 		/>
@@ -926,9 +929,7 @@
 <DeleteConfirmationDialog
 	bind:open={showDeleteDialog}
 	title="Delete engine"
-	description={engine?.usage?.schedules
-		? `Engine ${draft?.name ?? ''} is removed. ${engine.usage.schedules} schedule${engine.usage.schedules === 1 ? '' : 's'} that use it stop launching.`
-		: `Engine ${draft?.name ?? ''} is removed.`}
+	description={`Engine ${draft?.name ?? ''} is removed.`}
 	{isDeleting}
 	onOpenChange={(open) => (showDeleteDialog = open)}
 	onConfirm={confirmDelete}
@@ -980,7 +981,6 @@
 		background: color-mix(in oklch, var(--destructive) 8%, var(--card));
 		border-bottom: 1px solid color-mix(in oklch, var(--destructive) 30%, var(--border));
 		color: var(--destructive);
-		font-size: 12px;
 		font-weight: 500;
 	}
 
@@ -1039,7 +1039,6 @@
 		border-radius: 999px;
 		background: var(--primary);
 		color: var(--primary-foreground);
-		font-size: 11px;
 		font-variant-numeric: tabular-nums;
 	}
 
@@ -1048,7 +1047,6 @@
 		padding: 16px 16px 56px;
 	}
 	.none {
-		font-size: 12px;
 		color: var(--muted-foreground);
 		padding: 8px 2px;
 	}
@@ -1064,14 +1062,12 @@
 		padding: 2px 2px 8px 12px;
 	}
 	.group-head h2 {
-		font-size: 11px;
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.06em;
 		color: var(--muted-foreground);
 	}
 	.group-count {
-		font-size: 11px;
 		color: var(--muted-foreground);
 		font-variant-numeric: tabular-nums;
 	}
@@ -1084,7 +1080,6 @@
 	}
 	.automatic {
 		padding: 8px 14px 9px 32px;
-		font-size: 11px;
 		color: var(--muted-foreground);
 		background: color-mix(in oklch, var(--muted) 30%, transparent);
 	}

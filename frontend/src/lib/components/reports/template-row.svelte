@@ -14,7 +14,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { TEMPLATE_COLUMNS } from './template-columns';
 	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
-	import { FORMAT_LABELS, SectionRole } from '$lib/config/reports';
+	import { FORMAT_LABELS, SectionRole, catalogLabel } from '$lib/config/reports';
 	import { ROUTES } from '$lib/config/routes';
 	import type { ReportTemplate } from '$lib/types/report';
 
@@ -37,16 +37,14 @@
 	const content = $derived(
 		template.sections
 			.filter((s) => s.enabled)
-			.map((s) => reportCatalog.section(s.section))
-			.filter((s) => s && s.role !== SectionRole.FURNITURE)
-			.map((s) => s!.title)
+			.flatMap((s) => {
+				const spec = reportCatalog.section(s.section);
+				return spec && spec.role !== SectionRole.FURNITURE ? [s.title || spec.title] : [];
+			})
 	);
-	const scopeLabel = $derived(
-		reportCatalog.catalog?.scopes.find((s) => s.key === template.scope)?.label ?? template.scope
-	);
+	const scopeLabel = $derived(catalogLabel(reportCatalog.catalog?.scopes, template.scope));
 	const audienceLabel = $derived(
-		reportCatalog.catalog?.audiences.find((a) => a.key === template.narrative.audience)?.label ??
-			template.narrative.audience
+		catalogLabel(reportCatalog.catalog?.audiences, template.narrative.audience)
 	);
 </script>
 
@@ -76,7 +74,7 @@
 	</div>
 
 	<div class="hidden min-w-0 flex-wrap items-center gap-1 lg:flex">
-		{#each content.slice(0, OUTLINE) as title (title)}
+		{#each content.slice(0, OUTLINE) as title, i (i)}
 			{@render chip(title)}
 		{/each}
 		{#if content.length > OUTLINE}
@@ -89,7 +87,7 @@
 				<HoverCard.Content class="w-56 p-1" align="start">
 					<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
 						<ol>
-							{#each content.slice(OUTLINE) as title (title)}
+							{#each content.slice(OUTLINE) as title, i (i)}
 								<li class="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm">
 									<span class="truncate">{title}</span>
 								</li>

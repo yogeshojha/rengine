@@ -39,7 +39,6 @@ class ToolInput(BaseModel):
 @dataclass
 class ToolContext:
     session: Any
-    user_id: uuid.UUID
     project_id: uuid.UUID | None = None
 
 
@@ -73,10 +72,6 @@ class Tool(ABC):
         return cls.Input.model_json_schema()
 
     @classmethod
-    def payload_for(cls, value: str) -> dict:
-        return {cls.value_field: value}
-
-    @classmethod
     def label_for(cls, args: ToolInput) -> str:
         value = args.model_dump().get(cls.value_field)
         return (
@@ -97,16 +92,11 @@ def flag(country: str, label: str | None = None) -> Identity:
     return Identity(kind=IdentityKind.FLAG.value, value=country, label=label)
 
 
-def favicon(url: str, label: str | None = None) -> Identity:
-    return Identity(kind=IdentityKind.FAVICON.value, value=url, label=label)
-
-
 def glyph(slug: str, label: str | None = None) -> Identity:
     return Identity(kind=IdentityKind.GLYPH.value, value=slug, label=label)
 
 
 def nameserver(host: str, label: str | None = None) -> Identity:
-    """The frontend resolves the provider from the hostname."""
     return Identity(kind=IdentityKind.NAMESERVER.value, value=host, label=label)
 
 

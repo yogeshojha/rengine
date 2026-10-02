@@ -14,6 +14,8 @@ from shared.services.ip_asn import ranges_ready
 from shared.services.ip_inventory import collect_ips
 from shared.services.scope_filter import ip_excluded, matches_any
 from shared.utils.datetime import utc_now
+from shared.utils.text import counted
+from shared.utils.validation import normalize_host
 from stages.base import DOMAIN_TARGETS, Stage, StageResult
 from stages.netblock_sweep.config import (
     MAX_ASN_ADDRESSES,
@@ -21,7 +23,7 @@ from stages.netblock_sweep.config import (
     MIN_SHARE,
     NetblockSweepConfig,
 )
-from stages.subdomain.parser import in_scope, normalize_host, passes_included
+from stages.subdomain.parser import in_scope, passes_included
 from tools.dnsx.client import DnsxClient, DnsxError
 from tools.dnsx.parser import parse_dnsx_jsonl
 from tools.ripestat.client import RIPEStatAPIError, RIPEStatClient
@@ -91,19 +93,30 @@ class NetblockSweepStage(Stage):
         if not ips:
             return StageResult(counts={"hosts": 0})
 
-        owned, rejected = self._owned_networks(ips)
+        owned, rejected, failed = self._owned_networks(ips)
+        unanswered = (
+            [f"RIPEstat did not answer for {counted(failed, 'network')}."]
+            if failed
+            else []
+        )
         if not owned:
-            note = (
-                f"No network attributed. {rejected} candidate networks were too "
-                "large or held too few addresses."
-                if rejected
-                else "No network attributed."
+            note = "No network attributed."
+            if rejected:
+                note += (
+                    f" {counted(rejected, 'network')} over the "
+                    f"{MAX_ASN_ADDRESSES:,}-address limit or with no IPv4 prefix."
+                )
+            return StageResult(
+                counts={"hosts": 0},
+                warnings=[note, *unanswered],
+                partial=bool(failed),
             )
-            return StageResult(counts={"hosts": 0}, warnings=[note])
 
         addresses, truncated = self._sweep_list(owned, cfg)
         if not addresses:
-            return StageResult(counts={"hosts": 0})
+            return StageResult(
+                counts={"hosts": 0}, warnings=unanswered, partial=bool(failed)
+            )
 
         label = ", ".join(f"AS{n.asn}" for n in owned)
         self.emit_progress(f"sweeping {len(addresses):,} addresses in {label}")
@@ -112,7 +125,7 @@ class NetblockSweepStage(Stage):
         in_scope_names, foreign = self._scope(names)
         added = self._persist(in_scope_names)
 
-        warnings = [w for w in (note,) if w]
+        warnings = [w for w in (note,) if w] + unanswered
         if truncated:
             announced = sum(n.addresses for n in owned)
             warnings.append(
@@ -136,15 +149,15 @@ class NetblockSweepStage(Stage):
         return StageResult(
             counts={"hosts": added},
             warnings=warnings,
-            partial=bool(note) or truncated,
+            partial=bool(note) or truncated or bool(failed),
         )
 
-    def _owned_networks(self, ips: list[str]) -> tuple[list[Network], int]:
+    def _owned_networks(self, ips: list[str]) -> tuple[list[Network], int, int]:
         """ASNs meeting the share and size thresholds."""
         rows = self.session.execute(_ASN_SQL, {"ips": ips}).all()
         client = RIPEStatClient(proxy_url=self.ctx.resolved.proxy_url)
         owned: list[Network] = []
-        rejected = 0
+        rejected = failed = 0
         for asn, as_name, hosts in rows:
             if hosts < MIN_ADDRESSES or hosts * 100 < len(ips) * MIN_SHARE:
                 continue
@@ -154,7 +167,7 @@ class NetblockSweepStage(Stage):
                 data = client.announced_prefixes_sync(f"AS{net.asn}")
             except (RIPEStatAPIError, OSError) as exc:
                 logger.warning("announced prefixes failed", asn=net.asn, error=str(exc))
-                rejected += 1
+                failed += 1
                 continue
             for entry in data.get("prefixes") or []:
                 try:
@@ -170,7 +183,7 @@ class NetblockSweepStage(Stage):
                 continue
             owned.append(net)
         owned.sort(key=lambda n: (-n.hosts, n.addresses))
-        return owned, rejected
+        return owned, rejected, failed
 
     def _sweep_list(
         self, owned: list[Network], cfg: NetblockSweepConfig

@@ -80,9 +80,7 @@ def issue_risk(issue: Issue) -> tuple[float, list[str]]:
     new = issue.new_count
     if new:
         score *= 1.15
-        signals.append(
-            "New since the previous run" if new == issue.count else f"{new} new"
-        )
+        signals.append("New to this target" if new == issue.count else f"{new} new")
 
     rank = cwe_top_25_rank(issue.cwe_ids)
     if rank:

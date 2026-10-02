@@ -55,7 +55,6 @@ class SubdomainInsights(BaseModel):
     cert_buckets: list[Bucket] = Field(default_factory=list)
     top_tech: list[Tally] = Field(default_factory=list)
     tech_total: int = 0
-    top_asn: list[Tally] = Field(default_factory=list)
     geography: list[Tally] = Field(default_factory=list)
     geo_total: int = 0
     clusters: list[ClusterStat] = Field(default_factory=list)
@@ -318,8 +317,6 @@ class OriginFinding(BaseModel):
 
 class OriginExposure(BaseModel):
     findings: list[OriginFinding] = Field(default_factory=list)
-    probed_addresses: int = 0
-    fronted_assets: int = 0
 
 
 class CorrelationHost(BaseModel):
@@ -328,7 +325,6 @@ class CorrelationHost(BaseModel):
     live: bool = False
     status: int | None = None
     title: str | None = None
-    hubs: int = 0
     target: str = ""
 
 
@@ -341,7 +337,6 @@ class CorrelationHub(BaseModel):
     label: str
     count: int
     targets: int = 1
-    share: float = 0.0
     common: bool = False
     platform: bool = False
     platform_label: str = ""
@@ -354,12 +349,7 @@ class CorrelationKindStat(BaseModel):
     label: str
     help: str
     default: bool = True
-    hubs: int = 0
-    total: int = 0
     hosts: int = 0
-    common: int = 0
-    platform: int = 0
-    crossing: int = 0
 
 
 class CorrelationGraph(BaseModel):

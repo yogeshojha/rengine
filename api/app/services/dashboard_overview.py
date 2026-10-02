@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import re
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import UTC, date, datetime, time, timedelta
 from itertools import pairwise
 from uuid import UUID
@@ -16,19 +15,10 @@ from sqlalchemy import (
     not_,
     or_,
     select,
-    text,
-    tuple_,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import aliased
 
 from app.services import scan_deltas as stored_deltas
-from app.services.asset_query.predicates import (
-    answered,
-    cert_state,
-    live,
-    vuln_seen_earlier,
-)
 from app.services.dashboard import DashboardService
 from app.services.scan import ScanService
 from app.services.target_estate import TargetEstateService
@@ -36,7 +26,6 @@ from app.services.target_scope import Targets
 from shared.definitions.dashboard import (
     CERT_BUCKETS,
     CHANGES_LIMIT,
-    DEFAULT_WINDOW,
     DISCOVERY_LIMIT,
     EXPIRED_CERT_QUERY,
     EXPIRING_CERT_QUERY,
@@ -50,11 +39,11 @@ from shared.definitions.dashboard import (
     TIER_ACT_EPSS,
     TIER_ATTEND_EPSS,
     TIER_ORDER,
-    WINDOW_DELTAS,
     QueueTier,
     cert_bucket_query,
+    window_key,
+    window_since,
 )
-from shared.definitions.domains import MAX_RELATED_HOSTNAMES
 from shared.definitions.estate import EstateTriageState
 from shared.definitions.evidence import EVIDENCE_ORDER, Evidence
 from shared.definitions.ports import (
@@ -64,6 +53,7 @@ from shared.definitions.ports import (
     service_label,
 )
 from shared.definitions.surface import SURFACE_LABELS, SURFACE_ORDER, SurfaceDimension
+from shared.definitions.threat_intel import EXPLOITED_SIGNALS
 from shared.definitions.vulnerabilities import (
     ACTIONABLE_SEVERITIES,
     SEVERITY_LABELS,
@@ -74,7 +64,6 @@ from shared.definitions.vulnerabilities import (
 )
 from shared.enums.scan import SCAN_OPEN_STATUSES, ScanActivityStatus, ScanStatus
 from shared.enums.scan_schedule import ScheduleStatus
-from shared.enums.target import TargetType
 from shared.models.dashboard import (
     DashboardCertBucket,
     DashboardCerts,
@@ -89,14 +78,12 @@ from shared.models.dashboard import (
     DashboardExposure,
     DashboardExposureBand,
     DashboardFinding,
-    DashboardGeo,
     DashboardOverview,
     DashboardRisk,
     DashboardSurfaceMetric,
     DashboardTargetCount,
     DashboardTargetRow,
     ExpiringTarget,
-    FailedRun,
     StaleTarget,
 )
 from shared.models.ip_address import IpAddress
@@ -106,6 +93,7 @@ from shared.models.scan_activity import ScanActivity
 from shared.models.scan_schedule import ScanSchedule
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
+from shared.models.threat_intel import IntelSignal
 from shared.models.vulnerability import (
     SeverityCount,
     Vulnerability,
@@ -113,24 +101,24 @@ from shared.models.vulnerability import (
 )
 from shared.models.whois import WhoisRecord
 from shared.services import scan_deltas
-from shared.services.scan_scope import census_only, covering_stages
+from shared.services.asset_query.predicates import (
+    answered,
+    cert_state,
+    live,
+    vuln_corroborated_ids,
+    vuln_seen_earlier,
+)
+from shared.services.asset_query.tokens import token
+from shared.services.scan_scope import census_only, covering_stages, covers
 from shared.utils.datetime import utc_now
 
 WEB = SurfaceDimension.WEB_ASSETS.value
-ENDPOINTS = SurfaceDimension.ENDPOINTS.value
 SERVICES = SurfaceDimension.SERVICES.value
 IPS = SurfaceDimension.IPS.value
 VULNS = SurfaceDimension.VULNERABILITIES.value
-SOFTWARE = SurfaceDimension.SOFTWARE.value
-SECRETS = SurfaceDimension.SECRETS.value
 
 _TABLES = scan_deltas.TABLES
-# grouping() bits: country and scan_id grouped, country alone, the whole set
-_GROUPED_COUNTRY = 1
-_GROUPED_ALL = 3
 _TERMINAL_BAD = (ScanStatus.FAILED.value, ScanStatus.CANCELLED.value)
-_DOMAIN_TYPES = (TargetType.DOMAIN, TargetType.URL)
-_BARE_TOKEN = re.compile(r"^[\w.\-]+$")
 
 Counts = dict[str, dict[UUID, tuple[int, datetime]]]
 Covered = dict[str, dict[UUID, list[UUID]]]
@@ -138,13 +126,6 @@ Covered = dict[str, dict[UUID, list[UUID]]]
 
 def _started(scan: Scan) -> datetime:
     return scan.started_at or scan.created_at
-
-
-def _exact(key: str, value: str) -> str:
-    if _BARE_TOKEN.match(value):
-        return f"{key}={value}"
-    quoted = value.replace('"', '\\"')
-    return f'{key}="{quoted}"'
 
 
 def _suppressed():
@@ -179,7 +160,6 @@ def _attend():
     return or_(
         Vulnerability.severity.in_((Severity.HIGH.value, Severity.MEDIUM.value)),
         func.coalesce(Vulnerability.epss_score, 0) >= TIER_ATTEND_EPSS,
-        Vulnerability.evidence == Evidence.CORROBORATED.value,
     )
 
 
@@ -195,14 +175,9 @@ def _tier_of(row: Vulnerability) -> str:
     if (
         row.severity in (Severity.HIGH.value, Severity.MEDIUM.value)
         or (row.epss_score or 0) >= TIER_ATTEND_EPSS
-        or row.evidence == Evidence.CORROBORATED.value
     ):
         return QueueTier.ATTEND.value
     return QueueTier.TRACK.value
-
-
-def _day_of(at: datetime) -> str:
-    return at.date().isoformat()
 
 
 class DashboardOverviewService:
@@ -214,11 +189,12 @@ class DashboardOverviewService:
     async def overview(
         self, project_id: UUID, window: str, targets: Targets = None
     ) -> DashboardOverview:
-        if window not in WINDOW_DELTAS:
-            window = DEFAULT_WINDOW
+        window = window_key(window)
         now = utc_now()
-        cutoff = now - WINDOW_DELTAS[window]
-        series_cutoff = now - timedelta(days=SERIES_DAYS)
+        cutoff = window_since(window, now)
+        series_cutoff = datetime.combine(
+            (now - timedelta(days=SERIES_DAYS)).date(), time.min, tzinfo=UTC
+        )
 
         scoped = targets
         targets, expires = await self._targets(project_id, scoped)
@@ -228,15 +204,17 @@ class DashboardOverviewService:
         }
         counts = await self._counts(scans)
         ran = await self._ran(list(scans))
-        covered = self._covered(runs_by_target, counts, ran)
+        vuln_covered = await self._vuln_covered(list(scans))
+        covered = self._covered(runs_by_target, counts, ran, vuln_covered)
         baselines = self._baselines(counts, scans)
-        firsts = await self._first_seen(scans, baselines)
+        firsts, severity_firsts = await self._first_seen(scans, baselines)
         names = {t.id: t.target_value for t in targets}
 
         signals = await self.signals.signals(project_id, scoped)
         out = DashboardOverview(
             generated_at=now,
             window=window,
+            since=cutoff,
             signals=signals,
             runs_total=runs_total,
             certs=DashboardCerts(
@@ -247,46 +225,42 @@ class DashboardOverviewService:
         out.targets_total = len(targets)
         out.first_run = scoped is None and not targets and not runs_total
         out.targets_scanned = sum(1 for t in targets if runs_by_target.get(t.id))
-        by_type: dict[str, int] = defaultdict(int)
-        for t in targets:
-            by_type[t.target_type.value] += 1
-        out.targets_by_type = dict(by_type)
 
         in_window = [s for s in scans.values() if _started(s) >= cutoff]
         out.runs_in_window = len(in_window)
-        out.failed_in_window = sum(1 for s in in_window if s.status in _TERMINAL_BAD)
-        out.last_completed_at = max(
-            (s.completed_at for s in scans.values() if s.completed_at), default=None
-        )
+        out.outcomes_in_window = dict(Counter(s.status for s in in_window))
+        out.failed_in_window = out.outcomes_in_window.get(ScanStatus.FAILED.value, 0)
 
         latest_cover = {
             key: {tid: ids[0] for tid, ids in per_target.items() if ids}
             for key, per_target in covered.items()
         }
-        out.surface = self._surface(counts, latest_cover, firsts, baselines, in_window)
+        out.surface = self._surface(counts, latest_cover)
+        addresses = await self._addresses(list(latest_cover[IPS].values()))
+        for metric in out.surface:
+            if metric.key == IPS:
+                metric.value = addresses
         out.answering_hosts = await self._answering(list(latest_cover[WEB].values()))
 
         risk_ids = list(latest_cover[VULNS].values())
         out.risk = await self._risk(risk_ids, firsts, baselines, in_window, cutoff)
 
         service_ids = list(latest_cover[SERVICES].values())
-        sensitive = await self._sensitive(service_ids)
         out.exposure = await self._exposure(service_ids, scans, names)
-        await self._certs(
-            out.certs, list(latest_cover[WEB].values()), scans, names, now
-        )
-        ip_ids = list(latest_cover[IPS].values())
-        out.geography, out.geo_total = await self._geography(ip_ids, names, scans)
+        await self._certs(out.certs, list(latest_cover[WEB].values()), now)
 
         monitored = await self._monitored(project_id)
         out.targets_monitored = sum(1 for t in targets if t.id in monitored)
 
-        self._items(out, targets, runs_by_target, scans, sensitive, expires, now)
+        self._items(out, targets, runs_by_target, expires, now)
         out.changes = await self._changes(
             in_window, counts, firsts, baselines, names, targets
         )
         retired = await self._retired(covered, scans, series_cutoff)
-        severity_firsts = await self._first_seen_by_severity(scans, baselines)
+        out.retired_in_window = {
+            key: sum(retired[key].get(s.id, 0) for s in in_window)
+            for key in SURFACE_ORDER
+        }
         out.daily = self._daily(
             scans,
             firsts,
@@ -309,24 +283,19 @@ class DashboardOverviewService:
     async def discovery(self, project_id: UUID) -> DashboardDiscovery:
         """Registrable domains the estate names that are not targets."""
         estate = await TargetEstateService(self.session).for_project(project_id)
-        out = DashboardDiscovery(targets_examined=estate.targets_examined)
+        out = DashboardDiscovery()
         candidates = [
             d for d in estate.domains if d.state == EstateTriageState.OPEN.value
         ]
         for d in candidates[:DISCOVERY_LIMIT]:
-            hosts = sorted({h for s in d.signals for h in s.hosts})
             out.domains.append(
                 DashboardDiscoveredDomain(
                     domain=d.domain,
                     hostname_count=sum(s.count for s in d.signals),
-                    hostnames=hosts[:MAX_RELATED_HOSTNAMES],
                     sources=[
                         DashboardDiscoverySource(
                             target_id=src.target_id,
                             target_value=src.target_value,
-                            scan_id=src.scan_id,
-                            seen_on=hosts[0] if hosts else "",
-                            hostname_count=sum(s.count for s in d.signals),
                         )
                         for src in d.sources
                     ],
@@ -339,39 +308,20 @@ class DashboardOverviewService:
         out: DashboardOverview,
         targets: list[Target],
         runs_by_target: dict[UUID, list[Scan]],
-        scans: dict[UUID, Scan],
-        sensitive: dict[UUID, int],
         expires: dict[UUID, datetime | None],
         now: datetime,
     ) -> None:
         """The item lists behind the attention tiles."""
-        names = {t.id: t.target_value for t in targets}
         stale_before = now - timedelta(days=STALE_DAYS)
         for t in targets:
             runs = runs_by_target.get(t.id)
             if not runs:
-                out.never_scanned.append(_stale_row(t, None))
+                out.targets_never_scanned += 1
             elif _started(runs[0]) < stale_before:
                 out.stale.append(_stale_row(t, _started(runs[0])))
-        out.never_scanned.sort(key=lambda x: x.target_value)
         out.stale.sort(key=lambda x: x.last_scanned_at or now)
-        out.targets_never_scanned = len(out.never_scanned)
         out.targets_stale = len(out.stale)
-        out.never_scanned = out.never_scanned[:ITEMS_CAP]
         out.stale = out.stale[:ITEMS_CAP]
-        out.sensitive = sorted(
-            (
-                DashboardTargetCount(
-                    target_id=scans[sid].target_id,
-                    target_value=names.get(scans[sid].target_id, ""),
-                    scan_id=sid,
-                    count=n,
-                )
-                for sid, n in sensitive.items()
-                if n > 0
-            ),
-            key=lambda x: (-x.count, x.target_value),
-        )[:ITEMS_CAP]
         expiring_after = now + timedelta(days=EXPIRING_DAYS)
         out.expiring = sorted(
             (
@@ -383,19 +333,6 @@ class DashboardOverviewService:
             ),
             key=lambda x: x.expires_at,
         )[:ITEMS_CAP]
-        out.failed_runs = [
-            FailedRun(
-                target_id=t.id,
-                target_value=t.target_value,
-                scan_id=runs[0].id,
-                engine_name=runs[0].engine_name,
-                error=runs[0].error,
-                at=runs[0].completed_at or _started(runs[0]),
-            )
-            for t in targets
-            if (runs := runs_by_target.get(t.id))
-            and runs[0].status == ScanStatus.FAILED.value
-        ][:ITEMS_CAP]
 
     async def _targets(
         self, project_id: UUID, scoped: Targets = None
@@ -486,13 +423,26 @@ class DashboardOverviewService:
             ran[scan_id].add(name)
         return ran
 
+    async def _vuln_covered(self, scan_ids: list[UUID]) -> set[UUID]:
+        if not scan_ids:
+            return set()
+        result = await self.session.execute(
+            select(Scan.id).where(
+                Scan.id.in_(scan_ids),
+                covers(Vulnerability, SurfaceDimension.VULNERABILITIES.value),
+            )
+        )
+        return set(result.scalars())
+
     def _covered(
         self,
         runs_by_target: dict[UUID, list[Scan]],
         counts: Counts,
         ran: dict[UUID, set[str]],
+        vuln_covered: set[UUID],
     ) -> Covered:
         """Per dimension and target, the scans that ran it, newest first."""
+        vuln = SurfaceDimension.VULNERABILITIES.value
         by_dimension = covering_stages()
         out: Covered = {key: {} for key in SURFACE_ORDER}
         for tid, runs in runs_by_target.items():
@@ -500,15 +450,20 @@ class DashboardOverviewService:
                 out[key][tid] = [
                     r.id
                     for r in runs
-                    if (ran.get(r.id, set()) & names) or r.id in counts[key]
+                    if (
+                        r.id in vuln_covered
+                        if key == vuln
+                        else (ran.get(r.id, set()) & names) or r.id in counts[key]
+                    )
                 ]
         return out
 
     async def _first_seen(
         self, scans: dict[UUID, Scan], baselines: dict[str, set[UUID]]
-    ) -> dict[str, dict[UUID, int]]:
+    ) -> tuple[dict[str, dict[UUID, int]], dict[UUID, dict[str, int]]]:
         """Per dimension, how many keys each scan was the first to report for its target."""
         out: dict[str, dict[UUID, int]] = {key: {} for key in _TABLES}
+        by_severity: dict[UUID, dict[str, int]] = {}
         for key in _TABLES:
             sids = [sid for sid in baselines.get(key, ()) if sid in scans]
             if not sids:
@@ -517,22 +472,29 @@ class DashboardOverviewService:
                 live = [sid for sid in sids if scans[sid].status in SCAN_OPEN_STATUSES]
                 counted = await stored_deltas.first_seen(self.session, key, sids, live)
             else:
-                counted = await self._first_seen_findings(sids)
+                by_severity = await self._first_seen_findings(sids)
+                counted = {sid: sum(per.values()) for sid, per in by_severity.items()}
             out[key] = {sid: counted.get(sid, 0) for sid in sids}
-        return out
+        return out, by_severity
 
-    async def _first_seen_findings(self, sids: list[UUID]) -> dict[UUID, int]:
-        """Findings each scan was the first to report, triaged-away ones excluded."""
+    async def _first_seen_findings(
+        self, sids: list[UUID]
+    ) -> dict[UUID, dict[str, int]]:
+        """Findings each scan was the first to report by severity, triaged-away ones excluded."""
         rows = await self.session.execute(
-            select(Vulnerability.scan_id, func.count())
+            select(Vulnerability.scan_id, Vulnerability.severity, func.count())
             .where(
                 Vulnerability.scan_id.in_(sids),
                 not_(scan_deltas.seen_earlier(VULNS)),
                 not_(_suppressed()),
             )
-            .group_by(Vulnerability.scan_id)
+            .group_by(Vulnerability.scan_id, Vulnerability.severity)
         )
-        return {scan_id: int(total) for scan_id, total in rows.all()}
+        out: dict[UUID, dict[str, int]] = defaultdict(dict)
+        for sid, severity, n in rows.all():
+            key = coerce_severity(severity)
+            out[sid][key] = out[sid].get(key, 0) + int(n)
+        return out
 
     def _baselines(
         self, counts: Counts, scans: dict[UUID, Scan]
@@ -557,23 +519,18 @@ class DashboardOverviewService:
         self,
         counts: Counts,
         latest_cover: dict[str, dict[UUID, UUID]],
-        firsts: dict[str, dict[UUID, int]],
-        baselines: dict[str, set[UUID]],
-        in_window: list[Scan],
     ) -> list[DashboardSurfaceMetric]:
-        out = []
-        for key in SURFACE_ORDER:
-            cover = latest_cover[key]
-            metric = DashboardSurfaceMetric(key=key, label=SURFACE_LABELS[key])
-            metric.targets_covered = len(cover)
-            metric.value = sum(
-                counts[key].get(sid, (0, None))[0] for sid in cover.values()
+        return [
+            DashboardSurfaceMetric(
+                key=key,
+                label=SURFACE_LABELS[key],
+                value=sum(
+                    counts[key].get(sid, (0, None))[0]
+                    for sid in latest_cover[key].values()
+                ),
             )
-            metric.new_in_window = sum(
-                firsts[key].get(s.id, 0) for s in in_window if s.id in baselines[key]
-            )
-            out.append(metric)
-        return out
+            for key in SURFACE_ORDER
+        ]
 
     async def _risk(
         self,
@@ -640,15 +597,15 @@ class DashboardOverviewService:
         )
         risk.newly_exploited = int(
             await self.session.scalar(
-                text("""
-                    SELECT count(DISTINCT s.vulnerability_id)
-                    FROM intel_signals s
-                    JOIN vulnerabilities v ON v.id = s.vulnerability_id
-                    WHERE s.scan_id = ANY(:ids)
-                      AND s.kind IN ('kev', 'ransom_path', 'fresh_exploit')
-                      AND s.created_at >= :since
-                """),
-                {"ids": [str(i) for i in risk_ids], "since": since},
+                select(func.count(func.distinct(IntelSignal.vulnerability_id)))
+                .select_from(IntelSignal)
+                .join(Vulnerability, Vulnerability.id == IntelSignal.vulnerability_id)
+                .where(
+                    IntelSignal.scan_id.in_(risk_ids),
+                    IntelSignal.kind.in_(EXPLOITED_SIGNALS),
+                    IntelSignal.created_at >= since,
+                    not_(_suppressed()),
+                )
             )
             or 0
         )
@@ -668,10 +625,21 @@ class DashboardOverviewService:
             )
             or 0
         )
+        rung = case(
+            (
+                Vulnerability.evidence == Evidence.PROVEN.value,
+                Evidence.PROVEN.value,
+            ),
+            (
+                Vulnerability.id.in_(vuln_corroborated_ids(risk_ids)),
+                Evidence.CORROBORATED.value,
+            ),
+            else_=Vulnerability.evidence,
+        )
         cells = await self.session.execute(
-            select(Vulnerability.severity, Vulnerability.evidence, func.count())
+            select(Vulnerability.severity, rung, func.count())
             .where(live_rows, not_(_suppressed()))
-            .group_by(Vulnerability.severity, Vulnerability.evidence)
+            .group_by(Vulnerability.severity, rung)
         )
         matrix: dict[tuple[str, str], int] = defaultdict(int)
         for severity, evidence, n in cells.all():
@@ -777,16 +745,6 @@ class DashboardOverviewService:
             )
         return out
 
-    async def _sensitive(self, service_ids: list[UUID]) -> dict[UUID, int]:
-        if not service_ids:
-            return {}
-        rows = await self.session.execute(
-            select(Port.scan_id, func.count())
-            .where(Port.scan_id.in_(service_ids), Port.number.in_(SENSITIVE_PORTS))
-            .group_by(Port.scan_id)
-        )
-        return {row[0]: int(row[1]) for row in rows.all()}
-
     async def _exposure(
         self, service_ids: list[UUID], scans: dict[UUID, Scan], names: dict[UUID, str]
     ) -> DashboardExposure:
@@ -796,7 +754,6 @@ class DashboardOverviewService:
             return out
         scope = Port.scan_id.in_(service_ids)
         sensitive = Port.number.in_(SENSITIVE_PORTS)
-        web = Port.service_class == ServiceClass.WEB.value
         n = func.count()
         totals = (
             await self.session.execute(
@@ -805,7 +762,6 @@ class DashboardOverviewService:
                     func.count(func.distinct(Port.ip)),
                     n.filter(sensitive),
                     func.count(func.distinct(Port.scan_id)).filter(sensitive),
-                    n.filter(not_(web)),
                 ).where(scope)
             )
         ).one()
@@ -814,7 +770,6 @@ class DashboardOverviewService:
             out.addresses,
             out.sensitive,
             out.sensitive_targets,
-            out.non_web,
         ) = (int(v or 0) for v in totals)
 
         band_rows = (
@@ -866,7 +821,7 @@ class DashboardOverviewService:
                     key=name,
                     label=service_label(name),
                     service_class=klass[name][1],
-                    query=_exact("service", name),
+                    query=token("service", "=", name),
                 ),
             )
             entry.count += int(count)
@@ -893,14 +848,11 @@ class DashboardOverviewService:
         self,
         certs: DashboardCerts,
         web_ids: list[UUID],
-        scans: dict[UUID, Scan],
-        names: dict[UUID, str],
         now: datetime,
     ) -> None:
         if not web_ids:
             return
         expired = and_(cert_state("expired", now), live())
-        expiring = cert_state("expiring", now)
         not_after = Subdomain.tls_not_after
         filters = []
         for _key, _label, lower, upper in CERT_BUCKETS:
@@ -913,44 +865,15 @@ class DashboardOverviewService:
             if upper is not None:
                 clauses.append(not_after < now + timedelta(days=upper))
             filters.append(and_(*clauses))
-        rows = (
+        per_bucket = (
             await self.session.execute(
-                select(
-                    Subdomain.scan_id,
-                    func.count().filter(expired),
-                    func.count().filter(expiring),
-                    *[func.count().filter(f) for f in filters],
-                )
-                .where(
+                select(*[func.count().filter(f) for f in filters]).where(
                     Subdomain.scan_id.in_(web_ids),
                     or_(not_after.isnot(None), Subdomain.tls_expired.is_(True)),
                 )
-                .group_by(Subdomain.scan_id)
             )
-        ).all()
-        buckets = [0] * len(CERT_BUCKETS)
-        for sid, n_expired, n_expiring, *per_bucket in rows:
-            for index, n in enumerate(per_bucket):
-                buckets[index] += int(n or 0)
-            scan = scans.get(sid)
-            if scan is None:
-                continue
-            for signal, count in (
-                (certs.expired, int(n_expired or 0)),
-                (certs.expiring, int(n_expiring or 0)),
-            ):
-                if count:
-                    signal.count += count
-                    signal.targets.append(
-                        DashboardTargetCount(
-                            target_id=scan.target_id,
-                            target_value=names.get(scan.target_id, ""),
-                            scan_id=sid,
-                            count=count,
-                        )
-                    )
-        for signal in (certs.expired, certs.expiring):
-            signal.targets.sort(key=lambda t: (-t.count, t.target_value))
+        ).one()
+        buckets = [int(n or 0) for n in per_bucket]
         certs.buckets = [
             DashboardCertBucket(
                 key=key,
@@ -960,67 +883,6 @@ class DashboardOverviewService:
             )
             for (key, label, lower, upper), n in zip(CERT_BUCKETS, buckets, strict=True)
         ]
-
-    async def _geography(
-        self, ip_ids: list[UUID], names: dict[UUID, str], scans: dict[UUID, Scan]
-    ) -> tuple[list[DashboardGeo], int]:
-        if not ip_ids:
-            return [], 0
-        located = (
-            IpAddress.scan_id.in_(ip_ids),
-            IpAddress.country.is_not(None),
-            IpAddress.country != "",
-        )
-        rows = await self.session.execute(
-            select(
-                IpAddress.country,
-                IpAddress.scan_id,
-                func.count(func.distinct(IpAddress.ip)),
-                func.grouping(IpAddress.country, IpAddress.scan_id),
-            )
-            .where(*located)
-            .group_by(
-                func.grouping_sets(
-                    tuple_(IpAddress.country, IpAddress.scan_id),
-                    tuple_(IpAddress.country),
-                    tuple_(),
-                )
-            )
-        )
-        total = 0
-        totals: dict[str, int] = {}
-        breakdown: dict[str, list[DashboardTargetCount]] = defaultdict(list)
-        for country, scan_id, count, grouping in rows.all():
-            if grouping == _GROUPED_ALL:
-                total = int(count)
-                continue
-            code = country.upper()
-            if grouping == _GROUPED_COUNTRY:
-                totals[code] = totals.get(code, 0) + int(count)
-                continue
-            scan = scans.get(scan_id)
-            if scan is None:
-                continue
-            breakdown[code].append(
-                DashboardTargetCount(
-                    target_id=scan.target_id,
-                    target_value=names.get(scan.target_id, ""),
-                    scan_id=scan_id,
-                    count=int(count),
-                )
-            )
-        out = [
-            DashboardGeo(
-                code=code,
-                count=count,
-                targets=sorted(
-                    breakdown.get(code, []), key=lambda r: (-r.count, r.target_value)
-                ),
-            )
-            for code, count in totals.items()
-        ]
-        out.sort(key=lambda g: (-g.count, g.code))
-        return out, total
 
     async def _monitored(self, project_id: UUID) -> set[UUID]:
         result = await self.session.execute(
@@ -1070,17 +932,11 @@ class DashboardOverviewService:
                 last_at=_started(last),
             )
             for key in SURFACE_ORDER:
-                contributors = [
-                    s.id
-                    for s in runs
-                    if s.id in baselines[key] and firsts[key].get(s.id, 0)
-                ]
-                total = sum(firsts[key].get(sid, 0) for sid in contributors)
+                total = sum(
+                    firsts[key].get(s.id, 0) for s in runs if s.id in baselines[key]
+                )
                 if total:
                     row.new[key] = total
-                    row.new_scan[key] = (
-                        contributors[0] if len(contributors) == 1 else None
-                    )
                 elif any(
                     counts[key].get(s.id, (0, None))[0] and s.id not in baselines[key]
                     for s in runs
@@ -1113,7 +969,7 @@ class DashboardOverviewService:
         severity_firsts: dict[UUID, dict[str, int]],
     ) -> list[DashboardDay]:
         days: dict[str, DashboardDay] = {}
-        start = series_cutoff.date() + timedelta(days=1)
+        start = series_cutoff.date()
         for i in range((now.date() - start).days + 1):
             key = (start + timedelta(days=i)).isoformat()
             days[key] = DashboardDay(
@@ -1186,39 +1042,18 @@ class DashboardOverviewService:
             out[key] = {newer: n for (newer, _), n in counts.items() if n}
         return out
 
-    async def _first_seen_by_severity(
-        self, scans: dict[UUID, Scan], baselines: dict[str, set[UUID]]
-    ) -> dict[UUID, dict[str, int]]:
-        """Findings a scan was the first to report for its target, by severity."""
-        out: dict[UUID, dict[str, int]] = defaultdict(dict)
-        by_target: dict[UUID, list[UUID]] = defaultdict(list)
-        for sid in baselines.get(VULNS, ()):
-            scan = scans.get(sid)
-            if scan is not None:
-                by_target[scan.target_id].append(sid)
-        for target_id, sids in by_target.items():
-            earlier = aliased(Vulnerability)
-            seen_before = exists(
-                select(1).where(
-                    earlier.target_id == target_id,
-                    earlier.fingerprint == Vulnerability.fingerprint,
-                    earlier.scan_id != Vulnerability.scan_id,
-                    earlier.discovered_at < Vulnerability.discovered_at,
+    async def _addresses(self, ip_ids: list[UUID]) -> int:
+        """Distinct addresses across the covering scans."""
+        if not ip_ids:
+            return 0
+        return int(
+            await self.session.scalar(
+                select(func.count(func.distinct(IpAddress.ip))).where(
+                    IpAddress.scan_id.in_(ip_ids)
                 )
             )
-            rows = await self.session.execute(
-                select(Vulnerability.scan_id, Vulnerability.severity, func.count())
-                .where(
-                    Vulnerability.scan_id.in_(sids),
-                    not_(seen_before),
-                    not_(_suppressed()),
-                )
-                .group_by(Vulnerability.scan_id, Vulnerability.severity)
-            )
-            for sid, severity, n in rows.all():
-                key = coerce_severity(severity)
-                out[sid][key] = out[sid].get(key, 0) + int(n)
-        return out
+            or 0
+        )
 
     async def _answering(self, web_ids: list[UUID]) -> int:
         """Hosts that answered on HTTP at all, the `is:web` count."""

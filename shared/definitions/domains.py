@@ -23,8 +23,6 @@ RELATED_REASON_DETAIL: dict[str, str] = {
     ),
 }
 
-MAX_RELATED_HOSTNAMES = 12
-
 PUBLIC_SECOND_LEVEL: frozenset[str] = frozenset(
     {
         "ac.at",
@@ -330,16 +328,37 @@ IGNORED_DOMAINS: frozenset[str] = frozenset(VENDOR_DOMAINS | THIRD_PARTY_DOMAINS
 
 
 @lru_cache(maxsize=1)
-def _suffix_rules() -> tuple[frozenset[str], frozenset[str], frozenset[str]]:
+def _suffix_data() -> dict[str, list[str]]:
     try:
-        data = json.loads(_SUFFIX_PATH.read_text(encoding="utf-8"))
+        return json.loads(_SUFFIX_PATH.read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        data = {}
+        return {}
+
+
+@lru_cache(maxsize=1)
+def _suffix_rules() -> tuple[frozenset[str], frozenset[str], frozenset[str]]:
+    data = _suffix_data()
     return (
         frozenset(data.get("suffixes", ())) | PUBLIC_SECOND_LEVEL,
         frozenset(data.get("wildcards", ())),
         frozenset(data.get("exceptions", ())),
     )
+
+
+@lru_cache(maxsize=1)
+def _public_tlds() -> frozenset[str]:
+    return frozenset(_suffix_data().get("tlds", ()))
+
+
+@lru_cache(maxsize=PURE_CACHE)
+def is_public_tld(name: str) -> bool:
+    """The last label of `name` is a top-level domain on the ICANN public suffix list."""
+    label = name.strip().lower().rstrip(".").rsplit(".", 1)[-1]
+    try:
+        label = label.encode("idna").decode("ascii")
+    except UnicodeError:
+        return False
+    return label in _public_tlds()
 
 
 def _suffix_length(labels: list[str]) -> int:
@@ -402,7 +421,7 @@ TAKEOVER_FINGERPRINTS: tuple[tuple[str, str], ...] = (
     ("myshopify.com", "Shopify"),
     ("fastly.net", "Fastly"),
     ("ghost.io", "Ghost"),
-    ("wpengine.com", "WP Stage"),
+    ("wpengine.com", "WP Engine"),
     ("zendesk.com", "Zendesk"),
     ("surge.sh", "Surge"),
     ("bitbucket.io", "Bitbucket"),

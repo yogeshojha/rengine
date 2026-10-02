@@ -2,8 +2,7 @@
 # Compiles the extension and the harnesses and runs the offline checks.
 set -euo pipefail
 cd "$(dirname "$0")"
-MONTOYA_JAR="lib/montoya-api-2025.5.jar"
-[ -f "$MONTOYA_JAR" ] || ./build.sh >/dev/null
+MONTOYA_JAR="$(./build.sh --fetch-only)"
 rm -rf build/classes build/test-classes
 mkdir -p build/classes build/test-classes
 javac --release 17 -Xlint:all -Werror -cp "$MONTOYA_JAR" -d build/classes $(find src/main/java -name '*.java')

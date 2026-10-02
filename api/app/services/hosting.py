@@ -5,10 +5,11 @@ from uuid import UUID
 from sqlalchemy import case, func, literal, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.asset_query import resolved as host_resolved
 from shared.models.hosting import HostingComposition, HostingNetwork, HostingSlice
 from shared.models.http_asset import HttpAsset
 from shared.models.subdomain import Subdomain
+from shared.services.asset_query import resolved as host_resolved
+from shared.utils.text import plural
 
 MAX_NETWORKS = 6
 CLOUD = "cloud"
@@ -148,7 +149,7 @@ def _build(rows) -> HostingComposition:
             HostingNetwork(
                 id="other",
                 label="Other networks",
-                detail=f"{len(rest)} network{'' if len(rest) == 1 else 's'}",
+                detail=f"{len(rest)} {plural(len(rest), 'network')}",
                 count=sum(n for _, n in rest),
                 query=scope,
                 fronting=_slices(split, labels, scope),

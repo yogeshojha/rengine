@@ -1,5 +1,3 @@
-"""The judgement contract: a closed schema, an honesty rule, and untrusted input said out loud."""
-
 from __future__ import annotations
 
 import json

@@ -5,7 +5,7 @@
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import { seedKindFor, selectionLabel } from '$lib/utilities/rechecks';
 	import { rechecks } from '$lib/stores/rechecks.svelte';
-	import { startRescan } from '$lib/utilities/rechecks';
+	import { MAX_RUN_TEMPLATES, startRescan } from '$lib/utilities/rechecks';
 	import { SURFACE, SurfaceDimension, type ResultTab } from '$lib/config/surface';
 	import { SvelteSet, SvelteURLSearchParams } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
@@ -24,17 +24,15 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
-	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { Kbd } from '$lib/components/ui/kbd';
 	import Hint from '$lib/components/hint.svelte';
-	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
-	import CountTabs from '@/components/count-tabs.svelte';
-	import EmptyState from '@/components/empty-state.svelte';
+	import CountTabs from '$lib/components/count-tabs.svelte';
+	import EmptyState from '$lib/components/empty-state.svelte';
 
 	import QueryBar from './query-bar/query-bar.svelte';
 	import GroupList from './table/group-list.svelte';
@@ -51,12 +49,13 @@
 	import FilterBar from './vulnerabilities/filter-bar.svelte';
 	import IssueInstances from './vulnerabilities/issue-instances.svelte';
 	import SelectionBar from './table/selection-bar.svelte';
+	import FilterChips from './table/filter-chips.svelte';
 	import RowSelectionBar from './table/row-selection-bar.svelte';
 	import RescanAction from './table/rescan-action.svelte';
 	import ProxySend from './endpoints/proxy-send.svelte';
 	import { handoffToProxy } from './endpoints/proxy';
 	import { connectors as connectorStore } from '$lib/stores/connectors.svelte';
-	import { MAX_HANDOFF, type ActionKind } from '$lib/config/connectors';
+	import { MAX_HANDOFF, SEND_SHORTCUT, type ActionKind } from '$lib/config/connectors';
 	import FileIssuesDialog from '$lib/components/issue-trackers/file-issues-dialog.svelte';
 	import type { SeedPick, SeedSelection } from '$lib/types/recheck';
 	import IssueRow from './vulnerabilities/issue-row.svelte';
@@ -102,7 +101,6 @@
 		ISSUE_SORTS,
 		VULN_SORTS,
 		VULN_VIEWS,
-		type CoverageRead,
 		type IssueRead,
 		type ScanVulnerabilities,
 		type VulnFacetSet,
@@ -116,6 +114,7 @@
 	import { afterPause } from '$lib/utilities/debounce';
 	import { UrlSync, onPopSearch } from '$lib/utilities/url-history.svelte';
 	import { LiveRefresh } from '$lib/utilities/live-results';
+	import { TabCounts } from '$lib/utilities/tab-counts.svelte';
 
 	interface Props {
 		scanId: string;
@@ -183,7 +182,6 @@
 	let errored = $state(false);
 	let facets = $state<VulnFacetSet>(EMPTY_VULN_FACETS);
 	let facetsLoaded = $state(false);
-	let coverage = $state<CoverageRead[]>([]);
 	let overview = $state<ScanVulnerabilities | null>(null);
 	const expanded = new SvelteSet<string>();
 	let shortcutsOpen = $state(false);
@@ -234,7 +232,7 @@
 	);
 	let selectAllChecked = $derived(selectAllState(checkedCount, rowCount));
 	let filtered = $derived(vulnActiveFacetCount(query) > 0 || !!query.search);
-	let chips = $derived(vulnQueryChips(query, facets));
+	let chips = $derived(vulnQueryChips(query));
 	let rowPad = $derived(rowPadding(density));
 	let term = $derived(query.search.trim().includes(':') ? '' : query.search.trim());
 	let severityCounts = $derived.by(() => {
@@ -262,8 +260,15 @@
 					: 'active'
 				: ''
 	);
+	const tabCounts = new TabCounts();
+	let tabQuery = $derived({ ...query, states: [], includeSuppressed: true });
+	let tabFiltered = $derived(
+		vulnActiveFacetCount({ ...tabQuery, includeSuppressed: false }) > 0 || !!tabQuery.search.trim()
+	);
 	let reviewCounts = $derived.by(() => {
-		if (isIssues || !facetsLoaded) return null;
+		if (isIssues) return null;
+		if (tabFiltered) return tabCounts.counts;
+		if (!facetsLoaded) return null;
 		const m: Record<string, number> = {};
 		for (const f of facets.state) m[f.name] = f.count;
 		m.all = facets.state.reduce((n, f) => n + f.count, 0);
@@ -272,8 +277,7 @@
 			.reduce((n, f) => n + f.count, 0);
 		return m;
 	});
-	let coverageLoaded = $state(false);
-	let ranScan = $derived(coverage.some((c) => c.status !== 'skipped'));
+	let ranScan = $derived(overview?.ran ?? false);
 	let noun = $derived(isIssues ? 'weakness' : VULN.noun);
 	let nounPlural = $derived(isIssues ? 'weaknesses' : VULN.nounPlural);
 
@@ -435,16 +439,6 @@
 		}
 	}
 
-	async function loadCoverage() {
-		if (!ready) return;
-		try {
-			coverage = await vulnerabilitiesApi.coverage(projectId, scanId);
-			coverageLoaded = true;
-		} catch {
-			coverage = [];
-		}
-	}
-
 	async function loadInstances(templateId: string, limit: number) {
 		const my = ++instanceReq;
 		instancesSig = JSON.stringify(query);
@@ -495,7 +489,8 @@
 		try {
 			if (!quiet) loadedLeadSig = '';
 			forgetPeeks();
-			await Promise.all([runSearch(), loadFacets(), loadCoverage(), loadGroups(), loadOverview()]);
+			tabCounts.refresh();
+			await Promise.all([runSearch(), loadFacets(), loadGroups(), loadOverview()]);
 			if (expandedId) await loadInstances(expandedId, instanceLimit);
 		} finally {
 			if (!quiet) refreshing = false;
@@ -507,6 +502,18 @@
 		liveRefresh.notify(revision, active);
 	});
 	onDestroy(() => liveRefresh.stop());
+	onDestroy(() => tabCounts.clear());
+
+	$effect(() => {
+		const filter = compileVulnQuery(tabQuery, 'severity', 1, 0, 1);
+		const key = `${projectId}|${scanId}|${JSON.stringify(filter)}`;
+		const filtered = tabFiltered && !isIssues;
+		if (!ready || !seen || !queryReady) return;
+		untrack(() => {
+			if (filtered) tabCounts.track(key, () => vulnerabilitiesApi.tabs(projectId, scanId, filter));
+			else tabCounts.clear();
+		});
+	});
 
 	$effect(() => {
 		void JSON.stringify(query);
@@ -533,7 +540,6 @@
 		if (!seen) return;
 		untrack(() => {
 			void loadFacets();
-			void loadCoverage();
 			void loadOverview();
 		});
 	});
@@ -684,7 +690,7 @@
 			...(hosts.length
 				? [
 						{
-							label: hideLabel(hosts, 'web assets'),
+							label: hideLabel(hosts, WEB.nounPlural),
 							tokens: () => hosts.map((host) => excludeToken('host', host))
 						}
 					]
@@ -745,20 +751,22 @@
 		setView('findings');
 	}
 
-	function applyState(fingerprints: Set<string>, state: string, note: string | null) {
+	function applyState(fingerprints: Set<string>, state: string, note?: string | null) {
+		const patch = note === undefined ? { state } : { state, note };
 		items = items.map((item) =>
-			fingerprints.has(item.fingerprint) ? { ...item, state, note } : item
+			fingerprints.has(item.fingerprint) ? { ...item, ...patch } : item
 		);
 		instances = instances.map((item) =>
-			fingerprints.has(item.fingerprint) ? { ...item, state, note } : item
+			fingerprints.has(item.fingerprint) ? { ...item, ...patch } : item
 		);
 		if (selected && fingerprints.has(selected.fingerprint)) {
-			selected = { ...selected, state, note };
+			selected = { ...selected, ...patch };
 		}
 	}
 
 	function afterTriage() {
 		forgetPeeks();
+		tabCounts.refresh();
 		void loadFacets();
 		void loadOverview();
 		if (!query.includeSuppressed) {
@@ -769,7 +777,7 @@
 		}
 	}
 
-	async function triage(v: VulnerabilityRead, state: string, note: string | null = null) {
+	async function triage(v: VulnerabilityRead, state: string, note?: string | null) {
 		const previous = v.state;
 		try {
 			const result = await vulnerabilitiesApi.triage(
@@ -803,7 +811,7 @@
 					result.fingerprints === 1 ? 'finding' : 'findings'
 				} updated.`
 			});
-			if (body.fingerprints) applyState(new Set(body.fingerprints), state, null);
+			if (body.fingerprints) applyState(new Set(body.fingerprints), state);
 			checkedIds.clear();
 			afterTriage();
 		} catch {
@@ -818,15 +826,7 @@
 	}
 
 	function triageChecked(state: string) {
-		const what = `${checkedCount} ${
-			checkedCount === 1
-				? isIssues
-					? 'weakness'
-					: 'finding'
-				: isIssues
-					? 'weaknesses'
-					: 'findings'
-		}`;
+		const what = `${checkedCount} ${checkedCount === 1 ? noun : nounPlural}`;
 		if (isIssues) {
 			void triageMany({ template_ids: [...checkedIds] }, state, what);
 		} else {
@@ -864,7 +864,7 @@
 	let proxyCatalog = $derived(connectorStore.catalog);
 	$effect(() => {
 		const id = projectId;
-		if (!id) return;
+		if (!id || !seen) return;
 		untrack(() => {
 			void connectorStore.load(id);
 			void connectorStore.loadCatalog();
@@ -983,11 +983,9 @@
 	});
 
 	function pickedRows() {
-		const picked = isIssues
-			? instances.filter((v) => checkedIds.has(v.template_id))
-			: items.filter((v) => checkedIds.has(v.id));
+		const picked = items.filter((v) => checkedIds.has(v.id));
 		if (picked.length) return picked;
-		return isIssues ? [] : items.filter((v) => v.id === selected?.id);
+		return items.filter((v) => v.id === selected?.id);
 	}
 
 	function picksOf(rows: typeof items): SeedPick[] {
@@ -1015,24 +1013,32 @@
 		);
 	}
 
-	function querySelection(): SeedSelection {
+	function querySelection(q: VulnQuery = query): SeedSelection {
 		const {
 			limit: _l,
 			offset: _o,
 			sort: _s,
 			order: _d,
 			...filter
-		} = compileVulnQuery(query, 'severity', 1, 0, 1);
+		} = compileVulnQuery(q, 'severity', 1, 0, 1);
 		return {
 			dimension: SurfaceDimension.VULNERABILITIES,
 			query: { filter, scan_ids: scanId ? [scanId] : [] }
 		};
 	}
 
+	function issueSelection(): SeedSelection {
+		return querySelection({ ...query, templates: [...checkedIds] });
+	}
+
 	async function run(sel: SeedSelection, templates: string[]) {
 		if (rescanBusy) return;
+		if (templates.length > MAX_RUN_TEMPLATES) {
+			toast.error(`A rescan takes at most ${MAX_RUN_TEMPLATES} checks.`);
+			return;
+		}
 		rescanBusy = true;
-		const ok = await startRescan(projectId, sel, 'finding', 'findings', {
+		const ok = await startRescan(projectId, sel, VULN.noun, VULN.nounPlural, {
 			template_ids: templates
 		});
 		if (ok) checkedIds.clear();
@@ -1040,6 +1046,10 @@
 	}
 
 	async function rescanSelection() {
+		if (isIssues) {
+			if (checkedIds.size) await run(issueSelection(), [...checkedIds]);
+			return;
+		}
 		const rows = pickedRows();
 		const picks = picksOf(rows);
 		if (picks.length) {
@@ -1059,7 +1069,7 @@
 		['1 to 5', 'Switch row tab'],
 		['Enter', 'Open finding'],
 		['x', 'Select finding'],
-		['b', 'Send the open finding to Burp Suite'],
+		[SEND_SHORTCUT, 'Send the open finding to Burp Suite'],
 		[Object.values(VULN_STATE_KEYS).join(' / '), Object.values(VULN_STATE_LABELS).join(', ')],
 		['/', 'Search'],
 		['Esc', 'Collapse or clear']
@@ -1072,6 +1082,11 @@
 	let rescanOptionsFor = $state<{ selection: SeedSelection; templates: string[] } | null>(null);
 
 	function openRescanOptions() {
+		if (isIssues) {
+			if (checkedIds.size)
+				rescanOptionsFor = { selection: issueSelection(), templates: [...checkedIds] };
+			return;
+		}
 		const rows = pickedRows();
 		const picks = picksOf(rows);
 		if (!picks.length) return;
@@ -1139,6 +1154,8 @@
 		{leadSet}
 		total={errored ? null : total}
 		capped={totalCapped}
+		countNoun={noun}
+		countNounPlural={nounPlural}
 		serverError={queryError}
 		onReady={(value) => (queryReady = value)}
 		onChange={(v) => setQuery({ ...query, search: v })}
@@ -1147,12 +1164,13 @@
 </div>
 
 <Card.Root class="gap-0 overflow-clip rounded-t-none border-t-0 py-0">
-	<div class="flex items-center gap-3 border-b pr-3 pl-2">
-		<div class="min-w-0 flex-1">
+	<div class="flex flex-wrap items-center gap-x-3 gap-y-2 border-b pt-2 pr-3 pl-2 sm:pt-0">
+		<div class="order-last min-w-0 grow basis-full sm:order-none sm:basis-0">
 			<CountTabs
 				tabs={REVIEW_TABS}
 				value={reviewTab}
 				counts={reviewCounts}
+				capped={tabFiltered && !isIssues ? tabCounts.capped : null}
 				onChange={setReviewTab}
 			/>
 		</div>
@@ -1187,8 +1205,8 @@
 		</ToggleGroup.Root>
 	</div>
 
-	{#if coverageLoaded}
-		<CoverageStrip {coverage} />
+	{#if overview}
+		<CoverageStrip vulns={overview} />
 	{/if}
 
 	<FilterBar
@@ -1215,38 +1233,16 @@
 		onGroupBy={(key) => (groupBy = key)}
 	/>
 
-	{#if chips.length > 0}
-		<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/10 px-4 py-2">
-			{#each chips as chip (chip.id)}
-				<Badge variant="outline" class="gap-1 bg-background font-normal">
-					{chip.label}
-					<Tooltip.Root>
-						<Tooltip.Trigger
-							class="rounded-sm text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-							onclick={() => setQuery(chip.remove(query))}
-							aria-label="Remove filter {chip.label}"
-						>
-							<X class="h-3 w-3" />
-							<span class="sr-only">Remove filter {chip.label}</span>
-						</Tooltip.Trigger>
-						<Tooltip.Content>Remove filter {chip.label}</Tooltip.Content>
-					</Tooltip.Root>
-				</Badge>
-			{/each}
-			<button
-				class="ml-1 rounded-sm text-xs text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-				onclick={() => setQuery({ ...emptyVulnQuery(), search: query.search })}
-				aria-label="Clear all filters"
-			>
-				Clear all
-			</button>
-		</div>
-	{/if}
+	<FilterChips
+		{chips}
+		onRemove={(chip) => setQuery(chip.remove(query))}
+		onClear={() => setQuery({ ...emptyVulnQuery(), search: query.search })}
+	/>
 
 	{#if !groupBy}
 		<SelectionBar
-			noun={VULN.noun}
-			nounPlural={VULN.nounPlural}
+			{noun}
+			{nounPlural}
 			{total}
 			{totalCapped}
 			maxAssets={rechecks.schema?.max_assets ?? 0}
@@ -1317,7 +1313,7 @@
 				title="No findings"
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
-		{:else if coverageLoaded}
+		{:else if overview}
 			<EmptyState
 				icon={ShieldCheck}
 				title="Not scanned"
@@ -1329,7 +1325,7 @@
 				title="Scan coverage not loaded"
 				class="rounded-none border-0 bg-transparent py-16"
 			>
-				<Button variant="outline" class="gap-2" onclick={() => loadCoverage()}>
+				<Button variant="outline" class="gap-2" onclick={() => loadOverview()}>
 					<RefreshCw class="h-4 w-4" /> Retry
 				</Button>
 			</EmptyState>
@@ -1400,13 +1396,31 @@
 				{@render sortHead('Severity', 'severity', `${FCOL.severity} flex`)}
 				{@render sortHead('Finding', 'name', `${FCOL.finding} flex`)}
 				{#if projectWide}<div class={FCOL.target}>Target</div>{/if}
-				{#if findingPrefs.shows('asset')}{@render sortHead('Web asset', 'host', FCOL.asset)}{/if}
-				{#if findingPrefs.shows('related')}<div class={FCOL.related}>Correlation</div>{/if}
-				{#if findingPrefs.shows('risk')}{@render sortHead('Risk', 'exploit', FCOL.risk)}{/if}
-				{#if findingPrefs.shows('evidence')}<div class={FCOL.evidence}>Evidence</div>{/if}
-				{#if findingPrefs.shows('review')}<div class={FCOL.review}>Review</div>{/if}
-				{#if showIssue}<div class={FCOL.issue}>Issue</div>{/if}
-				{#if findingPrefs.shows('seen')}{@render sortHead('Seen', 'seen', FCOL.seen)}{/if}
+				{#if findingPrefs.shows('asset')}{@render sortHead(
+						FINDING_COLUMN_LABELS.asset,
+						'host',
+						FCOL.asset
+					)}{/if}
+				{#if findingPrefs.shows('related')}<div class={FCOL.related}>
+						{FINDING_COLUMN_LABELS.related}
+					</div>{/if}
+				{#if findingPrefs.shows('risk')}{@render sortHead(
+						FINDING_COLUMN_LABELS.risk,
+						'exploit',
+						FCOL.risk
+					)}{/if}
+				{#if findingPrefs.shows('evidence')}<div class={FCOL.evidence}>
+						{FINDING_COLUMN_LABELS.evidence}
+					</div>{/if}
+				{#if findingPrefs.shows('review')}<div class={FCOL.review}>
+						{FINDING_COLUMN_LABELS.review}
+					</div>{/if}
+				{#if showIssue}<div class={FCOL.issue}>{FINDING_COLUMN_LABELS.issue}</div>{/if}
+				{#if findingPrefs.shows('seen')}{@render sortHead(
+						FINDING_COLUMN_LABELS.seen,
+						'seen',
+						FCOL.seen
+					)}{/if}
 				<div class={FCOL.actions}></div>
 			</div>
 			<div class="transition-opacity {loading ? 'opacity-60' : ''}">

@@ -32,10 +32,8 @@ export type NotificationSeverity = MessageLevel;
 
 export interface NotificationMetadata {
 	url?: string;
-	open_new_tab?: boolean;
 	scan_id?: string;
 	target_id?: string;
-	action_label?: string;
 }
 
 export interface Notification {

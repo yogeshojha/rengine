@@ -343,12 +343,11 @@ def recheck(limit: int = RECHECK_BATCH) -> dict:
 
 
 @shared_task(name="app.tasks.watch.reconcile", max_retries=0)
-def reconcile(program_id: str | None = None) -> dict:
+def reconcile() -> dict:
     """Targets, exclusions and watch items follow the program scope."""
     out: dict[str, dict] = {}
     with get_sync_session() as session:
-        pid = uuid.UUID(program_id) if program_id else None
-        for watch in watch_sync.active_watches(session, pid):
+        for watch in watch_sync.active_watches(session):
             if not watch.follow_scope:
                 continue
             try:

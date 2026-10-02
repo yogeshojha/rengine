@@ -52,8 +52,6 @@ export function parseAnswer(text: string): AnswerBlock[] {
 	return blocks;
 }
 
-export function cited(blocks: AnswerBlock[]): number[] {
-	const seen = new Set<number>();
-	for (const b of blocks) for (const s of b.spans) if (s.kind === 'cite') seen.add(s.n);
-	return [...seen];
+export function plainAnswer(text: string): string {
+	return text.replace(/ ?\[\[\d{1,2}\]\]/g, '');
 }

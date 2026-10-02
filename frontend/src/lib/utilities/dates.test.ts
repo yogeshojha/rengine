@@ -1,5 +1,12 @@
 import { describe, expect, it, afterEach, beforeEach, vi } from 'vitest';
-import { relativeTime, relativeTimeLong, untilTime, uptime } from './dates';
+import {
+	formatDay,
+	relativeTime,
+	relativeTimeLong,
+	untilTime,
+	uptime,
+	utcDaysSince
+} from './dates';
 
 const NOW = new Date('2026-09-11T12:00:00Z');
 const ago = (minutes: number) => new Date(NOW.getTime() - minutes * 60_000).toISOString();
@@ -33,7 +40,7 @@ describe('relativeTime', () => {
 		expect(relativeTime(ago(minutes))).toBe(expected);
 	});
 
-	it('reaches years, where a months-only helper said 36mo ago', () => {
+	it('reaches years', () => {
 		expect(relativeTime(ago(3 * YEAR))).toBe('3y ago');
 	});
 });
@@ -53,7 +60,7 @@ describe('relativeTimeLong', () => {
 		expect(relativeTimeLong(ago(minutes))).toBe(expected);
 	});
 
-	it('always says ago, because three call sites printed "used 3 hours"', () => {
+	it('ends in ago', () => {
 		expect(relativeTimeLong(ago(3 * HOUR))).toBe('3 hours ago');
 	});
 });
@@ -119,5 +126,28 @@ describe('untilTime', () => {
 	it('returns null once the moment has passed', () => {
 		expect(untilTime(ago(35))).toBeNull();
 		expect(untilTime(null)).toBeNull();
+	});
+});
+
+describe('formatDay', () => {
+	it('reads a calendar date in UTC', () => {
+		expect(formatDay('2026-09-11')).toBe('Sep 11');
+		expect(formatDay('2026-09-11', true)).toBe('Fri, Sep 11');
+	});
+});
+
+describe('utcDaysSince', () => {
+	it('starts on the day the window starts and ends today', () => {
+		const now = Date.parse('2026-10-02T02:23:00Z');
+		expect(utcDaysSince('2026-09-25T02:23:00Z', now)).toEqual([
+			'2026-09-25',
+			'2026-09-26',
+			'2026-09-27',
+			'2026-09-28',
+			'2026-09-29',
+			'2026-09-30',
+			'2026-10-01',
+			'2026-10-02'
+		]);
 	});
 });

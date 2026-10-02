@@ -33,6 +33,8 @@ def backfill(limit: int = BACKFILL_SCANS_PER_TICK) -> dict:
                 target_id=scan.target_id,
                 project_id=scan.project_id,
             )
+            if outcome.busy:
+                continue
             session.execute(
                 Scan.__table__.update()
                 .where(Scan.id == scan_id)

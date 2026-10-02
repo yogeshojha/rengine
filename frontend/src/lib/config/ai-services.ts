@@ -26,8 +26,6 @@ export const CATEGORY_LABELS: Record<AiCategory, string> = {
 	generic: 'OpenAI-compatible API'
 };
 
-export const CATEGORY_ORDER: AiCategory[] = Object.keys(CATEGORY_LABELS) as AiCategory[];
-
 const SELF = AiCategory.SELF_HOSTED;
 const GATE = AiCategory.GATEWAY;
 const APP = AiCategory.APPLICATION;
@@ -113,5 +111,6 @@ export function aiQuery(value: string): string {
 }
 
 export function aiModelQuery(model: string): string {
-	return `${AI_MODEL_FIELD}:${/[\s:,"[\]()]/.test(model) ? `"${model}"` : model}`;
+	const value = /[\s:,"\\[\]()]/.test(model) ? `"${model.replace(/["\\]/g, '\\$&')}"` : model;
+	return `${AI_MODEL_FIELD}:${value}`;
 }

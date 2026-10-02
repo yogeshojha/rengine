@@ -8,8 +8,8 @@ from sqlmodel import select
 from mcp import links
 from mcp.context import ToolContext
 from mcp.result import ToolResult
+from mcp.tools._scope import active_project_ids, active_projects
 from mcp.tools.base import Tool, ToolGroup, ToolInput
-from shared.models.project import Project
 from shared.models.target import Target
 from shared.utils.text import counted
 from toolbox.base import cell, table
@@ -35,7 +35,7 @@ class ListTargets(Tool):
     examples = ("list_targets", "list_targets contains=acme")
 
     async def run(self, ctx: ToolContext, args: Input) -> ToolResult:
-        statement = select(Target)
+        statement = select(Target).where(Target.project_id.in_(active_project_ids()))
         scoped = ctx.scoped_projects()
         if scoped is not None:
             statement = statement.where(Target.project_id.in_(scoped))
@@ -51,7 +51,7 @@ class ListTargets(Tool):
         )
         projects = {
             p.id: p.name
-            for p in (await ctx.session.execute(select(Project))).scalars().all()
+            for p in (await ctx.session.execute(active_projects())).scalars().all()
         }
 
         shown = rows[: args.limit]
@@ -72,7 +72,7 @@ class ListTargets(Tool):
                     for row in shown
                 ],
             },
-            pivot=f"{ctx.ui_base_url.rstrip('/')}/targets",
+            pivot=links.targets(ctx.ui_base_url),
             caveats=(
                 [f"{len(rows) - len(shown)} more not shown. Narrow with `contains`."]
                 if len(rows) > len(shown)
@@ -103,7 +103,7 @@ class ListProjects(Tool):
     examples = ("list_projects",)
 
     async def run(self, ctx: ToolContext, args: ToolInput) -> ToolResult:  # noqa: ARG002
-        rows = (await ctx.session.execute(select(Project))).scalars().all()
+        rows = (await ctx.session.execute(active_projects())).scalars().all()
         scoped = ctx.scoped_projects()
         visible = [r for r in rows if scoped is None or r.id in scoped]
         return ToolResult(

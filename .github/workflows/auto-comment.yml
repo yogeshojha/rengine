@@ -25,8 +25,8 @@ jobs:
               github.rest.issues.createComment({ issue_number: context.issue.number, owner, repo, body });
 
             if (context.eventName === 'issues') {
-              const title = context.payload.issue.title.toLowerCase();
-              if (title.includes('feat')) {
+              const labels = context.payload.issue.labels.map((l) => l.name);
+              if (labels.includes('feature_request')) {
                 await comment(
                   `Thanks for the request, @${author}.\n\n` +
                   `A feature request is quickest to act on when it names the problem it solves, ` +

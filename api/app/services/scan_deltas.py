@@ -60,16 +60,13 @@ async def retired(
     session: AsyncSession,
     dimension: str,
     pairs: Iterable[scan_deltas.Pair],
-    live: Iterable[UUID] = (),
 ) -> dict[scan_deltas.Pair, int]:
     """Per (scan, previous scan), keys the previous one held that the scan lacks."""
     wanted = list(pairs)
-    reuse = frozenset(live)
-    counts, fill, stale = await session.run_sync(
-        lambda sync: scan_deltas.retired(sync, dimension, wanted, reuse=reuse)
+    counts, fill = await session.run_sync(
+        lambda sync: scan_deltas.retired(sync, dimension, wanted)
     )
     await _store(session, fill)
-    await _refresh(stale)
     return counts
 
 

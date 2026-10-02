@@ -3,7 +3,7 @@ import type { TableColumn } from '../table/columns';
 import type { EndpointFilter, EndpointRead, MergedLeaf, TreeNode } from '$lib/utilities/endpoints';
 import type { Connector, ConnectorSpec } from '$lib/types/connector';
 
-export const GUIDE_WIDTH = 'w-5';
+export const GUIDE = 'w-5 ml-[7px] h-5 shrink-0 border-l border-border/70';
 export const OUTLINE_ROW_ATTR = 'data-outline-row';
 export const LEAF_PAGE = 25;
 export const AUTO_OPEN_ROWS = 40;

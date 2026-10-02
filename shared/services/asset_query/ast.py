@@ -31,7 +31,6 @@ class Compare:
     sub: str | None
     start: int
     end: int
-    raw_name: str = ""
 
 
 @dataclass(frozen=True)

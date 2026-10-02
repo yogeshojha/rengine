@@ -1,6 +1,6 @@
 import type { ScanStatus } from './scan';
 import type { SeverityCount } from '$lib/utilities/vulns';
-import type { ActivityKind, QueueTier } from '$lib/config/dashboard';
+import type { ActivityKind, ActivityTone, QueueTier } from '$lib/config/dashboard';
 
 export const DASHBOARD_WINDOWS = [
 	{ key: '7d', label: '7d', text: 'last 7 days', days: 7 },
@@ -11,6 +11,9 @@ export type DashboardWindow = (typeof DASHBOARD_WINDOWS)[number]['key'];
 export const DEFAULT_DASHBOARD_WINDOW: DashboardWindow = '7d';
 export const windowDays = (w: DashboardWindow) =>
 	DASHBOARD_WINDOWS.find((x) => x.key === w)?.days ?? 7;
+// calendar-day buckets the sliding window touches
+export const bucketsSince = <T extends { date: string }>(days: T[], since: string): T[] =>
+	days.filter((d) => d.date >= since.slice(0, 10));
 export const DASHBOARD_SLICES = [
 	'tech',
 	'ipFacets',
@@ -26,7 +29,8 @@ export const DASHBOARD_SLICES = [
 	'activity',
 	'programs',
 	'discovery',
-	'surfaceRisk'
+	'surfaceRisk',
+	'window'
 ] as const;
 export type DashboardSlice = (typeof DASHBOARD_SLICES)[number];
 
@@ -45,7 +49,8 @@ export const DASHBOARD_SLICE_LABELS: Record<DashboardSlice, string> = {
 	activity: 'Activity',
 	programs: 'Programs',
 	discovery: 'Candidate targets',
-	surfaceRisk: 'Surface against risk'
+	surfaceRisk: 'Surface against risk',
+	window: 'Window totals'
 };
 
 export interface TakeoverCandidate {
@@ -81,16 +86,9 @@ export interface StaleTarget {
 	last_scanned_at: string | null;
 }
 
-export interface StaleSignal {
-	never_scanned: number;
-	stale: number;
-	items: StaleTarget[];
-}
-
 export interface DashboardSignals {
 	takeover: TakeoverSignal;
 	spoofable: SpoofableSignal;
-	stale: StaleSignal;
 }
 
 export interface DashboardTargetCount {
@@ -106,21 +104,10 @@ export interface ExpiringTarget {
 	expires_at: string;
 }
 
-export interface FailedRun {
-	target_id: string;
-	target_value: string;
-	scan_id: string;
-	engine_name: string;
-	error: string | null;
-	at: string;
-}
-
 export interface DashboardSurfaceMetric {
 	key: string;
 	label: string;
 	value: number;
-	targets_covered: number;
-	new_in_window: number;
 }
 
 export interface DashboardEvidenceCell {
@@ -168,12 +155,6 @@ export interface DashboardRisk {
 	queue: DashboardFinding[];
 }
 
-export interface DashboardGeo {
-	code: string;
-	count: number;
-	targets: DashboardTargetCount[];
-}
-
 export interface DashboardExposureBand {
 	key: string;
 	label: string;
@@ -198,15 +179,12 @@ export interface DashboardExposure {
 	targets: number;
 	sensitive: number;
 	sensitive_targets: number;
-	non_web: number;
 	bands: DashboardExposureBand[];
 	top: DashboardExposedService[];
 }
 
 export interface DashboardCertSignal {
-	count: number;
 	query: string;
-	targets: DashboardTargetCount[];
 }
 
 export interface DashboardCertBucket {
@@ -231,7 +209,6 @@ export interface DashboardChangeRow {
 	last_status: ScanStatus;
 	last_at: string;
 	new: Record<string, number>;
-	new_scan: Record<string, string | null>;
 	first: string[];
 	gone_web_assets: number;
 }
@@ -263,33 +240,44 @@ export interface DashboardReadiness {
 export interface DashboardOverview {
 	generated_at: string;
 	window: DashboardWindow;
+	since: string;
 	first_run: boolean;
 	targets_total: number;
 	targets_scanned: number;
 	targets_never_scanned: number;
 	targets_stale: number;
 	targets_monitored: number;
-	targets_by_type: Record<string, number>;
 	runs_total: number;
 	runs_in_window: number;
 	failed_in_window: number;
-	last_completed_at: string | null;
+	outcomes_in_window: Record<string, number>;
+	retired_in_window: Record<string, number>;
 	surface: DashboardSurfaceMetric[];
 	answering_hosts: number;
 	risk: DashboardRisk;
 	signals: DashboardSignals;
-	never_scanned: StaleTarget[];
 	stale: StaleTarget[];
-	sensitive: DashboardTargetCount[];
 	expiring: ExpiringTarget[];
-	failed_runs: FailedRun[];
 	exposure: DashboardExposure;
 	certs: DashboardCerts;
-	geography: DashboardGeo[];
-	geo_total: number;
 	changes: DashboardChangeRow[];
 	daily: DashboardDay[];
 	targets: DashboardTargetRow[];
+}
+
+export interface DashboardWindowCount {
+	key: string;
+	query: string;
+	count: number;
+	capped: boolean;
+}
+
+export interface DashboardWindowCounts {
+	window: DashboardWindow;
+	since: string;
+	new: DashboardWindowCount[];
+	findings: Record<string, number>;
+	targets_with_new_web_assets: number;
 }
 
 export interface SurfaceRiskTarget {
@@ -306,8 +294,6 @@ export interface SurfaceRiskTarget {
 	scan_id: string | null;
 	scan_status: ScanStatus | null;
 	last_at: string | null;
-	organizations: string[];
-	tags: string[];
 }
 
 export interface DashboardSurfaceRisk {
@@ -329,20 +315,15 @@ export interface SurfaceRiskFilters {
 export interface DashboardDiscoverySource {
 	target_id: string;
 	target_value: string;
-	scan_id: string;
-	seen_on: string;
-	hostname_count: number;
 }
 
 export interface DashboardDiscoveredDomain {
 	domain: string;
 	hostname_count: number;
-	hostnames: string[];
 	sources: DashboardDiscoverySource[];
 }
 
 export interface DashboardDiscovery {
-	targets_examined: number;
 	domains: DashboardDiscoveredDomain[];
 }
 
@@ -368,13 +349,11 @@ export interface DashboardEvent {
 	label: string;
 	title: string;
 	detail: string | null;
-	tone: 'neutral' | 'hot' | 'new';
+	tone: ActivityTone;
 	scan_id: string | null;
-	target_id: string | null;
 	watch_id: string | null;
 	platform: string | null;
 	handle: string | null;
-	connector_id: string | null;
 }
 
 export interface DashboardActivity {
@@ -402,7 +381,6 @@ export interface DashboardLadderStep {
 
 export interface DashboardWatches {
 	total: number;
-	active: number;
 	daily: DashboardDayKinds[];
 	ladder: DashboardLadderStep[];
 	latest_alert: DashboardWatchAlert | null;
@@ -413,8 +391,6 @@ export interface DashboardWatches {
 
 export interface DashboardBrowsing {
 	connectors: number;
-	live: number;
-	requests_seen: number;
 	browsed: number;
 	unseen: number;
 	new_params: number;
@@ -425,9 +401,9 @@ export interface DashboardBrowsing {
 
 export interface DashboardPrograms {
 	window: DashboardWindow;
+	since: string;
 	programs_total: number;
 	by_platform: Record<string, number>;
-	watched: number;
 	events_in_window: Record<string, number>;
 	events_daily: DashboardDayKinds[];
 	watches: DashboardWatches;

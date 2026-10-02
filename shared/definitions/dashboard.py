@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 from enum import StrEnum
 
 
@@ -20,6 +20,20 @@ WINDOW_DELTAS: dict[str, timedelta] = {
 WINDOW_DAYS: dict[str, int] = {k: v.days for k, v in WINDOW_DELTAS.items()}
 DEFAULT_WINDOW = DashboardWindow.WEEK.value
 
+
+def window_key(window: str | None) -> str:
+    return window if window in WINDOW_DELTAS else DEFAULT_WINDOW
+
+
+def window_since(window: str | None, now: datetime) -> datetime:
+    """Start of the sliding window that ends now."""
+    return now - WINDOW_DELTAS[window_key(window)]
+
+
+def new_in_window(window: str | None) -> str:
+    return f"is:new and seen:<{WINDOW_DAYS[window_key(window)]}d"
+
+
 STALE_DAYS = 30
 EXPIRING_DAYS = 30
 SERIES_DAYS = 30
@@ -29,7 +43,6 @@ CHANGES_LIMIT = 40
 EXPOSURE_TOP = 8
 DISCOVERY_LIMIT = 40
 ITEMS_CAP = 100
-SURFACE_RISK_ROWS = 6
 
 EXPIRED_CERT_QUERY = "cert:expired and is:live"
 EXPIRING_CERT_QUERY = "cert:expiring"
@@ -47,6 +60,12 @@ class ActivityKind(StrEnum):
     CONNECTOR = "connector"
 
 
+class ActivityTone(StrEnum):
+    NEUTRAL = "neutral"
+    HOT = "hot"
+    NEW = "new"
+
+
 class QueueTier(StrEnum):
     ACT = "act"
     ATTEND = "attend"
@@ -54,11 +73,6 @@ class QueueTier(StrEnum):
 
 
 TIER_ORDER: tuple[str, ...] = tuple(t.value for t in QueueTier)
-TIER_LABELS: dict[str, str] = {
-    QueueTier.ACT.value: "Act",
-    QueueTier.ATTEND.value: "Attend",
-    QueueTier.TRACK.value: "Track",
-}
 TIER_ACT_EPSS = 0.088
 TIER_ATTEND_EPSS = 0.01
 

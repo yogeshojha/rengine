@@ -16,7 +16,7 @@ export const IP_LEAD_COLUMNS: TableColumn[] = [
 ];
 
 export const IP_COLUMNS: TableColumn[] = [
-	{ key: 'hosts', label: 'Hosts', sort: 'hosts', width: 'min-w-56 max-w-[20rem]', grow: true },
+	{ key: 'hosts', label: 'Web assets', sort: 'hosts', width: 'min-w-56 max-w-[20rem]', grow: true },
 	{ key: 'ports', label: 'Ports', sort: 'ports', width: 'w-44' },
 	{ key: 'country', label: 'Country', sort: 'country', width: 'w-20' },
 	{ key: 'prefix', label: 'Prefix', width: 'w-36' },

@@ -11,6 +11,7 @@
 	import { notes } from '$lib/stores/notes.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import type { Note, NoteAnchor, NoteFilter } from '$lib/types/note';
+	import { plural } from '$lib/utilities/strings';
 
 	interface Props {
 		anchor: NoteAnchor;
@@ -61,9 +62,11 @@
 		}
 	}
 
+	let loadedSignature = '';
 	$effect(() => {
 		const signature = JSON.stringify([projectId, filter]);
-		void signature;
+		if (signature === loadedSignature) return;
+		loadedSignature = signature;
 		untrack(() => void load());
 	});
 </script>
@@ -71,7 +74,7 @@
 <div class="flex flex-col">
 	<div class="flex items-center justify-between gap-2 px-4 py-2.5">
 		<span class="text-xs font-medium text-muted-foreground">
-			{total === 1 ? '1 note' : `${total.toLocaleString()} notes`}
+			{plural(total, 'note')}
 		</span>
 		{#if !composerOpen}
 			<Button

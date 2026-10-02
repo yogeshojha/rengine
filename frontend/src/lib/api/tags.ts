@@ -8,6 +8,12 @@ export interface Tag {
 	project_id: string;
 	created_at: string;
 	created_by: string;
+	target_count: number;
+}
+
+export interface TagUpdate {
+	name?: string;
+	color?: string;
 }
 
 export interface TagCreate {
@@ -34,19 +40,15 @@ export const tagsApi = {
 		return api.get<Tag[]>(url);
 	},
 
-	async get(projectSlug: string, slug: string): Promise<Tag> {
-		return api.get<Tag>(`/tags/${projectSlug}/${slug}`);
-	},
-
 	async create(data: TagCreate): Promise<Tag> {
 		return api.post<Tag>('/tags', data);
 	},
 
-	async delete(projectSlug: string, slug: string): Promise<void> {
-		return api.delete(`/tags/${projectSlug}/${slug}`);
+	async update(id: string, data: TagUpdate): Promise<Tag> {
+		return api.patch<Tag>(`/tags/${id}`, data);
 	},
 
-	async initPredefined(projectSlug: string): Promise<void> {
-		return api.post(`/tags/init-predefined?project_slug=${projectSlug}`, {});
+	async remove(id: string): Promise<void> {
+		await api.delete(`/tags/${id}`);
 	}
 };

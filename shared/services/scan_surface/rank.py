@@ -1,4 +1,4 @@
-"""Who is scanned first when the budget runs out. Never alphabetical."""
+"""Scan order of web assets."""
 
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ def base_rank(candidate: RootCandidate) -> float:
 
 
 def cluster_rank(base: float, members: int) -> float:
-    """A representative standing for many is worth more."""
+    """The base rank plus a bonus per extra member, the bonus capped."""
     return round(base + min(_MAX_MEMBER_BONUS, _MEMBER_BONUS * max(0, members - 1)), 3)
 
 

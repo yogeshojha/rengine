@@ -8,7 +8,6 @@
 	import * as HoverCard from '$lib/components/ui/hover-card';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { targetsApi } from '$lib/api/targets';
-	import { organizationsApi } from '$lib/api/organizations';
 	import { targetsStore } from '$lib/stores/targets.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { toast } from 'svelte-sonner';
@@ -78,27 +77,31 @@
 		if (!projectSlug || !searchValue.trim()) return;
 
 		const orgName = searchValue.trim();
+		const previous = [...currentOrgs];
 		isUpdating = true;
 
 		try {
-			const newOrg = await organizationsApi.create({ name: orgName, project_slug: projectSlug });
+			const newOrg = await targetsStore.createOrganization(projectSlug, orgName);
+			if (!newOrg) {
+				toast.error('Organization not created');
+				return;
+			}
 
 			const newOrgSummary = { id: newOrg.id, name: newOrg.name, slug: newOrg.slug };
-			applyPatch({
-				organizations: [...currentOrgs, newOrgSummary]
-			});
+			applyPatch({ organizations: [...previous, newOrgSummary] });
 
-			await Promise.all([
-				targetsApi.update(targetId, {
-					organization_names: [...currentOrgs.map((o) => o.name), orgName]
-				}),
-				targetsStore.fetchOrganizations()
-			]);
+			try {
+				await targetsApi.update(targetId, {
+					organization_names: [...previous.map((o) => o.name), orgName]
+				});
+			} catch {
+				applyPatch({ organizations: previous });
+				toast.error('Organization not applied');
+				return;
+			}
 
 			searchValue = '';
 			toast.success('Organization created');
-		} catch {
-			toast.error('Organization not created');
 		} finally {
 			isUpdating = false;
 		}
@@ -106,7 +109,8 @@
 
 	function handleOpenChange(isOpen: boolean) {
 		open = isOpen;
-		if (!isOpen) searchValue = '';
+		if (isOpen) void targetsStore.fetchOrganizations(projectsStore.activeProject?.slug);
+		else searchValue = '';
 	}
 </script>
 

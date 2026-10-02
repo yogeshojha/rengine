@@ -2,17 +2,20 @@
 
 from __future__ import annotations
 
-import uuid
-
 from pydantic import Field
 
 from mcp import links
 from mcp.context import ToolContext
 from mcp.phrasing import number, stamp
 from mcp.result import ToolResult
-from mcp.tools._scope import project_for
+from mcp.tools._scope import parse_id, project_for
 from mcp.tools.base import Tool, ToolGroup, ToolInput
-from shared.definitions.dashboard import DEFAULT_WINDOW, WINDOW_DELTAS
+from shared.definitions.dashboard import (
+    CHANGES_LIMIT,
+    DEFAULT_WINDOW,
+    WINDOW_DELTAS,
+    QueueTier,
+)
 from shared.utils.text import counted
 from toolbox.base import cell, fact, facts, hero, table
 
@@ -52,13 +55,18 @@ class WhatChanged(Tool):
         )
 
         window = args.window if args.window in WINDOWS else DEFAULT_WINDOW
-        project_id = await project_for(
-            ctx, uuid.UUID(args.project_id) if args.project_id else None
-        )
+        project_id = await project_for(ctx, parse_id(args.project_id, "project_id"))
         overview = await DashboardOverviewService(ctx.session).overview(
             project_id, window
         )
 
+        changed = [
+            row
+            for row in overview.changes
+            if (row.new and any((row.new or {}).values()))
+            or row.first
+            or row.gone_web_assets
+        ]
         changes = [
             {
                 "target": row.target_value,
@@ -70,20 +78,21 @@ class WhatChanged(Tool):
                 "first_time_covered": list(row.first or []),
                 "web_assets_gone": row.gone_web_assets,
             }
-            for row in overview.changes[:MAX_ROWS]
-            if (row.new and any((row.new or {}).values()))
-            or row.first
-            or row.gone_web_assets
+            for row in changed[:MAX_ROWS]
         ]
+        floor = "At least " if len(overview.changes) >= CHANGES_LIMIT else ""
 
         risk = overview.risk
         headline = (
-            f"{counted(len(changes), 'target')} changed in the last {window}"
-            if changes
+            f"{floor}{counted(len(changed), 'target')} changed in the last {window}"
+            if changed
             else f"Nothing new in the last {window}"
         )
 
         caveats = []
+        if len(changed) > len(changes):
+            more = counted(len(changed) - len(changes), "more target")
+            caveats.append(f"{floor}{more} not listed.")
         if overview.targets_never_scanned:
             caveats.append(
                 f"{counted(overview.targets_never_scanned, 'target')} not scanned."
@@ -109,7 +118,9 @@ class WhatChanged(Tool):
                     "stale": overview.targets_stale,
                     "monitored": overview.targets_monitored,
                 },
-                "risk": risk.model_dump(mode="json") if risk else None,
+                "risk": risk.model_dump(mode="json", exclude={"queue"})
+                if risk
+                else None,
                 "changes": changes,
             },
             pivot=links.dashboard(ctx.ui_base_url),
@@ -129,6 +140,7 @@ def _change_line(row: dict) -> str:
 
 def _blocks(headline: str, overview, risk, changes: list[dict]) -> list:
     tiers = dict(getattr(risk, "tiers", None) or {})
+    act = tiers.get(QueueTier.ACT.value)
     return [
         hero(headline),
         facts(
@@ -136,7 +148,7 @@ def _blocks(headline: str, overview, risk, changes: list[dict]) -> list:
             fact("Scanned", number(overview.targets_scanned)),
             fact("Never scanned", number(overview.targets_never_scanned) or None),
             fact("Findings", number(risk.total) if risk else None),
-            fact("Act now", number(tiers.get("act")) if tiers.get("act") else None),
+            fact("Act now", number(act) if act else None),
             fact("KEV", number(risk.kev) if risk and risk.kev else None),
         ),
         table(

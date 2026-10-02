@@ -15,6 +15,7 @@ from app.services.ask.verdict import assess
 from shared.definitions.ask import EvidenceField, MessageRole, StreamEvent
 from shared.definitions.surface import SurfaceDimension
 from shared.models.ask import AskQuestion, AskThreadCreate
+from shared.models.user import User
 from shared.models.vulnerability import AssetContext
 from shared.services.ai.agent import DONE, TEXT, AgentEvent
 from tests.api.test_ask import _finding as pure_finding
@@ -116,8 +117,6 @@ async def two(estate, now, monkeypatch, flush_only):  # noqa: F811
         estate.project_id,
         AskThreadCreate(target_id=target, asset_key=other_fp),
     )
-    from shared.models.user import User  # noqa: PLC0415
-
     user = await estate.session.get(User, estate.user_id)
     return {"a": a, "b": b, "other": other, "fp": fp, "user": user, "target": target}
 
@@ -221,8 +220,6 @@ async def test_ask_on_a_web_asset_builds_its_own_context(
     monkeypatch,
     flush_only,  # noqa: F811
 ):
-    from app.services.ask import asset_context  # noqa: PLC0415
-
     await estate.scan("example.com", "run", at=now)
     await estate.hosts(
         "run", ["admin.example.com"], at=now, status=200, title="Admin login"
@@ -264,8 +261,6 @@ async def test_ask_on_a_web_asset_builds_its_own_context(
     )
     assert thread.dimension == SurfaceDimension.WEB_ASSETS.value
 
-    from shared.models.user import User  # noqa: PLC0415
-
     user = await estate.session.get(User, estate.user_id)
     seen: dict = {}
     frames = await _ask(estate, thread, user, "what is it?", seen, monkeypatch)
@@ -275,4 +270,3 @@ async def test_ask_on_a_web_asset_builds_its_own_context(
     assert '"name": "admin.example.com"' in system
     assert system.index("Admin login") > system.index("<<untrusted ")
     assert "F1 [" in system
-    assert asset_context.assess is not None

@@ -22,7 +22,6 @@
 	>
 		<Sheet.Header class="border-b px-5 py-4">
 			<Sheet.Title>Templates</Sheet.Title>
-			<Sheet.Description>Each opens as a new tripwire with its query filled in.</Sheet.Description>
 		</Sheet.Header>
 		<ScrollArea class="min-h-0 flex-1">
 			<div class="px-5 py-5">

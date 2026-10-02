@@ -6,18 +6,22 @@
 	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
 	import Plus from '@lucide/svelte/icons/plus';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import AlertCircle from '@lucide/svelte/icons/alert-circle';
 
 	import { scanSchedulesStore } from '$lib/stores/scan-schedules.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { instanceSettingsStore } from '$lib/stores/instanceSettings.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import EmptyState from '@/components/empty-state.svelte';
+	import * as Alert from '$lib/components/ui/alert';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import ScheduleListCard from '$lib/components/schedules/schedule-list-card.svelte';
 	import ScheduleModal from '$lib/components/schedules/schedule-modal.svelte';
 	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
+	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
 	import { scanSchedulesApi } from '$lib/api/scan-schedules';
 	import { SvelteSet } from 'svelte/reactivity';
+	import type { ScanScheduleRead } from '$lib/types/scan-schedule';
 
 	const picked = new SvelteSet<string>();
 
@@ -25,8 +29,6 @@
 		if (picked.has(id)) picked.delete(id);
 		else picked.add(id);
 	}
-	import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog.svelte';
-	import type { ScanScheduleRead } from '$lib/types/scan-schedule';
 
 	let isRefreshing = $state(false);
 	let showModal = $state(false);
@@ -41,6 +43,7 @@
 		if (project && hasFetched) {
 			untrack(() => {
 				if (scanSchedulesStore.fetchedProjectId !== project.id) {
+					picked.clear();
 					scanSchedulesStore.fetchSchedules(project.id);
 				}
 				if (!instanceSettingsStore.hasFetched) {
@@ -100,6 +103,7 @@
 			const ok = await scanSchedulesStore.deleteSchedule(scheduleToDelete.id, project.id);
 			if (ok) {
 				toast.success('Schedule deleted');
+				picked.delete(scheduleToDelete.id);
 				showDeleteDialog = false;
 				scheduleToDelete = null;
 			} else {
@@ -152,12 +156,24 @@
 		</div>
 	</div>
 
-	{#if scanSchedulesStore.error && !scanSchedulesStore.isLoading}
-		<div
-			class="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
-		>
-			{scanSchedulesStore.error}
-		</div>
+	{#if scanSchedulesStore.error && !scanSchedulesStore.isLoading && scanSchedulesStore.fetchedProjectId !== projectsStore.activeProject?.id}
+		<Alert.Root variant="destructive">
+			<AlertCircle />
+			<Alert.Title>Schedules not loaded</Alert.Title>
+			<Alert.Description class="flex flex-wrap items-center justify-between gap-3">
+				<span>{scanSchedulesStore.error}</span>
+				<Button
+					variant="outline"
+					size="sm"
+					class="gap-1.5"
+					onclick={handleRefresh}
+					disabled={isRefreshing}
+				>
+					<RefreshCw class="h-3.5 w-3.5 {isRefreshing ? 'animate-spin' : ''}" />
+					Retry
+				</Button>
+			</Alert.Description>
+		</Alert.Root>
 	{/if}
 
 	{#if scanSchedulesStore.isLoading}

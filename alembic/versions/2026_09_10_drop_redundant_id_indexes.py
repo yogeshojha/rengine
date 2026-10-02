@@ -1,4 +1,4 @@
-"""a primary key is already an index, so the second one on id is write cost for nothing
+"""drop secondary btree indexes on primary key id
 
 Revision ID: b4c81e77a250
 Revises: e17b2c904af6
@@ -47,5 +47,4 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # deliberately not recreated: the primary key serves every lookup they served
     pass

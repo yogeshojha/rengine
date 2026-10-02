@@ -3,7 +3,6 @@ import { exportsApi } from '$lib/api/exports';
 import { isLive } from '$lib/config/exports';
 import type { ExportCreate, ExportRead } from '$lib/types/export';
 
-// a small export finishes inside the fast window and downloads without a second click
 const FAST_MS = 300;
 const FAST_FOR_MS = 4000;
 const SLOW_MS = 1800;
@@ -11,7 +10,6 @@ const SLOW_MS = 1800;
 function createExportsStore() {
 	let rows = $state<ExportRead[]>([]);
 	let loading = $state(false);
-	let creating = $state(false);
 	let timer: ReturnType<typeof setTimeout> | null = null;
 	let watchingSince = 0;
 	let projectId = '';
@@ -46,9 +44,7 @@ function createExportsStore() {
 						handlers.delete(fresh.id);
 						handler?.(fresh);
 					}
-				} catch {
-					/* a row that vanished stops being polled on the next pass */
-				}
+				} catch {}
 			})
 		);
 		schedule();
@@ -60,12 +56,6 @@ function createExportsStore() {
 		},
 		get loading() {
 			return loading;
-		},
-		get creating() {
-			return creating;
-		},
-		get liveCount() {
-			return rows.filter((row) => isLive(row.status)).length;
 		},
 
 		async load(project: string, scope: { scanId?: string; targetId?: string } = {}) {
@@ -86,18 +76,13 @@ function createExportsStore() {
 			onReady?: (row: ExportRead) => void
 		): Promise<ExportRead | null> {
 			projectId = project;
-			creating = true;
-			try {
-				const row = await exportsApi.create(project, body);
-				rows = [row, ...rows];
-				claimHandler(row.id, onReady);
-				awaited.add(row.id);
-				watchingSince = Date.now();
-				schedule();
-				return row;
-			} finally {
-				creating = false;
-			}
+			const row = await exportsApi.create(project, body);
+			rows = [row, ...rows];
+			claimHandler(row.id, onReady);
+			awaited.add(row.id);
+			watchingSince = Date.now();
+			schedule();
+			return row;
 		},
 
 		async rerun(id: string, onReady?: (row: ExportRead) => void): Promise<ExportRead | null> {

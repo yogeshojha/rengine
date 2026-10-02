@@ -1,6 +1,6 @@
 import json
 import secrets
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 
 from sqlalchemy import select
 
@@ -41,7 +41,8 @@ def proxy_env(proxy_url: str | None) -> dict[str, str] | None:
 def build_proxy_url(ep: ProxyEndpoint) -> str:
     authority = host_port(ep.host, ep.port)
     if ep.username:
-        cred = f"{ep.username}:{ep.password}@" if ep.password else f"{ep.username}@"
+        user = quote(ep.username, safe="")
+        cred = f"{user}:{quote(ep.password, safe='')}@" if ep.password else f"{user}@"
         return f"{ep.scheme}://{cred}{authority}"
     return f"{ep.scheme}://{authority}"
 

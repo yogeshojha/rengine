@@ -7,8 +7,8 @@
 	import RunPicker from './run-picker.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { durationText } from '$lib/utilities/scan-status';
-	import { SURFACE_ORDER } from '$lib/config/surface';
-	import type { ComparableRun, RunSide } from '$lib/types/compare';
+	import { formatDateTime } from '$lib/utilities/dates';
+	import { runRows, type ComparableRun, type RunSide } from '$lib/types/compare';
 	import type { ScanStatus } from '$lib/types/scan';
 
 	interface Props {
@@ -21,18 +21,6 @@
 	}
 
 	let { baseline, current, runs, loading, onPick, onSwap }: Props = $props();
-
-	const when = (iso: string | null) =>
-		iso
-			? new Date(iso).toLocaleString('en-US', {
-					month: 'short',
-					day: 'numeric',
-					hour: 'numeric',
-					minute: '2-digit'
-				})
-			: '';
-
-	const rows = (side: RunSide) => SURFACE_ORDER.reduce((n, s) => n + (side.counts[s.key] ?? 0), 0);
 </script>
 
 {#snippet side(run: RunSide, label: string, which: 'baseline' | 'current')}
@@ -51,7 +39,7 @@
 		</RunPicker>
 
 		<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-			<span class="tabular-nums">{when(run.started_at)}</span>
+			<span class="tabular-nums">{run.started_at ? formatDateTime(run.started_at) : ''}</span>
 			{#if run.duration_seconds != null}
 				<span class="opacity-40">·</span>
 				<span class="tabular-nums">{durationText(run.duration_seconds)}</span>
@@ -61,7 +49,7 @@
 		</div>
 
 		<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-			<span class="tabular-nums text-foreground">{rows(run).toLocaleString()}</span>
+			<span class="tabular-nums text-foreground">{runRows(run.counts).toLocaleString()}</span>
 			<span class="text-muted-foreground">rows</span>
 			<span class="text-muted-foreground opacity-40">·</span>
 			<span class="tabular-nums text-foreground">{run.stages_ran}</span>
@@ -90,10 +78,7 @@
 		{@render side(current, 'Current', 'current')}
 	</div>
 
-	<div
-		class="pointer-events-none absolute inset-0 hidden items-center justify-center sm:flex"
-		aria-hidden="true"
-	>
+	<div class="pointer-events-none absolute inset-0 hidden items-center justify-center sm:flex">
 		<Hint text="Swap runs">
 			{#snippet child(props)}
 				<Button
@@ -101,7 +86,6 @@
 					variant="outline"
 					size="icon-sm"
 					onclick={() => onSwap()}
-					aria-hidden="false"
 					aria-label="Swap runs"
 					class="pointer-events-auto size-7 rounded-full bg-background shadow-sm"
 				>

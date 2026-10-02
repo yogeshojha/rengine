@@ -24,8 +24,9 @@ import ServerIcon from '@lucide/svelte/icons/server';
 import ShapesIcon from '@lucide/svelte/icons/shapes';
 import SmartphoneIcon from '@lucide/svelte/icons/smartphone';
 
+import type { Tab } from '$lib/components/count-tabs.svelte';
 import type { IconComponent } from '$lib/config/icons';
-import { AssetGroup, ProgramState, ScopeState, SubmissionState } from '$lib/types/bounty-program';
+import { ProgramState, ScopeState, SubmissionState } from '$lib/types/bounty-program';
 
 export const ASSET_ICONS: Record<string, IconComponent> = {
 	globe: GlobeIcon,
@@ -116,12 +117,13 @@ export const SCOPE_STATE_LABELS: Record<ScopeState, string> = {
 	[ScopeState.OutOfScope]: 'Out of scope'
 };
 
-export const ASSET_GROUP_LABELS: Record<AssetGroup, string> = {
-	[AssetGroup.Network]: 'Network',
-	[AssetGroup.Mobile]: 'Mobile',
-	[AssetGroup.Code]: 'Code',
-	[AssetGroup.Other]: 'Other'
-};
+export const SCOPE_TABS: Tab[] = [
+	{ key: 'all', label: 'All scope' },
+	...[ScopeState.InScope, ScopeState.OutOfScope].map((s) => ({
+		key: s,
+		label: SCOPE_STATE_LABELS[s]
+	}))
+];
 
 export const PROGRAM_SORTS = [
 	{ value: 'age', label: 'Newest' },
@@ -130,11 +132,7 @@ export const PROGRAM_SORTS = [
 	{ value: 'reports', label: 'Most reports' }
 ] as const;
 
-export const SCOPE_TABS = [
-	{ value: 'all', label: 'All scope' },
-	{ value: ScopeState.InScope, label: 'In scope' },
-	{ value: ScopeState.OutOfScope, label: 'Out of scope' }
-] as const;
+export const DEFAULT_PROGRAM_SORT = PROGRAM_SORTS[0].value;
 
 export const SYNC_INTERVAL_LABELS: Record<string, string> = {
 	off: 'Manual only',
@@ -143,7 +141,6 @@ export const SYNC_INTERVAL_LABELS: Record<string, string> = {
 	weekly: 'Every week'
 };
 
-export const SEARCH_DEBOUNCE_MS = 250;
 export const REFRESH_POLL_MS = 2000;
 export const REFRESH_POLLS = 30;
 export const EVENT_PAGE_SIZE = 50;

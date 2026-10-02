@@ -12,7 +12,7 @@ from shared.redis import async_client
 logger = get_logger(__name__)
 
 KEY = "channels:status:{channel}"
-OFFSET_KEY = "channels:offset:{channel}"
+OFFSET_KEY = "channels:offset:{channel}:{bot}"
 
 
 async def publish(channel: str, payload: dict) -> None:
@@ -37,14 +37,16 @@ async def read(channel: str) -> dict | None:
     return None
 
 
-async def load_offset(channel: str) -> int:
+async def load_offset(channel: str, bot: str) -> int:
     try:
-        raw = await async_client().get(OFFSET_KEY.format(channel=channel))
+        raw = await async_client().get(OFFSET_KEY.format(channel=channel, bot=bot))
     except Exception:
         return 0
     return int(raw or 0)
 
 
-async def save_offset(channel: str, offset: int) -> None:
+async def save_offset(channel: str, bot: str, offset: int) -> None:
     with contextlib.suppress(Exception):
-        await async_client().set(OFFSET_KEY.format(channel=channel), str(offset))
+        await async_client().set(
+            OFFSET_KEY.format(channel=channel, bot=bot), str(offset)
+        )

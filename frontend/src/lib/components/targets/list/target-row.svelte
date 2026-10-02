@@ -32,15 +32,19 @@
 	import TrendSpark from '$lib/components/scans/history/trend-spark.svelte';
 	import RunBrief from '$lib/components/scans/history/run-brief.svelte';
 	import { ROUTES } from '$lib/config/routes';
-	import { TargetType, formatTargetType, type Target } from '$lib/types/target';
+	import {
+		bgpApplies,
+		dnsApplies,
+		formatTargetType,
+		type EnrichmentKind,
+		type Target
+	} from '$lib/types/target';
 	import type { ScanRead, ScanTargetTrend } from '$lib/types/scan';
 	import { formatDateTime, relativeTime } from '$lib/utilities/dates';
 	import { isOpenStatus } from '$lib/utilities/scan-status';
 	import { stopProp } from '$lib/utilities';
 	import { TCOL, TNARROW } from './columns';
 	import { targetPrefs } from './prefs.svelte';
-
-	type EnrichmentKind = 'whois' | 'dns' | 'bgp';
 
 	interface Props {
 		projectId: string;
@@ -107,14 +111,8 @@
 	let findingsScan = $derived(run?.findings?.scan_id ?? run?.id ?? '');
 	let findingsLive = $derived(open && findingsScan === run?.id);
 	let started = $derived(run ? (run.started_at ?? run.created_at) : null);
-	let canDns = $derived(
-		target.target_type === TargetType.DOMAIN || target.target_type === TargetType.URL
-	);
-	let canBgp = $derived(
-		target.target_type === TargetType.IP ||
-			target.target_type === TargetType.IP_RANGE ||
-			target.target_type === TargetType.ASN
-	);
+	let canDns = $derived(dnsApplies(target.target_type));
+	let canBgp = $derived(bgpApplies(target.target_type));
 	let highlight = $state<string | null>(null);
 
 	let editing = $state(false);
@@ -130,9 +128,10 @@
 	}
 
 	function commitRename() {
+		if (!editing) return;
+		editing = false;
 		const next = editValue.trim();
 		if (next && next !== target.display_name) onRename(next);
-		editing = false;
 	}
 </script>
 
@@ -203,12 +202,14 @@
 						{#if target.display_name && target.display_name !== target.target_value}
 							<span class="truncate">{target.display_name}</span>
 						{/if}
-						{#if run}
-							<span class={TNARROW.run}>Run {relativeTime(started)}</span>
-						{:else if loaded}
-							<span class={TNARROW.run}>Not scanned</span>
-						{:else}
-							<Skeleton class="h-3 w-16 {TNARROW.run}" />
+						{#if targetPrefs.folded('run')}
+							{#if run}
+								<span>Run {relativeTime(started)}</span>
+							{:else if loaded}
+								<span>Not scanned</span>
+							{:else}
+								<Skeleton class="h-3 w-16" />
+							{/if}
 						{/if}
 						<!-- svelte-ignore a11y_click_events_have_key_events -->
 						<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -249,8 +250,8 @@
 						</span>
 					</div>
 				{/if}
-				{#if run?.findings?.covered}
-					<div class="mt-1 {TNARROW.findings}">
+				{#if run?.findings?.covered && targetPrefs.folded('findings')}
+					<div class="mt-1">
 						<SeverityChips
 							{projectId}
 							scanId={findingsScan}
@@ -273,7 +274,7 @@
 			{/if}
 		</div>
 
-		{#if targetPrefs.shows('run')}
+		{#if targetPrefs.fits('run')}
 			<div class="{TCOL.run} flex-col gap-1">
 				{#if run}
 					<StatusCell scan={run} />
@@ -293,7 +294,7 @@
 			</div>
 		{/if}
 
-		{#if targetPrefs.shows('findings')}
+		{#if targetPrefs.fits('findings')}
 			<div class="{TCOL.findings} h-6 items-center">
 				{#if run}
 					<SeverityChips
@@ -311,7 +312,7 @@
 			</div>
 		{/if}
 
-		{#if targetPrefs.shows('assets')}
+		{#if targetPrefs.fits('assets')}
 			<div class="{TCOL.assets} h-6 items-center">
 				{#if run}
 					<AssetsCell scan={run} />
@@ -321,7 +322,7 @@
 			</div>
 		{/if}
 
-		{#if targetPrefs.shows('change')}
+		{#if targetPrefs.fits('change')}
 			<div class="{TCOL.change} h-6 items-center">
 				{#if run}
 					<ChangeCell {projectId} scan={run} onCompare={() => onCompare(run)} />
@@ -331,7 +332,7 @@
 			</div>
 		{/if}
 
-		{#if targetPrefs.shows('organizations')}
+		{#if targetPrefs.fits('organizations')}
 			<!-- svelte-ignore a11y_click_events_have_key_events -->
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div class="{TCOL.organizations} h-6 items-center" onclick={stopProp}>
@@ -339,7 +340,7 @@
 			</div>
 		{/if}
 
-		{#if targetPrefs.shows('tags')}
+		{#if targetPrefs.fits('tags')}
 			<!-- svelte-ignore a11y_click_events_have_key_events -->
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div class="{TCOL.tags} h-6 items-center" onclick={stopProp}>

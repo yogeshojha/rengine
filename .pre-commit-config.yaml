@@ -6,7 +6,7 @@ repos:
       - id: ruff
         name: ruff-fix
         args: [--fix, --exit-zero]
-        files: &packages ^(api|worker|shared|tools|stages|reports|interest|connectors|mcp|channels|toolbox|tests)/
+        files: &packages ^(api|worker|shared|tools|stages|reports|interest|connectors|mcp|channels|toolbox|tests|scripts)/
       - id: ruff-format
         files: *packages
       - id: ruff

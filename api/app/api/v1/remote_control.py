@@ -5,16 +5,15 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentSuperuser, CurrentUser
+from app.api.errors import bad_request
 from app.core.database import get_session
 from channels.models import (
-    ChannelCatalogEntry,
     ChannelChatRead,
     ChannelChatUpdate,
     ChannelCommandRead,
     ChannelConnect,
     ChannelSettingsUpdate,
     ChannelStatus,
-    ChannelVerifyResult,
     PairingApprove,
     PairingRequestRead,
 )
@@ -22,7 +21,6 @@ from channels.service import (
     ChannelConfigError,
     ChannelNotFoundError,
     ChannelService,
-    catalog,
 )
 from mcp.models import McpCallRead
 
@@ -40,15 +38,6 @@ def _service(session: AsyncSession, channel: str) -> ChannelService:
         ) from exc
 
 
-def _guard(exc: ChannelConfigError) -> HTTPException:
-    return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
-
-
-@router.get("/channels", response_model=list[ChannelCatalogEntry])
-async def list_channels(_current_user: CurrentUser, session: Session):
-    return await catalog(session)
-
-
 @router.get("/channels/{channel}/status", response_model=ChannelStatus)
 async def channel_status(_current_user: CurrentUser, session: Session, channel: str):
     return await _service(session, channel).status()
@@ -64,7 +53,7 @@ async def update_channel(
     try:
         return await _service(session, channel).update(body, admin.id)
     except ChannelConfigError as exc:
-        raise _guard(exc) from exc
+        raise bad_request(exc) from exc
 
 
 @router.post("/channels/{channel}/connect", response_model=ChannelStatus)
@@ -74,17 +63,12 @@ async def connect_channel(
     try:
         return await _service(session, channel).connect(body.token, admin.id)
     except ChannelConfigError as exc:
-        raise _guard(exc) from exc
+        raise bad_request(exc) from exc
 
 
 @router.post("/channels/{channel}/disconnect", response_model=ChannelStatus)
 async def disconnect_channel(admin: CurrentSuperuser, session: Session, channel: str):
     return await _service(session, channel).disconnect(admin.id)
-
-
-@router.post("/channels/{channel}/verify", response_model=ChannelVerifyResult)
-async def verify_channel(_admin: CurrentSuperuser, session: Session, channel: str):
-    return await _service(session, channel).verify()
 
 
 @router.get("/channels/{channel}/pending", response_model=list[PairingRequestRead])
@@ -107,7 +91,7 @@ async def approve_pairing(
     try:
         return await _service(session, channel).approve(code, body, admin.id)
     except ChannelConfigError as exc:
-        raise _guard(exc) from exc
+        raise bad_request(exc) from exc
 
 
 @router.post(
@@ -119,7 +103,7 @@ async def block_pairing(
     try:
         await _service(session, channel).block(code, admin.id)
     except ChannelConfigError as exc:
-        raise _guard(exc) from exc
+        raise bad_request(exc) from exc
 
 
 @router.get("/channels/{channel}/chats", response_model=list[ChannelChatRead])
@@ -138,7 +122,7 @@ async def update_chat(
     try:
         return await _service(session, channel).update_chat(chat_id, body)
     except ChannelConfigError as exc:
-        raise _guard(exc) from exc
+        raise bad_request(exc) from exc
 
 
 @router.post(
@@ -150,7 +134,7 @@ async def revoke_chat(
     try:
         return await _service(session, channel).revoke_chat(chat_id)
     except ChannelConfigError as exc:
-        raise _guard(exc) from exc
+        raise bad_request(exc) from exc
 
 
 @router.delete(
@@ -162,7 +146,7 @@ async def delete_chat(
     try:
         await _service(session, channel).delete_chat(chat_id)
     except ChannelConfigError as exc:
-        raise _guard(exc) from exc
+        raise bad_request(exc) from exc
 
 
 @router.get("/channels/{channel}/commands", response_model=list[ChannelCommandRead])

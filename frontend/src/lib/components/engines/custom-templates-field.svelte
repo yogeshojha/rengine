@@ -5,6 +5,7 @@
 	import MultiSelectCombobox from '$lib/components/multi-select-combobox.svelte';
 	import { vulnTemplatesApi } from '$lib/api/vulnerabilities';
 	import { ROUTES } from '$lib/config/routes';
+	import { TemplateOrigin } from '$lib/config/vulnerabilities';
 	import { emptyTemplateFilter } from '$lib/types/vuln-template';
 	import type { VulnTemplateRead } from '$lib/types/vuln-template';
 
@@ -23,7 +24,7 @@
 	$effect(() => {
 		untrack(() => {
 			vulnTemplatesApi
-				.search({ ...emptyTemplateFilter(), origins: ['custom'], limit: 200 })
+				.search({ ...emptyTemplateFilter(), origins: [TemplateOrigin.CUSTOM], limit: 200 })
 				.then((res) => {
 					templates = res.items;
 					failed = false;
@@ -48,7 +49,7 @@
 	<div class="w-[280px] text-right">
 		<p class="text-2xs text-muted-foreground">No uploaded templates.</p>
 		<Button variant="link" size="sm" class="h-auto px-0 text-2xs" href={ROUTES.arsenal('nuclei')}>
-			Upload one in the Tools Arsenal
+			Upload in Arsenal
 		</Button>
 	</div>
 {:else}

@@ -195,8 +195,6 @@ class IssueTrackerRead(BaseModel):
     last_test_at: datetime | None
     last_test_ok: bool | None
     last_test_message: str | None
-    issues_filed: int = 0
-    issues_failed: int = 0
 
 
 class IssueTrackerTestConfig(BaseModel):

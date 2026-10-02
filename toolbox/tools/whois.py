@@ -14,6 +14,7 @@ from shared.definitions.toolbox import (
     ToolGroup,
 )
 from shared.enums.whois import WhoisLookupType
+from shared.http import egress_proxy
 from shared.utils.datetime import utc_now
 from shared.utils.privacy import is_redacted_name
 from toolbox import estate
@@ -77,9 +78,8 @@ class WhoisLookup(Tool):
     Input = Input
 
     async def run(self, ctx: ToolContext, args: Input) -> ToolOutcome:
-        service = WhoisService()
+        service = WhoisService(proxy_url=egress_proxy())
         try:
-            service.ensure_ready()
             result = await service.lookup(
                 query=args.query, store_in_db=True, session=ctx.session
             )
@@ -157,7 +157,10 @@ async def _domain(ctx: ToolContext, response) -> tuple[list, str]:
     days = _days_to(response.expiration_date)
     expiry_tone, expiry_note = _expiry_tone(days)
     redacted = is_redacted_name(_named(registrant))
-    flat = [s.lower().replace(" ", "").replace("client", "") for s in response.status]
+    flat = [
+        s.lower().replace(" ", "").removeprefix("client").removeprefix("server")
+        for s in response.status
+    ]
     locked = [s for s in flat if s in _LOCK_TOKENS]
     siblings = await estate.registrant_domains(
         ctx.session, ctx.project_id, _named(registrant), response.query
@@ -219,7 +222,7 @@ async def _domain(ctx: ToolContext, response) -> tuple[list, str]:
         ),
         facts(
             fact(
-                "Organisation",
+                "Organization",
                 _named(registrant),
                 tone=Tone.MUTED.value if redacted else Tone.NEUTRAL.value,
                 note="privacy service" if redacted else None,
@@ -335,7 +338,7 @@ async def _asn(ctx: ToolContext, response) -> tuple[list, str]:
             sub=" · ".join(p for p in (span, response.rir.upper()) if p) or None,
             identity=flag(country) if country else glyph("route"),
             metric=metric(
-                net.hosts or "", "Hosts in this project", tone=Tone.INFO.value
+                net.hosts or "", "Web assets in this project", tone=Tone.INFO.value
             )
             or metric(span or response.query, "Autonomous system"),
             marks=[

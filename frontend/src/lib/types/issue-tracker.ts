@@ -14,8 +14,6 @@ export interface IssueTracker {
 	last_test_at: string | null;
 	last_test_ok: boolean | null;
 	last_test_message: string | null;
-	issues_filed: number;
-	issues_failed: number;
 }
 
 export interface IssueTrackerWrite {

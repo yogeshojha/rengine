@@ -2,15 +2,11 @@
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass, field
 
-from shared.logging import get_logger
 from shared.services.proxy_resolve import proxy_env
 from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError
 from tools.runner.models import CommandRecorder
-
-logger = get_logger(__name__)
 
 JULIUS_BINARY = "julius"
 HEADER_FLAG = "-H"
@@ -24,7 +20,7 @@ JULIUS_ALIASES: dict[str, str] = {
     "--file": "-f",
     "--probes-dir": "-p",
 }
-MCP_PROBES_DIR = os.environ.get("JULIUS_MCP_PROBES_DIR", "/opt/julius/probes-mcp")
+MCP_PROBES_DIR = "/opt/julius/probes-mcp"
 
 
 class JuliusError(Exception):

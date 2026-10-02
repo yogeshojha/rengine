@@ -1,13 +1,13 @@
 from typing import Annotated
-from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
 from app.api.scope import SoftwareScope
 from app.core.database import get_session
 from app.services.software import SoftwareService
+from shared.models.asset_query import QueryCountRequest, QueryCounts
 from shared.models.software import (
     SoftwareCoverage,
     SoftwareFacets,
@@ -17,8 +17,6 @@ from shared.models.software import (
 from shared.services.asset_query import lead_cache
 
 router = APIRouter(prefix="/software", tags=["software"])
-
-MAX_COUNT_QUERIES = 25
 
 
 def get_service(
@@ -46,6 +44,16 @@ async def search_software(
     )
 
 
+@router.post("/search/counts", response_model=QueryCounts)
+async def software_search_counts(
+    _current_user: CurrentUser,
+    service: Annotated[SoftwareService, Depends(get_service)],
+    scope: SoftwareScope,
+    body: QueryCountRequest,
+):
+    return await service.counts(scope, body.queries)
+
+
 @router.get("/facets", response_model=SoftwareFacets)
 async def software_facets(
     _current_user: CurrentUser,
@@ -62,22 +70,3 @@ async def software_coverage(
     scope: SoftwareScope,
 ):
     return await service.coverage(scope)
-
-
-@router.post("/search/counts", response_model=dict[str, int])
-async def software_counts(
-    _current_user: CurrentUser,
-    service: Annotated[SoftwareService, Depends(get_service)],
-    scope: SoftwareScope,
-    queries: Annotated[list[str], Body(embed=True, max_length=MAX_COUNT_QUERIES)],
-):
-    return await service.counts(scope, queries)
-
-
-@router.get("/total", response_model=int)
-async def software_total(
-    _current_user: CurrentUser,
-    service: Annotated[SoftwareService, Depends(get_service)],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
-):
-    return await service.scan_total(scan_id)

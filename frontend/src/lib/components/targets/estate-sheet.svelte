@@ -6,6 +6,7 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { relativeTime } from '$lib/utilities/dates';
+	import { plural } from '$lib/utilities/strings';
 	import {
 		ESTATE_STRENGTH_LABELS,
 		EstateStrength,
@@ -22,7 +23,6 @@
 		domains: EstateDomain[];
 		providers?: EstateProvider[];
 		neighbours?: EstateNeighbourCert[];
-		loading?: boolean;
 		onAdded?: (domain: string) => void;
 		onTriaged?: (domain: string, state: string) => void;
 	}
@@ -35,7 +35,6 @@
 		domains,
 		providers = [],
 		neighbours = [],
-		loading = false,
 		onAdded,
 		onTriaged
 	}: Props = $props();
@@ -48,7 +47,7 @@
 
 	const stateOf = (d: EstateDomain) => states.get(d.domain) ?? d.state;
 
-	export function evidence(d: EstateDomain): string {
+	function evidence(d: EstateDomain): string {
 		return d.signals.map((s) => (s.detail ? `${s.label} ${s.detail}` : s.label)).join(' · ');
 	}
 
@@ -128,7 +127,8 @@
 		const x = d.dossier;
 		if (!x || !x.checked_at) return undefined;
 		const parts: string[] = [];
-		if (x.resolves === true) parts.push(x.ports.length ? `${x.ports.length} ports` : 'Resolves');
+		if (x.resolves === true)
+			parts.push(x.ports.length ? plural(x.ports.length, 'port') : 'Resolves');
 		else if (x.resolves === false) parts.push('No address');
 		if (x.registered_at) {
 			const age = (Date.now() - new Date(x.registered_at).getTime()) / 86400000;
@@ -219,7 +219,6 @@
 	{description}
 	{rows}
 	noun="Domains"
-	{loading}
 	action={candidates.length > 1 && !adding
 		? { label: `Add ${candidates.length} targets`, onClick: addAll }
 		: null}

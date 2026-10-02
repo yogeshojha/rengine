@@ -28,6 +28,7 @@
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import SeverityBar from '$lib/components/scans/results/vulnerabilities/severity-bar.svelte';
 	import SeverityMark from '$lib/components/scans/results/vulnerabilities/severity-mark.svelte';
+	import ResultsPagination from '$lib/components/scans/results/table/results-pagination.svelte';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import TemplateSheet from './template-sheet.svelte';
 	import CallbackServerSheet from './callback-server-sheet.svelte';
@@ -48,7 +49,8 @@
 		SEVERITY_ORDER,
 		TEMPLATE_ORIGIN_LABELS,
 		TEMPLATE_SET_ICONS,
-		TEMPLATE_SET_LABELS
+		TEMPLATE_SET_LABELS,
+		TemplateOrigin
 	} from '$lib/config/vulnerabilities';
 	import { emptyTemplateFilter } from '$lib/types/vuln-template';
 	import type {
@@ -71,6 +73,7 @@
 	let syncing = $state(false);
 	let uploading = $state(false);
 	let removing = $state<VulnTemplateRead | null>(null);
+	let deleting = $state(false);
 	let viewing = $state<VulnTemplateRead | null>(null);
 	let creating = $state(false);
 	let fileInput = $state<HTMLInputElement | null>(null);
@@ -91,12 +94,11 @@
 	function isNew(template: VulnTemplateRead): boolean {
 		return (
 			seenAt !== null &&
-			template.origin === 'official' &&
+			template.origin === TemplateOrigin.OFFICIAL &&
 			Date.parse(template.created_at) > Date.parse(seenAt)
 		);
 	}
 
-	let pageCount = $derived(Math.max(1, Math.ceil(total / PAGE_SIZE)));
 	let pageIndex = $derived(Math.floor(filter.offset / PAGE_SIZE));
 	let sets = $derived(stats?.sets ?? []);
 	let severityCounts = $derived(
@@ -210,9 +212,7 @@
 		const qs = params.toString();
 		try {
 			replaceState(qs ? `?${qs}` : location.pathname, {});
-		} catch {
-			// ignore
-		}
+		} catch {}
 	});
 
 	async function sync() {
@@ -230,7 +230,14 @@
 
 	async function upload(event: Event) {
 		const input = event.target as HTMLInputElement;
-		const chosen = [...(input.files ?? [])].slice(0, MAX_TEMPLATE_UPLOAD);
+		const chosen = [...(input.files ?? [])];
+		if (chosen.length > MAX_TEMPLATE_UPLOAD) {
+			toast.error(
+				`${chosen.length} files selected. The limit is ${MAX_TEMPLATE_UPLOAD} per upload.`
+			);
+			input.value = '';
+			return;
+		}
 		if (!chosen.length) return;
 		uploading = true;
 		try {
@@ -280,13 +287,17 @@
 	async function remove() {
 		const target = removing;
 		if (!target) return;
+		deleting = true;
 		try {
 			await vulnTemplatesApi.remove(target.id);
+			picked.delete(target.id);
 			toast.success(`${target.name} removed`);
 			removing = null;
 			await Promise.all([loadStats(), loadList()]);
 		} catch {
 			toast.error('Check not removed');
+		} finally {
+			deleting = false;
 		}
 	}
 
@@ -368,10 +379,7 @@
 		{:else if !stats?.ready}
 			<div class="flex items-start gap-3">
 				<TriangleAlert class="mt-0.5 size-4 shrink-0 text-warning" />
-				<div class="flex flex-col gap-0.5">
-					<p class="text-sm font-medium">No checks</p>
-					<p class="text-xs text-muted-foreground">Sync the library.</p>
-				</div>
+				<p class="text-sm font-medium">No checks</p>
 			</div>
 		{:else}
 			<div class="flex flex-wrap items-end gap-x-10 gap-y-4">
@@ -532,7 +540,7 @@
 	{:else}
 		<div class="divide-y">
 			{#each items as template (template.id)}
-				{@const custom = template.origin === 'custom'}
+				{@const custom = template.origin === TemplateOrigin.CUSTOM}
 				{@const SetIcon = TEMPLATE_SET_ICONS[template.sets[0] ?? ''] ?? FileCode}
 				<div class="flex items-start gap-3 px-6 py-3 hover:bg-muted/40">
 					{#if custom}
@@ -579,7 +587,9 @@
 								<span>{TEMPLATE_SET_LABELS[key] ?? key}</span>
 							{/each}
 							<span>{PROTOCOL_LABELS[template.protocol] ?? template.protocol}</span>
-							{#each template.cve_ids.slice(0, 1) as cve (cve)}
+							{#each template.cve_ids
+								.filter((cve) => cve !== template.template_id)
+								.slice(0, 1) as cve (cve)}
 								<span class="font-mono">{cve}</span>
 							{/each}
 							{#if template.requests}
@@ -623,34 +633,7 @@
 	{/if}
 
 	{#if total > PAGE_SIZE}
-		<div class="flex items-center justify-between border-t px-6 py-2.5 text-xs">
-			<span class="text-muted-foreground tabular-nums">
-				{(pageIndex * PAGE_SIZE + 1).toLocaleString()}–{Math.min(
-					(pageIndex + 1) * PAGE_SIZE,
-					total
-				).toLocaleString()} of {total.toLocaleString()}
-			</span>
-			<div class="flex items-center gap-2">
-				<Button
-					variant="outline"
-					size="sm"
-					class="h-7"
-					disabled={pageIndex === 0}
-					onclick={() => page(pageIndex - 1)}
-				>
-					Previous
-				</Button>
-				<Button
-					variant="outline"
-					size="sm"
-					class="h-7"
-					disabled={pageIndex >= pageCount - 1}
-					onclick={() => page(pageIndex + 1)}
-				>
-					Next
-				</Button>
-			</div>
-		</div>
+		<ResultsPagination {total} page={pageIndex} pageSize={PAGE_SIZE} noun="check" onPage={page} />
 	{/if}
 </Card.Root>
 
@@ -677,6 +660,7 @@
 	title="Remove check"
 	description={`Check ${removing?.name ?? ''} and its file are removed.`}
 	confirmLabel="Remove"
+	isDeleting={deleting}
 	onConfirm={remove}
 />
 

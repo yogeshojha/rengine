@@ -33,7 +33,7 @@ async def _write(
             project_id=estate.project_id,
             source=source,
             observations=[EndpointObservation(url=_url(p)) for p in paths],
-            policy=NoisePolicy.off(),
+            policy=NoisePolicy(enabled=False, drops=False, strip_params=False),
         )
     )
 

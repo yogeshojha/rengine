@@ -1,4 +1,4 @@
-"""wafw00f CLI client - WAF fingerprinting via CLIToolRunner."""
+"""wafw00f client."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ HEADER_FLAG = "-H"
 
 
 def unreadable_headers(headers: dict[str, str] | None) -> list[str]:
-    """Names wafw00f drops: it splits a line on ':' and keeps only a two-part result."""
+    """Header names wafw00f drops from the header file."""
     return sorted(name for name, value in (headers or {}).items() if ":" in value)
 
 
@@ -40,7 +40,7 @@ class Wafw00fError(Exception):
 
 @dataclass
 class WafScan:
-    """What the run actually covered."""
+    """WAFs found and URLs covered by one run."""
 
     found: dict[str, str] = field(default_factory=dict)
     scanned: int = 0
@@ -86,7 +86,7 @@ class Wafw00fClient:
             raise Wafw00fError(str(e)) from e
 
     def detect(self, urls: list[str]) -> WafScan:
-        """Fingerprint every URL, sharded across processes since wafw00f has no threads."""
+        """Fingerprint every URL across sharded wafw00f processes."""
         scan = WafScan()
         if not urls:
             return scan
@@ -111,7 +111,7 @@ class Wafw00fClient:
 
     @contextlib.contextmanager
     def _header_file(self) -> Iterator[str | None]:
-        """The scan's headers on disk, since wafw00f takes a path and not a value."""
+        """Write the scan's headers to a temporary file."""
         if not self.headers:
             yield None
             return

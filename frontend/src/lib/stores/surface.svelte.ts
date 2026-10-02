@@ -3,43 +3,39 @@ import type { SurfaceCoverage, SurfaceOverview } from '$lib/types/surface';
 
 function createSurfaceStore() {
 	let overview = $state<SurfaceOverview | null>(null);
-	let loading = $state(false);
 	let fetchedProjectId = $state<string | null>(null);
 	let inflight: Promise<void> | null = null;
+	let inflightId: string | null = null;
+	let wanted: string | null = null;
 
 	async function load(projectId: string, force = false): Promise<void> {
 		if (!projectId) return;
+		wanted = projectId;
 		if (!force && fetchedProjectId === projectId) return;
-		if (inflight) return inflight;
-		loading = true;
-		inflight = surfaceApi
+		if (inflight && inflightId === projectId) return inflight;
+		const pending: Promise<void> = surfaceApi
 			.overview(projectId)
 			.then((data) => {
+				if (wanted !== projectId) return;
 				overview = data;
 				fetchedProjectId = projectId;
 			})
 			.catch(() => {
-				if (fetchedProjectId !== projectId) overview = null;
+				if (wanted === projectId && fetchedProjectId !== projectId) overview = null;
 			})
 			.finally(() => {
-				loading = false;
+				if (inflight !== pending) return;
 				inflight = null;
+				inflightId = null;
 			});
-		return inflight;
+		inflight = pending;
+		inflightId = projectId;
+		return pending;
 	}
 
 	return {
 		get overview() {
 			return overview;
-		},
-		get loading() {
-			return loading;
-		},
-		get dimensions() {
-			return overview?.dimensions ?? [];
-		},
-		get exposures() {
-			return overview?.exposures ?? 0;
 		},
 		coverage(dimension: string): SurfaceCoverage | null {
 			return overview?.dimensions.find((d) => d.dimension === dimension) ?? null;
@@ -52,8 +48,9 @@ function createSurfaceStore() {
 		reset() {
 			overview = null;
 			fetchedProjectId = null;
-			loading = false;
 			inflight = null;
+			inflightId = null;
+			wanted = null;
 		}
 	};
 }

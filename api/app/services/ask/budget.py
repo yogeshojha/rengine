@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime
 
 from shared.definitions.ask import QUESTIONS_PER_DAY
 from shared.logging import get_logger
 from shared.redis import async_client
+from shared.utils.datetime import utc_now
 
 logger = get_logger(__name__)
 
@@ -16,7 +16,7 @@ DAY_SECONDS = 86_400
 
 
 async def over_daily(user_id: uuid.UUID) -> bool:
-    day = datetime.now(UTC).strftime("%Y%m%d")
+    day = utc_now().strftime("%Y%m%d")
     key = KEY.format(user_id=user_id, day=day)
     try:
         redis = async_client()

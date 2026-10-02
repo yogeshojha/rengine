@@ -19,7 +19,7 @@
 	import { VERSION } from '$lib/version.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { auth } from '$lib/stores/auth.svelte';
-	import { getInitials } from '$lib/utilities';
+	import { getInitials } from '$lib/utilities/strings';
 	import { goto } from '$app/navigation';
 	import { ROUTES } from '$lib/config/routes';
 
@@ -138,6 +138,7 @@
 				<a
 					href="https://github.com/yogeshojha/rengine"
 					target="_blank"
+					rel="noopener noreferrer"
 					class="text-sm text-primary hover:text-primary/80"
 				>
 					github.com/yogeshojha/rengine
@@ -148,6 +149,7 @@
 				<a
 					href="https://rengine.wiki"
 					target="_blank"
+					rel="noopener noreferrer"
 					class="text-sm text-primary hover:text-primary/80"
 				>
 					rengine.wiki

@@ -24,10 +24,6 @@ class ProtocolError(McpError):
     code = INVALID_REQUEST
 
 
-class MethodNotFoundError(McpError):
-    code = METHOD_NOT_FOUND
-
-
 class InvalidParamsError(McpError):
     code = INVALID_PARAMS
 

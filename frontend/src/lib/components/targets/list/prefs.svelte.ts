@@ -1,4 +1,6 @@
 import { STORAGE_KEYS } from '$lib/config/storage-keys';
+import { readStored, writeStored, type Density } from '$lib/utilities/storage';
+import { fitColumns } from './columns';
 
 export const TARGET_COLUMNS = [
 	'run',
@@ -18,32 +20,21 @@ export const TARGET_COLUMN_LABELS: Record<TargetColumn, string> = {
 	tags: 'Tags'
 };
 
-export type Density = 'comfortable' | 'compact';
-
-function read(key: string): string | null {
-	try {
-		return localStorage.getItem(key);
-	} catch {
-		return null;
-	}
-}
-
-function write(key: string, value: string) {
-	try {
-		localStorage.setItem(key, value);
-	} catch {
-		/* storage unavailable */
-	}
-}
-
 function createTargetPrefs() {
 	let hidden = $state<TargetColumn[]>(
-		(read(STORAGE_KEYS.targetsHidden) ?? '')
+		(readStored(STORAGE_KEYS.targetsHidden) ?? '')
 			.split(',')
 			.filter((c): c is TargetColumn => (TARGET_COLUMNS as readonly string[]).includes(c))
 	);
 	let density = $state<Density>(
-		read(STORAGE_KEYS.targetsDensity) === 'compact' ? 'compact' : 'comfortable'
+		readStored(STORAGE_KEYS.targetsDensity) === 'compact' ? 'compact' : 'comfortable'
+	);
+	let width = $state(0);
+	const fitted = $derived(
+		fitColumns(
+			width,
+			TARGET_COLUMNS.filter((c) => !hidden.includes(c))
+		)
 	);
 
 	return {
@@ -52,14 +43,26 @@ function createTargetPrefs() {
 		},
 		set density(v: Density) {
 			density = v;
-			write(STORAGE_KEYS.targetsDensity, v);
+			writeStored(STORAGE_KEYS.targetsDensity, v);
+		},
+		get width() {
+			return width;
+		},
+		set width(v: number) {
+			width = v;
 		},
 		shows(col: TargetColumn) {
 			return !hidden.includes(col);
 		},
+		fits(col: TargetColumn) {
+			return fitted.has(col);
+		},
+		folded(col: TargetColumn) {
+			return !hidden.includes(col) && !fitted.has(col);
+		},
 		toggle(col: TargetColumn) {
 			hidden = hidden.includes(col) ? hidden.filter((c) => c !== col) : [...hidden, col];
-			write(STORAGE_KEYS.targetsHidden, hidden.join(','));
+			writeStored(STORAGE_KEYS.targetsHidden, hidden.join(','));
 		}
 	};
 }

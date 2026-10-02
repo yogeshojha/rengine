@@ -2,8 +2,7 @@ export const LIVE_REFRESH_MS = 5000;
 export const LIVE_OVERVIEW_MS = 12000;
 export const LIVE_AGGREGATE_MS = 20000;
 
-/** Runs at most once per `every` ms. A declined call still lands on a trailing timer,
- *  so the last tick of a scan is never the one that gets dropped. */
+/** Runs at most once per `every` ms, with a trailing call. */
 export class Throttled {
 	#run: () => unknown;
 	#every: number;
@@ -59,7 +58,6 @@ export class LiveRefresh {
 	#arm() {
 		this.#timer = setTimeout(() => {
 			this.#timer = null;
-			// table frozen at the counts from when you left
 			if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
 				this.#arm();
 				return;

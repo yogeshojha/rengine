@@ -22,10 +22,12 @@ export interface ParsedScanQuery {
 	error: string | null;
 }
 
-const TOKEN = /(-?)(?:([a-z]+):)?("([^"]*)"|\S+)/gi;
+const TOKEN = /(-?)(?:([a-z]+):)?("((?:[^"\\]|\\.)*)"|\S+)/gi;
 
 function strip(value: string): string {
-	return value.startsWith('"') && value.endsWith('"') ? value.slice(1, -1) : value;
+	return value.startsWith('"') && value.endsWith('"')
+		? value.slice(1, -1).replace(/\\(.)/g, '$1')
+		: value;
 }
 
 export function tokenize(text: string): ScanQueryToken[] {
@@ -89,7 +91,7 @@ export function parseScanQuery(
 }
 
 export function quote(value: string): string {
-	return /\s/.test(value) ? `"${value}"` : value;
+	return /[\s"\\]/.test(value) ? `"${value.replace(/["\\]/g, '\\$&')}"` : value;
 }
 
 export function withToken(text: string, token: string): string {

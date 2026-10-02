@@ -1,5 +1,3 @@
-"""The brief: every fact the document argues from, small enough to hand to a model."""
-
 from __future__ import annotations
 
 import json
@@ -7,13 +5,13 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime
 
 from shared.definitions.ai import MAX_BRIEF_BYTES
+from shared.definitions.vulnerabilities import ACTIONABLE_SEVERITIES
 
 
 @dataclass
 class Posture:
     score: int = 100
     grade: str = "A"
-    verdict: str = ""
     deductions: list[dict] = field(default_factory=list)
 
 
@@ -30,7 +28,6 @@ class RiskItem:
     epss: float | None = None
     cvss: float | None = None
     cves: list[str] = field(default_factory=list)
-    sample: str = ""
     new: int = 0
 
 
@@ -68,7 +65,6 @@ class Concentration:
     label: str
     count: int
     worst: str = ""
-    note: str = ""
 
 
 @dataclass
@@ -82,22 +78,10 @@ class ChangeLine:
 
 
 @dataclass
-class Highlight:
-    key: str
-    label: str
-    value: str
-    detail: str = ""
-    tone: str = "neutral"
-
-
-@dataclass
 class ReportBrief:
     subject: str
     subject_type: str
-    scope: str
     observed_at: datetime | None = None
-    engine: str = ""
-    duration_seconds: float | None = None
     counts: dict[str, int] = field(default_factory=dict)
     coverage: list[dict] = field(default_factory=list)
     severity: dict[str, int] = field(default_factory=dict)
@@ -108,17 +92,15 @@ class ReportBrief:
     caveats: list[Caveat] = field(default_factory=list)
     changes: list[ChangeLine] = field(default_factory=list)
     concentration: list[Concentration] = field(default_factory=list)
-    highlights: list[Highlight] = field(default_factory=list)
     exposure: dict = field(default_factory=dict)
     hosting: dict = field(default_factory=dict)
     compliance: dict = field(default_factory=dict)
     headline: str = ""
-    suppressed: int = 0
     first_run: bool = True
 
     @property
     def actionable(self) -> int:
-        return sum(self.severity.get(k, 0) for k in ("critical", "high", "medium"))
+        return sum(self.severity.get(k, 0) for k in ACTIONABLE_SEVERITIES)
 
     @property
     def kev_count(self) -> int:

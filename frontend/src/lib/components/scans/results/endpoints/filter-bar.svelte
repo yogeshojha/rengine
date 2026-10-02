@@ -10,6 +10,7 @@
 	import Hint from '$lib/components/hint.svelte';
 	import ViewControls from '../table/view-controls.svelte';
 	import { SurfaceDimension } from '$lib/config/surface';
+	import type { IconComponent } from '$lib/config/icons';
 	import type { SortOption, TableColumn } from '../table/columns';
 	import type { QueryGroupSpec } from '$lib/types/asset-query';
 	import { EndpointSource } from '$lib/config/endpoints';
@@ -85,7 +86,7 @@
 		exportFilters = {}
 	}: Props = $props();
 
-	const LENSES: { value: EndpointView; label: string; hint: string; icon: typeof Network }[] = [
+	const LENSES: { value: EndpointView; label: string; hint: string; icon: IconComponent }[] = [
 		{
 			value: 'hosts',
 			label: 'Hosts',
@@ -165,7 +166,7 @@
 								closeOnSelect={false}
 							>
 								<span class="flex-1">{f.label}</span>
-								<span class="tabular-nums text-muted-foreground">{f.count}</span>
+								<span class="tabular-nums text-muted-foreground">{f.count.toLocaleString()}</span>
 							</DropdownMenu.CheckboxItem>
 						{/each}
 					</ScrollArea>
@@ -196,7 +197,7 @@
 								closeOnSelect={false}
 							>
 								<span class="flex-1">{f.label}</span>
-								<span class="tabular-nums text-muted-foreground">{f.count}</span>
+								<span class="tabular-nums text-muted-foreground">{f.count.toLocaleString()}</span>
 							</DropdownMenu.CheckboxItem>
 						{/each}
 					</ScrollArea>
@@ -226,26 +227,32 @@
 							closeOnSelect={false}
 						>
 							<span class="flex-1">{f.label}</span>
-							<span class="tabular-nums text-muted-foreground">{f.count}</span>
+							<span class="tabular-nums text-muted-foreground">{f.count.toLocaleString()}</span>
 						</DropdownMenu.CheckboxItem>
 					{/each}
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>
 		{/if}
 
-		<ToggleGroup.Root
-			type="multiple"
-			value={quick}
-			onValueChange={setQuick}
-			variant="outline"
-			aria-label="Quick filters"
+		<ScrollArea
+			orientation="horizontal"
+			class="max-lg:max-w-full max-lg:min-w-0"
+			scrollbarXClasses="h-1"
 		>
-			{#each quickOptions as q (q.value)}
-				<ToggleGroup.Item value={q.value} class="h-9 px-3 text-sm font-normal">
-					{q.label}
-				</ToggleGroup.Item>
-			{/each}
-		</ToggleGroup.Root>
+			<ToggleGroup.Root
+				type="multiple"
+				value={quick}
+				onValueChange={setQuick}
+				variant="outline"
+				aria-label="Quick filters"
+			>
+				{#each quickOptions as q (q.value)}
+					<ToggleGroup.Item value={q.value} class="h-9 px-3 text-sm font-normal">
+						{q.label}
+					</ToggleGroup.Item>
+				{/each}
+			</ToggleGroup.Root>
+		</ScrollArea>
 
 		{#if goneCount > 0 && onGoneLens}
 			<Hint text="Endpoints in the previous scan and not in this one">

@@ -8,7 +8,7 @@ from sqlalchemy import select
 from app.services.scan import ScanService
 from app.services.vulnerability import VulnerabilityService
 from shared.models.scan import Scan
-from shared.models.vulnerability import VulnerabilityTriage
+from shared.models.vulnerability import VulnerabilityCoverage, VulnerabilityTriage
 
 pytestmark = pytest.mark.api
 
@@ -55,6 +55,40 @@ async def test_row_counts_match_the_vulnerability_page(estate, now):
     assert counts.high == by_page.get("high", 0)
     assert counts.medium == by_page.get("medium", 0)
     assert counts.covered is True
+
+
+async def test_overview_counts_checks_run_and_each_dropped_target_once(estate, now):
+    sid = await estate.scan("example.com", "run", at=now)
+    tid = estate.targets["example.com"]
+
+    def row(tier, *, selected, loaded, dropped, status="partial"):
+        return VulnerabilityCoverage(
+            scan_id=sid,
+            target_id=tid,
+            project_id=estate.project_id,
+            group="Standard rate",
+            tier=tier,
+            status=status,
+            templates_selected=selected,
+            templates_loaded=loaded,
+            hosts_total=2,
+            hosts_dropped=[{"host": h, "reason": "no route"} for h in dropped],
+        )
+
+    estate.session.add_all(
+        [
+            row("one_request", selected=20, loaded=20, dropped=["a:443", "b:80"]),
+            row("blind", selected=300, loaded=298, dropped=["a:443"]),
+            row(None, selected=900, loaded=None, dropped=[], status="skipped"),
+        ]
+    )
+    await estate.session.flush()
+
+    out = await VulnerabilityService(estate.session).overview(sid)
+
+    assert out.templates_run == 298
+    assert out.targets_dropped == 2
+    assert out.headline_detail.startswith("298 checks ran against")
 
 
 async def test_a_run_that_never_scanned_is_not_covered(estate, now):
@@ -127,6 +161,25 @@ async def test_short_flags_a_partial_or_failed_stage(estate, now):
     assert [s.id for s in clean] == [estate.scans["clean"]]
 
 
+async def test_added_leaves_out_a_first_run(durable_estate, now):
+    estate = durable_estate
+    await estate.scan("example.com", "first", at=now - timedelta(days=1))
+    await estate.hosts("first", ["a.example.com"], at=now - timedelta(days=1))
+    await estate.scan("example.com", "second", at=now)
+    await estate.hosts("second", ["a.example.com", "b.example.com"], at=now)
+    await estate.scan("example.org", "only", at=now)
+    await estate.hosts("only", ["a.example.org"], at=now)
+    await estate.session.commit()
+    service = ScanService(estate.session)
+    await service.prepare_growth(estate.project_id)
+
+    added = await _ids(service, project_id=estate.project_id, added=True)
+    rest = await _ids(service, project_id=estate.project_id, added=False)
+
+    assert [s.id for s in added] == [estate.scans["second"]]
+    assert {s.id for s in rest} == {estate.scans["first"], estate.scans["only"]}
+
+
 async def test_daily_counts_runs_with_each_severity(estate, now):
     today = now.replace(hour=12, minute=0, second=0, microsecond=0)
     await estate.scan("example.com", "x", at=today)
@@ -136,10 +189,10 @@ async def test_daily_counts_runs_with_each_severity(estate, now):
     )
     service = ScanService(estate.session)
 
-    days = await service.daily(estate.project_id, 3)
-    last = days[-1]
+    daily = await service.daily(estate.project_id, 3)
+    last = daily.days[-1]
 
-    assert len(days) == 3
+    assert len(daily.days) == 4, "the three-day window touches four calendar days"
     assert (last.runs, last.failed, last.critical, last.high, last.medium) == (
         2,
         1,
@@ -147,13 +200,26 @@ async def test_daily_counts_runs_with_each_severity(estate, now):
         1,
         0,
     )
+    assert (daily.window.runs, daily.window.critical) == (2, 1)
     crit = await _ids(
         service,
         project_id=estate.project_id,
         severities=["critical"],
-        started_from=last.day,
+        started_from=daily.since,
     )
-    assert len(crit) == last.critical
+    assert len(crit) == daily.window.critical
+
+
+async def test_the_daily_totals_slide_with_the_clock(estate, now):
+    await estate.scan("example.com", "inside", at=now - timedelta(days=2, hours=23))
+    await estate.scan("example.com", "outside", at=now - timedelta(days=3, hours=1))
+    service = ScanService(estate.session)
+
+    daily = await service.daily(estate.project_id, 3)
+    listed = await _ids(service, project_id=estate.project_id, started_from=daily.since)
+
+    assert daily.window.runs == len(listed) == 1
+    assert sum(d.runs for d in daily.days) >= daily.window.runs
 
 
 async def test_trends_are_oldest_first_and_capped(estate, now):

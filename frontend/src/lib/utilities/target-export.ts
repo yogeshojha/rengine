@@ -1,4 +1,6 @@
 import type { Target } from '$lib/types/target';
+import { csvCell } from '$lib/utilities/csv';
+import { downloadBlob } from '$lib/utilities/download';
 
 export type ExportFormat = 'csv' | 'json';
 
@@ -28,16 +30,9 @@ const COLUMNS: Column[] = [
 	{ header: 'updated_at', value: (t) => t.updated_at }
 ];
 
-function escapeCsv(value: string): string {
-	if (/[",\n\r]/.test(value)) {
-		return `"${value.replace(/"/g, '""')}"`;
-	}
-	return value;
-}
-
 export function targetsToCsv(targets: Target[]): string {
 	const header = COLUMNS.map((c) => c.header).join(',');
-	const rows = targets.map((t) => COLUMNS.map((c) => escapeCsv(c.value(t))).join(','));
+	const rows = targets.map((t) => COLUMNS.map((c) => csvCell(c.value(t))).join(','));
 	return [header, ...rows].join('\r\n');
 }
 
@@ -59,15 +54,9 @@ function timestampSlug(): string {
 export function downloadTargets(targets: Target[], format: ExportFormat): void {
 	const isCsv = format === 'csv';
 	const content = isCsv ? targetsToCsv(targets) : targetsToJson(targets);
-	const blob = new Blob([content], {
-		type: isCsv ? 'text/csv;charset=utf-8' : 'application/json;charset=utf-8'
-	});
-	const url = URL.createObjectURL(blob);
-	const link = document.createElement('a');
-	link.href = url;
-	link.download = `targets-${timestampSlug()}.${format}`;
-	document.body.appendChild(link);
-	link.click();
-	link.remove();
-	URL.revokeObjectURL(url);
+	downloadBlob(
+		`targets-${timestampSlug()}.${format}`,
+		content,
+		isCsv ? 'text/csv;charset=utf-8' : 'application/json;charset=utf-8'
+	);
 }

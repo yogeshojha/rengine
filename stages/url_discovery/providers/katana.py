@@ -3,14 +3,20 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
+from shared.definitions.domains import target_zone
 from shared.definitions.endpoints import EndpointSource
 from shared.services.endpoint_inventory import EndpointObservation
+from shared.utils.net import bracketed
 from stages.url_discovery.config import MAX_URLS
 from stages.url_discovery.providers.base import ProviderResult, UrlProvider
-from tools.katana.client import KatanaClient, KatanaError
+from tools.katana.client import KatanaClient, KatanaError, url_pattern
 from tools.katana.parser import parse_katana_record
 
 _JS_RE = re.compile(r"\.m?js(?:\.map)?(?:[?#]|$)", re.IGNORECASE)
+_LITERAL = re.compile(r"[a-z0-9_.-]+", re.IGNORECASE)
+_ANCHORED = re.compile(r"(\^|\(\^\|\\\.\))((?:[a-z0-9_-]|\\[.-])+)\$", re.IGNORECASE)
+_LABELS = "[^/?#@:]*"
+_SUBDOMAINS = r"([^/?#@:]*\.)?"
 _UNRESPONSIVE = ("could not", "connection refused", "timeout", "no address")
 _HANDOVER_EVERY = 200
 _FATAL = (
@@ -38,6 +44,10 @@ class KatanaProvider(UrlProvider):
                 max_duration_minutes=cfg.max_crawl_minutes,
                 rate_limit=self.ctx.transport.rate,
                 crawl_scope=cfg.crawl_scope,
+                crawl_in_scope=self._crawl_in_scope(),
+                crawl_out_scope=crawl_out_scope(
+                    self.ctx.resolved.excluded_subdomains or []
+                ),
                 include_js=True,
                 headless=cfg.headless,
                 exclude_extensions=list(cfg.static_extensions),
@@ -49,6 +59,20 @@ class KatanaProvider(UrlProvider):
             )
         except KatanaError as e:
             raise RuntimeError(str(e)) from e
+
+    def _crawl_in_scope(self) -> list[str]:
+        """-crawl-scope patterns for a target narrower than its zone."""
+        hosts, apexes = self._scope
+        if not any(target_zone(apex) != apex for apex in apexes):
+            return []
+        scheme = self.ctx.net.probe_scheme
+        patterns = [url_pattern(_SUBDOMAINS + re.escape(a), scheme) for a in apexes]
+        patterns += [
+            url_pattern(re.escape(bracketed(host)), scheme)
+            for host in sorted(hosts)
+            if not any(host == a or host.endswith(f".{a}") for a in apexes)
+        ]
+        return patterns
 
     def discover(self, result: ProviderResult) -> None:
         targets = [h.url for h in self.ctx.hosts]
@@ -128,6 +152,20 @@ class _Crawl:
     @property
     def collected(self) -> int:
         return self.handed + len(self.observations)
+
+
+def crawl_out_scope(entries: list[str]) -> list[str]:
+    """-crawl-out-scope patterns for the host exclusions katana can read."""
+    patterns = []
+    for entry in entries:
+        if _LITERAL.fullmatch(entry):
+            patterns.append(url_pattern(f"{_LABELS}{re.escape(entry)}{_LABELS}"))
+            continue
+        anchored = _ANCHORED.fullmatch(entry)
+        if anchored is not None:
+            lead = "" if anchored.group(1) == "^" else _SUBDOMAINS
+            patterns.append(url_pattern(lead + anchored.group(2)))
+    return patterns
 
 
 def _observation(parsed: dict) -> EndpointObservation:

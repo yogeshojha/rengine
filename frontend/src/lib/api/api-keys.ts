@@ -1,5 +1,11 @@
 import { api } from './client';
-import type { APIKeyRead, APIKeyCreate, APIKeyUpdate, ProviderInfo } from '$lib/types/api-key';
+import type {
+	APIKeyRead,
+	APIKeyCreate,
+	APIKeyUpdate,
+	APIProvider,
+	ProviderInfo
+} from '$lib/types/api-key';
 
 export const apiKeysApi = {
 	async listProviders(): Promise<ProviderInfo[]> {
@@ -16,6 +22,13 @@ export const apiKeysApi = {
 
 	async update(keyId: string, data: APIKeyUpdate): Promise<APIKeyRead> {
 		return api.patch<APIKeyRead>(`/api-keys/${keyId}`, data);
+	},
+
+	async upsert(provider: APIProvider, key_value: string): Promise<APIKeyRead> {
+		const existing = (await apiKeysApi.list()).find((k) => k.provider === provider);
+		return existing
+			? apiKeysApi.update(existing.id, { key_value })
+			: apiKeysApi.create({ provider, key_value });
 	},
 
 	async delete(keyId: string): Promise<void> {

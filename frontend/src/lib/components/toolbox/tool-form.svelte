@@ -55,7 +55,12 @@
 				spellcheck={false}
 				class="h-9 font-mono text-sm"
 			/>
-			<Button type="submit" size="sm" class="h-9 shrink-0 px-4" disabled={busy}>
+			<Button
+				type="submit"
+				size="sm"
+				class="h-9 shrink-0 px-4"
+				disabled={busy || !String(valueOf(primary) ?? '').trim()}
+			>
 				{#if busy}
 					<Spinner class="size-3.5" />
 				{:else}

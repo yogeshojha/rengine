@@ -4,7 +4,8 @@ from urllib.parse import urlsplit, urlunsplit
 
 import validators
 
-from shared.enums.target import TargetType
+from shared.enums.target import HOSTNAME_TARGET_TYPES, TargetType
+from shared.utils.net import url_host
 
 HEX_COLOR_LENGTH = 7  # #RRGGBB
 MAX_NAME_LEN = 120
@@ -80,7 +81,7 @@ def _normalize_url(value: str) -> str:
 
 
 def normalize_target_value(value: str) -> str:
-    """Normalized target value. Host names are case-folded so one host is one target."""
+    """Normalized target value with the host case-folded."""
     v = (value or "").strip()
     if not v:
         return v
@@ -128,8 +129,34 @@ def _routable(address) -> bool:
     )
 
 
+_UNROUTABLE = tuple(
+    ipaddress.ip_network(n)
+    for n in (
+        "0.0.0.0/8",
+        "127.0.0.0/8",
+        "169.254.0.0/16",
+        "224.0.0.0/4",
+        "240.0.0.0/4",
+        "::/128",
+        "::1/128",
+        "fe80::/10",
+        "ff00::/8",
+    )
+)
+
+
+def _scannable_block(block) -> bool:
+    return (
+        block.prefixlen > 0
+        and _routable(block.network_address)
+        and not any(
+            block.overlaps(n) for n in _UNROUTABLE if n.version == block.version
+        )
+    )
+
+
 def scannable_address(value: str) -> bool:
-    """Address space a scan may be aimed at. Private ranges stay in for corporate estates."""
+    """Address space a scan may be aimed at."""
     try:
         return _routable(ipaddress.ip_address(value))
     except ValueError:
@@ -137,10 +164,8 @@ def scannable_address(value: str) -> bool:
 
 
 def _scannable(value: str, target_type: TargetType) -> bool:
-    """Address space a scan may be aimed at. Private ranges stay in for corporate estates."""
     if target_type is TargetType.IP_RANGE:
-        block = ipaddress.ip_network(value, strict=False)
-        return block.prefixlen > 0 and _routable(block.network_address)
+        return _scannable_block(ipaddress.ip_network(value, strict=False))
     if target_type is TargetType.IP:
         return scannable_address(value)
     return True
@@ -170,11 +195,19 @@ def normalize_query(query: str, target_type: TargetType) -> str:
         case TargetType.DOMAIN:
             return normalize_domain(query)
         case TargetType.URL:
-            return normalize_domain(extract_domain_from_url(query))
+            return url_host(query.strip()).rstrip(".") or normalize_domain(query)
         case TargetType.ASN:
             return str(extract_asn_number(query))
         case _:
             return query.strip()
+
+
+def dns_lookup_name(value: str, target_type: TargetType) -> str | None:
+    """The hostname a DNS lookup resolves for a target, or None when it has none."""
+    if target_type not in HOSTNAME_TARGET_TYPES:
+        return None
+    name = normalize_query(value, target_type)
+    return None if not name or validate_ip(name) else name
 
 
 def normalize_domain(domain: str) -> str:
@@ -187,10 +220,6 @@ def normalize_domain(domain: str) -> str:
 def extract_asn_number(query: str) -> int:
     cleaned = re.sub(r"^[Aa][Ss]", "", query.strip())
     return int(cleaned)
-
-
-def extract_domain_from_url(url: str) -> str:
-    return normalize_domain(url)
 
 
 def validate_hex_color(color: str) -> str:

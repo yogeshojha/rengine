@@ -6,9 +6,9 @@
 	import * as HoverCard from '$lib/components/ui/hover-card';
 	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
-	import { QueueTier, TIER_HELP, TIER_LABELS, TIER_ORDER } from '$lib/config/dashboard';
+	import { TIER_HELP, TIER_LABELS, TIER_ORDER, TIER_QUERY } from '$lib/config/dashboard';
 	import { SEVERITY_FILL, severityLabel } from '$lib/config/vulnerabilities';
-	import { evidenceLabel } from '$lib/config/evidence';
+	import { EVIDENCE_LABELS, Evidence, evidenceLabel } from '$lib/config/evidence';
 	import { relativeTime } from '$lib/utilities/dates';
 	import type { DashboardFinding, DashboardRisk } from '$lib/types/dashboard';
 
@@ -23,11 +23,6 @@
 
 	const PER_COLUMN = 3;
 	const VULN = SURFACE[SurfaceDimension.VULNERABILITIES];
-	const TIER_QUERY: Record<QueueTier, string> = {
-		[QueueTier.Act]: 'is:kev or evidence:proven or epss:>=0.088 or severity:critical',
-		[QueueTier.Attend]: 'severity:high or severity:medium or evidence:corroborated',
-		[QueueTier.Track]: ''
-	};
 
 	let columns = $derived(
 		TIER_ORDER.map((tier) => ({
@@ -36,15 +31,12 @@
 			help: TIER_HELP[tier],
 			count: risk.tiers[tier] ?? 0,
 			cards: risk.queue.filter((f) => f.tier === tier).slice(0, PER_COLUMN),
-			href: routes.surface(
-				VULN.tab,
-				TIER_QUERY[tier] ? { [VULN.queryParam]: TIER_QUERY[tier] } : undefined
-			)
+			href: routes.rows(SurfaceDimension.VULNERABILITIES, TIER_QUERY[tier])
 		}))
 	);
 
 	const cardHref = (f: DashboardFinding) =>
-		ROUTES.scanTab(f.scan_id, VULN.tab, { q: `template="${f.template_id}"` });
+		ROUTES.scanTab(f.scan_id, VULN.tab, { [VULN.queryParam]: `template="${f.template_id}"` });
 	const epss = (f: DashboardFinding) =>
 		f.epss_score === null ? null : Math.round(f.epss_score * 100);
 	const id = (f: DashboardFinding) => f.cve_ids[0] ?? f.template_id;
@@ -52,8 +44,7 @@
 
 <Cell
 	id="board"
-	title="Findings"
-	href={routes.surface(VULN.tab)}
+	href={routes.rows(SurfaceDimension.VULNERABILITIES, '')}
 	hrefLabel="{risk.total.toLocaleString()} open"
 	class={className}
 	bodyClass="pt-2"
@@ -92,11 +83,13 @@
 										<span class="truncate">{id(f)}</span>
 										{#if f.is_kev}
 											<Badge variant="destructive" class="px-1.5 py-0 text-2xs">KEV</Badge>
-										{:else if f.evidence === 'proven'}
-											<Badge variant="success" class="px-1.5 py-0 text-2xs">Proven</Badge>
+										{:else if f.evidence === Evidence.PROVEN}
+											<Badge variant="secondary" class="px-1.5 py-0 text-2xs">
+												{EVIDENCE_LABELS[Evidence.PROVEN]}
+											</Badge>
 										{:else if f.is_new}
 											<Badge variant="info" class="px-1.5 py-0 text-2xs">New</Badge>
-										{:else if f.evidence && f.evidence !== 'observed'}
+										{:else if f.evidence && f.evidence !== Evidence.OBSERVED}
 											<Badge variant="secondary" class="px-1.5 py-0 text-2xs">
 												{evidenceLabel(f.evidence)}
 											</Badge>
@@ -151,8 +144,9 @@
 								<dd class="truncate font-mono">{f.matched_at}</dd>
 								<dt class="text-muted-foreground">Severity</dt>
 								<dd>
-									{severityLabel(f.severity)}{#if f.cvss_score !== null}
-										· CVSS {f.cvss_score}{/if}
+									{severityLabel(
+										f.severity
+									)}{#if f.cvss_score !== null}{` · CVSS ${f.cvss_score}`}{/if}
 								</dd>
 								{#if f.epss_score !== null}
 									<dt class="text-muted-foreground">EPSS</dt>
@@ -164,8 +158,10 @@
 								{/if}
 								<dt class="text-muted-foreground">Evidence</dt>
 								<dd>
-									{evidenceLabel(f.evidence) || 'Observed'}{#if f.replays > 0}
-										· {f.replays} replayed{/if}
+									{evidenceLabel(f.evidence) ||
+										EVIDENCE_LABELS[
+											Evidence.OBSERVED
+										]}{#if f.replays > 0}{` · ${f.replays} replayed`}{/if}
 								</dd>
 								<dt class="text-muted-foreground">Web assets</dt>
 								<dd class="tabular-nums">{f.host_count}</dd>

@@ -10,12 +10,7 @@ SCREENSHOT_RETENTION_DAYS: tuple[int, ...] = (7, 14, 30, 60, 90, KEEP_FOREVER)
 
 MAX_SCANS_PER_RUN = 200
 
-KEEP_NEWEST_PER_TARGET = True
-
 MEDIA_ROOT = Path("/app/scan_media")
-
-# written by the toolbox
-MEDIA_RESERVED = frozenset({"toolbox"})
 
 
 def window_active(days: int) -> bool:

@@ -5,9 +5,12 @@ from pathlib import Path
 
 import pytest
 
-from shared.definitions.api_keys import PROVIDER_GROUP_LABELS, RECON_GROUPS
+from shared.definitions.api_keys import (
+    API_PROVIDER_META,
+    PROVIDER_GROUP_LABELS,
+    RECON_GROUPS,
+)
 from shared.enums.api_key import APIProvider, ProviderGroup
-from shared.models.api_key import API_PROVIDER_META
 from shared.services.notifier import SHARED_BOT_PROVIDER
 
 pytestmark = pytest.mark.grammar

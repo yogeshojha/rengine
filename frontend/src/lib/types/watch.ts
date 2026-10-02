@@ -183,4 +183,10 @@ export interface StreamStatus {
 	version: string | null;
 }
 
-export type WatchHostFilter = 'all' | 'arrived' | 'alerted' | 'unresolved' | 'out_of_scope';
+export enum WatchHostFilter {
+	All = 'all',
+	Arrived = 'arrived',
+	Alerted = 'alerted',
+	Unresolved = 'unresolved',
+	OutOfScope = 'out_of_scope'
+}

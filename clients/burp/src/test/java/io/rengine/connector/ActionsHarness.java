@@ -19,16 +19,19 @@ public final class ActionsHarness {
         check("null yields nothing", Actions.parse(null).isEmpty());
 
         List<Actions.Action> two = Actions.parse(
-                "[{\"kind\":\"repeater\",\"url\":\"https://a/x?q=1\",\"method\":\"POST\",\"label\":\"/x\"},"
-                        + "{\"kind\":\"repeater\",\"url\":\"https://b/y\",\"method\":\"GET\",\"label\":null}]");
+                "[{\"kind\":\"repeater\",\"url\":\"https://a/x?q=1\",\"label\":\"/x\","
+                        + "\"request\":\"POST /x?q=1 HTTP/1.1\\r\\nHost: a\\r\\n\\r\\n\"},"
+                        + "{\"kind\":\"repeater\",\"url\":\"https://b/y\",\"label\":null,"
+                        + "\"request\":\"GET /y HTTP/1.1\\r\\nHost: b\\r\\n\\r\\n\"}]");
         check("both actions parse", two.size() == 2);
         check("the url survives a query string", "https://a/x?q=1".equals(two.get(0).url()));
-        check("the method is read", "POST".equals(two.get(0).method()));
         check("a null label is tolerated", two.get(1).label() == null);
-        check("a missing method defaults to GET",
-                "GET".equals(Actions.parse("[{\"url\":\"https://c/z\"}]").get(0).method()));
         check("an action with no url is dropped",
-                Actions.parse("[{\"kind\":\"repeater\",\"url\":\"\"}]").isEmpty());
+                Actions.parse("[{\"kind\":\"repeater\",\"url\":\"\",\"request\":\"GET / HTTP/1.1\"}]")
+                        .isEmpty());
+        check("an action with no request is dropped",
+                Actions.parse("[{\"kind\":\"repeater\",\"url\":\"https://c/z\",\"request\":null}]")
+                        .isEmpty());
 
         check("target endpoint derives beside ingest",
                 "http://h/api/v1/connectors/targets".equals(
@@ -51,7 +54,7 @@ public final class ActionsHarness {
         check("a program is recognised", options.get(2).isProgram());
         check("a target is not a program", !options.get(0).isProgram());
         check("a program label names its targets",
-                options.get(2).toString().equals("Program: Acme BB  ·  3 target(s)"));
+                options.get(2).toString().equals("Program: Acme BB  ·  3 targets"));
         check("auto is neither", !Targets.AUTO.isProgram());
         check("auto carries no id", Targets.AUTO.id() == null);
         check("a malformed list yields nothing", Targets.parse("{}").isEmpty());
@@ -59,12 +62,14 @@ public final class ActionsHarness {
         String scopeBody = "{\"target_value\":\"acme.com\",\"include\":[\"https://a.acme.com\","
                 + "\"https://b.acme.com\"],\"exclude\":[\"https://no.acme.com\"],"
                 + "\"hosts_known\":2,\"truncated\":false,\"from_program\":\"Acme BB\"}";
-        check("include rules parse", Facts.strings(scopeBody, "include").size() == 2);
+        check("include rules parse", Json.strings(scopeBody, "include").size() == 2);
         check("exclude rules parse",
-                Facts.strings(scopeBody, "exclude").equals(List.of("https://no.acme.com")));
-        check("a missing array yields nothing", Facts.strings(scopeBody, "nope").isEmpty());
+                Json.strings(scopeBody, "exclude").equals(List.of("https://no.acme.com")));
+        check("a missing array yields nothing", Json.strings(scopeBody, "nope").isEmpty());
         check("an empty array yields nothing",
-                Facts.strings("{\"include\":[]}", "include").isEmpty());
+                Json.strings("{\"include\":[]}", "include").isEmpty());
+        check("the known host count is read", Json.integer(scopeBody, "hosts_known") == 2);
+        check("a missing count reads zero", Json.integer(scopeBody, "nope") == 0);
         check("the program name is read", "Acme BB".equals(Json.readString(scopeBody, "from_program")));
         check("a null program reads as absent",
                 Json.readString("{\"from_program\":null}", "from_program") == null);
@@ -102,8 +107,8 @@ public final class ActionsHarness {
                 + "\"response\":\"HTTP/1.1 200 OK\\r\\n\\r\\n{}\","
                 + "\"notes\":\"reNgine \\u00b7 Critical\\nline two\",\"color\":\"red\"},"
                 + "{\"kind\":\"repeater\",\"url\":\"https://b.acme.com/x\",\"method\":\"GET\","
-                + "\"label\":null,\"request\":null,\"response\":null,\"notes\":null,"
-                + "\"color\":null}]";
+                + "\"label\":null,\"request\":\"GET /x HTTP/1.1\\r\\nHost: b.acme.com\\r\\n\\r\\n\","
+                + "\"response\":null,\"notes\":null,\"color\":null}]";
         List<Actions.Action> rich = Actions.parse(raw);
         check("a request body holding },{ does not split the array", rich.size() == 2);
         check("the raw request is decoded",
@@ -113,8 +118,7 @@ public final class ActionsHarness {
         check("a unicode escape is decoded",
                 "reNgine \u00b7 Critical\nline two".equals(rich.get(0).notes()));
         check("the colour is read", "red".equals(rich.get(0).color()));
-        check("a bare action has no request", !rich.get(1).hasRequest());
-        check("a bare action has no response", !rich.get(1).hasResponse());
+        check("an action with no response has none", !rich.get(1).hasResponse());
 
         Handoff.Origin origin = Handoff.origin("https://a.acme.com:8443/api?q=1");
         check("the origin reads host, port and tls",
@@ -124,7 +128,29 @@ public final class ActionsHarness {
                         && !Handoff.origin("http://b.acme.com/x").secure());
         check("an https url takes port 443", Handoff.origin("https://c.acme.com").port() == 443);
         check("an ipv6 literal is handed over bare",
-                Handoff.origin("http://[2001:db8::1]:8080/").host().equals("2001:db8::1"));
+                Handoff.origin("http://[2001:db8::1]:8080/").host().equals("2001:db8::1")
+                        && Handoff.origin("http://[2001:db8::1]:8080/").port() == 8080);
+        Handoff.Origin spaced = Handoff.origin("https://a.com/x?q=a b|c");
+        check("a url with a space and a pipe still parses",
+                spaced.host().equals("a.com") && spaced.port() == 443 && spaced.secure());
+        check("a path template still parses",
+                Handoff.origin("https://a.com/api/users/{id}").host().equals("a.com"));
+        Handoff.Origin underscore = Handoff.origin("https://dev_api.example.com:8443/x");
+        check("an underscore host keeps its name and port",
+                underscore.host().equals("dev_api.example.com") && underscore.port() == 8443);
+        Handoff.Origin userinfo = Handoff.origin("http://u:p@h/");
+        check("userinfo is dropped", userinfo.host().equals("h") && userinfo.port() == 80);
+        check("a url with no scheme is refused", refused(() -> Handoff.origin("a.com/x")));
+        check("a non-numeric port is refused", refused(() -> Handoff.origin("http://a.com:x/")));
+        check("an empty host is refused", refused(() -> Handoff.origin("https:///x")));
+
+        check("the host of a bracketed ipv6 url is bare",
+                "2001:db8::1".equals(Capture.hostOf("http://[2001:db8::1]/x"))
+                        && "2001:db8::1".equals(Capture.hostOf("https://[2001:db8::1]:8443/x")));
+        check("the host drops userinfo", "h".equals(Capture.hostOf("http://u:p@h/")));
+        check("the host keeps an underscore",
+                "dev_api.example.com".equals(Capture.hostOf("https://dev_api.example.com:8443/x")));
+        check("a value with no scheme has no host", Capture.hostOf("a.com") == null);
         check("an unknown tool falls back to Repeater", Handoff.tool("scanner").equals(Handoff.REPEATER));
         check("site map is a tool", Handoff.tool("sitemap").equals(Handoff.SITE_MAP));
         check("a null tool is Repeater", Handoff.tool(null).equals(Handoff.REPEATER));
@@ -147,12 +173,22 @@ public final class ActionsHarness {
         check("the sample drops the body", !head.contains("body=1"));
         check("the sample ends with a blank line", head.endsWith("\r\n\r\n"));
         check("an empty request has no sample", Capture.sample("") == null);
+        String tokens = Capture.sample("GET / HTTP/1.1\r\nPRIVATE-TOKEN: glpat-1\r\n"
+                + "X-Amz-Security-Token: a\r\nX-Client-Secret: b\r\nX-Goog-Api-Key: c\r\n"
+                + "Proxy-Authorization: Basic d\r\nAccept: */*\r\n\r\n");
+        check("the sample masks any token, secret or key header",
+                tokens.contains("PRIVATE-TOKEN: " + Capture.MASK)
+                        && tokens.contains("X-Amz-Security-Token: " + Capture.MASK)
+                        && tokens.contains("X-Client-Secret: " + Capture.MASK)
+                        && tokens.contains("X-Goog-Api-Key: " + Capture.MASK)
+                        && tokens.contains("Proxy-Authorization: " + Capture.MASK)
+                        && tokens.contains("Accept: */*"));
 
         Notices held = new Notices();
         for (int i = 0; i < Notices.KEEP + 5; i++) {
             held.add(new Actions.Notice("sensitive", "Sensitive path", "https://a/" + i, "a"));
         }
-        check("the notice list is bounded", held.size() == Notices.KEEP);
+        check("the notice list is bounded", held.recent().size() == Notices.KEEP);
         check("the newest notice is first", held.recent().get(0).url().endsWith("/16"));
 
         String ingest = "https://r.example" + Settings.INGEST_PATH;
@@ -193,6 +229,15 @@ public final class ActionsHarness {
 
         System.out.println(failed == 0 ? "all action checks passed" : failed + " failed");
         System.exit(failed == 0 ? 0 : 1);
+    }
+
+    private static boolean refused(Runnable parse) {
+        try {
+            parse.run();
+            return false;
+        } catch (IllegalArgumentException e) {
+            return true;
+        }
     }
 
     private static void check(String name, boolean ok) {

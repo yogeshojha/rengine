@@ -1,13 +1,14 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
 from sqlalchemy import BigInteger, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, SQLModel
 
 from shared.enums.whois import WhoisLookupType
 from shared.utils.datetime import utc_now
+from shared.utils.privacy import is_redacted_name
 
 
 class WhoisRecord(SQLModel, table=True):
@@ -109,6 +110,11 @@ class WhoisRecordRead(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+    @computed_field
+    @property
+    def registrant_redacted(self) -> bool:
+        return bool(self.registrant_name) and is_redacted_name(self.registrant_name)
+
 
 class WhoisRecordSummary(BaseModel):
     id: uuid.UUID
@@ -117,12 +123,19 @@ class WhoisRecordSummary(BaseModel):
     lookup_type: str
     name: str
     registrant_name: str
+    registrant_email: str = ""
     registrar_name: str
+    nameservers: list[str] | None = None
     country: str
     network_cidr: str
     registration_date: datetime | None
     expiration_date: datetime | None
     queried_at: datetime
+
+    @computed_field
+    @property
+    def registrant_redacted(self) -> bool:
+        return bool(self.registrant_name) and is_redacted_name(self.registrant_name)
 
 
 class WhoisCorrelationResult(BaseModel):

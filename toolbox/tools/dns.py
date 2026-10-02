@@ -29,18 +29,6 @@ from toolbox.base import (
 from toolbox.pivot import target_pivot_sync
 from tools.dnsx.service import DnsxService, DnsxServiceError
 
-RECORD_ORDER = (
-    DnsRecordType.A,
-    DnsRecordType.AAAA,
-    DnsRecordType.CNAME,
-    DnsRecordType.NS,
-    DnsRecordType.MX,
-    DnsRecordType.TXT,
-    DnsRecordType.SOA,
-    DnsRecordType.SRV,
-    DnsRecordType.CAA,
-)
-
 _TXT_PURPOSE = (
     ("v=spf1", "SPF sender policy"),
     ("v=dmarc1", "DMARC policy"),
@@ -128,7 +116,9 @@ class DnsLookup(Tool):
                         note=(
                             f"open · {len(recon.zone_names):,} names"
                             if recon.zone_transferred
-                            else "refused"
+                            else (
+                                "refused" if recon.axfr is not None else "not answered"
+                            )
                         ),
                     ),
                 ],
@@ -144,7 +134,8 @@ class DnsLookup(Tool):
         ]
 
         summary = (
-            f"{len(rows)} records · {addresses} address{'es' if addresses != 1 else ''}"
+            f"{len(rows)} record{'s' if len(rows) != 1 else ''} · "
+            f"{addresses} address{'es' if addresses != 1 else ''}"
             if rows
             else f"No records returned: {status or 'no answer'}"
         )

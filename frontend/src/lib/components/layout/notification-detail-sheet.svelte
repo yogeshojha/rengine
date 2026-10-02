@@ -4,18 +4,10 @@
 	import { Button } from '$lib/components/ui/button';
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
 	import { relativeTimeLong } from '$lib/utilities/dates';
-	import { detailLines } from '$lib/utilities/notifications';
+	import { detailLines, SEVERITY_TILE_CLASS } from '$lib/utilities/notifications';
 	import { getTypeIcon } from '$lib/utilities/notification-icons';
 	import { NOTIFICATION_TYPE_LABELS, type Notification } from '$lib/types/notification';
-	import type { MessageLevel } from '$lib/types/message-level';
 	import { cn } from '$lib/utils';
-
-	const TILE_CLASS: Record<MessageLevel, string> = {
-		info: 'bg-muted text-muted-foreground',
-		success: 'bg-muted text-muted-foreground',
-		warning: 'bg-warning/10 text-warning',
-		error: 'bg-destructive/10 text-destructive'
-	};
 
 	interface Props {
 		notification: Notification | null;
@@ -49,7 +41,7 @@
 					<div
 						class={cn(
 							'flex size-8 shrink-0 items-center justify-center rounded-md',
-							TILE_CLASS[notification.severity]
+							SEVERITY_TILE_CLASS[notification.severity]
 						)}
 					>
 						<TypeIcon class="size-4" />
@@ -82,7 +74,7 @@
 			{#if meta?.url}
 				<Sheet.Footer class="border-t border-border px-5 py-4">
 					<Button onclick={onOpen}>
-						{meta.action_label ?? 'Open'}
+						Open
 						<ArrowUpRight class="size-4" />
 					</Button>
 				</Sheet.Footer>

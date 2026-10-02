@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { pageTitle } from '$lib/utilities/page-title';
+	import { plural } from '$lib/utilities/strings';
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
@@ -111,8 +113,8 @@
 		bulkDeleting = false;
 		bulkDeleteOpen = false;
 		selectedIds.clear();
-		if (ok > 0) toast.success(`${ok} report${ok !== 1 ? 's' : ''} deleted`);
-		if (failed > 0) toast.error(`${failed} report${failed !== 1 ? 's' : ''} not deleted`);
+		if (ok > 0) toast.success(`${plural(ok, 'report')} deleted`);
+		if (failed > 0) toast.error(`${plural(failed, 'report')} not deleted`);
 	}
 
 	$effect(() => {
@@ -172,8 +174,8 @@
 			: pendingDelete?.kind === 'theme'
 				? `Theme ${pendingDelete.name} is removed.`
 				: pendingDelete?.kind === 'typeface'
-					? `Typeface ${pendingDelete.name} and its font files are removed. A theme that names it falls back to a system face.`
-					: `Report ${pendingDelete?.name ?? ''} and its downloaded files are removed.`
+					? `Typeface ${pendingDelete.name} and its font files are removed.`
+					: `Report ${pendingDelete?.name ?? ''} and its files are removed.`
 	);
 
 	async function confirmDelete() {
@@ -217,33 +219,35 @@
 
 	<Tabs.Root value={activeTab} onValueChange={(v) => v && requestTab(v as ReportTab)}>
 		<div class="flex flex-wrap items-center justify-between gap-3">
-			<Tabs.List class="w-full sm:w-fit">
-				<Tabs.Trigger value="reports">
-					Reports
-					{#if reportsStore.reports.length}
-						<span class="ml-1.5 text-muted-foreground">{reportsStore.reports.length}</span>
-					{/if}
-				</Tabs.Trigger>
-				<Tabs.Trigger value="templates">
-					Templates
-					{#if reportsStore.templates.length}
-						<span class="ml-1.5 text-muted-foreground">{reportsStore.templates.length}</span>
-					{/if}
-				</Tabs.Trigger>
-				<Tabs.Trigger value="themes">
-					Themes
-					{#if reportCatalog.themes.length}
-						<span class="ml-1.5 text-muted-foreground">{reportCatalog.themes.length}</span>
-					{/if}
-				</Tabs.Trigger>
-				<Tabs.Trigger value="typefaces">
-					Typefaces
-					{#if reportCatalog.catalog?.fonts.length}
-						<span class="ml-1.5 text-muted-foreground">{reportCatalog.catalog.fonts.length}</span>
-					{/if}
-				</Tabs.Trigger>
-				<Tabs.Trigger value="branding">Branding</Tabs.Trigger>
-			</Tabs.List>
+			<ScrollArea orientation="horizontal" class="w-full sm:w-fit">
+				<Tabs.List class="w-max min-w-full">
+					<Tabs.Trigger value="reports">
+						Reports
+						{#if reportsStore.reports.length}
+							<span class="ml-1.5 text-muted-foreground">{reportsStore.reports.length}</span>
+						{/if}
+					</Tabs.Trigger>
+					<Tabs.Trigger value="templates">
+						Templates
+						{#if reportsStore.templates.length}
+							<span class="ml-1.5 text-muted-foreground">{reportsStore.templates.length}</span>
+						{/if}
+					</Tabs.Trigger>
+					<Tabs.Trigger value="themes">
+						Themes
+						{#if reportCatalog.themes.length}
+							<span class="ml-1.5 text-muted-foreground">{reportCatalog.themes.length}</span>
+						{/if}
+					</Tabs.Trigger>
+					<Tabs.Trigger value="typefaces">
+						Typefaces
+						{#if reportCatalog.catalog?.fonts.length}
+							<span class="ml-1.5 text-muted-foreground">{reportCatalog.catalog.fonts.length}</span>
+						{/if}
+					</Tabs.Trigger>
+					<Tabs.Trigger value="branding">Branding</Tabs.Trigger>
+				</Tabs.List>
+			</ScrollArea>
 
 			{#if activeTab === 'reports'}
 				<div class="relative w-full sm:w-64">
@@ -271,11 +275,7 @@
 					<RowSkeleton rows={4} avatar="size-8 rounded-md" trailing="h-5 w-20 rounded-full" />
 				</Card.Root>
 			{:else if !visibleReports.length}
-				<EmptyState
-					icon={FileTextIcon}
-					title="No reports"
-					description="Generate a report from a finished scan."
-				/>
+				<EmptyState icon={FileTextIcon} title="No reports" />
 			{:else}
 				<Card.Root class="gap-0 py-0">
 					<div
@@ -297,7 +297,6 @@
 						<ReportRow
 							{report}
 							{projectId}
-							selectable
 							isSelected={selectedIds.has(report.id)}
 							onSelect={toggleReport}
 							onRetry={(id) => reportsStore.retry(projectId, id)}
@@ -357,8 +356,8 @@
 <DeleteConfirmationDialog
 	open={bulkDeleteOpen}
 	onOpenChange={(v) => (bulkDeleteOpen = v)}
-	title="Delete {selectedCount} report{selectedCount !== 1 ? 's' : ''}"
-	description="The selected reports and their downloaded files are removed."
+	title={`Delete ${plural(selectedCount, 'report')}`}
+	description="The selected reports and their files are removed."
 	confirmLabel="Delete {selectedCount}"
 	isDeleting={bulkDeleting}
 	onConfirm={confirmBulkDelete}

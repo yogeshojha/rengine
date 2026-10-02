@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from mcp.errors import INVALID_REQUEST, ProtocolError
+from mcp.errors import PARSE_ERROR, ProtocolError
 
 VERSION = "2.0"
 
@@ -59,4 +59,4 @@ def failure(request_id: Any, code: int, message: str, data: dict | None = None) 
 
 
 def parse_failure(message: str) -> dict:
-    return failure(None, INVALID_REQUEST, message)
+    return failure(None, PARSE_ERROR, message)

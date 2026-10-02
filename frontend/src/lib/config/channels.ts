@@ -2,6 +2,9 @@
 
 export const REMOTE_CONTROL_POLL_MS = 10_000;
 
+export const RATE_LIMIT_MIN = 1;
+export const RATE_LIMIT_MAX = 10_000;
+
 export enum ChannelKind {
 	TELEGRAM = 'telegram'
 }
@@ -18,12 +21,6 @@ export enum ChatState {
 	BLOCKED = 'blocked'
 }
 
-export const CHAT_STATE_ORDER: ChatState[] = [
-	ChatState.ACTIVE,
-	ChatState.REVOKED,
-	ChatState.BLOCKED
-];
-
 export const CHAT_STATE_LABELS: Record<ChatState, string> = {
 	[ChatState.ACTIVE]: 'Active',
 	[ChatState.REVOKED]: 'Revoked',
@@ -35,18 +32,6 @@ export enum CommandSource {
 	TOOLBOX = 'toolbox',
 	BUILTIN = 'builtin'
 }
-
-export const COMMAND_SOURCE_ORDER: CommandSource[] = [
-	CommandSource.BUILTIN,
-	CommandSource.MCP,
-	CommandSource.TOOLBOX
-];
-
-export const COMMAND_SOURCE_LABELS: Record<CommandSource, string> = {
-	[CommandSource.BUILTIN]: 'Chat',
-	[CommandSource.MCP]: 'Tools',
-	[CommandSource.TOOLBOX]: 'Lookups'
-};
 
 export enum ChatGroup {
 	TARGETS = 'targets',

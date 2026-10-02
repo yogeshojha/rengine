@@ -1,5 +1,3 @@
-# every image that runs worker code mounts the same tree, so beat, the stream
-# and flower cannot drift from the worker
 x-worker-volumes: &worker-volumes
   - ./worker/app:/app/app
   - ./shared:/app/shared
@@ -14,7 +12,7 @@ x-worker-volumes: &worker-volumes
   - reports_out:/app/reports-out
   - exports_out:/app/exports-out
   - report_fonts:/app/report-fonts
-  # the editable installs the image built; a host mount must not shadow them
+  # keep the image's editable installs
   - /app/shared/build
   - /app/shared/rengine_shared.egg-info
   - /app/tools/build
@@ -24,8 +22,10 @@ services:
   db:
     image: postgres:16-alpine
     shm_size: ${POSTGRES_SHM_SIZE:-1gb}
-    env_file:
-      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-rengine}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rengine}
+      POSTGRES_DB: ${POSTGRES_DB:-rengine}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -98,7 +98,7 @@ services:
       - ./alembic.ini:/app/alembic.ini
       - ./tests:/app/tests
       - ./pyproject.toml:/app/pyproject.toml
-      # read-only, so the tests can check a frontend mirror has not drifted
+      # frontend mirrors for the drift tests
       - ./frontend/src/lib/config:/app/frontend-config:ro
       - ./scan_media:/app/scan_media
       - vuln_templates:/app/vuln-templates
@@ -111,7 +111,7 @@ services:
       - /app/tools/build
       - /app/tools/rengine_tools.egg-info
     ports:
-      - "${APP_BIND_ADDR:-0.0.0.0}:8000:8000"
+      - "${APP_BIND_ADDR:-127.0.0.1}:8000:8000"
     env_file:
       - .env
     environment:
@@ -135,11 +135,9 @@ services:
       - .env
     command: >
       uv run celery -A app.celery worker
-      --loglevel=DEBUG
       --concurrency=${CELERY_DEFAULT_CONCURRENCY:-4}
       --queues=critical,default
       --hostname=worker-default@%h
-      --max-tasks-per-child=100
     restart: unless-stopped
     depends_on:
       db:
@@ -153,7 +151,7 @@ services:
       retries: 3
       start_period: 30s
 
-  # scan stages, one slot per running stage; scale with --scale worker-scans=N
+  # scan stages, one slot per running stage
   worker-scans:
     init: true
     # built by worker-default
@@ -164,11 +162,9 @@ services:
       - .env
     command: >
       uv run celery -A app.celery worker
-      --loglevel=DEBUG
       --concurrency=${CELERY_SCAN_CONCURRENCY:-16}
       --queues=scans
       --hostname=worker-scans@%h
-      --max-tasks-per-child=100
     restart: unless-stopped
     depends_on:
       db:
@@ -192,11 +188,9 @@ services:
       - .env
     command: >
       uv run celery -A app.celery worker
-      --loglevel=DEBUG
       --concurrency=${CELERY_CONTROL_CONCURRENCY:-8}
       --queues=scan_control
       --hostname=worker-control@%h
-      --max-tasks-per-child=100
     restart: unless-stopped
     depends_on:
       db:
@@ -210,18 +204,27 @@ services:
       retries: 3
       start_period: 30s
 
-  # beat scheduler: emits the schedule tick that fires due scan schedules
+  # beat scheduler
   worker-beat:
     init: true
     # built by worker-default
     image: rengine-worker:latest
-    volumes: *worker-volumes
+    volumes:
+      - ./worker/app:/app/app
+      - ./shared:/app/shared
+      - ./tools:/app/tools
+      - ./stages:/app/stages
+      - ./reports:/app/reports
+      - ./interest:/app/interest
+      - ./toolbox:/app/toolbox
+      - beat_state:/app/beat-state
+      - /app/shared/build
+      - /app/shared/rengine_shared.egg-info
+      - /app/tools/build
+      - /app/tools/rengine_tools.egg-info
     env_file:
       - .env
-    command: >
-      uv run celery -A app.celery beat
-      --loglevel=INFO
-      --schedule=/tmp/celerybeat-schedule
+    command: uv run celery -A app.celery beat
     restart: unless-stopped
     depends_on:
       db:
@@ -296,8 +299,11 @@ services:
     profiles: ["debug"]
     ports:
       - "${BIND_ADDR:-127.0.0.1}:5555:5555"
-    env_file:
-      - .env
+    environment:
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_DB: ${REDIS_DB:-0}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
     command: >
       uv run celery -A app.celery flower
       --port=5555
@@ -314,13 +320,14 @@ services:
       - ./frontend/src:/app/src
       - ./frontend/vite.config.ts:/app/vite.config.ts
     ports:
-      - "${APP_BIND_ADDR:-0.0.0.0}:5173:5173"
+      - "${APP_BIND_ADDR:-127.0.0.1}:5173:5173"
     environment:
       - NODE_ENV=development
     depends_on:
       - api
 
 volumes:
+  beat_state:
   ct_state:
   postgres_data:
   redis_data:

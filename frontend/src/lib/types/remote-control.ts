@@ -2,17 +2,9 @@ import {
 	ChatState,
 	type ChannelKind,
 	type ChatGroup,
-	type CommandSource,
 	type ListenerState
 } from '$lib/config/channels';
-import {
-	ceilingKeys,
-	grantsUpTo,
-	ladderLevel,
-	type McpCall,
-	type McpCapability,
-	type McpCapabilitySpec
-} from '$lib/types/mcp';
+import type { McpCall, McpCapability, McpCapabilitySpec } from '$lib/types/mcp';
 
 export interface BotInfo {
 	id: string;
@@ -23,10 +15,7 @@ export interface BotInfo {
 export interface ListenerStatus {
 	reporting: boolean;
 	running: boolean;
-	last_poll_at: string | null;
-	updates_seen: number;
 	last_error: string | null;
-	last_error_at: string | null;
 }
 
 export interface ChannelStatus {
@@ -43,19 +32,7 @@ export interface ChannelStatus {
 	capabilities: McpCapabilitySpec[];
 	chats_total: number;
 	chats_active: number;
-	pending_total: number;
-	commands_total: number;
-	calls_recent: number;
-	last_call_at: string | null;
 	shared_notifications: number;
-}
-
-export interface ChannelCatalogEntry {
-	channel: ChannelKind;
-	label: string;
-	configured: boolean;
-	enabled: boolean;
-	running: boolean;
 }
 
 export interface ChannelSettingsUpdate {
@@ -106,29 +83,15 @@ export interface ChannelChatUpdate {
 	capabilities?: string[];
 }
 
-export interface CommandArg {
-	name: string;
-	type: string;
-	required: boolean;
-	description: string;
-	default: string | null;
-	options: string[];
-}
-
 export interface ChannelCommand {
 	name: string;
 	tool: string | null;
-	source: CommandSource;
 	group: ChatGroup;
 	title: string;
-	description: string;
 	capability: McpCapability;
 	touches_target: boolean;
-	queued: boolean;
-	value_field: string;
-	presets: Record<string, unknown>;
+	steps_up: boolean;
 	usage: string;
-	args: CommandArg[];
 }
 
 export type ChannelCall = McpCall;
@@ -152,9 +115,3 @@ export function chatName(tokenName: string): string {
 	const [, ...rest] = tokenName.split(':');
 	return rest.length ? rest.join(':') : tokenName;
 }
-
-export function allowedKeys(status: ChannelStatus): Set<string> {
-	return ceilingKeys(status);
-}
-
-export { grantsUpTo, ladderLevel };

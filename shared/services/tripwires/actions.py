@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING
 from sqlalchemy import cast, func, select
 from sqlalchemy.dialects.postgresql import JSONB
 
-from shared.config import BaseAppSettings
 from shared.definitions.notifications import (
     FiredRowLike,
     TripwireFired,
@@ -58,6 +57,7 @@ from shared.services.scan_factory import build_scan_row
 from shared.services.scan_resolve import merge_engine_context
 from shared.services.tripwires.identity import identity, seed_kind_of
 from shared.utils.datetime import utc_now
+from shared.utils.text import counted
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -86,7 +86,7 @@ def _target_value(scan: Scan) -> str:
 
 
 def live_channels(session: Session, chosen: list) -> list[uuid.UUID]:
-    """The chosen channels that still exist; type routing when none were chosen."""
+    """The chosen channels that exist and are active."""
     ids = [uuid.UUID(str(c)) for c in (chosen or [])]
     if not ids:
         return []
@@ -130,7 +130,7 @@ def notify(
     )
     channels = live_channels(session, channel_ids)
     try:
-        SyncNotificationPublisher(BaseAppSettings().redis_url).publish(
+        SyncNotificationPublisher().publish(
             session=session,
             type=payload["type"],
             severity=payload["severity"],
@@ -187,14 +187,10 @@ def delivery_outcome(session: Session, sent: list[tuple], *, chosen: bool) -> Ou
     )
     parts = []
     if delivered:
-        parts.append(
-            f"Sent to {len(delivered)} {'channel' if len(delivered) == 1 else 'channels'}"
-        )
+        parts.append(f"Sent to {counted(len(delivered), 'channel')}")
     if failed:
         listed = ", ".join(names.get(cid, str(cid)) for cid in failed)
-        parts.append(
-            f"{len(failed)} {'channel' if len(failed) == 1 else 'channels'} failed: {listed}"
-        )
+        parts.append(f"{counted(len(failed), 'channel')} failed: {listed}")
     return Outcome(
         kind=ActionKind.NOTIFY.value,
         status=OutcomeStatus.DONE.value if delivered else OutcomeStatus.FAILED.value,
@@ -409,7 +405,7 @@ def settle_run(session: Session, scan: Scan) -> Outcome | None:
     if payload is None:
         return outcome
     try:
-        SyncNotificationPublisher(BaseAppSettings().redis_url).publish(
+        SyncNotificationPublisher().publish(
             session=session,
             type=payload["type"],
             severity=payload["severity"],

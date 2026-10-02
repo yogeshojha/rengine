@@ -1,7 +1,11 @@
 <script lang="ts">
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { SEVERITY_CHIP, SEVERITY_LABELS, Severity } from '$lib/config/vulnerabilities';
-	import type { SignalFilter, TargetSummary } from '$lib/utilities/target-signals';
+	import {
+		SIGNAL_LABELS,
+		type SignalFilter,
+		type TargetSummary
+	} from '$lib/utilities/target-signals';
 
 	interface Props {
 		loading?: boolean;
@@ -18,11 +22,11 @@
 		{ signal: 'high', sev: Severity.HIGH },
 		{ signal: 'medium', sev: Severity.MEDIUM }
 	];
-	const ENRICHMENT: { signal: SignalFilter; label: string; tone: string }[] = [
-		{ signal: 'attention', label: 'Needs attention', tone: 'text-destructive' },
-		{ signal: 'expiring', label: 'Expiring', tone: 'text-warning' },
-		{ signal: 'awaiting', label: 'Enriching', tone: 'text-info' },
-		{ signal: 'monitored', label: 'New checks', tone: 'text-foreground' }
+	const ENRICHMENT: { signal: SignalFilter; tone: string }[] = [
+		{ signal: 'attention', tone: 'text-destructive' },
+		{ signal: 'expiring', tone: 'text-warning' },
+		{ signal: 'awaiting', tone: 'text-info' },
+		{ signal: 'monitored', tone: 'text-foreground' }
 	];
 </script>
 
@@ -30,15 +34,17 @@
 	{@const on = signal === null ? active === null : active === signal}
 	<button
 		type="button"
-		class="group/s flex flex-col items-start gap-0.5 rounded-md text-left focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+		class="-mx-2 -my-1 flex flex-col items-start gap-0.5 rounded-md px-2 py-1 text-left transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 		aria-pressed={on}
 		onclick={() => onSignal(signal === null || on ? null : signal)}
 	>
 		<span class="text-2xs tracking-wide text-muted-foreground uppercase">{label}</span>
 		<span
-			class="font-mono text-2xl font-semibold tabular-nums underline-offset-4 group-hover/s:underline {n
+			class="font-mono text-2xl font-semibold tabular-nums {n
 				? tone
-				: 'text-muted-foreground/60'} {on && signal !== null ? 'underline decoration-2' : ''}"
+				: 'text-muted-foreground/60'} {on && signal !== null
+				? 'underline decoration-2 underline-offset-4'
+				: ''}"
 		>
 			{n.toLocaleString()}
 		</span>
@@ -80,8 +86,8 @@
 			'text-foreground',
 			live ? `${live} scanning` : ''
 		)}
-		{@render stat('Not scanned', 'unscanned', summary.unscanned, 'text-foreground')}
-		{@render stat('Stale · 30 days', 'stale', summary.stale, 'text-warning')}
+		{@render stat(SIGNAL_LABELS.unscanned, 'unscanned', summary.unscanned, 'text-foreground')}
+		{@render stat(SIGNAL_LABELS.stale, 'stale', summary.stale, 'text-warning')}
 		<div class="flex flex-col gap-1">
 			<span class="text-2xs tracking-wide text-muted-foreground uppercase">With findings</span>
 			<div class="flex items-center gap-1.5">
@@ -118,7 +124,7 @@
 						aria-pressed={on}
 						onclick={() => onSignal(on ? null : e.signal)}
 					>
-						<span class="text-muted-foreground">{e.label}</span>
+						<span class="text-muted-foreground">{SIGNAL_LABELS[e.signal]}</span>
 						<span class="font-mono font-semibold tabular-nums {n ? e.tone : ''}"
 							>{n.toLocaleString()}</span
 						>

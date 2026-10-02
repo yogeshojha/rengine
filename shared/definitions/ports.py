@@ -81,6 +81,25 @@ SCAN_POLICY_LABELS: dict[str, str] = {
     ScanPolicy.SKIP.value: "Not scanned",
 }
 
+UNPLANNED = "unplanned"
+
+
+class ScanPolicyReason(StrEnum):
+    SCOPE = "scope"
+    PRIVATE = "private"
+    UNREACHABLE = "unreachable"
+    CDN = "cdn"
+    CLOUD = "cloud"
+
+
+SCAN_POLICY_REASON_LABELS: dict[str, str] = {
+    ScanPolicyReason.CDN.value: "CDN-fronted",
+    ScanPolicyReason.CLOUD.value: "Cloud provider",
+    ScanPolicyReason.SCOPE.value: "Excluded by scope",
+    ScanPolicyReason.PRIVATE.value: "Private address",
+    ScanPolicyReason.UNREACHABLE.value: "No response",
+}
+
 
 @dataclass(frozen=True)
 class ServiceSpec:

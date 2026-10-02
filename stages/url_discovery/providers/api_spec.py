@@ -60,7 +60,7 @@ class ApiSpecProvider(UrlProvider):
         if not roots:
             return
         selected = roots[:MAX_API_SPEC_HOSTS]
-        client = self._client()
+        client = self.http_client()
         state = _State()
         try:
             workers = min(self.workers(_MAX_WORKERS), len(selected))
@@ -90,17 +90,6 @@ class ApiSpecProvider(UrlProvider):
             f"{state.graphql} graphql {'endpoint' if state.graphql == 1 else 'endpoints'}"
         )
 
-    def _client(self) -> httpx.Client:
-        headers = dict(self.ctx.net.headers or {})
-        headers.setdefault("User-Agent", "reNgine/3.0 (+https://rengine.wiki)")
-        return httpx.Client(
-            timeout=self.ctx.transport.timeout,
-            follow_redirects=self.follow_redirects(True),
-            verify=False,  # noqa: S501
-            proxy=self.ctx.net.proxy_url or None,
-            headers=headers,
-        )
-
     def _mine(self, client: httpx.Client, root: str) -> _State | None:
         if self.aborted():
             return None
@@ -109,7 +98,7 @@ class ApiSpecProvider(UrlProvider):
             if self.aborted():
                 return None
             url = urljoin(root, path)
-            body = self._get(client, url, state)
+            body = self.fetch_text(client, url, _MAX_BYTES, state)
             if body is None:
                 continue
             document = _load(body)
@@ -152,7 +141,7 @@ class ApiSpecProvider(UrlProvider):
             return None
         try:
             schema = response.json().get("data", {}).get("__schema")
-        except (ValueError, AttributeError):
+        except (ValueError, AttributeError, RecursionError):
             return None
         if not isinstance(schema, dict):
             return None
@@ -163,28 +152,6 @@ class ApiSpecProvider(UrlProvider):
             methods=["POST"],
             detail=(f"GraphQL endpoint, introspection enabled, {len(types)} types"),
         )
-
-    def _get(self, client: httpx.Client, url: str, state: _State) -> str | None:
-        if self.path_excluded(url):
-            return None
-        self.throttle()
-        state.fetched += 1
-        host = urlsplit(url).hostname or ""
-        body = bytearray()
-        try:
-            with self.host_slot(host), client.stream("GET", url) as response:
-                self.host_observed(host, status=response.status_code)
-                if response.status_code >= _CLIENT_ERROR:
-                    return None
-                for chunk in response.iter_bytes():
-                    body += chunk
-                    if len(body) >= _MAX_BYTES:
-                        break
-        except (httpx.HTTPError, ValueError):
-            self.host_observed(host, transport_error=True)
-            state.errors += 1
-            return None
-        return bytes(body[:_MAX_BYTES]).decode("utf-8", errors="replace")
 
 
 class _State:
@@ -220,11 +187,11 @@ def _load(body: str) -> Any:
     if text[:1] in "{[":
         try:
             return json.loads(body)
-        except ValueError:
+        except (ValueError, RecursionError):
             return None
     try:
         return load_document(body)
-    except (DocumentTooLargeError, yaml.YAMLError):
+    except (DocumentTooLargeError, yaml.YAMLError, RecursionError):
         return None
 
 

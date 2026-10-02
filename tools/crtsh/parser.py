@@ -1,5 +1,3 @@
-"""Group crt.sh organization-search rows by the organization each certificate names."""
-
 from __future__ import annotations
 
 import json
@@ -31,7 +29,7 @@ def _day(value: object) -> date | None:
 
 
 def parse_org_search(payload: str) -> CrtShResult | None:
-    """None when the answer is not a JSON list; crt.sh returns an error page as 200."""
+    """None when the answer is not a JSON list."""
     try:
         rows = json.loads(payload)
     except (ValueError, TypeError):

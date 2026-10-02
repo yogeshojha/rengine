@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from shared.enums.target import TargetType
+from shared.enums.target import EnrichmentKind, TargetType
 from shared.enums.task_status import TaskStatus
 from shared.models.bgp_summary import BgpSummaryRead
 from shared.models.dns import DnsLookupRead
@@ -81,14 +81,6 @@ class TargetDnsDetailResponse(BaseModel):
     lookup: DnsLookupRead | None = None
 
 
-class TargetWhoisDetailResponse(BaseModel):
-    target_id: uuid.UUID
-    target_type: TargetType
-    status: TaskStatus
-    error: str | None = None
-    record: WhoisRecordRead | None = None
-
-
 class TargetDetailRead(BaseModel):
     id: uuid.UUID
     target_value: str
@@ -115,6 +107,6 @@ class TargetDetailRead(BaseModel):
 
 class EnrichmentRefreshResponse(BaseModel):
     target_id: uuid.UUID
-    enrichment_type: str
+    enrichment_type: EnrichmentKind
     status: str
     message: str

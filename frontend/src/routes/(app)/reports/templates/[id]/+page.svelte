@@ -2,16 +2,20 @@
 	import { pageTitle } from '$lib/utilities/page-title';
 	import { untrack } from 'svelte';
 	import { page } from '$app/state';
-	import { goto } from '$app/navigation';
+	import { beforeNavigate, goto } from '$app/navigation';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { Toggle } from '$lib/components/ui/toggle';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import PlayIcon from '@lucide/svelte/icons/play';
+	import FileX from '@lucide/svelte/icons/file-x';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import SectionList from '$lib/components/reports/builder/section-list.svelte';
@@ -53,6 +57,26 @@
 	let saving = $state(false);
 	let generateOpen = $state(false);
 	let leaveTo = $state<string | null>(null);
+	let allowNav = false;
+
+	beforeNavigate((nav) => {
+		if (allowNav) {
+			allowNav = false;
+			return;
+		}
+		if (!dirty || saving || !nav.to) return;
+		nav.cancel();
+		leaveTo = nav.to.url.pathname + nav.to.url.search;
+	});
+
+	$effect(() => {
+		function onBeforeUnload(e: BeforeUnloadEvent) {
+			if (!dirty || saving) return;
+			e.preventDefault();
+		}
+		window.addEventListener('beforeunload', onBeforeUnload);
+		return () => window.removeEventListener('beforeunload', onBeforeUnload);
+	});
 
 	$effect(() => {
 		const id = projectId;
@@ -158,6 +182,7 @@
 		});
 		if (created) {
 			toast.success(`Template ${created.name} created`);
+			allowNav = true;
 			void goto(ROUTES.reportTemplate(created.id));
 		}
 	}
@@ -165,7 +190,14 @@
 
 <svelte:head><title>{pageTitle(name || 'Report template')}</title></svelte:head>
 
-{#if !template}
+{#if !template && projectId && reportsStore.templatesProjectId === projectId}
+	<EmptyState icon={FileX} title="Template not found">
+		<Button variant="outline" href={ROUTES.reports('templates')}>
+			<ArrowLeftIcon class="mr-1.5 size-3.5" />
+			Templates
+		</Button>
+	</EmptyState>
+{:else if !template}
 	<div class="space-y-4">
 		<Skeleton class="h-9 w-64" />
 		<Skeleton class="h-64 w-full" />
@@ -209,13 +241,15 @@
 		{/if}
 
 		<Tabs.Root value="sections">
-			<Tabs.List>
-				<Tabs.Trigger value="sections">Sections</Tabs.Trigger>
-				<Tabs.Trigger value="look">Look</Tabs.Trigger>
-				<Tabs.Trigger value="branding">Branding</Tabs.Trigger>
-				<Tabs.Trigger value="narrative">Narrative</Tabs.Trigger>
-				<Tabs.Trigger value="document">Document</Tabs.Trigger>
-			</Tabs.List>
+			<ScrollArea orientation="horizontal" class="w-full sm:w-fit">
+				<Tabs.List>
+					<Tabs.Trigger value="sections">Sections</Tabs.Trigger>
+					<Tabs.Trigger value="look">Look</Tabs.Trigger>
+					<Tabs.Trigger value="branding">Branding</Tabs.Trigger>
+					<Tabs.Trigger value="narrative">Narrative</Tabs.Trigger>
+					<Tabs.Trigger value="document">Document</Tabs.Trigger>
+				</Tabs.List>
+			</ScrollArea>
 
 			<div
 				class="mt-5"
@@ -248,14 +282,15 @@
 							<Label class="text-xs">Formats</Label>
 							<div class="flex flex-wrap gap-2">
 								{#each Object.entries(FORMAT_LABELS) as [value, label] (value)}
-									<button
-										type="button"
-										class="rounded-md border px-2.5 py-1.5 text-xs transition-colors data-[active=true]:border-primary data-[active=true]:bg-muted"
-										data-active={formats.includes(value)}
-										onclick={() => toggleFormat(value)}
+									<Toggle
+										size="sm"
+										variant="outline"
+										class="h-8 px-2.5 text-xs"
+										pressed={formats.includes(value)}
+										onPressedChange={() => toggleFormat(value)}
 									>
 										{label}
-									</button>
+									</Toggle>
 								{/each}
 							</div>
 						</div>
@@ -274,7 +309,9 @@
 		onConfirm={() => {
 			const to = leaveTo;
 			leaveTo = null;
-			if (to) void goto(to);
+			if (!to) return;
+			allowNav = true;
+			void goto(to);
 		}}
 	/>
 {/if}

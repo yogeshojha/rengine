@@ -8,6 +8,7 @@ from sqlalchemy import select
 
 from app.services.connector import ConnectorError, ConnectorService
 from connectors import handoff
+from connectors.ingest import prepare
 from connectors.notice import notices_for
 from connectors.registry import connector as connector_for
 from shared.definitions.connectors import (
@@ -33,6 +34,7 @@ from shared.models.connector import (
 )
 from shared.models.endpoint import Endpoint, EndpointResponse
 from shared.models.scan import Scan
+from shared.models.user import User
 from shared.models.vulnerability import Vulnerability
 from shared.services import proxy_sync
 from shared.services.scan_resolve import MASK, redact_message, seal_headers
@@ -223,6 +225,17 @@ async def test_an_unscanned_target_gets_a_browsing_run(estate, now):
     ]
 
 
+async def test_the_browsing_run_survives_a_connector_rename(estate, now):
+    target_id = await estate.target("example.com")
+    _service, row = await _connector(estate)
+
+    first = await estate.session.run_sync(proxy_sync.browsing_run, row, target_id)
+    row.name = "Burp renamed"
+    again = await estate.session.run_sync(proxy_sync.browsing_run, row, target_id)
+
+    assert again.id == first.id
+
+
 async def test_a_running_census_scan_defers_to_finalize(estate, now):
     scan_id = await estate.scan("example.com", "live", at=now, status="running")
     service, row = await _connector(estate)
@@ -313,6 +326,28 @@ def test_redact_message_masks_credential_headers():
     assert f"Cookie: {MASK}" in out
     assert f"Authorization: {MASK}" in out
     assert out.endswith("session=abc"), "the body is not a header"
+
+
+def test_ingested_request_samples_are_masked_on_both_write_paths():
+    sample = (
+        f"GET /a HTTP/1.1\r\nHost: {HOST}\r\nCookie: session=abc\r\nX-Api-Key: k1\r\n"
+    )
+    batch = prepare(
+        [
+            _item(f"https://{HOST}/a", request_sample=sample),
+            _item(f"https://{HOST}/b"),
+            _item(f"https://{HOST}/b", request_sample=sample),
+        ],
+        include_static=False,
+        ingest_tools=[],
+    )
+    samples = [p.request_sample for p in batch.prepared]
+    assert len(samples) == 2
+    for stored in samples:
+        assert "session=abc" not in stored
+        assert "k1" not in stored
+        assert f"Cookie: {MASK}" in stored
+        assert f"Host: {HOST}" in stored
 
 
 async def test_reported_findings_store_a_redacted_request(estate, now):
@@ -526,6 +561,7 @@ async def test_delivery_restores_the_run_credentials_only_when_asked(estate, now
     finding = await estate.session.scalar(
         select(Vulnerability).where(Vulnerability.scan_id == estate.scans["census"])
     )
+    finding.protocol = Protocol.HTTP.value
     finding.request = (
         f"GET / HTTP/1.1\r\nHost: {HOST}\r\nAuthorization: Bearer {MASK}\r\n\r\n"
     )
@@ -701,6 +737,18 @@ def test_head_and_ipv6_requests():
     assert head.startswith("HEAD /status HTTP/1.1\r\nHost: [2001:db8::1]:8080\r\n")
     assert body == ""
     assert "Content-Length" not in head
+
+
+async def test_token_stops_working_when_its_issuer_is_deactivated(estate):
+    service = ConnectorService(estate.session)
+    created = await service.create(
+        ConnectorCreate(name="Burp", project_id=estate.project_id), estate.user_id
+    )
+    assert (await service.authenticate(created.secret)) is not None
+    issuer = await estate.session.get(User, estate.user_id)
+    issuer.is_active = False
+    await estate.session.flush()
+    assert (await service.authenticate(created.secret)) is None
 
 
 def test_state_follows_polling_and_traffic():

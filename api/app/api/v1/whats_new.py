@@ -10,7 +10,7 @@ from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.services.instance_settings import InstanceSettingsService
 from app.services.whats_new import WhatsNewService
-from shared.definitions.mode_features import CAP_BOUNTY_PROGRAMS, has_capability
+from shared.definitions.mode_features import CAP_BOUNTY_PROGRAMS
 from shared.definitions.whats_new import (
     DEFAULT_ZONE,
     KIND_ORDER,
@@ -31,7 +31,6 @@ def get_service(
 
 ServiceDep = Annotated[WhatsNewService, Depends(get_service)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
-RINGS = {r.value for r in ProgramRing}
 
 
 def _zone(tz: str) -> None:
@@ -44,9 +43,17 @@ def _zone(tz: str) -> None:
         ) from exc
 
 
-async def _bounty(session: AsyncSession) -> bool:
-    settings = await InstanceSettingsService(session).get_or_create()
-    return has_capability(settings.mode, CAP_BOUNTY_PROGRAMS)
+def _check_range(window: str | None, day: date | None, day_to: date | None) -> None:
+    if window is not None and window not in NEW_WINDOWS:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Window must be one of {', '.join(NEW_WINDOWS)}.",
+        )
+    if day_to is not None and (day is None or day_to < day):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="day_to needs a day at or before it.",
+        )
 
 
 @router.get("", response_model=NewFeed)
@@ -63,26 +70,12 @@ async def whats_new(
     platform: Annotated[str | None, Query(max_length=32)] = None,
     handle: Annotated[str | None, Query(max_length=200)] = None,
     kinds: Annotated[str | None, Query(max_length=160)] = None,
-    ring: Annotated[str, Query(max_length=16)] = ProgramRing.ENGAGED.value,
+    ring: ProgramRing = ProgramRing.ENGAGED,
     q: Annotated[str | None, Query(max_length=MAX_TEXT_FILTER)] = None,
     tz: Annotated[str, Query(max_length=64)] = DEFAULT_ZONE,
 ) -> NewFeed:
     _zone(tz)
-    if window is not None and window not in NEW_WINDOWS:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=f"Window must be one of {', '.join(NEW_WINDOWS)}.",
-        )
-    if ring not in RINGS:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=f"Ring must be one of {', '.join(sorted(RINGS))}.",
-        )
-    if day_to is not None and (day is None or day_to < day):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="day_to needs a day at or before it.",
-        )
+    _check_range(window, day, day_to)
     wanted = {k.strip() for k in kinds.split(",") if k.strip()} if kinds else None
     if wanted and not wanted <= set(KIND_ORDER):
         raise HTTPException(
@@ -103,7 +96,9 @@ async def whats_new(
         ring=ring,
         q=q,
         tz=tz,
-        bounty=await _bounty(session),
+        bounty=await InstanceSettingsService(session).has_capability(
+            CAP_BOUNTY_PROGRAMS
+        ),
     )
 
 
@@ -121,16 +116,7 @@ async def whats_new_visual(
     tz: Annotated[str, Query(max_length=64)] = DEFAULT_ZONE,
 ) -> VisualFeed:
     _zone(tz)
-    if window is not None and window not in NEW_WINDOWS:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=f"Window must be one of {', '.join(NEW_WINDOWS)}.",
-        )
-    if day_to is not None and (day is None or day_to < day):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="day_to needs a day at or before it.",
-        )
+    _check_range(window, day, day_to)
     return await service.visual(
         project_id,
         current_user.id,
@@ -153,9 +139,8 @@ async def whats_new_unseen(
     tz: Annotated[str, Query(max_length=64)] = DEFAULT_ZONE,
 ) -> NewUnseen:
     _zone(tz)
-    count = await service.unseen(
-        project_id, current_user.id, bounty=await _bounty(session), tz=tz
-    )
+    bounty = await InstanceSettingsService(session).has_capability(CAP_BOUNTY_PROGRAMS)
+    count = await service.unseen(project_id, current_user.id, bounty=bounty, tz=tz)
     return NewUnseen(count=count, since=await service.mark(current_user.id, project_id))
 
 

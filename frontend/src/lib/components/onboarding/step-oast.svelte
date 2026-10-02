@@ -74,25 +74,19 @@
 		});
 	});
 
-	async function saveToken(value: string) {
-		const keys = await apiKeysApi.list();
-		const existing = keys.find((k) => k.provider === APIProvider.INTERACTSH);
-		if (existing) await apiKeysApi.update(existing.id, { key_value: value });
-		else await apiKeysApi.create({ provider: APIProvider.INTERACTSH, key_value: value });
-	}
-
 	async function save(): Promise<boolean> {
 		serverError = null;
 		try {
-			if (mode === OastMode.SELF_HOSTED && token.trim()) {
-				await saveToken(token.trim());
-				token = '';
-			}
 			settings = await oastApi.update({
 				mode,
 				...(mode === OastMode.SELF_HOSTED ? { server: server.trim() } : {}),
 				...(mode === OastMode.PUBLIC ? { public_acknowledged: acknowledged } : {})
 			});
+			if (mode === OastMode.SELF_HOSTED && token.trim()) {
+				await apiKeysApi.upsert(APIProvider.INTERACTSH, token.trim());
+				token = '';
+				settings = await oastApi.get();
+			}
 			return true;
 		} catch (e) {
 			const message = e instanceof Error ? e.message : 'Out-of-band settings not saved';

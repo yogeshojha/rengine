@@ -6,6 +6,7 @@ from shared.definitions.surface import SurfaceDimension
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.services import vuln_inventory
 from shared.services.broken_links import dangling
+from shared.utils.text import counted
 from stages.base import Stage, StageResult
 from stages.broken_links.config import BrokenLinksConfig
 from stages.broken_links.finding import link_finding
@@ -43,6 +44,6 @@ class BrokenLinksStage(Stage):
         if stored:
             self.publish_results(SurfaceDimension.VULNERABILITIES.value)
             self.emit_progress(
-                f"{stored} broken {'link' if stored == 1 else 'links'} on a buyable domain"
+                f"{counted(stored, 'broken link')} on a domain available to register"
             )
         return StageResult(counts={"vulnerabilities": stored})

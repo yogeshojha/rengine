@@ -9,6 +9,7 @@ from uuid import UUID
 from sqlalchemy import bindparam, or_, select, update
 from sqlmodel import Session
 
+from shared.definitions.retention import MEDIA_ROOT
 from shared.enums.scan import SCAN_TERMINAL_STATUSES
 from shared.logging import get_logger
 from shared.models.http_asset import HttpAsset
@@ -18,11 +19,10 @@ from shared.utils.imagehash import phash_image
 
 logger = get_logger(__name__)
 
-MEDIA_ROOT = "/app/scan_media"
 SOURCE_SUFFIX = ".png"
 STORED_SUFFIX = ".webp"
 QUALITY = 80
-# the encoder's effort setting: 2 holds most of the saving at a third of the cost
+# WebP encoder effort
 METHOD = 2
 SCANS_PER_TICK = 2
 _MODELS = (HttpAsset, Subdomain)
@@ -36,7 +36,7 @@ class Rewritten:
 
 def absolute(stored: str) -> Path:
     path = Path(stored)
-    return path if path.is_absolute() else Path(MEDIA_ROOT) / path
+    return path if path.is_absolute() else MEDIA_ROOT / path
 
 
 def relative(path: Path) -> str:

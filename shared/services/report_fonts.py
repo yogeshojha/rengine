@@ -1,4 +1,4 @@
-"""The only reader and writer of uploaded font files."""
+"""Writes and deletes uploaded font files."""
 
 from __future__ import annotations
 
@@ -113,15 +113,6 @@ def _parse_or_reject(data: bytes) -> None:
         logger.info("font rejected", error=str(exc)[:160])
         msg = "The file could not be opened as a typeface."
         raise FontError(msg) from exc
-
-
-def face_path(slug: str, filename: str) -> Path | None:
-    """Resolve a stored face inside its family directory."""
-    directory = family_dir(slug)
-    candidate = (directory / filename).resolve()
-    if not candidate.is_relative_to(directory) or not candidate.is_file():
-        return None
-    return candidate
 
 
 def delete_family(slug: str, origin: str) -> None:

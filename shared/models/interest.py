@@ -244,7 +244,6 @@ class InterestCatalog(BaseModel):
     modes: dict[str, str] = PField(default_factory=dict)
     keyword_fields: dict[str, str] = PField(default_factory=dict)
     max_score: int = 0
-    providers: list[str] = PField(default_factory=list)
 
 
 class RulePreview(BaseModel):

@@ -18,14 +18,16 @@
 	import Terminal from '@lucide/svelte/icons/terminal';
 	import Gauge from '@lucide/svelte/icons/gauge';
 	import MoreHorizontal from '@lucide/svelte/icons/more-horizontal';
-	import LoadingButton from '@/components/loading-button.svelte';
+	import LoadingButton from '$lib/components/loading-button.svelte';
 	import type { Intensity, ScanEngine } from '$lib/types/scan-engine';
 	import {
+		CUSTOM_INTENSITY,
 		INTENSITIES,
 		INTENSITY_HELP,
 		INTENSITY_LABELS,
 		INTENSITY_TAGLINE
 	} from '$lib/types/scan-engine';
+	import { MOD_KEY } from '$lib/utils';
 
 	interface Props {
 		engine: ScanEngine;
@@ -40,9 +42,9 @@
 		onRates: () => void;
 		onRun: () => void;
 		onBack: () => void;
-		onDuplicate?: () => void;
-		onDelete?: () => void;
-		onExportYaml?: () => void;
+		onDuplicate: () => void;
+		onDelete: () => void;
+		onExportYaml: () => void;
 	}
 
 	let {
@@ -65,8 +67,6 @@
 
 	let editingName = $state(false);
 	let draftName = $state('');
-
-	const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
 	function startEdit() {
 		draftName = engine.name;
@@ -162,7 +162,9 @@
 				{/snippet}
 			</Tooltip.Trigger>
 			<Tooltip.Content class="max-w-[220px] text-xs">
-				{custom ? INTENSITY_TAGLINE.custom : 'Set requests a second and concurrency per tool'}
+				{custom
+					? INTENSITY_TAGLINE[CUSTOM_INTENSITY]
+					: 'Set requests a second and concurrency per tool'}
 			</Tooltip.Content>
 		</Tooltip.Root>
 	</div>
@@ -182,19 +184,19 @@
 				{/snippet}
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content align="end" class="w-44">
-				<DropdownMenu.Item disabled={!onExportYaml} onclick={() => onExportYaml?.()}>
+				<DropdownMenu.Item onclick={() => onExportYaml()}>
 					<Download size={13} />
 					Export YAML
 				</DropdownMenu.Item>
-				<DropdownMenu.Item disabled={!onDuplicate} onclick={() => onDuplicate?.()}>
+				<DropdownMenu.Item onclick={() => onDuplicate()}>
 					<Copy size={13} />
 					Duplicate
 				</DropdownMenu.Item>
 				<DropdownMenu.Separator />
 				<DropdownMenu.Item
 					variant="destructive"
-					disabled={!onDelete || engine.builtin}
-					onclick={() => onDelete?.()}
+					disabled={engine.builtin}
+					onclick={() => onDelete()}
 				>
 					<Trash2 size={13} />
 					Delete
@@ -224,7 +226,7 @@
 					Save
 					<Kbd.Group class="ml-0.5 hidden sm:inline-flex">
 						<Kbd.Root class="bg-primary-foreground/15 text-primary-foreground">
-							{isMac ? '⌘' : 'Ctrl'}
+							{MOD_KEY}
 						</Kbd.Root>
 						<Kbd.Root class="bg-primary-foreground/15 text-primary-foreground">S</Kbd.Root>
 					</Kbd.Group>

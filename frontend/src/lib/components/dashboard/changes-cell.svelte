@@ -4,22 +4,31 @@
 	import DailyArea, { type DailyLevel } from './daily-area.svelte';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import { SURFACE, SURFACE_ORDER, SurfaceDimension } from '$lib/config/surface';
-	import { windowDays, type DashboardOverview, type DashboardWindow } from '$lib/types/dashboard';
+	import { cappedCount } from '$lib/utilities/strings';
+	import {
+		bucketsSince,
+		windowDays,
+		type DashboardOverview,
+		type DashboardWindow,
+		type DashboardWindowCounts
+	} from '$lib/types/dashboard';
 
 	const routes = useScopedRoutes();
 
 	interface Props {
 		overview: DashboardOverview;
 		window: DashboardWindow;
+		counts: DashboardWindowCounts | null;
+		loading?: boolean;
 		class?: string;
 	}
 
-	let { overview, window, class: className = '' }: Props = $props();
+	let { overview, window, counts, loading = false, class: className = '' }: Props = $props();
 
 	let dim = $state<string>(SurfaceDimension.WEB_ASSETS);
 	let spec = $derived(SURFACE[dim as SurfaceDimension]);
 	let days = $derived(windowDays(window));
-	let recent = $derived(overview.daily.slice(-days));
+	let recent = $derived(bucketsSince(overview.daily, overview.since));
 	let data = $derived<DailyLevel[]>(
 		recent.map((d) => ({
 			date: d.date,
@@ -29,25 +38,36 @@
 			runs: d.runs
 		}))
 	);
-	let added = $derived(recent.reduce((n, d) => n + (d.new[dim] ?? 0), 0));
-	let retired = $derived(recent.reduce((n, d) => n + (d.retired[dim] ?? 0), 0));
-	let hasRetired = $derived(retired > 0);
+	let added = $derived(counts?.new.find((c) => c.key === dim) ?? null);
+	let retired = $derived(overview.retired_in_window[dim] ?? 0);
 	let totals = $derived(
 		SURFACE_ORDER.map((spec) => ({
 			key: spec.key,
 			label: spec.label,
-			added: recent.reduce((n, d) => n + (d.new[spec.key] ?? 0), 0)
+			added: counts?.new.find((c) => c.key === spec.key) ?? null
 		}))
 	);
 	let metric = $derived(overview.surface.find((m) => m.key === dim));
+	let summary = $derived.by(() => {
+		const moved = [
+			added && `${cappedCount(added.count, added.capped)} added`,
+			retired && `${retired.toLocaleString()} retired`
+		].filter(Boolean);
+		return [
+			moved.length && `${moved.join(', ')} in ${days} days`,
+			metric && `${metric.value.toLocaleString()} ${spec.label.toLowerCase()} today`
+		]
+			.filter(Boolean)
+			.join(' · ');
+	});
 </script>
 
 <Cell
 	id="changes"
-	title="Attack surface changes"
 	description="Rows per day"
-	href={routes.surface(spec.tab, { [spec.queryParam]: 'is:new' })}
-	hrefLabel="{spec.label} is:new"
+	href={added ? routes.rows(spec.key, added.query) : undefined}
+	hrefLabel={added?.query}
+	loading={loading && !counts}
 	class={className}
 >
 	<ToggleGroup.Root
@@ -61,7 +81,11 @@
 		{#each totals as t (t.key)}
 			<ToggleGroup.Item value={t.key} class="h-7 gap-1 px-2 text-xs">
 				{t.label}
-				<span class="text-muted-foreground tabular-nums">+{t.added.toLocaleString()}</span>
+				{#if t.added}
+					<span class="text-muted-foreground tabular-nums"
+						>+{cappedCount(t.added.count, t.added.capped)}</span
+					>
+				{/if}
 			</ToggleGroup.Item>
 		{/each}
 	</ToggleGroup.Root>
@@ -69,10 +93,6 @@
 		<DailyArea {data} label={spec.label} height={190} />
 	{/key}
 	{#snippet footer()}
-		<span>
-			{added.toLocaleString()} added{#if hasRetired}, {retired.toLocaleString()} retired{/if}
-			in {days} days
-			{#if metric}· {metric.value.toLocaleString()} {spec.label.toLowerCase()} today{/if}
-		</span>
+		<span>{summary}</span>
 	{/snippet}
 </Cell>

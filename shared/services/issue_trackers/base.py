@@ -13,7 +13,7 @@ from shared.definitions.issue_trackers import (
     TRACKERS_BY_KIND,
     TrackerSpec,
 )
-from shared.http import get_sync_client
+from shared.http import get_public_client
 from shared.logging import get_logger
 from shared.services.issue_trackers.document import Doc
 from shared.utils.net import redact_url_queries, validate_public_https_url
@@ -33,6 +33,7 @@ HTTP_TOO_MANY = 429
 HTTP_ERROR = 400
 HTTP_REDIRECT = 300
 GONE = frozenset({HTTP_NOT_FOUND, HTTP_GONE})
+UNREADABLE = "Unavailable"
 
 
 class TrackerError(RuntimeError):
@@ -135,9 +136,7 @@ class Tracker(ABC):
                 raise TrackerError(str(exc)) from None
             self._validated = True
         if self._client is None:
-            self._client = get_sync_client(
-                follow_redirects=False, timeout=httpx.Timeout(TIMEOUT)
-            )
+            self._client = get_public_client(timeout=httpx.Timeout(TIMEOUT))
         return self._client
 
     def close(self) -> None:
@@ -239,7 +238,7 @@ class Tracker(ABC):
 
     @abstractmethod
     def find_marker(self, destination: str, marker: str) -> RemoteIssue | None:
-        """The issue carrying this marker label, when one exists."""
+        """The issue whose body carries this reference."""
 
     @abstractmethod
     def verify(self) -> str:

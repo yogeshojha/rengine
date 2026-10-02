@@ -1,10 +1,9 @@
-"""One entry point: a spec and a subject in, rendered files out."""
-
 from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
+from pathlib import Path
 
 from sqlalchemy.orm import Session
 
@@ -20,9 +19,10 @@ from reports.render.text import to_json, to_markdown
 from reports.theme import resolve
 from shared.definitions.reports import (
     ReportFormat,
-    ReportScope,
     ReportSpec,
+    subject_scope,
 )
+from shared.definitions.surface import SurfaceDimension
 from shared.logging import get_logger
 from shared.models.scan import Scan
 from shared.models.target import Target
@@ -45,7 +45,6 @@ class RenderOutput:
     ai_used: bool = False
     ai_model: str = ""
     ai_provider: str = ""
-    html: str = ""
 
 
 def build_context(
@@ -54,16 +53,13 @@ def build_context(
     *,
     scan: Scan | None,
     target: Target,
-    project_name: str = "",
-    preview: bool = False,
     now: datetime | None = None,
 ) -> RenderContext:
     source = ReportSource(
         session,
-        scope=spec.scope or ReportScope.SCAN.value,
+        scope=subject_scope(spec.scope, has_scan=scan is not None),
         scan=scan,
         target=target,
-        project_name=project_name,
     )
     brief = build_brief(source)
     cfg = load_config(session)
@@ -76,7 +72,6 @@ def build_context(
         brief=brief,
         narrator=narrator,
         now=now or utc_now(),
-        preview=preview,
     )
 
 
@@ -86,8 +81,6 @@ def generate(
     *,
     scan: Scan | None,
     target: Target,
-    project_name: str = "",
-    preview: bool = False,
     progress: Progress | None = None,
 ) -> RenderOutput:
     def step(percent: int, label: str) -> None:
@@ -95,14 +88,7 @@ def generate(
             progress(percent, label)
 
     step(10, "Reading scan")
-    ctx = build_context(
-        session,
-        spec,
-        scan=scan,
-        target=target,
-        project_name=project_name,
-        preview=preview,
-    )
+    ctx = build_context(session, spec, scan=scan, target=target)
 
     step(35, "Writing narrative")
     try:
@@ -112,8 +98,7 @@ def generate(
 
     out = RenderOutput(
         warnings=document.warnings,
-        html=document.html,
-        ai_used=getattr(ctx.narrator, "used_model", False),
+        ai_used=ctx.narrator.used_model,
         usage=ctx.narrator.usage,
     )
     cfg = load_config(session)
@@ -152,16 +137,15 @@ def generate(
         "skipped": document.skipped,
         "findings": len(ctx.data.findings),
         "issues": len(ctx.brief.risks),
-        "hosts": ctx.data.count_of("web_assets"),
+        "hosts": ctx.data.count_of(SurfaceDimension.WEB_ASSETS.value),
         "score": ctx.brief.posture.score,
         "grade": ctx.brief.posture.grade,
         "paths": len(ctx.brief.paths),
+        "warnings": out.warnings,
     }
     step(95, "Finishing")
     return out
 
 
 def _base_url() -> str:
-    from pathlib import Path  # noqa: PLC0415
-
     return (Path(__file__).resolve().parent / "assets").as_uri() + "/"

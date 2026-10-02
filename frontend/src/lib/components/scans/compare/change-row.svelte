@@ -5,7 +5,7 @@
 	import VerbRail from './verb-rail.svelte';
 	import { SIGNAL_TONE_CLASS, signalSpec } from '$lib/config/compare';
 	import { surfaceSpec } from '$lib/config/surface';
-	import type { ChangeRow } from '$lib/types/compare';
+	import { CHANGE_VERB, type ChangeRow } from '$lib/types/compare';
 
 	interface Props {
 		row: ChangeRow;
@@ -53,15 +53,17 @@
 				</span>
 			{/if}
 
-			<span
-				class={cn(
-					'ml-auto flex shrink-0 items-center gap-1.5 text-2xs font-medium',
-					SIGNAL_TONE_CLASS[signal.tone]
-				)}
-			>
-				<signal.icon class="size-3.5" />
-				{signal.label}
-			</span>
+			{#if row.verb !== CHANGE_VERB.UNCHANGED}
+				<span
+					class={cn(
+						'ml-auto flex shrink-0 items-center gap-1.5 text-2xs font-medium',
+						SIGNAL_TONE_CLASS[signal.tone]
+					)}
+				>
+					<signal.icon class="size-3.5" />
+					{signal.label}
+				</span>
+			{/if}
 		</span>
 
 		<span class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-2xs">
@@ -80,14 +82,16 @@
 		{#if fields.length}
 			<span class="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-2xs">
 				{#each fields as f (f.field)}
-					<span class="inline-flex items-center gap-1">
-						<span class="text-muted-foreground">{f.label}</span>
+					<span class="inline-flex max-w-full min-w-0 items-center gap-1">
+						<span class="shrink-0 text-muted-foreground">{f.label}</span>
 						{#if f.before !== null && f.after !== null}
-							<span class="text-muted-foreground line-through">{f.before}</span>
-							<span class="text-muted-foreground/60">→</span>
-							<span class="font-medium">{f.after}</span>
+							<span class="min-w-0 text-muted-foreground line-through wrap-anywhere"
+								>{f.before}</span
+							>
+							<span class="shrink-0 text-muted-foreground/60">→</span>
+							<span class="min-w-0 font-medium wrap-anywhere">{f.after}</span>
 						{:else if f.after !== null}
-							<span class="font-medium">{f.after}</span>
+							<span class="min-w-0 font-medium wrap-anywhere">{f.after}</span>
 						{:else}
 							<span class="text-muted-foreground">gone</span>
 						{/if}

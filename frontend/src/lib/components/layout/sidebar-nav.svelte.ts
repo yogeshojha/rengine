@@ -18,6 +18,7 @@ import { FINDINGS_PATHS, ROUTES, routeLabels } from '$lib/config/routes';
 import { Capability } from '$lib/config/capabilities';
 import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
 import { liveScans } from '$lib/stores/live-scans.svelte';
+import { projectsStore } from '$lib/stores/projects.svelte';
 import { reports } from '$lib/stores/reports.svelte';
 import { whatsNewStore } from '$lib/stores/whats-new.svelte';
 import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
@@ -52,6 +53,9 @@ export function useSidebarNav() {
 	const bountyOn = $derived(capabilitiesStore.has(Capability.BOUNTY_PROGRAMS));
 	const reportPlatforms = $derived(bountyVocabulary.platforms.filter((p) => p.tracks_reports));
 	const findings = SURFACE[FINDINGS_ROOT];
+	const liveReports = $derived(
+		reports.rowsProjectId === projectsStore.activeProject?.id ? reports.liveCount : 0
+	);
 
 	const main = $derived<NavGroup[]>([
 		{
@@ -68,9 +72,7 @@ export function useSidebarNav() {
 					title: routeLabels['whats-new'],
 					url: ROUTES.whatsNew(),
 					icon: NewspaperIcon,
-					badge: whatsNewStore.unseen
-						? { label: compact(whatsNewStore.unseen), tone: 'info' as const }
-						: null
+					badge: whatsNewStore.unseen ? { label: compact(whatsNewStore.unseen) } : null
 				},
 				{ id: 'targets', title: routeLabels.targets, url: ROUTES.targets, icon: TargetIcon },
 				{ id: 'notes', title: routeLabels.notes, url: ROUTES.notes, icon: StickyNoteIcon }
@@ -113,9 +115,7 @@ export function useSidebarNav() {
 					title: routeLabels.scans,
 					url: ROUTES.scans,
 					icon: RadarIcon,
-					badge: liveScans.running
-						? { label: String(liveScans.running), live: true, tone: 'info' as const }
-						: null
+					badge: liveScans.running ? { label: String(liveScans.running), live: true } : null
 				},
 				{
 					id: 'scan-setup',
@@ -134,9 +134,7 @@ export function useSidebarNav() {
 					title: routeLabels.reports,
 					url: ROUTES.reports(),
 					icon: FileTextIcon,
-					badge: reports.liveCount
-						? { label: String(reports.liveCount), live: true, tone: 'info' as const }
-						: null
+					badge: liveReports ? { label: String(liveReports), live: true } : null
 				},
 				...(bountyOn
 					? [

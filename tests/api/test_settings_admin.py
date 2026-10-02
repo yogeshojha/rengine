@@ -6,24 +6,30 @@ from types import SimpleNamespace
 
 import pytest
 import sqlalchemy as sa
-from fastapi import HTTPException
+from fastapi import HTTPException, Response
 
-from app.api.v1.api_keys import list_providers
+from app.api.v1.ai import ai_status
+from app.api.v1.api_keys import list_providers, reveal_api_key
 from app.api.v1.users import create_user, delete_user, update_user
+from app.services import ai_settings
+from app.services.ai_settings import AiSettingsService, _clean_base_url
 from app.services.instance_settings import InstanceSettingsService, _check_window
 from app.services.proxy import ProxyService, _summarize
+from app.services.scan_context import ScanContextService
 from shared.definitions.retention import KEEP_FOREVER, SCAN_RETENTION_DAYS
 from shared.enums.api_key import APIProvider
+from shared.models.ai import AiSettingsUpdate, AiTestRequest
 from shared.models.api_key import APIKey, APIKeyUpdate
-from shared.models.instance_settings import InstanceSettingsUpdate
+from shared.models.instance_settings import InstanceSettingsRead, InstanceSettingsUpdate
 from shared.models.notification_channel import NotificationChannel
 from shared.models.project import Project
 from shared.models.proxy import Proxy, ProxyEndpoint, ProxyTestResult
-from shared.models.scan_context import ScanContext
+from shared.models.scan_context import ScanContext, ScanContextCreate
 from shared.models.user import User, UserAdminCreate, UserAdminUpdate
 from shared.services.api_key.async_api_key import APIKeyService
 from shared.services.notifier import _RECORD_DELIVERY, _delivery_rows
 from shared.services.proxy_resolve import resolve_proxy_url
+from shared.utils.crypto import encrypt_secret, try_decrypt
 
 pytestmark = pytest.mark.api
 
@@ -58,7 +64,7 @@ def _proxy(name: str, endpoints: list[dict], *, default: bool, created_by) -> Pr
         name=name,
         is_active=True,
         is_default=default,
-        endpoints_encrypted=json.dumps(endpoints),
+        endpoints_encrypted=encrypt_secret(json.dumps(endpoints)),
         endpoint_count=len(endpoints),
         created_by=created_by,
     )
@@ -143,7 +149,7 @@ async def test_an_account_that_owns_records_is_not_deleted(estate, flush_only):
 
 
 async def test_a_key_test_is_stored_and_a_new_key_clears_it(estate, flush_only):
-    key = APIKey(provider=APIProvider.VIEWDNS, key_value="first")
+    key = APIKey(provider=APIProvider.VIEWDNS, key_value=encrypt_secret("first"))
     flush_only.add(key)
     await flush_only.flush()
     service = APIKeyService(flush_only)
@@ -168,6 +174,23 @@ async def test_providers_state_which_keys_can_be_tested(estate, flush_only):
     assert providers[APIProvider.VIEWDNS].testable
     assert providers[APIProvider.TELEGRAM].testable
     assert not providers[APIProvider.CHAOS].testable
+
+
+async def test_a_revealed_key_is_not_cached(estate, flush_only):
+    key = APIKey(provider=APIProvider.VIEWDNS, key_value=encrypt_secret("plain"))
+    flush_only.add(key)
+    await flush_only.flush()
+    response = Response()
+
+    body = await reveal_api_key(
+        str(key.id),
+        _current_user=await _admin(estate),
+        service=APIKeyService(flush_only),
+        response=response,
+    )
+
+    assert body == {"key_value": "plain"}
+    assert response.headers["Cache-Control"] == "no-store"
 
 
 # ---------- proxies ----------
@@ -198,16 +221,44 @@ async def test_a_scan_without_a_context_uses_the_default_proxy(estate, flush_onl
     assert await service.scan_proxy_url(SimpleNamespace(proxy_id=None)) is None
 
 
+async def test_a_new_context_takes_the_default_proxy_unless_one_is_named(
+    estate, flush_only
+):
+    fallback = _proxy(
+        "fallback",
+        [{"scheme": "http", "host": "10.0.0.9", "port": 3128}],
+        default=True,
+        created_by=estate.user_id,
+    )
+    flush_only.add(fallback)
+    await flush_only.flush()
+    contexts = ScanContextService(flush_only)
+
+    implied = await contexts.create(
+        estate.project_id, estate.user_id, ScanContextCreate(name="implied")
+    )
+    direct = await contexts.create(
+        estate.project_id,
+        estate.user_id,
+        ScanContextCreate(name="direct", proxy_id=None),
+    )
+
+    assert implied.proxy_id == fallback.id
+    assert direct.proxy_id is None
+
+
 def test_a_pool_hands_each_scan_one_of_its_endpoints():
     pool = SimpleNamespace(
         name="pool",
         is_active=True,
-        endpoints_encrypted=json.dumps(
-            [
-                {"scheme": "http", "host": "10.0.0.1", "port": 8080},
-                {"scheme": "http", "host": "10.0.0.2", "port": 8080},
-                {"scheme": "http", "host": "2001:db8::5", "port": 8080},
-            ]
+        endpoints_encrypted=encrypt_secret(
+            json.dumps(
+                [
+                    {"scheme": "http", "host": "10.0.0.1", "port": 8080},
+                    {"scheme": "http", "host": "10.0.0.2", "port": 8080},
+                    {"scheme": "http", "host": "2001:db8::5", "port": 8080},
+                ]
+            )
         ),
     )
     urls = {resolve_proxy_url(pool) for _ in range(60)}
@@ -300,3 +351,106 @@ async def test_a_blank_instance_name_is_refused(estate, flush_only):
             InstanceSettingsUpdate(instance_name="   ")
         )
     assert err.value.status_code == 400
+
+
+async def test_general_settings_do_not_write_the_ai_connection(estate, flush_only):
+    service = InstanceSettingsService(flush_only)
+    settings = await service.get_or_create()
+    settings.ai_provider = "openai_compatible"
+    settings.ai_features = {"base_url": "https://llm.example.com/v1"}
+    settings.ai_api_key_encrypted = encrypt_secret("stored")
+    await flush_only.flush()
+    stored = settings.ai_api_key_encrypted
+
+    await service.update(
+        InstanceSettingsUpdate.model_validate(
+            {
+                "instance_name": "ops",
+                "ai_provider": "openai",
+                "ai_api_key": "sk-new",
+                "ai_features": {"ask": True},
+            }
+        )
+    )
+
+    assert settings.ai_provider == "openai_compatible"
+    assert settings.ai_features == {"base_url": "https://llm.example.com/v1"}
+    assert settings.ai_api_key_encrypted == stored
+    assert "ai_features" not in InstanceSettingsRead.model_fields
+
+
+# ---------- ai ----------
+
+
+async def _stored_ai(session):
+    settings = await InstanceSettingsService(session).get_or_create()
+    settings.ai_provider = "openai_compatible"
+    settings.ai_features = {
+        "base_url": "https://llm.example.com/v1",
+        "workspace_id": "ws",
+    }
+    settings.ai_api_key_encrypted = encrypt_secret("stored")
+    await session.flush()
+    return settings
+
+
+async def test_an_ai_test_sends_the_stored_key_to_the_stored_server_alone(
+    estate, flush_only, monkeypatch
+):
+    await _stored_ai(flush_only)
+    sent: list[tuple[str, str | None]] = []
+
+    def fake_complete(cfg, **_k):
+        sent.append((cfg.base_url, cfg.api_key))
+        return SimpleNamespace(model=cfg.model, latency_ms=1)
+
+    monkeypatch.setattr(ai_settings, "complete", fake_complete)
+    service = AiSettingsService(flush_only)
+
+    await service.test(AiTestRequest(model="m"))
+    await service.test(
+        AiTestRequest(base_url="https://collector.example/v1", model="m")
+    )
+    refused = await service.test(AiTestRequest(provider="openai", model="m"))
+
+    assert sent == [
+        ("https://llm.example.com/v1", "stored"),
+        ("https://collector.example/v1", None),
+    ]
+    assert not refused.success
+
+
+async def test_moving_the_ai_server_drops_the_stored_key(estate, flush_only):
+    settings = await _stored_ai(flush_only)
+    service = AiSettingsService(flush_only)
+
+    with pytest.raises(HTTPException) as err:
+        await service.update(AiSettingsUpdate(provider="openai"))
+    assert err.value.status_code == 400
+    assert try_decrypt(settings.ai_api_key_encrypted) == "stored"
+
+    await service.update(AiSettingsUpdate(model="m2"))
+    assert try_decrypt(settings.ai_api_key_encrypted) == "stored"
+
+    await service.update(AiSettingsUpdate(base_url="https://collector.example/v1"))
+    assert settings.ai_api_key_encrypted is None
+
+
+@pytest.mark.parametrize(
+    "url",
+    ["https://svc:pass@llm.example.com/v1", "https://llm.example.com/v1?key=k"],
+)
+def test_a_server_url_with_credentials_or_a_query_is_refused(url):
+    with pytest.raises(HTTPException) as err:
+        _clean_base_url(url)
+    assert err.value.status_code == 400
+
+
+async def test_only_an_admin_reads_the_ai_server(estate, flush_only):
+    await _stored_ai(flush_only)
+
+    member = await ai_status(SimpleNamespace(is_superuser=False), flush_only)
+    admin = await ai_status(SimpleNamespace(is_superuser=True), flush_only)
+
+    assert (member.base_url, member.workspace_id) == (None, None)
+    assert (admin.base_url, admin.workspace_id) == ("https://llm.example.com/v1", "ws")

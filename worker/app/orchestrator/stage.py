@@ -1,4 +1,4 @@
-"""Run one engine stage, fully tracked (activity timeline, command registration, events, abort)."""
+"""Run one stage with activity tracking."""
 
 import threading
 import time
@@ -24,8 +24,9 @@ from shared.services.orchestrator.tracking import (
     ScanActivityService,
     ScanCommandRecorder,
 )
-from shared.services.scan_resolve import ResolvedScanConfig, unseal_headers
+from shared.services.scan_resolve import ResolvedScanConfig, unseal_run_config
 from shared.utils.datetime import utc_now
+from shared.utils.text import sentences
 from stages.base import StageAbortedError, StageContext
 from stages.registry import StageSpec
 from tools.runner.abort import aborting_on
@@ -40,9 +41,7 @@ _UNSETTLED_ACTIVITY_STATUSES = (
 )
 
 
-def _throttled_abort(
-    session_factory: Callable[[], Session], scan_id: uuid.UUID
-) -> Callable[[], bool]:
+def _throttled_abort(scan_id: uuid.UUID) -> Callable[[], bool]:
     lock = threading.Lock()
     state = {"at": 0.0, "halted": False}
 
@@ -55,7 +54,7 @@ def _throttled_abort(
                 return False
             state["at"] = now
             try:
-                state["halted"] = _scan_is_halted(session_factory, scan_id)
+                state["halted"] = _scan_is_halted(scan_id)
             except Exception:
                 logger.warning("abort check failed, keeping last answer", exc_info=True)
             return state["halted"]
@@ -65,25 +64,22 @@ def _throttled_abort(
 
 def load_resolved(execution_config: dict) -> ResolvedScanConfig:
     raw = execution_config or {}
-    clean = {k: v for k, v in raw.items() if not k.startswith("_")}
-    clean["headers"] = unseal_headers(clean.get("headers"))
+    clean = unseal_run_config({k: v for k, v in raw.items() if not k.startswith("_")})
     config = ResolvedScanConfig(**clean)
     config._auth_header_names = list(raw.get("_auth_header_names") or [])
     return config
 
 
-def _scan_is_halted(session_factory: Callable[[], Session], scan_id: uuid.UUID) -> bool:
-    with session_factory() as session:
+def _scan_is_halted(scan_id: uuid.UUID) -> bool:
+    with get_sync_session() as session:
         scan = session.get(Scan, scan_id)
         return scan is None or scan.status in _HALTED_STATUSES
 
 
-def _halt_status(
-    session_factory: Callable[[], Session], scan_id: uuid.UUID
-) -> ScanActivityStatus:
+def _halt_status(scan_id: uuid.UUID) -> ScanActivityStatus:
     """PAUSED while the scan is paused, ABORTED otherwise."""
     try:
-        with session_factory() as session:
+        with get_sync_session() as session:
             scan = session.get(Scan, scan_id)
             paused = scan is not None and scan.status == ScanStatus.PAUSED.value
     except Exception:
@@ -137,12 +133,8 @@ def run_stage(
     spec: StageSpec,
     *,
     celery_task_id: str | None,
-    redis_url: str,
-    session_factory: Callable[[], Session] = get_sync_session,
 ) -> None:
-    events = ScanEventPublisher(
-        redis_url, scan_id=str(scan.id), project_id=str(scan.project_id)
-    )
+    events = ScanEventPublisher(scan_id=str(scan.id), project_id=str(scan.project_id))
     activity_svc = ScanActivityService(session)
     ids = _ScanIds(
         scan.id,
@@ -178,7 +170,7 @@ def run_stage(
     try:
         resolved = load_resolved(scan.execution_config)
         recorder = ScanCommandRecorder(
-            session_factory=session_factory,
+            session_factory=get_sync_session,
             scan_id=scan.id,
             project_id=scan.project_id,
             activity_id=activity.id,
@@ -206,11 +198,11 @@ def run_stage(
             stage_name=spec.name,
             recorder=recorder,
             events=events,
-            is_aborted=_throttled_abort(session_factory, scan.id),
+            is_aborted=_throttled_abort(scan.id),
         )
-        engine = spec.stage_cls(session, ctx)
+        stage = spec.stage_cls(session, ctx)
 
-        if not engine.should_run():
+        if not stage.should_run():
             activity_svc.finish(
                 activity,
                 status=ScanActivityStatus.SKIPPED,
@@ -220,9 +212,9 @@ def run_stage(
             return
 
         with aborting_on(ctx.is_aborted):
-            result = engine.run()
-        # a stage whose tool was killed mid-stream returns normally; the row is the halt's
-        if _scan_is_halted(session_factory, scan.id):
+            result = stage.run()
+        # a killed tool returns normally
+        if _scan_is_halted(scan.id):
             raise StageAbortedError
     except StageAbortedError:
         _fail_stage(
@@ -230,7 +222,7 @@ def run_stage(
             events,
             spec,
             activity.id,
-            _halt_status(session_factory, scan.id),
+            _halt_status(scan.id),
             ids,
         )
         return
@@ -251,7 +243,7 @@ def run_stage(
     status = (
         ScanActivityStatus.PARTIAL if result.partial else ScanActivityStatus.SUCCESS
     )
-    notes = "; ".join(result.warnings) or None
+    notes = sentences(result.warnings) or None
     activity_svc.finish(activity, status=status, result=result.counts, error=notes)
     try:
         _log_stage(
@@ -259,7 +251,7 @@ def run_stage(
             spec,
             ids,
             ActivityEvent.SCAN_STAGE_COMPLETED,
-            summary=stage_count_summary(result.counts),
+            summary=stage_count_summary(result.counts, spec.name),
             warning=notes if result.partial else None,
         )
         scan = session.get(Scan, scan.id)

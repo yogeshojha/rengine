@@ -41,7 +41,7 @@ export interface ToolboxCatalog {
 	tools: ToolSpec[];
 }
 
-export type IdentityKind = 'tech' | 'flag' | 'favicon' | 'glyph' | 'nameserver';
+export type IdentityKind = 'tech' | 'flag' | 'glyph' | 'nameserver';
 
 export interface Identity {
 	kind: IdentityKind;

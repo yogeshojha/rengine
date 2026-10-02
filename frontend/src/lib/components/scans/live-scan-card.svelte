@@ -7,6 +7,7 @@
 	import Ban from '@lucide/svelte/icons/ban';
 	import { ROUTES } from '$lib/config/routes';
 	import { elapsedSeconds, elapsedText, scanCountPills } from '$lib/utilities/scan-status';
+	import { plural } from '$lib/utilities/strings';
 	import {
 		STAGE_STEP_CLASS,
 		etaLabel,
@@ -118,7 +119,7 @@
 				{/each}
 				{#if failed > 0}
 					<span class="text-2xs font-medium text-destructive">
-						{failed} stage{failed === 1 ? '' : 's'} failed
+						{plural(failed, 'stage')} failed
 					</span>
 				{/if}
 			</div>

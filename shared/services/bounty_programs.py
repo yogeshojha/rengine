@@ -17,7 +17,6 @@ from shared.definitions.bounty_programs import (
     ScopeAccess,
     ScopeState,
     SubmissionState,
-    asset_type_spec,
 )
 from shared.logging import get_logger
 from shared.models.bounty_program import BountyEventRow, BountyProgram, BountyScope
@@ -127,11 +126,14 @@ def sync_programs(session: Session, provider: BountyProvider) -> dict[str, int]:
             if baseline:
                 events.append(event_row(program, BountyEvent.PROGRAM_ADDED.value))
             continue
-        for kind in _program_changes(current, row):
-            events.append(event_row(current, kind))
-        for kind, detail in terms_changes(current, row):
-            events.append(event_row(current, kind, detail=detail[:MAX_EVENT_DETAIL]))
-        if current.source != row["source"]:
+        if current.source == row["source"]:
+            for kind in _program_changes(current, row):
+                events.append(event_row(current, kind))
+            for kind, detail in terms_changes(current, row):
+                events.append(
+                    event_row(current, kind, detail=detail[:MAX_EVENT_DETAIL])
+                )
+        else:
             current.scopes_synced_at = None
             current.scope_access = None
         for key, value in row.items():
@@ -221,7 +223,7 @@ def _asset_terms(
 def scope_changes(
     program: BountyProgram, before: dict[tuple[str, str], dict], after: dict
 ) -> list[BountyEventRow]:
-    """Added, removed, flipped and re-termed assets, never on a program's first read."""
+    """Added, removed, flipped and re-termed assets."""
     events: list[BountyEventRow] = []
     for key, row in after.items():
         asset_type, identifier = key
@@ -340,26 +342,18 @@ def sync_settings(session: Session) -> tuple[str, datetime | None]:
     return (row[0] or DEFAULT_SYNC_INTERVAL), row[1]
 
 
-def sync_due(session: Session) -> bool:
-    """Whether the schedule says to sync now."""
-    interval, last = sync_settings(session)
+def interval_due(interval: str, last: datetime | None) -> bool:
     hours = SYNC_INTERVAL_HOURS.get(interval)
     if hours is None:
         return False
     return last is None or (utc_now() - last) >= timedelta(hours=hours)
 
 
+def sync_due(session: Session) -> bool:
+    """Whether the schedule says to sync now."""
+    return interval_due(*sync_settings(session))
+
+
 def mark_synced(session: Session) -> None:
     session.execute(text("UPDATE instance_settings SET bounty_synced_at = now()"))
     session.commit()
-
-
-def unreachable_summary(scopes: list[BountyScope]) -> dict[str, int]:
-    """What the program lists that no scan can reach, counted by asset type label."""
-    counts: dict[str, int] = {}
-    for scope in scopes:
-        if scope.target_value:
-            continue
-        label = asset_type_spec(scope.asset_type).label
-        counts[label] = counts.get(label, 0) + 1
-    return counts

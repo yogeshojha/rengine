@@ -23,8 +23,5 @@ export const ISSUE_COL = {
 	actions: 'flex w-8 shrink-0 justify-end'
 } as const;
 
-export const HEAD_ROW =
-	'flex items-center gap-4 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase';
-
 export const BODY_ROW =
 	'flex items-start gap-4 border-b border-border/60 px-4 py-2.5 last:border-b-0';

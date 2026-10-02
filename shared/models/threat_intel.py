@@ -2,17 +2,14 @@ import uuid
 from datetime import date, datetime
 
 from pydantic import BaseModel
-from sqlalchemy import Column, Text
+from sqlalchemy import BigInteger, Column, Text
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
 from shared.definitions.threat_intel import FeedStatus
 from shared.enums.api_key import APIProvider
+from shared.models.fields import json_list
 from shared.utils.datetime import utc_now
-
-
-def _json_list() -> Field:
-    return Field(default_factory=list, sa_column=Column(JSON, nullable=False))
 
 
 class EpssScore(SQLModel, table=True):
@@ -33,7 +30,7 @@ class KevEntry(SQLModel, table=True):
     short_description: str | None = Field(default=None, sa_column=Column(Text))
     required_action: str | None = Field(default=None, sa_column=Column(Text))
     notes: str | None = Field(default=None, sa_column=Column(Text))
-    cwes: list = _json_list()
+    cwes: list = json_list()
     known_ransomware: bool = Field(default=False, index=True)
     date_added: date | None = Field(default=None, index=True)
     due_date: date | None = Field(default=None)
@@ -50,8 +47,8 @@ class CveIntel(SQLModel, table=True):
     cvss_score: float | None = Field(default=None)
     description: str | None = Field(default=None, sa_column=Column(Text))
     remediation: str | None = Field(default=None, sa_column=Column(Text))
-    weaknesses: list = _json_list()
-    pocs: list = _json_list()
+    weaknesses: list = json_list()
+    pocs: list = json_list()
     poc_count: int = Field(default=0)
     poc_first_seen: datetime | None = Field(default=None)
     template_available: bool | None = Field(default=None)
@@ -59,9 +56,9 @@ class CveIntel(SQLModel, table=True):
     needs_auth: bool | None = Field(default=None)
     patch_available: bool | None = Field(default=None)
     vendor_kev: bool = Field(default=False)
-    kev_sources: list = _json_list()
-    exposure_hosts: int | None = Field(default=None)
-    exposure_products: list = _json_list()
+    kev_sources: list = json_list()
+    exposure_hosts: int | None = Field(default=None, sa_type=BigInteger)
+    exposure_products: list = json_list()
     hackerone_rank: int | None = Field(default=None)
     hackerone_reports: int | None = Field(default=None)
     published_at: datetime | None = Field(default=None)
@@ -77,7 +74,7 @@ class ThreatFeed(SQLModel, table=True):
     status: str = Field(default=FeedStatus.EMPTY.value, max_length=16)
     rows: int = Field(default=0)
     version: str | None = Field(default=None, max_length=100)
-    bytes: int = Field(default=0)
+    bytes: int = Field(default=0, sa_type=BigInteger)
     duration_ms: int = Field(default=0)
     error: str | None = Field(default=None, max_length=500)
     last_synced_at: datetime | None = Field(default=None)
@@ -124,7 +121,6 @@ class ThreatFeedRead(BaseModel):
     duration_ms: int = 0
     error: str | None = None
     last_synced_at: datetime | None = None
-    age_hours: float | None = None
 
 
 class ThreatProviderRead(BaseModel):
@@ -144,14 +140,10 @@ class IntelCoverage(BaseModel):
     """Findings reached by the intelligence."""
 
     findings: int = 0
-    with_cve: int = 0
     scored: int = 0
     kev: int = 0
     ransomware: int = 0
-    overdue: int = 0
     weaponised: int = 0
-    untestable: int = 0
-    enriched: int = 0
     bands: dict[str, int] = {}
 
 
@@ -201,8 +193,6 @@ class ThreatIntelStatus(BaseModel):
     ready: bool
     syncing: bool
     providers: list[ThreatProviderRead] = []
-    last_applied_at: datetime | None = None
-    recent_changes: list[IntelChange] = []
 
 
 class SyncResult(BaseModel):

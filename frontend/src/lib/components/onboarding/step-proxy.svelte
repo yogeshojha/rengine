@@ -1,23 +1,21 @@
 <script lang="ts">
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
-	import { Separator } from '$lib/components/ui/separator';
 	import * as Select from '$lib/components/ui/select';
 	import * as RadioGroup from '$lib/components/ui/radio-group';
-	import { Spinner } from '$lib/components/ui/spinner/index.js';
+	import LoadingButton from '$lib/components/loading-button.svelte';
 	import { proxiesApi } from '$lib/api/proxies';
 	import { PROXY_SCHEMES, PROXY_SCHEME_LABELS, type ProxyEndpoint } from '$lib/types/proxy';
 	import type { StepProps } from '$lib/types/onboarding';
-	import type { Component } from 'svelte';
+	import type { IconComponent } from '$lib/config/icons';
+	import { PRODUCT_NAME } from '$lib/constants';
+	import { plural } from '$lib/utilities/strings';
 	import { toast } from 'svelte-sonner';
 	import RepeatIcon from '@lucide/svelte/icons/repeat';
 	import ListIcon from '@lucide/svelte/icons/list';
 	import CircleSlashIcon from '@lucide/svelte/icons/circle-slash';
 	import FlaskConicalIcon from '@lucide/svelte/icons/flask-conical';
-	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
-	import InfoIcon from '@lucide/svelte/icons/info';
 
 	let { data, next, setFooter }: StepProps = $props();
 
@@ -25,9 +23,10 @@
 
 	let choice = $state<ProxyChoice>('none');
 	let busy = $state(false);
+	let testing = $state(false);
 
 	let single = $state<ProxyEndpoint>({
-		scheme: 'http',
+		scheme: PROXY_SCHEMES[0],
 		host: '',
 		port: 8080,
 		username: '',
@@ -39,9 +38,8 @@
 	const CHOICES: {
 		value: ProxyChoice;
 		label: string;
-		hint: string;
-		icon: Component;
-		recommended?: boolean;
+		hint?: string;
+		icon: IconComponent;
 	}[] = [
 		{
 			value: 'none',
@@ -51,15 +49,13 @@
 		},
 		{
 			value: 'single',
-			label: 'Single rotating proxy',
-			hint: 'One gateway that rotates the exit IP per request.',
-			icon: RepeatIcon,
-			recommended: true
+			label: 'Single proxy',
+			icon: RepeatIcon
 		},
 		{
 			value: 'list',
-			label: 'Multiple static proxies',
-			hint: 'A fixed pool of self-hosted endpoints.',
+			label: 'Proxy pool',
+			hint: 'Each scan uses one endpoint from the pool.',
 			icon: ListIcon
 		}
 	];
@@ -67,23 +63,10 @@
 	const LIST_PLACEHOLDER =
 		'http://user:pass@host:8080\nsocks5://10.0.0.4:1080\nhttps://gate.provider.com:3128';
 
-	const PROVIDERS = [
-		{
-			name: 'Bright Data',
-			note: 'Residential and datacenter pools, per-request rotation.',
-			url: 'https://brightdata.com'
-		},
-		{
-			name: 'Smartproxy',
-			note: 'Residential and ISP proxies, rotating gateway.',
-			url: 'https://smartproxy.com'
-		},
-		{
-			name: 'Oxylabs',
-			note: 'Residential and datacenter proxies.',
-			url: 'https://oxylabs.io'
-		}
-	];
+	const PROXY_URL = new RegExp(
+		`^(${PROXY_SCHEMES.join('|')}):\\/\\/(?:([^:@/]+)(?::([^@/]*))?@)?([^:/]+):(\\d+)$`,
+		'i'
+	);
 
 	function setSinglePort(raw: string) {
 		const n = Math.trunc(Number(raw));
@@ -93,7 +76,7 @@
 	function parseLine(line: string): ProxyEndpoint | null {
 		const trimmed = line.trim();
 		if (!trimmed) return null;
-		const m = trimmed.match(/^(https?|socks5):\/\/(?:([^:@/]+)(?::([^@/]*))?@)?([^:/]+):(\d+)$/i);
+		const m = trimmed.match(PROXY_URL);
 		if (!m) return null;
 		const [, scheme, user, pass, host, port] = m;
 		return {
@@ -137,40 +120,50 @@
 
 	let configured = $derived(choice !== 'none' && buildEndpoints() !== null);
 
-	let testedId = $state<string | null>(null);
+	let savedId = $state<string | null>(null);
+	let saved = $state(false);
 
 	$effect(() => {
 		void buildEndpoints();
-		testedId = null;
+		saved = false;
 	});
 
 	$effect(() => {
-		setFooter({ onNext: handleNext, nextLabel: 'Continue', nextLoading: busy, canSkip: true });
+		setFooter({
+			onNext: handleNext,
+			nextLabel: 'Continue',
+			nextLoading: busy,
+			nextDisabled: testing,
+			canSkip: true
+		});
 	});
 
-	async function persist(asDefault: boolean): Promise<string | null> {
-		const endpoints = buildEndpoints();
-		if (!endpoints) return null;
-		const created = await proxiesApi.create({
-			name: `${data.instanceName || 'reNgine'} Proxy`,
-			is_active: true,
-			is_default: asDefault,
-			endpoints
-		});
-		return created.id;
+	async function persist(endpoints: ProxyEndpoint[], asDefault: boolean): Promise<string> {
+		if (!savedId) {
+			const created = await proxiesApi.create({
+				name: `${data.instanceName || PRODUCT_NAME} Proxy`,
+				is_active: true,
+				is_default: asDefault,
+				endpoints
+			});
+			savedId = created.id;
+		} else {
+			if (!saved) await proxiesApi.update(savedId, { endpoints });
+			if (asDefault) await proxiesApi.setDefault(savedId);
+		}
+		saved = true;
+		return savedId;
 	}
 
 	async function handleTest() {
-		if (!configured) {
+		const endpoints = choice === 'none' ? null : buildEndpoints();
+		if (!endpoints) {
 			toast.error('Enter a proxy endpoint');
 			return;
 		}
-		busy = true;
+		testing = true;
 		try {
-			const id = testedId ?? (await persist(false));
-			if (!id) return;
-			testedId = id;
-			const result = await proxiesApi.test(id);
+			const result = await proxiesApi.test(await persist(endpoints, false));
 			if (result.success) {
 				const ms = result.latency_ms != null ? ` in ${result.latency_ms} ms` : '';
 				toast.success(`Proxy reachable${ms}`);
@@ -180,23 +173,21 @@
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Proxy test failed');
 		} finally {
-			busy = false;
+			testing = false;
 		}
 	}
 
 	async function handleNext() {
-		if (choice === 'none' || !configured) {
-			next();
-			return;
-		}
+		const endpoints = choice === 'none' ? null : buildEndpoints();
 		busy = true;
 		try {
-			if (testedId) {
-				await proxiesApi.setDefault(testedId);
-			} else {
-				await persist(true);
+			if (endpoints) {
+				await persist(endpoints, true);
+				toast.success('Proxy saved as default');
+			} else if (savedId) {
+				await proxiesApi.remove(savedId);
+				savedId = null;
 			}
-			toast.success('Proxy saved as default');
 			next();
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Proxy not saved');
@@ -221,17 +212,10 @@
 				<RadioGroup.Item value={opt.value} class="mt-0.5" />
 				<Icon class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
 				<span class="min-w-0 flex-1 space-y-0.5">
-					<span class="flex items-center gap-2 text-sm font-medium">
-						{opt.label}
-						{#if opt.recommended}
-							<span
-								class="rounded-full bg-primary/10 px-1.5 py-0.5 text-2xs font-medium text-primary"
-							>
-								Recommended
-							</span>
-						{/if}
-					</span>
-					<span class="block text-xs text-muted-foreground">{opt.hint}</span>
+					<span class="block text-sm font-medium">{opt.label}</span>
+					{#if opt.hint}
+						<span class="block text-xs text-muted-foreground">{opt.hint}</span>
+					{/if}
 				</span>
 			</Label>
 		{/each}
@@ -245,10 +229,10 @@
 					<Select.Root
 						type="single"
 						value={single.scheme}
-						onValueChange={(v) => (single.scheme = v ?? 'http')}
+						onValueChange={(v) => (single.scheme = v || PROXY_SCHEMES[0])}
 					>
 						<Select.Trigger class="h-9 w-full text-sm">
-							{PROXY_SCHEME_LABELS[single.scheme as keyof typeof PROXY_SCHEME_LABELS] ?? 'HTTP'}
+							{PROXY_SCHEME_LABELS[single.scheme as keyof typeof PROXY_SCHEME_LABELS]}
 						</Select.Trigger>
 						<Select.Content>
 							{#each PROXY_SCHEMES as s (s)}
@@ -321,12 +305,12 @@
 			<div class="flex items-center gap-3 text-xs">
 				{#if parsedList.length > 0}
 					<span class="text-muted-foreground">
-						{parsedList.length} endpoint{parsedList.length === 1 ? '' : 's'} parsed
+						{plural(parsedList.length, 'endpoint')} parsed
 					</span>
 				{/if}
 				{#if invalidLines > 0}
 					<span class="text-muted-foreground">
-						{invalidLines} line{invalidLines === 1 ? '' : 's'} not recognized
+						{plural(invalidLines, 'line')} not recognized
 					</span>
 				{/if}
 				{#if parsedList.length === 0 && invalidLines === 0}
@@ -338,46 +322,19 @@
 
 	{#if choice !== 'none'}
 		<div>
-			<Button
+			<LoadingButton
 				variant="outline"
 				size="sm"
 				class="h-8 text-xs"
+				loading={testing}
+				loadingLabel="Testing"
 				disabled={busy || !configured}
 				onclick={handleTest}
 			>
-				{#if busy}
-					<Spinner class="mr-1.5 size-4" />
-				{:else}
-					<FlaskConicalIcon class="mr-1.5 size-4" />
-				{/if}
+				<FlaskConicalIcon class="mr-1.5 size-4" />
 				Test connection
-			</Button>
+			</LoadingButton>
 			<p class="mt-1.5 text-2xs text-muted-foreground">Saves the proxy and checks reachability.</p>
 		</div>
 	{/if}
-
-	<Separator />
-
-	<div class="space-y-3">
-		<div class="flex items-start gap-2">
-			<InfoIcon class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-			<p class="text-xs text-muted-foreground">Third-party providers. No affiliation.</p>
-		</div>
-		<div class="grid gap-2.5 sm:grid-cols-3">
-			{#each PROVIDERS as p (p.name)}
-				<div class="flex flex-col rounded-lg border bg-card p-3.5">
-					<span class="text-sm font-medium">{p.name}</span>
-					<span class="mt-1 flex-1 text-xs text-muted-foreground">{p.note}</span>
-					<a
-						href={p.url}
-						target="_blank"
-						rel="noopener noreferrer"
-						class="mt-2.5 inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80"
-					>
-						Website <ExternalLinkIcon class="size-4" />
-					</a>
-				</div>
-			{/each}
-		</div>
-	</div>
 </div>

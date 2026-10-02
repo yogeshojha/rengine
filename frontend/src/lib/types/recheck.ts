@@ -80,6 +80,8 @@ export interface SeedGroupSummary {
 export interface RunPreview {
 	dimension: string;
 	seed_kind: string;
+	noun: string;
+	noun_plural: string;
 	asset_count: number;
 	matched: number | null;
 	target_count: number;

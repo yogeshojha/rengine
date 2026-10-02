@@ -30,6 +30,15 @@ export const USER_COL = {
 	actions: 'flex w-8 shrink-0 justify-end'
 } as const;
 
+export const CALL_COL = {
+	when: 'w-[88px] shrink-0',
+	feature: 'w-[140px] shrink-0',
+	model: 'hidden w-[180px] shrink-0 @2xl/calls:block',
+	tokens: 'hidden w-[120px] shrink-0 text-right @xl/calls:block',
+	cost: 'w-[64px] shrink-0 text-right',
+	outcome: 'min-w-0 flex-1'
+} as const;
+
 export const HEAD_ROW =
 	'flex items-center gap-4 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase';
 

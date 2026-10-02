@@ -27,6 +27,7 @@ from shared.definitions.broken_links import (
 )
 from shared.definitions.domains import (
     IGNORED_DOMAINS,
+    is_public_tld,
     owning_zone,
     registrable_domain,
     target_zone,
@@ -50,12 +51,13 @@ _TAG_SOURCES: tuple[tuple[str, re.Pattern[str]], ...] = (
         LinkKind.IFRAME.value,
         re.compile(r"<iframe\b[^>]*\bsrc\s*=\s*[\"']([^\"']+)", re.I),
     ),
-    (
-        LinkKind.STYLESHEET.value,
-        re.compile(r"<link\b[^>]*\bhref\s*=\s*[\"']([^\"']+)", re.I),
-    ),
     (LinkKind.IMAGE.value, re.compile(r"<img\b[^>]*\bsrc\s*=\s*[\"']([^\"']+)", re.I)),
 )
+_LINK_TAG = re.compile(r"<link\b[^>]*>", re.I)
+_HREF = re.compile(r"\bhref\s*=\s*[\"']([^\"']+)", re.I)
+_REL = re.compile(r"\brel\s*=\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s\"'>]+))", re.I)
+_AS = re.compile(r"\bas\s*=\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s\"'>]+))", re.I)
+_ICON_RELS = frozenset({"icon", "apple-touch-icon", "apple-touch-icon-precomposed"})
 _ABSOLUTE = re.compile(r"^https?://", re.I)
 
 
@@ -86,16 +88,43 @@ def _external_host(value: str) -> str | None:
     return host or None
 
 
+def _attr(pattern: re.Pattern[str], tag: str) -> str:
+    match = pattern.search(tag)
+    if match is None:
+        return ""
+    return next(value for value in match.groups() if value is not None).strip().lower()
+
+
+def _link_kind(tag: str) -> str:
+    rel = set(_attr(_REL, tag).split())
+    if "stylesheet" in rel:
+        return LinkKind.STYLESHEET.value
+    if "modulepreload" in rel or ("preload" in rel and _attr(_AS, tag) == "script"):
+        return LinkKind.SCRIPT.value
+    if rel & _ICON_RELS:
+        return LinkKind.IMAGE.value
+    return LinkKind.LINK.value
+
+
+def _sources(body: str):
+    for kind, pattern in _TAG_SOURCES:
+        for raw in pattern.findall(body):
+            yield kind, raw
+    for tag in _LINK_TAG.findall(body):
+        href = _HREF.search(tag)
+        if href:
+            yield _link_kind(tag), href.group(1)
+
+
 def _resources(body: str) -> dict[str, str]:
     """The strongest tag each external host appears as on one page."""
     found: dict[str, str] = {}
-    for kind, pattern in _TAG_SOURCES:
-        for raw in pattern.findall(body):
-            host = _external_host(raw)
-            if host is None:
-                continue
-            if host not in found or KIND_RANK[kind] > KIND_RANK[found[host]]:
-                found[host] = kind
+    for kind, raw in _sources(body):
+        host = _external_host(raw)
+        if host is None:
+            continue
+        if host not in found or KIND_RANK[kind] > KIND_RANK[found[host]]:
+            found[host] = kind
     return found
 
 
@@ -150,24 +179,30 @@ def dangling(session: Session, scan_id: UUID, root: str) -> list[BrokenLink]:
     """External resources whose registrable domain is buyable, worst tag first."""
     own = target_zone(root)
     candidates: dict[tuple[str, str], BrokenLink] = {}
-    domains: set[str] = set()
-    pages = 0
-    result = session.execute(
-        select(
-            HttpAsset.host,
-            HttpAsset.url,
-            HttpAsset.scheme,
-            HttpAsset.port,
-            func.left(HttpAsset.response_body, BODY_SCAN_BYTES),
+    page_ids = list(
+        session.scalars(
+            select(HttpAsset.id)
+            .where(HttpAsset.scan_id == scan_id, HttpAsset.response_body != "")
+            .order_by(HttpAsset.host, HttpAsset.url, HttpAsset.id)
+            .limit(MAX_PAGES)
         )
-        .where(HttpAsset.scan_id == scan_id, HttpAsset.response_body.is_not(None))
-        .execution_options(yield_per=_STREAM_BATCH)
     )
-    for batch in result.partitions():
-        for host, url, scheme, port, body in batch:
-            if not body or pages >= MAX_PAGES:
-                continue
-            pages += 1
+    for start in range(0, len(page_ids), _STREAM_BATCH):
+        chunk = page_ids[start : start + _STREAM_BATCH]
+        position = {page_id: index for index, page_id in enumerate(chunk)}
+        batch = session.execute(
+            select(
+                HttpAsset.id,
+                HttpAsset.host,
+                HttpAsset.url,
+                HttpAsset.scheme,
+                HttpAsset.port,
+                func.left(HttpAsset.response_body, BODY_SCAN_BYTES),
+            ).where(HttpAsset.id.in_(chunk))
+        )
+        for _id, host, url, scheme, port, body in sorted(
+            batch, key=lambda row: position[row[0]]
+        ):
             for resource_host, kind in _resources(body).items():
                 domain = registrable_domain(resource_host)
                 if not _worth_checking(domain, own):
@@ -194,17 +229,22 @@ def dangling(session: Session, scan_id: UUID, root: str) -> list[BrokenLink]:
                         and url not in existing.examples
                     ):
                         existing.examples.append(url)
-                domains.add(domain)
 
-    buyable = _resolve_buyable(list(domains)[:MAX_DOMAINS])
-    return _ranked(
-        [link for (rh, _k), link in candidates.items() if link.domain in buyable]
+    weight: dict[str, tuple[int, int]] = {}
+    for link in candidates.values():
+        rank, pages = weight.get(link.domain, (0, 0))
+        weight[link.domain] = (max(rank, KIND_RANK[link.kind]), pages + link.pages)
+    order = sorted(
+        weight, key=lambda domain: (-weight[domain][0], -weight[domain][1], domain)
     )
+    buyable = _resolve_buyable(order[:MAX_DOMAINS])
+    return _ranked([link for link in candidates.values() if link.domain in buyable])
 
 
 def _worth_checking(domain: str, own: str) -> bool:
     return bool(
         domain
+        and is_public_tld(domain)
         and owning_zone(domain, {own}) is None
         and domain not in IGNORED_DOMAINS
         and provider_of(domain) is None

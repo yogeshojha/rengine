@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlsplit
 
 import httpx
@@ -29,31 +29,33 @@ class SourceMapProvider(UrlProvider):
     tool = None
     binary = None
     uses_session = True
+    reads_endpoints = True
 
     def discover(self, result: ProviderResult) -> None:
         bundles = self._bundles()
         result.hosts_total = len(bundles)
         if not bundles:
-            self.progress("no javascript bundle answered")
+            self.progress("no javascript bundle found")
             return
 
         limit = MAX_SOURCE_MAPS
         selected = bundles[:limit]
-        client = self._client()
+        state = _State()
+        client = self.http_client()
         try:
             workers = min(self.workers(_MAX_WORKERS), len(selected))
             with ThreadPoolExecutor(max_workers=workers) as pool:
-                found = list(pool.map(lambda url: self._fetch(client, url), selected))
+                futures = {pool.submit(self._fetch, client, url) for url in selected}
+                for future in as_completed(futures):
+                    futures.discard(future)
+                    outcome = future.result()
+                    if outcome is None:
+                        result.capped = True
+                        result.cap_reason = "The scan was cancelled."
+                        continue
+                    state.absorb(outcome, self.in_scope)
         finally:
             client.close()
-
-        state = _State()
-        for outcome in found:
-            if outcome is None:
-                result.capped = True
-                result.cap_reason = "The scan was cancelled."
-                continue
-            state.absorb(outcome, self.in_scope)
 
         result.observations = state.observations
         result.urls_found = state.found
@@ -69,15 +71,14 @@ class SourceMapProvider(UrlProvider):
         self.progress(state.note(len(selected)))
 
     def _bundles(self) -> list[str]:
-        """Distinct bundles this scan proved answer."""
+        """Distinct bundles this scan found, the ones that answered first."""
         rows = self.ctx.session.scalars(
             select(Endpoint.url)
             .where(
                 Endpoint.scan_id == self.ctx.scan_id,
                 Endpoint.extension.in_(_BUNDLE_EXTENSIONS),
-                Endpoint.status_code == _OK,
             )
-            .order_by(Endpoint.url)
+            .order_by((Endpoint.status_code == _OK).desc().nulls_last(), Endpoint.url)
         )
         hosts = {h.host for h in self.ctx.hosts}
         seen: dict[str, None] = {}
@@ -86,17 +87,6 @@ class SourceMapProvider(UrlProvider):
             if base and (urlsplit(base).hostname or "").lower() in hosts:
                 seen.setdefault(base, None)
         return list(seen)
-
-    def _client(self) -> httpx.Client:
-        headers = dict(self.ctx.net.headers or {})
-        headers.setdefault("User-Agent", "reNgine/3.0 (+https://rengine.wiki)")
-        return httpx.Client(
-            timeout=self.ctx.transport.timeout,
-            follow_redirects=self.follow_redirects(True),
-            verify=False,  # noqa: S501
-            proxy=self.ctx.net.proxy_url or None,
-            headers=headers,
-        )
 
     def _fetch(self, client: httpx.Client, bundle: str) -> _Outcome | None:
         if self.aborted():
@@ -139,7 +129,7 @@ class _Outcome:
     def read(self, raw: bytes) -> None:
         try:
             document = json.loads(raw)
-        except (ValueError, UnicodeDecodeError):
+        except (ValueError, UnicodeDecodeError, RecursionError):
             return
         if not isinstance(document, dict):
             return

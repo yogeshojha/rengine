@@ -1,3 +1,4 @@
+import { API_PREFIX } from '$lib/api/client';
 import type { CandidateState, ConnectorState, SourceTool } from '$lib/types/connector';
 
 export const CONNECTOR_POLL_MS = 10_000;
@@ -85,19 +86,24 @@ export const NOTICE_HELP: Record<string, string> = {
 	unseen_by_scans: 'A scan covered this target and did not record this path.',
 	new_params: 'A scan recorded this path with a different parameter set.',
 	server_error: 'The server returned a 5xx response.',
-	non_standard_method: 'The method is not GET, POST, HEAD or OPTIONS.',
+	non_standard_method: 'The method is not GET, POST, PUT, PATCH, DELETE, HEAD or OPTIONS.',
 	out_of_scope: 'A bug bounty program lists this host as out of scope.'
 };
 
+const NOTICE_TONE: Record<string, string> = {
+	out_of_scope: 'text-destructive font-medium',
+	sensitive: 'text-destructive',
+	server_error: 'text-destructive',
+	admin: 'text-warning',
+	unseen_by_scans: 'text-info',
+	new_params: 'text-info'
+};
+
 export function noticeTone(notice: string): string {
-	if (notice === 'out_of_scope') return 'text-destructive font-medium';
-	if (notice === 'sensitive' || notice === 'server_error') return 'text-destructive';
-	if (notice === 'admin') return 'text-warning';
-	if (notice === 'unseen_by_scans' || notice === 'new_params') return 'text-info';
-	return 'text-muted-foreground';
+	return NOTICE_TONE[notice] ?? 'text-muted-foreground';
 }
 
-const INGEST_PATH = '/api/v1/connectors/ingest';
+const INGEST_PATH = `${API_PREFIX}/connectors/ingest`;
 
 export function ingestEndpoint(): string {
 	if (typeof location === 'undefined') return INGEST_PATH;

@@ -4,9 +4,11 @@ from reports.base import RenderContext, Section
 from reports.config import SectionConfig, flag, limit
 from shared.definitions.reports import SectionGroup
 from shared.definitions.surface import SurfaceDimension
-from shared.definitions.vulnerabilities import SEVERITY_LABELS, SEVERITY_ORDER, Severity
-
-QUIET = frozenset({Severity.INFO.value, Severity.UNKNOWN.value})
+from shared.definitions.vulnerabilities import (
+    ACTIONABLE_SEVERITIES,
+    SEVERITY_LABELS,
+    SEVERITY_ORDER,
+)
 
 
 class RiskSummaryConfig(SectionConfig):
@@ -39,12 +41,15 @@ class RiskSummarySection(Section):
             for key in SEVERITY_ORDER
             if brief.severity.get(key)
         ]
-        actionable_rows = [row for row in severity if row["severity"] not in QUIET]
+        actionable_rows = [
+            row for row in severity if row["severity"] in ACTIONABLE_SEVERITIES
+        ]
         return {
-            "severity": severity,
             "actionable_rows": actionable_rows,
             "actionable_total": sum(row["count"] for row in actionable_rows),
-            "quiet": sum(row["count"] for row in severity if row["severity"] in QUIET),
+            "other_rows": [
+                row for row in severity if row["severity"] not in ACTIONABLE_SEVERITIES
+            ],
             "show_donut": cfg.show_donut,
             "risks": brief.risks[: cfg.top],
             "show_signals": cfg.show_signals,
@@ -52,7 +57,5 @@ class RiskSummarySection(Section):
             "narrative": ctx.narrator.risk_narrative(brief)
             if cfg.show_narrative
             else "",
-            "actionable": brief.actionable,
-            "total": sum(brief.severity.values()),
             "kev": brief.kev_count,
         }

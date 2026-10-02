@@ -16,6 +16,8 @@ from mcp.models import McpCeiling
 from shared.definitions.channels import (
     MAX_DISPLAY,
     MAX_EXTERNAL_ID,
+    RATE_LIMIT_MAX,
+    RATE_LIMIT_MIN,
     ChatState,
 )
 from shared.utils.datetime import utc_now
@@ -76,10 +78,7 @@ class BotInfo(BaseModel):
 class ListenerStatus(BaseModel):
     reporting: bool = False
     running: bool
-    last_poll_at: datetime | None = None
-    updates_seen: int = 0
     last_error: str | None = None
-    last_error_at: datetime | None = None
 
 
 class ChannelStatus(BaseModel):
@@ -96,26 +95,16 @@ class ChannelStatus(BaseModel):
     capabilities: list[dict]
     chats_total: int
     chats_active: int
-    pending_total: int
-    commands_total: int
-    calls_recent: int
-    last_call_at: datetime | None
     shared_notifications: int = 0
-
-
-class ChannelCatalogEntry(BaseModel):
-    channel: str
-    label: str
-    configured: bool
-    enabled: bool
-    running: bool
 
 
 class ChannelSettingsUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     enabled: bool | None = None
-    rate_limit_per_minute: int | None = PydanticField(default=None, ge=1, le=10_000)
+    rate_limit_per_minute: int | None = PydanticField(
+        default=None, ge=RATE_LIMIT_MIN, le=RATE_LIMIT_MAX
+    )
     ceiling: McpCeiling | None = None
 
 
@@ -123,12 +112,6 @@ class ChannelConnect(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     token: str = PydanticField(min_length=1, max_length=200)
-
-
-class ChannelVerifyResult(BaseModel):
-    ok: bool
-    bot: BotInfo | None = None
-    error: str | None = None
 
 
 class PairingRequestRead(BaseModel):
@@ -177,26 +160,12 @@ class ChannelChatUpdate(BaseModel):
     capabilities: list[str] | None = PydanticField(default=None, max_length=8)
 
 
-class CommandArgRead(BaseModel):
-    name: str
-    type: str
-    required: bool
-    description: str
-    default: str | None = None
-    options: list[str] = PydanticField(default_factory=list)
-
-
 class ChannelCommandRead(BaseModel):
     name: str
     tool: str | None
-    source: str
     group: str
     title: str
-    description: str
     capability: str
     touches_target: bool
-    queued: bool
-    value_field: str
-    presets: dict[str, object]
+    steps_up: bool
     usage: str
-    args: list[CommandArgRead]

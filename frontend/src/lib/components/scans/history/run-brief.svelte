@@ -1,5 +1,6 @@
 <script lang="ts">
 	import * as Tabs from '$lib/components/ui/tabs';
+	import { Kbd } from '$lib/components/ui/kbd';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import type { ScanRead } from '$lib/types/scan';
 	import { isOpenStatus } from '$lib/utilities/scan-status';
@@ -30,7 +31,7 @@
 		{#each BRIEF_TABS as t, i (t)}
 			<Tabs.Trigger value={t} class="gap-1.5 px-3 text-xs">
 				{BRIEF_TAB_LABELS[t]}
-				<kbd class="hidden font-mono text-2xs text-muted-foreground sm:inline">{i + 1}</kbd>
+				<Kbd class="hidden sm:inline-flex">{i + 1}</Kbd>
 			</Tabs.Trigger>
 		{/each}
 	</Tabs.List>

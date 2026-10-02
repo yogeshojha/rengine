@@ -7,13 +7,8 @@
 	import LadderPick from '$lib/components/access/ladder-pick.svelte';
 	import { remoteControl } from '$lib/stores/remote-control.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
-	import {
-		allowedKeys,
-		grantsUpTo,
-		ladderLevel,
-		type ChannelChat,
-		type ChannelStatus
-	} from '$lib/types/remote-control';
+	import { ceilingKeys, ladderLevel, regrant } from '$lib/types/mcp';
+	import type { ChannelChat, ChannelStatus } from '$lib/types/remote-control';
 
 	interface Props {
 		status: ChannelStatus;
@@ -28,7 +23,7 @@
 	let saving = $state(false);
 
 	const open = $derived(chat !== null);
-	const allowed = $derived(allowedKeys(status));
+	const allowed = $derived(ceilingKeys(status));
 	const projects = $derived(projectsStore.projects ?? []);
 
 	$effect(() => {
@@ -42,7 +37,7 @@
 		saving = true;
 		const ok = await remoteControl.updateChat(chat.id, {
 			project_id: projectId || undefined,
-			capabilities: grantsUpTo(level, allowed)
+			capabilities: regrant(level, chat.capabilities, allowed)
 		});
 		saving = false;
 		if (ok) onOpenChange(false);

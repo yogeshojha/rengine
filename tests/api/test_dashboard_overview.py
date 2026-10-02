@@ -16,6 +16,10 @@ def _metric(overview, key: str):
     return next(m for m in overview.surface if m.key == key)
 
 
+def _new(overview, key: str) -> int:
+    return sum(day.new[key] for day in overview.daily)
+
+
 async def test_a_first_scan_contributes_nothing_new(estate, now):
     await estate.scan("example.com", "only", at=now)
     await estate.hosts("only", ["a.example.com", "b.example.com"], at=now)
@@ -26,7 +30,7 @@ async def test_a_first_scan_contributes_nothing_new(estate, now):
 
     web = _metric(out, WEB)
     assert web.value == 2
-    assert web.new_in_window == 0, "no baseline, so nothing counts as new"
+    assert _new(out, WEB) == 0, "no baseline, so nothing counts as new"
 
 
 async def test_only_the_scan_that_first_saw_a_host_is_credited(estate, now):
@@ -44,7 +48,7 @@ async def test_only_the_scan_that_first_saw_a_host_is_credited(estate, now):
 
     web = _metric(out, WEB)
     assert web.value == 3, "the newest covering scan holds three hosts"
-    assert web.new_in_window == 1, "only c.example.com is new"
+    assert _new(out, WEB) == 1, "only c.example.com is new"
 
 
 async def test_a_repeat_finding_is_never_counted_twice(estate, now):
@@ -56,7 +60,7 @@ async def test_a_repeat_finding_is_never_counted_twice(estate, now):
         estate.project_id, "30d"
     )
 
-    assert _metric(out, WEB).new_in_window == 0, (
+    assert _new(out, WEB) == 0, (
         "the only scan that first saw it has no baseline of its own"
     )
 
@@ -74,10 +78,11 @@ async def test_newness_is_judged_per_target(estate, now):
         estate.project_id, "7d"
     )
 
-    web = _metric(out, WEB)
-    assert web.value == 4
-    assert web.targets_covered == 2
-    assert web.new_in_window == 1, "two.com has no baseline and contributes nothing"
+    assert _metric(out, WEB).value == 4
+    assert _new(out, WEB) == 1, "two.com has no baseline and contributes nothing"
+    rows = {row.target_value: row for row in out.changes}
+    assert rows["one.com"].new.get(WEB) == 1
+    assert WEB in rows["two.com"].first
 
 
 async def test_answering_hosts_counts_every_http_answer_not_only_2xx(estate, now):

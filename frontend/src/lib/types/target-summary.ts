@@ -32,12 +32,8 @@ export interface TargetRisk {
 }
 
 export interface TargetMonitoring {
-	schedule_id: string;
-	name: string;
 	cadence: string;
-	status: string;
 	next_run_at: string | null;
-	last_run_at: string | null;
 }
 
 export interface TargetSummaryRead {
@@ -46,13 +42,11 @@ export interface TargetSummaryRead {
 	scans_running: number;
 	scans_failed: number;
 	first_scan_at: string | null;
-	last_scan_at: string | null;
 	last_completed_at: string | null;
 	latest_scan: ScanRead | null;
 	surface: SurfaceMetric[];
 	risk: TargetRisk;
 	sensitive_services: number | null;
 	inventory_total: number;
-	inventory_first_seen: string | null;
 	monitoring: TargetMonitoring | null;
 }

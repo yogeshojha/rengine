@@ -8,7 +8,7 @@
 	import Hint from '$lib/components/hint.svelte';
 	import AskTrace from './ask-trace.svelte';
 	import EvidencePeek from './evidence-peek.svelte';
-	import { parseAnswer } from './answer-text';
+	import { parseAnswer, plainAnswer, type AnswerSpan } from './answer-text';
 	import {
 		ASK_FLAG_LABELS,
 		CitationKind,
@@ -18,6 +18,7 @@
 	} from '$lib/config/ask';
 	import type { AskCitation, AskMessage } from '$lib/types/ask';
 	import { writeClipboard } from '$lib/utilities/clipboard';
+	import { inAppHref } from '$lib/utilities/mcp';
 
 	interface Props {
 		message: AskMessage;
@@ -49,7 +50,7 @@
 	}
 
 	async function copy() {
-		if (await writeClipboard(message.text)) toast.success('Copied');
+		if (await writeClipboard(plainAnswer(message.text))) toast.success('Copied');
 	}
 </script>
 
@@ -114,7 +115,7 @@
 					variant="ghost"
 					size="sm"
 					class="h-7 gap-1.5 px-2 text-xs"
-					onclick={() => onSave(message.text)}
+					onclick={() => onSave(plainAnswer(message.text))}
 				>
 					<NotebookPen />
 					Save to notes
@@ -124,18 +125,19 @@
 	</div>
 {/if}
 
-{#snippet spans(list: ReturnType<typeof parseAnswer>[number]['spans'], block: number)}
+{#snippet spans(list: AnswerSpan[], block: number)}
 	{#each list as span, j (j)}
 		{#if span.kind === 'cite'}
 			{@const cite = byNumber.get(span.n)}
 			{#if !cite}
 				<span class="text-muted-foreground">[{span.n}]</span>
 			{:else if cite.kind === CitationKind.TOOL && cite.pivot}
+				{@const href = inAppHref(cite.pivot)}
 				<Hint text={cite.label}>
 					{#snippet child(props)}
 						<a
 							{...props}
-							href={cite.pivot}
+							{href}
 							class="mx-0.5 inline-flex size-4 items-center justify-center rounded-sm bg-accent align-[1px] font-mono text-2xs font-semibold text-primary"
 							>{span.n}</a
 						>

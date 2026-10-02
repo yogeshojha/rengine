@@ -52,10 +52,6 @@ export interface EstateNeighbourCert {
 
 export interface EstateCounts {
 	untracked: number;
-	tracked: number;
-	providers: number;
-	neighbour_names: number;
-	by_reason: Record<string, number>;
 }
 
 export interface TargetEstate {
@@ -66,8 +62,6 @@ export interface TargetEstate {
 	domains: EstateDomain[];
 	providers: EstateProvider[];
 	neighbours: EstateNeighbourCert[];
-	own: string[];
-	considered_targets: number;
 }
 
 export interface ProjectEstate {

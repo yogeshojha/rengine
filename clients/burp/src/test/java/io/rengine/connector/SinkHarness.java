@@ -60,9 +60,7 @@ public final class SinkHarness {
         sink.offer(obs("https://" + host + "/harness/api/orders/8812", "POST", 200, "application/json", true, List.of("amount", "reason")));
         sink.offer(obs("https://" + host + "/harness/api/orders/9931", "POST", 200, "application/json", true, List.of("amount", "reason")));
         sink.offer(obs("https://github.com/harness/settings", "GET", 200, "text/html", false, List.of()));
-        // the same shape twice inside the window is held back by the client
         sink.offer(obs("https://" + host + "/harness/admin/", "GET", 200, "text/html", true, List.of()));
-        // a title with characters that must survive JSON escaping
         sink.offer(new Observation(
                 "https://" + host + "/harness/quote", "GET", 200, "text/html", 42,
                 "He said \"hi\"\n\tand left \\ ", false, "proxy", List.of(),
@@ -70,8 +68,7 @@ public final class SinkHarness {
 
         Thread.sleep(4000);
 
-        System.out.println("accepted=" + sink.accepted()
-                + " sent=" + sink.sent()
+        System.out.println("sent=" + sink.sent()
                 + " deduped=" + sink.deduped()
                 + " dropped=" + sink.dropped()
                 + " failed=" + sink.failed());

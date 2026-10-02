@@ -1,21 +1,20 @@
+from shared.definitions.bounty_programs import API_PLATFORMS
 from shared.enums.instance import InstanceMode
 
 CAP_BOUNTY_PLATFORMS = "bounty_platforms"
 CAP_BOUNTY_PROGRAMS = "bounty_programs"
-CAP_BB_RECON_PRESETS = "bb_recon_presets"
 CAP_PROGRAM_WATCHES = "program_watches"
 
 _MODE_CAPABILITIES: dict[str, set[str]] = {
     InstanceMode.BUG_BOUNTY.value: {
         CAP_BOUNTY_PLATFORMS,
         CAP_BOUNTY_PROGRAMS,
-        CAP_BB_RECON_PRESETS,
         CAP_PROGRAM_WATCHES,
     },
     InstanceMode.CORPORATE.value: set(),
 }
 
-BUG_BOUNTY_PROVIDERS: frozenset[str] = frozenset({"hackerone", "intigriti"})
+BUG_BOUNTY_PROVIDERS: frozenset[str] = frozenset(p.api_provider for p in API_PLATFORMS)
 
 VALID_MODES: frozenset[str] = frozenset(
     {InstanceMode.BUG_BOUNTY.value, InstanceMode.CORPORATE.value}

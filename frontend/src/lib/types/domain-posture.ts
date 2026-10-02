@@ -11,8 +11,6 @@ export interface DomainPostureRead {
 	dmarc: string | null;
 	dmarc_policy: string | null;
 	dmarc_subdomain_policy: string | null;
-	dmarc_pct: number | null;
-	dmarc_rua: boolean | null;
 	dmarc_inherited: boolean;
 	dkim_selectors: string[];
 	dkim_key_bits: number | null;

@@ -10,13 +10,12 @@ Join our developer chat on [Discord Developer Room](https://discord.gg/JuhHdHTtw
 
 ## Bug reporting
 
-We appreciate your effort to improve reNgine by submitting a bug report. But, Before doing so, please check the following things:
+Before submitting a bug report, check the following:
 
 1. Please **do not** use the issue tracker for personal support requests, instead use [reNgine Support Discord channel](https://discord.gg/azv6fzhNCE) for any personal support request.
-2. Check whether the bug **hasn't been already reported**. Duplicate reports take us time, that we could be used to fix other bugs or make improvements.
-3. If you get an error while using reNgine, please **describe what happened** and add a verbose error message. Reports like "I got an error when I started scanning some random website." are not worth anybody's time. Please be as descriptive as you can.
+2. Search existing issues before opening a new one.
+3. Include the reNgine version, the steps that trigger the error and the full error message.
 4. Provide easy steps to reproduce. This will help us solve your issues easily and quickly.
-Your contributions are again highly appreciated!
 
 Please report [bugs here on GitHub Issues section][1].
 
@@ -24,12 +23,14 @@ Please report [bugs here on GitHub Issues section][1].
 
 
 ## Feature requests
-We welcome feature requests. But please take a moment to find out whether your idea fits with the original idea behind reEngine. It's up to you to make a strong case to convince the project's developers of the merits of this feature. Please provide as much detail and context as possible.
+Describe the problem the feature solves and the expected result.
 
 ## Pull requests
 Pull requests with a bug fix, improvements, new features are welcome and very much appreciated.
 
-**Please ask** first before embarking on any significant pull request (e.g. implementing features, refactoring code, porting to a different language), otherwise you risk spending a lot of time working on something that the project's developers might not want to merge into the project.
+Open an issue before starting a large change such as a new feature or a refactor.
+
+Development setup is in [dev-README.md](../dev-README.md). Run `make lint` and `make test` before opening a pull request.
 
 ### First Time Contributors
 If reNgine happens to be your first open-source project to contribute to, please follow the guidelines.
@@ -54,6 +55,6 @@ git pull upstream master
 Please note that this project is released with a [Contributor Code of Conduct](CODE_OF_CONDUCT.md).
 By participating in this project you agree to abide by its terms.
 
-## Thank you!
+## Thanks
 
-Thank you for contributing!
+Thank you for contributing.

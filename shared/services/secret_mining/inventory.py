@@ -90,7 +90,6 @@ class SecretInventory:
         self._seen: set[tuple[str, str, str]] = set()
         self._cleared = incremental
         self.secrets = 0
-        self.sightings = 0
         if incremental:
             self._load()
 
@@ -208,7 +207,6 @@ class SecretInventory:
             if obj in self.session:
                 self.session.expunge(obj)
         self.secrets += len(rows)
-        self.sightings += len(sightings)
         return len(rows)
 
     def record_coverage(self, facts: CoverageFacts) -> None:

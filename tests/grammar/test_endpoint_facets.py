@@ -56,9 +56,7 @@ async def test_a_narrowed_reach_agrees_with_an_unnarrowed_one(estate, now):
     service = EndpointService(estate.session)
 
     plain = await service.facets(scan, EndpointFilter())
-    narrowed = await service.facets(scan, EndpointFilter(q="not is:nonexistentflag"))
-    if narrowed.total == 0:
-        narrowed = await service.facets(scan, EndpointFilter(host="www.example.com"))
+    narrowed = await service.facets(scan, EndpointFilter(host="www.example.com"))
 
     assert narrowed.total == plain.total
     assert [(f.value, f.count) for f in narrowed.endpoint_class] == [

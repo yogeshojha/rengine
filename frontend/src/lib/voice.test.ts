@@ -1,6 +1,7 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { sourceFiles } from './test-utils/source-files';
 
 const ROOT = join(import.meta.dirname, '..');
 
@@ -10,7 +11,6 @@ const REGISTER =
 const ADDRESS = /\b(you|your|you're|we|we'll|our|let's|please)\b/i;
 const SCOPE_NARRATION =
 	/\b(in this project|across all targets|of each target|from the latest (scan|run|covering run))\b/i;
-// a description may decode a visual encoding; that is not a restatement
 const ENCODING = /\b(sized|tinted|coloured|colored|ranked|ordered|scaled|shaded) by\b/i;
 const RHETORICAL = /^(What|Where|Why|How|Who)\b/;
 const IMPERATIVE = /^(Leave|Pick|Tick|Press|Make sure|Please|Head|Go|Click|Hover)\b/;
@@ -54,23 +54,11 @@ const words = (s: string) =>
 
 const stem = (w: string) => w.slice(0, 5);
 
-function walk(dir: string, out: string[] = []): string[] {
-	for (const name of readdirSync(dir)) {
-		const path = join(dir, name);
-		if (name === 'ui' && dir.endsWith('components')) continue;
-		if (statSync(path).isDirectory()) walk(path, out);
-		else if (/\.svelte$/.test(name)) out.push(path);
-	}
-	return out;
-}
-
-const files = walk(ROOT).map((path) => ({
+const files = sourceFiles(ROOT, /\.svelte$/).map((path) => ({
 	name: path.slice(ROOT.length + 1),
 	text: readFileSync(path, 'utf8')
 }));
 
-// an informational heading describes; an action heading (confirm, empty state)
-// states a consequence, which is not a restatement
 const INFORMATIONAL = /<(Widget|PanelHead)\b([\s\S]{0,400}?)\/?>/g;
 
 function pairs(text: string): { title: string; description: string }[] {
@@ -96,7 +84,7 @@ function subtitles(text: string): string[] {
 	return [...text.matchAll(re)].map((m) => m[1].replace(/\s+/g, ' ').trim());
 }
 
-/** every string a Widget or PanelHead shows as a description. */
+/** every literal description= attribute. */
 function descriptions(text: string): string[] {
 	const re = /description=\{?"([^"]{4,200})"/g;
 	return [...text.matchAll(re)].map((m) => m[1]);

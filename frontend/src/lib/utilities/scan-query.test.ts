@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hasToken, parseScanQuery, withToken, withoutToken } from './scan-query';
+import { hasToken, parseScanQuery, quote, withToken, withoutToken } from './scan-query';
 
 describe('parseScanQuery', () => {
 	it('splits tokens from free text', () => {
@@ -27,6 +27,13 @@ describe('parseScanQuery', () => {
 		expect(parseScanQuery('kev:true').error).toContain('Unknown field kev');
 		expect(parseScanQuery('is:kev').error).toContain('Unknown value is:kev');
 		expect(parseScanQuery('status:done').error).toContain('Unknown status done');
+	});
+
+	it('round-trips an engine name holding a quote', () => {
+		const name = 'Fast "web" run';
+		const q = parseScanQuery(`engine:${quote(name)} acme`);
+		expect(q.engines).toEqual([name]);
+		expect(q.search).toBe('acme');
 	});
 });
 

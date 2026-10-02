@@ -2,15 +2,20 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+import jwt
 from argon2 import PasswordHasher
 from argon2.exceptions import VerificationError, VerifyMismatchError
-from jose import JWTError, jwt
 
-from app.config import settings
+from app.config import ALGORITHM, settings
 
 TOKEN_TYPE_ACCESS = "access"  # noqa: S105
 TOKEN_TYPE_REFRESH = "refresh"  # noqa: S105
 TOKEN_TYPE_MFA = "mfa"  # noqa: S105
+
+ACCESS_TOKEN_COOKIE = "access_token"  # noqa: S105
+REFRESH_TOKEN_COOKIE = "refresh_token"  # noqa: S105
+AUTH_COOKIES = (ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE)
+ISSUED_MS_CLAIM = "iat_ms"
 
 ph = PasswordHasher(
     time_cost=2,
@@ -38,14 +43,17 @@ def create_token(
     token_type: str,
     expires_delta: timedelta,
 ) -> str:
-    expire = datetime.now(UTC) + expires_delta
+    now = datetime.now(UTC)
+    expire = now + expires_delta
     to_encode = {
         "exp": expire,
+        "iat": int(now.timestamp()),
+        ISSUED_MS_CLAIM: int(now.timestamp() * 1000),
         "sub": str(subject),
         "type": token_type,
         "jti": uuid.uuid4().hex,
     }
-    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
 
 
 def create_access_token(subject: str | Any) -> str:
@@ -69,7 +77,7 @@ def decode_token(token: str) -> dict | None:
         return jwt.decode(
             token,
             settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM],
+            algorithms=[ALGORITHM],
         )
-    except JWTError:
+    except jwt.PyJWTError:
         return None

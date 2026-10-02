@@ -18,7 +18,7 @@ RUN NODE_OPTIONS=--max-old-space-size=4096 npm run build && npm prune --omit=dev
 
 
 ##################################################################
-# Production: the adapter-node build and its runtime deps alone
+# Production
 ##################################################################
 
 FROM node:22-slim AS production

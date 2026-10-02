@@ -9,10 +9,10 @@
 		type ExpirationUrgency
 	} from '$lib/utilities/dates';
 	import * as Alert from '$lib/components/ui/alert';
-	import * as Tooltip from '$lib/components/ui/tooltip';
+	import Hint from '$lib/components/hint.svelte';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Separator } from '$lib/components/ui/separator';
-	import CopyButton from '@/components/copy-button.svelte';
+	import CopyButton from '$lib/components/copy-button.svelte';
 	import Server from '@lucide/svelte/icons/server';
 	import Network from '@lucide/svelte/icons/network';
 	import ShieldCheck from '@lucide/svelte/icons/shield-check';
@@ -56,18 +56,7 @@
 		urgency === 'expired' || urgency === 'critical' || urgency === 'warning'
 	);
 
-	let alertMessage = $derived.by(() => {
-		switch (urgency) {
-			case 'expired':
-				return `${expirationLabel}.`;
-			case 'critical':
-				return `Expires ${expirationLabel.toLowerCase()}.`;
-			case 'warning':
-				return `Expires ${expirationLabel.toLowerCase()}.`;
-			default:
-				return '';
-		}
-	});
+	let alertMessage = $derived(showAlert ? `${expirationLabel}.` : '');
 
 	let hasNameservers = $derived(record.nameservers && record.nameservers.length > 0);
 
@@ -105,8 +94,8 @@
 
 	<!-- Identity -->
 	<div class="flex items-start gap-3">
-		<div class="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/10 shrink-0">
-			<LookupIcon class="h-5 w-5 text-primary" />
+		<div class="flex items-center justify-center h-10 w-10 rounded-xl bg-muted shrink-0">
+			<LookupIcon class="h-5 w-5 text-muted-foreground" />
 		</div>
 		<div class="min-w-0 flex-1">
 			<div class="flex items-center gap-2">
@@ -133,23 +122,18 @@
 					<UserRound class="h-3 w-3" />
 					Registrant
 				</div>
-				<Tooltip.Root>
-					<Tooltip.Trigger>
-						{#snippet child({ props })}
-							<button
-								{...props}
-								class="text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 group"
-								onclick={() => handleCorrelationClick('registrant_name', record.registrant_name)}
-							>
-								{record.registrant_name}
-								<ExternalLink class="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
-							</button>
-						{/snippet}
-					</Tooltip.Trigger>
-					<Tooltip.Content>
-						<p>Targets sharing this registrant</p>
-					</Tooltip.Content>
-				</Tooltip.Root>
+				<Hint text="Records sharing this registrant">
+					{#snippet child(props)}
+						<button
+							{...props}
+							class="text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 group"
+							onclick={() => handleCorrelationClick('registrant_name', record.registrant_name)}
+						>
+							{record.registrant_name}
+							<ExternalLink class="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
+						</button>
+					{/snippet}
+				</Hint>
 				{#if record.registrant_email}
 					<p class="text-xs text-muted-foreground">{record.registrant_email}</p>
 				{/if}
@@ -164,23 +148,18 @@
 					<Building class="h-3 w-3" />
 					Registrar
 				</div>
-				<Tooltip.Root>
-					<Tooltip.Trigger>
-						{#snippet child({ props })}
-							<button
-								{...props}
-								class="text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 group"
-								onclick={() => handleCorrelationClick('registrar_name', record.registrar_name)}
-							>
-								{record.registrar_name}
-								<ExternalLink class="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
-							</button>
-						{/snippet}
-					</Tooltip.Trigger>
-					<Tooltip.Content>
-						<p>Targets sharing this registrar</p>
-					</Tooltip.Content>
-				</Tooltip.Root>
+				<Hint text="Records sharing this registrar">
+					{#snippet child(props)}
+						<button
+							{...props}
+							class="text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 group"
+							onclick={() => handleCorrelationClick('registrar_name', record.registrar_name)}
+						>
+							{record.registrar_name}
+							<ExternalLink class="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
+						</button>
+					{/snippet}
+				</Hint>
 				{#if record.abuse_email}
 					<div class="flex items-center gap-1 mt-0.5">
 						<Mail class="h-3 w-3 text-muted-foreground" />
@@ -203,23 +182,18 @@
 					<Cable class="h-3 w-3" />
 					Network
 				</div>
-				<Tooltip.Root>
-					<Tooltip.Trigger>
-						{#snippet child({ props })}
-							<button
-								{...props}
-								class="text-sm font-medium font-mono text-left hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 group"
-								onclick={() => handleCorrelationClick('network_cidr', record.network_cidr)}
-							>
-								{record.network_cidr}
-								<ExternalLink class="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
-							</button>
-						{/snippet}
-					</Tooltip.Trigger>
-					<Tooltip.Content>
-						<p>Targets in this network</p>
-					</Tooltip.Content>
-				</Tooltip.Root>
+				<Hint text="Records in this network">
+					{#snippet child(props)}
+						<button
+							{...props}
+							class="text-sm font-medium font-mono text-left hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 group"
+							onclick={() => handleCorrelationClick('network_cidr', record.network_cidr)}
+						>
+							{record.network_cidr}
+							<ExternalLink class="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
+						</button>
+					{/snippet}
+				</Hint>
 				{#if record.ip_version}
 					<p class="text-xs text-muted-foreground">IPv{record.ip_version}</p>
 				{/if}
@@ -369,28 +343,23 @@
 			<p class="text-2xs text-muted-foreground uppercase tracking-wider mb-2">Nameservers</p>
 			<div class="flex flex-wrap gap-1.5">
 				{#each record.nameservers as ns (ns)}
-					<Tooltip.Root>
-						<Tooltip.Trigger>
-							{#snippet child({ props })}
-								<button
-									{...props}
-									class="cursor-pointer"
-									onclick={() => handleCorrelationClick('nameserver', ns)}
+					<Hint text="Records on this nameserver">
+						{#snippet child(props)}
+							<button
+								{...props}
+								class="cursor-pointer"
+								onclick={() => handleCorrelationClick('nameserver', ns)}
+							>
+								<Badge
+									variant="outline"
+									class="text-xs font-mono font-normal gap-1.5 hover:bg-accent hover:border-primary/30 transition-colors"
 								>
-									<Badge
-										variant="outline"
-										class="text-xs font-mono font-normal gap-1.5 hover:bg-accent hover:border-primary/30 transition-colors"
-									>
-										<Server class="h-3 w-3 text-muted-foreground" />
-										{ns}
-									</Badge>
-								</button>
-							{/snippet}
-						</Tooltip.Trigger>
-						<Tooltip.Content>
-							<p>Targets on this nameserver</p>
-						</Tooltip.Content>
-					</Tooltip.Root>
+									<Server class="h-3 w-3 text-muted-foreground" />
+									{ns}
+								</Badge>
+							</button>
+						{/snippet}
+					</Hint>
 				{/each}
 			</div>
 		</div>

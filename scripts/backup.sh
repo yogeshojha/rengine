@@ -3,36 +3,44 @@
 #
 #   scripts/backup.sh dump [DIR]     write a dated archive to DIR (default ./backups)
 #   scripts/backup.sh restore FILE   replace this instance's data with an archive
-#   scripts/backup.sh list [DIR]     what is in DIR
+#   scripts/backup.sh list [DIR]     list the archives in DIR
 #
-# What is in an archive, and why:
-#   db.dump          the database, custom format so it restores in parallel
-#   scan_media.tar   screenshots and captured responses, which live on disk not in pg
-#   volumes.tar      uploaded wordlists, nuclei templates, report themes and fonts
-#   env              the settings a restore needs, SECRET_KEY included
+# Archive contents:
+#   db.dump          the database, pg_dump custom format
+#   scan_media.tar   screenshots and stored responses
+#   volumes.tar      check templates, wordlists, generated reports and report fonts
+#   env              SECRET_KEY
 #
-# SECRET_KEY is in the archive because API keys, proxy credentials and notification
-# secrets are Fernet-encrypted with a key derived from it: restore without it and
-# every stored secret is unreadable. Treat an archive as a credential.
+# An archive decrypts every stored secret. Store it as a credential.
 
 set -euo pipefail
-# an archive carries SECRET_KEY and the database
 umask 077
+
+ARG="${2:-}"
+case "$ARG" in "" | /*) ;; *) ARG="$PWD/$ARG" ;; esac
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$HERE"
 
-DEST="${2:-./backups}"
+DEST="${ARG:-./backups}"
 DB_USER="$(grep -E '^POSTGRES_USER=' .env | cut -d= -f2- || echo rengine)"
 DB_NAME="$(grep -E '^POSTGRES_DB=' .env | cut -d= -f2- || echo rengine)"
 VOLUMES=(vuln_templates wordlists report_fonts reports_out)
-# compose prefixes a volume with the project name, which is not always the directory
+SERVICES=(api worker-default worker-scans worker-control worker-beat channels ct-stream)
 PROJECT="$(docker compose config --format json 2>/dev/null \
-  | sed -n 's/.*"name": *"\([^"]*\)".*/\1/p' | head -1)"
+  | sed -n 's/.*"name": *"\([^"]*\)".*/\1/p' | head -1 || true)"
 PROJECT="${PROJECT:-$(basename "$HERE")}"
 
 WORK=""
-cleanup() { [ -n "$WORK" ] && rm -rf "$WORK"; return 0; }
+STOPPED=0
+cleanup() {
+  [ -n "$WORK" ] && rm -rf "$WORK"
+  if [ "$STOPPED" = 1 ]; then
+    docker compose start "${SERVICES[@]}" >/dev/null 2>&1 || true
+    printf 'error: restore not completed. Stopped services started.\n' >&2
+  fi
+  return 0
+}
 trap cleanup EXIT
 
 say() { printf '\033[1m%s\033[0m\n' "$*"; }
@@ -40,8 +48,14 @@ die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 
 running() { docker compose ps --format '{{.Service}}' 2>/dev/null | grep -qx "$1"; }
 
-dump() {
+HELPER=""
+need_db() {
   running db || die "the db service is not running"
+  HELPER="$(docker inspect --format '{{.Config.Image}}' "$(docker compose ps -q db)")"
+}
+
+dump() {
+  need_db
   mkdir -p "$DEST"
   local stamp archive work
   stamp="$(date -u +%Y%m%dT%H%M%SZ)"
@@ -51,10 +65,9 @@ dump() {
   say "database"
   docker compose exec -T db pg_dump -U "$DB_USER" -d "$DB_NAME" -Fc > "$work/db.dump"
 
-  # the worker writes scan media as root, so the tar runs as root too
   say "scan media"
   if [ -d scan_media ]; then
-    docker run --rm -v "$HERE:/repo:ro" -v "$work:/to" alpine \
+    docker run --rm -v "$HERE:/repo:ro" -v "$work:/to" "$HELPER" \
       tar -cf /to/scan_media.tar -C /repo scan_media >/dev/null
   else
     tar -cf "$work/scan_media.tar" -T /dev/null
@@ -66,43 +79,53 @@ dump() {
   for volume in "${VOLUMES[@]}"; do
     docker volume inspect "${PROJECT}_$volume" >/dev/null 2>&1 \
       || die "volume ${PROJECT}_$volume does not exist. Start the stack once before a backup."
-    docker run --rm -v "${PROJECT}_$volume:/from" -v "$vwork:/to" alpine \
+    docker run --rm -v "${PROJECT}_$volume:/from" -v "$vwork:/to" "$HELPER" \
       sh -c "tar -cf /to/$volume.tar -C /from ." >/dev/null
   done
   tar -cf "$work/volumes.tar" -C "$vwork" .
 
-  # only what a restore needs; nothing else from .env travels
-  grep -E '^(SECRET_KEY|POSTGRES_|ADMIN_)' .env > "$work/env" || true
+  grep -E '^SECRET_KEY=' .env > "$work/env" || true
 
   tar -cf "$archive" -C "$work" db.dump scan_media.tar volumes.tar env
   say "wrote $archive ($(du -h "$archive" | cut -f1))"
 }
 
 restore() {
-  local archive="${2:-}"
-  [ -f "$archive" ] || die "usage: scripts/backup.sh restore FILE"
-  running db || die "the db service is not running"
+  local archive="$ARG"
+  [ -n "$archive" ] || die "usage: scripts/backup.sh restore FILE"
+  [ -f "$archive" ] || die "$archive not found"
+  need_db
 
-  printf 'This replaces the data in this instance. Type the database name (%s) to go on: ' "$DB_NAME"
+  local work archived current differs redis_db
+  WORK="$(mktemp -d)"; work="$WORK"
+  tar -xf "$archive" -C "$work"
+  archived="$(grep -E '^SECRET_KEY=' "$work/env" | cut -d= -f2- || true)"
+  current="$(grep -E '^SECRET_KEY=' .env | cut -d= -f2- || true)"
+  differs="SECRET_KEY in .env differs from the archive. Copy the SECRET_KEY line from 'tar -xOf $archive env' into .env and restart the stack."
+  [ "$archived" = "$current" ] || say "$differs"
+
+  printf "Type the database name %s to replace this instance's data: " "$DB_NAME"
   read -r answer
   [ "$answer" = "$DB_NAME" ] || die "not confirmed"
 
-  local work
-  WORK="$(mktemp -d)"; work="$WORK"
-  tar -xf "$archive" -C "$work"
-
-  say "stopping the workers so nothing writes during the restore"
-  docker compose stop api worker-default worker-scans worker-control worker-beat >/dev/null
+  say "stopping the services that use the database"
+  STOPPED=1
+  docker compose stop "${SERVICES[@]}" >/dev/null
 
   say "database"
-  docker compose exec -T db psql -U "$DB_USER" -d postgres -c \
-    "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='$DB_NAME' AND pid <> pg_backend_pid();" >/dev/null
-  docker compose exec -T db dropdb -U "$DB_USER" --if-exists "$DB_NAME"
+  docker compose exec -T db dropdb -U "$DB_USER" --if-exists --force "$DB_NAME"
   docker compose exec -T db createdb -U "$DB_USER" "$DB_NAME"
   docker compose exec -T db pg_restore -U "$DB_USER" -d "$DB_NAME" --no-owner < "$work/db.dump"
 
+  say "cache"
+  redis_db="$(grep -E '^REDIS_DB=' .env | cut -d= -f2- || true)"
+  [[ "$redis_db" =~ ^[0-9]+$ ]] || redis_db=0
+  docker compose exec -T redis sh -c \
+    "redis-cli \${REDIS_PASSWORD:+-a \"\$REDIS_PASSWORD\"} --no-auth-warning -n $redis_db INCR rev:global" >/dev/null \
+    || say "cached aggregates not cleared"
+
   say "scan media"
-  docker run --rm -v "$HERE:/repo" -v "$work:/from:ro" alpine \
+  docker run --rm -v "$HERE:/repo" -v "$work:/from:ro" "$HELPER" \
     sh -c 'rm -rf /repo/scan_media && tar -xf /from/scan_media.tar -C /repo' >/dev/null
 
   say "volumes"
@@ -110,19 +133,20 @@ restore() {
   mkdir -p "$vwork" && tar -xf "$work/volumes.tar" -C "$vwork"
   for volume in "${VOLUMES[@]}"; do
     [ -f "$vwork/$volume.tar" ] || continue
-    docker run --rm -v "${PROJECT}_$volume:/to" -v "$vwork:/from" alpine \
+    docker run --rm -v "${PROJECT}_$volume:/to" -v "$vwork:/from" "$HELPER" \
       sh -c "rm -rf /to/* /to/..?* /to/.[!.]* 2>/dev/null; tar -xf /from/$volume.tar -C /to" >/dev/null
   done
 
   say "starting"
-  docker compose start api worker-default worker-scans worker-control worker-beat >/dev/null
-  say "restored. If SECRET_KEY differs from the archive's, stored secrets will not decrypt:"
-  grep -E '^SECRET_KEY=' "$work/env" | sed 's/=.*/=<in the archive>/'
+  docker compose start "${SERVICES[@]}" >/dev/null
+  STOPPED=0
+  say "restored"
+  [ "$archived" = "$current" ] || say "$differs"
 }
 
 case "${1:-}" in
-  dump) dump "$@" ;;
-  restore) restore "$@" ;;
-  list) ls -lh "${2:-./backups}" 2>/dev/null || die "nothing in ${2:-./backups}" ;;
-  *) sed -n '2,17p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
+  dump) dump ;;
+  restore) restore ;;
+  list) ls -lh "${ARG:-./backups}" 2>/dev/null || die "nothing in ${ARG:-./backups}" ;;
+  *) sed -n '2,14p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
 esac

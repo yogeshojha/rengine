@@ -14,6 +14,7 @@
 	import { ROUTES } from '$lib/config/routes';
 	import { NewKind, TERMS_KINDS } from '$lib/config/whats-new';
 	import { rowHref } from '$lib/utilities/whats-new';
+	import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
 	import type { NewItem } from '$lib/types/whats-new';
 
 	interface Props {
@@ -211,7 +212,7 @@
 				<Button variant="ghost" size="sm" class="h-7 px-2 text-xs" href={programHref}>Scope</Button>
 			{/if}
 			{#if item.program_url}
-				<Hint text="Open on {item.platform}">
+				<Hint text="Open on {bountyVocabulary.label(item.platform ?? '')}">
 					{#snippet child(props)}
 						<Button
 							{...props}

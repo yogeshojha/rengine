@@ -8,7 +8,7 @@ import secrets
 import urllib.error
 import urllib.request
 
-BASE = "http://localhost:8000/api/v1"
+BASE = os.environ.get("RENGINE_API", "http://localhost:8000/api/v1")
 PID = os.environ.get("RENGINE_PROJECT_ID", "")
 USER = os.environ.get("RENGINE_USER", "rengine")
 PASSWORD = os.environ.get("RENGINE_PASSWORD", "rengine@123")

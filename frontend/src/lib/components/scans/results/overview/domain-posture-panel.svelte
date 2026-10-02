@@ -9,13 +9,14 @@
 	import {
 		CHECK_BY_KEY,
 		FACT_CHIP,
-		TONE_DOT,
 		isSpoofable,
 		postureQuery,
 		sortChecks,
 		zoneFacts
 	} from '$lib/config/domain-posture';
+	import { TONE_DOT } from '$lib/config/hygiene';
 	import type { DomainPostureSummary } from '$lib/types/domain-posture';
+	import { plural } from '$lib/utilities/strings';
 
 	interface Props {
 		summary: DomainPostureSummary | null;
@@ -26,8 +27,6 @@
 	let { summary, loading, onFilter }: Props = $props();
 
 	const SCROLL_AFTER = 8;
-	const plural = (n: number, one: string, many: string) =>
-		`${n.toLocaleString()} ${n === 1 ? one : many}`;
 
 	let zones = $derived(summary?.zones ?? []);
 	let hasData = $derived((summary?.evaluated ?? 0) > 0);

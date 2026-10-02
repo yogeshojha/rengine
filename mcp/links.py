@@ -32,13 +32,24 @@ def compare(
     return f"{_base(ui)}/scans/compare?{urlencode(params)}"
 
 
-def target(ui: str, target_id: uuid.UUID | str, tab: str | None = None) -> str:
-    suffix = f"?tab={tab}" if tab else ""
-    return f"{_base(ui)}/targets/{target_id}{suffix}"
+def target(ui: str, target_id: uuid.UUID | str) -> str:
+    return f"{_base(ui)}/targets/{target_id}"
 
 
-def scans_for_target(ui: str, target_id: uuid.UUID | str) -> str:
-    return f"{_base(ui)}/scans?target={target_id}"
+def targets(ui: str) -> str:
+    return f"{_base(ui)}/targets"
+
+
+def scans(ui: str) -> str:
+    return f"{_base(ui)}/scans"
+
+
+def engines(ui: str) -> str:
+    return f"{_base(ui)}/automation/engines"
+
+
+def contexts(ui: str) -> str:
+    return f"{_base(ui)}/automation/contexts"
 
 
 def dashboard(ui: str) -> str:

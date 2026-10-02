@@ -14,15 +14,15 @@
 	import { Area, AreaChart, LinearGradient } from 'layerchart';
 	import * as Chart from '$lib/components/ui/chart';
 	import type { TooltipPayload } from '$lib/components/ui/chart/chart-utils';
+	import { formatDay } from '$lib/utilities/dates';
 
 	interface Props {
 		data: DailyLevel[];
 		label: string;
 		height?: number;
-		class?: string;
 	}
 
-	let { data, label, height = 190, class: className = '' }: Props = $props();
+	let { data, label, height = 190 }: Props = $props();
 
 	let config = $derived({ total: { label, color: 'var(--series)' } } satisfies Chart.ChartConfig);
 	let series = $derived([{ key: 'total', label, color: 'var(--series)' }]);
@@ -35,19 +35,6 @@
 		data.map((d) => d.date).filter((_, i) => (data.length - 1 - i) % every === 0)
 	);
 	let runDays = $derived(data.filter((d) => d.runs > 0));
-	const fmtDay = (v: string) =>
-		new Date(`${v}T00:00:00Z`).toLocaleDateString('en-US', {
-			month: 'short',
-			day: 'numeric',
-			timeZone: 'UTC'
-		});
-	const fmtFullDay = (v: string) =>
-		new Date(`${v}T00:00:00Z`).toLocaleDateString('en-US', {
-			weekday: 'short',
-			month: 'short',
-			day: 'numeric',
-			timeZone: 'UTC'
-		});
 	const fmtValue = (v: unknown) => (typeof v === 'number' ? v.toLocaleString() : String(v ?? ''));
 	const rowOf = (payload: TooltipPayload[]): DailyLevel | null => {
 		const first = payload[0]?.payload;
@@ -57,7 +44,7 @@
 
 <Chart.Container
 	{config}
-	class="aspect-auto w-full [&_.lc-highlight-rect]:fill-muted/40 {className}"
+	class="aspect-auto w-full [&_.lc-highlight-rect]:fill-muted/40"
 	style="height:{height}px"
 >
 	<AreaChart
@@ -73,7 +60,7 @@
 		padding={{ top: 6, left: 34, right: 8, bottom: 22 }}
 		props={{
 			area: { curve: curveStepAfter, fillOpacity: 1, line: { class: 'stroke-[1.5px]' } },
-			xAxis: { ticks, tickLength: 0, format: fmtDay },
+			xAxis: { ticks, tickLength: 0, format: (v: string) => formatDay(v) },
 			yAxis: { ticks: 3, tickLength: 0, format: 'metric' },
 			grid: { class: 'stroke-border/60' },
 			highlight: { points: { r: 4 }, lines: { class: 'stroke-border' } }
@@ -102,7 +89,7 @@
 			{/each}
 		{/snippet}
 		{#snippet tooltip()}
-			<Chart.Tooltip class="min-w-[11rem]" labelFormatter={fmtFullDay}>
+			<Chart.Tooltip class="min-w-[11rem]" labelFormatter={(v: string) => formatDay(v, true)}>
 				{#snippet formatter({ value, name, item })}
 					<span class="flex flex-1 items-center justify-between gap-4">
 						<span class="flex items-center gap-1.5 text-muted-foreground">

@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import BEARER_HEADERS, CurrentUser, user_for_payload
-from app.api.v1.auth import set_auth_cookies
+from app.api.v1.auth import LoginResponse, reissue_session, set_auth_cookies
 from app.core.database import get_session
 from app.core.ratelimit import (
     clear_failures,
@@ -21,13 +21,19 @@ from app.core.security import (
     decode_token,
 )
 from app.services.totp import TOTPService
-from shared.schemas.auth import LoginResponse, TwoFactorLoginRequest
 from shared.utils.datetime import utc_now
 
 router = APIRouter(prefix="/auth/2fa", tags=["two-factor"])
 
+UNREADABLE_DETAIL = "The stored two-factor secret is unreadable. Use a backup code."
+
 
 class TwoFactorCodeRequest(BaseModel):
+    code: str
+
+
+class TwoFactorLoginRequest(BaseModel):
+    mfa_token: str
     code: str
 
 
@@ -56,6 +62,7 @@ async def setup_2fa(
 @router.post("/verify")
 async def verify_2fa(
     data: TwoFactorCodeRequest,
+    response: Response,
     current_user: CurrentUser,
     service: Annotated[TOTPService, Depends(get_service)],
 ):
@@ -70,15 +77,17 @@ async def verify_2fa(
         await record_failure(rl_key, window_seconds=300)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="The stored two-factor secret is unreadable. Disable two-factor and enroll again.",
+            detail="The stored two-factor secret is unreadable. Start setup again.",
         ) from e
     await clear_failures(rl_key)
+    await reissue_session(response, current_user)
     return {"enabled": True, "backup_codes": backup_codes}
 
 
 @router.post("/disable")
 async def disable_2fa(
     data: TwoFactorCodeRequest,
+    response: Response,
     current_user: CurrentUser,
     service: Annotated[TOTPService, Depends(get_service)],
 ):
@@ -93,9 +102,10 @@ async def disable_2fa(
         await record_failure(rl_key, window_seconds=300)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="The stored two-factor secret is unreadable. Disable two-factor and enroll again.",
+            detail=UNREADABLE_DETAIL,
         ) from e
     await clear_failures(rl_key)
+    await reissue_session(response, current_user)
     return {"enabled": False}
 
 
@@ -135,8 +145,12 @@ async def login_2fa(
 
     try:
         code_valid = await service.verify_code(user, data.code)
-    except ValueError:
-        code_valid = False
+    except ValueError as e:
+        await record_failure(rl_key, window_seconds=300)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=UNREADABLE_DETAIL,
+        ) from e
 
     if not code_valid:
         await record_failure(rl_key, window_seconds=300)
@@ -155,7 +169,4 @@ async def login_2fa(
 
     set_auth_cookies(response, access_token, refresh_token)
 
-    return LoginResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-    )
+    return LoginResponse()

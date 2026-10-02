@@ -52,19 +52,6 @@ class CommandSource(StrEnum):
     BUILTIN = "builtin"
 
 
-COMMAND_SOURCE_ORDER: tuple[str, ...] = (
-    CommandSource.BUILTIN.value,
-    CommandSource.MCP.value,
-    CommandSource.TOOLBOX.value,
-)
-
-COMMAND_SOURCE_LABELS: dict[str, str] = {
-    CommandSource.BUILTIN.value: "Chat",
-    CommandSource.MCP.value: "Tools",
-    CommandSource.TOOLBOX.value: "Lookups",
-}
-
-
 class CommandPreset(BaseModel):
     """A command name bound to a tool with arguments already set."""
 
@@ -137,8 +124,13 @@ OTP_ATTEMPT_WINDOW = 900
 # ---------- limits ----------
 
 DEFAULT_RATE_LIMIT = 60
+RATE_LIMIT_MIN = 1
+RATE_LIMIT_MAX = 10_000
 MAX_CHATS = 50
 MAX_DISPLAY = 120
 MAX_EXTERNAL_ID = 64
 COMMAND_TEXT_MAX = 200
 STATUS_TTL = 30
+DISPATCH_SLOTS = 8
+POOL_SIZE = DISPATCH_SLOTS + 2
+POOL_OVERFLOW = 2

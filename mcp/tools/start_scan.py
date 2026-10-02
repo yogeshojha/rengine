@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
-
 from pydantic import Field
 
 from mcp import links
@@ -12,9 +10,9 @@ from mcp.context import ToolContext
 from mcp.errors import ToolError
 from mcp.phrasing import short_id
 from mcp.result import ToolResult
-from mcp.tools._scope import project_for
+from mcp.tools._scope import operator, parse_id, project_for
 from mcp.tools.base import Tool, ToolGroup, ToolInput
-from shared.enums.scan import Intensity
+from shared.enums.scan import INTENSITIES, Intensity
 from toolbox.base import fact, facts, hero
 
 
@@ -29,7 +27,7 @@ class Input(ToolInput):
         description="Capability stages to enable when no engine is named.",
     )
     intensity: str | None = Field(
-        default=None, description="passive, normal or aggressive."
+        default=None, description=f"One of: {', '.join(INTENSITIES)}."
     )
     context_id: str | None = Field(
         default=None, description="A saved scan context for auth, scope and rate."
@@ -59,13 +57,8 @@ class StartScan(Tool):
         from app.services.scan import ScanService  # noqa: PLC0415
         from shared.models.scan import ScanCreate  # noqa: PLC0415
 
-        if ctx.token.issued_by is None:
-            msg = "This token has no issuing operator to attribute the scan to."
-            raise ToolError(msg)
-
-        project_id = await project_for(
-            ctx, uuid.UUID(args.project_id) if args.project_id else None
-        )
+        issued_by = operator(ctx)
+        project_id = await project_for(ctx, parse_id(args.project_id, "project_id"))
         payload: dict = {
             "target_value": args.target.strip(),
             "overrides": {stage: {"enabled": True} for stage in args.stages},
@@ -75,15 +68,13 @@ class StartScan(Tool):
             ("context_id", args.context_id),
         ):
             if value:
-                payload[key] = _uuid(value, key)
+                payload[key] = parse_id(value, key)
         if args.intensity:
             payload["intensity"] = args.intensity
 
         try:
             data = ScanCreate.model_validate(payload)
-            scan = await ScanService(ctx.session).create(
-                data, project_id, ctx.token.issued_by
-            )
+            scan = await ScanService(ctx.session).create(data, project_id, issued_by)
         except Exception as exc:
             msg = f"Scan not started: {exc}"
             raise ToolError(msg) from exc
@@ -113,18 +104,9 @@ class StartScan(Tool):
 
 
 def _traffic_note(scan) -> str:
-    config = scan.execution_config or {}
-    passive = config.get("intensity") == Intensity.PASSIVE.value
+    passive = scan.execution_config.intensity == Intensity.PASSIVE.value
     return (
         "Passive intensity. No traffic reaches the target."
         if passive
         else "Traffic is being sent to the target."
     )
-
-
-def _uuid(value: str, field: str) -> uuid.UUID:
-    try:
-        return uuid.UUID(value)
-    except ValueError as exc:
-        msg = f"{field} must be a UUID."
-        raise ToolError(msg) from exc

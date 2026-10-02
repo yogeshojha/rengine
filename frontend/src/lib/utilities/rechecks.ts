@@ -6,12 +6,14 @@ import type {
 	RescanSchema,
 	SeedSelection
 } from '$lib/types/recheck';
+import type { ScanStatus } from '$lib/types/scan';
+import { isLiveStatus } from '$lib/utilities/scan-status';
 
-const LIVE = new Set(['pending', 'running']);
-
-export const isRecheckLive = (r: Recheck): boolean => LIVE.has(r.status);
+export const isRecheckLive = (r: Recheck): boolean => isLiveStatus(r.status as ScanStatus);
 
 export const recheckFailed = (r: Recheck): boolean => r.status === 'failed';
+
+export const recheckPaused = (r: Recheck): boolean => r.status === 'paused';
 
 function phrase(c: RecheckChange): string {
 	const label = c.label.toLowerCase();
@@ -23,6 +25,7 @@ function phrase(c: RecheckChange): string {
 export function recheckLabel(r: Recheck): string {
 	if (isRecheckLive(r)) return 'rechecking';
 	if (recheckFailed(r)) return 'recheck failed';
+	if (recheckPaused(r)) return 'recheck paused';
 	if (!r.changed) return 'unchanged';
 	const status = r.changes.find((c) => c.field === 'http_status');
 	if (status) return status.after ? `now ${status.after}` : 'no answer';
@@ -33,6 +36,7 @@ export function recheckLabel(r: Recheck): string {
 export function recheckTone(r: Recheck): 'live' | 'changed' | 'quiet' | 'failed' {
 	if (isRecheckLive(r)) return 'live';
 	if (recheckFailed(r)) return 'failed';
+	if (recheckPaused(r)) return 'quiet';
 	return r.changed ? 'changed' : 'quiet';
 }
 
@@ -46,18 +50,20 @@ export function runStarted(run: FocusedRun, noun: string, nounPlural: string): s
 	return `Rechecking ${n.toLocaleString()} ${n === 1 ? noun : nounPlural}`;
 }
 
+export function cappedLabel(run: { asset_count: number; matched: number | null }): string {
+	return run.matched === null
+		? `Capped at ${run.asset_count.toLocaleString()}`
+		: `Capped at ${run.asset_count.toLocaleString()} of ${run.matched.toLocaleString()}`;
+}
+
 export function runDescription(run: FocusedRun): string {
 	const parts: string[] = [];
 	if (run.target_count > 1) parts.push(`${run.target_count} targets`);
-	if (run.capped) {
-		parts.push(
-			run.matched === null
-				? `Capped at ${run.asset_count.toLocaleString()}`
-				: `Capped at ${run.asset_count.toLocaleString()} of ${run.matched.toLocaleString()}`
-		);
-	}
+	if (run.capped) parts.push(cappedLabel(run));
 	return parts.join(' · ');
 }
+
+export const MAX_RUN_TEMPLATES = 50;
 
 export async function startRescan(
 	projectId: string,
@@ -69,7 +75,7 @@ export async function startRescan(
 	const { rechecks } = await import('$lib/stores/rechecks.svelte');
 	const { toast } = await import('svelte-sonner');
 	try {
-		const run = await rechecks.rescan(projectId, { ...body, selection, dimension: '' });
+		const run = await rechecks.rescan(projectId, { ...body, selection });
 		toast.success(runStarted(run, noun, nounPlural), { description: runDescription(run) });
 		return true;
 	} catch (e) {

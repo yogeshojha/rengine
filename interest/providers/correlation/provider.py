@@ -138,14 +138,7 @@ class CorrelationProvider(InterestProvider):
     name = "correlation"
     source = InterestSource.CORRELATION.value
     title = "Correlation"
-    description = (
-        "Web assets that stand out from the estate: a lone network, rare software, "
-        "an asset outside the edge."
-    )
     order = 20
-
-    def available(self, ctx: InterestContext) -> bool:
-        return ctx.host_total >= MIN_ESTATE_FOR_RARITY
 
     def evaluate(self, ctx: InterestContext) -> Iterable[RawSignal]:
         yield from self._guard(self._network, ctx)
@@ -191,8 +184,7 @@ class CorrelationProvider(InterestProvider):
             yield self._signal(
                 row,
                 InterestKind.EXPLOITED_SOFTWARE.value,
-                f"Runs {product}. CISA lists {cves}.{ransom} "
-                "The scan did not confirm the version.",
+                f"Runs {product}. CISA lists {cves}.{ransom} Version not identified.",
                 f"{product}:{row.example}",
             )
 
@@ -293,7 +285,7 @@ class CorrelationProvider(InterestProvider):
                 kind=InterestKind.NEWLY_APPEARED.value,
                 weight=kind_weight(InterestKind.NEWLY_APPEARED.value),
                 label=self.title,
-                reason="Absent from the previous scan of this target.",
+                reason="Not seen in an earlier scan of this target.",
                 evidence="is:new",
                 booster=True,
             )

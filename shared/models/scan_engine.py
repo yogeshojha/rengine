@@ -10,7 +10,7 @@ from sqlmodel import Field, SQLModel
 
 from shared.definitions.intensity import clean_transport_overrides
 from shared.enums.scan import Intensity
-from shared.models.scan_context import ScanContextCreate
+from shared.models.scan_context import HttpProtocol, ScanContextCreate
 from shared.utils.datetime import utc_now
 from shared.utils.validation import clean_name, clean_optional_name
 
@@ -191,7 +191,7 @@ class PreviewResolved(BaseModel):
     excluded_ips: list[str] = PydanticField(default_factory=list)
     included_subdomains: list[str] = PydanticField(default_factory=list)
     follow_redirects: bool | None = None
-    http_protocol: str = "both"
+    http_protocol: str = HttpProtocol.BOTH.value
 
 
 class EnginePreviewResult(BaseModel):

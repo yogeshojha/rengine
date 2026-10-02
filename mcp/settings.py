@@ -67,4 +67,4 @@ def endpoint_url(ui_base: str) -> str:
 
 
 def stdio_command() -> str:
-    return "docker compose exec -T api /app/.venv/bin/python -m mcp.stdio"
+    return "docker compose exec -T -e RENGINE_MCP_TOKEN api /app/.venv/bin/python -m mcp.stdio"

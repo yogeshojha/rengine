@@ -18,9 +18,9 @@
 	import VerdictStrip from './verdict-strip.svelte';
 	import { askApi } from '$lib/api/ask';
 	import { LONG_REQUEST_TIMEOUT_MS } from '$lib/api/client';
-	import { Decision, NextStep, StreamEvent } from '$lib/config/ask';
+	import { Decision, EvidenceField, MessageRole, NextStep, StreamEvent } from '$lib/config/ask';
 	import { ROUTES } from '$lib/config/routes';
-	import { SurfaceDimension } from '$lib/config/surface';
+	import { SURFACE, type SurfaceDimension } from '$lib/config/surface';
 	import { VULN_STATE_LABELS, VulnState } from '$lib/config/vulnerabilities';
 	import type {
 		AskBrief,
@@ -80,7 +80,10 @@
 	let key = $derived(`${subject.targetId}:${subject.dimension}:${subject.key}:${subject.scanId}`);
 	let empty = $derived(!messages.length && !pending && !loadingThread);
 	let draftText = $derived(draft ? draft.text.replace(/ ?\[(?:F|T|R)\d{1,3}\]/g, '') : '');
-	let suggestion = $derived(messages.findLast((m) => m.role === 'assistant')?.suggestion ?? null);
+	let suggestion = $derived(
+		messages.findLast((m) => m.role === MessageRole.ASSISTANT)?.suggestion ?? null
+	);
+	let noun = $derived(SURFACE[subject.dimension as SurfaceDimension].noun);
 	let actions = $derived.by(() => {
 		const out: { label: string; primary: boolean; run: () => void }[] = [];
 		if (!suggestion || pending) return out;
@@ -306,6 +309,7 @@
 	<ThreadMenu
 		{threads}
 		{active}
+		{noun}
 		onPick={(t) => {
 			cancel();
 			void pick(t);
@@ -342,7 +346,9 @@
 		<EvidencePeek
 			field={factPeek.field}
 			lines={factPeek.lines}
-			text={factPeek.field === 'request' ? (subject.request ?? null) : (subject.response ?? null)}
+			text={factPeek.field === EvidenceField.REQUEST
+				? (subject.request ?? null)
+				: (subject.response ?? null)}
 			mark={factPeek.n}
 			onOpen={onOpenEvidence}
 		/>
@@ -448,9 +454,7 @@
 	<div class="px-5 pt-3 pb-4">
 		<AskComposer
 			bind:this={composer}
-			placeholder={subject.dimension === SurfaceDimension.WEB_ASSETS
-				? 'Ask about this web asset'
-				: 'Ask about this finding'}
+			placeholder="Ask about this {noun}"
 			disabled={!brief?.available}
 			busy={!!pending}
 			onSend={(text) => void send(text)}
@@ -472,9 +476,7 @@
 <ConfirmDialog
 	bind:open={confirmClear}
 	title="Clear history"
-	description="Every thread on this {subject.dimension === SurfaceDimension.WEB_ASSETS
-		? 'web asset'
-		: 'finding'} and its messages are removed."
+	description="Every thread on this {noun} and its messages are removed."
 	confirmLabel="Clear"
 	destructive
 	onOpenChange={(o) => (confirmClear = o)}

@@ -6,6 +6,7 @@
 	import ScreenshotThumb from '$lib/components/scans/results/screenshot-thumb.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { VISUAL_FIELD_LABELS, VISUAL_MAX_DISTANCE } from '$lib/config/whats-new';
+	import { visualChange } from '$lib/utilities/whats-new';
 	import type { VisualPair } from '$lib/types/whats-new';
 
 	interface Props {
@@ -22,26 +23,6 @@
 	const METER = 5;
 	const level = (d: number) =>
 		Math.min(METER, Math.max(1, Math.ceil((d / VISUAL_MAX_DISTANCE) * METER * 2)));
-
-	function change(pair: VisualPair, field: string): string {
-		switch (field) {
-			case 'http_status':
-				return `${pair.before_status ?? '—'} → ${pair.after_status ?? '—'}`;
-			case 'page_title':
-				return `${pair.before_title ?? 'No title'} → ${pair.after_title ?? 'No title'}`;
-			case 'webserver':
-				return `${pair.before_server ?? '—'} → ${pair.after_server ?? '—'}`;
-			case 'tech': {
-				const before = new Set(pair.before_tech);
-				const after = new Set(pair.after_tech);
-				const added = pair.after_tech.filter((t) => !before.has(t)).map((t) => `+${t}`);
-				const gone = pair.before_tech.filter((t) => !after.has(t)).map((t) => `−${t}`);
-				return [...added, ...gone].join(' ');
-			}
-			default:
-				return field;
-		}
-	}
 </script>
 
 <div class="grid grid-cols-[repeat(auto-fill,minmax(21rem,1fr))] gap-3">
@@ -86,9 +67,7 @@
 					class="aspect-[16/10] w-full"
 					interactive={false}
 				/>
-				<ArrowRight
-					class="size-4 text-muted-foreground transition-transform group-hover/pair:translate-x-0.5"
-				/>
+				<ArrowRight class="size-4 text-muted-foreground" />
 				<ScreenshotThumb
 					path={pair.after_path}
 					alt="{pair.host} after"
@@ -97,7 +76,10 @@
 				/>
 			</button>
 			<div class="flex flex-wrap items-center gap-x-2 gap-y-1 px-3 pt-2 pb-3">
-				<span class="flex items-center gap-0.5" aria-label="Distance {pair.distance} of 64">
+				<span
+					class="flex items-center gap-0.5"
+					aria-label="Distance {pair.distance} of {VISUAL_MAX_DISTANCE}"
+				>
 					{#each { length: METER } as _, i (i)}
 						<span
 							class="h-2 w-1.5 rounded-[1px] {i < level(pair.distance) ? '' : 'bg-muted'}"
@@ -112,7 +94,7 @@
 					{#each pair.moved as field (field)}
 						<Badge variant="secondary" class="max-w-full font-normal">
 							<span class="truncate"
-								>{VISUAL_FIELD_LABELS[field] ?? field} · {change(pair, field)}</span
+								>{VISUAL_FIELD_LABELS[field] ?? field} · {visualChange(pair, field)}</span
 							>
 						</Badge>
 					{/each}

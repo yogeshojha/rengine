@@ -7,6 +7,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import CopyButton from '$lib/components/copy-button.svelte';
+	import SectionHead from '$lib/components/section-head.svelte';
 	import TechIcon from '$lib/components/scans/results/tech-icon.svelte';
 	import { BAND_TEXT, kindIcon, sourceChipClass } from '$lib/config/interest';
 	import { interestCatalog } from '$lib/stores/interest-catalog.svelte';
@@ -23,10 +24,20 @@
 	let { row, open, onOpenChange, onDismiss, onOpenAssets }: Props = $props();
 
 	let ordered = $derived(row ? [...row.signals].sort((a, b) => b.weight - a.weight) : []);
+	let contentEl = $state<HTMLElement | null>(null);
 </script>
 
 <Sheet.Root {open} {onOpenChange}>
-	<Sheet.Content side="right" class="flex w-full flex-col p-0 sm:max-w-lg">
+	<Sheet.Content
+		bind:ref={contentEl}
+		side="right"
+		tabindex={-1}
+		class="flex w-full flex-col p-0 outline-none sm:max-w-lg"
+		onOpenAutoFocus={(e) => {
+			e.preventDefault();
+			contentEl?.focus();
+		}}
+	>
 		{#if row}
 			<Sheet.Header class="gap-2 border-b px-5 py-4">
 				<Sheet.Title class="flex items-center gap-2 font-mono text-sm wrap-anywhere">
@@ -55,9 +66,7 @@
 			<ScrollArea.Root class="min-h-0 flex-1">
 				<div class="flex flex-col gap-5 px-5 py-4">
 					<section class="flex flex-col gap-3">
-						<h3 class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
-							Signals
-						</h3>
+						<SectionHead title="Signals" />
 						{#each ordered as signal (`${signal.source}:${signal.kind}:${signal.rule_id ?? ''}`)}
 							{@const Icon = kindIcon(signal.kind)}
 							{@const isAi = signal.source === INTEREST_SOURCE.AI}
@@ -106,9 +115,7 @@
 
 					{#if row.page_title || row.resolved_ips.length}
 						<section class="flex flex-col gap-2">
-							<h3 class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
-								Observed
-							</h3>
+							<SectionHead title="Observed" />
 							{#if row.page_title}
 								<p class="text-xs">{row.page_title}</p>
 							{/if}
@@ -124,7 +131,7 @@
 
 			<Sheet.Footer class="flex-row flex-wrap gap-2 border-t px-5 py-3">
 				<Button size="sm" onclick={() => onOpenAssets(row)}>
-					Open in Web Assets
+					Open in Web assets
 					<ArrowUpRight class="size-3.5" />
 				</Button>
 				<Button

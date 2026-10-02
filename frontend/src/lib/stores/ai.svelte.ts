@@ -22,12 +22,6 @@ function createAiStore() {
 		get isSaving() {
 			return isSaving;
 		},
-		get hasFetched() {
-			return hasFetched;
-		},
-		get available() {
-			return Boolean(status?.enabled && status?.configured);
-		},
 
 		async fetch(force = false) {
 			if (isLoading || (hasFetched && !force)) return;

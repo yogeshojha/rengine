@@ -53,11 +53,11 @@
 	import VulnerabilityDetailSheet from '$lib/components/scans/results/vulnerability-detail-sheet.svelte';
 	import type { VulnerabilityRead } from '$lib/utilities/vulns';
 	import { compileQuery, emptyQuery, exactToken } from '$lib/utilities/scan-insights';
-	import { SURFACE } from '$lib/config/surface';
+	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import type { SubdomainRead } from '$lib/types/subdomain';
+	import { WatchHostState } from '$lib/types/watch';
 	import { Capability } from '$lib/config/capabilities';
-	import { SurfaceDimension } from '$lib/config/surface';
 	import {
 		BOUNTY_KINDS,
 		KIND_ORDER,
@@ -84,7 +84,7 @@
 		type NewWindowKey,
 		type SignalKey
 	} from '$lib/config/whats-new';
-	import { formatShortDate } from '$lib/utilities/dates';
+	import { formatClock, formatShortDate } from '$lib/utilities/dates';
 	import { rowHref } from '$lib/utilities/whats-new';
 	import type { NewFeed, NewGroup, NewItem, VisualFeed, VisualPair } from '$lib/types/whats-new';
 
@@ -184,11 +184,9 @@
 			day: 'numeric',
 			timeZone: 'UTC'
 		});
-	const WINDOW_WORDS: Record<string, string> = {
-		'24h': '24 hours',
-		'7d': '7 days',
-		'30d': '30 days'
-	};
+	let windowWords = $derived(
+		NEW_WINDOWS.find((w) => w.key === feed?.window)?.words ?? feed?.window ?? ''
+	);
 	let sinceLabel = $derived.by(() => {
 		if (!feed) return '';
 		if (feed.basis === NewBasis.DAYS && dayFrom) {
@@ -196,20 +194,19 @@
 				? `${dayLabel(dayFrom)} to ${dayLabel(dayTo)}`
 				: dayLabel(dayFrom);
 		}
-		const at = new Date(feed.since);
-		return `${formatShortDate(at)} ${at.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+		return `${formatShortDate(feed.since)} ${formatClock(feed.since)}`;
 	});
 	let periodLabel = $derived.by(() => {
 		if (!feed) return '';
 		if (feed.basis === NewBasis.DAYS) return `on ${sinceLabel}`;
 		if (feed.basis === NewBasis.MARK) return 'since caught up';
-		return feed.window ? `in the last ${WINDOW_WORDS[feed.window] ?? feed.window}` : '';
+		return feed.window ? `in the last ${windowWords}` : '';
 	});
 	let stripPeriod = $derived.by(() => {
 		if (!feed) return '';
 		if (feed.basis === NewBasis.DAYS) return sinceLabel;
 		if (feed.basis === NewBasis.MARK) return `Since caught up · ${sinceLabel}`;
-		return feed.window ? `Last ${WINDOW_WORDS[feed.window] ?? feed.window}` : '';
+		return feed.window ? `Last ${windowWords}` : '';
 	});
 	let emptyTitle = $derived(feed ? `Nothing new ${periodLabel}` : '');
 	let filtered = $derived(
@@ -267,8 +264,7 @@
 	);
 	let markLabel = $derived.by(() => {
 		if (!feed?.marked_at) return '';
-		const at = new Date(feed.marked_at);
-		return `${formatShortDate(at)}, ${at.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+		return `${formatShortDate(feed.marked_at)}, ${formatClock(feed.marked_at)}`;
 	});
 
 	let rowCount = $derived(tab === NewTab.TIMELINE ? entries.length : 0);
@@ -557,6 +553,13 @@
 		tab = next;
 		if (next === NewTab.VISUAL && !visual) void loadVisual();
 	}
+	let tabs = $derived(
+		NEW_TABS.filter((t) => t.key !== NewTab.VISUAL || tab === t.key || (feed?.visual ?? 0) > 0)
+	);
+	$effect(() => {
+		if (feed && !feed.visual && !qApplied && tab === NewTab.VISUAL)
+			untrack(() => setTab(NewTab.TIMELINE));
+	});
 	function clearFilters() {
 		source = NewSource.ALL;
 		targetId = '';
@@ -587,7 +590,7 @@
 			await load();
 			toast.success('Marked as caught up');
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Not marked');
+			toast.error(e instanceof Error ? e.message : 'Caught-up mark not saved');
 		} finally {
 			catchingUp = false;
 		}
@@ -646,7 +649,7 @@
 		try {
 			for (const i of wanted) {
 				const host = await watchesApi.muteHost(i.watch_id ?? '', i.host_id ?? '', projectId);
-				patch(i.id, (row) => (row.muted = host.state === 'muted'));
+				patch(i.id, (row) => (row.muted = host.state === WatchHostState.Muted));
 			}
 			const first = wanted[0];
 			toast.success(
@@ -720,59 +723,17 @@
 		void goto(ROUTES.scanTab(sheetScan, spec.tab, { [spec.queryParam]: dsl }));
 	}
 
-	async function openRow(item: NewItem) {
-		const scanId = item.scan_id;
-		if (!scanId || !projectId) {
-			const link = rowHref(item);
-			if (link) void goto(link);
-			return;
-		}
-		if (opening) return;
-		opening = item.id;
+	async function openHost(scanId: string, host: string, id: string) {
+		if (!projectId || opening) return;
+		opening = id;
 		try {
 			sheetScan = scanId;
-			if (item.kind === NewKind.CERT_HOST) {
-				const res = await subdomainsApi.search(
-					projectId,
-					scanId,
-					compileQuery({ ...emptyQuery(), search: exactToken('host', item.value) }, 'name', 1, 0, 5)
-				);
-				const hit = res.items.find((s) => s.name === item.value) ?? null;
-				if (!hit) {
-					toast.error('Web asset not found in this scan');
-					return;
-				}
-				sheetSub = hit;
-			} else {
-				const link = rowHref(item);
-				if (link) void goto(link);
-				return;
-			}
-			sheetOpen = true;
-		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Row not loaded');
-		} finally {
-			opening = null;
-		}
-	}
-
-	function openFinding(vuln: VulnerabilityRead, scanId: string) {
-		sheetScan = scanId;
-		sheetVuln = vuln;
-		sheetOpen = true;
-	}
-
-	async function openPair(pair: VisualPair) {
-		if (!projectId || opening) return;
-		opening = pair.id;
-		try {
-			sheetScan = pair.scan_id;
 			const res = await subdomainsApi.search(
 				projectId,
-				pair.scan_id,
-				compileQuery({ ...emptyQuery(), search: exactToken('host', pair.host) }, 'name', 1, 0, 5)
+				scanId,
+				compileQuery({ ...emptyQuery(), search: exactToken('host', host) }, 'name', 1, 0, 5)
 			);
-			const hit = res.items.find((s) => s.name === pair.host) ?? null;
+			const hit = res.items.find((s) => s.name === host) ?? null;
 			if (!hit) {
 				toast.error('Web asset not found in this scan');
 				return;
@@ -784,6 +745,25 @@
 		} finally {
 			opening = null;
 		}
+	}
+
+	function openRow(item: NewItem) {
+		if (item.scan_id && projectId && item.kind === NewKind.CERT_HOST) {
+			void openHost(item.scan_id, item.value, item.id);
+			return;
+		}
+		const link = rowHref(item);
+		if (link) void goto(link);
+	}
+
+	function openFinding(vuln: VulnerabilityRead, scanId: string) {
+		sheetScan = scanId;
+		sheetVuln = vuln;
+		sheetOpen = true;
+	}
+
+	function openPair(pair: VisualPair) {
+		return openHost(pair.scan_id, pair.host, pair.id);
 	}
 
 	// ---------- selection ----------
@@ -925,7 +905,7 @@
 
 		<div class="flex flex-wrap items-center justify-between gap-2 border-b px-2">
 			<CountTabs
-				tabs={NEW_TABS}
+				{tabs}
 				value={tab}
 				counts={feed
 					? {
@@ -985,7 +965,7 @@
 					onChange={(v) => (program = v)}
 				/>
 			{/if}
-			{#if tab === NewTab.VISUAL && visual}
+			{#if tab === NewTab.VISUAL && visual?.pairs.length}
 				<DistanceFilter
 					distances={visualDistances}
 					min={minDistance}
@@ -1010,7 +990,11 @@
 					aria-label="Period"
 				>
 					{#each NEW_WINDOWS as option (option.key)}
-						<ToggleGroup.Item value={option.key} class="h-9 px-3 text-xs font-normal">
+						<ToggleGroup.Item
+							value={option.key}
+							disabled={option.key === SINCE_KEY && !!feed && !feed.marked_at}
+							class="h-9 px-3 text-xs font-normal"
+						>
 							{option.label}
 						</ToggleGroup.Item>
 					{/each}
@@ -1241,7 +1225,6 @@
 			onSaved={(watch) => {
 				watchesStore.upsert(watch);
 				watchFor = null;
-				toast.success('Watch started');
 				void load(true);
 			}}
 		/>
@@ -1301,7 +1284,9 @@
 <ConfirmDialog
 	open={removeFor !== null}
 	title="Remove {removeFor?.target_value ?? removeFor?.value ?? 'target'}"
-	description="Target {removeFor?.target_value ?? ''} and its scans are removed."
+	description="Target {removeFor?.target_value ??
+		removeFor?.value ??
+		''} and its scans and findings are removed."
 	confirmLabel="Remove"
 	loadingLabel="Removing"
 	destructive

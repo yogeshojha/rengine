@@ -53,10 +53,6 @@ function createRecentStore() {
 	let visits = $state<Visit[]>(read());
 
 	return {
-		get visits() {
-			return visits;
-		},
-
 		/** The last places opened in one project, newest first. */
 		opened(projectId: string): Visit[] {
 			return visits.filter((v) => v.projectId === projectId);
@@ -74,13 +70,7 @@ function createRecentStore() {
 			write(next);
 		},
 
-		forget(kind: VisitKind, id: string) {
-			const next = visits.filter((v) => !(v.kind === kind && v.id === id));
-			visits = next;
-			write(next);
-		},
-
-		/** One query per dimension per round, so no dimension crowds the list. */
+		/** Recent queries interleaved across dimensions. */
 		searches(): RecentSearch[] {
 			const lanes = SURFACE_ORDER.map((spec) => ({
 				dimension: spec.key,
@@ -102,6 +92,9 @@ function createRecentStore() {
 		reset() {
 			visits = [];
 			write([]);
+			try {
+				for (const spec of SURFACE_ORDER) localStorage.removeItem(spec.recentsKey);
+			} catch {}
 		}
 	};
 }

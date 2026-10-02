@@ -123,9 +123,6 @@ class SubdomainRead(BaseModel):
     posture_issues: list[str] = Field(default_factory=list)
     posture_checked: list[str] = Field(default_factory=list)
     ai_services: list[str] | None = None
-    interest_score: int = 0
-    interest_band: str | None = None
-    interest_kinds: list[str] = Field(default_factory=list)
     discovered_at: datetime
 
 
@@ -146,12 +143,6 @@ class SubdomainRow(SubdomainRead):
     vuln_kev: bool = False
     matched_in: list[MatchEvidence] = Field(default_factory=list)
     cross_links: list[CrossLink] = Field(default_factory=list)
-
-
-class SubdomainSummary(BaseModel):
-    total: int
-    active: int
-    sources: dict[str, int] = Field(default_factory=dict)
 
 
 class Facet(BaseModel):
@@ -264,30 +255,3 @@ class SubdomainRelation(BaseModel):
     targets: int = 1
     hosts: list[str] = Field(default_factory=list)
     total: int = 0
-
-
-class TargetSubdomainRead(BaseModel):
-    name: str
-    sources: list[str] = Field(default_factory=list)
-    resolved_ips: list[str] = Field(default_factory=list)
-    cname: str | None = None
-    is_active: bool
-    is_wildcard: bool
-    is_excluded: bool = False
-    is_important: bool = False
-    http_status: int | None = None
-    page_title: str | None = None
-    content_length: int | None = None
-    response_time: float | None = None
-    webserver: str | None = None
-    tech: list[str] = Field(default_factory=list)
-    is_cdn: bool = False
-    cdn_name: str | None = None
-    waf: str | None = None
-    tls_not_after: datetime | None = None
-    tls_expired: bool | None = None
-    screenshot_path: str | None = None
-    scan_count: int
-    last_scan_id: uuid.UUID
-    first_seen: datetime
-    last_seen: datetime

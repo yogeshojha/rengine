@@ -1,8 +1,9 @@
 <script lang="ts">
 	import type { ScanDay } from '$lib/types/scan';
+	import { SEVERITY_CHIP } from '$lib/config/vulnerabilities';
 	import { formatShortDate } from '$lib/utilities/dates';
+	import { plural } from '$lib/utilities/strings';
 	import { historyPrefs } from './prefs.svelte';
-	import { SEV_CHIP } from './findings';
 
 	const DAY_MS = 86_400_000;
 
@@ -78,7 +79,7 @@
 		onpointerleave={() => (hover = null)}
 		ondblclick={() => onRange(null, null)}
 		role="group"
-		aria-label="Runs per day over the last {days.length} days. Drag to filter by date."
+		aria-label="Runs per day. Drag to filter by date."
 	>
 		{#each days as d, i (d.day)}
 			{@const w = worst(d)}
@@ -93,9 +94,9 @@
 					style={d.runs ? `height: ${Math.max((d.runs / max) * 100, 6)}%` : ''}
 				></div>
 				<span
-					class="mt-[3px] h-[3px] w-full rounded-full {w ? SEV_CHIP[w].edge : 'bg-transparent'} {dim
-						? 'opacity-25'
-						: ''}"
+					class="mt-[3px] h-[3px] w-full rounded-full {w
+						? SEVERITY_CHIP[w].edge
+						: 'bg-transparent'} {dim ? 'opacity-25' : ''}"
 				></span>
 			</div>
 		{/each}
@@ -109,12 +110,12 @@
 						: '-translate-x-1/2'}"
 				style="left: {((hover! + 0.5) / days.length) * 100}%"
 			>
-				<div class="font-medium">{formatShortDate(tip.day)}</div>
+				<div class="font-medium">{formatShortDate(tip.day, true)}</div>
 				<div class="font-mono text-muted-foreground">
-					{tip.runs} runs{tip.failed ? ` · ${tip.failed} failed` : ''}
+					{plural(tip.runs, 'run')}{tip.failed ? ` · ${tip.failed} failed` : ''}
 					{#each historyPrefs.severities as s (s)}
-						{#if tip[s as 'critical']}<span class={SEV_CHIP[s].ink}>
-								· {tip[s as 'critical']} with {s}</span
+						{#if tip[s as 'critical']}<span class={SEVERITY_CHIP[s].ink}>
+								· {tip[s as 'critical']} with {s} findings</span
 							>{/if}
 					{/each}
 				</div>
@@ -122,8 +123,8 @@
 		{/if}
 	</div>
 	<div class="flex justify-between font-mono text-2xs text-muted-foreground">
-		<span>{days.length ? formatShortDate(days[0].day) : ''}</span>
-		<span>max {max} runs a day</span>
+		<span>{days.length ? formatShortDate(days[0].day, true) : ''}</span>
+		<span>max {plural(max, 'run')} a day</span>
 		<span>Today</span>
 	</div>
 </div>

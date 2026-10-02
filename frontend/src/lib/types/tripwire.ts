@@ -121,6 +121,7 @@ export interface TripwirePreview {
 	matched: number;
 	fired: number;
 	rows: FiredRow[];
+	scanned: number;
 	unscanned: number;
 	capped: boolean;
 	error: QueryError | null;

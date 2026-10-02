@@ -1,5 +1,3 @@
-"""Ask: threads and streamed answers on a finding."""
-
 from __future__ import annotations
 
 from typing import Annotated
@@ -11,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser, StreamUser
 from app.api.scope import VulnScope
+from app.api.v1.events import STREAM_HEADERS
 from app.core.database import async_db_session, get_session
 from app.services.ask.service import AskService, stream_reply
 from shared.definitions.ask import ASK_DIMENSIONS
@@ -26,12 +25,6 @@ from shared.models.ask import (
 
 router = APIRouter(prefix="/ask", tags=["ask"])
 Session = Annotated[AsyncSession, Depends(get_session)]
-
-STREAM_HEADERS = {
-    "Cache-Control": "no-cache",
-    "Connection": "keep-alive",
-    "X-Accel-Buffering": "no",
-}
 
 
 def get_service(session: Session) -> AskService:

@@ -93,19 +93,6 @@ async def get_run(
     return row
 
 
-@router.get("/{tripwire_id}", response_model=TripwireRead)
-async def get_tripwire(
-    _user: CurrentUser,
-    service: ServiceDep,
-    tripwire_id: Annotated[UUID, Path()],
-    project_id: ProjectId,
-) -> TripwireRead:
-    row = await service.get(tripwire_id, project_id)
-    if row is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, NOT_FOUND)
-    return row
-
-
 @router.patch("/{tripwire_id}", response_model=TripwireRead)
 async def update_tripwire(
     _user: CurrentUser,

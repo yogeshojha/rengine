@@ -1,5 +1,3 @@
-"""crt.sh HTTP client. Keyless; the organization search reads the certificate subject O."""
-
 from __future__ import annotations
 
 import hashlib

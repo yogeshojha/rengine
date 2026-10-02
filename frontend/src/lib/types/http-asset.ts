@@ -1,3 +1,9 @@
+export interface HttpAssetCpe {
+	cpe: string;
+	product?: string;
+	vendor?: string;
+}
+
 export interface HttpAssetRead {
 	id: string;
 	scan_id: string;
@@ -20,7 +26,7 @@ export interface HttpAssetRead {
 	words: number | null;
 	lines: number | null;
 	tech: string[];
-	cpe: string[];
+	cpe: HttpAssetCpe[];
 	favicon_hash: string | null;
 	content_hash: string | null;
 	header_hash: string | null;

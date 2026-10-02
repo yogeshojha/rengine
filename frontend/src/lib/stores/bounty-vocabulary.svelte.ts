@@ -4,7 +4,6 @@ import type { BountyVocabulary, PlatformSpec } from '$lib/types/bounty-program';
 class BountyVocabularyStore {
 	vocabulary = $state<BountyVocabulary | null>(null);
 	loading = $state(false);
-	error = $state<string | null>(null);
 	private fetched = false;
 
 	get platforms(): PlatformSpec[] {
@@ -37,9 +36,7 @@ class BountyVocabularyStore {
 		try {
 			this.vocabulary = await bountyProgramsApi.vocabulary();
 			this.fetched = true;
-			this.error = null;
-		} catch (e) {
-			this.error = e instanceof Error ? e.message : 'Bounty vocabulary not loaded';
+		} catch {
 		} finally {
 			this.loading = false;
 		}
@@ -48,7 +45,6 @@ class BountyVocabularyStore {
 	reset(): void {
 		this.vocabulary = null;
 		this.fetched = false;
-		this.error = null;
 	}
 }
 

@@ -1,15 +1,8 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
-	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
-	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import * as Collapsible from '$lib/components/ui/collapsible';
-	import { Badge } from '$lib/components/ui/badge';
-	import { Button } from '$lib/components/ui/button';
-	import { Label } from '$lib/components/ui/label';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import { Switch } from '$lib/components/ui/switch';
 	import Hint from '$lib/components/hint.svelte';
 	import SeverityBar from './results/vulnerabilities/severity-bar.svelte';
 	import { vulnTemplatesApi } from '$lib/api/vulnerabilities';
@@ -26,64 +19,48 @@
 	import type { SelectionPreview, TemplateLibraryStats } from '$lib/types/vuln-template';
 	import type { StageConfig } from '$lib/types/scan-engine';
 
-	interface Plan {
-		enabled: boolean;
-		severities: string[];
-		template_sets: string[];
-	}
-
 	interface Props {
-		engineStages: Record<string, StageConfig> | null;
-		onChange: (overrides: Record<string, Record<string, unknown>>) => void;
-		showEnabled?: boolean;
+		config: StageConfig | undefined;
+		onField: (field: string, value: unknown) => void;
 	}
 
-	let { engineStages, onChange, showEnabled = true }: Props = $props();
+	let { config, onField }: Props = $props();
 
 	let stats = $state<TemplateLibraryStats | null>(null);
 	let statsLoading = $state(true);
 	let preview = $state<SelectionPreview | null>(null);
 	let previewLoading = $state(false);
 	let open = $state(false);
-	let plan = $state<Plan | null>(null);
 	let previewSeq = 0;
 	let debounce: ReturnType<typeof setTimeout>;
 
 	let catalogEntry = $derived(engineCatalogStore.stage(VULN_STAGE));
 
-	let baseline = $derived.by<Plan | null>(() => {
-		if (!catalogEntry) return null;
-		const stored = (engineStages?.[VULN_STAGE] ?? {}) as Record<string, unknown>;
-		const merged = { ...catalogEntry.defaults, ...stored } as Record<string, unknown>;
-		return {
-			enabled: Boolean(merged.enabled),
-			severities: [...((merged.severities as string[]) ?? [])],
-			template_sets: [...((merged.template_sets as string[]) ?? [])]
-		};
-	});
+	let merged = $derived(
+		catalogEntry ? ({ ...catalogEntry.defaults, ...config } as Record<string, unknown>) : null
+	);
 
-	let carried = $derived.by(() => {
-		if (!catalogEntry) return null;
-		const stored = (engineStages?.[VULN_STAGE] ?? {}) as Record<string, unknown>;
-		const merged = { ...catalogEntry.defaults, ...stored } as Record<string, unknown>;
-		return {
-			custom_templates: [...((merged.custom_templates as string[]) ?? [])],
-			include_tags: [...((merged.include_tags as string[]) ?? [])],
-			exclude_tags: [...((merged.exclude_tags as string[]) ?? [])],
-			exclude_templates: [...((merged.exclude_templates as string[]) ?? [])],
-			headless: Boolean(merged.headless)
-		};
-	});
+	let current = $derived(
+		merged
+			? {
+					severities: [...((merged.severities as string[]) ?? [])],
+					template_sets: [...((merged.template_sets as string[]) ?? [])]
+				}
+			: null
+	);
 
-	let current = $derived(plan ?? baseline);
-	let dirty = $derived.by(() => {
-		if (!plan || !baseline) return false;
-		return (
-			plan.enabled !== baseline.enabled ||
-			plan.severities.join() !== baseline.severities.join() ||
-			plan.template_sets.join() !== baseline.template_sets.join()
-		);
-	});
+	let carried = $derived(
+		merged
+			? {
+					custom_templates: [...((merged.custom_templates as string[]) ?? [])],
+					include_tags: [...((merged.include_tags as string[]) ?? [])],
+					exclude_tags: [...((merged.exclude_tags as string[]) ?? [])],
+					exclude_templates: [...((merged.exclude_templates as string[]) ?? [])],
+					headless: Boolean(merged.headless)
+				}
+			: null
+	);
+
 	let sets = $derived(stats?.sets ?? []);
 	let ready = $derived(stats?.ready ?? false);
 
@@ -99,67 +76,33 @@
 			.finally(() => (statsLoading = false));
 	});
 
-	let baselineKey = $derived(baseline ? JSON.stringify([baseline, carried]) : '');
-	let lastBaseline = '';
-	$effect(() => {
-		const key = baselineKey;
-		if (!key || key === lastBaseline) return;
-		lastBaseline = key;
-		untrack(() => {
-			plan = null;
-			onChange({});
-		});
-	});
-
-	function patch(update: Partial<Plan>) {
-		const base = current;
-		if (!base) return;
-		const next = { ...base, ...update };
-		plan = next;
-		emit(next);
-	}
-
-	function emit(next: Plan) {
-		if (!baseline) return;
-		const overrides: Record<string, unknown> = {};
-		if (next.enabled !== baseline.enabled) overrides.enabled = next.enabled;
-		if (next.severities.join() !== baseline.severities.join())
-			overrides.severities = next.severities;
-		if (next.template_sets.join() !== baseline.template_sets.join())
-			overrides.template_sets = next.template_sets;
-		onChange(Object.keys(overrides).length ? { [VULN_STAGE]: overrides } : {});
-	}
-
-	function reset() {
-		plan = null;
-		onChange({});
-	}
-
 	function toggleSeverity(value: string) {
 		const base = current;
 		if (!base) return;
-		patch({
-			severities: base.severities.includes(value)
+		onField(
+			'severities',
+			base.severities.includes(value)
 				? base.severities.filter((s) => s !== value)
 				: [...base.severities, value].sort((a, b) => severityRank(a) - severityRank(b))
-		});
+		);
 	}
 
 	function toggleSet(key: string) {
 		const base = current;
 		if (!base) return;
-		patch({
-			template_sets: base.template_sets.includes(key)
+		onField(
+			'template_sets',
+			base.template_sets.includes(key)
 				? base.template_sets.filter((s) => s !== key)
 				: [...base.template_sets, key]
-		});
+		);
 	}
 
 	$effect(() => {
 		const base = current;
 		const isReady = ready;
 		clearTimeout(debounce);
-		if (!base || !base.enabled || !isReady) {
+		if (!base || !isReady) {
 			preview = null;
 			previewLoading = false;
 			return;
@@ -204,28 +147,6 @@
 
 {#if catalogEntry}
 	<div class="space-y-2">
-		<div
-			class="flex min-h-9 flex-wrap items-center justify-between gap-x-2 gap-y-1"
-			class:hidden={!showEnabled}
-		>
-			<Label class="flex shrink-0 items-center gap-1.5" for="vuln-plan-switch">
-				<ShieldAlert class="size-3.5 text-muted-foreground" />
-				Vulnerability scan
-				{#if dirty}
-					<Badge variant="info" class="text-2xs font-normal">This run only</Badge>
-				{/if}
-			</Label>
-			<div class="ml-auto flex shrink-0 items-center gap-2">
-				<Switch
-					id="vuln-plan-switch"
-					checked={current?.enabled ?? false}
-					disabled={!ready && !current?.enabled}
-					onCheckedChange={(value) => patch({ enabled: value })}
-					aria-label="Vulnerability scan"
-				/>
-			</div>
-		</div>
-
 		{#if statsLoading}
 			<Skeleton class="h-9 w-full rounded-md" />
 		{:else if !ready}
@@ -235,10 +156,6 @@
 				<TriangleAlert class="mt-0.5 size-3.5 shrink-0 text-warning" />
 				<p class="text-muted-foreground">The check library is empty. Sync it in Arsenal.</p>
 			</div>
-		{:else if !current?.enabled}
-			<p class="text-2xs text-muted-foreground">
-				Off for this run. {stats?.total.toLocaleString()} checks available.
-			</p>
 		{:else}
 			<div class="space-y-3 rounded-md border bg-muted/20 p-3">
 				<div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
@@ -249,21 +166,6 @@
 							{preview.total.toLocaleString()}
 						</span>
 						<span class="text-xs text-muted-foreground"> checks selected </span>
-					{/if}
-					{#if dirty}
-						<Hint text="Reset to the engine default">
-							{#snippet child(props)}
-								<Button
-									{...props}
-									variant="ghost"
-									size="sm"
-									class="ml-auto h-6 gap-1 px-1.5 text-xs text-muted-foreground"
-									onclick={reset}
-								>
-									<RotateCcw class="size-3" /> Reset
-								</Button>
-							{/snippet}
-						</Hint>
 					{/if}
 				</div>
 

@@ -3,7 +3,6 @@ from __future__ import annotations
 from reports.base import RenderContext, Section
 from reports.config import SectionConfig, flag, limit
 from shared.definitions.reports import SectionGroup
-from shared.definitions.surface import SurfaceDimension
 from shared.utils.net import host_port
 
 
@@ -63,5 +62,4 @@ def _block(label: str, values: list[str], limit_rows: int) -> dict:
         "entries": unique[:limit_rows],
         "total": len(unique),
         "hidden": max(0, len(unique) - limit_rows),
-        "dimension": SurfaceDimension.WEB_ASSETS.value,
     }

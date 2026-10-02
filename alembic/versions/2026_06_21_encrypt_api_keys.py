@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy import text
 
 from alembic import op
-from shared.utils.crypto import decrypt_secret, encrypt_secret, try_decrypt
+from shared.utils.crypto import decrypt_secret
 
 revision: str = "c9e3a1b2d4f6"
 down_revision: str | None = "b8d2f0a1c4e5"
@@ -28,16 +28,6 @@ def upgrade() -> None:
         existing_type=sa.String(length=500),
         existing_nullable=False,
     )
-    conn = op.get_bind()
-    rows = conn.execute(text("SELECT id, key_value FROM api_keys")).fetchall()
-    for row in rows:
-        # idempotent: skip rows that already decrypt cleanly
-        if try_decrypt(row.key_value) is not None:
-            continue
-        conn.execute(
-            text("UPDATE api_keys SET key_value = :v WHERE id = :id"),
-            {"v": encrypt_secret(row.key_value), "id": row.id},
-        )
 
 
 def downgrade() -> None:

@@ -1,9 +1,11 @@
 import { isMap, isPair, isSeq, parseDocument, stringify, type Document } from 'yaml';
-import type {
-	EngineCatalog,
-	ScanEngine,
-	StageCatalogEntry,
-	StageConfig
+import {
+	DEFAULT_INTENSITY,
+	INTENSITIES,
+	type EngineCatalog,
+	type ScanEngine,
+	type StageCatalogEntry,
+	type StageConfig
 } from '$lib/types/scan-engine';
 
 export interface YamlIssue {
@@ -84,7 +86,7 @@ export function draftFromDoc(doc: Document.Parsed): EngineDraft | null {
 	return {
 		name: String(raw.name ?? ''),
 		description: (raw.description as string) ?? null,
-		intensity: String(raw.intensity ?? 'normal'),
+		intensity: String(raw.intensity ?? DEFAULT_INTENSITY),
 		stages: (raw.stages as Record<string, StageConfig>) ?? {}
 	};
 }
@@ -158,9 +160,11 @@ export function validate(
 
 	if (!String(raw.name ?? '').trim()) push(['name'], 'error', 'name is required.');
 
-	const intensities = ['passive', 'normal', 'aggressive'];
-	if (raw.intensity !== undefined && !intensities.includes(String(raw.intensity))) {
-		push(['intensity'], 'error', `intensity must be one of ${intensities.join(', ')}.`);
+	if (
+		raw.intensity !== undefined &&
+		!(INTENSITIES as readonly string[]).includes(String(raw.intensity))
+	) {
+		push(['intensity'], 'error', `intensity must be one of ${INTENSITIES.join(', ')}.`);
 	}
 
 	for (const key of Object.keys(raw)) {

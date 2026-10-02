@@ -9,10 +9,9 @@
 
 	interface Props {
 		platforms: PlatformCount[];
-		dismissible?: boolean;
 	}
 
-	let { platforms, dismissible = false }: Props = $props();
+	let { platforms }: Props = $props();
 
 	function stored(): string[] {
 		try {
@@ -26,9 +25,7 @@
 	let dismissed = $state<string[]>(stored());
 
 	const pending = $derived(
-		platforms.filter(
-			(p) => p.api_provider && !p.configured && !(dismissible && dismissed.includes(p.platform))
-		)
+		platforms.filter((p) => p.api_provider && !p.configured && !dismissed.includes(p.platform))
 	);
 	const names = $derived(
 		pending.length > 1
@@ -44,7 +41,7 @@
 		try {
 			localStorage.setItem(STORAGE_KEYS.bountyConnectDismissed, JSON.stringify(dismissed));
 		} catch {
-			/* a viewer with site data blocked keeps the alert */
+			/* storage unavailable */
 		}
 	}
 </script>
@@ -61,11 +58,9 @@
 		<div class="flex shrink-0 items-center gap-1">
 			<Button href={ROUTES.settings('api-keys')} size="sm" variant="outline">Add credentials</Button
 			>
-			{#if dismissible}
-				<Button variant="ghost" size="icon" class="size-8" onclick={dismiss} aria-label="Dismiss">
-					<XIcon class="size-4" />
-				</Button>
-			{/if}
+			<Button variant="ghost" size="icon" class="size-8" onclick={dismiss} aria-label="Dismiss">
+				<XIcon class="size-4" />
+			</Button>
 		</div>
 	</Alert.Root>
 {/if}

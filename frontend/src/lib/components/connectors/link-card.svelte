@@ -15,6 +15,7 @@
 		isOutdated
 	} from '$lib/config/connectors';
 	import { relativeTime } from '$lib/utilities/dates';
+	import { plural } from '$lib/utilities/strings';
 	import type { Connector, ConnectorSpec } from '$lib/types/connector';
 
 	interface Props {
@@ -45,9 +46,7 @@
 		if (!connector) return [];
 		const out: string[] = [];
 		if (connector.last_seen_at) out.push(`Last request ${relativeTime(connector.last_seen_at)}`);
-		out.push(
-			`${connector.requests_seen.toLocaleString()} request${connector.requests_seen === 1 ? '' : 's'}`
-		);
+		out.push(plural(connector.requests_seen, 'request'));
 		if (connector.pending_actions)
 			out.push(`${connector.pending_actions.toLocaleString()} queued for ${spec.title}`);
 		return out;
@@ -90,7 +89,7 @@
 			</div>
 		</div>
 
-		<div class="flex shrink-0 flex-wrap items-center gap-2">
+		<div class="flex min-w-0 flex-wrap items-center gap-2">
 			{#if connector}
 				<Button variant="outline" size="sm" onclick={onPause}>
 					{#if connector.paused}
@@ -114,12 +113,7 @@
 					<UnplugIcon class="size-3.5" /> Disconnect
 				</Button>
 			{:else}
-				<LoadingButton
-					size="sm"
-					loading={connecting}
-					disabled={!spec.available}
-					onclick={onConnect}
-				>
+				<LoadingButton size="sm" loading={connecting} onclick={onConnect}>
 					<PlugIcon class="size-4" />
 					Connect {spec.title}
 				</LoadingButton>

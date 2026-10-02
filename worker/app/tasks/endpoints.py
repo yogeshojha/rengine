@@ -32,7 +32,9 @@ logger = get_logger(__name__)
 MAX_BRANCH_URLS = 2000
 
 
-def branch_candidates(scan_id: uuid.UUID, host: str, dir_path: str | None):
+def branch_candidates(
+    scan_id: uuid.UUID, host: str, dir_path: str | None, scheme: str | None
+):
     """Unverified, non-static endpoints under a folder, most useful first."""
     flagged = func.jsonb_array_length(cast(Endpoint.interest, JSONB)) > 0
     query = select(Endpoint.url, Endpoint.path).where(
@@ -45,6 +47,8 @@ def branch_candidates(scan_id: uuid.UUID, host: str, dir_path: str | None):
         prefix = dir_path if dir_path.endswith("/") else f"{dir_path}/"
         escaped = prefix.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         query = query.where(Endpoint.dir_path.like(f"{escaped}%", escape="\\"))
+    if scheme:
+        query = query.where(Endpoint.url.startswith(f"{scheme}://", autoescape=True))
     return query.order_by(
         flagged.desc(),
         (Endpoint.param_count > 0).desc(),
@@ -53,9 +57,8 @@ def branch_candidates(scan_id: uuid.UUID, host: str, dir_path: str | None):
     )
 
 
-@shared_task(bind=True, name="app.tasks.endpoints.verify_branch", max_retries=0)
+@shared_task(name="app.tasks.endpoints.verify_branch", max_retries=0)
 def verify_branch(
-    self,  # noqa: ARG001
     scan_id: str,
     host: str,
     dir_path: str | None = None,
@@ -74,7 +77,8 @@ def verify_branch(
             if stored
             else EndpointProbeStage.default_transport(resolved.intensity)
         )
-        candidates = branch_candidates(scan.id, host, dir_path)
+        scheme = PROBE_SCHEME.get(resolved.http_protocol)
+        candidates = branch_candidates(scan.id, host, dir_path, scheme)
         excluded = resolved.excluded_paths or []
         if excluded:
             selected, total = _in_scope(session, candidates, excluded, cap)
@@ -84,9 +88,6 @@ def verify_branch(
                 or 0
             )
             selected = [r.url for r in session.execute(candidates.limit(cap)).all()]
-        scheme = PROBE_SCHEME.get(resolved.http_protocol)
-        if scheme:
-            selected = [url for url in selected if url.startswith(f"{scheme}://")]
         skipped = max(0, total - len(selected))
         where = f"{dir_path or '/'} on {host}"
         if not selected:
@@ -99,7 +100,7 @@ def verify_branch(
                 timeout=transport.timeout,
                 proxy_url=resolved.proxy_url,
                 headers=dict(resolved.headers or {}),
-                probe_scheme=PROBE_SCHEME.get(resolved.http_protocol),
+                probe_scheme=scheme,
                 follow_redirects=(
                     FOLLOW_REDIRECTS
                     if resolved.follow_redirects is None

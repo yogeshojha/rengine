@@ -2,13 +2,46 @@
 
 from __future__ import annotations
 
+import re
 from enum import StrEnum
+from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator
+
+from shared.definitions.vulnerabilities import SEVERITY_ORDER
 
 MAX_THEME_BYTES = 200_000
 MAX_THEME_CSS = 60_000
 THEME_SLUG_LENGTH = 48
+
+_HEX_COLOR = re.compile(r"#(?:[0-9a-fA-F]{3}){1,2}")
+_FONT_KEY = re.compile(r"(?:[^\W_]|-)*")
+
+
+def _color(value: str) -> str:
+    if value and not _HEX_COLOR.fullmatch(value):
+        msg = "A colour must be #rgb or #rrggbb."
+        raise ValueError(msg)
+    return value
+
+
+def _severity_key(value: str) -> str:
+    if value not in SEVERITY_ORDER:
+        msg = f"Severity must be one of {', '.join(SEVERITY_ORDER)}."
+        raise ValueError(msg)
+    return value
+
+
+def _font_key(value: str) -> str:
+    if not _FONT_KEY.fullmatch(value):
+        msg = "A font key may contain letters, digits and hyphens only."
+        raise ValueError(msg)
+    return value
+
+
+HexColor = Annotated[str, AfterValidator(_color)]
+SeverityKey = Annotated[str, AfterValidator(_severity_key)]
+FontKey = Annotated[str, AfterValidator(_font_key)]
 
 
 class ThemeOrigin(StrEnum):
@@ -42,29 +75,11 @@ class CoverArt(StrEnum):
     RINGS = "rings"
 
 
-COVER_ART_LABELS: dict[str, str] = {
-    CoverArt.NONE.value: "None",
-    CoverArt.GRID.value: "Grid",
-    CoverArt.TOPO.value: "Contours",
-    CoverArt.MESH.value: "Mesh",
-    CoverArt.SCAN.value: "Scan lines",
-    CoverArt.RINGS.value: "Rings",
-}
-
-
 class TableStyle(StrEnum):
     HAIRLINE = "hairline"
     ZEBRA = "zebra"
     BOXED = "boxed"
     OPEN = "open"
-
-
-TABLE_STYLE_LABELS: dict[str, str] = {
-    TableStyle.HAIRLINE.value: "Hairline",
-    TableStyle.ZEBRA.value: "Zebra",
-    TableStyle.BOXED.value: "Boxed",
-    TableStyle.OPEN.value: "Open",
-}
 
 
 class FindingStyle(StrEnum):
@@ -74,14 +89,6 @@ class FindingStyle(StrEnum):
     BANNER = "banner"
 
 
-FINDING_STYLE_LABELS: dict[str, str] = {
-    FindingStyle.RAIL.value: "Severity rail",
-    FindingStyle.CARD.value: "Card",
-    FindingStyle.PLAIN.value: "Plain",
-    FindingStyle.BANNER.value: "Severity banner",
-}
-
-
 class HeadingStyle(StrEnum):
     NUMBERED = "numbered"
     RULE = "rule"
@@ -89,39 +96,31 @@ class HeadingStyle(StrEnum):
     KICKER = "kicker"
 
 
-HEADING_STYLE_LABELS: dict[str, str] = {
-    HeadingStyle.NUMBERED.value: "Numbered",
-    HeadingStyle.RULE.value: "Rule above",
-    HeadingStyle.PLAIN.value: "Plain",
-    HeadingStyle.KICKER.value: "Kicker label",
-}
-
-
 class ColorTokens(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
-    page: str = "#ffffff"
-    ink: str = "#16181d"
-    ink_soft: str = "#4a4f5a"
-    ink_faint: str = "#82889a"
-    rule: str = "#e3e5ea"
-    rule_strong: str = "#c8ccd4"
-    surface: str = "#f6f7f9"
-    surface_soft: str = "#fafbfc"
-    accent: str = "#4f46e5"
-    accent_soft: str = "#eef0fe"
-    accent_ink: str = "#ffffff"
-    link: str = ""
-    severity: dict[str, str] = Field(default_factory=dict)
-    chart: list[str] = Field(default_factory=list, max_length=8)
+    page: HexColor = "#ffffff"
+    ink: HexColor = "#16181d"
+    ink_soft: HexColor = "#4a4f5a"
+    ink_faint: HexColor = "#82889a"
+    rule: HexColor = "#e3e5ea"
+    rule_strong: HexColor = "#c8ccd4"
+    surface: HexColor = "#f6f7f9"
+    surface_soft: HexColor = "#fafbfc"
+    accent: HexColor = "#4f46e5"
+    accent_soft: HexColor = "#eef0fe"
+    accent_ink: HexColor = "#ffffff"
+    link: HexColor = ""
+    severity: dict[SeverityKey, HexColor] = Field(default_factory=dict)
+    chart: list[HexColor] = Field(default_factory=list, max_length=8)
 
 
 class TypeTokens(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
-    heading: str = "inter"
-    body: str = "inter"
-    mono: str = "jetbrains-mono"
+    heading: FontKey = "inter"
+    body: FontKey = "inter"
+    mono: FontKey = "jetbrains-mono"
     base_size: float = Field(default=9.5, ge=6, le=16)
     scale: float = Field(default=1.22, ge=1.05, le=1.5)
     line_height: float = Field(default=1.55, ge=1.0, le=2.4)
@@ -151,7 +150,7 @@ class CoverTokens(BaseModel):
     layout: str = CoverLayout.BAND.value
     art: str = CoverArt.NONE.value
     ink: str = "light"
-    background: str = ""
+    background: HexColor = ""
     accent_bar: bool = True
 
 
@@ -171,3 +170,11 @@ class ThemeTokens(BaseModel):
     layout: LayoutTokens = Field(default_factory=LayoutTokens)
     cover: CoverTokens = Field(default_factory=CoverTokens)
     css: str = Field(default="", max_length=MAX_THEME_CSS)
+
+    @field_validator("css")
+    @classmethod
+    def _no_markup(cls, value: str) -> str:
+        if "<" in value:
+            msg = "The css block may not contain <."
+            raise ValueError(msg)
+        return value

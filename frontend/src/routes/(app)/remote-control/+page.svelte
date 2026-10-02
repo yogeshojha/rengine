@@ -40,7 +40,6 @@
 	let chosen = $state<ChannelView | null>(
 		(CHANNEL_VIEWS as readonly string[]).includes(asked) ? (asked as ChannelView) : null
 	);
-	const view = $derived(chosen && views.includes(chosen) ? chosen : views[0]);
 
 	let now = $state(Date.now());
 	let settingsOpen = $state(false);
@@ -54,6 +53,9 @@
 		activity: remoteControl.calls.length || null,
 		commands: remoteControl.commands.length || null
 	});
+	const view = $derived(
+		chosen && views.includes(chosen) ? chosen : (views.find((v) => counts[v]) ?? views[0])
+	);
 
 	$effect(() => {
 		const admin = canAdmin;

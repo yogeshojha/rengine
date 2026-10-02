@@ -1,5 +1,3 @@
-"""Read side of interest: the rule library, the ranked list, and dismissals."""
-
 from __future__ import annotations
 
 import uuid
@@ -8,11 +6,8 @@ from collections import defaultdict
 from sqlalchemy import bindparam, delete, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.asset_query import compile_query, parse_query
-from app.services.asset_query.ast import QuerySyntaxError
-from app.services.asset_query.compiler import QueryContext
-from app.services.asset_query.scope import QueryScope
 from app.services.target_names import target_names
+from shared.definitions.ai import TASK_FEATURE, AITask
 from shared.definitions.interest import (
     BAND_FLOOR,
     BAND_LABELS,
@@ -26,13 +21,14 @@ from shared.definitions.interest import (
     RULE_MODE_LABELS,
     SOURCE_HELP,
     SOURCE_LABELS,
+    InterestKind,
     InterestSource,
     RuleMode,
     coerce_kind,
     kind_label,
     kind_weight,
 )
-from shared.enums.scan import SCAN_TERMINAL_STATUSES
+from shared.enums.scan import SCAN_TERMINAL_STATUSES, ScanStatus
 from shared.logging import get_logger
 from shared.models.interest import (
     BandEntry,
@@ -55,8 +51,14 @@ from shared.models.interest import (
 )
 from shared.models.scan import Scan
 from shared.models.subdomain import Subdomain
-from shared.services.asset_query import lead_cache
+from shared.services.ai import ledger
+from shared.services.asset_query import compile_query, lead_cache, parse_query
+from shared.services.asset_query.ast import QuerySyntaxError
+from shared.services.asset_query.compiler import QueryContext
+from shared.services.asset_query.scope import QueryScope
+from shared.services.celery_dispatch import dispatch_interest_evaluation
 from shared.services.interest import HOST_ROLLUP_SQL, signature
+from shared.services.scan_scope import census_only
 from shared.utils.datetime import utc_now
 
 logger = get_logger(__name__)
@@ -70,8 +72,6 @@ class InterestError(ValueError):
 
 
 def catalog() -> InterestCatalog:
-    from interest.registry import provider_names  # noqa: PLC0415
-
     return InterestCatalog(
         kinds=[
             KindEntry(
@@ -100,7 +100,6 @@ def catalog() -> InterestCatalog:
         modes=dict(RULE_MODE_LABELS),
         keyword_fields=dict(KEYWORD_FIELD_LABELS),
         max_score=MAX_SCORE,
-        providers=list(provider_names()),
     )
 
 
@@ -136,7 +135,7 @@ def _clearable(field: str) -> bool:
     return column is not None and column.nullable
 
 
-class InterestService:
+class InterestReadService:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
@@ -271,15 +270,9 @@ class InterestService:
         data = payload.model_dump(exclude_unset=True)
 
         if rule.builtin:
-            allowed = {
-                "enabled",
-                "notify",
-                "keywords",
-                "keyword_fields",
-                "weight",
-                "live_only",
-            }
-            data = {k: v for k, v in data.items() if k in allowed}
+            from interest.presets import USER_FIELDS  # noqa: PLC0415
+
+            data = {k: v for k, v in data.items() if k in USER_FIELDS}
 
         if "query" in data and data["query"] is not None:
             self._validate(data["query"])
@@ -338,8 +331,6 @@ class InterestService:
             sample=list(rows[:SAMPLE]),
         )
 
-
-class InterestReadService(InterestService):
     async def _applicable(self, project_id: uuid.UUID) -> list[InterestRule]:
         return list(
             (
@@ -485,7 +476,7 @@ class InterestReadService(InterestService):
             asn_org=host.asn_org,
             is_cdn=host.is_cdn,
             screenshot_path=host.screenshot_path,
-            is_new="newly_appeared" in kinds,
+            is_new=InterestKind.NEWLY_APPEARED.value in kinds,
         )
 
     async def summary(
@@ -548,7 +539,9 @@ class InterestReadService(InterestService):
             judged_at=scan.interest_judged_at if scan else None,
             model=scan.interest_model if scan else None,
             ai_available=bool(cfg and cfg.available),
-            ai_enabled=bool(cfg and cfg.allows("asset_judgement")),
+            ai_enabled=bool(
+                cfg and cfg.allows(TASK_FEATURE[AITask.ASSET_JUDGEMENT.value])
+            ),
             stale=bool(scan)
             and scan.status in SCAN_TERMINAL_STATUSES
             and scan.interest_signature != signature(rules),
@@ -619,22 +612,31 @@ class InterestReadService(InterestService):
         row = await self.session.get(InterestDismissal, dismissal_id)
         if row is None:
             return False
+        target_id = row.target_id
         await self.session.delete(row)
         await self.session.commit()
-        await lead_cache.bump((row.target_id,))
+        await lead_cache.bump((target_id,))
+        latest = await self.session.scalar(
+            select(Scan.id)
+            .where(
+                Scan.target_id == target_id,
+                Scan.status == ScanStatus.COMPLETED.value,
+                census_only(),
+            )
+            .order_by(func.coalesce(Scan.started_at, Scan.created_at).desc())
+            .limit(1)
+        )
+        if latest is not None:
+            try:
+                dispatch_interest_evaluation(str(latest), include_ai=False)
+            except Exception:
+                logger.warning("interest evaluation dispatch failed", exc_info=True)
         return True
 
-    async def dismissals(
-        self,
-        *,
-        target_id: uuid.UUID | None = None,
-        project_id: uuid.UUID | None = None,
-    ) -> list[InterestDismissal]:
-        stmt = select(InterestDismissal)
-        if target_id is not None:
-            stmt = stmt.where(InterestDismissal.target_id == target_id)
-        if project_id is not None:
-            stmt = stmt.where(InterestDismissal.project_id == project_id)
+    async def dismissals(self, *, project_id: uuid.UUID) -> list[InterestDismissal]:
+        stmt = select(InterestDismissal).where(
+            InterestDismissal.project_id == project_id
+        )
         return list(
             (
                 await self.session.execute(
@@ -647,7 +649,10 @@ class InterestReadService(InterestService):
 
     async def suggestions(self, scan: Scan) -> list[RuleSuggestion]:
         """Rule proposals, each counted against this scan."""
-        from interest.providers.ai.suggest import MAX_EXAMPLES, propose  # noqa: PLC0415
+        from interest.providers.ai.suggest import (  # noqa: PLC0415
+            MAX_EXAMPLES,
+            propose_async,
+        )
         from shared.services.ai.config import load_config_async  # noqa: PLC0415
 
         cfg = await load_config_async(self.session)
@@ -686,8 +691,10 @@ class InterestReadService(InterestService):
             ).scalars()
         }
 
+        with ledger.source("scan", scan.id):
+            proposed = await propose_async(self.session, cfg, examples)
         out: list[RuleSuggestion] = []
-        for item in propose(self.session, cfg, examples):
+        for item in proposed:
             query = item["query"]
             if query in existing:
                 continue

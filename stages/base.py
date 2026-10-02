@@ -27,7 +27,6 @@ from shared.utils.text import REFUSED_ROW
 from shared.utils.validation import extract_asn_number
 from stages.config import StageConfig
 from stages.sink import DEFAULT_ROWS, DEFAULT_SECONDS, ResultSink
-from tools.runner import CLIToolRunner
 from tools.runner.abort import StageAbortedError
 
 logger = get_logger(__name__)
@@ -169,17 +168,11 @@ class Stage(ABC):
         wanted = set(runner.cfg.severities)
         return [f for f in findings if f.severity in wanted]
 
-    def runner(self, binary: str, default_timeout: int = 300) -> CLIToolRunner:
-        """A CLIToolRunner pre-bound to this scan's recorder + the tool's custom args."""
-        return CLIToolRunner(
-            binary,
-            default_timeout=default_timeout,
-            recorder=self.ctx.recorder,
-            extra_args=self.ctx.resolved.tool_args(binary),
-        )
+    def aborted(self) -> bool:
+        return self.ctx.is_aborted is not None and bool(self.ctx.is_aborted())
 
     def _check_abort(self) -> None:
-        if self.ctx.is_aborted is not None and self.ctx.is_aborted():
+        if self.aborted():
             raise StageAbortedError
 
     def follow_redirects(self, default: bool) -> bool:
@@ -258,7 +251,6 @@ class Stage(ABC):
             logger.warning("results event emit failed", exc_info=True)
 
     def _judge_live(self, dimension: str) -> None:
-        """Hosts landed."""
         if dimension != SurfaceDimension.WEB_ASSETS.value:
             return
         if not claim(f"interest:{self.ctx.scan_id}", LIVE_JUDGE_SECONDS):

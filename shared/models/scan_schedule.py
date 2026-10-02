@@ -37,7 +37,7 @@ class ScanSchedule(SQLModel, table=True):
     timezone: str = Field(default="UTC", max_length=64)
 
     status: str = Field(default=ScheduleStatus.ACTIVE.value, index=True)
-    next_run_at: datetime | None = Field(default=None, index=True)
+    next_run_at: datetime | None = Field(default=None)
     last_run_at: datetime | None = Field(default=None)
     last_error: str | None = Field(default=None, max_length=2000)
     total_run_count: int = Field(default=0)

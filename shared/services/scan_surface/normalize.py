@@ -1,11 +1,11 @@
-"""One spelling per target: nuclei deduplicates its input byte for byte."""
+"""Normalised root and service values."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from urllib.parse import urlsplit
 
-from shared.definitions.ports import SCHEME_PORTS as DEFAULT_PORTS
+from shared.definitions.ports import SCHEME_PORTS
 from shared.utils.net import bracketed, host_port, url_port
 
 
@@ -25,7 +25,7 @@ def root_value(scheme: str, host: str, port: int | None) -> str:
     scheme = (scheme or "https").lower()
     host = (host or "").lower().strip("[]")
     literal = bracketed(host)
-    if port and port != DEFAULT_PORTS.get(scheme):
+    if port and port != SCHEME_PORTS.get(scheme):
         return f"{scheme}://{literal}:{port}"
     return f"{scheme}://{literal}"
 
@@ -44,7 +44,7 @@ def parse_root(
     if not host:
         return None
     scheme_value = (parsed.scheme or scheme or "https").lower()
-    port_value = url_port(parsed) or port or DEFAULT_PORTS.get(scheme_value)
+    port_value = url_port(parsed) or port or SCHEME_PORTS.get(scheme_value)
     if not port_value:
         return None
     return Root(scheme=scheme_value, host=host, port=int(port_value))
@@ -55,4 +55,4 @@ def service_value(host: str, port: int) -> str:
     return host_port((host or "").lower(), int(port))
 
 
-__all__ = ["DEFAULT_PORTS", "Root", "parse_root", "root_value", "service_value"]
+__all__ = ["Root", "parse_root", "root_value", "service_value"]

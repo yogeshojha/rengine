@@ -31,7 +31,7 @@ final class Sink {
     static final int UNAUTHORIZED = 401;
     static final int TOO_MANY_REQUESTS = 429;
     static final String NOT_RENGINE =
-            "The address answered, but not as a reNgine connector. Check the host and the path.";
+            "The address is not a reNgine connector endpoint. Check the host and the path.";
     static final int MAX_ATTEMPTS = 8;
     static final long RETRY_MIN_MILLIS = 2000;
     static final long RETRY_MAX_MILLIS = 30_000;
@@ -67,7 +67,6 @@ final class Sink {
             return size() > DEDUPE_CAPACITY;
         }
     };
-    private final AtomicLong accepted = new AtomicLong();
     private final AtomicLong sent = new AtomicLong();
     private final AtomicLong dropped = new AtomicLong();
     private final AtomicLong deduped = new AtomicLong();
@@ -109,12 +108,8 @@ final class Sink {
 
     /** Called on Burp's request path. Non-blocking. */
     void offer(Observation observation) {
-        if (!seenRecently(observation)) {
-            if (queue.offer(observation)) {
-                accepted.incrementAndGet();
-            } else {
-                dropped.incrementAndGet();
-            }
+        if (!seenRecently(observation) && !queue.offer(observation)) {
+            dropped.incrementAndGet();
         }
     }
 
@@ -183,7 +178,7 @@ final class Sink {
         }
         if (!settings.isConfigured()) {
             dropped.addAndGet(batch.size());
-            lastError = "No endpoint or token configured";
+            lastError = "No endpoint or token configured.";
             return true;
         }
         String target = settings.targetId();
@@ -332,18 +327,15 @@ final class Sink {
             return "The endpoint could not be reached. Check the address and the port.";
         }
         if (e instanceof HttpTimeoutException) {
-            return "reNgine did not answer in time.";
+            return "The endpoint did not answer in time.";
         }
         if (e instanceof IllegalArgumentException) {
-            return "The endpoint is not a valid URL. It starts with http:// or https://.";
+            return "The endpoint is not a valid URL. Enter an address that starts with "
+                    + "http:// or https://.";
         }
         String message = e.getMessage();
         String name = e.getClass().getSimpleName();
         return message == null || message.isBlank() ? name : name + ": " + message;
-    }
-
-    long accepted() {
-        return accepted.get();
     }
 
     long sent() {

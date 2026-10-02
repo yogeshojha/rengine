@@ -89,10 +89,8 @@ async def list_issues(
     project_id: Annotated[UUID, Query(description="Project ID")],
     _user: CurrentUser,
     service: Filing,
-    state: Annotated[str | None, Query(max_length=16)] = None,
-    tracker_id: Annotated[UUID | None, Query()] = None,
 ):
-    return await service.list(project_id, state=state, tracker_id=tracker_id)
+    return await service.list(project_id)
 
 
 @router.post("/issues/plan", response_model=FilingPlan)
@@ -127,11 +125,6 @@ async def unlink_issue(issue_id: UUID, _user: CurrentUser, service: Filing):
 
 
 # ---------- one tracker ----------
-
-
-@router.get("/{tracker_id}", response_model=IssueTrackerRead)
-async def get_tracker(tracker_id: UUID, user: CurrentUser, service: Trackers):
-    return await service.get(tracker_id, reveal=user.is_superuser)
 
 
 @router.patch("/{tracker_id}", response_model=IssueTrackerRead)

@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import SectionHead from '$lib/components/section-head.svelte';
 	import { tripwiresApi } from '$lib/api/tripwires';
-	import { CheckStatus, dimensionSpec } from '$lib/config/tripwires';
+	import { CheckStatus, RECENT_DAYS, dimensionSpec } from '$lib/config/tripwires';
 	import type { TripwireBacktest, TripwirePreviewRequest } from '$lib/types/tripwire';
 	import { formatShortDate } from '$lib/utilities/dates';
 
@@ -56,9 +57,7 @@
 </script>
 
 <div class="flex flex-col gap-3 rounded-lg border bg-muted/20 p-4">
-	<span class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
-		Last {backtest?.days ?? 30} days
-	</span>
+	<SectionHead title="Last {backtest?.days ?? RECENT_DAYS} days" />
 	{#if !enabled}
 		<p class="text-xs text-muted-foreground">Not evaluated until the query is valid.</p>
 	{:else if loading && !backtest}

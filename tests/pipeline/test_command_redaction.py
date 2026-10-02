@@ -2,12 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from shared.services.scan_resolve import (
-    MASK,
-    redact_command,
-    redact_recorded,
-    secret_runs,
-)
+from shared.services.scan_resolve import MASK, redact_command, redact_recorded
 
 pytestmark = pytest.mark.pipeline
 
@@ -55,11 +50,6 @@ def test_the_flags_around_a_header_survive():
 )
 def test_an_ordinary_flag_is_left_alone(command: str):
     assert redact_command(command) == command
-
-
-def test_secret_runs_still_reads_back_what_was_masked():
-    command = f"nuclei -header X-Api-Session: {_TOKEN} -header X-Other: plainvalue"
-    assert secret_runs(command) == [_TOKEN, "plainvalue"]
 
 
 def test_a_run_secret_is_masked_wherever_it_lands():

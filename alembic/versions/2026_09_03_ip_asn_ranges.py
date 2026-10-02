@@ -17,7 +17,6 @@ down_revision: str | None = "b73e91d5c4a8"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
-# AS numbers are unsigned 32-bit; integer overflows on any ASN above 2^31-1
 _ASN_COLUMNS = (
     ("subdomains", "asn"),
     ("http_assets", "asn"),

@@ -6,7 +6,6 @@ import contextlib
 import json
 from collections.abc import Iterator
 
-from shared.logging import get_logger
 from shared.utils.net import bracketed
 from tools.runner import (
     CLIToolRunner,
@@ -14,8 +13,6 @@ from tools.runner import (
     StreamOutcome,
     ToolNotFoundError,
 )
-
-logger = get_logger(__name__)
 
 FFUF_BINARY = "ffuf"
 DEFAULT_TIMEOUT = 1800

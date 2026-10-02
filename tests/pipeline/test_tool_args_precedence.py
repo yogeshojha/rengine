@@ -1,5 +1,3 @@
-"""Tool args add flags; they never restate one the stage set."""
-
 from __future__ import annotations
 
 import pytest

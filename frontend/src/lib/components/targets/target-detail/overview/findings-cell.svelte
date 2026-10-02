@@ -6,8 +6,9 @@
 	import SeverityBar from '$lib/components/scans/results/vulnerabilities/severity-bar.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
-	import { SEVERITY_FILL, severityLabel } from '$lib/config/vulnerabilities';
+	import { ACTIONABLE_SEVERITIES, SEVERITY_FILL, severityLabel } from '$lib/config/vulnerabilities';
 	import { formatShortDate } from '$lib/utilities/dates';
+	import { plural } from '$lib/utilities/strings';
 	import type { RankedFinding, ScanVulnerabilities } from '$lib/utilities/vulns';
 	import type { TargetRisk } from '$lib/types/target-summary';
 
@@ -60,7 +61,7 @@
 				key: 'actionable',
 				label: 'Actionable',
 				value: actionable,
-				query: 'severity:critical or severity:high or severity:medium'
+				query: ACTIONABLE_SEVERITIES.map((s) => `severity:${s}`).join(' or ')
 			},
 			{ key: 'new', label: 'New this run', value: newCount, query: 'is:new' }
 		].filter((s) => s.value > 0)
@@ -169,7 +170,8 @@
 	{#snippet footer()}
 		{#if vulns}
 			<span>
-				{vulns.affected_hosts.toLocaleString()} of {vulns.scanned_hosts.toLocaleString()} web assets affected{#if suppressed}
+				{plural(vulns.affected_hosts, 'web asset')} affected · {vulns.scanned_hosts.toLocaleString()}
+				targets tested{#if suppressed}
 					· {suppressed.toLocaleString()} suppressed{/if}
 			</span>
 		{:else if suppressed}

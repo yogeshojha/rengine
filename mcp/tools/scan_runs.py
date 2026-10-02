@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
-from datetime import datetime
-
 from pydantic import Field
 from sqlmodel import select
 
@@ -15,7 +12,7 @@ from mcp.dimensions import dimension
 from mcp.errors import ToolError
 from mcp.phrasing import elapsed, number, short_id
 from mcp.result import ToolResult
-from mcp.tools._scope import find_target
+from mcp.tools._scope import active_project_ids, find_target, in_scope, parse_id
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.definitions.surface import SurfaceDimension
 from shared.enums.scan import (
@@ -26,7 +23,6 @@ from shared.enums.scan import (
 from shared.enums.scan import ScanStatus as RunStatus
 from shared.models.scan import Scan
 from shared.models.target import Target
-from shared.utils.datetime import utc_now
 from shared.utils.text import counted
 from toolbox.base import cell, fact, facts, hero, table
 
@@ -160,7 +156,7 @@ class CancelScan(Tool):
 class PauseInput(ToolInput):
     scan: str | None = Field(default=None, description="The scan id to pause.")
     target: str | None = Field(
-        default=None, description="A target, to pause whichever run of it is live."
+        default=None, description="A target, to pause its running scan."
     )
 
 
@@ -189,11 +185,11 @@ class PauseScan(Tool):
             ctx,
             args.scan,
             args.target,
-            statuses=SCAN_LIVE_STATUSES,
+            statuses=(RunStatus.RUNNING.value,),
             state="running",
             hint="Nothing to pause.",
         )
-        if row.status not in SCAN_LIVE_STATUSES:
+        if row.status != RunStatus.RUNNING.value:
             msg = f"The scan is {row.status}. Nothing to pause."
             raise ToolError(msg)
 
@@ -290,13 +286,13 @@ async def _one_run(
     hint: str = "Start one with start_scan.",
 ) -> Scan:
     if scan:
-        row = await ctx.session.get(Scan, _uuid(scan, "scan"))
+        row = await ctx.session.get(Scan, parse_id(scan, "scan"))
         if row is None:
             msg = (
                 f"No scan with id {scan!r}. Take the id from start_scan or scan_status."
             )
             raise ToolError(msg)
-        ctx.check_project(row.project_id)
+        await in_scope(ctx, row.project_id)
         return row
 
     found = await find_target(ctx, target or "")
@@ -314,7 +310,8 @@ async def _one_run(
 
 
 async def _running(ctx: ToolContext, limit: int) -> ToolResult:
-    statement = select(Scan).where(Scan.status.in_(SCAN_LIVE_STATUSES))
+    active = Scan.project_id.in_(active_project_ids())
+    statement = select(Scan).where(Scan.status.in_(SCAN_LIVE_STATUSES), active)
     scoped = ctx.scoped_projects()
     if scoped is not None:
         statement = statement.where(Scan.project_id.in_(scoped))
@@ -329,7 +326,7 @@ async def _running(ctx: ToolContext, limit: int) -> ToolResult:
     )
     live = bool(rows)
     if not rows:
-        recent = select(Scan)
+        recent = select(Scan).where(active)
         if scoped is not None:
             recent = recent.where(Scan.project_id.in_(scoped))
         rows = list(
@@ -360,7 +357,7 @@ async def _running(ctx: ToolContext, limit: int) -> ToolResult:
             }
             for row in rows
         ],
-        pivot=f"{ctx.ui_base_url.rstrip('/')}/scans",
+        pivot=links.scans(ctx.ui_base_url),
         caveats=[] if live else ["Start one with start_scan."],
         blocks=[
             table(
@@ -487,17 +484,6 @@ def _status_caveats(row: Scan, unfinished: bool) -> list[str]:
 
 
 def _elapsed(row: Scan) -> float | None:
-    start: datetime | None = row.started_at
-    if start is None:
-        return None
-    end = row.completed_at or row.paused_at or utc_now()
-    ran = (end - start).total_seconds() - (row.paused_seconds or 0.0)
-    return round(max(ran, 0.0), 1)
+    from app.services.scan import scan_duration  # noqa: PLC0415
 
-
-def _uuid(value: str, field: str) -> uuid.UUID:
-    try:
-        return uuid.UUID(value)
-    except ValueError as exc:
-        msg = f"{field} must be a uuid, not {value!r}."
-        raise ToolError(msg) from exc
+    return scan_duration(row)

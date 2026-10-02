@@ -1,17 +1,13 @@
 """RIPEstat HTTP client for GET /data/{endpoint}/data.json."""
 
-import os
 from typing import Any
 
 import httpx
 
 from shared.http import get_async_client, get_sync_client
-from shared.logging import get_logger
-
-logger = get_logger(__name__)
 
 BASE_URL = "https://stat.ripe.net/data"
-DEFAULT_SOURCE_APP = ""
+SOURCE_APP = ""
 
 
 class RIPEStatAPIError(Exception):
@@ -29,12 +25,7 @@ class RIPEStatInvalidResourceError(RIPEStatAPIError):
 class RIPEStatClient:
     """Low-level HTTP client for RIPEstat API."""
 
-    def __init__(
-        self, source_app: str | None = None, proxy_url: str | None = None
-    ) -> None:
-        self._source_app = source_app or os.environ.get(
-            "RIPESTAT_SOURCE_APP", DEFAULT_SOURCE_APP
-        )
+    def __init__(self, proxy_url: str | None = None) -> None:
         self._proxy_url = proxy_url
 
     def _egress(self) -> httpx.Client:
@@ -46,7 +37,7 @@ class RIPEStatClient:
     def _build_params(self, resource: str, **kwargs) -> dict[str, str]:
         params = {
             "resource": resource,
-            "sourceapp": self._source_app,
+            "sourceapp": SOURCE_APP,
         }
         params.update({k: v for k, v in kwargs.items() if v is not None})
         return params
@@ -80,62 +71,6 @@ class RIPEStatClient:
         return body["data"]
 
     # fastapi async methods
-
-    async def announced_prefixes(self, asn: str) -> dict[str, Any]:
-        async with get_async_client() as client:
-            resp = await client.get(
-                f"{BASE_URL}/announced-prefixes/data.json",
-                params=self._build_params(asn),
-            )
-        return self._handle_response(resp, "announced-prefixes")
-
-    async def asn_neighbours(self, asn: str) -> dict[str, Any]:
-        async with get_async_client() as client:
-            resp = await client.get(
-                f"{BASE_URL}/asn-neighbours/data.json",
-                params=self._build_params(asn),
-            )
-        return self._handle_response(resp, "asn-neighbours")
-
-    async def as_overview(self, asn: str) -> dict[str, Any]:
-        async with get_async_client() as client:
-            resp = await client.get(
-                f"{BASE_URL}/as-overview/data.json",
-                params=self._build_params(asn),
-            )
-        return self._handle_response(resp, "as-overview")
-
-    async def network_info(self, ip: str) -> dict[str, Any]:
-        async with get_async_client() as client:
-            resp = await client.get(
-                f"{BASE_URL}/network-info/data.json",
-                params=self._build_params(ip),
-            )
-        return self._handle_response(resp, "network-info")
-
-    async def abuse_contact(self, resource: str) -> dict[str, Any]:
-        async with get_async_client() as client:
-            resp = await client.get(
-                f"{BASE_URL}/abuse-contact-finder/data.json",
-                params=self._build_params(resource),
-            )
-        return self._handle_response(resp, "abuse-contact-finder")
-
-    async def prefix_overview(self, prefix: str) -> dict[str, Any]:
-        async with get_async_client() as client:
-            resp = await client.get(
-                f"{BASE_URL}/prefix-overview/data.json",
-                params=self._build_params(prefix),
-            )
-        return self._handle_response(resp, "prefix-overview")
-
-    async def related_prefixes(self, prefix: str) -> dict[str, Any]:
-        async with get_async_client() as client:
-            resp = await client.get(
-                f"{BASE_URL}/related-prefixes/data.json",
-                params=self._build_params(prefix),
-            )
-        return self._handle_response(resp, "related-prefixes")
 
     async def searchcomplete(self, query: str) -> dict[str, Any]:
         async with get_async_client() as client:
@@ -202,11 +137,3 @@ class RIPEStatClient:
                 params=self._build_params(prefix),
             )
         return self._handle_response(resp, "related-prefixes")
-
-    def searchcomplete_sync(self, query: str) -> dict[str, Any]:
-        with self._egress() as client:
-            resp = client.get(
-                f"{BASE_URL}/searchcomplete/data.json",
-                params=self._build_params(query),
-            )
-        return self._handle_response(resp, "searchcomplete")

@@ -11,28 +11,17 @@ from sqlalchemy import (
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.asset_query import (
-    NO_JIT,
-    STATEMENT_TIMEOUT,
-    QueryScope,
-    QuerySyntaxError,
-    ScopeLike,
-    build_leads,
-    build_service_groups,
-    compile_service_query,
-    page_rows,
-    parse_query,
-    query_error_for,
-    syntax_error,
-)
 from app.services.surface_scope import baselined_targets
 from app.services.target_names import target_names
 from shared.definitions import ai_services as ai_defs
-from shared.definitions.asset_query import COUNT_CAP, SERVICE_QUERY
+from shared.definitions.asset_query import ALL_TAB, COUNT_CAP, SERVICE_QUERY
 from shared.definitions.ports import (
     DEFAULT_WEB_PORTS,
     PORT_SOURCE_LABELS,
+    SCAN_POLICY_LABELS,
+    SCAN_POLICY_REASON_LABELS,
     SERVICE_CLASS_LABELS,
+    UNPLANNED,
     PortSource,
     ScanPolicy,
     ServiceClass,
@@ -40,8 +29,8 @@ from shared.definitions.ports import (
     service_label,
 )
 from shared.logging import get_logger
-from shared.models.asset_query import QueryGroups, QueryLeads
-from shared.models.port import Port, PortRead, PortSummary
+from shared.models.asset_query import QueryCounts, QueryGroups, QueryLeads
+from shared.models.port import Port, PortRead
 from shared.models.scan_correlation import (
     AiModelCount,
     AiServiceCount,
@@ -55,7 +44,22 @@ from shared.models.scan_correlation import (
     ServiceRead,
 )
 from shared.models.subdomain import Facet
-from shared.services.asset_query import lead_cache
+from shared.services.asset_query import (
+    NO_JIT,
+    STATEMENT_TIMEOUT,
+    QueryScope,
+    QuerySyntaxError,
+    ScopeLike,
+    build_leads,
+    build_service_groups,
+    compile_service_query,
+    count_named,
+    lead_cache,
+    page_rows,
+    parse_query,
+    query_error_for,
+    syntax_error,
+)
 from shared.services.surface_query import services as surface_services
 from shared.utils.datetime import utc_now
 
@@ -106,66 +110,7 @@ class PortService:
             discovered_at=port.discovered_at,
         )
 
-    def _conditions(
-        self,
-        project_id: UUID,
-        scan_id: UUID | None,
-        target_id: UUID | None,
-        search: str | None,
-    ) -> list:
-        where = [Port.project_id == project_id]
-        if scan_id is not None:
-            where.append(Port.scan_id == scan_id)
-        if target_id is not None:
-            where.append(Port.target_id == target_id)
-        if search:
-            where.append(Port.ip.ilike(f"%{search}%"))
-        return where
-
-    def _base_query(
-        self,
-        project_id: UUID,
-        scan_id: UUID | None,
-        target_id: UUID | None,
-        search: str | None,
-    ):
-        return select(Port).where(
-            *self._conditions(project_id, scan_id, target_id, search)
-        )
-
-    async def list(
-        self,
-        project_id: UUID,
-        scan_id: UUID | None = None,
-        target_id: UUID | None = None,
-        search: str | None = None,
-        limit: int = 1000,
-        offset: int = 0,
-    ) -> list[PortRead]:
-        query = self._base_query(project_id, scan_id, target_id, search)
-        query = query.order_by(Port.ip, Port.number).limit(limit).offset(offset)
-        result = await self.session.execute(query)
-        return [self._to_read(p) for p in result.scalars().all()]
-
-    async def summary(
-        self,
-        project_id: UUID,
-        scan_id: UUID | None = None,
-        target_id: UUID | None = None,
-    ) -> PortSummary:
-        name = func.coalesce(func.nullif(Port.service_name, ""), "unknown")
-        rows = (
-            await self.session.execute(
-                select(name, func.count())
-                .where(*self._conditions(project_id, scan_id, target_id, None))
-                .group_by(name)
-            )
-        ).all()
-        by_service = {str(service): int(count) for service, count in rows}
-        return PortSummary(total=sum(by_service.values()), by_service=by_service)
-
     _derived = staticmethod(surface_services.derived)
-    _apply_filter = staticmethod(surface_services.apply_filter)
     _order = staticmethod(surface_services.order)
     _scoped = staticmethod(surface_services.scoped)
     _context = staticmethod(surface_services.context)
@@ -183,9 +128,7 @@ class PortService:
         ).all()
         return baseline, {(ip, int(number)) for ip, number in rows}
 
-    async def _hosts_for(
-        self, scope: QueryScope, ips: list[str]
-    ) -> dict[str, set[str]]:
+    async def hosts_for(self, scope: QueryScope, ips: list[str]) -> dict[str, set[str]]:
         rows = (
             await self.session.execute(
                 text(_HOSTS_SQL).bindparams(sids=list(scope.ids), ips=ips)
@@ -235,7 +178,7 @@ class PortService:
         if not rows:
             return page
         page_ips = [r["ip"] for r in rows]
-        hosts = await self._hosts_for(scope, page_ips)
+        hosts = await self.hosts_for(scope, page_ips)
         baseline, seen = await self._seen_before(scope, page_ips)
         targets = await target_names(self.session, (r["target_id"] for r in rows))
         for r in rows:
@@ -302,6 +245,44 @@ class PortService:
         await self.session.execute(text(NO_JIT))
         rows = await self.session.execute(base.distinct().limit(limit))
         return [(ip, scan_id) for ip, scan_id in rows.all()]
+
+    async def tabs(self, scope: ScopeLike, f: ServiceFilter) -> QueryCounts:
+        """Rows under each class tab, for the filter without its own classes."""
+        scope = QueryScope.of(scope)
+        f = f.model_copy(update={"classes": []})
+
+        async def _build() -> QueryCounts:
+            now = utc_now()
+            d, base = self._scoped(scope, f, columns=lambda d: (d.c.id,))
+            try:
+                predicate = compile_service_query(
+                    parse_query(f.q, SERVICE_QUERY), self._context(scope, d, now)
+                )
+            except QuerySyntaxError:
+                return QueryCounts()
+            if predicate is not None:
+                base = base.where(predicate)
+            await self.session.execute(text(STATEMENT_TIMEOUT))
+            await self.session.execute(text(NO_JIT))
+            tabs = {k.value: d.c.service_class == k.value for k in ServiceClass}
+            try:
+                return await count_named(self.session, base, {ALL_TAB: None, **tabs})
+            except DBAPIError as exc:
+                await self.session.rollback()
+                logger.info("service tabs failed", error=str(exc.orig))
+                return QueryCounts()
+
+        return await lead_cache.cached(
+            self.session,
+            name="tabs:services",
+            scans=scope.ids,
+            facets=lead_cache.filter_of(f),
+            model=QueryCounts,
+            build=_build,
+            keep=lambda counted: counted.computed,
+            ttl=lead_cache.SEARCH_TTL_SECONDS,
+            live_ttl=None,
+        )
 
     async def leads(self, scope: ScopeLike, f: ServiceFilter) -> QueryLeads:
         scope = QueryScope.of(scope)
@@ -545,10 +526,10 @@ class PortService:
         policy_rows = (
             await self.session.execute(
                 text(
-                    "SELECT coalesce(scan_policy, 'unplanned') AS policy, "
+                    "SELECT coalesce(scan_policy, :unplanned) AS policy, "
                     "coalesce(scan_policy_reason, '') AS reason, count(*) AS n "
                     "FROM ip_addresses WHERE scan_id = ANY(:sids) GROUP BY 1, 2"
-                ).bindparams(sids=list(scope.ids))
+                ).bindparams(sids=list(scope.ids), unplanned=UNPLANNED)
             )
         ).all()
         coverage = _coverage(policy_rows)
@@ -574,19 +555,7 @@ class PortService:
         )
 
 
-_COVERAGE_LABELS: dict[str, tuple[str, str]] = {
-    ScanPolicy.FULL.value: ("Scanned in full", ""),
-    ScanPolicy.WEB.value: ("Web ports only", ""),
-    ScanPolicy.SKIP.value: ("Not scanned", ""),
-    "unplanned": ("Not reached", ""),
-}
-_COVERAGE_REASONS: dict[str, str] = {
-    "cdn": "CDN-fronted",
-    "cloud": "Cloud provider",
-    "scope": "Excluded by scope",
-    "private": "Private address",
-    "unreachable": "No response",
-}
+_COVERAGE_LABELS: dict[str, str] = {**SCAN_POLICY_LABELS, UNPLANNED: "Not reached"}
 
 
 def _coverage(rows) -> list[ExposureLine]:
@@ -597,14 +566,13 @@ def _coverage(rows) -> list[ExposureLine]:
         ) + int(count)
     out: list[ExposureLine] = []
     for (policy, reason), count in merged.items():
-        label, query = _COVERAGE_LABELS.get(policy, (policy, ""))
         out.append(
             ExposureLine(
                 key=f"{policy}:{reason}" if reason else policy,
-                label=label,
-                detail=_COVERAGE_REASONS.get(reason) or None,
+                label=_COVERAGE_LABELS.get(policy, policy),
+                detail=SCAN_POLICY_REASON_LABELS.get(reason) or None,
                 count=count,
-                query=query,
+                query="",
             )
         )
     out.sort(key=lambda line: -line.count)

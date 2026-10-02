@@ -1,5 +1,8 @@
 <script lang="ts">
 	import Cell from './cell.svelte';
+	import { useScopedRoutes } from './scope-links';
+	import { isScoped } from '$lib/utilities/surface-scope';
+	import { plural } from '$lib/utilities/strings';
 	import DailyBars, { type DailyPoint } from './daily-bars.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import {
@@ -7,7 +10,12 @@
 		SCAN_OUTCOME_LABELS,
 		SCAN_OUTCOME_ORDER
 	} from '$lib/config/dashboard';
-	import { windowDays, type DashboardOverview, type DashboardWindow } from '$lib/types/dashboard';
+	import {
+		bucketsSince,
+		windowDays,
+		type DashboardOverview,
+		type DashboardWindow
+	} from '$lib/types/dashboard';
 
 	interface Props {
 		overview: DashboardOverview;
@@ -17,8 +25,11 @@
 
 	let { overview, window, class: className = '' }: Props = $props();
 
+	const routes = useScopedRoutes();
+	let scoped = $derived(isScoped(routes.scope));
+
 	let days = $derived(windowDays(window));
-	let recent = $derived(overview.daily.slice(-days));
+	let recent = $derived(bucketsSince(overview.daily, overview.since));
 	let data = $derived<DailyPoint[]>(
 		recent.map((d) => ({
 			date: d.date,
@@ -30,19 +41,26 @@
 			key: k,
 			label: SCAN_OUTCOME_LABELS[k],
 			color: SCAN_OUTCOME_FILL[k],
-			count: recent.reduce((n, d) => n + (d.outcomes[k] ?? 0), 0)
+			count: overview.outcomes_in_window[k] ?? 0
 		}))
 	);
 	let series = $derived(
-		totals.filter((t) => t.count > 0).map((t) => ({ key: t.key, label: t.label, color: t.color }))
+		totals
+			.filter((t) => t.count > 0 || recent.some((d) => (d.outcomes[t.key] ?? 0) > 0))
+			.map((t) => ({ key: t.key, label: t.label, color: t.color }))
 	);
-	let total = $derived(totals.reduce((n, t) => n + t.count, 0));
-	let failed = $derived(totals.find((t) => t.key === 'failed')?.count ?? 0);
+	let failed = $derived(overview.failed_in_window);
+	let failedHref = $derived(
+		ROUTES.scansWhere({
+			status: 'failed',
+			range: window,
+			target: scoped ? overview.targets.map((t) => t.id) : []
+		})
+	);
 </script>
 
 <Cell
 	id="runs"
-	title="Scan activity"
 	description="Runs per day by outcome"
 	href={ROUTES.scans}
 	hrefLabel="Scans"
@@ -62,9 +80,9 @@
 	</div>
 	{#snippet footer()}
 		<span>
-			{total.toLocaleString()} runs in {days} days ·
-			<a href={ROUTES.scansWhere({ status: 'failed', range: window })} class="hover:text-primary">
-				{failed} failed
+			{plural(overview.runs_in_window, 'run')} in {days} days ·
+			<a href={failedHref} class="hover:text-primary">
+				{failed.toLocaleString()} failed
 			</a>
 		</span>
 	{/snippet}

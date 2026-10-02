@@ -7,6 +7,7 @@
 	import X from '@lucide/svelte/icons/x';
 	import * as Card from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
+	import { Toggle } from '$lib/components/ui/toggle';
 	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
@@ -67,20 +68,19 @@
 		}
 	}
 
-	// the tab totals depend on the project alone, never on the filters
 	async function loadCounts() {
 		if (!projectId) return;
 		const id = projectId;
 		try {
-			const [open, resolved] = await Promise.all([
-				notes.list(id, { status: ['open'], size: 1 }),
-				notes.list(id, { status: ['resolved'], size: 1 })
-			]);
+			const totals = await Promise.all(
+				NOTE_STATUSES.map((s) => notes.list(id, { status: [s], size: 1 }))
+			);
 			if (id !== projectId) return;
-			counts = { open: open.total, resolved: resolved.total, all: open.total + resolved.total };
-		} catch {
-			/* the tab totals keep their last good value */
-		}
+			counts = {
+				...Object.fromEntries(NOTE_STATUSES.map((s, i) => [s, totals[i].total])),
+				all: totals.reduce((n, p) => n + p.total, 0)
+			};
+		} catch {}
 	}
 
 	function reload() {
@@ -144,35 +144,15 @@
 			</div>
 			<div class="flex flex-wrap items-center gap-1">
 				{#each SURFACE_ORDER as spec (spec.key)}
-					<button
-						type="button"
-						class="rounded-md border px-2 py-1 text-xs transition-colors {dimension === spec.key
-							? 'border-primary/40 bg-primary/10 text-foreground'
-							: 'bg-background text-muted-foreground hover:text-foreground'}"
-						onclick={() => (dimension = dimension === spec.key ? null : spec.key)}
+					<Toggle
+						size="sm"
+						variant="outline"
+						class="h-7 px-2 text-xs font-normal"
+						pressed={dimension === spec.key}
+						onPressedChange={() => (dimension = dimension === spec.key ? null : spec.key)}
 					>
 						{spec.label}
-					</button>
-				{/each}
-			</div>
-		</div>
-
-		{#if notes.tags.length > 0}
-			<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/10 px-4 py-2">
-				{#each notes.tags as tag (tag.id)}
-					<button
-						type="button"
-						class="inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs transition-colors {tagIds.includes(
-							tag.id
-						)
-							? 'border-primary/40 bg-primary/10 text-foreground'
-							: 'bg-background text-muted-foreground hover:text-foreground'}"
-						onclick={() => toggleTag(tag.id)}
-						aria-pressed={tagIds.includes(tag.id)}
-					>
-						<span class="size-2 shrink-0 rounded-full" style="background-color: {tag.color}"></span>
-						{tag.name}
-					</button>
+					</Toggle>
 				{/each}
 				{#if filtered}
 					<button
@@ -183,6 +163,23 @@
 						Clear filters
 					</button>
 				{/if}
+			</div>
+		</div>
+
+		{#if notes.tags.length > 0}
+			<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/10 px-4 py-2">
+				{#each notes.tags as tag (tag.id)}
+					<Toggle
+						size="sm"
+						variant="outline"
+						class="h-7 gap-1.5 px-2 text-xs font-normal"
+						pressed={tagIds.includes(tag.id)}
+						onPressedChange={() => toggleTag(tag.id)}
+					>
+						<span class="size-2 shrink-0 rounded-full" style="background-color: {tag.color}"></span>
+						{tag.name}
+					</Toggle>
+				{/each}
 			</div>
 		{/if}
 
@@ -199,7 +196,6 @@
 			<EmptyState
 				icon={StickyNote}
 				title={filtered ? 'No notes match' : 'No notes'}
-				description={filtered ? 'Clear a filter.' : 'Add a note from an asset in a scan result.'}
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
 		{:else}

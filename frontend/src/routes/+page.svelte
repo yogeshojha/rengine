@@ -7,9 +7,9 @@
 	$effect(() => {
 		if (!auth.isLoading) {
 			if (auth.isAuthenticated) {
-				goto(ROUTES.dashboard);
+				goto(ROUTES.dashboard, { replaceState: true });
 			} else {
-				goto(ROUTES.login);
+				goto(ROUTES.login, { replaceState: true });
 			}
 		}
 	});

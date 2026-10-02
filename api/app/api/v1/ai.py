@@ -12,7 +12,6 @@ from shared.models.ai import (
     AiStatus,
     AiTestRequest,
     AiTestResult,
-    AiUsageRead,
 )
 
 router = APIRouter(prefix="/ai", tags=["ai"])
@@ -21,8 +20,8 @@ Session = Annotated[AsyncSession, Depends(get_session)]
 
 
 @router.get("/status", response_model=AiStatus)
-async def ai_status(_current_user: CurrentUser, session: Session):
-    return await AiSettingsService(session).status()
+async def ai_status(current_user: CurrentUser, session: Session):
+    return await AiSettingsService(session).status(full=current_user.is_superuser)
 
 
 @router.get("/calls", response_model=list[AiCallRead])
@@ -37,11 +36,6 @@ async def recent_calls(
 @router.get("/catalog", response_model=dict)
 async def ai_catalog(_current_user: CurrentUser):
     return AiSettingsService.catalog()
-
-
-@router.get("/usage", response_model=AiUsageRead)
-async def ai_usage(_current_user: CurrentUser, session: Session):
-    return await AiSettingsService(session).usage()
 
 
 @router.patch("/settings", response_model=AiStatus)

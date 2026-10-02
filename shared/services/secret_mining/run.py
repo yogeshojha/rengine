@@ -1,10 +1,10 @@
-"""Mine one scan's stored responses. The stage, finalize and the backfill all call this."""
+"""Mine one scan's stored responses."""
 
 from __future__ import annotations
 
 import uuid
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
@@ -37,34 +37,20 @@ logger = get_logger(__name__)
 _CHUNK = 200
 _PROGRESS_EVERY = 500
 CANCELLED = "The scan was cancelled."
-BUSY = "Another miner holds this scan."
+BUSY = "Secrets not mined. Another secret mining run is in progress on the same scan."
 
 
 @dataclass
 class MineOutcome:
-    documents_total: int = 0
     documents_read: int = 0
-    bytes_read: int = 0
     truncated: int = 0
-    skipped: int = 0
-    matches: int = 0
     secrets: int = 0
-    sightings: int = 0
-    dropped: dict[str, int] = field(default_factory=dict)
-    sources: dict[str, CoverageFacts] = field(default_factory=dict)
     aborted: bool = False
     busy: bool = False
 
     def absorb(self, facts: CoverageFacts) -> None:
-        self.sources[facts.source] = facts
-        self.documents_total += facts.documents_total
         self.documents_read += facts.documents_read
-        self.bytes_read += facts.bytes_read
         self.truncated += facts.truncated
-        self.skipped += facts.skipped
-        self.matches += facts.matches
-        for reason, n in facts.dropped.items():
-            self.dropped[reason] = self.dropped.get(reason, 0) + n
 
 
 def observations_for(sweep: Sweep, doc: Document) -> list[Observation]:
@@ -258,7 +244,6 @@ def _finish(
     inventory: SecretInventory, done: list[CoverageFacts], outcome: MineOutcome
 ) -> None:
     outcome.secrets = inventory.secrets
-    outcome.sightings = inventory.sightings
     for facts in done:
         outcome.absorb(facts)
         inventory.record_coverage(facts)

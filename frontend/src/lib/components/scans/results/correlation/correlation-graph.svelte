@@ -15,7 +15,7 @@
 		fy?: number | null;
 		born: number;
 	}
-	export interface GraphLink {
+	interface GraphLink {
 		source: GraphNode;
 		target: GraphNode;
 		kind: string;
@@ -120,7 +120,6 @@
 		return HUB_MIN_R + t * (HUB_MAX_R - HUB_MIN_R);
 	}
 
-	// keep positions across rebuilds
 	function build() {
 		const maxCount = Math.max(1, ...hubs.map((h) => h.count));
 		const used = new Set(hubs.flatMap((h) => h.members));
@@ -207,7 +206,6 @@
 			fit();
 			draw();
 		} else {
-			// fit on every tick while settling
 			simulation.on('tick', fit).on('end', () => {
 				remember();
 				fit();
@@ -698,7 +696,7 @@
 				{/if}
 				<span class="truncate">{tip.title}</span>
 			</p>
-			{#each tip.lines.filter(Boolean) as line (line)}
+			{#each tip.lines.filter(Boolean) as line, i (i)}
 				<p class="text-muted-foreground">{line}</p>
 			{/each}
 		</div>

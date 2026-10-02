@@ -8,8 +8,7 @@ import type { PortRead } from '$lib/types/port';
 import { quoteValue } from '$lib/utilities/query-lexer';
 import type { QueryError } from '$lib/types/asset-query';
 import type { StatusClass } from './scan-correlation';
-
-const DAY = 24 * 60 * 60 * 1000;
+import { MS_PER_DAY } from '$lib/utilities/dates';
 
 export function certState(
 	s: SubdomainRead
@@ -18,7 +17,8 @@ export function certState(
 	if (s.tls_expired) return 'expired';
 	if (s.tls_not_after) {
 		const t = new Date(s.tls_not_after).getTime();
-		if (t < Date.now() + 30 * DAY) return 'expiring';
+		if (t < Date.now()) return 'expired';
+		if (t < Date.now() + 30 * MS_PER_DAY) return 'expiring';
 		return 'valid';
 	}
 	return null;
@@ -26,7 +26,7 @@ export function certState(
 
 export function daysUntilExpiry(s: SubdomainRead): number | null {
 	if (!s.tls_not_after) return null;
-	return Math.round((new Date(s.tls_not_after).getTime() - Date.now()) / DAY);
+	return Math.round((new Date(s.tls_not_after).getTime() - Date.now()) / MS_PER_DAY);
 }
 
 export interface WebAssetQuery {
@@ -147,7 +147,7 @@ export function queryChips(q: WebAssetQuery): FilterChip[] {
 	if (q.newOnly)
 		chips.push({
 			id: 'new',
-			label: 'New since last scan',
+			label: 'New',
 			remove: (x) => ({ ...x, newOnly: false })
 		});
 	if (q.hasScreenshot)
@@ -177,10 +177,35 @@ export function excludeToken(key: string, value: string): string {
 	return `${key}!=${quoteValue(value)}`;
 }
 
+const OR_WORDS = new Set(['or', '||']);
+
+function hasTopLevelOr(parts: string[]): boolean {
+	let depth = 0;
+	for (const part of parts) {
+		if (depth === 0 && OR_WORDS.has(part.toLowerCase())) return true;
+		for (const ch of part.replace(/"[^"]*"/g, '')) {
+			if (ch === '(') depth++;
+			else if (ch === ')') depth = Math.max(0, depth - 1);
+		}
+	}
+	return false;
+}
+
 export function appendToken(search: string, token: string): string {
 	const parts = tokenize(search);
+	if (hasTopLevelOr(parts)) return `(${parts.join(' ')}) ${token}`;
 	if (parts.includes(token)) return search;
 	return [...parts, token].join(' ');
+}
+
+export function hasToken(search: string, token: string): boolean {
+	return tokenize(search).includes(token);
+}
+
+export function withoutToken(search: string, token: string): string {
+	return tokenize(search)
+		.filter((t) => t !== token)
+		.join(' ');
 }
 
 export function hideLabel(values: string[], nounPlural: string): string {
@@ -331,7 +356,6 @@ export interface SubdomainInsights {
 	cert_buckets: InsightBucket[];
 	top_tech: InsightTally[];
 	tech_total: number;
-	top_asn: InsightTally[];
 	geography: InsightTally[];
 	geo_total: number;
 	clusters: InsightCluster[];

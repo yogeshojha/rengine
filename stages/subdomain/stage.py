@@ -32,7 +32,6 @@ from shared.services.wordlists import WordlistError, read_words
 from shared.utils.datetime import utc_now
 from stages.base import DOMAIN_TARGETS, Stage, StageResult
 from stages.subdomain.config import (
-    DNS_BATCH_CONCURRENCY,
     DNS_BATCH_SIZE,
     DNS_IDLE_TIMEOUT,
     PASSIVE_TOOLS,
@@ -41,6 +40,7 @@ from stages.subdomain.config import (
     SubdomainConfig,
     tool_timeout,
 )
+from stages.subdomain.noise import sift
 from stages.subdomain.parser import in_scope, merge_and_filter
 from stages.subdomain.providers import (
     PASSIVE_PROVIDERS,
@@ -72,6 +72,7 @@ _PREFETCH_KEYS = (
     APIProvider.SECURITYTRAILS,
     APIProvider.CHAOS,
     APIProvider.NETLAS,
+    APIProvider.GITHUB,
 )
 _MAX_CONCURRENCY = 8
 _MAX_RESOLVE_THREADS = 50
@@ -92,6 +93,14 @@ def _seed_rank(name: str) -> tuple[int, int, str]:
 
 def _guess_budget(count: int) -> int:
     return max(_GUESS_MIN_BUDGET, -(-count // _GUESS_FLOOR_RATE))
+
+
+def _rule_counts(dropped: dict[str, str]) -> dict[str, int]:
+    """Names dropped before resolution, per rule."""
+    counts: dict[str, int] = {}
+    for rule in dropped.values():
+        counts[f"dropped_{rule}"] = counts.get(f"dropped_{rule}", 0) + 1
+    return counts
 
 
 _WILDCARD_PROBES = 5
@@ -118,12 +127,9 @@ class _Wildcard:
 
 @dataclass
 class _Resolution:
-    """What the resolver actually managed."""
-
     records: dict[str, dict] = field(default_factory=dict)
     submitted: int = 0
     batches: int = 0
-    retried: int = 0
     stalled: int = 0
     degraded: int = 0
     recovered: int = 0
@@ -200,26 +206,37 @@ class SubdomainStage(Stage):
             tool_options=dict(resolved.tool_options or {}),
         )
 
-        provider_classes = self._select_providers(cfg)
+        provider_classes = self._select_providers(cfg, activity)
         results = self._run_providers(
             provider_classes,
             pctx,
             activity,
             on_result=lambda result: self._write_names(
-                merge_and_filter([result], domain, resolved.included_subdomains)
+                self._sift(
+                    merge_and_filter([result], domain, resolved.included_subdomains),
+                    domain,
+                )[0]
             ),
         )
         self._check_abort()
 
-        merged = merge_and_filter(results, domain, resolved.included_subdomains)
+        merged, dropped = self._sift(
+            merge_and_filter(results, domain, resolved.included_subdomains), domain
+        )
         wildcard = self._wildcard_profile(domain)
         extra = self._expand(
             domain, cfg, sorted(merged, key=_seed_rank), wildcard, activity
         )
         if extra:
-            merged = merge_and_filter(
-                [*results, *extra], domain, resolved.included_subdomains
+            merged, dropped = self._sift(
+                merge_and_filter(
+                    [*results, *extra], domain, resolved.included_subdomains
+                ),
+                domain,
             )
+        rules = _rule_counts(dropped)
+        if dropped:
+            self.emit_progress(f"{len(dropped):,} address-shaped names dropped")
 
         merged.setdefault(domain, set()).add(SubdomainSource.TARGET.value)
         for host in target_seeds.seeded_hosts(resolved.seed_assets):
@@ -238,17 +255,22 @@ class SubdomainStage(Stage):
         state = self._resolve(to_resolve, wildcard)
 
         active, ips_seen = self._persist(merged, state.records, wildcard, excluded)
+        cut = [r.source.value for r in extra if r.cut_short]
         return StageResult(
             counts={
                 "subdomains": len(merged),
                 "active": active,
                 "ips": len(ips_seen),
                 "excluded": len(excluded),
+                **rules,
                 **({"recovered": state.recovered} if state.recovered else {}),
                 **{r.source.value: len(r.subdomains) for r in extra if r.subdomains},
             },
-            warnings=self._resolution_warnings(state),
-            partial=state.lost,
+            warnings=[
+                *self._resolution_warnings(state),
+                *(f"{source} stopped at its time budget." for source in cut),
+            ],
+            partial=state.lost or bool(cut),
         )
 
     def _expand(
@@ -273,13 +295,19 @@ class SubdomainStage(Stage):
             self._log_provider(activity, result)
         return out
 
+    def _sift(
+        self, merged: dict[str, set[str]], domain: str
+    ) -> tuple[dict[str, set[str]], dict[str, str]]:
+        if not self.cfg.skip_address_names:
+            return merged, {}
+        return sift(merged, domain)
+
     @staticmethod
     def _skipped(source: SubdomainSource, reason: str) -> ProviderResult:
         return ProviderResult(source=source, skipped=True, skip_reason=reason)
 
     @contextlib.contextmanager
     def _wordlist(self, cfg: SubdomainConfig):
-        """The word budget is the first N words."""
         try:
             words, label = read_words(self.session, cfg.wordlist, cfg.wordlist_limit)
         except WordlistError as exc:
@@ -405,10 +433,11 @@ class SubdomainStage(Stage):
             subdomains=found,
             raw_count=len(found),
             note=", ".join(notes) or None,
+            cut_short=cut_short,
             duration_seconds=round(time.monotonic() - start, 2),
         )
 
-    def _permute(
+    def _permute(  # noqa: PLR0911
         self,
         seeds: list[str],
         wildcard: _Wildcard,
@@ -434,7 +463,10 @@ class SubdomainStage(Stage):
             return self._skipped(source, "alterx is not installed on this instance")
 
         start = time.monotonic()
-        candidates = client.permute(seeds[:PERMUTATION_SEEDS])
+        try:
+            candidates = client.permute(seeds[:PERMUTATION_SEEDS])
+        except AlterxError as exc:
+            return ProviderResult(source=source, error=str(exc))
         if not candidates:
             return ProviderResult(source=source, duration_seconds=0.0)
         self.emit_progress(f"resolving {len(candidates):,} name variants")
@@ -463,6 +495,7 @@ class SubdomainStage(Stage):
             subdomains=found,
             raw_count=len(found),
             note=", ".join(notes),
+            cut_short=stream.timed_out,
             duration_seconds=round(time.monotonic() - start, 2),
         )
 
@@ -498,12 +531,12 @@ class SubdomainStage(Stage):
         if state.degraded:
             notes.append(
                 f"{state.degraded} of {state.batches} resolver batches answered "
-                "below the others after a retry. Some hosts are likely missing."
+                "below the others after a retry. Some hosts may be missing."
             )
         if state.still_dropping:
             notes.append(
                 f"A second resolver pass answered {state.recovered:,} names the first "
-                "pass missed. Some hosts are likely still missing."
+                "pass missed. Some hosts may be missing."
             )
         return notes
 
@@ -511,18 +544,30 @@ class SubdomainStage(Stage):
         svc = SyncAPIKeyService(self.session)
         return {p.value: svc.get_key_for_provider(p) for p in _PREFETCH_KEYS}
 
-    def _select_providers(self, cfg: SubdomainConfig) -> list[type[SubdomainProvider]]:
+    def _select_providers(
+        self, cfg: SubdomainConfig, activity: ActivityLogService
+    ) -> list[type[SubdomainProvider]]:
         names = list(dict.fromkeys(cfg.enabled_sources))
         if cfg.tls_discovery and "tlsx" not in names:
             names.append("tlsx")
+        passive = self.ctx.resolved.intensity == Intensity.PASSIVE.value
         selected: list[type[SubdomainProvider]] = []
         for name in names:
             provider = PASSIVE_PROVIDERS.get(name)
             if provider is None:
                 logger.warning("unknown subdomain provider '%s', skipping", name)
                 continue
-            if provider not in selected:
-                selected.append(provider)
+            if provider in selected:
+                continue
+            if passive and provider.touches_target:
+                self._log_provider(
+                    activity,
+                    self._skipped(
+                        provider.source, "a passive scan does not connect to the target"
+                    ),
+                )
+                continue
+            selected.append(provider)
         return selected
 
     def _run_providers(
@@ -558,6 +603,8 @@ class SubdomainStage(Stage):
             level = ActivityLevel.WARNING
         else:
             message = f"{source} found {result.raw_count} hosts"
+            if result.note:
+                message += f", {result.note}"
             level = ActivityLevel.INFO
         activity.log(
             event=ActivityEvent.SCAN_PROGRESS,
@@ -605,7 +652,6 @@ class SubdomainStage(Stage):
     def _run_batch(
         self, client: DnsxClient, names: list[str]
     ) -> tuple[dict[str, dict], bool]:
-        """Resolve one batch."""
         out: dict[str, dict] = {}
         with client.stream_query(
             names,
@@ -624,7 +670,6 @@ class SubdomainStage(Stage):
         names: list[str],
         wildcard: _Wildcard | None = None,
     ) -> _Resolution:
-        """wildcard is None for the wildcard probe itself, whose name is not stored."""
         state = _Resolution(submitted=len(names))
         if not names:
             return state
@@ -667,25 +712,11 @@ class SubdomainStage(Stage):
         return state
 
     def _resolve_batches(self, client: DnsxClient, batches: list[_Batch]):
-        """Batches are independent."""
-        workers = min(DNS_BATCH_CONCURRENCY, len(batches))
-        if workers == 1:
-            for batch in batches:
-                started = time.monotonic()
-                answered = self._run_batch(client, batch.names)
-                batch.seconds = time.monotonic() - started
-                yield batch, answered
-            return
-        with ThreadPoolExecutor(max_workers=workers) as pool:
+        for batch in batches:
             started = time.monotonic()
-            futures = {
-                pool.submit(self._run_batch, client, batch.names): batch
-                for batch in batches
-            }
-            for future in as_completed(futures):
-                batch = futures[future]
-                batch.seconds = time.monotonic() - started
-                yield batch, future.result()
+            answered = self._run_batch(client, batch.names)
+            batch.seconds = time.monotonic() - started
+            yield batch, answered
 
     def _retry_degraded(
         self,
@@ -709,8 +740,8 @@ class SubdomainStage(Stage):
             for batch in suspect
         ]
         retries = [(batch, pending) for batch, pending in retries if pending]
-        state.retried += len(retries)
-        for batch, (records, stalled) in self._retry_batches(client, retries):
+        for batch, pending in retries:
+            records, stalled = self._run_batch(client, pending)
             batch.stalled = stalled
             state.records.update(records)
             batch.answered += len(records)
@@ -726,7 +757,6 @@ class SubdomainStage(Stage):
         state: _Resolution,
         wildcard: _Wildcard | None,
     ) -> None:
-        """dnsx says nothing for a name it dropped and for a name that does not exist."""
         size = DNS_BATCH_SIZE
         for _ in range(_SILENCE_PASSES):
             pending = [n for n in names if n not in state.records]
@@ -748,26 +778,8 @@ class SubdomainStage(Stage):
             if not found:
                 return
 
-    def _retry_batches(
-        self,
-        client: DnsxClient,
-        retries: list[tuple[_Batch, list[str]]],
-    ):
-        workers = min(DNS_BATCH_CONCURRENCY, len(retries) or 1)
-        if workers == 1:
-            for batch, pending in retries:
-                yield batch, self._run_batch(client, pending)
-            return
-        with ThreadPoolExecutor(max_workers=workers) as pool:
-            futures = {
-                pool.submit(self._run_batch, client, pending): batch
-                for batch, pending in retries
-            }
-            for future in as_completed(futures):
-                yield futures[future], future.result()
-
     def _clear_once(self) -> None:
-        """Drop the previous attempt's rows inside the first write. Seeded rows belong to asset_seed."""
+        """Drop the previous attempt's rows except seeded ones."""
         if self._cleared:
             return
         seeded = or_(
@@ -865,7 +877,6 @@ class SubdomainStage(Stage):
         excluded: set[str],
     ) -> tuple[int, set[str]]:
         """The reconciling write."""
-        self._write_names(merged)
         self._write_resolution(
             {n: info for n, info in resolution.items() if n not in excluded},
             wildcard,

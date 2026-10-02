@@ -1,5 +1,3 @@
-"""Every engine field is a decision a stage reads; transport comes from intensity."""
-
 from __future__ import annotations
 
 import re
@@ -23,7 +21,6 @@ from stages.registry import rate_tools, stages
 pytestmark = pytest.mark.pipeline
 
 _ROOT = Path(__file__).resolve().parents[2]
-_NO_TRANSPORT: set[str] = set()
 _TRANSPORT_NAMES = {
     "rate",
     "threads",
@@ -77,7 +74,7 @@ def test_no_stage_carries_a_transport_field(spec):
 
 @pytest.mark.parametrize("spec", stages(), ids=lambda s: s.name)
 def test_every_stage_that_sends_traffic_declares_its_transport(spec):
-    if spec.touches_target and spec.tools and spec.name not in _NO_TRANSPORT:
+    if spec.touches_target and spec.tools:
         assert spec.transport_tool is not None, spec.name
 
 

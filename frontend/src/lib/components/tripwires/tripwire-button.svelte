@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { goto } from '$app/navigation';
 	import Zap from '@lucide/svelte/icons/zap';
 	import { toast } from 'svelte-sonner';
 	import * as Popover from '$lib/components/ui/popover';
@@ -18,11 +19,14 @@
 		ActionKind,
 		dimensionSpec,
 		FireOn,
+		SCOPE_LABELS,
 		ScopeKind,
 		TripwireTrigger
 	} from '$lib/config/tripwires';
 	import { ROUTES } from '$lib/config/routes';
 	import type { Tripwire, TripwireScope } from '$lib/types/tripwire';
+	import { withArticle } from '$lib/utilities/strings';
+	import { defaultTripwireName } from './format';
 	import QueryChip from './query-chip.svelte';
 	import TripwireWizard, { type TripwireDraft } from './tripwire-wizard.svelte';
 
@@ -38,7 +42,7 @@
 
 	const SCOPES = [
 		{ key: 'target', label: 'This target' },
-		{ key: ScopeKind.All, label: 'All targets' }
+		{ key: ScopeKind.All, label: SCOPE_LABELS[ScopeKind.All] }
 	];
 
 	let open = $state(false);
@@ -68,7 +72,7 @@
 		const project = pid;
 		untrack(() => {
 			void tripwiresStore.loadCatalog();
-			name = defaultName();
+			name = defaultTripwireName(spec, text);
 			fireOn = FireOn.Appears;
 			scopeChoice = sid ? 'target' : ScopeKind.All;
 			targetId = null;
@@ -76,11 +80,6 @@
 			if (sid && project) void loadTarget(sid, project);
 		});
 	});
-
-	function defaultName(): string {
-		const base = text ? `${spec.label} · ${text}` : `New ${spec.nounPlural}`;
-		return base.length > MAX_NAME ? `${base.slice(0, MAX_NAME - 1)}…` : base;
-	}
 
 	async function loadTarget(sid: string, project: string) {
 		try {
@@ -111,18 +110,16 @@
 			tripwiresStore.upsert(saved);
 			open = false;
 			toast.success(`${saved.name} created`, {
-				action: { label: 'Open', onClick: () => void goto(saved.id) }
+				action: {
+					label: 'Open',
+					onClick: () => void goto(ROUTES.tripwires({ tripwire: saved.id }))
+				}
 			});
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Tripwire not created');
 		} finally {
 			saving = false;
 		}
-	}
-
-	async function goto(id: string) {
-		const { goto: navigate } = await import('$app/navigation');
-		await navigate(ROUTES.tripwires({ tripwire: id }));
 	}
 
 	function moreOptions() {
@@ -161,14 +158,14 @@
 		<div class="flex flex-col gap-4 p-4">
 			<div class="flex flex-col gap-1.5">
 				<span class="text-sm font-medium">Tripwire on this query</span>
-				<QueryChip {dimension} query={text} />
+				<QueryChip {dimension} query={text} wrap />
 			</div>
 			<FormField label="Name">
 				{#snippet children({ id })}
 					<Input {id} bind:value={name} maxlength={MAX_NAME} class="h-8" />
 				{/snippet}
 			</FormField>
-			<FormField label="Fires when a {spec.noun}">
+			<FormField label="Fires when {withArticle(spec.noun)}">
 				{#snippet children({ id })}
 					<ToggleGroup.Root
 						{id}

@@ -58,10 +58,8 @@ class ComplianceSection(Section):
                 {
                     "name": spec.name,
                     "version": spec.version,
-                    "url": spec.url,
                     "scope_note": spec.scope_note if cfg.show_scope_note else "",
                     "rows": rows,
-                    "total": sum(counts.values()),
                 }
             )
         if not blocks:

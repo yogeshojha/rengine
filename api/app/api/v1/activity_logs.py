@@ -1,26 +1,20 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 from fastapi_pagination.ext.sqlalchemy import paginate
-from pydantic import BaseModel
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentSuperuser, CurrentUser
+from app.api.deps import CurrentUser
 from app.api.pagination import Page
 from app.core.database import get_session
-from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.models.activity_log import ActivityLog, ActivityLogRead
 
 router = APIRouter(
     prefix="/activity",
     tags=["activity"],
 )
-
-
-class ActivityDeleteResponse(BaseModel):
-    deleted: int
 
 
 @router.get("", response_model=Page[ActivityLogRead])
@@ -30,72 +24,10 @@ async def list_activity_logs(
     project_id: Annotated[
         UUID | None, Query(description="Filter by project ID")
     ] = None,
-    target_id: Annotated[UUID | None, Query(description="Filter by target ID")] = None,
-    scan_id: Annotated[UUID | None, Query(description="Filter by scan ID")] = None,
-    level: Annotated[
-        ActivityLevel | None, Query(description="Filter by severity level")
-    ] = None,
-    event_type: Annotated[
-        ActivityEvent | None, Query(description="Filter by event type")
-    ] = None,
 ):
     query = select(ActivityLog)
-
-    if scan_id:
-        query = query.where(ActivityLog.scan_id == scan_id)
-    elif target_id:
-        query = query.where(ActivityLog.target_id == target_id)
-    elif project_id:
+    if project_id:
         query = query.where(ActivityLog.project_id == project_id)
-
-    if level:
-        query = query.where(ActivityLog.level == level)
-
-    if event_type:
-        query = query.where(ActivityLog.event_type == event_type)
-
     query = query.order_by(ActivityLog.timestamp.desc())
 
     return await paginate(session, query)
-
-
-@router.delete("", response_model=ActivityDeleteResponse)
-async def delete_activity_logs(
-    _current_user: CurrentSuperuser,
-    session: Annotated[AsyncSession, Depends(get_session)],
-    project_id: Annotated[
-        UUID | None, Query(description="Delete logs for a specific project")
-    ] = None,
-    target_id: Annotated[
-        UUID | None, Query(description="Delete logs for a specific target")
-    ] = None,
-    level: Annotated[
-        ActivityLevel | None, Query(description="Delete logs of a specific level")
-    ] = None,
-    event_type: Annotated[
-        ActivityEvent | None, Query(description="Delete logs of a specific event type")
-    ] = None,
-):
-    if not project_id and not target_id and not level and not event_type:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A filter is required: project_id, target_id, level or event_type",
-        )
-
-    stmt = delete(ActivityLog)
-
-    if target_id:
-        stmt = stmt.where(ActivityLog.target_id == target_id)
-    elif project_id:
-        stmt = stmt.where(ActivityLog.project_id == project_id)
-
-    if level:
-        stmt = stmt.where(ActivityLog.level == level)
-
-    if event_type:
-        stmt = stmt.where(ActivityLog.event_type == event_type)
-
-    result = await session.execute(stmt)
-    await session.commit()
-
-    return ActivityDeleteResponse(deleted=result.rowcount)

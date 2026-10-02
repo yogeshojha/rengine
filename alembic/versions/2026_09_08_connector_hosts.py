@@ -1,4 +1,4 @@
-"""connector_hosts: every hostname a connector reached, so unknown domains can be offered as targets
+"""connector_hosts: hostnames a connector reached
 
 Revision ID: e7a4c1d9b520
 Revises: d41c7b9e2a10

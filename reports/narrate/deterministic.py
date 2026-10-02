@@ -25,8 +25,6 @@ def _count(value: int, noun: str, plural: str | None = None) -> str:
 
 
 class PlainNarrator(Narrator):
-    ai_used = False
-
     def executive_summary(self, brief: ReportBrief) -> str:
         parts: list[str] = [self._opening(brief), self._position(brief)]
         paths = self._paths(brief)
@@ -71,12 +69,16 @@ class PlainNarrator(Narrator):
             if not covered:
                 return "No vulnerability checks were run. This report describes the surface only."
             return "The checks that ran recorded no findings."
-        ordered = [
-            f"{severity[key]:,} {SEVERITY_LABELS[key].lower()}"
+        listed = [
+            key
             for key in ("critical", "high", "medium", "low", "info")
             if severity.get(key)
         ]
-        lead = f"The scan recorded {_join(ordered)} findings."
+        ordered = [
+            f"{severity[key]:,} {SEVERITY_LABELS[key].lower()}" for key in listed
+        ]
+        total = sum(severity[key] for key in listed)
+        lead = f"The scan recorded {_join(ordered)} finding{'s' if total != 1 else ''}."
         posture = brief.posture
         detail = ""
         if posture.deductions:
@@ -88,8 +90,8 @@ class PlainNarrator(Narrator):
         kev = brief.kev_count
         if kev:
             detail += (
-                f" {_count(kev, 'weakness', 'weaknesses')} are on the CISA Known Exploited "
-                "Vulnerabilities catalogue."
+                f" {_count(kev, 'weakness', 'weaknesses')} {'is' if kev == 1 else 'are'} "
+                "on the CISA Known Exploited Vulnerabilities catalogue."
             )
         return lead + detail
 
@@ -101,7 +103,7 @@ class PlainNarrator(Narrator):
 
     def _change(self, brief: ReportBrief) -> str:
         if brief.first_run:
-            return "This is the first recorded run for this target. Nothing is reported as new."
+            return "This is the first recorded run for this target."
         if not brief.changes:
             return "Nothing was added or retired since the previous run."
         pieces = []
@@ -176,7 +178,8 @@ class PlainNarrator(Narrator):
         if not hosting.get("hosts"):
             return ""
         parts = [
-            f"{_count(hosting['hosts'], 'web asset')} were catalogued. "
+            f"{_count(hosting['hosts'], 'web asset')} "
+            f"{'was' if hosting['hosts'] == 1 else 'were'} catalogued. "
             f"{hosting['resolving']:,} resolve and {hosting['live']:,} answered a request."
         ]
         edge, cloud, direct = hosting["edge"], hosting["cloud"], hosting["direct"]

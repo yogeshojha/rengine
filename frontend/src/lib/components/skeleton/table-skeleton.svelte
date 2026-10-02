@@ -16,8 +16,6 @@
 		selectable?: boolean;
 		actions?: boolean;
 		header?: boolean;
-		subline?: boolean;
-		class?: string;
 	}
 
 	let {
@@ -27,9 +25,7 @@
 		density = 'cozy',
 		selectable = false,
 		actions = true,
-		header = true,
-		subline = true,
-		class: className = ''
+		header = true
 	}: Props = $props();
 
 	const BAR = ['w-full', 'w-4/5', 'w-2/3', 'w-11/12', 'w-3/5'];
@@ -53,7 +49,7 @@
 	});
 </script>
 
-<div class={className} aria-busy="true">
+<div aria-busy="true">
 	{#if header}
 		<div
 			class="flex items-center gap-3 border-b bg-muted/30 px-4 py-2 text-xs font-medium tracking-wider text-muted-foreground uppercase"
@@ -82,7 +78,7 @@
 					<div class={leadCell(col)}>
 						<div class="flex w-full flex-col gap-1.5 {col.align === 'right' ? 'items-end' : ''}">
 							<Skeleton class="h-4 {bar(i, j)}" />
-							{#if subline && j === subIndex}
+							{#if j === subIndex}
 								<Skeleton class="h-3 w-1/3" />
 							{/if}
 						</div>

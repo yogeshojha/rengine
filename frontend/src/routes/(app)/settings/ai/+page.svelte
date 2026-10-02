@@ -21,15 +21,15 @@
 	import SettingRow from '$lib/components/settings/setting-row.svelte';
 	import { ai } from '$lib/stores/ai.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
-	import { AIProvider } from '$lib/config/ai';
+	import { AIProvider, DEFAULT_AI_PROVIDER } from '$lib/config/ai';
 	import { routeLabels } from '$lib/config/routes';
 	import { relativeTime } from '$lib/utilities/dates';
-	import * as Table from '$lib/components/ui/table/index.js';
+	import { BODY_ROW, CALL_COL, HEAD_ROW } from '$lib/components/settings/columns';
 	import { aiApi } from '$lib/api/ai';
 	import type { AiCall, AiTestResult } from '$lib/types/ai';
 
 	let dialogOpen = $state(false);
-	let provider = $state<string>(AIProvider.ANTHROPIC);
+	let provider = $state<string>(DEFAULT_AI_PROVIDER);
 	let model = $state('');
 	let workspaceId = $state('');
 	let baseUrl = $state('');
@@ -71,7 +71,7 @@
 	}
 
 	function openEdit() {
-		provider = status?.provider ?? AIProvider.ANTHROPIC;
+		provider = status?.provider ?? DEFAULT_AI_PROVIDER;
 		model = status?.model ?? '';
 		workspaceId = status?.workspace_id ?? '';
 		baseUrl = status?.base_url ?? '';
@@ -113,7 +113,7 @@
 
 	async function testStored() {
 		testing = true;
-		result = await ai.test({ provider: status?.provider ?? AIProvider.ANTHROPIC });
+		result = await ai.test({ provider: status?.provider ?? DEFAULT_AI_PROVIDER });
 		testing = false;
 	}
 
@@ -188,7 +188,7 @@
 		<SettingRow label="Model">
 			<span class="text-sm">{modelLabel(stored, status.model)}</span>
 		</SettingRow>
-		{#if stored?.needs_base_url}
+		{#if stored?.needs_base_url && isAdmin}
 			<SettingRow label="Server">
 				<code class="font-mono text-xs text-muted-foreground">{status.base_url || 'Not set'}</code>
 			</SettingRow>
@@ -198,7 +198,7 @@
 				{status.key_masked ?? (stored?.key_optional ? 'None' : 'Not set')}
 			</code>
 		</SettingRow>
-		{#if status.provider === AIProvider.ANTHROPIC}
+		{#if status.provider === AIProvider.ANTHROPIC && isAdmin}
 			<SettingRow label="Workspace ID">
 				<code class="font-mono text-xs text-muted-foreground">
 					{status.workspace_id || 'Not set'}
@@ -249,10 +249,9 @@
 			</SettingRow>
 		{/each}
 
-		<div id="ai-usage" class="scroll-mt-20"></div>
 		<PanelHead title="Usage" class="border-t">
-			{#if status.usage.since || status.usage.ask.since}
-				<span>Since {relativeTime(status.usage.since ?? status.usage.ask.since)}</span>
+			{#if status.usage.since}
+				<span>Since {relativeTime(status.usage.since)}</span>
 			{/if}
 		</PanelHead>
 		<div
@@ -289,37 +288,33 @@
 		</div>
 		{#if calls.length}
 			<PanelHead title="Recent calls" class="border-t" />
-			<Table.Root>
-				<Table.Header>
-					<Table.Row>
-						<Table.Head class="pl-5">When</Table.Head>
-						<Table.Head>Feature</Table.Head>
-						<Table.Head>Model</Table.Head>
-						<Table.Head class="text-right">Tokens in / out</Table.Head>
-						<Table.Head class="text-right">Cost</Table.Head>
-						<Table.Head class="pr-5">Outcome</Table.Head>
-					</Table.Row>
-				</Table.Header>
-				<Table.Body>
-					{#each calls as call (call.id)}
-						<Table.Row>
-							<Table.Cell class="pl-5 text-muted-foreground">{relativeTime(call.at)}</Table.Cell>
-							<Table.Cell
-								>{status.usage.by_feature.find((f) => f.feature === call.feature)?.label ??
-									call.feature}</Table.Cell
-							>
-							<Table.Cell class="font-mono text-xs">{call.model}</Table.Cell>
-							<Table.Cell class="text-right font-mono text-xs tabular-nums"
-								>{call.input_tokens.toLocaleString()} / {call.output_tokens.toLocaleString()}</Table.Cell
-							>
-							<Table.Cell class="text-right tabular-nums">{money(call.cost_usd)}</Table.Cell>
-							<Table.Cell class="max-w-64 truncate pr-5 {call.ok ? '' : 'text-destructive'}"
-								>{outcome(call)}</Table.Cell
-							>
-						</Table.Row>
-					{/each}
-				</Table.Body>
-			</Table.Root>
+			<div class="@container/calls w-full" role="table" aria-label="Recent calls">
+				<div class={HEAD_ROW} role="row">
+					<div class={CALL_COL.when}>When</div>
+					<div class={CALL_COL.feature}>Feature</div>
+					<div class={CALL_COL.model}>Model</div>
+					<div class={CALL_COL.tokens}>Tokens in / out</div>
+					<div class={CALL_COL.cost}>Cost</div>
+					<div class={CALL_COL.outcome}>Outcome</div>
+				</div>
+				{#each calls as call (call.id)}
+					<div class="{BODY_ROW} text-sm" role="row">
+						<div class="{CALL_COL.when} text-muted-foreground">{relativeTime(call.at)}</div>
+						<div class={CALL_COL.feature}>
+							{status.usage.by_feature.find((f) => f.feature === call.feature)?.label ??
+								call.feature}
+						</div>
+						<div class="{CALL_COL.model} font-mono text-xs wrap-anywhere">{call.model}</div>
+						<div class="{CALL_COL.tokens} font-mono text-xs tabular-nums">
+							{call.input_tokens.toLocaleString()} / {call.output_tokens.toLocaleString()}
+						</div>
+						<div class="{CALL_COL.cost} tabular-nums">{money(call.cost_usd)}</div>
+						<div class="{CALL_COL.outcome} wrap-anywhere {call.ok ? '' : 'text-destructive'}">
+							{outcome(call)}
+						</div>
+					</div>
+				{/each}
+			</div>
 		{/if}
 		{#if !isAdmin}
 			<div class="px-5 py-2.5 text-xs text-muted-foreground">Editable by administrators.</div>

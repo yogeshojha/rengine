@@ -10,7 +10,6 @@ from sqlmodel import col
 
 from app.services.target import TargetService
 from shared.definitions.bounty_feed import (
-    FEEDS_BY_PLATFORM,
     SOURCE_LICENSE,
     SOURCE_NAME,
     SOURCE_URL,
@@ -54,8 +53,19 @@ from shared.models.bounty_program import (
     PlatformCount,
 )
 from shared.models.instance_settings import InstanceSettings
-from shared.models.organization import Organization, OrganizationSummary
-from shared.models.tag import Tag, TagSummary, TargetTag
+from shared.models.organization import (
+    MAX_ORG_DESCRIPTION_LEN,
+    MAX_ORG_LEN,
+    Organization,
+    OrganizationSummary,
+)
+from shared.models.tag import (
+    DEFAULT_TAG_COLOR,
+    MAX_TAG_LEN,
+    Tag,
+    TagSummary,
+    TargetTag,
+)
 from shared.models.target import Target, TargetOrganization
 from shared.models.watch import ProgramWatch
 from shared.utils.datetime import utc_now
@@ -67,11 +77,6 @@ def _platform_label(platform: str) -> str:
     spec = PLATFORMS_BY_KEY.get(platform)
     return spec.label if spec else platform
 
-
-MAX_ORG_NAME = 100
-MAX_TAG_NAME = 50
-DEFAULT_TAG_COLOR = "#6B7280"
-MAX_ORG_DESCRIPTION = 500
 
 EMPTY_COUNTS = {"in_scope_count": 0, "out_of_scope_count": 0, "importable_count": 0}
 
@@ -107,7 +112,6 @@ SORTS = {
     "reports": (col(BountyProgram.reports_for_user), "desc"),
     "age": (col(BountyProgram.started_accepting_at), "desc"),
     "payout": (col(BountyProgram.max_payout), "desc"),
-    "assets": (col(BountyProgram.name), "asc"),
 }
 
 
@@ -126,29 +130,14 @@ class BountyProgramService:
         )
         return {k.provider.value: (k.key_meta or {}) for k in rows.scalars()}
 
-    async def _credentials_username(self, platform: str) -> str | None:
-        spec = PLATFORMS_BY_KEY.get(platform)
-        if not spec or not spec.api_provider:
-            return None
-        meta = (await self._connected()).get(spec.api_provider)
-        if meta is None:
-            return None
-        return meta.get("username") or spec.label
-
     async def _settings(self) -> InstanceSettings | None:
         rows = await self.session.execute(select(InstanceSettings).limit(1))
         return rows.scalar_one_or_none()
 
-    async def events(
-        self, platform: str | None, *, kind: str | None, handle: str | None
-    ) -> Select:
+    async def events(self, *, kind: str | None) -> Select:
         query = select(BountyEventRow)
-        if platform:
-            query = query.where(BountyEventRow.platform == platform)
         if kind:
             query = query.where(BountyEventRow.kind == kind)
-        if handle:
-            query = query.where(BountyEventRow.handle == handle)
         return query.order_by(col(BountyEventRow.created_at).desc())
 
     @staticmethod
@@ -179,23 +168,12 @@ class BountyProgramService:
         stored = settings.bounty_settings if settings else {}
         synced_at = settings.bounty_synced_at if settings else None
         hours = SYNC_INTERVAL_HOURS.get(interval)
-        totals = await self.session.execute(
-            select(
-                select(func.count(BountyProgram.id)).scalar_subquery(),
-                select(func.count(BountyEventRow.id)).scalar_subquery(),
-            )
-        )
-        programs, events = totals.one()
+        events = await self.session.scalar(select(func.count(BountyEventRow.id)))
         feed_interval = (
             settings.bounty_feed_interval if settings else None
         ) or DEFAULT_FEED_INTERVAL
         feed_synced = settings.bounty_feed_synced_at if settings else None
         feed_hours = SYNC_INTERVAL_HOURS.get(feed_interval)
-        feed_programs = await self.session.execute(
-            select(func.count(BountyProgram.id)).where(
-                BountyProgram.source == ProgramSource.FEED.value
-            )
-        )
         return BountySettingsRead(
             platforms=await self.platform_counts(),
             sync_interval=interval,
@@ -206,7 +184,6 @@ class BountyProgramService:
                 if (feed_hours and feed_synced)
                 else None
             ),
-            feed_programs=feed_programs.scalar_one() or 0,
             feed_source=SOURCE_NAME,
             feed_url=SOURCE_URL,
             feed_license=SOURCE_LICENSE,
@@ -217,7 +194,6 @@ class BountyProgramService:
             next_sync_at=(
                 (synced_at + timedelta(hours=hours)) if (hours and synced_at) else None
             ),
-            programs=programs or 0,
             events_recorded=events or 0,
         )
 
@@ -271,13 +247,10 @@ class BountyProgramService:
                 func.count(BountyProgram.id).filter(
                     BountyProgram.program_state == ProgramState.PRIVATE.value
                 ),
-                func.count(BountyProgram.id).filter(
-                    BountyProgram.source == ProgramSource.FEED.value
-                ),
             ).group_by(BountyProgram.platform)
         )
         counts = {r[0]: r[1:] for r in rows.all()}
-        empty = (0, 0, 0)
+        empty = (0, 0)
         connected = await self._connected()
         return [
             PlatformCount(
@@ -286,10 +259,7 @@ class BountyProgramService:
                 source=spec.source,
                 programs=counts.get(spec.key, empty)[0],
                 private_programs=counts.get(spec.key, empty)[1],
-                feed_programs=counts.get(spec.key, empty)[2],
-                has_feed=spec.key in FEEDS_BY_PLATFORM,
                 api_provider=spec.api_provider,
-                supports_private=spec.supports_private,
                 credential=spec.credential,
                 note=spec.note,
                 configured=bool(spec.api_provider and spec.api_provider in connected),
@@ -312,18 +282,13 @@ class BountyProgramService:
         )
         return dict(zip([s.value for s in ProgramSource], rows.one(), strict=True))
 
-    async def status(self, platform: str) -> BountyStatus:
-        username = await self._credentials_username(platform)
+    async def status(self) -> BountyStatus:
         settings = await self._settings()
         interval = (settings.bounty_sync_interval if settings else None) or (
             DEFAULT_SYNC_INTERVAL
         )
         synced_at = settings.bounty_synced_at if settings else None
         seen_at = settings.bounty_events_seen_at if settings else None
-        hours = SYNC_INTERVAL_HOURS.get(interval)
-        next_sync = (
-            (synced_at + timedelta(hours=hours)) if (hours and synced_at) else None
-        )
         unseen = await self.session.execute(
             select(func.count(BountyEventRow.id)).where(
                 *([BountyEventRow.created_at > seen_at] if seen_at else []),
@@ -342,20 +307,13 @@ class BountyProgramService:
         )
         total, private, last = totals.one()
         return BountyStatus(
-            configured=bool(username),
-            platform=platform,
-            username=username,
             programs=total or 0,
             private_programs=private or 0,
             last_synced_at=synced_at or last,
             sync_interval=interval,
-            next_sync_at=next_sync,
             unseen_events=unseen.scalar_one() or 0,
             platforms=platforms,
             source_counts=source_counts,
-            feed_interval=(settings.bounty_feed_interval if settings else None)
-            or DEFAULT_FEED_INTERVAL,
-            feed_synced_at=settings.bounty_feed_synced_at if settings else None,
         )
 
     def _filtered(
@@ -522,15 +480,9 @@ class BountyProgramService:
         handle: str,
         *,
         project_id: UUID | None,
-        scope: str | None = None,
-        asset_type: str | None = None,
     ) -> BountyProgramDetail:
         program = await self.get_program(platform, handle)
         query = select(BountyScope).where(BountyScope.program_id == program.id)
-        if scope in {s.value for s in ScopeState}:
-            query = query.where(BountyScope.scope_state == scope)
-        if asset_type:
-            query = query.where(BountyScope.asset_type == asset_type.upper())
         rows = (await self.session.execute(query)).scalars().all()
 
         existing: set[str] = set()
@@ -575,7 +527,6 @@ class BountyProgramService:
             id=scope.id,
             asset_type=scope.asset_type,
             asset_type_label=spec.label,
-            asset_group=spec.group.value,
             icon=spec.icon,
             asset_identifier=scope.asset_identifier,
             scope_state=scope.scope_state,
@@ -667,7 +618,7 @@ class BountyProgramService:
         spec = PLATFORMS_BY_KEY.get(program.platform)
         wanted: dict[str, str] = {}
         for raw in request.tags[:MAX_TAGS_PER_IMPORT]:
-            candidate = (raw or "").strip()[:MAX_TAG_NAME]
+            candidate = (raw or "").strip()[:MAX_TAG_LEN]
             if not candidate:
                 continue
             wanted.setdefault(candidate.lower(), DEFAULT_TAG_COLOR)
@@ -708,7 +659,6 @@ class BountyProgramService:
         return [tags[name] for name in wanted if name in tags]
 
     async def _attach_tags(self, targets: list[Target], tags: list[Tag]) -> None:
-        """A tag already on a target must not fail the import."""
         if not targets or not tags:
             return
         await self.session.execute(
@@ -727,9 +677,9 @@ class BountyProgramService:
         override: str | None = None,
     ) -> Organization:
         """The project's organization for this program, created on first import."""
-        chosen = ((override or "").strip() or program.name)[:MAX_ORG_NAME]
+        chosen = ((override or "").strip() or program.name)[:MAX_ORG_LEN]
         try:
-            name = clean_name(chosen, max_len=MAX_ORG_NAME).lower()
+            name = clean_name(chosen, max_len=MAX_ORG_LEN).lower()
         except ValueError as exc:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
@@ -745,7 +695,7 @@ class BountyProgramService:
         organization = Organization(
             name=name,
             description=f"{_platform_label(program.platform)} program @{program.handle}"[
-                :MAX_ORG_DESCRIPTION
+                :MAX_ORG_DESCRIPTION_LEN
             ],
             project_id=project_id,
             created_by=user_id,
@@ -765,7 +715,6 @@ class BountyProgramService:
         return organization
 
     async def _attach(self, targets: list[Target], organization: Organization) -> None:
-        """A target already under the organization must not fail the import."""
         if not targets:
             return
         await self.session.execute(

@@ -3,14 +3,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.openapi.utils import get_openapi
 from fastapi_pagination import add_pagination
 from sqlalchemy.exc import DBAPIError
 
 from app.api.router import router as api_router
-from app.config import settings
+from app.config import API_V1_PREFIX, settings
 from app.core import ai_ledger
-from app.core.crypto import SecretDecryptionError
+from app.core.body_limit import BodySizeLimitMiddleware
 from app.core.database import check_capacity
 from app.core.db_errors import data_exception_handler
 from app.core.redis_sse_bridge import RedisSSEBridge
@@ -19,8 +18,11 @@ from app.core.secret_errors import secret_decryption_handler
 from app.core.throttle import GlobalRateLimitMiddleware
 from app.core.validation_errors import validation_error_handler
 from app.utils.helpers import create_initial_admin
-from shared.logging import get_logger
+from shared.config import APP_NAME, APP_VERSION
+from shared.logging import get_logger, setup_logging
+from shared.utils.crypto import SecretDecryptionError
 
+setup_logging(level=settings.LOG_LEVEL)
 logger = get_logger(__name__)
 redis_sse_bridge = RedisSSEBridge(settings.redis_url)
 
@@ -42,40 +44,13 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(
-    title=settings.APP_NAME,
-    version=settings.APP_VERSION,
+    title=APP_NAME,
+    version=APP_VERSION,
     lifespan=lifespan,
 )
 
 
 add_pagination(app)
-
-
-def custom_openapi():
-    if app.openapi_schema:
-        return app.openapi_schema
-
-    openapi_schema = get_openapi(
-        title=settings.APP_NAME,
-        version=settings.APP_VERSION,
-        description="reNgine 3.0 - Attack Surface Management Platform",
-        routes=app.routes,
-    )
-
-    openapi_schema["components"]["securitySchemes"] = {
-        "BearerAuth": {
-            "type": "http",
-            "scheme": "bearer",
-            "bearerFormat": "JWT",
-            "description": "JWT from /auth/login",
-        }
-    }
-
-    app.openapi_schema = openapi_schema
-    return app.openapi_schema
-
-
-app.openapi = custom_openapi
 
 if "*" in settings.CORS_ORIGINS:
     msg = "CORS_ORIGINS must be an explicit allowlist (no '*') when credentials are enabled"
@@ -85,6 +60,7 @@ app.add_exception_handler(DBAPIError, data_exception_handler)
 app.add_exception_handler(SecretDecryptionError, secret_decryption_handler)
 app.add_exception_handler(RequestValidationError, validation_error_handler)
 
+app.add_middleware(BodySizeLimitMiddleware)
 app.add_middleware(GlobalRateLimitMiddleware)
 app.add_middleware(RejectNulMiddleware)
 app.add_middleware(
@@ -95,14 +71,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(api_router, prefix=settings.API_V1_PREFIX)
+app.include_router(api_router, prefix=API_V1_PREFIX)
 
 
 @app.get("/")
 async def root():
-    logger.debug("Root endpoint accessed")
     return {
         "message": "reNgine API",
-        "version": settings.APP_VERSION,
+        "version": APP_VERSION,
         "docs": "/docs",
     }

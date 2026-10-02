@@ -2,15 +2,16 @@ from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
-from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentUser
-from app.api.v1.bounty_programs import _require_mode
+from app.api.capability import require_capability
+from app.api.deps import CurrentSuperuser, CurrentUser
+from app.api.pagination import Page
 from app.core.database import get_session
 from app.services.bounty_report import BountyReportService, tracked_platform
 from shared.definitions.bounty_reports import ReportSort
+from shared.definitions.mode_features import CAP_BOUNTY_PROGRAMS
 from shared.models.bounty_report import (
     BountyAccountSummary,
     BountyReportRead,
@@ -29,7 +30,7 @@ async def summary(
     session: SessionDep, _current_user: CurrentUser, platform: PlatformPath
 ) -> BountyAccountSummary:
     """Reports, bounties and standing for the connected account."""
-    await _require_mode(session)
+    await require_capability(session, CAP_BOUNTY_PROGRAMS)
     return await BountyReportService(session).summary(tracked_platform(platform))
 
 
@@ -38,7 +39,7 @@ async def programs(
     session: SessionDep, _current_user: CurrentUser, platform: PlatformPath
 ) -> list[ProgramReports]:
     """Every program the account reported to."""
-    await _require_mode(session)
+    await require_capability(session, CAP_BOUNTY_PROGRAMS)
     return await BountyReportService(session).programs(tracked_platform(platform))
 
 
@@ -75,7 +76,7 @@ async def counts(
     filters: FiltersDep,
 ) -> dict[str, int]:
     """Report counts per tab under the active filters."""
-    await _require_mode(session)
+    await require_capability(session, CAP_BOUNTY_PROGRAMS)
     spec = tracked_platform(platform)
     return await BountyReportService(session).counts(spec.key, **filters.values)
 
@@ -91,7 +92,7 @@ async def list_reports(
     sort: Annotated[ReportSort, Query()] = ReportSort.SUBMITTED,
     order: str = Query("desc", pattern="^(asc|desc)$"),
 ) -> Page[BountyReportRead]:
-    await _require_mode(session)
+    await require_capability(session, CAP_BOUNTY_PROGRAMS)
     spec = tracked_platform(platform)
     service = BountyReportService(session)
     query = service.list_query(
@@ -109,9 +110,9 @@ async def list_reports(
 
 @router.post("/{platform}/sync", status_code=status.HTTP_202_ACCEPTED)
 async def sync(
-    session: SessionDep, _current_user: CurrentUser, platform: PlatformPath
+    session: SessionDep, _current_user: CurrentSuperuser, platform: PlatformPath
 ) -> dict:
-    await _require_mode(session)
+    await require_capability(session, CAP_BOUNTY_PROGRAMS)
     spec = tracked_platform(platform)
     if not dispatch_bounty_report_sync(spec.key):
         raise HTTPException(

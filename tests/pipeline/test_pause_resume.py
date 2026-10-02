@@ -32,7 +32,6 @@ def test_a_paused_stage_leaves_the_run_unsettled():
 
 
 def test_a_superseded_paused_row_does_not_cancel_the_resumed_run():
-    """The pause leaves a row behind; the re-run supersedes it, and the verdict is its own."""
     rows = [
         _row("http_probe", ScanActivityStatus.SKIPPED.value),
         _row("http_probe", ScanActivityStatus.SUCCESS.value),
@@ -81,7 +80,6 @@ def test_a_task_from_the_current_canvas_runs():
 
 @pytest.mark.parametrize("task_epoch", [0, 1, 2])
 def test_a_task_from_a_torn_down_canvas_is_refused(task_epoch):
-    """A run_scan or stage task queued before a pause must not run beside the resumed canvas."""
     assert superseded(3, task_epoch) is True
 
 
@@ -95,6 +93,5 @@ def test_a_legacy_row_with_no_epoch_reads_as_zero():
 
 
 def test_a_task_that_carries_no_epoch_always_runs():
-    """The reaper dispatches finalize without one, and it must still settle the scan."""
     assert superseded(0, None) is False
     assert superseded(7, None) is False

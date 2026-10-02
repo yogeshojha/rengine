@@ -27,31 +27,20 @@ class ColoredFormatter(logging.Formatter):
 QUIET_LOGGERS = ("httpx", "httpcore", "hpack", "urllib3", "asyncio", "kombu", "amqp")
 
 
-def setup_logging(
-    name: str = "rengine",
-    level: str = "INFO",
-    colored: bool = True,
-) -> logging.Logger:
-    logger = logging.getLogger(name)
+def setup_logging(level: str = "INFO") -> logging.Logger:
+    logger = logging.getLogger("")
     logger.setLevel(getattr(logging, level.upper()))
 
     logger.handlers.clear()
 
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(logging.DEBUG)
-
-    if colored:
-        console_format = ColoredFormatter(
+    console_handler.setFormatter(
+        ColoredFormatter(
             fmt="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
-    else:
-        console_format = logging.Formatter(
-            fmt="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
-        )
-
-    console_handler.setFormatter(console_format)
+    )
     logger.addHandler(console_handler)
     for noisy in QUIET_LOGGERS:
         logging.getLogger(noisy).setLevel(logging.WARNING)

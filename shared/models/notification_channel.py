@@ -12,21 +12,18 @@ from shared.definitions.notification_events import (
     DEFAULT_CHANNEL_EVENTS,
     DEFAULT_CHANNEL_LEVEL,
 )
-from shared.enums.notification import NotificationType
 from shared.enums.notification_channel import NotificationProvider
 from shared.utils.datetime import utc_now
 from shared.utils.validation import clean_name, clean_optional_name
 
 PROVIDERS = tuple(p.value for p in NotificationProvider)
 
-DEFAULT_PREFERENCE_TYPES = list(DEFAULT_CHANNEL_EVENTS)
-
-_KNOWN_TYPES = frozenset(t.value for t in NotificationType)
+_KNOWN_TYPES = frozenset(DEFAULT_CHANNEL_EVENTS)
 _KNOWN_LEVELS = frozenset(level.value for level in CHANNEL_LEVELS)
 
 
 class NotificationPreference(BaseModel):
-    types: list[str] = Field(default_factory=lambda: list(DEFAULT_PREFERENCE_TYPES))
+    types: list[str] = Field(default_factory=lambda: list(DEFAULT_CHANNEL_EVENTS))
     min_severity: str = DEFAULT_CHANNEL_LEVEL
 
     @field_validator("types")

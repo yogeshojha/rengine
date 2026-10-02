@@ -42,6 +42,7 @@ class AmassProvider(SubdomainProvider):
             )
         except ToolNotFoundError:
             return set()
+        self._checked(result)
         names: set[str] = set()
         for line in result.output_lines:
             names.update(_FQDN_RE.findall(line))

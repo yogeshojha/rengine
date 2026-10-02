@@ -16,17 +16,12 @@
 	interface Props {
 		open: boolean;
 		schema: QuerySchema;
-		noun: string;
 		onOpenChange: (open: boolean) => void;
 		onInsert: (fragment: string) => void;
 	}
 
-	let { open, schema, noun, onOpenChange, onInsert }: Props = $props();
+	let { open, schema, onOpenChange, onInsert }: Props = $props();
 
-	const ANATOMY: Record<string, string> = {
-		host: 'is:live and status:>=400 and not (cdn:yes or waf:yes)',
-		address: 'is:open and ports:>2 and not (cdn:yes or country=US)'
-	};
 	const SECTIONS = [
 		{ id: 'grammar', label: 'Grammar' },
 		{ id: 'fields', label: 'Fields' },
@@ -41,8 +36,14 @@
 		return (name: string) => names.has(name);
 	});
 	let dates = $derived(schema.fields.filter((f) => f.type === 'date'));
-	let sample = $derived(ANATOMY[noun] ?? ANATOMY.host);
+	let sample = $derived(
+		schema.examples.find((e) => /\band\b/.test(e.query))?.query ?? schema.examples[0]?.query ?? ''
+	);
 	let anatomy = $derived(lex(sample, known));
+	let sampleJoins = $derived(
+		anatomy.tokens.some((t) => t.kind === 'connector' && t.text.toLowerCase() === 'and')
+	);
+	let sampleGroups = $derived(anatomy.tokens.some((t) => t.kind === 'paren'));
 
 	let groups = $derived.by(() => {
 		const match = (field: QueryFieldSpec) =>
@@ -117,28 +118,34 @@
 		<ScrollArea class="min-h-0 flex-1">
 			<div class="flex flex-col gap-7 p-5">
 				{#if !needle}
-					<section class="rounded-lg border bg-muted/30 p-4">
-						{@render label('How a query reads')}
-						<p class="mt-2.5 font-mono text-sm leading-7 break-all whitespace-pre-wrap">
-							<QueryHighlight source={sample} tokens={anatomy.tokens} problems={[]} />
-						</p>
-						<div
-							class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground"
-						>
-							<span class="flex items-center gap-1.5"
-								>{@render key('field:')} narrows to one property</span
+					{#if sample}
+						<section class="rounded-lg border bg-muted/30 p-4">
+							{@render label('How a query reads')}
+							<p class="mt-2.5 font-mono text-sm leading-7 break-all whitespace-pre-wrap">
+								<QueryHighlight source={sample} tokens={anatomy.tokens} problems={[]} />
+							</p>
+							<div
+								class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground"
 							>
-							<span class="flex items-center gap-1.5"
-								><span class="font-mono text-foreground">value</span> the value it must match</span
-							>
-							<span class="flex items-center gap-1.5"
-								><span class="font-mono font-semibold text-info">and</span> joins terms</span
-							>
-							<span class="flex items-center gap-1.5"
-								><span class="font-mono">( )</span> groups a clause</span
-							>
-						</div>
-					</section>
+								<span class="flex items-center gap-1.5"
+									>{@render key('field:')} narrows to one property</span
+								>
+								<span class="flex items-center gap-1.5"
+									><span class="font-mono text-foreground">value</span> the value it must match</span
+								>
+								{#if sampleJoins}
+									<span class="flex items-center gap-1.5"
+										><span class="font-mono font-semibold text-info">and</span> joins terms</span
+									>
+								{/if}
+								{#if sampleGroups}
+									<span class="flex items-center gap-1.5"
+										><span class="font-mono">( )</span> groups a clause</span
+									>
+								{/if}
+							</div>
+						</section>
+					{/if}
 
 					<section id="query-help-grammar" class="grid scroll-mt-5 gap-6 sm:grid-cols-2">
 						<div class="flex flex-col gap-2.5">
@@ -242,7 +249,7 @@
 							{@render label('Flags')}
 							<span class="text-2xs text-muted-foreground"
 								>Used as
-								<span class="font-mono">is:{schema.flags[0]?.value ?? 'live'}</span></span
+								<span class="font-mono">is:{flags[0].value}</span></span
 							>
 						</div>
 						<div class="grid gap-x-4 gap-y-0.5 sm:grid-cols-2">

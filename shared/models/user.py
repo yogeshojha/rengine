@@ -29,12 +29,6 @@ class User(UserBase, table=True):
     updated_at: datetime | None = Field(default=None)
 
 
-class UserCreate(SQLModel):
-    email: str
-    username: str
-    password: str
-
-
 class UserAdminCreate(SQLModel):
     email: str
     username: str

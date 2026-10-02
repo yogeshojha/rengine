@@ -22,7 +22,7 @@
       {% for run in runs %}
       <tr>
         <td>{{ run.group }}</td>
-        <td class="small">{{ run.status|capitalize }}</td>
+        <td class="small">{{ status_labels.get(run.status, run.status) }}</td>
         <td class="num">{{ run.templates_loaded|num if run.templates_loaded is not none else (run.templates_selected|num if run.templates_selected is not none else '—') }}</td>
         <td class="num">{{ run.hosts_scanned|num if run.hosts_scanned is not none else '—' }} / {{ run.hosts_total|num }}</td>
         <td class="num">{{ run.requests_sent|num if run.requests_sent is not none else '—' }}</td>

@@ -1,8 +1,5 @@
-"""The Domains-by-organization tool end to end, with every source faked."""
-
 from __future__ import annotations
 
-import uuid
 from datetime import UTC, date, datetime
 from typing import ClassVar
 
@@ -86,7 +83,6 @@ def sources(monkeypatch):
         }
 
     state = Sources()
-    state.asked = {"crt": [], "ripe": [], "viewdns": [], "whois": []}
 
     async def fake_crt(self, organization):
         state.asked["crt"].append(organization)
@@ -118,7 +114,7 @@ def sources(monkeypatch):
 
 
 def ctx(session=None, project_id=None):
-    return ToolContext(session=session, user_id=uuid.uuid4(), project_id=project_id)
+    return ToolContext(session=session, project_id=project_id)
 
 
 async def run(value, context=None):
@@ -343,7 +339,7 @@ async def test_a_refused_name_says_so(sources):
 async def test_no_domains_is_an_empty_table_not_an_error(sources):
     out = await run("Nobody In Particular")
     assert block(out, "table").rows == []
-    assert block(out, "table").empty == "No domains found."
+    assert block(out, "table").empty == "No domains found"
     assert out.summary == "0 domains for Nobody In Particular"
 
 

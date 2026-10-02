@@ -4,6 +4,9 @@ from pydantic import Field, field_validator
 
 from shared.definitions.scan_surface import MAX_REQUESTS, MAX_REQUESTS_PER_ORIGIN
 from shared.definitions.vulnerabilities import (
+    DAST_SCANNER_LABELS,
+    DAST_SCANNERS,
+    DEFAULT_SCANNERS,
     DEFAULT_SEVERITIES,
     SEVERITY_LABELS,
     SEVERITY_ORDER,
@@ -19,12 +22,12 @@ class DastScanConfig(StageConfig):
         description="Send payloads to the parameters this scan discovered.",
     )
     scanners: list[str] = Field(
-        default_factory=lambda: ["nuclei"],
+        default_factory=lambda: list(DEFAULT_SCANNERS),
         title="Fuzzers",
         description="Tools that fuzz a request.",
         json_schema_extra={
-            "options": ["nuclei", "dalfox"],
-            "option_labels": {"nuclei": "Nuclei", "dalfox": "Dalfox"},
+            "options": list(DAST_SCANNERS),
+            "option_labels": dict(DAST_SCANNER_LABELS),
         },
     )
     severities: list[str] = Field(

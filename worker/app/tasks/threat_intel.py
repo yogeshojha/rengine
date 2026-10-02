@@ -3,14 +3,15 @@
 from celery import shared_task
 from sqlalchemy import text
 
-from app.config import settings
 from app.database import get_sync_session
 from shared.definitions.notifications import (
     IntelShift,
     SoftwareExposure,
+    distinct_findings,
     intel_changed,
     software_exposed,
 )
+from shared.definitions.threat_intel import ExploitSignal
 from shared.logging import get_logger
 from shared.services.exploitation import evaluate_all, evaluate_scan
 from shared.services.notification_sync import SyncNotificationPublisher
@@ -27,10 +28,18 @@ from shared.utils.datetime import utc_now
 logger = get_logger(__name__)
 
 
-ALERT_KINDS = ("kev", "ransom_path", "fresh_exploit", "weaponised")
+ALERT_KINDS = tuple(
+    s.value
+    for s in (
+        ExploitSignal.KEV,
+        ExploitSignal.RANSOM_PATH,
+        ExploitSignal.FRESH_EXPLOIT,
+        ExploitSignal.WEAPONISED,
+    )
+)
 
 _NEW_SIGNALS_SQL = """
-SELECT s.kind, v.template_name, v.scan_id, v.project_id,
+SELECT s.kind, v.id AS vulnerability_id, v.template_name, v.scan_id, v.project_id,
        coalesce((v.cve_ids::jsonb ->> 0), '') AS cve, t.target_value
 FROM intel_signals s
 JOIN vulnerabilities v ON v.id = s.vulnerability_id
@@ -51,22 +60,22 @@ def _notify_changes(session, since) -> int:
         by_project.setdefault(r.project_id, []).append(r)
     sent = 0
     for project_id, group in by_project.items():
-        payload = intel_changed(
-            [
-                IntelShift(
-                    cve=r.cve or "",
-                    target=r.target_value or "",
-                    finding=r.template_name,
-                    kind=r.kind,
-                    scan_id=str(r.scan_id),
-                )
-                for r in group
-            ]
-        )
+        shifts = [
+            IntelShift(
+                cve=r.cve or "",
+                target=r.target_value or "",
+                finding=r.template_name,
+                kind=r.kind,
+                scan_id=str(r.scan_id),
+                vulnerability_id=str(r.vulnerability_id),
+            )
+            for r in group
+        ]
+        payload = intel_changed(shifts)
         if payload is None:
             continue
         try:
-            SyncNotificationPublisher(settings.redis_url).publish(
+            SyncNotificationPublisher().publish(
                 session=session,
                 type=payload["type"],
                 severity=payload["severity"],
@@ -78,7 +87,7 @@ def _notify_changes(session, since) -> int:
         except Exception:
             logger.warning("threat intel notification failed", exc_info=True)
             continue
-        sent += len(group)
+        sent += len(distinct_findings(shifts))
     return sent
 
 
@@ -106,7 +115,7 @@ def _notify_exposures(session, result: RematchResult) -> int:
         if payload is None:
             continue
         try:
-            SyncNotificationPublisher(settings.redis_url).publish(
+            SyncNotificationPublisher().publish(
                 session=session,
                 type=payload["type"],
                 severity=payload["severity"],

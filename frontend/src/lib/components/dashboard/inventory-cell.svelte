@@ -5,6 +5,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE_ORDER, SurfaceDimension } from '$lib/config/surface';
+	import { Severity } from '$lib/config/vulnerabilities';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { scanSchedulesStore } from '$lib/stores/scan-schedules.svelte';
 	import { elapsedSeconds, elapsedText } from '$lib/utilities/scan-status';
@@ -65,7 +66,8 @@
 			if (key === SurfaceDimension.SERVICES && overview.exposure.sensitive)
 				sub = `${overview.exposure.sensitive.toLocaleString()} sensitive`;
 			if (key === SurfaceDimension.VULNERABILITIES) {
-				const crit = overview.risk.by_severity.find((s) => s.severity === 'critical')?.count ?? 0;
+				const crit =
+					overview.risk.by_severity.find((s) => s.severity === Severity.CRITICAL)?.count ?? 0;
 				sub = crit ? `${crit.toLocaleString()} critical` : null;
 			}
 			out.push({
@@ -73,7 +75,7 @@
 				label: spec.label,
 				value: metric.value,
 				sub,
-				href: routes.surface(spec.tab),
+				href: routes.rows(key, ''),
 				fill: FILL[key] ?? 'var(--series)',
 				ring: key === SurfaceDimension.VULNERABILITIES
 			});
@@ -97,7 +99,7 @@
 	let unscheduled = $derived(overview.targets_total - overview.targets_monitored);
 </script>
 
-<Cell id="inventory" title="Inventory" class={className}>
+<Cell id="inventory" class={className}>
 	<div class="grid grid-cols-2 gap-x-4 gap-y-2.5">
 		{#each rows as r (r.key)}
 			<a

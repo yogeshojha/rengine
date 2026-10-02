@@ -1,44 +1,23 @@
-
 # Security Policy
 
-> **[IMPORTANT NOTICE - February 9, 2025]**
-> reNgine is currently undergoing a major refactoring to address all XSS-related vulnerabilities. While we are committed to security, we are temporarily suspending new XSS vulnerability reports until this refactoring is complete. We will continue to accept and investigate all other types of security vulnerabilities. Thank you for your understanding and continued support in making reNgine more secure.
->
-> Please note that most reported XSS vulnerabilities in reNgine affect on-premise installations with limited exploitability. Nevertheless, we are committed to fixing these issues systematically through our ongoing refactoring effort.
+To report a security vulnerability:
 
+1. Do not disclose a vulnerability publicly, including in GitHub issues, before the fix is released.
 
-We appreciate your efforts to responsibly disclose your findings and will make every effort to acknowledge your contributions.
+2. Open the [Security tab](https://github.com/yogeshojha/rengine/security) of the reNgine repository.
 
-To report a security vulnerability, please follow these steps:
+3. Select "Report a vulnerability" to open GitHub's private vulnerability reporting form.
 
-1. **Do Not** disclose the vulnerability publicly on GitHub issues or any other public forum.
-
-2. Go to the [Security tab](https://github.com/yogeshojha/rengine/security) of the reNgine repository.
-
-3. Click on "Report a vulnerability" to open GitHub's private vulnerability reporting form.
-
-4. Provide a detailed description of the vulnerability, including:
+4. Describe the vulnerability:
    - Steps to reproduce
-   - Potential impact
-   - Any suggested fixes or mitigations (if you have them)
+   - Impact
+   - Suggested fixes or mitigations, when known
 
-5. I will review your report and respond as quickly as possible, usually within 48-72 hours.
+5. Reports are usually answered within 72 hours.
 
-6. Please allow some time to investigate and address the vulnerability before disclosing it to others.
+Responsible disclosure is credited after the fix is released, unless the reporter prefers to stay anonymous. A confirmed vulnerability receives a CVE ID.
 
-We are committed to working with security researchers to verify and address any potential vulnerabilities reported to us. After fixing the issue, we will publicly acknowledge your responsible disclosure, unless you prefer to remain anonymous.
-
-Thank you for helping to keep reNgine and its users safe!
-
-**What do we expect from security researchers?**
-
-* Patience: Please note that currently I am the only maintainer in reNgine and will take sometime to validate your report. I request your patience throughout the process.
-* Respect Privacy and Security Reports: Please do not disclose any vulnerabilities in public (this also includes github issues) before or after reporting on huntr.dev! That is against the disclosure policy and will not be eligible for monetary rewards.
-
-**What do I get in return?**
-
-* Much thanks from Maintainer and the community
-* CVE ID(s)
+Thank you for helping keep reNgine secure.
 
 ## Past Security Vulnerabilities
 

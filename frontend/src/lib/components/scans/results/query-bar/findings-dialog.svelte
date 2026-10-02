@@ -34,9 +34,9 @@
 	let scope = $derived.by(() => {
 		if (!leadSet) return '';
 		const rows = `${leadSet.total.toLocaleString()}${leadSet.total_capped ? '+' : ''}`;
-		const where = leadSet.filtered ? 'the filters in view' : 'this scan';
 		const word = leadSet.total === 1 ? noun : nounPlural;
-		return `${matched.length} of ${leads.length} queries matched ${where} · ${rows} ${word}`;
+		const where = leadSet.filtered ? ' in view' : '';
+		return `${matched.length} of ${leads.length} queries matched · ${rows} ${word}${where}`;
 	});
 
 	function apply(query: string) {
@@ -50,8 +50,7 @@
 		class="grid max-h-[88vh] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-3xl"
 	>
 		<Dialog.Header class="gap-1 border-b p-5">
-			<Dialog.Title>Findings</Dialog.Title>
-			<Dialog.Description>Prebuilt queries with matches in this scan.</Dialog.Description>
+			<Dialog.Title>Matched queries</Dialog.Title>
 		</Dialog.Header>
 
 		<ScrollArea class="min-h-0">

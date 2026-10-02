@@ -33,15 +33,19 @@
 
 	let query = $state('');
 	let inputEl = $state<HTMLInputElement | null>(null);
+	let boxEl = $state<HTMLDivElement | null>(null);
 	let suggestions = $state<Target[]>([]);
 	let searching = $state(false);
 	let adding = $state(false);
 	let highlight = $state(-1);
 	let error = $state<string | null>(null);
+	let dismissed = $state(false);
 
 	let trimmed = $derived(query.trim());
 	let visible = $derived(suggestions.filter((t) => !chips.some((c) => c.id === t.id)));
-	let open = $derived(trimmed.length >= MIN_QUERY && (visible.length > 0 || searching));
+	let open = $derived(
+		!dismissed && trimmed.length >= MIN_QUERY && (visible.length > 0 || searching)
+	);
 
 	$effect(() => {
 		const q = trimmed;
@@ -62,6 +66,17 @@
 			}
 		}, SEARCH_DEBOUNCE_MS);
 		return () => clearTimeout(timer);
+	});
+
+	$effect(() => {
+		if (!open) return;
+		const close = (e: Event) => {
+			const node = e.target instanceof Element ? e.target : null;
+			if (node && (boxEl?.contains(node) || node.closest('[data-slot=popover-content]'))) return;
+			dismissed = true;
+		};
+		window.addEventListener('scroll', close, true);
+		return () => window.removeEventListener('scroll', close, true);
 	});
 
 	function pick(target: Target) {
@@ -91,6 +106,7 @@
 			adding = false;
 		}
 		query = rejected.join(' ');
+		dismissed = true;
 		error = rejected.length
 			? `${INVALID_TARGET_MESSAGE}: ${rejected.join(', ')}. ${TARGET_FORMATS}`
 			: null;
@@ -120,9 +136,11 @@
 		}
 		if (e.key === 'ArrowDown' && visible.length) {
 			e.preventDefault();
+			dismissed = false;
 			highlight = (highlight + 1) % visible.length;
 		} else if (e.key === 'ArrowUp' && visible.length) {
 			e.preventDefault();
+			dismissed = false;
 			highlight = highlight <= 0 ? visible.length - 1 : highlight - 1;
 		} else if (e.key === 'Backspace' && !query && chips.length) {
 			onRemove(chips[chips.length - 1].key);
@@ -148,6 +166,7 @@
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div
 					{...props}
+					bind:this={boxEl}
 					class="flex min-h-9 w-full flex-wrap items-center gap-1.5 rounded-md border border-input bg-background px-2 py-1 text-sm shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 {error
 						? 'border-destructive'
 						: ''}"
@@ -194,6 +213,7 @@
 						spellcheck="false"
 						disabled={disabled || loading}
 						onkeydown={onKeydown}
+						oninput={() => (dismissed = false)}
 						onpaste={onPaste}
 					/>
 					{#if adding || loading}

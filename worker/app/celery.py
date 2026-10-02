@@ -54,30 +54,30 @@ celery_app.conf.update(
     worker_pool="prefork",
     worker_hijack_root_logger=False,
     beat_scheduler="celery.beat:PersistentScheduler",
-    beat_schedule_filename="/tmp/celerybeat-schedule",  # noqa: S108
+    beat_schedule_filename="/app/beat-state/celerybeat-schedule",
 )
 
 
-default_exchange = Exchange("default", type="direct")
-scan_exchange = Exchange("scans", type="direct")
+default_exchange = Exchange(DEFAULT_QUEUE, type="direct")
+scan_exchange = Exchange(SCANS_QUEUE, type="direct")
 
 celery_app.conf.task_queues = (
     Queue(
-        "critical",
+        CRITICAL_QUEUE,
         exchange=default_exchange,
-        routing_key="critical",
+        routing_key=CRITICAL_QUEUE,
         queue_arguments={"x-max-priority": 10},
     ),
     Queue(
-        "default",
+        DEFAULT_QUEUE,
         exchange=default_exchange,
-        routing_key="default",
+        routing_key=DEFAULT_QUEUE,
         queue_arguments={"x-max-priority": 5},
     ),
     Queue(
         SCANS_QUEUE,
         exchange=scan_exchange,
-        routing_key="scans",
+        routing_key=SCANS_QUEUE,
         queue_arguments={"x-max-priority": 5},
     ),
     Queue(
@@ -87,37 +87,15 @@ celery_app.conf.task_queues = (
     ),
 )
 
-celery_app.conf.task_default_queue = "default"
-celery_app.conf.task_default_exchange = "default"
-celery_app.conf.task_default_routing_key = "default"
+celery_app.conf.task_default_queue = DEFAULT_QUEUE
+celery_app.conf.task_default_exchange = default_exchange.name
+celery_app.conf.task_default_routing_key = DEFAULT_QUEUE
 
 
 celery_app.conf.task_routes = {
     "app.tasks.scan.reap_stalled": {"queue": DEFAULT_QUEUE},
     "app.tasks.scan.run_scan_stage": {"queue": SCANS_QUEUE},
     "app.tasks.scan.*": {"queue": SCAN_CONTROL_QUEUE},
-    "app.tasks.whois.*": {"queue": DEFAULT_QUEUE},
-    "app.tasks.ripestat.*": {"queue": DEFAULT_QUEUE},
-    "app.tasks.dns.*": {"queue": DEFAULT_QUEUE},
-    "app.tasks.schedule.*": {"queue": DEFAULT_QUEUE},
-    "app.tasks.vuln_templates.*": {"queue": DEFAULT_QUEUE},
-    "app.tasks.daily.*": {"queue": DEFAULT_QUEUE},
-    "app.tasks.new_checks.*": {"queue": DEFAULT_QUEUE},
-    "app.tasks.endpoints.*": {"queue": DEFAULT_QUEUE},
-    "app.tasks.reports.*": {"queue": DEFAULT_QUEUE},
-    "app.tasks.export.*": {"queue": DEFAULT_QUEUE},
-    "app.tasks.interest.*": {"queue": DEFAULT_QUEUE},
-    "app.tasks.threat_intel.*": {"queue": DEFAULT_QUEUE},
-    "app.tasks.freshness.*": {"queue": DEFAULT_QUEUE},
-    "app.tasks.hygiene.*": {"queue": DEFAULT_QUEUE},
-    "app.tasks.screenshots.*": {"queue": DEFAULT_QUEUE},
-    "app.tasks.software.*": {"queue": DEFAULT_QUEUE},
-    "app.tasks.secrets.*": {"queue": DEFAULT_QUEUE},
-    "app.tasks.scan_deltas.*": {"queue": DEFAULT_QUEUE},
-    "app.tasks.bounty_programs.*": {"queue": DEFAULT_QUEUE},
-    "app.tasks.estate.*": {"queue": DEFAULT_QUEUE},
-    "app.tasks.issue_trackers.*": {"queue": DEFAULT_QUEUE},
-    "app.tasks.tripwires.*": {"queue": DEFAULT_QUEUE},
     "app.tasks.toolbox.*": {"queue": CRITICAL_QUEUE},
 }
 
@@ -132,7 +110,6 @@ celery_app.autodiscover_tasks(
         "app.tasks.ip_asn",
         "app.tasks.vuln_templates",
         "app.tasks.daily",
-        "app.tasks.new_checks",
         "app.tasks.freshness",
         "app.tasks.endpoints",
         "app.tasks.reports",
@@ -162,6 +139,7 @@ TRIPWIRE_PRUNE_SECONDS = 24 * 60 * 60.0
 IP_RANGE_REFRESH_SECONDS = 7 * 24 * 60 * 60.0
 TEMPLATE_SYNC_SECONDS = 24 * 60 * 60.0
 REPORT_CLEANUP_SECONDS = 24 * 60 * 60.0
+REPORT_REAP_SECONDS = 10 * 60.0
 EXPORT_CLEANUP_SECONDS = 24 * 60 * 60.0
 EXPORT_REAP_SECONDS = 10 * 60.0
 NOTIFICATION_CLEANUP_SECONDS = 6 * 60 * 60.0
@@ -216,6 +194,7 @@ celery_app.conf.beat_schedule = {
     "ip-range-refresh": {
         "task": "app.tasks.ip_asn.refresh",
         "schedule": IP_RANGE_REFRESH_SECONDS,
+        "options": {"expires": IP_RANGE_REFRESH_SECONDS},
     },
     "ip-range-backfill": {
         "task": "app.tasks.ip_asn.backfill",
@@ -230,10 +209,17 @@ celery_app.conf.beat_schedule = {
     "report-cleanup": {
         "task": "app.tasks.reports.cleanup",
         "schedule": REPORT_CLEANUP_SECONDS,
+        "options": {"expires": REPORT_CLEANUP_SECONDS},
+    },
+    "report-reap": {
+        "task": "app.tasks.reports.reap",
+        "schedule": REPORT_REAP_SECONDS,
+        "options": {"expires": REPORT_REAP_SECONDS},
     },
     "export-cleanup": {
         "task": "app.tasks.export.cleanup",
         "schedule": EXPORT_CLEANUP_SECONDS,
+        "options": {"expires": EXPORT_CLEANUP_SECONDS},
     },
     "export-reap": {
         "task": "app.tasks.export.reap",
@@ -243,18 +229,22 @@ celery_app.conf.beat_schedule = {
     "notification-cleanup": {
         "task": "app.tasks.notifications.cleanup",
         "schedule": NOTIFICATION_CLEANUP_SECONDS,
+        "options": {"expires": NOTIFICATION_CLEANUP_SECONDS},
     },
     "retention-enforce": {
         "task": "app.tasks.retention.enforce",
         "schedule": RETENTION_SECONDS,
+        "options": {"expires": RETENTION_SECONDS},
     },
     "threat-intel-refresh": {
         "task": "app.tasks.threat_intel.refresh",
         "schedule": THREAT_INTEL_REFRESH_SECONDS,
+        "options": {"expires": THREAT_INTEL_REFRESH_SECONDS},
     },
     "certificate-recheck": {
         "task": "app.tasks.freshness.certificates",
         "schedule": CERT_RECHECK_SECONDS,
+        "options": {"expires": CERT_RECHECK_SECONDS},
     },
     "hygiene-backfill": {
         "task": "app.tasks.hygiene.backfill",
@@ -302,7 +292,7 @@ celery_app.conf.beat_schedule = {
 @setup_logging.connect
 def configure_logging(loglevel: int, **kwargs) -> None:  # noqa: ARG001
     """Configure logging for Celery workers."""
-    setup_rengine_logging(name="", level=settings.LOG_LEVEL, colored=True)
+    setup_rengine_logging(level=settings.LOG_LEVEL)
 
 
 @worker_process_init.connect
@@ -412,9 +402,3 @@ def on_task_postrun(task_id: str, task, retval, state, **_) -> None:  # noqa: AR
 def on_task_failure(task_id: str, exception, **_) -> None:
     """Log task failure."""
     logger.exception("Task failed: %s - %s", task_id, str(exception))
-
-
-@celery_app.task(bind=True, name="celery.ping")
-def ping(self) -> str:  # noqa: ARG001
-    """Debug health check task."""
-    return "pong"

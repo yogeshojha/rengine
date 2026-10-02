@@ -6,5 +6,4 @@ export type SkeletonShape =
 	| 'meters'
 	| 'donut'
 	| 'map'
-	| 'stat'
 	| 'board';

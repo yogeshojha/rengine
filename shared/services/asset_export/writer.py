@@ -1,4 +1,4 @@
-"""Turning rows into a file a person opens, without handing a spreadsheet a formula."""
+"""CSV, JSON and text writers for an export."""
 
 from __future__ import annotations
 
@@ -6,16 +6,29 @@ import csv
 import json
 from typing import TYPE_CHECKING, Any
 
+from shared.definitions.exports import BUNDLE_LABEL
+from shared.definitions.surface import SURFACE_LABELS
+from shared.utils.slug import generate_slug
 from shared.utils.text import strip_control
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
     from pathlib import Path
 
-# a cell opening with one of these is read as a formula by excel and sheets
+# formula leads
 _FORMULA_LEAD = ("=", "+", "-", "@", "\t", "\r")
 UTF8_BOM = "﻿"
 _LIST_JOIN = "; "
+_STEM_LENGTH = 80
+_STEM_FALLBACK = "export"
+
+
+def file_stem(dimension: str, subject: str) -> str:
+    """The download name: the dimension, then what it was exported from."""
+    label = SURFACE_LABELS.get(dimension, BUNDLE_LABEL)
+    parts = [label] if subject in ("", label) else [label, subject]
+    stem = generate_slug("-".join(parts).replace(".", "-"))
+    return stem[:_STEM_LENGTH].rstrip("-") or _STEM_FALLBACK
 
 
 def cell(value: Any) -> str:
@@ -39,7 +52,7 @@ def cell(value: Any) -> str:
 
 
 def write_csv(path: Path, headers: list[str], rows: Iterable[dict]) -> int:
-    """Excel reads a bare utf-8 file as latin-1, so the BOM is not optional."""
+    """Write a UTF-8 CSV with a BOM."""
     written = 0
     with path.open("w", encoding="utf-8", newline="") as handle:
         handle.write(UTF8_BOM)
@@ -52,7 +65,7 @@ def write_csv(path: Path, headers: list[str], rows: Iterable[dict]) -> int:
 
 
 def write_json(path: Path, headers: list[str], rows: Iterable[dict]) -> int:
-    """Streamed as an array, so a large export never assembles in memory."""
+    """Write a JSON array one row at a time."""
     written = 0
     with path.open("w", encoding="utf-8") as handle:
         handle.write("[")
@@ -78,6 +91,7 @@ def write_txt(path: Path, values: Iterator[str]) -> int:
     with path.open("w", encoding="utf-8") as handle:
         for value in values:
             text = strip_control(str(value)).strip()
+            text = text.replace("\r\n", "\n").replace("\r", "\n").replace("\n", "\\n")
             if not text:
                 continue
             handle.write(text + "\n")

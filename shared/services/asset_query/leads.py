@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -62,6 +62,27 @@ def _rank(lead: QueryLead, total: int) -> int:
     return 1 if total and lead.count >= total else 0
 
 
+async def count_named(
+    session: AsyncSession, base, predicates: Mapping[str, object | None]
+) -> QueryCounts:
+    """Exact counts for each named predicate over one scope, in one statement."""
+    keys = list(predicates)
+    local: list[tuple[int, object | None]] = []
+    branches = []
+    for index, key in enumerate(keys, start=1):
+        predicate = predicates[key]
+        if predicate is None or _row_local(predicate):
+            local.append((index, predicate))
+        else:
+            branches.append(_branch(base.where(predicate), index))
+    counts = await _counts(session, base, local, branches, total=False)
+    return QueryCounts(
+        counts={k: min(counts.get(i, 0), COUNT_CAP) for i, k in enumerate(keys, 1)},
+        capped={k: counts.get(i, 0) > COUNT_CAP for i, k in enumerate(keys, 1)},
+        computed=True,
+    )
+
+
 async def count_queries(
     session: AsyncSession,
     base,
@@ -69,23 +90,15 @@ async def count_queries(
     predicate_for: Callable[[str], object | None],
 ) -> QueryCounts:
     """Exact counts for the queries over one scope."""
-    kept: list[str] = []
-    local: list[tuple[int, object | None]] = []
-    branches = []
+    predicates: dict[str, object | None] = {}
     for query in queries:
-        predicate = predicate_for(query)
-        index = len(kept) + 1
-        kept.append(query)
-        if predicate is None or _row_local(predicate):
-            local.append((index, predicate))
-        else:
-            branches.append(_branch(base.where(predicate), index))
-    counts = await _counts(session, base, local, branches, total=False)
-    return QueryCounts(
-        counts={q: min(counts.get(i + 1, 0), COUNT_CAP) for i, q in enumerate(kept)},
-        capped={q: counts.get(i + 1, 0) > COUNT_CAP for i, q in enumerate(kept)},
-        computed=True,
-    )
+        try:
+            predicates[query] = predicate_for(query)
+        except QuerySyntaxError as exc:
+            logger.warning(
+                "search count does not compile", query=query, error=exc.message
+            )
+    return await count_named(session, base, predicates)
 
 
 async def build_leads(
@@ -95,11 +108,17 @@ async def build_leads(
     predicate_for: Callable[[str], object | None],
     *,
     filtered: bool = False,
+    known: Mapping[str, int] | None = None,
 ) -> QueryLeads:
     kept = []
     local: list[tuple[int, object | None]] = []
     branches = []
+    stored: dict[int, int] = {}
     for example in examples:
+        if known and example.query in known:
+            kept.append(example)
+            stored[len(kept)] = known[example.query]
+            continue
         try:
             predicate = predicate_for(example.query)
         except QuerySyntaxError as exc:
@@ -117,6 +136,7 @@ async def build_leads(
             branches.append(_branch(base.where(predicate), index))
 
     counts = await _counts(session, base, local, branches, total=True)
+    counts.update(stored)
     total = counts.get(_TOTAL_IDX, 0)
     leads = [
         QueryLead(

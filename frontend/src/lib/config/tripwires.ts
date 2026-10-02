@@ -40,11 +40,8 @@ export enum OutcomeStatus {
 }
 
 export const MAX_NAME = 80;
-export const MAX_ACTIONS = 4;
 export const MAX_RUNS_PER_DAY = 5;
 export const RECENT_DAYS = 30;
-export const SAMPLE_ROWS = 5;
-export const TRIPWIRE_KEY = '_tripwire';
 
 export const TRIGGER_LABELS: Record<TripwireTrigger, string> = {
 	[TripwireTrigger.ScanSettled]: 'After a scan',
@@ -63,10 +60,10 @@ export const FIRE_ON_VERB: Record<FireOn, string> = {
 	[FireOn.Matches]: 'matched'
 };
 
-export const FIRE_ON_PARTICIPLE: Record<FireOn, string> = {
-	[FireOn.Appears]: 'appeared',
-	[FireOn.BecomesTrue]: 'started matching',
-	[FireOn.Matches]: 'matched'
+export const FIRE_ON_CLAUSE: Record<FireOn, string> = {
+	[FireOn.Appears]: 'appears',
+	[FireOn.BecomesTrue]: 'starts matching',
+	[FireOn.Matches]: 'matches'
 };
 
 export const SCOPE_LABELS: Record<ScopeKind, string> = {
@@ -95,12 +92,6 @@ export const CHECK_STATUS_VARIANT: Record<CheckStatus, BadgeVariant> = {
 	[CheckStatus.NoBaseline]: 'outline',
 	[CheckStatus.NotCovered]: 'outline',
 	[CheckStatus.Error]: 'destructive'
-};
-
-export const OUTCOME_LABELS: Record<OutcomeStatus, string> = {
-	[OutcomeStatus.Done]: 'Done',
-	[OutcomeStatus.Skipped]: 'Skipped',
-	[OutcomeStatus.Failed]: 'Failed'
 };
 
 export const RUN_PARAM = 'run';

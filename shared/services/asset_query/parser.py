@@ -362,7 +362,6 @@ class _Parser:
                 sub=token.sub,
                 start=token.start,
                 end=token.end,
-                raw_name=token.text,
             )
         msg = f"{token.text or token.kind.lower()!r} has no operand."
         raise QuerySyntaxError(msg, token.start, token.end)

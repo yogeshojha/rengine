@@ -1,5 +1,3 @@
-"""Service signatures: what to send on a port and how to read the answer back."""
-
 from __future__ import annotations
 
 import re

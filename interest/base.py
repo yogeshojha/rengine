@@ -31,7 +31,6 @@ class InterestProvider:
     source: str = ""
     emits: tuple[str, ...] = ()
     title: str = ""
-    description: str = ""
     requires_ai: bool = False
     order: int = 50
 

@@ -4,6 +4,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, model_validator
 from sqlmodel import Field, SQLModel
 
+from shared.definitions.ask import plain_answer
 from shared.definitions.notes import (
     MAX_ASSET_KEY,
     MAX_ASSET_LABEL,
@@ -41,8 +42,8 @@ class Note(SQLModel, table=True):
     scan_id: uuid.UUID | None = Field(
         default=None, foreign_key="scans.id", index=True, ondelete="SET NULL"
     )
-    dimension: str | None = Field(default=None, max_length=32, index=True)
-    asset_key: str | None = Field(default=None, max_length=MAX_ASSET_KEY, index=True)
+    dimension: str | None = Field(default=None, max_length=32)
+    asset_key: str | None = Field(default=None, max_length=MAX_ASSET_KEY)
     asset_label: str | None = Field(default=None, max_length=MAX_ASSET_LABEL)
     title: str | None = Field(default=None, max_length=MAX_NOTE_TITLE)
     body: str = Field(max_length=MAX_NOTE_BODY)
@@ -82,10 +83,10 @@ class NoteCreate(BaseModel):
     @model_validator(mode="after")
     def _anchored_and_tagged(self):
         self.dimension, self.asset_key = _clean_anchor(self.dimension, self.asset_key)
-        if not self.body.strip():
+        self.body = plain_answer(self.body).strip()
+        if not self.body:
             msg = "Note body is required."
             raise ValueError(msg)
-        self.body = self.body.strip()
         self.tag_ids = list(dict.fromkeys(self.tag_ids))
         return self
 
@@ -106,7 +107,7 @@ class NoteUpdate(BaseModel):
                 msg = "A note needs at least one tag."
                 raise ValueError(msg)
         if self.body is not None:
-            self.body = self.body.strip()
+            self.body = plain_answer(self.body).strip()
             if not self.body:
                 msg = "Note body is required."
                 raise ValueError(msg)
@@ -130,11 +131,3 @@ class NoteRead(BaseModel):
     author: str | None = None
     created_at: datetime
     updated_at: datetime
-
-
-class NoteCount(BaseModel):
-    """Note totals for one asset, scan or target."""
-
-    key: str
-    total: int = 0
-    open: int = 0

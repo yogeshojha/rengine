@@ -4,8 +4,6 @@ Revision ID: d5f7b9c1e3a4
 Revises: c4e6a8b0d2f3
 Create Date: 2026-06-22 12:00:00.000000+00:00
 
-Supports the per-scan "newly discovered subdomains" computation (first-seen per
-target/name) and the scan-history "what changed" aggregates without a full sort.
 """
 
 from collections.abc import Sequence

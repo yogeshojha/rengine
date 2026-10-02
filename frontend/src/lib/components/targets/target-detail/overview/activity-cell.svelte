@@ -3,7 +3,7 @@
 	import Cell from '$lib/components/cell.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
-	import { TargetType, type Target } from '$lib/types/target';
+	import { bgpApplies, dnsApplies, type Target } from '$lib/types/target';
 	import { TaskStatus } from '$lib/types/task-status';
 	import type { ScanRead } from '$lib/types/scan';
 	import type { TargetSummaryRead } from '$lib/types/target-summary';
@@ -18,6 +18,7 @@
 		SCAN_STATUS_LABEL,
 		SCAN_STATUS_PILL
 	} from '$lib/utilities/scan-status';
+	import { formatClock } from '$lib/utilities/dates';
 
 	interface Props {
 		target: Target;
@@ -49,8 +50,6 @@
 		{ key: 'ips_found', spec: SURFACE[SurfaceDimension.IPS] },
 		{ key: 'vulnerabilities_found', spec: SURFACE[SurfaceDimension.VULNERABILITIES] }
 	];
-	const fmtTime = (iso: string) =>
-		new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 	const fmtDay = (iso: string) => {
 		const d = new Date(iso);
 		const today = new Date();
@@ -129,10 +128,9 @@
 			const word = state(st);
 			if (word) parts.push(`${label} ${word}`);
 		};
-		if (t === TargetType.DOMAIN || t === TargetType.URL) add('DNS', target.dns_status);
+		if (dnsApplies(t)) add('DNS', target.dns_status);
 		add('WHOIS', target.whois_status);
-		if (t === TargetType.IP || t === TargetType.IP_RANGE || t === TargetType.ASN)
-			add('BGP', target.bgp_status);
+		if (bgpApplies(t)) add('BGP', target.bgp_status);
 		return parts.join(' · ');
 	});
 </script>
@@ -168,7 +166,7 @@
 			<li class="grid grid-cols-[5.5rem_1.25rem_minmax(0,1fr)] gap-x-2.5">
 				<span class="pt-0.5 text-right text-xs leading-tight text-muted-foreground">
 					<span class="block font-medium text-foreground">{fmtDay(startedAt)}</span>
-					{fmtTime(startedAt)}
+					{formatClock(startedAt)}
 				</span>
 				<span class="relative flex justify-center">
 					<span class="z-[1] flex h-5 items-center"
@@ -221,7 +219,7 @@
 			{#each rescans as r (r.id)}
 				<li class="grid grid-cols-[5.5rem_1.25rem_1.25rem_minmax(0,1fr)] gap-x-2.5">
 					<span class="pt-0.5 text-right text-xs leading-tight text-muted-foreground">
-						{fmtTime(r.started_at ?? r.created_at)}
+						{formatClock(r.started_at ?? r.created_at)}
 					</span>
 					<span class="relative flex justify-center">
 						<span class="absolute -top-1 -bottom-1 left-1/2 border-l-2 border-dotted"></span>
@@ -257,7 +255,7 @@
 		<li class="grid grid-cols-[5.5rem_1.25rem_minmax(0,1fr)] gap-x-2.5">
 			<span class="pt-0.5 text-right text-xs leading-tight text-muted-foreground">
 				<span class="block font-medium text-foreground">{fmtDay(target.created_at)}</span>
-				{fmtTime(target.created_at)}
+				{formatClock(target.created_at)}
 			</span>
 			<span class="relative flex justify-center">
 				<span class="z-[1] flex h-5 items-center"
@@ -268,7 +266,7 @@
 				>
 			</span>
 			<span class="pb-1 text-sm text-muted-foreground">
-				Target added{creator ? ` by ${creator}` : ''} · {enrichment}
+				Target added{creator ? ` by ${creator}` : ''}{enrichment ? ` · ${enrichment}` : ''}
 			</span>
 		</li>
 	</ol>

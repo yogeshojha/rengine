@@ -3,7 +3,8 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Button } from '$lib/components/ui/button';
 	import type { IssueTracker, TrackerRoute } from '$lib/types/issue-tracker';
-	import { BODY_ROW, HEAD_ROW, ROUTE_COL } from './columns';
+	import { HEAD_ROW } from '$lib/components/settings/columns';
+	import { BODY_ROW, ROUTE_COL } from './columns';
 
 	interface Props {
 		routes: TrackerRoute[];

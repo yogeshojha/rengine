@@ -1,10 +1,14 @@
 <script lang="ts">
-	import { useScopedRoutes } from './scope-links';
-	import { onMount } from 'svelte';
+	import { scopeClause, useScopedRoutes } from './scope-links';
 	import * as HoverCard from '$lib/components/ui/hover-card';
 	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
-	import { SEVERITY_FILL, SEVERITY_ORDER, severityLabel } from '$lib/config/vulnerabilities';
+	import {
+		SEVERITY_FILL,
+		SEVERITY_ORDER,
+		Severity,
+		severityLabel
+	} from '$lib/config/vulnerabilities';
 	import { SCAN_STATUS_LABEL } from '$lib/utilities/scan-status';
 	import { relativeTime } from '$lib/utilities/dates';
 	import type { SurfaceRiskTarget } from '$lib/types/dashboard';
@@ -23,24 +27,23 @@
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 	const VULNS = SURFACE[SurfaceDimension.VULNERABILITIES];
 	const MIN = 2;
-
-	let ready = $state(false);
-	onMount(() => {
-		const id = requestAnimationFrame(() => (ready = true));
-		return () => cancelAnimationFrame(id);
-	});
+	const HOVER_SEVERITIES = SEVERITY_ORDER.filter(
+		(s) => s !== Severity.INFO && s !== Severity.UNKNOWN
+	);
 
 	const shown = (r: SurfaceRiskTarget) =>
 		severities.reduce((n, s) => n + (r.by_severity[s] ?? 0), 0);
 	let maxLive = $derived(Math.max(1, ...rows.map((r) => r.live)));
 	let maxShown = $derived(Math.max(1, ...rows.map(shown)));
-	const pct = (n: number, max: number) => (ready ? Math.max(MIN, (n / max) * 100) : 0);
+	const pct = (n: number, max: number) => Math.max(MIN, (n / max) * 100);
 	const liveQuery = (r: SurfaceRiskTarget) =>
 		routes.results(WEB.tab, undefined, {
-			[WEB.queryParam]: `target=${r.target_value} and is:live`
+			[WEB.queryParam]: `${scopeClause([r.target_value])} and is:live`
 		});
 	const findingsQuery = (r: SurfaceRiskTarget) =>
-		routes.results(VULNS.tab, undefined, { [VULNS.queryParam]: `target=${r.target_value}` });
+		routes.results(VULNS.tab, undefined, {
+			[VULNS.queryParam]: scopeClause([r.target_value])
+		});
 	let cols = $derived(
 		wide
 			? 'grid-cols-[minmax(0,1fr)_13.75rem_minmax(0,1fr)]'
@@ -84,7 +87,7 @@
 							{#if r.actionable || !settled}
 								<span class="flex items-center gap-1 text-2xs text-muted-foreground">
 									{#if r.actionable}
-										<span class="font-semibold text-[var(--sev-critical-ink)]">
+										<span class="font-semibold text-sev-critical-ink">
 											{r.actionable.toLocaleString()} actionable
 										</span>
 									{/if}
@@ -115,7 +118,7 @@
 							>
 							{#if r.kev}
 								<span
-									class="rounded-sm bg-[var(--sev-critical-wash)] px-1.5 text-2xs font-semibold text-[var(--sev-critical-ink)]"
+									class="rounded-sm bg-sev-critical-wash px-1.5 text-2xs font-semibold text-sev-critical-ink"
 								>
 									KEV {r.kev}
 								</span>
@@ -132,12 +135,13 @@
 							class="truncate text-sm font-semibold hover:text-primary">{r.target_value}</a
 						>
 						<span class="shrink-0 text-2xs text-muted-foreground">
-							{#if r.last_at}{relativeTime(r.last_at)}{/if}{#if !settled && r.scan_status}
-								· {SCAN_STATUS_LABEL[r.scan_status]}{/if}
+							{#if r.last_at}{relativeTime(
+									r.last_at
+								)}{/if}{#if !settled && r.scan_status}{` · ${SCAN_STATUS_LABEL[r.scan_status]}`}{/if}
 						</span>
 					</div>
 					<div class="grid grid-cols-4 gap-1">
-						{#each SEVERITY_ORDER.filter((s) => s !== 'info' && s !== 'unknown') as s (s)}
+						{#each HOVER_SEVERITIES as s (s)}
 							<div class="flex flex-col rounded-sm bg-muted px-1.5 py-1">
 								<span class="text-sm font-semibold tabular-nums" style="color:{SEVERITY_FILL[s]}">
 									{(r.by_severity[s] ?? 0).toLocaleString()}
@@ -166,7 +170,7 @@
 					{#if r.kev}
 						<div class="flex justify-between gap-2">
 							<span class="text-muted-foreground">Known exploited</span>
-							<span class="font-medium text-[var(--sev-critical-ink)] tabular-nums">{r.kev}</span>
+							<span class="font-medium text-sev-critical-ink tabular-nums">{r.kev}</span>
 						</div>
 					{/if}
 				</div>

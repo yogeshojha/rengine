@@ -24,6 +24,7 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { kindIcon } from '$lib/config/interest';
 	import { RULE_MODE, type InterestRule } from '$lib/types/interest';
+	import { parseCsv } from '$lib/utilities/parse';
 	import RuleSheet from './rule-sheet.svelte';
 
 	let rules = $state<InterestRule[]>([]);
@@ -57,6 +58,7 @@
 	$effect(() => {
 		const id = projectId;
 		if (!id) return;
+		picked.clear();
 		void load(id);
 	});
 
@@ -93,6 +95,7 @@
 		try {
 			await interestApi.deleteRule(projectId, removing.id);
 			rules = rules.filter((r) => r.id !== removing!.id);
+			picked.delete(removing.id);
 			toast.success(`${removing.name} deleted`);
 		} catch {
 			toast.error('Rule not deleted');
@@ -123,13 +126,7 @@
 					value={kr.keywords.join(', ')}
 					placeholder="admin, ftp, cpanel, dashboard"
 					class="font-mono text-sm"
-					onchange={(e) =>
-						patch(kr, {
-							keywords: e.currentTarget.value
-								.split(',')
-								.map((w) => w.trim())
-								.filter(Boolean)
-						})}
+					onchange={(e) => patch(kr, { keywords: parseCsv(e.currentTarget.value) })}
 				/>
 				<div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
 					{#each Object.entries(interestCatalog.catalog?.keyword_fields ?? {}) as [key, label] (key)}
@@ -232,7 +229,7 @@
 							<Button
 								variant="ghost"
 								size="icon"
-								class="size-7 opacity-0 group-hover:opacity-100"
+								class="size-7 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
 								onclick={() => (editing = rule)}
 								aria-label="Edit {rule.name}"
 							>
@@ -242,7 +239,7 @@
 								<Button
 									variant="ghost"
 									size="icon"
-									class="size-7 opacity-0 group-hover:opacity-100"
+									class="size-7 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
 									onclick={() => (removing = rule)}
 									aria-label="Delete {rule.name}"
 								>

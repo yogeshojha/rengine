@@ -20,9 +20,11 @@
 		onOpenChange: (open: boolean) => void;
 	}
 
-	let { open = $bindable(), targetId = null, targetValue = null, onOpenChange }: Props = $props();
+	let { open, targetId = null, targetValue = null, onOpenChange }: Props = $props();
 
 	const KINDS = [TargetRelation.DNS_RECORD, TargetRelation.NAMESERVER];
+	const POLL_MS = 2500;
+	const MAX_POLLS = 30;
 
 	let lookup = $state<DnsLookupRead | null>(null);
 	let status = $state<TaskStatus>(TaskStatus.PENDING);
@@ -31,9 +33,27 @@
 	let refreshing = $state(false);
 	let relations = $state<RelatedTarget[]>([]);
 	let loadedFor: string | null = null;
+	let pollTimer: ReturnType<typeof setTimeout> | null = null;
 
-	async function load(id: string) {
-		loading = true;
+	const isPending = (s: TaskStatus) => s === TaskStatus.PENDING || s === TaskStatus.QUERYING;
+
+	function stopPolling() {
+		if (pollTimer) clearTimeout(pollTimer);
+		pollTimer = null;
+	}
+
+	function poll(id: string, attempt = 1) {
+		stopPolling();
+		pollTimer = setTimeout(async () => {
+			await load(id, true);
+			if (open && targetId === id && isPending(status) && attempt < MAX_POLLS) {
+				poll(id, attempt + 1);
+			}
+		}, POLL_MS);
+	}
+
+	async function load(id: string, silent = false) {
+		if (!silent) loading = true;
 		try {
 			const res = await targetsApi.getDns(id);
 			lookup = res.lookup;
@@ -42,6 +62,7 @@
 		} catch {
 			lookup = null;
 			error = 'DNS records not loaded';
+			loadedFor = null;
 		} finally {
 			loading = false;
 		}
@@ -63,6 +84,8 @@
 		try {
 			await targetsApi.refreshDns(targetId);
 			toast.success('DNS refresh started');
+			status = TaskStatus.PENDING;
+			poll(targetId);
 		} catch {
 			toast.error('DNS not refreshed');
 		} finally {
@@ -71,11 +94,18 @@
 	}
 
 	$effect(() => {
-		if (!open || !targetId || loadedFor === targetId) return;
+		if (!open) {
+			loadedFor = null;
+			stopPolling();
+			return;
+		}
+		if (!targetId || loadedFor === targetId) return;
 		loadedFor = targetId;
 		void load(targetId);
 		void loadRelations(targetId);
 	});
+
+	$effect(() => stopPolling);
 </script>
 
 <Dialog.Root {open} {onOpenChange}>

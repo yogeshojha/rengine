@@ -1,17 +1,21 @@
+import re
 import shlex
+from collections import defaultdict
 
 import yaml
 from fastapi import HTTPException, status
 from pydantic import ValidationError
 
-from shared.definitions.tools import MAX_TOOL_OPTION_LEN, TOOL_NAMES
+from shared.definitions.tools import MAX_TOOL_OPTION_LEN, TOOL_NAMES, denied_flag
 from shared.enums.scan import INTENSITIES
 from shared.services.scan_resolve import (
-    _SENSITIVE_HEADER,
+    _CRED_FLAG,
+    _HEADER_VALUE,
+    CREDENTIAL_HEADER,
     MASK,
+    PROXY_CREDS_RE,
     _reject_ctrl,
     redact_command,
-    secret_runs,
 )
 from shared.utils.yaml_safe import DocumentTooLargeError, load_document
 from stages.registry import stage_by_name, stages
@@ -20,25 +24,49 @@ _MAX_HEADERS = 1000
 _MAX_HEADER_LEN = 4096
 _MAX_YAML_LEN = 512 * 1024
 _INTENSITIES = set(INTENSITIES)
+_HEADER_NAME = re.compile(r"([\w-]+)\s*:\s*$")
+_PROXY_HOST = re.compile(r"[^/\s\"']*")
 
 
 def _mask_tool_options(options: dict | None) -> dict[str, str]:
     return {t: redact_command(v) for t, v in (options or {}).items()}
 
 
+def _secret_slots(text: str) -> list[tuple[int, int, str]]:
+    """Span and owner of each run redact_command masks: a flag, a header or a proxy."""
+    slots: dict[int, tuple[int, str]] = {}
+    for m in PROXY_CREDS_RE.finditer(text):
+        host = _PROXY_HOST.match(text, m.end()).group()
+        slots.setdefault(m.end(1), (m.end() - 1, f"proxy {m.group(1)}{host}".lower()))
+    for m in _HEADER_VALUE.finditer(text):
+        name = _HEADER_NAME.search(m.group(1)).group(1)
+        slots.setdefault(m.start(2), (m.end(2), f"header {name}".lower()))
+    for m in _CRED_FLAG.finditer(text):
+        flag = m.group(1)[:-1].lstrip("-")
+        slots.setdefault(m.start(2), (m.end(2), f"flag {flag}".lower()))
+    return sorted((start, end, key) for start, (end, key) in slots.items())
+
+
 def _unmask_tool_options(submitted: dict | None, stored: dict | None) -> dict[str, str]:
-    """Restore each masked run in place."""
+    """Restore each masked run from the stored run of the same flag, header or proxy."""
     stored = stored or {}
     out: dict[str, str] = {}
     for tool, value in (submitted or {}).items():
         if not value or MASK not in value or tool not in stored:
             out[tool] = value
             continue
-        originals = secret_runs(stored[tool])
-        restored = value
-        for original in originals:
-            restored = restored.replace(MASK, original, 1)
-        out[tool] = restored
+        original = stored[tool] or ""
+        runs: dict[str, list[str]] = defaultdict(list)
+        for start, end, key in _secret_slots(original):
+            runs[key].append(original[start:end])
+        parts: list[str] = []
+        cursor = 0
+        for start, end, key in _secret_slots(value):
+            if start < cursor or value[start:end] != MASK or not runs[key]:
+                continue
+            parts += [value[cursor:start], runs[key].pop(0)]
+            cursor = end
+        out[tool] = "".join([*parts, value[cursor:]])
     return out
 
 
@@ -48,7 +76,7 @@ def _validate_yaml_source(source: str | None) -> str | None:
     if len(source) > _MAX_YAML_LEN:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Stage YAML may not exceed {_MAX_YAML_LEN} bytes.",
+            detail=f"Engine YAML may not exceed {_MAX_YAML_LEN} characters.",
         )
     try:
         load_document(source)
@@ -90,21 +118,38 @@ def _validate_tool_options(options: dict | None) -> dict[str, str]:
             )
         _reject_ctrl(f"{tool} options", value)
         try:
-            shlex.split(value)
+            tokens = shlex.split(value)
         except ValueError as exc:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"{tool} options are not valid shell arguments: {exc}",
             ) from exc
+        flag = denied_flag(tool, tokens)
+        if flag:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"{tool} does not take {flag}.",
+            )
         clean[tool] = value
     return clean
+
+
+def _check_tool_options_access(
+    superuser: bool, stored: dict | None, submitted: dict | None
+) -> None:
+    if superuser or dict(stored or {}) == dict(submitted or {}):
+        return
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Tool arguments require administrator access.",
+    )
 
 
 def _validate_intensity(intensity: str | None) -> None:
     if intensity is not None and intensity not in _INTENSITIES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"intensity must be one of {sorted(_INTENSITIES)}.",
+            detail=f"Intensity must be one of {', '.join(INTENSITIES)}.",
         )
 
 
@@ -148,7 +193,7 @@ def _mask_global_headers(headers: list) -> list[str]:
     for line in headers or []:
         if isinstance(line, str) and ":" in line:
             name, value = line.split(":", 1)
-            if value.strip() and _SENSITIVE_HEADER.search(name.strip()):
+            if value.strip() and CREDENTIAL_HEADER.match(name.strip()):
                 out.append(f"{name.strip()}: {MASK}")
                 continue
         out.append(line)

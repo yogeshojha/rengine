@@ -18,7 +18,7 @@
 	{#each modes as mode (mode.key)}
 		<Label
 			for="{id}-{mode.key}"
-			class="flex cursor-pointer flex-col gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/40 has-[[data-state=checked]]:border-primary/50 has-[[data-state=checked]]:bg-primary/5"
+			class="flex cursor-pointer flex-col items-stretch gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/40 has-[[data-state=checked]]:border-primary/50 has-[[data-state=checked]]:bg-primary/5"
 		>
 			<span class="flex items-center justify-between gap-3">
 				<span class="flex items-center gap-2.5">

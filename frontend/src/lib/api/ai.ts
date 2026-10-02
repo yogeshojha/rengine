@@ -1,12 +1,5 @@
 import { api } from './client';
-import type {
-	AiCall,
-	AiCatalog,
-	AiSettingsUpdate,
-	AiStatus,
-	AiTestResult,
-	AiUsage
-} from '$lib/types/ai';
+import type { AiCall, AiCatalog, AiSettingsUpdate, AiStatus, AiTestResult } from '$lib/types/ai';
 
 export const aiApi = {
 	calls(limit = 30): Promise<AiCall[]> {
@@ -19,10 +12,6 @@ export const aiApi = {
 
 	catalog(): Promise<AiCatalog> {
 		return api.get<AiCatalog>('/ai/catalog');
-	},
-
-	usage(): Promise<AiUsage> {
-		return api.get<AiUsage>('/ai/usage');
 	},
 
 	update(body: AiSettingsUpdate): Promise<AiStatus> {

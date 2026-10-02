@@ -41,7 +41,3 @@ ScopeLike = UUID | QueryScope | Sequence[UUID]
 
 def scope_of(value: ScopeLike) -> QueryScope:
     return QueryScope.of(value)
-
-
-def scan_filter(column, value: ScopeLike):
-    return QueryScope.of(value).match(column)

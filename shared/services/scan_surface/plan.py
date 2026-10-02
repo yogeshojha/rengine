@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import ipaddress
 import uuid
 from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from sqlalchemy import cast, delete, func, literal_column, select, true, update
+from sqlalchemy import cast, delete, func, select, true, update
 from sqlalchemy.dialects.postgresql import JSONB
 
 from shared.definitions.scan_surface import (
@@ -38,6 +37,7 @@ from shared.services.scan_surface.rank import base_rank, cluster_rank
 from shared.services.scan_surface.tech import host_tags
 from shared.services.scope_filter import ip_excluded, matches_any
 from shared.utils.datetime import utc_now
+from shared.utils.validation import validate_ip
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -144,14 +144,6 @@ class SurfacePlan:
 # ---------- reads ----------
 
 
-def _is_ip_literal(host: str | None) -> bool:
-    try:
-        ipaddress.ip_address((host or "").strip("[]"))
-    except ValueError:
-        return False
-    return True
-
-
 def library_tags(session: Session) -> frozenset[str]:
     """Every tag the check library carries."""
     tag = func.jsonb_array_elements_text(cast(VulnTemplate.tags, JSONB)).table_valued(
@@ -216,11 +208,34 @@ def _root_candidates(
     candidates: list[RootCandidate] = []
     dropped: list[SurfaceItem] = []
     rows = session.execute(
-        select(HttpAsset, literal_column("http_assets.software"))
+        select(
+            HttpAsset.id,
+            HttpAsset.url,
+            HttpAsset.scheme,
+            HttpAsset.port,
+            HttpAsset.status_code,
+            HttpAsset.ip,
+            HttpAsset.is_cdn,
+            HttpAsset.tech,
+            HttpAsset.cpe,
+            HttpAsset.webserver,
+            HttpAsset.software,
+            HttpAsset.title,
+            HttpAsset.content_hash,
+            HttpAsset.content_length,
+            HttpAsset.words,
+            HttpAsset.lines,
+            HttpAsset.a_records,
+            HttpAsset.aaaa_records,
+            HttpAsset.waf,
+            HttpAsset.tls_fingerprint,
+            HttpAsset.favicon_hash,
+            HttpAsset.not_found,
+        )
         .where(HttpAsset.scan_id == scan_id)
         .order_by(HttpAsset.url)
     )
-    for row, software in rows:
+    for row in rows:
         root = parse_root(row.url, scheme=row.scheme, port=row.port)
         if root is None:
             continue
@@ -246,7 +261,7 @@ def _root_candidates(
             item.drop_reason = DropReason.NO_ANSWER.value
             dropped.append(item)
             continue
-        if row.is_cdn and _is_ip_literal(root.host) and not keep_edges:
+        if row.is_cdn and validate_ip((root.host or "").strip("[]")) and not keep_edges:
             item.drop_reason = DropReason.CDN_EDGE.value
             dropped.append(item)
             continue
@@ -259,7 +274,7 @@ def _root_candidates(
             tech=list(row.tech or []),
             cpe=list(row.cpe or []),
             webserver=row.webserver,
-            software=list(software or []),
+            software=list(row.software or []),
             vocabulary=vocabulary,
         )
         unmapped.update(missing)
@@ -284,9 +299,6 @@ def _root_candidates(
             tls_fingerprint=row.tls_fingerprint,
             favicon_hash=row.favicon_hash,
             not_found=row.not_found,
-            tech=list(row.tech or []),
-            cpe=list(row.cpe or []),
-            software=list(software or []),
             endpoints=counts.get((root.scheme, root.host, root.port), 0),
             covered_before=root.value in covered,
             tags=tags,
@@ -348,11 +360,11 @@ def _service_items(
     if mode not in (SurfaceMode.SERVICES.value, SurfaceMode.FULL.value):
         return items
     rows = session.execute(
-        select(Port.id, Port.ip, Port.number, Port.tls)
+        select(Port.id, Port.ip, Port.number)
         .where(Port.scan_id == scan_id, Port.is_http.is_(False))
         .order_by(Port.ip, Port.number)
     )
-    for port_id, ip, number, _tls in rows:
+    for port_id, ip, number in rows:
         if ip_excluded(ip, excluded_ips):
             continue
         value = service_value(ip, number)
@@ -616,7 +628,6 @@ def settle(session: Session, scan_id: uuid.UUID) -> None:
             ScanSurfaceItem.id,
             ScanSurfaceItem.tiers_planned,
             ScanSurfaceItem.tiers_done,
-            ScanSurfaceItem.state,
         ).where(
             ScanSurfaceItem.scan_id == scan_id,
             ScanSurfaceItem.drop_reason.is_(None),
@@ -624,7 +635,7 @@ def settle(session: Session, scan_id: uuid.UUID) -> None:
         )
     ).all()
     by_state: dict[str, list[uuid.UUID]] = {}
-    for item_id, planned_raw, done_raw, _state in rows:
+    for item_id, planned_raw, done_raw in rows:
         planned = list(planned_raw or [])
         done = dict(done_raw or {})
         outcomes = {t: str(done.get(t, "")).split("@", 1)[0] for t in planned}

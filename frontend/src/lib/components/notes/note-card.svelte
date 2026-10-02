@@ -103,6 +103,7 @@
 							variant="ghost"
 							size="icon"
 							class="size-7 text-muted-foreground"
+							aria-label={resolved ? 'Reopen' : 'Resolve'}
 							onclick={toggleStatus}
 							disabled={busy}
 						>
@@ -121,6 +122,7 @@
 							variant="ghost"
 							size="icon"
 							class="size-7 text-muted-foreground"
+							aria-label="Edit"
 							onclick={() => (editing = true)}
 							disabled={busy}
 						>
@@ -135,6 +137,7 @@
 							variant="ghost"
 							size="icon"
 							class="size-7 text-muted-foreground hover:text-destructive"
+							aria-label="Delete"
 							onclick={() => (confirmDelete = true)}
 							disabled={busy}
 						>

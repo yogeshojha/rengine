@@ -64,7 +64,7 @@ def build_step(app: Celery, scan_id: str, epoch: int, steps: Steps, index: int):
 def build_canvas(
     app: Celery,
     scan_id: str,
-    epoch: int = 0,
+    epoch: int,
     start_level: int = 0,
     done: set[str] | None = None,
 ):

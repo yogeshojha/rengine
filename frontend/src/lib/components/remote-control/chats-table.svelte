@@ -38,6 +38,7 @@
 		const { chat, action } = pending;
 		pending = null;
 		if (action === 'revoke') await remoteControl.revokeChat(chat.id);
+		else if (chat.state === ChatState.BLOCKED) await remoteControl.unblockChat(chat.id);
 		else await remoteControl.deleteChat(chat.id);
 	}
 </script>
@@ -109,7 +110,7 @@
 								</DropdownMenu.Item>
 							{/if}
 							<DropdownMenu.Item
-								variant="destructive"
+								variant={chat.state === ChatState.BLOCKED ? 'default' : 'destructive'}
 								onSelect={() => (pending = { chat, action: 'delete' })}
 							>
 								{chat.state === ChatState.BLOCKED ? 'Unblock' : 'Delete'}

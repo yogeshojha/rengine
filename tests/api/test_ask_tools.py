@@ -42,6 +42,21 @@ def test_secret_rows_are_refused_before_the_tool_runs():
     assert not tools.reads_secrets("group_assets", {"dimension": "secrets"})
 
 
+def test_secret_values_are_refused_through_groups_and_compare():
+    secrets = SurfaceDimension.SECRETS.value
+    assert tools.reads_secrets(
+        "group_assets", {"dimension": secrets, "group_by": "value"}
+    )
+    assert tools.reads_secrets("compare_runs", {"dimension": secrets})
+    assert not tools.reads_secrets(
+        "group_assets", {"dimension": secrets, "group_by": "secret"}
+    )
+    assert not tools.reads_secrets(
+        "group_assets", {"dimension": "web_assets", "group_by": "value"}
+    )
+    assert not tools.reads_secrets("compare_runs", {"target": "example.com"})
+
+
 async def test_call_refuses_secrets_without_invoking(monkeypatch):
     async def boom(*args, **kwargs):
         msg = "invoked"

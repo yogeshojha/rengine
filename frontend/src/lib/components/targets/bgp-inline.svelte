@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import { TargetType, type BgpSummaryData } from '$lib/types/target';
-	import { TaskStatus } from '@/types/task-status';
+	import { TargetType, bgpApplies, type BgpSummaryData } from '$lib/types/target';
+	import { TaskStatus } from '$lib/types/task-status';
 	import { formatShortDate } from '$lib/utilities/dates';
 	import * as HoverCard from '$lib/components/ui/hover-card';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
@@ -26,11 +26,7 @@
 
 	let { status, bgp, targetType, targetValue, onClick }: Props = $props();
 
-	let isApplicable = $derived(
-		targetType === TargetType.ASN ||
-			targetType === TargetType.IP ||
-			targetType === TargetType.IP_RANGE
-	);
+	let isApplicable = $derived(bgpApplies(targetType));
 
 	let inlineSummary = $derived.by(() => {
 		if (!bgp) return '';
@@ -119,7 +115,7 @@
 						</div>
 						<div class="min-w-0 flex-1">
 							<p class="text-sm font-medium font-mono">{targetValue}</p>
-							<p class="text-xs text-muted-foreground">BGP Summary</p>
+							<p class="text-xs text-muted-foreground">BGP</p>
 						</div>
 					</div>
 				</div>
@@ -164,7 +160,7 @@
 								<p
 									class="text-2xs text-muted-foreground uppercase tracking-wider leading-none mb-1"
 								>
-									BGP Peers
+									Peers
 								</p>
 								<p class="text-sm font-medium font-mono">{formatNumber(bgp.peer_count)}</p>
 							</div>
@@ -179,7 +175,7 @@
 						</div>
 						<div class="min-w-0 flex-1">
 							<p class="text-sm font-medium font-mono">{targetValue}</p>
-							<p class="text-xs text-muted-foreground">BGP Routing Info</p>
+							<p class="text-xs text-muted-foreground">Routing</p>
 						</div>
 					</div>
 				</div>
@@ -231,13 +227,15 @@
 
 			<div class="px-4 py-2.5 border-t border-border/50 bg-muted/30">
 				<div class="flex items-center justify-between">
-					<div class="flex items-center gap-1.5 text-2xs text-muted-foreground">
-						<Clock class="h-3 w-3" />
-						<span>Queried {bgp.queried_at ? formatShortDate(bgp.queried_at) : 'Unknown'}</span>
-					</div>
+					{#if bgp.queried_at}
+						<div class="flex items-center gap-1.5 text-2xs text-muted-foreground">
+							<Clock class="h-3 w-3" />
+							<span>Queried {formatShortDate(bgp.queried_at)}</span>
+						</div>
+					{/if}
 					<button
 						type="button"
-						class="flex items-center gap-1 text-2xs text-primary/70 transition-colors hover:text-primary"
+						class="ml-auto flex items-center gap-1 text-2xs text-primary/70 transition-colors hover:text-primary"
 						onclick={handleClick}
 					>
 						See details

@@ -22,9 +22,7 @@ class DriverError(Exception):
 
 @dataclass(frozen=True)
 class Inbound:
-    channel: str
     external_id: str
-    sender_id: str
     username: str | None
     first_name: str | None
     text: str
@@ -45,14 +43,6 @@ class Channel(ABC):
     @abstractmethod
     async def send(self, external_id: str, message: Message) -> str | None:
         """Send one message and return its id."""
-
-    async def edit(
-        self,
-        external_id: str,
-        message_id: str,  # noqa: ARG002
-        message: Message,
-    ) -> None:
-        await self.send(external_id, message)
 
     async def delete(self, external_id: str, message_id: str) -> None:  # noqa: ARG002
         return None

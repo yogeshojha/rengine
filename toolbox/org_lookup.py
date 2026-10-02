@@ -11,6 +11,7 @@ from enum import StrEnum
 from urllib.parse import urlsplit
 
 from shared.definitions.domains import registrable_domain
+from shared.utils.net import split_host_port
 from shared.utils.privacy import CORPORATE_SUFFIXES, is_redacted_name
 
 MAX_NAME_LENGTH = 200
@@ -107,7 +108,7 @@ def org_key(name: str | None) -> str:
 
 
 def lead_word(name: str) -> str:
-    """The first distinctive word, which RIPEstat's name search needs."""
+    """The first distinctive word."""
     for word in re.split(r"[^A-Za-z0-9]+", fold(name)):
         if len(word) >= MIN_KEY_LENGTH + 1 and word.lower() not in _SUFFIXES:
             return word
@@ -118,8 +119,8 @@ def _host_of(raw: str) -> str:
     candidate = raw.strip()
     if "://" in candidate:
         candidate = urlsplit(candidate).hostname or ""
-    candidate = candidate.split("/", 1)[0].rstrip(".").lower()
-    return candidate.removeprefix("*.")
+    candidate = split_host_port(candidate.split("/", 1)[0])[0]
+    return candidate.rstrip(".").lower().removeprefix("*.")
 
 
 def _is_address(raw: str) -> bool:

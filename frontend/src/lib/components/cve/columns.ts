@@ -36,7 +36,7 @@ export const CVE_SORTS: SortOption[] = [
 	{ key: 'cve', label: 'Identifier' }
 ];
 
-export interface CveFilter {
+interface CveFilter {
 	key: string;
 	label: string;
 }

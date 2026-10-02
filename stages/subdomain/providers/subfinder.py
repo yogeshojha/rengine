@@ -5,15 +5,15 @@ import os
 import tempfile
 from pathlib import Path
 
+from shared.enums.api_key import APIProvider
 from shared.enums.subdomain import SubdomainSource
 from stages.subdomain.providers.base import SubdomainProvider
 from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError
 
-# our vault provider value -> subfinder source name
 _SUBFINDER_KEY_SOURCES = {
-    "securitytrails": "securitytrails",
-    "chaos": "chaos",
-    "github": "github",
+    APIProvider.SECURITYTRAILS.value: "securitytrails",
+    APIProvider.CHAOS.value: "chaos",
+    APIProvider.GITHUB.value: "github",
 }
 
 
@@ -63,6 +63,7 @@ class SubfinderProvider(SubdomainProvider):
                 with contextlib.suppress(OSError):
                     config_path.unlink(missing_ok=True)
 
+        self._checked(result)
         hosts = {
             (rec.get("host") or "").strip()
             for rec in result.json_records

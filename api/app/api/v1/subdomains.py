@@ -28,11 +28,7 @@ from shared.models.subdomain import (
     RenderGroups,
     SubdomainFacets,
     SubdomainFilter,
-    SubdomainRead,
-    SubdomainRelation,
     SubdomainSearchResult,
-    SubdomainSummary,
-    TargetSubdomainRead,
 )
 from shared.services.asset_query import lead_cache
 
@@ -46,31 +42,6 @@ def get_service(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> SubdomainService:
     return SubdomainService(session)
-
-
-@router.get("", response_model=list[SubdomainRead])
-async def list_subdomains(
-    _current_user: CurrentUser,
-    service: Annotated[SubdomainService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
-    scan_id: Annotated[UUID | None, Query(description="Filter by scan ID")] = None,
-    target_id: Annotated[UUID | None, Query(description="Filter by target ID")] = None,
-    active_only: Annotated[
-        bool, Query(description="Only resolving subdomains")
-    ] = False,
-    search: Annotated[str | None, Query(description="Substring match on name")] = None,
-    limit: Annotated[int, Query(ge=1, le=1000, description="Max rows")] = 100,
-    offset: Annotated[int, Query(ge=0, description="Rows to skip")] = 0,
-):
-    return await service.list(
-        project_id=project_id,
-        scan_id=scan_id,
-        target_id=target_id,
-        active_only=active_only,
-        search=search,
-        limit=limit,
-        offset=offset,
-    )
 
 
 @router.post("/search", response_model=SubdomainSearchResult)
@@ -104,6 +75,17 @@ async def subdomain_search_counts(
     return await service.counts(
         project_id=project_id, scope=scope, queries=body.queries
     )
+
+
+@router.post("/search/tabs", response_model=QueryCounts)
+async def subdomain_search_tabs(
+    _current_user: CurrentUser,
+    service: Annotated[SubdomainService, Depends(get_service)],
+    body: SubdomainFilter,
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    scope: WebAssetScope,
+):
+    return await service.tabs(project_id=project_id, scope=scope, f=body)
 
 
 @router.post("/search/leads", response_model=QueryLeads)
@@ -203,17 +185,6 @@ async def subdomain_facets(
     )
 
 
-@router.get("/related", response_model=list[SubdomainRelation])
-async def subdomain_related(
-    _current_user: CurrentUser,
-    service: Annotated[SubdomainService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
-    scope: WebAssetScope,
-    name: Annotated[str, Query(description="Subdomain name")],
-):
-    return await service.related(project_id=project_id, scope=scope, name=name)
-
-
 @router.get("/tech", response_model=list[Facet])
 async def subdomain_tech(
     _current_user: CurrentUser,
@@ -267,7 +238,7 @@ async def subdomain_posture(
     scope: WebAssetScope,
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
-    """Hosts whose zone fails each domain posture check."""
+    """Web assets whose zone fails each domain posture check."""
     return await lead_cache.cached(
         service.session,
         name="posture_hosts",
@@ -284,52 +255,6 @@ async def subdomain_correlation(
     service: Annotated[SubdomainService, Depends(get_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
     scope: WebAssetScope,
-    name: Annotated[str, Query(description="Subdomain name")],
+    name: Annotated[str, Query(description="Web asset name")],
 ):
     return await service.correlation(project_id=project_id, scope=scope, name=name)
-
-
-@router.get("/summary", response_model=SubdomainSummary)
-async def subdomain_summary(
-    _current_user: CurrentUser,
-    service: Annotated[SubdomainService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
-    scan_id: Annotated[UUID | None, Query(description="Filter by scan ID")] = None,
-    target_id: Annotated[UUID | None, Query(description="Filter by target ID")] = None,
-):
-    return await service.summary(
-        project_id=project_id, scan_id=scan_id, target_id=target_id
-    )
-
-
-@router.get("/rollup", response_model=list[TargetSubdomainRead])
-async def target_subdomain_rollup(
-    _current_user: CurrentUser,
-    service: Annotated[SubdomainService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
-    target_id: Annotated[UUID, Query(description="Target ID")],
-    active_only: Annotated[
-        bool, Query(description="Only resolving subdomains")
-    ] = False,
-    search: Annotated[str | None, Query(description="Substring match on name")] = None,
-    limit: Annotated[int, Query(ge=1, le=1000, description="Max rows")] = 100,
-    offset: Annotated[int, Query(ge=0, description="Rows to skip")] = 0,
-):
-    return await service.list_for_target(
-        project_id=project_id,
-        target_id=target_id,
-        active_only=active_only,
-        search=search,
-        limit=limit,
-        offset=offset,
-    )
-
-
-@router.get("/rollup/summary", response_model=SubdomainSummary)
-async def target_subdomain_rollup_summary(
-    _current_user: CurrentUser,
-    service: Annotated[SubdomainService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
-    target_id: Annotated[UUID, Query(description="Target ID")],
-):
-    return await service.summary_for_target(project_id=project_id, target_id=target_id)

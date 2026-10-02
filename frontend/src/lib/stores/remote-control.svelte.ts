@@ -25,16 +25,12 @@ function createRemoteControlStore() {
 	let calls = $state<ChannelCall[]>([]);
 	let isLoading = $state(false);
 	let isSaving = $state(false);
-	let callsLoadedAt = $state<number | null>(null);
 
 	function apply(next: ChannelStatus) {
 		status = next;
 	}
 
 	return {
-		get channel() {
-			return channel;
-		},
 		get status() {
 			return status;
 		},
@@ -50,25 +46,19 @@ function createRemoteControlStore() {
 		get calls() {
 			return calls;
 		},
-		get isLoading() {
-			return isLoading;
-		},
 		get isSaving() {
 			return isSaving;
-		},
-		get callsLoadedAt() {
-			return callsLoadedAt;
 		},
 
 		async fetch(kind: ChannelKind, force = false) {
 			if (isLoading || (channel === kind && status && !force)) return;
 			isLoading = true;
+			channel = kind;
 			try {
 				const [s, c] = await Promise.all([
 					remoteControlApi.status(kind),
 					remoteControlApi.commands(kind)
 				]);
-				channel = kind;
 				status = s;
 				commands = c;
 			} catch (e) {
@@ -105,7 +95,6 @@ function createRemoteControlStore() {
 			if (!channel) return;
 			try {
 				calls = await remoteControlApi.calls(channel);
-				callsLoadedAt = Date.now();
 			} catch (e) {
 				if (!silent) toast.error(message(e, 'Recent commands not loaded'));
 			}
@@ -216,18 +205,22 @@ function createRemoteControlStore() {
 			}
 		},
 
-		async deleteChat(id: string): Promise<boolean> {
+		async deleteChat(id: string, verb: 'deleted' | 'unblocked' = 'deleted'): Promise<boolean> {
 			if (!channel) return false;
 			try {
 				await remoteControlApi.deleteChat(channel, id);
 				chats = chats.filter((c) => c.id !== id);
-				toast.success('Chat deleted');
+				toast.success(`Chat ${verb}`);
 				await this.refreshStatus(true);
 				return true;
 			} catch (e) {
-				toast.error(message(e, 'Chat not deleted'));
+				toast.error(message(e, `Chat not ${verb}`));
 				return false;
 			}
+		},
+
+		async unblockChat(id: string): Promise<boolean> {
+			return this.deleteChat(id, 'unblocked');
 		},
 
 		reset() {
@@ -239,7 +232,6 @@ function createRemoteControlStore() {
 			calls = [];
 			isLoading = false;
 			isSaving = false;
-			callsLoadedAt = null;
 		}
 	};
 }

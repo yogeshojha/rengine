@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
-
 from pydantic import Field
 from sqlmodel import select
 
@@ -12,10 +10,12 @@ from mcp.capabilities import Capability
 from mcp.context import ToolContext
 from mcp.errors import ToolError
 from mcp.result import ToolResult
-from mcp.tools._scope import project_for, resolve
+from mcp.tools._scope import operator, parse_id, project_for, resolve
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.models.project import Project
 from shared.models.target import Target
+from shared.utils.text import counted
+from shared.utils.validation import normalize_target_value
 from toolbox.base import fact, facts, hero
 
 MAX_VALUES = 50
@@ -66,20 +66,20 @@ class AddTarget(Tool):
         from app.services.target import TargetService  # noqa: PLC0415
         from shared.models.target import TargetUpdate  # noqa: PLC0415
 
-        operator = _operator(ctx)
-        project_id = await project_for(ctx, _uuid(args.project_id, "project_id"))
+        issued_by = operator(ctx)
+        project_id = await project_for(ctx, parse_id(args.project_id, "project_id"))
         service = TargetService(ctx.session)
 
         wanted: list[str] = []
         rejected: list[str] = []
         seen: set[str] = set()
         for raw in args.targets:
-            value = raw.strip()
-            if not value or value.lower() in seen:
+            value = normalize_target_value(raw)
+            if not value or value in seen:
                 continue
-            seen.add(value.lower())
+            seen.add(value)
             if await service.validate_target_value(value) is None:
-                rejected.append(value)
+                rejected.append(raw.strip())
             else:
                 wanted.append(value)
 
@@ -100,7 +100,7 @@ class AddTarget(Tool):
             .all()
         )
 
-        rows = await _guard(service.ensure_targets(wanted, project_id, operator))
+        rows = await _guard(service.ensure_targets(wanted, project_id, issued_by))
         created = [row for row in rows if row.target_value not in present]
 
         if created and (args.tags or args.organizations):
@@ -109,7 +109,7 @@ class AddTarget(Tool):
                 organization_names=args.organizations or None,
             )
             for row in created:
-                await _guard(service.update_target(str(row.id), patch, operator))
+                await _guard(service.update_target(str(row.id), patch, issued_by))
 
         project = await ctx.session.get(Project, project_id)
         return ToolResult(
@@ -123,7 +123,7 @@ class AddTarget(Tool):
             pivot=(
                 links.target(ctx.ui_base_url, created[0].id)
                 if len(created) == 1 and not present
-                else f"{ctx.ui_base_url.rstrip('/')}/targets"
+                else links.targets(ctx.ui_base_url)
             ),
             caveats=_added_caveats(created, rejected),
             blocks=[
@@ -170,7 +170,7 @@ class UpdateTarget(Tool):
         from app.services.target import TargetService  # noqa: PLC0415
         from shared.models.target import TargetUpdate  # noqa: PLC0415
 
-        operator = _operator(ctx)
+        issued_by = operator(ctx)
         if (
             args.display_name is None
             and args.tags is None
@@ -188,7 +188,7 @@ class UpdateTarget(Tool):
                     tag_names=args.tags,
                     organization_names=args.organizations,
                 ),
-                operator,
+                issued_by,
             )
         )
         return ToolResult(
@@ -229,7 +229,7 @@ class DeleteTarget(Tool):
     async def run(self, ctx: ToolContext, args: DeleteInput) -> ToolResult:
         from app.services.target import TargetService  # noqa: PLC0415
 
-        operator = _operator(ctx)
+        issued_by = operator(ctx)
         scope = await resolve(ctx, args.target)
         value = scope.target.target_value
         holdings = {
@@ -248,31 +248,14 @@ class DeleteTarget(Tool):
             raise ToolError(msg)
 
         await _guard(
-            TargetService(ctx.session).delete_target(str(scope.target.id), operator)
+            TargetService(ctx.session).delete_target(str(scope.target.id), issued_by)
         )
         return ToolResult(
             summary=f"Deleted {value} and everything recorded against it",
             data={"value": value, "scans_deleted": scans, "results_deleted": holdings},
-            pivot=f"{ctx.ui_base_url.rstrip('/')}/targets",
+            pivot=links.targets(ctx.ui_base_url),
             caveats=[f"Deleted by agent token '{ctx.token.name}' via MCP."],
         )
-
-
-def _operator(ctx: ToolContext) -> uuid.UUID:
-    if ctx.token.issued_by is None:
-        msg = "This token has no issuing operator to attribute the change to."
-        raise ToolError(msg)
-    return ctx.token.issued_by
-
-
-def _uuid(value: str | None, field: str) -> uuid.UUID | None:
-    if not value:
-        return None
-    try:
-        return uuid.UUID(value)
-    except ValueError as exc:
-        msg = f"{field} must be a uuid, not {value!r}."
-        raise ToolError(msg) from exc
 
 
 async def _guard(awaitable):
@@ -309,7 +292,7 @@ def _added_line(
         tail.append(f"{reused} existing")
     if rejected:
         tail.append(f"{len(rejected)} rejected")
-    return f"{head} ({', '.join(tail)})" if tail else head
+    return " · ".join([head, *tail])
 
 
 def _added_caveats(created: list[Target], rejected: list[str]) -> list[str]:
@@ -326,5 +309,5 @@ def _holdings_line(value: str, scans: int, holdings: dict[str, int | None]) -> s
     if not scans:
         return f"{value} has no scans recorded."
     kept = ", ".join(f"{count} {label.lower()}" for label, count in holdings.items())
-    runs = f"{scans} scan{'s' if scans != 1 else ''}"
+    runs = counted(scans, "scan")
     return f"Deleting {value} removes {runs}" + (f" holding {kept}." if kept else ".")

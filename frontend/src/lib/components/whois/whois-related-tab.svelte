@@ -7,11 +7,10 @@
 		whoisLookupLabel
 	} from '$lib/types/whois';
 	import { Badge } from '$lib/components/ui/badge';
-	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as Empty from '$lib/components/ui/empty';
+	import Hint from '$lib/components/hint.svelte';
 	import SearchX from '@lucide/svelte/icons/search-x';
 	import Link2 from '@lucide/svelte/icons/link-2';
-	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 	import GitBranch from '@lucide/svelte/icons/git-branch';
 	import { SvelteMap } from 'svelte/reactivity';
 
@@ -43,10 +42,7 @@
 
 	function buildMatchSummary(reasons: CorrelationReason[]): string {
 		const labels = reasons.map((r) => reasonLabel(r.type)?.match ?? r.type);
-		if (labels.length === 1) return `Matching ${labels[0]}`;
-		if (labels.length === 2) return `Matching ${labels[0]} and ${labels[1]}`;
-		const last = labels.pop();
-		return `Matching ${labels.join(', ')}, and ${last}`;
+		return `Matching ${new Intl.ListFormat('en-GB', { type: 'conjunction' }).format(labels)}`;
 	}
 
 	function expandReasonValues(reason: CorrelationReason): { type: string; value: string }[] {
@@ -88,8 +84,6 @@
 			return a.record.query_value.localeCompare(b.record.query_value);
 		});
 	});
-
-	let strongMatchCount = $derived(relatedTargets.filter((t) => t.reasons.length >= 3).length);
 </script>
 
 {#if isLoading}
@@ -100,7 +94,7 @@
 			<Empty.Media variant="icon">
 				<SearchX />
 			</Empty.Media>
-			<Empty.Title>Related targets not loaded</Empty.Title>
+			<Empty.Title>Related records not loaded</Empty.Title>
 			<Empty.Description>{error}</Empty.Description>
 		</Empty.Header>
 	</Empty.Root>
@@ -110,7 +104,7 @@
 			<Empty.Media variant="icon">
 				<GitBranch />
 			</Empty.Media>
-			<Empty.Title>No related targets</Empty.Title>
+			<Empty.Title>No related records</Empty.Title>
 		</Empty.Header>
 	</Empty.Root>
 {:else}
@@ -120,15 +114,9 @@
 				<Link2 class="h-4 w-4" />
 				<span>
 					<span class="font-medium text-foreground">{relatedTargets.length}</span>
-					related {relatedTargets.length === 1 ? 'target' : 'targets'} found
+					related {relatedTargets.length === 1 ? 'record' : 'records'}
 				</span>
 			</div>
-			{#if strongMatchCount > 0}
-				<Badge variant="outline" class="gap-1.5 text-xs font-normal">
-					<ShieldAlert class="h-3 w-3" />
-					{strongMatchCount} strong {strongMatchCount === 1 ? 'match' : 'matches'}
-				</Badge>
-			{/if}
 		</div>
 
 		<div class="space-y-2">
@@ -153,15 +141,6 @@
 								<p class="text-xs text-muted-foreground truncate mt-0.5">{record.name}</p>
 							{/if}
 						</div>
-						{#if reasons.length >= 3}
-							<Badge
-								variant="outline"
-								class="text-2xs shrink-0 gap-1 border-warning/30 text-warning bg-warning/10"
-							>
-								<ShieldAlert class="h-3 w-3" />
-								Strong
-							</Badge>
-						{/if}
 					</div>
 
 					<p class="text-xs text-muted-foreground">{buildMatchSummary(reasons)}</p>
@@ -169,33 +148,28 @@
 					<div class="flex flex-wrap gap-1.5">
 						{#each reasons as reason (reason.type + reason.value)}
 							{#each expandReasonValues(reason) as { type, value } (type + value)}
-								<Tooltip.Root>
-									<Tooltip.Trigger>
-										{#snippet child({ props })}
-											<button
-												{...props}
-												onclick={() => handleBadgeClick(type, value)}
-												class="cursor-pointer"
+								<Hint text="Records sharing this {reasonLabel(type)?.match ?? type}">
+									{#snippet child(props)}
+										<button
+											{...props}
+											onclick={() => handleBadgeClick(type, value)}
+											class="cursor-pointer"
+										>
+											<span
+												class="inline-flex items-center text-2xs border border-border/60 rounded-md overflow-hidden hover:ring-1 hover:ring-ring/30 transition-shadow"
 											>
-												<span
-													class="inline-flex items-center text-2xs border border-border/60 rounded-md overflow-hidden hover:ring-1 hover:ring-ring/30 transition-shadow"
-												>
-													<span class="px-2 py-1 font-medium bg-muted/60 text-foreground/70">
-														{reasonLabel(type)?.full ?? type}
-													</span>
-													<span
-														class="px-2 py-1 font-mono border-l border-border/60 text-foreground truncate max-w-[200px]"
-													>
-														{value}
-													</span>
+												<span class="px-2 py-1 font-medium bg-muted/60 text-foreground/70">
+													{reasonLabel(type)?.full ?? type}
 												</span>
-											</button>
-										{/snippet}
-									</Tooltip.Trigger>
-									<Tooltip.Content>
-										<p>Targets sharing this {reasonLabel(type)?.match ?? type}</p>
-									</Tooltip.Content>
-								</Tooltip.Root>
+												<span
+													class="px-2 py-1 font-mono border-l border-border/60 text-foreground truncate max-w-[200px]"
+												>
+													{value}
+												</span>
+											</span>
+										</button>
+									{/snippet}
+								</Hint>
 							{/each}
 						{/each}
 					</div>

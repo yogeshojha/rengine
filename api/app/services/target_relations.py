@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from collections import defaultdict
 from uuid import UUID
 
@@ -21,6 +20,7 @@ from shared.definitions.relations import (
     TargetRelation,
 )
 from shared.definitions.surface import SurfaceDimension
+from shared.enums.dns import DnsRecordType
 from shared.models.dns import DnsRecord
 from shared.models.http_asset import HttpAsset
 from shared.models.ip_address import IpAddress
@@ -29,15 +29,16 @@ from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.whois import WhoisNameserver, WhoisRecord
 from shared.services.asset_query.scope import QueryScope
+from shared.services.domain_posture import spf
 from shared.utils.infra import is_shared_host, is_shared_nameserver, owns_network
 from shared.utils.privacy import registrant_key
+from shared.utils.text import counted
 
 # kind -> value -> targets carrying it, with what to show for each
 _Facts = dict[str, dict[str, dict[UUID, str]]]
 
 
-_SPF_INCLUDE = re.compile(r"include:([^\s]+)")
-_ADDRESS_RECORDS = ("A", "AAAA")
+_ADDRESS_RECORDS = (DnsRecordType.A, DnsRecordType.AAAA)
 
 
 def _ours(host: str, owned: set[str]) -> bool:
@@ -50,29 +51,39 @@ def _ours(host: str, owned: set[str]) -> bool:
 
 
 def _dns_keys(
-    record_type: str, value: str, soa_email: str, cdn: set[str], owned: set[str]
+    record_type: DnsRecordType | str,
+    value: str,
+    soa_email: str,
+    cdn: set[str],
+    owned: set[str],
 ) -> list[tuple[str, str]]:
-    """What a record says about ownership, as (shown, key) pairs. NS is the WHOIS relation's."""
-    kind = record_type.upper().removeprefix("DNSRECORDTYPE.")
+    """Ownership keys a DNS record carries, as shown and key pairs."""
+    kind = DnsRecordType(record_type)
     host = value.strip().lower().rstrip(".")
-    if kind == "MX" and _ours(host, owned):
+    if kind is DnsRecordType.MX and _ours(host, owned):
         return [(f"MX {host}", f"mx:{host}")]
-    if kind == "SOA":
+    if kind is DnsRecordType.SOA:
         contact = soa_email.strip().lower().rstrip(".")
         if _ours(contact, owned):
             return [(f"SOA {contact}", f"soa:{contact}")]
         return []
     if kind in _ADDRESS_RECORDS and host and host not in cdn:
-        return [(f"{kind} {host}", f"address:{host}")]
-    if kind == "TXT" and host.startswith("v=spf1"):
+        return [(f"{kind.value} {host}", f"address:{host}")]
+    if kind is DnsRecordType.TXT and spf.is_spf(host):
         return [
             (f"SPF include:{domain}", f"spf:{domain}")
-            for domain in {
-                m.group(1).lower().rstrip(".") for m in _SPF_INCLUDE.finditer(host)
-            }
+            for domain in spf.include_zones(host)
             if _ours(domain, owned)
         ]
     return []
+
+
+def _by_record(targets: dict[UUID, Target]) -> dict[UUID, list[UUID]]:
+    out: dict[UUID, list[UUID]] = defaultdict(list)
+    for target in targets.values():
+        if target.whois_record_id:
+            out[target.whois_record_id].append(target.id)
+    return out
 
 
 def _identity(target_value: str, registrant: str) -> set[str]:
@@ -160,21 +171,21 @@ class TargetRelationService:
             if key:
                 facts[TargetRelation.REGISTRANT.value][key][target_id] = registrant
 
-        ids = [t.whois_record_id for t in targets.values() if t.whois_record_id]
-        if not ids:
+        by_record = _by_record(targets)
+        if not by_record:
             return
-        by_record = {t.whois_record_id: t.id for t in targets.values()}
         names = await self.session.execute(
             select(WhoisNameserver.whois_record_id, WhoisNameserver.nameserver).where(
-                WhoisNameserver.whois_record_id.in_(ids)
+                WhoisNameserver.whois_record_id.in_(list(by_record))
             )
         )
         for record_id, nameserver in names.all():
             if is_shared_nameserver(nameserver):
                 continue
-            facts[TargetRelation.NAMESERVER.value][nameserver][by_record[record_id]] = (
-                nameserver
-            )
+            for target_id in by_record[record_id]:
+                facts[TargetRelation.NAMESERVER.value][nameserver][target_id] = (
+                    nameserver
+                )
 
     async def _dns(self, targets: dict[UUID, Target], facts: _Facts) -> None:
         """A mail host, a zone contact or an address that is not a provider's."""
@@ -193,9 +204,7 @@ class TargetRelationService:
         )
         owned = {target_zone(t.target_value) for t in targets.values()}
         for target_id, kind, value, soa_email in rows:
-            for shown, key in _dns_keys(
-                str(kind), value or "", soa_email or "", cdn, owned
-            ):
+            for shown, key in _dns_keys(kind, value or "", soa_email or "", cdn, owned):
                 facts[TargetRelation.DNS_RECORD.value][key][target_id] = shown
 
     async def _cdn_addresses(self, candidates: set[str]) -> set[str]:
@@ -257,7 +266,7 @@ class TargetRelationService:
         )
         carried: dict[str, dict[UUID, str]] = defaultdict(dict)
         for value, target_id, count in rows.all():
-            carried[value][target_id] = f"{count} web assets"
+            carried[value][target_id] = counted(count, "web asset")
         for value, owners in carried.items():
             if len(owners) <= FAVICON_MAX_TARGETS:
                 facts[TargetRelation.FAVICON.value][value] = owners
@@ -283,7 +292,7 @@ class TargetRelationService:
         carried: dict[int, dict[UUID, str]] = defaultdict(dict)
         for asn, org, target_id, count in rows.all():
             holders[asn] = org or ""
-            carried[asn][target_id] = f"{count} addresses"
+            carried[asn][target_id] = counted(count, "address", "addresses")
 
         for asn, owners in carried.items():
             identities: set[str] = set()
@@ -302,13 +311,12 @@ class TargetRelationService:
                 )
 
     async def _registrants(self, targets: dict[UUID, Target]) -> dict[UUID, str]:
-        ids = [t.whois_record_id for t in targets.values() if t.whois_record_id]
-        if not ids:
+        by_record = _by_record(targets)
+        if not by_record:
             return {}
-        by_record = {t.whois_record_id: t.id for t in targets.values()}
         rows = await self.session.execute(
             select(WhoisRecord.id, WhoisRecord.registrant_name).where(
-                WhoisRecord.id.in_(ids)
+                WhoisRecord.id.in_(list(by_record))
             )
         )
-        return {by_record[rid]: name for rid, name in rows.all()}
+        return {tid: name for rid, name in rows.all() for tid in by_record[rid]}

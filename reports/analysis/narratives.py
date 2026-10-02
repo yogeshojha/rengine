@@ -8,8 +8,9 @@ from collections.abc import Callable, Iterable
 from reports.analysis.brief import AttackPath
 from reports.data.models import Issue
 from reports.data.source import ReportSource
+from shared.definitions.endpoints import PathInterest
 from shared.definitions.ports import ServiceClass
-from shared.definitions.vulnerabilities import Severity
+from shared.definitions.vulnerabilities import Severity, severity_rank
 from shared.utils.net import host_port
 
 _OK = 2
@@ -50,12 +51,14 @@ def _kev_live(source: ReportSource, issues: list[Issue]) -> AttackPath | None:
     if not hits:
         return None
     total = sum(i.count for i in hits)
+    assets = len(_assets(hits, 200))
     return AttackPath(
         key="kev_live",
         title="Known exploited weaknesses are reachable",
         detail=(
             f"{total} observation{'s' if total != 1 else ''} across "
-            f"{len(_assets(hits, 200))} assets match checks on the CISA Known Exploited "
+            f"{assets} asset{'s' if assets != 1 else ''} "
+            f"{'match' if total != 1 else 'matches'} checks on the CISA Known Exploited "
             "Vulnerabilities catalogue."
         ),
         severity=Severity.CRITICAL.value,
@@ -95,7 +98,8 @@ def _takeover(_source: ReportSource, issues: list[Issue]) -> AttackPath | None:
         key="takeover",
         title="Hostnames point at unclaimed provider resources",
         detail=(
-            f"{total} name{'s' if total != 1 else ''} resolve to a provider where the "
+            f"{total} name{'s' if total != 1 else ''} "
+            f"{'resolve' if total != 1 else 'resolves'} to a provider where the "
             "backing resource no longer exists. Registering the resource serves content "
             "under the subject's domain."
         ),
@@ -115,7 +119,8 @@ def _exposed_data(_source: ReportSource, issues: list[Issue]) -> AttackPath | No
         key="exposed_data",
         title="Source, configuration or backup files are served",
         detail=(
-            f"{total} location{'s' if total != 1 else ''} return source, configuration "
+            f"{total} location{'s' if total != 1 else ''} "
+            f"{'return' if total != 1 else 'returns'} source, configuration "
             "or backup content."
         ),
         severity=Severity.HIGH.value,
@@ -132,7 +137,7 @@ def _injection(_source: ReportSource, issues: list[Issue]) -> AttackPath | None:
     if not hits:
         return None
     total = sum(i.count for i in hits)
-    worst = min(hits, key=lambda i: 0 if i.severity == Severity.CRITICAL.value else 1)
+    worst = min(hits, key=lambda i: severity_rank(i.severity))
     return AttackPath(
         key="injection",
         title="Untrusted input reaches an interpreter",
@@ -152,7 +157,8 @@ def _admin_open(source: ReportSource, issues: list[Issue]) -> AttackPath | None:
     endpoints = [
         e
         for e in source.endpoint_rows
-        if "admin" in (e.interest or []) and (e.status or 0) // 100 == _OK
+        if PathInterest.ADMIN.value in (e.interest or [])
+        and (e.status or 0) // 100 == _OK
     ]
     if not panels and not endpoints:
         return None
@@ -166,10 +172,7 @@ def _admin_open(source: ReportSource, issues: list[Issue]) -> AttackPath | None:
             if internal
             else "Management interfaces answer from the public internet"
         ),
-        detail=(
-            f"{total} administrative interface{'s' if total != 1 else ''} responded "
-            "with no gateway in front."
-        ),
+        detail=f"{total} administrative interface{'s' if total != 1 else ''} responded.",
         severity=Severity.MEDIUM.value if not panels else Severity.HIGH.value,
         evidence=[i.name for i in panels[:4]] + [e.path for e in endpoints[:3]],
         assets=list(dict.fromkeys(assets))[:8],
@@ -185,7 +188,8 @@ def _origin_exposed(source: ReportSource, _issues: list[Issue]) -> AttackPath | 
         key="origin_exposed",
         title="Origin servers answer outside the CDN",
         detail=(
-            f"{len(candidates)} address{'es' if len(candidates) != 1 else ''} serve the "
+            f"{len(candidates)} address{'es' if len(candidates) != 1 else ''} "
+            f"{'serve' if len(candidates) != 1 else 'serves'} the "
             "same content as a hostname behind a CDN or WAF. Requests to the address "
             "bypass the edge."
         ),

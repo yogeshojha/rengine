@@ -6,7 +6,9 @@ from __future__ import annotations
 import argparse
 import io
 import re
+import shutil
 import sys
+import tempfile
 import urllib.request
 from pathlib import Path
 
@@ -82,43 +84,54 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=DEFAULT_ROOT)
     root = parser.parse_args().root
-    root.mkdir(parents=True, exist_ok=True)
-    for stale in root.glob("*.woff2"):
-        stale.unlink()
     total = 0
     lines: list[str] = []
 
-    for key, (name, weights, italic, subsets) in FAMILIES.items():
-        url = f"{API}?{_spec(name, weights, italic)}&subset={subsets}&display=swap"
-        try:
-            css = _fetch(url).decode("utf-8")
-        except OSError as exc:
-            print(f"  {key}: unavailable ({exc})")
-            continue
-
-        faces = 0
-        for block in FACE_RE.findall(css):
-            src = re.search(r"url\((https://[^)]+)\)", block)
-            weight = re.search(r"font-weight:\s*(\d+)", block)
-            style = re.search(r"font-style:\s*(\w+)", block)
-            if not src or not weight:
-                continue
-            if "unicode-range" in block:
-                print(f"  {key}: the API split this family; refusing a split face")
+    with tempfile.TemporaryDirectory() as tmp:
+        staged = Path(tmp)
+        for key, (name, weights, italic, subsets) in FAMILIES.items():
+            url = f"{API}?{_spec(name, weights, italic)}&subset={subsets}&display=swap"
+            faces = 0
+            try:
+                css = _fetch(url).decode("utf-8")
+                for block in FACE_RE.findall(css):
+                    src = re.search(r"url\((https://[^)]+)\)", block)
+                    weight = re.search(r"font-weight:\s*(\d+)", block)
+                    style = re.search(r"font-style:\s*(\w+)", block)
+                    if not src or not weight:
+                        continue
+                    if "unicode-range" in block:
+                        print(
+                            f"  {key}: the API split this family; refusing a split face"
+                        )
+                        return 1
+                    slant = (style.group(1) if style else "normal") == "italic"
+                    filename = (
+                        f"{key}-{weight.group(1)}{'-italic' if slant else ''}.woff2"
+                    )
+                    data = _trim(_fetch(src.group(1)), UNICODES[subsets])
+                    (staged / filename).write_bytes(data)
+                    total += len(data)
+                    faces += 1
+                    lines.append(
+                        f"@font-face{{font-family:'{name}';"
+                        f"font-style:{'italic' if slant else 'normal'};"
+                        f"font-weight:{weight.group(1)};font-display:swap;"
+                        f"src:url('fonts/{filename}') format('woff2')}}"
+                    )
+            except OSError as exc:
+                print(f"  {key}: unavailable ({exc})")
                 return 1
-            slant = (style.group(1) if style else "normal") == "italic"
-            filename = f"{key}-{weight.group(1)}{'-italic' if slant else ''}.woff2"
-            data = _trim(_fetch(src.group(1)), UNICODES[subsets])
-            (root / filename).write_bytes(data)
-            total += len(data)
-            faces += 1
-            lines.append(
-                f"@font-face{{font-family:'{name}';"
-                f"font-style:{'italic' if slant else 'normal'};"
-                f"font-weight:{weight.group(1)};font-display:swap;"
-                f"src:url('fonts/{filename}') format('woff2')}}"
-            )
-        print(f"  {key}: {faces} faces")
+            if not faces:
+                print(f"  {key}: no faces")
+                return 1
+            print(f"  {key}: {faces} faces")
+
+        root.mkdir(parents=True, exist_ok=True)
+        for stale in root.glob("*.woff2"):
+            stale.unlink()
+        for face in staged.iterdir():
+            shutil.move(face, root / face.name)
 
     (root.parent / "fonts.css").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"{len(lines)} faces, {total / 1024:.0f} KB")

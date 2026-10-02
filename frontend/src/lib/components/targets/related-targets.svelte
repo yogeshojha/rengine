@@ -7,17 +7,16 @@
 
 	interface Props {
 		relations: RelatedTarget[];
-		kinds?: string[];
-		title?: string;
+		kinds: string[];
 	}
 
-	let { relations, kinds, title = 'Shared with' }: Props = $props();
+	let { relations, kinds }: Props = $props();
 
 	let rows = $derived(
 		relations
 			.map((r) => ({
 				...r,
-				reasons: kinds ? r.reasons.filter((x) => kinds.includes(x.kind)) : r.reasons
+				reasons: r.reasons.filter((x) => kinds.includes(x.kind))
 			}))
 			.filter((r) => r.reasons.length > 0)
 	);
@@ -26,7 +25,7 @@
 {#if rows.length}
 	<section class="flex flex-col gap-2">
 		<h4 class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
-			{title}
+			Shared with
 		</h4>
 		{#each rows as row (row.target_id)}
 			<div class="grid grid-cols-1 gap-x-3 gap-y-1 sm:grid-cols-[11rem_minmax(0,1fr)]">

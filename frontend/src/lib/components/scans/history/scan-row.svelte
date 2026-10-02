@@ -39,10 +39,9 @@
 		onEarlier?: () => void;
 		onToggle: () => void;
 		onSelect: () => void;
-		onFocus: () => void;
 		onOpen: () => void;
 		onCompare: () => void;
-		onRescan: () => void;
+		onRescan?: () => void;
 		onPause: () => void;
 		onResume: () => void;
 		onCancel: () => void;
@@ -65,7 +64,6 @@
 		onEarlier,
 		onToggle,
 		onSelect,
-		onFocus,
 		onOpen,
 		onCompare,
 		onRescan,
@@ -89,19 +87,15 @@
 	class="group relative border-b border-border/60 transition-colors
 		{expanded ? 'bg-muted/25' : ''} {selected ? 'bg-primary/5' : ''}"
 >
-	{#if focused}
-		<span class="absolute inset-y-0 left-0 w-0.5 bg-primary" aria-hidden="true"></span>
-	{/if}
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
 		class="flex cursor-pointer items-center gap-3 px-4 {compact
 			? 'py-1.5'
-			: 'py-2.5'} hover:bg-muted/30 {nested ? 'pl-10' : ''}"
+			: 'py-2.5'} hover:bg-muted/30 {focused ? 'bg-muted/40' : ''} {nested ? 'pl-10' : ''}"
 		role="row"
 		tabindex="-1"
 		aria-selected={selected}
 		onclick={onOpen}
-		onmouseenter={onFocus}
 	>
 		{#if nested}
 			<span class="absolute top-0 bottom-0 left-6 w-px bg-border" aria-hidden="true"></span>
@@ -192,10 +186,12 @@
 					{/if}
 					{#if open}
 						<DropdownMenu.Item onSelect={onCancel}><Ban /> Cancel</DropdownMenu.Item>
-					{:else}
+					{:else if onRescan}
 						<DropdownMenu.Item onSelect={onRescan}><Play /> Run again</DropdownMenu.Item>
 					{/if}
-					<DropdownMenu.Separator />
+					{#if open || onRescan}
+						<DropdownMenu.Separator />
+					{/if}
 					<DropdownMenu.Item variant="destructive" onSelect={onDelete}
 						><Trash2 /> Delete</DropdownMenu.Item
 					>
@@ -228,7 +224,7 @@
 					<Button size="sm" variant="outline" class="h-8 gap-1.5" onclick={onCancel}>
 						<Ban class="size-3.5" /> Cancel
 					</Button>
-				{:else}
+				{:else if onRescan}
 					<Button size="sm" variant="outline" class="h-8 gap-1.5" onclick={onRescan}>
 						<Play class="size-3.5" /> Run again
 					</Button>

@@ -51,6 +51,11 @@ class ReverseDnsStage(Stage):
         by_ip = {row.ip: row for row in rows}
         ips = list(by_ip.keys())[:_MAX_PTR]
         ptr_map, note = self._lookup_ptr(ips)
+        warnings = [note] if note else []
+        if len(by_ip) > _MAX_PTR:
+            warnings.append(
+                f"PTR lookup capped at {_MAX_PTR:,} of {len(by_ip):,} addresses."
+            )
 
         resolved = 0
         for ip, names in ptr_map.items():
@@ -63,8 +68,8 @@ class ReverseDnsStage(Stage):
         self.emit_progress(f"reverse-DNS resolved {resolved}/{len(ips)} IPs")
         return StageResult(
             counts={"ptr": resolved},
-            warnings=[note] if note else [],
-            partial=bool(note),
+            warnings=warnings,
+            partial=bool(warnings),
         )
 
     def _lookup_ptr(self, ips: list[str]) -> tuple[dict[str, list], str | None]:

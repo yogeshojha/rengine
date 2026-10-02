@@ -80,10 +80,6 @@ export const interestApi = {
 		return api.get<InterestDismissal[]>(`/interest/dismissals?project_id=${projectId}`);
 	},
 
-	dismissalsForTarget(targetId: string): Promise<InterestDismissal[]> {
-		return api.get<InterestDismissal[]>(`/interest/dismissals?target_id=${targetId}`);
-	},
-
 	restore(id: string): Promise<void> {
 		return api.delete<void>(`/interest/dismissals/${id}`);
 	}

@@ -6,7 +6,6 @@ from collections import Counter
 from sqlalchemy.orm import Session
 
 from shared.enums.dns import DnsRecordType
-from shared.logging import get_logger
 from shared.models.dns import DnsLookup, DnsLookupSummary, DnsRecord
 from shared.models.target import Target
 from shared.utils.datetime import utc_now
@@ -14,8 +13,6 @@ from tools.dnsx.client import DnsxClient, DnsxError
 from tools.dnsx.models import DnsxReconResponse
 from tools.dnsx.parser import parse_dnsx_jsonl
 from tools.runner.models import CommandRecorder
-
-logger = get_logger(__name__)
 
 
 class DnsxServiceError(Exception):

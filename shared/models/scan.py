@@ -7,7 +7,13 @@ from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
 from shared.definitions.constants import MAX_SCAN_BATCH
-from shared.definitions.rescan import MAX_RUN_ASSETS, MAX_RUN_SCANS, SeedKind
+from shared.definitions.endpoints import EndpointSource
+from shared.definitions.rescan import (
+    MAX_RUN_ASSETS,
+    MAX_RUN_SCANS,
+    MAX_RUN_TEMPLATES,
+    SeedKind,
+)
 from shared.definitions.surface import SURFACE_ORDER
 from shared.enums.scan import ScanScope, ScanStatus
 from shared.services.scan_resolve import ResolvedScanConfig
@@ -23,6 +29,7 @@ class SeedAsset(BaseModel):
 
     kind: str = Field(max_length=16)
     value: str = Field(max_length=500)
+    source: str | None = Field(default=None, max_length=32)
 
     @model_validator(mode="after")
     def _known_kind(self):
@@ -31,6 +38,9 @@ class SeedAsset(BaseModel):
             raise ValueError(msg)
         if not self.value.strip():
             msg = "Seed asset value is required."
+            raise ValueError(msg)
+        if self.source not in (None, EndpointSource.PROXY.value):
+            msg = f"Unknown seed source '{self.source}'."
             raise ValueError(msg)
         return self
 
@@ -62,8 +72,11 @@ class SeedSelection(BaseModel):
         if self.dimension not in SURFACE_ORDER:
             msg = f"Unknown dimension '{self.dimension}'."
             raise ValueError(msg)
-        if bool(self.picks) == (self.query is not None):
-            msg = "Provide either picks or a query, not both."
+        if not self.picks and self.query is None:
+            msg = "Provide picks or a query."
+            raise ValueError(msg)
+        if self.picks and self.query is not None:
+            msg = "Provide picks or a query, not both."
             raise ValueError(msg)
         return self
 
@@ -94,6 +107,8 @@ class SeedGroupSummary(BaseModel):
 class RunPreview(BaseModel):
     dimension: str
     seed_kind: str
+    noun: str = ""
+    noun_plural: str = ""
     asset_count: int = 0
     matched: int | None = None
     target_count: int = 0
@@ -166,6 +181,15 @@ def fold_pause(scan: Scan, at: datetime) -> None:
     scan.paused_at = None
 
 
+def run_seconds(scan: Scan, end: datetime | None = None) -> float | None:
+    """Seconds the run spent running up to `end`, paused time excluded."""
+    end = end or scan.completed_at
+    if scan.started_at is None or end is None:
+        return None
+    ran = (end - scan.started_at).total_seconds() - (scan.paused_seconds or 0.0)
+    return max(ran, 0.0)
+
+
 class ScanCreate(BaseModel):
     """A launch names a saved engine, or runs an ad hoc plan carried in `overrides`."""
 
@@ -206,13 +230,12 @@ class RescanCreate(BaseModel):
     overrides: dict[str, dict] = Field(default_factory=dict)
     context_id: uuid.UUID | None = None
     intensity: str | None = None
-    template_ids: list[str] = Field(default_factory=list, max_length=50)
+    template_ids: list[str] = Field(default_factory=list, max_length=MAX_RUN_TEMPLATES)
 
     @model_validator(mode="after")
     def _one_selection(self):
-        """Legacy parent_scan_id plus assets normalizes to selection."""
-        legacy = self.parent_scan_id is not None or bool(self.assets)
-        if legacy == (self.selection is not None):
+        listed = self.parent_scan_id is not None or bool(self.assets)
+        if listed == (self.selection is not None):
             msg = "Provide either a selection, or a parent scan and its assets."
             raise ValueError(msg)
         if self.selection is not None:
@@ -366,32 +389,6 @@ class ScanFacet(BaseModel):
     count: int
 
 
-class ScanChanges(BaseModel):
-    window: str
-    new_subdomains: int
-    retired_subdomains: int = 0
-    targets_changed: int
-    scans_run: int
-    failed_runs: int
-
-
-class ScanExportRow(BaseModel):
-    target: str
-    status: str
-    engine: str
-    context: str | None
-    schedule_type: str | None = None
-    subdomains: int
-    ips: int
-    open_ports: int
-    vulnerabilities: int
-    endpoints: int
-    duration_seconds: float | None
-    started_at: datetime | None
-    completed_at: datetime | None
-    created_at: datetime
-
-
 class ScanTrendPoint(BaseModel):
     scan_id: uuid.UUID
     started_at: datetime
@@ -414,15 +411,16 @@ class ScanDay(BaseModel):
     medium: int = 0
 
 
+class ScanDaily(BaseModel):
+    since: datetime
+    days: list[ScanDay] = []
+    window: ScanDay
+
+
 class ScanStats(BaseModel):
     total: int
-    running: int
     by_status: ScanStatusCounts
-    last_scan_at: datetime | None
-    avg_duration_seconds: float | None
-    success_rate: float | None
     engines: list[ScanFacet] = []
-    contexts: list[ScanFacet] = []
 
 
 FocusedRunRead.model_rebuild()

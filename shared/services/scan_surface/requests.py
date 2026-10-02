@@ -91,7 +91,8 @@ def origins(session, scan_id: uuid.UUID) -> dict[tuple[str, str, int], Origin]:
         origin = by_asset.get(row.representative_id)
         if origin is None:
             continue
-        origin.members.append(items[row.http_asset_id])
+        if row.drop_reason in (None, DropReason.COVERED_BY_ORIGIN.value):
+            origin.members.append(items[row.http_asset_id])
         found[(row.scheme or "", (row.host or "").lower(), int(row.port or 0))] = origin
     for origin in by_asset.values():
         item = origin.item
@@ -257,7 +258,7 @@ def _dropped(item: SurfaceItem, reason: str) -> SurfaceItem:
 
 
 def by_origin(items: Iterable[SurfaceItem]) -> list[list[SurfaceItem]]:
-    """Items grouped per origin, in rank order, so one invocation keeps a host together."""
+    """Items grouped per origin, in rank order."""
     groups: dict[str, list[SurfaceItem]] = {}
     for item in items:
         groups.setdefault(

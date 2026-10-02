@@ -44,5 +44,4 @@ def downgrade() -> None:
     op.drop_index("ix_wordlists_kind", table_name="wordlists")
     op.drop_index("ix_wordlists_origin", table_name="wordlists")
     op.drop_index("ix_wordlists_slug", table_name="wordlists")
-    op.drop_index("ix_wordlists_id", table_name="wordlists")
     op.drop_table("wordlists")

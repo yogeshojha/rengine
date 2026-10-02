@@ -1,21 +1,18 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import Cell from '$lib/components/cell.svelte';
-	import type { SkeletonShape } from '$lib/components/skeleton/shapes';
 	import { widgetSpec } from '$lib/config/dashboard-widgets';
 	import { dashboardLayout } from '$lib/stores/dashboard-layout.svelte';
 	import { isScoped } from '$lib/utilities/surface-scope';
-	import { useScopedRoutes } from './scope-links';
+	import { onDashboard, useScopedRoutes } from './scope-links';
 
 	interface Props {
 		id: string;
-		title: string;
+		title?: string;
 		description?: string;
 		href?: string;
 		hrefLabel?: string;
 		loading?: boolean;
-		skeleton?: SkeletonShape;
-		skeletonRows?: number;
 		class?: string;
 		bodyClass?: string;
 		tools?: Snippet;
@@ -26,7 +23,7 @@
 
 	let {
 		id,
-		skeleton,
+		title,
 		tools,
 		children,
 		footer,
@@ -36,21 +33,23 @@
 	}: Props = $props();
 
 	const routes = useScopedRoutes();
+	const hideable = onDashboard();
 	let scopedDescription = $derived(
 		projectWide && isScoped(routes.scope)
 			? [description, 'All targets'].filter(Boolean).join(' · ')
 			: description
 	);
 
-	let shape = $derived(skeleton ?? widgetSpec(id)?.skeleton ?? 'text');
+	let spec = $derived(widgetSpec(id));
 </script>
 
 <Cell
 	{id}
 	{...rest}
+	title={title ?? spec?.label ?? id}
 	description={scopedDescription}
-	skeleton={shape}
-	onHide={() => dashboardLayout.hide(id)}
+	skeleton={spec?.skeleton ?? 'text'}
+	onHide={hideable ? () => dashboardLayout.hide(id) : undefined}
 	{tools}
 	{children}
 	{footer}

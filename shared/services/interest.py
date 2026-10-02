@@ -11,8 +11,9 @@ from sqlalchemy import String, bindparam, delete, or_, select, text
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Session
 
-from interest import InterestContext, RawSignal, providers
+from interest import InterestContext, RawSignal
 from interest.presets import PRESETS, drift, row_values
+from interest.registry import providers
 from shared.definitions.interest import (
     BAND_FLOOR,
     BAND_ORDER,
@@ -20,8 +21,6 @@ from shared.definitions.interest import (
     MAX_SIGNALS_PER_HOST,
     InterestBand,
     InterestSource,
-    RuleMode,
-    kind_weight,
 )
 from shared.logging import get_logger
 from shared.models.interest import InterestDismissal, InterestRule, InterestSignal
@@ -104,7 +103,7 @@ WHERE s.id = scoped.id
 
 
 def ensure_builtin(session: Session) -> int:
-    """Seed the shipped library once, the way wordlists and themes index themselves on read."""
+    """Seed the shipped rules and apply preset changes to them."""
     rows = {
         row.name: row
         for row in session.execute(
@@ -357,15 +356,6 @@ def is_stale(session: Session, scan: Scan) -> bool:
     return scan.interest_signature != signature(
         applicable_rules(session, scan.project_id)
     )
-
-
-def keyword_rule_defaults() -> dict:
-    preset = next(p for p in PRESETS if p.mode == RuleMode.KEYWORD.value)
-    return {
-        "keywords": list(preset.keywords),
-        "keyword_fields": list(preset.keyword_fields),
-        "weight": kind_weight(preset.kind),
-    }
 
 
 _NEW_LEADS_SQL = """

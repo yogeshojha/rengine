@@ -5,6 +5,14 @@ export interface ExternalLink {
 	url: string;
 }
 
+function urlHost(value: string): string {
+	try {
+		return new URL(value).hostname || value;
+	} catch {
+		return value;
+	}
+}
+
 export function getExternalLinksTargetDropdown(
 	targetValue: string,
 	targetType: TargetType
@@ -12,6 +20,7 @@ export function getExternalLinksTargetDropdown(
 	const v = encodeURIComponent(targetValue);
 	const isIp = targetType === TargetType.IP;
 	const isAsn = targetType === TargetType.ASN;
+	const vtHost = targetType === TargetType.URL ? urlHost(targetValue) : targetValue;
 
 	const links: Array<ExternalLink & { types: TargetType[] }> = [
 		{
@@ -30,7 +39,7 @@ export function getExternalLinksTargetDropdown(
 			label: 'VirusTotal',
 			url: isIp
 				? `https://www.virustotal.com/gui/ip-address/${targetValue}`
-				: `https://www.virustotal.com/gui/domain/${targetValue}`,
+				: `https://www.virustotal.com/gui/domain/${vtHost}`,
 			types: [TargetType.DOMAIN, TargetType.IP, TargetType.URL]
 		},
 		{

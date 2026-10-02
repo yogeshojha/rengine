@@ -7,8 +7,8 @@ import {
 	type ProgramReports,
 	type ReportCounts
 } from '$lib/types/bounty-report';
+import type { PaginatedResponse } from '$lib/types/pagination';
 import { api } from './client';
-import type { Paged } from './bounty-programs';
 
 function filterParams(f: BountyReportFilters): URLSearchParams {
 	const search = new URLSearchParams();
@@ -39,7 +39,7 @@ export const bountyReportsApi = {
 		f: BountyReportFilters,
 		page: number,
 		size: number
-	): Promise<Paged<BountyReport>> {
+	): Promise<PaginatedResponse<BountyReport>> {
 		const search = filterParams(f);
 		if (f.tab === PAID_TAB) search.set('paid', 'true');
 		else if (f.tab !== ALL_TAB) search.set('stage', f.tab);
@@ -47,7 +47,7 @@ export const bountyReportsApi = {
 		search.set('order', f.order);
 		search.set('page', String(page));
 		search.set('size', String(size));
-		return api.get<Paged<BountyReport>>(`/bounty-reports/${platform}?${search}`);
+		return api.get<PaginatedResponse<BountyReport>>(`/bounty-reports/${platform}?${search}`);
 	},
 
 	async sync(platform: string): Promise<void> {

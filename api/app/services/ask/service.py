@@ -1,4 +1,4 @@
-"""Threads on a finding and the streamed reply."""
+"""Ask threads and the streamed reply."""
 
 from __future__ import annotations
 
@@ -23,8 +23,7 @@ from mcp.context import ToolContext
 from mcp.result import UNTRUSTED_NOTE
 from shared.definitions.ai import AITask, price
 from shared.definitions.ask import (
-    ANSWER_TOKENS,
-    CHARS_PER_TOKEN,
+    ASK_CLIENT,
     MAX_ANSWER_CHARS,
     MAX_CALLS_PER_ROUND,
     MAX_THREADS_PER_FINDING,
@@ -62,12 +61,12 @@ from shared.services.ai.agent import CALL, DONE, RESULT, TEXT, AgentEvent, conve
 from shared.services.ai.config import AIConfig
 from shared.services.asset_query import QueryScope
 from shared.utils.datetime import utc_now
-from shared.utils.text import strip_control
+from shared.utils.text import clip_line, strip_control
 
 logger = get_logger(__name__)
 
 FEATURE = "ask"
-DEFAULT_TITLE = "Is it real?"
+DEFAULT_TITLE = "New thread"
 ASK_FAILED = "Ask did not complete. Check the api log."
 NO_ANSWER = "The model returned no answer."
 
@@ -103,8 +102,7 @@ def _message_read(row: AskMessage) -> AskMessageRead:
 
 
 def _title(text: str) -> str:
-    line = " ".join(text.split())
-    return line if len(line) <= MAX_TITLE else f"{line[: MAX_TITLE - 1]}…"
+    return clip_line(text, MAX_TITLE)
 
 
 def _frame(event: StreamEvent, data: Any) -> str:
@@ -171,8 +169,8 @@ class AskService:
         if (count or 0) >= MAX_THREADS_PER_FINDING:
             raise HTTPException(
                 status.HTTP_409_CONFLICT,
-                f"This finding holds {MAX_THREADS_PER_FINDING} threads. "
-                "Delete one to start another.",
+                f"Thread limit of {MAX_THREADS_PER_FINDING} reached. "
+                "Delete a thread to start another.",
             )
         title = strip_control(data.title or "").strip()
         row = AskThread(
@@ -242,28 +240,11 @@ class AskService:
             return None
         software = await software_hit(self.session, v)
         verdict, facts = assess(v, software=software)
-        cfg = await load_config_async(self.session)
-        reason = availability(cfg)
         ctx = context.build(
             v, facts=facts, verdict=VERDICT_LABELS[verdict], target=_target(v)
         )
-        model = cfg.model_for_task(fast=False) if cfg and reason is None else None
-        estimate = (
-            price(model, len(ctx.system) // CHARS_PER_TOKEN, ANSWER_TOKENS)
-            if model
-            else None
-        )
-        return AskBrief(
-            verdict=verdict,
-            label=VERDICT_LABELS[verdict],
-            facts=facts,
-            available=reason is None,
-            off_reason=reason,
-            model=model,
-            estimate_usd=estimate,
-            masked=ctx.masked,
-            flags=ctx.flags,
-            starters=list(STARTERS[SurfaceDimension.VULNERABILITIES.value]),
+        return await self._brief(
+            verdict, facts, ctx, SurfaceDimension.VULNERABILITIES.value
         )
 
     async def brief_asset(self, scan_id: uuid.UUID, name: str) -> AskBrief | None:
@@ -280,17 +261,17 @@ class AskService:
         if bundle is None:
             return None
         verdict, facts = asset_context.assess(bundle)
-        cfg = await load_config_async(self.session)
-        reason = availability(cfg)
         ctx = asset_context.build(
             bundle, facts=facts, target=await _target_value(self.session, row)
         )
+        return await self._brief(verdict, facts, ctx, SurfaceDimension.WEB_ASSETS.value)
+
+    async def _brief(
+        self, verdict: str, facts: list[Fact], ctx: context.Context, dimension: str
+    ) -> AskBrief:
+        cfg = await load_config_async(self.session)
+        reason = availability(cfg)
         model = cfg.model_for_task(fast=False) if cfg and reason is None else None
-        estimate = (
-            price(model, len(ctx.system) // CHARS_PER_TOKEN, ANSWER_TOKENS)
-            if model
-            else None
-        )
         return AskBrief(
             verdict=verdict,
             label=VERDICT_LABELS[verdict],
@@ -298,10 +279,9 @@ class AskService:
             available=reason is None,
             off_reason=reason,
             model=model,
-            estimate_usd=estimate,
             masked=ctx.masked,
             flags=ctx.flags,
-            starters=list(STARTERS[SurfaceDimension.WEB_ASSETS.value]),
+            starters=list(STARTERS[dimension]),
         )
 
 
@@ -476,7 +456,7 @@ async def _run(session: AsyncSession, user: User, turn: _Turn) -> AsyncIterator[
         session=session,
         token=tools.identity_for(user, turn.thread.project_id),
         ui_base_url=settings.ui_base_url,
-        client=tools.CLIENT,
+        client=ASK_CLIENT,
     )
     steps = turn.steps
     nonce = secrets.token_hex(4)

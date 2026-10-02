@@ -12,7 +12,6 @@ from shared.definitions.ports import (
     PortProfile,
     profile_ports,
 )
-from shared.logging import get_logger
 from shared.services.proxy_resolve import is_socks5, proxy_env
 from shared.utils.net import bracketed, host_port, unreadable_port, url_port
 from tools.runner import (
@@ -23,8 +22,6 @@ from tools.runner import (
     ToolResult,
 )
 from tools.runner.models import CommandRecorder
-
-logger = get_logger(__name__)
 
 NAABU_BINARY = "naabu"
 DEFAULT_TIMEOUT = 3600

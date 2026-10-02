@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import Counter
 from datetime import timedelta
 from uuid import UUID
 
@@ -18,25 +17,8 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.util import ClauseAdapter
 
-from app.services.asset_query import (
-    NO_JIT,
-    STATEMENT_TIMEOUT,
-    QueryContext,
-    QueryScope,
-    QuerySyntaxError,
-    ScopeLike,
-    build_groups,
-    build_leads,
-    collect_evidence,
-    compile_query,
-    count_queries,
-    parse_query,
-    query_error_for,
-    syntax_error,
-    vuln_suppressed,
-)
-from app.services.asset_query import predicates as preds
 from app.services.cross_links import CrossLinkService
 from app.services.http_asset import HttpAssetService
 from app.services.ip_address import IpAddressService
@@ -45,10 +27,12 @@ from app.services.target_names import target_names
 from shared.definitions import domain_posture as posture_defs
 from shared.definitions import hygiene as hygiene_defs
 from shared.definitions.asset_query import (
+    ALL_TAB,
     COUNT_CAP,
     HOST_QUERY,
     MAX_GROUPS,
     RENDER_SAMPLE_HOSTS,
+    STATUS_CLASSES,
 )
 from shared.definitions.correlation import (
     CORRELATION_KIND_LABELS,
@@ -62,7 +46,6 @@ from shared.definitions.vulnerabilities import SEVERITY_ORDER
 from shared.logging import get_logger
 from shared.models.asset_query import (
     QueryCounts,
-    QueryError,
     QueryGroups,
     QueryLeads,
 )
@@ -92,11 +75,28 @@ from shared.models.subdomain import (
     SubdomainRelation,
     SubdomainRow,
     SubdomainSearchResult,
-    SubdomainSummary,
-    TargetSubdomainRead,
 )
 from shared.models.vulnerability import Vulnerability
-from shared.services.asset_query import lead_cache
+from shared.services.asset_query import (
+    NO_JIT,
+    STATEMENT_TIMEOUT,
+    QueryContext,
+    QueryScope,
+    QuerySyntaxError,
+    ScopeLike,
+    build_groups,
+    build_leads,
+    collect_evidence,
+    compile_query,
+    count_named,
+    count_queries,
+    lead_cache,
+    parse_query,
+    query_error_for,
+    syntax_error,
+    vuln_suppressed,
+)
+from shared.services.asset_query import predicates as preds
 from shared.services.asset_query.renders import cluster, is_identity
 from shared.services.correlation import CorrelationFinder, values_carried
 from shared.services.surface_query import web_assets as surface_hosts
@@ -109,46 +109,30 @@ logger = get_logger(__name__)
 _NO_FINDINGS: tuple[int, str | None, bool, dict[str, int]] = (0, None, False, {})
 _NO_SHARE: tuple[int, int] = (0, 1)
 
-_TARGET_ROLLUP_CAP = 20000
 _FACET_LIMIT = 40
 _RELATION_CAP = 300
-_HTTP_OK = preds.HTTP_OK
-_HTTP_REDIRECT = preds.HTTP_REDIRECT
-_HTTP_CLIENT = preds.HTTP_CLIENT
-_HTTP_SERVER = preds.HTTP_SERVER
-_AUTH_STATUS = preds.AUTH_STATUS
-_STATUS_BUCKETS = preds.STATUS_BUCKETS
-_SENSITIVE_PORTS = SENSITIVE_PORTS
-_STATUS_LABELS = {
-    "2xx": "2xx OK",
-    "3xx": "3xx Redirect",
-    "4xx": "4xx Client",
-    "5xx": "5xx Server",
-    "none": "No HTTP",
-}
 _CERT_LABELS = {
     "expired": "Expired",
     "expiring": "Expiring <30d",
     "self-signed": "Self-signed",
     "valid": "Valid",
 }
-_AUTH_RE = preds.AUTH_RE
 _REFRAME = {
-    "live": ("Responding (2xx)", "success"),
-    "redirect": ("Redirect (3xx)", "info"),
+    "live": ("2xx responses", "success"),
+    "redirect": ("3xx redirects", "info"),
     "auth": ("Authentication required", "warning"),
-    "error": ("Error response (4xx, 5xx)", "destructive"),
+    "error": ("4xx and 5xx errors", "destructive"),
     "none": ("No HTTP response", "muted"),
 }
 _REFRAME_ORDER = ["live", "redirect", "auth", "error", "none"]
 _EXPIRY = {
     "expired": ("Expired", "destructive"),
-    "d7": ("Expires within 7 days", "destructive"),
-    "d30": ("Expires within 30 days", "warning"),
-    "d90": ("Expires within 90 days", "info"),
-    "ok": ("Valid beyond 90 days", "success"),
+    "week": ("Expires within 7 days", "destructive"),
+    "month": ("Expires within 30 days", "warning"),
+    "quarter": ("Expires within 90 days", "info"),
+    "later": ("Valid beyond 90 days", "success"),
 }
-_EXPIRY_ORDER = ["expired", "d7", "d30", "d90", "ok"]
+_EXPIRY_ORDER = ["expired", "week", "month", "quarter", "later"]
 _CLUSTER_REASON = {
     "cert": "Shared TLS certificate",
     "favicon": "Shared favicon hash",
@@ -228,93 +212,13 @@ class SubdomainService:
             discovered_at=sub.discovered_at,
         )
 
-    def _base_query(
-        self,
-        project_id: UUID,
-        scan_id: UUID | None,
-        target_id: UUID | None,
-        active_only: bool,
-        search: str | None,
-    ):
-        return select(Subdomain).where(
-            *self._conditions(project_id, scan_id, target_id, active_only, search)
-        )
-
-    def _conditions(
-        self,
-        project_id: UUID,
-        scan_id: UUID | None,
-        target_id: UUID | None,
-        active_only: bool,
-        search: str | None,
-    ) -> list:
-        where = [Subdomain.project_id == project_id]
-        if scan_id is not None:
-            where.append(Subdomain.scan_id == scan_id)
-        if target_id is not None:
-            where.append(Subdomain.target_id == target_id)
-        if active_only:
-            where.append(Subdomain.is_active.is_(True))
-        if search:
-            where.append(Subdomain.name.ilike(f"%{search}%"))
-        return where
-
-    async def list(
-        self,
-        project_id: UUID,
-        scan_id: UUID | None = None,
-        target_id: UUID | None = None,
-        active_only: bool = False,
-        search: str | None = None,
-        limit: int = 100,
-        offset: int = 0,
-    ) -> list[SubdomainRead]:
-        query = self._base_query(project_id, scan_id, target_id, active_only, search)
-        query = query.order_by(Subdomain.name).limit(limit).offset(offset)
-        result = await self.session.execute(query)
-        return [self._to_read(s) for s in result.scalars().all()]
-
-    async def summary(
-        self,
-        project_id: UUID,
-        scan_id: UUID | None = None,
-        target_id: UUID | None = None,
-    ) -> SubdomainSummary:
-        where = self._conditions(project_id, scan_id, target_id, False, None)
-        totals = (
-            await self.session.execute(
-                select(
-                    func.count(),
-                    func.count().filter(Subdomain.is_active.is_(True)),
-                ).where(*where)
-            )
-        ).one()
-        source = func.jsonb_array_elements_text(
-            cast(Subdomain.sources, JSONB)
-        ).column_valued("source")
-        rows = (
-            await self.session.execute(
-                select(source, func.count())
-                .select_from(Subdomain)
-                .where(*where)
-                .group_by(source)
-            )
-        ).all()
-        return SubdomainSummary(
-            total=int(totals[0] or 0),
-            active=int(totals[1] or 0),
-            sources={str(name): int(count) for name, count in rows},
-        )
-
     # ── server-side faceted search (Web Assets table) ──────────────────
 
-    _status_pred = staticmethod(preds.status_class)
     _cert_pred = staticmethod(preds.cert_state)
 
     _apply_filter = staticmethod(surface_hosts.apply_filter)
     _order = staticmethod(surface_hosts.order)
     _scoped = staticmethod(surface_hosts.scoped)
-    _compiled = staticmethod(surface_hosts.compiled)
 
     async def search(
         self, project_id: UUID, scope: ScopeLike, f: SubdomainFilter
@@ -488,6 +392,46 @@ class SubdomainService:
             keep=lambda computed: computed.computed,
         )
 
+    async def tabs(
+        self, project_id: UUID, scope: ScopeLike, f: SubdomainFilter
+    ) -> QueryCounts:
+        """Rows under each status tab, for the filter without its own statuses."""
+        scope = QueryScope.of(scope)
+        f = f.model_copy(update={"statuses": []})
+
+        async def _build() -> QueryCounts:
+            now = utc_now()
+            base = self._scoped(project_id, scope, f, now, columns=(Subdomain.id,))
+            try:
+                predicate = compile_query(
+                    parse_query(f.q), QueryContext(scope=scope, now=now)
+                )
+            except QuerySyntaxError:
+                return QueryCounts()
+            if predicate is not None:
+                base = base.where(predicate)
+            await self.session.execute(text(STATEMENT_TIMEOUT))
+            await self.session.execute(text(NO_JIT))
+            tabs = {k: preds.status_class(k) for k in STATUS_CLASSES}
+            try:
+                return await count_named(self.session, base, {ALL_TAB: None, **tabs})
+            except DBAPIError as exc:
+                await self.session.rollback()
+                logger.info("search tabs failed", error=str(exc.orig))
+                return QueryCounts()
+
+        return await lead_cache.cached(
+            self.session,
+            name="tabs:web_assets",
+            scans=scope.ids,
+            facets=f"{project_id}|{lead_cache.filter_of(f)}",
+            model=QueryCounts,
+            build=_build,
+            keep=lambda counted: counted.computed,
+            ttl=lead_cache.SEARCH_TTL_SECONDS,
+            live_ttl=None,
+        )
+
     async def leads(
         self, project_id: UUID, scope: ScopeLike, f: SubdomainFilter
     ) -> QueryLeads:
@@ -563,17 +507,6 @@ class SubdomainService:
             logger.info("search groups failed", error=str(exc.orig))
             return QueryGroups(dimension=key)
 
-    async def _render_histogram(self, scope: QueryScope) -> dict[int, int]:
-        rows = await self.session.execute(
-            select(Subdomain.screenshot_phash, func.count())
-            .where(
-                scope.match(Subdomain.scan_id),
-                Subdomain.screenshot_phash.isnot(None),
-            )
-            .group_by(Subdomain.screenshot_phash)
-        )
-        return {int(value): int(n) for value, n in rows.all()}
-
     async def renders(
         self, project_id: UUID, scope: ScopeLike, f: SubdomainFilter
     ) -> RenderGroups:
@@ -588,9 +521,7 @@ class SubdomainService:
             node = parse_query(f.q)
             predicate = compile_query(node, QueryContext(scope=scope, now=now))
         except QuerySyntaxError as exc:
-            return RenderGroups(
-                error=QueryError(message=exc.message, start=exc.start, end=exc.end)
-            )
+            return RenderGroups(error=syntax_error(exc))
         if predicate is not None:
             base = base.where(predicate)
 
@@ -732,7 +663,7 @@ class SubdomainService:
                     and_(Subdomain.http_status >= lo, Subdomain.http_status < hi),
                     bucket,
                 )
-                for bucket, (lo, hi) in _STATUS_BUCKETS.items()
+                for bucket, (lo, hi) in preds.STATUS_BUCKETS.items()
             ],
             else_=None,
         )
@@ -741,10 +672,10 @@ class SubdomainService:
             .where(*reach)
             .group_by(status_key)
         )
-        order = list(_STATUS_LABELS)
+        order = list(preds.STATUS_LABELS)
         status_map = {k: c for k, c in status_rows.all() if k is not None}
         status = [
-            Facet(value=k, label=_STATUS_LABELS[k], count=status_map[k])
+            Facet(value=k, label=preds.STATUS_LABELS[k], count=status_map[k])
             for k in order
             if k in status_map
         ]
@@ -944,10 +875,20 @@ class SubdomainService:
             columns.append(
                 func.count().filter(preds.posture_applies(key)).label(f"a_{key}")
             )
+        rows = (
+            select(
+                cast(Subdomain.posture_issues, JSONB).label("posture_issues"),
+                cast(Subdomain.posture_checked, JSONB).label("posture_checked"),
+            )
+            .where(*reach)
+            .cte("posture_rows")
+            .prefix_with("MATERIALIZED")
+        )
+        adapter = ClauseAdapter(rows, adapt_on_names=True)
         row = (
             (
                 await self.session.execute(
-                    select(*columns).select_from(Subdomain).where(*reach)
+                    select(*(adapter.traverse(c) for c in columns)).select_from(rows)
                 )
             )
             .one()
@@ -1104,17 +1045,12 @@ class SubdomainService:
                     )
                     .label("cname_only"),
                     func.count()
-                    .filter(Subdomain.screenshot_path.isnot(None))
-                    .label("shots"),
-                    func.count()
                     .filter(
                         func.jsonb_array_length(cast(Subdomain.sources, JSONB)) == 1
                     )
                     .label("single_source"),
-                    func.count().filter(Subdomain.is_cdn.is_(True)).label("cdn"),
-                    func.count().filter(Subdomain.waf.isnot(None)).label("waf"),
                     func.count()
-                    .filter(Subdomain.http_status >= _HTTP_SERVER)
+                    .filter(Subdomain.http_status >= preds.HTTP_SERVER)
                     .label("server_err"),
                     func.count()
                     .filter(Subdomain.tls_self_signed.is_(True))
@@ -1133,8 +1069,8 @@ class SubdomainService:
                     func.count()
                     .filter(
                         or_(
-                            Subdomain.http_status.in_(_AUTH_STATUS),
-                            Subdomain.page_title.op("~*")(_AUTH_RE),
+                            Subdomain.http_status.in_(preds.AUTH_STATUS),
+                            Subdomain.page_title.op("~*")(preds.AUTH_RE),
                         )
                     )
                     .label("auth"),
@@ -1147,7 +1083,7 @@ class SubdomainService:
         sensitive = await self.session.scalar(
             select(func.count())
             .select_from(Subdomain)
-            .where(*scope, preds.port_match(Port.number.in_(_SENSITIVE_PORTS), scan_id))
+            .where(*scope, preds.port_match(Port.number.in_(SENSITIVE_PORTS), scan_id))
         )
         ip_total = await self.session.scalar(
             select(func.count())
@@ -1185,18 +1121,6 @@ class SubdomainService:
             ),
             SurfaceStat(key="live", label="Live", value=counts.live, filter="is:live"),
             SurfaceStat(key="web", label="With web", value=counts.web, filter="is:web"),
-            SurfaceStat(
-                key="screenshot",
-                label="Screenshots",
-                value=counts.shots,
-                filter="is:screenshot",
-            ),
-            SurfaceStat(
-                key="cdn", label="Behind CDN", value=counts.cdn, filter="cdn:yes"
-            ),
-            SurfaceStat(
-                key="waf", label="Behind WAF", value=counts.waf, filter="waf:any"
-            ),
             SurfaceStat(key="ips", label="Unique IPs", value=int(ip_total or 0)),
             SurfaceStat(key="asns", label="Networks", value=int(asn_total or 0)),
             SurfaceStat(key="ports", label="Open ports", value=int(port_total or 0)),
@@ -1277,9 +1201,9 @@ class SubdomainService:
 
         reframe_key = case(
             (Subdomain.http_status.is_(None), "none"),
-            (Subdomain.http_status < _HTTP_REDIRECT, "live"),
-            (Subdomain.http_status < _HTTP_CLIENT, "redirect"),
-            (Subdomain.http_status.in_(_AUTH_STATUS), "auth"),
+            (Subdomain.http_status < preds.HTTP_REDIRECT, "live"),
+            (Subdomain.http_status < preds.HTTP_CLIENT, "redirect"),
+            (Subdomain.http_status.in_(preds.AUTH_STATUS), "auth"),
             else_="error",
         )
         reframe_rows = dict(
@@ -1301,10 +1225,10 @@ class SubdomainService:
 
         cb_key = case(
             (self._cert_pred("expired", now), "expired"),
-            (Subdomain.tls_not_after < now + timedelta(days=7), "d7"),
-            (Subdomain.tls_not_after < now + timedelta(days=30), "d30"),
-            (Subdomain.tls_not_after < now + timedelta(days=90), "d90"),
-            (Subdomain.tls_not_after.isnot(None), "ok"),
+            (Subdomain.tls_not_after < now + timedelta(days=7), "week"),
+            (Subdomain.tls_not_after < now + timedelta(days=30), "month"),
+            (Subdomain.tls_not_after < now + timedelta(days=90), "quarter"),
+            (Subdomain.tls_not_after.isnot(None), "later"),
             else_=None,
         )
         cb_rows = {
@@ -1336,18 +1260,6 @@ class SubdomainService:
             )
             or 0
         )
-        asn_rows = await self.session.execute(
-            select(IpAddress.asn_org, func.count())
-            .where(
-                IpAddress.project_id == project_id,
-                IpAddress.scan_id == scan_id,
-                IpAddress.asn_org.isnot(None),
-            )
-            .group_by(IpAddress.asn_org)
-            .order_by(func.count().desc())
-            .limit(8)
-        )
-        top_asn = [Tally(name=n, count=c) for n, c in asn_rows.all()]
         geo_rows = await self.session.execute(
             select(IpAddress.country, func.count())
             .where(
@@ -1406,7 +1318,6 @@ class SubdomainService:
             cert_buckets=cert_buckets,
             top_tech=top_tech,
             tech_total=tech_total,
-            top_asn=top_asn,
             geography=geography,
             geo_total=sum(t.count for t in geography),
             clusters=clusters[:_CLUSTER_LIMIT],
@@ -1414,7 +1325,10 @@ class SubdomainService:
 
     @staticmethod
     def _asset_rank(a: HttpAsset) -> tuple:
-        alive = a.status_code is not None and _HTTP_OK <= a.status_code < _HTTP_CLIENT
+        alive = (
+            a.status_code is not None
+            and preds.HTTP_OK <= a.status_code < preds.HTTP_CLIENT
+        )
         return (a.scheme == "https", alive, a.port in (443, 80), -(a.port or 0))
 
     async def correlation(
@@ -1481,105 +1395,3 @@ class SubdomainService:
             ip_metas=ip_metas,
             related=await self.related(project_id, scope, name),
         )
-
-    async def _fetch_target_rows(
-        self, project_id: UUID, target_id: UUID
-    ) -> list[Subdomain]:
-        query = (
-            select(Subdomain)
-            .where(Subdomain.project_id == project_id, Subdomain.target_id == target_id)
-            .order_by(Subdomain.discovered_at.desc(), Subdomain.scan_id.desc())
-            .limit(_TARGET_ROLLUP_CAP + 1)
-        )
-        result = await self.session.execute(query)
-        rows = list(result.scalars().all())
-        if len(rows) > _TARGET_ROLLUP_CAP:
-            logger.warning(
-                "target %s rollup capped at %d rows (newest kept)",
-                target_id,
-                _TARGET_ROLLUP_CAP,
-            )
-            rows = rows[:_TARGET_ROLLUP_CAP]
-        rows.sort(key=lambda r: (r.discovered_at, str(r.scan_id)))
-        return rows
-
-    @staticmethod
-    def _aggregate(rows: list[Subdomain]) -> dict[str, TargetSubdomainRead]:
-        agg: dict[str, TargetSubdomainRead] = {}
-        scan_ids: dict[str, set] = {}
-        for row in rows:  # newest row wins
-            existing = agg.get(row.name)
-            if existing is None:
-                scan_ids[row.name] = {row.scan_id}
-                agg[row.name] = TargetSubdomainRead(
-                    name=row.name,
-                    sources=list(row.sources or []),
-                    resolved_ips=list(row.resolved_ips or []),
-                    cname=row.cname,
-                    is_active=row.is_active,
-                    is_wildcard=row.is_wildcard,
-                    is_excluded=row.is_excluded,
-                    scan_count=1,
-                    last_scan_id=row.scan_id,
-                    first_seen=row.discovered_at,
-                    last_seen=row.discovered_at,
-                )
-                continue
-            scan_ids[row.name].add(row.scan_id)
-            existing.sources = sorted(set(existing.sources) | set(row.sources or []))
-            existing.resolved_ips = list(row.resolved_ips or [])
-            existing.cname = row.cname
-            existing.is_active = row.is_active
-            existing.is_wildcard = row.is_wildcard
-            existing.is_excluded = row.is_excluded
-            existing.last_scan_id = row.scan_id
-            existing.last_seen = row.discovered_at
-            existing.scan_count = len(scan_ids[row.name])
-        return agg
-
-    async def list_for_target(
-        self,
-        project_id: UUID,
-        target_id: UUID,
-        active_only: bool = False,
-        search: str | None = None,
-        limit: int = 100,
-        offset: int = 0,
-    ) -> list[TargetSubdomainRead]:
-        rows = await self._fetch_target_rows(project_id, target_id)
-        items = list(self._aggregate(rows).values())
-        if active_only:
-            items = [i for i in items if i.is_active]
-        if search:
-            needle = search.lower()
-            items = [i for i in items if needle in i.name.lower()]
-        items.sort(key=lambda i: i.name)
-        return items[offset : offset + limit]
-
-    async def summary_for_target(
-        self, project_id: UUID, target_id: UUID
-    ) -> SubdomainSummary:
-        rows = await self._fetch_target_rows(project_id, target_id)
-        agg = self._aggregate(rows)
-        source_counts: Counter = Counter()
-        active = 0
-        for item in agg.values():
-            if item.is_active:
-                active += 1
-            for src in item.sources:
-                source_counts[src] += 1
-        return SubdomainSummary(
-            total=len(agg), active=active, sources=dict(source_counts)
-        )
-
-    async def count(
-        self,
-        project_id: UUID,
-        scan_id: UUID | None = None,
-        target_id: UUID | None = None,
-    ) -> int:
-        query = select(func.count()).select_from(
-            self._base_query(project_id, scan_id, target_id, False, None).subquery()
-        )
-        result = await self.session.execute(query)
-        return int(result.scalar_one())

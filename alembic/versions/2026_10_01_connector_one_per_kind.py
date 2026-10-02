@@ -16,16 +16,6 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    op.execute(
-        """
-        DELETE FROM connectors
-        WHERE id NOT IN (
-            SELECT DISTINCT ON (project_id, kind) id
-            FROM connectors
-            ORDER BY project_id, kind, last_seen_at DESC NULLS LAST, created_at DESC
-        )
-        """
-    )
     op.create_index(
         "uq_connector_project_kind",
         "connectors",

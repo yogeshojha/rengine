@@ -5,15 +5,14 @@
 		rows?: number;
 		stats?: boolean;
 		meter?: boolean;
-		class?: string;
 	}
 
-	let { rows = 6, stats = false, meter = false, class: className = '' }: Props = $props();
+	let { rows = 6, stats = false, meter = false }: Props = $props();
 
 	const WIDTH = ['w-56', 'w-44', 'w-64', 'w-48', 'w-52'];
 </script>
 
-<div class="space-y-4 py-1 {className}" aria-busy="true">
+<div class="space-y-4 py-1" aria-busy="true">
 	<div class="flex items-center justify-between gap-3">
 		<Skeleton class="h-4 w-40" />
 		<Skeleton class="h-4 w-20" />

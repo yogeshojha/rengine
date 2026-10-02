@@ -1,25 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime
-from uuid import UUID
 
 from sqlalchemy import func, select, text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.asset_query import (
-    NO_JIT,
-    STATEMENT_TIMEOUT,
-    QueryScope,
-    QuerySyntaxError,
-    ScopeLike,
-    SoftwareQueryContext,
-    compile_software_query,
-    parse_query,
-    query_error_for,
-    software_has_baseline,
-    syntax_error,
-)
+from app.services.baseline import new_row_ids
+from app.services.facets import column_facet
 from app.services.target_names import target_names
 from shared.definitions.asset_query import COUNT_CAP, SOFTWARE_QUERY
 from shared.definitions.evidence import EVIDENCE_LABELS, EVIDENCE_ORDER
@@ -28,16 +16,16 @@ from shared.definitions.software import (
     CAVEAT_ORDER,
     CONFIDENCE_LABELS,
     CONFIDENCE_ORDER,
+    MAX_MATCHES_PER_SCAN,
     PRODUCTS_BY_KEY,
     VERSION_SOURCE_LABELS,
-    VersionSource,
 )
 from shared.definitions.threat_intel import STALE_AFTER_HOURS, FeedKind, exploit_band
 from shared.definitions.vulnerabilities import SEVERITY_LABELS, SEVERITY_ORDER
 from shared.logging import get_logger
+from shared.models.asset_query import QueryCounts
 from shared.models.software import (
     NvdCve,
-    SoftwareComponentRead,
     SoftwareCoverage,
     SoftwareCve,
     SoftwareCveRead,
@@ -47,15 +35,29 @@ from shared.models.software import (
     SoftwarePage,
 )
 from shared.models.threat_intel import ThreatFeed
-from shared.services.asset_query import lead_cache
+from shared.services.asset_query import (
+    NO_JIT,
+    STATEMENT_TIMEOUT,
+    QueryScope,
+    QuerySyntaxError,
+    ScopeLike,
+    SoftwareQueryContext,
+    compile_software_query,
+    count_queries,
+    lead_cache,
+    parse_query,
+    query_error_for,
+    software_is_new,
+    syntax_error,
+)
 from shared.services.surface_query import software as surface_software
+from shared.services.threat_intel import feed_age_hours
 from shared.utils.datetime import utc_now
 from shared.utils.software import normalize_product
 
 logger = get_logger(__name__)
 
 _FACET_LIMIT = 20
-_UNMAPPED_SHOWN = 25
 
 
 class SoftwareService:
@@ -117,15 +119,19 @@ class SoftwareService:
 
         names = await target_names(self.session, (row.target_id for row in rows))
         descriptions = await self._descriptions([row.cve for row in rows])
-        seen = await self._seen_before(scope, [row.fingerprint for row in rows])
-        baseline = await self.session.scalar(select(software_has_baseline(scope)))
+        new_ids = await new_row_ids(
+            self.session,
+            SoftwareCve.id,
+            software_is_new(scope),
+            [row.id for row in rows],
+        )
         for row in rows:
             page.items.append(
                 self._to_read(
                     row,
                     target_value=names.get(row.target_id),
                     description=descriptions.get(row.cve),
-                    is_new=bool(baseline) and row.fingerprint not in seen,
+                    is_new=row.id in new_ids,
                 )
             )
         return page
@@ -193,22 +199,37 @@ class SoftwareService:
         )
         return {cve: description for cve, description in rows.all() if description}
 
-    async def _seen_before(
-        self, scope: QueryScope, fingerprints: list[str]
-    ) -> set[str]:
-        if not fingerprints or not scope.ids:
-            return set()
-        rows = await self.session.execute(
-            text(
-                "SELECT DISTINCT e.fingerprint FROM software_cves e "
-                "JOIN software_cves cur ON cur.scan_id = ANY(:sids) "
-                "AND cur.fingerprint = e.fingerprint "
-                "WHERE e.target_id = cur.target_id AND NOT (e.scan_id = ANY(:sids)) "
-                "AND e.discovered_at < cur.discovered_at AND e.fingerprint = ANY(:fps)"
-            ),
-            {"sids": [str(i) for i in scope.ids], "fps": fingerprints},
+    async def counts(self, scope: ScopeLike, queries: list[str]) -> QueryCounts:
+        scope = QueryScope.of(scope)
+
+        async def _build() -> QueryCounts:
+            ctx = self._context(scope, utc_now())
+            await self.session.execute(text(STATEMENT_TIMEOUT))
+            await self.session.execute(text(NO_JIT))
+            try:
+                return await count_queries(
+                    self.session,
+                    self._scoped(scope),
+                    queries,
+                    lambda q: compile_software_query(
+                        parse_query(q, SOFTWARE_QUERY), ctx
+                    ),
+                )
+            except DBAPIError as exc:
+                await self.session.rollback()
+                logger.info("software counts failed", error=str(exc.orig))
+                return QueryCounts()
+
+        return await lead_cache.cached(
+            self.session,
+            name="counts:software",
+            scans=scope.ids,
+            facets="|".join(queries),
+            model=QueryCounts,
+            build=_build,
+            keep=lambda counted: counted.computed,
+            live_ttl=None,
         )
-        return {row[0] for row in rows.all()}
 
     async def facets(self, scope: ScopeLike) -> SoftwareFacets:
         scope = QueryScope.of(scope)
@@ -246,22 +267,16 @@ class SoftwareService:
     async def _facet(
         self, scope: QueryScope, column, labels: dict[str, str], order: tuple[str, ...]
     ) -> list[SoftwareFacet]:
-        rows = await self.session.execute(
-            select(column, func.count())
-            .where(scope.match(SoftwareCve.scan_id))
-            .group_by(column)
-            .order_by(func.count().desc())
-            .limit(_FACET_LIMIT)
+        return await column_facet(
+            self.session,
+            scope,
+            column,
+            SoftwareCve.scan_id,
+            labels=labels,
+            order=order,
+            make=SoftwareFacet,
+            limit=_FACET_LIMIT,
         )
-        found = [
-            SoftwareFacet(key=key, label=labels.get(key, key), count=count)
-            for key, count in rows.all()
-            if key
-        ]
-        if not order:
-            return found
-        rank = {key: index for index, key in enumerate(order)}
-        return sorted(found, key=lambda item: rank.get(item.key, len(rank)))
 
     async def _caveat_facet(self, scope: QueryScope) -> list[SoftwareFacet]:
         rows = await self.session.execute(
@@ -283,35 +298,33 @@ class SoftwareService:
         scope = QueryScope.of(scope)
 
         async def build() -> SoftwareCoverage:
-            feed = await self.session.scalar(
-                select(ThreatFeed).where(ThreatFeed.kind == FeedKind.NVD.value)
-            )
-            age = None
-            if feed is not None and feed.last_synced_at is not None:
-                age = (utc_now() - feed.last_synced_at).total_seconds() / 3600
-            mapped, unmapped, names = await self._components(scope)
+            mapped, unmapped = await self._components(scope)
             matched = await self.session.scalar(
                 text(
                     "SELECT count(DISTINCT coalesce(http_asset_id::text, port_id::text)) "
                     "FROM software_cves WHERE scan_id = ANY(:sids)"
                 ).bindparams(sids=[str(i) for i in scope.ids])
             )
-            findings = await self.session.scalar(
-                select(func.count()).where(scope.match(SoftwareCve.scan_id))
-            )
+            per_scan = (
+                await self.session.execute(
+                    select(func.count())
+                    .where(scope.match(SoftwareCve.scan_id))
+                    .group_by(SoftwareCve.scan_id)
+                )
+            ).scalars()
+            stored = [int(n) for n in per_scan]
             return SoftwareCoverage(
                 components=mapped + unmapped,
                 mapped=mapped,
                 unmapped=unmapped,
-                unmapped_names=names,
                 matched=int(matched or 0),
-                findings=int(findings or 0),
-                feed_ready=feed is not None and feed.rows > 0,
-                feed_age_hours=age,
-                stale=age is not None and age > STALE_AFTER_HOURS,
+                findings=sum(stored),
+                capped_at=MAX_MATCHES_PER_SCAN
+                if any(n >= MAX_MATCHES_PER_SCAN for n in stored)
+                else None,
             )
 
-        return await lead_cache.cached(
+        counts = await lead_cache.cached(
             self.session,
             name="software:coverage",
             scans=scope.ids,
@@ -319,19 +332,28 @@ class SoftwareService:
             model=SoftwareCoverage,
             build=build,
         )
+        feed = await self.session.scalar(
+            select(ThreatFeed).where(ThreatFeed.kind == FeedKind.NVD.value)
+        )
+        age = feed_age_hours(feed)
+        return counts.model_copy(
+            update={
+                "feed_ready": feed is not None and feed.rows > 0,
+                "feed_age_hours": age,
+                "stale": age is not None and age > STALE_AFTER_HOURS,
+            }
+        )
 
-    async def _components(
-        self, scope: QueryScope
-    ) -> tuple[int, int, list[SoftwareComponentRead]]:
-        """Counted the way the matcher resolves them, so the two never disagree."""
+    async def _components(self, scope: QueryScope) -> tuple[int, int]:
+        """Versioned components, mapped and unmapped."""
         if not scope.ids:
-            return 0, 0, []
+            return 0, 0
         sids = [str(i) for i in scope.ids]
         rows = await self.session.execute(
             text(
-                "SELECT value ->> 'name' AS name, value ->> 'source' AS source, "
-                "count(*) AS n FROM http_assets, json_array_elements(software) value "
-                "WHERE scan_id = ANY(:sids) GROUP BY 1, 2"
+                "SELECT value ->> 'name' AS name, count(*) AS n "
+                "FROM http_assets, json_array_elements(software) value "
+                "WHERE scan_id = ANY(:sids) GROUP BY 1"
             ).bindparams(sids=sids)
         )
         ports = await self.session.execute(
@@ -343,60 +365,11 @@ class SoftwareService:
         )
         mapped = 0
         unmapped = 0
-        missing: dict[tuple[str, str], int] = {}
-        counted: list[tuple[str, str, int]] = [
-            (row.name, row.source or VersionSource.FINGERPRINT.value, row.n)
-            for row in rows.all()
-            if row.name
-        ]
-        counted += [
-            (row.name, VersionSource.BANNER.value, row.n)
-            for row in ports.all()
-            if row.name
-        ]
-        for name, source, count in counted:
-            if normalize_product(name) in PRODUCTS_BY_KEY:
-                mapped += count
-            else:
-                unmapped += count
-                missing[(name, source)] = missing.get((name, source), 0) + count
-        ordered = sorted(missing.items(), key=lambda item: -item[1])[:_UNMAPPED_SHOWN]
-        return (
-            mapped,
-            unmapped,
-            [
-                SoftwareComponentRead(
-                    name=name, version_source=source, mapped=False, assets=count
-                )
-                for (name, source), count in ordered
-            ],
-        )
-
-    async def counts(self, scope: ScopeLike, queries: list[str]) -> dict[str, int]:
-        scope = QueryScope.of(scope)
-        now = utc_now()
-        out: dict[str, int] = {}
-        for query in queries:
-            base = self._scoped(scope)
-            try:
-                predicate = compile_software_query(
-                    parse_query(query, SOFTWARE_QUERY), self._context(scope, now)
-                )
-            except QuerySyntaxError:
-                out[query] = 0
+        for row in [*rows.all(), *ports.all()]:
+            if not row.name:
                 continue
-            if predicate is not None:
-                base = base.where(predicate)
-            counted = await self.session.scalar(
-                select(func.count()).select_from(base.subquery())
-            )
-            out[query] = int(counted or 0)
-        return out
-
-    async def scan_total(self, scan_id: UUID) -> int:
-        return int(
-            await self.session.scalar(
-                select(func.count()).where(SoftwareCve.scan_id == scan_id)
-            )
-            or 0
-        )
+            if normalize_product(row.name) in PRODUCTS_BY_KEY:
+                mapped += row.n
+            else:
+                unmapped += row.n
+        return mapped, unmapped

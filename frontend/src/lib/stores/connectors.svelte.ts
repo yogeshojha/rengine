@@ -17,6 +17,7 @@ function createConnectorsStore() {
 	let queueLoading = $state(false);
 	let error = $state<string | null>(null);
 	let fetchedProjectId = $state<string | null>(null);
+	let queueSeq = 0;
 
 	function message(e: unknown, fallback: string) {
 		return e instanceof Error ? e.message : fallback;
@@ -80,13 +81,15 @@ function createConnectorsStore() {
 		},
 
 		async loadQueue(id: string, projectId: string, params: CandidateQuery = {}) {
+			const seq = ++queueSeq;
 			queueLoading = true;
 			try {
-				queue = await connectorsApi.candidates(id, projectId, params);
+				const next = await connectorsApi.candidates(id, projectId, params);
+				if (seq === queueSeq) queue = next;
 			} catch (e) {
-				error = message(e, 'Queue not loaded');
+				if (seq === queueSeq) error = message(e, 'Queue not loaded');
 			} finally {
-				queueLoading = false;
+				if (seq === queueSeq) queueLoading = false;
 			}
 		},
 
@@ -106,13 +109,16 @@ function createConnectorsStore() {
 
 		drop(id: string) {
 			items = items.filter((c) => c.id !== id);
+			queueSeq++;
 			queue = null;
+			queueLoading = false;
 			discovered = [];
 		},
 
 		reset() {
 			catalog = [];
 			items = [];
+			queueSeq++;
 			queue = null;
 			discovered = [];
 			isLoading = false;

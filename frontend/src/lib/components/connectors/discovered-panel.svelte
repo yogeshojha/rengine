@@ -15,6 +15,7 @@
 	import { connectors } from '$lib/stores/connectors.svelte';
 	import { targetsStore } from '$lib/stores/targets.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
+	import { plural } from '$lib/utilities/strings';
 	import type { Connector, TargetAdded } from '$lib/types/connector';
 
 	let { connector, projectId }: { connector: Connector; projectId: string } = $props();
@@ -62,6 +63,7 @@
 
 	async function dismiss(domain: string) {
 		working = domain;
+		error = null;
 		try {
 			await connectorsApi.dismissDomain(connector.id, projectId, domain);
 			await reload();
@@ -105,10 +107,8 @@
 							{row.hostnames.join(', ')}
 						</p>
 						<p class="text-muted-foreground/70 text-2xs tabular-nums">
-							{row.hostname_count} host{row.hostname_count === 1 ? '' : 's'} · {row.requests} request{row.requests ===
-							1
-								? ''
-								: 's'} · first seen {relativeTime(row.first_seen_at)}
+							{plural(row.hostname_count, 'host')} · {plural(row.requests, 'request')} · first seen
+							{relativeTime(row.first_seen_at)}
 						</p>
 					</div>
 					<div class="flex shrink-0 items-center gap-2">
@@ -120,16 +120,6 @@
 									Added{result.attached ? ` · ${result.attached} attached` : ''}
 								</span>
 							</div>
-						{:else if row.out_of_scope}
-							<Button
-								variant="ghost"
-								size="sm"
-								disabled={working === row.domain}
-								onclick={() => (pending = { domain: row.domain, action: 'dismiss' })}
-							>
-								<XIcon class="size-3.5" />
-								Dismiss
-							</Button>
 						{:else}
 							<Button
 								variant="ghost"
@@ -140,14 +130,16 @@
 								<XIcon class="size-3.5" />
 								Dismiss
 							</Button>
-							<LoadingButton
-								loading={working === row.domain}
-								size="sm"
-								onclick={() => (pending = { domain: row.domain, action: 'add' })}
-							>
-								<PlusIcon class="size-3.5" />
-								Add as target
-							</LoadingButton>
+							{#if !row.out_of_scope}
+								<LoadingButton
+									loading={working === row.domain}
+									size="sm"
+									onclick={() => (pending = { domain: row.domain, action: 'add' })}
+								>
+									<PlusIcon class="size-3.5" />
+									Add as target
+								</LoadingButton>
+							{/if}
 						{/if}
 					</div>
 				</div>

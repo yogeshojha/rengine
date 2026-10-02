@@ -11,7 +11,6 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
-from app.services.asset_query import QueryScope, vuln_suppressed
 from app.services.target_scope import Targets
 from shared.definitions.asset_query import COUNT_CAP
 from shared.definitions.dashboard import STALE_DAYS
@@ -33,7 +32,7 @@ from shared.models.subdomain import Subdomain
 from shared.models.surface import SurfaceCoverage, SurfaceOverview, SurfaceTargetRead
 from shared.models.target import Target
 from shared.models.vulnerability import Vulnerability
-from shared.services.asset_query import lead_cache
+from shared.services.asset_query import QueryScope, lead_cache, vuln_suppressed
 from shared.services.scan_scope import census_only, covers
 from shared.utils.datetime import utc_now
 
@@ -52,7 +51,7 @@ TABLES = {
     SurfaceDimension.SECRETS.value: Secret,
 }
 
-# dimensions whose page headlines a true total, not a paged one
+# counted without COUNT_CAP
 EXACT_COUNT = frozenset(
     {SurfaceDimension.SOFTWARE.value, SurfaceDimension.SECRETS.value}
 )
@@ -188,9 +187,7 @@ class SurfaceScopeService:
         total = int(counted or 0)
         return min(total, COUNT_CAP), total > COUNT_CAP
 
-    async def coverage(
-        self, project_id: UUID, dimension: str, *, counts: bool = True
-    ) -> SurfaceCoverage:
+    async def coverage(self, project_id: UUID, dimension: str) -> SurfaceCoverage:
         picks = await self._picks(project_id, dimension)
         targets = await self._targets(project_id)
         scope = await self.scope(project_id, dimension)
@@ -237,8 +234,7 @@ class SurfaceScopeService:
         stamps = [r.observed_at for r in out.covered if r.observed_at]
         out.observed_from = min(stamps) if stamps else None
         out.observed_to = max(stamps) if stamps else None
-        if counts:
-            out.total, out.total_capped = await self._count(dimension, scope)
+        out.total, out.total_capped = await self._count(dimension, scope)
         return out
 
     async def overview(self, project_id: UUID) -> SurfaceOverview:

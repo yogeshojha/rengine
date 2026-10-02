@@ -1,9 +1,9 @@
 /** Mirror of shared/definitions/ask.py */
 
 export const MAX_QUESTION_CHARS = 4000;
-export const MAX_TITLE = 80;
 
 export const Verdict = {
+	PROFILE: 'profile',
 	PROVEN: 'proven',
 	LIKELY: 'likely',
 	UNCERTAIN: 'uncertain',
@@ -11,14 +11,6 @@ export const Verdict = {
 	FALSE_POSITIVE: 'false_positive'
 } as const;
 export type VerdictValue = (typeof Verdict)[keyof typeof Verdict];
-
-export const VERDICT_LABELS: Record<VerdictValue, string> = {
-	proven: 'Proven',
-	likely: 'Likely real',
-	uncertain: 'Uncertain',
-	insufficient: 'Not enough evidence',
-	false_positive: 'Marked false positive'
-};
 
 export const FactTone = {
 	FOR: 'for',
@@ -63,7 +55,6 @@ export const StreamEvent = {
 	DONE: 'done',
 	ERROR: 'error'
 } as const;
-export type StreamEventValue = (typeof StreamEvent)[keyof typeof StreamEvent];
 
 export const TraceStatus = {
 	RUNNING: 'running',

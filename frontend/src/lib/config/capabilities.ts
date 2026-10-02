@@ -24,7 +24,6 @@ export function coerceInstanceMode(value: string | null | undefined): InstanceMo
 export const Capability = {
 	BOUNTY_PLATFORMS: 'bounty_platforms',
 	BOUNTY_PROGRAMS: 'bounty_programs',
-	BB_RECON_PRESETS: 'bb_recon_presets',
 	PROGRAM_WATCHES: 'program_watches'
 } as const;
 export type CapabilityKey = (typeof Capability)[keyof typeof Capability];
@@ -33,7 +32,6 @@ const MODE_CAPABILITIES: Record<InstanceMode, CapabilityKey[]> = {
 	[InstanceMode.BugBounty]: [
 		Capability.BOUNTY_PLATFORMS,
 		Capability.BOUNTY_PROGRAMS,
-		Capability.BB_RECON_PRESETS,
 		Capability.PROGRAM_WATCHES
 	],
 	[InstanceMode.Corporate]: []

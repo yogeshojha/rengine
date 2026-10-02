@@ -46,7 +46,7 @@
 	import RecheckChip from '../recheck-chip.svelte';
 	import type { Recheck } from '$lib/types/recheck';
 	import { SERVICE_LEAD_COLUMNS } from './columns';
-	import { hostPort } from '$lib/utilities/net';
+	import { bracketed, hostPort } from '$lib/utilities/net';
 	import { AI_ICON, AI_YES, aiQuery, aiServiceLabel } from '$lib/config/ai-services';
 
 	interface Props {
@@ -163,7 +163,7 @@
 										? 'text-warning'
 										: ''}"
 								>
-									<HighlightText text={s.ip} {term} /><span
+									<HighlightText text={bracketed(s.ip)} {term} /><span
 										class={s.is_sensitive ? 'text-warning/60' : 'text-muted-foreground'}>:</span
 									><HighlightText text={String(s.port)} {term} />
 								</span>
@@ -195,7 +195,7 @@
 							<span class="block">{s.description}</span>
 							{#if s.registered}
 								<span class="block text-muted-foreground">
-									IANA registration for port {s.port}. Not confirmed by this scan.
+									IANA registration for port {s.port}. The running service is not identified.
 								</span>
 							{/if}
 						{:else}
@@ -293,7 +293,7 @@
 						onclick={(e) => pivot(e, 'is:passive')}
 					>
 						<span class="size-1 rounded-full bg-muted-foreground/50"></span>
-						Not observed by this scan
+						Not observed directly
 					</button>
 				{/snippet}
 			</Hint>
@@ -366,7 +366,7 @@
 							class="shrink-0"
 							items={hosts}
 							shown={MAX_HOSTS}
-							label="hosts"
+							label="web assets"
 							mono
 							onSelect={(h) => onHosts(exactToken('host', h))}
 						/>
@@ -521,7 +521,7 @@
 						</DropdownMenu.Item>
 						{#if s.host_count}
 							<DropdownMenu.Item onclick={() => onHosts(filterToken('ip', s.ip))}>
-								<Globe /> Hosts in Web assets
+								<Globe /> Web assets on this address
 							</DropdownMenu.Item>
 						{/if}
 						<DropdownMenu.Item onclick={() => onFilter(excludeToken('port', String(s.port)))}>

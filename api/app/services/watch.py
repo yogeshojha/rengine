@@ -9,7 +9,6 @@ import uuid
 from datetime import datetime
 from uuid import UUID
 
-import redis.asyncio as aioredis
 from fastapi import HTTPException, status
 from pydantic import ValidationError
 from sqlalchemy import Select, and_, func, or_, select
@@ -21,7 +20,7 @@ from app.services.bounty_program import BountyProgramService
 from app.services.scan import ScanService
 from app.services.scan_context import ScanContextService
 from app.services.scan_schedule import ScanScheduleService
-from shared.config import BaseAppSettings
+from shared.definitions.bounty_programs import SubmissionState
 from shared.definitions.schedule_constants import MAX_SCHEDULE_TARGETS
 from shared.definitions.watch import (
     ARRIVED_STATES,
@@ -31,9 +30,11 @@ from shared.definitions.watch import (
     FIELD_LABELS,
     HOST_STATE_LABELS,
     MAX_LISTED_ITEMS,
+    WATCH_EVENT_SCOPE,
     WATCH_TAG,
     WatchCadence,
     WatchEventKind,
+    WatchHostFilter,
     WatchHostState,
     WatchStatus,
     mark_key,
@@ -68,6 +69,7 @@ from shared.models.watch import (
     WatchTargetPreview,
     WatchUpdate,
 )
+from shared.redis import async_client
 from shared.services.asset_query import (
     QueryContext,
     QueryScope,
@@ -75,7 +77,6 @@ from shared.services.asset_query import (
     compile_query,
     parse_query,
 )
-from shared.services.celery_dispatch import dispatch_watch_reconcile
 from shared.utils.datetime import utc_now
 from shared.utils.text import counted
 
@@ -268,7 +269,7 @@ class WatchService:
                     watch_id=watch.id,
                     project_id=watch.project_id,
                     kind=WatchEventKind.BASELINE_QUEUED.value,
-                    detail=f"{launched} scans queued with {engine.name}.",
+                    detail=f"{counted(launched, 'scan')} queued with {engine.name}.",
                 )
             )
             await self.session.commit()
@@ -498,7 +499,9 @@ class WatchService:
                     handle=program.handle if program else "",
                     program_name=program.name if program else "",
                     profile_picture=program.profile_picture if program else None,
-                    submission_state=program.submission_state if program else "unknown",
+                    submission_state=program.submission_state
+                    if program
+                    else SubmissionState.UNKNOWN.value,
                     status=w.status,
                     organization_id=w.organization_id,
                     context_id=w.context_id,
@@ -760,10 +763,6 @@ class WatchService:
             with contextlib.suppress(HTTPException):
                 await ScanContextService(self.session).delete(context_id, project_id)
 
-    async def reconcile(self, watch_id: UUID, project_id: UUID) -> dict:
-        watch = await self._watch(watch_id, project_id)
-        return {"queued": dispatch_watch_reconcile(str(watch.program_id))}
-
     # ---------- ledger ----------
 
     def hosts_query(
@@ -776,12 +775,12 @@ class WatchService:
     ) -> Select:
         stmt = select(WatchHost).where(WatchHost.watch_id == watch_id)
         order = WatchHost.first_seen_at
-        if state == "arrived":
+        if state == WatchHostFilter.ARRIVED:
             stmt = stmt.where(WatchHost.state.in_(ARRIVED_STATES))
-        elif state == "alerted":
+        elif state == WatchHostFilter.ALERTED:
             stmt = stmt.where(WatchHost.alerted_at.isnot(None))
             order = WatchHost.alerted_at
-        elif state == "unresolved":
+        elif state == WatchHostFilter.UNRESOLVED:
             stmt = stmt.where(
                 WatchHost.state.in_(
                     (WatchHostState.NEW.value, WatchHostState.UNRESOLVED.value)
@@ -881,7 +880,7 @@ class WatchService:
         self, watch_id: UUID, *, kind: str | None = None, since: datetime | None = None
     ) -> Select:
         stmt = select(WatchEvent).where(WatchEvent.watch_id == watch_id)
-        if kind == "scope":
+        if kind == WATCH_EVENT_SCOPE:
             stmt = stmt.where(WatchEvent.kind.in_(_SCOPE_KINDS))
         elif kind in {k.value for k in WatchEventKind}:
             stmt = stmt.where(WatchEvent.kind == kind)
@@ -923,13 +922,10 @@ class WatchService:
 
     @staticmethod
     async def stream_status() -> StreamStatus:
-        client = aioredis.from_url(BaseAppSettings().redis_url, decode_responses=True)
         try:
-            raw = await client.get(CT_STATUS_KEY)
+            raw = await async_client().get(CT_STATUS_KEY)
         except Exception:
             return StreamStatus()
-        finally:
-            await client.aclose()
         if not raw:
             return StreamStatus()
         try:

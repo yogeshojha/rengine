@@ -1,5 +1,3 @@
-"""Removing result rows: what each dimension addresses, and what cannot stand without it."""
-
 from __future__ import annotations
 
 import uuid
@@ -24,7 +22,7 @@ from shared.services.asset_query import lead_cache
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from app.services.asset_query import QueryScope
+    from shared.services.asset_query import QueryScope
 
 
 @dataclass(frozen=True)
@@ -52,7 +50,7 @@ def _spec(dimension: str) -> DeleteSpec:
     spec = SPECS.get(dimension)
     if spec is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Unknown dimension '{dimension}'.",
         )
     return spec
@@ -62,7 +60,7 @@ def _column(spec: DeleteSpec, key: str | None):
     name = key or spec.keys[0]
     if name not in spec.keys:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Rows cannot be addressed by '{name}'. Expected one of "
             f"{', '.join(spec.keys)}.",
         )

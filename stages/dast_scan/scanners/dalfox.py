@@ -1,5 +1,3 @@
-"""dalfox over the request items, gated by a reflection probe so it fuzzes only what reflects."""
-
 from __future__ import annotations
 
 import secrets
@@ -95,6 +93,7 @@ class DalfoxScanner(VulnScanner):
         )
         result = ScannerResult()
         result.coverage.append(self._fuzz(reflecting, coverage))
+        result.findings = sum(c.findings for c in result.coverage)
         return result
 
     def _reflecting(self, plan: SurfacePlan) -> list[str] | None:

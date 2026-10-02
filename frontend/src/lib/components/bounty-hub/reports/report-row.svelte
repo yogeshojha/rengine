@@ -18,7 +18,7 @@
 		formatMoney
 	} from '$lib/config/bounty-reports';
 	import { formatShortDate, relativeTime } from '$lib/utilities/dates';
-	import type { BountyReport, ProgramReports } from '$lib/types/bounty-report';
+	import { ReportStage, type BountyReport, type ProgramReports } from '$lib/types/bounty-report';
 	import { RCOL } from './columns';
 
 	interface Props {
@@ -67,7 +67,7 @@
 				tone: 'var(--series)'
 			})),
 			{
-				label: report.stage === 'open' ? '' : report.state_label,
+				label: report.stage === ReportStage.Open ? '' : report.state_label,
 				at: report.closed_at,
 				tone: REPORT_STAGE_FILL[report.stage]
 			},
@@ -335,7 +335,13 @@
 					{/if}
 				</dl>
 				<div class="mt-auto">
-					<Button size="sm" class="h-7 gap-1.5 text-xs" href={report.url} target="_blank">
+					<Button
+						size="sm"
+						class="h-7 gap-1.5 text-xs"
+						href={report.url}
+						target="_blank"
+						rel="noopener noreferrer"
+					>
 						<ExternalLink class="size-3" /> Open on {platformLabel}
 					</Button>
 				</div>

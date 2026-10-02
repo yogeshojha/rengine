@@ -96,6 +96,7 @@ export interface WhoisRecordRead {
 	parsed_data: WhoisParsedData | null;
 	created_at: string;
 	updated_at: string;
+	registrant_redacted: boolean;
 }
 
 export interface WhoisRecordSummary {
@@ -105,12 +106,15 @@ export interface WhoisRecordSummary {
 	lookup_type: string;
 	name: string;
 	registrant_name: string;
+	registrant_email: string;
 	registrar_name: string;
+	nameservers: string[] | null;
 	country: string;
 	network_cidr: string;
 	registration_date: string | null;
 	expiration_date: string | null;
 	queried_at: string;
+	registrant_redacted: boolean;
 }
 
 export interface WhoisCorrelationResult {
@@ -123,17 +127,6 @@ export interface WhoisCorrelationResult {
 export interface WhoisRefreshResponse {
 	record: WhoisRecordRead;
 	previous_queried_at: string | null;
-}
-
-export interface WhoisLookupRequest {
-	query: string;
-	store_in_db?: boolean;
-}
-
-export interface WhoisLookupResponse {
-	record: WhoisRecordRead | null;
-	data: Record<string, unknown>;
-	cached: boolean;
 }
 
 export type WhoisEntityRole =
@@ -160,12 +153,9 @@ export const ENTITY_ROLE_LABELS: Record<WhoisEntityRole, string> = {
 };
 
 export const CORRELATION_REASONS = [
-	'registrant',
 	'registrant_name',
-	'registrar',
 	'registrar_name',
 	'nameserver',
-	'network',
 	'network_cidr'
 ] as const;
 export type CorrelationReason = (typeof CORRELATION_REASONS)[number];
@@ -174,12 +164,9 @@ export const CORRELATION_REASON_LABELS: Record<
 	CorrelationReason,
 	{ full: string; match: string; short: string }
 > = {
-	registrant: { full: 'Registrant name', match: 'registrant name', short: 'Registrant' },
 	registrant_name: { full: 'Registrant name', match: 'registrant name', short: 'Registrant' },
-	registrar: { full: 'Registrar', match: 'registrar', short: 'Registrar' },
 	registrar_name: { full: 'Registrar', match: 'registrar', short: 'Registrar' },
 	nameserver: { full: 'Nameserver', match: 'nameserver', short: 'Nameserver' },
-	network: { full: 'Network block', match: 'network block', short: 'Network' },
 	network_cidr: { full: 'Network block', match: 'network block', short: 'Network' }
 };
 
@@ -208,11 +195,4 @@ export function describeDomainStatus(code: string): DomainStatusInfo {
 	const bare = code.replace(/\s+https?:\/\/\S+$/i, '').trim();
 	for (const [re, info] of DOMAIN_STATUS_RULES) if (re.test(bare)) return info;
 	return { label: bare, tone: 'info' };
-}
-
-export function isRedactedName(name: string | null | undefined): boolean {
-	if (!name) return false;
-	return /(redacted|privacy|proxy|withheld|not disclosed|data protected|gdpr|whoisguard|contact privacy)/i.test(
-		name
-	);
 }

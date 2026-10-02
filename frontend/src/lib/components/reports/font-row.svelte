@@ -3,15 +3,14 @@
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import OriginBadge from './origin-badge.svelte';
 	import { TYPEFACE_COLUMNS } from './typeface-columns';
-	import { LibraryOrigin, formatBytes } from '$lib/config/reports';
+	import { LibraryOrigin, catalogLabel } from '$lib/config/reports';
+	import { formatBytes } from '$lib/utilities/format';
 	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
 	import type { ReportFont } from '$lib/types/report';
 
 	let { font, onDelete }: { font: ReportFont; onDelete: (slug: string) => void } = $props();
 
-	const roleLabel = $derived(
-		reportCatalog.catalog?.font_roles.find((r) => r.key === font.role)?.label ?? font.role
-	);
+	const roleLabel = $derived(catalogLabel(reportCatalog.catalog?.font_roles, font.role));
 </script>
 
 {#snippet cell(label: string)}

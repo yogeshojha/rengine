@@ -99,7 +99,7 @@ export class LaunchState {
 					this.effective,
 					this.lensType,
 					this.runIntensity,
-					true,
+					this.mode === 'quick',
 					this.seedKinds
 				)
 			: null
@@ -168,16 +168,6 @@ export class LaunchState {
 		this.patch = next;
 	}
 
-	setStageFields(name: string, fields: StageConfig) {
-		for (const [field, value] of Object.entries(fields)) this.setStageField(name, field, value);
-	}
-
-	resetStage(name: string) {
-		const next = { ...this.patch };
-		delete next[name];
-		this.patch = next;
-	}
-
 	private capabilityPatch(patch: StageOverrides): StageOverrides {
 		const next: StageOverrides = {};
 		for (const stage of this.catalog?.stages ?? []) {
@@ -190,21 +180,13 @@ export class LaunchState {
 	}
 
 	selectAll() {
-		const next: StageOverrides = {};
-		for (const stage of this.quickStages) {
-			if (!this.baseline[stage.name]?.enabled) next[stage.name] = { enabled: true };
-		}
-		this.patch = next;
+		for (const stage of this.quickStages) this.setStageField(stage.name, 'enabled', true);
 	}
 
 	clearAll() {
-		const next: StageOverrides = {};
 		for (const stage of this.catalog?.stages ?? []) {
-			if (stage.role === CAPABILITY && this.baseline[stage.name]?.enabled) {
-				next[stage.name] = { enabled: false };
-			}
+			if (stage.role === CAPABILITY) this.setStageField(stage.name, 'enabled', false);
 		}
-		this.patch = next;
 	}
 
 	rememberQuick(stages: StageOverrides, intensity: Intensity | null) {
@@ -233,9 +215,14 @@ export class LaunchState {
 		this.intensity = null;
 	}
 
-	restoreRun(scan: ScanRead, engineExists: (id: string) => boolean) {
+	restoreRun(
+		scan: ScanRead,
+		engineExists: (id: string) => boolean,
+		contextExists: (id: string) => boolean
+	) {
 		const config = scan.execution_config;
-		this.contextId = scan.context_id ?? SELECT_NONE;
+		this.contextId =
+			scan.context_id && contextExists(scan.context_id) ? scan.context_id : SELECT_NONE;
 		if (scan.engine_id && engineExists(scan.engine_id)) {
 			this.applyEngine(scan.engine_id);
 			return;
@@ -281,7 +268,6 @@ export class LaunchState {
 		if (!seed) return null;
 		return {
 			selection: seed.selection,
-			dimension: '',
 			stages: this.runningStages.filter((s) => s.role === CAPABILITY).map((s) => s.name),
 			overrides: this.overrides,
 			context_id: this.contextId === SELECT_NONE ? null : this.contextId,

@@ -12,9 +12,7 @@
 	import History from '@lucide/svelte/icons/history';
 
 	import * as Card from '$lib/components/ui/card';
-	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button } from '$lib/components/ui/button';
-	import { Badge } from '$lib/components/ui/badge';
 	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import EmptyState from '$lib/components/empty-state.svelte';
@@ -25,6 +23,7 @@
 	import ListHeader from './table/list-header.svelte';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import GroupList from './table/group-list.svelte';
+	import FilterChips from './table/filter-chips.svelte';
 	import SelectionBar from './table/selection-bar.svelte';
 	import RowSelectionBar from './table/row-selection-bar.svelte';
 	import { RowSelection } from './table/selection.svelte';
@@ -100,6 +99,7 @@
 	import { afterPause } from '$lib/utilities/debounce';
 	import { UrlSync, onPopSearch } from '$lib/utilities/url-history.svelte';
 	import { LiveRefresh, Throttled } from '$lib/utilities/live-results';
+	import { TabCounts } from '$lib/utilities/tab-counts.svelte';
 	import { formatShortDate } from '$lib/utilities/dates';
 
 	interface Props {
@@ -142,7 +142,6 @@
 	const DEFAULT_HIDE_STATIC: Record<string, boolean> = { hosts: true, merged: true, list: false };
 
 	function normalizeView(raw: string | null | undefined): EndpointView {
-		if (raw === 'outline') return 'hosts';
 		return raw && (ENDPOINT_VIEWS as readonly string[]).includes(raw)
 			? (raw as EndpointView)
 			: 'hosts';
@@ -210,7 +209,6 @@
 	let goneLoading = $state(false);
 	let goneIndex = $state(0);
 	let goneReq = 0;
-	let selectedScanId = $state('');
 	let headEl = $state<HTMLElement | null>(null);
 	let crumbs = $state<Crumb[]>([]);
 	let coverage = $state<EndpointCoverageRead[]>([]);
@@ -262,7 +260,13 @@
 	let classTabs = $derived(
 		hideStatic ? ENDPOINT_CLASS_TABS.filter((t) => !STATIC_CLASSES.has(t.key)) : ENDPOINT_CLASS_TABS
 	);
+	const tabCounts = new TabCounts();
+	let tabQuery = $derived({ ...query, endpointClass: '' });
+	let tabFiltered = $derived(
+		endpointActiveFacetCount({ ...tabQuery, host: '' }) > 0 || !!tabQuery.search.trim()
+	);
 	let classCounts = $derived.by(() => {
+		if (tabFiltered) return tabCounts.counts;
 		if (inHost) {
 			if (!brief || brief.host !== query.host) return null;
 			const all = Object.values(brief.by_class).reduce((a, b) => a + b, 0);
@@ -494,7 +498,6 @@
 		}
 	}
 
-	// a new query starts the host list over at page one
 	$effect(() => {
 		void treeSig;
 		void hideRootOnly;
@@ -628,6 +631,7 @@
 		refreshing = !quiet;
 		try {
 			if (!quiet) loadedLeadSig = '';
+			tabCounts.refresh();
 			const heavy = quiet ? liveAggregates.call() : aggregates();
 			await Promise.all([runSearch(), heavy ?? Promise.resolve()]);
 		} finally {
@@ -642,6 +646,18 @@
 	onDestroy(() => {
 		liveRefresh.stop();
 		liveAggregates.stop();
+		tabCounts.clear();
+	});
+
+	$effect(() => {
+		const filter = compiled(tabQuery, 'path', 1, 1, 1);
+		const key = `${projectId}|${scanId}|${JSON.stringify(filter)}`;
+		const filtered = tabFiltered;
+		if (!ready || !seen || !queryReady) return;
+		untrack(() => {
+			if (filtered) tabCounts.track(key, () => endpointsApi.tabs(projectId, scanId, filter));
+			else tabCounts.clear();
+		});
 	});
 
 	$effect(() => {
@@ -762,7 +778,6 @@
 	});
 
 	function open(e: Endpoint) {
-		selectedScanId = scanId;
 		selected = e;
 		drawerOpen = true;
 	}
@@ -803,7 +818,7 @@
 	async function sendBranch(node: TreeNode, connectorId: string, kind: ActionKind) {
 		const filter: EndpointFilter = {
 			...treeFilter,
-			host: isMerged ? null : node.host,
+			host: isMerged ? (treeFilter.host ?? null) : node.host,
 			dir_path: node.kind === 'host' ? null : node.path,
 			subtree: true
 		};
@@ -888,12 +903,6 @@
 		void sort.key;
 		untrack(() => (goneIndex = 0));
 	});
-
-	function openGone(e: Endpoint) {
-		selectedScanId = gonePage?.previous_scan_id ?? scanId;
-		selected = e;
-		drawerOpen = true;
-	}
 
 	function setHideStatic(value: boolean) {
 		hideStaticPref = { ...hideStaticPref, [view]: value };
@@ -1122,9 +1131,7 @@
 		<EmptyState
 			icon={SearchX}
 			title={atEstate ? 'No host matches' : 'No endpoints match'}
-			description={hideStatic && !filtered
-				? 'All matching endpoints are static files.'
-				: 'Widen the search or remove a filter.'}
+			description={hideStatic && !filtered ? 'All matching endpoints are static files.' : undefined}
 			class="rounded-none border-0 bg-transparent py-16"
 		>
 			{#if filtered}
@@ -1156,7 +1163,7 @@
 	{:else}
 		<EmptyState
 			icon={Waypoints}
-			title="No endpoints in this scan"
+			title={projectWide ? 'No endpoints' : 'No endpoints in this scan'}
 			class="rounded-none border-0 bg-transparent py-16"
 		/>
 	{/if}
@@ -1176,12 +1183,18 @@
 
 <Card.Root class="gap-0 overflow-clip rounded-t-none border-t-0 py-0">
 	<div class="border-b px-2">
-		<CountTabs tabs={classTabs} value={classTab} counts={classCounts} onChange={setClassTab} />
+		<CountTabs
+			tabs={classTabs}
+			value={classTab}
+			counts={classCounts}
+			capped={tabFiltered ? tabCounts.capped : null}
+			onChange={setClassTab}
+		/>
 	</div>
 
 	<SelectionBar
-		noun="host"
-		nounPlural="hosts"
+		noun={EP.noun}
+		nounPlural={EP.nounPlural}
 		{total}
 		{totalCapped}
 		maxAssets={rechecks.schema?.max_assets ?? 0}
@@ -1263,43 +1276,21 @@
 		onHideRootOnly={(v) => (hideRootOnly = v)}
 		{expandedCount}
 		onCollapseAll={() => outline?.collapseAll()}
-		goneCount={summary?.gone ?? 0}
+		goneCount={projectWide ? 0 : (summary?.gone ?? 0)}
 		{goneLens}
-		onGoneLens={(on) => (goneLens = on)}
+		onGoneLens={projectWide ? undefined : (on) => (goneLens = on)}
 	/>
 
-	{#if chips.length > 0}
-		<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/10 px-4 py-2">
-			{#each chips as chip (chip.id)}
-				<Badge variant="outline" class="gap-1 bg-background font-normal">
-					{chip.label}
-					<Tooltip.Root>
-						<Tooltip.Trigger
-							class="rounded-sm text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-							onclick={() => setQuery(chip.remove(query))}
-							aria-label="Remove filter {chip.label}"
-						>
-							<X class="h-3 w-3" />
-							<span class="sr-only">Remove filter {chip.label}</span>
-						</Tooltip.Trigger>
-						<Tooltip.Content>Remove filter {chip.label}</Tooltip.Content>
-					</Tooltip.Root>
-				</Badge>
-			{/each}
-			<button
-				class="ml-1 rounded-sm text-xs text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-				onclick={() =>
-					setQuery({
-						...emptyEndpointQuery(),
-						search: query.search,
-						host: inHost ? query.host : ''
-					})}
-				aria-label="Clear all filters"
-			>
-				Clear all
-			</button>
-		</div>
-	{/if}
+	<FilterChips
+		{chips}
+		onRemove={(chip) => setQuery(chip.remove(query))}
+		onClear={() =>
+			setQuery({
+				...emptyEndpointQuery(),
+				search: query.search,
+				host: inHost ? query.host : ''
+			})}
+	/>
 
 	{#if goneLens}
 		<div
@@ -1366,7 +1357,7 @@
 							gone
 							active={drawerOpen && selected?.id === e.id}
 							pad={rowPad}
-							onOpen={openGone}
+							onOpen={open}
 							onFilter={applyDsl}
 						/>
 					{/each}
@@ -1550,15 +1541,15 @@
 <EndpointDetailSheet
 	endpoint={selected}
 	{projectId}
-	scanId={selectedScanId || scanId}
 	open={drawerOpen}
 	onOpenChange={(o) => (drawerOpen = o)}
 	index={isList ? selectedIndex : -1}
 	pageOffset={pageIndex * pageSize}
 	total={isList ? total : 0}
+	capped={isList && totalCapped}
 	onStep={step}
 	onFilter={applyDsl}
-	onHost={showHost}
+	onHost={onTab ? showHost : undefined}
 	onReveal={reveal}
 	connectors={proxies}
 	{catalog}

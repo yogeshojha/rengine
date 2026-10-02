@@ -172,7 +172,7 @@ CHECKS: tuple[CheckSpec, ...] = (
         "or page link.",
         "Every response.",
         "Remove private addresses and internal hostnames from responses.",
-        "Content-Security-Policy",
+        "",
         HygieneGroup.DISCLOSURE.value,
         TONE_WARNING,
     ),

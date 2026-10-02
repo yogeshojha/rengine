@@ -28,6 +28,7 @@ const state = $state<NotificationState>({
 
 const toastCallbacks: SvelteSet<(notification: Notification) => void> = new SvelteSet();
 let sseUnsub: (() => void) | null = null;
+let resumeUnsub: (() => void) | null = null;
 
 export const notificationStore = {
 	get notifications() {
@@ -63,13 +64,13 @@ export const notificationStore = {
 		return () => toastCallbacks.delete(callback);
 	},
 
-	async loadNotifications(projectId?: string, page = 1, size = 50) {
+	async loadNotifications(projectId?: string) {
 		state.isLoading = true;
 		state.error = null;
 		state.projectId = projectId;
 
 		try {
-			const response = await notificationsApi.list(page, size, projectId);
+			const response = await notificationsApi.list(1, 50, projectId);
 			state.notifications = response.items;
 
 			const stats = await notificationsApi.stats(projectId);
@@ -107,16 +108,8 @@ export const notificationStore = {
 		}
 	},
 
-	async updateStats() {
-		try {
-			const stats = await notificationsApi.stats(state.projectId);
-			state.unreadCount = stats.unread;
-		} catch (error) {
-			console.error('[Notifications] Failed to update stats:', error);
-		}
-	},
-
 	async markAsRead(id: number) {
+		if (state.notifications.find((n) => n.id === id)?.is_read) return;
 		try {
 			await notificationsApi.markAsRead(id);
 
@@ -131,49 +124,34 @@ export const notificationStore = {
 	},
 
 	async markAllAsRead() {
-		try {
-			const result = await notificationsApi.markAllAsRead(state.projectId);
+		const result = await notificationsApi.markAllAsRead(state.projectId);
 
-			state.notifications.forEach((n) => (n.is_read = true));
-			state.unreadCount = 0;
+		state.notifications.forEach((n) => (n.is_read = true));
+		state.unreadCount = 0;
 
-			return result.count;
-		} catch (error) {
-			console.error('[Notifications] Failed to mark all as read:', error);
-			throw error;
-		}
+		return result.count;
 	},
 
 	async deleteNotification(id: number) {
-		try {
-			await notificationsApi.delete(id);
+		await notificationsApi.delete(id);
 
-			const notification = state.notifications.find((n) => n.id === id);
-			const wasUnread = notification && !notification.is_read;
+		const notification = state.notifications.find((n) => n.id === id);
+		const wasUnread = notification && !notification.is_read;
 
-			state.notifications = state.notifications.filter((n) => n.id !== id);
+		state.notifications = state.notifications.filter((n) => n.id !== id);
 
-			if (wasUnread) {
-				state.unreadCount = Math.max(0, state.unreadCount - 1);
-			}
-
-			state.totalCount = Math.max(0, state.totalCount - 1);
-		} catch (error) {
-			console.error('[Notifications] Failed to delete notification:', error);
-			throw error;
+		if (wasUnread) {
+			state.unreadCount = Math.max(0, state.unreadCount - 1);
 		}
+
+		state.totalCount = Math.max(0, state.totalCount - 1);
 	},
 
 	async clearAll() {
-		try {
-			await notificationsApi.clearAll(state.projectId);
-			state.notifications = [];
-			state.unreadCount = 0;
-			state.totalCount = 0;
-		} catch (error) {
-			console.error('[Notifications] Failed to clear all:', error);
-			throw error;
-		}
+		await notificationsApi.clearAll(state.projectId);
+		state.notifications = [];
+		state.unreadCount = 0;
+		state.totalCount = 0;
 	},
 
 	subscribeSSE() {
@@ -183,19 +161,24 @@ export const notificationStore = {
 			SSEChannel.BROADCAST,
 			SSEEventType.NOTIFICATION,
 			(data) => {
-				this.handleNewNotification(data, true);
+				this.handleNewNotification(data);
 			}
 		);
+		resumeUnsub = sseStore.onResume(() => void this.loadNotifications(state.projectId));
 	},
 
 	unsubscribeSSE() {
 		sseUnsub?.();
 		sseUnsub = null;
+		resumeUnsub?.();
+		resumeUnsub = null;
 	},
 
 	reset() {
 		sseUnsub?.();
 		sseUnsub = null;
+		resumeUnsub?.();
+		resumeUnsub = null;
 		state.notifications = [];
 		state.unreadCount = 0;
 		state.totalCount = 0;
@@ -205,7 +188,7 @@ export const notificationStore = {
 		state.error = null;
 	},
 
-	handleNewNotification(notification: Notification, fromSSE: boolean = true) {
+	handleNewNotification(notification: Notification) {
 		if (notification.project_id && notification.project_id !== state.projectId) return;
 		if (state.notifications.some((n) => n.id === notification.id)) return;
 
@@ -217,8 +200,6 @@ export const notificationStore = {
 
 		state.totalCount++;
 
-		if (fromSSE) {
-			toastCallbacks.forEach((callback) => callback(notification));
-		}
+		toastCallbacks.forEach((callback) => callback(notification));
 	}
 };

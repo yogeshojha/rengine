@@ -1,4 +1,4 @@
-# production stack: caddy is the only door, published ports live in ports.yml
+# published ports are in ports.yml, written by install.sh
 
 x-logging: &logging
   driver: json-file
@@ -33,8 +33,10 @@ services:
     image: postgres:16-alpine
     logging: *logging
     shm_size: ${POSTGRES_SHM_SIZE:-1gb}
-    env_file:
-      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-rengine}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-rengine}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     command: >
@@ -112,7 +114,7 @@ services:
       - .env
     environment:
       API_RELOAD: "false"
-      FORWARDED_ALLOW_IPS: ${CADDY_ADDR:-172.29.0.253}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-${CADDY_ADDR:-172.29.0.253}}
     logging: *logging
     restart: unless-stopped
     healthcheck:
@@ -138,11 +140,9 @@ services:
       target: production
     command: >
       uv run celery -A app.celery worker
-      --loglevel=INFO
       --concurrency=${CELERY_DEFAULT_CONCURRENCY:-4}
       --queues=critical,default
       --hostname=worker-default@%h
-      --max-tasks-per-child=100
     healthcheck:
       test: ["CMD-SHELL", "/app/.venv/bin/celery -A app.celery inspect ping -d worker-default@$$HOSTNAME || exit 1"]
       interval: 30s
@@ -150,17 +150,17 @@ services:
       retries: 3
       start_period: 30s
 
-  # scan stages, one slot per running stage; scale with --scale worker-scans=N
+  # scan stages, one slot per running stage, replicas set by rengine scale
   worker-scans:
     <<: *worker-base
     shm_size: 512m
+    deploy:
+      replicas: ${WORKER_SCANS_REPLICAS:-1}
     command: >
       uv run celery -A app.celery worker
-      --loglevel=INFO
       --concurrency=${CELERY_SCAN_CONCURRENCY:-16}
       --queues=scans
       --hostname=worker-scans@%h
-      --max-tasks-per-child=100
     healthcheck:
       test: ["CMD-SHELL", "/app/.venv/bin/celery -A app.celery inspect ping -d worker-scans@$$HOSTNAME || exit 1"]
       interval: 30s
@@ -173,11 +173,9 @@ services:
     <<: *worker-base
     command: >
       uv run celery -A app.celery worker
-      --loglevel=INFO
       --concurrency=${CELERY_CONTROL_CONCURRENCY:-8}
       --queues=scan_control
       --hostname=worker-control@%h
-      --max-tasks-per-child=100
     healthcheck:
       test: ["CMD-SHELL", "/app/.venv/bin/celery -A app.celery inspect ping -d worker-control@$$HOSTNAME || exit 1"]
       interval: 30s
@@ -185,13 +183,12 @@ services:
       retries: 3
       start_period: 30s
 
-  # beat scheduler: emits the schedule tick that fires due scan schedules
+  # beat scheduler
   worker-beat:
     <<: *worker-base
-    command: >
-      uv run celery -A app.celery beat
-      --loglevel=INFO
-      --schedule=/tmp/celerybeat-schedule
+    volumes:
+      - beat_state:/app/beat-state
+    command: uv run celery -A app.celery beat
 
   # certificate transparency stream for watched programs
   ct-stream:
@@ -225,8 +222,11 @@ services:
     profiles: ["debug"]
     ports:
       - "127.0.0.1:5555:5555"
-    env_file:
-      - .env
+    environment:
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_DB: ${REDIS_DB:-0}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
     command: >
       uv run celery -A app.celery flower
       --port=5555
@@ -260,9 +260,6 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
-    environment:
-      - RENGINE_HOST=${RENGINE_HOST:-}
-      - ACME_EMAIL=${ACME_EMAIL:-}
     networks:
       default:
         ipv4_address: ${CADDY_ADDR:-172.29.0.253}
@@ -281,6 +278,7 @@ networks:
         - subnet: ${DOCKER_SUBNET:-172.29.0.0/24}
 
 volumes:
+  beat_state:
   ct_state:
   postgres_data:
   redis_data:

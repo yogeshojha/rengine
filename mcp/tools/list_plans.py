@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-import uuid
-
 from pydantic import Field
 
+from mcp import links
 from mcp.context import ToolContext
-from mcp.errors import ToolError
 from mcp.result import ToolResult
-from mcp.tools._scope import project_for
+from mcp.tools._scope import parse_id, project_for
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.utils.text import counted
 
@@ -42,7 +40,7 @@ class ListEngines(Tool):
     async def run(self, ctx: ToolContext, args: EnginesInput) -> ToolResult:
         from app.services.scan_engine import ScanEngineService  # noqa: PLC0415
 
-        project_id = await project_for(ctx, _uuid(args.project_id, "project_id"))
+        project_id = await project_for(ctx, parse_id(args.project_id, "project_id"))
         rows = await ScanEngineService(ctx.session).list(project_id)
         if args.contains:
             needle = args.contains.strip().lower()
@@ -71,7 +69,7 @@ class ListEngines(Tool):
                 }
                 for row in shown
             ],
-            pivot=f"{ctx.ui_base_url.rstrip('/')}/engines",
+            pivot=links.engines(ctx.ui_base_url),
             caveats=[
                 *_more(len(rows), len(shown), "engines"),
                 "`stages` lists the stages the engine document names. An omitted stage "
@@ -103,7 +101,7 @@ class ListContexts(Tool):
     async def run(self, ctx: ToolContext, args: ContextsInput) -> ToolResult:
         from app.services.scan_context import ScanContextService  # noqa: PLC0415
 
-        project_id = await project_for(ctx, _uuid(args.project_id, "project_id"))
+        project_id = await project_for(ctx, parse_id(args.project_id, "project_id"))
         rows = await ScanContextService(ctx.session).list(project_id)
         shown = rows[: args.limit]
         return ToolResult(
@@ -126,7 +124,7 @@ class ListContexts(Tool):
                 }
                 for row in shown
             ],
-            pivot=f"{ctx.ui_base_url.rstrip('/')}/automation/contexts",
+            pivot=links.contexts(ctx.ui_base_url),
             caveats=[
                 *_more(len(rows), len(shown), "contexts"),
                 "Credentials are not returned.",
@@ -140,13 +138,3 @@ def _more(total: int, shown: int, noun: str) -> list[str]:
         if total > shown
         else []
     )
-
-
-def _uuid(value: str | None, field: str) -> uuid.UUID | None:
-    if not value:
-        return None
-    try:
-        return uuid.UUID(value)
-    except ValueError as exc:
-        msg = f"{field} must be a uuid, not {value!r}."
-        raise ToolError(msg) from exc

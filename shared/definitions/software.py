@@ -21,11 +21,6 @@ VERSION_SOURCE_LABELS: dict[str, str] = {
     VersionSource.FINGERPRINT.value: "Fingerprint",
 }
 
-VERSION_SOURCE_HELP: dict[str, str] = {
-    VersionSource.BANNER.value: "Version stated in a server response header.",
-    VersionSource.FINGERPRINT.value: "Version read from the page body.",
-}
-
 
 class Caveat(StrEnum):
     BACKPORT = "backport"
@@ -46,7 +41,7 @@ CAVEAT_HELP: dict[str, str] = {
         "The banner names a distribution build. Fixes may land without a version change."
     ),
     Caveat.CONDITIONAL.value: (
-        "NVD ties this CVE to a further component this scan did not identify."
+        "NVD ties this CVE to a further component not identified on the asset."
     ),
     Caveat.FINGERPRINT.value: ("The version was read from the page body."),
     Caveat.COARSE.value: (
@@ -83,15 +78,6 @@ OUTLIER_SPAN = 5
 
 MEDIUM_CAVEATS = 1
 LOW_CAVEATS = 2
-
-
-def confidence_of(caveats: list[str] | tuple[str, ...]) -> str:
-    count = len({c for c in caveats if c in CAVEAT_LABELS})
-    if count >= LOW_CAVEATS:
-        return Confidence.LOW.value
-    if count >= MEDIUM_CAVEATS:
-        return Confidence.MEDIUM.value
-    return Confidence.HIGH.value
 
 
 @dataclass(frozen=True)

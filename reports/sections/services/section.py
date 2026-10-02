@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from reports.base import RenderContext, Section
 from reports.config import SectionConfig, flag, limit
-from shared.definitions.ports import SERVICE_CLASS_LABELS
+from shared.definitions.ports import SCAN_POLICY_LABELS, SERVICE_CLASS_LABELS
 from shared.definitions.reports import SectionGroup
 from shared.definitions.surface import SurfaceDimension
 
@@ -41,11 +41,9 @@ class ServicesSection(Section):
                 policies[address.scan_policy] = policies.get(address.scan_policy, 0) + 1
         return {
             "rows": rows[: cfg.max_rows],
-            "total": total,
             "hidden": max(0, total - cfg.max_rows),
             "classes": [
                 {
-                    "name": f.name,
                     "label": SERVICE_CLASS_LABELS.get(f.name, f.name.title()),
                     "count": f.count,
                 }
@@ -54,9 +52,13 @@ class ServicesSection(Section):
             if cfg.show_composition
             else [],
             "sensitive": len(ctx.data.sensitive_services),
-            "internal": ctx.data.internal_estate,
             "web": sum(1 for s in ctx.data.service_rows if s.is_http),
             "addresses": len({s.ip for s in ctx.data.service_rows}),
             "show_banner": cfg.show_banner,
-            "policies": policies if cfg.show_coverage else {},
+            "policies": [
+                (SCAN_POLICY_LABELS.get(key, key), count)
+                for key, count in policies.items()
+            ]
+            if cfg.show_coverage
+            else [],
         }

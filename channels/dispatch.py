@@ -14,7 +14,7 @@ from channels import commands, pairing, render, settings, stepup
 from channels.base import Channel, Inbound
 from channels.commands import CommandError, CommandSpec, Parsed
 from channels.identity import effective_capabilities, identity_for
-from channels.models import ChannelChat, ChannelConfig
+from channels.models import MAX_COMMAND, ChannelChat, ChannelConfig
 from channels.render import Line, bold, code, italic, line
 from mcp import limits, server, telemetry
 from mcp.capabilities import CAPABILITY_LABELS
@@ -64,7 +64,7 @@ STEP_UP_PROMPT = (
 )
 INACTIVE_ACCOUNT = "The account bound to this chat is inactive."
 PAIRING_HOW = (
-    "An administrator approves it under Toolkit, Remote control. "
+    "An administrator approves it under Integrations, Remote control. "
     f"The code expires in {PAIRING_CODE_TTL // 60} minutes."
 )
 QUEUE_FULL = "Pairing queue is full. Try again later."
@@ -279,7 +279,7 @@ class Dispatcher:
         try:
             result = await server.invoke(ctx, spec.tool or "", args)
         except McpError as exc:
-            await self.channel.reply(external_id, render.error_lines(exc.message))
+            await self.channel.reply(external_id, render.text_lines(exc.message))
             return
         await self.channel.reply(
             external_id, render.result_lines(result, rewrite=self._chat_text)
@@ -306,9 +306,7 @@ class Dispatcher:
             await self._say(external_id, str(exc))
             return
 
-        ctx = LookupContext(
-            session=session, user_id=user.id, project_id=chat.project_id
-        )
+        ctx = LookupContext(session=session, project_id=chat.project_id)
         label = tool.tool_cls.label_for(payload)
 
         if tool.queued:
@@ -518,7 +516,7 @@ class Dispatcher:
                     )
         if spec.steps_up:
             out.append(line(""))
-            out.append(line(italic("Confirmed with your authenticator code.")))
+            out.append(line(italic("Confirmed with the account's authenticator code.")))
         return out
 
     async def _whoami(
@@ -613,7 +611,7 @@ class Dispatcher:
     @staticmethod
     async def _touch(session: Any, chat: ChannelChat, command: str) -> None:
         chat.last_seen_at = utc_now()
-        chat.last_command = command[:80]
+        chat.last_command = command[:MAX_COMMAND]
         chat.calls = (chat.calls or 0) + 1
         session.add(chat)
         await session.commit()
@@ -662,17 +660,18 @@ class Dispatcher:
 
     @staticmethod
     async def _scans_by_prefix(
-        session: Any, project_id: uuid.UUID | None, prefix: str
+        session: Any, project_id: uuid.UUID, prefix: str
     ) -> list[tuple[uuid.UUID, str]]:
         statement = (
             select(Scan.id, Target.target_value)
             .join(Target, Target.id == Scan.target_id)
-            .where(cast(Scan.id, String).like(f"{prefix}%"))
+            .where(
+                Scan.project_id == project_id,
+                cast(Scan.id, String).like(f"{prefix}%"),
+            )
             .order_by(Scan.created_at.desc())
             .limit(2)
         )
-        if project_id is not None:
-            statement = statement.where(Scan.project_id == project_id)
         return [(row[0], row[1]) for row in (await session.execute(statement)).all()]
 
 

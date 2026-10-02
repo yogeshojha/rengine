@@ -20,10 +20,15 @@
 		if (!pid || loadedFor === pid) return;
 		loadedFor = pid;
 		untrack(() => {
+			estate = null;
 			targetsApi
 				.projectEstate(pid)
-				.then((e) => (estate = e))
-				.catch(() => (estate = null));
+				.then((e) => {
+					if (loadedFor === pid) estate = e;
+				})
+				.catch(() => {
+					if (loadedFor === pid) estate = null;
+				});
 		});
 	});
 

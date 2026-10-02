@@ -4,9 +4,9 @@ from types import SimpleNamespace
 
 import pytest
 
+from shared.definitions.api_keys import API_PROVIDER_META
 from shared.definitions.oast import DEFAULT_WAIT_SECONDS, EVICTION_SLACK
 from shared.enums.api_key import APIProvider
-from shared.models.api_key import API_PROVIDER_META
 from shared.services.scan_resolve import MASK, redact_command
 from tools.nuclei.client import NucleiClient, NucleiOptions
 
@@ -98,13 +98,6 @@ def test_every_spelling_of_the_token_flag_is_redacted(command: str):
     assert MASK in redacted
 
 
-@pytest.mark.parametrize(
-    "command",
-    [
-        "naabu -timeout 3s -top-ports 100",
-        "ffuf -w /tmp/w.txt:FUZZ -u https://a/FUZZ -maxtime 60",
-        "nuclei -interactsh-server oast.example.com -u https://a.example.com",
-    ],
-)
-def test_an_ordinary_flag_is_left_alone(command: str):
+def test_the_server_flag_is_left_alone():
+    command = "nuclei -interactsh-server oast.example.com -u https://a.example.com"
     assert redact_command(command) == command

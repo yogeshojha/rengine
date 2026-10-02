@@ -61,7 +61,3 @@ class StreamOutcome:
     stopped: bool = False
     record_count: int = 0
     stderr: str = ""
-
-    @property
-    def ok(self) -> bool:
-        return self.return_code == 0 and not self.timed_out and not self.stopped

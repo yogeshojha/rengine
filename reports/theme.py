@@ -8,6 +8,7 @@ from pathlib import Path
 
 import yaml
 
+from shared.definitions.report_fonts import clean_family_name
 from shared.definitions.report_theme import ColorTokens, ThemeTokens
 from shared.definitions.reports import (
     DARK_CHART_PALETTE,
@@ -18,14 +19,15 @@ from shared.definitions.reports import (
     FONT_BY_KEY,
     ReportStyle,
 )
+from shared.definitions.vulnerabilities import SEVERITY_ORDER
 from shared.utils.color import ink as ink_of
-from shared.utils.color import is_dark, mix
+from shared.utils.color import is_dark, mix, parse_hex
 from shared.utils.color import tint as tint_of
 from shared.utils.yaml_safe import DocumentTooLargeError, load_document
 
 THEME_DIR = Path(__file__).resolve().parent / "themes"
 
-_FALLBACK_CHART = list(DEFAULT_CHART_PALETTE)
+_COLOUR_DEFAULTS = ColorTokens()
 _MONO_CHART = ["#22262e", "#474d58", "#6d7481", "#9aa1ad", "#c6ccd5"]
 _MONO_SEVERITY = {
     "critical": "#14181f",
@@ -46,9 +48,11 @@ _URL_RE = re.compile(r"url\(\s*['\"]?([^)'\"]*)", re.I)
 
 
 def check_css(css: str) -> None:
-    """A theme may style."""
     if not css:
         return
+    if "<" in css:
+        msg = "The css block may not contain '<'."
+        raise ThemeError(msg)
     if _IMPORT_RE.search(css):
         msg = "@import is not accepted. Put the rules in the css block."
         raise ThemeError(msg)
@@ -136,25 +140,41 @@ def resolve(tokens: ThemeTokens, style: ReportStyle) -> ThemeTokens:
         colour.accent_soft = "#eeeff2"
         merged.cover.art = "none"
 
+    for name in ColorTokens.model_fields:
+        value = getattr(colour, name)
+        if isinstance(value, str) and not parse_hex(value):
+            setattr(colour, name, getattr(_COLOUR_DEFAULTS, name))
+    if not parse_hex(merged.cover.background):
+        merged.cover.background = ""
+    try:
+        check_css(merged.css)
+    except ThemeError:
+        merged.css = ""
+
     paper_is_dark = is_dark(colour.page)
     base_severity = DARK_SEVERITY_COLORS if paper_is_dark else DEFAULT_SEVERITY_COLORS
-    colour.severity = {**base_severity, **colour.severity}
-    if not colour.chart:
-        colour.chart = list(
-            DARK_CHART_PALETTE if paper_is_dark else DEFAULT_CHART_PALETTE
-        )
+    colour.severity = {
+        **base_severity,
+        **{
+            key: value
+            for key, value in colour.severity.items()
+            if key in SEVERITY_ORDER and parse_hex(value)
+        },
+    }
+    colour.chart = [value for value in colour.chart if parse_hex(value)] or list(
+        DARK_CHART_PALETTE if paper_is_dark else DEFAULT_CHART_PALETTE
+    )
     if not colour.link:
         colour.link = colour.accent
     return merged
 
 
 def _wash(value: str, page: str) -> str:
-    """A badge ground: a tint on light paper, the colour dropped into dark paper."""
+    """Badge background for a colour on the page."""
     return mix(page, value, 0.20) if is_dark(page) else tint_of(value)
 
 
 def _label_ink(value: str, page: str) -> str:
-    """Text that sits on that ground."""
     return value if is_dark(page) else ink_of(value)
 
 
@@ -167,7 +187,11 @@ def font_stack(key: str, fallback: str, families: dict[str, str] | None = None) 
     family = (families or {}).get(key) or (
         FONT_BY_KEY[key].stack if key in FONT_BY_KEY else key
     )
-    return f"'{family}', {fallback}" if family else fallback
+    try:
+        family = clean_family_name(family)
+    except ValueError:
+        return fallback
+    return f"'{family}', {fallback}"
 
 
 def _scale_sizes(base: float, ratio: float, density: str) -> dict[str, float]:

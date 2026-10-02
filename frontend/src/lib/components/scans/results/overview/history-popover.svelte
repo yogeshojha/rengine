@@ -10,6 +10,7 @@
 	import { durationText, isLiveStatus, SCAN_STATUS_LABEL } from '$lib/utilities/scan-status';
 	import { ROUTES } from '$lib/config/routes';
 	import type { ScanRead } from '$lib/types/scan';
+	import { formatDateTime } from '$lib/utilities/dates';
 
 	interface Props {
 		history: ScanRead[];
@@ -21,13 +22,6 @@
 
 	const GRID =
 		'grid grid-cols-[minmax(0,1fr)_6rem] items-center gap-x-4 sm:grid-cols-[minmax(0,1fr)_6rem_5.5rem_5.5rem_5.5rem]';
-	const fmt = (iso: string) =>
-		new Date(iso).toLocaleString('en-US', {
-			month: 'short',
-			day: 'numeric',
-			hour: 'numeric',
-			minute: '2-digit'
-		});
 	const startedAt = (s: ScanRead) => new Date(s.started_at ?? s.created_at).getTime();
 
 	let open = $state(false);
@@ -61,7 +55,7 @@
 			{/if}
 		</span>
 		<span class="truncate text-xs leading-4 text-muted-foreground">
-			{[fmt(s.started_at ?? s.created_at), dur].filter(Boolean).join(' · ')}
+			{[formatDateTime(s.started_at ?? s.created_at), dur].filter(Boolean).join(' · ')}
 			{#if state}
 				· <span class={s.status === 'failed' ? 'text-destructive' : ''}>{state}</span>
 			{/if}
@@ -70,8 +64,8 @@
 	<span class="flex items-center justify-end gap-1.5 text-sm tabular-nums">
 		<span class="font-medium">{s.subdomains_found.toLocaleString()}</span>
 		{#if added > 0}
-			<span class="inline-flex items-center text-xs text-success">
-				<ArrowUpRight class="size-3" />{added}
+			<span class="inline-flex items-center text-xs text-muted-foreground">
+				<ArrowUpRight class="size-3" />{added.toLocaleString()}
 			</span>
 		{/if}
 	</span>
@@ -144,7 +138,7 @@
 				variant="link"
 				size="sm"
 				class="mt-2 h-auto gap-1 self-start px-2.5 text-xs"
-				href={ROUTES.target(current.target_id)}
+				href={ROUTES.scansForTarget(current.target_id)}
 			>
 				View all scans <ChevronRight class="size-3.5" />
 			</Button>

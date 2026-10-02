@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { scalePoint } from 'd3-scale';
 	import { curveMonotoneX } from 'd3-shape';
 	import { Area, AreaChart, LinearGradient } from 'layerchart';
@@ -8,9 +7,9 @@
 
 	let {
 		values,
-		label = SURFACE[SurfaceDimension.WEB_ASSETS].label,
+		label,
 		class: className
-	}: { values: number[]; label?: string; class?: string } = $props();
+	}: { values: number[]; label: string; class?: string } = $props();
 
 	let data = $derived(values.map((v, i) => ({ i: String(i), v })));
 

@@ -30,11 +30,11 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import { EVIDENCE_ORDER } from '$lib/config/evidence';
-	import { SEVERITY_LABELS, SEVERITY_ORDER } from '$lib/config/vulnerabilities';
-	import { SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
+	import { CVE_ID, SEVERITY_LABELS, SEVERITY_ORDER } from '$lib/config/vulnerabilities';
+	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
+	import { plural } from '$lib/utilities/strings';
 	import type { CveIndex, CveIndexRow } from '$lib/types/cve';
 
-	const CVE_ID = /^CVE-\d{4}-\d{4,7}$/i;
 	const SEVERITY_TABS = [
 		{ key: 'all', label: 'All' },
 		...SEVERITY_ORDER.filter((k) => k !== 'unknown' && k !== 'info').map((k) => ({
@@ -49,7 +49,7 @@
 	let active = $state<string[]>([]);
 	let sort = $state<{ key: string; dir: 1 | -1 }>({ key: 'rank', dir: -1 });
 	let pageIndex = $state(0);
-	let pageSize = $state(50);
+	let pageSize = $state(RESULTS_PAGE_SIZE);
 
 	let index = $state<CveIndex | null>(null);
 	let loading = $state(true);
@@ -166,8 +166,8 @@
 	let coverageLine = $derived(
 		index
 			? [
-					`${index.software_scans.toLocaleString()} ${index.software_scans === 1 ? 'target' : 'targets'} with software inference`,
-					`${index.finding_scans.toLocaleString()} ${index.finding_scans === 1 ? 'target' : 'targets'} with checks`
+					`${plural(index.software_scans, 'target')} with software inference`,
+					`${plural(index.finding_scans, 'target')} with checks`
 				].join(' · ')
 			: ''
 	);
@@ -254,10 +254,7 @@
 					<Button variant="outline" size="sm" onclick={rerun}>Retry</Button>
 				</EmptyState>
 			{:else if items.length === 0}
-				<EmptyState
-					icon={filtered ? SearchX : Bug}
-					title={filtered ? 'No CVE matches' : 'No CVE in this project'}
-				>
+				<EmptyState icon={filtered ? SearchX : Bug} title={filtered ? 'No CVE matches' : 'No CVEs'}>
 					{#if filtered}
 						<Button variant="outline" size="sm" onclick={clearFilters}>Clear filters</Button>
 					{/if}
@@ -280,7 +277,6 @@
 									{row}
 									{term}
 									columns={CVE_COLUMNS}
-									pad="py-3"
 									onOpen={(r: CveIndexRow) => goto(ROUTES.cve(r.cve))}
 								/>
 							{/each}

@@ -54,7 +54,6 @@ export interface AskBrief {
 	available: boolean;
 	off_reason: string | null;
 	model: string | null;
-	estimate_usd: number | null;
 	masked: number;
 	flags: AskFlagRead[];
 	starters: string[];
@@ -79,7 +78,6 @@ export interface AskSuggestion {
 
 export interface AskMessage {
 	id: string;
-	thread_id: string;
 	role: MessageRoleValue;
 	text: string;
 	citations: AskCitation[];

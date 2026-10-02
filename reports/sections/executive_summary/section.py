@@ -41,14 +41,9 @@ class ExecutiveSummarySection(Section):
             for key in SEVERITY_ORDER
             if key != Severity.UNKNOWN.value
         ]
-        assessed = any(
-            c["covered"]
-            for c in brief.coverage
-            if c["dimension"] == SurfaceDimension.VULNERABILITIES.value
-        )
+        assessed = SurfaceDimension.VULNERABILITIES.value in ctx.data.covered_dimensions
         kpis = [
             {
-                "dimension": key,
                 "label": SURFACE_LABELS[key],
                 "value": f"{ctx.data.coverage[key].count:,}"
                 if ctx.data.coverage[key].covered
@@ -70,7 +65,7 @@ class ExecutiveSummarySection(Section):
             "headline": brief.headline,
             "actionable": brief.actionable,
             "kev": brief.kev_count,
-            "ai": ctx.narrator.ai_used and getattr(ctx.narrator, "used_model", False),
+            "ai": ctx.narrator.used_model,
             "disclose": ctx.spec.narrative.disclose_ai,
         }
 

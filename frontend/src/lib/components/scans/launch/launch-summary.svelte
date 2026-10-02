@@ -43,7 +43,10 @@
 			/>
 			{#if preview?.summary.seed_count}
 				<span class="text-muted-foreground">·</span>
-				<span>{preview.summary.seed_count} seed assets</span>
+				<span>
+					{preview.summary.seed_count}
+					{preview.summary.seed_count === 1 ? 'seed asset' : 'seed assets'}
+				</span>
 			{/if}
 			{#if preview?.summary.estimated_duration_seconds}
 				<span class="text-muted-foreground">·</span>

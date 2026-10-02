@@ -1,6 +1,7 @@
 import contextlib
 import csv
 import io
+import itertools
 import re
 from collections import Counter
 from dataclasses import dataclass
@@ -20,12 +21,19 @@ from app.services.target_filters import (
     SortKey,
     apply_filters,
     apply_sort,
+    empty_signal_counts,
     signal_count_columns,
     with_whois_join,
 )
+from shared.definitions.constants import MAX_TARGETS_IMPORT
 from shared.enums.activity import ActivityLevel
 from shared.enums.scan import SCAN_OPEN_STATUSES
-from shared.enums.target import TargetType
+from shared.enums.target import (
+    HOSTNAME_TARGET_TYPES,
+    NETWORK_TARGET_TYPES,
+    EnrichmentKind,
+    TargetType,
+)
 from shared.enums.task_status import TaskStatus
 from shared.models import (
     Organization,
@@ -60,6 +68,7 @@ from shared.models.ripestat import (
     RIPEStatRelatedPrefix,
 )
 from shared.models.scan import Scan
+from shared.models.target import MAX_DISPLAY_NAME_LEN, MAX_TARGET_VALUE_LEN
 from shared.models.target_seed import TargetSeedRejection
 from shared.models.whois import WhoisRecordRead, WhoisRecordSummary
 from shared.schemas.target_detail import (
@@ -74,27 +83,37 @@ from shared.schemas.target_detail import (
     TargetBgpDetailResponse,
     TargetDetailRead,
     TargetDnsDetailResponse,
-    TargetWhoisDetailResponse,
 )
-from shared.services import get_or_create_organization, get_or_create_tag, target_seeds
+from shared.services import target_seeds
 from shared.services.activity_log import ActivityLogService
 from shared.services.celery_dispatch import (
     dispatch_dns_lookups,
     dispatch_ripestat_enrichment,
     dispatch_whois_lookups,
 )
+from shared.services.organization import get_or_create_organization
+from shared.services.tag import get_or_create_tag
 from shared.utils.datetime import utc_now
+from shared.utils.text import counted
 from shared.utils.validation import (
+    extract_asn_number,
     normalize_target_value,
     unrecognised_target,
     validate_target,
 )
 from tools.dnsx.service import DnsxService
 
-MAX_TARGETS_IMPORT = 500
+MAX_CSV_MB = 10
 
-BGP_ELIGIBLE_TYPES = {TargetType.IP, TargetType.IP_RANGE, TargetType.ASN}
-DNS_ELIGIBLE_TYPES = {TargetType.DOMAIN, TargetType.URL}
+_CSV_TARGET = ("target_value", "target", "value", "domain", "ip")
+_CSV_TAGS = ("tags", "tag")
+_CSV_ORGANIZATIONS = ("organizations", "organization", "orgs", "org")
+_CSV_NAME = ("display_name", "name")
+_CSV_SEEDS = ("seeds", "seed", "subdomains")
+_CSV_POSITIONS = ["target_value", "tags", "organizations", "display_name"]
+
+_VALUE_TOO_LONG = f"Target value is longer than {MAX_TARGET_VALUE_LEN} characters"
+_NAME_TOO_LONG = f"Display name is longer than {MAX_DISPLAY_NAME_LEN} characters"
 
 
 @dataclass
@@ -105,17 +124,24 @@ class BulkTargetResult:
 
 
 def _rejected(
-    value: str, seen_in_batch: set[str], existing: dict[str, UUID]
+    value: str,
+    seen_in_batch: set[str],
+    existing: dict[str, UUID],
+    display_name: str | None = None,
 ) -> BulkTargetResult | None:
     """The result for a value no import may store, or None."""
     if not value:
         reason, duplicate = "Empty target value", False
+    elif len(value) > MAX_TARGET_VALUE_LEN:
+        reason, duplicate = _VALUE_TOO_LONG, False
     elif value in seen_in_batch:
         reason, duplicate = "Duplicate within import batch", True
     elif value in existing:
         reason, duplicate = "Target exists in this project", True
     elif validate_target(value) is None:
         reason, duplicate = unrecognised_target(value), False
+    elif display_name and len(display_name) > MAX_DISPLAY_NAME_LEN:
+        reason, duplicate = _NAME_TOO_LONG, False
     else:
         return None
     return BulkTargetResult(
@@ -141,28 +167,89 @@ def _unique_by_id[T: (Organization, Tag)](rows: list[T]) -> list[T]:
     return out
 
 
-def _csv_value(
-    row: dict, originals: list[str], lowered: list[str], keys: tuple[str, ...]
-) -> str:
-    """The first of these column names the sheet actually has."""
+def _csv_value(row: list[str], columns: list[str], keys: tuple[str, ...]) -> str:
+    """The cell under the first of these column names the sheet has."""
     for key in keys:
-        if key in lowered:
-            return (row.get(originals[lowered.index(key)], "") or "").strip()
+        if key in columns:
+            index = columns.index(key)
+            return row[index].strip() if index < len(row) else ""
     return ""
 
 
 def _csv_list(
-    row: dict,
-    originals: list[str],
-    lowered: list[str],
-    keys: tuple[str, ...],
-    pattern: str = ",",
+    row: list[str], columns: list[str], keys: tuple[str, ...], pattern: str = ","
 ) -> list[str]:
-    value = _csv_value(row, originals, lowered, keys)
+    value = _csv_value(row, columns, keys)
     if not value:
         return []
     parts = re.split(pattern, value) if pattern != "," else value.split(",")
     return [part.strip() for part in parts if part.strip()]
+
+
+def _is_header(cells: list[str]) -> bool:
+    """A row that names the target column and holds no target."""
+    return any(cell in _CSV_TARGET for cell in cells) and not any(
+        validate_target(normalize_target_value(cell)) for cell in cells if cell
+    )
+
+
+def _parse_csv(csv_text: str, limit: int) -> list[TargetImportItem]:
+    """Rows as import items, read by header when the first row is one."""
+    rows = csv.reader(io.StringIO(csv_text))
+    first = next(rows, None)
+    if first is None:
+        return []
+    header = [cell.lower().strip() for cell in first]
+    if _is_header(header):
+        columns = header
+    else:
+        columns = _CSV_POSITIONS
+        rows = itertools.chain([first], rows)
+
+    items: list[TargetImportItem] = []
+    for row in rows:
+        target_value = normalize_target_value(_csv_value(row, columns, _CSV_TARGET))
+        if not target_value:
+            continue
+        items.append(
+            TargetImportItem(
+                target_value=target_value,
+                tags=_csv_list(row, columns, _CSV_TAGS),
+                organizations=_csv_list(row, columns, _CSV_ORGANIZATIONS),
+                display_name=_csv_value(row, columns, _CSV_NAME) or None,
+                seeds=_csv_list(row, columns, _CSV_SEEDS, pattern=r"[;,\s]+"),
+            )
+        )
+        if len(items) > limit:
+            break
+    return items
+
+
+def _org_tags(target: Target) -> tuple[list[OrganizationSummary], list[TagSummary]]:
+    return (
+        [
+            OrganizationSummary(id=org.id, name=org.name, slug=org.slug)
+            for org in target.organizations
+        ],
+        [
+            TagSummary(id=tag.id, name=tag.name, slug=tag.slug, color=tag.color)
+            for tag in target.tags
+        ],
+    )
+
+
+def _bgp_summary(summary: TargetBgpSummary | None) -> BgpSummaryRead | None:
+    if summary is None:
+        return None
+    return BgpSummaryRead(
+        prefix_count=summary.prefix_count,
+        peer_count=summary.peer_count,
+        announced=summary.announced,
+        asn=summary.asn,
+        prefix=summary.prefix,
+        holder=summary.holder,
+        queried_at=summary.queried_at,
+    )
 
 
 class TargetService:
@@ -173,16 +260,48 @@ class TargetService:
     async def validate_target_value(self, target_value: str) -> TargetType | None:
         return validate_target(target_value)
 
-    async def get_target_counts(self, project_slug: str) -> dict[str, int]:
+    async def existing_targets(
+        self, project_slug: str, values: list[str]
+    ) -> dict[str, UUID]:
+        """The project's targets whose value is one of the given values."""
+        project = await self._get_project_by_slug(project_slug)
+        if project is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+            )
+        if not values:
+            return {}
+        rows = await self.session.execute(
+            select(Target.target_value, Target.id).where(
+                Target.project_id == project.id, Target.target_value.in_(values)
+            )
+        )
+        return dict(rows.all())
+
+    async def get_target_counts(
+        self,
+        project_slug: str,
+        *,
+        search: str | None = None,
+        organization_ids: list[UUID] | None = None,
+        tag_ids: list[UUID] | None = None,
+        signal: SignalName | None = None,
+    ) -> dict[str, int]:
         project = await self._get_project_by_slug(project_slug)
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
 
-        result = await self.session.execute(
-            select(Target.target_type, func.count(Target.id))
-            .where(Target.project_id == project.id)
-            .group_by(Target.target_type)
+        query = with_whois_join(
+            select(Target.target_type, func.count(Target.id)).select_from(Target)
+        ).where(Target.project_id == project.id)
+        query = apply_filters(
+            query,
+            search=search,
+            organization_ids=organization_ids,
+            tag_ids=tag_ids,
+            signal=signal,
         )
+        result = await self.session.execute(query.group_by(Target.target_type))
 
         counts = {"all": 0} | {kind.value: 0 for kind in TargetType}
 
@@ -197,7 +316,9 @@ class TargetService:
         target_value: str,
         project_slug: str | None = None,
     ) -> Select:
-        query = select(Target).where(Target.target_value.ilike(f"%{target_value}%"))
+        query = select(Target).where(
+            Target.target_value.icontains(target_value, autoescape=True)
+        )
 
         if project_slug:
             project = await self._get_project_by_slug(project_slug)
@@ -206,12 +327,6 @@ class TargetService:
             query = query.where(Target.project_id == project.id)
 
         return query
-
-    async def get_targets_by_value(self, target_value: str) -> list[Target]:
-        result = await self.session.execute(
-            select(Target).where(Target.target_value == target_value)
-        )
-        return list(result.scalars().all())
 
     async def list_targets(
         self,
@@ -253,18 +368,9 @@ class TargetService:
         tag_ids: list[UUID] | None = None,
         target_type: TargetType | None = None,
     ) -> dict[str, int]:
-        empty = {
-            "total": 0,
-            "expiring": 0,
-            "attention": 0,
-            "awaiting": 0,
-            "enriched": 0,
-            "monitored": 0,
-        }
-
         project = await self._get_project_by_slug(project_slug)
         if not project:
-            return empty
+            return empty_signal_counts()
 
         query = with_whois_join(
             select(*signal_count_columns()).select_from(Target)
@@ -279,19 +385,7 @@ class TargetService:
         )
 
         row = (await self.session.execute(query)).one()
-        return {
-            "total": row.total,
-            "expiring": row.expiring,
-            "attention": row.attention,
-            "awaiting": row.awaiting,
-            "enriched": row.enriched,
-            "monitored": row.monitored,
-            "unscanned": row.unscanned,
-            "stale": row.stale,
-            "critical": row.critical,
-            "high": row.high,
-            "medium": row.medium,
-        }
+        return dict(row._mapping)
 
     async def get_matching_target_ids(
         self,
@@ -321,7 +415,7 @@ class TargetService:
         result = await self.session.execute(query.limit(limit))
         return list(result.scalars().all())
 
-    async def bulk_enrich(self, target_ids: list[UUID], kind: str) -> int:
+    async def bulk_enrich(self, target_ids: list[UUID], kind: EnrichmentKind) -> int:
         result = await self.session.execute(
             select(Target).where(Target.id.in_(target_ids))
         )
@@ -329,15 +423,21 @@ class TargetService:
         eligible: list[Target] = []
 
         for target in targets:
-            if kind == "whois":
+            if kind == EnrichmentKind.WHOIS:
                 target.whois_status = TaskStatus.PENDING
                 target.whois_error = None
                 eligible.append(target)
-            elif kind == "dns" and target.target_type in DNS_ELIGIBLE_TYPES:
+            elif (
+                kind == EnrichmentKind.DNS
+                and target.target_type in HOSTNAME_TARGET_TYPES
+            ):
                 target.dns_status = TaskStatus.PENDING
                 target.dns_error = None
                 eligible.append(target)
-            elif kind == "bgp" and target.target_type in BGP_ELIGIBLE_TYPES:
+            elif (
+                kind == EnrichmentKind.BGP
+                and target.target_type in NETWORK_TARGET_TYPES
+            ):
                 target.bgp_status = TaskStatus.PENDING
                 eligible.append(target)
             else:
@@ -348,9 +448,9 @@ class TargetService:
 
         ids = [str(t.id) for t in eligible]
         if ids:
-            if kind == "whois":
+            if kind == EnrichmentKind.WHOIS:
                 dispatch_whois_lookups(ids)
-            elif kind == "dns":
+            elif kind == EnrichmentKind.DNS:
                 dispatch_dns_lookups(ids)
             else:
                 dispatch_ripestat_enrichment(ids)
@@ -418,6 +518,10 @@ class TargetService:
 
     async def create_target(self, target_in: TargetCreate, user_id: str) -> TargetRead:
         target_value = normalize_target_value(target_in.target_value)
+        if len(target_value) > MAX_TARGET_VALUE_LEN:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=_VALUE_TOO_LONG
+            )
         target_type = validate_target(target_value)
         if not target_type:
             raise HTTPException(
@@ -442,7 +546,7 @@ class TargetService:
         target = Target(
             target_value=target_value,
             target_type=target_type,
-            display_name=target_in.display_name or target_value,
+            display_name=target_in.display_name or None,
             project_id=project.id,
             created_by=user_id,
             organizations=organizations,
@@ -463,7 +567,7 @@ class TargetService:
 
         await self._activity.log_async(
             event=ActivityEvent.TARGET_CREATED,
-            title="Target created.",
+            title=f"Target created: {target.target_value}",
             target_id=target.id,
             project_id=target.project_id,
             user_id=user_id,
@@ -480,14 +584,18 @@ class TargetService:
         """The project's targets for these values, creating any that do not exist yet."""
         wanted: dict[str, TargetType] = {}
         for raw in values:
-            value = raw.strip()
+            value = normalize_target_value(raw)
             if not value or value in wanted:
                 continue
+            if len(value) > MAX_TARGET_VALUE_LEN:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, detail=_VALUE_TOO_LONG
+                )
             target_type = validate_target(value)
             if not target_type:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=unrecognised_target(value),
+                    detail=unrecognised_target(raw),
                 )
             wanted[value] = target_type
         if not wanted:
@@ -511,7 +619,6 @@ class TargetService:
             target = Target(
                 target_value=value,
                 target_type=target_type,
-                display_name=value,
                 project_id=project_id,
                 created_by=user_id,
             )
@@ -533,7 +640,7 @@ class TargetService:
         for target in created:
             await self._activity.log_async(
                 event=ActivityEvent.TARGET_CREATED,
-                title="Target created.",
+                title=f"Target created: {target.target_value}",
                 target_id=target.id,
                 project_id=project_id,
                 user_id=user_id,
@@ -560,6 +667,22 @@ class TargetService:
                 detail="Project not found",
             )
 
+        items = [
+            TargetImportItem(target_value=value, seeds=bulk_in.seeds)
+            for value in bulk_in.targets
+        ]
+        return await self._import_items(
+            project, items, bulk_in.organization_names, bulk_in.tag_names, user_id
+        )
+
+    async def _import_items(
+        self,
+        project: Project,
+        items: list[TargetImportItem],
+        organization_names: list[str],
+        tag_names: list[str],
+        user_id: str,
+    ) -> TargetBulkCreateResponse:
         existing_targets_result = await self.session.execute(
             select(Target.target_value, Target.id).where(
                 Target.project_id == project.id
@@ -567,10 +690,10 @@ class TargetService:
         )
         existing_target_values = dict(existing_targets_result.all())
 
-        organizations = await self._get_or_create_organizations(
-            bulk_in.organization_names, project.id, user_id
+        shared_organizations = await self._get_or_create_organizations(
+            organization_names, project.id, user_id
         )
-        tags = await self._get_or_create_tags(bulk_in.tag_names, project.id, user_id)
+        shared_tags = await self._get_or_create_tags(tag_names, project.id, user_id)
 
         results: list[TargetImportResult] = []
         imported_count = 0
@@ -579,15 +702,15 @@ class TargetService:
         seen_in_batch: set[str] = set()
         created_targets: list[Target] = []
 
-        for target_value in bulk_in.targets:
-            result = await self._process_bulk_target(
-                target_value=target_value,
+        for item in items:
+            result = await self._process_import_item(
+                item=item,
                 project_id=project.id,
                 user_id=user_id,
-                organizations=organizations,
-                tags=tags,
                 existing_target_values=existing_target_values,
                 seen_in_batch=seen_in_batch,
+                shared_organizations=shared_organizations,
+                shared_tags=shared_tags,
             )
 
             results.append(result.import_result)
@@ -602,12 +725,19 @@ class TargetService:
                 failed_count += 1
 
         await self.session.commit()
-        await self._seed_created(created_targets, bulk_in.seeds)
+        by_id = {t.id: t for t in created_targets}
+        for item, result in zip(items, results, strict=True):
+            created = by_id.get(result.target_id) if result.success else None
+            if created is not None and item.seeds:
+                await self._seed_created([created], item.seeds)
 
+        total = imported_count + failed_count + skipped_duplicates
         await self._activity.log_async(
             event=ActivityEvent.TARGET_BULK_IMPORTED,
-            title=f"Imported {imported_count} targets",
-            description=f"{failed_count} failed, {skipped_duplicates} duplicates skipped",
+            title=f"Imported {counted(imported_count, 'target')}",
+            description=f"{imported_count}/{total} imported"
+            + (f", {failed_count} failed" if failed_count else "")
+            + (f", {skipped_duplicates} skipped" if skipped_duplicates else ""),
             level=ActivityLevel.SUCCESS
             if imported_count > 0
             else ActivityLevel.WARNING,
@@ -619,7 +749,7 @@ class TargetService:
         self._dispatch_post_target_creation(created_targets)
 
         return TargetBulkCreateResponse(
-            total=len(bulk_in.targets),
+            total=len(items),
             imported=imported_count,
             failed=failed_count,
             skipped_duplicates=skipped_duplicates,
@@ -794,8 +924,8 @@ class TargetService:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=(
-                    f"'{target.target_value}' has {running} running "
-                    f"scan{'s' if running != 1 else ''}. Cancel them before deleting."
+                    f"{target.target_value} has {counted(running, 'unfinished scan')}. "
+                    f"Cancel {'it' if running == 1 else 'them'} before deleting."
                 ),
             )
 
@@ -832,16 +962,21 @@ class TargetService:
                 detail="File must be CSV",
             )
 
+        content = await file.read(MAX_CSV_MB * 1024 * 1024 + 1)
+        if len(content) > MAX_CSV_MB * 1024 * 1024:
+            raise HTTPException(
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                detail=f"The CSV file is larger than the {MAX_CSV_MB} MB limit.",
+            )
         try:
-            content = await file.read()
-            csv_text = content.decode("utf-8")
+            csv_text = content.decode("utf-8-sig")
         except UnicodeDecodeError as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="File must be UTF-8 encoded",
             ) from e
 
-        targets_data = self._parse_csv_to_targets(csv_text)
+        targets_data = _parse_csv(csv_text, MAX_TARGETS_IMPORT)
 
         if not targets_data:
             raise HTTPException(
@@ -852,7 +987,7 @@ class TargetService:
         if len(targets_data) > MAX_TARGETS_IMPORT:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"The CSV holds {len(targets_data)} targets. The limit is {MAX_TARGETS_IMPORT}.",
+                detail=f"A CSV import holds at most {MAX_TARGETS_IMPORT} targets.",
             )
 
         import_request = TargetImportRequest(
@@ -873,82 +1008,12 @@ class TargetService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Project not found",
             )
-
-        existing_targets_result = await self.session.execute(
-            select(Target.target_value, Target.id).where(
-                Target.project_id == project.id
-            )
-        )
-        existing_target_values = dict(existing_targets_result.all())
-
-        results: list[TargetImportResult] = []
-        imported_count = 0
-        failed_count = 0
-        skipped_duplicates = 0
-        seen_in_batch: set[str] = set()
-        created_targets: list[Target] = []
-
-        shared_organizations = await self._get_or_create_organizations(
-            import_request.organization_names, project.id, user_id
-        )
-        shared_tags = await self._get_or_create_tags(
-            import_request.tag_names, project.id, user_id
-        )
-
-        for item in import_request.targets:
-            result = await self._process_import_item(
-                item=item,
-                project_id=project.id,
-                user_id=user_id,
-                existing_target_values=existing_target_values,
-                seen_in_batch=seen_in_batch,
-                shared_organizations=shared_organizations,
-                shared_tags=shared_tags,
-            )
-
-            results.append(result.import_result)
-
-            if result.import_result.success:
-                imported_count += 1
-                if result.target:
-                    created_targets.append(result.target)
-            elif result.duplicate:
-                skipped_duplicates += 1
-            else:
-                failed_count += 1
-
-        await self.session.commit()
-        for item, result in zip(import_request.targets, results, strict=False):
-            if result.success and item.seeds:
-                created = next(
-                    (t for t in created_targets if t.id == result.target_id), None
-                )
-                if created is not None:
-                    await self._seed_created([created], item.seeds)
-
-        total = imported_count + failed_count + skipped_duplicates
-        await self._activity.log_async(
-            event=ActivityEvent.TARGET_BULK_IMPORTED,
-            title=f"Imported {imported_count} targets",
-            description=f"{imported_count}/{total} imported"
-            + (f", {failed_count} failed" if failed_count else "")
-            + (f", {skipped_duplicates} skipped" if skipped_duplicates else ""),
-            level=ActivityLevel.SUCCESS
-            if imported_count > 0
-            else ActivityLevel.WARNING,
-            project_id=project.id,
-            user_id=user_id,
-        )
-        await self.session.commit()
-
-        self._dispatch_post_target_creation(created_targets)
-
-        return TargetBulkCreateResponse(
-            total=len(import_request.targets),
-            imported=imported_count,
-            failed=failed_count,
-            skipped_duplicates=skipped_duplicates,
-            results=results,
+        return await self._import_items(
+            project,
+            import_request.targets,
+            import_request.organization_names,
+            import_request.tag_names,
+            user_id,
         )
 
     async def get_target_detail(self, target_id: str) -> TargetDetailRead:
@@ -963,6 +1028,7 @@ class TargetService:
             dns = self._to_dns_lookup_read(target.dns_lookup)
 
         bgp = await self._build_bgp_detail(target)
+        organizations, tags = _org_tags(target)
 
         return TargetDetailRead(
             id=target.id,
@@ -973,14 +1039,8 @@ class TargetService:
             created_at=target.created_at,
             updated_at=target.updated_at,
             created_by=target.created_by,
-            organizations=[
-                OrganizationSummary(id=org.id, name=org.name, slug=org.slug)
-                for org in target.organizations
-            ],
-            tags=[
-                TagSummary(id=tag.id, name=tag.name, slug=tag.slug, color=tag.color)
-                for tag in target.tags
-            ],
+            organizations=organizations,
+            tags=tags,
             whois_status=target.whois_status,
             whois_error=target.whois_error,
             whois=whois,
@@ -1006,21 +1066,6 @@ class TargetService:
             lookup=lookup,
         )
 
-    async def get_target_whois(self, target_id: str) -> TargetWhoisDetailResponse:
-        target = await self._get_target_or_404(target_id)
-
-        record = None
-        if target.whois_record:
-            record = WhoisRecordRead.model_validate(target.whois_record)
-
-        return TargetWhoisDetailResponse(
-            target_id=target.id,
-            target_type=target.target_type,
-            status=target.whois_status,
-            error=target.whois_error,
-            record=record,
-        )
-
     async def get_target_bgp(self, target_id: str) -> TargetBgpDetailResponse:
         target = await self._get_target_or_404(target_id)
         return await self._build_bgp_detail(target)
@@ -1028,11 +1073,10 @@ class TargetService:
     async def refresh_target_dns(self, target_id: str) -> EnrichmentRefreshResponse:
         target = await self._get_target_or_404(target_id)
 
-        if target.target_type not in DNS_ELIGIBLE_TYPES:
+        if target.target_type not in HOSTNAME_TARGET_TYPES:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"DNS lookup does not apply to {target.target_type.value} targets. "
-                "Domain and URL targets only.",
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="DNS lookup applies to domain and URL targets only.",
             )
 
         target.dns_status = TaskStatus.PENDING
@@ -1052,7 +1096,7 @@ class TargetService:
 
         return EnrichmentRefreshResponse(
             target_id=target.id,
-            enrichment_type="dns",
+            enrichment_type=EnrichmentKind.DNS,
             status="queued",
             message=f"DNS lookup queued for {target.target_value}",
         )
@@ -1077,7 +1121,7 @@ class TargetService:
 
         return EnrichmentRefreshResponse(
             target_id=target.id,
-            enrichment_type="whois",
+            enrichment_type=EnrichmentKind.WHOIS,
             status="queued",
             message=f"WHOIS lookup queued for {target.target_value}",
         )
@@ -1085,11 +1129,10 @@ class TargetService:
     async def refresh_target_bgp(self, target_id: str) -> EnrichmentRefreshResponse:
         target = await self._get_target_or_404(target_id)
 
-        if target.target_type not in BGP_ELIGIBLE_TYPES:
+        if target.target_type not in NETWORK_TARGET_TYPES:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"BGP enrichment does not apply to {target.target_type.value} targets. "
-                "IP, IP range and ASN targets only.",
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="BGP enrichment applies to IP, IP range and ASN targets only.",
             )
 
         target.bgp_status = TaskStatus.PENDING
@@ -1108,7 +1151,7 @@ class TargetService:
 
         return EnrichmentRefreshResponse(
             target_id=target.id,
-            enrichment_type="bgp",
+            enrichment_type=EnrichmentKind.BGP,
             status="queued",
             message=f"BGP enrichment queued for {target.target_value}",
         )
@@ -1134,12 +1177,6 @@ class TargetService:
 
     async def _get_project_by_slug(self, slug: str) -> Project | None:
         result = await self.session.execute(select(Project).where(Project.slug == slug))
-        return result.scalar_one_or_none()
-
-    async def _get_organization_by_slug(self, slug: str) -> Organization | None:
-        result = await self.session.execute(
-            select(Organization).where(Organization.slug == slug)
-        )
         return result.scalar_one_or_none()
 
     async def _check_duplicate_target(self, target_value: str, project_id: str) -> None:
@@ -1176,46 +1213,6 @@ class TargetService:
             tags.append(tag)
         return tags
 
-    async def _process_bulk_target(
-        self,
-        target_value: str,
-        project_id: str,
-        user_id: str,
-        organizations: list[Organization],
-        tags: list[Tag],
-        existing_target_values: dict[str, UUID],
-        seen_in_batch: set[str],
-    ) -> "BulkTargetResult":
-        _target_value = normalize_target_value(target_value)
-        rejected = _rejected(_target_value, seen_in_batch, existing_target_values)
-        if rejected is not None:
-            return rejected
-        target_type = validate_target(_target_value)
-
-        target = Target(
-            target_value=_target_value,
-            target_type=target_type,
-            display_name=_target_value,
-            project_id=project_id,
-            created_by=user_id,
-            organizations=organizations,
-            tags=tags,
-        )
-        self.session.add(target)
-
-        seen_in_batch.add(_target_value)
-        existing_target_values[_target_value] = target.id
-
-        return BulkTargetResult(
-            import_result=TargetImportResult(
-                target_value=_target_value,
-                success=True,
-                target_type=target_type,
-                target_id=target.id,
-            ),
-            target=target,
-        )
-
     async def _process_import_item(
         self,
         item: TargetImportItem,
@@ -1227,7 +1224,9 @@ class TargetService:
         shared_tags: list[Tag] | None = None,
     ) -> "BulkTargetResult":
         target_value = normalize_target_value(item.target_value)
-        rejected = _rejected(target_value, seen_in_batch, existing_target_values)
+        rejected = _rejected(
+            target_value, seen_in_batch, existing_target_values, item.display_name
+        )
         if rejected is not None:
             return rejected
         target_type = validate_target(target_value)
@@ -1254,7 +1253,7 @@ class TargetService:
         target = Target(
             target_value=target_value,
             target_type=target_type,
-            display_name=item.display_name or target_value,
+            display_name=item.display_name or None,
             project_id=project_id,
             created_by=user_id,
             organizations=organizations,
@@ -1286,7 +1285,9 @@ class TargetService:
                 lookup_type=target.whois_record.lookup_type,
                 name=target.whois_record.name,
                 registrant_name=target.whois_record.registrant_name,
+                registrant_email=target.whois_record.registrant_email,
                 registrar_name=target.whois_record.registrar_name,
+                nameservers=target.whois_record.nameservers,
                 country=target.whois_record.country,
                 network_cidr=target.whois_record.network_cidr,
                 registration_date=target.whois_record.registration_date,
@@ -1294,21 +1295,10 @@ class TargetService:
                 queried_at=target.whois_record.queried_at,
             )
 
-        bgp = None
-        if target.bgp_summary:
-            bgp = BgpSummaryRead(
-                prefix_count=target.bgp_summary.prefix_count,
-                peer_count=target.bgp_summary.peer_count,
-                announced=target.bgp_summary.announced,
-                asn=target.bgp_summary.asn,
-                prefix=target.bgp_summary.prefix,
-                holder=target.bgp_summary.holder,
-                queried_at=target.bgp_summary.queried_at,
-            )
-
         dns = None
         if target.dns_lookup:
             dns = DnsxService.to_lookup_summary(target.dns_lookup)
+        organizations, tags = _org_tags(target)
 
         return TargetRead(
             **target.model_dump(
@@ -1322,16 +1312,10 @@ class TargetService:
             ),
             whois_record_id=target.whois_record_id,
             whois=whois,
-            bgp=bgp,
+            bgp=_bgp_summary(target.bgp_summary),
             dns=dns,
-            organizations=[
-                OrganizationSummary(id=org.id, name=org.name, slug=org.slug)
-                for org in target.organizations
-            ],
-            tags=[
-                TagSummary(id=tag.id, name=tag.name, slug=tag.slug, color=tag.color)
-                for tag in target.tags
-            ],
+            organizations=organizations,
+            tags=tags,
             seed_count=seed_count,
         )
 
@@ -1369,45 +1353,51 @@ class TargetService:
             records=records,
         )
 
-    async def _build_bgp_detail(self, target: Target) -> TargetBgpDetailResponse:
-        summary = None
-        if target.bgp_summary:
-            summary = BgpSummaryRead(
-                prefix_count=target.bgp_summary.prefix_count,
-                peer_count=target.bgp_summary.peer_count,
-                announced=target.bgp_summary.announced,
-                asn=target.bgp_summary.asn,
-                prefix=target.bgp_summary.prefix,
-                holder=target.bgp_summary.holder,
-                queried_at=target.bgp_summary.queried_at,
+    async def _as_overview(self, asn: int) -> ASOverviewDetail | None:
+        overview = (
+            await self.session.execute(
+                select(RIPEStatASOverview).where(RIPEStatASOverview.asn == asn)
             )
+        ).scalar_one_or_none()
+        if overview is None:
+            return None
+        return ASOverviewDetail(
+            asn=overview.asn,
+            holder=overview.holder,
+            rir=overview.rir,
+            announced=overview.announced,
+            block_name=overview.block_name,
+            block_resource=overview.block_resource,
+        )
 
+    async def _abuse_contacts(self, resource: str) -> list[AbuseContactDetail]:
+        rows = await self.session.execute(
+            select(RIPEStatAbuseContact).where(
+                RIPEStatAbuseContact.resource == resource
+            )
+        )
+        return [
+            AbuseContactDetail(
+                resource=a.resource, abuse_email=a.abuse_email, rir=a.rir
+            )
+            for a in rows.scalars().all()
+        ]
+
+    async def _build_bgp_detail(self, target: Target) -> TargetBgpDetailResponse:
         response = TargetBgpDetailResponse(
             target_id=target.id,
             target_type=target.target_type,
             status=target.bgp_status,
-            summary=summary,
+            summary=_bgp_summary(target.bgp_summary),
         )
 
-        if target.target_type not in BGP_ELIGIBLE_TYPES:
+        if target.target_type not in NETWORK_TARGET_TYPES:
             return response
 
         if target.target_type == TargetType.ASN:
-            asn_number = int(target.target_value.upper().replace("AS", "").strip())
+            asn_number = extract_asn_number(target.target_value)
 
-            overview_result = await self.session.execute(
-                select(RIPEStatASOverview).where(RIPEStatASOverview.asn == asn_number)
-            )
-            overview = overview_result.scalar_one_or_none()
-            if overview:
-                response.as_overview = ASOverviewDetail(
-                    asn=overview.asn,
-                    holder=overview.holder,
-                    rir=overview.rir,
-                    announced=overview.announced,
-                    block_name=overview.block_name,
-                    block_resource=overview.block_resource,
-                )
+            response.as_overview = await self._as_overview(asn_number)
 
             prefixes_result = await self.session.execute(
                 select(RIPEStatAnnouncedPrefix).where(
@@ -1438,19 +1428,7 @@ class TargetService:
                 for n in neighbours_result.scalars().all()
             ]
 
-            abuse_result = await self.session.execute(
-                select(RIPEStatAbuseContact).where(
-                    RIPEStatAbuseContact.resource == f"AS{asn_number}"
-                )
-            )
-            response.abuse_contacts = [
-                AbuseContactDetail(
-                    resource=a.resource,
-                    abuse_email=a.abuse_email,
-                    rir=a.rir,
-                )
-                for a in abuse_result.scalars().all()
-            ]
+            response.abuse_contacts = await self._abuse_contacts(f"AS{asn_number}")
 
         elif target.target_type == TargetType.IP:
             ip = target.target_value.strip()
@@ -1464,33 +1442,9 @@ class TargetService:
             ]
 
             if net_rows and net_rows[0].asn:
-                overview_result = await self.session.execute(
-                    select(RIPEStatASOverview).where(
-                        RIPEStatASOverview.asn == net_rows[0].asn
-                    )
-                )
-                overview = overview_result.scalar_one_or_none()
-                if overview:
-                    response.as_overview = ASOverviewDetail(
-                        asn=overview.asn,
-                        holder=overview.holder,
-                        rir=overview.rir,
-                        announced=overview.announced,
-                        block_name=overview.block_name,
-                        block_resource=overview.block_resource,
-                    )
+                response.as_overview = await self._as_overview(net_rows[0].asn)
 
-            abuse_result = await self.session.execute(
-                select(RIPEStatAbuseContact).where(RIPEStatAbuseContact.resource == ip)
-            )
-            response.abuse_contacts = [
-                AbuseContactDetail(
-                    resource=a.resource,
-                    abuse_email=a.abuse_email,
-                    rir=a.rir,
-                )
-                for a in abuse_result.scalars().all()
-            ]
+            response.abuse_contacts = await self._abuse_contacts(ip)
 
         elif target.target_type == TargetType.IP_RANGE:
             prefix = target.target_value.strip()
@@ -1512,21 +1466,7 @@ class TargetService:
             ]
 
             if po_rows and po_rows[0].asn:
-                overview_result = await self.session.execute(
-                    select(RIPEStatASOverview).where(
-                        RIPEStatASOverview.asn == po_rows[0].asn
-                    )
-                )
-                overview = overview_result.scalar_one_or_none()
-                if overview:
-                    response.as_overview = ASOverviewDetail(
-                        asn=overview.asn,
-                        holder=overview.holder,
-                        rir=overview.rir,
-                        announced=overview.announced,
-                        block_name=overview.block_name,
-                        block_resource=overview.block_resource,
-                    )
+                response.as_overview = await self._as_overview(po_rows[0].asn)
 
             rp_result = await self.session.execute(
                 select(RIPEStatRelatedPrefix).where(
@@ -1542,86 +1482,9 @@ class TargetService:
                 for r in rp_result.scalars().all()
             ]
 
-            abuse_result = await self.session.execute(
-                select(RIPEStatAbuseContact).where(
-                    RIPEStatAbuseContact.resource == prefix
-                )
-            )
-            response.abuse_contacts = [
-                AbuseContactDetail(
-                    resource=a.resource,
-                    abuse_email=a.abuse_email,
-                    rir=a.rir,
-                )
-                for a in abuse_result.scalars().all()
-            ]
+            response.abuse_contacts = await self._abuse_contacts(prefix)
 
         return response
-
-    def _parse_csv_to_targets(self, csv_text: str) -> list[TargetImportItem]:
-        csv_reader = csv.DictReader(io.StringIO(csv_text))
-
-        if csv_reader.fieldnames is None or not csv_reader.fieldnames:
-            csv_reader = csv.reader(io.StringIO(csv_text))
-            targets_data = [
-                TargetImportItem(target_value=row[0].strip())
-                for row in csv_reader
-                if row and row[0].strip()
-            ]
-        else:
-            fieldnames = [field.lower().strip() for field in csv_reader.fieldnames]
-
-            targets_data = []
-            for row in csv_reader:
-                if not any(row.values()):
-                    continue
-
-                target_value = normalize_target_value(
-                    _csv_value(
-                        row,
-                        csv_reader.fieldnames,
-                        fieldnames,
-                        ("target_value", "target", "value", "domain", "ip"),
-                    )
-                )
-
-                if not target_value:
-                    continue
-
-                tags = _csv_list(
-                    row, csv_reader.fieldnames, fieldnames, ("tags", "tag")
-                )
-                organizations = _csv_list(
-                    row,
-                    csv_reader.fieldnames,
-                    fieldnames,
-                    ("organizations", "organization", "orgs", "org"),
-                )
-                display_name = (
-                    _csv_value(
-                        row, csv_reader.fieldnames, fieldnames, ("display_name", "name")
-                    )
-                    or None
-                )
-                seeds = _csv_list(
-                    row,
-                    csv_reader.fieldnames,
-                    fieldnames,
-                    ("seeds", "seed", "subdomains"),
-                    pattern=r"[;,\s]+",
-                )
-
-                targets_data.append(
-                    TargetImportItem(
-                        target_value=target_value,
-                        tags=tags,
-                        organizations=organizations,
-                        display_name=display_name,
-                        seeds=seeds,
-                    )
-                )
-
-        return targets_data
 
     def _dispatch_post_target_creation(self, targets: list[Target]) -> None:
         if not targets:
@@ -1630,10 +1493,10 @@ class TargetService:
         all_ids = [str(t.id) for t in targets]
         dispatch_whois_lookups(all_ids)
 
-        dns_ids = [str(t.id) for t in targets if t.target_type in DNS_ELIGIBLE_TYPES]
+        dns_ids = [str(t.id) for t in targets if t.target_type in HOSTNAME_TARGET_TYPES]
         if dns_ids:
             dispatch_dns_lookups(dns_ids)
 
-        bgp_ids = [str(t.id) for t in targets if t.target_type in BGP_ELIGIBLE_TYPES]
+        bgp_ids = [str(t.id) for t in targets if t.target_type in NETWORK_TARGET_TYPES]
         if bgp_ids:
             dispatch_ripestat_enrichment(bgp_ids)

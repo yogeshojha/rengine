@@ -34,6 +34,5 @@ export interface LookalikeSummary {
 	fetched: boolean;
 	rows: LookalikeRead[];
 	verdicts: Record<string, number>;
-	open_threats: number;
 	registered: number;
 }

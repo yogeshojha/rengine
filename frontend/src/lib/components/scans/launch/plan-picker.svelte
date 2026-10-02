@@ -37,28 +37,15 @@
 
 	let { launch, phases, phasesLoading, disabled = false, onClose }: Props = $props();
 
-	const MODES: { value: LaunchMode; label: string; caption: string }[] = [
-		{
-			value: 'engine',
-			label: 'Scan engine',
-			caption: 'Runs a saved scan engine.'
-		},
-		{
-			value: 'quick',
-			label: 'Custom scan',
-			caption: 'Dependent stages are included automatically.'
-		}
+	const MODES: { value: LaunchMode; label: string }[] = [
+		{ value: 'engine', label: 'Scan engine' },
+		{ value: 'quick', label: 'Custom scan' }
 	];
 
 	let view = $state<'pipeline' | 'yaml'>('pipeline');
 
 	let engines = $derived(scanEnginesStore.engines);
 	let groups = $derived(launch.catalog?.groups ?? []);
-	let caption = $derived(
-		launch.rescan
-			? 'Runs against the selected assets. Dependent stages are included automatically.'
-			: (MODES.find((m) => m.value === launch.mode)?.caption ?? '')
-	);
 	let allSelected = $derived(
 		launch.quickStages.length > 0 &&
 			launch.quickStages.every((s) => launch.effective[s.name]?.enabled)
@@ -123,7 +110,7 @@
 			<div
 				class="flex items-center justify-between gap-3 rounded-md border border-dashed px-3 py-3 text-xs text-muted-foreground"
 			>
-				<span>No scan engines in this project.</span>
+				<span>No scan engines</span>
 				<Button variant="outline" size="sm" class="h-7 text-xs" onclick={createEngine}>
 					Create scan engine
 				</Button>
@@ -167,8 +154,6 @@
 							· Last used {relativeTime(launch.engine.last_used_at)}
 						{/if}
 					</p>
-				{:else}
-					<p class="text-2xs text-muted-foreground">{caption}</p>
 				{/if}
 			</div>
 			{#if launch.engine}
@@ -200,7 +185,7 @@
 		{/if}
 	{:else}
 		<div class="-mt-1 flex items-center justify-between gap-2">
-			<p class="text-xs text-muted-foreground">{caption}</p>
+			<p class="text-xs text-muted-foreground">Dependent stages are included automatically.</p>
 			<div class="flex shrink-0 items-center gap-1">
 				<Button
 					variant="ghost"

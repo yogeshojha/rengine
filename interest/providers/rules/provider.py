@@ -5,10 +5,12 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from sqlalchemy import select
+from sqlalchemy.exc import DataError
 
 from interest.base import InterestProvider, RawSignal
 from interest.context import InterestContext
 from shared.definitions.interest import (
+    KEYWORD_FIELD_LABELS,
     MAX_EVIDENCE,
     MAX_REASON,
     InterestSource,
@@ -39,7 +41,7 @@ def rule_query(rule: InterestRule) -> str:
     words = [w.strip() for w in (rule.keywords or []) if str(w).strip()]
     if not words:
         return ""
-    fields = [f for f in (rule.keyword_fields or []) if f in ("host", "title")] or [
+    fields = [f for f in (rule.keyword_fields or []) if f in KEYWORD_FIELD_LABELS] or [
         "host"
     ]
     listed = ",".join(_escape(w) for w in words)
@@ -49,7 +51,13 @@ def rule_query(rule: InterestRule) -> str:
 
 
 def _escape(word: str) -> str:
-    cleaned = word.replace('"', "").replace(",", "").replace("]", "").strip()
+    cleaned = (
+        word.replace('"', "")
+        .replace(",", "")
+        .replace("]", "")
+        .replace("\\", "")
+        .strip()
+    )
     return f'"{cleaned}"' if " " in cleaned else cleaned
 
 
@@ -58,7 +66,6 @@ class RulesProvider(InterestProvider):
     source = InterestSource.RULE.value
     emits = (InterestSource.KEYWORD.value, InterestSource.RULE.value)
     title = "Rules"
-    description = "Keyword lists and saved queries, evaluated against the scan."
     order = 10
 
     def evaluate(self, ctx: InterestContext) -> Iterable[RawSignal]:
@@ -100,7 +107,15 @@ class RulesProvider(InterestProvider):
         )
         weight = rule.weight if rule.weight is not None else kind_weight(rule.kind)
         reason = (rule.description or kind_label(rule.kind))[:MAX_REASON]
-        for row in ctx.session.execute(stmt):
+        try:
+            with ctx.session.begin_nested():
+                rows = ctx.session.execute(stmt).all()
+        except DataError as exc:
+            logger.warning(
+                "interest rule did not run", rule=rule.name, error=str(exc.orig)[:200]
+            )
+            return
+        for row in rows:
             yield RawSignal(
                 subdomain_id=row.id,
                 host=row.name,

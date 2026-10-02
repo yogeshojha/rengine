@@ -5,6 +5,7 @@ import pytest
 from shared.enums.target import TargetType
 from shared.utils.validation import (
     MAX_ASN,
+    dns_lookup_name,
     normalize_target_value,
     unrecognised_target,
     validate_target,
@@ -63,6 +64,9 @@ def test_a_scannable_target_is_recognised(value, expected):
         "::/0",
         "127.0.0.1",
         "127.0.0.0/8",
+        "126.0.0.0/7",
+        "169.252.0.0/14",
+        "fc00::/6",
         "169.254.169.254",
         "::1",
         "224.0.0.1",
@@ -97,3 +101,19 @@ def test_reserved_space_says_what_is_out_of_scope():
 
 def test_plain_nonsense_still_gets_the_format_hint():
     assert "Unrecognised target" in unrecognised_target("not a target at all")
+
+
+@pytest.mark.parametrize(
+    ("value", "kind", "expected"),
+    [
+        ("example.com", TargetType.DOMAIN, "example.com"),
+        ("https://Shop.Example.com:8443/a?b=1", TargetType.URL, "shop.example.com"),
+        ("https://user:pw@example.com./path", TargetType.URL, "example.com"),
+        ("https://192.0.2.5/admin", TargetType.URL, None),
+        ("http://[2001:db8::1]:8080/", TargetType.URL, None),
+        ("192.0.2.5", TargetType.IP, None),
+        ("AS13335", TargetType.ASN, None),
+    ],
+)
+def test_dns_enrichment_resolves_the_host_of_a_hostname_target(value, kind, expected):
+    assert dns_lookup_name(value, kind) == expected

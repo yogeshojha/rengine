@@ -145,3 +145,35 @@ def test_a_candidate_with_no_name_cannot_be_checked():
 
 def test_the_default_vhost_case_carries_no_bypass_claim_to_check():
     assert _Confirmer([]).check(_candidate(kind=DEFAULT_VHOST)) is Verdict.CONFIRMED
+
+
+class _Recorder(OriginConfirmer):
+    def __init__(self):
+        self.urls: list[str] = []
+        self._headers = {}
+
+    def _fetch(self, url, *, host=None):  # noqa: ARG002
+        self.urls.append(url)
+        return _page()
+
+
+def test_an_ipv6_origin_is_asked_with_a_bracketed_address():
+    found = OriginFinding(
+        kind=ORIGIN_EXPOSED,
+        confidence="medium",
+        exposed=OriginSample(
+            host="2001:db8::1", url="https://[2001:db8::1]", ip="2001:db8::1", port=443
+        ),
+        fronted=[OriginSample(host="www.example.com", url="https://www.example.com")],
+    )
+    recorder = _Recorder()
+    assert recorder.check(found) is Verdict.CONFIRMED
+    assert recorder.urls == [
+        "https://www.example.com:443/",
+        "https://[2001:db8::1]:443/",
+    ]
+
+
+def test_an_unparseable_url_is_not_a_crash():
+    with OriginConfirmer(timeout=1) as confirmer:
+        assert confirmer._fetch("https://2001:db8::1:443/") is None

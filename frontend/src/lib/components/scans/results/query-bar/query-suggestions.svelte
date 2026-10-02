@@ -114,7 +114,7 @@
 			{/if}
 			{#if shownExamples.length}
 				<div class="flex min-w-0 flex-col">
-					{@render heading(counted ? 'Findings in this scan' : 'Suggested queries')}
+					{@render heading(counted ? 'Matched queries' : 'Suggested queries')}
 					<div class="grid gap-1.5 px-1 pb-1 {columns}">
 						{#each shownExamples as example (example.query)}
 							<QueryExample {example} {noun} {nounPlural} onPick={onQuery} />
@@ -127,8 +127,8 @@
 							onclick={onShowAll}
 						>
 							{moreCount > 0
-								? `Show ${moreCount.toLocaleString()} more ${moreCount === 1 ? 'finding' : 'findings'}`
-								: 'Show all findings'}
+								? `Show ${moreCount.toLocaleString()} more ${moreCount === 1 ? 'query' : 'queries'}`
+								: 'Show all queries'}
 							<ArrowRight class="size-3.5" />
 						</button>
 					{/if}

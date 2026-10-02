@@ -39,9 +39,9 @@ RELATION_LABELS: dict[str, str] = {
 RELATION_HELP: dict[str, str] = {
     TargetRelation.CERTIFICATE.value: "One certificate names both targets",
     TargetRelation.REGISTRANT.value: "Registered to the same name",
-    TargetRelation.NETWORK.value: "Addresses in a network the organisation runs",
+    TargetRelation.NETWORK.value: "Addresses in a network the organization runs",
     TargetRelation.NAMESERVER.value: "Answered by the same nameserver",
-    TargetRelation.DNS_RECORD.value: "A DNS record nobody rents, on both targets",
+    TargetRelation.DNS_RECORD.value: "The same unshared DNS record on both targets",
     TargetRelation.NETWORK_CIDR.value: "Inside the same registered network block",
     TargetRelation.FAVICON.value: "Serving the same favicon",
 }

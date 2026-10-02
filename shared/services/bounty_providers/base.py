@@ -4,22 +4,22 @@ from __future__ import annotations
 
 import json
 import time
-import urllib.error
 import urllib.parse
-import urllib.request
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, ClassVar
 
+import httpx
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from shared.enums.api_key import APIProvider
+from shared.http import get_sync_client
 from shared.logging import get_logger
 from shared.models.api_key import APIKey
 from shared.models.bounty_program import BountyProgram
-from shared.utils.crypto import try_decrypt
+from shared.utils.net import redact_url_queries
 
 logger = get_logger(__name__)
 
@@ -43,7 +43,7 @@ class CredentialsError(BountyProviderError):
 
 
 class AccessDeniedError(BountyProviderError):
-    """The platform will not show this to the credential. Retrying cannot help."""
+    """The platform refuses this read to the credential."""
 
 
 @dataclass
@@ -72,10 +72,6 @@ def api_key_row(session: Session, provider: APIProvider) -> APIKey | None:
     ).scalar_one_or_none()
 
 
-def decrypted(row: APIKey) -> str:
-    return str(try_decrypt(row.key_value) or row.key_value)
-
-
 class JsonClient:
     """One paced, retrying JSON GET path shared by every provider."""
 
@@ -89,24 +85,14 @@ class JsonClient:
         denied_marker: str = "",
     ) -> None:
         self.label = label
-        self.headers = {
-            "Accept": "application/json",
-            "User-Agent": "reNgine",
-            **headers,
-        }
+        self.headers = {"Accept": "application/json", **headers}
         self.min_interval = min_interval
         self.rate_limit_codes = rate_limit_codes
         self.denied_marker = denied_marker
         self._last = 0.0
 
-    def _denied(self, exc: urllib.error.HTTPError) -> bool:
-        """A refusal the credential cannot retry past, told apart from an overage."""
-        if not self.denied_marker:
-            return False
-        try:
-            return self.denied_marker in exc.read().decode("utf-8", errors="replace")
-        except Exception:
-            return False
+    def _denied(self, response: httpx.Response) -> bool:
+        return bool(self.denied_marker) and self.denied_marker in response.text
 
     def _pace(self) -> None:
         if self.min_interval <= 0:
@@ -119,36 +105,40 @@ class JsonClient:
     def get(self, url: str, params: dict | None = None) -> Any:
         if params:
             url = f"{url}?{urllib.parse.urlencode(params)}"
-        request = urllib.request.Request(url, headers=self.headers)  # noqa: S310
         for attempt in range(MAX_RETRIES):
             self._pace()
             try:
-                with urllib.request.urlopen(request, timeout=TIMEOUT) as response:  # noqa: S310
-                    return json.loads(response.read().decode("utf-8", errors="replace"))
-            except urllib.error.HTTPError as exc:
-                if exc.code == HTTP_UNAUTHORIZED:
-                    msg = f"{self.label} rejected the credentials"
-                    raise CredentialsError(msg) from exc
-                if exc.code == HTTP_FORBIDDEN and self._denied(exc):
-                    msg = f"{self.label} returned {exc.code}"
-                    raise AccessDeniedError(msg) from exc
-                if exc.code in self.rate_limit_codes and attempt < MAX_RETRIES - 1:
-                    delay = (
-                        as_int(exc.headers.get("Retry-After")) or RETRY_AFTER_DEFAULT
+                with get_sync_client(timeout=TIMEOUT) as client:
+                    response = client.get(url, headers=self.headers)
+            except httpx.HTTPError as exc:
+                raise BountyProviderError(redact_url_queries(str(exc))) from None
+            code = response.status_code
+            if not response.is_error:
+                try:
+                    return json.loads(
+                        response.content.decode("utf-8", errors="replace")
                     )
-                    logger.info(
-                        "bounty provider rate limited",
-                        provider=self.label,
-                        seconds=delay,
-                    )
-                    time.sleep(min(delay, MAX_RETRY_SLEEP))
-                    continue
-                msg = f"{self.label} returned {exc.code}"
-                raise BountyProviderError(msg) from exc
-            except BountyProviderError:
-                raise
-            except Exception as exc:
-                raise BountyProviderError(str(exc)) from exc
+                except ValueError as exc:
+                    raise BountyProviderError(str(exc)) from exc
+            if code == HTTP_UNAUTHORIZED:
+                msg = f"{self.label} rejected the credentials"
+                raise CredentialsError(msg)
+            if code == HTTP_FORBIDDEN and self._denied(response):
+                msg = f"{self.label} returned {code}"
+                raise AccessDeniedError(msg)
+            if code in self.rate_limit_codes and attempt < MAX_RETRIES - 1:
+                delay = (
+                    as_int(response.headers.get("Retry-After")) or RETRY_AFTER_DEFAULT
+                )
+                logger.info(
+                    "bounty provider rate limited",
+                    provider=self.label,
+                    seconds=delay,
+                )
+                time.sleep(min(delay, MAX_RETRY_SLEEP))
+                continue
+            msg = f"{self.label} returned {code}"
+            raise BountyProviderError(msg)
         msg = f"{self.label} rate limit did not clear"
         raise BountyProviderError(msg)
 
@@ -165,10 +155,6 @@ class BountyProvider(ABC):
     def from_session(cls, session: Session) -> BountyProvider | None:
         """The configured provider, or None when the instance has no credential."""
 
-    @classmethod
-    def configured(cls, session: Session) -> bool:
-        return cls.from_session(session) is not None
-
     @abstractmethod
     def programs(self) -> list[dict]:
         """Every program the credential can see, as program rows."""
@@ -179,14 +165,10 @@ class BountyProvider(ABC):
 
     @abstractmethod
     def verify(self) -> dict:
-        """One cheap call down the sync path, to prove the credential works."""
+        """One call down the sync path that checks the credential."""
 
     def changed_since(self, since: datetime | None) -> set[str] | None:  # noqa: ARG002
         """Platform ids whose scope moved since a time. None when it cannot be asked."""
-        return None
-
-    def account(self) -> str | None:
-        """The account name, when the platform states one."""
         return None
 
     def own_reports(self) -> ReportFetch | None:

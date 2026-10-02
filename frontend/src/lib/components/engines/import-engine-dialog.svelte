@@ -2,8 +2,9 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import * as Alert from '$lib/components/ui/alert';
-	import LoadingButton from '@/components/loading-button.svelte';
+	import LoadingButton from '$lib/components/loading-button.svelte';
 	import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
 	import Upload from '@lucide/svelte/icons/upload';
 	import YamlEditor from '$lib/components/yaml-editor.svelte';
@@ -11,7 +12,7 @@
 	import FootprintMeter from './footprint-meter.svelte';
 	import { parse, validate, draftFromDoc } from '$lib/utilities/engine-yaml';
 	import { summarize } from '$lib/utilities/engine-summary';
-	import type { EngineCatalog } from '$lib/types/scan-engine';
+	import { INTENSITY_LABELS, type EngineCatalog } from '$lib/types/scan-engine';
 
 	interface Props {
 		open: boolean;
@@ -99,30 +100,34 @@ stages:
 				</Alert.Description>
 			</Alert.Root>
 		{:else if parsed && summary}
-			<div class="preview">
-				<div class="preview-head">
-					<span class="preview-name">{parsed.name || 'Untitled engine'}</span>
-					<Badge variant="outline" class="cap">{parsed.intensity}</Badge>
+			<ScrollArea class="min-h-0 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(92vh-32rem)]">
+				<div class="preview">
+					<div class="preview-head">
+						<span class="preview-name">{parsed.name || 'Untitled engine'}</span>
+						<Badge variant="outline" class="cap"
+							>{INTENSITY_LABELS[parsed.intensity] ?? parsed.intensity}</Badge
+						>
+					</div>
+					{#if catalog}
+						<StageList
+							stages={catalog.stages}
+							config={parsed.stages}
+							intensity={parsed.intensity}
+							class="py-1"
+						/>
+					{/if}
+					<div class="preview-line">
+						<span>{summary.activeStages} of {summary.totalStages} stages run</span>
+						<FootprintMeter
+							footprint={summary.footprint}
+							requestsPerSecond={summary.requestsPerSecond}
+						/>
+					</div>
+					{#if summary.tools.length}
+						<p class="preview-tools">{summary.tools.join(' · ')}</p>
+					{/if}
 				</div>
-				{#if catalog}
-					<StageList
-						stages={catalog.stages}
-						config={parsed.stages}
-						intensity={parsed.intensity}
-						class="py-1"
-					/>
-				{/if}
-				<div class="preview-line">
-					<span>{summary.activeStages} of {summary.totalStages} stages run</span>
-					<FootprintMeter
-						footprint={summary.footprint}
-						requestsPerSecond={summary.requestsPerSecond}
-					/>
-				</div>
-				{#if summary.tools.length}
-					<p class="preview-tools">{summary.tools.join(' · ')}</p>
-				{/if}
-			</div>
+			</ScrollArea>
 		{/if}
 
 		<Dialog.Footer>
@@ -152,7 +157,7 @@ stages:
 	.hint {
 		position: absolute;
 		right: 10px;
-		bottom: 8px;
+		bottom: 36px;
 		display: inline-flex;
 		align-items: center;
 		gap: 5px;
@@ -184,7 +189,6 @@ stages:
 		gap: 3px;
 		font-size: 11px;
 		font-weight: 400;
-		text-transform: capitalize;
 	}
 	.preview-line {
 		display: flex;

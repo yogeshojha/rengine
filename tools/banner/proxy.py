@@ -1,5 +1,3 @@
-"""Open a TCP tunnel to one host through the scan's proxy."""
-
 from __future__ import annotations
 
 import base64
@@ -7,9 +5,9 @@ import socket
 import ssl
 from urllib.parse import SplitResult, unquote, urlsplit
 
+from shared.services.proxy_resolve import SOCKS_SCHEMES
 from shared.utils.net import host_port, unreadable_port, url_port
 
-SOCKS_SCHEMES = frozenset({"socks5", "socks5h"})
 HTTP_SCHEMES = frozenset({"http", "https"})
 SUPPORTED_SCHEMES = SOCKS_SCHEMES | HTTP_SCHEMES
 

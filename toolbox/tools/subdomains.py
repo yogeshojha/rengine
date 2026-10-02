@@ -129,17 +129,17 @@ class SubdomainFinder(Tool):
         blocks = [
             hero(
                 args.domain,
-                sub=f"{len(names)} hostname{'s' if len(names) != 1 else ''} from "
+                sub=f"{len(names):,} hostname{'s' if len(names) != 1 else ''} from "
                 f"{ran} source{'s' if ran != 1 else ''}",
                 identity=glyph("git-fork"),
                 metric=metric(
-                    len(new),
+                    f"{len(new):,}",
                     "Not in inventory",
                     tone=Tone.INFO.value if new else Tone.MUTED.value,
                 ),
                 meter=meter(
                     len(known) / len(names) if names else 0.0,
-                    caption=f"{len(known)} of {len(names)} in inventory",
+                    caption=f"{len(known):,} of {len(names):,} in inventory",
                     tone=Tone.SUCCESS.value,
                 )
                 if names
@@ -177,12 +177,14 @@ class SubdomainFinder(Tool):
         ]
         if len(names) > MAX_LISTED:
             blocks.append(
-                note(f"First {MAX_LISTED} of {len(names)} shown.", tone=Tone.INFO.value)
+                note(
+                    f"First {MAX_LISTED} of {len(names):,} shown.", tone=Tone.INFO.value
+                )
             )
 
         return ToolOutcome(
-            summary=f"{len(names)} host{'s' if len(names) != 1 else ''} · "
-            f"{len(new)} not in inventory",
+            summary=f"{len(names):,} host{'s' if len(names) != 1 else ''} · "
+            f"{len(new):,} not in inventory",
             blocks=blocks,
             caveats=[
                 "Passive sources only. Bruteforce, permutations and DNS resolution "
@@ -206,7 +208,7 @@ def _source_note(result: ProviderResult) -> str:
         return result.error
     if result.skipped:
         return result.skip_reason or "skipped"
-    return f"{len(result.subdomains)} in {result.duration_seconds:.0f}s"
+    return f"{len(result.subdomains):,} in {result.duration_seconds:.0f}s"
 
 
 def _api_keys(ctx: ToolContext) -> dict[str, str | None]:

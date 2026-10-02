@@ -1,4 +1,4 @@
-"""EPSS + CISA KEV: download, store, and re-rank every finding without rescanning."""
+"""EPSS and CISA KEV feeds and the finding re-rank."""
 
 from __future__ import annotations
 
@@ -6,7 +6,6 @@ import gzip
 import json
 import shutil
 import tempfile
-import urllib.request
 from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import date
@@ -22,6 +21,7 @@ from shared.definitions.threat_intel import (
     FeedKind,
     FeedStatus,
 )
+from shared.http import download
 from shared.logging import get_logger
 from shared.models.threat_intel import EpssScore, KevEntry, ThreatFeed
 from shared.services import feed_ledger, locks, nvd_corpus
@@ -33,7 +33,6 @@ logger = get_logger(__name__)
 
 DOWNLOAD_TIMEOUT = 180
 MAX_FEED_BYTES = 128 * 1024 * 1024
-USER_AGENT = "reNgine"
 
 
 @contextmanager
@@ -41,18 +40,9 @@ def _download(url: str, name: str) -> Iterator[tuple[Path, int]]:
     workdir = Path(tempfile.mkdtemp(prefix="threat_intel_"))
     target = workdir / name
     try:
-        request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})  # noqa: S310
-        with (
-            urllib.request.urlopen(request, timeout=DOWNLOAD_TIMEOUT) as response,  # noqa: S310
-            target.open("wb") as handle,
-        ):
-            copied = 0
-            while chunk := response.read(1 << 20):
-                copied += len(chunk)
-                if copied > MAX_FEED_BYTES:
-                    msg = f"{name} exceeded {MAX_FEED_BYTES} bytes"
-                    raise ValueError(msg)
-                handle.write(chunk)
+        copied = download(
+            url, target, timeout=DOWNLOAD_TIMEOUT, max_bytes=MAX_FEED_BYTES
+        )
         yield target, copied
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
@@ -183,17 +173,6 @@ def auto_sync_enabled(session: Session) -> bool:
     return True if value is None else bool(value)
 
 
-def set_auto_sync(session: Session, enabled: bool) -> bool:
-    session.execute(
-        text(
-            "UPDATE instance_settings SET threat_intel_auto_sync = :v, updated_at = now()"
-        ),
-        {"v": enabled},
-    )
-    session.commit()
-    return enabled
-
-
 def feeds_ready(session: Session) -> bool:
     return bool(
         session.scalar(select(func.count()).select_from(EpssScore).limit(1))
@@ -209,20 +188,6 @@ def missing_feeds(session: Session) -> list[str]:
             text(f"SELECT EXISTS (SELECT 1 FROM {spec.rows_table})")  # noqa: S608
         ).scalar()
     ]
-
-
-def feed_rows(session: Session) -> dict[str, int]:
-    """Counted from each feed's own table, named by its spec."""
-    out: dict[str, int] = {}
-    for spec in FEEDS_BY_KIND.values():
-        try:
-            out[spec.kind] = int(
-                session.scalar(text(f"SELECT count(*) FROM {spec.rows_table}")) or 0  # noqa: S608
-            )
-        except Exception:
-            logger.warning("feed row count failed", feed=spec.kind, exc_info=True)
-            out[spec.kind] = 0
-    return out
 
 
 def feed_status(feed: ThreatFeed | None, rows: int) -> str:
@@ -264,16 +229,13 @@ GROUP BY x.id
 """
 
 
-def apply_intel(session: Session, *, scan_id=None, project_id=None) -> dict[str, int]:
+def apply_intel(session: Session, *, scan_id=None) -> dict[str, int]:
     """Re-score findings from the feeds."""
     scope = ""
     params: dict = {"now": utc_now()}
     if scan_id is not None:
         scope = "WHERE v.scan_id = :scan_id"
         params["scan_id"] = scan_id
-    elif project_id is not None:
-        scope = "WHERE v.project_id = :project_id"
-        params["project_id"] = project_id
 
     joined = _JOINED_SQL.format(scope=scope)
     session.execute(
@@ -316,21 +278,3 @@ def apply_intel(session: Session, *, scan_id=None, project_id=None) -> dict[str,
         "became_kev": int(moved.became_kev or 0),
         "epss_moved": int(moved.epss_moved or 0),
     }
-
-
-def lookup(session: Session, cves: list[str]) -> dict[str, dict]:
-    """Local feed data for a set of CVEs."""
-    keys = [c.strip().upper() for c in cves if c and c.strip()]
-    if not keys:
-        return {}
-    out: dict[str, dict] = {k: {"cve": k} for k in keys}
-    for row in session.execute(
-        select(EpssScore).where(EpssScore.cve.in_(keys))
-    ).scalars():
-        out[row.cve]["epss_score"] = row.score
-        out[row.cve]["epss_percentile"] = row.percentile
-    for row in session.execute(
-        select(KevEntry).where(KevEntry.cve.in_(keys))
-    ).scalars():
-        out[row.cve]["kev"] = row
-    return out

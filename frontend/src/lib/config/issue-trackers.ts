@@ -130,12 +130,6 @@ export enum RemoteCategory {
 	DONE = 'done'
 }
 
-export const REMOTE_CATEGORY_ORDER: RemoteCategory[] = [
-	RemoteCategory.TODO,
-	RemoteCategory.IN_PROGRESS,
-	RemoteCategory.DONE
-];
-
 export const REMOTE_CATEGORY_LABELS: Record<RemoteCategory, string> = {
 	[RemoteCategory.TODO]: 'To do',
 	[RemoteCategory.IN_PROGRESS]: 'In progress',

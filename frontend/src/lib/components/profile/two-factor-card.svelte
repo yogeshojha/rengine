@@ -25,6 +25,7 @@
 	import DownloadIcon from '@lucide/svelte/icons/download';
 	import { downloadBlob } from '$lib/utilities/download';
 	import { writeClipboard } from '$lib/utilities/clipboard';
+	import { TOTP_DIGITS } from '$lib/constants';
 
 	let twoFactorEnabled = $state(false);
 	let twoFactorLoading = $state(true);
@@ -61,7 +62,7 @@
 	});
 
 	const canDisable = $derived(
-		disableUseBackupCode ? disableCode.trim().length > 0 : disableCode.length === 6
+		disableUseBackupCode ? disableCode.trim().length > 0 : disableCode.length === TOTP_DIGITS
 	);
 
 	const enrollDirty = $derived(
@@ -120,8 +121,8 @@
 	}
 
 	async function handleVerify() {
-		if (setupCode.length !== 6) {
-			toast.error('Enter the 6-digit code');
+		if (setupCode.length !== TOTP_DIGITS) {
+			toast.error(`Enter the ${TOTP_DIGITS}-digit code`);
 			return;
 		}
 		isVerifying = true;
@@ -249,7 +250,7 @@
 					<p class="text-xs text-muted-foreground">
 						{disableUseBackupCode
 							? 'Enter one of the backup codes saved at enrollment.'
-							: 'Enter the 6-digit code from the authenticator app.'}
+							: `Enter the ${TOTP_DIGITS}-digit code from the authenticator app.`}
 					</p>
 					{#if disableUseBackupCode}
 						<Label for="disable-backup-code" class="sr-only">Backup code</Label>
@@ -385,7 +386,7 @@
 								onclick={handleVerify}
 								loading={isVerifying}
 								loadingLabel="Verifying"
-								disabled={setupCode.length !== 6}
+								disabled={setupCode.length !== TOTP_DIGITS}
 							>
 								Verify &amp; enable
 							</LoadingButton>
@@ -395,10 +396,6 @@
 				</div>
 			{/if}
 		{:else}
-			<div class="flex items-center gap-2 text-sm text-muted-foreground">
-				<TriangleAlertIcon class="w-4 h-4 text-muted-foreground shrink-0" />
-				Not enabled.
-			</div>
 			<LoadingButton onclick={handleStartSetup} loading={isSettingUp} loadingLabel="Preparing">
 				Enable 2FA
 			</LoadingButton>
@@ -421,10 +418,10 @@
 
 <UnsavedChangesDialog
 	bind:open={showLeaveDialog}
-	title="Discard two-factor setup"
-	description="Enrollment is discarded. Two-factor remains off."
-	confirmLabel="Discard setup"
-	cancelLabel="Continue setup"
+	title={backupCodes ? 'Backup codes not saved' : 'Discard two-factor setup'}
+	description={backupCodes ? 'The codes are shown once.' : 'Enrollment is discarded.'}
+	confirmLabel={backupCodes ? 'Leave' : 'Discard setup'}
+	cancelLabel={backupCodes ? 'Back' : 'Continue setup'}
 	onOpenChange={(o) => {
 		showLeaveDialog = o;
 		if (!o) pendingNav = null;

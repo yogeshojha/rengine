@@ -1,4 +1,3 @@
-from ipaddress import IPv4Network, IPv6Network
 from typing import Any
 
 from shared.utils.coerce import safe_bool, safe_datetime, safe_int, safe_list, safe_str
@@ -88,14 +87,6 @@ def _parse_base_fields(raw: dict[str, Any], query: str) -> dict[str, Any]:
     }
 
 
-def _network_to_str(value: Any) -> str:
-    if isinstance(value, (IPv4Network, IPv6Network)):
-        return str(value)
-    if value is not None:
-        return safe_str(value)
-    return ""
-
-
 def parse_domain_response(raw: dict[str, Any], query: str) -> WhoisDomainResponse:
     """Parse a raw whoisit domain response into a typed model."""
     base = _parse_base_fields(raw, query)
@@ -113,11 +104,10 @@ def parse_ip_response(raw: dict[str, Any], query: str) -> WhoisIPResponse:
     base = _parse_base_fields(raw, query)
     return WhoisIPResponse(
         **base,
-        # upper-cased for case-insensitive correlation
         country=safe_str(raw.get("country")).strip().upper(),
         ip_version=safe_int(raw.get("ip_version")),
         assignment_type=safe_str(raw.get("assignment_type")),
-        network=_network_to_str(raw.get("network")),
+        network=safe_str(raw.get("network")),
     )
 
 

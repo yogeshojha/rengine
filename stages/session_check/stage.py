@@ -50,8 +50,7 @@ class SessionCheckStage(Stage):
         if not candidates:
             return self._result(
                 Verdict.UNANSWERED,
-                f"A {self.ctx.target_type} target has no URL to request. The session "
-                "was not checked.",
+                "The target has no URL to request. The session was not checked.",
             )
 
         client = self._client()
@@ -67,8 +66,7 @@ class SessionCheckStage(Stage):
 
         return self._result(
             Verdict.UNANSWERED,
-            f"nothing answered at {' or '.join(candidates)}. The session could "
-            "not be checked",
+            f"No answer from {' or '.join(candidates)}. The session was not checked.",
         )
 
     def _candidates(self) -> list[str]:
@@ -103,15 +101,14 @@ class SessionCheckStage(Stage):
         if signed.status in _UNAUTHORISED:
             return (
                 Verdict.REFUSED,
-                f"{url} answered {signed.status} with the scan context's credentials. "
-                "They are wrong, expired or not accepted here",
+                f"{url} refused the scan context's credentials with {signed.status}.",
             )
         if signed.status == bare.status and signed.digest == bare.digest:
             return (
                 Verdict.IGNORED,
                 f"{url} answered {signed.status} and the same {signed.length:,} bytes "
-                "with and without the credentials, nothing in this scan is "
-                "authenticated",
+                "with and without the credentials. Requests in this scan are not "
+                "authenticated.",
             )
         changed = (
             f"status {bare.status} to {signed.status}"

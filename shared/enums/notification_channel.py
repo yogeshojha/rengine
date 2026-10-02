@@ -27,3 +27,18 @@ URL_PROVIDERS: frozenset[str] = frozenset(
         NotificationProvider.WEBHOOK.value,
     }
 )
+
+APPRISE_SCHEMES: frozenset[str] = frozenset(
+    {
+        "discord",
+        "gchat",
+        "opsgenie",
+        "pagerduty",
+        "pbul",
+        "pover",
+        "ses",
+        "slack",
+        "sns",
+        "tgram",
+    }
+)

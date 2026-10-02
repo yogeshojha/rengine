@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
     from stages.subdomain.providers.base import ProviderResult
 
-__all__ = ["in_scope", "merge_and_filter", "normalize_host", "passes_included"]
+__all__ = ["in_scope", "merge_and_filter", "passes_included"]
 
 
 def in_scope(name: str, domain: str) -> bool:

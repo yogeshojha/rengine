@@ -1,41 +1,31 @@
-import type {
-	StreamStatus,
-	Watch,
-	WatchCreate,
-	WatchEvent,
-	WatchHost,
-	WatchHostCounts,
+import {
 	WatchHostFilter,
-	WatchPreview,
-	WatchUpdate
+	type StreamStatus,
+	type Watch,
+	type WatchCreate,
+	type WatchEvent,
+	type WatchHost,
+	type WatchHostCounts,
+	type WatchPreview,
+	type WatchUpdate
 } from '$lib/types/watch';
-import { api } from './client';
-import type { Paged } from './bounty-programs';
-
-function query(params: Record<string, unknown>): string {
-	const search = new URLSearchParams();
-	for (const [key, value] of Object.entries(params)) {
-		if (value === undefined || value === null || value === '') continue;
-		search.set(key, String(value));
-	}
-	const qs = search.toString();
-	return qs ? `?${qs}` : '';
-}
+import type { PaginatedResponse } from '$lib/types/pagination';
+import { api, toQuery } from './client';
 
 const BASE = '/bounty-programs/watches';
 
 export const watchesApi = {
 	list(projectId: string): Promise<Watch[]> {
-		return api.get<Watch[]>(`${BASE}${query({ project_id: projectId })}`);
+		return api.get<Watch[]>(`${BASE}${toQuery({ project_id: projectId })}`);
 	},
 
 	get(id: string, projectId: string): Promise<Watch> {
-		return api.get<Watch>(`${BASE}/${id}${query({ project_id: projectId })}`);
+		return api.get<Watch>(`${BASE}/${id}${toQuery({ project_id: projectId })}`);
 	},
 
 	preview(platform: string, handle: string, projectId: string): Promise<WatchPreview> {
 		return api.get<WatchPreview>(
-			`/bounty-programs/${platform}/${encodeURIComponent(handle)}/watch/preview${query({
+			`/bounty-programs/${platform}/${encodeURIComponent(handle)}/watch/preview${toQuery({
 				project_id: projectId
 			})}`
 		);
@@ -49,23 +39,16 @@ export const watchesApi = {
 	},
 
 	update(id: string, projectId: string, patch: WatchUpdate): Promise<Watch> {
-		return api.patch<Watch>(`${BASE}/${id}${query({ project_id: projectId })}`, patch);
+		return api.patch<Watch>(`${BASE}/${id}${toQuery({ project_id: projectId })}`, patch);
 	},
 
 	remove(id: string, projectId: string): Promise<unknown> {
-		return api.delete(`${BASE}/${id}${query({ project_id: projectId })}`);
+		return api.delete(`${BASE}/${id}${toQuery({ project_id: projectId })}`);
 	},
 
 	markSeen(id: string, projectId: string): Promise<{ seen_at: string }> {
 		return api.post<{ seen_at: string }>(
-			`${BASE}/${id}/seen${query({ project_id: projectId })}`,
-			{}
-		);
-	},
-
-	reconcile(id: string, projectId: string): Promise<Record<string, number>> {
-		return api.post<Record<string, number>>(
-			`${BASE}/${id}/reconcile${query({ project_id: projectId })}`,
+			`${BASE}/${id}/seen${toQuery({ project_id: projectId })}`,
 			{}
 		);
 	},
@@ -80,11 +63,11 @@ export const watchesApi = {
 			page: number;
 			size: number;
 		}
-	): Promise<Paged<WatchHost>> {
-		return api.get<Paged<WatchHost>>(
-			`${BASE}/${id}/hosts${query({
+	): Promise<PaginatedResponse<WatchHost>> {
+		return api.get<PaginatedResponse<WatchHost>>(
+			`${BASE}/${id}/hosts${toQuery({
 				project_id: projectId,
-				state: options.state === 'all' ? null : options.state,
+				state: options.state === WatchHostFilter.All ? null : options.state,
 				since: options.since,
 				q: options.q,
 				page: options.page,
@@ -95,13 +78,13 @@ export const watchesApi = {
 
 	hostCounts(id: string, projectId: string, since?: string | null): Promise<WatchHostCounts> {
 		return api.get<WatchHostCounts>(
-			`${BASE}/${id}/hosts/counts${query({ project_id: projectId, since })}`
+			`${BASE}/${id}/hosts/counts${toQuery({ project_id: projectId, since })}`
 		);
 	},
 
 	muteHost(id: string, hostId: string, projectId: string): Promise<WatchHost> {
 		return api.post<WatchHost>(
-			`${BASE}/${id}/hosts/${hostId}/mute${query({ project_id: projectId })}`,
+			`${BASE}/${id}/hosts/${hostId}/mute${toQuery({ project_id: projectId })}`,
 			{}
 		);
 	},
@@ -110,9 +93,9 @@ export const watchesApi = {
 		id: string,
 		projectId: string,
 		options: { page: number; size: number; kind?: string | null; since?: string | null }
-	): Promise<Paged<WatchEvent>> {
-		return api.get<Paged<WatchEvent>>(
-			`${BASE}/${id}/events${query({
+	): Promise<PaginatedResponse<WatchEvent>> {
+		return api.get<PaginatedResponse<WatchEvent>>(
+			`${BASE}/${id}/events${toQuery({
 				project_id: projectId,
 				page: options.page,
 				size: options.size,

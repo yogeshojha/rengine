@@ -14,10 +14,16 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import {
 		targetTypeLabel,
+		targetTypePhrase,
 		type EnginePreviewResult,
 		type ScanEngine
 	} from '$lib/types/scan-engine';
-	import { MASK, type AuthConfig, type ScanContextCreate } from '$lib/types/scan-context';
+	import { TargetType } from '$lib/types/target';
+	import { MASK } from '$lib/constants';
+	import type { AuthConfig, HttpProtocol, ScanContextCreate } from '$lib/types/scan-context';
+	import type { PreviewTool } from '$lib/types/scan';
+	import { secretFieldFor } from './context-form';
+	import { HTTP_PROTOCOL_LABELS } from './context-summary';
 
 	interface Props {
 		draft: ScanContextCreate | null;
@@ -26,16 +32,10 @@
 	let { draft }: Props = $props();
 
 	const DEBOUNCE_MS = 300;
-	const SECRET_FOR_TYPE: Record<string, keyof AuthConfig> = {
-		bearer: 'bearer_token',
-		basic: 'basic_password',
-		header: 'header_value',
-		cookie: 'cookie_value',
-		api_key: 'api_key_value'
-	};
 
 	let engineId = $state('');
-	let targetType = $state('domain');
+	let targetType = $state<string>(TargetType.DOMAIN);
+	const article = $derived(targetTypePhrase(targetType).split(' ', 1)[0]);
 	let plain = $state<EnginePreviewResult | null>(null);
 	let merged = $state<EnginePreviewResult | null>(null);
 	let isLoading = $state(false);
@@ -45,7 +45,7 @@
 	const engine = $derived(engines.find((e) => e.id === engineId));
 
 	$effect(() => {
-		engineCatalogStore.fetch();
+		untrack(() => engineCatalogStore.fetch());
 		const project = projectsStore.activeProject;
 		if (!project) return;
 		untrack(() => {
@@ -61,10 +61,11 @@
 
 	function previewContext(d: ScanContextCreate): ScanContextCreate {
 		const auth = { ...d.auth } as AuthConfig;
-		const secret = SECRET_FOR_TYPE[d.auth_type];
+		const secret = secretFieldFor(d.auth_type);
 		if (secret && !auth[secret]) auth[secret] = MASK;
 		return {
 			...d,
+			name: d.name.trim() || 'Untitled context',
 			auth,
 			extra_headers: d.extra_headers.filter((h) => h.name.trim())
 		};
@@ -115,6 +116,27 @@
 		return engineCatalogStore.stage(stage)?.fields.find((f) => f.name === field)?.title ?? field;
 	}
 
+	function protocolLabel(value: string): string {
+		return HTTP_PROTOCOL_LABELS[value as HttpProtocol] ?? value;
+	}
+
+	const TRANSPORT: { key: 'rate' | 'threads' | 'timeout'; label: string; unit: string }[] = [
+		{ key: 'rate', label: 'Rate', unit: '/s' },
+		{ key: 'threads', label: 'Threads', unit: '' },
+		{ key: 'timeout', label: 'Timeout', unit: 's' }
+	];
+
+	function transportChanges(tool: PreviewTool, base: PreviewTool | undefined): Change[] {
+		return TRANSPORT.filter(({ key }) => tool[key] && tool[key] !== base?.[key]).map(
+			({ key, label, unit }) => ({
+				group: 'Throughput',
+				label: `${tool.label} · ${label}`,
+				from: base?.[key] ? `${base[key]}${unit}` : null,
+				to: `${tool[key]}${unit}`
+			})
+		);
+	}
+
 	function list(items: string[], max = 3): string {
 		const shown = items.slice(0, max).join(', ');
 		return items.length > max ? `${shown} +${items.length - max}` : shown;
@@ -134,8 +156,8 @@
 			out.push({
 				group: 'Requests',
 				label: 'Protocol',
-				from: before.http_protocol,
-				to: after.http_protocol.replace('_', ' ')
+				from: protocolLabel(before.http_protocol),
+				to: protocolLabel(after.http_protocol)
 			});
 		}
 		if (after.follow_redirects !== before.follow_redirects) {
@@ -145,6 +167,11 @@
 				from: before.follow_redirects == null ? 'engine default' : String(before.follow_redirects),
 				to: after.follow_redirects ? 'follow' : 'do not follow'
 			});
+		}
+
+		const baseTools = new Map(plain.phases.flatMap((p) => p.tools).map((t) => [t.capability, t]));
+		for (const tool of merged.phases.flatMap((p) => p.tools)) {
+			out.push(...transportChanges(tool, baseTools.get(tool.capability)));
 		}
 
 		for (const [stage, config] of Object.entries(merged.resolved_stages)) {
@@ -214,7 +241,7 @@
 				{/each}
 			</Select.Content>
 		</Select.Root>
-		<span class="dim">against a</span>
+		<span class="dim">against {article}</span>
 		<Select.Root type="single" value={targetType} onValueChange={(v) => v && (targetType = v)}>
 			<Select.Trigger
 				class="h-6 w-auto min-w-[88px] gap-1 border-0 bg-muted px-2 text-xs font-medium shadow-none"

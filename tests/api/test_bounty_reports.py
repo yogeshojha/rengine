@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import pytest
 
+from app.api.deps import get_current_superuser
+from app.api.v1.bounty_reports import router
 from shared.definitions.bounty_programs import PLATFORMS
 from shared.definitions.bounty_reports import SETTLED_STATES, ReportStage, report_state
 from shared.services.bounty_providers import PROVIDERS_BY_PLATFORM, BountyProvider
@@ -147,3 +149,10 @@ def test_the_open_filter_matches_what_the_badge_calls_open():
         assert (report_state(raw).stage is ReportStage.OPEN) == (
             raw not in SETTLED_STATES
         )
+
+
+def test_report_sync_is_superuser_only():
+    route = next(
+        r for r in router.routes if r.path == "/bounty-reports/{platform}/sync"
+    )
+    assert get_current_superuser in {d.call for d in route.dependant.dependencies}

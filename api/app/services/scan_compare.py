@@ -1,5 +1,3 @@
-"""Diff two runs of one target across the five result dimensions."""
-
 from __future__ import annotations
 
 from collections import defaultdict
@@ -28,9 +26,9 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.asset_query import NO_JIT, vuln_suppressed
 from shared.definitions.compare import (
     AUTH_STATUS,
+    COMPARABILITY_LABELS,
     COMPARE_KEYS,
     DEFAULT_RANK,
     DIFF_FIELD_INDENT,
@@ -83,18 +81,18 @@ from shared.models.compare import (
     ScanComparison,
     ScreenshotPair,
     SettingDiff,
-    StageDiff,
 )
 from shared.models.endpoint import Endpoint, EndpointCoverage
 from shared.models.ip_address import IpAddress
 from shared.models.port import Port
-from shared.models.scan import Scan
+from shared.models.scan import Scan, run_seconds
 from shared.models.scan_activity import ScanActivity
 from shared.models.secret import Secret
 from shared.models.software import SoftwareCve
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.vulnerability import Vulnerability, VulnerabilityCoverage
+from shared.services.asset_query import NO_JIT, vuln_suppressed
 from shared.services.scan_scope import covering_stages, producing_stages
 from shared.utils.datetime import utc_now
 from shared.utils.net import host_port
@@ -334,7 +332,7 @@ def _live_status(column):
 
 def _rules(spec: DimSpec, a, b, appeared, gone, both):
     d = spec.dimension
-    if d == SurfaceDimension.VULNERABILITIES.value:
+    if d in (SurfaceDimension.VULNERABILITIES.value, SurfaceDimension.SOFTWARE.value):
         return (
             (ChangeSignal.KEV_APPEARED, and_(appeared, b.c.is_kev.is_(True))),
             (
@@ -502,7 +500,6 @@ class ScanCompareService:
                 )
             )
 
-        stage_diff = self._stage_diff(baseline, current, activities, titles)
         run_diff = self._run_diff(baseline, current)
         between = await self._runs_between(baseline, current)
         worst = self._overall(deltas, setting_diff, run_diff, baseline, current)
@@ -518,7 +515,6 @@ class ScanCompareService:
             baseline=self._side_read(baseline, activities, deltas, "total_baseline"),
             current=self._side_read(current, activities, deltas, "total_current"),
             dimensions=deltas,
-            stage_diff=stage_diff,
             setting_diff=setting_diff,
             settings_identical=identical,
             run_diff=run_diff,
@@ -549,7 +545,7 @@ class ScanCompareService:
             )
         baseline, current = await self._pair(baseline_id, current_id, project_id)
         activities = await self._activities([baseline.id, current.id])
-        confirmed = self._confirmed(dimension, current, activities)
+        confirmed = self._clean(dimension, current, activities)
         wanted = self._wanted(verbs, confirmed)
         spec = SPECS[dimension]
 
@@ -674,7 +670,7 @@ class ScanCompareService:
             f"--- {side(report.baseline)}",
             f"+++ {side(report.current)}",
             f"# {report.target_value}",
-            f"# {report.comparability.replace('_', ' ')} · {report.summary}",
+            f"# {COMPARABILITY_LABELS[report.comparability]} · {report.summary}",
         ]
         lines.extend(
             f"# run · {row.label}  {row.baseline or 'none'} → {row.current or 'none'}"
@@ -780,17 +776,16 @@ class ScanCompareService:
             baseline_id = await self._previous(current, project_id)
         if baseline_id == current_id:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=REFUSAL_REASON[Refusal.SAME_RUN.value],
             )
         baseline = await self._scan(baseline_id, project_id)
-        current = await self._scan(current_id, project_id)
         refusal = self._refusal(
             current, baseline, current.scope == ScanScope.FULL.value
         )
         if refusal:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=refusal
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=refusal
             )
         return baseline, current
 
@@ -884,8 +879,8 @@ class ScanCompareService:
             noun=noun,
             noun_plural=noun_plural,
             verdict=verdict,
-            total_baseline=changed_n + unchanged_n + gone_n,
-            total_current=changed_n + unchanged_n + appeared_n,
+            total_baseline=rows_baseline,
+            total_current=rows_current,
             appeared=appeared_n,
             changed=changed_n,
             unchanged=unchanged_n,
@@ -940,10 +935,15 @@ class ScanCompareService:
         ran = activities.get(scan.id, {})
         return any(ran.get(name) == CLEAN for name in names)
 
-    def _confirmed(
-        self, dimension: str, current: Scan, activities: dict[UUID, dict[str, str]]
-    ) -> bool:
-        return self._clean(dimension, current, activities)
+    def _partial(
+        self, dimension: str, scan: Scan, activities: dict[UUID, dict[str, str]]
+    ) -> list[str]:
+        ran = activities.get(scan.id, {})
+        return sorted(
+            name
+            for name in covering_stages()[dimension]
+            if ran.get(name) == ScanActivityStatus.PARTIAL.value
+        )
 
     async def _verdict(
         self,
@@ -989,15 +989,22 @@ class ScanCompareService:
             noun, noun_plural = SURFACE_NOUN[dimension]
             missing = noun if gone == 1 else noun_plural
             verdict.comparability = Comparability.QUALITY_DIFFERS.value
-            verdict.note = (
-                f"The later run did not finish this dimension. "
-                f"{gone:,} missing {missing} not confirmed."
+            partial = self._partial(dimension, current, activities)
+            if partial:
+                verdict.stages = partial
+                titles = _stage_titles()
+                names = " and ".join(titles.get(name, name) for name in partial)
+                lead = f"{names} {'was' if len(partial) == 1 else 'were'} partial in the later run."
+            else:
+                lead = "The later run did not finish this dimension."
+            verdict.note = lead + (
+                f" {gone:,} missing {missing} not confirmed." if gone else ""
             )
             return verdict
 
         if verdict.coverage:
             verdict.comparability = Comparability.QUALITY_DIFFERS.value
-            measured = ", ".join(line.label.lower() for line in verdict.coverage)
+            measured = ", ".join(_mid_sentence(line.label) for line in verdict.coverage)
             verdict.note = f"The runs differ in {measured}."
         return verdict
 
@@ -1025,7 +1032,7 @@ class ScanCompareService:
         return self._coverage_diff(
             rows.get(a_id),
             rows.get(b_id),
-            (("Requests sent", 0), ("Hosts scanned", 1), ("Checks loaded", 2)),
+            (("Requests sent", 0), ("Targets scanned", 1), ("Checks loaded", 2)),
         )
 
     async def _endpoint_coverage(self, a_id: UUID, b_id: UUID) -> list[CoverageLine]:
@@ -1043,7 +1050,7 @@ class ScanCompareService:
         return self._coverage_diff(
             rows.get(a_id),
             rows.get(b_id),
-            (("URLs found", 0), ("Pages fetched", 1), ("Hosts", 2)),
+            (("URLs found", 0), ("Pages fetched", 1), ("Web assets crawled", 2)),
         )
 
     def _coverage_diff(self, left, right, fields) -> list[CoverageLine]:
@@ -1172,29 +1179,6 @@ class ScanCompareService:
             return self._comparable_read(row, ran, "", counts)
         return None
 
-    def _stage_diff(
-        self,
-        baseline: Scan,
-        current: Scan,
-        activities: dict[UUID, dict[str, str]],
-        titles: dict[str, str],
-    ) -> list[StageDiff]:
-        left = activities.get(baseline.id, {})
-        right = activities.get(current.id, {})
-        out = []
-        for name in sorted(set(left) | set(right)):
-            if left.get(name) == right.get(name):
-                continue
-            out.append(
-                StageDiff(
-                    name=name,
-                    title=titles.get(name, name),
-                    baseline=left.get(name),
-                    current=right.get(name),
-                )
-            )
-        return out
-
     def _setting_diff(
         self, baseline: Scan, current: Scan, titles: dict[str, str]
     ) -> tuple[list[SettingDiff], int]:
@@ -1313,7 +1297,7 @@ class ScanCompareService:
             status=scan.status,
             started_at=scan.started_at or scan.created_at,
             completed_at=scan.completed_at,
-            duration_seconds=self._duration(scan),
+            duration_seconds=run_seconds(scan),
             stages_ran=sum(1 for state in ran.values() if state in RAN),
             stages_planned=len(ran),
             counts={d.dimension: getattr(d, attr) for d in deltas},
@@ -1327,11 +1311,12 @@ class ScanCompareService:
         if not scan_ids:
             return out
         for dimension, spec in SPECS.items():
-            rows = await self.session.execute(
-                select(spec.model.scan_id, func.count())
-                .where(spec.model.scan_id.in_(scan_ids))
-                .group_by(spec.model.scan_id)
+            query = select(spec.model.scan_id, func.count()).where(
+                spec.model.scan_id.in_(scan_ids)
             )
+            if spec.dimension == SurfaceDimension.VULNERABILITIES.value:
+                query = query.where(not_(vuln_suppressed(scan_ids)))
+            rows = await self.session.execute(query.group_by(spec.model.scan_id))
             for scan_id, total in rows.all():
                 out.setdefault(scan_id, {})[dimension] = int(total)
         return out
@@ -1350,7 +1335,7 @@ class ScanCompareService:
             status=run.status,
             scope=run.scope,
             started_at=_started_at(run),
-            duration_seconds=self._duration(run),
+            duration_seconds=run_seconds(run),
             counts=counts,
             dimensions=[
                 key
@@ -1360,12 +1345,6 @@ class ScanCompareService:
             comparable=reason == "",
             reason=reason,
         )
-
-    def _duration(self, scan: Scan) -> float | None:
-        start, end = scan.started_at, scan.completed_at
-        if start is None or end is None:
-            return None
-        return (end - start).total_seconds() - (scan.paused_seconds or 0.0)
 
     def _wanted(self, verbs: list[str], confirmed: bool) -> set[str]:
         asked = {
@@ -1476,6 +1455,8 @@ class ScanCompareService:
                 )
                 continue
             if field.kind == FieldKind.LIST.value:
+                if old is None or new is None:
+                    continue
                 left, right, tone = _list_delta(old, new)
                 if right is None:
                     continue
@@ -1508,8 +1489,8 @@ class ScanCompareService:
         return out
 
 
-def compare_dimensions() -> tuple[str, ...]:
-    return SURFACE_ORDER
+def _mid_sentence(label: str) -> str:
+    return label if label[:2].isupper() else label[:1].lower() + label[1:]
 
 
-__all__ = ["ScanCompareService", "compare_dimensions"]
+__all__ = ["ScanCompareService"]

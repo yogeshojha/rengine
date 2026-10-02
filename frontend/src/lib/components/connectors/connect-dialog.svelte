@@ -14,6 +14,7 @@
 		isOutdated
 	} from '$lib/config/connectors';
 	import type { Connector, ConnectorSpec } from '$lib/types/connector';
+	import { plural } from '$lib/utilities/strings';
 
 	interface Props {
 		open: boolean;
@@ -123,9 +124,7 @@
 						<CheckIcon class="size-3.5" />
 					</span>
 					<span class="font-medium">
-						{receiving
-							? `Receiving · ${connector.requests_seen.toLocaleString()} request${connector.requests_seen === 1 ? '' : 's'}`
-							: 'Connected'}
+						{receiving ? `Receiving · ${plural(connector.requests_seen, 'request')}` : 'Connected'}
 					</span>
 					{#if version}
 						<span class="font-mono text-xs {outdated ? 'text-warning' : 'text-muted-foreground'}">

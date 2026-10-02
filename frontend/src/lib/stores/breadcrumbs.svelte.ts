@@ -8,10 +8,6 @@ export interface Crumb {
 const overrides = new SvelteMap<string, string | Crumb[]>();
 
 export const breadcrumbStore = {
-	get overrides() {
-		return overrides;
-	},
-
 	set(segment: string, label: string) {
 		overrides.set(segment, label);
 	},

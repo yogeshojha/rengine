@@ -2,6 +2,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import Hint from '$lib/components/hint.svelte';
 	import { TOOLBOX_ICON } from '$lib/config/toolbox';
+	import { IS_MAC } from '$lib/utils';
 
 	let { open = $bindable(false) }: { open?: boolean } = $props();
 
@@ -15,7 +16,7 @@
 
 <svelte:window onkeydown={onKeydown} />
 
-<Hint text="Toolbox · ⌘⇧K">
+<Hint text="Toolbox · {IS_MAC ? '⌘⇧K' : 'Ctrl+Shift+K'}">
 	{#snippet child(hintProps)}
 		<span {...hintProps} class="inline-flex">
 			<Button variant="ghost" size="icon" onclick={() => (open = true)}>

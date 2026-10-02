@@ -2,16 +2,10 @@ from __future__ import annotations
 
 import pytest
 
-from shared.definitions.software import (
-    PRODUCTS_BY_KEY,
-    Caveat,
-    Confidence,
-    confidence_of,
-)
+from shared.definitions.software import PRODUCTS_BY_KEY
 from shared.services.nvd_corpus import _bounds
 from shared.services.software_match import _is_coarse
 from shared.utils.software import (
-    cpe23,
     normalize_product,
     parse_banner,
     parse_tech,
@@ -85,11 +79,6 @@ def test_known_traps_resolve_to_the_right_pair() -> None:
     assert "popper" not in PRODUCTS_BY_KEY
 
 
-def test_cpe_is_escaped_the_way_the_dictionary_escapes_it() -> None:
-    assert cpe23("f5", "nginx", "1.24.0").startswith("cpe:2.3:a:f5:nginx:1.24.0:")
-    assert "joomla\\!" in cpe23("joomla", "joomla!", "5.0")
-
-
 def _match(criteria: str, **bounds: str) -> dict:
     return {"criteria": criteria, "vulnerable": True, **bounds}
 
@@ -145,19 +134,3 @@ def test_hardware_parts_are_not_software() -> None:
 )
 def test_a_bare_major_version_is_a_coarse_match(version: str, coarse: bool) -> None:
     assert _is_coarse(version) is coarse
-
-
-def test_confidence_counts_what_is_unverified() -> None:
-    assert confidence_of([]) == Confidence.HIGH.value
-    assert confidence_of([Caveat.BACKPORT.value]) == Confidence.MEDIUM.value
-    assert (
-        confidence_of([Caveat.BACKPORT.value, Caveat.CONDITIONAL.value])
-        == Confidence.LOW.value
-    )
-    assert confidence_of([Caveat.BACKPORT.value, Caveat.BACKPORT.value]) == (
-        Confidence.MEDIUM.value
-    )
-    assert (
-        confidence_of([Caveat.FINGERPRINT.value, Caveat.COARSE.value])
-        == Confidence.LOW.value
-    )

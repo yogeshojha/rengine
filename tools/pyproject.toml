@@ -3,8 +3,7 @@ name = "rengine-tools"
 version = "3.0.0"
 requires-python = ">=3.13"
 dependencies = [
-    "dnstwist>=20250130",
-    "ppdeep>=20260221",
+    "requests[socks]>=2.32",
     "whoisit>=4.0.3",
 ]
 
@@ -12,8 +11,6 @@ dependencies = [
 requires = ["setuptools>=81.0"]
 build-backend = "setuptools.build_meta"
 
-# tool code is imported via the `tools.*` namespace (PYTHONPATH=/app); the
-# installed package carries deps only — packaging subdirs as top-level modules
-# would clobber same-named libs (e.g. httpx).
+# deps only: a packaged tools/httpx shadows the httpx library
 [tool.setuptools]
 packages = []

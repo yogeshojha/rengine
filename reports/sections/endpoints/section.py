@@ -2,11 +2,26 @@ from __future__ import annotations
 
 from reports.base import RenderContext, Section
 from reports.config import SectionConfig, flag, limit
-from shared.definitions.endpoints import STATIC_CLASSES
+from shared.definitions.endpoints import (
+    INTEREST_LABELS,
+    STATIC_CLASSES,
+    ParamInterest,
+    PathInterest,
+)
 from shared.definitions.reports import SectionGroup
 from shared.definitions.surface import SurfaceDimension
 
-_INTEREST = ("admin", "auth", "api_doc", "debug_endpoint", "infra", "upload", "secret")
+_NOTABLE = frozenset(
+    {
+        PathInterest.ADMIN.value,
+        PathInterest.AUTH.value,
+        PathInterest.API_DOC.value,
+        PathInterest.DEBUG_ENDPOINT.value,
+        PathInterest.INFRA.value,
+        PathInterest.SECRETS.value,
+        ParamInterest.UPLOAD.value,
+    }
+)
 
 
 class EndpointsConfig(SectionConfig):
@@ -38,13 +53,21 @@ class EndpointsSection(Section):
         if cfg.only_answering:
             rows = [e for e in rows if e.status]
         if cfg.notable_only:
-            rows = [e for e in rows if set(e.interest or []) & set(_INTEREST)]
+            rows = [e for e in rows if _NOTABLE.intersection(e.interest or [])]
         if not rows:
             return None
         rows = sorted(rows, key=lambda e: (e.host, e.path))
         total = len(rows)
         return {
-            "rows": rows[: cfg.max_rows],
+            "rows": [
+                {
+                    "endpoint": e,
+                    "markers": [
+                        INTEREST_LABELS.get(k, k) for k in (e.interest or [])[:2]
+                    ],
+                }
+                for e in rows[: cfg.max_rows]
+            ],
             "total": total,
             "hidden": max(0, total - cfg.max_rows),
             "show_params": cfg.show_params,

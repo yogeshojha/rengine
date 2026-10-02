@@ -1,11 +1,39 @@
-<script lang="ts">
+<script lang="ts" module>
 	import { viewdnsApi } from '$lib/api/viewdns';
-	import type { ViewDNSCacheRead, DiscoverySourceType } from '$lib/types/viewdns';
+	import type { CachedCountQuery } from '$lib/types/viewdns';
+
+	const BATCH = 100;
+	let queued: CachedCountQuery[] = [];
+	let flush: Promise<Record<string, number | null>> | null = null;
+
+	const keyOf = (q: CachedCountQuery) => `${q.source}\n${q.query}\n${q.exclude}`;
+
+	function cachedCount(q: CachedCountQuery): Promise<number | null> {
+		queued.push(q);
+		flush ??= Promise.resolve().then(async () => {
+			const batch = Object.values(Object.fromEntries(queued.map((x) => [keyOf(x), x])));
+			queued = [];
+			flush = null;
+			const counts: Record<string, number | null> = {};
+			for (let i = 0; i < batch.length; i += BATCH) {
+				const chunk = batch.slice(i, i + BATCH);
+				const rows = await viewdnsApi.cachedCounts(chunk);
+				chunk.forEach((x, j) => (counts[keyOf(x)] = rows[j]?.count ?? null));
+			}
+			return counts;
+		});
+		return flush.then((counts) => counts[keyOf(q)] ?? null);
+	}
+</script>
+
+<script lang="ts">
+	import type { DiscoverySourceType } from '$lib/types/viewdns';
 	import type { WhoisSummaryData } from '$lib/types/target';
 	import { TargetType } from '$lib/types/target';
 	import { DISCOVERY_SOURCE_LABELS } from '$lib/types/viewdns';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { SvelteMap } from 'svelte/reactivity';
+	import { planLookups } from './lookups';
 
 	interface Props {
 		targetValue: string;
@@ -39,7 +67,12 @@
 		total = 0;
 		breakdown = [];
 
-		const key = `${targetType}:${targetValue}:${whois?.registrant_name ?? ''}`;
+		const lookups = planLookups(targetType, targetValue, whois).filter(
+			(l) => l.source !== 'reverse_ns'
+		);
+		if (lookups.length === 0) return;
+
+		const key = lookups.map((l) => `${l.source}:${l.queryValue}`).join('|');
 		const cached = cache.get(key);
 		if (cached) {
 			total = cached.total;
@@ -48,68 +81,36 @@
 			return;
 		}
 
-		const lookups = planLookups();
-		if (lookups.length === 0) return;
-
-		try {
-			const results = await Promise.all(
-				lookups.map(async (l) => {
-					try {
-						const result = await l.fetch(l.queryValue, true);
-						return { source: l.source, query: l.queryValue, result };
-					} catch {
-						return { source: l.source, query: l.queryValue, result: null };
-					}
-				})
-			);
-
-			const b: typeof breakdown = [];
-			let t = 0;
-
-			for (const { source, query, result } of results) {
-				if (result && result.result_count > 0) {
-					const count = Math.max(0, result.result_count - 1);
-					if (count > 0) {
-						b.push({ source, count, query });
-						t += count;
-					}
+		const results = await Promise.all(
+			lookups.map(async (l) => {
+				try {
+					const count = await cachedCount({
+						source: l.source,
+						query: l.queryValue,
+						exclude: targetValue
+					});
+					return { source: l.source, query: l.queryValue, count };
+				} catch {
+					return { source: l.source, query: l.queryValue, count: null };
 				}
+			})
+		);
+
+		const b: typeof breakdown = [];
+		let t = 0;
+
+		for (const { source, query, count } of results) {
+			if (count && count > 0) {
+				b.push({ source, count, query });
+				t += count;
 			}
-
-			total = t;
-			breakdown = b;
-			loaded = true;
-
-			cache.set(key, { total: t, breakdown: b });
-		} catch {
-			// nothing
-		}
-	}
-
-	function planLookups(): {
-		source: DiscoverySourceType;
-		queryValue: string;
-		fetch: (q: string, cachedOnly: boolean) => Promise<ViewDNSCacheRead | null>;
-	}[] {
-		const lookups: ReturnType<typeof planLookups> = [];
-
-		if (targetType === TargetType.DOMAIN && whois) {
-			if (whois.registrant_name) {
-				lookups.push({
-					source: 'reverse_whois',
-					queryValue: whois.registrant_name,
-					fetch: viewdnsApi.reverseWhois
-				});
-			}
-		} else if (targetType === TargetType.IP) {
-			lookups.push({
-				source: 'reverse_ip',
-				queryValue: targetValue,
-				fetch: viewdnsApi.reverseIp
-			});
 		}
 
-		return lookups;
+		total = t;
+		breakdown = b;
+		loaded = true;
+
+		cache.set(key, { total: t, breakdown: b });
 	}
 
 	function handleClick(e: MouseEvent) {

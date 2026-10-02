@@ -11,6 +11,8 @@ from shared.definitions.constants import (
     SCANS_QUEUE,
 )
 
+INSPECT_TIMEOUT = 1.0
+
 
 @dataclass(frozen=True)
 class QueueSpec:

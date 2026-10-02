@@ -1,5 +1,3 @@
-"""Reading what was typed, matching organization names and ranking domains."""
-
 from __future__ import annotations
 
 from datetime import date

@@ -8,10 +8,7 @@ from pathlib import Path
 
 from connectors.base import ProxyConnector
 from shared.definitions.connectors import ConnectorKind
-from shared.logging import get_logger
 from shared.plugins import classes_in_packages
-
-logger = get_logger(__name__)
 
 
 class ConnectorRegistrationError(RuntimeError):
@@ -19,7 +16,7 @@ class ConnectorRegistrationError(RuntimeError):
 
 
 def _validate(instance: ProxyConnector) -> None:
-    for attribute in ("kind", "title", "description"):
+    for attribute in ("kind", "title"):
         if not getattr(instance, attribute, None):
             msg = f"{type(instance).__qualname__} must set `{attribute}`."
             raise ConnectorRegistrationError(msg)
@@ -43,7 +40,3 @@ def connectors() -> dict[str, ProxyConnector]:
 
 def connector(kind: str) -> ProxyConnector | None:
     return connectors().get(kind)
-
-
-def kinds() -> list[str]:
-    return list(connectors())

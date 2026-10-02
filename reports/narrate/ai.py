@@ -1,6 +1,6 @@
-"""The model writes from the brief and nothing else."""
-
 from __future__ import annotations
+
+import json
 
 from reports.analysis.brief import AttackPath, ReportBrief
 from reports.data.models import Issue
@@ -47,8 +47,6 @@ _LENGTH = {
 
 
 class AiNarrator(Narrator):
-    ai_used = True
-
     def __init__(self, session, cfg: AIConfig, options: NarrativeOptions) -> None:
         super().__init__()
         self.session = session
@@ -149,11 +147,15 @@ class AiNarrator(Narrator):
         ) or self.fallback.surface_narrative(brief)
 
     def attack_path(self, path: AttackPath) -> str:
-        if not self.options.ai_enabled:
-            return path.detail
-        payload = (
-            f'{{"title":"{path.title}","severity":"{path.severity}","count":{path.count},'
-            f'"evidence":{path.evidence[:5]},"assets":{path.assets[:5]}}}'
+        payload = json.dumps(
+            {
+                "title": path.title,
+                "severity": path.severity,
+                "count": path.count,
+                "evidence": path.evidence[:5],
+                "assets": path.assets[:5],
+            },
+            separators=(",", ":"),
         )
         instruction = (
             "Write two or three sentences describing how an attacker uses this condition, "
@@ -173,10 +175,17 @@ class AiNarrator(Narrator):
     def issue_explainer(self, issue: Issue) -> str | None:
         if not self.options.explain_findings:
             return None
-        payload = (
-            f'{{"check":"{issue.name}","severity":"{issue.severity}",'
-            f'"tags":{issue.tags[:8]},"cwe":{issue.cwe_ids[:3]},"cve":{issue.cve_ids[:3]},'
-            f'"observations":{issue.count},"hosts":{len(issue.hosts)}}}'
+        payload = json.dumps(
+            {
+                "check": issue.name,
+                "severity": issue.severity,
+                "tags": issue.tags[:8],
+                "cwe": issue.cwe_ids[:3],
+                "cve": issue.cve_ids[:3],
+                "observations": issue.count,
+                "hosts": len(issue.hosts),
+            },
+            separators=(",", ":"),
         )
         instruction = (
             "In at most 70 words, say what this weakness lets an attacker do and what a "

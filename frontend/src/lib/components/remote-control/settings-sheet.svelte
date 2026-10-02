@@ -6,8 +6,9 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
+	import SectionHead from '$lib/components/section-head.svelte';
 	import TokenForm from './token-form.svelte';
-	import { CHANNEL_META } from '$lib/config/channels';
+	import { CHANNEL_META, RATE_LIMIT_MAX, RATE_LIMIT_MIN } from '$lib/config/channels';
 	import { remoteControl } from '$lib/stores/remote-control.svelte';
 	import type { ChannelStatus } from '$lib/types/remote-control';
 	import type { McpCapability } from '$lib/types/mcp';
@@ -18,8 +19,6 @@
 	}
 
 	let { status, open = $bindable() }: Props = $props();
-
-	const LABEL = 'text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase';
 
 	let rateDraft = $state<string | null>(null);
 	let changing = $state(false);
@@ -34,7 +33,10 @@
 
 	async function commitRate() {
 		if (rateDraft === null) return;
-		const value = Math.min(10000, Math.max(1, Math.round(Number(rateDraft) || 0)));
+		const value = Math.min(
+			RATE_LIMIT_MAX,
+			Math.max(RATE_LIMIT_MIN, Math.round(Number(rateDraft) || 0))
+		);
 		rateDraft = null;
 		if (value !== status.rate_limit_per_minute)
 			await remoteControl.save({ rate_limit_per_minute: value }, 'Rate limit saved');
@@ -70,7 +72,7 @@
 		<ScrollArea class="min-h-0 flex-1">
 			<div class="flex flex-col divide-y px-5">
 				<section class="flex flex-col gap-3 py-5">
-					<h3 class={LABEL}>Bot</h3>
+					<SectionHead title="Bot" />
 					<div class="flex flex-wrap items-baseline justify-between gap-2">
 						{#if status.bot}
 							<a
@@ -110,7 +112,7 @@
 				</section>
 
 				<section class="flex flex-col gap-3 py-5">
-					<h3 class={LABEL}>Ceiling</h3>
+					<SectionHead title="Ceiling" />
 					{#each status.capabilities as capability (capability.key)}
 						{@const on = capability.always || (status.ceiling[capability.key] ?? false)}
 						<div class="flex items-start justify-between gap-4">
@@ -139,13 +141,13 @@
 				</section>
 
 				<section class="flex flex-col gap-2.5 py-5">
-					<h3 class={LABEL}>Rate limit</h3>
+					<SectionHead title="Rate limit" />
 					<label class="flex items-center gap-2 text-sm" for="rc-rate">
 						<Input
 							id="rc-rate"
 							type="number"
-							min="1"
-							max="10000"
+							min={RATE_LIMIT_MIN}
+							max={RATE_LIMIT_MAX}
 							class="h-8 w-20 text-right font-mono text-xs tabular-nums"
 							value={rate}
 							oninput={(e) => (rateDraft = e.currentTarget.value)}

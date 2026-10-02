@@ -4,8 +4,8 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.status import HTTP_503_SERVICE_UNAVAILABLE
 
-from app.core.crypto import SecretDecryptionError
 from shared.logging import get_logger
+from shared.utils.crypto import SecretDecryptionError
 
 logger = get_logger(__name__)
 

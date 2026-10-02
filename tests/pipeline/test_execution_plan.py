@@ -64,7 +64,6 @@ def test_vulnerability_scan_no_longer_holds_up_the_last_stages():
 
 
 def test_waf_detection_settles_before_the_scanner_reads_it():
-    """nuclei splits its rate groups on http_assets.waf, which waf_detect writes."""
     assert "waf_detect" in _before(execution_plan())["vulnerability_scan"]
 
 

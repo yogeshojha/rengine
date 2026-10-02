@@ -43,9 +43,7 @@
 			const result = await bountyProgramsApi.events(
 				index + 1,
 				EVENT_PAGE_SIZE,
-				kind === 'all' ? null : kind,
-				null,
-				null
+				kind === 'all' ? null : kind
 			);
 			events = result.items;
 			total = result.total;

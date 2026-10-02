@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from urllib.parse import urlsplit
 
 from sqlalchemy import Select, func, or_, select
-from sqlalchemy.orm import Session
 
 from shared.definitions.secrets import BODY_CAP_BYTES, MinerSource, SecretSource
 from shared.definitions.vulnerabilities import MAX_EVIDENCE_BYTES
@@ -187,9 +186,3 @@ CORPORA: dict[str, Corpus] = {c.source: c for c in (WEB_ASSETS, ENDPOINTS, FINDI
 
 def corpora_for(sources: Sequence[str]) -> list[Corpus]:
     return [CORPORA[source] for source in sources]
-
-
-def has_documents(session: Session, scan_id: uuid.UUID) -> bool:
-    return any(
-        bool(session.scalar(corpus.count(scan_id))) for corpus in CORPORA.values()
-    )

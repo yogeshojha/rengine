@@ -13,11 +13,8 @@ from shared.definitions.channels import (
     PAIRING_CODE_TTL,
     PENDING_PAIRINGS_MAX,
 )
-from shared.logging import get_logger
 from shared.redis import async_client
 from shared.utils.datetime import utc_now
-
-logger = get_logger(__name__)
 
 CODE_KEY = "channels:pair:{channel}:{code}"
 CHAT_KEY = "channels:pair:chat:{channel}:{external_id}"
@@ -53,7 +50,7 @@ async def request(
 
     index = INDEX_KEY.format(channel=channel)
     if await redis.scard(index) >= PENDING_PAIRINGS_MAX:
-        await _prune(channel)
+        await pending(channel)
         if await redis.scard(index) >= PENDING_PAIRINGS_MAX:
             return None, False
 
@@ -133,10 +130,6 @@ async def forget(channel: str, external_id: str) -> None:
         pipe.delete(CODE_KEY.format(channel=channel, code=code))
         pipe.srem(INDEX_KEY.format(channel=channel), code)
     await pipe.execute()
-
-
-async def _prune(channel: str) -> None:
-    await pending(channel)
 
 
 async def clear(channel: str) -> None:

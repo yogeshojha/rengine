@@ -1,10 +1,8 @@
 import { api } from './client';
 import { scopeQuery } from '$lib/utilities/surface-scope';
-import type { QueryGroups, QueryLeads } from '$lib/types/asset-query';
+import type { QueryCounts, QueryGroups, QueryLeads } from '$lib/types/asset-query';
 import type {
 	BulkTriageResult,
-	CoverageRead,
-	SurfaceSummary,
 	IssuePage,
 	ScanVulnerabilities,
 	TriageResult,
@@ -52,6 +50,13 @@ export const vulnerabilitiesApi = {
 		);
 	},
 
+	async tabs(projectId: string, scanId: string, filter: VulnFilter): Promise<QueryCounts> {
+		return api.post<QueryCounts>(
+			`/vulnerabilities/search/tabs?${scopeQuery({ projectId, scanId })}`,
+			filter
+		);
+	},
+
 	async leads(projectId: string, scanId: string, filter: VulnFilter): Promise<QueryLeads> {
 		return api.post<QueryLeads>(
 			`/vulnerabilities/search/leads?${scopeQuery({ projectId, scanId })}`,
@@ -81,15 +86,6 @@ export const vulnerabilitiesApi = {
 		);
 	},
 
-	async surface(projectId: string, scanId: string): Promise<SurfaceSummary> {
-		return api.get<SurfaceSummary>(`/vulnerabilities/surface?${scopeQuery({ projectId, scanId })}`);
-	},
-	async coverage(projectId: string, scanId: string): Promise<CoverageRead[]> {
-		return api.get<CoverageRead[]>(
-			`/vulnerabilities/coverage?${scopeQuery({ projectId, scanId })}`
-		);
-	},
-
 	async detail(projectId: string, scanId: string, id: string): Promise<VulnerabilityRead> {
 		return api.get<VulnerabilityRead>(
 			`/vulnerabilities/${id}?${scopeQuery({ projectId, scanId })}`
@@ -101,7 +97,7 @@ export const vulnerabilitiesApi = {
 		scanId: string,
 		fingerprint: string,
 		state: string,
-		note: string | null
+		note?: string | null
 	): Promise<TriageResult> {
 		return api.patch<TriageResult>(
 			`/vulnerabilities/triage/${fingerprint}?${scopeQuery({ projectId, scanId })}`,
@@ -134,12 +130,11 @@ export const vulnTemplatesApi = {
 		return api.post<TemplateSeen>('/vuln-templates/seen', {});
 	},
 
-	async upload(files: { filename: string; content: string }[]): Promise<VulnTemplateUploadResult> {
-		return api.post<VulnTemplateUploadResult>('/vuln-templates/upload', { files });
-	},
-
-	async get(id: string): Promise<VulnTemplateRead> {
-		return api.get<VulnTemplateRead>(`/vuln-templates/${id}`);
+	async upload(
+		files: { filename: string; content: string }[],
+		replace = true
+	): Promise<VulnTemplateUploadResult> {
+		return api.post<VulnTemplateUploadResult>('/vuln-templates/upload', { files, replace });
 	},
 
 	async update(id: string, enabled: boolean): Promise<VulnTemplateRead> {

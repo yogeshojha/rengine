@@ -4,15 +4,6 @@ Revision ID: c7e9f1b3d5a8
 Revises: b5d7f9a1c3e6
 Create Date: 2026-06-26 12:00:00.000000+00:00
 
-Back the correlation lookups (related: favicon/cname/asn equality), cert
-filtering/expiry (tls_not_after), and the JSON-array filters (tech/sources via
-jsonb_exists_any, resolved_ips overlap) with indexes so insights/search/related
-stay fast on 100k-500k-row scans. GIN indexes are expression indexes matching
-the `col::jsonb` cast the queries use (default jsonb_ops supports ?|/?/@>).
-
-NOTE: these CREATE INDEX run inside the migration transaction and take an
-ACCESS SHARE → SHARE lock while building; on a live instance with large tables
-prefer CREATE INDEX CONCURRENTLY out-of-band.
 """
 
 from collections.abc import Sequence

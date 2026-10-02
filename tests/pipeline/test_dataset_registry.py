@@ -35,12 +35,14 @@ def test_dataset_locks_stay_clear_of_every_other_lock():
         locks.BOUNTY_REPORTS,
         locks.SECRET_MINING,
         locks.SOFTWARE_MATCH,
+        locks.TRIPWIRE_CHECK,
     ]
     singles = [
         locks.SOFTWARE_BACKFILL,
         locks.NEW_CHECKS_SWEEP,
         locks.SCAN_ADMISSION,
         locks.SCAN_DELTAS_BACKFILL,
+        locks.PROXY_DEFAULT,
     ]
     for d in DATASETS:
         key = locks.dataset(d.kind)

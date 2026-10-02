@@ -1,12 +1,10 @@
-"""Pairing approval, capability caps, revocation and the command catalog through the service."""
-
 from __future__ import annotations
 
 import uuid
 
 import pytest
 
-from channels import pairing
+from channels import commands, pairing
 from channels import service as channel_service
 from channels.models import (
     BotInfo,
@@ -161,11 +159,16 @@ def test_the_command_catalog_is_served():
     scan = next(r for r in rows if r.name == "scan")
     assert scan.usage.startswith("/scan <target>")
     assert scan.group == "scans"
-    assert any(a.name == "target" and a.required for a in scan.args)
+    assert any(
+        a["name"] == "target" and a["required"] for a in commands.get("scan").args()
+    )
 
 
-async def test_a_chat_call_is_found_behind_newer_calls_from_other_clients(estate):
+async def test_a_chat_call_is_found_behind_newer_calls_from_other_clients(
+    estate, monkeypatch
+):
     mark = uuid.uuid4().hex[:8]
+    monkeypatch.setattr(telemetry, "CALLS_KEY", f"test:mcp:calls:{mark}")
     record = telemetry.CallRecord(
         token_id=uuid.uuid4(),
         token_name="chat",
@@ -188,6 +191,7 @@ async def test_a_chat_call_is_found_behind_newer_calls_from_other_clients(estate
         )
 
     rows = await ChannelService(estate.session, CHANNEL).calls(limit=5)
+    await telemetry.async_client().delete(telemetry.CALLS_KEY)
 
     assert any(row.tool == mark for row in rows), "a cut before the filter hides it"
 

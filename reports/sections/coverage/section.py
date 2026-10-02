@@ -5,6 +5,7 @@ from reports.config import SectionConfig, flag
 from reports.data.source import REPORT_DIMENSIONS
 from shared.definitions.reports import SectionGroup, SectionRole
 from shared.definitions.surface import SURFACE_LABELS
+from shared.definitions.vulnerabilities import COVERAGE_STATUS_LABELS
 
 
 class CoverageConfig(SectionConfig):
@@ -39,4 +40,9 @@ class CoverageSection(Section):
         ]
         if not cfg.show_suppressed:
             caveats = [c for c in caveats if c.kind != "suppressed"]
-        return {"dimensions": dimensions, "runs": rows, "caveats": caveats}
+        return {
+            "dimensions": dimensions,
+            "runs": rows,
+            "status_labels": COVERAGE_STATUS_LABELS,
+            "caveats": caveats,
+        }

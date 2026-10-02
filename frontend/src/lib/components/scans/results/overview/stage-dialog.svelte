@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import Circle from '@lucide/svelte/icons/circle';
@@ -21,13 +22,13 @@
 		ScanCommandDetail,
 		ScanCommandRead
 	} from '$lib/types/scan';
+	import { formatClock } from '$lib/utilities/dates';
 
 	interface Props {
 		open: boolean;
 		title: string;
 		description: string;
 		activity: ScanActivityRead | null;
-		commands: ScanCommandRead[];
 		scanId: string;
 		projectId: string;
 	}
@@ -37,12 +38,10 @@
 		title,
 		description,
 		activity,
-		commands,
 		scanId,
 		projectId
 	}: Props = $props();
 
-	const HIDDEN_RESULT_KEYS = new Set(['excluded']);
 	const STATUS_VARIANT: Record<ScanActivityStatus, BadgeVariant> = {
 		pending: 'secondary',
 		running: 'info',
@@ -53,11 +52,33 @@
 		skipped: 'outline',
 		aborted: 'warning'
 	};
-	const fmtTime = (iso: string) =>
-		new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
 	let outputs = $state<Record<string, string | null>>({});
 	let loadingId = $state<string | null>(null);
+	let commands = $state<ScanCommandRead[] | null>(null);
+	let commandsFailed = $state(false);
+	let commandsFor: string | null = null;
+
+	$effect(() => {
+		const id = activity?.id;
+		void activity?.status;
+		if (!open || !id) return;
+		untrack(() => loadCommands(id));
+	});
+
+	async function loadCommands(id: string) {
+		if (commandsFor !== id) {
+			commandsFor = id;
+			commands = null;
+			commandsFailed = false;
+		}
+		try {
+			const rows = await scansApi.commands(scanId, projectId, id);
+			if (commandsFor === id) commands = rows;
+		} catch {
+			if (commandsFor === id) commandsFailed = true;
+		}
+	}
 
 	$effect(() => {
 		void activity?.id;
@@ -78,11 +99,7 @@
 	}
 
 	let Icon = $derived(activity ? activityStatusIcon(activity.status) : Circle);
-	let numbers = $derived(
-		Object.entries(activity?.result ?? {}).filter(
-			(e): e is [string, number] => typeof e[1] === 'number' && !HIDDEN_RESULT_KEYS.has(e[0])
-		)
-	);
+	let figures = $derived(activity?.figures ?? []);
 	let notes = $derived(
 		Object.entries(activity?.result ?? {}).filter(
 			(e): e is [string, string] => typeof e[1] === 'string'
@@ -91,10 +108,11 @@
 	let meta = $derived.by(() => {
 		if (!activity) return description;
 		const parts: string[] = [];
-		if (activity.started_at) parts.push(`Started ${fmtTime(activity.started_at)}`);
+		if (activity.started_at) parts.push(`Started ${formatClock(activity.started_at)}`);
 		const dur = durationText(activity.duration_seconds);
 		if (dur) parts.push(dur);
-		parts.push(`${commands.length} ${commands.length === 1 ? 'command' : 'commands'}`);
+		if (commands)
+			parts.push(`${commands.length} ${commands.length === 1 ? 'command' : 'commands'}`);
 		return parts.join(' · ');
 	});
 </script>
@@ -125,17 +143,17 @@
 				{#if !activity}
 					<p class="text-sm text-muted-foreground">Stage has not run.</p>
 				{:else}
-					{#if numbers.length}
+					{#if figures.length}
 						<section>
 							<h3 class="mb-2 text-xs font-medium text-muted-foreground">Results</h3>
 							<div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-								{#each numbers as [key, value] (key)}
+								{#each figures as figure (figure.key)}
 									<div class="rounded-md border px-3 py-2.5">
 										<div class="text-lg leading-none font-semibold tracking-tight">
-											{value.toLocaleString()}
+											{figure.value.toLocaleString()}
 										</div>
-										<div class="mt-1.5 truncate text-xs text-muted-foreground">
-											{key.replace(/_/g, ' ')}
+										<div class="mt-1.5 text-xs text-muted-foreground">
+											{figure.label}
 										</div>
 									</div>
 								{/each}
@@ -158,7 +176,14 @@
 
 					<section>
 						<h3 class="mb-2 text-xs font-medium text-muted-foreground">Commands</h3>
-						{#if !commands.length}
+						{#if !commands && commandsFailed}
+							<p class="text-sm text-muted-foreground">Commands not loaded.</p>
+						{:else if !commands}
+							<div class="flex flex-col gap-1.5">
+								<Skeleton class="h-9 w-full" />
+								<Skeleton class="h-9 w-full" />
+							</div>
+						{:else if !commands.length}
 							<p class="text-sm text-muted-foreground">No commands recorded.</p>
 						{:else}
 							<div class="flex flex-col gap-1.5">

@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import and_, cast, desc, func, select
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import and_, cast, desc, func, select, true
+from sqlalchemy.dialects.postgresql import JSONB, array
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.asset_query import predicates as preds
+from app.services.endpoint_tree import MAX_OPEN_INSIDE, MIN_WALLED
 from shared.definitions.endpoints import (
     CLASS_LABELS,
     INTEREST_LABELS,
@@ -23,14 +23,13 @@ from shared.models.endpoint import (
     StructureFinding,
     StructureLine,
 )
+from shared.services.asset_query import array_elements, element_counts
+from shared.services.asset_query import predicates as preds
 from shared.services.asset_query.tokens import token as _token
 from shared.utils.text import plural
 
-_MIN_WALLED = 2
-_MAX_OPEN_INSIDE = 2
 _MIN_SHARED_HOSTS = 3
 _TOP = 6
-_AUTH_STATUS = (401, 403)
 _CONTENT_CLASSES = (
     EndpointClass.IMAGE.value,
     EndpointClass.STYLE.value,
@@ -46,16 +45,29 @@ class EndpointStructureService:
 
     async def build(self, scan_id: UUID) -> ScanStructure:
         out = ScanStructure()
+        folders = (
+            select(
+                Endpoint.host,
+                Endpoint.dir_path,
+                func.count().label("n"),
+                func.max(Endpoint.depth).label("depth"),
+                func.count().filter(Endpoint.is_probed.is_(True)).label("probed"),
+                func.count().filter(Endpoint.param_count > 0).label("params"),
+            )
+            .where(Endpoint.scan_id == scan_id)
+            .group_by(Endpoint.host, Endpoint.dir_path)
+            .subquery()
+        )
         totals = (
             await self.session.execute(
                 select(
-                    func.count().label("endpoints"),
-                    func.count(func.distinct(Endpoint.host)).label("hosts"),
-                    func.count(func.distinct(Endpoint.dir_path)).label("dirs"),
-                    func.max(Endpoint.depth).label("depth"),
-                    func.count().filter(Endpoint.is_probed.is_(True)).label("probed"),
-                    func.count().filter(Endpoint.param_count > 0).label("params"),
-                ).where(Endpoint.scan_id == scan_id)
+                    func.sum(folders.c.n).label("endpoints"),
+                    func.count(func.distinct(folders.c.host)).label("hosts"),
+                    func.count(func.distinct(folders.c.dir_path)).label("dirs"),
+                    func.max(folders.c.depth).label("depth"),
+                    func.sum(folders.c.probed).label("probed"),
+                    func.sum(folders.c.params).label("params"),
+                )
             )
         ).one()
         out.endpoints = int(totals.endpoints or 0)
@@ -81,7 +93,7 @@ class EndpointStructureService:
 
     async def _auth_boundaries(self, scan_id: UUID) -> list[StructureFinding]:
         """A directory that is mostly walled off, with something answering inside it."""
-        walled = func.count().filter(Endpoint.status_code.in_(_AUTH_STATUS))
+        walled = func.count().filter(Endpoint.status_code.in_(preds.AUTH_STATUS))
         opened = func.count().filter(preds.endpoint_status_class("2xx"))
         rows = (
             await self.session.execute(
@@ -96,9 +108,9 @@ class EndpointStructureService:
                 .group_by(Endpoint.host, Endpoint.dir_path)
                 .having(
                     and_(
-                        walled >= _MIN_WALLED,
+                        walled >= MIN_WALLED,
                         opened >= 1,
-                        opened <= _MAX_OPEN_INSIDE,
+                        opened <= MAX_OPEN_INSIDE,
                     )
                 )
                 .order_by(desc("walled"))
@@ -125,9 +137,9 @@ class EndpointStructureService:
         ]
 
     async def _exposed_files(self, scan_id: UUID) -> list[StructureFinding]:
-        value = func.jsonb_array_elements_text(
-            cast(Endpoint.interest, JSONB)
-        ).column_valued("v")
+        sensitive = sorted(SENSITIVE_INTERESTS)
+        element = array_elements(Endpoint.interest, "v")
+        value = element.c.value
         rows = (
             await self.session.execute(
                 select(
@@ -137,9 +149,11 @@ class EndpointStructureService:
                     func.min(Endpoint.url).label("sample"),
                 )
                 .select_from(Endpoint)
+                .join(element, true())
                 .where(
                     Endpoint.scan_id == scan_id,
-                    value.in_(tuple(sorted(SENSITIVE_INTERESTS))),
+                    cast(Endpoint.interest, JSONB).op("?|")(array(sensitive)),
+                    value.in_(tuple(sensitive)),
                 )
                 .group_by(value)
                 .order_by(desc("n"))
@@ -184,22 +198,27 @@ class EndpointStructureService:
 
     async def _shared_paths(self, scan_id: UUID) -> list[PathSpread]:
         """Routes that answer on several hosts."""
-        hosts = func.count(func.distinct(Endpoint.host))
+        per_host = (
+            select(Endpoint.path, Endpoint.host, func.count().label("n"))
+            .where(
+                Endpoint.scan_id == scan_id,
+                Endpoint.path != "/",
+                Endpoint.endpoint_class.notin_(_CONTENT_CLASSES),
+            )
+            .group_by(Endpoint.path, Endpoint.host)
+            .subquery()
+        )
+        hosts = func.count(per_host.c.host)
         rows = (
             await self.session.execute(
                 select(
-                    Endpoint.path,
+                    per_host.c.path,
                     hosts.label("hosts"),
-                    func.count().label("endpoints"),
+                    func.sum(per_host.c.n).label("endpoints"),
                 )
-                .where(
-                    Endpoint.scan_id == scan_id,
-                    Endpoint.path != "/",
-                    Endpoint.endpoint_class.notin_(_CONTENT_CLASSES),
-                )
-                .group_by(Endpoint.path)
+                .group_by(per_host.c.path)
                 .having(hosts >= _MIN_SHARED_HOSTS)
-                .order_by(desc("hosts"), Endpoint.path)
+                .order_by(desc("hosts"), per_host.c.path)
                 .limit(_TOP)
             )
         ).all()
@@ -214,20 +233,20 @@ class EndpointStructureService:
         ]
 
     async def _interest(self, scan_id: UUID) -> list[StructureLine]:
-        value = func.jsonb_array_elements_text(
-            cast(Endpoint.interest, JSONB)
-        ).column_valued("v")
+        per_host = element_counts(
+            select(Endpoint.id).where(Endpoint.scan_id == scan_id),
+            Endpoint.interest,
+            Endpoint.host,
+        ).subquery()
         rows = (
             await self.session.execute(
                 select(
-                    value.label("interest"),
-                    func.count(func.distinct(Endpoint.id)).label("n"),
-                    func.count(func.distinct(Endpoint.host)).label("hosts"),
+                    per_host.c.value.label("interest"),
+                    func.sum(per_host.c.n).label("n"),
+                    func.count().label("hosts"),
                 )
-                .select_from(Endpoint)
-                .where(Endpoint.scan_id == scan_id)
-                .group_by(value)
-                .order_by(desc("n"))
+                .group_by(per_host.c.value)
+                .order_by(desc("n"), per_host.c.value)
                 .limit(_TOP_INTEREST)
             )
         ).all()
@@ -262,19 +281,14 @@ class EndpointStructureService:
         ]
 
     async def _by_source(self, scan_id: UUID) -> list[StructureLine]:
-        value = func.jsonb_array_elements_text(
-            cast(Endpoint.sources, JSONB)
-        ).column_valued("v")
+        counted = element_counts(
+            select(Endpoint.id).where(Endpoint.scan_id == scan_id), Endpoint.sources
+        ).subquery()
         rows = (
             await self.session.execute(
-                select(
-                    value.label("source"),
-                    func.count(func.distinct(Endpoint.id)).label("n"),
+                select(counted.c.value.label("source"), counted.c.n).order_by(
+                    desc(counted.c.n)
                 )
-                .select_from(Endpoint)
-                .where(Endpoint.scan_id == scan_id)
-                .group_by(value)
-                .order_by(desc("n"))
             )
         ).all()
         return [
@@ -301,10 +315,15 @@ def _headline(out: ScanStructure) -> str:
     exposed = [f for f in out.findings if f.kind == "exposed_file"]
     if exposed:
         total = sum(f.count for f in exposed)
-        return f"{total} {plural(total, 'path')} expose source, credentials or backups"
+        verb = plural(total, "exposes", "expose")
+        return f"{total} {plural(total, 'path')} {verb} source, credentials or backups"
     if out.shared_paths:
         top = out.shared_paths[0]
-        return f"{top.path} answers on {top.hosts} hosts"
+        return f"{top.path} answers on {top.hosts} {plural(top.hosts, 'web asset')}"
     if out.with_params:
-        return f"{out.with_params} {plural(out.with_params, 'endpoint')} accept input"
-    return f"{out.endpoints} endpoints across {out.hosts} {plural(out.hosts, 'host')}"
+        verb = plural(out.with_params, "accepts", "accept")
+        return f"{out.with_params} {plural(out.with_params, 'endpoint')} {verb} input"
+    return (
+        f"{out.endpoints} {plural(out.endpoints, 'endpoint')} "
+        f"across {out.hosts} {plural(out.hosts, 'web asset')}"
+    )

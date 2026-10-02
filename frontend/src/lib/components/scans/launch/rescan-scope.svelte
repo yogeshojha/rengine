@@ -5,6 +5,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import type { RunPreview } from '$lib/types/recheck';
+	import { cappedLabel } from '$lib/utilities/rechecks';
 
 	interface Props {
 		assets: string[];
@@ -28,7 +29,7 @@
 	const TARGET_SCROLL_AT = 8;
 
 	let noun = $derived(
-		preview && preview.asset_count === 1 ? preview.seed_kind : `${preview?.seed_kind ?? 'asset'}s`
+		preview ? (preview.asset_count === 1 ? preview.noun : preview.noun_plural) : 'assets'
 	);
 	let byQuery = $derived(Boolean(queryLabel));
 </script>
@@ -58,7 +59,7 @@
 
 {#snippet targetChips()}
 	<div class="flex flex-wrap gap-1">
-		{#each preview?.targets ?? [] as t (t.target_id)}
+		{#each preview?.targets ?? [] as t (t.scan_id)}
 			<span
 				class="inline-flex items-center gap-1.5 rounded border bg-background px-1.5 py-0.5 text-xs"
 			>
@@ -106,11 +107,7 @@
 			{/if}
 			{#if preview.capped}
 				<span>·</span>
-				<span class="text-warning">
-					{preview.matched === null
-						? `Capped at ${preview.asset_count.toLocaleString()}`
-						: `Capped at ${preview.asset_count.toLocaleString()} of ${preview.matched.toLocaleString()}`}
-				</span>
+				<span class="text-warning">{cappedLabel(preview)}</span>
 			{/if}
 		</div>
 		{#if preview.targets.length > 1}

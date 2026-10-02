@@ -99,7 +99,7 @@
 				{/if}
 			</div>
 		{:else}
-			<p class="text-muted-foreground">No hostnames resolve to this address.</p>
+			<p class="text-muted-foreground">No host names resolve to this address.</p>
 		{/if}
 	</HoverCard.Content>
 </HoverCard.Root>

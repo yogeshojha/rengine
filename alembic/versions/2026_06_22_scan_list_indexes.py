@@ -4,9 +4,6 @@ Revision ID: c4e6a8b0d2f3
 Revises: b3d5f7a9c1e2
 Create Date: 2026-06-22 11:00:00.000000+00:00
 
-Backs the dominant scan-list query (project- and target-scoped, ordered by
-coalesce(started_at, created_at) DESC, created_at DESC) so it serves from an
-index instead of a full sort at scale.
 """
 
 from collections.abc import Sequence

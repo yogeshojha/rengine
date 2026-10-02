@@ -12,6 +12,7 @@ from shared.definitions.endpoints import EndpointSource
 from shared.services.endpoint_inventory import EndpointObservation
 from shared.utils.net import host_port
 from stages.url_discovery.config import MAX_KNOWN_FILE_HOSTS
+from stages.url_discovery.providers import mine
 from stages.url_discovery.providers.base import ProviderResult, UrlProvider
 
 _ROBOTS = "/robots.txt"
@@ -21,10 +22,9 @@ _RULE_RE = re.compile(r"^(allow|disallow)\s*:\s*(\S+)", re.IGNORECASE)
 _SITEMAP_RE = re.compile(r"^sitemap\s*:\s*(\S+)", re.IGNORECASE)
 _MAX_BYTES = 5 * 1024 * 1024
 _MAX_SITEMAPS = 20
-_MAX_URL = 2000
 _MAX_WORKERS = 12
-_CLIENT_ERROR = 400
 _WILDCARD = ("*", "$")
+_SECURITY_DETAIL = f"Served at {_SECURITY}"
 _ALLOWED_SCHEMES = ("http", "https")
 
 
@@ -42,7 +42,7 @@ class KnownFilesProvider(UrlProvider):
         limit = MAX_KNOWN_FILE_HOSTS
         selected = roots[:limit]
         state = _State()
-        client = self._client()
+        client = self.http_client()
         try:
             workers = min(self.workers(_MAX_WORKERS), len(selected))
             with ThreadPoolExecutor(max_workers=workers) as pool:
@@ -68,17 +68,6 @@ class KnownFilesProvider(UrlProvider):
             f"{len(result.observations)} urls declared by robots.txt and sitemaps"
         )
 
-    def _client(self) -> httpx.Client:
-        headers = dict(self.ctx.net.headers or {})
-        headers.setdefault("User-Agent", "reNgine/3.0 (+https://rengine.wiki)")
-        return httpx.Client(
-            timeout=self.ctx.transport.timeout,
-            follow_redirects=self.follow_redirects(True),
-            verify=False,  # noqa: S501
-            proxy=self.ctx.net.proxy_url or None,
-            headers=headers,
-        )
-
     def _mine(self, client: httpx.Client, root: str) -> _State | None:
         if self.aborted():
             return None
@@ -91,11 +80,13 @@ class KnownFilesProvider(UrlProvider):
             queue.extend(declared)
             state.found += len(rules)
             for rule in rules:
-                state.add(urljoin(root, rule), root, EndpointSource.ROBOTS.value)
+                state.add(
+                    urljoin(root, rule), root, f"Declared by robots.txt on {root}"
+                )
 
         if self._get(client, urljoin(root, _SECURITY), state) is not None:
             state.found += 1
-            state.add(urljoin(root, _SECURITY), root, self.source)
+            state.add(urljoin(root, _SECURITY), root, _SECURITY_DETAIL)
 
         queue.extend(urljoin(root, path) for path in _SITEMAPS)
         visited: set[str] = set()
@@ -114,28 +105,14 @@ class KnownFilesProvider(UrlProvider):
             queue.extend(n for n in nested if n not in visited)
             state.found += len(locations)
             for location in locations:
-                state.add(location, url, self.source)
+                state.add(location, url, f"Declared by the sitemap on {url}")
         return state
 
     def _get(self, client: httpx.Client, url: str, state: _State) -> str | None:
         if self.path_excluded(url):
             state.refused += 1
             return None
-        self.throttle()
-        state.fetched += 1
-        body = bytearray()
-        try:
-            with client.stream("GET", url) as response:
-                if response.status_code >= _CLIENT_ERROR:
-                    return None
-                for chunk in response.iter_bytes():
-                    body += chunk
-                    if len(body) >= _MAX_BYTES:
-                        break
-        except (httpx.HTTPError, ValueError):
-            state.errors += 1
-            return None
-        return bytes(body[:_MAX_BYTES]).decode("utf-8", errors="replace")
+        return self.fetch_text(client, url, _MAX_BYTES, state)
 
 
 class _State:
@@ -158,22 +135,17 @@ class _State:
             self.seen.add(obs.url)
             self.observations.append(obs)
 
-    def add(self, url: str, found_on: str, source: str) -> None:
-        if url in self.seen or len(url) > _MAX_URL:
+    def add(self, url: str, found_on: str, detail: str) -> None:
+        if url in self.seen or len(url) > mine.MAX_URL:
             return
         self.seen.add(url)
-        label = "robots.txt" if source == EndpointSource.ROBOTS.value else "the sitemap"
         self.observations.append(
-            EndpointObservation(
-                url=url,
-                found_on=found_on,
-                detail=f"Declared by {label} on {found_on}",
-            )
+            EndpointObservation(url=url, found_on=found_on, detail=detail)
         )
 
 
 def _fetchable(url: str, in_scope) -> bool:
-    """A sitemap URL is attacker-controlled: it must stay in scope and off private space."""
+    """Whether a sitemap URL is http or https, in scope, and a global address when an IP literal."""
     try:
         parts = urlsplit(url)
     except ValueError:

@@ -7,17 +7,15 @@
 	import { KIND_ICONS } from '$lib/config/correlation';
 	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
-	import { cn } from '$lib/utils';
 	import type { CrossLink } from '$lib/types/crosslink';
 	import { linkedTargets } from '$lib/types/crosslink';
 
 	interface Props {
 		links: CrossLink[];
 		onHost?: (host: string) => void;
-		class?: string;
 	}
 
-	let { links, onHost, class: className }: Props = $props();
+	let { links, onHost }: Props = $props();
 
 	let targets = $derived(linkedTargets(links));
 	let label = $derived(
@@ -49,10 +47,7 @@
 			closeDelay={140}
 			onclick={stop}
 			onkeydown={stop}
-			class={cn(
-				'inline-flex h-5 shrink-0 cursor-pointer items-center gap-1 rounded-sm border border-primary/30 px-1.5 text-2xs text-primary hover:bg-primary/5',
-				className
-			)}
+			class="inline-flex h-5 shrink-0 cursor-pointer items-center gap-1 rounded-sm border border-primary/30 px-1.5 text-2xs text-primary hover:bg-primary/5"
 			aria-label={heading}
 		>
 			<Waypoints class="size-2.5" />

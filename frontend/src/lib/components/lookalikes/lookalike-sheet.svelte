@@ -11,6 +11,7 @@
 	import { SEVERITY_CHIP } from '$lib/config/vulnerabilities';
 	import { LookalikeState, STATE_LABELS, VERDICTS } from '$lib/config/lookalikes';
 	import { relativeTime } from '$lib/utilities/dates';
+	import { plural } from '$lib/utilities/strings';
 	import type { LookalikeSummary } from '$lib/types/lookalike';
 
 	interface Props {
@@ -83,7 +84,7 @@
 			LookalikeState.REVIEWED
 		);
 		bulkPending = false;
-		if (ok) toast.success(`${n} ${n === 1 ? 'lookalike' : 'lookalikes'} marked reviewed`);
+		if (ok) toast.success(`${plural(n, 'lookalike')} marked reviewed`);
 	}
 
 	let subtitle = $derived(
@@ -165,11 +166,7 @@
 			{:else}
 				<ul class="flex flex-col divide-y divide-border/60 px-1">
 					{#each shown as r (r.domain)}
-						<LookalikeRow
-							row={r}
-							review={r.state}
-							onReview={(next) => setReview([r.domain], next)}
-						/>
+						<LookalikeRow row={r} onReview={(next) => setReview([r.domain], next)} />
 					{/each}
 				</ul>
 			{/if}

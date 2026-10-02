@@ -2,6 +2,7 @@
 	import * as Sheet from '$lib/components/ui/sheet';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Button } from '$lib/components/ui/button';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import { compareApi } from '$lib/api/compare';
 	import ChangeBar from '$lib/components/scans/compare/change-bar.svelte';
@@ -9,7 +10,8 @@
 	import { ROUTES } from '$lib/config/routes';
 	import { COMPARABILITY, type RunSide, type ScanComparison } from '$lib/types/compare';
 	import { formatDateTime } from '$lib/utilities/dates';
-	import { formatSeconds } from '$lib/utilities/scan-status';
+	import { SCAN_STATUS_LABEL, formatSeconds } from '$lib/utilities/scan-status';
+	import type { ScanStatus } from '$lib/types/scan';
 
 	interface Props {
 		projectId: string;
@@ -27,19 +29,27 @@
 		const c = current;
 		const b = baseline;
 		if (!c) return;
+		let live = true;
 		data = null;
 		error = null;
 		compareApi
 			.comparison(projectId, c, b)
-			.then((r) => (data = r))
-			.catch((e) => (error = e instanceof Error ? e.message : 'Comparison not loaded.'));
+			.then((r) => {
+				if (live) data = r;
+			})
+			.catch((e) => {
+				if (live) error = e instanceof Error ? e.message : 'Comparison not loaded.';
+			});
+		return () => {
+			live = false;
+		};
 	});
 
 	const n = (v: number) => v.toLocaleString();
 	const delta = (a: number, b: number) =>
 		b - a > 0 ? `+${n(b - a)}` : b - a < 0 ? `−${n(a - b)}` : '0';
 	const side = (r: RunSide) =>
-		`${r.engine_name} · ${r.started_at ? formatDateTime(r.started_at) : 'not started'} · ${r.status}${r.duration_seconds != null ? ` · ${formatSeconds(r.duration_seconds)}` : ''}`;
+		`${r.engine_name} · ${r.started_at ? formatDateTime(r.started_at) : 'not started'} · ${SCAN_STATUS_LABEL[r.status as ScanStatus]}${r.duration_seconds != null ? ` · ${formatSeconds(r.duration_seconds)}` : ''}`;
 </script>
 
 <Sheet.Root open={!!current} onOpenChange={(o) => !o && onClose()}>
@@ -67,9 +77,7 @@
 					<p class="text-sm text-muted-foreground">{error}</p>
 				{:else if !data}
 					<div class="space-y-2">
-						{#each { length: 5 } as _, i (i)}<div
-								class="h-6 animate-pulse rounded bg-muted/60"
-							></div>{/each}
+						{#each { length: 5 } as _, i (i)}<Skeleton class="h-6 rounded" />{/each}
 					</div>
 				{:else}
 					{@const material = data.run_diff.filter((d) => d.material)}
@@ -77,8 +85,8 @@
 						<div class="mb-3 rounded-md border border-warning/30 bg-warning/5 px-3 py-2 text-xs">
 							{#each material as d (d.key)}
 								<div>
-									<span class="font-medium">{d.label} differ:</span>
-									{d.baseline ?? 'none'} and {d.current ?? 'none'}
+									<span class="font-medium">{d.label}:</span>
+									{d.baseline ?? 'none'} → {d.current ?? 'none'}
 								</div>
 							{/each}
 						</div>
@@ -106,13 +114,15 @@
 									<tr class="border-t border-border/50">
 										<td class="py-1.5 pr-3">{d.label}</td>
 										<td class="py-1.5 pr-3 text-right font-mono tabular-nums text-muted-foreground"
-											>{n(d.total_baseline)}</td
+											>{d.verdict.covered_baseline ? n(d.total_baseline) : 'Not scanned'}</td
 										>
 										<td class="py-1.5 pr-3 text-right font-mono tabular-nums"
-											>{n(d.total_current)}</td
+											>{d.verdict.covered_current ? n(d.total_current) : 'Not scanned'}</td
 										>
 										<td class="py-1.5 pr-3 text-right font-mono font-semibold tabular-nums"
-											>{delta(d.total_baseline, d.total_current)}</td
+											>{d.verdict.covered_baseline && d.verdict.covered_current
+												? delta(d.total_baseline, d.total_current)
+												: ''}</td
 										>
 										<td class="py-1.5 pr-3"><ChangeBar delta={d} /></td>
 										<td class="py-1.5 text-2xs text-muted-foreground">

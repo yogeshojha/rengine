@@ -11,7 +11,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.definitions.lookalikes import (
     LOOKALIKE_STAGE,
-    THREAT_VERDICTS,
     VERDICT_ORDER,
     VERDICT_RANK,
     LookalikeState,
@@ -129,13 +128,6 @@ class LookalikeService:
         summary.verdicts = {
             key: sum(1 for r in rows if r.verdict == key) for key in VERDICT_ORDER
         }
-        summary.open_threats = sum(
-            1
-            for r in rows
-            if r.verdict in THREAT_VERDICTS
-            and states.get(r.domain, LookalikeState.OPEN.value)
-            == LookalikeState.OPEN.value
-        )
         return summary
 
     async def for_target(self, project_id: UUID, target_id: UUID) -> LookalikeSummary:

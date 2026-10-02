@@ -10,11 +10,11 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import XIcon from '@lucide/svelte/icons/x';
 	import { toast } from 'svelte-sonner';
+	import { MAX_EMBEDDED_IMAGE_KB, readEmbeddedImage } from '$lib/config/reports';
 	import type { ReportBranding } from '$lib/types/report';
 
 	let { branding = $bindable() }: { branding: ReportBranding } = $props();
 
-	const MAX_LOGO = 512_000;
 	let logoInput = $state<HTMLInputElement | null>(null);
 	let distributionDraft = $state('');
 
@@ -23,16 +23,12 @@
 		const file = input.files?.[0];
 		input.value = '';
 		if (!file) return;
-		if (file.size > MAX_LOGO) {
-			toast.error('Logo exceeds 500 KB. Choose a smaller file.');
+		const logo = await readEmbeddedImage(file);
+		if (logo === null) {
+			toast.error(`Logo exceeds ${MAX_EMBEDDED_IMAGE_KB} KB. Choose a smaller file.`);
 			return;
 		}
-		branding.company_logo = await new Promise<string>((resolve, reject) => {
-			const reader = new FileReader();
-			reader.onload = () => resolve(String(reader.result));
-			reader.onerror = reject;
-			reader.readAsDataURL(file);
-		});
+		branding.company_logo = logo;
 	}
 
 	function addRecipient() {
@@ -79,7 +75,9 @@
 						</Button>
 					{/if}
 				</div>
-				<span class="text-xs text-muted-foreground">PNG, JPEG, SVG or WebP. 500 KB maximum.</span>
+				<span class="text-xs text-muted-foreground"
+					>PNG, JPEG, SVG or WebP. {MAX_EMBEDDED_IMAGE_KB} KB maximum.</span
+				>
 			</div>
 			<input
 				bind:this={logoInput}

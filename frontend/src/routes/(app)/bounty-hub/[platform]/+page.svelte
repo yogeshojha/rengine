@@ -21,16 +21,17 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Empty from '$lib/components/ui/empty';
-	import * as Pagination from '$lib/components/ui/pagination';
+	import * as InputGroup from '$lib/components/ui/input-group';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import { Button } from '$lib/components/ui/button';
 	import { Kbd } from '$lib/components/ui/kbd';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import CountTabs from '$lib/components/count-tabs.svelte';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
-	import PageSizeSelector from '$lib/components/targets/page-size-selector.svelte';
+	import ResultsPagination from '$lib/components/scans/results/table/results-pagination.svelte';
 	import MonthChart from '$lib/components/bounty-hub/reports/month-chart.svelte';
 	import ReportRow from '$lib/components/bounty-hub/reports/report-row.svelte';
 	import ProgramsTable from '$lib/components/bounty-hub/reports/programs-table.svelte';
@@ -39,6 +40,7 @@
 	import { bountyReportsApi } from '$lib/api/bounty-reports';
 	import { bountyProgramsApi } from '$lib/api/bounty-programs';
 	import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
 	import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
 	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import { REFRESH_POLLS, REFRESH_POLL_MS } from '$lib/config/bounty-programs';
@@ -83,6 +85,7 @@
 	let listSeq = 0;
 	let countSeq = 0;
 	let refreshing = $state(false);
+	const isAdmin = $derived(auth.user?.is_superuser ?? false);
 	let compact = $state(false);
 	let searchEl = $state<HTMLInputElement | null>(null);
 	let focusId = $state<string | null>(null);
@@ -294,7 +297,6 @@
 	let resolvedShare = $derived(
 		summary?.reports ? Math.round(((summary.stages.resolved ?? 0) / summary.reports) * 100) : 0
 	);
-	let pages = $derived(Math.max(1, Math.ceil(total / pageSize)));
 
 	let tabs = $derived([
 		{ key: ALL_TAB, label: 'All' },
@@ -403,7 +405,7 @@
 	>
 		<span class="text-2xs tracking-wide text-muted-foreground uppercase">{title}</span>
 		<span
-			class="font-mono text-2xl font-semibold tabular-nums underline-offset-4 group-hover/s:underline {on
+			class="font-mono text-2xl font-semibold tabular-nums underline-offset-4 group-hover/s:text-primary {on
 				? 'underline decoration-2'
 				: ''}"
 		>
@@ -505,7 +507,7 @@
 							size="icon"
 							class="size-8"
 							aria-label="Refresh reports"
-							disabled={refreshing}
+							disabled={refreshing || !isAdmin}
 							onclick={() => refresh()}
 						>
 							<RefreshCw class="size-4 {refreshing ? 'animate-spin' : ''}" />
@@ -642,13 +644,12 @@
 
 			<!-- filters -->
 			<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-				<div
-					class="flex h-9 min-w-[240px] flex-1 items-center gap-2 rounded-md border bg-background px-2.5 focus-within:ring-2 focus-within:ring-ring/50"
-				>
-					<Search class="size-4 shrink-0 text-muted-foreground" />
-					<input
-						bind:this={searchEl}
-						class="h-full min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+				<InputGroup.Root class="h-9 w-auto min-w-[240px] flex-1">
+					<InputGroup.Addon>
+						<Search />
+					</InputGroup.Addon>
+					<InputGroup.Input
+						bind:ref={searchEl}
 						placeholder={view === ReportView.Reports
 							? 'Title, report ID, program, weakness or asset'
 							: 'Program name or handle'}
@@ -663,18 +664,20 @@
 						}}
 						aria-label="Search reports"
 					/>
-					{#if view === ReportView.Reports ? queryText : programQuery}
-						<button
-							type="button"
-							class="rounded text-muted-foreground hover:text-foreground"
-							aria-label="Clear search"
-							onclick={() => (view === ReportView.Reports ? search('') : (programQuery = ''))}
-							><X class="size-3.5" /></button
-						>
-					{:else}
-						<Kbd class="hidden sm:inline-flex">/</Kbd>
-					{/if}
-				</div>
+					<InputGroup.Addon align="inline-end">
+						{#if view === ReportView.Reports ? queryText : programQuery}
+							<InputGroup.Button
+								size="icon-xs"
+								aria-label="Clear search"
+								onclick={() => (view === ReportView.Reports ? search('') : (programQuery = ''))}
+							>
+								<X />
+							</InputGroup.Button>
+						{:else}
+							<Kbd class="hidden sm:inline-flex">/</Kbd>
+						{/if}
+					</InputGroup.Addon>
+				</InputGroup.Root>
 				{#if view === ReportView.Reports}
 					<DropdownMenu.Root>
 						<DropdownMenu.Trigger>
@@ -858,9 +861,7 @@
 
 			{#if view === ReportView.Programs}
 				{#if programs.length === 0}
-					<Empty.Root class="py-16">
-						<Empty.Header><Empty.Title>No programs</Empty.Title></Empty.Header>
-					</Empty.Root>
+					<EmptyState title="No programs" compact class="border-0 bg-transparent py-16" />
 				{:else}
 					<ProgramsTable
 						{programs}
@@ -886,31 +887,22 @@
 					</Empty.Header>
 				</Empty.Root>
 			{:else if reports.length === 0 && (hasFilters || filters.tab !== ALL_TAB)}
-				<Empty.Root class="py-16">
-					<Empty.Header><Empty.Title>No reports match</Empty.Title></Empty.Header>
-					<Empty.Content>
-						<Button size="sm" variant="outline" class="gap-2" onclick={clearFilters}>
-							<X class="size-4" /> Clear filters
-						</Button>
-					</Empty.Content>
-				</Empty.Root>
+				<EmptyState title="No reports match" compact class="border-0 bg-transparent py-16">
+					<Button size="sm" variant="outline" class="gap-2" onclick={clearFilters}>
+						<X class="size-4" /> Clear filters
+					</Button>
+				</EmptyState>
 			{:else if reports.length === 0}
-				<Empty.Root class="py-16">
-					<Empty.Header>
-						<Empty.Media
-							variant="icon"
-							class="size-14 rounded-2xl bg-muted text-muted-foreground/60"
-						>
-							<FileText />
-						</Empty.Media>
-						<Empty.Title>No reports</Empty.Title>
-					</Empty.Header>
-					<Empty.Content>
-						<Button class="gap-2" onclick={() => refresh()} disabled={refreshing}>
-							<RefreshCw class="size-4" /> Refresh reports
-						</Button>
-					</Empty.Content>
-				</Empty.Root>
+				<EmptyState
+					icon={FileText}
+					title="No reports"
+					compact
+					class="border-0 bg-transparent py-16"
+				>
+					<Button class="gap-2" onclick={() => refresh()} disabled={refreshing || !isAdmin}>
+						<RefreshCw class="size-4" /> Refresh reports
+					</Button>
+				</EmptyState>
 			{:else}
 				<ScrollArea orientation="horizontal">
 					<div
@@ -946,47 +938,15 @@
 						{/each}
 					</div>
 				</ScrollArea>
-				<div
-					class="flex flex-wrap items-center justify-between gap-3 border-t bg-muted/20 px-4 py-3"
-				>
-					<div class="flex items-center gap-4">
-						<span class="text-xs text-muted-foreground">
-							{reports.length} of {total}
-							{total === 1 ? 'report' : 'reports'}
-						</span>
-						<PageSizeSelector
-							{pageSize}
-							options={REPORT_PAGE_SIZES}
-							onPageSizeChange={(size) => setParam('size', String(size))}
-						/>
-					</div>
-					{#if pages > 1}
-						<Pagination.Root
-							count={total}
-							perPage={pageSize}
-							page={pageIndex}
-							onPageChange={(p) => setParam('page', String(p), true)}
-						>
-							{#snippet children({ pages: items, currentPage })}
-								<Pagination.Content>
-									<Pagination.Item><Pagination.Previous /></Pagination.Item>
-									{#each items as p (p.key)}
-										{#if p.type === 'ellipsis'}
-											<Pagination.Item><Pagination.Ellipsis /></Pagination.Item>
-										{:else}
-											<Pagination.Item
-												><Pagination.Link page={p} isActive={currentPage === p.value}
-													>{p.value}</Pagination.Link
-												></Pagination.Item
-											>
-										{/if}
-									{/each}
-									<Pagination.Item><Pagination.Next /></Pagination.Item>
-								</Pagination.Content>
-							{/snippet}
-						</Pagination.Root>
-					{/if}
-				</div>
+				<ResultsPagination
+					page={pageIndex - 1}
+					{pageSize}
+					{total}
+					noun="report"
+					sizes={REPORT_PAGE_SIZES}
+					onPage={(p) => setParam('page', String(p + 1), true)}
+					onPageSize={(s) => setParam('size', String(s))}
+				/>
 			{/if}
 		</Card.Root>
 	{/if}

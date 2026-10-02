@@ -28,8 +28,8 @@ class ResolveTarget(Tool):
     title = "Resolve target"
     group = ToolGroup.ORIENT.value
     description = (
-        "For each of a target's five result dimensions: whether it was scanned, what "
-        "the most recent covering scan found, when, and the scan id other tools take. "
+        "For each of a target's result dimensions: whether it was scanned, what the "
+        "most recent covering scan found, when, and the scan id other tools take. "
         "Call this first. covered=false means not scanned, not zero."
     )
     Input = Input
@@ -72,10 +72,7 @@ class ResolveTarget(Tool):
 
         caveats = []
         if uncovered:
-            caveats.append(
-                "Not scanned: " + ", ".join(uncovered) + ". "
-                "Report these as not scanned, not as zero."
-            )
+            caveats.append("Not scanned: " + ", ".join(uncovered) + ".")
         if summary.scans_running:
             caveats.append(f"{counted(summary.scans_running, 'scan')} running now.")
 

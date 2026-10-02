@@ -18,7 +18,6 @@ export interface CveLocation {
 	port: number | null;
 	url: string | null;
 	evidence: string;
-	evidence_label: string;
 	basis: string;
 	detail: string | null;
 	severity: string;

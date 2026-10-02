@@ -8,10 +8,8 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 from pydantic import Field as PydanticField
 from sqlalchemy import Column, Index, Text
-from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
-import shared.models._tztypes  # noqa: F401
 from shared.definitions.connectors import (
     DEFAULT_ACTION_KIND,
     MAX_BATCH,
@@ -23,11 +21,8 @@ from shared.definitions.connectors import (
 )
 from shared.definitions.vulnerabilities import Severity
 from shared.models.endpoint import EndpointFilter
+from shared.models.fields import json_list
 from shared.utils.datetime import utc_now
-
-
-def _json_list():
-    return Field(default_factory=list, sa_column=Column(JSON, nullable=False))
 
 
 class Connector(SQLModel, table=True):
@@ -44,7 +39,7 @@ class Connector(SQLModel, table=True):
     token_prefix: str = Field(max_length=32)
 
     only_known_hosts: bool = Field(default=False)
-    ingest_tools: list = _json_list()
+    ingest_tools: list = json_list()
     capture_bodies: bool = Field(default=False)
     record_hosts: bool = Field(default=True)
     include_static: bool = Field(default=False)
@@ -86,12 +81,12 @@ class ConnectorCandidate(SQLModel, table=True):
     extension: str | None = Field(default=None, max_length=16)
     depth: int = Field(default=0)
 
-    methods: list = _json_list()
-    params: list = _json_list()
+    methods: list = json_list()
+    params: list = json_list()
     param_count: int = Field(default=0, index=True)
     endpoint_class: str | None = Field(default=None, max_length=24, index=True)
-    interests: list = _json_list()
-    notices: list = _json_list()
+    interests: list = json_list()
+    notices: list = json_list()
 
     status_code: int | None = Field(default=None, index=True)
     content_type: str | None = Field(default=None, max_length=120)
@@ -256,8 +251,6 @@ class HostFacts(BaseModel):
     known_endpoints: int = 0
     visited: int = 0
     unvisited: int = 0
-    flagged: int = 0
-    last_scan_at: datetime | None = None
 
 
 class ActionRead(BaseModel):
@@ -296,7 +289,6 @@ class ConnectorCreate(BaseModel):
     only_known_hosts: bool = False
     ingest_tools: list[str] = PydanticField(default_factory=list, max_length=4)
     capture_bodies: bool = False
-    record_hosts: bool = True
     include_static: bool = False
     scan_safe_methods_only: bool = True
     context_id: uuid.UUID | None = None
@@ -310,7 +302,6 @@ class ConnectorUpdate(BaseModel):
     only_known_hosts: bool | None = None
     ingest_tools: list[str] | None = PydanticField(default=None, max_length=4)
     capture_bodies: bool | None = None
-    record_hosts: bool | None = None
     include_static: bool | None = None
     scan_safe_methods_only: bool | None = None
     context_id: uuid.UUID | None = None
@@ -327,7 +318,6 @@ class ConnectorRead(BaseModel):
     only_known_hosts: bool
     ingest_tools: list[str]
     capture_bodies: bool
-    record_hosts: bool
     include_static: bool
     scan_safe_methods_only: bool
     context_id: uuid.UUID | None
@@ -335,7 +325,6 @@ class ConnectorRead(BaseModel):
     paused: bool
     state: str
     requests_seen: int
-    dropped_out_of_scope: int
     candidates: int
     queued: int
     unseen: int
@@ -344,11 +333,9 @@ class ConnectorRead(BaseModel):
     flagged: int
     out_of_scope: int
     discovered: int
-    scans_launched: int
     pending_actions: int
     last_seen_at: datetime | None
     last_client: str | None
-    last_scan_at: datetime | None
     created_at: datetime
 
 
@@ -369,7 +356,6 @@ class CandidateRead(BaseModel):
     params: list[str]
     param_count: int
     endpoint_class: str | None
-    interests: list[str]
     notices: list[str]
     status_code: int | None
     content_type: str | None

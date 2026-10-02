@@ -31,7 +31,6 @@ async def _pending(estate) -> list:
 
 
 async def test_a_running_scan_is_left_alone(durable_estate, now):
-    """A stage still writing would have its path rewritten out from under it."""
     await durable_estate.scan("example.com", "live", at=now, status="running")
     await _render(durable_estate, "live", "a.example.com", now, path=_SHOT)
 
@@ -53,7 +52,6 @@ async def test_a_settled_scan_with_an_unhashed_render_is_pending(durable_estate,
 
 
 async def test_a_hashed_webp_is_not_pending(durable_estate, now):
-    """The beat task has to run out of work or it never stops."""
     await durable_estate.scan("example.com", "done", at=now)
     await _render(durable_estate, "done", "d.example.com", now, path=_DONE, phash=_HASH)
 
@@ -61,7 +59,6 @@ async def test_a_hashed_webp_is_not_pending(durable_estate, now):
 
 
 async def test_a_rewritten_path_reaches_both_tables(durable_estate, now):
-    """The host row and the asset row share a path and have to move together."""
     await durable_estate.scan("example.com", "done", at=now)
     await _render(durable_estate, "done", "e.example.com", now, path=_SHOT)
     await durable_estate.assets("done", ["e.example.com"], at=now)

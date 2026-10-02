@@ -19,8 +19,8 @@ Works on Burp Suite Community and Professional. The extension uses no Profession
 
 ## Build
 
-Needs a JDK 17 or later. The Montoya API is downloaded on first build as a `compileOnly`
-dependency. The jar carries no dependencies.
+Needs a JDK 17 or later. The Montoya API jar is downloaded to `lib/` on first build and is not
+packaged. The jar carries no dependencies.
 
 ```
 ./build.sh
@@ -54,7 +54,7 @@ parameters. **Request bodies and response bodies are not sent.**
 
 With *Send request headers* on, each record also carries the request line and headers. Cookie,
 Authorization and token header values are masked before they leave Burp. reNgine keeps the sample
-only when the connector's *Keep a request sample* setting is on.
+only when the connector's *Request samples* setting is on.
 
 Only Proxy and Repeater traffic is eligible. Scanner and Intruder traffic is not captured.
 
@@ -91,9 +91,9 @@ carries a body template in the declared type, JSON, multipart, XML or form. A fi
 HTTP exchange, a DNS or TLS check, is skipped and counted in the reply. Responses arrive decoded,
 as UTF-8, with the length of what was stored; a binary response arrives as its headers.
 
-Header values a scan masked arrive masked. The connector setting *Restore the run's credentials*
-fills them from the run that sent the request, at collection time. The connector token then
-reads those values.
+Header values a scan masked arrive masked. The connector setting *Restore masked headers* fills
+them from the run that sent the request, at collection time. A request collected with the
+connector token then carries those values.
 
 The extension polls for queued requests. Each is delivered once. One left uncollected for an
 hour is dropped.
@@ -150,6 +150,7 @@ with `scanner = manual`. Reporting the same thing twice is one finding.
 | `Facts.java`, `Targets.java` | Scope, host facts and the target picker |
 | `Report.java` / `ReportMenu.java` | Reporting a finding, and the right-click that starts it |
 | `Settings.java` | Configuration, persisted in Burp preferences |
+| `Tls.java` | HTTP clients and the self-signed certificate switch |
 | `ConnectorTab.java` | The reNgine tab |
 | `Json.java`, `Observation.java` | Minimal JSON writer and the wire record |
 
@@ -159,5 +160,5 @@ carries the token.
 ## Tests
 
 `./test.sh` compiles the extension with `-Werror` and runs the offline checks. `SinkHarness`
-posts to a running reNgine: `java -cp lib/montoya-api-2025.5.jar:build/classes:build/test-classes
+posts to a running reNgine: `java -cp 'lib/*:build/classes:build/test-classes'
 io.rengine.connector.SinkHarness <ingest url> <token> [host]`.

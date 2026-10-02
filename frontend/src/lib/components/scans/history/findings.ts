@@ -1,12 +1,9 @@
 import { vulnerabilitiesApi } from '$lib/api/vulnerabilities';
 import { ROUTES } from '$lib/config/routes';
 import { SURFACE, SurfaceDimension } from '$lib/config/surface';
-import { SEVERITY_CHIP } from '$lib/config/vulnerabilities';
 import type { VulnFilter, VulnSearchResult } from '$lib/utilities/vulns';
 
 const VULN = SURFACE[SurfaceDimension.VULNERABILITIES];
-
-export const SEV_CHIP = SEVERITY_CHIP;
 
 export function findingsFilter(severities: string[], limit: number): VulnFilter {
 	return {
@@ -31,6 +28,7 @@ export function findingsFilter(severities: string[], limit: number): VulnFilter 
 	};
 }
 
+const CACHE_LIMIT = 200;
 const cache = new Map<string, Promise<VulnSearchResult>>();
 
 export function findingsOf(
@@ -40,9 +38,12 @@ export function findingsOf(
 	limit: number,
 	version: string
 ): Promise<VulnSearchResult> {
-	const key = `${scanId}|${severities.join(',')}|${limit}|${version}`;
+	const prefix = `${scanId}|${severities.join(',')}|${limit}|`;
+	const key = `${prefix}${version}`;
 	let hit = cache.get(key);
 	if (!hit) {
+		for (const k of cache.keys()) if (k.startsWith(prefix)) cache.delete(k);
+		if (cache.size >= CACHE_LIMIT) cache.clear();
 		hit = vulnerabilitiesApi.search(projectId, scanId, findingsFilter(severities, limit));
 		hit.catch(() => cache.delete(key));
 		cache.set(key, hit);
@@ -52,6 +53,10 @@ export function findingsOf(
 
 export function forgetFindings(scanId: string) {
 	for (const key of cache.keys()) if (key.startsWith(`${scanId}|`)) cache.delete(key);
+}
+
+export function clearFindings() {
+	cache.clear();
 }
 
 function severityQuery(severities: string[]): string {

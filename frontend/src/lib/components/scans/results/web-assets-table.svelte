@@ -12,9 +12,7 @@
 	import Settings2 from '@lucide/svelte/icons/settings-2';
 
 	import * as Card from '$lib/components/ui/card';
-	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button } from '$lib/components/ui/button';
-	import { Badge } from '$lib/components/ui/badge';
 	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import EmptyState from '$lib/components/empty-state.svelte';
@@ -27,8 +25,7 @@
 	import AssetRow from './web-assets/asset-row.svelte';
 	import AssetGallery from './web-assets/asset-gallery.svelte';
 	import RenderGallery from './web-assets/render-gallery.svelte';
-	import HygieneRail from './web-assets/hygiene-rail.svelte';
-	import PostureRail from './web-assets/posture-rail.svelte';
+	import CheckRail, { type RailBreakdown, type RailRow } from './web-assets/check-rail.svelte';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import SelectionBar from './table/selection-bar.svelte';
 	import RowSelectionBar from './table/row-selection-bar.svelte';
@@ -39,6 +36,7 @@
 	import RescanAction from './table/rescan-action.svelte';
 	import { RowSelection } from './table/selection.svelte';
 	import GroupList from './table/group-list.svelte';
+	import FilterChips from './table/filter-chips.svelte';
 	import WebAssetDetailSheet from './web-asset-detail-sheet.svelte';
 	import HostStructureDialog from './web-assets/host-structure-dialog.svelte';
 	import {
@@ -50,12 +48,28 @@
 	import { subdomainsApi } from '$lib/api/subdomains';
 	import { servicesOn } from '$lib/utilities/service-lookup';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
-	import { runDescription, runStarted, seedKindFor, selectionLabel } from '$lib/utilities/rechecks';
+	import { seedKindFor, selectionLabel, startRescan } from '$lib/utilities/rechecks';
 	import { rechecks } from '$lib/stores/rechecks.svelte';
 	import { SURFACE, SurfaceDimension, type ResultTab } from '$lib/config/surface';
 	import { querySchema } from '$lib/stores/query-schema.svelte';
-	import { HygieneTone, TONE_DOT } from '$lib/config/hygiene';
-	import { PostureTone, TONE_DOT as POSTURE_DOT } from '$lib/config/domain-posture';
+	import {
+		HYGIENE_NONE,
+		HygieneTone,
+		TONE_DOT,
+		TONE_LABEL,
+		hygieneBreakdown,
+		hygieneShare,
+		hygieneShareLabel,
+		type HygieneRow
+	} from '$lib/config/hygiene';
+	import {
+		POSTURE_NONE,
+		PostureTone,
+		hostBreakdown,
+		share as postureShare,
+		shareLabel as postureShareLabel,
+		type PostureRow
+	} from '$lib/config/domain-posture';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import type { RenderGroups, SubdomainRead } from '$lib/types/subdomain';
 	import type { SeedPick, SeedSelection } from '$lib/types/recheck';
@@ -81,6 +95,7 @@
 	import { afterPause } from '$lib/utilities/debounce';
 	import { UrlSync, onPopSearch } from '$lib/utilities/url-history.svelte';
 	import { LiveRefresh } from '$lib/utilities/live-results';
+	import { TabCounts } from '$lib/utilities/tab-counts.svelte';
 
 	interface Props {
 		scanId: string;
@@ -196,7 +211,7 @@
 	let proxyCatalog = $derived(connectorStore.catalog);
 	$effect(() => {
 		const id = projectId;
-		if (!id) return;
+		if (!id || !seen) return;
 		untrack(() => {
 			void connectorStore.load(id);
 			void connectorStore.loadCatalog();
@@ -241,12 +256,51 @@
 	let postureHeadline = $derived(
 		postureTone === PostureTone.WARNING ? (posture?.warning ?? 0) : (posture?.info ?? 0)
 	);
+	function railOf<T>(
+		b: { warnings: T[]; infos: T[]; evaluated: number; pending: number },
+		row: (r: T) => RailRow
+	): RailBreakdown {
+		return {
+			warnings: b.warnings.map(row),
+			infos: b.infos.map(row),
+			evaluated: b.evaluated,
+			pending: b.pending
+		};
+	}
+	let hygieneRail = $derived(
+		railOf(hygieneBreakdown(hygiene), (r: HygieneRow) => ({
+			key: r.spec.key,
+			label: r.spec.label,
+			help: r.spec.help,
+			failing: r.count.failing,
+			share: hygieneShare(r),
+			shareLabel: hygieneShareLabel(r)
+		}))
+	);
+	let postureRail = $derived(
+		railOf(hostBreakdown(posture), (r: PostureRow) => ({
+			key: r.spec.key,
+			label: r.spec.label,
+			help: r.spec.help,
+			failing: r.failing,
+			share: postureShare(r),
+			shareLabel: postureShareLabel(r)
+		}))
+	);
+	const tabCounts = new TabCounts();
+	let tabQuery = $derived({
+		...(view === 'gallery' && onlyShots ? { ...query, hasScreenshot: true } : query),
+		status: []
+	});
+	let tabFiltered = $derived(activeFacetCount(tabQuery) > 0 || !!tabQuery.search.trim());
 	let statusCounts = $derived.by(() => {
+		if (tabFiltered) return tabCounts.counts;
 		if (!facetsLoaded) return null;
 		const m: Record<string, number> = { all: scanTotal };
 		for (const f of facets.status) m[f.value] = f.count;
 		return m;
 	});
+	let statusCapped = $derived(tabFiltered ? tabCounts.capped : null);
 
 	$effect(() => {
 		if (visiblePref) writePref(STORAGE_KEYS.webAssetsColumns, visiblePref);
@@ -438,6 +492,7 @@
 		refreshing = !quiet;
 		try {
 			if (!quiet) loadedLeadSig = '';
+			tabCounts.refresh();
 			await Promise.all([runSearch(), loadFacets(), loadHygiene(), loadPosture(), loadGroups()]);
 		} finally {
 			if (!quiet) refreshing = false;
@@ -454,6 +509,18 @@
 		liveRefresh.notify(revision, active);
 	});
 	onDestroy(() => liveRefresh.stop());
+	onDestroy(() => tabCounts.clear());
+
+	$effect(() => {
+		const filter = compileQuery(tabQuery, 'name', 1, 0, 1);
+		const key = `${projectId}|${scanId}|${JSON.stringify(filter)}`;
+		const filtered = tabFiltered;
+		if (!ready || !seen || !queryReady) return;
+		untrack(() => {
+			if (filtered) tabCounts.track(key, () => subdomainsApi.tabs(projectId, scanId, filter));
+			else tabCounts.clear();
+		});
+	});
 
 	$effect(() => {
 		void JSON.stringify(query);
@@ -587,7 +654,7 @@
 			);
 			const exact = res.items.find((s) => s.name === name);
 			if (exact) open(exact);
-			else toast.error('Web asset not found in this scan');
+			else toast.error('Web asset not found');
 		} catch {
 			toast.error('Web asset not loaded');
 		}
@@ -627,7 +694,7 @@
 		{
 			label: hideLabel(
 				selection.rows().map((s) => s.name),
-				'web assets'
+				WEB.nounPlural
 			),
 			tokens: () => selection.rows().map((s) => excludeToken('host', s.name))
 		}
@@ -736,13 +803,7 @@
 		if (rescanBusy) return;
 		rescanBusy = true;
 		try {
-			const run = await rechecks.rescan(projectId, { selection: sel, dimension: '' });
-			selection.clear();
-			toast.success(runStarted(run, 'web asset', 'web assets'), {
-				description: runDescription(run)
-			});
-		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Rescan not started');
+			if (await startRescan(projectId, sel, WEB.noun, WEB.nounPlural)) selection.clear();
 		} finally {
 			rescanBusy = false;
 		}
@@ -817,7 +878,7 @@
 		bind:ref={searchRef}
 		store={querySchema}
 		recentsKey={SURFACE[SurfaceDimension.WEB_ASSETS].recentsKey}
-		hint="status:>=500 is:live"
+		hint="status:>=500 not is:cdn"
 		value={query.search}
 		facets={facets as unknown as Record<string, Facet[]>}
 		busy={loading && !!query.search}
@@ -844,8 +905,11 @@
 					<PanelRight class="size-4" />
 					<span class="max-sm:hidden">Hygiene</span>
 					{#if hygieneHeadline > 0}
-						<span class="size-1.5 rounded-full {TONE_DOT[hygieneTone]}" aria-hidden="true"></span>
-						<span class="tabular-nums">{hygieneHeadline.toLocaleString()}</span>
+						<span
+							class="size-1.5 rounded-full max-sm:hidden {TONE_DOT[hygieneTone]}"
+							aria-hidden="true"
+						></span>
+						<span class="tabular-nums max-sm:hidden">{hygieneHeadline.toLocaleString()}</span>
 					{/if}
 				</Button>
 			{/if}
@@ -863,9 +927,11 @@
 					<PanelRight class="size-4" />
 					<span class="max-sm:hidden">Posture</span>
 					{#if postureHeadline > 0}
-						<span class="size-1.5 rounded-full {POSTURE_DOT[postureTone]}" aria-hidden="true"
+						<span
+							class="size-1.5 rounded-full max-sm:hidden {TONE_DOT[postureTone]}"
+							aria-hidden="true"
 						></span>
-						<span class="tabular-nums">{postureHeadline.toLocaleString()}</span>
+						<span class="tabular-nums max-sm:hidden">{postureHeadline.toLocaleString()}</span>
 					{/if}
 				</Button>
 			{/if}
@@ -879,6 +945,7 @@
 			tabs={STATUS_CLASS_TABS}
 			value={statusTab}
 			counts={statusCounts}
+			capped={statusCapped}
 			countClass={statusCountClass}
 			onChange={setStatusTab}
 		/>
@@ -921,33 +988,11 @@
 		onGroupBy={(key) => (groupBy = key)}
 	/>
 
-	{#if chips.length > 0}
-		<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/10 px-4 py-2">
-			{#each chips as chip (chip.id)}
-				<Badge variant="outline" class="gap-1 bg-background font-normal">
-					{chip.label}
-					<Tooltip.Root>
-						<Tooltip.Trigger
-							class="rounded-sm text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-							onclick={() => setQuery(chip.remove(query))}
-							aria-label="Remove filter {chip.label}"
-						>
-							<X class="h-3 w-3" />
-							<span class="sr-only">Remove filter {chip.label}</span>
-						</Tooltip.Trigger>
-						<Tooltip.Content>Remove filter {chip.label}</Tooltip.Content>
-					</Tooltip.Root>
-				</Badge>
-			{/each}
-			<button
-				class="ml-1 rounded-sm text-xs text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-				onclick={() => setQuery({ ...emptyQuery(), search: query.search })}
-				aria-label="Clear all filters"
-			>
-				Clear all
-			</button>
-		</div>
-	{/if}
+	<FilterChips
+		{chips}
+		onRemove={(chip) => setQuery(chip.remove(query))}
+		onClear={() => setQuery({ ...emptyQuery(), search: query.search })}
+	/>
 
 	{#if !groupBy}
 		<SelectionBar
@@ -1008,7 +1053,6 @@
 					<EmptyState
 						icon={SearchX}
 						title="No web assets match"
-						description="Widen the search or remove a filter."
 						class="rounded-none border-0 bg-transparent py-16"
 					>
 						<Button
@@ -1023,7 +1067,7 @@
 				{:else}
 					<EmptyState
 						icon={Globe}
-						title="No web assets in this scan"
+						title={projectWide ? 'No web assets' : 'No web assets in this scan'}
 						class="rounded-none border-0 bg-transparent py-16"
 					/>
 				{/if}
@@ -1109,16 +1153,31 @@
 			{/if}
 		</div>
 		{#if insightsOpen}
-			<HygieneRail
+			<CheckRail
+				label="Web hygiene"
 				summary={hygiene}
+				breakdown={hygieneRail}
+				evaluatedLabel="checked"
+				pendingLabel="pending evaluation"
+				noneKey={HYGIENE_NONE}
+				toneDot={TONE_DOT}
+				toneLabel={TONE_LABEL}
 				selected={query.hygiene}
 				onToggle={toggleHygiene}
 				onClose={() => (insightsOpen = false)}
 			/>
 		{/if}
 		{#if postureOpen}
-			<PostureRail
+			<CheckRail
+				label="Domain posture"
 				summary={posture}
+				breakdown={postureRail}
+				evaluatedLabel="under a checked zone"
+				pendingLabel="under a zone not checked"
+				emptyText="Not scanned"
+				noneKey={POSTURE_NONE}
+				toneDot={TONE_DOT}
+				toneLabel={TONE_LABEL}
 				selected={query.posture}
 				onToggle={togglePosture}
 				onClose={() => (postureOpen = false)}
@@ -1189,6 +1248,7 @@
 	index={selectedIndex}
 	pageOffset={pageIndex * pageSize}
 	{total}
+	capped={totalCapped}
 	onStep={step}
 	onFilter={applyDsl}
 	onPivot={openHost}

@@ -20,6 +20,9 @@
 	import ScopeRow from './scope-row.svelte';
 	import { bountyProgramsApi } from '$lib/api/bounty-programs';
 	import {
+		REFRESH_POLLS,
+		REFRESH_POLL_MS,
+		SCOPE_TABS,
 		SOURCE_LABELS,
 		SOURCE_NOTES,
 		SUBMISSION_STATE_LABELS,
@@ -28,8 +31,8 @@
 	import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { formatMoney } from '$lib/config/bounty-reports';
-	import { REFRESH_POLLS, REFRESH_POLL_MS } from '$lib/config/bounty-programs';
 	import { formatShortDate } from '$lib/utilities/dates';
+	import { plural, pluralWord } from '$lib/utilities/strings';
 	import type { Watch } from '$lib/types/watch';
 	import {
 		ProgramState,
@@ -86,7 +89,7 @@
 	async function load(handle: string, platform: string) {
 		loading = true;
 		try {
-			const d = await bountyProgramsApi.detail(handle, projectId, null, platform);
+			const d = await bountyProgramsApi.detail(handle, projectId, platform);
 			if (!isCurrent(handle, platform)) return;
 			apply(d);
 			const key = `${platform}:${handle}`;
@@ -183,7 +186,7 @@
 			const grouped = result.organization ? ` under ${result.organization.name}` : '';
 			toast.success(
 				created > 0
-					? `Added ${created} ${created === 1 ? 'target' : 'targets'}${grouped}`
+					? `Added ${plural(created, 'target')}${grouped}`
 					: `No targets added. Each selected asset is a target${grouped}`
 			);
 			importOpen = false;
@@ -206,9 +209,7 @@
 			for (let i = 0; i < REFRESH_POLLS; i++) {
 				await new Promise((r) => setTimeout(r, REFRESH_POLL_MS));
 				if (!isCurrent(handle, platform)) return;
-				const d = await bountyProgramsApi
-					.detail(handle, projectId, null, platform)
-					.catch(() => null);
+				const d = await bountyProgramsApi.detail(handle, projectId, platform).catch(() => null);
 				if (!d) continue;
 				if (d.scopes_synced_at !== before || d.scope_access === ScopeAccess.Denied) {
 					apply(d);
@@ -269,13 +270,14 @@
 								href={ROUTES.bountyReports(program.platform, program.handle)}
 								class="text-xs text-foreground hover:text-primary"
 							>
-								{program.reports_for_user}
-								{program.reports_for_user === 1 ? 'report' : 'reports'}{program.earnings_for_user
+								{plural(program.reports_for_user, 'report')}{program.earnings_for_user
 									? ` · ${formatMoney(program.earnings_for_user, program.currency?.toUpperCase() || 'USD')} earned`
 									: ''}
 							</a>
 						{:else}
-							<span class="text-xs">{program.reports_for_user} reports from this account</span>
+							<span class="text-xs"
+								>{plural(program.reports_for_user, 'report')} from this account</span
+							>
 						{/if}
 					{/if}
 					{#if detail?.scopes_synced_at}
@@ -310,11 +312,7 @@
 
 			<div class="border-b px-4">
 				<CountTabs
-					tabs={[
-						{ key: 'all', label: 'All scope' },
-						{ key: ScopeState.InScope, label: 'In scope' },
-						{ key: ScopeState.OutOfScope, label: 'Out of scope' }
-					]}
+					tabs={SCOPE_TABS}
 					value={tab}
 					counts={counts as Record<string, number>}
 					onChange={(k) => (tab = k)}
@@ -393,8 +391,8 @@
 				{:else}
 					{#if tab !== ScopeState.OutOfScope && unreachableTotal > 0}
 						<div class="border-b bg-muted/30 px-4 py-2.5 text-xs text-muted-foreground">
-							<span class="font-medium text-foreground">{unreachableTotal} assets</span> in this
-							program are not scannable:
+							<span class="font-medium text-foreground">{plural(unreachableTotal, 'asset')}</span>
+							not scannable:
 							{unreachableEntries.map(([label, n]) => `${n} ${label}`).join(' · ')}
 						</div>
 					{/if}
@@ -419,9 +417,8 @@
 						>
 							<TriangleAlertIcon class="mt-0.5 size-3.5 shrink-0 text-warning" />
 							<span>
-								{selectedOutOfScope}
-								{selectedOutOfScope === 1 ? 'asset is' : 'assets are'} out of scope. Scanning them is
-								not authorised by the program.
+								{plural(selectedOutOfScope, 'asset')} out of scope. Not authorised for testing by the
+								program.
 							</span>
 						</div>
 					{/if}
@@ -430,7 +427,7 @@
 						<label class="flex items-center gap-2 text-xs text-muted-foreground">
 							<Switch checked={showOutOfScope} onCheckedChange={setAllowOutOfScope} />
 							Allow selecting {outOfScopeImportable} out-of-scope
-							{outOfScopeImportable === 1 ? 'asset' : 'assets'}
+							{pluralWord(outOfScopeImportable, 'asset')}
 						</label>
 					{/if}
 
@@ -445,7 +442,7 @@
 							disabled={selected.size === 0 || !projectId}
 							onclick={() => (importOpen = true)}
 						>
-							Add {selected.size} as {selected.size === 1 ? 'target' : 'targets'}
+							Add {selected.size} as {pluralWord(selected.size, 'target')}
 						</Button>
 					</div>
 				</Sheet.Footer>

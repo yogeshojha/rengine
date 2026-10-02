@@ -3,6 +3,7 @@ from __future__ import annotations
 from reports.base import RenderContext, Section
 from reports.config import SectionConfig, choice, flag, text
 from shared.definitions.reports import SectionGroup, SectionRole
+from shared.definitions.surface import SurfaceDimension
 
 
 class CoverConfig(SectionConfig):
@@ -36,10 +37,7 @@ class CoverConfig(SectionConfig):
 
 
 def _grade(ctx: RenderContext) -> dict | None:
-    assessed = any(
-        c["covered"] for c in ctx.brief.coverage if c["dimension"] == "vulnerabilities"
-    )
-    if not assessed:
+    if SurfaceDimension.VULNERABILITIES.value not in ctx.data.covered_dimensions:
         return None
     posture = ctx.brief.posture
     return {"letter": posture.grade, "score": posture.score}

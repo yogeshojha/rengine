@@ -1,4 +1,4 @@
-"""Scan orchestrator celery tasks: run_scan, run_scan_step, run_scan_stage, resume_scan, finalize_scan."""
+"""Scan orchestrator tasks."""
 
 import json
 import re
@@ -49,7 +49,7 @@ STALL_GRACE_SECONDS = 600
 PENDING_GRACE_SECONDS = 300
 STALL_ABANDON_SECONDS = settings.TASK_HARD_TIME_LIMIT
 _INSPECT_TIMEOUT = 5.0
-_ABANDON_REASON = "The worker never came back to this stage."
+_ABANDON_REASON = "Worker stopped without a result."
 _SCAN_ID_RE = re.compile(r"'scan_id': '([0-9a-f-]{36})'")
 
 _broker_client: redis.Redis | None = None
@@ -58,7 +58,6 @@ _broker_client: redis.Redis | None = None
 @shared_task(bind=True, name="app.tasks.scan.run_scan", max_retries=0)
 def run_scan(self, scan_id: str, epoch: int = 0) -> dict:
     """Orchestrator entrypoint: claim RUNNING, dispatch the stage canvas, then notify."""
-    redis_url = settings.celery_broker_url
     with get_sync_session() as session:
         scan = session.get(Scan, uuid.UUID(scan_id), with_for_update=True)
         if scan is None:
@@ -90,7 +89,7 @@ def run_scan(self, scan_id: str, epoch: int = 0) -> dict:
 
         if was_pending:
             events = ScanEventPublisher(
-                redis_url, scan_id=scan_id, project_id=str(scan.project_id)
+                scan_id=scan_id, project_id=str(scan.project_id)
             )
             target_value = (scan.execution_config or {}).get("target_value", "")
             ActivityLogService(session).log(
@@ -157,7 +156,7 @@ def run_scan_step(scan_id: str, epoch: int, steps: list[list[str]], index: int) 
 
 @shared_task(bind=True, name="app.tasks.scan.run_scan_stage", max_retries=0)
 def run_scan_stage(self, scan_id: str, stage_name: str, epoch: int = 0) -> dict:
-    """Run one engine stage with activity tracking + command registration."""
+    """Run one stage with activity tracking."""
     spec = get_stage(stage_name)
     if spec is None:
         logger.warning("unknown scan stage %s", stage_name)
@@ -177,18 +176,12 @@ def run_scan_stage(self, scan_id: str, stage_name: str, epoch: int = 0) -> dict:
         if scan.status == ScanStatus.PAUSED.value:
             logger.info("stage %s not started, scan %s paused", stage_name, scan_id)
             return {"skipped": ScanStatus.PAUSED.value, "stage": stage_name}
-        run_stage(
-            session,
-            scan,
-            spec,
-            celery_task_id=self.request.id,
-            redis_url=settings.celery_broker_url,
-        )
+        run_stage(session, scan, spec, celery_task_id=self.request.id)
     return {"stage": stage_name}
 
 
-@shared_task(bind=True, name="app.tasks.scan.finalize_scan", max_retries=0)
-def finalize_scan(self, scan_id: str, epoch: int | None = None) -> dict:  # noqa: ARG001
+@shared_task(name="app.tasks.scan.finalize_scan", max_retries=0)
+def finalize_scan(scan_id: str, epoch: int | None = None) -> dict:
     """Aggregate stage outcomes into the final scan status + terminal notif."""
     with get_sync_session() as session:
         scan = session.get(Scan, uuid.UUID(scan_id))
@@ -197,7 +190,7 @@ def finalize_scan(self, scan_id: str, epoch: int | None = None) -> dict:  # noqa
         if superseded(scan.run_epoch, epoch):
             logger.info("finalize of scan %s belongs to a superseded canvas", scan_id)
             return {"skipped": "superseded canvas"}
-        finalize_scan_run(session, scan, redis_url=settings.celery_broker_url)
+        finalize_scan_run(session, scan)
     return {"finalized": True, "scan_id": scan_id}
 
 
@@ -245,8 +238,8 @@ def admit() -> dict:
     return {"started": started}
 
 
-@shared_task(bind=True, name="app.tasks.scan.reap_stalled", max_retries=0)
-def reap_stalled(self) -> dict:  # noqa: ARG001
+@shared_task(name="app.tasks.scan.reap_stalled", max_retries=0)
+def reap_stalled() -> dict:
     """Resume a RUNNING scan whose canvas died, and settle one that never comes back."""
     queued = _queued_scan_ids()
     if queued is None:

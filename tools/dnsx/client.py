@@ -5,7 +5,6 @@ from __future__ import annotations
 import contextlib
 from collections.abc import Iterator
 
-from shared.logging import get_logger
 from tools.runner import (
     CLIToolRunner,
     OutputFormat,
@@ -14,8 +13,6 @@ from tools.runner import (
     ToolResult,
 )
 from tools.runner.models import CommandRecorder
-
-logger = get_logger(__name__)
 
 DNSX_BINARY = "dnsx"
 DEFAULT_TIMEOUT = 120

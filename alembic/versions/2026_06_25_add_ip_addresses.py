@@ -4,8 +4,6 @@ Revision ID: d6b8f0a2c4e7
 Revises: c4f6a8e0b2d3
 Create Date: 2026-06-25 12:00:00.000000+00:00
 
-Per-scan IP asset produced by the Discovery phase for IP / IP_RANGE / ASN seeds:
-seed/expansion provenance, reverse-DNS hostnames, and ASN/CDN enrichment.
 """
 
 from collections.abc import Sequence
@@ -82,5 +80,4 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_ip_addresses_project_id"), table_name="ip_addresses")
     op.drop_index(op.f("ix_ip_addresses_target_id"), table_name="ip_addresses")
     op.drop_index(op.f("ix_ip_addresses_scan_id"), table_name="ip_addresses")
-    op.drop_index(op.f("ix_ip_addresses_id"), table_name="ip_addresses")
     op.drop_table("ip_addresses")

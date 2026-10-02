@@ -1,8 +1,8 @@
 <script lang="ts">
 	import IdentityMark from './identity-mark.svelte';
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
-	import { TONE_TEXT } from '$lib/config/toolbox';
-	import type { Cell, Tone } from '$lib/types/toolbox';
+	import { TONE_TINT, isExternalHref, safeHref } from '$lib/config/toolbox';
+	import type { Cell } from '$lib/types/toolbox';
 
 	interface Props {
 		cell: Cell;
@@ -12,8 +12,8 @@
 
 	let { cell, onLookup, onNavigate }: Props = $props();
 
-	const TINTED: Record<Tone, string> = { ...TONE_TEXT, info: TONE_TEXT.neutral };
-	const external = $derived(cell.href?.startsWith('http') ?? false);
+	const href = $derived(safeHref(cell.href));
+	const external = $derived(isExternalHref(href ?? ''));
 	const lookup = $derived(cell.lookup);
 </script>
 
@@ -24,13 +24,13 @@
 		</span>
 	{/if}
 	<span
-		class="text-sm leading-5 {TINTED[cell.tone]} {cell.mono
+		class="text-sm leading-5 {TONE_TINT[cell.tone]} {cell.mono
 			? 'font-mono text-xs break-all'
 			: 'break-words'}"
 	>
-		{#if cell.href}
+		{#if href}
 			<a
-				href={cell.href}
+				{href}
 				target={external ? '_blank' : undefined}
 				rel={external ? 'noreferrer' : undefined}
 				onclick={() => !external && onNavigate?.()}

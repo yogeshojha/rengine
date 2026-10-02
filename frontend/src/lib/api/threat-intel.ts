@@ -1,7 +1,6 @@
 import { api } from './client';
 import { appendTargetScope, type TargetScope } from '$lib/utilities/surface-scope';
 import type {
-	CveIntelRead,
 	FindingIntel,
 	IntelChange,
 	SignalFinding,
@@ -38,10 +37,6 @@ export const threatIntelApi = {
 		return api.post<SyncResult>('/threat-intel/sync', {});
 	},
 
-	async enrich(scanId: string): Promise<SyncResult> {
-		return api.post<SyncResult>(`/threat-intel/scan/${scanId}/enrich`, {});
-	},
-
 	async signal(
 		kind: string,
 		projectId?: string,
@@ -51,10 +46,6 @@ export const threatIntelApi = {
 		const params = appendTargetScope(new URLSearchParams({ limit: String(limit) }), scope);
 		if (projectId) params.set('project_id', projectId);
 		return api.get<SignalFinding[]>(`/threat-intel/signal/${kind}?${params}`);
-	},
-
-	async cve(cveId: string): Promise<CveIntelRead> {
-		return api.get<CveIntelRead>(`/threat-intel/cve/${encodeURIComponent(cveId)}`);
 	},
 
 	async finding(vulnerabilityId: string): Promise<FindingIntel> {

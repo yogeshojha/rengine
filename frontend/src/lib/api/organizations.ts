@@ -7,6 +7,12 @@ export interface Organization {
 	project_id: string;
 	created_at: string;
 	created_by: string;
+	target_count: number;
+}
+
+export interface OrganizationUpdate {
+	name?: string;
+	description?: string | null;
 }
 
 export interface OrganizationCreate {
@@ -15,32 +21,24 @@ export interface OrganizationCreate {
 }
 
 interface ListOrganizationsParams {
-	project_slug?: string;
+	project_slug: string;
 }
 
 export const organizationsApi = {
-	async list(params?: ListOrganizationsParams): Promise<Organization[]> {
-		const searchParams = new URLSearchParams();
-
-		if (params?.project_slug) {
-			searchParams.append('project_slug', params.project_slug);
-		}
-
-		const query = searchParams.toString();
-		const url = query ? `/organizations?${query}` : '/organizations';
-
-		return api.get<Organization[]>(url);
-	},
-
-	async get(projectSlug: string, slug: string): Promise<Organization> {
-		return api.get<Organization>(`/organizations/${projectSlug}/${slug}`);
+	async list(params: ListOrganizationsParams): Promise<Organization[]> {
+		const searchParams = new URLSearchParams({ project_slug: params.project_slug });
+		return api.get<Organization[]>(`/organizations?${searchParams}`);
 	},
 
 	async create(data: OrganizationCreate): Promise<Organization> {
 		return api.post<Organization>('/organizations', data);
 	},
 
-	async delete(projectSlug: string, slug: string): Promise<void> {
-		return api.delete(`/organizations/${projectSlug}/${slug}`);
+	async update(id: string, data: OrganizationUpdate): Promise<Organization> {
+		return api.patch<Organization>(`/organizations/${id}`, data);
+	},
+
+	async remove(id: string): Promise<void> {
+		await api.delete(`/organizations/${id}`);
 	}
 };

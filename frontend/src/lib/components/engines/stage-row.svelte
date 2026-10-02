@@ -14,7 +14,13 @@
 	import type { Snippet } from 'svelte';
 	import { SEVERITY_LABELS } from '$lib/config/vulnerabilities';
 	import type { StageCatalogEntry, StageConfig, StageField } from '$lib/types/scan-engine';
-	import { advancedFields, basicFields, targetTypeLabel } from '$lib/types/scan-engine';
+	import {
+		ADVANCED_TIER,
+		advancedFields,
+		basicFields,
+		targetTypeLabel
+	} from '$lib/types/scan-engine';
+	import { overridesOf } from '$lib/utilities/engine-yaml';
 
 	interface Props {
 		stage: StageCatalogEntry;
@@ -58,14 +64,9 @@
 	const basic = $derived(basicFields(stage));
 	const advanced = $derived(advancedFields(stage));
 
-	const changed = $derived(
-		stage.fields.filter((f) => {
-			const current = config[f.name];
-			if (current === undefined) return false;
-			return JSON.stringify(current) !== JSON.stringify(stage.defaults[f.name]);
-		})
-	);
-	const advancedChanged = $derived(changed.filter((f) => f.tier === 'advanced').length);
+	const overrides = $derived(overridesOf(config, stage.defaults));
+	const changed = $derived(stage.fields.filter((f) => f.name in overrides));
+	const advancedChanged = $derived(changed.filter((f) => f.tier === ADVANCED_TIER).length);
 
 	function describe(field: StageField, value: unknown): string | null {
 		if (value === undefined || value === null || value === '') return null;
@@ -90,7 +91,7 @@
 <Collapsible.Root
 	{open}
 	onOpenChange={() => onToggleOpen()}
-	class="row"
+	class="stage-row"
 	data-active={active}
 	data-dim={dimmed}
 	data-enabled={enabled}
@@ -128,7 +129,7 @@
 						{/snippet}
 					</Tooltip.Trigger>
 					<Tooltip.Content class="text-xs">
-						{changed.length} setting{changed.length === 1 ? '' : 's'} differ from defaults
+						{changed.length === 1 ? '1 setting differs' : `${changed.length} settings differ`} from defaults
 					</Tooltip.Content>
 				</Tooltip.Root>
 			{/if}
@@ -268,18 +269,18 @@
 </Collapsible.Root>
 
 <style>
-	:global(.row) {
+	:global(.stage-row) {
 		position: relative;
 		border-bottom: 1px solid var(--border);
 		transition: background 0.15s ease;
 	}
-	:global(.row:last-child) {
+	:global(.stage-row:last-child) {
 		border-bottom: none;
 	}
-	:global(.row[data-active='true']) {
+	:global(.stage-row[data-active='true']) {
 		background: color-mix(in oklch, var(--primary) 4%, transparent);
 	}
-	:global(.row[data-active='true'])::before {
+	:global(.stage-row[data-active='true'])::before {
 		content: '';
 		position: absolute;
 		left: 0;
@@ -289,15 +290,15 @@
 		background: var(--primary);
 		opacity: 0.6;
 	}
-	:global(.row[data-dim='true']) > .head .title,
-	:global(.row[data-dim='true']) > .head .summary,
-	:global(.row[data-enabled='false']) > .head .title {
+	:global(.stage-row[data-dim='true']) > .head .title,
+	:global(.stage-row[data-dim='true']) > .head .summary,
+	:global(.stage-row[data-enabled='false']) > .head .title {
 		color: var(--muted-foreground);
 	}
-	:global(.row[data-support='true']) {
+	:global(.stage-row[data-support='true']) {
 		background: color-mix(in oklch, var(--muted) 30%, transparent);
 	}
-	:global(.row[data-support='true']) > .head .title {
+	:global(.stage-row[data-support='true']) > .head .title {
 		font-weight: 450;
 	}
 
@@ -308,7 +309,7 @@
 		padding: 0 14px 0 12px;
 		min-height: 46px;
 	}
-	:global(.row[data-support='true']) .head {
+	:global(.stage-row[data-support='true']) .head {
 		min-height: 40px;
 	}
 
@@ -332,7 +333,7 @@
 		border-color: transparent;
 	}
 
-	:global(.row .disclose) {
+	:global(.stage-row .disclose) {
 		display: flex;
 		align-items: center;
 		gap: 6px;
@@ -345,12 +346,12 @@
 		text-align: left;
 		color: inherit;
 	}
-	:global(.row .disclose .chev) {
+	:global(.stage-row .disclose .chev) {
 		flex-shrink: 0;
 		color: var(--muted-foreground);
 		transition: transform 0.15s ease;
 	}
-	:global(.row[data-state='open'] > .head .disclose .chev) {
+	:global(.stage-row[data-state='open'] > .head .disclose .chev) {
 		transform: rotate(90deg);
 	}
 	.title {
@@ -409,15 +410,15 @@
 		font-weight: 500;
 		color: var(--muted-foreground);
 	}
-	.checks :global(.row) {
+	.checks :global(.stage-row) {
 		border: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
 		border-bottom-width: 0;
 	}
-	.checks :global(.row:first-of-type) {
+	.checks :global(.stage-row:first-of-type) {
 		border-top-left-radius: 6px;
 		border-top-right-radius: 6px;
 	}
-	.checks :global(.row:last-child) {
+	.checks :global(.stage-row:last-child) {
 		border-bottom-width: 1px;
 		border-bottom-left-radius: 6px;
 		border-bottom-right-radius: 6px;
@@ -427,7 +428,7 @@
 		color: var(--muted-foreground);
 	}
 
-	:global(.row .body) {
+	:global(.stage-row .body) {
 		padding: 0 16px 14px 32px;
 	}
 	.desc {
@@ -458,11 +459,11 @@
 	.fields > :global(* + *) {
 		border-top: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
 	}
-	:global(.row .advanced) {
+	:global(.stage-row .advanced) {
 		margin-top: 6px;
 		border-top: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
 	}
-	:global(.row .advanced-head) {
+	:global(.stage-row .advanced-head) {
 		display: flex;
 		align-items: center;
 		gap: 6px;
@@ -475,7 +476,7 @@
 		font-size: 12px;
 		font-weight: 500;
 	}
-	:global(.row .advanced[data-state='open'] .advanced-head .chev) {
+	:global(.stage-row .advanced[data-state='open'] .advanced-head .chev) {
 		transform: rotate(90deg);
 	}
 	.advanced-count {
@@ -492,7 +493,7 @@
 		.summary {
 			display: none;
 		}
-		:global(.row .body) {
+		:global(.stage-row .body) {
 			padding-left: 16px;
 		}
 	}

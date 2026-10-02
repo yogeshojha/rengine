@@ -73,6 +73,7 @@ async def create_engine(
         project_id=project_id,
         created_by=current_user.id,
         data=data,
+        superuser=current_user.is_superuser,
     )
 
 
@@ -89,6 +90,7 @@ async def import_engine(
         project_id=project_id,
         created_by=current_user.id,
         yaml_str=body.yaml,
+        superuser=current_user.is_superuser,
     )
 
 
@@ -106,11 +108,16 @@ async def get_engine(
 async def update_engine(
     id: UUID,
     data: ScanEngineUpdate,
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
     service: Annotated[ScanEngineService, Depends(get_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
-    return await service.update(id=id, project_id=project_id, data=data)
+    return await service.update(
+        id=id,
+        project_id=project_id,
+        data=data,
+        superuser=current_user.is_superuser,
+    )
 
 
 @router.delete("/{id}", response_model=dict)

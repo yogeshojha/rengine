@@ -7,17 +7,20 @@ from datetime import datetime, timedelta
 from shared.definitions.asset_query import MAX_NUMBER, FieldType
 from shared.utils.datetime import utc_now
 from shared.utils.imagehash import DIGEST_CHARS, to_signed
+from shared.utils.validation import MAX_ASN
 
 from .ast import QuerySyntaxError
 
 _BYTES = {"b": 1, "kb": 1024, "k": 1024, "mb": 1024**2, "m": 1024**2, "gb": 1024**3}
 _SECONDS = {"ms": 0.001, "s": 1.0, "m": 60.0, "h": 3600.0}
+_UNITS = {FieldType.BYTES: _BYTES, FieldType.DURATION: _SECONDS}
 _RELATIVE = {"m": 60, "h": 3600, "d": 86400, "w": 604800, "mo": 2592000, "y": 31536000}
 _SIZE_RE = re.compile(r"^(-?\d+(?:\.\d+)?)\s*([a-z]*)$", re.IGNORECASE)
 _RELATIVE_RE = re.compile(r"^(\d+(?:\.\d+)?)\s*(mo|[mhdwy])$", re.IGNORECASE)
 _DATE_FORMATS = ("%Y-%m-%d", "%Y/%m/%d", "%d-%m-%Y")
 _STATUS_CLASS_RE = re.compile(r"^([1-5])xx$", re.IGNORECASE)
 _ASN_RE = re.compile(r"^as(\d+)$", re.IGNORECASE)
+IPV4_RE = re.compile(r"^[0-9]{1,3}(\.[0-9]{1,3}){3}$")
 
 PRIVATE_NETWORKS: tuple[str, ...] = (
     "10.0.0.0/8",
@@ -44,8 +47,8 @@ def scaled_number(raw: str, kind: FieldType, start: int, end: int) -> float:
     amount = float(match.group(1))
     unit = match.group(2).lower()
     if unit:
-        table = _BYTES if kind is FieldType.BYTES else _SECONDS
-        if unit not in table:
+        table = _UNITS.get(kind)
+        if table is None or unit not in table:
             raise _fail(raw, "number", start, end)
         amount *= table[unit]
     return _bounded(amount, raw, start, end)
@@ -71,7 +74,11 @@ def asn_number(raw: str, start: int, end: int) -> int:
     text = match.group(1) if match else raw.strip()
     if not text.isdigit():
         raise _fail(raw, "AS number", start, end)
-    return int(_bounded(float(text), raw, start, end))
+    value = int(text)
+    if value > MAX_ASN:
+        msg = f"{raw!r} is out of range."
+        raise QuerySyntaxError(msg, start, end)
+    return value
 
 
 def render_hash(raw: str, start: int, end: int) -> int:

@@ -4,6 +4,7 @@
 	import RankedBars, { type BarRow } from './ranked-bars.svelte';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import type { SoftwareCoverage, SoftwareFacets } from '$lib/types/software';
+	import { cappedCount } from '$lib/utilities/strings';
 
 	const routes = useScopedRoutes();
 
@@ -23,7 +24,7 @@
 			key: f.key,
 			label: f.label,
 			count: f.count,
-			href: routes.results(SPEC.tab, scanId, { [SPEC.queryParam]: `product="${f.key}"` })
+			href: routes.results(SPEC.tab, scanId, { [SPEC.queryParam]: `software="${f.key}"` })
 		}))
 	);
 	let coverage = $derived(software?.coverage ?? null);
@@ -34,7 +35,6 @@
 
 <Cell
 	id="software"
-	title="Software CVEs"
 	description="By product"
 	href={routes.results(SPEC.tab, scanId)}
 	hrefLabel={SPEC.label}
@@ -42,7 +42,7 @@
 	class={className}
 >
 	{#if rows.length}
-		<RankedBars {rows} dense />
+		<RankedBars {rows} />
 	{:else}
 		<span class="text-sm text-muted-foreground">No matches</span>
 	{/if}
@@ -70,10 +70,12 @@
 	{#snippet footer()}
 		{#if coverage}
 			<span>
-				{coverage.findings.toLocaleString()} matches on {coverage.matched.toLocaleString()} components{#if coverage.feed_age_hours !== null}
-					· corpus {coverage.feed_age_hours < 24
-						? `${Math.round(coverage.feed_age_hours)}h`
-						: `${Math.round(coverage.feed_age_hours / 24)}d`} old{/if}
+				{cappedCount(coverage.findings, coverage.capped_at != null)} matches on {coverage.matched.toLocaleString()}
+				components{#if coverage.feed_age_hours !== null}{` · corpus ${
+						coverage.feed_age_hours < 24
+							? `${Math.round(coverage.feed_age_hours)}h`
+							: `${Math.round(coverage.feed_age_hours / 24)}d`
+					} old`}{/if}
 			</span>
 		{/if}
 	{/snippet}

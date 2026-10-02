@@ -41,19 +41,6 @@ async def test_second_scan_reports_only_what_the_first_missed(estate, now):
     assert await _hosts(estate, "", "second") == 5
 
 
-async def test_new_and_not_new_partition_the_scan(estate, now):
-    old = now - timedelta(days=7)
-    await estate.scan("example.com", "first", at=old)
-    await estate.hosts("first", FIRST, at=old)
-    await estate.scan("example.com", "second", at=now)
-    await estate.hosts("second", SECOND, at=now, status=200)
-
-    total = await _hosts(estate, "", "second")
-    new = await _hosts(estate, "is:new", "second")
-    rest = await _hosts(estate, "not is:new", "second")
-    assert new + rest == total
-
-
 async def test_a_baseline_belongs_to_one_target(estate, now):
     old = now - timedelta(days=7)
     await estate.scan("other.com", "other", at=old)

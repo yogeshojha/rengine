@@ -43,15 +43,8 @@ class NetlasProvider(SubdomainProvider):
             {"q": f"domain:*.{self.ctx.domain}", "fields": "domain", "size": 100}
         )
         url = f"{_NETLAS_URL}?{query}"
-        proxy = self.ctx.proxy_url
-        opener = urllib.request.build_opener(
-            _NoRedirect(),
-            urllib.request.ProxyHandler({"http": proxy, "https": proxy})
-            if proxy
-            else urllib.request.ProxyHandler({}),
-        )
         req = urllib.request.Request(url, headers={"X-API-Key": key})  # noqa: S310
-        with opener.open(req, timeout=self.ctx.timeout) as resp:
+        with self._opener(_NoRedirect()).open(req, timeout=self.ctx.timeout) as resp:
             payload = resp.read().decode("utf-8", errors="replace")
 
         try:

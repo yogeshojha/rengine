@@ -10,8 +10,9 @@ function createScanSchedulesStore() {
 	let schedules = $state<ScanScheduleRead[]>([]);
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
-	let hasFetched = $state(false);
 	let fetchedProjectId = $state<string | null>(null);
+	let seq = 0;
+	let loadingFor: string | null = null;
 
 	function replace(updated: ScanScheduleRead) {
 		schedules = schedules.map((s) => (s.id === updated.id ? updated : s));
@@ -27,25 +28,28 @@ function createScanSchedulesStore() {
 		get error() {
 			return error;
 		},
-		get hasFetched() {
-			return hasFetched;
-		},
 		get fetchedProjectId() {
 			return fetchedProjectId;
 		},
 
 		async fetchSchedules(projectId: string) {
-			if (isLoading) return;
+			if (isLoading && loadingFor === projectId) return;
+			const my = ++seq;
+			loadingFor = projectId;
 			isLoading = true;
 			error = null;
 			try {
-				schedules = await scanSchedulesApi.list(projectId);
-				hasFetched = true;
+				const rows = await scanSchedulesApi.list(projectId);
+				if (my !== seq) return;
+				schedules = rows;
 				fetchedProjectId = projectId;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Schedules not loaded';
+				if (my === seq) error = e instanceof Error ? e.message : 'Schedules not loaded';
 			} finally {
-				isLoading = false;
+				if (my === seq) {
+					isLoading = false;
+					loadingFor = null;
+				}
 			}
 		},
 
@@ -123,9 +127,11 @@ function createScanSchedulesStore() {
 		},
 
 		clear() {
+			seq++;
 			schedules = [];
+			isLoading = false;
+			loadingFor = null;
 			error = null;
-			hasFetched = false;
 			fetchedProjectId = null;
 		}
 	};

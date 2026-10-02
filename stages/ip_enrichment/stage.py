@@ -15,6 +15,7 @@ from shared.services.ip_asn import (
     sync_ranges,
 )
 from shared.services.ip_inventory import collect_ips, materialize
+from shared.utils.text import plural
 from stages.base import ALL_TARGETS, Stage, StageResult, parse_asn
 from stages.ip_enrichment.config import IpEnrichmentConfig
 
@@ -88,8 +89,9 @@ class IpEnrichmentStage(Stage):
             []
             if ready
             else [
-                f"IP-to-ASN ranges are still loading. {len(found):,} addresses "
-                "were stored without a network or country."
+                f"IP-to-ASN ranges are not loaded. {len(found):,} "
+                f"{plural(len(found), 'address', 'addresses')} stored without a "
+                "network or country."
             ]
         )
         return StageResult(
@@ -120,7 +122,6 @@ class IpEnrichmentStage(Stage):
         return ranges_ready(self.session)
 
     def _enrich(self) -> int:
-        """Most addresses were enriched as they were written."""
         enrich_addresses(self.session, scan_id=self.ctx.scan_id)
         self._apply_target_asn()
         return int(

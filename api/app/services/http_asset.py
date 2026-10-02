@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import cast, func, select
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.scan_surface import ScanSurfaceService
@@ -11,7 +10,6 @@ from shared.models.http_asset import (
     HttpAsset,
     HttpAssetDetail,
     HttpAssetRead,
-    HttpAssetSummary,
     HygieneVerdict,
 )
 from shared.models.scan_surface import AssetSurface
@@ -117,86 +115,3 @@ class HttpAssetService:
             asset.scan_id, asset.id
         )
         return self._to_detail(asset, surface)
-
-    def _filters(
-        self,
-        project_id: UUID,
-        scan_id: UUID | None,
-        target_id: UUID | None,
-        search: str | None,
-    ) -> list:
-        conditions = [HttpAsset.project_id == project_id]
-        if scan_id is not None:
-            conditions.append(HttpAsset.scan_id == scan_id)
-        if target_id is not None:
-            conditions.append(HttpAsset.target_id == target_id)
-        if search:
-            conditions.append(HttpAsset.url.ilike(f"%{search}%"))
-        return conditions
-
-    def _base_query(
-        self,
-        project_id: UUID,
-        scan_id: UUID | None,
-        target_id: UUID | None,
-        search: str | None,
-    ):
-        return select(HttpAsset).where(
-            *self._filters(project_id, scan_id, target_id, search)
-        )
-
-    async def list(
-        self,
-        project_id: UUID,
-        scan_id: UUID | None = None,
-        target_id: UUID | None = None,
-        search: str | None = None,
-        limit: int = 100,
-        offset: int = 0,
-    ) -> list[HttpAssetRead]:
-        query = self._base_query(project_id, scan_id, target_id, search)
-        query = (
-            query.order_by(HttpAsset.host, HttpAsset.port).limit(limit).offset(offset)
-        )
-        result = await self.session.execute(query)
-        return [self._to_read(a) for a in result.scalars().all()]
-
-    async def summary(
-        self,
-        project_id: UUID,
-        scan_id: UUID | None = None,
-        target_id: UUID | None = None,
-    ) -> HttpAssetSummary:
-        where = self._filters(project_id, scan_id, target_id, None)
-        totals = (
-            await self.session.execute(
-                select(
-                    func.count(),
-                    func.count().filter(HttpAsset.is_cdn.is_(True)),
-                ).where(*where)
-            )
-        ).one()
-        status_rows = (
-            await self.session.execute(
-                select(HttpAsset.status_code, func.count())
-                .where(*where, HttpAsset.status_code.isnot(None))
-                .group_by(HttpAsset.status_code)
-            )
-        ).all()
-        tech = func.jsonb_array_elements_text(
-            cast(HttpAsset.tech, JSONB)
-        ).column_valued("v")
-        tech_rows = (
-            await self.session.execute(
-                select(tech, func.count())
-                .select_from(HttpAsset)
-                .where(*where)
-                .group_by(tech)
-            )
-        ).all()
-        return HttpAssetSummary(
-            total=int(totals[0] or 0),
-            by_status={str(code): int(n) for code, n in status_rows},
-            by_tech={str(name): int(n) for name, n in tech_rows},
-            cdn=int(totals[1] or 0),
-        )

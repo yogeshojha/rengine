@@ -42,7 +42,7 @@
 	{/if}
 {/snippet}
 
-<Tabs.Root {value} onValueChange={(v) => v && onChange?.(v)}>
+<Tabs.Root {value} onValueChange={(v) => v && onChange?.(v)} class="min-w-0 max-w-full">
 	<ScrollArea.Root orientation="horizontal" class="w-full">
 		<Tabs.List class="-mb-px h-auto w-full justify-start gap-0 rounded-none bg-transparent p-0">
 			{#each tabs as tab (tab.key)}

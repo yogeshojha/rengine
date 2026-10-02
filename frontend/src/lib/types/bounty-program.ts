@@ -1,3 +1,5 @@
+import type { OrganizationSummary } from './target';
+
 export enum BountyPlatform {
 	HackerOne = 'hackerone',
 	Bugcrowd = 'bugcrowd',
@@ -84,7 +86,6 @@ export interface BountyScope {
 	id: string;
 	asset_type: string;
 	asset_type_label: string;
-	asset_group: AssetGroup;
 	icon: string;
 	asset_identifier: string;
 	scope_state: ScopeState;
@@ -115,11 +116,8 @@ export interface BountyProgram {
 	raw_state: string | null;
 	raw_state_label: string;
 	joined: boolean;
-	joined_at: string | null;
 	submission_state: SubmissionState;
 	offers_bounties: boolean;
-	open_scope: boolean | null;
-	gold_standard_safe_harbor: boolean | null;
 	currency: string | null;
 	started_accepting_at: string | null;
 	bookmarked: boolean;
@@ -159,10 +157,7 @@ export interface PlatformCount {
 	source: ProgramSource;
 	programs: number;
 	private_programs: number;
-	feed_programs: number;
-	has_feed: boolean;
 	api_provider: string | null;
-	supports_private: boolean;
 	credential: string;
 	note: string;
 	configured: boolean;
@@ -201,7 +196,6 @@ export interface BountySettings {
 	feed_interval: SyncInterval;
 	feed_synced_at: string | null;
 	feed_next_sync_at: string | null;
-	feed_programs: number;
 	feed_source: string;
 	feed_url: string;
 	feed_license: string;
@@ -210,7 +204,6 @@ export interface BountySettings {
 	notifiable_events: string[];
 	last_synced_at: string | null;
 	next_sync_at: string | null;
-	programs: number;
 	events_recorded: number;
 }
 
@@ -222,28 +215,13 @@ export interface BountySettingsUpdate {
 }
 
 export interface BountyStatus {
-	configured: boolean;
-	platform: string;
-	username: string | null;
 	programs: number;
 	private_programs: number;
-	feed_programs: number;
-	has_feed: boolean;
 	last_synced_at: string | null;
 	sync_interval: SyncInterval;
-	next_sync_at: string | null;
 	unseen_events: number;
 	platforms: PlatformCount[];
 	source_counts: Record<string, number>;
-	feed_interval: SyncInterval;
-	feed_synced_at: string | null;
-	error: string | null;
-}
-
-export interface OrganizationSummary {
-	id: string;
-	name: string;
-	slug: string;
 }
 
 export interface BountyImportResult {

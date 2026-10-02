@@ -8,6 +8,7 @@
 	import { formatDateTime } from '$lib/utilities/dates';
 	import { durationLabel } from '$lib/utilities/scan-status';
 	import { plannedStages } from '$lib/utilities/scan-progress';
+	import { plural } from '$lib/utilities/strings';
 	import type { ScanRead } from '$lib/types/scan';
 
 	interface Props {
@@ -30,8 +31,8 @@
 		['Scope', scan.scope === 'focused' ? `Focused · ${scan.seed_count} assets` : 'Full'],
 		['Context', scan.context_name ?? NO_CONTEXT_LABEL],
 		['Authentication', scan.auth_summary],
-		['Protocol', HTTP_PROTOCOL_LABELS[cfg.http_protocol] || 'HTTP and HTTPS'],
-		['Exclusions', exclusions ? `${exclusions} ${exclusions === 1 ? 'rule' : 'rules'}` : 'None'],
+		['Protocol', HTTP_PROTOCOL_LABELS[cfg.http_protocol] ?? cfg.http_protocol],
+		['Exclusions', exclusions ? plural(exclusions, 'rule') : 'None'],
 		[
 			'Rate ceiling',
 			cfg.global_rate_limit_ceiling ? `${cfg.global_rate_limit_ceiling} req/s` : 'None'

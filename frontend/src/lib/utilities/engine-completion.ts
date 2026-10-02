@@ -4,11 +4,11 @@ import type { EngineCatalog, StageCatalogEntry, StageField } from '$lib/types/sc
 import { INTENSITIES, INTENSITY_HELP } from '$lib/types/scan-engine';
 
 const TOP_LEVEL: { name: string; detail: string; info: string }[] = [
-	{ name: 'name', detail: 'string', info: 'What this engine is called.' },
-	{ name: 'description', detail: 'string', info: 'Optional note about what it is for.' },
+	{ name: 'name', detail: 'string', info: 'Engine name.' },
+	{ name: 'description', detail: 'string', info: 'Engine description.' },
 	{
 		name: 'intensity',
-		detail: 'passive | normal | aggressive',
+		detail: INTENSITIES.join(' | '),
 		info: 'Passive blocks every stage that sends traffic to the target.'
 	},
 	{ name: 'stages', detail: 'mapping', info: 'Per-stage settings, keyed by stage name.' }
@@ -111,7 +111,7 @@ export function engineCompletion(getCatalog: () => EngineCatalog | null) {
 		const stage: StageCatalogEntry | undefined =
 			path[0] === 'stages' && path[1] ? catalog.stages.find((s) => s.name === path[1]) : undefined;
 
-		// value position — after "key:" on this line
+		// value position
 		const afterKey = /^\s*([\w-]+):\s+(\S*)$/.exec(upto);
 		if (afterKey) {
 			const [, key, typed] = afterKey;

@@ -11,7 +11,8 @@ from reports.registry import SectionSpec
 from reports.registry import section as lookup_section
 from reports.render.css import stylesheet
 from reports.render.env import environment
-from shared.definitions.report_theme import HeadingStyle
+from shared.definitions.report_theme import HeadingStyle, TableStyle
+from shared.definitions.reports import SECTION_GROUP_LABELS
 from shared.logging import get_logger
 
 logger = get_logger(__name__)
@@ -51,8 +52,6 @@ def _wrap(
     title: str,
     anchor: str,
     number: str,
-    kicker: str,
-    lede: str,
 ) -> str:
     heading = ctx.theme.layout.heading
     if heading == HeadingStyle.NUMBERED.value and not ctx.style.section_numbering:
@@ -62,21 +61,40 @@ def _wrap(
         title=title,
         anchor=anchor,
         number=number if heading == HeadingStyle.NUMBERED.value else "",
-        kicker=kicker if heading == HeadingStyle.KICKER.value else "",
-        lede=lede,
+        kicker=SECTION_GROUP_LABELS.get(spec.group, "")
+        if heading == HeadingStyle.KICKER.value
+        else "",
         heading_style=heading,
         flow=spec.page_break == "flow",
     )
 
 
+def _body(env, ctx: RenderContext, spec: SectionSpec, config, payload: dict) -> str:
+    if spec.name == _TOC_SECTION:
+        return ""
+    return env.get_template(spec.section_cls.template_name()).render(
+        ctx=ctx, cfg=config, **payload
+    )
+
+
+def _table_style(ctx: RenderContext) -> str:
+    style = ctx.theme.layout.table
+    if style == TableStyle.ZEBRA.value and not ctx.style.table_zebra:
+        return TableStyle.HAIRLINE.value
+    return style
+
+
 def _fill_contents(
-    env, ctx: RenderContext, doc: RenderedDocument, blocks: list[str], slots: list[int]
+    env,
+    ctx: RenderContext,
+    doc: RenderedDocument,
+    blocks: list[str],
+    slots: list[tuple[int, dict]],
 ) -> None:
     spec = lookup_section(_TOC_SECTION)
     if spec is None:
         return
-    for slot in slots:
-        payload = spec.instance().build(ctx, spec.config({})) or {}
+    for slot, payload in slots:
         blocks[slot] = env.get_template(spec.section_cls.template_name()).render(
             ctx=ctx, entries=doc.entries, **payload
         )
@@ -87,7 +105,7 @@ def render_html(ctx: RenderContext) -> RenderedDocument:
     env = environment()
     doc = RenderedDocument(html="")
     blocks: list[str] = []
-    toc_slots: list[int] = []
+    toc_slots: list[tuple[int, dict]] = []
     counter = 0
 
     for index, entry in enumerate(ctx.spec.sections):
@@ -106,6 +124,11 @@ def render_html(ctx: RenderContext) -> RenderedDocument:
         try:
             config = spec.config(entry.config)
             payload = instance.build(ctx, config)
+            if payload is not None:
+                built_title = payload.pop("title", "")
+                subs = payload.pop("toc_subs", None) or []
+                bare = bool(payload.pop("bare", False))
+                body = _body(env, ctx, spec, config, payload)
         except Exception as exc:
             logger.warning("section failed", section=spec.name, error=str(exc)[:300])
             doc.warnings.append(f"{spec.title} not rendered: {exc}")
@@ -115,53 +138,37 @@ def render_html(ctx: RenderContext) -> RenderedDocument:
             doc.skipped.append(spec.name)
             continue
 
-        title = (entry.title or payload.pop("title", "") or spec.title).strip()
+        title = (entry.title or built_title or spec.title).strip()
         anchor = f"s{index}-{slug(spec.name)}"
         number = ""
         if spec.in_toc:
             counter += 1
             number = str(counter)
             doc.entries.append(TocEntry(title=title, anchor=anchor, number=number))
-            for sub_title, sub_anchor in payload.pop("toc_subs", []) or []:
+            for sub_title, sub_anchor in subs:
                 doc.entries.append(
                     TocEntry(title=sub_title, anchor=sub_anchor, level=2)
                 )
 
         if spec.name == _TOC_SECTION:
             blocks.append("")
-            toc_slots.append(len(blocks) - 1)
+            toc_slots.append((len(blocks) - 1, payload))
             continue
 
-        bare = bool(payload.pop("bare", False))
-        kicker = payload.pop("kicker", "") or spec.group.replace("_", " ")
-        lede = payload.pop("lede", "")
-        body = env.get_template(spec.section_cls.template_name()).render(
-            ctx=ctx, cfg=config, **payload
-        )
         blocks.append(
             body
             if bare
-            else _wrap(
-                env,
-                ctx,
-                spec,
-                body,
-                title=title,
-                anchor=anchor,
-                number=number,
-                kicker=kicker,
-                lede=lede,
-            )
+            else _wrap(env, ctx, spec, body, title=title, anchor=anchor, number=number)
         )
         doc.rendered.append(spec.name)
 
     _fill_contents(env, ctx, doc, blocks, toc_slots)
 
-    doc.warnings.extend(ctx.warnings)
     doc.faces = font_faces(ctx.data.session)
     doc.html = env.get_template("document.html").render(
         spec=ctx.spec,
         blocks=blocks,
+        table_style=_table_style(ctx),
         stylesheet=stylesheet(
             ctx.theme,
             ctx.style,

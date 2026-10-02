@@ -8,6 +8,7 @@
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import FormField from '$lib/components/form-field.svelte';
 	import CodeBlock from '$lib/components/code-block.svelte';
+	import SectionHead from '$lib/components/section-head.svelte';
 	import LadderPick from '$lib/components/access/ladder-pick.svelte';
 	import { mcp } from '$lib/stores/mcp.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
@@ -20,6 +21,7 @@
 		ceilingKeys,
 		grantsUpTo,
 		ladderLevel,
+		regrant,
 		type McpStatus,
 		type McpToken,
 		type McpTokenCreated
@@ -35,7 +37,6 @@
 
 	let { open = $bindable(), status, editing, titles }: Props = $props();
 
-	const LABEL = 'text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase';
 	const DEFAULT_EXPIRY = '30';
 
 	let client = $state('');
@@ -115,9 +116,11 @@
 	async function submit() {
 		saving = true;
 		const project = projectId === SELECT_NONE ? null : projectId;
-		const capabilities = grantsUpTo(level, allowed);
 		if (editing) {
-			const ok = await mcp.updateToken(editing.id, { project_id: project, capabilities });
+			const ok = await mcp.updateToken(editing.id, {
+				project_id: project,
+				capabilities: regrant(level, editing.capabilities, allowed)
+			});
 			saving = false;
 			if (ok) close();
 			return;
@@ -125,7 +128,7 @@
 		created = await mcp.createToken({
 			name: name.trim(),
 			project_id: project,
-			capabilities,
+			capabilities: grantsUpTo(level, allowed),
 			expires_in_days: expiry === 'never' ? null : Number(expiry)
 		});
 		shownClient = client || (created?.clients[0]?.key ?? '');
@@ -236,7 +239,7 @@
 				<div class="flex flex-col divide-y px-5">
 					{#if !editing}
 						<section class="flex flex-col gap-2.5 py-5">
-							<h3 class={LABEL}>Client</h3>
+							<SectionHead title="Client" />
 							<div class="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
 								{#each status.clients as c (c.key)}
 									<button

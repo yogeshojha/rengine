@@ -1,4 +1,4 @@
-"""Match the software an asset reports against the NVD corpus. Nothing is sent to the asset."""
+"""Match the software an asset reports against the NVD corpus."""
 
 from __future__ import annotations
 
@@ -26,14 +26,19 @@ from shared.definitions.software import (
     VersionSource,
 )
 from shared.definitions.threat_intel import (
+    BANDS_BY_KEY,
     SIGNALS_BY_KIND,
     ExploitSignal,
     exploit_score,
 )
-from shared.definitions.vulnerabilities import SUPPRESSED_STATES, Severity
+from shared.definitions.vulnerabilities import (
+    SEVERITY_ORDER,
+    SUPPRESSED_STATES,
+    Severity,
+)
 from shared.enums.scan import ScanScope, ScanStatus
 from shared.logging import get_logger
-from shared.models.software import SoftwareComponentRead, SoftwareCoverage
+from shared.models.software import SoftwareCoverage
 from shared.services import locks
 from shared.services.asset_query.lead_cache import bump_sync
 from shared.utils.datetime import utc_now
@@ -46,9 +51,8 @@ from shared.utils.software import (
 
 logger = get_logger(__name__)
 
-LIKELY_EPSS = 0.088
+LIKELY_EPSS = BANDS_BY_KEY["likely"].floor
 _BACKFILL_CHUNK = 2000
-_MAX_UNMAPPED_SHOWN = 25
 MAX_EXPOSURES_REPORTED = 200
 
 _HAD_PREVIOUS = "SELECT EXISTS (SELECT 1 FROM software_cves WHERE scan_id = :scan_id)"
@@ -171,6 +175,7 @@ SELECT matched.*,
             WHEN json_array_length(matched.caveats) >= :medium_caveats THEN cast(:medium AS varchar)
             ELSE cast(:high AS varchar) END AS confidence
   FROM (
+SELECT * FROM (
 SELECT DISTINCT ON (fingerprint) * FROM (
     SELECT
         gen_random_uuid() AS id,
@@ -233,6 +238,12 @@ SELECT DISTINCT ON (fingerprint) * FROM (
     LEFT JOIN kev_entries k ON k.cve = m.cve
 ) rows
 ORDER BY fingerprint
+) deduped
+ORDER BY is_kev DESC,
+         array_position(cast(:severities AS varchar[]), severity),
+         epss_score DESC NULLS LAST,
+         cvss_score DESC NULLS LAST,
+         fingerprint
 LIMIT :cap
 ) matched
 """
@@ -591,7 +602,6 @@ def match_scan(
         components=len(components) + len(unmapped),
         mapped=len(components),
         unmapped=len(unmapped),
-        unmapped_names=_unmapped_read(unmapped),
     )
     if not components:
         session.execute(
@@ -650,6 +660,7 @@ def match_scan(
             "fingerprint_source": VersionSource.FINGERPRINT.value,
             "coarse": Caveat.COARSE.value,
             "cap": MAX_MATCHES_PER_SCAN,
+            "severities": list(SEVERITY_ORDER),
         },
     )
     coverage.findings = int(
@@ -712,22 +723,6 @@ def match_scan(
         newly_exposed=exposed_total,
     )
     return MatchResult(coverage=coverage, exposed=exposed, exposed_total=exposed_total)
-
-
-def _unmapped_read(unmapped: list[tuple[str, str]]) -> list[SoftwareComponentRead]:
-    counts: dict[tuple[str, str], int] = {}
-    for name, source in unmapped:
-        counts[(name, source)] = counts.get((name, source), 0) + 1
-    ordered = sorted(counts.items(), key=lambda item: -item[1])[:_MAX_UNMAPPED_SHOWN]
-    return [
-        SoftwareComponentRead(
-            name=name,
-            version_source=source or VersionSource.FINGERPRINT.value,
-            mapped=False,
-            assets=count,
-        )
-        for (name, source), count in ordered
-    ]
 
 
 _LATEST_SCANS = """

@@ -28,15 +28,15 @@ export const KIND_LABELS: Record<NewKindKey, string> = {
 	[NewKind.TARGET]: 'Targets'
 };
 
-export const KIND_NOUN: Record<NewKindKey, [string, string]> = {
-	[NewKind.FINDING]: ['finding', 'findings'],
-	[NewKind.PROGRAM]: ['program', 'programs'],
-	[NewKind.SCOPE]: ['asset in scope', 'assets in scope'],
-	[NewKind.OUT_OF_SCOPE]: ['asset out of scope', 'assets out of scope'],
-	[NewKind.BOUNTY_TABLE]: ['bounty change', 'bounty changes'],
-	[NewKind.RULES]: ['rule change', 'rule changes'],
-	[NewKind.CERT_HOST]: ['certificate host', 'certificate hosts'],
-	[NewKind.TARGET]: ['target', 'targets']
+export const KIND_SUMMARY: Record<NewKindKey, [string, string]> = {
+	[NewKind.FINDING]: ['{n} finding', '{n} findings'],
+	[NewKind.PROGRAM]: ['{n} program', '{n} programs'],
+	[NewKind.SCOPE]: ['{n} asset added to scope', '{n} assets added to scope'],
+	[NewKind.OUT_OF_SCOPE]: ['{n} asset left scope', '{n} assets left scope'],
+	[NewKind.BOUNTY_TABLE]: ['Bounty table changed', '{n} bounty changes'],
+	[NewKind.RULES]: ['Rules changed', '{n} rule changes'],
+	[NewKind.CERT_HOST]: ['{n} new host in certificate logs', '{n} new hosts in certificate logs'],
+	[NewKind.TARGET]: ['{n} target', '{n} targets']
 };
 
 export const SCAN_KINDS: ReadonlySet<string> = new Set([NewKind.FINDING]);
@@ -44,7 +44,6 @@ export const BOUNTY_KINDS: ReadonlySet<string> = new Set(
 	KIND_ORDER.filter((k) => !SCAN_KINDS.has(k))
 );
 export const TERMS_KINDS: ReadonlySet<string> = new Set([NewKind.BOUNTY_TABLE, NewKind.RULES]);
-export const GONE_KINDS: ReadonlySet<string> = new Set([NewKind.OUT_OF_SCOPE]);
 export const SELECTABLE_KINDS: ReadonlySet<string> = new Set([
 	NewKind.SCOPE,
 	NewKind.CERT_HOST,
@@ -84,10 +83,10 @@ export const Fact = {
 } as const;
 
 export const NEW_WINDOWS = [
-	{ key: 'since', label: 'Since caught up' },
-	{ key: '24h', label: '24h' },
-	{ key: '7d', label: '7d' },
-	{ key: '30d', label: '30d' }
+	{ key: 'since', label: 'Since caught up', words: 'since caught up' },
+	{ key: '24h', label: '24h', words: '24 hours' },
+	{ key: '7d', label: '7d', words: '7 days' },
+	{ key: '30d', label: '30d', words: '30 days' }
 ] as const;
 export type NewWindowKey = (typeof NEW_WINDOWS)[number]['key'];
 export const SINCE_KEY: NewWindowKey = 'since';

@@ -7,7 +7,6 @@ import json
 import uuid
 from collections.abc import Collection
 from dataclasses import dataclass
-from datetime import datetime
 
 from shared.logging import get_logger
 from shared.redis import async_client
@@ -19,15 +18,13 @@ logger = get_logger(__name__)
 SESSION_KEY = "mcp:session:{token_id}:{client}"
 SESSION_INDEX = "mcp:sessions"
 CALLS_KEY = "mcp:calls"
-COUNTER_KEY = "mcp:calls:{day}"
-CLIENT_COUNTER_KEY = "mcp:calls:{day}:{client}"
 
 SESSION_TTL = 300
 CALLS_KEPT = 200
 CALLS_TTL = 7 * 24 * 3600
-COUNTER_TTL = 2 * 24 * 3600
 ARGS_MAX = 200
 SUMMARY_MAX = 240
+TOOL_NAME_MAX = 64
 LIST_SHOWN = 5
 _SECRET_NAMES = ("token", "secret", "password", "header", "cookie", "auth", "key")
 
@@ -71,30 +68,15 @@ def clip(value: str | None, limit: int = SUMMARY_MAX) -> str | None:
     return strip_control(value)[:limit] if value else None
 
 
-async def touch(
-    *,
-    token_id: uuid.UUID,
-    token_name: str,
-    client: str,
-    capabilities: list[str],
-    tool: str | None,
-) -> None:
+async def touch(*, token_id: uuid.UUID, client: str) -> None:
     key = SESSION_KEY.format(token_id=token_id, client=_slug(client))
-    now = utc_now()
+    payload = {
+        "token_id": str(token_id),
+        "client": client,
+        "last_seen": utc_now().isoformat(),
+    }
     try:
         redis = async_client()
-        raw = await redis.get(key)
-        existing = json.loads(raw) if raw else {}
-        payload = {
-            "token_id": str(token_id),
-            "token_name": token_name,
-            "client": client,
-            "capabilities": capabilities,
-            "first_seen": existing.get("first_seen", now.isoformat()),
-            "last_seen": now.isoformat(),
-            "calls": int(existing.get("calls", 0)) + (1 if tool else 0),
-            "last_tool": tool or existing.get("last_tool"),
-        }
         await redis.set(key, json.dumps(payload), ex=SESSION_TTL)
         await redis.sadd(SESSION_INDEX, key)
         await redis.expire(SESSION_INDEX, SESSION_TTL * 4)
@@ -144,9 +126,8 @@ async def drop(token_id: uuid.UUID) -> int:
 
 
 async def record(call: CallRecord) -> None:
-    now = utc_now()
     entry = {
-        "at": now.isoformat(),
+        "at": utc_now().isoformat(),
         "token_id": str(call.token_id),
         "token_name": call.token_name,
         "client": call.client,
@@ -166,13 +147,6 @@ async def record(call: CallRecord) -> None:
         await redis.lpush(CALLS_KEY, json.dumps(entry))
         await redis.ltrim(CALLS_KEY, 0, CALLS_KEPT - 1)
         await redis.expire(CALLS_KEY, CALLS_TTL)
-        day = now.date().isoformat()
-        for counter in (
-            COUNTER_KEY.format(day=day),
-            CLIENT_COUNTER_KEY.format(day=day, client=_slug(call.client)),
-        ):
-            await redis.incr(counter)
-            await redis.expire(counter, COUNTER_TTL)
     except Exception as exc:
         logger.debug("mcp call telemetry skipped", error=str(exc))
 
@@ -198,27 +172,6 @@ async def recent(
         if len(entries) >= limit:
             break
     return entries
-
-
-async def calls_today(without: Collection[str] = ()) -> int:
-    day = utc_now().date().isoformat()
-    keys = [COUNTER_KEY.format(day=day)]
-    keys += [CLIENT_COUNTER_KEY.format(day=day, client=_slug(c)) for c in without]
-    try:
-        values = await async_client().mget(keys)
-    except Exception:
-        return 0
-    total = int(values[0] or 0)
-    return max(0, total - sum(int(v or 0) for v in values[1:]))
-
-
-async def last_call_at(without: Collection[str] = ()) -> datetime | None:
-    entries = await recent(1, without=without)
-    if not entries:
-        return None
-    with contextlib.suppress(ValueError, TypeError):
-        return datetime.fromisoformat(entries[0]["at"])
-    return None
 
 
 def _wanted(value: str | None, client: str | None, without: Collection[str]) -> bool:

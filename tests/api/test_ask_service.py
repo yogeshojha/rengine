@@ -428,15 +428,12 @@ async def test_brief_states_the_verdict_and_availability(ready, estate, monkeypa
     assert brief.verdict == Verdict.LIKELY.value
     assert brief.available is True
     assert brief.model == "claude-opus-5"
-    assert brief.estimate_usd is not None
-    assert brief.estimate_usd > 0
     assert any(f.lines == [5] for f in brief.facts)
 
     monkeypatch.setattr(ask_service, "load_config_async", _cfg_loader(None))
     off = await service.brief(estate.scans["run"], ready["vuln_id"])
     assert off.available is False
     assert off.off_reason == "AI is switched off."
-    assert off.estimate_usd is None
     assert off.verdict == brief.verdict
 
     assert await service.brief(uuid.uuid4(), ready["vuln_id"]) is None

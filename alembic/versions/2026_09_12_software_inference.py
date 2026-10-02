@@ -143,18 +143,6 @@ def upgrade() -> None:
         sa.Column("software", sa.JSON(), nullable=False, server_default="[]"),
     )
 
-    # a Server header states the version inside the product string
-    op.execute(
-        r"""
-        UPDATE ports
-           SET version = substring(product from '^[^/\s]+/(\d[\w.+\-]*)'),
-               product = substring(product from '^([^/\s]+)')
-         WHERE product IS NOT NULL
-           AND (version IS NULL OR version = '')
-           AND product ~ '^[^/\s]+/\d'
-        """
-    )
-
 
 def downgrade() -> None:
     op.drop_column("http_assets", "software")

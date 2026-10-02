@@ -1,14 +1,26 @@
-"""Shipped themes are indexed from disk on read."""
-
 from __future__ import annotations
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
-from reports.theme import ThemeError, builtin_source, builtin_themes, parse
+from reports.theme import builtin_source, builtin_themes
 from shared.definitions.report_theme import ThemeOrigin, ThemeTokens
 from shared.definitions.reports import DEFAULT_THEME
 from shared.models.report import ReportTheme
 from shared.utils.datetime import utc_now
+
+
+def builtin_values(tokens: ThemeTokens, source: str) -> dict:
+    return {
+        "name": tokens.name,
+        "description": tokens.description,
+        "author": tokens.author,
+        "version": tokens.version,
+        "origin": ThemeOrigin.BUILTIN.value,
+        "tokens": tokens.model_dump(),
+        "source": source,
+        "updated_at": utc_now(),
+    }
 
 
 def sync_builtin(session) -> int:
@@ -20,16 +32,7 @@ def sync_builtin(session) -> int:
             .scalars()
             .first()
         )
-        values = {
-            "name": tokens.name,
-            "description": tokens.description,
-            "author": tokens.author,
-            "version": tokens.version,
-            "origin": ThemeOrigin.BUILTIN.value,
-            "tokens": tokens.model_dump(),
-            "source": source,
-            "updated_at": utc_now(),
-        }
+        values = builtin_values(tokens, source)
         if row is None:
             session.add(ReportTheme(slug=slug, **values))
             changed += 1
@@ -39,7 +42,11 @@ def sync_builtin(session) -> int:
             session.add(row)
             changed += 1
     if changed:
-        session.commit()
+        try:
+            session.commit()
+        except IntegrityError:
+            session.rollback()
+            return 0
     return changed
 
 
@@ -59,10 +66,3 @@ def load(session, slug: str | None) -> ThemeTokens:
     if key in shipped:
         return shipped[key]
     return shipped.get(DEFAULT_THEME) or ThemeTokens(key=DEFAULT_THEME, name="Default")
-
-
-def validate(source: str, *, slug: str = "") -> ThemeTokens:
-    return parse(source, slug=slug)
-
-
-__all__ = ["ThemeError", "load", "sync_builtin", "validate"]

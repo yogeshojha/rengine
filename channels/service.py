@@ -16,7 +16,6 @@ from channels.base import DriverError
 from channels.identity import effective_capabilities
 from channels.models import (
     BotInfo,
-    ChannelCatalogEntry,
     ChannelChat,
     ChannelChatRead,
     ChannelChatUpdate,
@@ -24,8 +23,6 @@ from channels.models import (
     ChannelConfig,
     ChannelSettingsUpdate,
     ChannelStatus,
-    ChannelVerifyResult,
-    CommandArgRead,
     ListenerStatus,
     PairingApprove,
     PairingRequestRead,
@@ -33,12 +30,7 @@ from channels.models import (
 from channels.render import line
 from channels.telegram import driver as telegram_driver
 from mcp import telemetry
-from mcp.capabilities import (
-    ALWAYS_GRANTED,
-    CAPABILITY_LABELS,
-    normalize,
-    within_ceiling,
-)
+from mcp.capabilities import CAPABILITY_LABELS, normalize, within_ceiling
 from mcp.models import McpCallRead
 from mcp.service import capability_catalog
 from shared.definitions.channels import (
@@ -47,6 +39,7 @@ from shared.definitions.channels import (
     CHANNEL_ORDER,
     CHANNEL_PROVIDERS,
     MAX_CHATS,
+    MAX_DISPLAY,
     ChannelKind,
     ChatState,
 )
@@ -141,7 +134,6 @@ class ChannelService:
             .scalars()
             .all()
         )
-        calls = await self.calls()
         return ChannelStatus(
             channel=self.channel,
             label=self.label,
@@ -153,20 +145,13 @@ class ChannelService:
             listener=ListenerStatus(
                 reporting=bool(heartbeat),
                 running=bool(heartbeat.get("running")),
-                last_poll_at=_parse(heartbeat.get("last_poll_at")),
-                updates_seen=int(heartbeat.get("updates_seen") or 0),
                 last_error=heartbeat.get("last_error"),
-                last_error_at=_parse(heartbeat.get("last_error_at")),
             ),
             rate_limit_per_minute=cfg.rate_limit_per_minute,
             ceiling=cfg.ceiling,
             capabilities=capability_catalog(),
             chats_total=len(chats),
             chats_active=sum(1 for c in chats if c.state == ChatState.ACTIVE.value),
-            pending_total=len(await pairing.pending(self.channel)),
-            commands_total=len(commands.catalog()),
-            calls_recent=len(calls),
-            last_call_at=calls[0].at if calls else None,
             shared_notifications=await self._shared_notifications(),
         )
 
@@ -294,6 +279,9 @@ class ChannelService:
         if key is None:
             key = APIKey(provider=CHANNEL_PROVIDERS[self.channel], key_value="")
         key.key_value = encrypt_secret(token)
+        key.last_test_at = None
+        key.last_test_ok = None
+        key.last_test_message = None
         key.is_enabled = True
         key.updated_at = utc_now()
         self.session.add(key)
@@ -315,23 +303,6 @@ class ChannelService:
             .all()
         )
         return sum(1 for row in rows if not _config(row).get("bot_token"))
-
-    async def verify(self) -> ChannelVerifyResult:
-        row = await self.row()
-        secret = await self._token()
-        if secret is None:
-            error = f"No {self.label} API key is saved."
-            return ChannelVerifyResult(ok=False, error=error)
-        try:
-            info = await self._verify(secret)
-        except ChannelConfigError as exc:
-            return ChannelVerifyResult(ok=False, error=str(exc))
-        cfg = settings.read(row)
-        cfg.bot = info
-        settings.write(row, cfg)
-        self.session.add(row)
-        await self.session.commit()
-        return ChannelVerifyResult(ok=True, bot=info)
 
     async def _token(self) -> str | None:
         return await settings.bot_token(self.session, self.channel)
@@ -407,13 +378,13 @@ class ChannelService:
 
         request = await pairing.take(self.channel, code)
         if request is None:
-            msg = "The pairing code expired or was already used."
+            msg = "The pairing code expired or was used."
             raise ChannelConfigError(msg)
 
         row = await self._chat_by_external(request["external_id"])
         if row is None:
             row = ChannelChat(channel=self.channel, external_id=request["external_id"])
-        row.display = (request.get("display") or request["external_id"])[:120]
+        row.display = (request.get("display") or request["external_id"])[:MAX_DISPLAY]
         row.user_id = user.id
         row.project_id = project.id
         row.capabilities = granted
@@ -431,12 +402,12 @@ class ChannelService:
     async def block(self, code: str, admin_id: uuid.UUID) -> None:
         request = await pairing.take(self.channel, code)
         if request is None:
-            msg = "The pairing code expired or was already used."
+            msg = "The pairing code expired or was used."
             raise ChannelConfigError(msg)
         row = await self._chat_by_external(request["external_id"])
         if row is None:
             row = ChannelChat(channel=self.channel, external_id=request["external_id"])
-        row.display = (request.get("display") or request["external_id"])[:120]
+        row.display = (request.get("display") or request["external_id"])[:MAX_DISPLAY]
         row.state = ChatState.BLOCKED.value
         row.capabilities = []
         row.approved_by = admin_id
@@ -572,17 +543,12 @@ class ChannelService:
                 ChannelCommandRead(
                     name=spec.name,
                     tool=spec.tool,
-                    source=spec.source,
                     group=spec.group,
                     title=spec.title,
-                    description=spec.description,
                     capability=spec.capability,
                     touches_target=spec.touches_target,
-                    queued=spec.queued,
-                    value_field=spec.value_field,
-                    presets=dict(spec.presets),
+                    steps_up=spec.steps_up,
                     usage=spec.usage,
-                    args=[CommandArgRead(**arg) for arg in spec.args()],
                 )
             )
         return out
@@ -592,28 +558,8 @@ class ChannelService:
         return [McpCallRead(**entry) for entry in entries]
 
 
-async def catalog(session) -> list[ChannelCatalogEntry]:
-    out = []
-    for kind in CHANNEL_ORDER:
-        row = await session.get(ChannelConfig, kind)
-        cfg = settings.read(row)
-        heartbeat = await status.read(kind) or {}
-        out.append(
-            ChannelCatalogEntry(
-                channel=kind,
-                label=CHANNEL_LABELS[kind],
-                configured=await settings.bot_token(session, kind) is not None,
-                enabled=cfg.enabled,
-                running=bool(heartbeat.get("running")),
-            )
-        )
-    return out
-
-
 __all__ = [
-    "ALWAYS_GRANTED",
     "ChannelConfigError",
     "ChannelNotFoundError",
     "ChannelService",
-    "catalog",
 ]

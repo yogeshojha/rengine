@@ -12,11 +12,12 @@
 		open: boolean;
 		toolOptions: Record<string, string>;
 		tools: ToolOption[];
+		readonly?: boolean;
 		onOpenChange: (open: boolean) => void;
 		onChange: (toolOptions: Record<string, string>) => void;
 	}
 
-	let { open, toolOptions, tools, onOpenChange, onChange }: Props = $props();
+	let { open, toolOptions, tools, readonly = false, onOpenChange, onChange }: Props = $props();
 
 	let options = $derived(toolOptions ?? {});
 	let phases = $derived([...new Set(tools.map((t) => t.phase))]);
@@ -45,7 +46,7 @@
 					<AlertTriangle class="size-4" />
 					<AlertTitle>Advanced</AlertTitle>
 					<AlertDescription class="text-warning/90">
-						Flags are not validated. An invalid flag fails the tool and its stage.
+						An invalid flag fails the tool and its stage.
 					</AlertDescription>
 				</Alert>
 
@@ -60,6 +61,7 @@
 								<Input
 									id="tool-opt-{tool.name}"
 									value={options[tool.name] ?? ''}
+									{readonly}
 									oninput={(e) => handleInput(tool.name, e.currentTarget.value)}
 									placeholder={tool.example}
 									class="font-mono text-xs"
@@ -73,5 +75,8 @@
 				{/each}
 			</div>
 		</ScrollArea>
+		{#if readonly}
+			<p class="border-t px-5 py-2.5 text-xs text-muted-foreground">Editable by administrators.</p>
+		{/if}
 	</Sheet.Content>
 </Sheet.Root>

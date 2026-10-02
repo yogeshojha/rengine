@@ -12,6 +12,7 @@
 	import TechIcon from '../tech-icon.svelte';
 	import { SERVICE_CLASS_FILL, ServiceClass } from '$lib/config/service-classes';
 	import type { ScanExposure } from '$lib/utilities/services';
+	import { plural } from '$lib/utilities/strings';
 
 	interface Props {
 		exposure: ScanExposure | null;
@@ -29,9 +30,6 @@
 	const PASSIVE_FILTER = 'is:passive';
 	const NONSTANDARD_FILTER = 'is:http and not port:[80,443]';
 	const QUIET_FILTER = `class:${ServiceClass.WEB} and not is:http`;
-
-	const plural = (n: number, one: string, many: string) =>
-		`${n.toLocaleString()} ${n === 1 ? one : many}`;
 
 	function pick(filter: string) {
 		onTab(SVC.tab, filter);
@@ -166,7 +164,7 @@
 					<Button
 						variant="outline"
 						size="sm"
-						class="h-8 gap-1.5"
+						class="h-8 gap-1.5 max-sm:h-auto max-sm:min-h-8 max-sm:max-w-full max-sm:py-1 max-sm:text-left max-sm:whitespace-normal"
 						onclick={() => pick(NONSTANDARD_FILTER)}
 					>
 						{plural(exposure.nonstandard_web, 'web service', 'web services')} on non-standard ports
@@ -197,7 +195,7 @@
 					<Button
 						variant="link"
 						size="sm"
-						class="mt-auto h-auto gap-1 self-start px-0 text-xs"
+						class="mt-auto h-auto gap-1 self-start px-0 text-xs max-sm:max-w-full max-sm:text-left max-sm:whitespace-normal"
 						onclick={() => pick(QUIET_FILTER)}
 					>
 						{plural(exposure.web_services - exposure.answering_http, 'web port', 'web ports')} with no
@@ -245,7 +243,7 @@
 						<Button
 							variant="link"
 							size="sm"
-							class="mt-auto h-auto gap-1 self-start px-0 text-xs"
+							class="mt-auto h-auto gap-1 self-start px-0 text-xs max-sm:max-w-full max-sm:text-left max-sm:whitespace-normal"
 							onclick={() => pick(PASSIVE_FILTER)}
 						>
 							{plural(unconfirmed, 'unconfirmed port', 'unconfirmed ports')} reported by external scanners

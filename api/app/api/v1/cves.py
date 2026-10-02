@@ -1,4 +1,3 @@
-import re
 from typing import Annotated
 from uuid import UUID
 
@@ -8,11 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.services.cve_exposure import DEFAULT_PAGE_SIZE, CveExposureService
+from shared.definitions.vulnerabilities import CVE_ID
 from shared.models.cve_exposure import CveExposure, CveIndex
 
 router = APIRouter(prefix="/cves", tags=["cves"])
 
-CVE_PATTERN = re.compile(r"^CVE-\d{4}-\d{4,7}$", re.IGNORECASE)
 MAX_QUERY = 40
 
 
@@ -61,9 +60,9 @@ async def cve_exposure(
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
     cleaned = cve.strip().upper()
-    if not CVE_PATTERN.match(cleaned):
+    if not CVE_ID.match(cleaned):
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"{cve} is not a CVE identifier.",
         )
     return await service.exposure(project_id, cleaned)

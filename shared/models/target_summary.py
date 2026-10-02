@@ -35,12 +35,8 @@ class TargetRisk(BaseModel):
 
 
 class TargetMonitoring(BaseModel):
-    schedule_id: uuid.UUID
-    name: str
     cadence: str
-    status: str
     next_run_at: datetime | None = None
-    last_run_at: datetime | None = None
 
 
 class TargetSummaryRead(BaseModel):
@@ -49,12 +45,10 @@ class TargetSummaryRead(BaseModel):
     scans_running: int = 0
     scans_failed: int = 0
     first_scan_at: datetime | None = None
-    last_scan_at: datetime | None = None
     last_completed_at: datetime | None = None
     latest_scan: ScanRead | None = None
     surface: list[SurfaceMetric] = Field(default_factory=list)
     risk: TargetRisk = Field(default_factory=TargetRisk)
     sensitive_services: int | None = None
     inventory_total: int = 0
-    inventory_first_seen: datetime | None = None
     monitoring: TargetMonitoring | None = None

@@ -43,7 +43,6 @@ def run(
     with get_sync_session() as session:
         ctx = ToolContext(
             session=session,
-            user_id=uuid.UUID(user_id),
             project_id=uuid.UUID(project_id) if project_id else None,
         )
         try:

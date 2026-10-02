@@ -12,12 +12,13 @@
 	interface Props {
 		threads: AskThread[];
 		active: AskThread | null;
+		noun: string;
 		onPick: (thread: AskThread) => void;
 		onNew: () => void;
 		onClear: () => void;
 	}
 
-	let { threads, active, onPick, onNew, onClear }: Props = $props();
+	let { threads, active, noun, onPick, onNew, onClear }: Props = $props();
 </script>
 
 <DropdownMenu.Root>
@@ -40,7 +41,7 @@
 		onCloseAutoFocus={(e) => e.preventDefault()}
 	>
 		{#if threads.length}
-			<ScrollArea class="max-h-64">
+			<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-64">
 				<DropdownMenu.Group>
 					{#each threads as thread (thread.id)}
 						<DropdownMenu.Item
@@ -69,7 +70,7 @@
 			{#if threads.length}
 				<DropdownMenu.Item variant="destructive" onclick={onClear}>
 					<Eraser />
-					Clear history on this finding
+					Clear history on this {noun}
 				</DropdownMenu.Item>
 			{/if}
 		</DropdownMenu.Group>

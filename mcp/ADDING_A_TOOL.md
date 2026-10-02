@@ -1,9 +1,8 @@
 # Adding a tool
 
-One file in `mcp/tools/`. No registry to edit, no route to add, no frontend
-change. Drop the file in, restart the api, and the tool appears in `tools/list`,
-in the MCP page's Tools tab, and in every agent connected with a token that
-carries its capability.
+One file in `mcp/tools/`. No registry edit, no route and no frontend change.
+After an api restart the tool appears in `tools/list`, in the Tools sheet on the
+Agents page, and to every agent whose token carries its capability.
 
 ## The smallest possible tool
 
@@ -29,29 +28,34 @@ class CountTargets(Tool):
         return ToolResult(summary="12 targets")
 ```
 
-That is the whole contract. Everything else is optional.
+`name`, `title`, `description` and `run` are required. Every other attribute has
+a default.
 
 ## The full contract
 
 ```python
 class MyTool(Tool):
     name: str  # snake_case, unique across the server
-    title: str  # short human label, shown in the UI
-    description: str  # what the MODEL reads — write it for the model
-    capability = Capability.READ  # read | plan | write | launch
-    group = ToolGroup.INTERROGATE  # Orient | Interrogate | Explain | Act
-    destructive = False  # True if the call destroys data; sets destructiveHint
+    title: str  # short label shown in the UI
+    description: str  # the text the model reads
+    capability = Capability.READ.value  # read, plan, write or launch
+    group = ToolGroup.INTERROGATE.value  # Orient, Interrogate, Explain or Act
+    destructive = False  # the call destroys data; sets destructiveHint
+    command = None  # one short word for chat; None keeps the tool out of chat
+    value_field = ""  # the Input field a bare chat argument fills
     Input: type[ToolInput]  # pydantic model; becomes the JSON Schema
-    examples: tuple[str, ...]  # shown in the UI and docs, never to the model
+    examples: tuple[str, ...]  # shown in the UI and docs, not to the model
 
     async def run(self, ctx: ToolContext, args: Input) -> ToolResult: ...
 ```
 
 **`Input` is the single source of truth for arguments.** `model_json_schema()`
 becomes the `inputSchema` the model plans against, and the server validates every
-call with it before your `run` is reached — so `args` is always valid.
-`Field(description=...)` is the only place an argument is explained; do not
-restate it in the tool description.
+call with it before `run` is reached. `Field(description=...)` is the one place
+an argument is explained. The tool description does not restate it.
+
+The registry refuses a `command` outside `^[a-z][a-z0-9]{1,15}$`, a command two
+tools share, and a `value_field` that names no `Input` field.
 
 ```python
 class Input(ToolInput):
@@ -59,16 +63,16 @@ class Input(ToolInput):
     limit: int = Field(default=20, ge=1, le=100, description="Rows to return.")
 ```
 
-**`capability` is the security gate.** The server checks it before calling you,
+**`capability` is the security gate.** The server checks it before `run`,
 `tools/list` hides tools a token cannot use, and the instance ceiling can switch
-a whole capability off. Anything that sends traffic to a target must be
-`Capability.LAUNCH`; anything that writes to the database must be at least
-`Capability.WRITE`.
+a whole capability off. A tool that sends traffic to a target is
+`Capability.LAUNCH.value`. A tool that writes to the database is at least
+`Capability.WRITE.value`.
 
-## What you get: `ctx`
+## The context: `ctx`
 
 ```python
-ctx.session  # AsyncSession — call app.services.* directly
+ctx.session  # AsyncSession, for app.services.* calls
 ctx.token  # name, project_id, capabilities, issued_by
 ctx.ui_base_url  # for building links
 ctx.client  # the connected agent's name
@@ -78,15 +82,19 @@ ctx.scoped_projects()  # [project_id], or None for every project
 ctx.check_project(project_id)  # raise if outside the token's scope
 ```
 
-Import reNgine services *inside* `run`, not at module scope — a tool module that
-fails to import is skipped with a warning rather than breaking discovery:
+`mcp/tools/_scope.py` holds the shared helpers: `project_for` picks the project a
+project-wide tool acts on, `parse_id` reads a UUID argument and `operator`
+returns the user a change is attributed to.
+
+Import reNgine services inside `run`, not at module scope. A tool module that
+fails to import is skipped with a warning and discovery continues:
 
 ```python
 async def run(self, ctx, args):
     from app.services.subdomain import SubdomainService  # noqa: PLC0415
 ```
 
-## What you return: `ToolResult`
+## The result: `ToolResult`
 
 ```python
 ToolResult(
@@ -98,22 +106,20 @@ ToolResult(
 )
 ```
 
-Three of these carry reNgine's contract, and a tool that skips them is a worse
-tool:
+Three fields carry reNgine's contract:
 
-- **`pivot`** — the count is a promise. Whatever number is in `summary`, the link
-  must open exactly those rows. If you cannot produce such a link, do not report
-  a count.
-- **`caveats`** — say what the answer cannot tell you: a capped total, a
-  dimension that was never scanned, a figure from an older run.
-- **`untrusted`** — set it whenever `data` contains anything the scanned party
-  wrote (titles, banners, bodies, certificate subjects). It adds the instruction
-  that stops the model treating that text as a command.
+- **`pivot`**: the count is a promise. The link opens exactly the rows the
+  number in `summary` counts. A tool with no such link reports no count.
+- **`caveats`**: what the answer cannot state, such as a capped total, a
+  dimension that was not scanned or a figure from an older run.
+- **`untrusted`**: set whenever `data` holds text the scanned party wrote, such
+  as titles, banners, bodies and certificate subjects. It adds the instruction
+  that keeps the model from treating that text as a command.
 
 ## Errors
 
-Raise `ToolError` with a message written for the model. It comes back as a tool
-error the agent can act on, not a transport failure — and a good message teaches:
+Raise `ToolError` with a message written for the model. It returns as a tool
+error the agent can act on, not a transport failure:
 
 ```python
 raise ToolError(
@@ -121,30 +127,29 @@ raise ToolError(
 )
 ```
 
-Anything else you raise is logged and returned as a generic failure, so prefer
-`ToolError` wherever the caller could do something about it.
+Any other exception is logged and returned as `<title> failed: <message>`.
+`ToolError` is the right type wherever the caller can act on the message.
 
-## Working with the five dimensions
+## Working with result dimensions
 
-If your tool is per-dimension, use the adapter rather than branching:
+A per-dimension tool uses the adapter instead of branching:
 
 ```python
 from mcp.dimensions import dimension
 from mcp.tools._scope import resolve
 
-dim = dimension(
-    args.dimension
-)  # web_assets | ips | services | vulnerabilities | endpoints
-scope = await resolve(ctx, args.target)  # target + per-dimension coverage
-scan_id = scope.require(dim)  # raises with the "never scanned" message
+# web_assets, ips, services, vulnerabilities, endpoints or secrets
+dim = dimension(args.dimension)
+scope = await resolve(ctx, args.target)  # target and per-dimension coverage
+scan_id = scope.require(dim)  # raises when the dimension was not scanned
 
 f = dim.build_filter(args.query, limit=args.limit, offset=args.offset)
 page = await dim.search(ctx.session, scan_id, f, scope.project_id)
 rows = [dim.compact(row) for row in page.items]
 ```
 
-`scope.require(dim)` is what stops a tool reporting "0 findings" for a dimension
-nobody ever scanned. Use it rather than reaching for a scan id yourself.
+`scope.require(dim)` keeps a tool from reporting "0 findings" for a dimension no
+scan covered. A tool takes its scan id from it.
 
 ## Checklist
 
@@ -157,7 +162,7 @@ nobody ever scanned. Use it rather than reaching for a scan id yourself.
 - [ ] `untrusted=True` wherever target-written text is returned
 - [ ] `ruff check mcp` passes
 
-Then restart the api and confirm:
+After an api restart, confirm the tool is registered:
 
 ```bash
 docker compose exec -T api /app/.venv/bin/python -c \

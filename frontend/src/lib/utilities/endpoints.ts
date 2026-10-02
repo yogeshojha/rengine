@@ -558,7 +558,7 @@ export function whyReasons(interest: string[], limit = 2): string[] {
 }
 
 export function curlFor(e: { url: string; methods: string[] }): string {
-	const method = e.methods.find((m) => m !== 'GET') ?? 'GET';
+	const method = e.methods.find((m) => m !== 'GET' && /^[A-Z]+$/.test(m)) ?? 'GET';
 	const flag = method === 'GET' ? '' : ` -X ${method}`;
 	return `curl -sk${flag} '${e.url.replace(/'/g, "'\\''")}'`;
 }

@@ -8,6 +8,8 @@ function createTripwiresStore() {
 	let error = $state<string | null>(null);
 	let fetchedProjectId = $state<string | null>(null);
 	let catalogPending: Promise<void> | null = null;
+	let seq = 0;
+	let loadingFor: string | null = null;
 
 	return {
 		get tripwires() {
@@ -27,25 +29,34 @@ function createTripwiresStore() {
 		},
 
 		async fetch(projectId: string) {
-			if (isLoading) return;
+			if (isLoading && loadingFor === projectId) return;
+			const my = ++seq;
+			loadingFor = projectId;
 			isLoading = true;
 			error = null;
 			try {
-				tripwires = await tripwiresApi.list(projectId);
+				const rows = await tripwiresApi.list(projectId);
+				if (my !== seq) return;
+				tripwires = rows;
 				fetchedProjectId = projectId;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Tripwires not loaded';
+				if (my === seq) error = e instanceof Error ? e.message : 'Tripwires not loaded';
 			} finally {
-				isLoading = false;
+				if (my === seq) {
+					isLoading = false;
+					loadingFor = null;
+				}
 			}
 		},
 
 		async refresh() {
 			if (!fetchedProjectId) return;
+			const my = seq;
 			try {
-				tripwires = await tripwiresApi.list(fetchedProjectId);
+				const rows = await tripwiresApi.list(fetchedProjectId);
+				if (my === seq) tripwires = rows;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Tripwires not loaded';
+				if (my === seq) error = e instanceof Error ? e.message : 'Tripwires not loaded';
 			}
 		},
 
@@ -86,9 +97,11 @@ function createTripwiresStore() {
 		},
 
 		clear() {
+			seq++;
 			tripwires = [];
 			catalog = null;
 			isLoading = false;
+			loadingFor = null;
 			error = null;
 			fetchedProjectId = null;
 		}

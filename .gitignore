@@ -17,6 +17,10 @@ __pycache__/
 *$py.class
 .pytest_cache/
 .ruff_cache/
+.venv/
+.python-version
+.coverage
+htmlcov/
 
 # Temporary files
 *.tmp
@@ -26,7 +30,7 @@ __pycache__/
 **/build/
 **/*.egg-info/
 
-# Claude Code / agent tooling — working notes never ship
+# agent tooling
 CLAUDE.md
 CLAUDE.local.md
 NOTES.md
@@ -45,6 +49,6 @@ skills-lock.json
 scan_media/
 research/
 
-# backup archives carry SECRET_KEY, and therefore every stored credential
+# backup archives
 backups/
 *.tar

@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { fly } from 'svelte/transition';
 	import { activityFeed } from '$lib/stores/activity-feed.svelte';
 	import { sseStore } from '$lib/stores/sse.svelte';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
+	import { SCAN_STATUS_LABEL } from '$lib/utilities/scan-status';
 	import Activity from '@lucide/svelte/icons/activity';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import Hint from '$lib/components/hint.svelte';
@@ -46,7 +46,7 @@
 							>{solo.execution_config.target_value}</span
 						>
 						<span class="truncate font-medium"
-							>{soloStage ?? (solo.status === 'pending' ? 'queued' : 'running')}</span
+							>{soloStage ?? SCAN_STATUS_LABEL[solo.status].toLowerCase()}</span
 						>
 					{:else}
 						<span class="font-medium tabular-nums">{liveScans.summary}</span>
@@ -55,11 +55,9 @@
 				<Spinner class="h-3.5 w-3.5 text-info sm:hidden" />
 			{:else if latest}
 				<span class="hidden min-w-0 items-center gap-2 sm:flex">
-					{#key latest.id}
-						<span in:fly={{ y: -6, duration: 220 }} class="flex min-w-0 items-center">
-							<span class="max-w-[180px] truncate text-foreground/70">{latest.title}</span>
-						</span>
-					{/key}
+					<span class="flex min-w-0 items-center">
+						<span class="max-w-[180px] truncate text-foreground/70">{latest.title}</span>
+					</span>
 					<span class="shrink-0 font-mono text-2xs tabular-nums text-muted-foreground">
 						{timeLabel}
 					</span>
@@ -72,7 +70,6 @@
 
 			{#if activityFeed.newCount > 0}
 				<span
-					in:fly={{ y: -4, duration: 180 }}
 					class="ml-0.5 inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-info/15 px-1 text-2xs font-semibold text-info"
 				>
 					{activityFeed.newCount}

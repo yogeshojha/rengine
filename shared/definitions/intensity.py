@@ -78,27 +78,6 @@ RATE_TOOLS: tuple[str, ...] = tuple(
     tool for tool, (rate, _) in _NORMAL.items() if rate is not None
 )
 
-CUSTOM_INTENSITY = "custom"
-
-INTENSITY_LABELS: dict[str, str] = {
-    Intensity.PASSIVE.value: "Passive",
-    Intensity.NORMAL.value: "Normal",
-    Intensity.AGGRESSIVE.value: "Aggressive",
-    CUSTOM_INTENSITY: "Custom",
-}
-INTENSITY_TAGLINE: dict[str, str] = {
-    Intensity.PASSIVE.value: "No traffic to the target.",
-    Intensity.NORMAL.value: "Default rates for every tool.",
-    Intensity.AGGRESSIVE.value: "Higher rates and concurrency.",
-    CUSTOM_INTENSITY: "Rates and concurrency set per tool.",
-}
-INTENSITY_HELP: dict[str, str] = {
-    Intensity.PASSIVE.value: "Findings come from public sources only. No request reaches the target.",
-    Intensity.NORMAL.value: "150 requests a second per tool. 1,000 packets a second for the port scan.",
-    Intensity.AGGRESSIVE.value: "400 requests a second per tool. 3,000 packets a second for the port scan, and higher concurrency.",
-    CUSTOM_INTENSITY: "Rates and concurrency set per tool. An empty value uses the preset.",
-}
-
 
 def tool_threads(
     tool: str,
@@ -123,7 +102,7 @@ def tool_rate(
     rate_override: int | None = None,
     ceiling: int | None = None,
 ) -> int | None:
-    """The rate one tool runs at under this intensity, after the context's say."""
+    """The rate one tool runs at under this intensity, capped by the context ceiling."""
     base = PROFILES.get(intensity, _NORMAL).get(tool, (None, 1))[0]
     value = rate_override if rate_override is not None else base
     if value is None:
@@ -206,10 +185,6 @@ def clean_transport_overrides(raw: object) -> dict[str, dict[str, int]]:
 
 
 __all__ = [
-    "CUSTOM_INTENSITY",
-    "INTENSITY_HELP",
-    "INTENSITY_LABELS",
-    "INTENSITY_TAGLINE",
     "PROFILES",
     "RATE_TOOLS",
     "TOOL_RETRIES",

@@ -1,5 +1,6 @@
 """RIPEstat response parsers — update here if RIPEstat changes response format."""
 
+import re
 from datetime import datetime
 from typing import Any
 
@@ -23,6 +24,7 @@ from tools.ripestat.models import (
 logger = get_logger(__name__)
 
 _ASN_CATEGORY = "ASNs"
+_ASSIGNED_BY = re.compile(r"^Assigned by (.+)$")
 
 
 def _detect_ip_version(prefix: str) -> int:
@@ -117,11 +119,12 @@ def parse_asn_neighbours(data: dict[str, Any], asn: int) -> ASNNeighboursRespons
 def parse_as_overview(data: dict[str, Any], asn: int) -> ASOverviewResponse:
     """Parse /data/as-overview response."""
     block = data.get("block") or {}
+    assigned = _ASSIGNED_BY.match(str(block.get("desc") or "").strip())
 
     return ASOverviewResponse(
         asn=asn,
         holder=data.get("holder", ""),
-        rir=data.get("type"),  # not the RIR name
+        rir=assigned.group(1).strip() if assigned else None,
         announced=data.get("announced", False),
         block_name=block.get("name"),
         block_resource=block.get("resource"),

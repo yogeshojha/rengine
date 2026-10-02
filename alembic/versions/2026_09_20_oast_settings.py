@@ -16,28 +16,6 @@ down_revision: str | None = "b7c2e4a91d05"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
-_STRIP_STAGE_KEY = """
-UPDATE scan_engines
-   SET stages = jsonb_set(
-           stages::jsonb,
-           '{vulnerability_scan}',
-           (stages::jsonb -> 'vulnerability_scan') - 'interactsh_server' - 'interactsh'
-       )::json,
-       yaml_source = NULL
- WHERE stages::jsonb -> 'vulnerability_scan' ?| array['interactsh_server', 'interactsh']
-"""
-
-_STRIP_DAST_KEY = """
-UPDATE scan_engines
-   SET stages = jsonb_set(
-           stages::jsonb,
-           '{dast_scan}',
-           (stages::jsonb -> 'dast_scan') - 'interactsh'
-       )::json,
-       yaml_source = NULL
- WHERE stages::jsonb -> 'dast_scan' ? 'interactsh'
-"""
-
 
 def upgrade() -> None:
     op.add_column(
@@ -68,8 +46,6 @@ def upgrade() -> None:
             "oast_wait_seconds", sa.Integer(), nullable=False, server_default="60"
         ),
     )
-    op.execute(_STRIP_STAGE_KEY)
-    op.execute(_STRIP_DAST_KEY)
 
 
 def downgrade() -> None:

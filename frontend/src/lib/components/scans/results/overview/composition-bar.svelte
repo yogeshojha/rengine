@@ -1,5 +1,6 @@
 <script lang="ts">
 	import * as Tooltip from '$lib/components/ui/tooltip';
+	import { percentLabel } from '$lib/utilities/strings';
 
 	export interface Segment {
 		key: string;
@@ -22,10 +23,7 @@
 	const MIN_BAR_SEGMENTS = 2;
 
 	const pct = (n: number) => (total > 0 ? (n / total) * 100 : 0);
-	const pctLabel = (n: number) => {
-		const p = pct(n);
-		return p > 0 && p < 1 ? '<1%' : `${Math.round(p)}%`;
-	};
+	const pctLabel = (n: number) => percentLabel(pct(n));
 </script>
 
 <div class="flex flex-col gap-3">

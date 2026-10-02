@@ -255,17 +255,30 @@ def _normalize_title(title: str) -> str:
     return re.sub(r"[^\w ]+", " ", title.strip().lower())
 
 
+_PHRASES = tuple(
+    (" ".join(_normalize_title(phrase).split()), source)
+    for phrase, source in GENERIC_TITLE_PHRASES.items()
+)
+
+
+@lru_cache(maxsize=PURE_CACHE)
+def _title_source(title: str) -> tuple[str | None, frozenset[int]]:
+    normalized = " ".join(_normalize_title(title).split())
+    if len(normalized) < _MIN_TITLE_LENGTH or normalized.isdigit():
+        return "the server", frozenset()
+    for phrase, source in _PHRASES:
+        if phrase in normalized:
+            return source, frozenset()
+    return None, frozenset(int(m.group(1)) for m in _STATUS_CODE.finditer(normalized))
+
+
 def generic_page(title: str | None, statuses: Iterable[int | None] = ()) -> str | None:
     """Who wrote the page, when the title is not the application's own."""
     if not title or not title.strip():
         return "the server"
-    normalized = " ".join(_normalize_title(title).split())
-    if len(normalized) < _MIN_TITLE_LENGTH or normalized.isdigit():
-        return "the server"
-    for phrase, source in GENERIC_TITLE_PHRASES.items():
-        if " ".join(_normalize_title(phrase).split()) in normalized:
-            return source
-    codes = {int(m.group(1)) for m in _STATUS_CODE.finditer(normalized)}
+    source, codes = _title_source(title)
+    if source is not None:
+        return source
     answered = {code for code in statuses if code is not None}
     if codes and answered and codes <= answered:
         return "the server"

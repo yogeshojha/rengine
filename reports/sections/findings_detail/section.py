@@ -3,11 +3,14 @@ from __future__ import annotations
 from reports.analysis.engine import build_issues
 from reports.base import RenderContext, Section
 from reports.config import SectionConfig, choice, flag, limit, multi
+from reports.registry import section as lookup_section
 from shared.definitions.compliance import FRAMEWORK_BY_KEY
 from shared.definitions.reports import MAX_EVIDENCE_CHARS, SectionGroup
 from shared.definitions.surface import SurfaceDimension
-from shared.definitions.vulnerabilities import SEVERITY_ORDER, Severity
+from shared.definitions.vulnerabilities import SEVERITY_LABELS, SEVERITY_ORDER, Severity
 from shared.utils.text import strip_control
+
+_APPENDIX = "appendix_assets"
 
 
 class FindingsDetailConfig(SectionConfig):
@@ -19,13 +22,15 @@ class FindingsDetailConfig(SectionConfig):
     severities: list[str] = multi(
         [s for s in SEVERITY_ORDER if s != Severity.UNKNOWN.value],
         title="Severities included",
-        options={s: s.title() for s in SEVERITY_ORDER},
+        options={s: SEVERITY_LABELS[s] for s in SEVERITY_ORDER},
     )
     detail_from: str = choice(
         Severity.MEDIUM.value,
         title="Full detail down to",
         description="Evidence and impact are shown at or above this severity.",
-        options={s: s.title() for s in SEVERITY_ORDER if s != Severity.UNKNOWN.value},
+        options={
+            s: SEVERITY_LABELS[s] for s in SEVERITY_ORDER if s != Severity.UNKNOWN.value
+        },
     )
     roll_up_info: bool = flag(
         True,
@@ -89,11 +94,16 @@ class FindingsDetailSection(Section):
 
         rows = []
         subs: list[tuple[str, str]] = []
+        budget = ctx.spec.narrative.max_explained_issues
         for index, issue in enumerate(issues):
             full = rank.get(issue.severity, len(SEVERITY_ORDER)) <= cut
             anchor = f"f-{index}-{issue.template_id.replace('/', '-')[:48]}"
             subs.append((issue.name, anchor))
             sample = issue.findings[0]
+            explainer = ""
+            if full and budget > 0:
+                budget -= 1
+                explainer = ctx.narrator.issue_explainer(issue) or ""
             rows.append(
                 {
                     "issue": issue,
@@ -102,7 +112,7 @@ class FindingsDetailSection(Section):
                     "sample": sample,
                     "assets": issue.findings[: cfg.max_assets],
                     "more": max(0, issue.count - cfg.max_assets),
-                    "explainer": ctx.narrator.issue_explainer(issue) if full else "",
+                    "explainer": explainer,
                     "controls": _controls(issue) if cfg.show_controls and full else [],
                     "request": _clip(sample.request, cfg.evidence_chars)
                     if cfg.show_evidence and full
@@ -116,6 +126,7 @@ class FindingsDetailSection(Section):
         return {
             "rows": rows,
             "toc_subs": subs,
+            "appendix": _appendix_lists_locations(ctx),
             "rolled": [
                 {
                     "issue": i,
@@ -125,6 +136,18 @@ class FindingsDetailSection(Section):
                 for i in rolled
             ],
         }
+
+
+def _appendix_lists_locations(ctx: RenderContext) -> bool:
+    spec = lookup_section(_APPENDIX)
+    if spec is None:
+        return False
+    return any(
+        entry.enabled
+        and entry.section == _APPENDIX
+        and getattr(spec.config(entry.config), "include_findings", False)
+        for entry in ctx.spec.sections
+    )
 
 
 def _ordered(issues, key: str):

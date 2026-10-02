@@ -19,7 +19,7 @@
 	import StatusBar from './status-bar.svelte';
 	import { ACTIONS_BODY, ACTIONS_PIN, pinTone, rowTone, type TableColumn } from '../table/columns';
 	import { OUTLINE_LEAD_COLUMNS } from './columns';
-	import { GUIDE_WIDTH, OUTLINE_ROW_ATTR } from './outline-context';
+	import { GUIDE, OUTLINE_ROW_ATTR } from './outline-context';
 	import ProxyMenuItems from './proxy-menu-items.svelte';
 	import type { ActionKind } from '$lib/config/connectors';
 	import {
@@ -94,9 +94,6 @@
 			: (FOLDER_GLYPH_TONE[glyph] ?? 'text-muted-foreground')
 	);
 	let reason = $derived(whyReasons(node.interest, 1)[0] ?? '');
-	let verifiedMix = $derived(
-		Object.fromEntries(Object.entries(node.status_mix).filter(([k]) => k !== 'none'))
-	);
 	let hostNote = $derived(merged && !isGroup && node.hosts > 1 ? `on ${node.hosts} hosts` : '');
 	let noun = $derived(isGroup ? 'group' : 'folder');
 	let attrs = $derived({
@@ -117,24 +114,25 @@
 	<div class="min-w-0 flex-1 {OUTLINE_LEAD_COLUMNS[0].width}">
 		<div class="flex items-start gap-x-1.5 leading-5">
 			{#each Array(depth) as _, i (i)}
-				<span class="{GUIDE_WIDTH} -ml-1.5 h-5 shrink-0 border-l border-border/70 ml-[7px]"></span>
+				<span class={GUIDE}></span>
 			{/each}
-			<button
-				type="button"
-				class="flex size-4 shrink-0 items-center justify-center self-start rounded text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {node.child_count ||
-				node.direct_count
-					? ''
-					: 'invisible'}"
-				style="margin-top:2px"
-				aria-label={open ? 'Collapse' : 'Expand'}
-				aria-expanded={open}
-				onclick={onToggle}
-			>
-				<ChevronRight class="size-3.5 transition-transform {open ? 'rotate-90' : ''}" />
-			</button>
+			<span class="flex h-5 shrink-0 items-center">
+				<button
+					type="button"
+					class="flex size-4 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {node.child_count ||
+					node.direct_count
+						? ''
+						: 'invisible'}"
+					aria-label={open ? 'Collapse' : 'Expand'}
+					aria-expanded={open}
+					onclick={onToggle}
+				>
+					<ChevronRight class="size-3.5 transition-transform {open ? 'rotate-90' : ''}" />
+				</button>
+			</span>
 			<Hint
 				text={node.archive_only
-					? 'Known only to an archive. No endpoint here answered this scan.'
+					? 'Known only to an archive. No endpoint here answered.'
 					: (FOLDER_GLYPH_LABELS[glyph] ?? '')}
 			>
 				{#snippet child(props)}
@@ -185,7 +183,7 @@
 					<Hint
 						text="{node.new_count.toLocaleString()} {node.new_count === 1
 							? 'endpoint'
-							: 'endpoints'} first seen in this scan"
+							: 'endpoints'} absent from every earlier scan"
 					>
 						{#snippet child(props)}
 							<span {...props} class="font-medium text-success"
@@ -214,7 +212,7 @@
 	<div class="{OUTLINE_LEAD_COLUMNS[1].width} shrink-0">
 		{#if node.verified > 0}
 			<div class="flex h-5 items-center">
-				<StatusBar mix={verifiedMix} total={node.verified} />
+				<StatusBar mix={node.status_mix} total={node.verified} />
 			</div>
 		{/if}
 	</div>
@@ -223,7 +221,8 @@
 		<div class="{column.width} min-w-0 shrink-0 {column.align === 'right' ? 'text-right' : ''}">
 			{#if column.key === 'params' && node.params > 0}
 				<span class="flex h-5 items-center text-xs text-muted-foreground">
-					{node.params.toLocaleString()} take input
+					{node.params.toLocaleString()}
+					{node.params === 1 ? 'takes' : 'take'} input
 				</span>
 			{:else if column.key === 'sources'}
 				<SourceMarks sources={node.sources} />

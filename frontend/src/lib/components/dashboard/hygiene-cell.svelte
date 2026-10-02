@@ -2,7 +2,7 @@
 	import { useScopedRoutes } from './scope-links';
 	import Cell from './cell.svelte';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
-	import { CHECK_BY_KEY } from '$lib/config/hygiene';
+	import { CHECK_BY_KEY, HYGIENE_ANY, hygieneQuery } from '$lib/config/hygiene';
 	import type { HygieneSummary } from '$lib/utilities/scan-insights';
 
 	const routes = useScopedRoutes();
@@ -18,6 +18,7 @@
 
 	const TOP = 7;
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
+	const ANY_QUERY = hygieneQuery(HYGIENE_ANY);
 	let rows = $derived(
 		(hygiene?.checks ?? [])
 			.filter((c) => c.applicable > 0 && c.failing > 0)
@@ -35,10 +36,9 @@
 
 <Cell
 	id="hygiene"
-	title="Web hygiene"
 	description="Failing share per check"
-	href={routes.results(WEB.tab, scanId, { [WEB.queryParam]: 'hygiene:any' })}
-	hrefLabel="hygiene:any"
+	href={routes.results(WEB.tab, scanId, { [WEB.queryParam]: ANY_QUERY })}
+	hrefLabel={ANY_QUERY}
 	loading={loading && !hygiene}
 	class={className}
 >
@@ -52,7 +52,7 @@
 					>
 						<span class="truncate text-muted-foreground">{r.label}</span>
 						<span class="h-1.5 overflow-hidden rounded-full bg-muted">
-							<span class="block h-full rounded-full bg-chart-4" style="width:{r.share}%"></span>
+							<span class="block h-full rounded-full bg-series" style="width:{r.share}%"></span>
 						</span>
 						<span class="text-right font-medium tabular-nums">{r.share}%</span>
 					</a>
@@ -65,8 +65,7 @@
 	{#snippet footer()}
 		{#if hygiene}
 			<span>
-				{hygiene.evaluated.toLocaleString()} checked{#if hygiene.pending}
-					· {hygiene.pending.toLocaleString()} pending{/if}
+				{hygiene.evaluated.toLocaleString()} checked{#if hygiene.pending}{` · ${hygiene.pending.toLocaleString()} pending`}{/if}
 			</span>
 		{/if}
 	{/snippet}

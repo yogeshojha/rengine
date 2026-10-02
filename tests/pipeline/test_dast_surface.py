@@ -143,7 +143,6 @@ def test_the_schedule_fuzzes_requests_and_probes_directories(monkeypatch):
 
 def test_a_fuzzing_finding_replays_the_same_request_on_each_equivalent():
     scanner = _scanner()
-    rep = uuid.uuid4()
     member = SurfaceItem(id=uuid.uuid4(), class_="root", value="https://m.example")
     plan = SurfacePlan(equivalents={"https://rep.example": [member]})
     targets = scanner._replay_targets(
@@ -151,7 +150,6 @@ def test_a_fuzzing_finding_replays_the_same_request_on_each_equivalent():
     )
 
     assert targets == [(member, "https://m.example/search?q=1")]
-    _ = rep
 
 
 def test_a_fuzzing_job_passes_dast_and_the_parameter_patience():

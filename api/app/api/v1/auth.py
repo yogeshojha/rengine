@@ -3,12 +3,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import HTTPAuthorizationCredentials
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from app.api.deps import (
     BEARER_HEADERS,
-    CurrentSuperuser,
     CurrentUser,
     security,
     user_for_payload,
@@ -23,9 +23,13 @@ from app.core.ratelimit import (
     is_token_revoked,
     record_failure,
     revoke_token,
+    revoke_user_tokens,
     too_many_attempts,
 )
 from app.core.security import (
+    ACCESS_TOKEN_COOKIE,
+    AUTH_COOKIES,
+    REFRESH_TOKEN_COOKIE,
     TOKEN_TYPE_MFA,
     TOKEN_TYPE_REFRESH,
     create_access_token,
@@ -36,24 +40,47 @@ from app.core.security import (
     verify_password,
 )
 from app.utils.validation import validate_password_strength, validate_username
-from shared.models.user import User, UserCreate, UserRead
-from shared.schemas.auth import (
-    LoginRequest,
-    LoginResponse,
-    PasswordChangeRequest,
-    TokenResponse,
-    UsernameChangeRequest,
-)
+from shared.models.user import User, UserRead
 from shared.utils.datetime import utc_now
 
 _DUMMY_HASH = "$argon2id$v=19$m=65536,t=2,p=4$BFG/6RwwvAFTuluSmeDY5Q$ssCZOxGGhBFAM+3ub/t5TVPTUAyiL4Maz42kFYbcWts"
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
-ACCESS_TOKEN_COOKIE = "access_token"  # noqa: S105
-REFRESH_TOKEN_COOKIE = "refresh_token"  # noqa: S105
-AUTH_COOKIES = (ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE)
 REFRESH_GRACE_SECONDS = 30
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class LoginResponse(BaseModel):
+    mfa_required: bool = False
+    mfa_token: str | None = None
+
+
+class PasswordChangeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    current_password: str | None = None
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_password(cls, password: str) -> str:
+        return validate_password_strength(password)
+
+
+class UsernameChangeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    new_username: str = Field(max_length=50)
+
+    @field_validator("new_username")
+    @classmethod
+    def validate_username_field(cls, username: str) -> str:
+        return validate_username(username)
 
 
 def set_auth_cookies(
@@ -79,6 +106,16 @@ def set_auth_cookies(
         samesite="lax",
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
         path="/",
+    )
+
+
+async def reissue_session(response: Response, user: User) -> None:
+    """Revoke every token the user holds and sign this client in again."""
+    await revoke_user_tokens(user.id)
+    set_auth_cookies(
+        response,
+        create_access_token(str(user.id)),
+        create_refresh_token(str(user.id)),
     )
 
 
@@ -141,13 +178,10 @@ async def login(
 
     set_auth_cookies(response, access_token, refresh_token)
 
-    return LoginResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-    )
+    return LoginResponse()
 
 
-@router.post("/refresh", response_model=TokenResponse)
+@router.post("/refresh", status_code=status.HTTP_204_NO_CONTENT)
 async def refresh_access_token(
     request: Request,
     response: Response,
@@ -200,11 +234,6 @@ async def refresh_access_token(
 
     set_auth_cookies(response, new_access_token, new_refresh_token)
 
-    return TokenResponse(
-        access_token=new_access_token,
-        refresh_token=new_refresh_token,
-    )
-
 
 @router.post("/logout")
 async def logout(
@@ -234,101 +263,40 @@ async def get_current_user_info(current_user: CurrentUser):
     return current_user
 
 
-@router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
-async def register_user(
-    user_in: UserCreate,
-    session: Annotated[AsyncSession, Depends(get_session)],
-    current_user: CurrentSuperuser,  # noqa: ARG001
-):
-    try:
-        validate_username(user_in.username)
-        validate_password_strength(
-            user_in.password, user_inputs=[user_in.email, user_in.username]
-        )
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(e),
-        ) from e
-
-    result = await session.execute(select(User).where(User.email == user_in.email))
-    if result.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A user with this email exists",
-        )
-
-    result = await session.execute(
-        select(User).where(User.username == user_in.username)
-    )
-    if result.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A user with this username exists",
-        )
-
-    user = User(
-        email=user_in.email,
-        username=user_in.username,
-        hashed_password=hash_password(user_in.password),
-    )
-    session.add(user)
-    await session.commit()
-    await session.refresh(user)
-
-    return user
-
-
 @router.post("/change-password")
 async def change_password(
     password_data: PasswordChangeRequest,
+    response: Response,
     current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    target_user_id = password_data.user_id or current_user.id
-
-    result = await session.execute(select(User).where(User.id == target_user_id))
-    target_user = result.scalar_one_or_none()
-
-    if not target_user:
+    if not password_data.current_password:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is required",
         )
-
-    if target_user_id != current_user.id and not current_user.is_superuser:
+    rl_key = f"auth:change-password:{current_user.id}"
+    await too_many_attempts(rl_key, limit=5)
+    if not verify_password(
+        password_data.current_password, current_user.hashed_password
+    ):
+        await record_failure(rl_key, window_seconds=900)
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Administrator access is required to change another user's password",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Current password is incorrect",
         )
+    await clear_failures(rl_key)
 
-    if target_user_id == current_user.id:
-        if not password_data.current_password:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Current password is required",
-            )
-        rl_key = f"auth:change-password:{current_user.id}"
-        await too_many_attempts(rl_key, limit=5)
-        if not verify_password(
-            password_data.current_password, target_user.hashed_password
-        ):
-            await record_failure(rl_key, window_seconds=900)
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Current password is incorrect",
-            )
-        await clear_failures(rl_key)
+    current_user.hashed_password = hash_password(password_data.new_password)
+    current_user.updated_at = utc_now()
 
-    target_user.hashed_password = hash_password(password_data.new_password)
-    target_user.updated_at = utc_now()
-
-    session.add(target_user)
+    session.add(current_user)
     await session.commit()
+    await reissue_session(response, current_user)
 
     return {
         "message": "Password changed",
-        "user_id": str(target_user_id),
+        "user_id": str(current_user.id),
     }
 
 
@@ -338,42 +306,25 @@ async def change_username(
     current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    target_user_id = username_data.user_id or current_user.id
-
-    result = await session.execute(select(User).where(User.id == target_user_id))
-    target_user = result.scalar_one_or_none()
-
-    if not target_user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
-        )
-
-    if target_user_id != current_user.id and not current_user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Administrator access is required to change another user's username",
-        )
-
     result = await session.execute(
         select(User).where(User.username == username_data.new_username)
     )
     existing_user = result.scalar_one_or_none()
 
-    if existing_user and existing_user.id != target_user_id:
+    if existing_user and existing_user.id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Username is taken",
         )
 
-    target_user.username = username_data.new_username
-    target_user.updated_at = utc_now()
+    current_user.username = username_data.new_username
+    current_user.updated_at = utc_now()
 
-    session.add(target_user)
+    session.add(current_user)
     await session.commit()
 
     return {
         "message": "Username changed",
-        "user_id": str(target_user_id),
+        "user_id": str(current_user.id),
         "new_username": username_data.new_username,
     }

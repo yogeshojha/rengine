@@ -6,7 +6,6 @@ from fastapi import (
     Body,
     Depends,
     Header,
-    HTTPException,
     Query,
     Request,
     status,
@@ -14,6 +13,7 @@ from fastapi import (
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentSuperuser, CurrentUser
+from app.api.errors import bad_request
 from app.config import settings
 from app.core.client_ip import client_id
 from app.core.database import get_session
@@ -44,10 +44,6 @@ def ui_base() -> str:
     return settings.ui_base_url
 
 
-def _guard(exc: McpConfigError) -> HTTPException:
-    return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
-
-
 def _rejected_token(response: dict | list | None) -> bool:
     if not isinstance(response, dict):
         return False
@@ -55,6 +51,10 @@ def _rejected_token(response: dict | list | None) -> bool:
     if not isinstance(error, dict) or error.get("code") != UNAUTHORIZED:
         return False
     return error.get("message") != DISABLED_MESSAGE
+
+
+def _answered(response: dict | list | None) -> bool:
+    return not isinstance(response, dict) or "error" not in response
 
 
 @router.post("", include_in_schema=False)
@@ -78,7 +78,7 @@ async def mcp_endpoint(
     )
     if _rejected_token(response):
         await record_failure(key, window_seconds=TOKEN_ATTEMPT_WINDOW)
-    else:
+    elif _answered(response):
         await clear_failures(key)
     return response if response is not None else {}
 
@@ -95,7 +95,7 @@ async def update_mcp(
     try:
         await McpService(session).update(body)
     except McpConfigError as exc:
-        raise _guard(exc) from exc
+        raise bad_request(exc) from exc
     return await McpService(session).status(ui_base())
 
 
@@ -127,7 +127,7 @@ async def create_mcp_token(
     try:
         return await McpService(session).create_token(body, admin.id, ui_base())
     except McpConfigError as exc:
-        raise _guard(exc) from exc
+        raise bad_request(exc) from exc
 
 
 @router.patch("/tokens/{token_id}", response_model=McpTokenRead)
@@ -137,7 +137,7 @@ async def update_mcp_token(
     try:
         return await McpService(session).update_token(token_id, body)
     except McpConfigError as exc:
-        raise _guard(exc) from exc
+        raise bad_request(exc) from exc
 
 
 @router.post("/tokens/{token_id}/revoke", status_code=status.HTTP_204_NO_CONTENT)
@@ -145,7 +145,7 @@ async def revoke_mcp_token(_admin: CurrentSuperuser, session: Session, token_id:
     try:
         await McpService(session).revoke_token(token_id)
     except McpConfigError as exc:
-        raise _guard(exc) from exc
+        raise bad_request(exc) from exc
 
 
 @router.delete("/tokens/{token_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -153,11 +153,4 @@ async def delete_mcp_token(_admin: CurrentSuperuser, session: Session, token_id:
     try:
         await McpService(session).delete_token(token_id)
     except McpConfigError as exc:
-        raise _guard(exc) from exc
-
-
-@router.post("/sessions/{token_id}/disconnect", response_model=dict)
-async def disconnect_mcp_session(
-    _admin: CurrentSuperuser, session: Session, token_id: UUID
-):
-    return {"dropped": await McpService(session).disconnect(token_id)}
+        raise bad_request(exc) from exc

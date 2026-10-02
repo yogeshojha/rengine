@@ -13,10 +13,8 @@ from shared.http import get_async_client
 
 API_BASE = "https://api.telegram.org"
 LONG_POLL_SECONDS = 50
-MESSAGE_LIMIT = 4096
 SAFE_LIMIT = 4000
 MAX_MENU_COMMANDS = 100
-_OK = 200
 _UNAUTHORIZED = 401
 
 
@@ -117,18 +115,6 @@ class TelegramApi:
         return await self.call(
             "sendMessage",
             chat_id=chat_id,
-            text=text,
-            entities=entities or None,
-            link_preview_options={"is_disabled": True},
-        )
-
-    async def edit_message_text(
-        self, chat_id: str, message_id: str, text: str, entities: list[dict] | None
-    ) -> None:
-        await self.call(
-            "editMessageText",
-            chat_id=chat_id,
-            message_id=int(message_id),
             text=text,
             entities=entities or None,
             link_preview_options={"is_disabled": True},

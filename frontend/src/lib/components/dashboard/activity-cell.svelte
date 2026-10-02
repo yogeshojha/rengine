@@ -3,7 +3,7 @@
 	import Hint from '$lib/components/hint.svelte';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { ROUTES } from '$lib/config/routes';
-	import { ActivityKind } from '$lib/config/dashboard';
+	import { ActivityKind, ActivityTone } from '$lib/config/dashboard';
 	import { relativeTime } from '$lib/utilities/dates';
 	import type { DashboardActivity, DashboardEvent } from '$lib/types/dashboard';
 
@@ -16,10 +16,10 @@
 	let { activity, loading = false, class: className = '' }: Props = $props();
 
 	let events = $derived(activity?.events ?? []);
-	const DOT: Record<DashboardEvent['tone'], string> = {
-		neutral: 'bg-muted-foreground/60',
-		hot: 'bg-destructive',
-		new: 'bg-chart-1'
+	const DOT: Record<ActivityTone, string> = {
+		[ActivityTone.Neutral]: 'bg-muted-foreground/60',
+		[ActivityTone.Hot]: 'bg-destructive',
+		[ActivityTone.New]: 'bg-chart-1'
 	};
 	function href(e: DashboardEvent): string | null {
 		switch (e.kind) {
@@ -41,7 +41,6 @@
 
 <Cell
 	id="activity"
-	title="Activity"
 	href={ROUTES.scans}
 	hrefLabel="Scans"
 	loading={loading && !activity}

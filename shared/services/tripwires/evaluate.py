@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import uuid
-import zlib
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import exists, func, or_, select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import DBAPIError
 
@@ -23,17 +22,17 @@ from shared.definitions.tripwires import (
     Trigger,
     appears_query,
 )
-from shared.enums.scan import SCAN_TERMINAL_STATUSES, ScanActivityStatus
+from shared.enums.scan import SCAN_TERMINAL_STATUSES
 from shared.logging import get_logger
 from shared.models.scan import Scan
-from shared.models.scan_activity import ScanActivity
 from shared.models.tag import TargetTag
 from shared.models.target import TargetOrganization
 from shared.models.tripwire import FiredRow, Tripwire, TripwireMark, TripwireRun
 from shared.services.asset_query import QueryScope, QuerySyntaxError
 from shared.services.asset_query.errors import NO_JIT, query_error_for
+from shared.services.locks import tripwire_check
 from shared.services.scan_deltas import TABLES
-from shared.services.scan_scope import census_only, covering_stages, covers
+from shared.services.scan_scope import census_only, covers
 from shared.services.surface_query import for_dimension
 from shared.services.tripwires.identity import identity
 from shared.utils.datetime import utc_now
@@ -45,9 +44,6 @@ logger = get_logger(__name__)
 
 EVAL_TIMEOUT = "SET LOCAL statement_timeout = '120s'"
 TOO_MANY_ROWS = f"More than {MAX_DIFF_ROWS:,} rows match. Narrow the query."
-QUERY_FAILED = "The query did not run."
-# check() spans TRIPWIRE_CHECK .. TRIPWIRE_CHECK + 0xFFFF
-TRIPWIRE_CHECK = 0x54570001
 
 
 @dataclass
@@ -84,16 +80,11 @@ def previous_scan(session: Session, scan: Scan, dimension: str) -> Scan | None:
 
 
 def covered(session: Session, scan: Scan, dimension: str) -> bool:
-    model = TABLES[dimension]
-    rows = exists(select(1).where(model.scan_id == scan.id))
-    done = exists(
-        select(1).where(
-            ScanActivity.scan_id == scan.id,
-            ScanActivity.status == ScanActivityStatus.SUCCESS.value,
-            ScanActivity.name.in_(covering_stages()[dimension]),
+    return bool(
+        session.scalar(
+            select(covers(TABLES[dimension], dimension)).where(Scan.id == scan.id)
         )
     )
-    return bool(session.scalar(select(or_(rows, done))))
 
 
 def _built(dimension: str, query: str, scan_id: uuid.UUID, project_id: uuid.UUID, now):
@@ -109,8 +100,7 @@ def _built(dimension: str, query: str, scan_id: uuid.UUID, project_id: uuid.UUID
 def validate_query(dimension: str, query: str) -> None:
     """Parse and compile the query as a check would. Raises QuerySyntaxError."""
     probe = uuid.uuid4()
-    q, f, scope, built = _built(dimension, query, probe, probe, utc_now())
-    q.compiled(built, scope, f, utc_now())
+    _built(dimension, query, probe, probe, utc_now())
 
 
 def rows_of(
@@ -278,10 +268,6 @@ def applicable(
 # ---------- one check, recorded ----------
 
 
-def _lock_key(tripwire_id: uuid.UUID, scan_id: uuid.UUID) -> int:
-    return TRIPWIRE_CHECK + (zlib.crc32(f"{tripwire_id}:{scan_id}".encode()) & 0xFFFF)
-
-
 def _marks(
     session: Session, tripwire_id: uuid.UUID, scan_id: uuid.UUID
 ) -> frozenset[str]:
@@ -341,7 +327,7 @@ def check(
     now = now or utc_now()
     session.execute(
         text("SELECT pg_advisory_xact_lock(:key)"),
-        {"key": _lock_key(tripwire.id, scan.id)},
+        {"key": tripwire_check(tripwire.id, scan.id)},
     )
     session.execute(text(EVAL_TIMEOUT))
     session.execute(text(NO_JIT))

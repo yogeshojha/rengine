@@ -360,7 +360,6 @@ KEYS_BY_TONE: dict[str, tuple[str, ...]] = {
 }
 QUERY_VALUES: tuple[str, ...] = (*CHECK_KEYS, *TONES, ANY, NONE)
 
-# spoofable
 SPOOFABLE_KEYS: tuple[str, ...] = (
     PostureCheck.SPF_MISSING.value,
     PostureCheck.SPF_ANY_SENDER.value,

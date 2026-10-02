@@ -1,124 +1,23 @@
 import shared.models._tztypes  # patch datetime->timestamptz first
-from shared.models.activity_log import ActivityLog, ActivityLogRead
-from shared.models.ai import AiCall, AiCallRead, AiFeatureUsage, AiNarrative
-from shared.models.api_key import (
-    APIKey,
-    APIKeyCreate,
-    APIKeyRead,
-    APIKeyUpdate,
-    ProviderInfo,
-)
-from shared.models.ask import (
-    AskBrief,
-    AskMessage,
-    AskMessageRead,
-    AskQuestion,
-    AskThread,
-    AskThreadCreate,
-    AskThreadDetail,
-    AskThreadRead,
-)
-from shared.models.compare import (
-    ChangeField,
-    ChangeRow,
-    ChangeRows,
-    ComparableRun,
-    CoverageLine,
-    DimensionDelta,
-    DimensionVerdict,
-    RunDifference,
-    RunSide,
-    ScanComparison,
-    ScreenshotPair,
-    SettingDiff,
-    StageDiff,
-)
+from shared.models.activity_log import ActivityLog
+from shared.models.ai import AiCall, AiNarrative
+from shared.models.api_key import APIKey
+from shared.models.ask import AskMessage, AskThread
 from shared.models.connector import (
-    ActionRead,
-    AddTargetRequest,
-    CandidatePage,
-    CandidateRead,
     Connector,
     ConnectorAction,
     ConnectorCandidate,
-    ConnectorCreate,
-    ConnectorCreated,
     ConnectorHost,
-    ConnectorRead,
-    ConnectorScope,
-    ConnectorUpdate,
-    DiscoveredDomain,
-    FindingRecorded,
-    FindingReport,
-    HandoffRequest,
-    HandoffResult,
-    HostFacts,
-    IngestItem,
-    IngestRequest,
-    IngestResult,
-    NoticeRead,
-    TargetAdded,
-    TargetOption,
 )
-from shared.models.crosslink import CrossLink, CrossLinkPeer
-from shared.models.dns import (
-    DnsLookup,
-    DnsLookupRead,
-    DnsLookupSummary,
-    DnsRecord,
-    DnsRecordRead,
-)
-from shared.models.domain_posture import (
-    DomainPosture,
-    DomainPostureRead,
-    DomainPostureSummary,
-    PostureCheckCount,
-)
-from shared.models.endpoint import (
-    Endpoint,
-    EndpointCoverage,
-    EndpointDetail,
-    EndpointFacets,
-    EndpointFilter,
-    EndpointPage,
-    EndpointRead,
-    EndpointSummary,
-    EndpointTree,
-    TreeNode,
-)
+from shared.models.dns import DnsLookup, DnsRecord
+from shared.models.domain_posture import DomainPosture
+from shared.models.endpoint import Endpoint, EndpointCoverage
 from shared.models.estate import EstateCandidate, EstateTriage
-from shared.models.export import Export, ExportCreate, ExportRead
-from shared.models.http_asset import (
-    HttpAsset,
-    HttpAssetRead,
-    HttpAssetSummary,
-)
-from shared.models.instance_settings import (
-    InstanceSettings,
-    InstanceSettingsRead,
-    InstanceSettingsUpdate,
-)
-from shared.models.interest import (
-    InterestCatalog,
-    InterestDismissal,
-    InterestFilter,
-    InterestPage,
-    InterestRow,
-    InterestRule,
-    InterestRuleCreate,
-    InterestRuleRead,
-    InterestRuleUpdate,
-    InterestSignal,
-    InterestSummary,
-    RulePreview,
-    RuleSuggestion,
-)
-from shared.models.ip_address import (
-    IpAddress,
-    IpAddressRead,
-    IpAddressSummary,
-    TargetIpAddressRead,
-)
+from shared.models.export import Export
+from shared.models.http_asset import HttpAsset
+from shared.models.instance_settings import InstanceSettings
+from shared.models.interest import InterestDismissal, InterestRule, InterestSignal
+from shared.models.ip_address import IpAddress
 from shared.models.ip_asn_range import IpAsnRange, IpCountryRange
 from shared.models.issue_tracker import (
     IssueTracker,
@@ -127,52 +26,14 @@ from shared.models.issue_tracker import (
     TrackedIssueComment,
     TrackedIssueFinding,
 )
-from shared.models.lookalike import (
-    LookalikeDomain,
-    LookalikeRead,
-    LookalikeSummary,
-    LookalikeTriage,
-)
-from shared.models.note import (
-    Note,
-    NoteCount,
-    NoteCreate,
-    NoteRead,
-    NoteTag,
-    NoteUpdate,
-)
-from shared.models.notification import (
-    Notification,
-    NotificationCreate,
-    NotificationRead,
-    NotificationReceipt,
-)
-from shared.models.notification_channel import (
-    NotificationChannel,
-    NotificationChannelCreate,
-    NotificationChannelRead,
-    NotificationChannelTestResult,
-    NotificationChannelUpdate,
-    NotificationPreference,
-)
-from shared.models.organization import (
-    Organization,
-    OrganizationCreate,
-    OrganizationRead,
-    OrganizationSummary,
-    OrganizationUpdate,
-)
-from shared.models.port import Port, PortRead, PortSummary
-from shared.models.project import Project, ProjectBase, ProjectCreate, ProjectRead
-from shared.models.proxy import (
-    Proxy,
-    ProxyCreate,
-    ProxyEndpoint,
-    ProxyEndpointRead,
-    ProxyRead,
-    ProxyTestResult,
-    ProxyUpdate,
-)
+from shared.models.lookalike import LookalikeDomain, LookalikeTriage
+from shared.models.note import Note, NoteTag
+from shared.models.notification import Notification, NotificationReceipt
+from shared.models.notification_channel import NotificationChannel
+from shared.models.organization import Organization, OrganizationSummary
+from shared.models.port import Port
+from shared.models.project import Project
+from shared.models.proxy import Proxy
 from shared.models.report import Report, ReportFont, ReportTemplate, ReportTheme
 from shared.models.ripestat import (
     RIPEStatAbuseContact,
@@ -183,71 +44,18 @@ from shared.models.ripestat import (
     RIPEStatPrefixOverview,
     RIPEStatRelatedPrefix,
 )
-from shared.models.scan import (
-    Scan,
-    ScanCreate,
-    ScanRead,
-)
-from shared.models.scan_activity import ScanActivity, ScanActivityRead
-from shared.models.scan_command import (
-    ScanCommand,
-    ScanCommandDetail,
-    ScanCommandRead,
-)
-from shared.models.scan_context import (
-    AuthConfig,
-    AuthHeader,
-    ScanContext,
-    ScanContextCreate,
-    ScanContextRead,
-    ScanContextUpdate,
-)
+from shared.models.scan import Scan
+from shared.models.scan_activity import ScanActivity
+from shared.models.scan_command import ScanCommand
+from shared.models.scan_context import ScanContext
 from shared.models.scan_delta import ScanDelta, ScanRetired, ScanRevision
-from shared.models.scan_engine import (
-    EngineCatalog,
-    ScanEngine,
-    ScanEngineCreate,
-    ScanEngineRead,
-    ScanEngineUpdate,
-)
-from shared.models.scan_schedule import (
-    ScanSchedule,
-    ScanScheduleCreate,
-    ScanScheduleRead,
-    ScanScheduleUpdate,
-    ScheduleTargetRef,
-)
-from shared.models.scan_surface import (
-    AssetSurface,
-    ScanSurfaceItem,
-    SurfaceItemRead,
-    SurfaceSummary,
-    SurfaceTierCount,
-)
-from shared.models.secret import (
-    Secret,
-    SecretCoverage,
-    SecretSighting,
-)
-from shared.models.software import (
-    NvdCpeMatch,
-    NvdCve,
-    SoftwareComponentRead,
-    SoftwareCoverage,
-    SoftwareCve,
-    SoftwareCveRead,
-    SoftwareFacet,
-    SoftwareFacets,
-    SoftwareFilter,
-    SoftwarePage,
-)
-from shared.models.subdomain import (
-    Subdomain,
-    SubdomainRead,
-    SubdomainSummary,
-    TargetSubdomainRead,
-)
-from shared.models.tag import Tag, TagBase, TagCreate, TagRead, TagSummary, TagUpdate
+from shared.models.scan_engine import ScanEngine
+from shared.models.scan_schedule import ScanSchedule
+from shared.models.scan_surface import ScanSurfaceItem
+from shared.models.secret import Secret, SecretCoverage, SecretSighting
+from shared.models.software import NvdCpeMatch, NvdCve, SoftwareCve
+from shared.models.subdomain import Subdomain
+from shared.models.tag import Tag, TagSummary
 from shared.models.target import (
     Target,
     TargetBulkCreate,
@@ -269,193 +77,63 @@ from shared.models.target_seed import (
     TargetSeedWrite,
 )
 from shared.models.tripwire import Tripwire, TripwireMark, TripwireRun
-from shared.models.user import User, UserBase, UserCreate, UserRead
+from shared.models.user import User
 from shared.models.viewdns import ViewDNSCache
-from shared.models.vuln_template import (
-    TemplateFilter,
-    TemplateLibraryStats,
-    TemplatePage,
-    TemplateSelection,
-    VulnTemplate,
-    VulnTemplateRead,
-    VulnTemplateUpdate,
-    VulnTemplateUploadRequest,
-)
+from shared.models.vuln_template import VulnTemplate
 from shared.models.vulnerability import (
-    ScanVulnerabilities,
     Vulnerability,
     VulnerabilityCoverage,
-    VulnerabilityFacets,
-    VulnerabilityFilter,
-    VulnerabilityPage,
-    VulnerabilityRead,
     VulnerabilityTriage,
 )
-from shared.models.watch import (
-    ProgramWatch,
-    UserMark,
-    WatchCreate,
-    WatchEvent,
-    WatchHost,
-    WatchRead,
-    WatchUpdate,
-)
-from shared.models.wordlist import (
-    Wordlist,
-    WordlistFile,
-    WordlistRead,
-    WordlistUpdate,
-    WordlistUploadRequest,
-    WordlistUploadResult,
-)
+from shared.models.watch import ProgramWatch, UserMark, WatchEvent, WatchHost
+from shared.models.wordlist import Wordlist
 
 TargetRead.model_rebuild()
 
 __all__ = [
     "APIKey",
-    "APIKeyCreate",
-    "APIKeyRead",
-    "APIKeyUpdate",
-    "ActionRead",
     "ActivityLog",
-    "ActivityLogRead",
-    "AddTargetRequest",
     "AiCall",
-    "AiCallRead",
-    "AiFeatureUsage",
     "AiNarrative",
-    "AskBrief",
     "AskMessage",
-    "AskMessageRead",
-    "AskQuestion",
     "AskThread",
-    "AskThreadCreate",
-    "AskThreadDetail",
-    "AskThreadRead",
-    "AssetSurface",
-    "AuthConfig",
-    "AuthHeader",
-    "CandidatePage",
-    "CandidateRead",
-    "ChangeField",
-    "ChangeRow",
-    "ChangeRows",
-    "ComparableRun",
     "Connector",
     "ConnectorAction",
     "ConnectorCandidate",
-    "ConnectorCreate",
-    "ConnectorCreated",
     "ConnectorHost",
-    "ConnectorRead",
-    "ConnectorScope",
-    "ConnectorUpdate",
-    "CoverageLine",
-    "CrossLink",
-    "CrossLinkPeer",
-    "DimensionDelta",
-    "DimensionVerdict",
-    "DiscoveredDomain",
     "DnsLookup",
-    "DnsLookupRead",
-    "DnsLookupSummary",
     "DnsRecord",
-    "DnsRecordRead",
     "DomainPosture",
-    "DomainPostureRead",
-    "DomainPostureSummary",
     "Endpoint",
     "EndpointCoverage",
-    "EndpointDetail",
-    "EndpointFacets",
-    "EndpointFilter",
-    "EndpointPage",
-    "EndpointRead",
-    "EndpointSummary",
-    "EndpointTree",
-    "EngineCatalog",
     "EstateCandidate",
     "EstateTriage",
     "Export",
-    "ExportCreate",
-    "ExportRead",
-    "FindingRecorded",
-    "FindingReport",
-    "HandoffRequest",
-    "HandoffResult",
-    "HostFacts",
     "HttpAsset",
-    "HttpAssetRead",
-    "HttpAssetSummary",
-    "IngestItem",
-    "IngestRequest",
-    "IngestResult",
     "InstanceSettings",
-    "InstanceSettingsRead",
-    "InstanceSettingsUpdate",
-    "InterestCatalog",
     "InterestDismissal",
-    "InterestFilter",
-    "InterestPage",
-    "InterestRow",
     "InterestRule",
-    "InterestRuleCreate",
-    "InterestRuleRead",
-    "InterestRuleUpdate",
     "InterestSignal",
-    "InterestSummary",
     "IpAddress",
-    "IpAddressRead",
-    "IpAddressSummary",
     "IpAsnRange",
     "IpCountryRange",
     "IssueTracker",
     "IssueTrackerRoute",
     "LookalikeDomain",
-    "LookalikeRead",
-    "LookalikeSummary",
     "LookalikeTriage",
     "Note",
-    "NoteCount",
-    "NoteCreate",
-    "NoteRead",
     "NoteTag",
-    "NoteUpdate",
-    "NoticeRead",
     "Notification",
     "NotificationChannel",
-    "NotificationChannelCreate",
-    "NotificationChannelRead",
-    "NotificationChannelTestResult",
-    "NotificationChannelUpdate",
-    "NotificationCreate",
-    "NotificationPreference",
-    "NotificationRead",
     "NotificationReceipt",
     "NvdCpeMatch",
     "NvdCve",
     "Organization",
-    "OrganizationCreate",
-    "OrganizationRead",
     "OrganizationSummary",
-    "OrganizationUpdate",
     "Port",
-    "PortRead",
-    "PortSummary",
-    "PostureCheckCount",
     "ProgramWatch",
     "Project",
-    "ProjectBase",
-    "ProjectCreate",
-    "ProjectRead",
-    "ProviderInfo",
     "Proxy",
-    "ProxyCreate",
-    "ProxyEndpoint",
-    "ProxyEndpointRead",
-    "ProxyRead",
-    "ProxyTestResult",
-    "ProxyUpdate",
     "RIPEStatASNNeighbour",
     "RIPEStatASOverview",
     "RIPEStatAbuseContact",
@@ -467,120 +145,53 @@ __all__ = [
     "ReportFont",
     "ReportTemplate",
     "ReportTheme",
-    "RulePreview",
-    "RuleSuggestion",
-    "RunDifference",
-    "RunSide",
     "Scan",
     "ScanActivity",
-    "ScanActivityRead",
     "ScanCommand",
-    "ScanCommandDetail",
-    "ScanCommandRead",
-    "ScanComparison",
     "ScanContext",
-    "ScanContextCreate",
-    "ScanContextRead",
-    "ScanContextUpdate",
-    "ScanCreate",
     "ScanDelta",
     "ScanEngine",
-    "ScanEngineCreate",
-    "ScanEngineRead",
-    "ScanEngineUpdate",
-    "ScanRead",
     "ScanRetired",
     "ScanRevision",
     "ScanSchedule",
-    "ScanScheduleCreate",
-    "ScanScheduleRead",
-    "ScanScheduleUpdate",
     "ScanSurfaceItem",
-    "ScanVulnerabilities",
-    "ScheduleTargetRef",
-    "ScreenshotPair",
     "Secret",
     "SecretCoverage",
     "SecretSighting",
-    "SettingDiff",
-    "SoftwareComponentRead",
-    "SoftwareCoverage",
     "SoftwareCve",
-    "SoftwareCveRead",
-    "SoftwareFacet",
-    "SoftwareFacets",
-    "SoftwareFilter",
-    "SoftwarePage",
-    "StageDiff",
     "Subdomain",
-    "SubdomainRead",
-    "SubdomainSummary",
-    "SurfaceItemRead",
-    "SurfaceSummary",
-    "SurfaceTierCount",
     "Tag",
-    "TagBase",
-    "TagCreate",
-    "TagRead",
     "TagSummary",
-    "TagUpdate",
     "Target",
-    "TargetAdded",
     "TargetBulkCreate",
     "TargetBulkCreateResponse",
     "TargetCreate",
     "TargetImportItem",
     "TargetImportRequest",
     "TargetImportResult",
-    "TargetIpAddressRead",
-    "TargetOption",
     "TargetRead",
     "TargetSeed",
     "TargetSeedRead",
     "TargetSeedResult",
     "TargetSeedWrite",
-    "TargetSubdomainRead",
     "TargetType",
     "TargetUpdate",
     "TargetValidationRequest",
     "TargetValidationResponse",
-    "TemplateFilter",
-    "TemplateLibraryStats",
-    "TemplatePage",
-    "TemplateSelection",
     "TrackedIssue",
     "TrackedIssueComment",
     "TrackedIssueFinding",
-    "TreeNode",
     "Tripwire",
     "TripwireMark",
     "TripwireRun",
     "User",
-    "UserBase",
-    "UserCreate",
     "UserMark",
-    "UserRead",
     "ViewDNSCache",
     "VulnTemplate",
-    "VulnTemplateRead",
-    "VulnTemplateUpdate",
-    "VulnTemplateUploadRequest",
     "Vulnerability",
     "VulnerabilityCoverage",
-    "VulnerabilityFacets",
-    "VulnerabilityFilter",
-    "VulnerabilityPage",
-    "VulnerabilityRead",
     "VulnerabilityTriage",
-    "WatchCreate",
     "WatchEvent",
     "WatchHost",
-    "WatchRead",
-    "WatchUpdate",
     "Wordlist",
-    "WordlistFile",
-    "WordlistRead",
-    "WordlistUpdate",
-    "WordlistUploadRequest",
-    "WordlistUploadResult",
 ]

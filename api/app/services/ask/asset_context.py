@@ -12,15 +12,21 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.ask.context import (
+    MAX_SAMPLE,
     MAX_TITLE,
     Context,
     _clip,
     _fact_line,
-    _line_flags,
     masked,
 )
 from mcp.result import UNTRUSTED_NOTE
-from shared.definitions.ask import EvidenceField, FactTone, Verdict
+from shared.definitions.ask import (
+    INSTRUCTION_TEXT,
+    AskFlag,
+    EvidenceField,
+    FactTone,
+    Verdict,
+)
 from shared.definitions.vulnerabilities import SEVERITY_ORDER
 from shared.models.ask import AskFlagRead, Fact
 from shared.models.endpoint import Endpoint
@@ -29,7 +35,7 @@ from shared.models.port import Port
 from shared.models.subdomain import Subdomain
 from shared.models.vulnerability import Vulnerability
 from shared.services.scan_resolve import MASK
-from shared.utils.text import counted
+from shared.utils.text import counted, strip_control
 
 LOGIN_WORDS = ("login", "log in", "sign in", "signin", "sso", "authenticate")
 ADMIN_WORDS = ("admin", "dashboard", "console", "manage", "internal", "staging")
@@ -275,15 +281,25 @@ def _observed(bundle: AssetBundle) -> dict:
 def _fenced(bundle: AssetBundle) -> tuple[str, int, list[AskFlagRead]]:
     nonce = secrets.token_hex(4)
     observed = json.dumps(_observed(bundle), default=str, ensure_ascii=False)
-    flags = _line_flags(
-        "\n".join(
-            filter(
-                None, [bundle.sub.page_title, *[a.title or "" for a in bundle.assets]]
-            )
-        ),
-        EvidenceField.TITLE.value,
-    )
     fenced = "\n".join(
         [f"<<untrusted {nonce}>>", UNTRUSTED_NOTE, observed, f"<<end {nonce}>>"]
     )
-    return fenced, observed.count(MASK), flags
+    return fenced, observed.count(MASK), _title_flags(bundle)
+
+
+def _title_flags(bundle: AssetBundle) -> list[AskFlagRead]:
+    titles = [bundle.sub.page_title, *(a.title for a in bundle.assets)]
+    samples = dict.fromkeys(
+        " ".join(strip_control(t).split())[:MAX_SAMPLE]
+        for t in titles
+        if t and INSTRUCTION_TEXT.search(t)
+    )
+    return [
+        AskFlagRead(
+            kind=AskFlag.INSTRUCTION_TEXT.value,
+            field=EvidenceField.TITLE.value,
+            line=0,
+            sample=sample,
+        )
+        for sample in samples
+    ]

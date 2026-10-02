@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import Eye from '@lucide/svelte/icons/eye';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
@@ -20,9 +21,14 @@
 	import { wordlists as store } from '$lib/stores/wordlists.svelte';
 	import { wordlistsApi } from '$lib/api/wordlists';
 	import { relativeTime } from '$lib/utilities/dates';
+	import { formatBytes } from '$lib/utilities/format';
 	import {
+		MAX_WORDLIST_UPLOAD,
 		WORDLIST_KINDS,
 		WORDLIST_KIND_LABELS,
+		WORDLIST_ORIGIN_BADGE,
+		WORDLIST_ORIGIN_LABELS,
+		WordlistOrigin,
 		type Wordlist,
 		type WordlistKind
 	} from '$lib/types/wordlist';
@@ -30,15 +36,16 @@
 	const ALL = 'all';
 
 	let kindFilter = $state<string>(ALL);
-	let uploadKind = $state<WordlistKind>('subdomain');
+	let uploadKind = $state<WordlistKind>(WORDLIST_KINDS[0]);
 	let uploading = $state(false);
 	let fileInput = $state<HTMLInputElement | null>(null);
 	let removing = $state<Wordlist | null>(null);
+	let deleting = $state(false);
 	let viewing = $state<Wordlist | null>(null);
 	const picked = new SvelteSet<string>();
 
 	$effect(() => {
-		store.fetch();
+		untrack(() => store.fetch());
 	});
 
 	let items = $derived(
@@ -55,17 +62,17 @@
 		else picked.add(id);
 	}
 
-	function size(bytes: number): string {
-		if (bytes < 1024) return `${bytes} B`;
-		if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-		return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-	}
-
 	async function upload(event: Event) {
 		const input = event.currentTarget as HTMLInputElement;
 		const chosen = Array.from(input.files ?? []);
 		input.value = '';
 		if (!chosen.length) return;
+		if (chosen.length > MAX_WORDLIST_UPLOAD) {
+			toast.error(
+				`${chosen.length} files selected. The limit is ${MAX_WORDLIST_UPLOAD} per upload.`
+			);
+			return;
+		}
 		uploading = true;
 		try {
 			const files = await Promise.all(
@@ -97,8 +104,16 @@
 	async function remove() {
 		const target = removing;
 		if (!target) return;
-		if (await store.remove(target.id)) toast.success(`${target.name} removed`);
-		removing = null;
+		deleting = true;
+		try {
+			if (await store.remove(target.id)) {
+				picked.delete(target.id);
+				toast.success(`${target.name} removed`);
+			}
+		} finally {
+			deleting = false;
+			removing = null;
+		}
 	}
 
 	let lastChanged = $derived(
@@ -179,7 +194,7 @@
 					<EmptyState
 						icon={Upload}
 						title="No wordlists"
-						description="Upload a text file with one word per line."
+						description="Plain text, one word per line."
 					/>
 				</div>
 			{:else}
@@ -187,7 +202,7 @@
 					<div
 						class="group flex items-start gap-4 border-b px-6 py-4 last:border-b-0 hover:bg-muted/40"
 					>
-						{#if item.origin !== 'builtin'}
+						{#if item.origin !== WordlistOrigin.BUILTIN}
 							<div class="flex h-6 shrink-0 items-center">
 								<Checkbox
 									checked={picked.has(item.id)}
@@ -201,8 +216,8 @@
 						<div class="min-w-0 flex-1 space-y-1">
 							<div class="flex flex-wrap items-center gap-2">
 								<span class="font-medium">{item.name}</span>
-								<Badge variant={item.origin === 'builtin' ? 'secondary' : 'info'}>
-									{item.origin === 'builtin' ? 'Default' : 'Custom'}
+								<Badge variant={WORDLIST_ORIGIN_BADGE[item.origin]}>
+									{WORDLIST_ORIGIN_LABELS[item.origin]}
 								</Badge>
 								<Badge variant="outline">{WORDLIST_KIND_LABELS[item.kind]}</Badge>
 							</div>
@@ -222,7 +237,7 @@
 
 						<div class="shrink-0 text-right font-mono text-xs tabular-nums text-muted-foreground">
 							<div class="text-sm text-foreground">{item.words.toLocaleString()} words</div>
-							<div>{size(item.bytes)}</div>
+							<div>{formatBytes(item.bytes)}</div>
 							<div>{relativeTime(item.updated_at)}</div>
 						</div>
 
@@ -234,13 +249,18 @@
 										variant="ghost"
 										size="icon"
 										class="size-8"
+										aria-label="Preview {item.name}"
 										onclick={() => (viewing = item)}
 									>
 										<Eye class="size-4" />
 									</Button>
 								{/snippet}
 							</Hint>
-							<Hint text={item.origin === 'builtin' ? 'Default wordlists are read-only' : 'Remove'}>
+							<Hint
+								text={item.origin === WordlistOrigin.BUILTIN
+									? 'Default wordlists are read-only'
+									: 'Remove'}
+							>
 								{#snippet child(props)}
 									<span class="inline-flex">
 										<Button
@@ -248,7 +268,8 @@
 											variant="ghost"
 											size="icon"
 											class="size-8"
-											disabled={item.origin === 'builtin'}
+											aria-label="Remove {item.name}"
+											disabled={item.origin === WordlistOrigin.BUILTIN}
 											onclick={() => (removing = item)}
 										>
 											<Trash2 class="size-4" />
@@ -291,5 +312,6 @@
 	title="Remove wordlist"
 	description={`Wordlist ${removing?.name ?? ''} and its file are removed.`}
 	confirmLabel="Remove"
+	isDeleting={deleting}
 	onConfirm={remove}
 />

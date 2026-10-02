@@ -15,10 +15,10 @@ export const FOOTPRINT_LABEL: Record<Footprint, string> = {
 };
 
 export const FOOTPRINT_HELP: Record<Footprint, string> = {
-	none: 'All enabled stages use public data sources. No traffic is sent to the target.',
+	none: 'Enabled stages read public data sources only.',
 	quiet: 'Sends a low volume of traffic to the target.',
 	moderate: 'Sends a moderate volume of traffic to the target.',
-	loud: 'Sends a high volume of traffic to the target. Likely to trigger rate limiting or WAF blocking.'
+	loud: 'Sends a high volume of traffic to the target.'
 };
 
 const MODERATE_RPS = 300;

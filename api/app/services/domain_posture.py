@@ -40,8 +40,6 @@ def _read(row: DomainPosture) -> DomainPostureRead:
         dmarc=row.dmarc,
         dmarc_policy=row.dmarc_policy,
         dmarc_subdomain_policy=row.dmarc_subdomain_policy,
-        dmarc_pct=row.dmarc_pct,
-        dmarc_rua=row.dmarc_rua,
         dmarc_inherited=row.dmarc_inherited,
         dkim_selectors=list(row.dkim_selectors or []),
         dkim_key_bits=row.dkim_key_bits,

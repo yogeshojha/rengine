@@ -43,6 +43,8 @@ export interface SurfaceSpec {
 	countColumns: (keyof ScanRead)[];
 	// what a deleted row takes with it
 	children?: string;
+	// page params that list one row per counted row
+	rowView?: Record<string, string>;
 }
 
 export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
@@ -69,7 +71,8 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		queryParam: 'ep_q',
 		recentsKey: STORAGE_KEYS.endpointsRecentQueries,
 		kinds: ['endpoints'],
-		countColumns: ['endpoints_found']
+		countColumns: ['endpoints_found'],
+		rowView: { ep_view: 'list' }
 	},
 	[SurfaceDimension.SERVICES]: {
 		key: SurfaceDimension.SERVICES,
@@ -105,7 +108,8 @@ export const SURFACE: Record<SurfaceDimension, SurfaceSpec> = {
 		queryParam: 'vuln_q',
 		recentsKey: STORAGE_KEYS.vulnsRecentQueries,
 		kinds: ['vulnerabilities'],
-		countColumns: ['vulnerabilities_found']
+		countColumns: ['vulnerabilities_found'],
+		rowView: { vuln_view: 'findings' }
 	},
 	[SurfaceDimension.SOFTWARE]: {
 		key: SurfaceDimension.SOFTWARE,

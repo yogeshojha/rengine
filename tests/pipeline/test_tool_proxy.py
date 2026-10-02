@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import socket
+import threading
 from pathlib import Path
 
 import pytest
 
 import tools.wafw00f.client as wafw00f
 from tools.naabu.client import proxy_args
+from tools.whois.providers.whoisit import RDAPProvider, RDAPProviderError
 
 pytestmark = pytest.mark.pipeline
 
@@ -61,3 +64,25 @@ def test_wafw00f_writes_the_scan_headers_to_a_private_file(waf_client):
 def test_wafw00f_writes_no_file_when_the_scan_carries_no_header(waf_client):
     with waf_client()._header_file() as path:
         assert path is None
+
+
+def test_rdap_speaks_socks5_to_a_socks5_proxy():
+    greeting: list[bytes] = []
+    with socket.create_server(("127.0.0.1", 0)) as server:
+        server.settimeout(5)
+        port = server.getsockname()[1]
+
+        def accept() -> None:
+            try:
+                conn, _ = server.accept()
+            except OSError:
+                return
+            with conn:
+                greeting.append(conn.recv(1))
+
+        listener = threading.Thread(target=accept, daemon=True)
+        listener.start()
+        with pytest.raises(RDAPProviderError):
+            RDAPProvider(f"socks5://127.0.0.1:{port}").lookup_domain("example.com")
+        listener.join(timeout=5)
+    assert greeting == [b"\x05"]

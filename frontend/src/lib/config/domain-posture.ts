@@ -1,9 +1,7 @@
-import Mail from '@lucide/svelte/icons/mail';
-import Send from '@lucide/svelte/icons/send';
-import ShieldCheck from '@lucide/svelte/icons/shield-check';
-import type { IconComponent } from './icons';
 import type { DomainPostureRead } from '$lib/types/domain-posture';
 import type { HygieneSummary } from '$lib/utilities/scan-insights';
+import { percentLabel } from '$lib/utilities/strings';
+import { TONE_CHIP, TONE_LABEL } from './hygiene';
 
 // mirrors shared/definitions/domain_posture.py
 export const PostureCheck = {
@@ -38,18 +36,6 @@ export const POSTURE_FIELD = 'posture';
 export const DKIM_MIN_BITS = 1024;
 export const POSTURE_ANY = 'any';
 export const POSTURE_NONE = 'none';
-
-export const GROUP_LABELS: Record<PostureGroup, string> = {
-	sender: 'Sender authentication',
-	mail: 'Mail transport',
-	zone: 'Zone integrity'
-};
-
-export const GROUP_ICONS: Record<PostureGroup, IconComponent> = {
-	sender: Send,
-	mail: Mail,
-	zone: ShieldCheck
-};
 
 export const SPF_ALL_LABELS: Record<string, string> = {
 	fail: '-all',
@@ -288,13 +274,6 @@ export const SPOOFABLE_KEYS: string[] = [
 	'dmarc_subdomains_open'
 ];
 
-export const TONE_LABEL: Record<PostureTone, string> = { warning: 'Warning', info: 'Info' };
-export const TONE_DOT: Record<PostureTone, string> = { warning: 'bg-warning', info: 'bg-info' };
-export const TONE_TEXT: Record<PostureTone, string> = {
-	warning: 'text-warning',
-	info: 'text-info'
-};
-
 export function checkLabel(key: string): string {
 	if (key === POSTURE_NONE) return 'Passes every check';
 	if (key === POSTURE_ANY) return 'Any check failing';
@@ -310,11 +289,6 @@ export function sortChecks(keys: string[]): string[] {
 	return [...keys].sort(
 		(a, b) => (CHECK_ORDER[a] ?? CHECKS.length) - (CHECK_ORDER[b] ?? CHECKS.length)
 	);
-}
-
-export function worstTone(keys: string[]): PostureTone | null {
-	if (!keys.length) return null;
-	return keys.some((k) => CHECK_BY_KEY[k]?.tone === 'warning') ? 'warning' : 'info';
 }
 
 export function isSpoofable(keys: string[]): boolean {
@@ -335,8 +309,7 @@ export interface ZoneFact {
 
 export const FACT_CHIP: Record<FactTone, string> = {
 	good: 'border-success/30 bg-success/10 text-success',
-	warning: 'border-warning/30 bg-warning/10 text-warning',
-	info: 'border-info/25 bg-info/10 text-info',
+	...TONE_CHIP,
 	muted: 'border-border text-muted-foreground'
 };
 
@@ -465,6 +438,5 @@ export function share(row: PostureRow): number {
 }
 
 export function shareLabel(row: PostureRow): string {
-	const p = share(row);
-	return p > 0 && p < 1 ? '<1%' : `${Math.round(p)}%`;
+	return percentLabel(share(row));
 }

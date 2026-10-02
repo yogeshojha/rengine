@@ -2,17 +2,14 @@ from __future__ import annotations
 
 import ipaddress
 
-from sqlalchemy import delete
-
+from shared.definitions.endpoints import parse_url
 from shared.enums.ip import IpSource
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.enums.target import TargetType
 from shared.logging import get_logger
-from shared.models.ip_address import IpAddress
+from shared.services import ip_inventory
 from shared.services.scope_filter import ip_excluded
 from shared.utils.cidr import expand_network, parse_network
-from shared.utils.datetime import utc_now
-from shared.utils.validation import normalize_domain
 from stages.base import IP_TARGETS, Stage, StageResult, parse_asn
 from stages.seed_resolution.config import SeedResolutionConfig
 from tools.dnsx.service import DnsxLookupError, DnsxService
@@ -93,7 +90,8 @@ class SeedResolutionStage(Stage):
 
     def _from_url(self, value: str) -> list[dict]:
         """Addresses of the host a URL names."""
-        host = normalize_domain(value)
+        parsed = parse_url(value)
+        host = parsed.host if parsed else ""
         if not host:
             return []
         try:
@@ -198,29 +196,20 @@ class SeedResolutionStage(Stage):
         return [p.prefix for p in result.data if getattr(p, "prefix", None)]
 
     def _persist(self, records: list[dict]) -> int:
-        self.session.execute(
-            delete(IpAddress).where(IpAddress.scan_id == self.ctx.scan_id)
-        )
-        now = utc_now()
         seen: set[str] = set()
+        rows: list[dict] = []
         excluded = self.ctx.resolved.excluded_ips or []
         for rec in records:
             ip = rec["ip"]
             if ip in seen or (excluded and ip_excluded(ip, excluded)):
                 continue
             seen.add(ip)
-            self.session.add(
-                IpAddress(
-                    scan_id=self.ctx.scan_id,
-                    target_id=self.ctx.target_id,
-                    project_id=self.ctx.project_id,
-                    ip=ip,
-                    version=rec["version"],
-                    source=rec["source"],
-                    prefix=rec.get("prefix"),
-                    asn=rec.get("asn"),
-                    discovered_at=now,
-                )
-            )
-        self.session.commit()
+            rows.append(rec)
+        ip_inventory.materialize_rows(
+            self.session,
+            scan_id=self.ctx.scan_id,
+            target_id=self.ctx.target_id,
+            project_id=self.ctx.project_id,
+            rows=rows,
+        )
         return len(seen)

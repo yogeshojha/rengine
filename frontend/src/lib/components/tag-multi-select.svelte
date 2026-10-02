@@ -8,6 +8,7 @@
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Command from '$lib/components/ui/command';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import { DEFAULT_TAG_COLOR, TAG_COLORS } from '$lib/config/tags';
 
 	interface TagItem {
 		id: string;
@@ -36,23 +37,12 @@
 	let open = $state(false);
 	let searchValue = $state('');
 	let showColorPicker = $state(false);
-	let selectedColor = $state('#64748b');
+	let selectedColor = $state(DEFAULT_TAG_COLOR);
 	let colorPickerEl = $state<HTMLDivElement | null>(null);
 
 	$effect(() => {
 		if (showColorPicker) colorPickerEl?.focus();
 	});
-
-	const presetColors = [
-		'#64748b',
-		'#4f7cc4',
-		'#6366f1',
-		'#7c6bb0',
-		'#3f9e93',
-		'#c2855a',
-		'#be5a6e',
-		'#5a9e6f'
-	];
 
 	let filteredItems = $derived(
 		items.filter(
@@ -81,7 +71,7 @@
 			onCreate(searchValue.trim(), selectedColor);
 			searchValue = '';
 			showColorPicker = false;
-			selectedColor = '#6366f1';
+			selectedColor = DEFAULT_TAG_COLOR;
 		}
 	}
 
@@ -141,7 +131,7 @@
 				</Button>
 			{/snippet}
 		</Popover.Trigger>
-		<Popover.Content class="w-[--radix-popover-trigger-width] p-0" align="start">
+		<Popover.Content class="w-(--bits-popover-anchor-width) p-0" align="start">
 			{#if showColorPicker}
 				<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 				<div
@@ -156,7 +146,7 @@
 						<span class="text-sm font-medium">Color for "{searchValue}"</span>
 					</div>
 					<div class="flex flex-wrap gap-2">
-						{#each presetColors as color (color)}
+						{#each TAG_COLORS as color (color)}
 							<button
 								type="button"
 								class="h-6 w-6 rounded-full border-2 {selectedColor === color
@@ -202,9 +192,6 @@
 											style="background-color: {item.color}"
 										></span>
 										<span class="flex-1 truncate">{item.label}</span>
-										{#if selected.some((s) => s.id === item.id)}
-											<Check class="h-4 w-4 text-primary" />
-										{/if}
 									</Command.Item>
 								{/each}
 							</Command.Group>

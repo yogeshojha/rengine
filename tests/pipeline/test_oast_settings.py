@@ -104,7 +104,6 @@ def test_the_out_of_band_checks_are_their_own_tier():
     assert [r.template_id for r in plan.oast] == ["blind-ssrf", "log4shell"]
     assert [r.template_id for r in plan.product] == ["plain-cve"]
     assert all(not wants_callback(r) for r in plan.universal)
-    assert plan.http_count == 4
 
 
 def test_a_check_is_judged_on_what_it_references_not_its_tag():

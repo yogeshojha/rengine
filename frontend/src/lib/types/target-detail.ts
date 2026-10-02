@@ -1,7 +1,20 @@
 import type { TaskStatus } from './task-status';
-import type { TargetType, OrganizationSummary, TagSummary, BgpSummaryData } from './target';
+import type {
+	TargetType,
+	OrganizationSummary,
+	TagSummary,
+	BgpSummaryData,
+	DnsSummaryData
+} from './target';
 import type { WhoisRecordRead } from './whois';
-import type { PeerRelationship, PrefixRelationship } from './ripestat';
+import type {
+	AnnouncedPrefixRead,
+	ASNNeighbourRead,
+	ASOverviewRead,
+	NetworkInfoRead,
+	PrefixOverviewRead,
+	RelatedPrefixRead
+} from './ripestat';
 
 export interface DnsRecordRead {
 	id: string;
@@ -16,56 +29,8 @@ export interface DnsRecordRead {
 	caa_flag: number | null;
 }
 
-export interface DnsLookupRead {
-	id: string;
-	host: string;
-	status_code: string;
-	cdn: boolean;
-	cdn_name: string;
-	queried_at: string;
-	record_counts: Record<string, number>;
+export interface DnsLookupRead extends DnsSummaryData {
 	records: DnsRecordRead[];
-}
-
-export interface AnnouncedPrefixDetail {
-	prefix: string;
-	ip_version: number;
-	first_seen: string | null;
-	last_seen: string | null;
-}
-
-export interface ASNNeighbourDetail {
-	neighbour_asn: number;
-	relationship: PeerRelationship;
-	power: number;
-}
-
-export interface ASOverviewDetail {
-	asn: number;
-	holder: string;
-	rir: string | null;
-	announced: boolean;
-	block_name: string | null;
-	block_resource: string | null;
-}
-
-export interface NetworkInfoDetail {
-	ip: string;
-	prefix: string;
-	asn: number;
-}
-
-export interface PrefixOverviewDetail {
-	prefix: string;
-	asn: number;
-	holder: string;
-	is_announced: boolean;
-}
-
-export interface RelatedPrefixDetail {
-	related_prefix: string;
-	relationship: PrefixRelationship;
-	origin_asn: number | null;
 }
 
 export interface AbuseContactDetail {
@@ -79,12 +44,12 @@ export interface TargetBgpDetailResponse {
 	target_type: TargetType;
 	status: TaskStatus;
 	summary: BgpSummaryData | null;
-	as_overview: ASOverviewDetail | null;
-	announced_prefixes: AnnouncedPrefixDetail[];
-	neighbours: ASNNeighbourDetail[];
-	network_info: NetworkInfoDetail[];
-	prefix_overview: PrefixOverviewDetail[];
-	related_prefixes: RelatedPrefixDetail[];
+	as_overview: ASOverviewRead | null;
+	announced_prefixes: AnnouncedPrefixRead[];
+	neighbours: ASNNeighbourRead[];
+	network_info: NetworkInfoRead[];
+	prefix_overview: PrefixOverviewRead[];
+	related_prefixes: RelatedPrefixRead[];
 	abuse_contacts: AbuseContactDetail[];
 }
 

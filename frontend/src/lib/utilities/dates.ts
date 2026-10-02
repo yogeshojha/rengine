@@ -1,4 +1,18 @@
+import { plural } from '$lib/utilities/strings';
+
 export const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+/** UTC calendar days from the day of `since` through today, as `YYYY-MM-DD`. */
+export function utcDaysSince(since: string, now = Date.now()): string[] {
+	const today = new Date(now).toISOString().slice(0, 10);
+	const out: string[] = [];
+	for (let t = Date.parse(`${since.slice(0, 10)}T00:00:00Z`); ; t += MS_PER_DAY) {
+		const day = new Date(t).toISOString().slice(0, 10);
+		if (day > today) break;
+		out.push(day);
+	}
+	return out;
+}
 
 export const formatDate = (dateString: string) => {
 	const date = new Date(dateString);
@@ -72,11 +86,24 @@ export function formatShortDate(date: string | Date, utc = false): string {
 	});
 }
 
-export function formatDateTime(date: string | Date): string {
-	return new Date(date).toLocaleString('en-GB', {
-		day: 'numeric',
+export function formatDay(isoDate: string, weekday = false): string {
+	return new Date(`${isoDate}T00:00:00Z`).toLocaleDateString('en-US', {
+		...(weekday ? { weekday: 'short' } : {}),
 		month: 'short',
-		hour: '2-digit',
+		day: 'numeric',
+		timeZone: 'UTC'
+	});
+}
+
+export function formatClock(date: string | Date): string {
+	return new Date(date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+export function formatDateTime(date: string | Date): string {
+	return new Date(date).toLocaleString('en-US', {
+		month: 'short',
+		day: 'numeric',
+		hour: 'numeric',
 		minute: '2-digit'
 	});
 }
@@ -139,7 +166,7 @@ export function getDomainAge(registrationDate: string | null): string {
 	const diffMs = now.getTime() - reg.getTime();
 	const diffDays = Math.floor(diffMs / MS_PER_DAY);
 
-	if (diffDays < 30) return `${diffDays} days old`;
+	if (diffDays < 30) return `${plural(diffDays, 'day')} old`;
 	if (diffDays < 365) {
 		const months = Math.floor(diffDays / 30);
 		return `${months} ${months === 1 ? 'month' : 'months'} old`;
@@ -152,73 +179,13 @@ export function getDomainAge(registrationDate: string | null): string {
 
 export type FreshnessLevel = 'fresh' | 'recent' | 'aging' | 'stale' | 'never';
 
-export interface FreshnessThresholds {
-	fresh: number;
-	recent: number;
-	aging: number;
-}
-
-const DEFAULT_THRESHOLDS: FreshnessThresholds = {
-	fresh: 24,
-	recent: 72,
-	aging: 168
-};
-
-export function getFreshnessLevel(
-	timestamp: string | null | undefined,
-	thresholds: FreshnessThresholds = DEFAULT_THRESHOLDS
-): FreshnessLevel {
+export function getFreshnessLevel(timestamp: string | null | undefined): FreshnessLevel {
 	if (!timestamp) return 'never';
 	const hours = (Date.now() - new Date(timestamp).getTime()) / (1000 * 60 * 60);
-	if (hours < thresholds.fresh) return 'fresh';
-	if (hours < thresholds.recent) return 'recent';
-	if (hours < thresholds.aging) return 'aging';
+	if (hours < 24) return 'fresh';
+	if (hours < 72) return 'recent';
+	if (hours < 168) return 'aging';
 	return 'stale';
-}
-
-export interface FreshnessColors {
-	dot: string;
-	text: string;
-	border: string;
-}
-
-const FRESHNESS_COLOR_MAP: Record<FreshnessLevel, FreshnessColors> = {
-	fresh: {
-		dot: 'bg-foreground',
-		text: 'text-foreground',
-		border: 'border-border'
-	},
-	recent: {
-		dot: 'bg-muted-foreground',
-		text: 'text-muted-foreground',
-		border: 'border-border'
-	},
-	aging: {
-		dot: 'bg-warning',
-		text: 'text-warning',
-		border: 'border-warning/20'
-	},
-	stale: {
-		dot: 'bg-destructive',
-		text: 'text-destructive',
-		border: 'border-destructive/40'
-	},
-	never: {
-		dot: 'bg-muted-foreground',
-		text: 'text-muted-foreground',
-		border: 'border-border'
-	}
-};
-
-export function getFreshnessColors(level: FreshnessLevel): FreshnessColors {
-	return FRESHNESS_COLOR_MAP[level];
-}
-
-export function getColorsForTimestamp(
-	timestamp: string | null | undefined,
-	thresholds?: FreshnessThresholds
-): FreshnessColors {
-	return getFreshnessColors(getFreshnessLevel(timestamp, thresholds));
 }
 
 export function viewerZone(): string {

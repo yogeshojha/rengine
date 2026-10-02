@@ -21,7 +21,8 @@
 	let launchTargetId = $state<string | undefined>(undefined);
 	let launchTargetIds = $state<string[] | undefined>(undefined);
 	let rerunScan = $state<ScanRead | null>(null);
-	let targetFilter = $derived(page.url.searchParams.get('target') ?? undefined);
+	let targetFilters = $derived(page.url.searchParams.getAll('target'));
+	let targetFilter = $derived(targetFilters.length === 1 ? targetFilters[0] : undefined);
 
 	$effect(() => {
 		const status = page.url.searchParams.get('status');
@@ -79,6 +80,7 @@
 	<h1 class="sr-only">Scans</h1>
 	<ScanHistoryTable
 		targetId={targetFilter}
+		targetIds={targetFilters}
 		onLaunch={newScan}
 		onRescan={rescan}
 		onRescanMany={rescanMany}

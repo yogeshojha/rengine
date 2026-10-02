@@ -10,17 +10,16 @@ import sys
 
 from mcp.protocol import parse_failure
 from mcp.transport import handle_request
+from shared.config import base_settings
 
 TOKEN_VAR = "RENGINE_MCP_TOKEN"  # noqa: S105
-UI_VAR = "RENGINE_UI_URL"
-DEFAULT_UI = "http://localhost:5173"
 
 
 async def _serve() -> None:
     from app.core.database import async_db_session  # noqa: PLC0415
 
     token = os.environ.get(TOKEN_VAR, "").strip()
-    ui_base = os.environ.get(UI_VAR, DEFAULT_UI)
+    ui_base = base_settings().ui_base_url
     loop = asyncio.get_running_loop()
 
     while True:

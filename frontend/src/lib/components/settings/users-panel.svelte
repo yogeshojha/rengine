@@ -24,7 +24,7 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import { settingsActions } from '$lib/stores/settings-actions.svelte';
 	import { ROLE_LABELS, roleLabel } from '$lib/config/users';
-	import { formatDate } from '$lib/utilities';
+	import { formatDate } from '$lib/utilities/dates';
 	import { BODY_ROW, HEAD_ROW, USER_COL } from './columns';
 
 	const ADMIN = 'admin';
@@ -206,9 +206,7 @@
 									<DropdownMenu.Item
 										onSelect={() => update(user, { is_superuser: !user.is_superuser })}
 									>
-										{user.is_superuser
-											? `Make ${ROLE_LABELS.member.toLowerCase()}`
-											: 'Make administrator'}
+										Make {roleLabel(!user.is_superuser).toLowerCase()}
 									</DropdownMenu.Item>
 									<DropdownMenu.Item onSelect={() => update(user, { is_active: !user.is_active })}>
 										{user.is_active ? 'Disable' : 'Enable'}
@@ -278,7 +276,7 @@
 				{#snippet children({ id })}
 					<Select.Root type="single" bind:value={role} disabled={saving}>
 						<Select.Trigger {id} class="w-full">
-							{role === ADMIN ? ROLE_LABELS.admin : ROLE_LABELS.member}
+							{roleLabel(role === ADMIN)}
 						</Select.Trigger>
 						<Select.Content>
 							<Select.Item value={MEMBER} label={ROLE_LABELS.member}

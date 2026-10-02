@@ -13,13 +13,14 @@ from shared.models.ripestat import (
 )
 from shared.models.target import Target
 from shared.utils.datetime import utc_now
+from shared.utils.validation import extract_asn_number
 
 
 def write_bgp_summary_for_target(session: Session, target: Target) -> None:
     now = utc_now()
 
-    if target.target_type.value == TargetType.ASN.value:
-        asn_number = int(target.target_value.upper().replace("AS", "").strip())
+    if target.target_type == TargetType.ASN:
+        asn_number = extract_asn_number(target.target_value)
 
         prefix_count = session.execute(
             select(func.count(RIPEStatAnnouncedPrefix.id)).where(
@@ -46,7 +47,7 @@ def write_bgp_summary_for_target(session: Session, target: Target) -> None:
             queried_at=now,
         )
 
-    elif target.target_type.value == TargetType.IP.value:
+    elif target.target_type == TargetType.IP:
         info = session.execute(
             select(RIPEStatNetworkInfo).where(
                 RIPEStatNetworkInfo.ip == target.target_value
@@ -69,7 +70,7 @@ def write_bgp_summary_for_target(session: Session, target: Target) -> None:
         else:
             _upsert_summary(session, target_id=target.id, queried_at=now)
 
-    elif target.target_type.value == TargetType.IP_RANGE.value:
+    elif target.target_type == TargetType.IP_RANGE:
         po = (
             session.execute(
                 select(RIPEStatPrefixOverview).where(

@@ -23,13 +23,6 @@ class RunSide(BaseModel):
     counts: dict[str, int] = Field(default_factory=dict)
 
 
-class StageDiff(BaseModel):
-    name: str
-    title: str
-    baseline: str | None = None
-    current: str | None = None
-
-
 class SettingDiff(BaseModel):
     stage: str
     title: str
@@ -136,7 +129,6 @@ class ScanComparison(BaseModel):
     baseline: RunSide
     current: RunSide
     dimensions: list[DimensionDelta] = Field(default_factory=list)
-    stage_diff: list[StageDiff] = Field(default_factory=list)
     setting_diff: list[SettingDiff] = Field(default_factory=list)
     settings_identical: int = 0
     run_diff: list[RunDifference] = Field(default_factory=list)

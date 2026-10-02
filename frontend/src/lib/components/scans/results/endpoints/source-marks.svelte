@@ -12,14 +12,15 @@
 	interface Props {
 		sources: string[];
 		evidence?: SourceEvidence[];
-		limit?: number;
 	}
 
-	let { sources, evidence = [], limit = 4 }: Props = $props();
+	let { sources, evidence = [] }: Props = $props();
+
+	const LIMIT = 4;
 
 	let byName = $derived(new Map(evidence.map((e) => [e.source, e])));
-	let shown = $derived(sources.slice(0, limit));
-	let extra = $derived(Math.max(0, sources.length - limit));
+	let shown = $derived(sources.slice(0, LIMIT));
+	let extra = $derived(Math.max(0, sources.length - LIMIT));
 
 	function icon(source: string) {
 		return SOURCE_ICONS[source] ?? SOURCE_ICONS[EndpointSource.OTHER];

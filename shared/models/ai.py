@@ -57,20 +57,16 @@ class AiCall(SQLModel, table=True):
 class AiCallRead(BaseModel):
     id: uuid.UUID
     at: datetime
-    task: str
     feature: str
     provider: str
     model: str
     ok: bool
     cached: bool
-    rounds: int
     input_tokens: int
     output_tokens: int
     cost_usd: float | None
     latency_ms: int
     error: str | None
-    source_kind: str | None
-    source_id: uuid.UUID | None
 
 
 class AiFeatureUsage(BaseModel):
@@ -85,25 +81,11 @@ class AiFeatureUsage(BaseModel):
     last_at: datetime | None = None
 
 
-class AskUsageRead(BaseModel):
-    questions: int = 0
-    threads: int = 0
-    input_tokens: int = 0
-    output_tokens: int = 0
-    cost_usd: float | None = None
-    since: datetime | None = None
-
-
 class AiUsageRead(BaseModel):
     calls: int = 0
-    cached: int = 0
-    input_tokens: int = 0
-    output_tokens: int = 0
     cost_usd: float | None = None
-    reports: int = 0
     failed: int = 0
     since: datetime | None = None
-    ask: AskUsageRead = AskUsageRead()
     by_feature: list[AiFeatureUsage] = []
 
 

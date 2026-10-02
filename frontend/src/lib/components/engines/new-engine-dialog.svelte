@@ -5,7 +5,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Button } from '$lib/components/ui/button';
-	import LoadingButton from '@/components/loading-button.svelte';
+	import LoadingButton from '$lib/components/loading-button.svelte';
 	import StageList from './stage-list.svelte';
 	import FootprintMeter from './footprint-meter.svelte';
 	import { summarize } from '$lib/utilities/engine-summary';
@@ -16,20 +16,11 @@
 		presets: EnginePreset[];
 		stages: StageCatalogEntry[];
 		isCreating: boolean;
-		initialPreset?: string | null;
 		onOpenChange: (open: boolean) => void;
 		onCreate: (name: string, preset: EnginePreset) => void;
 	}
 
-	let {
-		open,
-		presets,
-		stages,
-		isCreating,
-		initialPreset = null,
-		onOpenChange,
-		onCreate
-	}: Props = $props();
+	let { open, presets, stages, isCreating, onOpenChange, onCreate }: Props = $props();
 
 	let name = $state('');
 	let selected = $state('');
@@ -38,7 +29,7 @@
 		if (!open) return;
 		untrack(() => {
 			name = '';
-			selected = initialPreset ?? presets[0]?.name ?? '';
+			selected = presets[0]?.name ?? '';
 		});
 	});
 
@@ -46,7 +37,7 @@
 		const first = presets[0]?.name;
 		if (!open || !first) return;
 		untrack(() => {
-			if (!selected) selected = initialPreset ?? first;
+			if (!selected) selected = first;
 		});
 	});
 
@@ -79,10 +70,10 @@
 
 			<RadioGroup.Root bind:value={selected} class="grid gap-2 sm:grid-cols-2">
 				{#each presets as p (p.name)}
-					{@const summary = summarize(p.stages, stages, 'normal')}
+					{@const summary = summarize(p.stages, stages, p.intensity)}
 					<Label
 						for="preset-{p.name}"
-						class="flex cursor-pointer flex-col gap-2.5 rounded-lg border border-border p-3 transition-colors hover:bg-muted/40 has-[[data-state=checked]]:border-primary/50 has-[[data-state=checked]]:bg-primary/5"
+						class="flex cursor-pointer flex-col items-stretch gap-2.5 rounded-lg border border-border p-3 transition-colors hover:bg-muted/40 has-[[data-state=checked]]:border-primary/50 has-[[data-state=checked]]:bg-primary/5"
 					>
 						<span class="flex items-start gap-2.5">
 							<RadioGroup.Item value={p.name} id="preset-{p.name}" class="mt-0.5" />
@@ -92,7 +83,13 @@
 							</span>
 						</span>
 						<span class="flex flex-col gap-1.5 pl-6">
-							<StageList {stages} config={p.stages} variant="inline" max={4} />
+							<StageList
+								{stages}
+								config={p.stages}
+								intensity={p.intensity}
+								variant="inline"
+								max={4}
+							/>
 							<span class="flex items-center justify-between gap-2 text-2xs font-normal">
 								<span class="text-muted-foreground tabular-nums">
 									{summary.activeStages} of {summary.totalStages} stages

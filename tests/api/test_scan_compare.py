@@ -133,6 +133,26 @@ async def test_a_partial_producing_stage_leaves_missing_rows_unconfirmed(estate,
     assert web.unconfirmed == 1
     assert web.verdict.confirmed is False
     assert web.verdict.comparability == Comparability.QUALITY_DIFFERS.value
+    assert web.verdict.note == (
+        "Subdomain Discovery was partial in the later run."
+        " 1 missing web asset not confirmed."
+    )
+
+
+async def test_a_partial_stage_with_nothing_missing_states_no_count(estate, now):
+    a, b, old = await _pair(estate, now)
+    await estate.hosts("first", ["kept.example.com"], at=old)
+    await estate.hosts("second", ["kept.example.com"], at=now)
+    await estate.activity("first", RAN_WEB)
+    await estate.activity("second", {"subdomain_discovery": "partial"})
+
+    report = await ScanCompareService(estate.session).comparison(
+        a, b, estate.project_id
+    )
+
+    note = _dim(report, WEB).verdict.note
+    assert "partial in the later run" in note
+    assert "missing" not in note
 
 
 async def test_a_stage_setting_that_differs_is_named(estate, now):
@@ -658,6 +678,7 @@ async def test_the_diff_names_a_dimension_one_run_did_not_scan(estate, now):
     )
 
     assert "# vulnerabilities  not scanned in the later run." in text
+    assert "# Coverage differs · " in text
     assert "@@ vulnerabilities" not in text
 
 

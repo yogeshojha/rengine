@@ -1,5 +1,3 @@
-"""Everything a report can know, gathered once and cached."""
-
 from __future__ import annotations
 
 from datetime import datetime
@@ -29,9 +27,11 @@ from reports.data.models import (
 )
 from shared.definitions import domain_posture as posture_defs
 from shared.definitions import hygiene as hygiene_defs
+from shared.definitions.correlation import MIN_BODY_BYTES
 from shared.definitions.ports import SENSITIVE_PORTS, ServiceClass
 from shared.definitions.reports import MAX_REPORT_ROWS, ReportScope
-from shared.definitions.surface import SURFACE_KINDS, SURFACE_ORDER, SurfaceDimension
+from shared.definitions.secrets import DETECTOR_LABELS
+from shared.definitions.surface import SURFACE_ORDER, SurfaceDimension
 from shared.definitions.vulnerabilities import (
     SUPPRESSED_STATES,
     Severity,
@@ -53,8 +53,10 @@ from shared.models.vulnerability import (
     VulnerabilityTriage,
 )
 from shared.services.asset_query import predicates as preds
+from shared.services.scan_scope import census_only, covers
+from shared.services.surface_query import vulnerabilities as surface_vulns
 from shared.utils.datetime import utc_now
-from shared.utils.net import is_registry_routable
+from shared.utils.net import host_port, is_registry_routable
 
 _DIM = SurfaceDimension
 _MAX_HOSTS_PER_IP = 6
@@ -76,20 +78,34 @@ _KEY = {
     _DIM.SECRETS.value: (Secret.fingerprint,),
 }
 _LABEL = {
-    _DIM.WEB_ASSETS.value: Subdomain.name,
-    _DIM.IPS.value: IpAddress.ip,
-    _DIM.SERVICES.value: Port.ip,
-    _DIM.ENDPOINTS.value: Endpoint.url,
-    _DIM.VULNERABILITIES.value: Vulnerability.matched_at,
-    _DIM.SECRETS.value: Secret.value,
+    _DIM.WEB_ASSETS.value: (Subdomain.name,),
+    _DIM.IPS.value: (IpAddress.ip,),
+    _DIM.SERVICES.value: (Port.ip,),
+    _DIM.ENDPOINTS.value: (func.concat(Endpoint.host, Endpoint.path),),
+    _DIM.VULNERABILITIES.value: (Vulnerability.matched_at,),
+    _DIM.SECRETS.value: (Secret.kind, Secret.host),
 }
 
 # the dimensions a report counts: those with a per-scan table above
 REPORT_DIMENSIONS: tuple[str, ...] = tuple(d for d in SURFACE_ORDER if d in _TABLE)
 
 
+def _started():
+    return func.coalesce(Scan.started_at, Scan.created_at)
+
+
+def _change_label(dimension: str, key: tuple, values: tuple) -> str:
+    if dimension == _DIM.SERVICES.value:
+        return host_port(values[0], key[1])
+    if dimension == _DIM.SECRETS.value:
+        kind, host = values
+        label = DETECTOR_LABELS.get(kind, kind)
+        return f"{label} on {host}" if host else label
+    return str(values[0])
+
+
 class ReportSource:
-    """Reads for one scan, or for a target's most recent covering run per dimension."""
+    """Reads for one scan, or per dimension for a target's latest census run."""
 
     def __init__(
         self,
@@ -98,13 +114,11 @@ class ReportSource:
         scope: str,
         scan: Scan | None,
         target: Target,
-        project_name: str = "",
     ) -> None:
         self.session = session
         self.scope = scope
         self.scan = scan
         self.target = target
-        self.project_name = project_name
         self._memo: dict[str, Any] = {}
 
     # ---------- identity ----------
@@ -137,39 +151,27 @@ class ReportSource:
 
     # ---------- scan selection ----------
 
-    @cached_property
-    def runs(self) -> list[Scan]:
-        rows = (
-            self.session.execute(
-                select(Scan)
-                .where(Scan.target_id == self.target.id)
-                .order_by(Scan.created_at.desc())
-                .limit(60)
-            )
-            .scalars()
-            .all()
+    def _latest_census(self, table, dimension: str | None = None) -> UUID | None:
+        ran = (
+            covers(table, dimension)
+            if dimension
+            else select(1).where(table.scan_id == Scan.id).exists()
         )
-        return list(rows)
+        return self.session.execute(
+            select(Scan.id)
+            .where(Scan.target_id == self.target.id, census_only(), ran)
+            .order_by(_started().desc())
+            .limit(1)
+        ).scalar()
 
     def scan_for(self, dimension: str) -> UUID | None:
         """The run whose rows this dimension is reported from."""
         if self.is_scan_scope:
             return self.scan.id if self.scan else None
         key = f"scan_for:{dimension}"
-        if key in self._memo:
-            return self._memo[key]
-        table = _TABLE[dimension]
-        row = self.session.execute(
-            select(table.scan_id, func.max(Scan.created_at).label("at"))
-            .join(Scan, Scan.id == table.scan_id)
-            .where(table.target_id == self.target.id)
-            .group_by(table.scan_id)
-            .order_by(func.max(Scan.created_at).desc())
-            .limit(1)
-        ).first()
-        found = row[0] if row else None
-        self._memo[key] = found
-        return found
+        if key not in self._memo:
+            self._memo[key] = self._latest_census(_TABLE[dimension], dimension)
+        return self._memo[key]
 
     @cached_property
     def previous_scan(self) -> Scan | None:
@@ -184,6 +186,7 @@ class ReportSource:
                     Scan.id != self.scan.id,
                     Scan.created_at < cutoff,
                     Scan.status == ScanStatus.COMPLETED.value,
+                    census_only(),
                 )
                 .order_by(Scan.created_at.desc())
                 .limit(1)
@@ -211,24 +214,6 @@ class ReportSource:
             if (values or {}).get("enabled", True)
         }
 
-    @cached_property
-    def producing_stages(self) -> dict[str, set[str]]:
-        """Dimension -> the enabled stages that produce it."""
-        try:
-            from stages.registry import stages as stage_specs  # noqa: PLC0415
-        except ImportError:
-            return {}
-        specs = {spec.name: spec for spec in stage_specs()}
-        out: dict[str, set[str]] = {dim: set() for dim in REPORT_DIMENSIONS}
-        for name in self.planned_stages:
-            spec = specs.get(name)
-            if spec is None:
-                continue
-            for dimension, kinds in SURFACE_KINDS.items():
-                if dimension in out and spec.produces & kinds:
-                    out[dimension].add(name)
-        return out
-
     def _count(self, dimension: str, scan_id: UUID | None) -> int:
         if scan_id is None:
             return 0
@@ -238,29 +223,35 @@ class ReportSource:
             query = query.where(self._not_suppressed())
         return int(self.session.execute(query).scalar() or 0)
 
+    def _covers(self, dimension: str, scan_id: UUID | None) -> bool:
+        if scan_id is None:
+            return False
+        return (
+            self.session.execute(
+                select(Scan.id).where(
+                    Scan.id == scan_id, covers(_TABLE[dimension], dimension)
+                )
+            ).first()
+            is not None
+        )
+
     @cached_property
     def coverage(self) -> dict[str, DimensionCoverage]:
         out: dict[str, DimensionCoverage] = {}
         for dimension in REPORT_DIMENSIONS:
             scan_id = self.scan_for(dimension)
             count = self._count(dimension, scan_id)
-            planned = bool(self.producing_stages.get(dimension))
-            covered = count > 0 or (planned and self.scan is not None)
             observed = None
             if scan_id is not None:
-                run = next((r for r in self.runs if r.id == scan_id), self.scan)
+                run = self.session.get(Scan, scan_id)
                 if run is not None:
                     observed = run.completed_at or run.started_at or run.created_at
-            entry = DimensionCoverage(
+            out[dimension] = DimensionCoverage(
                 dimension=dimension,
-                covered=covered,
+                covered=count > 0 or self._covers(dimension, scan_id),
                 count=count,
                 observed_at=observed,
-                scan_id=str(scan_id) if scan_id else "",
             )
-            if not covered:
-                entry.note = "Not scanned"
-            out[dimension] = entry
         self._attach_previous(out)
         return out
 
@@ -268,15 +259,18 @@ class ReportSource:
         previous = self.previous_scan
         if previous is None:
             return
-        covered_before = self._covered_by(previous)
         for dimension, entry in coverage.items():
-            if not entry.covered or dimension not in covered_before:
+            if not entry.covered or dimension not in self.previous_dimensions:
                 continue
             entry.previous = self._count(dimension, previous.id)
 
-    def _covered_by(self, scan: Scan) -> set[str]:
-        """Rows are the only proof a previous run produced a dimension."""
-        return {d for d in REPORT_DIMENSIONS if self._count(d, scan.id)}
+    @cached_property
+    def previous_dimensions(self) -> frozenset[str]:
+        """The dimensions the previous run covered."""
+        previous = self.previous_scan
+        if previous is None:
+            return frozenset()
+        return frozenset(d for d in REPORT_DIMENSIONS if self._covers(d, previous.id))
 
     @cached_property
     def covered_dimensions(self) -> frozenset[str]:
@@ -314,8 +308,8 @@ class ReportSource:
     # ---------- vulnerabilities ----------
 
     @staticmethod
-    def _not_suppressed():
-        suppressed = (
+    def _suppressed():
+        return (
             select(VulnerabilityTriage.id)
             .where(
                 VulnerabilityTriage.target_id == Vulnerability.target_id,
@@ -324,18 +318,10 @@ class ReportSource:
             )
             .exists()
         )
-        return ~suppressed
 
-    @cached_property
-    def triage(self) -> dict[str, tuple[str, str | None]]:
-        rows = self.session.execute(
-            select(
-                VulnerabilityTriage.fingerprint,
-                VulnerabilityTriage.state,
-                VulnerabilityTriage.note,
-            ).where(VulnerabilityTriage.target_id == self.target.id)
-        ).all()
-        return {row[0]: (row[1], row[2]) for row in rows}
+    @classmethod
+    def _not_suppressed(cls):
+        return ~cls._suppressed()
 
     @cached_property
     def findings(self) -> list[Finding]:
@@ -345,7 +331,13 @@ class ReportSource:
         rows = (
             self.session.execute(
                 select(Vulnerability)
-                .where(Vulnerability.scan_id == scan_id)
+                .where(Vulnerability.scan_id == scan_id, self._not_suppressed())
+                .order_by(
+                    surface_vulns.severity_rank(),
+                    Vulnerability.is_kev.desc(),
+                    Vulnerability.epss_score.desc().nulls_last(),
+                    Vulnerability.id,
+                )
                 .limit(MAX_REPORT_ROWS)
             )
             .scalars()
@@ -356,24 +348,15 @@ class ReportSource:
         assets = self._asset_context({r.host for r in rows if r.host})
         out: list[Finding] = []
         for row in rows:
-            state, note = self.triage.get(row.fingerprint, ("open", None))
-            if state in SUPPRESSED_STATES:
-                continue
             asset = assets.get(row.host or "")
             out.append(
                 Finding(
-                    id=str(row.id),
-                    fingerprint=row.fingerprint,
                     template_id=row.template_id,
                     name=row.template_name,
                     severity=row.severity,
-                    scanner=row.scanner,
-                    protocol=row.protocol,
                     matched_at=row.matched_at,
                     host=row.host,
                     ip=row.ip,
-                    port=row.port,
-                    url=row.url,
                     description=row.description,
                     impact=row.impact,
                     remediation=row.remediation,
@@ -382,31 +365,18 @@ class ReportSource:
                     cve_ids=list(row.cve_ids or []),
                     cwe_ids=list(row.cwe_ids or []),
                     cvss_score=row.cvss_score,
-                    cvss_metrics=row.cvss_metrics,
                     epss_score=row.epss_score,
                     is_kev=row.is_kev,
-                    state=state,
-                    note=note,
                     is_new=known and (row.fingerprint,) not in baseline,
                     extracted=[str(v) for v in (row.extracted_results or [])],
                     request=row.request,
                     response=row.response,
                     curl=row.curl_command,
-                    matcher=row.matcher_name,
-                    discovered_at=row.discovered_at,
                     screenshot=asset[0] if asset else None,
                     asset_title=asset[1] if asset else None,
                     asset_status=asset[2] if asset else None,
-                    asset_tech=list(asset[3]) if asset else [],
                 )
             )
-        out.sort(
-            key=lambda f: (
-                severity_rank(f.severity),
-                not f.is_kev,
-                -(f.epss_score or 0),
-            )
-        )
         return out
 
     def _asset_context(self, hosts: set[str]) -> dict[str, tuple]:
@@ -421,12 +391,11 @@ class ReportSource:
                 Subdomain.screenshot_path,
                 Subdomain.page_title,
                 Subdomain.http_status,
-                Subdomain.tech,
             ).where(
                 Subdomain.scan_id == scan_id, Subdomain.name.in_(list(hosts)[:2000])
             )
         ).all()
-        return {row[0]: (row[1], row[2], row[3], row[4] or []) for row in rows}
+        return {row[0]: (row[1], row[2], row[3]) for row in rows}
 
     @cached_property
     def coverage_rows(self) -> list[VulnerabilityCoverage]:
@@ -446,8 +415,16 @@ class ReportSource:
     @cached_property
     def severity_counts(self) -> dict[str, int]:
         counts = dict.fromkeys((s.value for s in Severity), 0)
-        for finding in self.findings:
-            counts[finding.severity] = counts.get(finding.severity, 0) + 1
+        scan_id = self.scan_for(_DIM.VULNERABILITIES.value)
+        if scan_id is None:
+            return counts
+        rows = self.session.execute(
+            select(Vulnerability.severity, func.count())
+            .where(Vulnerability.scan_id == scan_id, self._not_suppressed())
+            .group_by(Vulnerability.severity)
+        ).all()
+        for severity, count in rows:
+            counts[severity] = counts.get(severity, 0) + int(count)
         return counts
 
     @cached_property
@@ -455,15 +432,14 @@ class ReportSource:
         scan_id = self.scan_for(_DIM.VULNERABILITIES.value)
         if scan_id is None:
             return 0
-        total = int(
+        return int(
             self.session.execute(
                 select(func.count())
                 .select_from(Vulnerability)
-                .where(Vulnerability.scan_id == scan_id)
+                .where(Vulnerability.scan_id == scan_id, self._suppressed())
             ).scalar()
             or 0
         )
-        return max(0, total - len(self.findings))
 
     # ---------- hosts ----------
 
@@ -493,7 +469,7 @@ class ReportSource:
         by_host = self.findings_by_host
         out: list[Host] = []
         for sub, asset in rows:
-            worst = by_host.get(sub.name)
+            found = by_host.get(sub.name)
             out.append(
                 Host(
                     name=sub.name,
@@ -501,29 +477,17 @@ class ReportSource:
                     title=sub.page_title,
                     url=sub.http_url,
                     ips=list(sub.resolved_ips or []),
-                    cname=sub.cname,
                     tech=list((asset.tech if asset else None) or sub.tech or []),
                     webserver=sub.webserver,
                     is_cdn=bool(asset.is_cdn if asset else sub.is_cdn),
                     cdn_name=(asset.cdn_name if asset else None) or sub.cdn_name,
-                    cdn_type=asset.cdn_type if asset else None,
                     waf=(asset.waf if asset else None) or sub.waf,
-                    asn=sub.asn or (asset.asn if asset else None),
                     asn_org=sub.asn_org or (asset.asn_org if asset else None),
-                    tls_issuer=(asset.tls_issuer_org or asset.tls_issuer_cn)
-                    if asset
-                    else None,
                     tls_not_after=(asset.tls_not_after if asset else None)
                     or sub.tls_not_after,
-                    tls_expired=(asset.tls_expired if asset else None)
-                    if asset
-                    else sub.tls_expired,
-                    tls_self_signed=sub.tls_self_signed,
                     screenshot=sub.screenshot_path,
-                    sources=list(sub.sources or []),
                     is_new=known and (sub.name,) not in baseline,
-                    findings=worst[0] if worst else 0,
-                    worst=worst[1] if worst else None,
+                    findings=found[0] if found else 0,
                 )
             )
         return out
@@ -572,16 +536,12 @@ class ReportSource:
         return [
             Address(
                 ip=row.ip,
-                version=row.version,
                 asn=row.asn,
                 asn_org=row.asn_org,
                 country=row.country,
-                prefix=row.prefix,
                 is_cdn=row.is_cdn,
                 cdn_name=row.cdn_name,
-                cdn_type=row.cdn_type,
                 scan_policy=row.scan_policy,
-                scan_policy_reason=row.scan_policy_reason,
                 ptr=list(row.ptr_hostnames or []),
                 open_ports=ports.get(row.ip, 0),
                 hosts=hosts.get(row.ip, []),
@@ -625,24 +585,21 @@ class ReportSource:
         scan_id = self.scan_for(_DIM.SERVICES.value)
         if scan_id is None:
             return []
-        rows = self.session.execute(
-            select(Port, IpAddress)
-            .outerjoin(
-                IpAddress,
-                and_(IpAddress.scan_id == Port.scan_id, IpAddress.ip == Port.ip),
+        rows = (
+            self.session.execute(
+                select(Port)
+                .where(Port.scan_id == scan_id)
+                .order_by(Port.ip, Port.number)
+                .limit(MAX_REPORT_ROWS)
             )
-            .where(Port.scan_id == scan_id)
-            .order_by(Port.ip, Port.number)
-            .limit(MAX_REPORT_ROWS)
-        ).all()
+            .scalars()
+            .all()
+        )
         hosts = self._hosts_per_ip()
-        baseline = self._baseline_keys(_DIM.SERVICES.value)
-        known = self.has_baseline(_DIM.SERVICES.value)
         return [
             Service(
                 ip=port.ip,
                 port=port.number,
-                protocol=port.protocol,
                 service_name=port.service_name,
                 service_class=port.service_class,
                 product=port.product,
@@ -650,14 +607,10 @@ class ReportSource:
                 banner=port.banner,
                 is_http=port.is_http,
                 tls=port.tls,
-                source=port.source,
                 sensitive=port.number in SENSITIVE_PORTS,
                 hosts=hosts.get(port.ip, []),
-                asn_org=address.asn_org if address else None,
-                country=address.country if address else None,
-                is_new=known and (port.ip, port.number, port.protocol) not in baseline,
             )
-            for port, address in rows
+            for port in rows
         ]
 
     @cached_property
@@ -691,18 +644,12 @@ class ReportSource:
         known = self.has_baseline(_DIM.ENDPOINTS.value)
         return [
             EndpointRow(
-                url=row.url,
                 host=row.host,
                 path=row.path,
                 status=row.status_code,
                 endpoint_class=row.endpoint_class,
-                content_type=row.content_type,
-                length=row.content_length,
-                title=row.title,
                 params=list(row.params or []),
                 interest=list(row.interest or []),
-                sources=list(row.sources or []),
-                is_probed=row.is_probed,
                 is_new=known and (row.signature,) not in baseline,
             )
             for row in rows
@@ -806,15 +753,7 @@ class ReportSource:
     def domain_posture(self) -> PostureRollup | None:
         scan_id = self.scan.id if self.is_scan_scope and self.scan else None
         if scan_id is None:
-            row = self.session.execute(
-                select(DomainPosture.scan_id)
-                .join(Scan, Scan.id == DomainPosture.scan_id)
-                .where(DomainPosture.target_id == self.target.id)
-                .group_by(DomainPosture.scan_id)
-                .order_by(func.max(Scan.created_at).desc())
-                .limit(1)
-            ).first()
-            scan_id = row[0] if row else None
+            scan_id = self._latest_census(DomainPosture)
         if scan_id is None:
             return None
         rows = (
@@ -891,15 +830,11 @@ class ReportSource:
         rows = self.session.execute(
             select(
                 HttpAsset.host,
-                HttpAsset.tls_subject_cn,
                 HttpAsset.tls_issuer_org,
                 HttpAsset.tls_issuer_cn,
-                HttpAsset.tls_not_before,
                 HttpAsset.tls_not_after,
                 HttpAsset.tls_expired,
                 HttpAsset.tls_self_signed,
-                HttpAsset.tls_sans,
-                HttpAsset.tls_version,
             )
             .where(HttpAsset.scan_id == scan_id, HttpAsset.tls_not_after.is_not(None))
             .distinct(HttpAsset.host)
@@ -908,8 +843,7 @@ class ReportSource:
         ).all()
         now = self.observed_at or utc_now()
         out: list[Certificate] = []
-        for row in rows:
-            expires = row[5]
+        for host, issuer_org, issuer_cn, expires, expired, self_signed in rows:
             days = None
             if expires is not None:
                 try:
@@ -918,16 +852,12 @@ class ReportSource:
                     days = None
             out.append(
                 Certificate(
-                    host=row[0],
-                    subject=row[1],
-                    issuer=row[2] or row[3],
-                    not_before=row[4],
+                    host=host,
+                    issuer=issuer_org or issuer_cn,
                     not_after=expires,
-                    expired=row[6],
-                    self_signed=row[7],
+                    expired=expired,
+                    self_signed=self_signed,
                     days_left=days,
-                    sans=len(row[8] or []),
-                    version=row[9],
                 )
             )
         return out
@@ -955,12 +885,6 @@ class ReportSource:
     @cached_property
     def networks(self) -> list[Facet]:
         return self._facet(IpAddress.asn_org, self.scan_for(_DIM.IPS.value), IpAddress)
-
-    @cached_property
-    def webservers(self) -> list[Facet]:
-        return self._facet(
-            HttpAsset.webserver, self.scan_for(_DIM.WEB_ASSETS.value), HttpAsset
-        )
 
     @cached_property
     def technologies(self) -> list[Facet]:
@@ -1052,11 +976,9 @@ class ReportSource:
 
     @cached_property
     def tools_used(self) -> list[str]:
-        try:
-            from stages.registry import stages as stage_specs  # noqa: PLC0415
-        except ImportError:
-            return []
-        specs = {spec.name: spec for spec in stage_specs()}
+        from stages.registry import stage_by_name  # noqa: PLC0415
+
+        specs = stage_by_name()
         names: set[str] = set()
         for stage in self.planned_stages:
             spec = specs.get(stage)
@@ -1066,15 +988,28 @@ class ReportSource:
 
     def trend(self, dimension: str, limit: int = 8) -> list[int]:
         table = _TABLE[dimension]
-        rows = self.session.execute(
-            select(table.scan_id, func.count(), func.max(Scan.created_at).label("at"))
-            .join(Scan, Scan.id == table.scan_id)
-            .where(table.target_id == self.target.id)
-            .group_by(table.scan_id)
-            .order_by(func.max(Scan.created_at).desc())
+        runs = (
+            select(Scan.id, Scan.created_at)
+            .where(
+                Scan.target_id == self.target.id,
+                census_only(),
+                covers(table, dimension),
+            )
+            .order_by(Scan.created_at.desc())
             .limit(limit)
+            .subquery()
+        )
+        count = (
+            select(func.count()).select_from(table).where(table.scan_id == runs.c.id)
+        )
+        if dimension == _DIM.VULNERABILITIES.value:
+            count = count.where(self._not_suppressed())
+        rows = self.session.execute(
+            select(count.scalar_subquery())
+            .select_from(runs)
+            .order_by(runs.c.created_at)
         ).all()
-        return [int(row[1]) for row in reversed(rows)]
+        return [int(row[0] or 0) for row in rows]
 
     def added_and_gone(
         self, dimension: str, limit: int = 40
@@ -1086,17 +1021,16 @@ class ReportSource:
             return ([], [], 0, 0)
         table = _TABLE[dimension]
         columns = _KEY[dimension]
-        label = _LABEL[dimension]
-        service = dimension == _DIM.SERVICES.value
+        labels = _LABEL[dimension]
 
         def read(scan: UUID) -> dict[tuple, str]:
             rows = self.session.execute(
-                select(*columns, label).where(table.scan_id == scan).distinct()
+                select(*columns, *labels).where(table.scan_id == scan).distinct()
             )
             out: dict[tuple, str] = {}
             for row in rows:
                 key = tuple(row[: len(columns)])
-                out[key] = f"{row[-1]}:{key[1]}" if service else str(row[-1])
+                out[key] = _change_label(dimension, key, tuple(row[len(columns) :]))
             return out
 
         current = read(scan_id)
@@ -1113,9 +1047,6 @@ class ReportSource:
             "paths": list(config.get("excluded_paths") or []),
         }
 
-    def has_any(self, *dimensions: str) -> bool:
-        return any(self.count_of(d) for d in dimensions)
-
     @cached_property
     def origin_candidates(self) -> list[tuple[str, str, str, list[str]]]:
         """Addresses answering directly that share an identity with a CDN-fronted hostname."""
@@ -1128,6 +1059,7 @@ class ReportSource:
                 HttpAsset.ip,
                 HttpAsset.cdn_type,
                 HttpAsset.content_hash,
+                HttpAsset.content_length,
                 HttpAsset.tls_fingerprint,
                 HttpAsset.favicon_hash,
                 HttpAsset.status_code,
@@ -1139,8 +1071,13 @@ class ReportSource:
 
         fronted: dict[tuple[str, str], set[str]] = {}
         direct: dict[tuple[str, str], set[str]] = {}
-        for host, ip, cdn_type, content, tls, favicon, _status in rows:
-            for kind, value in (("body", content), ("tls", tls), ("favicon", favicon)):
+        for host, ip, cdn_type, content, length, tls, favicon, status in rows:
+            body = (
+                f"{status}:{content}"
+                if content and (length or 0) >= MIN_BODY_BYTES
+                else None
+            )
+            for kind, value in (("body", body), ("tls", tls), ("favicon", favicon)):
                 if not value:
                     continue
                 bucket = fronted if cdn_type in {"cdn", "waf"} else direct

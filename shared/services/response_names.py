@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 from collections import defaultdict
-from urllib.parse import urlsplit
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -12,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from shared.enums.subdomain import SubdomainSource
 from shared.models.http_asset import HttpAsset
+from shared.utils.net import url_host
 
 BODY_SCAN_BYTES = 500_000
 STREAM_BATCH = 200
@@ -51,15 +51,6 @@ def _clean(name: str | None, root: str) -> str:
     return host if host == root or host.endswith(f".{root}") else ""
 
 
-def _url_host(url: str | None) -> str:
-    if not url:
-        return ""
-    try:
-        return urlsplit(url).hostname or ""
-    except ValueError:
-        return ""
-
-
 def harvest(
     rows: list[
         tuple[str | None, list | None, str | None, str | None, str | None, str | None]
@@ -80,7 +71,7 @@ def harvest(
         for name in (subject, *(sans or [])):
             _add(str(name) if name else None, SubdomainSource.TLS_CERT)
         for url in (location, final_url):
-            _add(_url_host(url), SubdomainSource.REDIRECT)
+            _add(url_host(url), SubdomainSource.REDIRECT)
         if header:
             for match in pattern.findall(_unescape(header)):
                 _add(match, SubdomainSource.RESPONSE_HEADER)

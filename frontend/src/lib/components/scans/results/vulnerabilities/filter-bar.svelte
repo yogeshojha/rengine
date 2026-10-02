@@ -120,7 +120,7 @@
 		{/if}
 		{#if facets.host.length}
 			<FacetedFilter
-				title="Host"
+				title="Web asset"
 				options={options(facets.host)}
 				selected={query.hosts}
 				onChange={(v) => setList('hosts', v)}
@@ -159,7 +159,7 @@
 		</div>
 	</div>
 
-	<div class="flex items-center gap-2">
+	<div class="flex min-w-0 flex-wrap items-center gap-2">
 		<ViewControls
 			dimension={SurfaceDimension.VULNERABILITIES}
 			{dimensions}

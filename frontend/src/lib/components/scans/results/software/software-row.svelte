@@ -21,9 +21,18 @@
 	import { relativeTime } from '$lib/utilities/dates';
 	import { ROUTES } from '$lib/config/routes';
 	import { SEVERITY_FILL, SEVERITY_TEXT, severityLabel } from '$lib/config/vulnerabilities';
-	import { CAVEAT_HELP, CONFIDENCE_HELP, CONFIDENCE_TEXT } from '$lib/config/software';
+	import { CAVEAT_HELP, CONFIDENCE_HELP, CONFIDENCE_TEXT, nvdUrl } from '$lib/config/software';
 	import type { SoftwareCve } from '$lib/types/software';
-	import { ACTIONS_BODY, ACTIONS_PIN, pinTone, rowTone, type TableColumn } from '../table/columns';
+	import {
+		ACTIONS_BODY,
+		ACTIONS_PIN,
+		TARGET_COLUMN,
+		columnCell,
+		pinTone,
+		rowTone,
+		type TableColumn
+	} from '../table/columns';
+	import { bracketed } from '$lib/utilities/net';
 	import { SOFTWARE_LEAD_COLUMNS } from './columns';
 
 	interface Props {
@@ -31,7 +40,6 @@
 		term?: string;
 		columns: TableColumn[];
 		selected: boolean;
-		focused: boolean;
 		checked?: boolean;
 		projectWide?: boolean;
 		pad: string;
@@ -45,7 +53,6 @@
 		term = '',
 		columns,
 		selected,
-		focused,
 		checked = false,
 		projectWide = false,
 		pad,
@@ -54,10 +61,7 @@
 		onToken
 	}: Props = $props();
 
-	const NVD = 'https://nvd.nist.gov/vuln/detail/';
-
-	let shown = $derived(new Set(columns.map((c) => c.key)));
-	let width = $derived(new Map(columns.map((c) => [c.key, c.width])));
+	let cells = $derived(columns.filter((c) => c.key !== 'target'));
 	let location = $derived(row.host ?? row.ip ?? '');
 	let epss = $derived(row.epss_score == null ? null : Math.round(row.epss_score * 100));
 	let fill = $derived(SEVERITY_FILL[row.severity] ?? SEVERITY_FILL.unknown);
@@ -73,7 +77,7 @@
 
 	const fixedHint = $derived(
 		row.fixed_in && row.fixed_in_assets
-			? `Not affected: ${row.name} ${row.fixed_in}, ${plural(row.fixed_in_assets, 'asset')} in this scan`
+			? `Not affected: ${row.name} ${row.fixed_in}, ${plural(row.fixed_in_assets, 'asset')} on the same target`
 			: null
 	);
 </script>
@@ -83,7 +87,7 @@
 	tabindex="0"
 	class="group relative flex w-full items-stretch gap-3 pr-0 pl-4 text-left text-sm {rowTone(
 		selected,
-		focused
+		false
 	)}"
 	onclick={() => onOpen(row)}
 	onkeydown={(e) => {
@@ -112,8 +116,8 @@
 	{/if}
 
 	{#if projectWide}
-		<div class="flex shrink-0 items-center {width.get('target')} {pad}">
-			<TargetCell value={row.target_value} />
+		<div class="flex shrink-0 items-center {TARGET_COLUMN.width} {pad}">
+			<TargetCell value={row.target_value} onFilter={onToken} />
 		</div>
 	{/if}
 
@@ -164,66 +168,50 @@
 		</span>
 	</div>
 
-	{#if shown.has('asset')}
-		<div class="flex min-w-56 max-w-[22rem] grow items-center gap-2 {pad}">
-			{#if row.http_asset_id}
-				<Globe class="size-3.5 shrink-0 text-muted-foreground" />
-			{:else}
-				<Server class="size-3.5 shrink-0 text-muted-foreground" />
-			{/if}
-			<span class="min-w-0 break-all">
-				<HighlightText text={location} {term} />
-				{#if row.port}<span class="text-muted-foreground">:{row.port}</span>{/if}
-			</span>
-		</div>
-	{/if}
-
-	{#if shown.has('severity')}
-		<div class="flex items-center gap-1.5 {width.get('severity')} {pad}">
-			<span class={SEVERITY_TEXT[row.severity] ?? 'text-muted-foreground'}>
-				{severityLabel(row.severity)}
-			</span>
-			{#if row.cvss_score != null}
-				<span class="text-xs text-muted-foreground tabular-nums">{row.cvss_score.toFixed(1)}</span>
-			{/if}
-		</div>
-	{/if}
-
-	{#if shown.has('exploitation')}
-		<div class="flex items-center {width.get('exploitation')} {pad}">
-			{#if epss != null}
-				<span class="text-xs tabular-nums">{epss}%</span>
-			{:else}
-				<span class="text-xs text-muted-foreground">Not scored</span>
-			{/if}
-		</div>
-	{/if}
-
-	{#if shown.has('evidence')}
-		<div class="flex items-center {width.get('evidence')} {pad}">
-			<EvidenceMark evidence={row.evidence} onFilter={onToken} />
-		</div>
-	{/if}
-
-	{#if shown.has('confidence')}
-		<div class="flex items-center {width.get('confidence')} {pad}">
-			<Hint text={confidenceHint}>
-				{#snippet child(props)}
-					<span {...props} class={CONFIDENCE_TEXT[row.confidence] ?? 'text-muted-foreground'}>
-						{row.confidence_label}
+	{#each cells as col (col.key)}
+		<div class="{columnCell(col)} items-center gap-2 {pad}">
+			{#if col.key === 'asset'}
+				{#if row.http_asset_id}
+					<Globe class="size-3.5 shrink-0 text-muted-foreground" />
+				{:else}
+					<Server class="size-3.5 shrink-0 text-muted-foreground" />
+				{/if}
+				<span class="min-w-0 break-all">
+					<HighlightText text={bracketed(location)} {term} />
+					{#if row.port}<span class="text-muted-foreground">:{row.port}</span>{/if}
+				</span>
+			{:else if col.key === 'severity'}
+				<span class={SEVERITY_TEXT[row.severity] ?? 'text-muted-foreground'}>
+					{severityLabel(row.severity)}
+				</span>
+				{#if row.cvss_score != null}
+					<span class="text-xs text-muted-foreground tabular-nums">
+						{row.cvss_score.toFixed(1)}
 					</span>
-				{/snippet}
-			</Hint>
+				{/if}
+			{:else if col.key === 'exploitation'}
+				{#if epss != null}
+					<span class="text-xs tabular-nums">{epss}%</span>
+				{:else}
+					<span class="text-xs text-muted-foreground">Not scored</span>
+				{/if}
+			{:else if col.key === 'evidence'}
+				<EvidenceMark evidence={row.evidence} onFilter={onToken} />
+			{:else if col.key === 'confidence'}
+				<Hint text={confidenceHint}>
+					{#snippet child(props)}
+						<span {...props} class={CONFIDENCE_TEXT[row.confidence] ?? 'text-muted-foreground'}>
+							{row.confidence_label}
+						</span>
+					{/snippet}
+				</Hint>
+			{:else if col.key === 'seen'}
+				<span class="text-xs text-muted-foreground">{relativeTime(row.discovered_at)}</span>
+			{/if}
 		</div>
-	{/if}
+	{/each}
 
-	{#if shown.has('seen')}
-		<div class="flex items-center text-xs text-muted-foreground {width.get('seen')} {pad}">
-			{relativeTime(row.discovered_at)}
-		</div>
-	{/if}
-
-	<div class="{ACTIONS_PIN} {pinTone(selected, focused)}">
+	<div class="{ACTIONS_PIN} {pinTone(selected, false)}">
 		<div class={ACTIONS_BODY}>
 			<Hint text="Hide all {row.name}">
 				{#snippet child(props)}
@@ -281,7 +269,7 @@
 						<DropdownMenu.Separator />
 						<DropdownMenu.Item>
 							{#snippet child({ props })}
-								<a {...props} href={`${NVD}${row.cve}`} target="_blank" rel="noreferrer noopener">
+								<a {...props} href={nvdUrl(row.cve)} target="_blank" rel="noreferrer noopener">
 									<ExternalLink class="size-3.5" />
 									Open on NVD
 								</a>

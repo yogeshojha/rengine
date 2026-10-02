@@ -13,10 +13,11 @@
 	import TopBar from '$lib/components/layout/top-bar.svelte';
 	import NotificationToasts from '$lib/components/notifications/notification-toasts.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import { SIDEBAR_COOKIE_NAME } from '$lib/components/ui/sidebar/constants.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
-	import CreateFirstProjectModal from '@/components/modals/create-first-project-modal.svelte';
-	import { getRouteLabel, ROUTES } from '$lib/config/routes';
+	import CreateFirstProjectModal from '$lib/components/modals/create-first-project-modal.svelte';
+	import { crumbHref, getRouteLabel, ROUTES, UUID_REGEX } from '$lib/config/routes';
 	import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
 	import ActivityPanel from '$lib/components/activity/activity-panel.svelte';
 
@@ -27,7 +28,7 @@
 	onMount(() => {
 		const saved = document.cookie
 			.split('; ')
-			.find((c) => c.startsWith('sidebar:state='))
+			.find((c) => c.startsWith(`${SIDEBAR_COOKIE_NAME}=`))
 			?.split('=')[1];
 		if (saved !== undefined) {
 			sidebarOpen = saved === 'true';
@@ -80,7 +81,6 @@
 		});
 	});
 
-	// reads activeProject so a project switch tears the stream down and re-inits it on the new channel
 	$effect(() => {
 		if (auth.isAuthenticated && !auth.isLoading) {
 			const projectId = projectsStore.activeProject?.id;
@@ -108,13 +108,9 @@
 			projectsStore.projects.length === 0
 	);
 
-	const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 	const NEW_ENTITY_LABEL: Record<string, string> = {
 		contexts: 'New context',
-		engines: 'New engine',
-		targets: 'New target',
-		scans: 'New scan'
+		engines: 'New engine'
 	};
 
 	let breadcrumbs = $derived.by(() => {
@@ -123,7 +119,7 @@
 
 		return segments
 			.flatMap((segment, index) => {
-				const href = '/' + segments.slice(0, index + 1).join('/');
+				const href = crumbHref('/' + segments.slice(0, index + 1).join('/'));
 				const trail = breadcrumbStore.getTrail(segment);
 				if (trail) return trail;
 				const override = breadcrumbStore.getLabel(segment);
@@ -134,7 +130,7 @@
 					return { label: NEW_ENTITY_LABEL[parent] ?? 'New', href };
 				}
 
-				if (UUID_RE.test(segment)) {
+				if (UUID_REGEX.test(segment)) {
 					return { label: segment.slice(0, 8), href };
 				}
 

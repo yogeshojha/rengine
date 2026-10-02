@@ -57,10 +57,11 @@
 		saving = true;
 		try {
 			const updated = await instanceSettingsStore.update(patch);
-			if (!updated) return;
+			if (!updated) return null;
 			capabilitiesStore.setMode(updated.mode);
 			capabilitiesStore.setInstanceName(updated.instance_name);
 			toast.success(`${label} saved`);
+			return updated;
 		} finally {
 			saving = false;
 		}
@@ -75,7 +76,9 @@
 			toast.error('Instance name is required');
 			return;
 		}
-		void save({ instance_name: next }, 'Instance name');
+		void save({ instance_name: next }, 'Instance name').then((updated) => {
+			if (!updated && settings) name = settings.instance_name;
+		});
 	}
 </script>
 

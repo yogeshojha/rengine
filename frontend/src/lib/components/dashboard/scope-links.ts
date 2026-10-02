@@ -1,6 +1,6 @@
 import { getContext, setContext } from 'svelte';
 import { ROUTES } from '$lib/config/routes';
-import { SURFACE_ORDER } from '$lib/config/surface';
+import { SURFACE, SURFACE_ORDER, type SurfaceDimension } from '$lib/config/surface';
 import type { TargetScope } from '$lib/utilities/surface-scope';
 
 const KEY = Symbol('dashboard-scope-links');
@@ -12,6 +12,10 @@ export interface ScopeLinks {
 
 export function provideScopeLinks(links: ScopeLinks) {
 	setContext(KEY, links);
+}
+
+export function onDashboard(): boolean {
+	return getContext<ScopeLinks | undefined>(KEY) !== undefined;
 }
 
 export function scopeClause(values: string[]): string {
@@ -41,9 +45,14 @@ export function useScopedRoutes() {
 	};
 	const results = (tab: string, scanId?: string | null, query?: Record<string, string>) =>
 		scanId ? ROUTES.results(tab, scanId, query) : surface(tab, query);
+	const rows = (key: SurfaceDimension, q: string) => {
+		const spec = SURFACE[key];
+		return surface(spec.tab, { ...spec.rowView, [spec.queryParam]: q });
+	};
 	return {
 		surface,
 		results,
+		rows,
 		query: (q: string) => withClause(links?.clause ?? '', q),
 		get scope(): TargetScope {
 			return links?.scope ?? {};

@@ -40,13 +40,19 @@ class KindSpec:
     def column(self) -> Any:
         return getattr(self.model, self.attr)
 
-    def value(self) -> Any:
+    def elements(self) -> Any | None:
+        """A list column's elements, joined LATERAL on true; None for a scalar column."""
+        if not self.json_array:
+            return None
+        return (
+            func.json_array_elements_text(self.column)
+            .table_valued("value")
+            .lateral(f"{self.attr}_value")
+        )
+
+    def value(self, elements: Any | None = None) -> Any:
         """The scalar a row contributes, one per element for a list column."""
-        if self.json_array:
-            return func.json_array_elements_text(self.column).column_valued(
-                f"{self.attr}_value"
-            )
-        return self.column
+        return self.column if elements is None else elements.c.value
 
     def carried(self) -> Any:
         """A row that carries at least one value of this kind."""

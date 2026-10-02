@@ -7,6 +7,7 @@
 	import ResultsPagination from '$lib/components/scans/results/table/results-pagination.svelte';
 	import ChangeRowItem from './change-row.svelte';
 	import type { ChangeRow } from '$lib/types/compare';
+	import { plural } from '$lib/utilities/strings';
 
 	interface Props {
 		rows: ChangeRow[];
@@ -78,12 +79,11 @@
 	{#if digest}
 		{#if rows.length < total}
 			<p class="border-t bg-muted/20 px-4 py-3 text-xs text-muted-foreground sm:px-5">
-				{rows.length.toLocaleString()} of {total.toLocaleString()} changes, highest signal first.
+				{rows.length.toLocaleString()} of {total.toLocaleString()} changes
 			</p>
 		{:else}
 			<p class="border-t bg-muted/20 px-4 py-3 text-xs text-muted-foreground sm:px-5">
-				{total.toLocaleString()}
-				{total === 1 ? 'change' : 'changes'}, highest signal first.
+				{plural(total, 'change')}
 			</p>
 		{/if}
 	{:else}

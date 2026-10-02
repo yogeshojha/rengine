@@ -35,7 +35,6 @@
 		showGroupBy?: boolean;
 		showColumns?: boolean;
 		columnsLocked?: boolean;
-		showExport?: boolean;
 	}
 
 	let {
@@ -59,8 +58,7 @@
 		exportFilters = {},
 		showGroupBy = true,
 		showColumns = true,
-		columnsLocked = false,
-		showExport = true
+		columnsLocked = false
 	}: Props = $props();
 
 	let groupLabel = $derived(dimensions.find((d) => d.key === groupBy)?.label ?? 'Group');
@@ -158,9 +156,7 @@
 	</DropdownMenu.Root>
 {/if}
 
-{#if showExport}
-	<ExportMenu {dimension} {projectId} {scanId} filters={exportFilters} />
-{/if}
+<ExportMenu {dimension} {projectId} {scanId} filters={exportFilters} />
 <TripwireButton
 	{dimension}
 	{projectId}

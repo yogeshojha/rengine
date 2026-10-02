@@ -3,16 +3,16 @@ import { plural } from '$lib/utilities/strings';
 
 type CtxLike = ScanContextRead | ScanContextCreate;
 
-export type FacetKey = 'auth' | 'headers' | 'rate' | 'scope' | 'runtime' | 'proxy';
+type FacetKey = 'auth' | 'headers' | 'rate' | 'scope' | 'runtime' | 'proxy';
 
-export interface ContextFacet {
+interface ContextFacet {
 	key: FacetKey;
 	label: string;
 	set: boolean;
 	value: string;
 }
 
-export const FACET_LABELS: Record<FacetKey, string> = {
+const FACET_LABELS: Record<FacetKey, string> = {
 	auth: 'Auth',
 	headers: 'Headers',
 	rate: 'Rate',
@@ -22,12 +22,12 @@ export const FACET_LABELS: Record<FacetKey, string> = {
 };
 
 export const HTTP_PROTOCOL_LABELS: Record<HttpProtocol, string> = {
-	both: '',
+	both: 'HTTP and HTTPS',
 	http_only: 'HTTP only',
 	https_only: 'HTTPS only'
 };
 
-export const PASS_THROUGH = 'No overrides';
+const PASS_THROUGH = 'No overrides';
 
 export function authBadgeLabel(ctx: CtxLike): string {
 	switch (ctx.auth_type) {
@@ -42,14 +42,14 @@ export function authBadgeLabel(ctx: CtxLike): string {
 		case 'cookie':
 			return 'Cookie';
 		case 'api_key':
-			return ctx.auth?.api_key_name || 'API Key';
+			return ctx.auth?.api_key_name || 'API key';
 		case 'none':
 		default:
 			return 'No auth';
 	}
 }
 
-export function authLabel(ctx: CtxLike): string {
+function authLabel(ctx: CtxLike): string {
 	switch (ctx.auth_type) {
 		case 'bearer':
 			return 'Bearer token';
@@ -99,8 +99,7 @@ export function contextFacets(ctx: CtxLike, proxyName?: string | null): ContextF
 	}
 
 	const runtime: string[] = [];
-	const proto = HTTP_PROTOCOL_LABELS[ctx.http_protocol];
-	if (proto) runtime.push(proto);
+	if (ctx.http_protocol !== 'both') runtime.push(HTTP_PROTOCOL_LABELS[ctx.http_protocol]);
 	if (ctx.follow_redirects_override != null) {
 		runtime.push(ctx.follow_redirects_override ? 'redirects followed' : 'redirects not followed');
 	}

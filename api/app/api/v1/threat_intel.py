@@ -1,34 +1,26 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query
+from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentSuperuser, CurrentUser
-from app.api.scope import TargetFilterDep
+from app.api.scope import TargetFilterDep, resolve_scope
 from app.core.database import get_session
-from app.services.target_scope import resolve_targets
+from app.services.target_scope import TargetFilter
 from app.services.threat_intel import ThreatIntelService
-from shared.definitions.threat_intel import (
-    EXPLOIT_BANDS,
-    FEEDS,
-    MAX_EXPLOIT_SCORE,
-    SIGNALS,
-)
-from shared.models.scan import Scan
+from shared.definitions.surface import SurfaceDimension
+from shared.definitions.threat_intel import FEEDS
 from shared.models.threat_intel import (
     AutoSyncUpdate,
-    CveIntelRead,
     FindingIntel,
     IntelChange,
     SignalFinding,
     SyncResult,
     ThreatIntelStatus,
 )
-from shared.services.celery_dispatch import (
-    dispatch_threat_intel,
-    dispatch_threat_intel_refresh,
-)
+from shared.services.asset_query import QueryScope
+from shared.services.celery_dispatch import dispatch_threat_intel_refresh
 
 router = APIRouter(prefix="/threat-intel", tags=["threat intelligence"])
 
@@ -39,44 +31,14 @@ def get_service(
     return ThreatIntelService(session)
 
 
-@router.get("/vocabulary")
-async def vocabulary(_current_user: CurrentUser) -> dict:
-    """Exploitation vocabulary."""
-    return {
-        "feeds": [
-            {
-                "kind": f.kind,
-                "label": f.label,
-                "tagline": f.tagline,
-                "description": f.description,
-                "source": f.source,
-                "source_url": f.source_url,
-                "url": f.url,
-                "license": f.license,
-            }
-            for f in FEEDS
-        ],
-        "bands": [
-            {
-                "key": b.key,
-                "label": b.label,
-                "floor": b.floor,
-                "description": b.description,
-            }
-            for b in EXPLOIT_BANDS
-        ],
-        "signals": [
-            {
-                "kind": s.kind,
-                "label": s.label,
-                "help": s.help,
-                "weight": s.weight,
-                "tone": s.tone,
-            }
-            for s in SIGNALS
-        ],
-        "max_score": MAX_EXPLOIT_SCORE,
-    }
+async def _findings_scope(
+    session: AsyncSession, project_id: UUID | None, spec: TargetFilter
+) -> QueryScope | None:
+    if project_id is None:
+        return None
+    return await resolve_scope(
+        session, SurfaceDimension.VULNERABILITIES.value, None, project_id, spec
+    )
 
 
 @router.get("/status", response_model=ThreatIntelStatus)
@@ -86,8 +48,8 @@ async def status(
     spec: TargetFilterDep,
     project_id: Annotated[UUID | None, Query()] = None,
 ) -> ThreatIntelStatus:
-    targets = await resolve_targets(service.session, project_id, spec)
-    return await service.status(project_id, targets)
+    scope = await _findings_scope(service.session, project_id, spec)
+    return await service.status(scope)
 
 
 @router.get("/changes", response_model=list[IntelChange])
@@ -99,8 +61,8 @@ async def changes(
     days: Annotated[int, Query(ge=1, le=90)] = 7,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ) -> list[IntelChange]:
-    targets = await resolve_targets(service.session, project_id, spec)
-    return await service.changes(project_id, days=days, limit=limit, targets=targets)
+    scope = await _findings_scope(service.session, project_id, spec)
+    return await service.changes(scope, days=days, limit=limit)
 
 
 @router.put("/auto-sync", response_model=ThreatIntelStatus)
@@ -112,13 +74,14 @@ async def set_auto_sync(
 ) -> ThreatIntelStatus:
     """Turn the nightly download on or off."""
     await service.set_auto_sync(body.enabled)
-    return await service.status(project_id)
+    scope = await _findings_scope(service.session, project_id, TargetFilter())
+    return await service.status(scope)
 
 
 @router.post("/sync", response_model=SyncResult)
 async def sync(_current_user: CurrentSuperuser) -> SyncResult:
     """Download the feeds and re-rank every finding."""
-    queued = dispatch_threat_intel_refresh(force=True)
+    queued = dispatch_threat_intel_refresh()
     return SyncResult(
         queued=queued,
         feeds=[f.kind for f in FEEDS],
@@ -126,34 +89,6 @@ async def sync(_current_user: CurrentSuperuser) -> SyncResult:
         if queued
         else "The task queue did not accept the sync. Check the worker.",
     )
-
-
-@router.post("/scan/{scan_id}/enrich", response_model=SyncResult)
-async def enrich(
-    _current_user: CurrentUser,
-    session: Annotated[AsyncSession, Depends(get_session)],
-    scan_id: Annotated[UUID, Path()],
-) -> SyncResult:
-    """Fetch provider intel for the scan's CVEs and re-rank."""
-    if await session.get(Scan, scan_id) is None:
-        raise HTTPException(status_code=404, detail="Scan not found")
-    queued = dispatch_threat_intel(str(scan_id))
-    return SyncResult(
-        queued=queued,
-        feeds=["vulnx"],
-        detail=None
-        if queued
-        else "The task queue did not accept the request. Check the worker.",
-    )
-
-
-@router.get("/cve/{cve_id}", response_model=CveIntelRead)
-async def cve(
-    _current_user: CurrentUser,
-    service: Annotated[ThreatIntelService, Depends(get_service)],
-    cve_id: Annotated[str, Path(max_length=30)],
-) -> CveIntelRead:
-    return await service.cve(cve_id)
 
 
 @router.get("/finding/{vulnerability_id}", response_model=FindingIntel)
@@ -175,5 +110,5 @@ async def signal_findings(
     limit: Annotated[int, Query(ge=1, le=500)] = 100,
 ) -> list[SignalFinding]:
     """Findings behind one signal count."""
-    targets = await resolve_targets(service.session, project_id, spec)
-    return await service.signal_findings(kind, project_id, limit=limit, targets=targets)
+    scope = await _findings_scope(service.session, project_id, spec)
+    return await service.signal_findings(kind, scope, limit=limit)

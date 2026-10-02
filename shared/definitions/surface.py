@@ -198,18 +198,7 @@ SURFACE_COLUMNS: dict[str, tuple[str, ...]] = {
     ),
 }
 
-# the column a human reads first
-SURFACE_IDENTITY: dict[str, str] = {
-    SurfaceDimension.WEB_ASSETS.value: "name",
-    SurfaceDimension.ENDPOINTS.value: "url",
-    SurfaceDimension.SERVICES.value: "ip",
-    SurfaceDimension.IPS.value: "ip",
-    SurfaceDimension.VULNERABILITIES.value: "template_name",
-    SurfaceDimension.SOFTWARE.value: "cve",
-    SurfaceDimension.SECRETS.value: "value",
-}
-
-# the one value a plain text export writes per line, for piping into the next tool
+# the value a plain text export writes per line
 SURFACE_TEXT_VALUE: dict[str, tuple[str, ...]] = {
     SurfaceDimension.WEB_ASSETS.value: ("name",),
     SurfaceDimension.ENDPOINTS.value: ("url",),
@@ -222,7 +211,5 @@ SURFACE_TEXT_VALUE: dict[str, tuple[str, ...]] = {
 
 # a dimension an export can write: every map an export run reads has an entry for it
 EXPORTABLE_DIMENSIONS: tuple[str, ...] = tuple(
-    d
-    for d in SURFACE_ORDER
-    if d in SURFACE_COLUMNS and d in SURFACE_IDENTITY and d in SURFACE_TEXT_VALUE
+    d for d in SURFACE_ORDER if d in SURFACE_COLUMNS and d in SURFACE_TEXT_VALUE
 )

@@ -4,8 +4,6 @@ Revision ID: b8e1f4a2c6d9
 Revises: d5f7b9c1e3a4
 Create Date: 2026-06-22 23:00:00.000000+00:00
 
-Per-stage activity timeline + per-command registration & log capture for the
-scan orchestrator, plus the celery task-id abort handle on scans.
 """
 
 from collections.abc import Sequence
@@ -133,14 +131,12 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_scan_commands_project_id"), table_name="scan_commands")
     op.drop_index(op.f("ix_scan_commands_activity_id"), table_name="scan_commands")
     op.drop_index(op.f("ix_scan_commands_scan_id"), table_name="scan_commands")
-    op.drop_index(op.f("ix_scan_commands_id"), table_name="scan_commands")
     op.drop_table("scan_commands")
 
     op.drop_index(op.f("ix_scan_activities_status"), table_name="scan_activities")
     op.drop_index(op.f("ix_scan_activities_name"), table_name="scan_activities")
     op.drop_index(op.f("ix_scan_activities_project_id"), table_name="scan_activities")
     op.drop_index(op.f("ix_scan_activities_scan_id"), table_name="scan_activities")
-    op.drop_index(op.f("ix_scan_activities_id"), table_name="scan_activities")
     op.drop_table("scan_activities")
 
     op.drop_column("scans", "celery_task_ids")

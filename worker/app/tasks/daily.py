@@ -1,4 +1,4 @@
-"""Once-a-day jobs, run in order. One job failing does not stop the next."""
+"""Once-a-day jobs, run in order."""
 
 from __future__ import annotations
 

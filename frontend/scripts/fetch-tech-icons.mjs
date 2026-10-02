@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-// Vendors Wappalyzer technology logos into static/tech-icons/<slug>.svg.
-// Tech names come from `httpx -tech-detect` (wappalyzergo), which shares this vocabulary.
 import { execFile } from 'node:child_process';
 import { mkdtemp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
@@ -12,10 +10,12 @@ import { promisify } from 'node:util';
 const run = promisify(execFile);
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'static', 'tech-icons');
-const TARBALL = 'https://codeload.github.com/enthec/webappanalyzer/tar.gz/refs/heads/main';
+const TARBALL =
+	'https://codeload.github.com/enthec/webappanalyzer/tar.gz/eea872af449e207e055398f7369d11ee48c8ea03';
 const MAX_BYTES = 32 * 1024;
+const ACTIVE = /<script|<foreignObject|\son\w+\s*=|javascript:/i;
 
-export const techIconSlug = (name) =>
+const techIconSlug = (name) =>
 	name
 		.toLowerCase()
 		.replace(/[^a-z0-9]+/g, '-')
@@ -90,7 +90,7 @@ async function main() {
 		let plated = 0;
 		let aliased = 0;
 		const claimed = new Set();
-		const skipped = { missing: 0, raster: 0, oversized: 0, collided: 0 };
+		const skipped = { missing: 0, raster: 0, oversized: 0, collided: 0, rejected: 0 };
 		for (const [name, icon] of icons) {
 			if (!icon.endsWith('.svg')) {
 				skipped.raster++;
@@ -111,6 +111,10 @@ async function main() {
 				skipped.oversized++;
 				continue;
 			}
+			if (ACTIVE.test(min)) {
+				skipped.rejected++;
+				continue;
+			}
 			const slug = techIconSlug(name);
 			if (claimed.has(slug)) {
 				skipped.collided++;
@@ -122,7 +126,6 @@ async function main() {
 			const out = plate ? withPlate(min, plate) : min;
 			await writeFile(join(OUT, `${slug}.svg`), out);
 			written++;
-			// several technologies share one logo file, so key it by brand too (Google Web Server -> google)
 			const brand = techIconSlug(icon.replace(/\.svg$/, ''));
 			if (brand && !claimed.has(brand)) {
 				claimed.add(brand);
@@ -135,7 +138,8 @@ async function main() {
 			`wrote ${written} icons + ${aliased} brand aliases to static/tech-icons ` +
 				`(${plated} plated for contrast) ` +
 				`(skipped ${skipped.raster} raster, ${skipped.oversized} oversized, ` +
-				`${skipped.collided} slug collisions, ${skipped.missing} missing)\n`
+				`${skipped.collided} slug collisions, ${skipped.missing} missing, ` +
+				`${skipped.rejected} with script)\n`
 		);
 	} finally {
 		await rm(tmp, { recursive: true, force: true });

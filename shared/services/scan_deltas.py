@@ -171,17 +171,11 @@ def _stored_facts(dimension: str, scan_ids: list[UUID], *, loose: bool):
     return query if loose else query.where(ScanDelta.history_rev == current)
 
 
-def _stored_retired(dimension: str, pairs: list[Pair], *, loose: bool):
+def _stored_retired(dimension: str, pairs: list[Pair]):
     own = aliased(ScanRevision)
     prev = aliased(ScanRevision)
-    fresh = and_(
-        ScanRetired.rows_rev == func.coalesce(own.rows_rev, 0),
-        ScanRetired.prev_rows_rev == func.coalesce(prev.rows_rev, 0),
-    )
-    query = (
-        select(
-            ScanRetired.scan_id, ScanRetired.prev_scan_id, ScanRetired.retired, fresh
-        )
+    return (
+        select(ScanRetired.scan_id, ScanRetired.prev_scan_id, ScanRetired.retired)
         .select_from(ScanRetired)
         .outerjoin(
             own,
@@ -194,9 +188,10 @@ def _stored_retired(dimension: str, pairs: list[Pair], *, loose: bool):
         .where(
             ScanRetired.dimension == dimension,
             tuple_(ScanRetired.scan_id, ScanRetired.prev_scan_id).in_(pairs),
+            ScanRetired.rows_rev == func.coalesce(own.rows_rev, 0),
+            ScanRetired.prev_rows_rev == func.coalesce(prev.rows_rev, 0),
         )
     )
-    return query if loose else query.where(fresh)
 
 
 # ---------- read-through ----------
@@ -289,30 +284,22 @@ def retired(
     session: Session,
     dimension: str,
     pairs: Iterable[Pair],
-    *,
-    reuse: frozenset[UUID] = frozenset(),
-) -> tuple[dict[Pair, int], Fill, set[UUID]]:
+) -> tuple[dict[Pair, int], Fill]:
     """Per (scan, previous scan), keys the previous one held that the scan lacks."""
     wanted = list(dict.fromkeys(pairs))
     if not wanted:
-        return {}, Fill([], []), set()
-    out: dict[Pair, int] = {}
-    stale: set[UUID] = set()
-    for scan_id, prev_id, count, fresh in session.execute(
-        _stored_retired(dimension, wanted, loose=bool(reuse))
-    ).all():
-        if fresh or scan_id in reuse:
-            out[(scan_id, prev_id)] = int(count)
-            if not fresh:
-                stale.add(scan_id)
+        return {}, Fill([], [])
+    out: dict[Pair, int] = {
+        (scan_id, prev_id): int(count)
+        for scan_id, prev_id, count in session.execute(
+            _stored_retired(dimension, wanted)
+        ).all()
+    }
     rows: list[dict] = []
     for pair in wanted:
         if pair in out:
             continue
         scan_id, prev_id = pair
-        if scan_id in reuse:
-            stale.add(scan_id)
-            continue
         own, prev, count = session.execute(
             _retired_statement(dimension, scan_id, prev_id)
         ).one()
@@ -327,7 +314,7 @@ def retired(
                 "retired": int(count),
             }
         )
-    return out, Fill([], rows), stale
+    return out, Fill([], rows)
 
 
 def store(session: Session, fill: Fill) -> None:
@@ -448,7 +435,7 @@ def warm(session: Session, scan: Scan) -> None:
         ).all()
     )
     for dimension, pair in dict.fromkeys(pairs):
-        _, fill, _ = retired(session, dimension, [pair])
+        _, fill = retired(session, dimension, [pair])
         store(session, fill)
     session.commit()
 

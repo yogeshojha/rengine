@@ -34,7 +34,7 @@
 				aria-label={`Select ${scope.asset_identifier}`}
 			/>
 		{:else if scope.already_target}
-			<Hint text="Existing target in this project">
+			<Hint text="Existing target">
 				{#snippet child(props)}
 					<span {...props} class="flex h-5 items-center">
 						<CheckIcon class="size-3.5 text-success" />

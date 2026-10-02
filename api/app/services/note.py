@@ -25,7 +25,6 @@ from shared.definitions.notes import ASSET_IDENTITY, NOTE_STATUSES, NoteStatus
 from shared.definitions.surface import SurfaceDimension
 from shared.models.note import (
     Note,
-    NoteCount,
     NoteCreate,
     NoteRead,
     NoteTag,
@@ -46,7 +45,6 @@ _NOTE_NOT_FOUND = "Note not found"
 def _identity(dimension: str, model):
     """This dimension's identity column."""
     if dimension == SurfaceDimension.SERVICES.value:
-        # an IPv6 literal is bracketed, so the port is never ambiguous
         host = case(
             (Port.ip.like("%:%"), func.concat(literal("["), Port.ip, literal("]"))),
             else_=Port.ip,
@@ -163,32 +161,6 @@ class NoteService:
             created_at=note.created_at,
             updated_at=note.updated_at,
         )
-
-    async def counts(
-        self,
-        project_id: UUID,
-        *,
-        dimension: str | None = None,
-        target_id: UUID | None = None,
-        scan_id: UUID | None = None,
-    ) -> list[NoteCount]:
-        """One row per asset that carries notes."""
-        query = select(
-            Note.asset_key,
-            func.count(),
-            func.count().filter(Note.status == NoteStatus.OPEN.value),
-        ).where(Note.project_id == project_id, Note.asset_key.isnot(None))
-        if dimension:
-            query = query.where(Note.dimension == dimension)
-        if target_id is not None:
-            query = query.where(Note.target_id == target_id)
-        if scan_id is not None:
-            query = query.where(await self._scan_reach(scan_id, project_id))
-        rows = await self.session.execute(query.group_by(Note.asset_key))
-        return [
-            NoteCount(key=key, total=int(total), open=int(open_))
-            for key, total, open_ in rows.all()
-        ]
 
     async def create(
         self, data: NoteCreate, project_id: UUID, created_by: UUID

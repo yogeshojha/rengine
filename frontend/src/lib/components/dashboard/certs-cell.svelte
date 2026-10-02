@@ -24,10 +24,9 @@
 
 <Cell
 	id="certs"
-	title="Certificates"
 	description="Live web assets by days to expiry"
 	href={link(expiringQuery)}
-	hrefLabel="cert:expiring"
+	hrefLabel={expiringQuery}
 	class={className}
 >
 	<div class="flex h-28 items-end gap-2">

@@ -48,5 +48,5 @@ async def test_oast(
     _current_user: CurrentSuperuser,
     service: Annotated[OastService, Depends(get_service)],
 ):
-    """Check that the configured server answers. Nothing is scanned."""
+    """Check that the configured server answers."""
     return await service.test()

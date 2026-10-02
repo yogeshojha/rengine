@@ -30,7 +30,7 @@ _GLOSSARY = (
     ),
     (
         "New",
-        "Not present in the previous run of this target. A first run reports nothing as new.",
+        "Not present in any earlier run of this target. A first run reports nothing as new.",
     ),
     (
         "Suppressed",

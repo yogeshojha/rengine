@@ -7,9 +7,9 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import PanelHead from '$lib/components/panel-head.svelte';
 	import { ROUTES } from '$lib/config/routes';
-	import { SURFACE_ORDER } from '$lib/config/surface';
 	import { durationText } from '$lib/utilities/scan-status';
-	import type { ComparableRun } from '$lib/types/compare';
+	import { formatDateTime } from '$lib/utilities/dates';
+	import { runRows, type ComparableRun } from '$lib/types/compare';
 
 	interface Props {
 		reason: string;
@@ -22,81 +22,77 @@
 
 	let usable = $derived(runs.filter((r) => r.comparable));
 	let blocked = $derived(runs.filter((r) => !r.comparable));
-
-	const when = (iso: string | null) =>
-		iso
-			? new Date(iso).toLocaleString('en-US', {
-					month: 'short',
-					day: 'numeric',
-					hour: 'numeric',
-					minute: '2-digit'
-				})
-			: '';
-	const rows = (run: ComparableRun) =>
-		SURFACE_ORDER.reduce((n, s) => n + (run.counts[s.key] ?? 0), 0);
 </script>
 
 <div class="flex flex-col gap-4 p-4 sm:p-5">
 	<div class="flex gap-3 rounded-lg border border-warning/40 bg-warning/5 p-4">
 		<TriangleAlert class="mt-0.5 size-4 shrink-0 text-warning" />
 		<div class="flex min-w-0 flex-col gap-1">
-			<p class="text-sm font-semibold">These two runs cannot be compared</p>
-			<p class="text-sm text-muted-foreground">{reason}</p>
+			{#if currentId}
+				<p class="text-sm font-semibold">These two runs cannot be compared</p>
+				<p class="text-sm text-muted-foreground">{reason}</p>
+			{:else}
+				<p class="text-sm font-semibold">No runs selected</p>
+			{/if}
 		</div>
 	</div>
 
-	<div class="overflow-hidden rounded-lg border">
-		<PanelHead title="Runs of this target" />
-		<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-[26rem]">
-			<div class="flex flex-col">
-				{#if loading}
-					{#each [0, 1, 2] as i (i)}
-						<Skeleton class="m-2 h-12" />
+	{#if currentId}
+		<div class="overflow-hidden rounded-lg border">
+			<PanelHead title="Runs of this target" />
+			<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-[26rem]">
+				<div class="flex flex-col">
+					{#if loading}
+						{#each [0, 1, 2] as i (i)}
+							<Skeleton class="m-2 h-12" />
+						{/each}
+					{:else if !usable.length && !blocked.length}
+						<p class="px-5 py-6 text-sm text-muted-foreground">No other finished runs.</p>
+					{/if}
+
+					{#each usable as run (run.scan_id)}
+						<a
+							href={ROUTES.compare(currentId, run.scan_id)}
+							class="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-5 py-3 transition-colors last:border-b-0 hover:bg-accent/40"
+						>
+							<GitCompareArrows class="size-3.5 shrink-0 text-muted-foreground" />
+							<span class="text-sm font-medium">{run.engine_name}</span>
+							<span class="text-xs text-muted-foreground tabular-nums">
+								{[
+									run.started_at ? formatDateTime(run.started_at) : '',
+									run.duration_seconds != null ? durationText(run.duration_seconds) : ''
+								]
+									.filter(Boolean)
+									.join(' · ')}
+							</span>
+							<span class="ml-auto text-xs text-muted-foreground tabular-nums">
+								{runRows(run.counts).toLocaleString()} rows
+							</span>
+						</a>
 					{/each}
-				{:else if !usable.length && !blocked.length}
-					<p class="px-5 py-6 text-sm text-muted-foreground">No other finished runs.</p>
-				{/if}
 
-				{#each usable as run (run.scan_id)}
-					<a
-						href={ROUTES.compare(currentId, run.scan_id)}
-						class="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-5 py-3 transition-colors last:border-b-0 hover:bg-accent/40"
-					>
-						<GitCompareArrows class="size-3.5 shrink-0 text-muted-foreground" />
-						<span class="text-sm font-medium">{run.engine_name}</span>
-						<span class="text-xs text-muted-foreground tabular-nums">
-							{[
-								when(run.started_at),
-								run.duration_seconds != null ? durationText(run.duration_seconds) : ''
-							]
-								.filter(Boolean)
-								.join(' · ')}
-						</span>
-						<span class="ml-auto text-xs text-muted-foreground tabular-nums">
-							{rows(run).toLocaleString()} rows
-						</span>
-					</a>
-				{/each}
-
-				{#each blocked as run (run.scan_id)}
-					<div
-						class="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-5 py-3 opacity-60 last:border-b-0"
-					>
-						<span class="text-sm font-medium">{run.engine_name}</span>
-						<span class="text-xs text-muted-foreground tabular-nums">
-							{when(run.started_at)}
-						</span>
-						<span class="w-full text-xs text-muted-foreground">{run.reason}</span>
-					</div>
-				{/each}
-			</div>
-		</ScrollArea>
-	</div>
+					{#each blocked as run (run.scan_id)}
+						<div
+							class="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-5 py-3 opacity-60 last:border-b-0"
+						>
+							<span class="text-sm font-medium">{run.engine_name}</span>
+							<span class="text-xs text-muted-foreground tabular-nums">
+								{run.started_at ? formatDateTime(run.started_at) : ''}
+							</span>
+							<span class="w-full text-xs text-muted-foreground">{run.reason}</span>
+						</div>
+					{/each}
+				</div>
+			</ScrollArea>
+		</div>
+	{/if}
 
 	<div class="flex flex-wrap gap-2">
-		<Button variant="outline" size="sm" href={ROUTES.scan(currentId)} class="gap-1.5">
-			Open run <ArrowUpRight class="size-3.5" />
-		</Button>
+		{#if currentId}
+			<Button variant="outline" size="sm" href={ROUTES.scan(currentId)} class="gap-1.5">
+				Open run <ArrowUpRight class="size-3.5" />
+			</Button>
+		{/if}
 		<Button variant="ghost" size="sm" href={ROUTES.scans}>All scans</Button>
 	</div>
 </div>

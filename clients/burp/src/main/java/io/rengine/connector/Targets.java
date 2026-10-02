@@ -1,9 +1,6 @@
 package io.rengine.connector;
 
-import java.net.URI;
-import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,9 +20,19 @@ final class Targets {
                 return value;
             }
             if (isProgram()) {
-                return "Program: " + value + "  ·  " + targets + " target(s)";
+                return "Program: " + value + "  ·  " + targets
+                        + (targets == 1 ? " target" : " targets");
             }
             return endpoints > 0 ? value + "  ·  " + endpoints + " endpoints scanned" : value;
+        }
+    }
+
+    /** The target list was refused. */
+    static final class Refused extends Exception {
+        private static final long serialVersionUID = 1L;
+
+        Refused(String message) {
+            super(message);
         }
     }
 
@@ -36,9 +43,7 @@ final class Targets {
     }
 
     static String endpointFor(String ingest) {
-        String value = ingest == null ? "" : ingest.trim();
-        int cut = value.lastIndexOf('/');
-        return cut < 0 ? value : value.substring(0, cut) + "/targets";
+        return Settings.beside(ingest, "targets");
     }
 
     List<Option> fetch() throws Exception {
@@ -47,27 +52,12 @@ final class Targets {
         if (!settings.isConfigured()) {
             return out;
         }
-        HttpRequest request = HttpRequest.newBuilder(URI.create(endpointFor(settings.endpoint())))
-                .timeout(Duration.ofSeconds(15))
-                .header("Authorization", "Bearer " + settings.token())
-                .GET()
-                .build();
-        HttpResponse<String> response = Tls.clientFor(settings)
-                .send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = Tls.get(settings, endpointFor(settings.endpoint()));
         if (response.statusCode() / 100 != 2) {
-            return out;
+            throw new Refused(Sink.refusal(response));
         }
         out.addAll(parse(response.body()));
         return out;
-    }
-
-    private static int number(String chunk, String field) {
-        String value = Json.readString(chunk, field);
-        try {
-            return value == null ? 0 : Integer.parseInt(value.trim());
-        } catch (NumberFormatException e) {
-            return 0;
-        }
     }
 
     static List<Option> parse(String body) {
@@ -85,8 +75,8 @@ final class Targets {
                     id,
                     value,
                     Json.readString(chunk, "kind"),
-                    number(chunk, "endpoints"),
-                    number(chunk, "targets")));
+                    Json.integer(chunk, "endpoints"),
+                    Json.integer(chunk, "targets")));
         }
         return out;
     }

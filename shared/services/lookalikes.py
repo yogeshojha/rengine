@@ -7,8 +7,10 @@ import re
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
+from urllib.parse import urlsplit
 
 import dnstwist
+import idna
 import ppdeep
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
@@ -37,9 +39,11 @@ from shared.utils.infra import is_shared_nameserver
 from shared.utils.text import strip_control, strip_nul
 
 _ORIGINAL = "*original"
-_TITLE = re.compile(rb"<title[^>]*>(.*?)</title>", re.IGNORECASE | re.DOTALL)
-_ATTR = re.compile(rb'(action|src|href)=".+?"', re.IGNORECASE)
-_CSS_URL = re.compile(rb"url\(.+?\)", re.IGNORECASE)
+_TITLE = re.compile(
+    rb"<title[^>]{0,256}>(.{0,1024}?)</title>", re.IGNORECASE | re.DOTALL
+)
+_ATTR = re.compile(rb'(action|src|href)="[^"]{1,2048}"', re.IGNORECASE)
+_CSS_URL = re.compile(rb"url\([^)]{1,512}\)", re.IGNORECASE)
 
 
 @dataclass
@@ -48,10 +52,6 @@ class Records:
     aaaa: list[str] = field(default_factory=list)
     mx: list[str] = field(default_factory=list)
     ns: list[str] = field(default_factory=list)
-
-    @property
-    def registered(self) -> bool:
-        return bool(self.a or self.aaaa or self.mx or self.ns)
 
     @property
     def addressed(self) -> bool:
@@ -89,7 +89,9 @@ def permutations(
 ) -> list[tuple[str, str]]:
     """(domain, technique) for every permutation of the apex, the apex excluded."""
     swap = list(SWAP_TLDS) if tld_swap else []
+    label, _, suffix = apex.partition(".")
     fuzzer = dnstwist.Fuzzer(apex, dictionary=words, tld_dictionary=swap)
+    fuzzer.subdomain, fuzzer.domain, fuzzer.tld = "", idna.decode(label), suffix
     fuzzer.generate()
     out: dict[str, str] = {}
     for perm in fuzzer.domains:
@@ -143,7 +145,10 @@ def similarity(original: str | None, body: bytes) -> int | None:
 
 
 def _host(url: str) -> str:
-    return url.split("://", 1)[-1].split("/", 1)[0].split(":", 1)[0].lower()
+    try:
+        return (urlsplit(url).hostname or "").lower()
+    except ValueError:
+        return ""
 
 
 def receives_mail(records: Records) -> bool:

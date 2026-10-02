@@ -7,7 +7,7 @@ import {
 	widgetSpec,
 	type DashboardWidgetSpec
 } from '$lib/config/dashboard-widgets';
-import { coerceInstanceMode, InstanceMode } from '$lib/config/capabilities';
+import { coerceInstanceMode, INSTANCE_MODES, InstanceMode } from '$lib/config/capabilities';
 import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
@@ -47,7 +47,7 @@ function write(mode: InstanceMode, value: Stored) {
 function createDashboardLayout() {
 	const hidden = new SvelteMap<InstanceMode, SvelteSet<string>>();
 	const shown = new SvelteMap<InstanceMode, SvelteSet<string>>();
-	for (const m of [InstanceMode.BugBounty, InstanceMode.Corporate]) {
+	for (const m of INSTANCE_MODES.map((spec) => spec.value)) {
 		const stored = read(m);
 		hidden.set(m, new SvelteSet(stored.hidden));
 		shown.set(m, new SvelteSet(stored.shown));
@@ -65,9 +65,6 @@ function createDashboardLayout() {
 	const mode = () => coerceInstanceMode(capabilitiesStore.mode);
 
 	return {
-		get mode() {
-			return mode();
-		},
 		available(spec: DashboardWidgetSpec): boolean {
 			return widgetAvailable(spec, capabilitiesStore.capabilities);
 		},

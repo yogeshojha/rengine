@@ -1,13 +1,11 @@
 <script lang="ts">
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { Badge } from '$lib/components/ui/badge/index.js';
 	import Hint from '$lib/components/hint.svelte';
 	import { goto } from '$app/navigation';
 	import { ROUTES } from '$lib/config/routes';
 	import Plus from '@lucide/svelte/icons/plus';
 	import Crosshair from '@lucide/svelte/icons/crosshair';
-	import Building from '@lucide/svelte/icons/building';
 	import Cog from '@lucide/svelte/icons/cog';
 	import Layers from '@lucide/svelte/icons/layers';
 	import { toolbox } from '$lib/stores/toolbox.svelte';
@@ -35,13 +33,6 @@
 						<Crosshair class="mr-2 h-4 w-4" />
 						Add target
 					</DropdownMenu.Item>
-					<DropdownMenu.Item disabled class="justify-between">
-						<span class="flex items-center">
-							<Building class="mr-2 h-4 w-4" />
-							Add organization
-						</span>
-						<Badge variant="secondary" class="text-2xs">Soon</Badge>
-					</DropdownMenu.Item>
 					<DropdownMenu.Separator />
 					<DropdownMenu.Label class="text-xs text-muted-foreground">Discover</DropdownMenu.Label>
 					<DropdownMenu.Item onclick={() => toolbox.open({ value: '', tool: ORG_DOMAINS_TOOL })}>
@@ -50,7 +41,7 @@
 					</DropdownMenu.Item>
 					<DropdownMenu.Separator />
 					<DropdownMenu.Label class="text-xs text-muted-foreground">Automation</DropdownMenu.Label>
-					<DropdownMenu.Item onclick={() => goto(ROUTES.engine('new'))}>
+					<DropdownMenu.Item onclick={() => goto(ROUTES.newEngine())}>
 						<Cog class="mr-2 h-4 w-4" />
 						New scan engine
 					</DropdownMenu.Item>

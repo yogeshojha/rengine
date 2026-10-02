@@ -1,19 +1,19 @@
 import { DEFAULT_SCAN_CONTEXT, type ScanContextCreate } from '$lib/types/scan-context';
 import type { ContextFormSection } from './context-form';
+import { facetLine } from './context-summary';
 
-export interface ContextTemplate {
+interface ContextTemplate {
 	key: string;
 	title: string;
-	description: string;
 	focus: ContextFormSection;
 	patch: Partial<ScanContextCreate>;
+	facet?: string;
 }
 
 export const CONTEXT_TEMPLATES: readonly ContextTemplate[] = [
 	{
 		key: 'authenticated',
 		title: 'Authenticated application',
-		description: 'Sends a bearer token with every request and restricts scanning to HTTPS.',
 		focus: 'auth',
 		patch: {
 			auth_type: 'bearer',
@@ -24,25 +24,23 @@ export const CONTEXT_TEMPLATES: readonly ContextTemplate[] = [
 	{
 		key: 'scoped',
 		title: 'Program scope',
-		description: 'Starts at the scope section with no exclusions set.',
 		focus: 'scope',
-		patch: {}
+		patch: {},
+		facet: 'Included subdomains · excluded patterns, paths and IPs'
 	},
 	{
 		key: 'gentle',
 		title: 'Low impact',
-		description: 'Caps the request rate at 20/s, halves threads and doubles timeouts.',
 		focus: 'rate',
 		patch: { global_rate_limit_override: 20, thread_multiplier: 0.5, timeout_multiplier: 2.0 }
 	},
 	{
 		key: 'blank',
 		title: 'No overrides',
-		description: 'No credentials or overrides.',
 		focus: 'auth',
 		patch: {}
 	}
-] as const;
+];
 
 export function contextTemplate(key: string | null | undefined): ContextTemplate | undefined {
 	return CONTEXT_TEMPLATES.find((t) => t.key === key);
@@ -52,4 +50,9 @@ export function templateDraft(key?: string | null): ScanContextCreate {
 	const base = DEFAULT_SCAN_CONTEXT();
 	const template = contextTemplate(key);
 	return template ? { ...base, ...template.patch } : base;
+}
+
+export function templateFacet(template: ContextTemplate): string | null {
+	if (template.facet) return template.facet;
+	return Object.keys(template.patch).length ? facetLine(templateDraft(template.key)) : null;
 }

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import ipaddress
 import uuid
 from uuid import UUID
 
@@ -13,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.scan import ScanService
 from app.services.seed_selection import SeedSelectionService
+from shared.definitions.default_engine import VULNERABILITY_STAGE
 from shared.definitions.new_checks import NEW_CHECKS_KEY
 from shared.definitions.rescan import (
     MAX_RUN_ASSETS,
@@ -38,22 +38,19 @@ from shared.models.scan import (
     SeedAsset,
     SeedGroupSummary,
     SeedSelection,
+    run_seconds,
 )
 from shared.models.vuln_template import VulnTemplate
 from shared.services.focused import focused_overrides
+from shared.utils.validation import validate_ip
 from stages.registry import stage_by_name
 
 
 def _seed_kind(value: str, default: str) -> str:
     """An IP value is an address seed in every dimension."""
-    try:
-        ipaddress.ip_address(value)
-    except ValueError:
-        return default
-    return SeedKind.ADDRESS.value
+    return SeedKind.ADDRESS.value if validate_ip(value) else default
 
 
-_VULN_STAGE = "vulnerability_scan"
 _MAX_RUNS = 50
 
 
@@ -131,9 +128,13 @@ class RescanService:
         resolved = await self._resolve(data.selection, project_id)
         picked = self._stages(data.stages, data.dimension)
         known = stage_by_name()
+        kind = seed_kind_for(data.dimension)
+        noun, noun_plural = SEED_KIND_NOUN[kind]
         return RunPreview(
             dimension=data.dimension,
-            seed_kind=seed_kind_for(data.dimension),
+            seed_kind=kind,
+            noun=noun,
+            noun_plural=noun_plural,
             asset_count=resolved.total,
             matched=resolved.matched,
             target_count=len(resolved.groups),
@@ -231,12 +232,7 @@ class RescanService:
                 and name in RESCANNABLE_STAGES
                 and (values or {}).get("enabled")
             ]
-            duration = (
-                (run.completed_at - run.started_at).total_seconds()
-                - (run.paused_seconds or 0.0)
-                if run.completed_at and run.started_at
-                else None
-            )
+            duration = run_seconds(run)
             for seed in config.get("seed_assets") or []:
                 key = seed.get("value") or ""
                 row = diffed.get((run.id, key))
@@ -291,9 +287,9 @@ class RescanService:
         for name, values in (data.overrides or {}).items():
             if name in known and not known[name].catalog_hidden:
                 overrides[name] = {**(overrides.get(name) or {}), **(values or {})}
-        if data.template_ids and _VULN_STAGE in picked:
-            overrides[_VULN_STAGE] = {
-                **overrides[_VULN_STAGE],
+        if data.template_ids and VULNERABILITY_STAGE in picked:
+            overrides[VULNERABILITY_STAGE] = {
+                **overrides[VULNERABILITY_STAGE],
                 **await self._only_templates(data.template_ids),
             }
         return overrides
@@ -318,8 +314,3 @@ class RescanService:
             "include_tags": [],
             "custom_templates": [str(row) for row in rows],
         }
-
-    @staticmethod
-    def seed_noun(kind: str, count: int) -> str:
-        singular, plural = SEED_KIND_NOUN.get(kind, ("asset", "assets"))
-        return singular if count == 1 else plural

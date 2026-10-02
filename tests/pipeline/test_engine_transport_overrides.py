@@ -1,5 +1,3 @@
-"""A scan engine can set its own rate and concurrency per tool, and it overrides the preset."""
-
 from __future__ import annotations
 
 from types import SimpleNamespace

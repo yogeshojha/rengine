@@ -97,3 +97,16 @@ def ip_excluded(value: str, patterns: list[str]) -> bool:
         if address.version == network.version and address in network:
             return True
     return False
+
+
+def host_excluded(
+    host: str, excluded_hosts: list[str], excluded_ips: list[str]
+) -> bool:
+    """True if a URL host matches a host exclusion or is an address inside an excluded range."""
+    if matches_any(host, excluded_hosts):
+        return True
+    try:
+        ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return ip_excluded(host, excluded_ips)

@@ -7,28 +7,26 @@ from sqlalchemy import Column
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
+from shared.enums.scan_context import AuthType, HttpProtocol
 from shared.models.types import EncryptedJSON
 from shared.utils.datetime import utc_now
 from shared.utils.validation import clean_name, clean_optional_name
 
-AUTH_TYPES = ("none", "header", "bearer", "basic", "cookie", "api_key")
-HTTP_PROTOCOLS = ("both", "http_only", "https_only")
+AUTH_TYPES: tuple[str, ...] = tuple(t.value for t in AuthType)
+HTTP_PROTOCOLS: tuple[str, ...] = tuple(p.value for p in HttpProtocol)
 
-# the scheme a probe is restricted to; "both" leaves the choice to the tool
-PROBE_SCHEME: dict[str, str] = {"http_only": "http", "https_only": "https"}
-
-
-def valid_rate_tools() -> tuple[str, ...]:
-    from stages.registry import rate_tools  # noqa: PLC0415
-
-    return rate_tools()
+# probe scheme per http_protocol
+PROBE_SCHEME: dict[str, str] = {
+    HttpProtocol.HTTP_ONLY.value: "http",
+    HttpProtocol.HTTPS_ONLY.value: "https",
+}
 
 
 MULTIPLIERS = (0.5, 1.0, 2.0)
 
 
 class AuthConfig(BaseModel):
-    auth_type: str = "none"
+    auth_type: str = AuthType.NONE.value
     bearer_token: str | None = None
     basic_username: str | None = None
     basic_password: str | None = None
@@ -52,7 +50,7 @@ class ScanContext(SQLModel, table=True):
     created_by: uuid.UUID = Field(foreign_key="users.id")
     name: str = Field(max_length=200)
     description: str | None = Field(default=None, max_length=1000)
-    auth_type: str = Field(default="none")
+    auth_type: str = Field(default=AuthType.NONE.value)
     auth: dict = Field(
         default_factory=dict, sa_column=Column(EncryptedJSON, nullable=False)
     )
@@ -78,7 +76,7 @@ class ScanContext(SQLModel, table=True):
         default_factory=list, sa_column=Column(JSON, nullable=False)
     )
     follow_redirects_override: bool | None = Field(default=None)
-    http_protocol: str = Field(default="both")
+    http_protocol: str = Field(default=HttpProtocol.BOTH.value)
     proxy_id: uuid.UUID | None = Field(default=None, index=True)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
@@ -89,7 +87,7 @@ class ScanContext(SQLModel, table=True):
 class ScanContextCreate(BaseModel):
     name: str
     description: str | None = None
-    auth_type: str = "none"
+    auth_type: str = AuthType.NONE.value
     auth: AuthConfig | None = None
     extra_headers: list[AuthHeader] = Field(default_factory=list)
     global_rate_limit_override: int | None = None
@@ -101,7 +99,7 @@ class ScanContextCreate(BaseModel):
     excluded_ips: list[str] = Field(default_factory=list)
     included_subdomains: list[str] = Field(default_factory=list)
     follow_redirects_override: bool | None = None
-    http_protocol: str = "both"
+    http_protocol: str = HttpProtocol.BOTH.value
     proxy_id: uuid.UUID | None = None
 
     _validate_name = field_validator("name")(partial(clean_name, max_len=200))

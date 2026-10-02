@@ -56,10 +56,6 @@ function createProxiesStore() {
 			}
 		},
 
-		drop(id: string): void {
-			proxies = proxies.filter((p) => p.id !== id);
-		},
-
 		async remove(id: string): Promise<boolean> {
 			try {
 				await proxiesApi.remove(id);
@@ -86,7 +82,7 @@ function createProxiesStore() {
 				);
 				return result;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Proxy test failed');
+				toast.error(e instanceof Error ? e.message : 'Proxy not tested');
 				return null;
 			}
 		},

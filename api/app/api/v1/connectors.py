@@ -6,11 +6,12 @@ from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
+from app.api.errors import bad_request
 from app.api.scope import EndpointScope
 from app.core.client_ip import client_id
 from app.core.database import get_session
 from app.core.ratelimit import clear_failures, record_failure, too_many_attempts
-from app.services.connector import ConnectorError, ConnectorService, _guard
+from app.services.connector import ConnectorError, ConnectorService
 from connectors import auth
 from shared.models.connector import (
     ActionRead,
@@ -129,7 +130,7 @@ async def report_finding(
     try:
         return await service.record_finding(row, body, row.created_by)
     except ConnectorError as exc:
-        raise _guard(exc) from exc
+        raise bad_request(exc) from exc
 
 
 @router.get("/scope", response_model=ConnectorScope)
@@ -152,7 +153,7 @@ async def target_scope(
             return await service.program_scope(row, program_id)
         return await service.scope_for(row, target_id)
     except ConnectorError as exc:
-        raise _guard(exc) from exc
+        raise bad_request(exc) from exc
 
 
 @router.get("/host", response_model=HostFacts)
@@ -167,7 +168,7 @@ async def host_facts(
     try:
         return await service.host_facts(row, host)
     except ConnectorError as exc:
-        raise _guard(exc) from exc
+        raise bad_request(exc) from exc
 
 
 # ---------- reNgine side, user session ----------
@@ -204,7 +205,7 @@ async def create_connector(
     try:
         return await service.create(data, current_user.id)
     except ConnectorError as exc:
-        raise _guard(exc) from exc
+        raise bad_request(exc) from exc
 
 
 @router.patch("/{connector_id}", response_model=ConnectorRead)
@@ -218,7 +219,7 @@ async def update_connector(
     try:
         return await service.update(connector_id, project_id, data)
     except ConnectorError as exc:
-        raise _guard(exc) from exc
+        raise bad_request(exc) from exc
 
 
 @router.post("/{connector_id}/rotate", response_model=ConnectorCreated)
@@ -254,7 +255,7 @@ async def handoff_to_proxy(
     try:
         return await service.handoff(connector_id, project_id, body, scope)
     except ConnectorError as exc:
-        raise _guard(exc) from exc
+        raise bad_request(exc) from exc
 
 
 @router.get("/{connector_id}/candidates", response_model=CandidatePage)
@@ -295,7 +296,7 @@ async def set_candidate_state(
             connector_id, project_id, body.ids, body.state
         )
     except ConnectorError as exc:
-        raise _guard(exc) from exc
+        raise bad_request(exc) from exc
     return {"changed": changed}
 
 
@@ -313,7 +314,7 @@ async def scan_queue(
             connector_id, project_id, current_user.id, body.ids or None
         )
     except ConnectorError as exc:
-        raise _guard(exc) from exc
+        raise bad_request(exc) from exc
 
 
 @router.get("/{connector_id}/discovered", response_model=list[DiscoveredDomain])
@@ -339,7 +340,7 @@ async def add_discovered_target(
             connector_id, project_id, current_user.id, body.domain
         )
     except ConnectorError as exc:
-        raise _guard(exc) from exc
+        raise bad_request(exc) from exc
 
 
 @router.post("/{connector_id}/discovered/dismiss")

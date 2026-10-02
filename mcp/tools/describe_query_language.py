@@ -33,7 +33,7 @@ class DescribeQueryLanguage(Tool):
     examples = ("describe_query_language dimension=services",)
 
     async def run(self, ctx: ToolContext, args: Input) -> ToolResult:  # noqa: ARG002
-        from app.services.asset_query import build_schema  # noqa: PLC0415
+        from shared.services.asset_query import build_schema  # noqa: PLC0415
 
         dim = dimension(args.dimension)
         schema = build_schema(dim.registry)

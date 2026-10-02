@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { tick, type Snippet } from 'svelte';
+	import { tick } from 'svelte';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Button } from '$lib/components/ui/button';
 	import CopyButton from '$lib/components/copy-button.svelte';
@@ -40,13 +40,9 @@
 		wrap?: boolean;
 		maxLines?: number;
 		maxHeight?: string;
-		toolbar?: boolean;
-		copy?: boolean;
 		download?: string;
 		marks?: string[];
-		emptyText?: string;
 		class?: string;
-		actions?: Snippet;
 	}
 
 	let {
@@ -57,13 +53,9 @@
 		wrap,
 		maxLines = 18,
 		maxHeight = '26rem',
-		toolbar = true,
-		copy = true,
 		download,
 		marks = [],
-		emptyText,
-		class: className,
-		actions
+		class: className
 	}: Props = $props();
 
 	const LANG_ICONS: Record<CodeLang, IconComponent> = {
@@ -93,7 +85,6 @@
 	const AUTO_NUMBERS = 6;
 	const MAX_RENDER = 4000;
 	const FIND_FROM = 4;
-	const PULSE_MS = 420;
 
 	let expanded = $state(false);
 	let wrapOverride = $state<boolean | null>(null);
@@ -127,7 +118,7 @@
 	const gutter = $derived(numbers ?? total > AUTO_NUMBERS);
 	const width = $derived(`${String(total).length + 1}ch`);
 	const Icon = $derived(LANG_ICONS[lang]);
-	const findable = $derived(toolbar && total >= FIND_FROM);
+	const findable = $derived(total >= FIND_FROM);
 
 	$effect(() => {
 		void shown;
@@ -186,14 +177,6 @@
 				: Math.max(0, port.scrollLeft + box.left - frame.left - (frame.width - box.width) / 2),
 			behavior
 		});
-		if (calm()) return;
-		const style = getComputedStyle(el);
-		const rest = style.backgroundColor;
-		const flash = style.getPropertyValue('--primary').trim() || rest;
-		el.animate([{ backgroundColor: rest }, { backgroundColor: flash }, { backgroundColor: rest }], {
-			duration: PULSE_MS,
-			easing: 'ease-out'
-		});
 	}
 
 	function openFind() {
@@ -225,138 +208,133 @@
 		class={cn('code-block flex min-w-0 flex-col overflow-hidden rounded-lg border', className)}
 		style="--cb-max:{maxHeight};--cb-gutter:{width}"
 	>
-		{#if toolbar}
-			<div class="cb-bar">
-				<Icon class="size-3.5 shrink-0 text-muted-foreground" />
-				<span class="truncate font-medium">{label ?? LANG_LABELS[lang]}</span>
-				{#if total > 1 && !finding}
-					<span class="shrink-0 text-muted-foreground tabular-nums">
-						{total.toLocaleString()} lines
-					</span>
-				{/if}
-				{#if pretty && !finding}
-					<span class="shrink-0 text-muted-foreground">formatted</span>
-				{/if}
-				{#if findable}
-					<div class="cb-find ml-auto" class:open={finding}>
-						<Search class="size-3 shrink-0 text-muted-foreground" />
-						<input
-							bind:this={findInput}
-							bind:value={query}
-							class="cb-find-input"
-							placeholder="Find"
-							spellcheck="false"
-							autocomplete="off"
-							aria-label="Find in {label ?? LANG_LABELS[lang]}"
-							tabindex={finding ? 0 : -1}
-							onkeydown={onFindKey}
-						/>
-						{#if searching}
-							<span class="cb-find-count">{hits ? active + 1 : 0}/{hits}</span>
-						{/if}
-						<Button
-							variant="ghost"
-							size="icon"
-							class="size-6 shrink-0 text-muted-foreground"
-							disabled={!hits}
-							tabindex={finding ? 0 : -1}
-							aria-label="Previous match"
-							onclick={() => step(-1)}
-						>
-							<ChevronUp class="size-3.5" />
-						</Button>
-						<Button
-							variant="ghost"
-							size="icon"
-							class="size-6 shrink-0 text-muted-foreground"
-							disabled={!hits}
-							tabindex={finding ? 0 : -1}
-							aria-label="Next match"
-							onclick={() => step(1)}
-						>
-							<ChevronDown class="size-3.5" />
-						</Button>
-						<Button
-							variant="ghost"
-							size="icon"
-							class="size-6 shrink-0 text-muted-foreground"
-							tabindex={finding ? 0 : -1}
-							aria-label="Close find"
-							onclick={closeFind}
-						>
-							<X class="size-3.5" />
-						</Button>
-					</div>
-				{/if}
-				<div class="flex shrink-0 items-center gap-0.5" class:ml-auto={!findable}>
-					{#if findable && !finding}
-						<Hint text="Find">
-							{#snippet child(props)}
-								<Button
-									{...props}
-									variant="ghost"
-									size="icon"
-									class="size-7 text-muted-foreground"
-									aria-label="Find"
-									onclick={openFind}
-								>
-									<Search class="size-3.5" />
-								</Button>
-							{/snippet}
-						</Hint>
+		<div class="cb-bar">
+			<Icon class="size-3.5 shrink-0 text-muted-foreground" />
+			<span class="truncate font-medium">{label ?? LANG_LABELS[lang]}</span>
+			{#if total > 1 && !finding}
+				<span class="shrink-0 text-muted-foreground tabular-nums">
+					{total.toLocaleString()} lines
+				</span>
+			{/if}
+			{#if pretty && !finding}
+				<span class="shrink-0 text-muted-foreground">formatted</span>
+			{/if}
+			{#if findable}
+				<div class="cb-find ml-auto" class:open={finding}>
+					<Search class="size-3 shrink-0 text-muted-foreground" />
+					<input
+						bind:this={findInput}
+						bind:value={query}
+						class="cb-find-input"
+						placeholder="Find"
+						spellcheck="false"
+						autocomplete="off"
+						aria-label="Find in {label ?? LANG_LABELS[lang]}"
+						tabindex={finding ? 0 : -1}
+						onkeydown={onFindKey}
+					/>
+					{#if searching}
+						<span class="cb-find-count">{hits ? active + 1 : 0}/{hits}</span>
 					{/if}
-					{@render actions?.()}
-					{#if formatted}
-						<Hint text={pretty ? 'Show as received' : 'Format'}>
-							{#snippet child(props)}
-								<Button
-									{...props}
-									variant="ghost"
-									size="icon"
-									class={pretty ? 'size-7 text-foreground' : 'size-7 text-muted-foreground'}
-									aria-pressed={pretty}
-									onclick={() => (pretty = !pretty)}
-								>
-									<IndentIncrease class="size-3.5" />
-								</Button>
-							{/snippet}
-						</Hint>
-					{/if}
-					<Hint text={wrapped ? 'Do not wrap lines' : 'Wrap lines'}>
+					<Button
+						variant="ghost"
+						size="icon"
+						class="size-6 shrink-0 text-muted-foreground"
+						disabled={!hits}
+						tabindex={finding ? 0 : -1}
+						aria-label="Previous match"
+						onclick={() => step(-1)}
+					>
+						<ChevronUp class="size-3.5" />
+					</Button>
+					<Button
+						variant="ghost"
+						size="icon"
+						class="size-6 shrink-0 text-muted-foreground"
+						disabled={!hits}
+						tabindex={finding ? 0 : -1}
+						aria-label="Next match"
+						onclick={() => step(1)}
+					>
+						<ChevronDown class="size-3.5" />
+					</Button>
+					<Button
+						variant="ghost"
+						size="icon"
+						class="size-6 shrink-0 text-muted-foreground"
+						tabindex={finding ? 0 : -1}
+						aria-label="Close find"
+						onclick={closeFind}
+					>
+						<X class="size-3.5" />
+					</Button>
+				</div>
+			{/if}
+			<div class="flex shrink-0 items-center gap-0.5" class:ml-auto={!findable}>
+				{#if findable && !finding}
+					<Hint text="Find">
 						{#snippet child(props)}
 							<Button
 								{...props}
 								variant="ghost"
 								size="icon"
-								class={wrapped ? 'size-7 text-foreground' : 'size-7 text-muted-foreground'}
-								aria-pressed={wrapped}
-								onclick={() => (wrapOverride = !wrapped)}
+								class="size-7 text-muted-foreground"
+								aria-label="Find"
+								onclick={openFind}
 							>
-								<TextWrap class="size-3.5" />
+								<Search class="size-3.5" />
 							</Button>
 						{/snippet}
 					</Hint>
-					{#if download}
-						<Hint text="Download">
-							{#snippet child(props)}
-								<Button
-									{...props}
-									variant="ghost"
-									size="icon"
-									class="size-7 text-muted-foreground"
-									onclick={() => downloadBlob(download!, source)}
-								>
-									<Download class="size-3.5" />
-								</Button>
-							{/snippet}
-						</Hint>
-					{/if}
-					{#if copy}
-						<CopyButton value={source} />
-					{/if}
-				</div>
+				{/if}
+				{#if formatted}
+					<Hint text={pretty ? 'Show as received' : 'Format'}>
+						{#snippet child(props)}
+							<Button
+								{...props}
+								variant="ghost"
+								size="icon"
+								class={pretty ? 'size-7 text-foreground' : 'size-7 text-muted-foreground'}
+								aria-pressed={pretty}
+								onclick={() => (pretty = !pretty)}
+							>
+								<IndentIncrease class="size-3.5" />
+							</Button>
+						{/snippet}
+					</Hint>
+				{/if}
+				<Hint text={wrapped ? 'Do not wrap lines' : 'Wrap lines'}>
+					{#snippet child(props)}
+						<Button
+							{...props}
+							variant="ghost"
+							size="icon"
+							class={wrapped ? 'size-7 text-foreground' : 'size-7 text-muted-foreground'}
+							aria-pressed={wrapped}
+							onclick={() => (wrapOverride = !wrapped)}
+						>
+							<TextWrap class="size-3.5" />
+						</Button>
+					{/snippet}
+				</Hint>
+				{#if download}
+					<Hint text="Download">
+						{#snippet child(props)}
+							<Button
+								{...props}
+								variant="ghost"
+								size="icon"
+								class="size-7 text-muted-foreground"
+								onclick={() => downloadBlob(download!, source)}
+							>
+								<Download class="size-3.5" />
+							</Button>
+						{/snippet}
+					</Hint>
+				{/if}
+				<CopyButton value={source} />
 			</div>
-		{/if}
+		</div>
 
 		<div class="cb-body">
 			<ScrollArea
@@ -401,15 +379,6 @@
 			</div>
 		{/if}
 	</div>
-{:else if emptyText}
-	<div
-		class={cn(
-			'rounded-lg border border-dashed px-3 py-6 text-center text-xs text-muted-foreground',
-			className
-		)}
-	>
-		{emptyText}
-	</div>
 {/if}
 
 <style>
@@ -438,10 +407,6 @@
 		opacity: 0;
 		overflow: hidden;
 		border-radius: 6px;
-		transition:
-			width 0.18s ease,
-			padding 0.18s ease,
-			opacity 0.14s ease;
 	}
 	.cb-find.open {
 		width: 15rem;
@@ -466,11 +431,6 @@
 		flex-shrink: 0;
 		color: var(--muted-foreground);
 		font-variant-numeric: tabular-nums;
-	}
-	@media (prefers-reduced-motion: reduce) {
-		.cb-find {
-			transition: none;
-		}
 	}
 	.cb-body {
 		position: relative;

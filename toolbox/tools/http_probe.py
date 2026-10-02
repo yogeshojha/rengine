@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import contextlib
+import re
 import shutil
 import uuid
 from datetime import datetime
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
+from shared.definitions.retention import MEDIA_ROOT
 from shared.definitions.toolbox import (
     MAX_INPUT_LENGTH,
     BlockKind,
@@ -19,6 +21,9 @@ from shared.definitions.toolbox import (
 )
 from shared.logging import get_logger
 from shared.utils.datetime import utc_now
+from shared.utils.net import bracketed
+from shared.utils.text import strip_control
+from shared.utils.validation import validate_ip
 from toolbox.base import (
     Tool,
     ToolContext,
@@ -33,11 +38,12 @@ from toolbox.base import (
     lookup,
     mark,
     metric,
+    note,
     tag,
     tags,
 )
 from toolbox.base import tech as tech_identity
-from toolbox.guard import hostname_of, require_public
+from toolbox.guard import DENIED_NETWORKS, hostname_of, require_public
 from toolbox.pivot import target_pivot_sync
 from tools.httpx.client import HttpxClient, HttpxError
 from tools.httpx.parser import parse_httpx_record
@@ -48,8 +54,11 @@ PROBE_TIMEOUT = 15
 CERT_WARNING_DAYS = 30
 OK_STATUS = 400
 REDIRECT_STATUS = 300
+SCHEMES = ("http", "https")
+DENY_ARGS = ["-deny", ",".join(DENIED_NETWORKS)]
+DEAD_PROXY = "http://127.0.0.1:9"
+_HOSTNAME = re.compile(r"^[a-z0-9_-]+(?:\.[a-z0-9_-]+)*$")
 
-MEDIA_ROOT = Path("/app/scan_media")
 SHOT_DIR = "toolbox"
 MEDIA_URL = "/api/v1/media/screenshot?path="
 KEPT_RUNS = 40
@@ -74,6 +83,18 @@ class Input(ToolInput):
         description="Render the page in a headless browser",
     )
 
+    @field_validator("target")
+    @classmethod
+    def _target(cls, value: str) -> str:
+        if any(ch.isspace() for ch in value) or strip_control(value) != value:
+            msg = "Enter one host or URL with no spaces or line breaks."
+            raise ValueError(msg)
+        scheme, sep, _ = value.partition("://")
+        if sep and scheme.lower() not in SCHEMES:
+            msg = "Only http:// and https:// URLs can be probed."
+            raise ValueError(msg)
+        return value
+
 
 class HttpProbe(Tool):
     name = "http"
@@ -96,6 +117,7 @@ class HttpProbe(Tool):
                 timeout=PROBE_TIMEOUT,
                 threads=1,
                 follow_redirects=args.follow_redirects,
+                extra_args=DENY_ARGS,
             )
             with client.stream_probe([args.target]) as stream:
                 records = list(stream.records)
@@ -109,11 +131,15 @@ class HttpProbe(Tool):
         row = parse_httpx_record(records[0])
         status = row.get("status_code")
         tech = row.get("tech") or []
-        shot = _capture(args.target) if args.screenshot else None
+        shot = _capture(row, args.follow_redirects) if args.screenshot else None
+        unrendered = _unrendered(row) if args.screenshot else None
 
         blocks = [
             _hero(row, status, tech),
-            image(shot, title="Page") if shot else None,
+            image(shot, title="Page", sub="Only resources from this host were loaded.")
+            if shot
+            else None,
+            note(unrendered, tone=Tone.MUTED.value) if unrendered else None,
             facts(
                 fact("URL", row.get("final_url") or row.get("url"), mono=True),
                 fact("Server", row.get("webserver")),
@@ -224,11 +250,26 @@ def _summary(status: int | None, server: str | None, tech: int) -> str:
     return " · ".join(parts)
 
 
-def _capture(target: str) -> str | None:
-    """Render the page and return the media URL, or None."""
+def _capture(row: dict, follow_redirects: bool) -> str | None:
+    """Render the page the probe reached and return the media URL, or None."""
+    target = row.get("final_url") or row.get("url")
+    if not target or _unrendered(row):
+        return None
+    try:
+        confine = _confined(target, require_public(target))
+    except ToolError:
+        return None
+    if confine is None:
+        return None
     run_dir = MEDIA_ROOT / SHOT_DIR / uuid.uuid4().hex
     try:
-        client = HttpxClient(timeout=PROBE_TIMEOUT, threads=1, store_dir=str(run_dir))
+        client = HttpxClient(
+            timeout=PROBE_TIMEOUT,
+            threads=1,
+            store_dir=str(run_dir),
+            follow_redirects=follow_redirects,
+            extra_args=DENY_ARGS + confine,
+        )
         with client.stream_capture([target]) as stream:
             path = next(
                 (
@@ -247,6 +288,48 @@ def _capture(target: str) -> str | None:
         return None
     _prune()
     return MEDIA_URL + str(Path(path).resolve().relative_to(MEDIA_ROOT))
+
+
+def _confined(target: str, addresses: list[str]) -> list[str] | None:
+    """Headless options that hold the browser to the checked host at a checked address."""
+    host = hostname_of(target)
+    name = _rule_host(host) if host else None
+    if not name or not addresses:
+        return None
+    args = [
+        "-ho",
+        f"proxy-server={DEAD_PROXY}",
+        "-ho",
+        f"proxy-bypass-list={name};<-loopback>",
+    ]
+    if not validate_ip(host):
+        pinned = next((a for a in addresses if ":" not in a), addresses[0])
+        args += ["-ho", f"host-resolver-rules=MAP {name} {bracketed(pinned)}"]
+    return args
+
+
+def _rule_host(host: str) -> str | None:
+    """The host as Chrome's proxy and resolver rules spell it, or None."""
+    if validate_ip(host):
+        return bracketed(host)
+    try:
+        name = host.encode("idna").decode()
+    except UnicodeError:
+        return None
+    return name if _HOSTNAME.match(name) else None
+
+
+def _unrendered(row: dict) -> str | None:
+    """Why the page the probe reached is not rendered, or None."""
+    status = row.get("status_code")
+    if status and REDIRECT_STATUS <= status < OK_STATUS:
+        return "Page not rendered. The response is a redirect."
+    host = hostname_of(row.get("final_url") or row.get("url") or "")
+    if host and _rule_host(host) is None:
+        if host.endswith("."):
+            return "Page not rendered. The host name ends in a dot."
+        return "Page not rendered for this host name."
+    return None
 
 
 def _prune() -> None:
@@ -289,7 +372,8 @@ def _edge(row: dict) -> str:
     if not row.get("is_cdn"):
         return "none"
     kind = row.get("cdn_type") or "cdn"
-    return f"{row.get('cdn_name') or kind} ({kind})"
+    name = row.get("cdn_name")
+    return f"{name} · {kind}" if name else kind
 
 
 def _tls(row: dict) -> list:

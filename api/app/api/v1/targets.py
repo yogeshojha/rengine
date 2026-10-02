@@ -1,4 +1,4 @@
-from typing import Annotated, Literal
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import (
@@ -6,7 +6,6 @@ from fastapi import (
     Depends,
     File,
     Form,
-    HTTPException,
     Query,
     UploadFile,
     status,
@@ -26,8 +25,8 @@ from app.services.target_estate import TargetEstateService
 from app.services.target_filters import SignalName, SortDir, SortKey
 from app.services.target_relations import TargetRelationService
 from app.services.target_summary import TargetSummaryService
-from shared.definitions.constants import MAX_TARGET_IMPORT
-from shared.definitions.mode_features import CAP_BOUNTY_PROGRAMS, has_capability
+from shared.definitions.mode_features import CAP_BOUNTY_PROGRAMS
+from shared.enums.target import EnrichmentKind
 from shared.models import (
     TargetBulkCreate,
     TargetBulkCreateResponse,
@@ -44,6 +43,7 @@ from shared.models import (
 )
 from shared.models.estate import EstateTriageUpdate, ProjectEstate, TargetEstate
 from shared.models.relations import TargetPrograms, TargetRelations
+from shared.models.target import TargetValidationBatch
 from shared.models.target_asset import TargetAssetFilter, TargetAssetPage
 from shared.models.target_summary import TargetSummaryRead
 from shared.schemas.target_detail import (
@@ -51,7 +51,6 @@ from shared.schemas.target_detail import (
     TargetBgpDetailResponse,
     TargetDetailRead,
     TargetDnsDetailResponse,
-    TargetWhoisDetailResponse,
 )
 from shared.utils.validation import normalize_target_value, unrecognised_target
 
@@ -100,27 +99,19 @@ async def validate_target_endpoint(
     return await _validated(request.target_value, service)
 
 
-@router.post("/validate/bulk", response_model=list[TargetValidationResponse])
-async def validate_bulk_target(
-    request: list[TargetValidationRequest],
+@router.post("/validate/batch", response_model=list[TargetValidationResponse])
+async def validate_target_batch(
+    request: TargetValidationBatch,
     _current_user: CurrentUser,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    if len(request) > MAX_TARGET_IMPORT:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"At most {MAX_TARGET_IMPORT} targets per request",
+    results = [await _validated(value, service) for value in request.values]
+    if request.project_slug:
+        existing = await service.existing_targets(
+            request.project_slug, [r.target_value for r in results if r.valid]
         )
-
-    seen: set[str] = set()
-    results = []
-    for req in request:
-        key = normalize_target_value(req.target_value) or req.target_value
-        if key in seen:
-            continue
-        seen.add(key)
-        results.append(await _validated(req.target_value, service))
-
+        for result in results:
+            result.target_id = existing.get(result.target_value)
     return results
 
 
@@ -153,8 +144,18 @@ async def get_target_counts(
     _current_user: CurrentUser,
     service: Annotated[TargetService, Depends(get_target_service)],
     project_slug: Annotated[str, Query(description="Filter by project slug")],
+    search: Annotated[str | None, Query()] = None,
+    organization_ids: Annotated[list[UUID] | None, Query()] = None,
+    tag_ids: Annotated[list[UUID] | None, Query()] = None,
+    signal: Annotated[SignalName | None, Query()] = None,
 ):
-    return await service.get_target_counts(project_slug)
+    return await service.get_target_counts(
+        project_slug,
+        search=search,
+        organization_ids=organization_ids,
+        tag_ids=tag_ids,
+        signal=signal,
+    )
 
 
 class TargetStatsResponse(BaseModel):
@@ -225,7 +226,7 @@ MAX_BULK_NAMES = 100
 
 class BulkEnrichRequest(BaseModel):
     target_ids: list[UUID] = Field(..., min_length=1, max_length=MAX_BULK_TARGET_IDS)
-    kind: Literal["whois", "dns", "bgp"]
+    kind: EnrichmentKind
 
 
 class BulkTagRequest(BaseModel):
@@ -316,9 +317,7 @@ async def list_targets(
     ] = None,
     signal: Annotated[
         SignalName | None,
-        Query(
-            description="Filter by signal: expiring, attention, awaiting, enriched, monitored, unscanned, stale, critical, high, medium"
-        ),
+        Query(description="Filter by signal"),
     ] = None,
     sort_by: Annotated[SortKey, Query(description="Sort field")] = "updated",
     sort_dir: Annotated[SortDir, Query(description="Sort direction")] = "desc",
@@ -438,15 +437,6 @@ async def get_target_dns(
     return await service.get_target_dns(target_id)
 
 
-@router.get("/{target_id}/whois", response_model=TargetWhoisDetailResponse)
-async def get_target_whois(
-    target_id: str,
-    _current_user: CurrentUser,
-    service: Annotated[TargetService, Depends(get_target_service)],
-):
-    return await service.get_target_whois(target_id)
-
-
 @router.get("/{target_id}/relations", response_model=TargetRelations)
 async def get_target_relations(
     target_id: UUID,
@@ -467,8 +457,9 @@ async def get_target_estate(
     scan_id: Annotated[UUID | None, Query(description="Scan ID")] = None,
 ):
     """Domains this target points at, providers it runs on, targets it shares with."""
-    settings = await InstanceSettingsService(session).get_or_create()
-    with_programs = has_capability(settings.mode, CAP_BOUNTY_PROGRAMS)
+    with_programs = await InstanceSettingsService(session).has_capability(
+        CAP_BOUNTY_PROGRAMS
+    )
     return await TargetEstateService(session).for_target(
         project_id, target_id, scan_id, with_programs=with_programs, persist=True
     )

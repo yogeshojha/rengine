@@ -18,13 +18,19 @@
 	import TrackersTable from '$lib/components/issue-trackers/trackers-table.svelte';
 	import RoutesTable from '$lib/components/issue-trackers/routes-table.svelte';
 	import IssuesTable from '$lib/components/issue-trackers/issues-table.svelte';
+	import FilterChips from '$lib/components/scans/results/table/filter-chips.svelte';
 	import ConnectSheet from '$lib/components/issue-trackers/connect-sheet.svelte';
 	import RouteDialog from '$lib/components/issue-trackers/route-dialog.svelte';
 	import { issueTrackersApi } from '$lib/api/issue-trackers';
 	import { issueTrackers } from '$lib/stores/issue-trackers.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
-	import { ISSUE_TRACKER_TABS, routeLabels, type IssueTrackerTab } from '$lib/config/routes';
+	import {
+		ISSUE_TRACKER_TABS,
+		TRACKER_PARAM,
+		routeLabels,
+		type IssueTrackerTab
+	} from '$lib/config/routes';
 	import { FilingState, MAX_TRACKERS } from '$lib/config/issue-trackers';
 	import type { IssueTracker, TrackedIssue, TrackerRoute } from '$lib/types/issue-tracker';
 
@@ -46,6 +52,7 @@
 	let activeTab = $state<IssueTrackerTab | null>(
 		validTabs.has(initialTab) ? (initialTab as IssueTrackerTab) : null
 	);
+	let trackerFilter = $state<string | null>(page.url.searchParams.get(TRACKER_PARAM));
 	let connectOpen = $state(false);
 	let editing = $state<IssueTracker | null>(null);
 	let routeOpen = $state(false);
@@ -61,8 +68,15 @@
 		activeTab ?? (issueTrackers.loaded && !trackers.length ? 'trackers' : 'issues')
 	);
 	const atLimit = $derived(trackers.length >= MAX_TRACKERS);
+	const filtered = $derived(trackers.find((t) => t.id === trackerFilter) ?? null);
+	const shownIssues = $derived(
+		filtered
+			? issueTrackers.issues.filter((i) => i.tracker_id === filtered.id)
+			: issueTrackers.issues
+	);
+	const filterChips = $derived(filtered ? [{ id: filtered.id, label: filtered.name }] : []);
 	const counts = $derived({
-		issues: issueTrackers.issues.length,
+		issues: shownIssues.length,
 		trackers: trackers.length,
 		routes: issueTrackers.routes.length
 	});
@@ -79,10 +93,22 @@
 	$effect(() => {
 		if (!browser || !activeTab) return;
 		const url = new URL(page.url);
-		if (url.searchParams.get('tab') === activeTab) return;
+		const tracker = trackerFilter ?? '';
+		if (
+			url.searchParams.get('tab') === activeTab &&
+			(url.searchParams.get(TRACKER_PARAM) ?? '') === tracker
+		)
+			return;
 		url.searchParams.set('tab', activeTab);
+		if (tracker) url.searchParams.set(TRACKER_PARAM, tracker);
+		else url.searchParams.delete(TRACKER_PARAM);
 		replaceState(url, page.state);
 	});
+
+	function openIssues(tracker: IssueTracker) {
+		trackerFilter = tracker.id;
+		activeTab = 'issues';
+	}
 
 	$effect(() => {
 		if (!browser || !inFlight) return;
@@ -283,25 +309,35 @@
 						<Skeleton class="h-10 w-full" />
 						<Skeleton class="h-10 w-full" />
 					</div>
-				{:else if !issueTrackers.issues.length}
-					<EmptyState icon={SquareKanbanIcon} title="No issues filed" compact />
 				{:else}
-					<IssuesTable
-						issues={issueTrackers.issues}
-						onRetry={retry}
-						onRefresh={refresh}
-						onUnlink={(issue) => (pending = { kind: 'issue', issue })}
+					<FilterChips
+						chips={filterChips}
+						onRemove={() => (trackerFilter = null)}
+						onClear={() => (trackerFilter = null)}
 					/>
+					{#if !shownIssues.length}
+						<EmptyState icon={SquareKanbanIcon} title="No issues filed" compact />
+					{:else}
+						<IssuesTable
+							issues={shownIssues}
+							onRetry={retry}
+							onRefresh={refresh}
+							onUnlink={(issue) => (pending = { kind: 'issue', issue })}
+						/>
+					{/if}
 				{/if}
 			{:else if tab === 'trackers'}
 				<TrackersTable
 					{trackers}
+					issues={issueTrackers.issues}
+					capped={issueTrackers.issuesCapped}
 					{canAdmin}
 					{testing}
 					onEdit={(t) => openConnect(t)}
 					onTest={test}
 					onToggle={toggle}
 					onRemove={(tracker) => (pending = { kind: 'tracker', tracker })}
+					onOpenIssues={openIssues}
 				/>
 			{:else if !issueTrackers.routes.length}
 				<EmptyState icon={SquareKanbanIcon} title="No routes" compact>

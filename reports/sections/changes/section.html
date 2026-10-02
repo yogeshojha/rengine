@@ -1,6 +1,6 @@
 {% import 'macros.html' as m with context %}
 {% if first_run %}
-<div class="callout callout--quiet">First recorded run for {{ ctx.data.subject }}. Nothing is reported as new.</div>
+<div class="callout callout--quiet">First recorded run for {{ ctx.data.subject }}.</div>
 {% else %}
 <p class="block muted small">Compared against the run of {{ previous.completed_at|date('%d %b %Y') }}. Dimensions the previous run did not produce are omitted.</p>
 

@@ -6,7 +6,7 @@
 	import { countryGeo } from '$lib/config/country-geo';
 	import { cn } from '$lib/utils';
 
-	export interface GlobeEntry {
+	interface GlobeEntry {
 		code: string;
 		count: number;
 	}
@@ -178,7 +178,7 @@
 	<path d={sphere} fill="none" stroke="var(--border)" stroke-width="1" />
 
 	{#each rings as ring (ring.i)}
-		<path class="ring" d={ring.d} pathLength="1" />
+		<path class="ring" d={ring.d} />
 	{/each}
 
 	{#each dots as dot (dot.code)}

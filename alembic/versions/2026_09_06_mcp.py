@@ -60,5 +60,4 @@ def downgrade() -> None:
     op.drop_index("ix_mcp_tokens_token_hash", table_name="mcp_tokens")
     op.drop_index("ix_mcp_tokens_project_id", table_name="mcp_tokens")
     op.drop_index("ix_mcp_tokens_name", table_name="mcp_tokens")
-    op.drop_index("ix_mcp_tokens_id", table_name="mcp_tokens")
     op.drop_table("mcp_tokens")

@@ -1,9 +1,4 @@
-import {
-	CHANNEL_EVENTS,
-	CHANNEL_LEVELS,
-	DEFAULT_CHANNEL_EVENTS,
-	DEFAULT_CHANNEL_LEVEL
-} from '$lib/config/notification-events';
+import { DEFAULT_CHANNEL_EVENTS, DEFAULT_CHANNEL_LEVEL } from '$lib/config/notification-events';
 
 export const NOTIF_PROVIDERS = [
 	'slack',
@@ -16,15 +11,6 @@ export const NOTIF_PROVIDERS = [
 ] as const;
 
 export type NotifProvider = (typeof NOTIF_PROVIDERS)[number];
-
-export const NOTIF_CATEGORIES = CHANNEL_EVENTS.map((event) => ({
-	value: event.type,
-	label: event.label,
-	hint: event.hint,
-	capability: event.capability
-}));
-
-export const NOTIF_SEVERITIES = CHANNEL_LEVELS;
 
 export interface NotificationPreference {
 	types: string[];

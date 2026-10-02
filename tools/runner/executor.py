@@ -3,6 +3,7 @@
 import contextlib
 import json
 import os
+import re
 import shutil
 import signal
 import subprocess
@@ -25,7 +26,7 @@ from tools.runner.models import (
 
 logger = get_logger(__name__)
 
-_TOOL_BIN = os.environ.get("RENGINE_TOOL_BIN", "/root/go/bin")
+_TOOL_BIN = "/root/go/bin"
 
 
 def tool_path() -> str:
@@ -35,6 +36,18 @@ def tool_path() -> str:
 
 _STOP_POLL_SECONDS = 2.0
 _KILL_GRACE_SECONDS = 5
+
+_WITHHELD_ENV = frozenset(
+    {
+        "SECRET_KEY",
+        "ADMIN_USERNAME",
+        "ADMIN_EMAIL",
+        "ADMIN_PASSWORD",
+        "POSTGRES_PASSWORD",
+        "FLOWER_PASSWORD",
+        "REDIS_PASSWORD",
+    }
+)
 
 
 def _terminate(proc: subprocess.Popen) -> None:
@@ -186,14 +199,55 @@ class ToolExecutionError(Exception):
 
 
 _MAX_STDOUT_AS_ERROR = 2000
+_EXCERPT_CHARS = 500
+_ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
+_LEVEL = re.compile(r"^\[(?P<level>[A-Za-z]{3,5})\]\s*")
+_FATAL_LEVELS = frozenset({"FTL", "FATAL"})
+_ERROR_LEVELS = frozenset({"ERR", "ERROR"})
+_BANNER = re.compile(
+    r"^[\s_/\\|()<>.,'`~=*:+#-]*(v\d[\w.-]*)?\s*$|^projectdiscovery\.io$"
+)
+_BENIGN = re.compile(r"nuclei-ignore", re.IGNORECASE)
+_ERRORISH = re.compile(
+    r"error|fatal|panic|failed|could not|cannot|unable|invalid|not defined|"
+    r"unknown|no such|denied|refused",
+    re.IGNORECASE,
+)
+
+
+def _reason(text: str | None) -> str:
+    """The lines of a tool's output that state why it failed."""
+    lines = [
+        line
+        for raw in _ANSI.sub("", text or "").splitlines()
+        if (line := raw.strip())
+        and not _BANNER.match(line)
+        and not line.startswith("{")
+        and not _BENIGN.search(line)
+    ]
+    tagged = [
+        (match.group("level").upper(), line[match.end() :].strip())
+        for line in lines
+        if (match := _LEVEL.match(line))
+    ]
+    for levels in (_FATAL_LEVELS, _ERROR_LEVELS):
+        picked = [message for level, message in tagged if level in levels and message]
+        if picked:
+            return _joined(picked)
+    plain = [line for line in lines if not _LEVEL.match(line)]
+    return _joined([line for line in plain if _ERRORISH.search(line)] or plain[-3:])
+
+
+def _joined(lines: list[str]) -> str:
+    return "; ".join(dict.fromkeys(lines))[:_EXCERPT_CHARS]
 
 
 def failure_excerpt(stderr: str | None, stdout: str | None) -> str:
-    text = (stderr or "").strip()
-    if text:
-        return text[:500]
+    reason = _reason(stderr)
+    if reason:
+        return reason
     out = (stdout or "").strip()
-    return out[:500] if 0 < len(out) <= _MAX_STDOUT_AS_ERROR else ""
+    return _reason(out) if 0 < len(out) <= _MAX_STDOUT_AS_ERROR else ""
 
 
 class CLIToolRunner:
@@ -554,6 +608,7 @@ class CLIToolRunner:
             if killed_for[0]:
                 logger.warning("%s killed: %s", self.binary, killed_for[0])
             if recorder is not None and handle is not None:
+                excerpt = failure_excerpt(stderr, None)
                 err = (
                     None
                     if return_code == 0 and not killed_for[0]
@@ -562,7 +617,7 @@ class CLIToolRunner:
                         if killed_for[0]
                         else f"{self.binary} exited with code {return_code}"
                     )
-                    + (f": {stderr.strip()[:500]}" if stderr.strip() else "")
+                    + (f": {excerpt}" if excerpt else "")
                 )
                 with contextlib.suppress(Exception):
                     recorder.finish(
@@ -653,7 +708,7 @@ class CLIToolRunner:
     @staticmethod
     def _build_env(extra: dict[str, str] | None) -> dict[str, str]:
         """Build subprocess environment, merging extra vars with current env."""
-        env = os.environ.copy()
+        env = {k: v for k, v in os.environ.items() if k not in _WITHHELD_ENV}
         if extra:
             env.update(extra)
         return env

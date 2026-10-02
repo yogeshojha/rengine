@@ -1,4 +1,4 @@
-"""a self-hosted OAST server's token is a secret like any other key
+"""api key provider: interactsh
 
 Revision ID: d27c6a90f1b3
 Revises: c19a5f3b7d84

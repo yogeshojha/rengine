@@ -1,5 +1,3 @@
-"""Lookalike permutations and the verdict each registered one gets."""
-
 from __future__ import annotations
 
 import pytest
@@ -13,7 +11,7 @@ from shared.definitions.lookalikes import (
 from shared.services import lookalikes
 from shared.services.lookalikes import Lookalike, Page, Records
 from stages.lookalike_domains.config import LookalikeDomainsConfig
-from stages.lookalike_domains.stage import _registered
+from stages.lookalike_domains.stage import _probes, _registered, _tld
 from stages.registry import stage_by_name
 
 pytestmark = pytest.mark.pipeline
@@ -61,6 +59,21 @@ def test_a_tld_wildcard_answer_is_not_a_registration():
         records=Records(a=["64.70.19.203"], ns=["ns1.example-dns.net"]),
     )
     assert _registered(delegated, wildcard)
+
+
+def test_permutations_vary_the_label_under_a_second_level_suffix():
+    names = lookalikes.permutations(
+        "kominfo.go.id", tld_swap=False, words=[], cap=10_000
+    )
+    domains = {d for d, _ in names}
+    assert "kominf.go.id" in domains
+    assert not any(d.endswith((".qo.id", ".g0.id")) for d in domains)
+
+
+def test_the_wildcard_probe_sits_under_the_public_suffix():
+    assert _tld("kominfo.go.id") == "go.id"
+    assert _tld("exarnple.ws") == "ws"
+    assert set(_probes(["kominf0.go.id", "exarnple.ws"])) == {"go.id", "ws"}
 
 
 def test_a_redirect_to_the_target_is_held():

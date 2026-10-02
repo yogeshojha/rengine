@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cited, parseAnswer, spans } from './answer-text';
+import { parseAnswer, plainAnswer, spans } from './answer-text';
 
 describe('spans', () => {
 	it('splits citations, bold and code out of prose', () => {
@@ -40,6 +40,11 @@ describe('parseAnswer', () => {
 			['item', 2],
 			['item', null]
 		]);
-		expect(cited(blocks)).toEqual([1]);
+	});
+});
+
+describe('plainAnswer', () => {
+	it('drops citation marks and keeps literal brackets', () => {
+		expect(plainAnswer('Apache 2.4.41 [[1]][[2]], see arr[1].')).toBe('Apache 2.4.41, see arr[1].');
 	});
 });

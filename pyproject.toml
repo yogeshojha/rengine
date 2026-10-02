@@ -75,22 +75,14 @@ section-order = [
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401", "F403"]
-"scripts/*.py" = ["T201"]  # maintenance CLIs: stdout is their interface
+"scripts/*.py" = ["T201"]
 "tests/**/*.py" = ["S101", "S105", "S106", "PLR2004", "ARG001", "PLR0915"]  # asserts, literal expectations, fixture args
-
-[tool.ruff.lint.pydocstyle]
-convention = "google"
 
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
-
-[dependency-groups]
-dev = [
-    "ruff==0.14.14",
-]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

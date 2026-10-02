@@ -9,10 +9,10 @@
 	import * as HoverCard from '$lib/components/ui/hover-card';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { targetsApi } from '$lib/api/targets';
-	import { tagsApi } from '$lib/api/tags';
 	import { targetsStore } from '$lib/stores/targets.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { toast } from 'svelte-sonner';
+	import { DEFAULT_TAG_COLOR, TAG_COLORS } from '$lib/config/tags';
 	import type { TagSummary } from '$lib/types/target';
 
 	interface Props {
@@ -33,20 +33,7 @@
 	let searchValue = $state('');
 	let isUpdating = $state(false);
 	let showColorPicker = $state(false);
-	let selectedColor = $state('#6366f1');
-
-	const presetColors = [
-		'#ef4444',
-		'#f97316',
-		'#eab308',
-		'#22c55e',
-		'#14b8a6',
-		'#3b82f6',
-		'#6366f1',
-		'#a855f7',
-		'#ec4899',
-		'#64748b'
-	];
+	let selectedColor = $state(DEFAULT_TAG_COLOR);
 
 	let availableTags = $derived(
 		targetsStore.tags.map((t) => ({
@@ -99,14 +86,15 @@
 		if (!projectSlug || !searchValue.trim()) return;
 
 		const tagName = searchValue.trim();
+		const previous = [...currentTags];
 		isUpdating = true;
 
 		try {
-			const newTag = await tagsApi.create({
-				name: tagName,
-				color: selectedColor,
-				project_slug: projectSlug
-			});
+			const newTag = await targetsStore.createTag(projectSlug, tagName, selectedColor);
+			if (!newTag) {
+				toast.error('Tag not created');
+				return;
+			}
 
 			const newTagSummary = {
 				id: newTag.id,
@@ -114,21 +102,20 @@
 				slug: newTag.slug,
 				color: newTag.color
 			};
-			applyPatch({
-				tags: [...currentTags, newTagSummary]
-			});
+			applyPatch({ tags: [...previous, newTagSummary] });
 
-			await Promise.all([
-				targetsApi.update(targetId, { tag_names: [...currentTags.map((t) => t.name), tagName] }),
-				targetsStore.fetchTags()
-			]);
+			try {
+				await targetsApi.update(targetId, { tag_names: [...previous.map((t) => t.name), tagName] });
+			} catch {
+				applyPatch({ tags: previous });
+				toast.error('Tag not applied');
+				return;
+			}
 
 			searchValue = '';
 			showColorPicker = false;
-			selectedColor = '#6366f1';
+			selectedColor = DEFAULT_TAG_COLOR;
 			toast.success('Tag created');
-		} catch {
-			toast.error('Tag not created');
 		} finally {
 			isUpdating = false;
 		}
@@ -140,7 +127,9 @@
 
 	function handleOpenChange(isOpen: boolean) {
 		open = isOpen;
-		if (!isOpen) {
+		if (isOpen) {
+			void targetsStore.fetchTags(projectsStore.activeProject?.slug);
+		} else {
 			searchValue = '';
 			showColorPicker = false;
 		}
@@ -210,7 +199,7 @@
 						Color for "<span class="text-primary">{searchValue}</span>"
 					</p>
 					<div class="flex flex-wrap gap-2">
-						{#each presetColors as color (color)}
+						{#each TAG_COLORS as color (color)}
 							<button
 								type="button"
 								class="h-6 w-6 rounded-full border-2 {selectedColor === color

@@ -114,7 +114,7 @@ def build_index(
 
 @dataclass
 class _Merged:
-    """One signature's worth of observations, folded before the database is touched."""
+    """One signature's observations, folded."""
 
     signature: str
     family: str
@@ -628,7 +628,7 @@ def seed_from_assets(
     project_id: uuid.UUID,
     sifter: Sifter | None = None,
 ) -> UpsertResult:
-    """Every live web asset is an endpoint the scan already proved exists."""
+    """Write the scan's web assets as endpoints."""
     rows = session.execute(
         select(
             HttpAsset.url,

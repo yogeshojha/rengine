@@ -20,27 +20,32 @@
 	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import WatchDialog from './watch-dialog.svelte';
 	import WatchHostRow from './watch-host-row.svelte';
+	import SubmissionBadge from './submission-badge.svelte';
 	import { watchesApi } from '$lib/api/watches';
 	import {
+		CADENCE_LABELS,
+		EVENT_FILTERS,
 		EVENT_ICONS,
 		EVENT_TONE_CLASS,
 		HOST_FILTERS,
+		WATCH_EVENT_ALL,
 		WATCH_EVENT_PAGE_SIZE,
-		WATCH_HOST_PAGE_SIZE
+		WATCH_EVENT_SCOPE,
+		WATCH_HOST_PAGE_SIZE,
+		type WatchEventFilter
 	} from '$lib/config/watch';
-	import { CADENCE_LABELS } from '$lib/config/watch';
-	import { SUBMISSION_STATE_LABELS } from '$lib/config/bounty-programs';
 	import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
-	import { SubmissionState } from '$lib/types/bounty-program';
 	import { watchesStore } from '$lib/stores/watches.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
+	import { SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
+	import { plural } from '$lib/utilities/strings';
 	import {
+		WatchHostFilter,
 		WatchStatus,
 		type Watch,
 		type WatchEvent,
 		type WatchHost,
-		type WatchHostCounts,
-		type WatchHostFilter
+		type WatchHostCounts
 	} from '$lib/types/watch';
 
 	interface Props {
@@ -57,14 +62,14 @@
 		watch,
 		projectId,
 		open,
-		initialFilter = 'all',
+		initialFilter = WatchHostFilter.All,
 		initialTab = 'hosts',
 		onOpenChange,
 		onChanged
 	}: Props = $props();
 
 	let tab = $state<'hosts' | 'activity'>('hosts');
-	let filter = $state<WatchHostFilter>('all');
+	let filter = $state<WatchHostFilter>(WatchHostFilter.All);
 	let sinceSeen = $state(false);
 	let search = $state('');
 	let hosts = $state<WatchHost[]>([]);
@@ -74,7 +79,7 @@
 	let events = $state<WatchEvent[]>([]);
 	let eventTotal = $state(0);
 	let eventPage = $state(0);
-	let eventFilter = $state<'all' | 'scope'>('all');
+	let eventFilter = $state<WatchEventFilter>(WATCH_EVENT_ALL);
 	let loading = $state(false);
 	let busy = $state(false);
 	let settingsOpen = $state(false);
@@ -115,8 +120,8 @@
 			const page = await watchesApi.events(watch.id, projectId, {
 				page: eventPage + 1,
 				size: WATCH_EVENT_PAGE_SIZE,
-				kind: eventFilter === 'scope' ? 'scope' : null,
-				since: eventFilter === 'scope' && sinceSeen ? seenAt : null
+				kind: eventFilter === WATCH_EVENT_SCOPE ? WATCH_EVENT_SCOPE : null,
+				since: eventFilter === WATCH_EVENT_SCOPE && sinceSeen ? seenAt : null
 			});
 			events = page.items;
 			eventTotal = page.total;
@@ -136,11 +141,11 @@
 			hostPage = 0;
 			eventPage = 0;
 			seenAt = w.seen_at;
-			eventFilter = initialTab === 'activity' ? 'scope' : 'all';
+			eventFilter = initialTab === 'activity' ? WATCH_EVENT_SCOPE : WATCH_EVENT_ALL;
 			sinceSeen =
 				w.seen_at !== null &&
-				((initialFilter === 'arrived' && w.new_hosts > 0) ||
-					(initialFilter === 'alerted' && w.new_alerts > 0) ||
+				((initialFilter === WatchHostFilter.Arrived && w.new_hosts > 0) ||
+					(initialFilter === WatchHostFilter.Alerted && w.new_alerts > 0) ||
 					(initialTab === 'activity' && w.scope_changes > 0));
 			void loadHosts();
 			void loadEvents();
@@ -166,7 +171,7 @@
 		searchTimer = setTimeout(() => {
 			hostPage = 0;
 			void loadHosts();
-		}, 250);
+		}, SEARCH_DEBOUNCE_MS);
 	}
 
 	async function setStatus(status: WatchStatus) {
@@ -236,13 +241,7 @@
 					{:else}
 						<Badge variant="success">Watching</Badge>
 					{/if}
-					{#if watch.submission_state !== SubmissionState.Open && watch.submission_state !== SubmissionState.Unknown}
-						<Badge variant="warning">
-							Submissions {SUBMISSION_STATE_LABELS[
-								watch.submission_state as SubmissionState
-							]?.toLowerCase() ?? watch.submission_state}
-						</Badge>
-					{/if}
+					<SubmissionBadge submission={watch.submission_state} />
 					{#if watch.baseline.status}
 						<Badge variant="outline" class="text-muted-foreground">
 							{watch.baseline.engine_name} · {CADENCE_LABELS[watch.cadence]}
@@ -252,9 +251,7 @@
 				<Sheet.Description class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
 					<span class="font-mono">@{watch.handle}</span>
 					<span>{platformLabel}</span>
-					<span class="tabular-nums"
-						>{watch.targets} {watch.targets === 1 ? 'target' : 'targets'}</span
-					>
+					<span class="tabular-nums">{plural(watch.targets, 'target')}</span>
 					<span class="font-mono">
 						{watch.watch_items
 							.slice(0, 6)
@@ -358,10 +355,7 @@
 						<RowSkeleton rows={6} avatar="size-4 rounded" trailing="h-5 w-20 rounded-full" />
 					{:else if hosts.length === 0}
 						<EmptyState
-							title={counts?.all === 0 ? 'No certificates yet' : 'No hosts match'}
-							description={counts?.all === 0
-								? 'New certificates for the watched apexes are listed here.'
-								: undefined}
+							title={counts?.all === 0 ? 'No certificates' : 'No hosts match'}
 							class="p-10"
 						/>
 					{:else}
@@ -383,13 +377,13 @@
 				{/if}
 			{:else}
 				<div class="flex flex-wrap items-center gap-2 border-b px-4 py-2">
-					{#each [{ key: 'all', label: 'All' }, { key: 'scope', label: 'Scope changes' }] as f (f.key)}
+					{#each EVENT_FILTERS as f (f.key)}
 						<Toggle
 							size="sm"
 							variant="outline"
 							pressed={eventFilter === f.key}
 							onPressedChange={() => {
-								eventFilter = f.key as 'all' | 'scope';
+								eventFilter = f.key;
 								eventPage = 0;
 								void loadEvents();
 							}}
@@ -398,7 +392,7 @@
 							{f.label}
 						</Toggle>
 					{/each}
-					{#if seenAt && eventFilter === 'scope'}
+					{#if seenAt && eventFilter === WATCH_EVENT_SCOPE}
 						<label class="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
 							<Switch
 								checked={sinceSeen}
@@ -414,7 +408,7 @@
 				<ScrollArea.Root class="min-h-0 flex-1">
 					{#if events.length === 0}
 						<EmptyState
-							title={eventFilter === 'scope' ? 'No scope changes' : 'No activity'}
+							title={eventFilter === WATCH_EVENT_SCOPE ? 'No scope changes' : 'No activity'}
 							class="p-10"
 						/>
 					{:else}

@@ -9,6 +9,5 @@ class InstanceMode(Enum):
 class AIProvider(Enum):
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
-    AZURE_OPENAI = "azure_openai"
     GOOGLE = "google"
     OPENAI_COMPATIBLE = "openai_compatible"

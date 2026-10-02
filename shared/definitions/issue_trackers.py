@@ -175,7 +175,6 @@ TRACKERS: tuple[TrackerSpec, ...] = (
 )
 
 TRACKERS_BY_KIND: dict[str, TrackerSpec] = {spec.kind.value: spec for spec in TRACKERS}
-TRACKER_ORDER: tuple[str, ...] = tuple(spec.kind.value for spec in TRACKERS)
 
 
 DESTINATION_PATTERNS: dict[str, re.Pattern[str]] = {

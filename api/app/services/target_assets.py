@@ -30,10 +30,11 @@ class TargetAssetService:
         if latest is None and not live:
             return TargetAssetPage()
 
-        baseline = latest is not None and await self._has_baseline(
-            project_id, target_id, latest
+        first = await self._first_scan(project_id, target_id)
+        baseline = first is not None and await self._has_baseline(
+            project_id, target_id, first
         )
-        rolled = self._rollup(project_id, target_id, latest, live, baseline).subquery(
+        rolled = self._rollup(project_id, target_id, latest, live, first).subquery(
             "rolled"
         )
         facets = await self._facets(rolled, latest, baseline)
@@ -65,18 +66,8 @@ class TargetAssetService:
     async def _latest_scan(
         self, project_id: UUID, target_id: UUID, live: list[UUID]
     ) -> UUID | None:
-        """Newest finished scan that found web assets — a live run cannot retire anything."""
-        query = select(Subdomain.scan_id).where(
-            Subdomain.project_id == project_id,
-            Subdomain.target_id == target_id,
-            Subdomain.scan_id.in_(
-                select(Scan.id).where(
-                    Scan.project_id == project_id,
-                    Scan.target_id == target_id,
-                    census_only(),
-                )
-            ),
-        )
+        """Newest finished census scan that found web assets."""
+        query = select(Subdomain.scan_id).where(*_census_rows(project_id, target_id))
         if live:
             query = query.where(Subdomain.scan_id.notin_(live))
         return await self.session.scalar(
@@ -85,19 +76,27 @@ class TargetAssetService:
             ).limit(1)
         )
 
+    async def _first_scan(self, project_id: UUID, target_id: UUID) -> UUID | None:
+        """Earliest census scan that found web assets."""
+        return await self.session.scalar(
+            select(Subdomain.scan_id)
+            .where(*_census_rows(project_id, target_id))
+            .order_by(Subdomain.discovered_at.asc(), Subdomain.scan_id.asc())
+            .limit(1)
+        )
+
     async def _has_baseline(
-        self, project_id: UUID, target_id: UUID, latest: UUID
+        self, project_id: UUID, target_id: UUID, first: UUID
     ) -> bool:
-        earlier = await self.session.scalar(
+        later = await self.session.scalar(
             select(Subdomain.id)
             .where(
-                Subdomain.project_id == project_id,
-                Subdomain.target_id == target_id,
-                Subdomain.scan_id != latest,
+                *_census_rows(project_id, target_id),
+                Subdomain.scan_id != first,
             )
             .limit(1)
         )
-        return earlier is not None
+        return later is not None
 
     def _rollup(
         self,
@@ -105,9 +104,9 @@ class TargetAssetService:
         target_id: UUID,
         latest: UUID | None,
         live: list[UUID],
-        baseline: bool,
+        first: UUID | None,
     ) -> Select:
-        scope = (Subdomain.project_id == project_id, Subdomain.target_id == target_id)
+        scope = _census_rows(project_id, target_id)
         seen_now = [Subdomain.scan_id == latest] if latest else []
         if live:
             seen_now.append(Subdomain.scan_id.in_(live))
@@ -136,7 +135,10 @@ class TargetAssetService:
         )
         web = (
             select(HttpAsset)
-            .where(HttpAsset.target_id == target_id)
+            .where(
+                HttpAsset.target_id == target_id,
+                HttpAsset.scan_id.in_(_census_scans(project_id, target_id)),
+            )
             .distinct(HttpAsset.host)
             .order_by(
                 HttpAsset.host,
@@ -152,15 +154,16 @@ class TargetAssetService:
                 agg.c.last_seen,
                 agg.c.scan_count,
                 agg.c.current,
-                and_(agg.c.current, agg.c.scan_count == 1, literal(baseline)).label(
-                    "is_new"
-                ),
-                newest.c.is_active,
+                and_(
+                    agg.c.current,
+                    agg.c.scan_count == 1,
+                    (newest.c.scan_id != first) if first else literal(False),
+                ).label("is_new"),
                 newest.c.is_wildcard,
                 newest.c.resolved_ips,
                 newest.c.cname,
-                newest.c.sources,
                 newest.c.scan_id.label("last_scan_id"),
+                web.c.url,
                 web.c.status_code,
                 web.c.title,
                 web.c.webserver,
@@ -169,7 +172,6 @@ class TargetAssetService:
                 web.c.asn_org,
                 web.c.is_cdn,
                 web.c.cdn_name,
-                web.c.screenshot_path,
             )
             .select_from(agg)
             .join(newest, newest.c.name == agg.c.name)
@@ -235,20 +237,33 @@ class TargetAssetService:
         )
 
 
+def _census_scans(project_id: UUID, target_id: UUID) -> Select:
+    return select(Scan.id).where(
+        Scan.project_id == project_id, Scan.target_id == target_id, census_only()
+    )
+
+
+def _census_rows(project_id: UUID, target_id: UUID) -> tuple[ColumnElement[bool], ...]:
+    return (
+        Subdomain.project_id == project_id,
+        Subdomain.target_id == target_id,
+        Subdomain.scan_id.in_(_census_scans(project_id, target_id)),
+    )
+
+
 def _to_row(m) -> TargetAssetRow:
     return TargetAssetRow(
         name=m["name"],
-        is_active=bool(m["is_active"]),
         is_wildcard=bool(m["is_wildcard"]),
         resolved_ips=list(m["resolved_ips"] or []),
         cname=m["cname"],
-        sources=list(m["sources"] or []),
         scan_count=m["scan_count"],
         first_seen=m["first_seen"],
         last_seen=m["last_seen"],
         last_scan_id=m["last_scan_id"],
         current=bool(m["current"]),
         is_new=bool(m["is_new"]),
+        url=m["url"],
         status_code=m["status_code"],
         title=m["title"],
         webserver=m["webserver"],
@@ -257,5 +272,4 @@ def _to_row(m) -> TargetAssetRow:
         asn_org=m["asn_org"],
         is_cdn=bool(m["is_cdn"]),
         cdn_name=m["cdn_name"],
-        screenshot_path=m["screenshot_path"],
     )

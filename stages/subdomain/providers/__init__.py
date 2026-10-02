@@ -23,7 +23,6 @@ PASSIVE_PROVIDERS: dict[str, type[SubdomainProvider]] = {
     AmassProvider.tool: AmassProvider,
     TlsxProvider.tool: TlsxProvider,
     NetlasProvider.tool: NetlasProvider,
-    "crtsh": CtfrProvider,  # saved engines name the crt.sh source this way
 }
 
 __all__ = [

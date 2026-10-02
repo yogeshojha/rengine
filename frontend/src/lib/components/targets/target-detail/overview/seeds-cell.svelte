@@ -130,7 +130,7 @@
 	{:else if loading}
 		<Skeleton class="h-4 w-2/3" />
 	{:else}
-		<span class="text-sm text-muted-foreground">No seed</span>
+		<span class="text-sm text-muted-foreground">No seed assets</span>
 	{/if}
 	{#snippet footer()}
 		<span>{seeds.length.toLocaleString()} stored</span>

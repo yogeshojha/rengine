@@ -1,18 +1,11 @@
-"""nuclei in DAST mode over the request items, and the exposure checks under directories."""
-
 from __future__ import annotations
 
 from urllib.parse import urlsplit, urlunsplit
 
-from sqlalchemy import and_, select
+from sqlalchemy import select
 
 from shared.definitions.scan_surface import SWEEP_REQUEST_CAP, Tier
-from shared.definitions.vulnerabilities import (
-    DAST_ROOT,
-    WEAK_MATCHER_PATHS,
-    Protocol,
-    TemplateOrigin,
-)
+from shared.definitions.vulnerabilities import Protocol
 from shared.models.vuln_template import TemplateSelection, VulnTemplate
 from shared.services.scan_surface import (
     SurfaceItem,
@@ -23,7 +16,7 @@ from shared.services.scan_surface import (
     cost,
 )
 from shared.services.scan_surface.tiers import requests_of
-from shared.services.vuln_templates import selection_predicate
+from shared.services.vuln_templates import dast_predicate, selection_predicate
 from stages.vulnerability_scan.scanners.base import ScannerResult
 from stages.vulnerability_scan.scanners.nuclei import (
     WAF_RATE_DIVISOR,
@@ -41,17 +34,9 @@ _BASE_URL = "{{BaseURL}}"
 
 
 def dast_templates(session, cfg) -> list[VulnTemplate]:
-    """The fuzzing checks: the dast tree, gated by severity and the browser switch."""
-    clauses = [
-        VulnTemplate.enabled.is_(True),
-        VulnTemplate.origin == TemplateOrigin.OFFICIAL.value,
-        VulnTemplate.path.startswith(DAST_ROOT),
-        VulnTemplate.severity.in_(list(cfg.severities)),
-        VulnTemplate.path.notin_(sorted(WEAK_MATCHER_PATHS)),
-    ]
-    if not cfg.headless:
-        clauses.append(VulnTemplate.protocol != Protocol.HEADLESS.value)
-    return list(session.execute(select(VulnTemplate).where(and_(*clauses))).scalars())
+    """The fuzzing checks the stage's settings select."""
+    predicate = dast_predicate(cfg.severities, headless=cfg.headless)
+    return list(session.execute(select(VulnTemplate).where(predicate)).scalars())
 
 
 def exposure_templates(session, cfg) -> list[VulnTemplate]:
@@ -72,8 +57,6 @@ def exposure_templates(session, cfg) -> list[VulnTemplate]:
 
 
 class NucleiDastScanner(NucleiScanner):
-    """The same runner, handed request and directory items instead of roots."""
-
     honeypot_threshold = 0
     evidence_recovery = 0
     fuzz_param_frequency = FUZZ_PARAM_FREQUENCY
@@ -135,7 +118,6 @@ class NucleiDastScanner(NucleiScanner):
                             templates=files,
                             rate=rates[lane],
                             dast=True,
-                            cost=cost(fuzz.rows),
                         )
                     )
         if exposure.paths and plan.bases:
@@ -151,7 +133,6 @@ class NucleiDastScanner(NucleiScanner):
                             items=items,
                             templates=files,
                             rate=rates[lane],
-                            cost=per_host,
                         )
                     )
         return lanes

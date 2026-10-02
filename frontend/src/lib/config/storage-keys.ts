@@ -1,9 +1,7 @@
 export const STORAGE_KEYS = {
 	activeProjectSlug: 'activeProjectSlug',
-	launchLastEngine: 'rengine:launch:lastEngine',
 	toolboxLastTool: 'rengine:toolbox:lastTool',
 	proxyLastTool: 'rengine:proxy:lastTool',
-	launchLastContext: 'rengine:launch:lastContext',
 	targetViews: 'targets:views',
 	targetsHidden: 'rengine:targets:hidden',
 	targetsDensity: 'rengine:targets:density',
@@ -14,7 +12,6 @@ export const STORAGE_KEYS = {
 	contextSplit: 'rengine:context:split',
 	activityPinned: 'rengine:activity:pinned',
 	activityGrouping: 'rengine:activity:grouping',
-	webAssetsView: 'rengine:webassets:view',
 	webAssetsColumns: 'rengine:webassets:columns',
 	webAssetsDensity: 'rengine:webassets:density',
 	webAssetsPageSize: 'rengine:webassets:pageSize',

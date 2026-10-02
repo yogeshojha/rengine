@@ -30,9 +30,6 @@ def upgrade() -> None:
         nullable=True,
         server_default=None,
     )
-    op.execute(
-        "UPDATE http_assets SET software = NULL WHERE json_array_length(software) = 0"
-    )
     op.execute(f"ALTER TABLE software_cves SET ({_AUTOVACUUM})")
     with op.get_context().autocommit_block():
         op.execute(

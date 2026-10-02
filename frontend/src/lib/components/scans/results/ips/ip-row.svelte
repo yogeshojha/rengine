@@ -142,7 +142,7 @@
 					{/snippet}
 				</Tooltip.Trigger>
 				<Tooltip.Content side="right">
-					{g.is_alive ? 'Responded to a probe' : 'No response'}
+					{g.is_alive ? 'Responding' : 'No response'}
 				</Tooltip.Content>
 			</Tooltip.Root>
 			<span class="min-w-0 leading-5 wrap-anywhere">
@@ -305,6 +305,7 @@
 									<button
 										{...props}
 										type="button"
+										class="max-w-44 min-w-0 shrink"
 										onclick={(e) => {
 											stopProp(e);
 											onHosts(exactToken('host', h));
@@ -312,7 +313,7 @@
 									>
 										<Badge
 											variant="outline"
-											class="max-w-44 cursor-pointer font-mono text-2xs font-normal hover:bg-accent"
+											class="max-w-full shrink cursor-pointer font-mono text-2xs font-normal hover:bg-accent"
 										>
 											<span class="truncate">{h}</span>
 										</Badge>
@@ -324,7 +325,7 @@
 							class="shrink-0"
 							items={hosts}
 							shown={MAX_HOSTS}
-							label="hosts"
+							label="web assets"
 							mono
 							onSelect={(h) => onHosts(exactToken('host', h))}
 						/>
@@ -387,13 +388,13 @@
 									stopProp(e);
 									onHosts(filterToken('ip', g.ip));
 								}}
-								aria-label="Show hosts on {g.ip} in Web assets"
+								aria-label="Web assets on {g.ip}"
 							>
 								<Globe />
 							</Button>
 						{/snippet}
 					</Tooltip.Trigger>
-					<Tooltip.Content>Hosts in Web assets</Tooltip.Content>
+					<Tooltip.Content>Web assets on this address</Tooltip.Content>
 				</Tooltip.Root>
 			{/if}
 			<Hint text="Hide all {g.ip}">
@@ -434,7 +435,7 @@
 						</DropdownMenu.Item>
 						{#if g.host_count}
 							<DropdownMenu.Item onclick={() => onHosts(filterToken('ip', g.ip))}>
-								<Globe /> Hosts in Web assets
+								<Globe /> Web assets on this address
 							</DropdownMenu.Item>
 						{/if}
 						{#if g.port_count}

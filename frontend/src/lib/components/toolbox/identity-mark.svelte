@@ -22,10 +22,8 @@
 	<CountryFlag
 		code={identity.value}
 		showCode={false}
-		class="shrink-0 [&_.fi]:size-full {className}"
+		class="shrink-0 [&_.fi]:size-full! {className}"
 	/>
-{:else if identity.kind === 'favicon'}
-	<img src={identity.value} alt="" aria-hidden="true" class="shrink-0 object-contain {className}" />
 {:else if Glyph}
 	<Glyph class="shrink-0 {className}" />
 {:else if techName}

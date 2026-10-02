@@ -5,7 +5,6 @@ from __future__ import annotations
 import hashlib
 import shutil
 import tempfile
-import urllib.request
 import zipfile
 from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
@@ -35,8 +34,8 @@ from shared.definitions.vulnerabilities import (
     Severity,
     TemplateOrigin,
     coerce_severity,
-    is_kev,
 )
+from shared.http import download
 from shared.logging import get_logger
 from shared.models.vuln_template import TemplateSelection, VulnTemplate
 from shared.services import feed_ledger
@@ -363,20 +362,12 @@ def _downloaded_archive() -> Iterator[Path]:
     workdir = Path(tempfile.mkdtemp(prefix="vuln_templates_"))
     archive = workdir / "templates.zip"
     try:
-        request = urllib.request.Request(  # noqa: S310
-            ARCHIVE_URL, headers={"User-Agent": "reNgine"}
+        download(
+            ARCHIVE_URL,
+            archive,
+            timeout=DOWNLOAD_TIMEOUT,
+            max_bytes=MAX_ARCHIVE_BYTES,
         )
-        with (
-            urllib.request.urlopen(request, timeout=DOWNLOAD_TIMEOUT) as response,  # noqa: S310
-            archive.open("wb") as handle,
-        ):
-            copied = 0
-            while chunk := response.read(1 << 20):
-                copied += len(chunk)
-                if copied > MAX_ARCHIVE_BYTES:
-                    msg = "Template archive exceeded the download limit."
-                    raise ValueError(msg)
-                handle.write(chunk)
         yield archive
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
@@ -479,15 +470,26 @@ def sync_official(session: Session) -> int | None:
     return refresh.rows
 
 
+def custom_path(parsed: ParsedTemplate, filename: str) -> str:
+    """Path under the custom root an uploaded document is stored at."""
+    stem = Path(filename).stem or parsed.template_id
+    safe = "".join(c for c in stem if c.isalnum() or c in "-_.")[:80] or "template"
+    template_id = parsed.template_id.lower()
+    safe_id = "".join(c for c in template_id if c.isalnum() or c in "-_.")[:60]
+    return f"{safe}-{safe_id or 'template'}.yaml".replace("--", "-")
+
+
 def store_custom(raw: str, filename: str) -> tuple[ParsedTemplate, str]:
     """Validate an uploaded document and write it under the custom root."""
     parsed = parse_template(raw)
-    stem = Path(filename).stem or parsed.template_id
-    safe = "".join(c for c in stem if c.isalnum() or c in "-_.")[:80] or "template"
-    relative = f"{safe}-{parsed.template_id.lower()[:60]}.yaml".replace("--", "-")
+    relative = custom_path(parsed, filename)
     root = custom_root()
     root.mkdir(parents=True, exist_ok=True)
-    (root / relative).write_text(raw, encoding="utf-8")
+    destination = (root / relative).resolve()
+    if not destination.is_relative_to(root.resolve()):
+        msg = "The template id is not a valid file name."
+        raise TemplateError(msg)
+    destination.write_text(raw, encoding="utf-8")
     return parsed, relative
 
 
@@ -561,6 +563,20 @@ def selection_predicate(selection: TemplateSelection, *, official_only: bool = T
     return and_(*clauses)
 
 
+def dast_predicate(severities: Iterable[str], *, headless: bool):
+    """The fuzzing checks: the dast tree, gated by severity and the browser switch."""
+    clauses = [
+        VulnTemplate.enabled.is_(True),
+        VulnTemplate.origin == TemplateOrigin.OFFICIAL.value,
+        VulnTemplate.path.startswith(DAST_ROOT),
+        VulnTemplate.severity.in_(list(severities)),
+        VulnTemplate.path.notin_(sorted(WEAK_MATCHER_PATHS)),
+    ]
+    if not headless:
+        clauses.append(VulnTemplate.protocol != Protocol.HEADLESS.value)
+    return and_(*clauses)
+
+
 def selected_templates(
     session: Session, selection: TemplateSelection
 ) -> list[VulnTemplate]:
@@ -583,25 +599,14 @@ def selected_templates(
     return rows
 
 
-def severity_of(rows: Iterable[VulnTemplate]) -> dict[str, int]:
-    counts: dict[str, int] = {}
-    for row in rows:
-        counts[row.severity] = counts.get(row.severity, 0) + 1
-    return counts
-
-
-def kev_rows(rows: Iterable[VulnTemplate]) -> int:
-    return sum(1 for row in rows if is_kev(row.tags))
-
-
 __all__ = [
     "ParsedTemplate",
-    "Severity",
     "TemplateError",
+    "custom_path",
     "custom_root",
     "custom_row",
+    "dast_predicate",
     "index_directory",
-    "kev_rows",
     "library_ready",
     "official_root",
     "parse_template",
@@ -609,7 +614,6 @@ __all__ = [
     "selected_templates",
     "selection_predicate",
     "sets_for",
-    "severity_of",
     "shape_indexed",
     "store_custom",
     "sync_official",

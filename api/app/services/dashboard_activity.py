@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from uuid import UUID
 
 from sqlalchemy import cast, func, select
 from sqlalchemy.dialects.postgresql import JSONB, array
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services.scan import scan_duration
+from app.services.surface_scope import SurfaceScopeService
 from app.services.target_scope import Targets
 from app.services.threat_intel import ThreatIntelService
 from app.services.watch import WatchService
@@ -15,19 +17,20 @@ from shared.definitions.bounty_programs import event_spec
 from shared.definitions.connectors import LOUD_NOTICES, NoticeKind
 from shared.definitions.dashboard import (
     ACTIVITY_LIMIT,
-    DEFAULT_WINDOW,
     SERIES_DAYS,
     WINDOW_DAYS,
-    WINDOW_DELTAS,
     ActivityKind,
+    ActivityTone,
+    window_key,
+    window_since,
 )
-from shared.definitions.threat_intel import FEEDS_BY_KIND
+from shared.definitions.surface import SurfaceDimension
+from shared.definitions.threat_intel import FEEDS_BY_KIND, SIGNALS_BY_KIND
 from shared.definitions.watch import (
     EVENT_LABELS,
     HOST_STATE_LABELS,
     WatchEventKind,
     WatchHostState,
-    WatchStatus,
 )
 from shared.enums.scan import ScanStatus
 from shared.models.bounty_program import BountyEventRow, BountyProgram
@@ -47,7 +50,8 @@ from shared.models.target import Target
 from shared.models.threat_intel import ThreatFeed
 from shared.models.watch import ProgramWatch, WatchEvent, WatchHost
 from shared.services.scan_scope import census_only
-from shared.utils.datetime import utc_now
+from shared.utils.datetime import duration_text, utc_now
+from shared.utils.text import plural
 
 _HOT_STATUSES = (ScanStatus.FAILED.value, ScanStatus.CANCELLED.value)
 _WATCH_KINDS = (
@@ -73,27 +77,13 @@ _STATUS_LABEL = {
 
 
 def _window(window: str) -> tuple[str, datetime]:
-    if window not in WINDOW_DELTAS:
-        window = DEFAULT_WINDOW
-    return window, utc_now() - WINDOW_DELTAS[window]
+    window = window_key(window)
+    return window, window_since(window, utc_now())
 
 
 def _days(now: datetime, span: int) -> list[str]:
-    start = now.date() - timedelta(days=span - 1)
-    return [(start + timedelta(days=i)).isoformat() for i in range(span)]
-
-
-def _duration(seconds: float | None) -> str | None:
-    if not seconds:
-        return None
-    total = int(seconds)
-    hours, rest = divmod(total, 3600)
-    minutes = rest // 60
-    if hours:
-        return f"{hours}h {minutes:02d}m"
-    if minutes:
-        return f"{minutes}m"
-    return f"{total}s"
+    start = now.date() - timedelta(days=span)
+    return [(start + timedelta(days=i)).isoformat() for i in range(span + 1)]
 
 
 class DashboardActivityService:
@@ -143,18 +133,14 @@ class DashboardActivityService:
         for scan, target_value in rows.all():
             parts: list[str] = []
             if scan.status == ScanStatus.COMPLETED.value:
-                parts.append(
-                    f"{scan.vulnerabilities_found:,} findings"
-                    if scan.vulnerabilities_found != 1
-                    else "1 finding"
-                )
-                parts.append(f"{scan.subdomains_found:,} web assets")
+                found = scan.vulnerabilities_found
+                hosts = scan.subdomains_found
+                parts.append(f"{found:,} {plural(found, 'finding')}")
+                parts.append(f"{hosts:,} {plural(hosts, 'web asset')}")
             elif scan.error:
                 parts.append(scan.error[:140])
-            started = scan.started_at or scan.created_at
-            took = _duration((scan.completed_at - started).total_seconds())
-            if took:
-                parts.append(took)
+            if ran := scan_duration(scan):
+                parts.append(duration_text(ran))
             out.append(
                 DashboardEvent(
                     at=scan.completed_at,
@@ -162,9 +148,10 @@ class DashboardActivityService:
                     label="Run",
                     title=f"{target_value} {_STATUS_LABEL[scan.status]}",
                     detail=" · ".join(parts) or None,
-                    tone="hot" if scan.status in _HOT_STATUSES else "neutral",
+                    tone=ActivityTone.HOT.value
+                    if scan.status in _HOT_STATUSES
+                    else ActivityTone.NEUTRAL.value,
                     scan_id=scan.id,
-                    target_id=scan.target_id,
                 )
             )
         return out
@@ -187,7 +174,11 @@ class DashboardActivityService:
                     kind=ActivityKind.FEEDS.value,
                     label="Feeds",
                     title=f"{label} refreshed",
-                    detail=f"{feed.rows:,} rows" if feed.rows else None,
+                    detail=(
+                        f"{feed.rows:,} {plural(feed.rows, 'row')}"
+                        if feed.rows
+                        else None
+                    ),
                 )
             )
         return out
@@ -195,11 +186,11 @@ class DashboardActivityService:
     async def _intel(
         self, project_id: UUID, window: str, targets: Targets = None
     ) -> list[DashboardEvent]:
+        scope = await SurfaceScopeService(self.session).scope(
+            project_id, SurfaceDimension.VULNERABILITIES.value, targets=targets
+        )
         changes = await ThreatIntelService(self.session).changes(
-            project_id,
-            days=WINDOW_DAYS[window],
-            limit=ACTIVITY_LIMIT * 4,
-            targets=targets,
+            scope, days=WINDOW_DAYS[window], limit=ACTIVITY_LIMIT * 4
         )
         grouped: dict[tuple, list] = defaultdict(list)
         for c in changes:
@@ -208,7 +199,7 @@ class DashboardActivityService:
             key = (c.template_name, c.change, c.target_id, c.changed_at.date())
             grouped[key].append(c)
         out = []
-        for (template, change, target_id, _day), items in sorted(
+        for (template, change, _target, _day), items in sorted(
             grouped.items(),
             key=lambda kv: max(c.changed_at for c in kv[1]),
             reverse=True,
@@ -218,16 +209,16 @@ class DashboardActivityService:
             parts = [p for p in (first.cve, first.target_value) if p]
             if hosts > 1:
                 parts.append(f"on {hosts} web assets")
+            spec = SIGNALS_BY_KIND.get(change)
             out.append(
                 DashboardEvent(
                     at=first.changed_at,
                     kind=ActivityKind.INTEL.value,
                     label="Exploitation",
-                    title=f"{template} · {change.replace('_', ' ')}",
+                    title=f"{template} · {spec.label if spec else change}",
                     detail=" · ".join(parts) or None,
-                    tone="hot",
+                    tone=ActivityTone.HOT.value,
                     scan_id=first.scan_id,
-                    target_id=target_id,
                 )
             )
         return out
@@ -265,11 +256,10 @@ class DashboardActivityService:
                 label="Connector",
                 title=f"{c.name} synced",
                 detail=(
-                    f"{unseen[c.id]:,} browsed endpoints unseen by scans"
-                    if unseen.get(c.id)
-                    else f"{c.requests_seen:,} requests"
+                    f"{n:,} {plural(n, 'browsed endpoint')} unseen by scans"
+                    if (n := unseen.get(c.id, 0))
+                    else f"{c.requests_seen:,} {plural(c.requests_seen, 'request')}"
                 ),
-                connector_id=c.id,
             )
             for c in connectors
         ]
@@ -305,7 +295,11 @@ class DashboardActivityService:
                     label="Watch",
                     title=f"{program_name} · {EVENT_LABELS.get(event.kind, event.kind)}",
                     detail=event.name or event.detail,
-                    tone="hot" if hot else "new" if fresh else "neutral",
+                    tone=ActivityTone.HOT.value
+                    if hot
+                    else ActivityTone.NEW.value
+                    if fresh
+                    else ActivityTone.NEUTRAL.value,
                     watch_id=event.watch_id,
                     platform=platform,
                     handle=handle,
@@ -330,7 +324,9 @@ class DashboardActivityService:
                     label="Program",
                     title=f"{row.program_name} · {spec.label}",
                     detail=row.asset_identifier or row.detail,
-                    tone="new" if spec.actionable else "neutral",
+                    tone=ActivityTone.NEW.value
+                    if spec.actionable
+                    else ActivityTone.NEUTRAL.value,
                     platform=row.platform,
                     handle=row.handle,
                 )
@@ -338,11 +334,14 @@ class DashboardActivityService:
         return out
 
     async def programs(self, project_id: UUID, window: str) -> DashboardPrograms:
-        window, cutoff = _window(window)
+        window = window_key(window)
         now = utc_now()
-        series_cutoff = now - timedelta(days=SERIES_DAYS)
+        since = window_since(window, now)
         days = _days(now, SERIES_DAYS)
-        out = DashboardPrograms(window=window)
+        series_cutoff = datetime.combine(
+            date.fromisoformat(days[0]), time.min, tzinfo=UTC
+        )
+        out = DashboardPrograms(window=window, since=since)
 
         by_platform = await self.session.execute(
             select(BountyProgram.platform, func.count()).group_by(
@@ -364,18 +363,19 @@ class DashboardActivityService:
             .where(BountyEventRow.created_at >= series_cutoff)
             .group_by(func.date(BountyEventRow.created_at), BountyEventRow.kind)
         )
-        totals: dict[str, int] = defaultdict(int)
         for day, kind, n in rows.all():
             key = day.isoformat()
             if key in per_day:
                 per_day[key].kinds[kind] = int(n)
-            if day >= cutoff.date():
-                totals[kind] += int(n)
         out.events_daily = list(per_day.values())
-        out.events_in_window = dict(totals)
+        in_window = await self.session.execute(
+            select(BountyEventRow.kind, func.count())
+            .where(BountyEventRow.created_at >= since)
+            .group_by(BountyEventRow.kind)
+        )
+        out.events_in_window = {kind: int(n) for kind, n in in_window.all()}
 
         out.watches = await self._watches(project_id, days, series_cutoff)
-        out.watched = out.watches.total
         out.browsing = await self._browsing(project_id, days, series_cutoff)
         return out
 
@@ -383,17 +383,12 @@ class DashboardActivityService:
         self, project_id: UUID, days: list[str], series_cutoff: datetime
     ) -> DashboardWatches:
         out = DashboardWatches()
-        counts = (
-            await self.session.execute(
-                select(
-                    func.count(),
-                    func.count().filter(
-                        ProgramWatch.status == WatchStatus.ACTIVE.value
-                    ),
-                ).where(ProgramWatch.project_id == project_id)
+        out.total = int(
+            await self.session.scalar(
+                select(func.count()).where(ProgramWatch.project_id == project_id)
             )
-        ).one()
-        out.total, out.active = int(counts[0] or 0), int(counts[1] or 0)
+            or 0
+        )
         if not out.total:
             return out
         in_project = ProgramWatch.project_id == project_id
@@ -482,15 +477,8 @@ class DashboardActivityService:
         out.connectors = len(connectors)
         if not connectors:
             return out
-        now = utc_now()
-        out.requests_seen = sum(c.requests_seen for c in connectors)
         out.last_seen_at = max(
             (c.last_seen_at for c in connectors if c.last_seen_at), default=None
-        )
-        out.live = sum(
-            1
-            for c in connectors
-            if c.last_seen_at and now - c.last_seen_at <= timedelta(minutes=15)
         )
         notices = cast(ConnectorCandidate.notices, JSONB)
         scope = ConnectorCandidate.project_id == project_id

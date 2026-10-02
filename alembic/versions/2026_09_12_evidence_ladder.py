@@ -18,20 +18,6 @@ depends_on: str | Sequence[str] | None = None
 
 _COLUMNS = (("software_cves", "inferred"), ("vulnerabilities", "observed"))
 
-_PROVEN = """
-UPDATE vulnerabilities SET evidence = 'proven'
- WHERE interaction IS NOT NULL AND interaction::text NOT IN ('{}', 'null')
-"""
-
-_CORROBORATED = """
-UPDATE software_cves s SET evidence = 'corroborated'
-  FROM vulnerabilities v
- WHERE v.scan_id = s.scan_id
-   AND v.severity <> 'info'
-   AND s.host IS NOT NULL AND v.host = s.host
-   AND (v.cve_ids::jsonb) ? s.cve
-"""
-
 
 def upgrade() -> None:
     for table, default in _COLUMNS:
@@ -45,8 +31,6 @@ def upgrade() -> None:
             ),
         )
         op.create_index(f"ix_{table}_evidence", table, ["evidence"])
-    op.execute(_PROVEN)
-    op.execute(_CORROBORATED)
 
 
 def downgrade() -> None:

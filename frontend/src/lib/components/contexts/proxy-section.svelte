@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import { onMount } from 'svelte';
+	import { untrack } from 'svelte';
 	import { Label } from '$lib/components/ui/label';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Select from '$lib/components/ui/select';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import { proxiesStore } from '$lib/stores/proxies.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { SELECT_NONE } from '$lib/constants';
 	import type { ScanContextRead, ScanContextCreate } from '$lib/types/scan-context';
@@ -19,8 +20,10 @@
 
 	let { context, onChange }: Props = $props();
 
-	onMount(() => {
-		if (!proxiesStore.hasFetched) proxiesStore.fetch();
+	const isAdmin = $derived(Boolean(auth.user?.is_superuser));
+
+	$effect(() => {
+		if (isAdmin && !proxiesStore.hasFetched) untrack(() => proxiesStore.fetch());
 	});
 
 	let activeProxies = $derived(proxiesStore.proxies.filter((p) => p.is_active));
@@ -33,14 +36,15 @@
 
 	let triggerLabel = $derived.by(() => {
 		if (!context.proxy_id) return 'None';
-		return selected ? selected.name : 'Unknown proxy';
+		if (selected) return selected.name;
+		return isAdmin ? 'Unknown proxy' : 'Proxy set';
 	});
 </script>
 
 <div class="space-y-4">
 	<div class="space-y-1.5">
 		<Label class="text-xs">Proxy</Label>
-		<Select.Root type="single" value={selectedId} onValueChange={setProxy}>
+		<Select.Root type="single" value={selectedId} onValueChange={setProxy} disabled={!isAdmin}>
 			<Select.Trigger class="h-9 w-full max-w-sm text-sm">
 				{triggerLabel}
 			</Select.Trigger>
@@ -83,15 +87,17 @@
 				</p>
 			{/if}
 		</div>
-	{:else if context.proxy_id}
+	{:else if context.proxy_id && proxiesStore.hasFetched}
 		<p class="text-xs text-destructive">The selected proxy is inactive or removed.</p>
 	{/if}
 
-	<a
-		href={ROUTES.settings('proxies')}
-		class="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-	>
-		Manage proxies in Settings
-		<ExternalLink class="h-3 w-3" />
-	</a>
+	{#if isAdmin}
+		<a
+			href={ROUTES.settings('proxies')}
+			class="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+		>
+			Manage proxies in Settings
+			<ExternalLink class="h-3 w-3" />
+		</a>
+	{/if}
 </div>

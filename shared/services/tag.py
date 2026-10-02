@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.models import Tag
+from shared.models.tag import MAX_TAG_LEN
 from shared.utils.slug import add_with_unique_slug
 from shared.utils.validation import clean_name
 
@@ -13,9 +14,8 @@ async def get_or_create_tag(
     project_id: uuid.UUID,
     user_id: uuid.UUID,
     session: AsyncSession,
-    color: str = "#6B7280",
 ) -> Tag:
-    normalized_name = clean_name(name, max_len=50).lower()
+    normalized_name = clean_name(name, max_len=MAX_TAG_LEN).lower()
 
     result = await session.execute(
         select(Tag).where(
@@ -28,7 +28,6 @@ async def get_or_create_tag(
     if not tag:
         tag = Tag(
             name=normalized_name,
-            color=color,
             project_id=project_id,
             created_by=user_id,
         )

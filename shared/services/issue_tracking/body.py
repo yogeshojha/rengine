@@ -7,7 +7,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import datetime
 from typing import Any
-from urllib.parse import urlencode, urlsplit
+from urllib.parse import urlencode
 
 from shared.config import base_settings
 from shared.definitions.evidence import evidence_label
@@ -24,18 +24,17 @@ from shared.definitions.vulnerabilities import SEVERITY_LABELS
 from shared.services.issue_trackers.document import Doc, rendered_size
 from shared.services.scan_resolve import MASK, redact_credentials, redact_message
 from shared.services.secret_mining.detectors import find as find_secrets
-from shared.utils.net import host_port, url_port
-from shared.utils.text import counted, strip_control
+from shared.utils.net import authority
+from shared.utils.text import clip, counted, strip_control
 
 MAX_REFERENCES = 8
 MAX_PROSE = 3000
 MAX_RESPONSE = 1500
 MAX_LOCATION = 300
 MIN_SHOWN = 5
-DEFAULT_PORTS = {"http": 80, "https": 443}
 _ASSIGNED_SECRET = re.compile(
-    r"(?i)((?<![\w-])[\"']?[\w.-]*(?:pass(?:word|wd)?|secret|token|api[_-]?key"
-    r"|access[_-]?key|private[_-]?key|credential)[\w.-]*[\"']?\s*[:=]\s*)"
+    r"(?i)((?<![\w.-])[\"']?[\w.-]{0,128}?(?:pass(?:word|wd)?|secret|token|api[_-]?key"
+    r"|access[_-]?key|private[_-]?key|credential)[\w.-]{0,128}[\"']?\s*[:=]\s*)"
     r"(\"[^\"\n]*\"|'[^'\n]*'|[^\s,;&}\"']+)"
 )
 _SPACE = re.compile(r"\s+")
@@ -43,8 +42,7 @@ VULN_TAB = SurfaceDimension.VULNERABILITIES.value
 
 
 def _clip(text: str | None, limit: int) -> str:
-    value = strip_control(text or "").strip()
-    return value if len(value) <= limit else f"{value[: limit - 1]}…"
+    return clip(strip_control(text or "").strip(), limit)
 
 
 def finding_link(scan_id: Any, vuln_id: Any) -> str:
@@ -62,12 +60,7 @@ def scan_link(scan_id: Any) -> str:
 
 
 def _where(vuln: Any) -> str:
-    parts = urlsplit(vuln.matched_at or "")
-    host = vuln.host or parts.hostname or vuln.matched_at
-    port = url_port(parts)
-    if port and port != DEFAULT_PORTS.get(parts.scheme):
-        return host_port(host, port)
-    return host
+    return authority(vuln.matched_at or "", vuln.host) or vuln.matched_at or ""
 
 
 def title_for(vulns: Sequence[Any], target_value: str, *, grouped: bool) -> str:
@@ -77,7 +70,7 @@ def title_for(vulns: Sequence[Any], target_value: str, *, grouped: bool) -> str:
     ).strip()
     where = _SPACE.sub(" ", target_value if grouped else _where(lead)).strip()
     title = f"{name} on {where}"
-    return title if len(title) <= MAX_TITLE else f"{title[: MAX_TITLE - 1]}…"
+    return clip(title, MAX_TITLE)
 
 
 def marker(issue_id: uuid.UUID) -> str:

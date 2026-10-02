@@ -6,8 +6,6 @@ import ipaddress
 
 IPNetwork = ipaddress.IPv4Network | ipaddress.IPv6Network
 
-DEFAULT_MAX_HOSTS = 4096
-
 
 def parse_network(cidr: str) -> IPNetwork | None:
     """Parse a CIDR (or bare IP) into a network, host bits zeroed."""
@@ -17,17 +15,10 @@ def parse_network(cidr: str) -> IPNetwork | None:
         return None
 
 
-def _usable_count(net: IPNetwork) -> int:
-    total = net.num_addresses
-    if net.version == 4 and net.prefixlen < 31 and total > 2:  # noqa: PLR2004
-        return total - 2
-    return total
-
-
 def expand_network(
     cidr: str,
     *,
-    max_hosts: int = DEFAULT_MAX_HOSTS,
+    max_hosts: int,
     skip_private: bool = False,
 ) -> tuple[list[str], bool]:
     """Expand a CIDR to host IPs, capped at max_hosts by even-stride sampling."""

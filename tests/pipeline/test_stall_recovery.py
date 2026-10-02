@@ -68,7 +68,6 @@ def test_an_earlier_success_does_not_make_a_stranded_stage_done():
     ],
 )
 def test_the_resumer_and_finalize_never_disagree(rows):
-    """Whatever finalize still calls RUNNING, the resumer must still call unfinished."""
     running = aggregate_status(rows) == ScanStatus.RUNNING.value
     names = {row.name for row in rows}
 

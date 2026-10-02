@@ -1,3 +1,6 @@
-Dockerfile  eol=lf
-*.sh        eol=lf
+Dockerfile*     eol=lf
+*.sh            eol=lf
+deploy/rengine  eol=lf
 shared/definitions/data/port_registry.json linguist-generated=true -diff
+shared/definitions/data/public_suffixes.json linguist-generated=true -diff
+.github/screenshots/** export-ignore

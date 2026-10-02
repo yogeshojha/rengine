@@ -17,6 +17,7 @@
 	import ArrowRightIcon from '@lucide/svelte/icons/arrow-right';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import StepHeader from './step-header.svelte';
+	import { plural } from '$lib/utilities/strings';
 	import type { DatasetRead } from '$lib/types/dataset';
 	import type { StepProps } from '$lib/types/onboarding';
 
@@ -31,8 +32,6 @@
 	let finishing = $state(true);
 	let pending = $state<DatasetRead[]>([]);
 
-	const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-
 	let done = $derived.by(() => {
 		const status = onboardingStore.status;
 		const items: string[] = ['Instance settings saved'];
@@ -40,10 +39,9 @@
 			items.push(`Mode set to ${MODE_LABELS[coerceInstanceMode(status.mode)]}`);
 		}
 		const s = status?.summary;
-		if (s && s.integrations > 0)
-			items.push(`${plural(s.integrations, 'API key', 'API keys')} saved`);
+		if (s && s.integrations > 0) items.push(`${plural(s.integrations, 'API key')} saved`);
 		if (s && s.platforms > 0) {
-			items.push(`${plural(s.platforms, 'bug bounty platform', 'bug bounty platforms')} connected`);
+			items.push(`${plural(s.platforms, 'bug bounty platform')} connected`);
 		}
 		if (s && s.oast_mode !== OastMode.OFF) {
 			items.push(`Out-of-band testing set to ${OAST_MODE_LABELS[s.oast_mode as OastMode]}`);
@@ -51,7 +49,7 @@
 		if (s && s.proxies > 0) items.push(`${plural(s.proxies, 'proxy', 'proxies')} configured`);
 		if (s?.ai_enabled) items.push('AI analysis enabled');
 		if (s && s.channels > 0) {
-			items.push(plural(s.channels, 'notification channel', 'notification channels'));
+			items.push(plural(s.channels, 'notification channel'));
 		}
 		items.push('Project created');
 		return items;

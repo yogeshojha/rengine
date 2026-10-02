@@ -5,6 +5,7 @@ from app.database import get_sync_session
 from shared.definitions.notifications import ENRICHMENT_FAILED
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.task_status import TaskStatus
+from shared.http import egress_proxy
 from shared.logging import get_logger
 from shared.models.target import Target
 from shared.services.activity_log import ActivityLogService
@@ -21,6 +22,7 @@ def _fail_group(
     error: str,
 ) -> tuple[int, int]:
     """Stamp one failure on every target sharing the query."""
+    session.rollback()
     for target in targets:
         target.whois_status = TaskStatus.FAILED
         target.whois_error = error
@@ -84,7 +86,6 @@ def _resolve_group(
 
 @celery_app.task(
     name="app.tasks.whois.perform_whois_lookups",
-    queue="default",
     max_retries=0,
     soft_time_limit=600,
     time_limit=900,
@@ -98,7 +99,7 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:
     activity = ActivityLogService(session)
 
     try:
-        service = WhoisService()
+        service = WhoisService(proxy_url=egress_proxy())
         service.ensure_ready()
 
         targets = (
@@ -136,6 +137,7 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:
     except Exception:
         logger.exception("WHOIS enrichment task failed entirely")
         try:
+            session.rollback()
             remaining = (
                 session.execute(
                     select(Target).where(

@@ -1,5 +1,3 @@
-"""Messages fit the channel, entities point at the right code units, target text stays literal."""
-
 from __future__ import annotations
 
 import uuid
@@ -150,7 +148,6 @@ async def test_an_unknown_scan_prefix_is_named(estate):
 
 
 def test_a_url_telegram_refuses_is_sent_as_copyable_text():
-    """Telegram rejects the whole message when one entity URL is not a public URL."""
     for url in (
         "http://localhost:5173/targets/x",
         "http://127.0.0.1:8000/",

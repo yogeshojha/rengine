@@ -29,8 +29,6 @@ class QuerySchemaStore {
 		return map;
 	});
 
-	names = $derived(this.schema.fields.flatMap((f) => [f.name, ...f.aliases]));
-
 	async load(): Promise<void> {
 		if (this.loaded) return;
 		this.pending ??= loadAll()
@@ -45,10 +43,6 @@ class QuerySchemaStore {
 				this.pending = null;
 			});
 		return this.pending;
-	}
-
-	resolve(name: string): QueryFieldSpec | undefined {
-		return this.byName.get(name.toLowerCase());
 	}
 
 	reset() {

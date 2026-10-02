@@ -331,7 +331,6 @@ export interface ScanVulnerabilities {
 	actionable: number;
 	new_count: number;
 	kev_count: number;
-	cve_count: number;
 	suppressed: number;
 	by_severity: SeverityCount[];
 	headline: string;
@@ -340,6 +339,7 @@ export interface ScanVulnerabilities {
 	headline_tone: string;
 	affected_hosts: number;
 	scanned_hosts: number;
+	targets_dropped: number;
 	top_findings: RankedFinding[];
 	top_hosts: VulnHostRow[];
 	coverage: CoverageRead[];
@@ -369,7 +369,7 @@ export const VULN_SORTS: SortOption[] = [
 	{ key: 'severity', label: 'Severity' },
 	{ key: 'name', label: 'Finding' },
 	{ key: 'template', label: 'Check' },
-	{ key: 'host', label: 'Host' },
+	{ key: 'host', label: 'Web asset' },
 	{ key: 'exploit', label: 'Exploitation' },
 	{ key: 'cvss', label: 'CVSS' },
 	{ key: 'epss', label: 'EPSS' },
@@ -413,7 +413,7 @@ export interface VulnFilterChip {
 
 type ListKey = 'severities' | 'states' | 'protocols' | 'templates' | 'tags' | 'hosts' | 'scanners';
 
-export function vulnQueryChips(q: VulnQuery, facets: VulnFacetSet): VulnFilterChip[] {
+export function vulnQueryChips(q: VulnQuery): VulnFilterChip[] {
 	const chips: VulnFilterChip[] = [];
 	const list = (key: ListKey, fmt: (v: string) => string) => {
 		for (const v of q[key])
@@ -434,8 +434,7 @@ export function vulnQueryChips(q: VulnQuery, facets: VulnFacetSet): VulnFilterCh
 		chips.push({ id: 'kev', label: 'Known exploited', remove: (x) => ({ ...x, kevOnly: false }) });
 	if (q.cveOnly)
 		chips.push({ id: 'cve', label: 'Has a CVE', remove: (x) => ({ ...x, cveOnly: false }) });
-	if (q.newOnly)
-		chips.push({ id: 'new', label: 'New this scan', remove: (x) => ({ ...x, newOnly: false }) });
+	if (q.newOnly) chips.push({ id: 'new', label: 'New', remove: (x) => ({ ...x, newOnly: false }) });
 	if (q.corroboratedOnly)
 		chips.push({
 			id: 'corroborated',
@@ -454,7 +453,6 @@ export function vulnQueryChips(q: VulnQuery, facets: VulnFacetSet): VulnFilterCh
 			label: 'Reviewed findings shown',
 			remove: (x) => ({ ...x, includeSuppressed: false })
 		});
-	void facets;
 	return chips;
 }
 

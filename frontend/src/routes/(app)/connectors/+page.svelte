@@ -5,13 +5,13 @@
 	import { browser } from '$app/environment';
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import CountTabs from '$lib/components/count-tabs.svelte';
 	import LinkCard from '$lib/components/connectors/link-card.svelte';
 	import ConnectDialog from '$lib/components/connectors/connect-dialog.svelte';
 	import SettingsDialog from '$lib/components/connectors/settings-dialog.svelte';
@@ -20,7 +20,6 @@
 	import { connectors } from '$lib/stores/connectors.svelte';
 	import { connectorsApi } from '$lib/api/connectors';
 	import { projectsStore } from '$lib/stores/projects.svelte';
-	import { targetsStore } from '$lib/stores/targets.svelte';
 	import { CONNECTOR_POLL_MS, LIVE_POLL_MS, ONLINE_STATES } from '$lib/config/connectors';
 	import { CONNECTOR_TABS, routeLabels, type ConnectorTab } from '$lib/config/routes';
 	import type { Connector, ConnectorSpec, QueueView } from '$lib/types/connector';
@@ -49,7 +48,6 @@
 	let working = $state(false);
 
 	const projectId = $derived(projectsStore.activeProject?.id ?? null);
-	const projectSlug = $derived(projectsStore.activeProject?.slug ?? null);
 	const specs = $derived(connectors.catalog);
 	const linked = $derived(connectors.selected);
 	const linkedSpec = $derived(specs.find((s) => s.kind === linked?.kind) ?? null);
@@ -79,12 +77,10 @@
 
 	$effect(() => {
 		const id = projectId;
-		const slug = projectSlug;
 		if (!id) return;
 		untrack(() => {
 			void connectors.load(id);
 			void connectors.loadCatalog();
-			if (slug) void targetsStore.fetchAll(slug);
 		});
 	});
 
@@ -202,17 +198,13 @@
 		{/each}
 
 		{#if linked && projectId}
-			<Tabs.Root value={activeTab} onValueChange={(v) => v && (activeTab = v as ConnectorTab)}>
-				<Tabs.List class="w-full sm:w-fit">
-					{#each CONNECTOR_TABS as tab (tab)}
-						<Tabs.Trigger value={tab} class="gap-1.5">
-							{TAB_LABELS[tab]}
-							<span class="text-2xs tabular-nums {tabCounts[tab] ? '' : 'text-muted-foreground'}"
-								>{tabCounts[tab].toLocaleString()}</span
-							>
-						</Tabs.Trigger>
-					{/each}
-				</Tabs.List>
+			<div>
+				<CountTabs
+					tabs={CONNECTOR_TABS.map((key) => ({ key, label: TAB_LABELS[key] }))}
+					counts={tabCounts}
+					value={activeTab}
+					onChange={(key) => (activeTab = key as ConnectorTab)}
+				/>
 
 				<div class="mt-4">
 					{#if activeTab === 'domains'}
@@ -221,7 +213,7 @@
 						<QueuePanel connector={linked} {projectId} view={activeTab as QueueView} {live} />
 					{/if}
 				</div>
-			</Tabs.Root>
+			</div>
 		{/if}
 	{/if}
 </div>

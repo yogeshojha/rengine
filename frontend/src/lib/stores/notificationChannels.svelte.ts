@@ -15,9 +15,6 @@ function createNotificationChannelsStore() {
 		get channels() {
 			return channels;
 		},
-		get isLoading() {
-			return isLoading;
-		},
 		get hasFetched() {
 			return hasFetched;
 		},
@@ -60,10 +57,6 @@ function createNotificationChannelsStore() {
 			}
 		},
 
-		drop(id: string): void {
-			channels = channels.filter((c) => c.id !== id);
-		},
-
 		async remove(id: string): Promise<boolean> {
 			try {
 				await notificationChannelsApi.remove(id);
@@ -90,7 +83,7 @@ function createNotificationChannelsStore() {
 				);
 				return result;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Notification channel test failed');
+				toast.error(e instanceof Error ? e.message : 'Notification channel not tested');
 				return null;
 			}
 		},

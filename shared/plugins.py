@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import importlib
-from collections.abc import Collection, Sequence
+from collections.abc import Sequence
 from pathlib import Path
 from types import ModuleType
 
@@ -23,7 +23,7 @@ def _import(name: str) -> ModuleType | None:
 
 
 def _declared[T](namespace: ModuleType, base: type[T]) -> list[type[T]]:
-    """The subclasses this module declares itself, never the ones it imports."""
+    """Concrete subclasses of `base` defined in `namespace`."""
     out = []
     for obj in vars(namespace).values():
         if (
@@ -38,12 +38,12 @@ def _declared[T](namespace: ModuleType, base: type[T]) -> list[type[T]]:
 
 
 def classes_in_modules[T](
-    package: str, directory: Path, base: type[T], *, skip: Collection[str] = SKIP
+    package: str, directory: Path, base: type[T]
 ) -> list[type[T]]:
     """Every `base` subclass declared by a module in `directory`."""
     found: list[type[T]] = []
     for module in sorted(directory.glob("*.py")):
-        if module.stem.startswith("_") or module.stem in skip:
+        if module.stem.startswith("_") or module.stem in SKIP:
             continue
         namespace = _import(f"{package}.{module.stem}")
         if namespace is not None:
@@ -72,7 +72,6 @@ def classes_in_packages[T](
 
 
 def _import_optional(name: str) -> ModuleType | None:
-    """A sub-package need not carry every module name a registry looks for."""
     try:
         return importlib.import_module(name)
     except ModuleNotFoundError as exc:

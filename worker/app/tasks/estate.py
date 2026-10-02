@@ -8,6 +8,7 @@ from sqlalchemy import select
 from app.database import get_sync_session
 from shared.definitions.domains import takeover_provider
 from shared.definitions.estate import MAX_DOSSIER_PORTS, MAX_ENRICH_PER_TICK
+from shared.http import egress_proxy
 from shared.logging import get_logger
 from shared.models.target import Target
 from shared.services import estate_dossier
@@ -54,7 +55,7 @@ def _registration(rdap: RDAPProvider, domain: str):
 @shared_task(name="app.tasks.estate.enrich", max_retries=0)
 def enrich(limit: int = MAX_ENRICH_PER_TICK) -> dict:
     dns = DnsxService(timeout=20, retry=1, query_timeout=3)
-    rdap = RDAPProvider()
+    rdap = RDAPProvider(proxy_url=egress_proxy())
     done = 0
     projects: set = set()
     with get_sync_session() as session:

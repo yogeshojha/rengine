@@ -26,9 +26,10 @@
 	import { watchesApi } from '$lib/api/watches';
 	import { watchesStore } from '$lib/stores/watches.svelte';
 	import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
-	import type { StreamStatus, Watch, WatchHostFilter } from '$lib/types/watch';
+	import { WatchHostFilter, type StreamStatus, type Watch } from '$lib/types/watch';
 	import { bountyProgramsApi } from '$lib/api/bounty-programs';
 	import {
+		DEFAULT_PROGRAM_SORT,
 		PROGRAM_PAGE_SIZE,
 		REFRESH_POLLS,
 		REFRESH_POLL_MS,
@@ -56,15 +57,16 @@
 	let pageIndex = $state(0);
 	let pageSize = $state(PROGRAM_PAGE_SIZE);
 	let loading = $state(true);
+	let programsSeq = 0;
 	let syncing = $state(false);
 	let selected = $state<BountyProgram | null>(null);
 	let sheetOpen = $state(false);
-	let filters = $state<BountyProgramFilters>({ sort: 'age' });
+	let filters = $state<BountyProgramFilters>({ sort: DEFAULT_PROGRAM_SORT });
 	let tab = $state<BountyHubTab>('programs');
 	let tabChosen = $state(false);
 	let watchOpen = $state(false);
 	let selectedWatch = $state<Watch | null>(null);
-	let watchFilter = $state<WatchHostFilter>('all');
+	let watchFilter = $state<WatchHostFilter>(WatchHostFilter.All);
 	let watchTab = $state<'hosts' | 'activity'>('hosts');
 	let deepLinkedWatch = $state<string | null>(null);
 	let stream = $state<StreamStatus | null>(null);
@@ -100,17 +102,20 @@
 		size: number,
 		project: string | undefined
 	) {
+		const seq = ++programsSeq;
 		loading = true;
 		try {
 			const result = await bountyProgramsApi.list(f, index + 1, size, project);
+			if (seq !== programsSeq) return;
 			programs = result.items;
 			total = result.total;
 		} catch (error) {
+			if (seq !== programsSeq) return;
 			toast.error(error instanceof Error ? error.message : 'Programs not loaded');
 			programs = [];
 			total = 0;
 		} finally {
-			loading = false;
+			if (seq === programsSeq) loading = false;
 		}
 	}
 
@@ -120,6 +125,7 @@
 
 	$effect(() => {
 		void filterKey;
+		if (!projectsStore.hasFetched) return;
 		void loadPrograms(filters, pageIndex, pageSize, projectId);
 	});
 
@@ -173,7 +179,7 @@
 
 	function openWatch(
 		watch: Watch,
-		filter: WatchHostFilter = 'all',
+		filter: WatchHostFilter = WatchHostFilter.All,
 		sheetTab: 'hosts' | 'activity' = 'hosts'
 	) {
 		selectedWatch = watch;
@@ -205,7 +211,6 @@
 	$effect(() => {
 		const handle = page.url.searchParams.get('program');
 		const platform = page.url.searchParams.get('platform') ?? undefined;
-		// the sheet would immediately reopen it
 		if (!handle) {
 			deepLinked = null;
 			return;
@@ -220,9 +225,9 @@
 			return;
 		}
 		void bountyProgramsApi
-			.detail(handle, projectId, null, platform)
+			.detail(handle, projectId, platform)
 			.then((program) => open(program))
-			.catch(() => toast.error(`No program found for @${handle}`));
+			.catch(() => toast.error(`Program @${handle} not found`));
 	});
 
 	function openProgram(handle: string, platform: string) {
@@ -310,7 +315,7 @@
 			</p>
 		</div>
 
-		<div class="flex items-center gap-2">
+		<div class="flex flex-wrap items-center gap-2">
 			<Button variant="outline" size="sm" href={ROUTES.whatsNew()}>
 				<NewspaperIcon class="mr-2 size-3.5" />
 				What's new
@@ -326,7 +331,7 @@
 		</div>
 	</div>
 
-	<ConnectAlert platforms={status?.platforms ?? []} dismissible />
+	<ConnectAlert platforms={status?.platforms ?? []} />
 
 	{#if status || watchesStore.watches.length > 0}
 		<CountTabs
@@ -377,9 +382,6 @@
 						title={total === 0 && status?.programs === 0
 							? 'No programs'
 							: 'No programs match these filters'}
-						description={total === 0 && status?.programs === 0
-							? 'Refresh all platforms to load programs.'
-							: 'Clear a filter.'}
 						class="p-12"
 					/>
 				{:else}

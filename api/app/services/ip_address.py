@@ -12,28 +12,13 @@ from sqlalchemy import (
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.asset_query import (
-    NO_JIT,
-    STATEMENT_TIMEOUT,
-    QueryScope,
-    QuerySyntaxError,
-    ScopeLike,
-    build_ip_groups,
-    build_leads,
-    compile_ip_query,
-    page_rows,
-    parse_query,
-    query_error_for,
-    syntax_error,
-)
 from app.services.port import PortService
 from app.services.target_names import target_names
-from shared.definitions.asset_query import COUNT_CAP, IP_EXPOSURE, IP_QUERY
+from shared.definitions.asset_query import ALL_TAB, COUNT_CAP, IP_EXPOSURE, IP_QUERY
 from shared.definitions.ports import port_interest
 from shared.logging import get_logger
-from shared.models.asset_query import QueryGroups, QueryLeads
-from shared.models.http_asset import HttpAsset
-from shared.models.ip_address import IpAddress, IpAddressRead, IpAddressSummary
+from shared.models.asset_query import QueryCounts, QueryGroups, QueryLeads
+from shared.models.ip_address import IpAddress, IpAddressRead
 from shared.models.port import Port
 from shared.models.scan_correlation import (
     IpFacets,
@@ -42,7 +27,22 @@ from shared.models.scan_correlation import (
     IpGroupRead,
 )
 from shared.models.subdomain import Facet
-from shared.services.asset_query import lead_cache
+from shared.services.asset_query import (
+    NO_JIT,
+    STATEMENT_TIMEOUT,
+    QueryScope,
+    QuerySyntaxError,
+    ScopeLike,
+    build_ip_groups,
+    build_leads,
+    compile_ip_query,
+    count_named,
+    lead_cache,
+    page_rows,
+    parse_query,
+    query_error_for,
+    syntax_error,
+)
 from shared.services.surface_query import ips as surface_ips
 from shared.utils.datetime import utc_now
 
@@ -79,77 +79,6 @@ class IpAddressService:
             discovered_at=ip.discovered_at,
         )
 
-    def _filters(
-        self,
-        project_id: UUID,
-        scan_id: UUID | None,
-        target_id: UUID | None,
-        search: str | None,
-    ) -> list:
-        conditions = [IpAddress.project_id == project_id]
-        if scan_id is not None:
-            conditions.append(IpAddress.scan_id == scan_id)
-        if target_id is not None:
-            conditions.append(IpAddress.target_id == target_id)
-        if search:
-            conditions.append(IpAddress.ip.ilike(f"%{search}%"))
-        return conditions
-
-    def _base_query(
-        self,
-        project_id: UUID,
-        scan_id: UUID | None,
-        target_id: UUID | None,
-        search: str | None,
-    ):
-        return select(IpAddress).where(
-            *self._filters(project_id, scan_id, target_id, search)
-        )
-
-    async def list(
-        self,
-        project_id: UUID,
-        scan_id: UUID | None = None,
-        target_id: UUID | None = None,
-        search: str | None = None,
-        limit: int = 1000,
-        offset: int = 0,
-    ) -> list[IpAddressRead]:
-        query = self._base_query(project_id, scan_id, target_id, search)
-        query = query.order_by(IpAddress.ip).limit(limit).offset(offset)
-        result = await self.session.execute(query)
-        return [self._to_read(ip) for ip in result.scalars().all()]
-
-    async def summary(
-        self,
-        project_id: UUID,
-        scan_id: UUID | None = None,
-        target_id: UUID | None = None,
-    ) -> IpAddressSummary:
-        where = self._filters(project_id, scan_id, target_id, None)
-        totals = (
-            await self.session.execute(
-                select(
-                    func.count(),
-                    func.count().filter(IpAddress.is_alive.is_(True)),
-                    func.count().filter(IpAddress.is_cdn.is_(True)),
-                ).where(*where)
-            )
-        ).one()
-        by_source = (
-            await self.session.execute(
-                select(IpAddress.source, func.count())
-                .where(*where)
-                .group_by(IpAddress.source)
-            )
-        ).all()
-        return IpAddressSummary(
-            total=int(totals[0] or 0),
-            alive=int(totals[1] or 0),
-            cdn=int(totals[2] or 0),
-            by_source={str(source): int(n) for source, n in by_source},
-        )
-
     async def _page_details(
         self, scope: QueryScope, page_ips: list[str]
     ) -> tuple[dict[str, list], dict[str, set]]:
@@ -169,35 +98,11 @@ class IpAddressService:
         for p in sorted(port_rows, key=lambda r: (port_interest(r.number), r.number)):
             ports_by_ip.setdefault(p.ip, []).append(ps._to_read(p))
 
-        host_rows = (
-            await self.session.execute(
-                text(
-                    "SELECT ip AS ip, s.name AS host "
-                    "FROM subdomains s, LATERAL jsonb_array_elements_text(cast(s.resolved_ips AS jsonb)) ip "
-                    "WHERE s.scan_id = ANY(:sids) "
-                    "AND cast(s.resolved_ips AS jsonb) ?| :ips AND ip = ANY(:ips)"
-                ).bindparams(sids=list(scope.ids), ips=page_ips)
-            )
-        ).all()
-        asset_rows = (
-            await self.session.execute(
-                select(HttpAsset.ip, HttpAsset.host).where(
-                    scope.match(HttpAsset.scan_id), HttpAsset.ip.in_(page_ips)
-                )
-            )
-        ).all()
-        hosts_by_ip: dict[str, set] = {}
-        for ip, host in host_rows:
-            hosts_by_ip.setdefault(ip, set()).add(host)
-        for ip, host in asset_rows:
-            if ip:
-                hosts_by_ip.setdefault(ip, set()).add(host)
+        hosts_by_ip = await ps.hosts_for(scope, page_ips)
         return ports_by_ip, hosts_by_ip
 
     _derived = staticmethod(surface_ips.derived)
     _exposure = staticmethod(surface_ips.exposure_bucket)
-    _port_exists = staticmethod(surface_ips.port_exists)
-    _apply_filter = staticmethod(surface_ips.apply_filter)
     _order = staticmethod(surface_ips.order)
     _scoped = staticmethod(surface_ips.scoped)
     _context = staticmethod(surface_ips.context)
@@ -263,7 +168,7 @@ class IpAddressService:
                     is_alive=r["is_alive"],
                     ptr_hostnames=list(r["ptr_hostnames"] or []),
                     ports=ports_by_ip.get(r["ip"], []),
-                    host_count=max(len(host_set), int(r["host_count"] or 0)),
+                    host_count=int(r["host_count"] or 0),
                     hosts=sorted(host_set)[:_HOSTS_PER_ROW],
                     port_count=int(r["port_count"] or 0),
                     has_sensitive=bool(r["sensitive"]),
@@ -291,6 +196,44 @@ class IpAddressService:
         await self.session.execute(text(NO_JIT))
         rows = await self.session.execute(base.order_by(d.c.ip).limit(limit))
         return [(ip, list(target_ids or [])) for ip, target_ids in rows.all()]
+
+    async def tabs(self, scope: ScopeLike, f: IpGroupFilter) -> QueryCounts:
+        """Addresses under each exposure tab, for the filter without its own exposure."""
+        scope = QueryScope.of(scope)
+        f = f.model_copy(update={"exposure": []})
+
+        async def _build() -> QueryCounts:
+            now = utc_now()
+            d, base = self._scoped(scope, f, columns=lambda d: (d.c.ip,))
+            try:
+                predicate = compile_ip_query(
+                    parse_query(f.q, IP_QUERY), self._context(scope, d, now)
+                )
+            except QuerySyntaxError:
+                return QueryCounts()
+            if predicate is not None:
+                base = base.where(predicate)
+            await self.session.execute(text(STATEMENT_TIMEOUT))
+            await self.session.execute(text(NO_JIT))
+            tabs = {k: self._exposure(d, k) for k in IP_EXPOSURE}
+            try:
+                return await count_named(self.session, base, {ALL_TAB: None, **tabs})
+            except DBAPIError as exc:
+                await self.session.rollback()
+                logger.info("address tabs failed", error=str(exc.orig))
+                return QueryCounts()
+
+        return await lead_cache.cached(
+            self.session,
+            name="tabs:ips",
+            scans=scope.ids,
+            facets=lead_cache.filter_of(f),
+            model=QueryCounts,
+            build=_build,
+            keep=lambda counted: counted.computed,
+            ttl=lead_cache.SEARCH_TTL_SECONDS,
+            live_ttl=None,
+        )
 
     async def leads(self, scope: ScopeLike, f: IpGroupFilter) -> QueryLeads:
         scope = QueryScope.of(scope)

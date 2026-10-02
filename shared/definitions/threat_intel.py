@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
+from shared.definitions.interest import TONE_INFO, TONE_WARNING
 from shared.definitions.ports import ServiceClass
 
 
@@ -168,10 +169,13 @@ class ExploitSignal(StrEnum):
     CROWD = "crowd"
 
 
+EXPLOITED_SIGNALS: tuple[str, ...] = (
+    ExploitSignal.KEV.value,
+    ExploitSignal.RANSOM_PATH.value,
+    ExploitSignal.FRESH_EXPLOIT.value,
+)
+
 TONE_CRITICAL = "critical"
-TONE_WARNING = "warning"
-TONE_INFO = "info"
-TONE_NEUTRAL = "neutral"
 
 
 @dataclass(frozen=True)

@@ -2,10 +2,12 @@ import ipaddress
 from uuid import UUID
 
 from fastapi import HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.enums.scan import SCAN_OPEN_STATUSES
+from shared.enums.scan_context import AuthType
 from shared.models.proxy import Proxy
 from shared.models.scan import Scan
 from shared.models.scan_context import (
@@ -19,11 +21,10 @@ from shared.models.scan_context import (
     ScanContextCreate,
     ScanContextRead,
     ScanContextUpdate,
-    valid_rate_tools,
 )
 from shared.models.scan_schedule import ScanSchedule
 from shared.services.scan_resolve import (
-    _SENSITIVE_HEADER,
+    CREDENTIAL_HEADER,
     MASK,
     SECRET_FIELDS,
     _auth_summary,
@@ -33,32 +34,39 @@ from shared.services.scan_resolve import (
 )
 from shared.services.scope_filter import backtracks_badly, looks_like_domain
 from shared.utils.datetime import utc_now
+from stages.registry import rate_tools
 
 _AUTH_KEEP = {
-    "none": set(),
-    "bearer": {"bearer_token"},
-    "basic": {"basic_username", "basic_password"},
-    "header": {"header_name", "header_value"},
-    "cookie": {"cookie_value"},
-    "api_key": {"api_key_name", "api_key_value"},
+    AuthType.NONE.value: set(),
+    AuthType.BEARER.value: {"bearer_token"},
+    AuthType.BASIC.value: {"basic_username", "basic_password"},
+    AuthType.HEADER.value: {"header_name", "header_value"},
+    AuthType.COOKIE.value: {"cookie_value"},
+    AuthType.API_KEY.value: {"api_key_name", "api_key_value"},
 }
+
+
+async def usage_counts[U: BaseModel](
+    session: AsyncSession, column: str, ids: list[UUID], usage: type[U]
+) -> dict[UUID, U]:
+    """Schedules and scans per value of the named column."""
+    out = {i: usage() for i in ids}
+    if not ids:
+        return out
+    for model, field in ((ScanSchedule, "schedules"), (Scan, "scans")):
+        key = getattr(model, column)
+        rows = await session.execute(
+            select(key, func.count()).where(key.in_(ids)).group_by(key)
+        )
+        for value, count in rows.all():
+            setattr(out[value], field, count)
+    return out
 
 
 async def _usage_for(
     session: AsyncSession, context_ids: list[UUID]
 ) -> dict[UUID, ContextUsage]:
-    out = {cid: ContextUsage() for cid in context_ids}
-    if not context_ids:
-        return out
-    for model, field in ((ScanSchedule, "schedules"), (Scan, "scans")):
-        rows = await session.execute(
-            select(model.context_id, func.count())
-            .where(model.context_id.in_(context_ids))
-            .group_by(model.context_id)
-        )
-        for context_id, count in rows.all():
-            setattr(out[context_id], field, count)
-    return out
+    return await usage_counts(session, "context_id", context_ids, ContextUsage)
 
 
 def _to_read(ctx: ScanContext, usage: ContextUsage | None = None) -> ScanContextRead:
@@ -137,16 +145,16 @@ def _validate_multiplier(name: str, value: float) -> None:
 
 def _validate_rate(name: str, value: int) -> None:
     if not isinstance(value, int) or isinstance(value, bool):
-        msg = f"Invalid {name}. Must be an integer between 1 and 10000."
+        msg = f"Invalid {name}. Must be an integer between {_MIN_RATE} and {_MAX_RATE}."
         raise _bad(msg)
     if value < _MIN_RATE or value > _MAX_RATE:
-        msg = f"Invalid {name}. Must be between 1 and 10000."
+        msg = f"Invalid {name}. Must be between {_MIN_RATE} and {_MAX_RATE}."
         raise _bad(msg)
 
 
 def _validate_per_tool(overrides: dict) -> None:
     for tool, val in (overrides or {}).items():
-        allowed = valid_rate_tools()
+        allowed = rate_tools()
         if tool not in allowed:
             msg = f"Invalid per-tool rate key '{tool}'. Must be one of {', '.join(allowed)}."
             raise _bad(msg)
@@ -274,7 +282,9 @@ def _apply_extra_headers_update(ctx: ScanContext, data: ScanContextUpdate) -> No
         (h.get("name") or "").lower(): h.get("value") for h in (ctx.extra_headers or [])
     }
     for h in incoming:
-        if h.get("value") == MASK and _SENSITIVE_HEADER.search(h.get("name") or ""):
+        if h.get("value") == MASK and CREDENTIAL_HEADER.match(
+            (h.get("name") or "").strip()
+        ):
             prev = stored.get((h.get("name") or "").lower())
             h["value"] = prev if prev is not None else ""
     ctx.extra_headers = incoming
@@ -298,7 +308,7 @@ class ScanContextService:
         data: ScanContextCreate,
     ) -> ScanContextRead:
         auth = data.auth or AuthConfig()
-        auth_type = data.auth_type or auth.auth_type or "none"
+        auth_type = data.auth_type or auth.auth_type or AuthType.NONE.value
 
         _validate_auth_type(auth_type)
         _validate_http_protocol(data.http_protocol)
@@ -317,6 +327,9 @@ class ScanContextService:
         _validate_auth_fields(auth.model_dump())
         _validate_extra_headers([h.model_dump() for h in data.extra_headers])
         await self._validate_proxy_id(data.proxy_id)
+        proxy_id = data.proxy_id
+        if "proxy_id" not in data.model_fields_set:
+            proxy_id = await self._default_proxy_id()
 
         auth_dict = _prune_auth(auth.model_dump(), auth_type)
 
@@ -338,12 +351,20 @@ class ScanContextService:
             included_subdomains=list(data.included_subdomains),
             follow_redirects_override=data.follow_redirects_override,
             http_protocol=data.http_protocol,
-            proxy_id=data.proxy_id,
+            proxy_id=proxy_id,
         )
         self.session.add(ctx)
         await self.session.commit()
         await self.session.refresh(ctx)
         return _to_read(ctx)
+
+    async def _default_proxy_id(self) -> UUID | None:
+        result = await self.session.execute(
+            select(Proxy.id).where(
+                Proxy.is_default.is_(True), Proxy.is_active.is_(True)
+            )
+        )
+        return result.scalars().first()
 
     async def list(self, project_id: UUID) -> list[ScanContextRead]:
         result = await self.session.execute(

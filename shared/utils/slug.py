@@ -22,7 +22,7 @@ def _reduce(pattern: re.Pattern[str], name: str) -> str:
 
 
 def generate_slug(name: str) -> str:
-    """A name written in a non-Latin script still has to produce an addressable slug."""
+    """A slug of ASCII letters and digits, falling back to word characters."""
     return _reduce(_ASCII, name) or _reduce(_WORD, name)
 
 
@@ -65,7 +65,7 @@ def _slug_conflict(exc: IntegrityError) -> bool:
 async def add_with_unique_slug[T](
     session: AsyncSession, row: T, name: str, **scope: Any
 ) -> T:
-    """The slug is constrained in the database."""
+    """Add the row under a slug free in its scope, retrying on a slug conflict."""
     for _ in range(MAX_SLUG_ATTEMPTS):
         row.slug = await unique_slug(session, type(row), name, **scope)
         try:

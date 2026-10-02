@@ -29,7 +29,6 @@ def upgrade() -> None:
             server_default=sa.text("'[]'::jsonb"),
         ),
     )
-    op.execute("UPDATE bounty_programs SET sources = jsonb_build_array(source)")
     op.create_index(
         "ix_bounty_programs_sources",
         "bounty_programs",

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from shared.definitions.compliance import DEFAULT_FRAMEWORKS
+from shared.definitions.compliance import DEFAULT_FRAMEWORKS, Framework
 from shared.definitions.reports import (
     Audience,
     Density,
@@ -199,9 +199,9 @@ PRESETS: tuple[Preset, ...] = (
                 {
                     "frameworks": [
                         *DEFAULT_FRAMEWORKS,
-                        "pci_dss",
-                        "iso_27001",
-                        "nist_csf",
+                        Framework.PCI.value,
+                        Framework.ISO.value,
+                        Framework.NIST.value,
                     ]
                 },
             ),
@@ -239,6 +239,3 @@ PRESETS: tuple[Preset, ...] = (
         ),
     ),
 )
-
-PRESET_BY_SLUG: dict[str, Preset] = {p.slug: p for p in PRESETS}
-DEFAULT_PRESET = next((p.slug for p in PRESETS if p.default), PRESETS[0].slug)

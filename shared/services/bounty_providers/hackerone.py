@@ -23,6 +23,7 @@ from shared.definitions.bounty_reports import (
 )
 from shared.enums.api_key import APIProvider
 from shared.models.bounty_program import BountyProgram
+from shared.services.api_key.sync_api_key import open_key
 from shared.services.bounty_providers.base import (
     MAX_INSTRUCTION,
     BountyProvider,
@@ -34,7 +35,6 @@ from shared.services.bounty_providers.base import (
     as_float,
     as_int,
     as_url,
-    decrypted,
 )
 from shared.utils.datetime import utc_now
 from shared.utils.text import strip_control
@@ -63,13 +63,10 @@ class HackerOneProvider(BountyProvider):
         if not row:
             return None
         username = (row.key_meta or {}).get("username")
-        token = decrypted(row)
+        token = open_key(row)
         if not username or not token:
             return None
         return cls(str(username), token)
-
-    def account(self) -> str | None:
-        return self.username
 
     def _paged(self, path: str) -> list[dict]:
         rows: list[dict] = []

@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import re
-
 from pydantic import Field, field_validator
 
+from shared.definitions.threat_intel import FEEDS_BY_KIND, FeedKind
 from shared.definitions.toolbox import (
     MAX_INPUT_LENGTH,
     Pivot,
@@ -13,8 +12,9 @@ from shared.definitions.toolbox import (
     ToolExecution,
     ToolGroup,
 )
-from shared.definitions.vulnerabilities import EPSS_HIGH, Severity
+from shared.definitions.vulnerabilities import CVE_ID, EPSS_HIGH, Severity
 from shared.models.threat_intel import CveIntel, EpssScore, KevEntry
+from shared.services.threat_intel import missing_feeds
 from toolbox import estate
 from toolbox.base import (
     Tool,
@@ -36,7 +36,6 @@ from toolbox.base import (
     tags,
 )
 
-CVE_PATTERN = re.compile(r"^CVE-\d{4}-\d{4,7}$", re.IGNORECASE)
 MAX_POCS = 12
 
 _SEVERITY_TONE = {
@@ -60,7 +59,7 @@ class Input(ToolInput):
     @classmethod
     def _cve(cls, value: str) -> str:
         cleaned = value.strip().upper()
-        if not CVE_PATTERN.match(cleaned):
+        if not CVE_ID.match(cleaned):
             msg = f"{value} is not a CVE identifier."
             raise ValueError(msg)
         return cleaned
@@ -85,11 +84,14 @@ class CveLookup(Tool):
         epss = await ctx.session.get(EpssScore, args.cve)
         kev = await ctx.session.get(KevEntry, args.cve)
         intel = await ctx.session.get(CveIntel, args.cve)
-        findings = await estate.cve_findings(ctx.session, ctx.project_id, args.cve)
-        inferred = await estate.cve_software(ctx.session, ctx.project_id, args.cve)
+        findings, inferred = await estate.cve_counts(
+            ctx.session, ctx.project_id, args.cve
+        )
+        checks, loaded = await estate.library_checks(ctx.session, args.cve)
+        template = _template(intel, checks, loaded)
 
         blocks = [
-            _hero(args.cve, epss, kev, intel, findings),
+            _hero(args.cve, epss, kev, intel, findings, checks, template),
             facts(
                 fact(
                     "Severity",
@@ -127,10 +129,11 @@ class CveLookup(Tool):
             facts(
                 fact(
                     "Nuclei template",
-                    _template(intel),
+                    template,
                     tone=Tone.WARNING.value
-                    if intel and intel.template_available is False
+                    if template == NO_TEMPLATE
                     else Tone.NEUTRAL.value,
+                    note=_library_note(checks, template),
                 ),
                 fact("Remote", "yes" if intel and intel.is_remote else ""),
                 fact(
@@ -168,8 +171,7 @@ class CveLookup(Tool):
             blocks = [
                 blocks[0],
                 note(
-                    "No local record for this identifier. The exploitation feeds may "
-                    "not have been downloaded.",
+                    _no_record(await ctx.session.run_sync(missing_feeds)),
                     tone=Tone.WARNING.value,
                 ),
             ]
@@ -196,6 +198,7 @@ class CveLookup(Tool):
                 "kev": kev.model_dump(mode="json") if kev else None,
                 "intel": intel.model_dump(mode="json") if intel else None,
                 "findings": findings,
+                "library_checks": checks,
             },
         )
 
@@ -214,10 +217,39 @@ def _rank(percentile: float) -> str:
     return f"higher than {percentile:.0%} of all CVEs"
 
 
-def _template(intel: CveIntel | None) -> str:
-    if intel is None or intel.template_available is None:
-        return ""
-    return "available" if intel.template_available else "none"
+def _no_record(missing: list[str]) -> str:
+    labels = [
+        FEEDS_BY_KIND[kind].label
+        for kind in (FeedKind.EPSS.value, FeedKind.KEV.value)
+        if kind in missing
+    ]
+    if not labels:
+        return "No local record for this identifier."
+    return (
+        f"The {' and '.join(labels)} feed{'s are' if len(labels) > 1 else ' is'} "
+        "not loaded."
+    )
+
+
+HAS_TEMPLATE = "available"
+NO_TEMPLATE = "none"
+
+
+def _template(intel: CveIntel | None, checks: int, loaded: bool) -> str:
+    """The library decides first, the provider cache second."""
+    if checks:
+        return HAS_TEMPLATE
+    if intel is not None and intel.template_available is not None:
+        return HAS_TEMPLATE if intel.template_available else NO_TEMPLATE
+    return NO_TEMPLATE if loaded else ""
+
+
+def _library_note(checks: int, template: str) -> str | None:
+    if checks:
+        return f"{checks:,} {'check' if checks == 1 else 'checks'} in the library"
+    if template == HAS_TEMPLATE:
+        return "not in the library"
+    return None
 
 
 def _poc_row(poc) -> list:
@@ -226,10 +258,13 @@ def _poc_row(poc) -> list:
         source = poc.get("source") or poc.get("type") or ""
     else:
         url, source = str(poc), ""
-    return [cell(url, href=url or None, mono=True), cell(source, tone=Tone.MUTED.value)]
+    href = url if str(url).lower().startswith(("https://", "http://")) else None
+    return [cell(url, href=href, mono=True), cell(source, tone=Tone.MUTED.value)]
 
 
-def _hero(cve: str, epss, kev, intel, findings: int) -> object:
+def _hero(
+    cve: str, epss, kev, intel, findings: int, checks: int, template: str
+) -> object:
     severity = (intel.severity or "").lower() if intel else ""
     tone = (
         Tone.CRITICAL.value
@@ -275,9 +310,9 @@ def _hero(cve: str, epss, kev, intel, findings: int) -> object:
             mark(
                 "Nuclei template",
                 tone=Tone.WARNING.value
-                if intel and intel.template_available is False
+                if template == NO_TEMPLATE
                 else Tone.NEUTRAL.value,
-                note=_template(intel) or "unknown",
+                note=f"{checks:,} in the library" if checks else template or "unknown",
             ),
             mark(
                 "In this project",

@@ -114,7 +114,6 @@ class LookalikeSummary(BaseModel):
     fetched: bool = False
     rows: list[LookalikeRead] = Field(default_factory=list)
     verdicts: dict[str, int] = Field(default_factory=dict)
-    open_threats: int = 0
     registered: int = 0
 
 

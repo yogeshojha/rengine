@@ -5,20 +5,16 @@ from datetime import datetime
 from pathlib import Path
 from uuid import UUID
 
-from sqlalchemy import cast, delete, func, or_, select
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.dialects.postgresql import array as pg_array
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.definitions.new_checks import TEMPLATES_MARK_KEY
 from shared.definitions.vulnerabilities import (
     HEADLESS_SETS,
-    PROTOCOL_LABELS,
     SEVERITY_LABELS,
     SEVERITY_ORDER,
     TEMPLATE_SETS,
-    Protocol,
     TemplateOrigin,
 )
 from shared.logging import get_logger
@@ -40,11 +36,11 @@ from shared.models.vuln_template import (
     VulnTemplateUploadRequest,
     VulnTemplateUploadResult,
 )
-from shared.models.vulnerability import Vulnerability
 from shared.models.watch import UserMark
 from shared.services.celery_dispatch import dispatch_template_sync
 from shared.services.vuln_templates import (
     TemplateError,
+    custom_path,
     custom_root,
     custom_row,
     official_root,
@@ -85,28 +81,12 @@ def _read(root: Path, relative: str) -> str:
         return ""
 
 
-_TAG_LIMIT = 40
-
-
 class VulnTemplateService:
     def __init__(self, session: AsyncSession):
         self.session = session
 
     @staticmethod
-    def _hits():
-        return (
-            select(
-                Vulnerability.template_id.label("template_id"),
-                func.count().label("findings"),
-            )
-            .group_by(Vulnerability.template_id)
-            .subquery()
-        )
-
-    @staticmethod
-    def _to_read(
-        row: VulnTemplate, *, raw: bool = False, findings: int = 0
-    ) -> VulnTemplateRead:
+    def _to_read(row: VulnTemplate, *, raw: bool = False) -> VulnTemplateRead:
         return VulnTemplateRead(
             id=row.id,
             origin=row.origin,
@@ -127,7 +107,6 @@ class VulnTemplateService:
             requests=row.requests,
             enabled=row.enabled,
             sets=sets_for(row.tags or [], row.path),
-            findings=findings,
             raw=row.raw if raw else None,
             created_at=row.created_at,
             updated_at=row.updated_at,
@@ -154,8 +133,8 @@ class VulnTemplateService:
         await self.session.commit()
         return TemplateSeen(seen_at=before, marked_at=now)
 
-    async def stats(self, user_id: UUID | None = None) -> TemplateLibraryStats:
-        seen = await self.seen_at(user_id) if user_id is not None else None
+    async def stats(self, user_id: UUID) -> TemplateLibraryStats:
+        seen = await self.seen_at(user_id)
         new = 0
         if seen is not None:
             new = int(
@@ -189,32 +168,7 @@ class VulnTemplateService:
                 )
             ).all()
         }
-        protocol = {
-            name: int(count)
-            for name, count in (
-                await self.session.execute(
-                    select(VulnTemplate.protocol, func.count()).group_by(
-                        VulnTemplate.protocol
-                    )
-                )
-            ).all()
-        }
-        tag = func.jsonb_array_elements_text(
-            cast(VulnTemplate.tags, JSONB)
-        ).column_valued("tag")
-        tags = (
-            await self.session.execute(
-                select(tag, func.count())
-                .select_from(VulnTemplate)
-                .group_by(tag)
-                .order_by(func.count().desc(), tag)
-                .limit(_TAG_LIMIT)
-            )
-        ).all()
         last = await self.session.scalar(select(func.max(VulnTemplate.updated_at)))
-        fired = await self.session.scalar(
-            select(func.count(func.distinct(Vulnerability.template_id)))
-        )
         callback = await self.session.scalar(
             select(func.count(VulnTemplate.id)).where(VulnTemplate.needs_oast.is_(True))
         )
@@ -231,18 +185,7 @@ class VulnTemplateService:
                 for name in SEVERITY_ORDER
                 if severity.get(name)
             ],
-            by_protocol=[
-                SelectionBreakdown(
-                    key=name, label=PROTOCOL_LABELS.get(name, name), count=count
-                )
-                for name, count in sorted(protocol.items(), key=lambda item: -item[1])
-            ],
             sets=await self._set_counts(),
-            tags=[
-                SelectionBreakdown(key=str(name), label=str(name), count=int(count))
-                for name, count in tags
-            ],
-            fired=int(fired or 0),
             new=new,
             seen_at=seen,
             last_synced_at=last,
@@ -271,13 +214,7 @@ class VulnTemplateService:
         return out
 
     async def list(self, f: TemplateFilter) -> TemplatePage:
-        hits = self._hits()
-        findings = func.coalesce(hits.c.findings, 0)
-        query = select(VulnTemplate, findings).outerjoin(
-            hits, hits.c.template_id == VulnTemplate.template_id
-        )
-        if f.fired:
-            query = query.where(hits.c.findings > 0)
+        query = select(VulnTemplate)
         if f.callback:
             query = query.where(VulnTemplate.needs_oast.is_(True))
         if f.new_since is not None:
@@ -290,15 +227,6 @@ class VulnTemplateService:
             query = query.where(VulnTemplate.origin.in_(f.origins))
         if f.severities:
             query = query.where(VulnTemplate.severity.in_(f.severities))
-        if f.protocols:
-            query = query.where(VulnTemplate.protocol.in_(f.protocols))
-        if f.tags:
-            query = query.where(
-                func.jsonb_exists_any(
-                    cast(VulnTemplate.tags, JSONB),
-                    pg_array(sorted({t.lower() for t in f.tags})),
-                )
-            )
         if f.sets:
             selection = TemplateSelection(
                 severities=list(SEVERITY_ORDER),
@@ -319,18 +247,13 @@ class VulnTemplateService:
         )
         if f.new_since is not None:
             ordering = [VulnTemplate.created_at.desc(), VulnTemplate.name]
-        elif f.fired:
-            ordering = [findings.desc(), VulnTemplate.name]
         else:
             ordering = [VulnTemplate.origin, VulnTemplate.name]
-        rows = await self.session.execute(
+        rows = await self.session.scalars(
             query.order_by(*ordering).limit(f.limit).offset(f.offset)
         )
         return TemplatePage(
-            items=[
-                self._to_read(row, findings=int(count or 0))
-                for row, count in rows.all()
-            ],
+            items=[self._to_read(row) for row in rows.all()],
             total=int(total or 0),
         )
 
@@ -342,30 +265,18 @@ class VulnTemplateService:
         total_rows = await self.session.scalar(select(func.count(VulnTemplate.id)))
         if not total_rows:
             return SelectionPreview(
-                ready=False,
                 warnings=[
                     "The check library is empty. Sync it before running a vulnerability scan."
                 ],
             )
-        predicate = selection_predicate(selection)
         severity = (
             await self.session.execute(
-                select(
-                    VulnTemplate.severity, func.count(), func.sum(VulnTemplate.requests)
-                )
-                .where(predicate)
+                select(VulnTemplate.severity, func.count())
+                .where(selection_predicate(selection))
                 .group_by(VulnTemplate.severity)
             )
         ).all()
-        protocol = (
-            await self.session.execute(
-                select(VulnTemplate.protocol, func.count())
-                .where(predicate)
-                .group_by(VulnTemplate.protocol)
-            )
-        ).all()
-        official = sum(int(count) for _, count, _ in severity)
-        requests = sum(int(total or 0) for _, _, total in severity)
+        official = sum(int(count) for _, count in severity)
 
         custom = 0
         if selection.custom_templates:
@@ -377,21 +288,6 @@ class VulnTemplateService:
                     )
                 )
                 or 0
-            )
-
-        by_set = []
-        for key in selection.template_sets:
-            narrowed = selection.model_copy(update={"template_sets": [key]})
-            spec = next((s for s in TEMPLATE_SETS if s.key == key), None)
-            count = await self.session.scalar(
-                select(func.count()).where(selection_predicate(narrowed))
-            )
-            by_set.append(
-                SelectionBreakdown(
-                    key=key,
-                    label=spec.label if spec else key,
-                    count=int(count or 0),
-                )
             )
 
         warnings = []
@@ -406,17 +302,14 @@ class VulnTemplateService:
                 "Browser checks are selected and the browser is off. They will not run."
             )
         return SelectionPreview(
-            ready=True,
             total=total,
-            official=official,
-            custom=custom,
             by_severity=[
                 SelectionBreakdown(
                     key=name,
                     label=SEVERITY_LABELS.get(name, name),
                     count=int(count),
                 )
-                for name, count, _ in sorted(
+                for name, count in sorted(
                     severity,
                     key=lambda item: (
                         SEVERITY_ORDER.index(item[0])
@@ -425,14 +318,6 @@ class VulnTemplateService:
                     ),
                 )
             ],
-            by_set=by_set,
-            by_protocol=[
-                SelectionBreakdown(
-                    key=name, label=PROTOCOL_LABELS.get(name, name), count=int(count)
-                )
-                for name, count in sorted(protocol, key=lambda item: -item[1])
-            ],
-            estimated_requests=requests,
             warnings=warnings,
         )
 
@@ -442,6 +327,16 @@ class VulnTemplateService:
         result = VulnTemplateUploadResult()
         for item in data.files:
             try:
+                if not data.replace:
+                    taken = custom_path(parse_template(item.content), item.filename)
+                    if await self._custom_at(taken) is not None:
+                        result.rejected.append(
+                            VulnTemplateRejection(
+                                filename=item.filename,
+                                reason="A custom check with this id exists. Change the id.",
+                            )
+                        )
+                        continue
                 parsed, relative = store_custom(item.content, item.filename)
             except TemplateError as exc:
                 result.rejected.append(
@@ -457,12 +352,7 @@ class VulnTemplateService:
                     )
                 )
                 continue
-            existing = await self.session.scalar(
-                select(VulnTemplate).where(
-                    VulnTemplate.origin == TemplateOrigin.CUSTOM.value,
-                    VulnTemplate.path == relative,
-                )
-            )
+            existing = await self._custom_at(relative)
             values = custom_row(parsed, relative, item.content, user_id)
             if existing is not None:
                 for key, value in values.items():
@@ -478,6 +368,14 @@ class VulnTemplateService:
             result.accepted.append(self._to_read(row))
         await self.session.commit()
         return result
+
+    async def _custom_at(self, relative: str) -> VulnTemplate | None:
+        return await self.session.scalar(
+            select(VulnTemplate).where(
+                VulnTemplate.origin == TemplateOrigin.CUSTOM.value,
+                VulnTemplate.path == relative,
+            )
+        )
 
     async def source(self, template_id: UUID) -> TemplateSource | None:
         row = await self.session.get(VulnTemplate, template_id)
@@ -556,4 +454,4 @@ class VulnTemplateService:
         )
 
 
-__all__ = ["Protocol", "VulnTemplateService"]
+__all__ = ["VulnTemplateService"]

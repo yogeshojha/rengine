@@ -32,6 +32,7 @@
 	import {
 		groupByRecency,
 		highestSeverity,
+		openNotificationUrl,
 		UNREAD_BADGE_CLASS
 	} from '$lib/utilities/notifications';
 	import { ROUTES } from '$lib/config/routes';
@@ -90,19 +91,6 @@
 		returnToModal = false;
 	});
 
-	const navigateToUrl = (url: string, openNewTab?: boolean) => {
-		if (openNewTab) {
-			window.open(url, '_blank', 'noopener,noreferrer');
-			return;
-		}
-		const isInternal = url.startsWith('/') || url.startsWith(window.location.origin);
-		if (isInternal) {
-			goto(url);
-		} else {
-			window.open(url, '_blank', 'noopener,noreferrer');
-		}
-	};
-
 	const openNotification = (notificationId: number) => {
 		const notification = notificationStore.notifications.find((n) => n.id === notificationId);
 		if (!notification) return;
@@ -128,7 +116,7 @@
 		const metadata = detail?.notification_metadata;
 		detailOpen = false;
 		returnToModal = false;
-		if (metadata?.url) navigateToUrl(metadata.url, metadata.open_new_tab);
+		if (metadata?.url) openNotificationUrl(metadata.url);
 	};
 
 	const handleActionClick = (notificationId: number, event: Event) => {
@@ -141,7 +129,7 @@
 		modalOpen = false;
 
 		const metadata = notification.notification_metadata;
-		if (metadata?.url) navigateToUrl(metadata.url, metadata.open_new_tab);
+		if (metadata?.url) openNotificationUrl(metadata.url);
 	};
 
 	const handleMarkRead = (id: number, event: Event) => {

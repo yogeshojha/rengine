@@ -87,11 +87,6 @@ class InstanceSettingsUpdate(BaseModel):
     concurrent_scans: int | None = PydanticField(
         default=None, ge=AUTOMATIC, le=MAX_CONCURRENT_SCANS
     )
-    ai_enabled: bool | None = None
-    ai_provider: str | None = None
-    ai_model: str | None = None
-    ai_api_key: str | None = None
-    ai_features: dict | None = None
 
 
 class InstanceSettingsRead(BaseModel):
@@ -110,12 +105,6 @@ class InstanceSettingsRead(BaseModel):
     cert_recheck_enabled: bool
     concurrent_scans: int = AUTOMATIC
     concurrent_scans_auto: int | None = None
-    ai_enabled: bool
-    ai_provider: str | None
-    ai_model: str | None
-    ai_api_key_masked: str | None
-    ai_configured: bool
-    ai_features: dict
     capabilities: list[str]
     created_at: datetime
     updated_at: datetime

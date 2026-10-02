@@ -30,7 +30,7 @@ from shared.services.scope_filter import matches_any
 from shared.utils.datetime import utc_now
 from shared.utils.net import host_port
 from shared.utils.software import parse_banner
-from stages.base import Stage, StageResult
+from stages.base import IP_TARGETS, Stage, StageResult
 from stages.http_probe.config import (
     FOLLOW_REDIRECTS,
     MAX_MENTIONED,
@@ -49,7 +49,6 @@ logger = get_logger(__name__)
 
 _PORT_SCAN = "port_scan"
 _DISCOVERY = "subdomain_discovery"
-_IP_FAMILY = {TargetType.IP.value, TargetType.IP_RANGE.value, TargetType.ASN.value}
 _MAX_TARGETS = 50000
 _SHUFFLE_SEED = 1
 _PROBE_CHUNK = 2000
@@ -398,7 +397,7 @@ class HttpProbeStage(Stage):
                     host_port(name, port)
                     for port in self._ports_for(resolved_ips or [], port_map)
                 )
-        elif target_type in _IP_FAMILY:
+        elif target_type in IP_TARGETS:
             ips = (
                 self.session.execute(
                     select(IpAddress.ip).where(IpAddress.scan_id == self.ctx.scan_id)

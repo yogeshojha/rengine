@@ -100,12 +100,6 @@ FIRE_ON_VERB: dict[str, str] = {
     FireOn.BECOMES_TRUE.value: "started matching",
     FireOn.MATCHES.value: "matched",
 }
-# the same after "would have"
-FIRE_ON_PARTICIPLE: dict[str, str] = {
-    FireOn.APPEARS.value: "appeared",
-    FireOn.BECOMES_TRUE.value: "started matching",
-    FireOn.MATCHES.value: "matched",
-}
 
 SCOPE_LABELS: dict[str, str] = {
     ScopeKind.ALL.value: "All targets",
@@ -121,7 +115,7 @@ ACTION_LABELS: dict[str, str] = {
 }
 ACTION_HELP: dict[str, str] = {
     ActionKind.NOTIFY.value: "One message per run. Without a chosen channel, the channels subscribed to Tripwires receive it.",
-    ActionKind.SCAN.value: f"Runs the chosen stages against the rows that fired. {MAX_RUNS_PER_DAY} runs a day.",
+    ActionKind.SCAN.value: f"Runs the chosen stages against the rows that fired. At most {MAX_RUNS_PER_DAY} runs a day.",
 }
 
 CHECK_STATUS_LABELS: dict[str, str] = {
@@ -133,12 +127,6 @@ CHECK_STATUS_LABELS: dict[str, str] = {
 }
 FIRST_SCAN_DETAIL = "First scan of the target."
 NOT_COVERED_DETAIL = "The run did not scan this dimension."
-
-OUTCOME_LABELS: dict[str, str] = {
-    OutcomeStatus.DONE.value: "Done",
-    OutcomeStatus.SKIPPED.value: "Skipped",
-    OutcomeStatus.FAILED.value: "Failed",
-}
 
 
 @dataclass(frozen=True)
@@ -293,7 +281,6 @@ __all__ = [
     "FIRE_ON_HELP",
     "FIRE_ON_LABELS",
     "FIRE_ON_ORDER",
-    "FIRE_ON_PARTICIPLE",
     "FIRE_ON_VERB",
     "FIRST_SCAN_DETAIL",
     "LIVE_TRIP_SECONDS",
@@ -309,7 +296,6 @@ __all__ = [
     "MAX_STORED_ROWS",
     "MAX_TRIPWIRES",
     "NOT_COVERED_DETAIL",
-    "OUTCOME_LABELS",
     "PREVIEW_ROW_CAP",
     "QUIET_RETENTION_DAYS",
     "RECENT_DAYS",

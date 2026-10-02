@@ -4,7 +4,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import Hint from '$lib/components/hint.svelte';
 	import EstateSheet from '$lib/components/targets/estate-sheet.svelte';
-	import { EstateTriageState } from '$lib/config/estate';
+	import { ESTATE_STRENGTH_LABELS, EstateStrength, EstateTriageState } from '$lib/config/estate';
 	import type { EstateDomain, EstateNeighbourCert, EstateProvider } from '$lib/types/estate';
 
 	interface Props {
@@ -54,8 +54,10 @@
 		const direct = candidates.filter((d) => d.strength).length;
 		const shared = candidates.length - direct;
 		const parts: string[] = [];
-		if (direct) parts.push(`Direct ${direct.toLocaleString()}`);
-		if (shared) parts.push(`Shared ${shared.toLocaleString()}`);
+		if (direct)
+			parts.push(`${ESTATE_STRENGTH_LABELS[EstateStrength.DIRECT]} ${direct.toLocaleString()}`);
+		if (shared)
+			parts.push(`${ESTATE_STRENGTH_LABELS[EstateStrength.SHARED]} ${shared.toLocaleString()}`);
 		if (inProgram) parts.push(`${inProgram.toLocaleString()} in a bounty program`);
 		if (takeovers) parts.push(`${takeovers.toLocaleString()} possible takeover`);
 		return parts.join(' · ');

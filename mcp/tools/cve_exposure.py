@@ -2,20 +2,18 @@
 
 from __future__ import annotations
 
-import re
-
 from pydantic import Field
 
 from mcp import links
 from mcp.context import ToolContext
 from mcp.errors import ToolError
 from mcp.result import ToolResult
-from mcp.tools._scope import find_target
+from mcp.tools._scope import find_target, parse_id, project_for
 from mcp.tools.base import Tool, ToolGroup, ToolInput
+from shared.definitions.vulnerabilities import CVE_ID
 from shared.utils.text import counted
 
 MAX_LOCATIONS = 50
-_CVE = re.compile(r"^CVE-\d{4}-\d{4,7}$", re.IGNORECASE)
 
 
 class Input(ToolInput):
@@ -26,6 +24,10 @@ class Input(ToolInput):
             "A target in reNgine. Names the project to answer for when the token "
             "reaches more than one."
         ),
+    )
+    project_id: str | None = Field(
+        default=None,
+        description="Project to answer for. Omit when the token is scoped to one.",
     )
 
 
@@ -50,10 +52,14 @@ class CveExposure(Tool):
         from app.services.cve_exposure import CveExposureService  # noqa: PLC0415
 
         cve = args.cve.strip().upper()
-        if not _CVE.match(cve):
+        if not CVE_ID.match(cve):
             msg = f"{args.cve} is not a CVE identifier."
             raise ToolError(msg)
-        project_id = await self._project(ctx, args.target)
+        project_id = (
+            (await find_target(ctx, args.target)).project_id
+            if args.target
+            else await project_for(ctx, parse_id(args.project_id, "project_id"))
+        )
         report = await CveExposureService(ctx.session).exposure(project_id, cve)
 
         ladder = {step.evidence: step.count for step in report.ladder}
@@ -135,13 +141,3 @@ class CveExposure(Tool):
             caveats=caveats,
             untrusted=True,
         )
-
-    @staticmethod
-    async def _project(ctx: ToolContext, target: str | None):
-        if target:
-            return (await find_target(ctx, target)).project_id
-        scoped = ctx.scoped_projects()
-        if scoped:
-            return scoped[0]
-        msg = "This token reaches every project. Name a target to pick one."
-        raise ToolError(msg)

@@ -1,5 +1,3 @@
-from functools import lru_cache
-
 from shared.config import BaseAppSettings
 
 
@@ -10,9 +8,4 @@ class Settings(BaseAppSettings):
         return self.database_url_sync
 
 
-@lru_cache
-def get_settings() -> Settings:
-    return Settings()
-
-
-settings = get_settings()
+settings = Settings()

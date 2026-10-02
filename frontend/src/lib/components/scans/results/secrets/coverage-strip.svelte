@@ -32,6 +32,14 @@
 		}
 		return Object.entries(totals).sort((a, b) => b[1] - a[1]);
 	});
+	let sources = $derived.by(() => {
+		const totals: Record<string, { label: string; read: number }> = {};
+		for (const row of coverage?.rows ?? []) {
+			const entry = (totals[row.source] ??= { label: row.source_label, read: 0 });
+			entry.read += row.documents_read;
+		}
+		return Object.entries(totals);
+	});
 	let facts = $derived.by<[string, string][]>(() => {
 		if (!coverage) return [];
 		const out: [string, string][] = [
@@ -73,7 +81,7 @@
 				{/snippet}
 			</Popover.Trigger>
 			<Popover.Content class="w-72 p-0" align="start">
-				<ScrollArea class="max-h-96">
+				<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-96">
 					<dl class="divide-y">
 						{#each facts as [label, value] (label)}
 							<div class="flex items-center justify-between gap-3 px-3 py-1.5 text-xs">
@@ -82,17 +90,17 @@
 							</div>
 						{/each}
 					</dl>
-					{#if coverage.rows.length > 1}
+					{#if sources.length > 1}
 						<div
 							class="border-t px-3 py-1.5 text-2xs tracking-wide text-muted-foreground uppercase"
 						>
 							Sources
 						</div>
 						<dl class="divide-y">
-							{#each coverage.rows as row (row.source)}
+							{#each sources as [source, { label, read }] (source)}
 								<div class="flex items-center justify-between gap-3 px-3 py-1.5 text-xs">
-									<dt class="text-muted-foreground">{row.source_label}</dt>
-									<dd class="font-mono tabular-nums">{n(row.documents_read)}</dd>
+									<dt class="text-muted-foreground">{label}</dt>
+									<dd class="font-mono tabular-nums">{n(read)}</dd>
 								</div>
 							{/each}
 						</dl>

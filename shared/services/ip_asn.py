@@ -1,11 +1,10 @@
-"""IP -> ASN / country ranges from ip-location-db (PDDL, no key, no attribution)."""
+"""IP to ASN and country ranges from ip-location-db."""
 
 from __future__ import annotations
 
 import shutil
 import tempfile
 import time
-import urllib.request
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -16,6 +15,7 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from shared.definitions.datasets import DatasetKind
+from shared.http import download
 from shared.logging import get_logger
 from shared.models.ip_asn_range import IpAsnRange, IpCountryRange
 from shared.services import feed_ledger
@@ -52,7 +52,7 @@ FEEDS: tuple[Feed, ...] = (
 
 
 def ranges_ready(session: Session) -> bool:
-    """Existence, not a count — this is checked on the write path, and the tables are ~1.1M rows."""
+    """Whether both range tables hold a row."""
     return bool(
         session.scalar(select(IpAsnRange.start_ip).limit(1)) is not None
         and session.scalar(select(IpCountryRange.start_ip).limit(1)) is not None
@@ -83,6 +83,10 @@ LEFT JOIN LATERAL (
 WHERE a.id = base.id AND (r.asn IS NOT NULL OR c.country IS NOT NULL){filter}
 """
 _ONLY_MISSING = " AND (base.asn IS NULL OR base.country IS NULL)"
+_FILLS = (
+    " AND ((a.asn IS NULL AND r.asn IS NOT NULL)"
+    " OR (a.country IS NULL AND c.country IS NOT NULL))"
+)
 _SCOPED = " AND base.ip = ANY(:ips)"
 _PENDING_SQL = """
 SELECT id, ip FROM ip_addresses
@@ -118,7 +122,6 @@ def enrich_addresses(
     *,
     scan_id,
     ips: list[str] | None = None,
-    only_missing: bool = True,
 ) -> int:
     """Fill ASN, operator and country from the local range tables."""
     if ips is not None and not ips:
@@ -127,7 +130,7 @@ def enrich_addresses(
         return 0
     where = " AND base.scan_id = :sid"
     where += _SCOPED if ips is not None else ""
-    where += _ONLY_MISSING if only_missing else ""
+    where += _ONLY_MISSING
     sql = _ENRICH_SQL.format(source="ip_addresses", filter=where)
     statement = text(sql).bindparams(sid=scan_id)
     if ips is not None:
@@ -150,7 +153,7 @@ def backfill_addresses(session: Session, limit: int = BACKFILL_LIMIT) -> Backfil
     """Fill addresses left blank by a scan that ran before the ranges were loaded."""
     if not ranges_ready(session):
         return Backfilled()
-    sql = _ENRICH_SQL.format(source=f"({_PENDING_SQL})", filter="")
+    sql = _ENRICH_SQL.format(source=f"({_PENDING_SQL})", filter=_FILLS)
     sql += " RETURNING a.scan_id"
     filled = session.execute(text(sql).bindparams(lim=limit)).fetchall()
     scans = sorted({row[0] for row in filled})
@@ -173,23 +176,13 @@ def _downloaded(feed: Feed, deadline: float) -> Iterator[list[Path]]:
         for name in feed.files:
             _check_deadline(deadline, name)
             target = workdir / name
-            request = urllib.request.Request(  # noqa: S310
-                f"{BASE_URL}/{name}", headers={"User-Agent": "reNgine"}
+            download(
+                f"{BASE_URL}/{name}",
+                target,
+                timeout=DOWNLOAD_TIMEOUT,
+                max_bytes=MAX_FEED_BYTES,
+                on_chunk=lambda name=name: _check_deadline(deadline, name),
             )
-            with (
-                urllib.request.urlopen(  # noqa: S310
-                    request, timeout=DOWNLOAD_TIMEOUT
-                ) as response,
-                target.open("wb") as handle,
-            ):
-                copied = 0
-                while chunk := response.read(1 << 20):
-                    copied += len(chunk)
-                    if copied > MAX_FEED_BYTES:
-                        msg = f"{name} exceeded {MAX_FEED_BYTES} bytes"
-                        raise ValueError(msg)
-                    handle.write(chunk)
-                    _check_deadline(deadline, name)
             paths.append(target)
         yield paths
     finally:

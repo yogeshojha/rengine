@@ -94,7 +94,6 @@ def upgrade() -> None:
     ):
         op.create_index(f"ix_endpoints_{column}", "endpoints", [column])
 
-    # the table's own working set: one scan's rows ordered the way the tree walks them
     op.create_index(
         "ix_endpoints_scan_dir", "endpoints", ["scan_id", "dir_path", "path"]
     )
@@ -102,7 +101,6 @@ def upgrade() -> None:
     op.create_index(
         "ix_endpoints_target_signature", "endpoints", ["target_id", "signature"]
     )
-    # free-text branches keep their own index instead of a shared seq scan
     op.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
     for column in ("url", "path", "title"):
         op.execute(

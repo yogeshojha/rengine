@@ -4,7 +4,6 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 from pydantic import Field as PydanticField
 from sqlalchemy import Column, Text
-from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
 from shared.definitions.report_fonts import (
@@ -26,15 +25,8 @@ from shared.definitions.reports import (
     ReportStyle,
     SectionEntry,
 )
+from shared.models.fields import json_dict, json_list
 from shared.utils.datetime import utc_now
-
-
-def _json_list() -> Field:
-    return Field(default_factory=list, sa_column=Column(JSON, nullable=False))
-
-
-def _json_dict() -> Field:
-    return Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
 
 
 class ReportTemplate(SQLModel, table=True):
@@ -50,14 +42,14 @@ class ReportTemplate(SQLModel, table=True):
     title: str = Field(default="", max_length=MAX_TITLE_LENGTH)
     subtitle: str = Field(default="", max_length=MAX_TITLE_LENGTH)
     preset: str = Field(default="", max_length=40)
-    tags: list = _json_list()
+    tags: list = json_list()
     scope: str = Field(default=ReportScope.SCAN.value, max_length=16, index=True)
-    sections: list = _json_list()
+    sections: list = json_list()
     theme: str = Field(default="", max_length=64)
-    style: dict = _json_dict()
-    branding: dict = _json_dict()
-    narrative: dict = _json_dict()
-    formats: list = _json_list()
+    style: dict = json_dict()
+    branding: dict = json_dict()
+    narrative: dict = json_dict()
+    formats: list = json_list()
     is_builtin: bool = Field(default=False, index=True)
     is_default: bool = Field(default=False)
     used_count: int = Field(default=0)
@@ -81,7 +73,7 @@ class Report(SQLModel, table=True):
     target_id: uuid.UUID | None = Field(default=None, index=True)
     subject: str = Field(default="", max_length=500)
     title: str = Field(default="", max_length=MAX_TITLE_LENGTH)
-    spec: dict = _json_dict()
+    spec: dict = json_dict()
 
     status: str = Field(default=ReportStatus.QUEUED.value, max_length=16, index=True)
     progress: int = Field(default=0)
@@ -89,9 +81,9 @@ class Report(SQLModel, table=True):
     error: str | None = Field(default=None, max_length=2000)
     task_id: str | None = Field(default=None, max_length=120)
 
-    files: list = _json_list()
+    files: list = json_list()
     page_count: int | None = Field(default=None)
-    stats: dict = _json_dict()
+    stats: dict = json_dict()
 
     ai_used: bool = Field(default=False)
     ai_provider: str | None = Field(default=None, max_length=32)
@@ -122,7 +114,7 @@ class ReportTheme(SQLModel, table=True):
     author: str = Field(default="", max_length=120)
     version: str = Field(default="1", max_length=20)
     origin: str = Field(default=ThemeOrigin.CUSTOM.value, max_length=16, index=True)
-    tokens: dict = _json_dict()
+    tokens: dict = json_dict()
     source: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
     uploaded_by: uuid.UUID | None = Field(default=None)
     created_at: datetime = Field(default_factory=utc_now)
@@ -141,7 +133,7 @@ class ReportFont(SQLModel, table=True):
     role: str = Field(default=FontRole.SANS.value, max_length=8, index=True)
     origin: str = Field(default=FontOrigin.CUSTOM.value, max_length=16, index=True)
     note: str = Field(default="", max_length=300)
-    faces: list = _json_list()
+    faces: list = json_list()
     bytes: int = Field(default=0)
     uploaded_by: uuid.UUID | None = Field(default=None)
     created_at: datetime = Field(default_factory=utc_now)
@@ -159,7 +151,6 @@ class FontFace(BaseModel):
 class FontFaceUpload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    filename: str = PydanticField(default="", max_length=200)
     content: str = PydanticField(max_length=3_000_000)
     weight: int = PydanticField(default=DEFAULT_WEIGHT, ge=100, le=900)
     italic: bool = False
@@ -194,7 +185,6 @@ class ReportDefaults(BaseModel):
 
     branding: ReportBranding = PydanticField(default_factory=ReportBranding)
     theme: str = PydanticField(default="", max_length=64)
-    footer_note: str = PydanticField(default="", max_length=300)
 
 
 class ReportFile(BaseModel):
@@ -340,7 +330,6 @@ class ReportThemeRead(BaseModel):
 class ReportThemeUpload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    filename: str = PydanticField(default="", max_length=200)
     content: str = PydanticField(max_length=200_000)
 
 
@@ -356,7 +345,6 @@ class SectionField(BaseModel):
     minimum: float | None = None
     maximum: float | None = None
     widget: str = ""
-    depends_on: str = ""
     launch: bool = False
 
 
@@ -403,16 +391,6 @@ class ThemeSummary(BaseModel):
     chart: list[str] = PydanticField(default_factory=list)
 
 
-class FrameworkSummary(BaseModel):
-    key: str
-    name: str
-    version: str
-    description: str
-    url: str
-    scope_note: str
-    controls: list[dict] = PydanticField(default_factory=list)
-
-
 class ReportCatalog(BaseModel):
     """Everything the builder needs to render itself."""
 
@@ -426,17 +404,11 @@ class ReportCatalog(BaseModel):
     formats: list[dict] = PydanticField(default_factory=list)
     scopes: list[dict] = PydanticField(default_factory=list)
     slot_tokens: list[dict] = PydanticField(default_factory=list)
-    frameworks: list[FrameworkSummary] = PydanticField(default_factory=list)
     cover_layouts: list[dict] = PydanticField(default_factory=list)
-    cover_art: list[dict] = PydanticField(default_factory=list)
-    table_styles: list[dict] = PydanticField(default_factory=list)
-    finding_styles: list[dict] = PydanticField(default_factory=list)
-    heading_styles: list[dict] = PydanticField(default_factory=list)
     audiences: list[dict] = PydanticField(default_factory=list)
     depths: list[dict] = PydanticField(default_factory=list)
     densities: list[dict] = PydanticField(default_factory=list)
     ai_available: bool = False
-    ai_model: str = ""
 
 
 class ReportEstimate(BaseModel):
@@ -450,5 +422,4 @@ class ReportEstimate(BaseModel):
     ai_input_tokens: int = 0
     ai_output_tokens: int = 0
     ai_cost_usd: float = 0.0
-    ai_cached: int = 0
     warnings: list[str] = PydanticField(default_factory=list)

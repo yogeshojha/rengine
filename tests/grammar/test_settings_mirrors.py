@@ -16,7 +16,7 @@ from shared.definitions.retention import (
     SCREENSHOT_RETENTION_DAYS,
 )
 from shared.enums.notification import NotificationType
-from shared.models.notification_channel import DEFAULT_PREFERENCE_TYPES
+from shared.models.notification_channel import NotificationPreference
 
 pytestmark = pytest.mark.grammar
 
@@ -50,7 +50,7 @@ def test_every_offered_event_is_one_the_product_sends():
     offered = {e.type for e in CHANNEL_EVENTS}
     assert NotificationType.SECURITY.value not in offered
     assert NotificationType.RESOURCE.value not in offered
-    assert set(DEFAULT_PREFERENCE_TYPES) == offered
+    assert set(NotificationPreference().types) == offered
 
 
 def _days(name: str) -> list[int]:

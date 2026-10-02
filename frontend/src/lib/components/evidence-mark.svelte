@@ -14,17 +14,9 @@
 		size?: 'sm' | 'md';
 		hint?: boolean;
 		onFilter?: (token: string) => void;
-		class?: string;
 	}
 
-	let {
-		evidence,
-		showLabel = true,
-		size = 'sm',
-		hint = true,
-		onFilter,
-		class: klass = ''
-	}: Props = $props();
+	let { evidence, showLabel = true, size = 'sm', hint = true, onFilter }: Props = $props();
 
 	let rank = $derived(evidenceRank(evidence));
 	let label = $derived(evidenceLabel(evidence));
@@ -38,7 +30,7 @@
 		<button
 			{...props}
 			type="button"
-			class="flex h-5 shrink-0 items-center gap-1.5 {klass}"
+			class="flex h-5 shrink-0 items-center gap-1.5"
 			aria-label="Filter to {label.toLowerCase()} evidence"
 			onclick={(e) => {
 				e.stopPropagation();
@@ -49,7 +41,7 @@
 			{#if showLabel}<span class="text-xs">{label}</span>{/if}
 		</button>
 	{:else}
-		<span {...props} class="flex h-5 shrink-0 items-center gap-1.5 {klass}">
+		<span {...props} class="flex h-5 shrink-0 items-center gap-1.5">
 			{@render bars()}
 			{#if showLabel}<span class="text-xs">{label}</span>{/if}
 		</span>

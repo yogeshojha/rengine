@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import ipaddress
 import uuid
+from collections import defaultdict
 
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
@@ -18,21 +18,14 @@ from shared.services import endpoint_inventory, ip_inventory, port_inventory
 from shared.services.endpoint_inventory import EndpointObservation
 from shared.services.endpoint_noise import NoisePolicy
 from shared.services.port_inventory import ServiceObservation
+from shared.services.scope_filter import ip_excluded, matches_any
 from shared.utils.datetime import utc_now
+from shared.utils.validation import normalize_host, validate_ip
 from stages.asset_seed.config import AssetSeedConfig
 from stages.base import ALL_TARGETS, Stage, StageResult
 from tools.dnsx.client import DnsxClient, DnsxError
 
 logger = get_logger(__name__)
-
-
-def _is_ip(host: str) -> bool:
-    try:
-        ipaddress.ip_address(host)
-    except ValueError:
-        return False
-    return True
-
 
 _RECORD_TYPES = ("a", "aaaa", "cname")
 _RESOLVE_TIMEOUT = 300
@@ -66,15 +59,20 @@ class AssetSeedStage(Stage):
 
         self._cnames: dict[str, str] = {}
         self._recovered = 0
-        carried = self._carried(hosts)
-        answers, unanswered = self._resolve([h for h in hosts if h not in carried])
+        excluded_hosts = self.ctx.resolved.excluded_subdomains or []
+        in_scope = [h for h in hosts if not matches_any(h, excluded_hosts)]
+        carried = self._carried(in_scope)
+        answers, unanswered = self._resolve([h for h in in_scope if h not in carried])
         stored = self._persist_hosts(hosts, carried, answers)
         answered = [ip for answer in answers.values() for ip in answer.get("ips") or []]
-        addresses = list(
-            dict.fromkeys(
+        excluded_ips = self.ctx.resolved.excluded_ips or []
+        addresses = [
+            ip
+            for ip in dict.fromkeys(
                 addresses + [ip for ips in carried.values() for ip in ips] + answered
             )
-        )
+            if not ip_excluded(ip, excluded_ips)
+        ]
         materialized = ip_inventory.materialize(
             self.session,
             scan_id=self.ctx.scan_id,
@@ -92,6 +90,8 @@ class AssetSeedStage(Stage):
         counts = {"subdomains": stored, "ips": materialized}
         if seeded_urls:
             counts["endpoints"] = seeded_urls
+        if len(in_scope) < len(hosts):
+            counts["excluded"] = len(hosts) - len(in_scope)
         warnings: list[str] = []
         if self._recovered:
             counts["recovered"] = self._recovered
@@ -111,16 +111,19 @@ class AssetSeedStage(Stage):
         """Port rows for URL seeds on non-default ports."""
         if not self._url_ports:
             return 0
+        excluded = self.ctx.resolved.excluded_ips or []
         observations: list[ServiceObservation] = []
         for host, ports in self._url_ports.items():
             ips = (
                 [host]
-                if _is_ip(host)
+                if validate_ip(host)
                 else list(
                     (answers.get(host) or {}).get("ips") or carried.get(host) or []
                 )
             )
             for ip in ips:
+                if ip_excluded(ip, excluded):
+                    continue
                 for port, tls in sorted(ports):
                     observations.append(
                         ServiceObservation(
@@ -143,57 +146,80 @@ class AssetSeedStage(Stage):
             keep_source=True,
         )
 
-    def _persist_urls(self, urls: list[str]) -> int:
-        """A URL seed carries the exact request shape a person chose, not just its host."""
-        if not urls:
-            return 0
-        result = endpoint_inventory.upsert(
-            self.session,
-            scan_id=self.ctx.scan_id,
-            target_id=self.ctx.target_id,
-            project_id=self.ctx.project_id,
-            source=EndpointSource.PROXY.value,
-            observations=[EndpointObservation(url=url) for url in urls],
-            policy=NoisePolicy.protected(),
-        )
-        return result.created + result.updated
+    def _persist_urls(self, urls: list[tuple[str, str]]) -> int:
+        """Endpoint rows for URL seeds."""
+        by_source: dict[str, list[str]] = defaultdict(list)
+        for url, source in urls:
+            by_source[source].append(url)
+        written = 0
+        for source, group in sorted(by_source.items()):
+            result = endpoint_inventory.upsert(
+                self.session,
+                scan_id=self.ctx.scan_id,
+                target_id=self.ctx.target_id,
+                project_id=self.ctx.project_id,
+                source=source,
+                observations=[EndpointObservation(url=url) for url in group],
+                policy=NoisePolicy.protected(),
+            )
+            written += result.created + result.updated
+        return written
 
-    def _seeds(self) -> tuple[list[str], list[str], list[str]]:
+    def _seeds(self) -> tuple[list[str], list[str], list[tuple[str, str]]]:
         hosts: list[str] = []
         addresses: list[str] = []
-        urls: list[str] = []
+        urls: list[tuple[str, str]] = []
         self._sources: dict[str, str] = {}
         self._url_ports: dict[str, set[tuple[int, bool]]] = {}
+        excluded_hosts = self.ctx.resolved.excluded_subdomains or []
+        excluded_ips = self.ctx.resolved.excluded_ips or []
         for seed in self.ctx.resolved.seed_assets or []:
             value = (seed.get("value") or "").strip()
             if not value:
                 continue
-            source = seed.get("source") or RESCAN_SOURCE
+            proxied = seed.get("source") == EndpointSource.PROXY.value
+            source = RESCAN_SOURCE if proxied else seed.get("source") or RESCAN_SOURCE
             if seed.get("kind") == SeedKind.ADDRESS.value:
-                try:
-                    ipaddress.ip_address(value)
-                except ValueError:
+                if not validate_ip(value):
                     logger.warning("invalid address seed: %s", value)
                     continue
-                addresses.append(value)
+                if not ip_excluded(value, excluded_ips):
+                    addresses.append(value)
             elif seed.get("kind") == SeedKind.URL.value:
                 parsed = parse_url(value)
                 if parsed is None:
                     logger.warning("invalid url seed: %s", value)
                     continue
-                urls.append(parsed.url)
+                if (
+                    ip_excluded(parsed.host, excluded_ips)
+                    if validate_ip(parsed.host)
+                    else matches_any(parsed.host, excluded_hosts)
+                ):
+                    continue
+                urls.append(
+                    (
+                        parsed.url,
+                        EndpointSource.PROXY.value
+                        if proxied
+                        else EndpointSource.IMPORT.value,
+                    )
+                )
                 if parsed.port != SCHEME_PORTS.get(parsed.scheme):
                     self._url_ports.setdefault(parsed.host, set()).add(
                         (parsed.port, parsed.scheme == "https")
                     )
-                if _is_ip(parsed.host):
+                if validate_ip(parsed.host):
                     addresses.append(parsed.host)
                     continue
                 hosts.append(parsed.host)
                 self._sources[parsed.host] = source
             else:
-                hosts.append(value.lower())
-                self._sources[value.lower()] = source
+                name = normalize_host(value)
+                if name is None:
+                    logger.warning("invalid host seed: %s", value)
+                    continue
+                hosts.append(name)
+                self._sources[name] = source
         return (
             list(dict.fromkeys(hosts)),
             list(dict.fromkeys(addresses)),
@@ -218,7 +244,7 @@ class AssetSeedStage(Stage):
         return {name: list(ips or []) for name, ips, _ in rows}
 
     def _resolve(self, hosts: list[str]) -> tuple[dict[str, dict], int]:
-        """Two dnsx passes: the resolver answers nothing both for an absent name and a dropped query."""
+        """Two dnsx passes over the names."""
         if not hosts:
             return {}, 0
         answers, failed = self._query(hosts)
@@ -231,7 +257,7 @@ class AssetSeedStage(Stage):
         return answers, len(missing)
 
     def _query(self, hosts: list[str]) -> tuple[dict[str, dict], bool]:
-        """One pass. The bool says the resolver broke, not that a name is absent."""
+        """One pass, and whether the resolver broke."""
         try:
             client = DnsxClient(
                 timeout=_RESOLVE_TIMEOUT,
@@ -286,6 +312,7 @@ class AssetSeedStage(Stage):
         if not hosts:
             return 0
         now = utc_now()
+        excluded = self.ctx.resolved.excluded_subdomains or []
         rows = [
             {
                 "id": uuid.uuid4(),
@@ -298,6 +325,7 @@ class AssetSeedStage(Stage):
                 "interest_kinds": [],
                 "discovered_at": now,
                 "created_at": now,
+                "is_excluded": matches_any(name, excluded),
                 **self._row(name, carried, answers),
             }
             for name in sorted(hosts)
@@ -311,6 +339,7 @@ class AssetSeedStage(Stage):
                         "resolved_ips": statement.excluded.resolved_ips,
                         "cname": statement.excluded.cname,
                         "is_active": statement.excluded.is_active,
+                        "is_excluded": statement.excluded.is_excluded,
                     },
                     where=statement.excluded.is_active,
                 )

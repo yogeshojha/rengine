@@ -38,7 +38,7 @@ def dispatch_whois_lookups(target_ids: list[str]) -> None:
     get_celery_client().send_task(
         "app.tasks.whois.perform_whois_lookups",
         kwargs={"target_ids": target_ids},
-        queue="default",
+        queue=DEFAULT_QUEUE,
     )
 
 
@@ -50,7 +50,7 @@ def dispatch_ripestat_enrichment(target_ids: list[str]) -> None:
     get_celery_client().send_task(
         "app.tasks.ripestat.enrich_targets_bgp",
         kwargs={"target_ids": target_ids},
-        queue="default",
+        queue=DEFAULT_QUEUE,
     )
 
 
@@ -62,7 +62,7 @@ def dispatch_dns_lookups(target_ids: list[str]) -> None:
     get_celery_client().send_task(
         "app.tasks.dns.perform_dns_lookups",
         kwargs={"target_ids": target_ids},
-        queue="default",
+        queue=DEFAULT_QUEUE,
     )
 
 
@@ -100,7 +100,7 @@ def dispatch_scan_finalize(scan_id: str) -> None:
 
 
 def revoke_scan_tasks(task_ids: list[str]) -> None:
-    """Drop a scan's queued tasks. A task already running stops through its abort check."""
+    """Drop a scan's queued tasks."""
     if not task_ids:
         return
     logger.info("Revoking %d scan task(s)", len(task_ids))
@@ -116,7 +116,7 @@ def dispatch_template_sync() -> bool:
         get_celery_client().send_task(
             "app.tasks.daily.run",
             kwargs={"jobs": ["library", "new_checks"]},
-            queue="default",
+            queue=DEFAULT_QUEUE,
         )
     except Exception:
         logger.warning("template sync dispatch failed", exc_info=True)
@@ -137,7 +137,7 @@ def dispatch_endpoint_verify(
                 "dir_path": dir_path,
                 "limit": limit,
             },
-            queue="default",
+            queue=DEFAULT_QUEUE,
         )
     except Exception:
         logger.warning("endpoint verify dispatch failed", exc_info=True)
@@ -151,7 +151,7 @@ def dispatch_scan_deltas_refresh(scan_id: str) -> bool:
         get_celery_client().send_task(
             "app.tasks.scan_deltas.refresh",
             kwargs={"scan_id": scan_id},
-            queue="default",
+            queue=DEFAULT_QUEUE,
         )
     except Exception:
         logger.warning("scan deltas dispatch failed", exc_info=True)
@@ -163,7 +163,7 @@ def dispatch_report(report_id: str) -> bool:
     """Queue a report render."""
     try:
         get_celery_client().send_task(
-            "app.tasks.reports.generate", args=[report_id], queue="default"
+            "app.tasks.reports.generate", args=[report_id], queue=DEFAULT_QUEUE
         )
     except Exception:
         logger.warning("report dispatch failed", exc_info=True)
@@ -175,7 +175,7 @@ def dispatch_export(export_id: str) -> bool:
     """Queue an export run."""
     try:
         get_celery_client().send_task(
-            "app.tasks.export.run", args=[export_id], queue="default"
+            "app.tasks.export.run", args=[export_id], queue=DEFAULT_QUEUE
         )
     except Exception:
         logger.warning("export dispatch failed", exc_info=True)
@@ -190,7 +190,7 @@ def dispatch_interest_evaluation(
     get_celery_client().send_task(
         "app.tasks.interest.evaluate_scan",
         kwargs={"scan_id": scan_id, "include_ai": include_ai, "digest": digest},
-        queue="default",
+        queue=DEFAULT_QUEUE,
     )
 
 
@@ -200,7 +200,7 @@ def dispatch_interest_live(scan_id: str) -> None:
         get_celery_client().send_task(
             "app.tasks.interest.evaluate_live",
             kwargs={"scan_id": scan_id},
-            queue="default",
+            queue=DEFAULT_QUEUE,
         )
     except Exception:
         logger.warning("live interest dispatch failed", exc_info=True)
@@ -211,21 +211,20 @@ def dispatch_interest_refresh(project_id: str) -> None:
     get_celery_client().send_task(
         "app.tasks.interest.refresh_project",
         kwargs={"project_id": project_id},
-        queue="default",
+        queue=DEFAULT_QUEUE,
     )
 
 
-def dispatch_threat_intel(scan_id: str, *, enrich: bool = True) -> bool:
+def dispatch_threat_intel(scan_id: str) -> bool:
     """Score a finished scan from the feeds, then fill the provider cache behind it."""
     try:
         client = get_celery_client()
         client.send_task(
-            "app.tasks.threat_intel.apply_scan", args=[scan_id], queue="default"
+            "app.tasks.threat_intel.apply_scan", args=[scan_id], queue=DEFAULT_QUEUE
         )
-        if enrich:
-            client.send_task(
-                "app.tasks.threat_intel.enrich", args=[scan_id], queue="default"
-            )
+        client.send_task(
+            "app.tasks.threat_intel.enrich", args=[scan_id], queue=DEFAULT_QUEUE
+        )
     except Exception:
         logger.warning("threat intel dispatch failed", exc_info=True)
         return False
@@ -242,11 +241,13 @@ def dispatch_dataset_sync(task: str, kwargs: dict) -> bool:
     return True
 
 
-def dispatch_threat_intel_refresh(*, force: bool = False) -> bool:
+def dispatch_threat_intel_refresh() -> bool:
     """Kick off a feed refresh."""
     try:
         get_celery_client().send_task(
-            "app.tasks.threat_intel.refresh", kwargs={"force": force}, queue="default"
+            "app.tasks.threat_intel.refresh",
+            kwargs={"force": True},
+            queue=DEFAULT_QUEUE,
         )
     except Exception:
         logger.warning("threat intel refresh dispatch failed", exc_info=True)
@@ -260,7 +261,7 @@ def dispatch_bounty_sync(*, scopes: bool = True, platform: str | None = None) ->
         get_celery_client().send_task(
             "app.tasks.bounty_programs.sync",
             kwargs={"scopes": scopes, "platform": platform},
-            queue="default",
+            queue=DEFAULT_QUEUE,
         )
     except Exception:
         logger.warning("bounty program sync dispatch failed", exc_info=True)
@@ -274,7 +275,7 @@ def dispatch_bounty_report_sync(platform: str) -> bool:
         get_celery_client().send_task(
             "app.tasks.bounty_programs.sync_reports",
             kwargs={"platform": platform},
-            queue="default",
+            queue=DEFAULT_QUEUE,
         )
     except Exception:
         logger.warning("bounty report sync dispatch failed", exc_info=True)
@@ -282,13 +283,13 @@ def dispatch_bounty_report_sync(platform: str) -> bool:
     return True
 
 
-def dispatch_bounty_program_sync(handle: str, platform: str = "hackerone") -> bool:
+def dispatch_bounty_program_sync(handle: str, platform: str) -> bool:
     """Refresh one program's scope."""
     try:
         get_celery_client().send_task(
             "app.tasks.bounty_programs.sync_program",
             args=[handle, platform],
-            queue="default",
+            queue=DEFAULT_QUEUE,
         )
     except Exception:
         logger.warning("bounty program scope dispatch failed", exc_info=True)
@@ -300,7 +301,7 @@ def dispatch_bounty_feed_sync() -> bool:
     """Refresh the public program feed."""
     try:
         get_celery_client().send_task(
-            "app.tasks.bounty_programs.sync_feed", queue="default"
+            "app.tasks.bounty_programs.sync_feed", queue=DEFAULT_QUEUE
         )
     except Exception:
         logger.warning("bounty feed sync dispatch failed", exc_info=True)
@@ -339,7 +340,7 @@ def dispatch_watch_certificate(cert: dict) -> bool:
     """One discovered certificate from the stream."""
     try:
         get_celery_client().send_task(
-            "app.tasks.watch.certificate", kwargs={"cert": cert}, queue="default"
+            "app.tasks.watch.certificate", kwargs={"cert": cert}, queue=DEFAULT_QUEUE
         )
         return True
     except Exception:
@@ -350,7 +351,7 @@ def dispatch_watch_certificate(cert: dict) -> bool:
 def dispatch_watch_settle(scan_id: str) -> bool:
     try:
         get_celery_client().send_task(
-            "app.tasks.watch.settle", kwargs={"scan_id": scan_id}, queue="default"
+            "app.tasks.watch.settle", kwargs={"scan_id": scan_id}, queue=DEFAULT_QUEUE
         )
         return True
     except Exception:
@@ -361,7 +362,9 @@ def dispatch_watch_settle(scan_id: str) -> bool:
 def dispatch_tripwire_settle(scan_id: str) -> bool:
     try:
         get_celery_client().send_task(
-            "app.tasks.tripwires.settle", kwargs={"scan_id": scan_id}, queue="default"
+            "app.tasks.tripwires.settle",
+            kwargs={"scan_id": scan_id},
+            queue=DEFAULT_QUEUE,
         )
         return True
     except Exception:
@@ -374,19 +377,15 @@ def dispatch_tripwire_live(scan_id: str, dimension: str) -> None:
         get_celery_client().send_task(
             "app.tasks.tripwires.live",
             kwargs={"scan_id": scan_id, "dimension": dimension},
-            queue="default",
+            queue=DEFAULT_QUEUE,
         )
     except Exception:
         logger.warning("tripwire live dispatch failed", exc_info=True)
 
 
-def dispatch_watch_reconcile(program_id: str | None = None) -> bool:
+def dispatch_watch_reconcile() -> bool:
     try:
-        get_celery_client().send_task(
-            "app.tasks.watch.reconcile",
-            kwargs={"program_id": program_id},
-            queue="default",
-        )
+        get_celery_client().send_task("app.tasks.watch.reconcile", queue=DEFAULT_QUEUE)
         return True
     except Exception:
         logger.warning("watch reconcile dispatch failed", exc_info=True)

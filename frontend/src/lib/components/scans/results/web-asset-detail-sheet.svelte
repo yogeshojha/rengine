@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { toast } from 'svelte-sonner';
 	import {
 		AI_ICON,
 		aiCategoryLabel,
@@ -14,7 +15,7 @@
 	import AskTab from './vulnerabilities/ask/ask-tab.svelte';
 	import AskComposer from './vulnerabilities/ask/ask-composer.svelte';
 	import { notes } from '$lib/stores/notes.svelte';
-	import { SurfaceDimension } from '$lib/config/surface';
+	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import Network from '@lucide/svelte/icons/network';
 	import Plug from '@lucide/svelte/icons/plug';
 	import ShieldCheck from '@lucide/svelte/icons/shield-check';
@@ -40,7 +41,6 @@
 	import type { IconComponent } from '$lib/config/icons';
 	import {
 		CHECK_BY_KEY as POSTURE_BY_KEY,
-		TONE_DOT as POSTURE_DOT,
 		postureQuery,
 		sortChecks as sortPosture
 	} from '$lib/config/domain-posture';
@@ -72,6 +72,7 @@
 	import { Progress } from '$lib/components/ui/progress';
 	import { Kbd } from '$lib/components/ui/kbd';
 	import Hint from '$lib/components/hint.svelte';
+	import CopyButton from '$lib/components/copy-button.svelte';
 	import ScreenshotThumb from './screenshot-thumb.svelte';
 	import TechIcon from './tech-icon.svelte';
 	import CodeBlock from '$lib/components/code-block.svelte';
@@ -90,7 +91,6 @@
 	import type { SubdomainCorrelation } from '$lib/utilities/scan-insights';
 	import { certState, daysUntilExpiry, exactToken } from '$lib/utilities/scan-insights';
 	import {
-		formatBytes,
 		formatResponseTime,
 		httpStatusClass,
 		httpStatusReason,
@@ -98,6 +98,7 @@
 		isPrivateIp,
 		STATUS_DOT
 	} from '$lib/utilities/scan-correlation';
+	import { formatBytes } from '$lib/utilities/format';
 	import { isSensitivePort } from '$lib/config/service-classes';
 	import {
 		CLUSTER_SIGNAL_LABELS,
@@ -107,8 +108,9 @@
 		tierOutcome
 	} from '$lib/config/scan-surface';
 	import { COVERAGE_STATUS_LABELS } from '$lib/config/vulnerabilities';
-	import { formatShortDate, relativeTime } from '$lib/utilities/dates';
+	import { formatDateTime, formatShortDate, relativeTime } from '$lib/utilities/dates';
 	import { writeClipboard } from '$lib/utilities/clipboard';
+	import { hostPort } from '$lib/utilities/net';
 
 	interface Props {
 		sub: SubdomainRead | null;
@@ -120,6 +122,7 @@
 		index?: number;
 		pageOffset?: number;
 		total?: number;
+		capped?: boolean;
 		onStep?: (dir: -1 | 1) => void;
 		onFilter?: (dsl: string) => void;
 		onPivot?: (name: string) => void;
@@ -137,6 +140,7 @@
 		index = 0,
 		pageOffset = 0,
 		total = 0,
+		capped = false,
 		onStep,
 		onFilter,
 		onPivot,
@@ -144,6 +148,7 @@
 		focus = null
 	}: Props = $props();
 
+	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 	const MAX_SANS = 4;
 	const MAX_HOSTS = 16;
 
@@ -155,6 +160,7 @@
 	let detailLoading = $state(false);
 	let httpView = $state('response');
 	let loadedFor = '';
+	let detailFor = '';
 	let corr = $state<SubdomainCorrelation | null>(null);
 	let corrLoading = $state(false);
 	let corrErrored = $state(false);
@@ -195,13 +201,15 @@
 		const name = sub.name;
 		if (loadedFor !== name) {
 			loadedFor = name;
+			detailFor = '';
 			httpView = focus?.pane ?? 'response';
 			detail = null;
 			detailLoading = false;
 			loadCorrelation(name);
 		}
 		const assetId = corr?.primary_asset?.id;
-		if (assetId && !detail && !detailLoading) {
+		if (assetId && detailFor !== assetId) {
+			detailFor = assetId;
 			detailLoading = true;
 			const forName = name;
 			httpAssetsApi
@@ -292,8 +300,9 @@
 	function fmtHeader(v: string | string[]): string {
 		return Array.isArray(v) ? v.join(', ') : v;
 	}
-	function copy(text: string) {
-		writeClipboard(text);
+	async function copyHeaders() {
+		if (await writeClipboard(headerText)) toast.success('Headers copied');
+		else toast.error('Headers not copied');
 	}
 </script>
 
@@ -317,23 +326,7 @@
 					></span>
 					{#if sub.is_important}<Star class="size-3.5 shrink-0 fill-warning text-warning" />{/if}
 					<Sheet.Title class="truncate font-mono text-base font-medium">{sub.name}</Sheet.Title>
-					<Tooltip.Root>
-						<Tooltip.Trigger>
-							{#snippet child({ props })}
-								<Button
-									{...props}
-									variant="ghost"
-									size="icon-sm"
-									class="size-7"
-									onclick={() => copy(sub.name)}
-									aria-label="Copy host"
-								>
-									<Copy />
-								</Button>
-							{/snippet}
-						</Tooltip.Trigger>
-						<Tooltip.Content>Copy host</Tooltip.Content>
-					</Tooltip.Root>
+					<CopyButton value={sub.name} />
 					{#if hasHttp}
 						<Tooltip.Root>
 							<Tooltip.Trigger>
@@ -358,7 +351,7 @@
 					<div class="ml-auto flex items-center gap-1">
 						{#if total > 1 && index >= 0}
 							<span class="text-xs text-muted-foreground tabular-nums">
-								{position.toLocaleString()} / {total.toLocaleString()}
+								{position.toLocaleString()} / {total.toLocaleString()}{capped ? '+' : ''}
 							</span>
 							<Tooltip.Root>
 								<Tooltip.Trigger>
@@ -567,7 +560,7 @@
 								</div>
 								<div class={SHEET_ROW_TIGHT}>
 									<dt class={SHEET_DT}>First seen</dt>
-									<Hint text={sub.discovered_at}>
+									<Hint text={formatDateTime(sub.discovered_at)}>
 										{#snippet child(props)}
 											<dd {...props} class="text-sm">
 												{formatShortDate(sub.discovered_at)}
@@ -590,7 +583,8 @@
 											)}
 											{#if (sub.favicon_count ?? 0) > 1}
 												<span class="ml-1 text-xs text-muted-foreground">
-													shared by {sub.favicon_count} hosts
+													Shared by {sub.favicon_count}
+													{WEB.nounPlural}
 												</span>
 											{/if}
 										</dd>
@@ -628,7 +622,8 @@
 														onclick={() => onFilter?.(exactToken('title', pageTitle))}
 													>
 														<Layers data-icon="inline-start" />
-														{sub.title_count} hosts show this page
+														{sub.title_count}
+														{WEB.nounPlural} show this page
 													</Button>
 												{/if}
 											</dd>
@@ -785,7 +780,7 @@
 								{/if}
 								{#if hostAssets.length > 1}
 									<p class="text-xs text-muted-foreground">
-										Across {hostAssets.length} web services on this host.
+										Across {hostAssets.length} web services.
 									</p>
 								{/if}
 							</section>
@@ -801,9 +796,7 @@
 											<li class="flex items-start gap-2 py-2">
 												<span class="flex h-5 shrink-0 items-center">
 													<span
-														class="size-1.5 rounded-full {spec
-															? POSTURE_DOT[spec.tone]
-															: 'bg-muted'}"
+														class="size-1.5 rounded-full {spec ? TONE_DOT[spec.tone] : 'bg-muted'}"
 														aria-hidden="true"
 													></span>
 												</span>
@@ -855,7 +848,7 @@
 													{aiCategoryLabel(a.ai_category)}
 												</span>
 												<span class="ml-auto font-mono text-2xs break-all text-muted-foreground">
-													{a.scheme}://{a.host}:{a.port}{a.ai_endpoint ?? ''}
+													{a.scheme}://{hostPort(a.host, a.port)}{a.ai_endpoint ?? ''}
 												</span>
 											</div>
 											{#if a.ai_models?.length}
@@ -883,7 +876,9 @@
 								{#if detail?.cpe?.length}
 									<div class="flex flex-wrap gap-1">
 										{#each detail.cpe as c (c)}
-											<Badge variant="secondary" class="font-mono text-2xs font-normal">{c}</Badge>
+											<Badge variant="secondary" class="font-mono text-2xs font-normal"
+												>{c.cpe}</Badge
+											>
 										{/each}
 									</div>
 								{/if}
@@ -971,15 +966,7 @@
 													<span class="truncate font-mono text-xs"
 														>{primaryAsset.tls_fingerprint}</span
 													>
-													<Button
-														variant="ghost"
-														size="icon-sm"
-														class="size-6 shrink-0"
-														onclick={() => copy(primaryAsset?.tls_fingerprint ?? '')}
-														aria-label="Copy fingerprint"
-													>
-														<Copy />
-													</Button>
+													<CopyButton value={primaryAsset.tls_fingerprint} class="size-6" />
 												</dd>
 											</div>
 										{/if}
@@ -1057,7 +1044,7 @@
 												variant="ghost"
 												size="sm"
 												class="h-7 text-xs"
-												onclick={() => copy(headerText)}
+												onclick={() => copyHeaders()}
 											>
 												<Copy data-icon="inline-start" /> Copy
 											</Button>
@@ -1099,9 +1086,11 @@
 															<div class="min-w-0 flex-1">
 																<div class="flex flex-wrap items-baseline gap-x-2">
 																	<span class="text-sm leading-5">{spec?.control ?? v.key}</span>
-																	<span class="font-mono text-2xs text-muted-foreground"
-																		>{spec?.header}</span
-																	>
+																	{#if spec?.header}
+																		<span class="font-mono text-2xs text-muted-foreground"
+																			>{spec.header}</span
+																		>
+																	{/if}
 																</div>
 																{#if v.failed}
 																	<p class="text-xs {spec ? TONE_TEXT[spec.tone] : ''}">
@@ -1175,7 +1164,7 @@
 												</Item.Media>
 												<Item.Content class="gap-0">
 													<Item.Title class="font-mono text-xs font-normal">
-														{a.scheme}://{a.host}:{a.port}
+														{a.scheme}://{hostPort(a.host, a.port)}
 													</Item.Title>
 													{#if a.title}
 														<Item.Description class="text-xs">{a.title}</Item.Description>
@@ -1248,7 +1237,8 @@
 														class="h-7 text-xs"
 														onclick={() => onFilter?.(`ip:${m.ip}`)}
 													>
-														<Filter data-icon="inline-start" /> Hosts
+														<Filter data-icon="inline-start" />
+														{WEB.label}
 													</Button>
 												</Item.Actions>
 											</Item.Root>
@@ -1273,7 +1263,7 @@
 										<div class="min-w-0 flex-1">
 											<p class="text-xs font-medium">
 												{(r.total || r.hosts.length).toLocaleString()}
-												{(r.total || r.hosts.length) === 1 ? 'host' : 'hosts'}
+												{(r.total || r.hosts.length) === 1 ? WEB.noun : WEB.nounPlural}
 												{r.reason}
 												{#if r.targets > 1}
 													<span class="text-muted-foreground">
@@ -1318,7 +1308,7 @@
 										<OverflowPopover
 											items={r.hosts}
 											shown={MAX_HOSTS}
-											label="hosts"
+											label={WEB.nounPlural}
 											mono
 											onSelect={(h) => onPivot?.(h)}
 										/>
@@ -1358,7 +1348,9 @@
 		class="flex-none gap-1.5 rounded-none border-0 border-b-2 border-transparent px-3 py-2.5 text-xs font-medium text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:border-primary dark:data-[state=active]:bg-transparent"
 	>
 		{label}
-		{#if count != null}<span class="text-muted-foreground tabular-nums">{count}</span>{/if}
+		{#if count != null}<span class="text-muted-foreground tabular-nums"
+				>{count.toLocaleString()}</span
+			>{/if}
 	</Tabs.Trigger>
 {/snippet}
 

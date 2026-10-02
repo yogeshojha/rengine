@@ -7,6 +7,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { cn } from '$lib/utils';
+	import { stopProp } from '$lib/utilities';
 
 	interface Props {
 		count: number;
@@ -35,7 +36,6 @@
 			.catch(() => (errored = true));
 	});
 
-	const stop = (e: Event) => e.stopPropagation();
 	function pick(h: string) {
 		open = false;
 		onHost?.(h);
@@ -47,8 +47,8 @@
 		openOnHover
 		openDelay={240}
 		closeDelay={140}
-		onclick={stop}
-		onkeydown={stop}
+		onclick={stopProp}
+		onkeydown={stopProp}
 		class={cn(
 			'inline-flex h-5 shrink-0 cursor-pointer items-center gap-0.5 rounded-sm border border-border px-1 text-2xs text-muted-foreground tabular-nums hover:bg-accent hover:text-foreground',
 			className
@@ -58,9 +58,9 @@
 		<Layers class="size-2.5" />
 		{count}
 	</Popover.Trigger>
-	<Popover.Content class="w-72 p-0" align="start" onclick={stop}>
+	<Popover.Content class="w-72 p-0" align="start" onclick={stopProp}>
 		<div class="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
-			<span class="truncate text-xs font-medium" {title}>{title}</span>
+			<span class="min-w-0 text-xs font-medium wrap-anywhere">{title}</span>
 			{#if onFilter}
 				<Button
 					variant="ghost"
@@ -78,7 +78,7 @@
 		<ScrollArea class={(hosts?.length ?? 0) > 8 ? 'h-64' : ''}>
 			<div class="p-1">
 				{#if errored}
-					<p class="px-2 py-3 text-xs text-muted-foreground">Hosts not loaded.</p>
+					<p class="px-2 py-3 text-xs text-muted-foreground">Web assets not loaded.</p>
 				{:else if hosts === null}
 					<div class="flex flex-col gap-1 p-1">
 						<Skeleton class="h-6 w-full" />

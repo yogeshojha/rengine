@@ -1,6 +1,6 @@
 <script lang="ts">
 	import * as Tooltip from '$lib/components/ui/tooltip';
-	import { STATUS_CLASS_FILL, STATUS_CLASS_LABELS } from '$lib/config/endpoints';
+	import { STATUS_CLASSES, STATUS_CLASS_FILL, STATUS_CLASS_LABELS } from '$lib/config/endpoints';
 
 	interface Props {
 		mix: Record<string, number>;
@@ -8,8 +8,9 @@
 	}
 
 	let { mix, total }: Props = $props();
-	const ORDER = ['2xx', '3xx', '4xx', '5xx', 'none'];
-	let parts = $derived(ORDER.filter((k) => (mix[k] ?? 0) > 0).map((k) => ({ k, n: mix[k] })));
+	let parts = $derived(
+		STATUS_CLASSES.filter((k) => k !== 'none' && (mix[k] ?? 0) > 0).map((k) => ({ k, n: mix[k] }))
+	);
 </script>
 
 <Tooltip.Root>

@@ -1,31 +1,23 @@
 <script lang="ts">
 	import * as Select from '$lib/components/ui/select';
-	import { cn } from '$lib/utils';
 
 	interface Props {
 		pageSize: number;
 		onPageSizeChange: (size: number) => void;
 		options?: number[];
-		class?: string;
 	}
 
-	let { pageSize, onPageSizeChange, options, class: className }: Props = $props();
+	let { pageSize, onPageSizeChange, options }: Props = $props();
 
-	const DEFAULT_OPTIONS = [
-		{ value: '10', label: '10 per page' },
-		{ value: '20', label: '20 per page' },
-		{ value: '50', label: '50 per page' },
-		{ value: '100', label: '100 per page' },
-		{ value: '-1', label: 'All' }
-	];
+	const DEFAULT_OPTIONS = [10, 20, 25, 50, 100];
 	let pageSizeOptions = $derived(
-		options ? options.map((n) => ({ value: String(n), label: `${n} per page` })) : DEFAULT_OPTIONS
+		(options ?? DEFAULT_OPTIONS).map((n) => ({ value: String(n), label: `${n} per page` }))
 	);
 
-	let selectedValue = $derived(pageSize === -1 ? '-1' : pageSize.toString());
+	let selectedValue = $derived(pageSize.toString());
 
 	const triggerContent = $derived(
-		pageSizeOptions.find((opt) => opt.value === selectedValue)?.label ?? '10 per page'
+		pageSizeOptions.find((opt) => opt.value === selectedValue)?.label ?? `${pageSize} per page`
 	);
 
 	function handleValueChange(value: string | undefined) {
@@ -36,7 +28,7 @@
 </script>
 
 <Select.Root type="single" bind:value={selectedValue} onValueChange={handleValueChange}>
-	<Select.Trigger class={cn('h-9 w-[140px]', className)}>
+	<Select.Trigger class="h-9 w-[140px]">
 		{triggerContent}
 	</Select.Trigger>
 	<Select.Content>

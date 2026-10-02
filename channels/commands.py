@@ -17,7 +17,6 @@ from shared.definitions.channels import (
     ChatGroup,
     CommandSource,
 )
-from shared.definitions.toolbox import ToolExecution
 from toolbox import registry as toolbox_registry
 
 
@@ -53,7 +52,6 @@ class CommandSpec:
     description: str
     capability: str
     touches_target: bool
-    queued: bool
     value_field: str
     presets: dict[str, Any] = field(default_factory=dict)
     schema: dict = field(default_factory=dict)
@@ -139,7 +137,6 @@ def catalog() -> dict[str, CommandSpec]:
                 description=description,
                 capability=Capability.READ.value,
                 touches_target=False,
-                queued=False,
                 value_field="",
             ),
         )
@@ -157,7 +154,6 @@ def catalog() -> dict[str, CommandSpec]:
                 description=spec.description,
                 capability=spec.capability,
                 touches_target=spec.capability == Capability.LAUNCH.value,
-                queued=False,
                 value_field=spec.value_field,
                 schema=spec.schema,
             ),
@@ -178,7 +174,6 @@ def catalog() -> dict[str, CommandSpec]:
                     else Capability.READ.value
                 ),
                 touches_target=spec.touches_target,
-                queued=spec.execution == ToolExecution.QUEUED.value,
                 value_field=spec.value_field,
                 schema=spec.tool_cls.schema(),
             ),
@@ -199,7 +194,6 @@ def catalog() -> dict[str, CommandSpec]:
                 description=preset.description,
                 capability=base.capability,
                 touches_target=base.capability == Capability.LAUNCH.value,
-                queued=False,
                 value_field=base.value_field,
                 presets=dict(preset.args),
                 schema=base.schema,

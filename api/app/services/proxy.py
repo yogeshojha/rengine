@@ -10,7 +10,6 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.crypto import encrypt_secret
 from shared.http import get_async_client
 from shared.models.proxy import (
     PROXY_SCHEMES,
@@ -23,6 +22,7 @@ from shared.models.proxy import (
     ProxyUpdate,
 )
 from shared.models.scan_context import ScanContext
+from shared.services import locks
 from shared.services.proxy_resolve import (
     build_proxy_url as _build_url,
 )
@@ -33,6 +33,7 @@ from shared.services.proxy_resolve import (
     resolve_proxy_url as _resolve_proxy_url,
 )
 from shared.services.scan_resolve import MASK
+from shared.utils.crypto import encrypt_secret
 from shared.utils.datetime import utc_now
 from shared.utils.net import host_port
 
@@ -41,7 +42,6 @@ _TEST_TIMEOUT = 8.0
 _TCP_TIMEOUT = 6.0
 _MIN_PORT = 1
 _MAX_PORT = 65535
-_DEFAULT_LOCK_KEY = 0x70726F78
 _MAX_TESTED = 10
 
 
@@ -163,10 +163,6 @@ class ProxyService:
         )
         return [self.to_read(p, used.get(p.id, 0)) for p in result.scalars().all()]
 
-    async def get(self, id: UUID) -> ProxyRead:
-        proxy = await self._get_or_404(id)
-        return await self._read(proxy)
-
     async def create(self, data: ProxyCreate, created_by: UUID) -> ProxyRead:
         _validate_endpoints(data.endpoints)
 
@@ -214,7 +210,7 @@ class ProxyService:
         await self.session.refresh(proxy)
         return await self._read(proxy)
 
-    async def delete(self, id: UUID) -> bool:
+    async def delete(self, id: UUID) -> None:
         proxy = await self._get_or_404(id)
         await self.session.execute(
             update(ScanContext)
@@ -223,7 +219,6 @@ class ProxyService:
         )
         await self.session.delete(proxy)
         await self.session.commit()
-        return True
 
     async def set_default(self, id: UUID) -> ProxyRead:
         proxy = await self._get_or_404(id)
@@ -271,9 +266,9 @@ class ProxyService:
     ) -> list[ProxyEndpoint]:
         previous = _load_endpoints(proxy)
         stored = {_endpoint_key(e): e.password for e in previous}
-        by_user: dict[str | None, list[str | None]] = {}
+        by_host_user: dict[tuple, list[str | None]] = {}
         for ep in previous:
-            by_user.setdefault(ep.username, []).append(ep.password)
+            by_host_user.setdefault((ep.host, ep.username), []).append(ep.password)
         merged: list[ProxyEndpoint] = []
         for ep in incoming:
             if ep.password != MASK:
@@ -283,7 +278,7 @@ class ProxyService:
             if key in stored:
                 merged.append(ep.model_copy(update={"password": stored[key]}))
                 continue
-            same_user = by_user.get(ep.username) or []
+            same_user = by_host_user.get((ep.host, ep.username)) or []
             if len(same_user) != 1:
                 msg = f"Enter the password again for {host_port(ep.host, ep.port)}."
                 raise _bad(msg)
@@ -341,7 +336,7 @@ class ProxyService:
 
     async def _lock_defaults(self) -> None:
         await self.session.execute(
-            text("SELECT pg_advisory_xact_lock(:k)"), {"k": _DEFAULT_LOCK_KEY}
+            text("SELECT pg_advisory_xact_lock(:k)"), {"k": locks.PROXY_DEFAULT}
         )
 
     async def _unset_other_defaults(self, keep_id: UUID) -> None:

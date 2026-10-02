@@ -39,11 +39,13 @@ def withdraw(hostname: str) -> None:
 def live_workers() -> set[str] | None:
     """Hostnames of the scan workers seen within the TTL, or None when Redis is unreadable."""
     try:
-        keys = _redis().keys(f"{_PREFIX}*")
+        return {
+            key.decode()[len(_PREFIX) :]
+            for key in _redis().scan_iter(match=f"{_PREFIX}*", count=500)
+        }
     except Exception:
         logger.warning("worker presence unreadable", exc_info=True)
         return None
-    return {key.decode()[len(_PREFIX) :] for key in keys}
 
 
 def stage_slots() -> int:

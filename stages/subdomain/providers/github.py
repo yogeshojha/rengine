@@ -8,8 +8,6 @@ from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError
 
 
 class GithubProvider(SubdomainProvider):
-    """Subdomains written into public code, which no other source reads."""
-
     tool = "github-subdomains"
     source = SubdomainSource.GITHUB
     binary = "github-subdomains"
@@ -17,7 +15,7 @@ class GithubProvider(SubdomainProvider):
 
     def discover(self) -> set[str]:
         runner = CLIToolRunner(self.binary, default_timeout=self.ctx.timeout)
-        # the token goes in the environment, so it never reaches the command log
+        # token via env, never argv
         env = dict(proxy_env(self.ctx.proxy_url) or {})
         env["GITHUB_TOKEN"] = self.ctx.api_keys.get(APIProvider.GITHUB.value, "")
         try:
@@ -34,6 +32,7 @@ class GithubProvider(SubdomainProvider):
             )
         except ToolNotFoundError:
             return set()
+        self._checked(result)
         suffix = f".{self.ctx.domain}"
         return {
             host

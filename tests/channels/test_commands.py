@@ -1,5 +1,3 @@
-"""The chat set is curated at the tool, one word each, and every command is grouped."""
-
 from __future__ import annotations
 
 import pytest
@@ -68,13 +66,8 @@ def test_every_command_names_a_real_tool_or_builtin():
 
 
 def test_every_command_sits_in_one_group():
-    seen = {
-        name
-        for _group, specs in commands.by_group()
-        for spec in specs
-        for name in [spec.name]
-    }
-    assert seen == set(commands.catalog())
+    seen = [spec.name for _group, specs in commands.by_group() for spec in specs]
+    assert sorted(seen) == sorted(commands.catalog())
     assert [g for g, _ in commands.by_group()] == [
         g
         for g in CHAT_GROUP_ORDER

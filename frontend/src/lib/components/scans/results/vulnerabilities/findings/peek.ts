@@ -1,6 +1,7 @@
 import { vulnerabilitiesApi } from '$lib/api/vulnerabilities';
 import { compileVulnQuery, emptyVulnQuery, type VulnSearchResult } from '$lib/utilities/vulns';
 
+const CACHE_LIMIT = 200;
 const cache = new Map<string, Promise<VulnSearchResult>>();
 
 export function peek(
@@ -13,6 +14,7 @@ export function peek(
 	const key = `${projectId}|${scanId}|${q}|${limit}|${sort}`;
 	let hit = cache.get(key);
 	if (!hit) {
+		if (cache.size >= CACHE_LIMIT) cache.clear();
 		hit = vulnerabilitiesApi.search(
 			projectId,
 			scanId,

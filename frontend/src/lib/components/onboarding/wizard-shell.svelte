@@ -1,25 +1,22 @@
 <script lang="ts">
-	import type { Snippet, Component } from 'svelte';
-	import { fly } from 'svelte/transition';
-	import { cubicIn, cubicOut } from 'svelte/easing';
+	import type { Snippet } from 'svelte';
 	import BoxesIcon from '@lucide/svelte/icons/boxes';
 	import { Progress } from '$lib/components/ui/progress/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
-	import { PrefersReducedMotion } from '$lib/hooks/prefers-reduced-motion.svelte';
+	import { PRODUCT_NAME } from '$lib/constants';
+	import type { IconComponent } from '$lib/config/icons';
 	import WizardFooter from './wizard-footer.svelte';
 	import type { StepFooter } from '$lib/types/onboarding';
 
 	interface StepMeta {
-		key: string;
 		title: string;
 		description: string;
-		icon: Component;
+		icon: IconComponent;
 	}
 
 	interface Props {
 		steps: StepMeta[];
 		currentIndex: number;
-		direction: 'forward' | 'back';
 		footer: StepFooter;
 		onBack: () => void;
 		onSkip: () => void;
@@ -27,26 +24,12 @@
 		children: Snippet;
 	}
 
-	let { steps, currentIndex, direction, footer, onBack, onSkip, isFirst, children }: Props =
-		$props();
+	let { steps, currentIndex, footer, onBack, onSkip, isFirst, children }: Props = $props();
 
 	let total = $derived(steps.length);
 	let current = $derived(steps[currentIndex]);
 	let pct = $derived(total > 0 ? Math.round(((currentIndex + 1) / total) * 100) : 0);
 	let isCelebration = $derived(currentIndex === total - 1);
-
-	const reduce = new PrefersReducedMotion();
-	let dx = $derived(direction === 'back' ? -8 : 8);
-	let transIn = $derived(
-		reduce.current
-			? { x: 0, duration: 90, easing: cubicOut }
-			: { x: dx, duration: 260, easing: cubicOut }
-	);
-	let transOut = $derived(
-		reduce.current
-			? { x: 0, duration: 70, easing: cubicIn }
-			: { x: -dx, duration: 170, easing: cubicIn }
-	);
 
 	let bodyEl = $state<HTMLElement | null>(null);
 	$effect(() => {
@@ -62,17 +45,7 @@
 		>
 			<BoxesIcon class="size-3.5" />
 		</div>
-		<span class="text-sm font-semibold tracking-tight">reNgine setup</span>
-	</div>
-{/snippet}
-
-{#snippet stepBody()}
-	<div class="grid">
-		{#key currentIndex}
-			<div class="[grid-area:1/1]" in:fly={transIn} out:fly={transOut}>
-				{@render children()}
-			</div>
-		{/key}
+		<span class="text-sm font-semibold tracking-tight">{PRODUCT_NAME} setup</span>
 	</div>
 {/snippet}
 
@@ -90,7 +63,7 @@
 					tabindex="-1"
 					class="mx-auto flex min-h-full w-full max-w-xl flex-col justify-center px-6 py-12 outline-none"
 				>
-					{@render stepBody()}
+					{@render children()}
 				</div>
 			</ScrollArea>
 		</main>
@@ -150,7 +123,7 @@
 						tabindex="-1"
 						class="mx-auto flex min-h-full w-full max-w-2xl flex-col justify-center px-6 py-10 outline-none sm:px-10 lg:py-14"
 					>
-						{@render stepBody()}
+						{@render children()}
 					</div>
 				</ScrollArea>
 			</main>
@@ -163,10 +136,10 @@
 							{onSkip}
 							{isFirst}
 							onNext={footer.onNext}
-							nextLabel={footer.nextLabel ?? 'Continue'}
-							nextLoading={footer.nextLoading ?? false}
-							nextDisabled={footer.nextDisabled ?? false}
-							canSkip={footer.canSkip ?? false}
+							nextLabel={footer.nextLabel}
+							nextLoading={footer.nextLoading}
+							nextDisabled={footer.nextDisabled}
+							canSkip={footer.canSkip}
 						/>
 					</div>
 				</footer>

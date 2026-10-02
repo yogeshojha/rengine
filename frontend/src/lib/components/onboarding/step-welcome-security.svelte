@@ -1,9 +1,10 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
-	import * as Select from '$lib/components/ui/select/index.js';
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
+	import TimezonePicker from '$lib/components/settings/timezone-picker.svelte';
 	import { toast } from 'svelte-sonner';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
@@ -11,31 +12,20 @@
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import { instanceSettingsApi } from '$lib/api/instanceSettings';
 	import { authApi } from '$lib/api/auth';
+	import { MIN_PASSWORD_LENGTH, PRODUCT_NAME } from '$lib/constants';
 	import type { StepProps } from '$lib/types/onboarding';
 
 	let { data, next, setFooter }: StepProps = $props();
 
-	const TIMEZONES = [
-		'UTC',
-		'America/New_York',
-		'America/Chicago',
-		'America/Denver',
-		'America/Los_Angeles',
-		'America/Sao_Paulo',
-		'Europe/London',
-		'Europe/Paris',
-		'Europe/Berlin',
-		'Europe/Moscow',
-		'Asia/Dubai',
-		'Asia/Kolkata',
-		'Asia/Singapore',
-		'Asia/Shanghai',
-		'Asia/Tokyo',
-		'Australia/Sydney'
-	];
+	let instanceName = $state(data.instanceName || PRODUCT_NAME);
+	let timezone = $state('');
 
-	let instanceName = $state(data.instanceName || 'reNgine');
-	let timezone = $state('UTC');
+	onMount(() => {
+		instanceSettingsApi
+			.get()
+			.then((s) => (timezone = s.timezone))
+			.catch(() => {});
+	});
 
 	let pwOpen = $state(false);
 	let currentPassword = $state('');
@@ -46,15 +36,8 @@
 
 	let busy = $state(false);
 
-	let zoneOptions = $derived.by(() => {
-		const local = Intl.DateTimeFormat().resolvedOptions().timeZone;
-		if (local && !TIMEZONES.includes(local)) return [local, ...TIMEZONES];
-		return TIMEZONES;
-	});
-
-	const MIN_PW_LENGTH = 10;
 	let pwMismatch = $derived(newPassword.length > 0 && newPassword !== confirmPassword);
-	let pwTooShort = $derived(newPassword.length > 0 && newPassword.length < MIN_PW_LENGTH);
+	let pwTooShort = $derived(newPassword.length > 0 && newPassword.length < MIN_PASSWORD_LENGTH);
 	let currentPwMissing = $derived(newPassword.length > 0 && !currentPassword);
 	let pwInvalid = $derived(pwMismatch || pwTooShort || currentPwMissing);
 
@@ -71,8 +54,8 @@
 			toast.error('Instance name is required');
 			return;
 		}
-		if (newPassword && newPassword.length < MIN_PW_LENGTH) {
-			toast.error(`Password must be at least ${MIN_PW_LENGTH} characters`);
+		if (newPassword && newPassword.length < MIN_PASSWORD_LENGTH) {
+			toast.error(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
 			return;
 		}
 		if (newPassword && newPassword !== confirmPassword) {
@@ -86,7 +69,10 @@
 
 		busy = true;
 		try {
-			await instanceSettingsApi.update({ instance_name: instanceName.trim(), timezone });
+			await instanceSettingsApi.update({
+				instance_name: instanceName.trim(),
+				...(timezone ? { timezone } : {})
+			});
 			if (newPassword) {
 				await authApi.changePassword({
 					current_password: currentPassword,
@@ -111,23 +97,23 @@
 			<Input
 				id="instance-name"
 				bind:value={instanceName}
-				placeholder="reNgine"
+				placeholder={PRODUCT_NAME}
 				disabled={busy}
 				maxlength={120}
 			/>
-			<p class="text-xs text-muted-foreground">Shown in the header and on reports.</p>
+			<p class="text-xs text-muted-foreground">Shown in the browser tab title.</p>
 		</div>
 
 		<div class="space-y-1.5">
-			<Label class="text-sm font-medium">Timezone</Label>
-			<Select.Root type="single" bind:value={timezone}>
-				<Select.Trigger class="w-full sm:w-72">{timezone}</Select.Trigger>
-				<Select.Content>
-					{#each zoneOptions as tz (tz)}
-						<Select.Item value={tz} label={tz}>{tz}</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
+			<Label for="instance-timezone" class="text-sm font-medium">Timezone</Label>
+			<div>
+				<TimezonePicker
+					id="instance-timezone"
+					value={timezone}
+					disabled={busy || !timezone}
+					onChange={(zone) => (timezone = zone)}
+				/>
+			</div>
 			<p class="text-xs text-muted-foreground">Used for scan schedules and timestamps.</p>
 		</div>
 	</div>
@@ -141,17 +127,12 @@
 			<span class="flex items-center gap-2">
 				<LockIcon class="size-4 text-muted-foreground" />
 				<span class="font-medium">Change admin password</span>
-				<span
-					class="rounded-full border border-input px-1.5 py-0.5 text-2xs font-medium uppercase tracking-wide text-muted-foreground"
-					>Recommended</span
-				>
 			</span>
 			<ChevronDownIcon
 				class="size-4 text-muted-foreground transition-transform {pwOpen ? 'rotate-180' : ''}"
 			/>
 		</Collapsible.Trigger>
 		<Collapsible.Content class="space-y-4 pt-4">
-			<p class="text-xs text-muted-foreground">The administrator password is the default one.</p>
 			<div class="space-y-1.5">
 				<Label for="current-pw" class="text-xs">Current password</Label>
 				<div class="relative">
@@ -203,10 +184,10 @@
 						</button>
 					</div>
 					{#if pwTooShort}
-						<p class="text-xs text-destructive">Use at least {MIN_PW_LENGTH} characters.</p>
+						<p class="text-xs text-destructive">Use at least {MIN_PASSWORD_LENGTH} characters.</p>
 					{:else}
 						<p class="text-xs text-muted-foreground">
-							At least {MIN_PW_LENGTH} characters.
+							At least {MIN_PASSWORD_LENGTH} characters.
 						</p>
 					{/if}
 				</div>
@@ -226,7 +207,6 @@
 					{/if}
 				</div>
 			</div>
-			<p class="text-xs text-muted-foreground">A blank field keeps the current password.</p>
 		</Collapsible.Content>
 	</Collapsible.Root>
 </div>

@@ -1,5 +1,11 @@
-import { CHANNEL_ORDER, type ChannelKind } from './channels';
-import { FINDINGS_TABS, SURFACE, SURFACE_ORDER, type FindingsTab } from './surface';
+import { BountyPlatform } from '$lib/types/bounty-program';
+import {
+	ASSET_DIMENSIONS,
+	FINDINGS_TABS,
+	SURFACE,
+	SURFACE_ORDER,
+	type FindingsTab
+} from './surface';
 
 export const routeLabels: Record<string, string> = {
 	dashboard: 'Dashboard',
@@ -14,7 +20,6 @@ export const routeLabels: Record<string, string> = {
 	cves: 'CVEs',
 	cve: 'CVEs',
 
-	// Discovery
 	targets: 'Targets',
 	scans: 'Scans',
 	compare: 'Compare runs',
@@ -70,6 +75,8 @@ export type BountyHubTab = (typeof BOUNTY_HUB_TABS)[number];
 
 export const ARSENAL_TABS = ['nuclei', 'wordlists', 'threat-intel'] as const;
 export const PANEL_PARAM = 'panel';
+export const NEW_PARAM = 'new';
+export const TRACKER_PARAM = 'tracker';
 export const CALLBACK_PANEL = 'callback-server';
 export const BOUNTY_SETTINGS_PANEL = 'settings';
 export const EXPOSURE_TABS = ['exposures', 'rules', 'dismissed'] as const;
@@ -77,14 +84,11 @@ export type ExposureTab = (typeof EXPOSURE_TABS)[number];
 export const REPORT_TABS = ['reports', 'templates', 'themes', 'typefaces', 'branding'] as const;
 export type ReportTab = (typeof REPORT_TABS)[number];
 
-export const AI_SECTIONS = ['connection', 'features', 'usage'] as const;
 export const CONNECTOR_TABS = ['missed', 'flagged', 'out_of_scope', 'all', 'domains'] as const;
 export const ISSUE_TRACKER_TABS = ['issues', 'trackers', 'routes'] as const;
 export type IssueTrackerTab = (typeof ISSUE_TRACKER_TABS)[number];
 export type ConnectorTab = (typeof CONNECTOR_TABS)[number];
-export const REMOTE_CONTROL_TABS = CHANNEL_ORDER;
-export type RemoteControlTab = ChannelKind;
-export type AiSection = (typeof AI_SECTIONS)[number];
+export type AiSection = 'connection' | 'features';
 export type ArsenalTab = (typeof ARSENAL_TABS)[number];
 
 export const ROUTES = {
@@ -102,7 +106,12 @@ export const ROUTES = {
 		return `/tripwires${suffix ? `?${suffix}` : ''}`;
 	},
 	scansForTarget: (id: string) => `/scans?target=${id}`,
-	scansWhere: (query: Record<string, string>) => `/scans?${new URLSearchParams(query).toString()}`,
+	scansWhere: (query: Record<string, string | string[]>) => {
+		const sp = new URLSearchParams();
+		for (const [key, value] of Object.entries(query))
+			for (const v of [value].flat()) sp.append(key, v);
+		return `/scans?${sp.toString()}`;
+	},
 	whatsNew: (query?: Record<string, string>) => {
 		const params = new URLSearchParams(query ?? {});
 		const suffix = params.toString();
@@ -127,9 +136,9 @@ export const ROUTES = {
 	},
 	results: (tab: string, scanId?: string | null, query?: Record<string, string>) =>
 		scanId ? ROUTES.scanTab(scanId, tab, query) : ROUTES.surface(tab, query),
-	automation: '/automation',
 	engines: '/automation/engines',
 	engine: (id: string) => `/automation/engines/${id}`,
+	newEngine: () => `/automation/engines?${NEW_PARAM}=1`,
 	contexts: '/automation/contexts',
 	context: (id: string) => `/automation/contexts/${id}`,
 	newContext: (projectId?: string, template?: string) => {
@@ -144,14 +153,16 @@ export const ROUTES = {
 	callbackServer: () => `/arsenal?${PANEL_PARAM}=${CALLBACK_PANEL}`,
 	bountyHubSettings: () => `/bounty-hub?${PANEL_PARAM}=${BOUNTY_SETTINGS_PANEL}`,
 	bountyHub: (handle?: string, platform?: string) =>
-		handle ? `/bounty-hub?program=${handle}&platform=${platform ?? 'hackerone'}` : '/bounty-hub',
+		handle
+			? `/bounty-hub?${new URLSearchParams({ program: handle, platform: platform ?? BountyPlatform.HackerOne })}`
+			: '/bounty-hub',
 	bountyHubTab: (tab: BountyHubTab) => `/bounty-hub?tab=${tab}`,
 	bountyReports: (platform: string, program?: string) =>
 		program
 			? `/bounty-hub/${platform}?program=${encodeURIComponent(program)}`
 			: `/bounty-hub/${platform}`,
 	bountyWatch: (id: string) => `/bounty-hub?tab=watching&watch=${id}`,
-	exposures: (tab?: ExposureTab, query?: Record<string, string>) => {
+	exposures: (tab?: ExposureTab, query?: Record<string, string> | URLSearchParams) => {
 		const params = new URLSearchParams(query ?? {});
 		if (tab) params.set('tab', tab);
 		const suffix = params.toString();
@@ -166,29 +177,35 @@ export const ROUTES = {
 	connectors: (tab?: ConnectorTab) => (tab ? `/connectors?tab=${tab}` : '/connectors'),
 	issueTrackers: (tab?: IssueTrackerTab) =>
 		tab ? `/issue-trackers?tab=${tab}` : '/issue-trackers',
-	remoteControl: (tab?: RemoteControlTab) =>
-		tab ? `/remote-control?tab=${tab}` : '/remote-control',
+	remoteControl: () => '/remote-control',
 	settings: (section?: SettingsSection) => (section ? `/settings/${section}` : '/settings')
 } as const;
 
-/** A detail page belongs to one project; switching projects returns to its list. */
 const PROJECT_SWITCH_REDIRECTS: { match: RegExp; list: string }[] = [
 	{ match: /^\/targets\/[^/]+/, list: ROUTES.targets },
 	{ match: /^\/scans\/[^/]+/, list: ROUTES.scans },
 	{ match: /^\/automation\/engines\/[^/]+/, list: ROUTES.engines },
-	{ match: /^\/automation\/contexts\/[^/]+/, list: ROUTES.contexts }
+	{ match: /^\/automation\/contexts\/[^/]+/, list: ROUTES.contexts },
+	{ match: /^\/reports\/templates\/[^/]+/, list: ROUTES.reports('templates') }
 ];
 
 export function projectSwitchRedirect(path: string): string | null {
 	return PROJECT_SWITCH_REDIRECTS.find((r) => r.match.test(path))?.list ?? null;
 }
 
+const CRUMB_LANDING: Record<string, string> = {
+	'/surface': ROUTES.surface(ASSET_DIMENSIONS[0].tab),
+	'/reports/templates': ROUTES.reports('templates')
+};
+
+export const crumbHref = (path: string): string => CRUMB_LANDING[path] ?? path;
+
 export const findingsHref = (key: FindingsTab): string =>
 	key === 'cve' ? ROUTES.cves : ROUTES.surface(SURFACE[key].tab);
 
 export const FINDINGS_PATHS: string[] = FINDINGS_TABS.map((tab) => findingsHref(tab.key));
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function getRouteLabel(segment: string): string {
 	if (routeLabels[segment]) return routeLabels[segment];

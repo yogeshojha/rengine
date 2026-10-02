@@ -8,14 +8,14 @@ export const INTENSITY_LABELS: Record<string, string> = {
 	passive: 'Passive',
 	normal: 'Normal',
 	aggressive: 'Aggressive',
-	custom: 'Custom'
+	[CUSTOM_INTENSITY]: 'Custom'
 };
 
 export const INTENSITY_TAGLINE: Record<string, string> = {
 	passive: 'No traffic to the target.',
 	normal: 'Default rates for every tool.',
 	aggressive: 'Higher rates and concurrency.',
-	custom: 'Rates and concurrency set per tool.'
+	[CUSTOM_INTENSITY]: 'Rates and concurrency set per tool.'
 };
 
 export const INTENSITY_HELP: Record<string, string> = {
@@ -23,7 +23,7 @@ export const INTENSITY_HELP: Record<string, string> = {
 	normal: '150 requests a second per tool. 1,000 packets a second for the port scan.',
 	aggressive:
 		'400 requests a second per tool. 3,000 packets a second for the port scan, and higher concurrency.',
-	custom: 'Rates and concurrency set per tool. An empty value uses the preset.'
+	[CUSTOM_INTENSITY]: 'Rates and concurrency set per tool. An empty value uses the preset.'
 };
 
 export type ToolTransport = { rate?: number | null; threads?: number | null };
@@ -143,7 +143,6 @@ export interface EnginePreset {
 }
 
 export interface EngineCatalog {
-	phases: string[];
 	stages: StageCatalogEntry[];
 	rate_tools: string[];
 	tool_options: ToolOption[];

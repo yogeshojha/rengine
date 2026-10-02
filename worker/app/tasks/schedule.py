@@ -6,15 +6,16 @@ from celery import shared_task
 from sqlalchemy import select
 
 from app.database import get_sync_session
-from shared.config import BaseAppSettings
 from shared.definitions.notifications import schedule_not_started
 from shared.enums.scan_schedule import ScheduleStatus
 from shared.logging import get_logger
 from shared.models.scan_schedule import ScanSchedule
+from shared.models.target import Target
 from shared.services.celery_dispatch import dispatch_scan_run
 from shared.services.notification_sync import SyncNotificationPublisher
-from shared.services.scan_factory import build_scan_for_target_sync
+from shared.services.scan_factory import ScanFactoryError, build_scan_for_target_sync
 from shared.services.schedule_timing import advance_schedule
+from shared.utils.crypto import SecretDecryptionError
 from shared.utils.datetime import utc_now
 from shared.utils.uuid import uuid_list
 
@@ -59,7 +60,14 @@ def _fire_one(schedule_id: uuid.UUID) -> int:
             sched.project_id,
             len(sched.target_ids or []),
         )
-        for tid in uuid_list(sched.target_ids):
+        target_ids = uuid_list(sched.target_ids)
+        labels = dict(
+            session.execute(
+                select(Target.id, Target.target_value).where(Target.id.in_(target_ids))
+            ).all()
+        )
+        for tid in target_ids:
+            label = labels.get(tid, tid)
             try:
                 scan = build_scan_for_target_sync(
                     session,
@@ -74,11 +82,17 @@ def _fire_one(schedule_id: uuid.UUID) -> int:
                 )
                 queued.append((str(scan.id), scan.run_epoch))
             except Exception as exc:
-                errors.append(f"{tid}: {type(exc).__name__}: {exc}")
+                reason = (
+                    exc
+                    if isinstance(exc, ScanFactoryError | SecretDecryptionError)
+                    else "Scan not created."
+                )
+                errors.append(f"{label}: {reason}")
                 logger.warning(
-                    "scheduled scan build failed (schedule=%s target=%s): %s",
+                    "scheduled scan build failed (schedule=%s target=%s): %s: %s",
                     sched.id,
                     tid,
+                    type(exc).__name__,
                     exc,
                 )
         sched.last_error = _format_errors(errors)
@@ -108,7 +122,7 @@ def _notify_not_started(name: str, project_id, failed: int, total: int) -> None:
     payload = schedule_not_started(name, failed, total)
     try:
         with get_sync_session() as session:
-            SyncNotificationPublisher(BaseAppSettings().redis_url).publish(
+            SyncNotificationPublisher().publish(
                 session=session,
                 type=payload["type"],
                 severity=payload["severity"],

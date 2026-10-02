@@ -13,7 +13,7 @@
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { getTargetTypeIcon } from '$lib/config/icons';
 	import {
-		KIND_NOUN,
+		KIND_SUMMARY,
 		NEW_FINDINGS_QUERY,
 		NewKind,
 		RUN_VERBS,
@@ -140,14 +140,10 @@
 	});
 
 	function sentence(kind: string, n: number): string {
-		if (kind === NewKind.SCOPE) return `${n} ${n === 1 ? 'asset' : 'assets'} added to scope`;
-		if (kind === NewKind.OUT_OF_SCOPE) return `${n} ${n === 1 ? 'asset' : 'assets'} left scope`;
-		if (kind === NewKind.CERT_HOST)
-			return `${n} new ${n === 1 ? 'host' : 'hosts'} in certificate logs`;
-		if (kind === NewKind.BOUNTY_TABLE)
-			return n === 1 ? 'Bounty table changed' : `${n} bounty changes`;
-		if (kind === NewKind.RULES) return n === 1 ? 'Rules changed' : `${n} rule changes`;
-		return `${n} ${KIND_NOUN[kind as NewKindKey]?.[n === 1 ? 0 : 1] ?? ''}`;
+		return (KIND_SUMMARY[kind as NewKindKey]?.[n === 1 ? 0 : 1] ?? '').replace(
+			'{n}',
+			n.toLocaleString()
+		);
 	}
 	function stop(e: Event) {
 		e.stopPropagation();
@@ -200,7 +196,7 @@
 				{#if isRun}
 					<span class="text-muted-foreground">Rescan of</span>
 					<span class="font-mono font-medium wrap-anywhere">{subject.label}</span>
-					<SevCounts severities={group.severities} labelled />
+					<SevCounts severities={group.severities} />
 					<span class="text-muted-foreground">new {found === 1 ? 'finding' : 'findings'}</span>
 					{#if status}<span class="text-xs text-muted-foreground">Run {status}</span>{/if}
 				{:else}

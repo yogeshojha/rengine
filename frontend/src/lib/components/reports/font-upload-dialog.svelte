@@ -12,6 +12,8 @@
 	import { toast } from 'svelte-sonner';
 	import { reportsApi } from '$lib/api/reports';
 	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
+	import { catalogLabel } from '$lib/config/reports';
+	import { formatBytes } from '$lib/utilities/format';
 	import type { FontFaceUpload } from '$lib/types/report';
 
 	let { open = $bindable(false) }: { open?: boolean } = $props();
@@ -22,7 +24,7 @@
 	let name = $state('');
 	let role = $state('sans');
 	let note = $state('');
-	let faces = $state<(FontFaceUpload & { size: number })[]>([]);
+	let faces = $state<(FontFaceUpload & { filename: string; size: number })[]>([]);
 	let busy = $state(false);
 	let fileInput = $state<HTMLInputElement | null>(null);
 
@@ -86,12 +88,7 @@
 				name: name.trim(),
 				role,
 				note: note.trim(),
-				faces: faces.map(({ filename, content, weight, italic }) => ({
-					filename,
-					content,
-					weight,
-					italic
-				}))
+				faces: faces.map(({ content, weight, italic }) => ({ content, weight, italic }))
 			});
 			toast.success(`${family.name} uploaded`);
 			await reportCatalog.fetch(true);
@@ -111,7 +108,6 @@
 	<Dialog.Content class="flex max-h-[92vh] flex-col gap-0 p-0 sm:max-w-2xl">
 		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>Upload a typeface</Dialog.Title>
-			<Dialog.Description>Stored on this instance.</Dialog.Description>
 		</Dialog.Header>
 
 		<ScrollArea
@@ -127,7 +123,7 @@
 						<Label class="text-xs">Role</Label>
 						<Select.Root type="single" bind:value={role}>
 							<Select.Trigger class="h-9 w-full">
-								{ROLES.find((r) => r.key === role)?.label ?? role}
+								{catalogLabel(ROLES, role)}
 							</Select.Trigger>
 							<Select.Content>
 								{#each ROLES as item (item.key)}
@@ -171,7 +167,7 @@
 								<div class="flex items-center gap-3 border-b px-3 py-2 last:border-b-0">
 									<span class="min-w-0 flex-1 truncate font-mono text-xs">{face.filename}</span>
 									<span class="shrink-0 text-xs text-muted-foreground">
-										{(face.size / 1024).toFixed(0)} KB
+										{formatBytes(face.size)}
 									</span>
 									<Select.Root
 										type="single"

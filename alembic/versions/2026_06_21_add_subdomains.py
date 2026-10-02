@@ -13,7 +13,6 @@ import sqlmodel
 
 from alembic import op
 
-# revision identifiers, used by Alembic.
 revision: str = "f3b7d1a9c2e4"
 down_revision: str | None = "e2a5c7d9f1b3"
 branch_labels: str | Sequence[str] | None = None
@@ -63,5 +62,4 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_subdomains_project_id"), table_name="subdomains")
     op.drop_index(op.f("ix_subdomains_target_id"), table_name="subdomains")
     op.drop_index(op.f("ix_subdomains_scan_id"), table_name="subdomains")
-    op.drop_index(op.f("ix_subdomains_id"), table_name="subdomains")
     op.drop_table("subdomains")

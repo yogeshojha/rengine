@@ -82,7 +82,7 @@
 					<Button
 						variant="ghost"
 						size="sm"
-						class="h-7 shrink-0 opacity-0 group-hover:opacity-100"
+						class="h-7 shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
 						onclick={() => restore(row)}
 					>
 						<Undo2 class="size-3.5" />

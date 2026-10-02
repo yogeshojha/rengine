@@ -8,7 +8,10 @@ from shared.definitions.issue_trackers import (
     TrackerKind,
 )
 from shared.services.issue_trackers.base import (
+    UNREADABLE,
+    CredentialsError,
     Option,
+    RateLimitedError,
     RemoteIssue,
     RemoteNotFoundError,
     RemoteStatus,
@@ -19,7 +22,6 @@ from shared.services.issue_trackers.document import Doc, to_markdown
 
 NOT_PLANNED = "not_planned"
 REPO_PAGES = 5
-UNREADABLE = "Unavailable"
 
 
 def github_status(issue: dict) -> RemoteStatus:
@@ -135,6 +137,8 @@ class GitHubIssues(Tracker):
             except RemoteNotFoundError:
                 out[number] = None
                 continue
+            except (RateLimitedError, CredentialsError):
+                raise
             except TrackerError:
                 out[number] = RemoteStatus(name=UNREADABLE, category=None)
                 continue

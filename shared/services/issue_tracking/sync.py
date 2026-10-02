@@ -10,6 +10,7 @@ from collections import defaultdict
 from collections.abc import Iterable
 from datetime import timedelta
 
+from pydantic import ValidationError
 from sqlalchemy import exists, select, text
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
@@ -26,9 +27,10 @@ from shared.definitions.issue_trackers import (
     RemoteCategory,
     secret_fields,
 )
+from shared.definitions.oast import OAST_COVERAGE_GROUP
 from shared.definitions.scan_surface import SurfaceState
 from shared.definitions.surface import SurfaceDimension
-from shared.definitions.vulnerabilities import Scanner
+from shared.definitions.vulnerabilities import CoverageStatus, Scanner
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.scan import ScanActivityStatus, ScanScope, ScanStatus
 from shared.logging import get_logger
@@ -42,7 +44,8 @@ from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
 from shared.models.scan_surface import ScanSurfaceItem
 from shared.models.target import Target
-from shared.models.vulnerability import Vulnerability
+from shared.models.vuln_template import VulnTemplate
+from shared.models.vulnerability import Vulnerability, VulnerabilityCoverage
 from shared.services import locks
 from shared.services.activity_log import ActivityLogService
 from shared.services.asset_query.lead_cache import bump_sync
@@ -54,11 +57,13 @@ from shared.services.issue_trackers import (
     open_config,
     tracker_client,
 )
+from shared.services.issue_trackers.base import UNREADABLE
 from shared.services.issue_trackers.document import Block, Doc
-from shared.services.issue_trackers.github import UNREADABLE
 from shared.services.issue_tracking import body as bodies
 from shared.services.scan_resolve import MASK
 from shared.services.scan_scope import covering_stages, producing_stages
+from shared.services.scan_surface import wants_callback
+from shared.services.vuln_templates import dast_predicate, selection_predicate
 from shared.utils.datetime import utc_now
 from shared.utils.text import counted
 
@@ -510,7 +515,7 @@ def send_comments(
                 clients.of(tracker).comment(
                     issue.destination,
                     issue.external_id or "",
-                    load_doc(_loads(comment.body)),
+                    load_doc(json.loads(comment.body)),
                 )
             except TrackerError as exc:
                 comment.error = _error(exc, tracker)
@@ -528,23 +533,10 @@ def send_comments(
     return sent
 
 
-def _loads(raw: str) -> dict:
-    try:
-        loaded = json.loads(raw)
-    except ValueError:
-        return {"blocks": [{"kind": "paragraph", "text": raw}]}
-    return loaded if isinstance(loaded, dict) else {}
-
-
 # ---------- status ----------
 
 
-def refresh_statuses(
-    session: Session,
-    *,
-    issue_ids: list[uuid.UUID] | None = None,
-    force: bool = False,
-) -> int:
+def refresh_statuses(session: Session, *, force: bool = False) -> int:
     """Read each filed issue's status from its tracker."""
     stmt = (
         select(TrackedIssue)
@@ -557,8 +549,6 @@ def refresh_statuses(
         .order_by(TrackedIssue.status_read_at.asc().nulls_first())
         .limit(MAX_STATUS_READS)
     )
-    if issue_ids is not None:
-        stmt = stmt.where(TrackedIssue.id.in_(issue_ids))
     if not force:
         cutoff = utc_now() - timedelta(seconds=STATUS_REFRESH_SECONDS)
         stmt = stmt.where(
@@ -645,35 +635,99 @@ def _stages_ran(session: Session, scan: Scan) -> dict[str, str] | None:
     return ran
 
 
-def _scanned_hosts(session: Session, scan: Scan) -> set[str]:
-    return {
-        (host or "").lower()
-        for host in session.execute(
-            select(ScanSurfaceItem.host).where(
-                ScanSurfaceItem.scan_id == scan.id,
-                ScanSurfaceItem.state.in_(SCANNED_STATES),
+def _scanned_hosts(session: Session, scan: Scan) -> set[tuple[str, int | None]]:
+    """Each scanned (host, port), and (host, None) for every scanned host."""
+    out: set[tuple[str, int | None]] = set()
+    for host, port in session.execute(
+        select(ScanSurfaceItem.host, ScanSurfaceItem.port).where(
+            ScanSurfaceItem.scan_id == scan.id,
+            ScanSurfaceItem.state.in_(SCANNED_STATES),
+        )
+    ).all():
+        if host:
+            out.add((host.lower(), port))
+            out.add((host.lower(), None))
+    return out
+
+
+def _stage_config(model, configs: dict, name: str, ran: dict[str, str]):
+    if name not in ran:
+        return None
+    try:
+        return model.model_validate(configs.get(name) or {})
+    except ValidationError:
+        return None
+
+
+def _selected_checks(
+    session: Session,
+    scan: Scan,
+    ran: dict[str, str],
+    vulns: Iterable[Vulnerability],
+) -> set[str]:
+    """Check ids among these findings that the run selected and could send."""
+    from stages.dast_scan.config import DastScanConfig  # noqa: PLC0415
+    from stages.vulnerability_scan.config import (  # noqa: PLC0415
+        VulnerabilityScanConfig,
+    )
+
+    configs = (scan.execution_config or {}).get("stages") or {}
+    fuzzed: set[str] = set()
+    plain: set[str] = set()
+    for vuln in vulns:
+        if vuln.template_id:
+            (fuzzed if DAST_TAG in (vuln.tags or []) else plain).add(vuln.template_id)
+    columns = (VulnTemplate.template_id, VulnTemplate.needs_oast, VulnTemplate.tags)
+    rows: list = []
+    cfg = _stage_config(VulnerabilityScanConfig, configs, VULN_STAGE, ran)
+    if plain and cfg is not None and Scanner.NUCLEI.value in cfg.scanners:
+        selection = cfg.selection()
+        wanted = VulnTemplate.template_id.in_(sorted(plain))
+        rows += session.execute(
+            select(*columns).where(selection_predicate(selection), wanted)
+        ).all()
+        if selection.custom_templates:
+            rows += session.execute(
+                select(*columns).where(
+                    VulnTemplate.id.in_(list(selection.custom_templates)),
+                    VulnTemplate.enabled.is_(True),
+                    wanted,
+                )
+            ).all()
+    dast = _stage_config(DastScanConfig, configs, DAST_STAGE, ran)
+    if fuzzed and dast is not None and Scanner.NUCLEI.value in dast.scanners:
+        rows += session.execute(
+            select(*columns).where(
+                dast_predicate(dast.severities, headless=dast.headless),
+                VulnTemplate.template_id.in_(sorted(fuzzed)),
             )
-        ).scalars()
-        if host
-    }
+        ).all()
+    if not rows:
+        return set()
+    unheard = session.scalar(
+        select(
+            exists(
+                select(VulnerabilityCoverage.id).where(
+                    VulnerabilityCoverage.scan_id == scan.id,
+                    VulnerabilityCoverage.group == OAST_COVERAGE_GROUP,
+                    VulnerabilityCoverage.status == CoverageStatus.SKIPPED.value,
+                )
+            )
+        )
+    )
+    return {row.template_id for row in rows if not (unheard and wants_callback(row))}
 
 
 def _checked_again(
-    vuln: Vulnerability | None, scan: Scan, ran: dict[str, str], hosts: set[str]
+    vuln: Vulnerability | None,
+    hosts: set[tuple[str, int | None]],
+    selected: set[str],
 ) -> bool:
-    """The run tested this finding's check on this finding's host."""
+    """The run selected this finding's check and tested this finding's host."""
     if vuln is None or vuln.scanner != Scanner.NUCLEI.value or not vuln.host:
         return False
-    config = ((scan.execution_config or {}).get("stages") or {}).get(VULN_STAGE) or {}
-    severities = config.get("severities") or []
-    only = config.get("template_ids") or []
     return (
-        VULN_STAGE in ran
-        and (DAST_TAG not in (vuln.tags or []) or DAST_STAGE in ran)
-        and (not severities or vuln.severity in severities)
-        and vuln.template_id not in (config.get("exclude_templates") or [])
-        and (not only or vuln.template_id in only)
-        and vuln.host.lower() in hosts
+        vuln.template_id in selected and (vuln.host.lower(), vuln.port or None) in hosts
     )
 
 
@@ -723,6 +777,11 @@ def observe_scan(session: Session, scan_id: uuid.UUID) -> int:
     missing = [lk for lk, _ in rows if lk.present and lk.fingerprint not in seen]
     earlier = latest_vulns(session, [(lk.target_id, lk.fingerprint) for lk in missing])
     hosts = _scanned_hosts(session, scan) if ran and missing else set()
+    selected = (
+        _selected_checks(session, scan, ran, earlier.values())
+        if ran and missing
+        else set()
+    )
     per_issue: dict[uuid.UUID, tuple[TrackedIssue, list[TrackedIssueFinding]]] = {}
     for link, issue in rows:
         per_issue.setdefault(issue.id, (issue, []))[1].append(link)
@@ -735,7 +794,7 @@ def observe_scan(session: Session, scan_id: uuid.UUID) -> int:
             and lk.fingerprint not in seen
             and ran is not None
             and _checked_again(
-                earlier.get((lk.target_id, lk.fingerprint)), scan, ran, hosts
+                earlier.get((lk.target_id, lk.fingerprint)), hosts, selected
             )
         ]
         back = [lk for lk in links if not lk.present and lk.fingerprint in seen]

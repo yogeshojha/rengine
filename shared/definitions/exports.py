@@ -12,6 +12,7 @@ MAX_RUNNING_PER_PROJECT = 3
 # a run that has not reported in this long is not running any more
 STALE_AFTER_SECONDS = 3_600
 BUNDLE = "bundle"
+BUNDLE_LABEL = "All dimensions"
 
 
 class ExportFormat(StrEnum):
@@ -21,12 +22,6 @@ class ExportFormat(StrEnum):
 
 
 EXPORT_FORMATS: tuple[str, ...] = tuple(f.value for f in ExportFormat)
-
-FORMAT_LABELS: dict[str, str] = {
-    ExportFormat.CSV.value: "CSV",
-    ExportFormat.JSON.value: "JSON",
-    ExportFormat.TXT.value: "Text",
-}
 
 FORMAT_MEDIA_TYPES: dict[str, str] = {
     ExportFormat.CSV.value: "text/csv",
@@ -51,20 +46,6 @@ class ExportStatus(StrEnum):
     FAILED = "failed"
     EXPIRED = "expired"
 
-
-EXPORT_STATUS_LABELS: dict[str, str] = {
-    ExportStatus.QUEUED.value: "Queued",
-    ExportStatus.RUNNING.value: "Preparing",
-    ExportStatus.COMPLETED.value: "Ready",
-    ExportStatus.FAILED.value: "Failed",
-    ExportStatus.EXPIRED.value: "Expired",
-}
-
-TERMINAL_STATUSES: tuple[str, ...] = (
-    ExportStatus.COMPLETED.value,
-    ExportStatus.FAILED.value,
-    ExportStatus.EXPIRED.value,
-)
 
 LIVE_STATUSES: tuple[str, ...] = (
     ExportStatus.QUEUED.value,

@@ -7,15 +7,16 @@
 		CHECK_BY_KEY,
 		FACT_CHIP,
 		POSTURE_ANY,
-		TONE_DOT,
 		hostRows,
 		postureQuery,
 		share,
 		sortChecks,
 		zoneFacts
 	} from '$lib/config/domain-posture';
+	import { TONE_DOT } from '$lib/config/hygiene';
 	import type { DomainPostureSummary } from '$lib/types/domain-posture';
 	import type { HygieneSummary } from '$lib/utilities/scan-insights';
+	import { plural } from '$lib/utilities/strings';
 
 	const routes = useScopedRoutes();
 
@@ -31,8 +32,6 @@
 
 	const TOP = 7;
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
-	const plural = (n: number, one: string, many: string) =>
-		`${n.toLocaleString()} ${n === 1 ? one : many}`;
 	const link = (query: string) => routes.results(WEB.tab, scanId, { [WEB.queryParam]: query });
 
 	let zone = $derived(summary && summary.zones.length === 1 ? summary.zones[0] : null);
@@ -48,7 +47,6 @@
 
 <Cell
 	id="domain-posture"
-	title="Domain posture"
 	description="Checks per registrable domain"
 	href={link(postureQuery(POSTURE_ANY))}
 	hrefLabel={postureQuery(POSTURE_ANY)}
@@ -134,9 +132,11 @@
 			<span>{plural(zone.hosts, 'web asset', 'web assets')}</span>
 		{:else if summary}
 			<span>
-				{plural(summary.zone_count, 'zone', 'zones')}{#if summary.mail_hosts}
-					· {plural(summary.mail_hosts, 'mail host', 'mail hosts')}{/if}{#if summary.spoofable}
-					· {summary.spoofable.toLocaleString()} spoofable{/if}
+				{plural(
+					summary.zone_count,
+					'zone',
+					'zones'
+				)}{#if summary.mail_hosts}{` · ${plural(summary.mail_hosts, 'mail host', 'mail hosts')}`}{/if}{#if summary.spoofable}{` · ${summary.spoofable.toLocaleString()} spoofable`}{/if}
 			</span>
 			{#if hosts}
 				<span class="tabular-nums">{plural(hosts.evaluated, 'web asset', 'web assets')}</span>

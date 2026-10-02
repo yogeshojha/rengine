@@ -14,14 +14,13 @@ def _opt_id(value: uuid.UUID | str | None) -> str | None:
 
 
 class ScanEventPublisher:
-    def __init__(self, redis_url: str, *, scan_id: str, project_id: str) -> None:
-        self._pub = SyncEventPublisher(redis_url)
+    def __init__(self, *, scan_id: str, project_id: str) -> None:
+        self._pub = SyncEventPublisher()
         self._scan_id = str(scan_id)
         self._project_id = str(project_id)
 
     def _emit(self, kind: ScanEventKind, data: dict[str, Any]) -> None:
         payload = {"kind": kind.value, "scan_id": self._scan_id, **data}
-        self._pub.publish(SSEChannel.scan(self._scan_id), SSEEventType.SCAN, payload)
         self._pub.publish(
             SSEChannel.project(self._project_id), SSEEventType.SCAN, payload
         )

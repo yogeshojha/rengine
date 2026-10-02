@@ -150,7 +150,7 @@ def redacted_name_sql(column):
 
 
 def registrant_key_sql(column):
-    """The SQL half of registrant_key: the two must agree, or a match is invisible."""
+    """The SQL half of registrant_key."""
     suffixes = "|".join(CORPORATE_SUFFIXES)
     key = func.regexp_replace(
         func.regexp_replace(

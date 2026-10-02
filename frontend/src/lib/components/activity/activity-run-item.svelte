@@ -9,7 +9,8 @@
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
 	import CircleX from '@lucide/svelte/icons/circle-x';
 	import { relativeTime } from '$lib/utilities/dates';
-	import { liveScans } from '$lib/stores/live-scans.svelte';
+	import { SCAN_STATUS_LABEL } from '$lib/utilities/scan-status';
+	import { LIVE_PAGE_SIZE, liveScans } from '$lib/stores/live-scans.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import {
 		ACTIVITY_EVENT,
@@ -29,13 +30,6 @@
 
 	let { cluster, tick = 0, isNew = false, inGroup = false, onRescan }: Props = $props();
 
-	const STATUS_LABEL: Record<RunStatus, string> = {
-		running: 'Running',
-		completed: 'Completed',
-		failed: 'Failed',
-		cancelled: 'Cancelled',
-		paused: 'Paused'
-	};
 	const STATUS_VARIANT: Record<RunStatus, BadgeVariant> = {
 		running: 'info',
 		completed: 'success',
@@ -53,7 +47,15 @@
 
 	let run = $derived(cluster.run!);
 	let live = $derived(!!cluster.scanId && liveScans.isLive(cluster.scanId));
-	let status = $derived<RunStatus>(run.status === 'running' && !live ? 'cancelled' : run.status);
+	let status = $derived<RunStatus>(
+		run.status === 'running' &&
+			!live &&
+			liveScans.hasFetched &&
+			liveScans.count < LIVE_PAGE_SIZE &&
+			liveScans.fetchedAt > new Date(cluster.timestamp).getTime()
+			? 'cancelled'
+			: run.status
+	);
 	let stageCount = $derived(run.steps.filter((s) => isStageEvent(s.event_type)).length);
 	let expanded = $state(false);
 	let timeAgo = $derived.by(() => {
@@ -109,7 +111,7 @@
 							{heading ?? 'Scan'}
 						</span>
 						<Badge variant={STATUS_VARIANT[status]} class="h-4 shrink-0 px-1.5 text-2xs">
-							{STATUS_LABEL[status]}
+							{SCAN_STATUS_LABEL[status]}
 						</Badge>
 					</div>
 					<p class="mt-0.5 line-clamp-1 text-2xs text-muted-foreground">

@@ -6,6 +6,7 @@ import pytest
 
 from app.config import settings
 from app.core.database import check_capacity, pool_demand
+from shared.definitions.channels import POOL_OVERFLOW, POOL_SIZE
 
 pytestmark = pytest.mark.api
 
@@ -15,7 +16,9 @@ def test_demand_counts_every_pool():
     api_pool = settings.DB_POOL_SIZE + settings.DB_MAX_OVERFLOW
     api_processes = 1 if settings.API_RELOAD else settings.API_WORKERS
     expected = (
-        (api_processes + 1) * api_pool
+        api_processes * api_pool
+        + POOL_SIZE
+        + POOL_OVERFLOW
         + settings.CELERY_SCAN_CONCURRENCY * per_child
         + settings.CELERY_CONTROL_CONCURRENCY * per_child
         + settings.CELERY_DEFAULT_CONCURRENCY * per_child

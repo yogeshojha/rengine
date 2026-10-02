@@ -11,7 +11,7 @@ from fastapi.concurrency import run_in_threadpool
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.crypto import encrypt_secret, try_decrypt
+from app.services.instance_settings import InstanceSettingsService
 from shared.definitions.ai import (
     AI_FEATURES,
     BASE_URL_HINT,
@@ -37,26 +37,17 @@ from shared.models.ai import (
     AiTestRequest,
     AiTestResult,
     AiUsageRead,
-    AskUsageRead,
 )
-from shared.models.ask import AskThread
 from shared.models.instance_settings import InstanceSettings
-from shared.models.report import Report
 from shared.services.ai import ledger
 from shared.services.ai.client import AIError, complete
 from shared.services.ai.config import AIConfig
-from shared.services.scan_resolve import MASK
+from shared.services.scan_resolve import MASK, mask_tail
+from shared.utils.crypto import encrypt_secret, try_decrypt
 from shared.utils.datetime import utc_now
 
-_VALID_PROVIDERS = frozenset(p.value for p in AIProvider)
+_VALID_PROVIDERS = frozenset(PROVIDER_LABELS)
 _TEST_PROMPT = "Reply with the single word: ready."
-_TAIL = 4
-
-
-def _mask(key: str | None) -> str | None:
-    if not key:
-        return None
-    return f"{MASK}{key[-_TAIL:]}" if len(key) > _TAIL else MASK
 
 
 def _clean_base_url(value: str) -> str:
@@ -69,7 +60,24 @@ def _clean_base_url(value: str) -> str:
             status.HTTP_400_BAD_REQUEST,
             "Server URL must start with http:// or https://.",
         )
+    if "@" in parts.netloc or "?" in value:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Server URL cannot carry credentials or a query. Enter the key under API key.",
+        )
     return value.rstrip("/")
+
+
+def _stored_url(features: dict) -> str:
+    return str(features.get("base_url") or "").strip().rstrip("/")
+
+
+def _server(provider: str, base_url: str) -> tuple[str, str]:
+    return provider, base_url if provider in BASE_URL_PROVIDERS else ""
+
+
+def _fresh_key(api_key: str | None) -> bool:
+    return api_key is not None and MASK not in api_key
 
 
 class AiSettingsService:
@@ -77,19 +85,9 @@ class AiSettingsService:
         self.session = session
 
     async def _row(self) -> InstanceSettings:
-        row = (
-            (await self.session.execute(select(InstanceSettings).limit(1)))
-            .scalars()
-            .first()
-        )
-        if row is None:
-            row = InstanceSettings()
-            self.session.add(row)
-            await self.session.commit()
-            await self.session.refresh(row)
-        return row
+        return await InstanceSettingsService(self.session).get_or_create()
 
-    async def status(self) -> AiStatus:
+    async def status(self, *, full: bool = False) -> AiStatus:
         row = await self._row()
         key = try_decrypt(row.ai_api_key_encrypted)
         provider = row.ai_provider or AIProvider.ANTHROPIC.value
@@ -100,9 +98,9 @@ class AiSettingsService:
             provider=provider,
             model=model_for(provider, row.ai_model),
             fast_model=model_for(provider, stored.get("fast_model"), fast=True),
-            workspace_id=str(stored.get("workspace_id") or ""),
-            base_url=str(stored.get("base_url") or ""),
-            key_masked=_mask(key),
+            workspace_id=str(stored.get("workspace_id") or "") if full else None,
+            base_url=str(stored.get("base_url") or "") if full else None,
+            key_masked=mask_tail(key) if key else None,
             features={
                 **DEFAULT_AI_FEATURES,
                 **{k: v for k, v in stored.items() if isinstance(v, bool)},
@@ -145,34 +143,12 @@ class AiSettingsService:
         ]
         by_feature.sort(key=lambda f: (-(f.cost_usd or 0), -f.calls))
         costs = [f.cost_usd for f in by_feature if f.cost_usd is not None]
-        reports = await self.session.scalar(
-            select(func.count(Report.id)).where(Report.ai_used.is_(True))
-        )
         return AiUsageRead(
             calls=sum(f.calls - f.cached for f in by_feature),
-            cached=sum(f.cached for f in by_feature),
             failed=sum(f.failed for f in by_feature),
-            input_tokens=sum(f.input_tokens for f in by_feature),
-            output_tokens=sum(f.output_tokens for f in by_feature),
             cost_usd=round(sum(costs), 4) if costs else None,
-            reports=int(reports or 0),
             since=min((r[8] for r in rows if r[8] is not None), default=None),
-            ask=await self._ask_usage(by_feature),
             by_feature=by_feature,
-        )
-
-    async def _ask_usage(self, by_feature: list[AiFeatureUsage]) -> AskUsageRead:
-        ask = next((f for f in by_feature if f.feature == "ask"), None)
-        threads = await self.session.scalar(select(func.count(AskThread.id)))
-        if ask is None:
-            return AskUsageRead(threads=int(threads or 0))
-        return AskUsageRead(
-            questions=ask.calls - ask.failed,
-            threads=int(threads or 0),
-            input_tokens=ask.input_tokens,
-            output_tokens=ask.output_tokens,
-            cost_usd=ask.cost_usd,
-            since=None,
         )
 
     async def calls(self, limit: int) -> list[AiCallRead]:
@@ -185,28 +161,51 @@ class AiSettingsService:
 
     async def update(self, data: AiSettingsUpdate) -> AiStatus:
         row = await self._row()
-        if data.provider is not None:
-            if data.provider not in _VALID_PROVIDERS:
+        if data.provider is not None and data.provider not in _VALID_PROVIDERS:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                f"Unknown provider '{data.provider}'.",
+            )
+        features = dict(row.ai_features or {})
+        stored_provider = row.ai_provider or AIProvider.ANTHROPIC.value
+        new_provider = data.provider or stored_provider
+        new_url = (
+            _clean_base_url(data.base_url)
+            if data.base_url is not None
+            else _stored_url(features)
+        )
+        moved = _server(new_provider, new_url) != _server(
+            stored_provider, _stored_url(features)
+        )
+        if moved and row.ai_api_key_encrypted and not _fresh_key(data.api_key):
+            if new_provider not in KEY_OPTIONAL_PROVIDERS:
                 raise HTTPException(
                     status.HTTP_400_BAD_REQUEST,
-                    f"Unknown provider '{data.provider}'.",
+                    "Enter the API key for this server.",
                 )
+            row.ai_api_key_encrypted = None
+        if data.provider is not None:
             row.ai_provider = data.provider
         if data.model is not None:
             row.ai_model = data.model.strip() or None
-        if data.api_key is not None and MASK not in data.api_key:
+        if _fresh_key(data.api_key):
             row.ai_api_key_encrypted = (
                 encrypt_secret(data.api_key) if data.api_key else None
             )
-        features = dict(row.ai_features or {})
         if data.features is not None:
-            features.update({k: bool(v) for k, v in data.features.items()})
+            features.update(
+                {
+                    k: bool(v)
+                    for k, v in data.features.items()
+                    if k in DEFAULT_AI_FEATURES
+                }
+            )
         if data.fast_model is not None:
             features["fast_model"] = data.fast_model.strip()
         if data.workspace_id is not None:
             features["workspace_id"] = data.workspace_id.strip()
         if data.base_url is not None:
-            features["base_url"] = _clean_base_url(data.base_url)
+            features["base_url"] = new_url
         row.ai_features = features
         if data.enabled is not None:
             provider = row.ai_provider or AIProvider.ANTHROPIC.value
@@ -232,24 +231,31 @@ class AiSettingsService:
         row.updated_at = utc_now()
         self.session.add(row)
         await self.session.commit()
-        return await self.status()
+        return await self.status(full=True)
 
     async def test(
         self, data: AiTestRequest, user_id: uuid.UUID | None = None
     ) -> AiTestResult:
         row = await self._row()
-        provider = (
-            data.provider or row.ai_provider or AIProvider.ANTHROPIC.value
-        ).strip()
-        key = (
-            data.api_key
-            if data.api_key and MASK not in data.api_key
-            else try_decrypt(row.ai_api_key_encrypted)
-        )
+        stored_provider = row.ai_provider or AIProvider.ANTHROPIC.value
+        provider = (data.provider or stored_provider).strip()
         stored = row.ai_features or {}
-        base_url = _clean_base_url(data.base_url or str(stored.get("base_url") or ""))
+        stored_url = _stored_url(stored)
+        base_url = _clean_base_url(data.base_url or stored_url)
+        same = _server(provider, base_url) == _server(stored_provider, stored_url)
+        if data.api_key and _fresh_key(data.api_key):
+            key = data.api_key
+        else:
+            key = try_decrypt(row.ai_api_key_encrypted) if same else None
         if not key and provider not in KEY_OPTIONAL_PROVIDERS:
-            return AiTestResult(success=False, message="No API key is configured.")
+            return AiTestResult(
+                success=False,
+                message=(
+                    "No API key is configured."
+                    if same
+                    else "Enter the API key for this server."
+                ),
+            )
         if provider in BASE_URL_PROVIDERS and not base_url:
             return AiTestResult(success=False, message="No server URL is configured.")
         model = model_for(provider, data.model or row.ai_model)

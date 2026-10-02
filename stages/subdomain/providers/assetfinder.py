@@ -27,4 +27,5 @@ class AssetfinderProvider(SubdomainProvider):
             )
         except ToolNotFoundError:
             return set()
+        self._checked(result)
         return {line.strip() for line in result.output_lines if line.strip()}

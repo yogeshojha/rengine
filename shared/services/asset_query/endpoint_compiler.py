@@ -18,7 +18,7 @@ from shared.models.endpoint import Endpoint
 from shared.models.vulnerability import Vulnerability
 
 from . import predicates as preds
-from .ast import Compare, QuerySyntaxError, Term
+from .ast import Compare, Term
 from .scope import QueryScope
 from .terms import (
     date_match,
@@ -30,7 +30,7 @@ from .terms import (
     string_match,
     target_match,
 )
-from .walk import as_compare, compare_with, free_text_fields, walker
+from .walk import as_compare, compare_with, flags, free_text_fields, walker
 
 _SENSITIVE_INTEREST = (
     PathInterest.VCS.value,
@@ -48,18 +48,6 @@ class EndpointQueryContext:
 
 def _has_any(column, names: list[str]):
     return func.jsonb_exists_any(cast(column, JSONB), pg_array(names))
-
-
-def _flag(cmp: Compare, ctx: EndpointQueryContext):
-    branches = []
-    for raw in cmp.values:
-        builder = _FLAG_BUILDERS.get(raw.lower())
-        if builder is None:
-            msg = f"Unknown flag {raw!r}."
-            hint = f"Try one of: {', '.join(ENDPOINT_FLAGS)}"
-            raise QuerySyntaxError(msg, cmp.start, cmp.end, hint)
-        branches.append(builder(ctx))
-    return or_(*branches)
 
 
 _FLAG_BUILDERS = {
@@ -110,7 +98,7 @@ def _dir_match(cmp: Compare, _ctx: EndpointQueryContext):
 
 
 def _status_match(cmp: Compare, _ctx: EndpointQueryContext):
-    """Values may mix named classes and numbers, as the host grammar allows."""
+    """Named status classes and numbers."""
     classes = {*preds.STATUS_BUCKETS, "none"}
     named = [v for v in cmp.values if v.lower() in classes]
     numeric = [v for v in cmp.values if v.lower() not in classes]
@@ -167,7 +155,7 @@ _ENDPOINT_BUILDERS = {
     "seen": lambda c, ctx: date_match(Endpoint.discovered_at, c, ctx.now, future=False),
     "vuln": _vuln_severity,
     "cve": _vuln_cve,
-    "is": _flag,
+    "is": flags(_FLAG_BUILDERS, ENDPOINT_FLAGS),
 }
 
 

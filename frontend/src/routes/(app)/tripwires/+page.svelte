@@ -254,16 +254,6 @@
 	{/if}
 </div>
 
-<TripwireWizard
-	open={wizardOpen}
-	{projectId}
-	{projectSlug}
-	tripwire={editing}
-	{draft}
-	onOpenChange={(v) => (wizardOpen = v)}
-	onSaved={(t) => tripwiresStore.upsert(t)}
-/>
-
 <TripwireHistorySheet
 	tripwire={history}
 	{projectId}
@@ -273,6 +263,16 @@
 	}}
 	onEdit={openEdit}
 	onToggle={toggle}
+/>
+
+<TripwireWizard
+	open={wizardOpen}
+	{projectId}
+	{projectSlug}
+	tripwire={editing}
+	{draft}
+	onOpenChange={(v) => (wizardOpen = v)}
+	onSaved={(t) => tripwiresStore.upsert(t)}
 />
 
 <TemplateSheet

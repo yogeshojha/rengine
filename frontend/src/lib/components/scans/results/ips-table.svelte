@@ -11,9 +11,7 @@
 	import Settings2 from '@lucide/svelte/icons/settings-2';
 
 	import * as Card from '$lib/components/ui/card';
-	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button } from '$lib/components/ui/button';
-	import { Badge } from '$lib/components/ui/badge';
 	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import EmptyState from '$lib/components/empty-state.svelte';
@@ -28,6 +26,7 @@
 	import RescanAction from './table/rescan-action.svelte';
 	import type { SeedPick, SeedSelection } from '$lib/types/recheck';
 	import GroupList from './table/group-list.svelte';
+	import FilterChips from './table/filter-chips.svelte';
 	import FilterBar from './ips/filter-bar.svelte';
 	import IpRow from './ips/ip-row.svelte';
 	import IpDetailSheet from './ip-detail-sheet.svelte';
@@ -67,6 +66,7 @@
 	import { afterPause } from '$lib/utilities/debounce';
 	import { UrlSync, onPopSearch } from '$lib/utilities/url-history.svelte';
 	import { LiveRefresh } from '$lib/utilities/live-results';
+	import { TabCounts } from '$lib/utilities/tab-counts.svelte';
 
 	interface Props {
 		scanId: string;
@@ -167,7 +167,11 @@
 	let exposureTab = $derived(
 		query.exposure.length === 0 ? 'all' : query.exposure.length === 1 ? query.exposure[0] : ''
 	);
+	const tabCounts = new TabCounts();
+	let tabQuery = $derived({ ...query, exposure: [] });
+	let tabFiltered = $derived(ipActiveFacetCount(tabQuery) > 0 || !!tabQuery.search.trim());
 	let exposureCounts = $derived.by(() => {
+		if (tabFiltered) return tabCounts.counts;
 		if (!facetsLoaded) return null;
 		const m: Record<string, number> = { all: scanTotal };
 		for (const f of facets.exposure) m[f.value] = f.count;
@@ -304,6 +308,7 @@
 		refreshing = !quiet;
 		try {
 			if (!quiet) loadedLeadSig = '';
+			tabCounts.refresh();
 			await Promise.all([runSearch(), loadFacets(), loadGroups()]);
 		} finally {
 			if (!quiet) refreshing = false;
@@ -315,6 +320,18 @@
 		liveRefresh.notify(revision, active);
 	});
 	onDestroy(() => liveRefresh.stop());
+	onDestroy(() => tabCounts.clear());
+
+	$effect(() => {
+		const filter = compileIpQuery(tabQuery, 'ip', 1, 0, 1);
+		const key = `${projectId}|${scanId}|${JSON.stringify(filter)}`;
+		const filtered = tabFiltered;
+		if (!ready || !seen || !queryReady) return;
+		untrack(() => {
+			if (filtered) tabCounts.track(key, () => ipsApi.tabs(projectId, scanId, filter));
+			else tabCounts.clear();
+		});
+	});
 
 	$effect(() => {
 		void JSON.stringify(query);
@@ -418,7 +435,7 @@
 			);
 			const exact = res.items.find((g) => g.ip === ip);
 			if (exact) open(exact);
-			else toast.error('Address not found in this scan');
+			else toast.error('Address not found.');
 		} catch {
 			toast.error('Address not loaded');
 		}
@@ -454,7 +471,7 @@
 	}
 	let hideOptions = $derived([
 		{
-			label: hideLabel([...checkedIps], 'addresses'),
+			label: hideLabel([...checkedIps], IP.nounPlural),
 			tokens: () => [...checkedIps].map((ip) => excludeToken('ip', ip))
 		}
 	]);
@@ -554,7 +571,7 @@
 	async function run(sel: SeedSelection) {
 		if (rescanBusy) return;
 		rescanBusy = true;
-		const ok = await startRescan(projectId, sel, 'address', 'addresses');
+		const ok = await startRescan(projectId, sel, IP.noun, IP.nounPlural);
 		if (ok) checkedIps.clear();
 		rescanBusy = false;
 	}
@@ -591,7 +608,7 @@
 		bind:this={queryBar}
 		bind:ref={searchRef}
 		store={ipQuerySchema}
-		recentsKey={SURFACE[SurfaceDimension.IPS].recentsKey}
+		recentsKey={IP.recentsKey}
 		hint="is:sensitive not cdn:yes"
 		value={query.search}
 		facets={facets as unknown as Record<string, Facet[]>}
@@ -612,6 +629,7 @@
 			tabs={IP_EXPOSURE_TABS}
 			value={exposureTab}
 			counts={exposureCounts}
+			capped={tabFiltered ? tabCounts.capped : null}
 			onChange={setExposureTab}
 		/>
 	</div>
@@ -639,33 +657,11 @@
 		onGroupBy={(key) => (groupBy = key)}
 	/>
 
-	{#if chips.length > 0}
-		<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/10 px-4 py-2">
-			{#each chips as chip (chip.id)}
-				<Badge variant="outline" class="gap-1 bg-background font-normal">
-					{chip.label}
-					<Tooltip.Root>
-						<Tooltip.Trigger
-							class="rounded-sm text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-							onclick={() => setQuery(chip.remove(query))}
-							aria-label="Remove filter {chip.label}"
-						>
-							<X class="h-3 w-3" />
-							<span class="sr-only">Remove filter {chip.label}</span>
-						</Tooltip.Trigger>
-						<Tooltip.Content>Remove filter {chip.label}</Tooltip.Content>
-					</Tooltip.Root>
-				</Badge>
-			{/each}
-			<button
-				class="ml-1 rounded-sm text-xs text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-				onclick={() => setQuery({ ...emptyIpQuery(), search: query.search })}
-				aria-label="Clear all filters"
-			>
-				Clear all
-			</button>
-		</div>
-	{/if}
+	<FilterChips
+		{chips}
+		onRemove={(chip) => setQuery(chip.remove(query))}
+		onClear={() => setQuery({ ...emptyIpQuery(), search: query.search })}
+	/>
 
 	{#if !groupBy}
 		<SelectionBar
@@ -719,7 +715,6 @@
 			<EmptyState
 				icon={SearchX}
 				title="No addresses match"
-				description="Widen the search or remove a filter."
 				class="rounded-none border-0 bg-transparent py-16"
 			>
 				<Button size="sm" variant="outline" class="gap-2" onclick={() => setQuery(emptyIpQuery())}>
@@ -729,7 +724,7 @@
 		{:else}
 			<EmptyState
 				icon={Network}
-				title="No addresses in this scan"
+				title={projectWide ? 'No addresses' : 'No addresses in this scan'}
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
 		{/if}
@@ -794,7 +789,7 @@
 	dimension={SurfaceDimension.IPS}
 	{projectId}
 	{scanId}
-	copy={[{ label: 'addresses', values: () => [...checkedIps] }]}
+	copy={[{ label: IP.nounPlural, values: () => [...checkedIps] }]}
 	hide={hideOptions}
 	onHide={(tokens) => {
 		setQuery({ ...query, search: appendTokens(query.search, tokens) });

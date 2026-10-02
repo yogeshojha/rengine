@@ -7,7 +7,13 @@ import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 import Ban from '@lucide/svelte/icons/ban';
 import Radio from '@lucide/svelte/icons/radio';
 import Pause from '@lucide/svelte/icons/pause';
-import type { ScanActivityStatus, ScanRead, ScanStatus, ScanStatusCounts } from '$lib/types/scan';
+import type {
+	ScanActivityStatus,
+	ScanRead,
+	ScanStatus,
+	ScanStatusCounts,
+	StageFigure
+} from '$lib/types/scan';
 import type { BadgeVariant } from '$lib/components/ui/badge';
 import type { IconComponent } from '$lib/config/icons';
 import { SURFACE_ORDER, SurfaceDimension } from '$lib/config/surface';
@@ -158,13 +164,8 @@ export const ACTIVITY_STATUS_LABEL: Record<ScanActivityStatus, string> = {
 	aborted: 'Aborted'
 };
 
-const HIDDEN_RESULT_KEYS = new Set(['excluded', 'reason']);
-
-export function activitySummary(result: Record<string, number | string> | undefined): string {
-	return Object.entries(result ?? {})
-		.filter(([k, v]) => typeof v === 'number' && !HIDDEN_RESULT_KEYS.has(k))
-		.map(([k, v]) => `${v.toLocaleString()} ${k.replace(/_/g, ' ')}`)
-		.join(' · ');
+export function activitySummary(figures: StageFigure[] | undefined): string {
+	return (figures ?? []).map((f) => `${f.value.toLocaleString()} ${f.label}`).join(' · ');
 }
 
 export const SCAN_POLL_MS = 4000;

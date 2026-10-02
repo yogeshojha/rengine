@@ -2,13 +2,10 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
-from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
-from app.api.pagination import Page
 from app.core.database import get_session
-from app.services.scan import ScanService
 from app.services.scan_schedule import ScanScheduleService
 from shared.enums.scan_schedule import ScheduleStatus
 from shared.models.scan import ScanRead
@@ -46,16 +43,6 @@ async def list_schedules(
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
     return await service.list_schedules(project_id=project_id)
-
-
-@router.get("/{id}", response_model=ScanScheduleRead)
-async def get_schedule(
-    id: UUID,
-    _current_user: CurrentUser,
-    service: Annotated[ScanScheduleService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
-):
-    return await service.get(id=id, project_id=project_id)
 
 
 @router.patch("/{id}", response_model=ScanScheduleRead)
@@ -99,24 +86,6 @@ async def run_schedule_now(
     return await service.run_now(
         id=id, project_id=project_id, created_by=current_user.id
     )
-
-
-@router.get("/{id}/scans", response_model=Page[ScanRead])
-async def list_schedule_scans(
-    id: UUID,
-    _current_user: CurrentUser,
-    session: Annotated[AsyncSession, Depends(get_session)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
-):
-    scan_service = ScanService(session)
-    query = scan_service.build_list_query(project_id=project_id, schedule_id=id)
-    page = await paginate(
-        session,
-        query,
-        transformer=lambda items: [scan_service.to_read(s) for s in items],
-    )
-    await scan_service.attach_deltas(page.items)
-    return page
 
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)

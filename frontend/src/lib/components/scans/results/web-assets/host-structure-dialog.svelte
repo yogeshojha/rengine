@@ -6,6 +6,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import HostStructure from './host-structure.svelte';
 	import type { EndpointSummary } from '$lib/utilities/endpoints';
+	import { plural } from '$lib/utilities/strings';
 
 	interface Props {
 		host: string | null;
@@ -23,11 +24,9 @@
 	const n = (value: number) => value.toLocaleString();
 	let line = $derived.by(() => {
 		if (!summary || !summary.total) return 'Endpoint structure';
-		const parts = [
-			`${n(summary.total)} ${summary.total === 1 ? 'endpoint' : 'endpoints'}`,
-			`${n(summary.probed)} verified`
-		];
-		if (summary.with_params) parts.push(`${n(summary.with_params)} take input`);
+		const parts = [plural(summary.total, 'endpoint'), `${n(summary.probed)} verified`];
+		if (summary.with_params)
+			parts.push(`${n(summary.with_params)} ${summary.with_params === 1 ? 'takes' : 'take'} input`);
 		if (summary.interesting) parts.push(`${n(summary.interesting)} of interest`);
 		return parts.join(' · ');
 	});

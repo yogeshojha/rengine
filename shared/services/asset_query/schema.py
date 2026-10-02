@@ -3,7 +3,6 @@ from __future__ import annotations
 from shared.definitions.asset_query import (
     CONNECTORS,
     HOST_QUERY,
-    MAX_FREE_TERMS,
     MAX_QUERY_LENGTH,
     OP_HELP,
     OPS_BY_TYPE,
@@ -22,7 +21,6 @@ from shared.models.asset_query import (
 def build_schema(registry: QueryRegistry = HOST_QUERY) -> QuerySchema:
     return QuerySchema(
         max_length=MAX_QUERY_LENGTH,
-        max_terms=MAX_FREE_TERMS,
         noun=registry.noun,
         noun_plural=registry.noun_plural,
         groups=list(registry.groups),
@@ -42,9 +40,7 @@ def build_schema(registry: QueryRegistry = HOST_QUERY) -> QuerySchema:
                 values=list(spec.values),
                 facet=spec.facet,
                 operators=[op.value for op in OPS_BY_TYPE[spec.type]],
-                free_text=spec.free_text,
                 unit=spec.unit,
-                dynamic_sub=spec.dynamic_sub,
             )
             for spec in registry.fields
         ],

@@ -34,15 +34,6 @@ class ConnectorState(StrEnum):
     PAUSED = "paused"
 
 
-CONNECTOR_STATE_LABELS: dict[str, str] = {
-    ConnectorState.IDLE.value: "Not connected",
-    ConnectorState.LIVE.value: "Receiving",
-    ConnectorState.CONNECTED.value: "Connected",
-    ConnectorState.STALE.value: "Offline",
-    ConnectorState.PAUSED.value: "Paused",
-}
-
-
 class SourceTool(StrEnum):
     """The proxy tool that produced the request."""
 
@@ -50,12 +41,6 @@ class SourceTool(StrEnum):
     REPEATER = "repeater"
     OTHER = "other"
 
-
-SOURCE_TOOL_LABELS: dict[str, str] = {
-    SourceTool.PROXY.value: "Proxy",
-    SourceTool.REPEATER.value: "Repeater",
-    SourceTool.OTHER.value: "Other",
-}
 
 INGESTED_TOOLS: frozenset[str] = frozenset(
     {SourceTool.PROXY.value, SourceTool.REPEATER.value}
@@ -123,14 +108,6 @@ class CandidateState(StrEnum):
     IGNORED = "ignored"
 
 
-CANDIDATE_STATE_LABELS: dict[str, str] = {
-    CandidateState.NEW.value: "New",
-    CandidateState.QUEUED.value: "Queued",
-    CandidateState.SCANNED.value: "Scanned",
-    CandidateState.IGNORED.value: "Ignored",
-}
-
-
 class NoticeKind(StrEnum):
     """Why a shape was flagged."""
 
@@ -151,16 +128,6 @@ NOTICE_LABELS: dict[str, str] = {
     NoticeKind.SERVER_ERROR.value: "Server error",
     NoticeKind.NON_STANDARD_METHOD.value: "Uncommon method",
     NoticeKind.OUT_OF_SCOPE.value: "Out of scope",
-}
-
-NOTICE_HELP: dict[str, str] = {
-    NoticeKind.SENSITIVE.value: "The path matches a pattern associated with sensitive files.",
-    NoticeKind.ADMIN.value: "The path matches an administrative or authentication surface.",
-    NoticeKind.UNSEEN_BY_SCANS.value: "A scan covered this target and did not record this path.",
-    NoticeKind.NEW_PARAMS.value: "A scan recorded this path with a different parameter set.",
-    NoticeKind.SERVER_ERROR.value: "The server returned a 5xx response.",
-    NoticeKind.NON_STANDARD_METHOD.value: "The method is not GET, POST, HEAD or OPTIONS.",
-    NoticeKind.OUT_OF_SCOPE.value: "A bug bounty program lists this host as out of scope.",
 }
 
 # a notice in this set surfaces the row on its own

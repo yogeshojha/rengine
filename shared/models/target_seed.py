@@ -35,7 +35,7 @@ class TargetSeedRead(BaseModel):
 
 
 class TargetSeedWrite(BaseModel):
-    """Seed lines as typed or pasted. Each line is classified against the target."""
+    """Seed lines as typed or pasted."""
 
     values: list[str] = PydanticField(default_factory=list, max_length=MAX_RUN_ASSETS)
     replace: bool = False

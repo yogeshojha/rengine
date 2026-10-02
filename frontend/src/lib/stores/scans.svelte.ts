@@ -1,8 +1,7 @@
 import { scansApi } from '$lib/api/scans';
 import type {
 	ScanBatchCreate,
-	ScanDay,
-	ScanExportRow,
+	ScanDaily,
 	ScanRead,
 	ScanStats,
 	ScanStatus,
@@ -11,17 +10,17 @@ import type {
 	ScanTargetTrend,
 	ScanTimeRange
 } from '$lib/types/scan';
+import { SCAN_TIME_RANGES } from '$lib/types/scan';
 import { isLiveStatus } from '$lib/utilities/scan-status';
 import { parseScanQuery, type ParsedScanQuery } from '$lib/utilities/scan-query';
 import type { PaginatedResponse } from '$lib/types/pagination';
 
-const HISTORY_DAYS = 30;
+export const HISTORY_DAYS = 30;
 const DAY_MS = 86_400_000;
-const WINDOW_DAYS: Partial<Record<ScanTimeRange, number>> = { '24h': 1, '7d': 7, '30d': 30 };
 
 interface ScanFilters {
 	projectId?: string;
-	targetId?: string;
+	targetIds: string[];
 	query: string;
 	statuses: ScanStatus[];
 	startedFrom: string | null;
@@ -41,6 +40,7 @@ interface PaginationState {
 function defaultFilters(): ScanFilters {
 	return {
 		query: '',
+		targetIds: [],
 		statuses: [],
 		startedFrom: null,
 		startedTo: null,
@@ -53,7 +53,7 @@ function defaultFilters(): ScanFilters {
 function createScansStore() {
 	let scans = $state<ScanRead[]>([]);
 	let stats = $state<ScanStats | null>(null);
-	let days = $state<ScanDay[]>([]);
+	let daily = $state<ScanDaily | null>(null);
 	let trends = $state<Record<string, ScanTargetTrend>>({});
 
 	let isLoading = $state(false);
@@ -86,7 +86,7 @@ function createScansStore() {
 	function filterParams() {
 		const q = parsed;
 		return {
-			target_id: filters.targetId,
+			target_id: filters.targetIds,
 			status: filters.statuses.length
 				? filters.statuses
 				: q.statuses.length
@@ -115,11 +115,11 @@ function createScansStore() {
 		if (silent) refreshing = true;
 		else isLoading = true;
 		const seq = ++loadSeq;
-		const size = pagination.pageSize === -1 ? undefined : pagination.pageSize;
+		const size = pagination.pageSize;
 		try {
 			const res: PaginatedResponse<ScanRead> = await scansApi.list(projectId, {
 				...filterParams(),
-				latest: filters.latest && !filters.targetId,
+				latest: filters.latest && filters.targetIds.length === 0,
 				page: pagination.currentPage,
 				size
 			});
@@ -158,18 +158,19 @@ function createScansStore() {
 
 	function fetchStats() {
 		const projectId = filters.projectId;
-		const targetId = filters.targetId;
+		const targetIds = filters.targetIds;
+		const current = () => projectId === filters.projectId && targetIds === filters.targetIds;
 		if (!projectId) return;
 		scansApi
-			.stats(projectId, targetId)
+			.stats(projectId, targetIds)
 			.then((s) => {
-				if (projectId === filters.projectId && targetId === filters.targetId) stats = s;
+				if (current()) stats = s;
 			})
 			.catch(() => {});
 		scansApi
-			.daily(projectId, HISTORY_DAYS, targetId)
+			.daily(projectId, HISTORY_DAYS, targetIds)
 			.then((d) => {
-				if (projectId === filters.projectId && targetId === filters.targetId) days = d;
+				if (current()) daily = d;
 			})
 			.catch(() => {});
 	}
@@ -204,7 +205,10 @@ function createScansStore() {
 			return stats;
 		},
 		get days() {
-			return days;
+			return daily?.days ?? [];
+		},
+		get daily() {
+			return daily;
 		},
 		get trends() {
 			return trends;
@@ -217,9 +221,6 @@ function createScansStore() {
 		},
 		get error() {
 			return error;
-		},
-		get hasFetched() {
-			return hasFetched;
 		},
 		get filters() {
 			return filters;
@@ -237,15 +238,15 @@ function createScansStore() {
 			return hasLive;
 		},
 
-		init(projectId: string, targetId?: string) {
+		init(projectId: string, targetIds: string[] = []) {
 			const scopeChanged =
-				projectId !== filters.projectId || (targetId ?? undefined) !== filters.targetId;
+				projectId !== filters.projectId || targetIds.join(',') !== filters.targetIds.join(',');
 			if (scopeChanged) {
-				filters = { ...defaultFilters(), projectId, targetId };
+				filters = { ...defaultFilters(), projectId, targetIds };
 				pagination.currentPage = 1;
 				scans = [];
 				stats = null;
-				days = [];
+				daily = null;
 				trends = {};
 				hasFetched = false;
 				fetchAll(1, false);
@@ -300,7 +301,7 @@ function createScansStore() {
 		},
 
 		setTimeRange(range: ScanTimeRange) {
-			const n = WINDOW_DAYS[range];
+			const n = SCAN_TIME_RANGES.find((r) => r.key === range)?.days;
 			store.setRange(n ? new Date(Date.now() - n * DAY_MS).toISOString() : null, null);
 		},
 
@@ -403,27 +404,13 @@ function createScansStore() {
 			if (!projectId) return null;
 			error = null;
 			try {
-				const { cancelled } = await scansApi.cancelAll(projectId, filters.targetId);
+				const { cancelled } = await scansApi.cancelAll(projectId, filters.targetIds);
 				store.refresh();
 				return cancelled;
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Scans not cancelled';
 				return null;
 			}
-		},
-
-		exportAll(): Promise<ScanExportRow[]> {
-			const projectId = filters.projectId;
-			if (!projectId) return Promise.resolve([]);
-			const p = filterParams();
-			return scansApi.exportRows(projectId, {
-				target_id: p.target_id,
-				status: p.status,
-				engine: p.engine,
-				search: p.search,
-				sort_by: p.sort_by,
-				sort_dir: p.sort_dir
-			});
 		},
 
 		async launchScans(projectId: string, body: ScanBatchCreate): Promise<ScanRead[] | null> {
@@ -442,7 +429,7 @@ function createScansStore() {
 			loadSeq++;
 			scans = [];
 			stats = null;
-			days = [];
+			daily = null;
 			trends = {};
 			filters = defaultFilters();
 			pagination = { currentPage: 1, pageSize: 25, totalItems: 0, totalPages: 0 };

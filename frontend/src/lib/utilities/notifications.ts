@@ -1,3 +1,4 @@
+import { goto } from '$app/navigation';
 import type { MessageLevel } from '$lib/types/message-level';
 import type { Notification } from '$lib/types/notification';
 import { MS_PER_DAY } from '$lib/utilities/dates';
@@ -42,6 +43,29 @@ export const UNREAD_BADGE_CLASS: Record<MessageLevel, string> = {
 	success: 'bg-primary text-primary-foreground',
 	info: 'bg-primary text-primary-foreground'
 };
+
+export const SEVERITY_TILE_CLASS: Record<MessageLevel, string> = {
+	info: 'bg-muted text-muted-foreground',
+	success: 'bg-muted text-muted-foreground',
+	warning: 'bg-warning/10 text-warning',
+	error: 'bg-destructive/10 text-destructive'
+};
+
+function isSameOrigin(url: string): boolean {
+	try {
+		return new URL(url, window.location.origin).origin === window.location.origin;
+	} catch {
+		return false;
+	}
+}
+
+export function openNotificationUrl(url: string): void {
+	if (isSameOrigin(url)) {
+		void goto(url);
+	} else {
+		window.open(url, '_blank', 'noopener,noreferrer');
+	}
+}
 
 export function headline(message: string): string {
 	return message.split('\n').find((line) => line.trim()) ?? '';

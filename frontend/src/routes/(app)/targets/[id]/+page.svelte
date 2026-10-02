@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { packedSpans } from '$lib/utilities/bento';
 	import { pageTitle } from '$lib/utilities/page-title';
 	import { page } from '$app/state';
 	import { goto, replaceState } from '$app/navigation';
@@ -33,8 +34,9 @@
 	import { scansStore } from '$lib/stores/scans.svelte';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { activityScope } from '$lib/stores/activity-scope.svelte';
-	import { TargetType } from '$lib/types/target';
-	import type { Target } from '$lib/types/target';
+	import { bgpApplies, dnsApplies } from '$lib/types/target';
+	import type { EnrichmentKind, Target } from '$lib/types/target';
+	import { DnsRecordType } from '$lib/types/dns';
 	import { TaskStatus } from '$lib/types/task-status';
 	import type { TargetDetailRead } from '$lib/types/target-detail';
 	import type { TargetSummaryRead } from '$lib/types/target-summary';
@@ -52,6 +54,7 @@
 	import * as Empty from '$lib/components/ui/empty';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import * as Tooltip from '$lib/components/ui/tooltip';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Kbd } from '$lib/components/ui/kbd';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
@@ -91,7 +94,10 @@
 		CERT_FILTER,
 		EXPIRING_FILTER
 	} from '$lib/components/scans/results/overview/posture-panel.svelte';
-	import { buildTargetIntel } from '$lib/components/targets/target-detail/overview/derive';
+	import {
+		buildTargetIntel,
+		completedCensusRuns
+	} from '$lib/components/targets/target-detail/overview/derive';
 	import TargetWebAssets from '$lib/components/targets/target-detail/target-web-assets.svelte';
 	import DnsTab from '$lib/components/targets/target-detail/dns/dns-tab.svelte';
 	import WhoisTab from '$lib/components/targets/target-detail/whois/whois-tab.svelte';
@@ -102,6 +108,7 @@
 	import { NOW_TICK_MS } from '$lib/constants';
 	import { isLiveStatus } from '$lib/utilities/scan-status';
 	import { downloadBlob } from '$lib/utilities/download';
+	import { csvCell } from '$lib/utilities/csv';
 
 	const TABS = ['overview', 'web-assets', 'dns', 'whois', 'bgp', 'notes'] as const;
 	type TabKey = (typeof TABS)[number];
@@ -116,24 +123,10 @@
 		bgp: { label: 'BGP', icon: Router },
 		notes: { label: 'Notes', icon: StickyNote }
 	};
-	const LEGACY_TABS: Record<string, TabKey> = {
-		summary: 'overview',
-		intelligence: 'whois',
-		scans: 'overview'
-	};
 	const ENRICHMENT_POLL_MS = 2500;
 	const MAX_ENRICHMENT_POLLS = 30;
 	const HISTORY_SIZE = 12;
 	const EXPOSURE_ROWS = 6;
-	const DNS_TYPES = [TargetType.DOMAIN, TargetType.URL];
-	const BGP_TYPES = [TargetType.IP, TargetType.IP_RANGE, TargetType.ASN];
-	const CERT_BUCKET_KEY: Record<string, string> = {
-		expired: 'expired',
-		d7: 'week',
-		d30: 'month',
-		d90: 'quarter',
-		ok: 'later'
-	};
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 
 	const targetId = $derived(page.params.id ?? '');
@@ -168,6 +161,7 @@
 	let postureHosts = $state<HygieneSummary | null>(null);
 	let certBuckets = $state<DashboardCertBucket[] | null>(null);
 	let reach = $state<Record<string, number> | null>(null);
+	let reachCapped = $state<Record<string, boolean>>({});
 	let exposures = $state<InterestPage | null>(null);
 	let exposure = $state<ScanExposure | null>(null);
 	let vulns = $state<ScanVulnerabilities | null>(null);
@@ -189,8 +183,8 @@
 	let condensed = $state(false);
 	let now = $state(Date.now());
 
-	let showDns = $derived(!!target && DNS_TYPES.includes(target.target_type));
-	let showBgp = $derived(!!target && BGP_TYPES.includes(target.target_type));
+	let showDns = $derived(!!target && dnsApplies(target.target_type));
+	let showBgp = $derived(!!target && bgpApplies(target.target_type));
 	let whoisStatus = $derived(detail?.whois_status ?? target?.whois_status ?? TaskStatus.PENDING);
 	let dnsStatus = $derived(detail?.dns_status ?? target?.dns_status ?? TaskStatus.PENDING);
 	let bgpStatus = $derived(detail?.bgp_status ?? target?.bgp_status ?? TaskStatus.PENDING);
@@ -199,7 +193,7 @@
 	let live = $derived(!!latest && isLiveStatus(latest.status as ScanStatus));
 	let run = $derived(live && latest ? liveScans.runFor(latest.id) : undefined);
 	let dnsRecords = $derived(
-		(detail?.dns?.records ?? []).filter((r) => r.record_type !== 'CDN').length
+		(detail?.dns?.records ?? []).filter((r) => r.record_type !== DnsRecordType.CDN).length
 	);
 	const scanFor = (key: SurfaceDimension) =>
 		summary?.surface.find((m) => m.key === key && m.covered)?.scan_id ?? null;
@@ -252,30 +246,13 @@
 	});
 
 	// cell visibility
-	const SPAN: Record<number, string> = {
-		12: 'xl:col-span-12',
-		6: 'xl:col-span-6',
-		4: 'xl:col-span-4',
-		3: 'xl:col-span-3'
-	};
-	function packed(n: number, perRow = 3): string[] {
-		const rows = Math.ceil(n / perRow);
-		const base = Math.floor(n / rows);
-		const extra = n % rows;
-		const out: string[] = [];
-		for (let r = 0; r < rows; r++) {
-			const k = base + (r < extra ? 1 : 0);
-			for (let i = 0; i < k; i++)
-				out.push(`col-span-12 ${k > 1 ? 'lg:col-span-6' : ''} ${SPAN[12 / k] ?? ''}`);
-		}
-		return out;
-	}
-	let completedRuns = $derived(
-		history.filter((s) => s.status === 'completed' && s.scope !== 'focused').length
-	);
+	let completedRuns = $derived(completedCensusRuns(history, Infinity).length);
 	let showReach = $derived(!!reach && !!webScanId);
 	let webObservedAt = $derived(
 		summary?.surface.find((m) => m.key === SurfaceDimension.WEB_ASSETS)?.observed_at ?? null
+	);
+	let webRows = $derived(
+		summary?.surface.find((m) => m.key === SurfaceDimension.WEB_ASSETS)?.value ?? null
 	);
 	let showGeo = $derived((ipFacets?.country.length ?? 0) > 0);
 	let showFindings = $derived(!!vulnScanId && !!summary);
@@ -307,7 +284,7 @@
 			showExposures && 'exposures'
 		].filter((k): k is string => !!k)
 	);
-	let compositionSpans = $derived(packed(compositionKeys.length));
+	let compositionSpans = $derived(packedSpans(compositionKeys.length));
 	let showRuns = $derived(completedRuns >= 2);
 	let identityKeys = $derived(
 		[
@@ -317,7 +294,7 @@
 			'seeds'
 		].filter((k): k is string => !!k)
 	);
-	let identitySpans = $derived(packed(identityKeys.length));
+	let identitySpans = $derived(packedSpans(identityKeys.length));
 	let servicesExposure = $derived.by<DashboardExposure | null>(() => {
 		const e = exposure;
 		if (!e) return null;
@@ -327,7 +304,6 @@
 			targets: 1,
 			sensitive: e.sensitive,
 			sensitive_targets: e.sensitive ? 1 : 0,
-			non_web: e.non_web_services,
 			bands: e.bands.map((b) => ({
 				key: b.key,
 				label: b.label,
@@ -341,14 +317,19 @@
 
 	function resolveTab(raw: string | null): TabKey {
 		if (!raw) return 'overview';
-		const key = (LEGACY_TABS[raw] ?? raw) as TabKey;
+		const key = raw as TabKey;
 		return (TABS as readonly string[]).includes(key) ? key : 'overview';
 	}
 	let activeTab = $state<TabKey>(resolveTab(page.url.searchParams.get('tab')));
+	let webSeen = $state(false);
 
 	$effect(() => {
 		const fromUrl = resolveTab(page.url.searchParams.get('tab'));
 		if (fromUrl !== untrack(() => activeTab)) activeTab = fromUrl;
+	});
+
+	$effect(() => {
+		if (activeTab === 'web-assets') webSeen = true;
 	});
 
 	$effect(() => {
@@ -460,7 +441,7 @@
 
 	function certBucketsOf(buckets: { key: string; label: string; count: number }[]) {
 		return buckets.map((b) => ({
-			key: CERT_BUCKET_KEY[b.key] ?? b.key,
+			key: b.key,
 			label: b.label,
 			count: b.count,
 			query: CERT_FILTER[b.key] ?? EXPIRING_FILTER
@@ -517,6 +498,7 @@
 			),
 			settle('Reachability', subdomainsApi.counts(project.id, scanId, reachQueries), (r) => {
 				reach = r.counts;
+				reachCapped = r.capped;
 			}),
 			settle(
 				'Exposures',
@@ -610,6 +592,29 @@
 			fetchPrograms();
 		}
 	}
+
+	let shownId: string | null = null;
+	function resetTarget(id: string) {
+		if (shownId && shownId !== id) breadcrumbStore.remove(shownId);
+		shownId = id;
+		stopPolling();
+		programs = [];
+		programsLoaded = false;
+		estate = lookalikes = ipFacets = hosting = tech = hygiene = ai = null;
+		posture = postureHosts = certBuckets = reach = exposures = exposure = null;
+		vulns = software = summary = detail = null;
+		history = [];
+		historyLoaded = false;
+		notesTotal = null;
+		notLoaded.clear();
+		webFor = geoFor = servicesFor = vulnsFor = softwareFor = estateFor = null;
+		summaryLoading = detailLoading = true;
+	}
+
+	$effect(() => {
+		const id = targetId;
+		untrack(() => resetTarget(id));
+	});
 
 	$effect(() => {
 		const id = targetId;
@@ -767,7 +772,7 @@
 		startPolling();
 	}
 
-	async function refreshOne(kind: 'dns' | 'whois' | 'bgp') {
+	async function refreshOne(kind: EnrichmentKind) {
 		if (!target) return;
 		const call = {
 			dns: targetsApi.refreshDns,
@@ -829,8 +834,7 @@
 			['created_at', target.created_at],
 			['updated_at', target.updated_at]
 		];
-		const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
-		const csv = ['field,value', ...rows.map(([k, v]) => `${esc(k)},${esc(v)}`)].join('\n');
+		const csv = ['field,value', ...rows.map(([k, v]) => `${csvCell(k)},${csvCell(v)}`)].join('\n');
 		downloadBlob(fileName('csv'), csv, 'text/csv');
 		toast.success('Target exported as CSV');
 	}
@@ -939,39 +943,43 @@
 							{/if}
 						</div>
 					{/if}
-					<Tabs.List class="h-auto w-full justify-start gap-0 rounded-none bg-transparent p-0">
-						{#each tabs as key, i (key)}
-							{@const t = TAB_DEFS[key]}
-							{@const n = tabCounts[key]}
-							<Tooltip.Root>
-								<Tooltip.Trigger>
-									{#snippet child({ props })}
-										<Tabs.Trigger
-											{...props}
-											value={key}
-											class="flex-none gap-1.5 rounded-none border-0 border-b-2 border-transparent px-3 py-2.5 text-sm font-medium text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:border-primary dark:data-[state=active]:bg-transparent"
-										>
-											<t.icon class="size-3.5" />
-											{t.label}
-											{#if n != null}
-												<span
-													class="text-xs tabular-nums {n === 0
-														? 'text-muted-foreground/50'
-														: 'text-muted-foreground'}"
-												>
-													{n.toLocaleString()}
-												</span>
-											{/if}
-										</Tabs.Trigger>
-									{/snippet}
-								</Tooltip.Trigger>
-								<Tooltip.Content side="bottom" class="flex items-center gap-1.5">
-									{t.label}
-									<Kbd>{i + 1}</Kbd>
-								</Tooltip.Content>
-							</Tooltip.Root>
-						{/each}
-					</Tabs.List>
+					<ScrollArea orientation="horizontal" class="min-w-0 flex-1" scrollbarXClasses="h-1">
+						<Tabs.List
+							class="h-auto w-max min-w-full justify-start gap-0 rounded-none bg-transparent p-0"
+						>
+							{#each tabs as key, i (key)}
+								{@const t = TAB_DEFS[key]}
+								{@const n = tabCounts[key]}
+								<Tooltip.Root>
+									<Tooltip.Trigger>
+										{#snippet child({ props })}
+											<Tabs.Trigger
+												{...props}
+												value={key}
+												class="flex-none gap-1.5 rounded-none border-0 border-b-2 border-transparent px-3 py-2.5 text-sm font-medium text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:border-primary dark:data-[state=active]:bg-transparent"
+											>
+												<t.icon class="size-3.5" />
+												{t.label}
+												{#if n != null}
+													<span
+														class="text-xs tabular-nums {n === 0
+															? 'text-muted-foreground/50'
+															: 'text-muted-foreground'}"
+													>
+														{n.toLocaleString()}
+													</span>
+												{/if}
+											</Tabs.Trigger>
+										{/snippet}
+									</Tooltip.Trigger>
+									<Tooltip.Content side="bottom" class="flex items-center gap-1.5">
+										{t.label}
+										<Kbd>{i + 1}</Kbd>
+									</Tooltip.Content>
+								</Tooltip.Root>
+							{/each}
+						</Tabs.List>
+					</ScrollArea>
 				</div>
 			</div>
 
@@ -1009,6 +1017,8 @@
 						<div class="grid grid-cols-12 overflow-hidden rounded-xl border bg-card">
 							<ReachabilityCell
 								counts={reach}
+								capped={reachCapped}
+								rowCount={webRows}
 								isDomain={showDns}
 								scanId={webScanId}
 								observedAt={webObservedAt}
@@ -1128,14 +1138,16 @@
 							class="col-span-12 {showRuns ? 'xl:col-span-7' : ''}"
 						/>
 						{#if showRuns}
-							<RunsCell {history} class="col-span-12 xl:col-span-5" />
+							<RunsCell {history} targetId={target.id} class="col-span-12 xl:col-span-5" />
 						{/if}
 					</div>
 				</div>
 			</Tabs.Content>
 
 			<Tabs.Content value="web-assets" class="mt-4">
-				<TargetWebAssets targetId={target.id} onScan={handleScan} />
+				{#if webSeen}
+					<TargetWebAssets targetId={target.id} onScan={handleScan} />
+				{/if}
 			</Tabs.Content>
 
 			{#if showDns}
@@ -1186,7 +1198,6 @@
 						anchor={{ targetId: target.id }}
 						filter={{ target_id: target.id }}
 						emptyTitle="No notes on this target"
-						emptyDescription="Add a note from one of its assets."
 						onCount={(n) => (notesTotal = n)}
 					/>
 				</div>

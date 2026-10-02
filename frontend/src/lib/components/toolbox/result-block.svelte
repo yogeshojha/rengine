@@ -7,7 +7,7 @@
 	import ResultCell from './result-cell.svelte';
 	import SelectableTable from './selectable-table.svelte';
 	import Info from '@lucide/svelte/icons/info';
-	import { TONE_CHIP, TONE_DOT, TONE_TEXT } from '$lib/config/toolbox';
+	import { TONE_CHIP, TONE_DOT, TONE_TINT, isExternalHref, safeHref } from '$lib/config/toolbox';
 	import type { CodeLang } from '$lib/utilities/code-highlight';
 	import type { Lookup, ResultBlock, Tone } from '$lib/types/toolbox';
 
@@ -31,8 +31,6 @@
 		block.total !== null && block.total > block.rows.length ? block.total - block.rows.length : 0
 	);
 	const DOTTED: Tone[] = ['success', 'warning', 'critical', 'info'];
-	const TINTED: Record<Tone, string> = { ...TONE_TEXT, info: TONE_TEXT.neutral };
-	const external = (href: string) => href.startsWith('http');
 	const chase = (l: Lookup | null) => l && onLookup && (() => onLookup(l.value, l.tool));
 </script>
 
@@ -63,6 +61,7 @@
 		<dl class="grid">
 			{#each block.facts as f (f.label)}
 				{@const go = chase(f.lookup)}
+				{@const href = safeHref(f.href)}
 				<div
 					class="flex items-start gap-3 border-b border-border/40 py-1.5 leading-5 last:border-0"
 				>
@@ -78,13 +77,15 @@
 							</span>
 						{/if}
 						<span class="min-w-0 flex-1 break-words">
-							<span class="text-sm {TINTED[f.tone]} {f.mono ? 'font-mono text-xs break-all' : ''}">
-								{#if f.href}
+							<span
+								class="text-sm {TONE_TINT[f.tone]} {f.mono ? 'font-mono text-xs break-all' : ''}"
+							>
+								{#if href}
 									<a
-										href={f.href}
-										target={external(f.href) ? '_blank' : undefined}
-										rel={external(f.href) ? 'noreferrer' : undefined}
-										onclick={() => f.href && !external(f.href) && onNavigate?.()}
+										{href}
+										target={isExternalHref(href) ? '_blank' : undefined}
+										rel={isExternalHref(href) ? 'noreferrer' : undefined}
+										onclick={() => !isExternalHref(href) && onNavigate?.()}
 										class="hover:text-primary">{f.value}</a
 									>
 								{:else if go}

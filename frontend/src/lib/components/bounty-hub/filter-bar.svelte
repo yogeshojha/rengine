@@ -8,8 +8,14 @@
 	import * as Select from '$lib/components/ui/select';
 	import { Toggle } from '$lib/components/ui/toggle';
 	import FacetedFilter from '$lib/components/scans/results/faceted-filter.svelte';
-	import { PROGRAM_SORTS, SEARCH_DEBOUNCE_MS, SOURCE_LABELS } from '$lib/config/bounty-programs';
+	import {
+		DEFAULT_PROGRAM_SORT,
+		PROGRAM_SORTS,
+		PROGRAM_STATE_LABELS,
+		SOURCE_LABELS
+	} from '$lib/config/bounty-programs';
 	import { SELECT_NONE } from '$lib/constants';
+	import { SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 	import {
 		ProgramSource,
 		ProgramState,
@@ -30,7 +36,6 @@
 	let draft = $state('');
 	let timer: ReturnType<typeof setTimeout> | undefined;
 
-	// input on every keystroke
 	$effect(() => {
 		const applied = filters.q ?? '';
 		if (applied !== untrack(() => draft.trim())) draft = applied;
@@ -79,8 +84,8 @@
 	];
 	const STATE = [
 		{ value: SELECT_NONE, label: 'Public and private' },
-		{ value: ProgramState.Public, label: 'Public' },
-		{ value: ProgramState.Private, label: 'Private' }
+		{ value: ProgramState.Public, label: PROGRAM_STATE_LABELS[ProgramState.Public] },
+		{ value: ProgramState.Private, label: PROGRAM_STATE_LABELS[ProgramState.Private] }
 	];
 	const SUBMISSION = [
 		{ value: SELECT_NONE, label: 'Any state' },
@@ -224,11 +229,11 @@
 
 	<Select.Root
 		type="single"
-		value={filters.sort ?? 'age'}
+		value={filters.sort ?? DEFAULT_PROGRAM_SORT}
 		onValueChange={(v) => patch({ sort: v })}
 	>
 		<Select.Trigger class="w-36">
-			{PROGRAM_SORTS.find((s) => s.value === (filters.sort ?? 'age'))?.label}
+			{PROGRAM_SORTS.find((s) => s.value === (filters.sort ?? DEFAULT_PROGRAM_SORT))?.label}
 		</Select.Trigger>
 		<Select.Content>
 			{#each PROGRAM_SORTS as option (option.value)}

@@ -50,20 +50,6 @@ export enum ExploitSignal {
 	UNTESTABLE = 'untestable'
 }
 
-export const SIGNAL_ORDER: string[] = [
-	ExploitSignal.KEV,
-	ExploitSignal.RANSOM_PATH,
-	ExploitSignal.RANSOMWARE,
-	ExploitSignal.FRESH_EXPLOIT,
-	ExploitSignal.OVERDUE,
-	ExploitSignal.WEAPONISED,
-	ExploitSignal.LIKELY,
-	ExploitSignal.REACHABLE,
-	ExploitSignal.BYPASSED,
-	ExploitSignal.CROWD,
-	ExploitSignal.UNTESTABLE
-];
-
 export const SIGNAL_LABELS: Record<string, string> = {
 	[ExploitSignal.KEV]: 'Known exploited',
 	[ExploitSignal.RANSOM_PATH]: 'Ransomware path',
@@ -76,22 +62,6 @@ export const SIGNAL_LABELS: Record<string, string> = {
 	[ExploitSignal.BYPASSED]: 'Matched through a WAF',
 	[ExploitSignal.CROWD]: 'Widely deployed software',
 	[ExploitSignal.UNTESTABLE]: 'No scanner template'
-};
-
-export const SIGNAL_HELP: Record<string, string> = {
-	[ExploitSignal.KEV]: 'Listed in CISA KEV.',
-	[ExploitSignal.RANSOM_PATH]:
-		'Used in ransomware campaigns. The host exposes a remote access or database service.',
-	[ExploitSignal.RANSOMWARE]: 'Listed in CISA ransomware campaigns.',
-	[ExploitSignal.FRESH_EXPLOIT]:
-		'A public exploit was published after the scan that recorded this finding.',
-	[ExploitSignal.OVERDUE]: 'The CISA remediation deadline has passed.',
-	[ExploitSignal.WEAPONISED]: 'Working exploit code is published.',
-	[ExploitSignal.LIKELY]: 'EPSS 8.8% or above.',
-	[ExploitSignal.REACHABLE]: 'Answers from the internet. No CDN or WAF.',
-	[ExploitSignal.BYPASSED]: 'The check matched through a WAF or CDN.',
-	[ExploitSignal.CROWD]: 'Run by more than 100,000 hosts on the internet.',
-	[ExploitSignal.UNTESTABLE]: 'No scanner template covers this CVE.'
 };
 
 export const SIGNAL_ICONS: Record<string, IconComponent> = {
@@ -155,13 +125,6 @@ export function signalVariant(kind: string): BadgeVariant {
 	return TONE_BADGE[SIGNAL_TONE[kind] ?? SignalTone.NEUTRAL];
 }
 
-export const TONE_TEXT: Record<string, string> = {
-	critical: 'text-destructive',
-	warning: 'text-warning',
-	info: 'text-info',
-	neutral: 'text-muted-foreground'
-};
-
 export const TONE_FILL: Record<string, string> = {
 	critical: 'var(--destructive)',
 	warning: 'var(--warning)',
@@ -190,13 +153,6 @@ export const BAND_LABELS: Record<string, string> = {
 	[ExploitBand.UNLIKELY]: 'Unlikely'
 };
 
-export const BAND_HELP: Record<string, string> = {
-	[ExploitBand.VERY_LIKELY]: 'EPSS 50% or above.',
-	[ExploitBand.LIKELY]: 'EPSS 8.8% or above.',
-	[ExploitBand.POSSIBLE]: 'EPSS 1% or above.',
-	[ExploitBand.UNLIKELY]: 'EPSS below 1%.'
-};
-
 export const BAND_FILL: Record<string, string> = {
 	[ExploitBand.VERY_LIKELY]: 'var(--destructive)',
 	[ExploitBand.LIKELY]: 'var(--sev-high)',
@@ -211,14 +167,6 @@ export function exploitTone(score: number): string {
 	if (score >= 50) return 'var(--sev-high)';
 	if (score >= 20) return 'var(--warning)';
 	return 'var(--muted-foreground)';
-}
-
-export function bandFor(score: number | null | undefined): string | null {
-	if (score === null || score === undefined) return null;
-	if (score >= 0.5) return ExploitBand.VERY_LIKELY;
-	if (score >= 0.088) return ExploitBand.LIKELY;
-	if (score >= 0.01) return ExploitBand.POSSIBLE;
-	return ExploitBand.UNLIKELY;
 }
 
 /** EPSS as a percentage. */

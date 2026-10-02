@@ -1,5 +1,3 @@
-"""The crawl budget the form states is the budget the runner enforces."""
-
 from __future__ import annotations
 
 from types import SimpleNamespace

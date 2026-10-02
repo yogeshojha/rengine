@@ -30,10 +30,6 @@ class SurfaceCoverage(BaseModel):
     covered: list[SurfaceTargetRead] = Field(default_factory=list)
     uncovered: list[SurfaceTargetRead] = Field(default_factory=list)
 
-    @property
-    def stale_targets(self) -> int:
-        return sum(1 for row in self.covered if row.stale)
-
 
 class SurfaceOverview(BaseModel):
     project_id: uuid.UUID

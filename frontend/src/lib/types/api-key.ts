@@ -12,28 +12,17 @@ export enum APIProvider {
 	TELEGRAM = 'telegram'
 }
 
-export interface ProviderMeta {
-	name: string;
-	description: string;
-	docs_url: string;
-	icon: string;
-	requires_username: boolean;
-}
-
 export interface APIKeyRead {
 	id: string;
 	provider: APIProvider;
 	key_value_masked: string;
 	key_meta?: Record<string, unknown> | null;
 	is_enabled: boolean;
-	usage_counter: number;
-	last_used_at: string | null;
 	last_test_at: string | null;
 	last_test_ok: boolean | null;
 	last_test_message: string | null;
 	created_at: string;
 	updated_at: string;
-	meta: ProviderMeta;
 }
 
 export interface ProviderInfo {

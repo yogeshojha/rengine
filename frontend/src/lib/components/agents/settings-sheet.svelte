@@ -8,6 +8,7 @@
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import CopyButton from '$lib/components/copy-button.svelte';
+	import SectionHead from '$lib/components/section-head.svelte';
 	import { mcp } from '$lib/stores/mcp.svelte';
 	import { uptime } from '$lib/utilities/dates';
 	import type { McpCapability, McpStatus } from '$lib/types/mcp';
@@ -20,7 +21,6 @@
 
 	let { status, open = $bindable() }: Props = $props();
 
-	const LABEL = 'text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase';
 	const RATE_MAX = 10_000;
 
 	let rateDraft = $state<string | null>(null);
@@ -60,13 +60,13 @@
 		<ScrollArea class="min-h-0 flex-1">
 			<div class="flex flex-col divide-y px-5">
 				<section class="flex flex-col gap-3 py-5">
-					<h3 class={LABEL}>Server</h3>
+					<SectionHead title="Server" />
 					<div class="flex items-start justify-between gap-4">
 						<div class="flex flex-col">
 							<span class="text-sm font-medium">
 								{status.enabled ? 'Running' : 'Stopped'}{#if status.enabled && status.started_at}
-									<span class="font-normal text-muted-foreground">
-										· {uptime(status.started_at)}</span
+									<span class="font-normal text-muted-foreground"
+										>{` · ${uptime(status.started_at)}`}</span
 									>{/if}
 							</span>
 							<span class="text-xs text-muted-foreground"> Stopping disconnects every agent. </span>
@@ -114,7 +114,7 @@
 
 				<section class="flex flex-col gap-3 py-5">
 					<div class="flex flex-col gap-0.5">
-						<h3 class={LABEL}>Ceiling</h3>
+						<SectionHead title="Ceiling" />
 						<span class="text-xs text-muted-foreground">Highest access any key may hold.</span>
 					</div>
 					{#each status.capabilities as capability (capability.key)}
@@ -144,7 +144,7 @@
 				</section>
 
 				<section class="flex flex-col gap-2.5 py-5">
-					<h3 class={LABEL}>Rate limit</h3>
+					<SectionHead title="Rate limit" />
 					<label class="flex items-center gap-2 text-sm" for="agents-rate">
 						<Input
 							id="agents-rate"

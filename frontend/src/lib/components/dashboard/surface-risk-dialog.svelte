@@ -216,23 +216,23 @@
 					<span class="text-lg leading-tight font-semibold tracking-tight tabular-nums">
 						{data.live.toLocaleString()}
 					</span>
-					<span class="truncate text-2xs text-muted-foreground">live web assets</span>
+					<span class="text-2xs text-muted-foreground sm:truncate">live web assets</span>
 				</div>
 				<div class="flex min-w-0 flex-col rounded-md bg-muted/60 px-2.5 py-1.5">
 					<span class="text-lg leading-tight font-semibold tracking-tight tabular-nums">
 						{data.findings.toLocaleString()}
 					</span>
-					<span class="truncate text-2xs text-muted-foreground">open findings</span>
+					<span class="text-2xs text-muted-foreground sm:truncate">open findings</span>
 				</div>
 				<div class="flex min-w-0 flex-col rounded-md bg-muted/60 px-2.5 py-1.5">
 					<span
 						class="text-lg leading-tight font-semibold tracking-tight tabular-nums {data.actionable
-							? 'text-[var(--sev-critical-ink)]'
+							? 'text-sev-critical-ink'
 							: ''}"
 					>
 						{data.actionable.toLocaleString()}
 					</span>
-					<span class="truncate text-2xs text-muted-foreground">
+					<span class="text-2xs text-muted-foreground sm:truncate">
 						actionable · {data.act.toLocaleString()} act now
 					</span>
 				</div>
@@ -252,14 +252,12 @@
 						Surface against risk not loaded.
 					</p>
 				{:else if rows.length}
-					{#key data}
-						<SurfaceRiskRows
-							{rows}
-							{severities}
-							wide
-							onScope={onScope && ((id) => scopeTo({ targetIds: [id] }))}
-						/>
-					{/key}
+					<SurfaceRiskRows
+						{rows}
+						{severities}
+						wide
+						onScope={onScope && ((id) => scopeTo({ targetIds: [id] }))}
+					/>
 				{:else}
 					<p class="py-8 text-center text-sm text-muted-foreground">No matching target</p>
 				{/if}

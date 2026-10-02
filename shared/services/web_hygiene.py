@@ -19,12 +19,10 @@ from shared.definitions.hygiene import (
     MAX_INTERNAL_SHOWN,
     HygieneCheck,
 )
-from shared.logging import get_logger
 from shared.models.http_asset import HttpAsset
+from shared.utils.text import clip_line
 from shared.utils.tracking import BODY_SCAN_BYTES as TRACKING_SCAN_BYTES
 from shared.utils.tracking import tracking_ids
-
-logger = get_logger(__name__)
 
 C = HygieneCheck
 
@@ -102,12 +100,6 @@ class Hygiene:
     def checked(self) -> list[str]:
         return [str(v.key) for v in self.verdicts]
 
-    @property
-    def evidence(self) -> dict[str, str]:
-        return {
-            str(v.key): v.evidence for v in self.verdicts if v.failed and v.evidence
-        }
-
 
 # ---------- parsing ----------
 
@@ -126,8 +118,7 @@ def normalize_headers(raw: dict[str, Any] | None) -> dict[str, str]:
 
 
 def _clip(value: str) -> str:
-    value = " ".join(value.split())
-    return value if len(value) <= MAX_EVIDENCE else value[: MAX_EVIDENCE - 1] + "…"
+    return clip_line(value, MAX_EVIDENCE)
 
 
 def _cookie(line: str) -> Cookie | None:

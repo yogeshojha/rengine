@@ -1,11 +1,12 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
-	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import CopyButton from '$lib/components/copy-button.svelte';
+	import LoadingButton from '$lib/components/loading-button.svelte';
 	import { toast } from 'svelte-sonner';
 	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
 	import CopyIcon from '@lucide/svelte/icons/copy';
@@ -16,6 +17,8 @@
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { twoFactorApi } from '$lib/api/twoFactor';
 	import { writeClipboard } from '$lib/utilities/clipboard';
+	import { downloadBlob } from '$lib/utilities/download';
+	import { TOTP_DIGITS } from '$lib/constants';
 	import OtpInput from './otp-input.svelte';
 	import type { StepProps } from '$lib/types/onboarding';
 
@@ -23,6 +26,17 @@
 
 	type Phase = 'intro' | 'enroll' | 'done';
 	let phase = $state<Phase>(data.twoFactorEnabled ? 'done' : 'intro');
+
+	onMount(async () => {
+		if (data.twoFactorEnabled) return;
+		try {
+			if (!(await twoFactorApi.status()).enabled) return;
+		} catch {
+			return;
+		}
+		data.twoFactorEnabled = true;
+		if (phase === 'intro') phase = 'done';
+	});
 
 	let setupLoading = $state(false);
 	let verifying = $state(false);
@@ -72,8 +86,8 @@
 	}
 
 	async function verify() {
-		if (code.length !== 6) {
-			errorMsg = 'Enter the 6-digit code from the authenticator app.';
+		if (code.length !== TOTP_DIGITS) {
+			errorMsg = `Enter the ${TOTP_DIGITS}-digit code from the authenticator app.`;
 			return;
 		}
 		verifying = true;
@@ -104,19 +118,13 @@
 	}
 
 	function downloadCodes() {
-		const blob = new Blob([backupCodes.join('\n') + '\n'], { type: 'text/plain' });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement('a');
-		a.href = url;
-		a.download = 'rengine-2fa-backup-codes.txt';
-		a.click();
-		URL.revokeObjectURL(url);
+		downloadBlob('rengine-backup-codes.txt', backupCodes.join('\n') + '\n');
 	}
 
 	function onCodeChange(v: string) {
 		code = v;
 		if (errorMsg) errorMsg = '';
-		if (v.length === 6 && !verifying) verify();
+		if (v.length === TOTP_DIGITS && !verifying) verify();
 	}
 </script>
 
@@ -135,10 +143,14 @@
 				</p>
 			</div>
 		</div>
-		<Button class="mt-6" onclick={startSetup} disabled={setupLoading}>
-			{#if setupLoading}<Spinner class="mr-2" />{/if}
+		<LoadingButton
+			class="mt-6"
+			onclick={startSetup}
+			loading={setupLoading}
+			loadingLabel="Set up two-factor"
+		>
 			Set up two-factor
-		</Button>
+		</LoadingButton>
 	</div>
 {:else if phase === 'enroll'}
 	<div class="grid gap-8 sm:grid-cols-[auto_1fr] sm:items-start">
@@ -167,7 +179,7 @@
 
 		<div class="space-y-4">
 			<div class="space-y-1">
-				<Label class="text-sm font-medium">Enter the 6-digit code</Label>
+				<Label class="text-sm font-medium">Enter the {TOTP_DIGITS}-digit code</Label>
 			</div>
 			<OtpInput value={code} onValueChange={onCodeChange} disabled={verifying} />
 
@@ -181,10 +193,15 @@
 				</p>
 			{/if}
 
-			<Button class="w-full sm:w-auto" onclick={verify} disabled={verifying || code.length !== 6}>
-				{#if verifying}<Spinner class="mr-2" />{/if}
+			<LoadingButton
+				class="w-full sm:w-auto"
+				onclick={verify}
+				loading={verifying}
+				loadingLabel="Verify and enable"
+				disabled={code.length !== TOTP_DIGITS}
+			>
 				Verify and enable
-			</Button>
+			</LoadingButton>
 
 			<Collapsible.Root bind:open={manualOpen} class="pt-1">
 				<Collapsible.Trigger

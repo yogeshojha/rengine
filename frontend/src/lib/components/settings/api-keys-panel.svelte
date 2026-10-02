@@ -22,7 +22,6 @@
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import FormField from '$lib/components/form-field.svelte';
-	import Hint from '$lib/components/hint.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import { apiKeysApi } from '$lib/api/api-keys';
 	import { auth } from '$lib/stores/auth.svelte';
@@ -32,8 +31,9 @@
 	import { relativeTime } from '$lib/utilities/dates';
 	import type { APIKeyRead, ProviderInfo } from '$lib/types/api-key';
 	import { ProviderGroup } from '$lib/config/api-keys';
+	import CheckStatus from './check-status.svelte';
 	import { BODY_ROW, GROUP_ROW, HEAD_ROW, KEY_COL } from './columns';
-	import { CHECK_DOT, checkState, type CheckState } from './status';
+	import { checkState, type CheckState } from './status';
 
 	const GROUP_ORDER = Object.values(ProviderGroup);
 
@@ -132,7 +132,8 @@
 		const provider = editing;
 		if (!provider || !canSave) return;
 		saving = true;
-		const meta = provider.requires_username ? { key_meta: { username: username.trim() } } : {};
+		const name = username.trim();
+		const meta = provider.requires_username && name ? { key_meta: { username: name } } : {};
 		try {
 			const existing = keys.get(provider.provider);
 			const stored = existing
@@ -336,30 +337,16 @@
 						</div>
 						<div class={KEY_COL.status}>
 							{#if key}
-								<Hint text={check === 'failed' ? key.last_test_message : null}>
-									{#snippet child(props)}
-										<span {...props} class="inline-flex items-center gap-2 text-sm">
-											{#if testing === provider.provider}
-												<Spinner class="size-3" />
-												<span class="text-muted-foreground">Testing</span>
-											{:else}
-												<span class="size-2 shrink-0 rounded-full {CHECK_DOT[check]}"></span>
-												<span
-													class={check === 'ok' || check === 'failed'
-														? ''
-														: 'text-muted-foreground'}
-												>
-													{STATUS_LABEL[check]}
-												</span>
-											{/if}
-										</span>
-									{/snippet}
-								</Hint>
+								<CheckStatus
+									{check}
+									label={STATUS_LABEL[check]}
+									message={check === 'failed' ? key.last_test_message : null}
+									busy={testing === provider.provider}
+									busyLabel="Testing"
+									muted={check !== 'ok' && check !== 'failed'}
+								/>
 							{:else}
-								<span class="inline-flex items-center gap-2 text-sm text-muted-foreground">
-									<span class="size-2 shrink-0 rounded-full {CHECK_DOT.off}"></span>
-									Not set
-								</span>
+								<CheckStatus check="off" label="Not set" muted />
 							{/if}
 						</div>
 						<div class="{KEY_COL.tested} text-xs text-muted-foreground tabular-nums">

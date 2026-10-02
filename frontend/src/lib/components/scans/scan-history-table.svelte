@@ -33,7 +33,7 @@
 	import PageSizeSelector from '$lib/components/targets/page-size-selector.svelte';
 
 	import { projectsStore } from '$lib/stores/projects.svelte';
-	import { scansStore } from '$lib/stores/scans.svelte';
+	import { HISTORY_DAYS, scansStore } from '$lib/stores/scans.svelte';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 	import {
@@ -46,7 +46,8 @@
 	import { eligibility } from '$lib/utilities/compare';
 	import { formatShortDate } from '$lib/utilities/dates';
 	import { ROUTES } from '$lib/config/routes';
-	import { SEVERITY_LABELS } from '$lib/config/vulnerabilities';
+	import { SEVERITY_CHIP, SEVERITY_LABELS } from '$lib/config/vulnerabilities';
+	import { plural, pluralWord } from '$lib/utilities/strings';
 	import type { ScanRead, ScanSortKey } from '$lib/types/scan';
 
 	import ScanStatusTabs from './scan-status-tabs.svelte';
@@ -55,7 +56,7 @@
 	import HistoryChart from './history/history-chart.svelte';
 	import CompareSheet from './history/compare-sheet.svelte';
 	import { COL } from './history/columns';
-	import { SEV_CHIP, forgetFindings } from './history/findings';
+	import { forgetFindings } from './history/findings';
 	import {
 		BRIEF_TABS,
 		HISTORY_COLUMNS,
@@ -66,12 +67,13 @@
 
 	interface Props {
 		targetId?: string;
+		targetIds?: string[];
 		onLaunch?: () => void;
 		onRescan?: (scan: ScanRead) => void;
 		onRescanMany?: (targetIds: string[]) => void;
 	}
 
-	let { targetId, onLaunch, onRescan, onRescanMany }: Props = $props();
+	let { targetId, targetIds, onLaunch, onRescan, onRescanMany }: Props = $props();
 
 	const SAVED_VIEWS = [
 		{ label: 'Critical findings', token: 'severity:critical' },
@@ -101,10 +103,10 @@
 
 	$effect(() => {
 		const project = projectsStore.activeProject;
-		const tid = targetId;
+		const ids = targetId ? [targetId] : (targetIds ?? []);
 		if (project && projectsStore.hasFetched) {
 			untrack(() => {
-				scansStore.init(project.id, tid);
+				scansStore.init(project.id, ids);
 				queryText = scansStore.filters.query;
 			});
 		}
@@ -132,24 +134,32 @@
 	let statusTab = $derived(scanStatusTab(scansStore.filters.statuses));
 	let parseError = $derived(scansStore.parsed.error);
 	let days = $derived(scansStore.days);
-	let windowRuns = $derived(days.reduce((n, d) => n + d.runs, 0));
+	let windowTotals = $derived(scansStore.daily?.window ?? null);
+	let windowRuns = $derived(windowTotals?.runs ?? 0);
 	let byStatus = $derived(scansStore.stats?.by_status);
 	let openCount = $derived(byStatus ? byStatus.running + byStatus.pending + byStatus.paused : 0);
 	let canCancelAll = $derived(openCount > 0 || scansStore.hasLive);
 	let sevRuns = $derived(
 		STRIP_SEVERITIES.map((s) => ({
 			sev: s,
-			n: days.reduce((a, d) => a + (d[s as 'critical' | 'high' | 'medium'] ?? 0), 0),
+			n: windowTotals?.[s as 'critical' | 'high' | 'medium'] ?? 0,
 			active: hasToken(scansStore.filters.query, `severity:${s}`)
 		}))
 	);
 
 	let visible = $derived.by(() => {
 		const out: { scan: ScanRead; nested: boolean }[] = [];
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
+		const seen = new Set(scans.map((s) => s.id));
 		for (const s of scans) {
 			out.push({ scan: s, nested: false });
-			const kids = earlier[s.id];
-			if (Array.isArray(kids)) for (const k of kids) out.push({ scan: k, nested: true });
+			const kids = latest ? earlier[s.id] : undefined;
+			if (!Array.isArray(kids)) continue;
+			for (const k of kids) {
+				if (seen.has(k.id)) continue;
+				seen.add(k.id);
+				out.push({ scan: k, nested: true });
+			}
 		}
 		return out;
 	});
@@ -192,8 +202,8 @@
 		const token = `severity:${sev}`;
 		if (!hasToken(queryText, token)) {
 			scansStore.filters.latest = false;
-			if (days.length && !scansStore.filters.startedFrom)
-				scansStore.filters.startedFrom = new Date(days[0].day).toISOString();
+			if (scansStore.daily && !scansStore.filters.startedFrom)
+				scansStore.filters.startedFrom = scansStore.daily.since;
 		}
 		toggleToken(token);
 	}
@@ -279,8 +289,8 @@
 		if (!ids.length) return;
 		const { ok, failed } = await scansStore.removeMany(ids);
 		selected.clear();
-		if (ok) toast.success(`Deleted ${ok} scan${ok !== 1 ? 's' : ''}`);
-		if (failed) toast.error(`${failed} scan${failed !== 1 ? 's' : ''} not deleted`);
+		if (ok) toast.success(`${plural(ok, 'scan')} deleted`);
+		if (failed) toast.error(`${plural(failed, 'scan')} not deleted`);
 	}
 
 	async function confirmBulkCancel() {
@@ -288,8 +298,8 @@
 		bulkCancelOpen = false;
 		if (!ids.length) return;
 		const { ok, failed } = await scansStore.cancelMany(ids);
-		if (ok) toast.success(`Cancelled ${ok} scan${ok !== 1 ? 's' : ''}`);
-		if (failed) toast.error(`${failed} scan${failed !== 1 ? 's' : ''} not cancelled`);
+		if (ok) toast.success(`${plural(ok, 'scan')} cancelled`);
+		if (failed) toast.error(`${plural(failed, 'scan')} not cancelled`);
 	}
 
 	async function confirmCancelAll() {
@@ -298,7 +308,7 @@
 		const n = await scansStore.cancelAll();
 		cancellingAll = false;
 		if (n === null) toast.error(scansStore.error ?? 'Scans not cancelled');
-		else toast.success(`Cancelled ${n} scan${n !== 1 ? 's' : ''}`);
+		else toast.success(`${plural(n, 'scan')} cancelled`);
 	}
 
 	function openCompare(scan?: ScanRead) {
@@ -316,6 +326,12 @@
 		return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
 	}
 
+	const OWN_KEYS = new Set(['Enter', ' ', 'ArrowUp', 'ArrowDown']);
+	const interactive = (e: KeyboardEvent) =>
+		!!(e.target as HTMLElement | null)?.closest?.(
+			'button, a, [role=button], [role=checkbox], [role=tab], [role=option], [role=radio], [role=switch]'
+		);
+
 	function onKey(e: KeyboardEvent) {
 		if (e.metaKey || e.ctrlKey || e.altKey) return;
 		if (e.key === '/' && !typing(e)) {
@@ -324,6 +340,7 @@
 			return;
 		}
 		if (typing(e) || document.querySelector('[role=dialog],[role=menu]')) return;
+		if (OWN_KEYS.has(e.key) && interactive(e)) return;
 		const idx = visible.findIndex((v) => v.scan.id === focusId);
 		const focused = idx >= 0 ? visible[idx].scan : null;
 		const move = (d: number) => {
@@ -409,7 +426,9 @@
 	<div class="grid gap-x-8 gap-y-4 border-b px-4 py-4 lg:grid-cols-[auto_minmax(0,1fr)]">
 		<div class="flex flex-wrap items-start gap-x-8 gap-y-3">
 			<div class="flex flex-col gap-0.5">
-				<span class="text-2xs tracking-wide text-muted-foreground uppercase">Runs · 30 days</span>
+				<span class="text-2xs tracking-wide text-muted-foreground uppercase"
+					>Runs · {HISTORY_DAYS} days</span
+				>
 				<span class="font-mono text-2xl font-semibold tabular-nums"
 					>{windowRuns.toLocaleString()}</span
 				>
@@ -428,13 +447,13 @@
 			</div>
 			<div class="flex flex-col gap-1">
 				<span class="text-2xs tracking-wide text-muted-foreground uppercase"
-					>Runs with findings · 30 days</span
+					>Runs with findings · {HISTORY_DAYS} days</span
 				>
 				<div class="flex items-center gap-1.5">
 					{#each sevRuns as s (s.sev)}
 						<button
 							type="button"
-							class="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 font-mono text-sm font-semibold tabular-nums transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {SEV_CHIP[
+							class="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 font-mono text-sm font-semibold tabular-nums transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {SEVERITY_CHIP[
 								s.sev
 							].chip} {s.active ? 'ring-2 ring-current/50' : ''} {s.n ? '' : 'opacity-50'}"
 							aria-pressed={s.active}
@@ -494,7 +513,9 @@
 					bind:this={searchEl}
 					id="scan-history-search"
 					class="h-full min-w-0 flex-1 bg-transparent font-mono text-sm outline-none placeholder:font-sans placeholder:text-muted-foreground"
-					placeholder="target:acme severity:critical status:failed is:added"
+					placeholder={targetId
+						? 'engine:default severity:critical status:failed is:added'
+						: 'target:acme severity:critical status:failed is:added'}
 					value={queryText}
 					oninput={(e) => setQuery(e.currentTarget.value)}
 					onkeydown={(e) => {
@@ -647,8 +668,8 @@
 			<span
 				class="ml-1 inline-flex items-center gap-1 rounded-full border border-border bg-background px-2 py-0.5 text-xs"
 			>
-				Started {formatShortDate(scansStore.filters.startedFrom)}{scansStore.filters.startedTo
-					? ` to ${formatShortDate(new Date(new Date(scansStore.filters.startedTo).getTime() - 1))}`
+				Started {formatShortDate(scansStore.filters.startedFrom, true)}{scansStore.filters.startedTo
+					? ` to ${formatShortDate(new Date(new Date(scansStore.filters.startedTo).getTime() - 1), true)}`
 					: ' onward'}
 				<button
 					type="button"
@@ -771,10 +792,9 @@
 						onToggle={() => toggleExpand(v.scan.id)}
 						onSelect={() =>
 							selected.has(v.scan.id) ? selected.delete(v.scan.id) : selected.add(v.scan.id)}
-						onFocus={() => (focusId = v.scan.id)}
 						onOpen={() => goto(ROUTES.scan(v.scan.id))}
 						onCompare={() => openCompare(v.scan)}
-						onRescan={() => onRescan?.(v.scan)}
+						onRescan={onRescan ? () => onRescan?.(v.scan) : undefined}
 						onPause={() => pause(v.scan)}
 						onResume={() => resume(v.scan)}
 						onCancel={() => (cancelTarget = v.scan)}
@@ -796,20 +816,14 @@
 			<div class="flex items-center gap-4">
 				<span class="text-xs text-muted-foreground">
 					{scans.length} of {pagination.totalItems}
-					{latest
-						? pagination.totalItems === 1
-							? 'target'
-							: 'targets'
-						: pagination.totalItems === 1
-							? 'run'
-							: 'runs'}
+					{pluralWord(pagination.totalItems, latest ? 'target' : 'run')}
 				</span>
 				<PageSizeSelector
 					pageSize={pagination.pageSize}
 					onPageSizeChange={(size) => scansStore.setPageSize(size)}
 				/>
 			</div>
-			{#if pagination.pageSize !== -1 && pagination.totalPages > 1}
+			{#if pagination.totalPages > 1}
 				<Pagination.Root
 					count={pagination.totalItems}
 					perPage={pagination.pageSize}
@@ -883,7 +897,7 @@
 <ScanBulkActionBar
 	selectedCount={selectedScans.length}
 	liveCount={selectedLive}
-	targetCount={selectedTargets.length}
+	targetCount={onRescanMany ? selectedTargets.length : 0}
 	{compareHref}
 	compareReason={pair.reason}
 	onRescan={() => {
@@ -897,7 +911,7 @@
 
 <ConfirmDialog
 	open={bulkDeleteOpen}
-	title="Delete {selectedScans.length} scan{selectedScans.length !== 1 ? 's' : ''}"
+	title="Delete {plural(selectedScans.length, 'scan')}"
 	description="The selected scans and their results are removed."
 	confirmLabel="Delete {selectedScans.length}"
 	cancelLabel="Keep"
@@ -918,7 +932,7 @@
 
 <ConfirmDialog
 	open={bulkCancelOpen}
-	title="Cancel {selectedLive} unfinished scan{selectedLive !== 1 ? 's' : ''}"
+	title="Cancel {selectedLive} unfinished {pluralWord(selectedLive, 'scan')}"
 	description="The selected scans stop and are marked cancelled."
 	confirmLabel="Cancel scans"
 	cancelLabel="Keep"

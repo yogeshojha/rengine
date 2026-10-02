@@ -127,13 +127,13 @@ async def test_an_export_of_a_selection_writes_only_the_chosen_rows(
         )
     ).all()
 
-    assert (
-        await _export_rows(estate, "web_assets", {"ids": [str(i) for i in chosen]}) == 2
-    )
+    ids = {"ids": [str(i) for i in chosen]}
+    assert await _export_rows(estate, SurfaceDimension.WEB_ASSETS.value, ids) == 2
 
 
 async def test_a_filter_that_matches_nothing_exports_nothing(durable_estate, now):
     estate = durable_estate
     await _seed(estate, now)
 
-    assert await _export_rows(estate, "web_assets", {"q": "status:418"}) == 0
+    filters = {"q": "status:418"}
+    assert await _export_rows(estate, SurfaceDimension.WEB_ASSETS.value, filters) == 0

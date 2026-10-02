@@ -1,94 +1,58 @@
-"""The site tree, built from the same filtered set the table shows."""
-
 from __future__ import annotations
 
-import re
+import json
 from collections import Counter
 from dataclasses import dataclass, field
 from uuid import UUID
 
-from sqlalchemy import exists, func, or_, select
+from sqlalchemy import Text, cast, exists, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
-from app.services.asset_query import QueryScope, endpoint_is_new
 from shared.definitions.endpoints import (
     ADMIN_INTERESTS,
     ARCHIVE_SOURCES,
     MAX_TREE_NODES,
     MAX_TREE_ROWS,
     SENSITIVE_INTERESTS,
-    STATIC_CLASSES,
-    STATIC_EXTENSIONS,
     EndpointClass,
     FolderGlyph,
     PathInterest,
     folder_glyph,
 )
 from shared.models.endpoint import Endpoint, EndpointTree, TreeLeaf, TreeNode
+from shared.services.asset_query import QueryScope, endpoint_is_new
+from shared.services.asset_query import predicates as preds
+from shared.services.asset_query.tokens import list_token, token
+from shared.services.surface_query.endpoints import static_clause
 
 _MERGED = "merged"
 _HOST = "host"
 _LEAF = "leaf"
 _GROUP = FolderGlyph.GROUP.value
-_AUTH_WALL = (401, 403)
-_MIN_WALLED = 2
-_MAX_OPEN_INSIDE = 2
+MIN_WALLED = 2
+MAX_OPEN_INSIDE = 2
 _MIN_VERIFIED_FOR_ERROR = 10
 _MAX_ERROR_SHARE = 0.1
 _MIN_GROUP = 3
 _MIN_SHARED = 2
 _CORE_SHARE = 0.6
-_QUOTE_CHARS = re.compile(r'[\s()"\[\]:=><~,]')
 _MAX_HINT = 4
 _MAX_GROUP_TOKEN = 40
-_STATUS_BUCKETS = (
-    ("2xx", 200, 300),
-    ("3xx", 300, 400),
-    ("4xx", 400, 500),
-    ("5xx", 500, 600),
-)
 
 
-def static_clause():
-    return or_(
-        Endpoint.endpoint_class.in_(tuple(STATIC_CLASSES)),
-        func.coalesce(Endpoint.extension, "").in_(tuple(STATIC_EXTENSIONS)),
-    )
-
-
-def _needs_quote(value: str) -> bool:
-    return bool(_QUOTE_CHARS.search(value)) or not value
-
-
-def _token(field: str, value: str) -> str:
-    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
-    quoted = f'"{escaped}"' if _needs_quote(value) else value
-    return f"{field}:{quoted}"
-
-
-def _list_token(field: str, values: list[str]) -> str:
-    items = [
-        f'"{v.replace("\\", "\\\\").replace(chr(34), "\\" + chr(34))}"'
-        if _needs_quote(v)
-        else v
-        for v in values
-    ]
-    return f"{field}:[{','.join(items)}]"
-
-
-def _bucket(status: int | None) -> str:
+def status_bucket(status: int | None) -> str:
     if status is None:
         return "none"
-    for name, low, high in _STATUS_BUCKETS:
+    for name, (low, high) in preds.STATUS_BUCKETS.items():
         if low <= status < high:
             return name
     return "none"
 
 
 def anomaly_for(walled: int, opened: int, errors: int, verified: int) -> str | None:
-    """The one sentence a folder's status mix earns, or nothing."""
-    if walled >= _MIN_WALLED and 1 <= opened <= _MAX_OPEN_INSIDE:
+    """Status-mix anomaly text for a folder, or None."""
+    if walled >= MIN_WALLED and 1 <= opened <= MAX_OPEN_INSIDE:
         return (
             f"{opened} of {walled + opened} {'answers' if opened == 1 else 'answer'} "
             "without auth"
@@ -166,7 +130,7 @@ class _Node:
     def absorb(self, row: _Row) -> None:
         self.subtree += 1
         self.hosts.add(row.host)
-        bucket = _bucket(row.status)
+        bucket = status_bucket(row.status)
         self.status_mix[bucket] = self.status_mix.get(bucket, 0) + 1
         self.class_mix[row.endpoint_class] = (
             self.class_mix.get(row.endpoint_class, 0) + 1
@@ -175,7 +139,7 @@ class _Node:
             self.verified += 1
         else:
             self.unprobed += 1
-        if row.status in _AUTH_WALL:
+        if row.status in preds.AUTH_STATUS:
             self.walled += 1
         if row.params:
             self.params += 1
@@ -209,6 +173,124 @@ class _Node:
             self.sample_url = other.sample_url
 
 
+@dataclass
+class _Run:
+    """Consecutive rows of one folder on one host."""
+
+    host: str
+    dir_path: str
+    url: str
+    n: int = 0
+    unprobed: int = 0
+    verified: int = 0
+    params: int = 0
+    api: int = 0
+    new: int = 0
+    walled: int = 0
+    status_mix: dict = field(default_factory=dict)
+    class_mix: dict = field(default_factory=dict)
+    sources: set = field(default_factory=set)
+    interest: set = field(default_factory=set)
+    index_rows: list = field(default_factory=list)
+
+
+def _absorb_run(node: _Node, run: _Run) -> None:
+    node.subtree += run.n
+    node.hosts.add(run.host)
+    for k, v in run.status_mix.items():
+        node.status_mix[k] = node.status_mix.get(k, 0) + v
+    for k, v in run.class_mix.items():
+        node.class_mix[k] = node.class_mix.get(k, 0) + v
+    node.verified += run.verified
+    node.unprobed += run.unprobed
+    node.walled += run.walled
+    node.params += run.params
+    node.api += run.api
+    node.new += run.new
+    node.sources |= run.sources
+    node.interest |= run.interest
+    if node.sample_url is None:
+        node.sample_url = run.url
+
+
+def _runs(rows) -> list[_Run]:
+    """Fold consecutive rows that share a host and a folder."""
+    decoded: dict[str | None, list] = {None: []}
+    buckets: dict[int | None, str] = {}
+    api = EndpointClass.API.value
+    auth = frozenset(preds.AUTH_STATUS)
+    out: list[_Run] = []
+    run: _Run | None = None
+    for (
+        row_id,
+        host,
+        dir_path,
+        path,
+        url,
+        status,
+        probed,
+        params_text,
+        content_length,
+        klass,
+        sources_text,
+        interest_text,
+        is_new,
+    ) in rows:
+        if run is None or host != run.host or dir_path != run.dir_path:
+            run = _Run(host=host, dir_path=dir_path, url=url)
+            out.append(run)
+        params = decoded.get(params_text)
+        if params is None:
+            params = decoded[params_text] = json.loads(params_text) or []
+        sources = decoded.get(sources_text)
+        if sources is None:
+            sources = decoded[sources_text] = json.loads(sources_text) or []
+        interest = decoded.get(interest_text)
+        if interest is None:
+            interest = decoded[interest_text] = json.loads(interest_text) or []
+        bucket = buckets.get(status)
+        if bucket is None:
+            bucket = buckets[status] = status_bucket(status)
+        run.n += 1
+        run.status_mix[bucket] = run.status_mix.get(bucket, 0) + 1
+        run.class_mix[klass] = run.class_mix.get(klass, 0) + 1
+        if probed:
+            run.verified += 1
+        else:
+            run.unprobed += 1
+        if status in auth:
+            run.walled += 1
+        if params:
+            run.params += 1
+        if klass == api:
+            run.api += 1
+        if is_new:
+            run.new += 1
+        if sources:
+            run.sources.update(sources)
+        if interest:
+            run.interest.update(interest)
+        if path == dir_path:
+            run.index_rows.append(
+                _Row(
+                    id=row_id,
+                    host=host,
+                    dir_path=dir_path,
+                    path=path,
+                    url=url,
+                    status=status,
+                    probed=probed,
+                    params=list(params),
+                    content_length=content_length,
+                    endpoint_class=klass,
+                    sources=list(sources),
+                    interest=list(interest),
+                    is_new=bool(is_new),
+                )
+            )
+    return out
+
+
 async def build_tree(
     session: AsyncSession,
     base,
@@ -219,9 +301,9 @@ async def build_tree(
     hide_static: bool = False,
 ) -> EndpointTree:
     """Aggregate the filtered endpoints into a directory tree."""
-    scoped = base.subquery()
-    result = await session.execute(
-        select(
+    connection = await session.connection()
+    result = await connection.execute(
+        base.with_only_columns(
             Endpoint.id,
             Endpoint.host,
             Endpoint.dir_path,
@@ -229,36 +311,17 @@ async def build_tree(
             Endpoint.url,
             Endpoint.status_code,
             Endpoint.is_probed,
-            Endpoint.params,
+            cast(Endpoint.params, Text).label("params"),
             Endpoint.content_length,
             Endpoint.endpoint_class,
-            Endpoint.sources,
-            Endpoint.interest,
+            cast(Endpoint.sources, Text).label("sources"),
+            cast(Endpoint.interest, Text).label("interest"),
             endpoint_is_new(scope).label("is_new"),
         )
-        .select_from(Endpoint)
-        .join(scoped, Endpoint.id == scoped.c.id)
         .order_by(Endpoint.host, Endpoint.dir_path, Endpoint.path)
         .limit(MAX_TREE_ROWS + 1)
     )
-    rows = [
-        _Row(
-            id=r.id,
-            host=r.host,
-            dir_path=r.dir_path,
-            path=r.path,
-            url=r.url,
-            status=r.status_code,
-            probed=r.is_probed,
-            params=list(r.params or []),
-            content_length=r.content_length,
-            endpoint_class=r.endpoint_class,
-            sources=list(r.sources or []),
-            interest=list(r.interest or []),
-            is_new=bool(r.is_new),
-        )
-        for r in result.all()
-    ]
+    rows = result.all()
     if not rows:
         return EndpointTree(mode=mode)
 
@@ -270,28 +333,30 @@ async def build_tree(
     roots: dict[str, _Node] = {}
     count = 0
     truncated = False
+    hosts: set[str] = set()
 
-    for row in rows:
-        prefix = "" if merged else row.host
+    for run in _runs(rows):
+        hosts.add(run.host)
+        prefix = "" if merged else run.host
         root_key = f"{prefix}/"
         root = roots.get(root_key)
         if root is None:
             root = _Node(
                 key=root_key,
-                name="All hosts" if merged else row.host,
+                name="All hosts" if merged else run.host,
                 path="/",
-                host=None if merged else row.host,
+                host=None if merged else run.host,
                 depth=0,
                 kind="directory" if merged else _HOST,
             )
             roots[root_key] = root
             count += 1
         cursor = root
-        root.absorb(row)
+        _absorb_run(root, run)
 
         walked = ""
         complete = True
-        for segment in [s for s in row.dir_path.split("/") if s]:
+        for segment in [s for s in run.dir_path.split("/") if s]:
             walked = f"{walked}/{segment}"
             child = cursor.children.get(segment)
             if child is None:
@@ -303,17 +368,16 @@ async def build_tree(
                     key=f"{prefix}{walked}/",
                     name=segment,
                     path=f"{walked}/",
-                    host=None if merged else row.host,
+                    host=None if merged else run.host,
                     depth=cursor.depth + 1,
                 )
                 cursor.children[segment] = child
                 count += 1
-            child.absorb(row)
+            _absorb_run(child, run)
             cursor = child
         if complete:
-            cursor.direct += 1
-            if row.is_index:
-                cursor.index_rows.append(row)
+            cursor.direct += run.n
+            cursor.index_rows.extend(run.index_rows)
 
     if previous_scan_id is not None:
         await _count_gone(
@@ -321,7 +385,7 @@ async def build_tree(
             roots,
             scope=scope,
             previous_scan_id=previous_scan_id,
-            hosts={r.host for r in rows},
+            hosts=hosts,
             merged=merged,
             hide_static=hide_static,
         )
@@ -360,17 +424,21 @@ async def _count_gone(
     )
     if hide_static:
         query = query.where(~static_clause())
-    for host, dir_path in (await session.execute(query.limit(MAX_TREE_ROWS))).all():
+    lost = query.limit(MAX_TREE_ROWS).subquery()
+    grouped = select(lost.c.host, lost.c.dir_path, func.count()).group_by(
+        lost.c.host, lost.c.dir_path
+    )
+    for host, dir_path, n in (await session.execute(grouped)).all():
         prefix = "" if merged else host
         cursor = roots.get(f"{prefix}/")
         if cursor is None:
             continue
-        cursor.gone += 1
+        cursor.gone += n
         for segment in [s for s in dir_path.split("/") if s]:
             child = cursor.children.get(segment)
             if child is None:
                 break
-            child.gone += 1
+            child.gone += n
             cursor = child
 
 
@@ -380,7 +448,7 @@ def _root_order(item):
 
 
 def _rank(node: _Node) -> tuple:
-    """Folders that matter sort first: exposed files, admin surfaces, API, then answering."""
+    """Sort key: sensitive, admin, API, answering, size, name."""
     return (
         0 if node.interest & SENSITIVE_INTERESTS else 1,
         0 if node.interest & (ADMIN_INTERESTS | {PathInterest.AUTH.value}) else 1,
@@ -437,7 +505,6 @@ def _fold_layouts(parent: _Node, children: list[_Node]) -> list[_Node]:
     members = [c for c in pool if len(set(c.children) & core) >= _MIN_SHARED]
     if len(members) < _MIN_GROUP:
         return children
-    # the row's token names every folder it counts, so the group stops where the token does
     members = sorted(members, key=_rank)[:_MAX_GROUP_TOKEN]
     group = _Node(
         key=f"{parent.key}#layout",
@@ -456,7 +523,7 @@ def _fold_layouts(parent: _Node, children: list[_Node]) -> list[_Node]:
 
 
 def _emit(node: _Node) -> TreeNode:
-    """Collapse single-child chains the way a file tree does."""
+    """Collapse single-child chains."""
     if node.kind == _GROUP:
         return _emit_group(node)
     collapsed = node
@@ -512,7 +579,7 @@ def _emit(node: _Node) -> TreeNode:
         glyph=folder_glyph(collapsed.interest, collapsed.api, collapsed.subtree),
         sample_url=collapsed.sample_url,
         leaf=leaf,
-        query=_token(field_name, value or "/"),
+        query=token(field_name, ":", value or "/"),
         children=children,
     )
 
@@ -546,7 +613,7 @@ def _emit_group(group: _Node) -> TreeNode:
         glyph=FolderGlyph.GROUP.value,
         sample_url=group.sample_url,
         leaf=None,
-        query=_list_token("dir", paths),
+        query=list_token("dir", paths),
         children=members,
         folders=len(members),
         top_folders=group.shared,

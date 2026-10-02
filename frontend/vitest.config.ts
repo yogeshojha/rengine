@@ -6,8 +6,7 @@ export default defineConfig({
 	plugins: [svelte({ hot: false })],
 	resolve: {
 		alias: {
-			$lib: fileURLToPath(new URL('./src/lib', import.meta.url)),
-			'@': fileURLToPath(new URL('./src/lib', import.meta.url))
+			$lib: fileURLToPath(new URL('./src/lib', import.meta.url))
 		}
 	},
 	test: {

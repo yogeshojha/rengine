@@ -1,26 +1,13 @@
 <script lang="ts">
-	import { onboardingApi } from '$lib/api/onboarding';
+	import { projectsApi } from '$lib/api/projects';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import { Textarea } from '$lib/components/ui/textarea/index.js';
-	import * as Select from '$lib/components/ui/select/index.js';
 	import { toast } from 'svelte-sonner';
 	import type { StepProps } from '$lib/types/onboarding';
 
 	let { next, setFooter }: StepProps = $props();
 
-	const LABELS = [
-		'Bug bounty',
-		'Client engagement',
-		'Personal research',
-		'Internal assessment',
-		'Red team exercise',
-		'Other'
-	];
-
 	let projectName = $state('');
-	let projectDescription = $state('');
-	let projectLabel = $state('');
 	let busy = $state(false);
 
 	let nameInvalid = $derived(projectName.trim() === '');
@@ -41,11 +28,7 @@
 		}
 		busy = true;
 		try {
-			await onboardingApi.createFirstProject({
-				name: projectName.trim(),
-				description: projectDescription.trim() || null,
-				label: projectLabel || null
-			});
+			await projectsApi.create({ name: projectName.trim() });
 			next();
 		} catch (e) {
 			toast.error(
@@ -71,30 +54,6 @@
 				aria-invalid={nameInvalid}
 				class="h-9 text-sm"
 			/>
-		</div>
-		<div class="space-y-1.5">
-			<Label for="project-description" class="text-xs">Description</Label>
-			<Textarea
-				id="project-description"
-				bind:value={projectDescription}
-				placeholder="Scope or goal of this project"
-				disabled={busy}
-				rows={3}
-				class="text-sm"
-			/>
-		</div>
-		<div class="space-y-1.5">
-			<Label class="text-xs">Label</Label>
-			<Select.Root type="single" bind:value={projectLabel}>
-				<Select.Trigger class="h-9 w-full text-sm">
-					{projectLabel || 'Select a label'}
-				</Select.Trigger>
-				<Select.Content>
-					{#each LABELS as label (label)}
-						<Select.Item value={label} {label}>{label}</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
 		</div>
 	</section>
 </div>

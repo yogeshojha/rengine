@@ -6,10 +6,9 @@
 		level: number;
 		allowed: Set<string>;
 		onChange: (level: number) => void;
-		blockedHint?: string;
 	}
 
-	let { level, allowed, onChange, blockedHint = 'Off in the ceiling' }: Props = $props();
+	let { level, allowed, onChange }: Props = $props();
 </script>
 
 <div
@@ -20,7 +19,7 @@
 	{#each MCP_CAPABILITIES as cap, i (cap)}
 		{@const blocked = !allowed.has(cap)}
 		{@const inside = i <= level && !blocked}
-		<Hint text={blocked ? blockedHint : ''}>
+		<Hint text={blocked ? 'Off in the ceiling' : ''}>
 			{#snippet child(props)}
 				<span {...props} class="inline-flex border-r last:border-r-0">
 					<button

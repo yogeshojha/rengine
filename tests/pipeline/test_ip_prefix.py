@@ -44,9 +44,7 @@ async def _address(estate, scan: str, ip: str) -> None:
 
 async def _enrich(estate, scan: str) -> int:
     sid = estate.scans[scan]
-    return await estate.session.run_sync(
-        lambda s: enrich_addresses(s, scan_id=sid, only_missing=False)
-    )
+    return await estate.session.run_sync(lambda s: enrich_addresses(s, scan_id=sid))
 
 
 async def _row(estate, ip: str) -> IpAddress:

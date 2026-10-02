@@ -1,3 +1,5 @@
+import { SURFACE_ORDER } from '$lib/config/surface';
+
 export const CHANGE_VERB = {
 	APPEARED: 'appeared',
 	CHANGED: 'changed',
@@ -40,13 +42,6 @@ export interface RunSide {
 	stages_ran: number;
 	stages_planned: number;
 	counts: Record<string, number>;
-}
-
-export interface StageDiff {
-	name: string;
-	title: string;
-	baseline: string | null;
-	current: string | null;
 }
 
 export interface SettingDiff {
@@ -160,7 +155,6 @@ export interface ScanComparison {
 	baseline: RunSide;
 	current: RunSide;
 	dimensions: DimensionDelta[];
-	stage_diff: StageDiff[];
 	setting_diff: SettingDiff[];
 	settings_identical: number;
 	run_diff: RunDifference[];
@@ -177,3 +171,6 @@ export interface ScanComparison {
 export function listedCount(delta: DimensionDelta): number {
 	return delta.appeared + delta.changed + delta.disappeared + delta.unconfirmed;
 }
+
+export const runRows = (counts: Record<string, number>): number =>
+	SURFACE_ORDER.reduce((n, s) => n + (counts[s.key] ?? 0), 0);

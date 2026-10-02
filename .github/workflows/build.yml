@@ -22,7 +22,6 @@ jobs:
             dockerfile: api/Dockerfile
             target: production
             platforms: linux/amd64,linux/arm64
-          # the worker compiles its tool set, which QEMU stretches past the job limit
           - image: worker
             dockerfile: worker/Dockerfile
             target: production

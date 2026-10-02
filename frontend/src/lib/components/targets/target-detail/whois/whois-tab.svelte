@@ -19,7 +19,6 @@
 	import {
 		ENTITY_ROLE_LABELS,
 		describeDomainStatus,
-		isRedactedName,
 		type DomainStatusTone,
 		type WhoisEntity,
 		type WhoisEntityRole,
@@ -105,7 +104,7 @@
 				key: 'registrant',
 				label: 'Registrant',
 				value: record.registrant_name,
-				sub: isRedactedName(record.registrant_name) ? 'identity redacted' : undefined
+				sub: record.registrant_redacted ? 'identity redacted' : undefined
 			});
 		} else {
 			push({ key: 'name', label: isAsn ? 'AS name' : 'Network name', value: record.name });
@@ -294,7 +293,7 @@
 					{@const Icon = STATUS_ICON[s.tone]}
 					<div class="flex items-center gap-2.5 py-1.5 text-sm">
 						<Icon class="size-3.5 shrink-0 {STATUS_COLOR[s.tone]}" />
-						<span class="min-w-0 flex-1">{s.label}</span>
+						<span class="max-w-full shrink-0 grow wrap-anywhere">{s.label}</span>
 						<span class="truncate font-mono text-xs text-muted-foreground">{s.code}</span>
 					</div>
 				{/each}

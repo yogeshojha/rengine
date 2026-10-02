@@ -12,7 +12,10 @@ from shared.definitions.issue_trackers import (
     TrackerKind,
 )
 from shared.services.issue_trackers.base import (
+    UNREADABLE,
+    CredentialsError,
     Option,
+    RateLimitedError,
     RemoteIssue,
     RemoteNotFoundError,
     RemoteStatus,
@@ -133,6 +136,10 @@ class _Jira(Tracker):
             )
         except RemoteNotFoundError:
             return None
+        except (RateLimitedError, CredentialsError):
+            raise
+        except TrackerError:
+            return RemoteStatus(name=UNREADABLE, category=None)
         return _status(issue)
 
     def statuses(

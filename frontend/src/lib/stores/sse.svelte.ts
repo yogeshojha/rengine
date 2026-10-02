@@ -1,14 +1,12 @@
-import { sseClient, type ConnectionState, type SSEMessage } from '$lib/api/sse';
+import { sseClient, type ConnectionState } from '$lib/api/sse';
 import { SSEChannel } from '$lib/types/sse';
 
 interface SSEStoreState {
 	connectionState: ConnectionState;
-	activeChannels: string[];
 }
 
 const state = $state<SSEStoreState>({
-	connectionState: 'disconnected',
-	activeChannels: []
+	connectionState: 'disconnected'
 });
 
 let stateUnsub: (() => void) | null = null;
@@ -26,10 +24,6 @@ export const sseStore = {
 		return state.connectionState === 'reconnecting';
 	},
 
-	get activeChannels(): string[] {
-		return state.activeChannels;
-	},
-
 	init(projectId?: string): void {
 		stateUnsub?.();
 		stateUnsub = null;
@@ -42,14 +36,9 @@ export const sseStore = {
 
 		stateUnsub = sseClient.onStateChange((newState) => {
 			state.connectionState = newState;
-			state.activeChannels = Array.from(sseClient.activeChannels);
 		});
 
 		sseClient.connect(channels);
-	},
-
-	subscribe(channel: string, callback: (message: SSEMessage) => void): () => void {
-		return sseClient.subscribe(channel, callback);
 	},
 
 	on<T = Record<string, unknown>>(
@@ -64,11 +53,14 @@ export const sseStore = {
 		});
 	},
 
+	onResume(callback: () => void): () => void {
+		return sseClient.onResume(callback);
+	},
+
 	destroy(): void {
 		stateUnsub?.();
 		stateUnsub = null;
 		sseClient.disconnect();
 		state.connectionState = 'disconnected';
-		state.activeChannels = [];
 	}
 };

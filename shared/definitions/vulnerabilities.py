@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from enum import StrEnum
+
+CVE_ID = re.compile(r"^CVE-\d{4}-\d{4,7}$", re.IGNORECASE)
 
 MAX_TEMPLATE_BYTES = 512_000
 MAX_TEMPLATE_UPLOAD = 50
@@ -102,16 +105,13 @@ SUPPRESSED_STATES: tuple[str, ...] = (
     VulnState.ACCEPTED.value,
 )
 
+# every state outside SUPPRESSED_STATES
+ACTIVE_TAB = "active"
+
 
 class CorroborationBasis(StrEnum):
     CVE = "cve"
     CWE = "cwe"
-
-
-CORROBORATION_BASIS_LABELS: dict[str, str] = {
-    CorroborationBasis.CVE.value: "Names the same CVE",
-    CorroborationBasis.CWE.value: "Names the same weakness class",
-}
 
 
 class Scanner(StrEnum):
@@ -130,9 +130,13 @@ SCANNER_LABELS: dict[str, str] = {
 
 DEFAULT_SCANNERS: list[str] = [Scanner.NUCLEI.value]
 
-# scanners the census stage can run (dalfox is a fuzzer, it lives in dast_scan)
+# scanners the census stage can run
 CENSUS_SCANNERS: tuple[str, ...] = (Scanner.NUCLEI.value,)
 CENSUS_SCANNER_LABELS: dict[str, str] = {k: SCANNER_LABELS[k] for k in CENSUS_SCANNERS}
+
+# scanners the dast stage can run
+DAST_SCANNERS: tuple[str, ...] = (Scanner.NUCLEI.value, Scanner.DALFOX.value)
+DAST_SCANNER_LABELS: dict[str, str] = {k: SCANNER_LABELS[k] for k in DAST_SCANNERS}
 
 
 class Protocol(StrEnum):
@@ -206,6 +210,20 @@ COVERAGE_STATUS_LABELS: dict[str, str] = {
     CoverageStatus.FAILED.value: "Failed",
     CoverageStatus.SKIPPED.value: "Not run",
 }
+
+
+def checks_run(rows) -> int:
+    """The largest check set one invocation loaded, or selected where none was reported."""
+    return max(
+        (
+            row.templates_loaded
+            if row.templates_loaded is not None
+            else row.templates_selected or 0
+            for row in rows
+            if row.status != CoverageStatus.SKIPPED.value
+        ),
+        default=0,
+    )
 
 
 @dataclass(frozen=True)
@@ -327,10 +345,6 @@ DEFAULT_TEMPLATE_SETS: list[str] = [s.key for s in TEMPLATE_SETS if s.default]
 HEADLESS_SETS: frozenset[str] = frozenset(s.key for s in TEMPLATE_SETS if s.headless)
 
 
-# retired check sets
-RETIRED_TEMPLATE_SETS: frozenset[str] = frozenset({"technology"})
-
-
 def reject_unknown(values: list[str], known, axis: str) -> list[str]:
     """Reject values outside the known set."""
     unknown = [v for v in values if v not in known]
@@ -341,15 +355,13 @@ def reject_unknown(values: list[str], known, axis: str) -> list[str]:
 
 
 def scannable_severities(values: list[str]) -> list[str]:
-    """Known severities, minus the ones the vulnerability scan never runs."""
+    """Known severities the vulnerability scan runs."""
     reject_unknown(values, SEVERITY_ORDER, "severity")
     return [v for v in values if v in SCANNABLE_SEVERITIES]
 
 
 def live_template_sets(values: list[str]) -> list[str]:
-    """Known check sets, minus the retired ones."""
-    reject_unknown(values, (*TEMPLATE_SET_KEYS, *RETIRED_TEMPLATE_SETS), "check set")
-    return [v for v in values if v in TEMPLATE_SET_KEYS]
+    return reject_unknown(values, TEMPLATE_SET_KEYS, "check set")
 
 
 FORBIDDEN_TEMPLATE_KEYS: frozenset[str] = frozenset({"code"})
@@ -385,7 +397,6 @@ KEV_TAG = "kev"
 VKEV_TAG = "vkev"
 
 EPSS_HIGH = 0.5
-CVSS_HIGH = 7.0
 
 
 def is_kev(tags: list[str] | tuple[str, ...] | None) -> bool:

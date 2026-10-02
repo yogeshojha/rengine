@@ -2,6 +2,7 @@
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import XIcon from '@lucide/svelte/icons/x';
 	import * as Sheet from '$lib/components/ui/sheet';
+	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
@@ -139,21 +140,21 @@
 				{#if !editing}
 					<section class="flex flex-col gap-2.5 py-5">
 						<h3 class={LABEL}>Tracker</h3>
-						<div class="grid grid-cols-2 gap-1.5">
+						<ToggleGroup.Root
+							type="single"
+							variant="outline"
+							spacing={1}
+							value={kind}
+							onValueChange={(v) => v && pickKind(v)}
+							class="grid w-full grid-cols-2 gap-1.5"
+							aria-label="Tracker"
+						>
 							{#each TRACKERS as option (option.kind)}
-								<button
-									type="button"
-									class="h-9 rounded-md border px-2 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {kind ===
-									option.kind
-										? 'border-foreground/50 bg-muted font-medium'
-										: 'hover:border-foreground/30'}"
-									aria-pressed={kind === option.kind}
-									onclick={() => pickKind(option.kind)}
-								>
+								<ToggleGroup.Item value={option.kind} class="h-9 w-full">
 									{option.label}
-								</button>
+								</ToggleGroup.Item>
 							{/each}
-						</div>
+						</ToggleGroup.Root>
 					</section>
 				{/if}
 

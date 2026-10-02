@@ -1,5 +1,3 @@
-"""The bug bounty platforms reNgine reads through a researcher API."""
-
 from __future__ import annotations
 
 from sqlalchemy.orm import Session
@@ -9,8 +7,6 @@ from shared.services.bounty_providers.base import (
     BountyProvider,
     BountyProviderError,
     CredentialsError,
-    ReportFetch,
-    ScopeFetch,
 )
 from shared.services.bounty_providers.hackerone import HackerOneProvider
 from shared.services.bounty_providers.intigriti import IntigritiProvider
@@ -34,11 +30,6 @@ def configured_providers(session: Session) -> list[BountyProvider]:
     return [p for p in built if p is not None]
 
 
-def configured_platforms(session: Session) -> set[str]:
-    """Platform keys with a configured credential."""
-    return {cls.platform for cls in PROVIDERS if cls.from_session(session) is not None}
-
-
 __all__ = [
     "PROVIDERS",
     "PROVIDERS_BY_PLATFORM",
@@ -48,9 +39,6 @@ __all__ = [
     "CredentialsError",
     "HackerOneProvider",
     "IntigritiProvider",
-    "ReportFetch",
-    "ScopeFetch",
-    "configured_platforms",
     "configured_providers",
     "provider_for",
 ]

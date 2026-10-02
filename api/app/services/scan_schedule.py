@@ -276,10 +276,6 @@ class ScanScheduleService:
         current_tz = await self._instance_timezone()
         return [self._to_read(s, targets, current_tz) for s in rows]
 
-    async def get(self, id: UUID, project_id: UUID) -> ScanScheduleRead:
-        sched = await self._get(id, project_id)
-        return await self._read_one(sched)
-
     async def update(
         self, id: UUID, project_id: UUID, data: ScanScheduleUpdate
     ) -> ScanScheduleRead:

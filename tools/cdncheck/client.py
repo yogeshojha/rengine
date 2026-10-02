@@ -1,19 +1,14 @@
-"""cdncheck CLI client - CDN / WAF / cloud detection via CLIToolRunner."""
-
 from __future__ import annotations
 
-from shared.logging import get_logger
 from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError
 from tools.runner.models import CommandRecorder
-
-logger = get_logger(__name__)
 
 CDNCHECK_BINARY = "cdncheck"
 DEFAULT_TIMEOUT = 120
 
 
 class CdncheckError(Exception):
-    """Raised when cdncheck execution fails."""
+    """cdncheck is not installed or failed."""
 
 
 class CdncheckClient:
@@ -50,6 +45,8 @@ class CdncheckClient:
             tool=CDNCHECK_BINARY,
             extra_args=self.extra_args,
         )
+        if not result.success and not result.json_records:
+            raise CdncheckError(result.error or "cdncheck failed")
         out: dict[str, dict] = {}
         for rec in result.json_records:
             ip = rec.get("input") or rec.get("ip")

@@ -80,13 +80,13 @@
 
 		{#key `${projectId}:${spec.key}`}
 			{#if spec.key === SurfaceDimension.WEB_ASSETS}
-				<WebAssetsTable scanId="" projectWide {projectId} />
+				<WebAssetsTable scanId="" projectWide {projectId} onTab={openTab} />
 			{:else if spec.key === SurfaceDimension.ENDPOINTS}
-				<EndpointsTable scanId="" projectWide {projectId} />
+				<EndpointsTable scanId="" projectWide {projectId} onTab={openTab} />
 			{:else if spec.key === SurfaceDimension.SERVICES}
-				<ServicesTable scanId="" projectWide {projectId} />
+				<ServicesTable scanId="" projectWide {projectId} onTab={openTab} />
 			{:else if spec.key === SurfaceDimension.IPS}
-				<IpsTable scanId="" projectWide {projectId} />
+				<IpsTable scanId="" projectWide {projectId} onTab={openTab} />
 			{:else if spec.key === SurfaceDimension.VULNERABILITIES}
 				<VulnerabilitiesTable scanId="" projectWide onTab={openTab} />
 			{:else if spec.key === SurfaceDimension.SECRETS}

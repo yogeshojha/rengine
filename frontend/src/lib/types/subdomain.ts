@@ -74,23 +74,3 @@ export interface RenderGroups {
 	unrendered: number;
 	error?: QueryError | null;
 }
-
-export interface SubdomainSummary {
-	total: number;
-	active: number;
-	sources: Record<string, number>;
-}
-
-export interface TargetSubdomainRead {
-	name: string;
-	sources: string[];
-	resolved_ips: string[];
-	cname: string | null;
-	is_active: boolean;
-	is_wildcard: boolean;
-	is_excluded: boolean;
-	scan_count: number;
-	last_scan_id: string;
-	first_seen: string;
-	last_seen: string;
-}

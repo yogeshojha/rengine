@@ -50,6 +50,7 @@ class ServiceFingerprintStage(Stage):
             timeout=float(self.transport.timeout),
             concurrency=self.transport.threads,
             proxy_url=self.net_options().proxy_url,
+            rate=self.ctx.resolved.global_rate_limit_ceiling,
         )
         if client.proxy_warning:
             self.emit_progress(client.proxy_warning)
@@ -114,16 +115,29 @@ class ServiceFingerprintStage(Stage):
             )
         )
         rows = self.session.execute(
-            query.order_by(Port.ip, Port.number).limit(cfg.max_services)
-        ).all()
+            query.order_by(Port.ip, Port.number).execution_options(yield_per=1000)
+        )
         excluded = self.ctx.resolved.excluded_ips or []
-        return [
-            Endpoint(
-                ip=ip, port=number, service=name, tls=bool(tls) or likely_tls(number)
-            )
-            for ip, number, name, tls, policy in rows
-            if _allowed(policy, number) and not (excluded and ip_excluded(ip, excluded))
-        ]
+        endpoints: list[Endpoint] = []
+        try:
+            for ip, number, name, tls, policy in rows:
+                if not _allowed(policy, number) or (
+                    excluded and ip_excluded(ip, excluded)
+                ):
+                    continue
+                endpoints.append(
+                    Endpoint(
+                        ip=ip,
+                        port=number,
+                        service=name,
+                        tls=bool(tls) or likely_tls(number),
+                    )
+                )
+                if len(endpoints) >= cfg.max_services:
+                    break
+        finally:
+            rows.close()
+        return endpoints
 
 
 def _allowed(policy: str | None, port: int) -> bool:

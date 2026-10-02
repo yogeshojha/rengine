@@ -6,6 +6,7 @@
 	import { onboardingApi } from '$lib/api/onboarding';
 	import type { StepFooter, StepProps, WizardData } from '$lib/types/onboarding';
 	import { ROUTES } from '$lib/config/routes';
+	import { pageTitle } from '$lib/utilities/page-title';
 	import { toast } from 'svelte-sonner';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -35,48 +36,43 @@
 	import SatelliteDishIcon from '@lucide/svelte/icons/satellite-dish';
 	import NinjaIcon from '$lib/components/icons/ninja.svelte';
 	import { Capability, modeHas, type CapabilityKey } from '$lib/config/capabilities';
+	import type { IconComponent } from '$lib/config/icons';
 	import type { Component } from 'svelte';
 
 	interface Step {
-		key: string;
 		title: string;
 		description: string;
-		icon: Component;
+		icon: IconComponent;
 		component: Component<StepProps>;
 		capability?: CapabilityKey;
 	}
 
 	const ALL_STEPS: Step[] = [
 		{
-			key: 'welcome-security',
 			title: 'Instance setup',
 			description: 'Instance name, timezone and administrator password.',
 			icon: ServerCogIcon,
 			component: StepWelcomeSecurity
 		},
 		{
-			key: 'two-factor',
 			title: 'Two-factor authentication',
 			description: 'Second factor for the administrator account, from an authenticator app.',
 			icon: ShieldCheckIcon,
 			component: StepTwoFactor
 		},
 		{
-			key: 'mode',
 			title: 'Operating mode',
 			description: 'One mode is active at a time. Corporate hides bug bounty tooling.',
 			icon: CompassIcon,
 			component: StepMode
 		},
 		{
-			key: 'data',
 			title: 'Data',
 			description: 'Worker status, downloaded datasets and retention.',
 			icon: DatabaseIcon,
 			component: StepData
 		},
 		{
-			key: 'platforms',
 			title: 'Bug bounty platforms',
 			description: 'Platform API tokens add private programs and their scope.',
 			icon: NinjaIcon,
@@ -84,28 +80,24 @@
 			capability: Capability.BOUNTY_PLATFORMS
 		},
 		{
-			key: 'integrations',
 			title: 'API keys',
 			description: 'Keys for subdomain sources, lookups and exploit intelligence.',
 			icon: PlugIcon,
 			component: StepIntegrations
 		},
 		{
-			key: 'oast',
 			title: 'Out-of-band testing',
 			description: 'Callback server for checks that confirm a finding out of band.',
 			icon: SatelliteDishIcon,
 			component: StepOast
 		},
 		{
-			key: 'proxy',
 			title: 'Proxy',
 			description: 'Optional. Scan traffic exits through the proxy.',
 			icon: ShieldIcon,
 			component: StepProxy
 		},
 		{
-			key: 'ai',
 			title: 'AI analysis',
 			description:
 				'A language model summarizes findings and drafts remediation. A computed summary of each scan is sent to the selected provider.',
@@ -113,21 +105,18 @@
 			component: StepAi
 		},
 		{
-			key: 'notifications',
 			title: 'Notifications',
 			description: 'Scan events sent to Slack, Discord, Telegram or a webhook.',
 			icon: BellIcon,
 			component: StepNotifications
 		},
 		{
-			key: 'finish',
 			title: 'Create a project',
 			description: 'First project on this instance.',
 			icon: FolderPlusIcon,
 			component: StepFinish
 		},
 		{
-			key: 'celebration',
 			title: 'Setup complete',
 			description: 'This instance is configured.',
 			icon: CircleCheckIcon,
@@ -138,7 +127,6 @@
 	let ready = $state(false);
 	let loadFailed = $state(false);
 	let currentIndex = $state(0);
-	let direction = $state<'forward' | 'back'>('forward');
 	let data = $state<WizardData>({ mode: null, instanceName: '', twoFactorEnabled: false });
 
 	const STEPS = $derived(
@@ -146,7 +134,6 @@
 	);
 	const steps = $derived(
 		STEPS.map((s) => ({
-			key: s.key,
 			title: s.title,
 			description: s.description,
 			icon: s.icon
@@ -203,7 +190,6 @@
 
 	function next() {
 		if (currentIndex < STEPS.length - 1) {
-			direction = 'forward';
 			currentIndex += 1;
 			persistProgress(currentIndex);
 		}
@@ -211,7 +197,6 @@
 
 	function back() {
 		if (currentIndex > 0) {
-			direction = 'back';
 			currentIndex -= 1;
 			persistProgress(currentIndex);
 		}
@@ -222,7 +207,7 @@
 	}
 </script>
 
-<svelte:head><title>{STEPS[currentIndex]?.title ?? 'Setup'} · reNgine</title></svelte:head>
+<svelte:head><title>{pageTitle(STEPS[currentIndex]?.title ?? 'Setup')}</title></svelte:head>
 
 {#if loadFailed}
 	<div class="flex min-h-svh flex-col items-center justify-center gap-3 bg-background">
@@ -240,21 +225,12 @@
 	<WizardShell
 		{steps}
 		{currentIndex}
-		{direction}
 		footer={fcfg}
 		onBack={back}
 		onSkip={skip}
 		isFirst={currentIndex === 0}
 	>
 		{@const Step = STEPS[currentIndex].component}
-		<Step
-			{data}
-			{next}
-			{back}
-			{skip}
-			{setFooter}
-			isFirst={currentIndex === 0}
-			isLast={currentIndex === STEPS.length - 1}
-		/>
+		<Step {data} {next} {setFooter} />
 	</WizardShell>
 {/if}

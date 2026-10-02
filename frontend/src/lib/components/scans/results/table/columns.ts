@@ -64,7 +64,5 @@ export function readPref<T>(key: string, fallback: T): T {
 export function writePref(key: string, value: unknown) {
 	try {
 		localStorage.setItem(key, JSON.stringify(value));
-	} catch {
-		// ignore
-	}
+	} catch {}
 }

@@ -1,4 +1,4 @@
-"""Celery task for DNS enrichment of domain targets."""
+"""Celery task for DNS enrichment of domain and URL targets."""
 
 from celery import shared_task
 from sqlalchemy import select
@@ -6,27 +6,24 @@ from sqlalchemy import select
 from app.database import get_sync_session
 from shared.definitions.notifications import ENRICHMENT_FAILED
 from shared.enums.activity import ActivityEvent, ActivityLevel
-from shared.enums.target import TargetType
 from shared.enums.task_status import TaskStatus
 from shared.logging import get_logger
 from shared.models.target import Target
 from shared.services.activity_log import ActivityLogService
 from shared.utils.datetime import utc_now
+from shared.utils.validation import dns_lookup_name
 from tools.dnsx.service import DnsxService, DnsxServiceError
 
 logger = get_logger(__name__)
 
 
 @shared_task(
-    bind=True,
     name="app.tasks.dns.perform_dns_lookups",
-    max_retries=2,
-    default_retry_delay=30,
     soft_time_limit=300,
     time_limit=360,
 )
-def perform_dns_lookups(self, target_ids: list[str]) -> dict:  # noqa: ARG001, PLR0915
-    """Run dnsx recon on domain targets and store the records for correlation."""
+def perform_dns_lookups(target_ids: list[str]) -> dict:  # noqa: PLR0915
+    """Run dnsx recon on domain and URL targets and store the records for correlation."""
     logger.info(f"DNS lookup task started for {len(target_ids)} target(s)")
 
     try:
@@ -51,7 +48,8 @@ def perform_dns_lookups(self, target_ids: list[str]) -> dict:  # noqa: ARG001, P
                 results["skipped"] += 1
                 continue
 
-            if target.target_type != TargetType.DOMAIN:
+            name = dns_lookup_name(target.target_value, target.target_type)
+            if not name:
                 logger.debug(
                     f"Target {target_id} is {target.target_type.value}, "
                     f"skipping DNS lookup"
@@ -69,7 +67,7 @@ def perform_dns_lookups(self, target_ids: list[str]) -> dict:  # noqa: ARG001, P
                 lookup = service.lookup_and_store(
                     session=session,
                     target_id=target.id,
-                    domain=target.target_value,
+                    domain=name,
                 )
 
                 target.dns_lookup_id = lookup.id
@@ -108,6 +106,7 @@ def perform_dns_lookups(self, target_ids: list[str]) -> dict:  # noqa: ARG001, P
                     f"Unexpected error in DNS lookup for {target.target_value}: {e}",
                     exc_info=True,
                 )
+                session.rollback()
                 target.dns_status = TaskStatus.FAILED
                 target.dns_error = ENRICHMENT_FAILED
                 target.updated_at = utc_now()

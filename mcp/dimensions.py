@@ -1,4 +1,4 @@
-"""The five result dimensions, adapted for tools."""
+"""Result dimensions, adapted for tools."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any
 
+from mcp.errors import InvalidParamsError
 from shared.definitions.asset_query import (
     ENDPOINT_QUERY,
     HOST_QUERY,
@@ -38,7 +39,6 @@ class Dimension:
     registry: QueryRegistry
     # the scan-page tab a pivot link opens
     tab: str
-    filter_path: str
     service_path: str
     needs_project: bool = False
     page_args: tuple[str, str] = ("limit", "offset")
@@ -56,7 +56,9 @@ class Dimension:
         return SURFACE_NOUN[self.key][1]
 
     def load_filter(self) -> type[BaseModel]:
-        return _load(self.filter_path)
+        from shared.services.surface_query import for_dimension  # noqa: PLC0415
+
+        return for_dimension(self.key).filter_model
 
     def service(self, session: AsyncSession) -> Any:
         return _load(self.service_path)(session)
@@ -66,9 +68,13 @@ class Dimension:
     ) -> BaseModel:
         size_arg, offset_arg = self.page_args
         payload: dict[str, Any] = {"q": query or None, size_arg: limit}
-        payload[offset_arg] = (
-            offset if offset_arg == "offset" else offset // max(1, limit) + 1
-        )
+        if offset_arg == "offset":
+            payload[offset_arg] = offset
+        elif offset % max(1, limit):
+            msg = f"offset must be a multiple of limit for {self.noun_plural}."
+            raise InvalidParamsError(msg)
+        else:
+            payload[offset_arg] = offset // max(1, limit) + 1
         payload.update({k: v for k, v in extra.items() if v is not None})
         return self.load_filter().model_validate(payload)
 
@@ -120,7 +126,6 @@ DIMENSIONS: tuple[Dimension, ...] = (
         key=SurfaceDimension.WEB_ASSETS.value,
         registry=HOST_QUERY,
         tab="web-assets",
-        filter_path="shared.models.subdomain.SubdomainFilter",
         service_path="app.services.subdomain.SubdomainService",
         needs_project=True,
     ),
@@ -128,28 +133,24 @@ DIMENSIONS: tuple[Dimension, ...] = (
         key=SurfaceDimension.IPS.value,
         registry=IP_QUERY,
         tab="ips",
-        filter_path="shared.models.scan_correlation.IpGroupFilter",
         service_path="app.services.ip_address.IpAddressService",
     ),
     Dimension(
         key=SurfaceDimension.SERVICES.value,
         registry=SERVICE_QUERY,
         tab="services",
-        filter_path="shared.models.scan_correlation.ServiceFilter",
         service_path="app.services.port.PortService",
     ),
     Dimension(
         key=SurfaceDimension.VULNERABILITIES.value,
         registry=VULN_QUERY,
         tab="vulnerabilities",
-        filter_path="shared.models.vulnerability.VulnerabilityFilter",
         service_path="app.services.vulnerability.VulnerabilityService",
     ),
     Dimension(
         key=SurfaceDimension.ENDPOINTS.value,
         registry=ENDPOINT_QUERY,
         tab="endpoints",
-        filter_path="shared.models.endpoint.EndpointFilter",
         service_path="app.services.endpoint.EndpointService",
         page_args=("size", "page"),
     ),
@@ -157,7 +158,6 @@ DIMENSIONS: tuple[Dimension, ...] = (
         key=SurfaceDimension.SECRETS.value,
         registry=SECRET_QUERY,
         tab="secrets",
-        filter_path="shared.models.secret.SecretFilter",
         service_path="app.services.secret.SecretService",
     ),
 )
@@ -171,8 +171,6 @@ def by_key() -> dict[str, Dimension]:
 def dimension(key: str) -> Dimension:
     found = by_key().get(key)
     if found is None:
-        from mcp.errors import InvalidParamsError  # noqa: PLC0415
-
         known = ", ".join(DIMENSION_KEYS)
         msg = f"Unknown dimension {key!r}. Use one of: {known}."
         raise InvalidParamsError(msg)

@@ -35,12 +35,13 @@
 		const doomed = [...ids];
 		removing = true;
 		let done = 0;
+		let lastError = '';
 		for (const id of doomed) {
 			try {
 				await remove(id);
 				done += 1;
-			} catch {
-				/* counted as a miss below */
+			} catch (e) {
+				lastError = e instanceof Error ? e.message : '';
 			}
 		}
 		removing = false;
@@ -48,7 +49,9 @@
 		if (done) toast.success(`${done.toLocaleString()} ${done === 1 ? noun : many} deleted`);
 		if (done < doomed.length) {
 			const left = doomed.length - done;
-			toast.error(`${left.toLocaleString()} ${left === 1 ? noun : many} not deleted.`);
+			toast.error(
+				`${left.toLocaleString()} ${left === 1 ? noun : many} not deleted.${lastError ? ` ${lastError}` : ''}`
+			);
 		}
 		await onDone?.();
 	}

@@ -10,13 +10,6 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
-from app.services.asset_query import (
-    NO_JIT,
-    QueryScope,
-    vuln_corroborated_ids,
-    vuln_evidence,
-    vuln_suppressed,
-)
 from app.services.surface_scope import SurfaceScopeService
 from shared.definitions.evidence import (
     EVIDENCE_HELP,
@@ -46,6 +39,13 @@ from shared.models.software import NvdCpeMatch, NvdCve, SoftwareCve
 from shared.models.target import Target
 from shared.models.threat_intel import EpssScore, KevEntry
 from shared.models.vulnerability import Vulnerability, VulnerabilityTriage
+from shared.services.asset_query import (
+    NO_JIT,
+    QueryScope,
+    vuln_corroborated_ids,
+    vuln_evidence,
+    vuln_suppressed,
+)
 from shared.utils.datetime import utc_now
 
 MAX_LOCATIONS = 500
@@ -84,8 +84,8 @@ WITH sw AS (
            max(r.cvss_score) AS cvss_score,
            max(r.epss_score) AS epss_score,
            min(r.discovered_at) AS first_seen,
-           coalesce(max(n.severity), min({sev_rank})) AS severity,
-           max({ev_rank}) AS top_evidence
+           coalesce(max(n.severity), {sev_label}) AS severity,
+           {ev_label} AS top_evidence
       FROM rows r
       LEFT JOIN nvd_cves n ON n.cve = r.cve
      WHERE (:needle = '' OR r.cve ILIKE :needle)
@@ -167,8 +167,8 @@ def _label(ranks: dict[str, int], expr: str) -> str:
 
 _SEV_RANK = _case(SEVERITY_RANK, "r.severity")
 _AGG_SQL = _AGG.format(
-    sev_rank=_label(SEVERITY_RANK, _SEV_RANK),
-    ev_rank=_label(EVIDENCE_RANK, _case(EVIDENCE_RANK, "r.evidence")),
+    sev_label=_label(SEVERITY_RANK, f"min({_SEV_RANK})"),
+    ev_label=_label(EVIDENCE_RANK, f"max({_case(EVIDENCE_RANK, 'r.evidence')})"),
 )
 
 
@@ -197,13 +197,13 @@ class CveExposureService:
             "needle": f"%{q.strip()}%" if q.strip() else "",
         }
 
-    async def total(self, project_id: UUID, q: str = "") -> int:
+    async def total(self, project_id: UUID) -> int:
         software, findings = await self._scopes(project_id)
         if not software and not findings:
             return 0
         await self.session.execute(text(NO_JIT))
         counted = await self.session.scalar(
-            text(_INDEX_TOTAL), self._params(software, findings, q)
+            text(_INDEX_TOTAL), self._params(software, findings)
         )
         return int(counted or 0)
 
@@ -258,6 +258,15 @@ class CveExposureService:
                 {**params, "size": size, "offset": (page - 1) * size},
             )
         ).all()
+        total = int(rows[0].matched) if rows else 0
+        if not rows and page > 1:
+            total = int(
+                await self.session.scalar(
+                    text(f"{_AGG_SQL}\nSELECT count(*) FROM agg WHERE {row_where}"),
+                    params,
+                )
+                or 0
+            )
         facets = (
             await self.session.execute(
                 text(
@@ -291,7 +300,7 @@ class CveExposureService:
                 )
                 for r in rows
             ],
-            total=int(rows[0].matched) if rows else 0,
+            total=total,
             page=page,
             size=size,
             severity_counts=counts,
@@ -498,7 +507,6 @@ class CveExposureService:
                 port=r.port,
                 url=r.url,
                 evidence=r.evidence,
-                evidence_label=EVIDENCE_LABELS.get(r.evidence, ""),
                 basis=f"{r.name} {r.version}",
                 detail=r.cpe,
                 severity=r.severity,
@@ -566,7 +574,6 @@ class CveExposureService:
                     port=v.port,
                     url=v.matched_at,
                     evidence=evidence,
-                    evidence_label=EVIDENCE_LABELS[evidence],
                     basis=v.template_name,
                     detail=v.template_id,
                     severity=v.severity,

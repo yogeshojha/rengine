@@ -8,12 +8,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from shared.definitions.api_keys import PROVIDER_GROUP_LABELS
+from shared.definitions.api_keys import API_PROVIDER_META, PROVIDER_GROUP_LABELS
 from shared.definitions.mode_features import provider_allowed
 from shared.enums.api_key import APIProvider
 from shared.enums.instance import InstanceMode
 from shared.models.api_key import (
-    API_PROVIDER_META,
     APIKey,
     APIKeyCreate,
     APIKeyRead,
@@ -21,6 +20,8 @@ from shared.models.api_key import (
     ProviderInfo,
 )
 from shared.models.instance_settings import SINGLETON_KEY, InstanceSettings
+from shared.services.api_key.sync_api_key import open_key
+from shared.services.scan_resolve import mask_tail
 from shared.utils.crypto import encrypt_secret, try_decrypt
 from shared.utils.datetime import utc_now
 
@@ -46,28 +47,18 @@ class APIKeyService:
         )
         return result.scalar_one_or_none() or InstanceMode.BUG_BOUNTY.value
 
-    def _mask_key(self, key_value: str) -> str:
-        if len(key_value) <= 4:  # noqa: PLR2004
-            return "****"
-        return f"****{key_value[-4:]}"
-
     def _to_read(self, api_key: APIKey) -> APIKeyRead:
         return APIKeyRead(
             id=api_key.id,
             provider=api_key.provider,
-            key_value_masked=self._mask_key(
-                try_decrypt(api_key.key_value) or api_key.key_value
-            ),
+            key_value_masked=mask_tail(try_decrypt(api_key.key_value) or ""),
             key_meta=api_key.key_meta,
             is_enabled=api_key.is_enabled,
-            usage_counter=api_key.usage_counter,
-            last_used_at=api_key.last_used_at,
             last_test_at=api_key.last_test_at,
             last_test_ok=api_key.last_test_ok,
             last_test_message=api_key.last_test_message,
             created_at=api_key.created_at,
             updated_at=api_key.updated_at,
-            meta=API_PROVIDER_META.get(api_key.provider, {}),
         )
 
     async def list_keys(self) -> list[APIKeyRead]:
@@ -99,11 +90,12 @@ class APIKeyService:
         return [p for p in providers if provider_allowed(mode, p.provider.value)]
 
     async def create_key(self, data: APIKeyCreate) -> APIKeyRead:
+        name = API_PROVIDER_META[data.provider]["name"]
         mode = await self._instance_mode()
         if not provider_allowed(mode, data.provider.value):
             raise _http_error(
                 HTTPStatus.FORBIDDEN,
-                f"{data.provider.value} requires Bug bounty mode.",
+                f"{name} requires bug bounty mode.",
             )
 
         if API_PROVIDER_META.get(data.provider, {}).get("requires_username"):
@@ -111,7 +103,7 @@ class APIKeyService:
             if not username or not str(username).strip():
                 raise _http_error(
                     HTTPStatus.BAD_REQUEST,
-                    f"{data.provider.value} requires a username.",
+                    f"{name} requires a username.",
                 )
 
         existing = await self.session.execute(
@@ -122,7 +114,7 @@ class APIKeyService:
         if existing.scalar_one_or_none():
             raise _http_error(
                 HTTPStatus.CONFLICT,
-                f"An API key for {data.provider.value} exists.",
+                f"An API key for {name} exists.",
             )
 
         api_key = APIKey(
@@ -137,7 +129,7 @@ class APIKeyService:
             await self.session.rollback()
             raise _http_error(
                 HTTPStatus.CONFLICT,
-                f"An API key for {data.provider.value} exists.",
+                f"An API key for {name} exists.",
             ) from e
         await self.session.refresh(api_key)
         return self._to_read(api_key)
@@ -183,20 +175,7 @@ class APIKeyService:
         api_key = result.scalar_one_or_none()
         if not api_key:
             return None
-        return try_decrypt(api_key.key_value) or api_key.key_value
-
-    async def increment_usage(self, provider: APIProvider) -> None:
-        result = await self.session.execute(
-            select(APIKey).where(
-                APIKey.provider == provider,
-            )
-        )
-        api_key = result.scalar_one_or_none()
-        if api_key:
-            api_key.usage_counter += 1
-            api_key.last_used_at = utc_now()
-            self.session.add(api_key)
-            await self.session.commit()
+        return open_key(api_key)
 
     async def disable_key(self, provider: APIProvider) -> None:
         result = await self.session.execute(
@@ -215,10 +194,10 @@ class APIKeyService:
         try:
             uuid_id = uuid.UUID(key_id)
         except ValueError as e:
-            raise _http_error(HTTPStatus.BAD_REQUEST, "Invalid key ID") from e
+            raise _http_error(HTTPStatus.BAD_REQUEST, "Invalid key ID.") from e
 
         result = await self.session.execute(select(APIKey).where(APIKey.id == uuid_id))
         api_key = result.scalar_one_or_none()
         if not api_key:
-            raise _http_error(HTTPStatus.NOT_FOUND, "API key not found")
+            raise _http_error(HTTPStatus.NOT_FOUND, "API key not found.")
         return api_key

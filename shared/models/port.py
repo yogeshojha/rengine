@@ -64,8 +64,3 @@ class PortRead(BaseModel):
     banner: str | None = None
     cpe: list[str] = Field(default_factory=list)
     discovered_at: datetime
-
-
-class PortSummary(BaseModel):
-    total: int
-    by_service: dict[str, int] = Field(default_factory=dict)

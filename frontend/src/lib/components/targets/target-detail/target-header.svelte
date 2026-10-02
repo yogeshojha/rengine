@@ -20,7 +20,7 @@
 	import TargetTagPopover from '$lib/components/targets/target-tag-popover.svelte';
 	import { TARGET_TYPE_ICONS } from '$lib/config/icons';
 	import { targetTypeLabel } from '$lib/types/scan-engine';
-	import { TargetType, type Target } from '$lib/types/target';
+	import { TargetType, bgpApplies, dnsApplies, type Target } from '$lib/types/target';
 	import { TaskStatus } from '$lib/types/task-status';
 	import { getFreshnessLevel, formatShortDate } from '$lib/utilities/dates';
 	import { getExternalLinksTargetDropdown } from '$lib/utilities/target-detail-external-links';
@@ -71,7 +71,7 @@
 	const sources = $derived.by<Source[]>(() => {
 		const t = target.target_type;
 		const out: Source[] = [];
-		if (t === TargetType.DOMAIN || t === TargetType.URL)
+		if (dnsApplies(t))
 			out.push({
 				label: 'DNS',
 				status: target.dns_status,
@@ -82,7 +82,7 @@
 			status: target.whois_status,
 			queriedAt: target.whois?.queried_at ?? null
 		});
-		if (t === TargetType.IP || t === TargetType.IP_RANGE || t === TargetType.ASN)
+		if (bgpApplies(t))
 			out.push({
 				label: 'BGP',
 				status: target.bgp_status,

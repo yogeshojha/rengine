@@ -6,14 +6,11 @@ from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentSuperuser, CurrentUser
+from app.api.deps import CurrentUser
 from app.api.pagination import Page
-from app.config import settings
 from app.core.database import get_session
-from app.debug.notifications import DEBUG_NOTIFICATION_TEMPLATES
 from shared.models.notification import (
     Notification,
-    NotificationCreate,
     NotificationRead,
     NotificationReceipt,
     NotificationStats,
@@ -82,42 +79,6 @@ async def list_notifications(
     )
 
 
-@router.get("/unread", response_model=Page[NotificationRead])
-async def list_unread_notifications(
-    current_user: CurrentUser,
-    session: Annotated[AsyncSession, Depends(get_session)],
-    project_id: ProjectScope = None,
-):
-    query = (
-        _visible(
-            select(Notification, NotificationReceipt.read_at), current_user, project_id
-        )
-        .where(NotificationReceipt.read_at.is_(None))
-        .order_by(Notification.created_at.desc())
-    )
-    return await paginate(
-        session, query, unique=False, transformer=lambda rows: [_read(r) for r in rows]
-    )
-
-
-@router.post("", response_model=NotificationRead, status_code=status.HTTP_201_CREATED)
-async def create_notification(
-    notification_in: NotificationCreate,
-    _current_user: CurrentSuperuser,
-    session: Annotated[AsyncSession, Depends(get_session)],
-):
-    notification = await NotificationManager.publish(
-        session=session,
-        type=notification_in.type,
-        severity=notification_in.severity,
-        title=notification_in.title,
-        message=notification_in.message,
-        metadata=notification_in.notification_metadata,
-    )
-
-    return NotificationRead(**notification.model_dump())
-
-
 @router.patch("/{notification_id}/read", response_model=dict)
 async def mark_notification_as_read(
     notification_id: int,
@@ -178,25 +139,3 @@ async def clear_all_notifications(
     project_id: ProjectScope = None,
 ):
     await NotificationManager.dismiss_all(session, current_user.id, project_id)
-
-
-if settings.DEBUG:
-    import random
-
-    @router.post("/debug/publish-random", response_model=NotificationRead)
-    async def debug_publish_random_notification(
-        _current_user: CurrentUser,
-        session: Annotated[AsyncSession, Depends(get_session)],
-    ):
-        template = random.choice(DEBUG_NOTIFICATION_TEMPLATES)  # noqa: S311
-
-        notification = await NotificationManager.publish(
-            session=session,
-            type=template["type"],
-            severity=template["severity"],
-            title=template["title"],
-            message=template["message"],
-            metadata=template.get("metadata"),
-        )
-
-        return NotificationRead(**notification.model_dump())

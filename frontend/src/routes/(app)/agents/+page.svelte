@@ -23,10 +23,9 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { routeLabels } from '$lib/config/routes';
 	import { MCP_POLL_MS } from '$lib/utilities/mcp';
-	import { SERVER_STATE_DOT, SERVER_STATE_LABEL, tokenUsable, type McpToken } from '$lib/types/mcp';
+	import { MAX_TOKENS, SERVER_STATE_DOT, SERVER_STATE_LABEL, type McpToken } from '$lib/types/mcp';
 
 	const TICK_MS = 1000;
-	const MAX_KEYS = 50;
 
 	let now = $state(Date.now());
 	let connectOpen = $state(false);
@@ -43,7 +42,7 @@
 	const tokens = $derived(mcp.tokens);
 	const titles = $derived(new Map(mcp.tools.map((t) => [t.name, t.title])));
 	const history = $derived(tokens.find((t) => t.id === historyId) ?? null);
-	const atLimit = $derived(tokens.filter(tokenUsable).length >= MAX_KEYS);
+	const atLimit = $derived(tokens.filter((t) => !t.revoked).length >= MAX_TOKENS);
 
 	$effect(() => {
 		const admin = canAdmin;
@@ -123,7 +122,7 @@
 					<SettingsIcon class="size-4" />
 					Settings
 				</Button>
-				<Hint text={atLimit ? `Limit of ${MAX_KEYS} agents reached.` : ''}>
+				<Hint text={atLimit ? `Limit of ${MAX_TOKENS} agents reached.` : ''}>
 					{#snippet child(props)}
 						<span {...props} class="inline-flex">
 							<Button size="sm" disabled={atLimit} onclick={() => openConnect(null)}>

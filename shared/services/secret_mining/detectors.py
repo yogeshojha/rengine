@@ -1,4 +1,4 @@
-"""Compiled detectors and the checks that keep a match honest."""
+"""Compiled detectors and match validation."""
 
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ from shared.definitions.secrets import (
     DETECTORS,
     EXAMPLE_DOMAINS,
     FILE_EXTENSIONS,
+    LINK_SCHEMES,
     MAX_SUBJECT_LENGTH,
     MAX_VALUE_LENGTH,
     MIN_ENTROPY_BITS,
@@ -168,7 +169,7 @@ def _validate_jwt(raw: str, now: datetime) -> Verdict:
     return Verdict(state=state, subject=_subject(meta["iss"]), meta=meta)
 
 
-def _validate_credential_url(raw: str) -> Verdict:
+def _validate_credential_url(raw: str) -> Verdict:  # noqa: PLR0911
     lowered = raw.lower()
     if any(mark in lowered for mark in TEMPLATE_MARKS):
         return Verdict(reason=DropReason.TEMPLATE.value)
@@ -182,6 +183,8 @@ def _validate_credential_url(raw: str) -> Verdict:
         return Verdict(reason=DropReason.UNDECODABLE.value)
     if not username or not password:
         return Verdict(reason=DropReason.PLACEHOLDER.value)
+    if username.lower() in LINK_SCHEMES:
+        return Verdict(reason=DropReason.LINK_SCHEME.value)
     if password.lower() in PLACEHOLDER_PASSWORDS or _placeholder(password):
         return Verdict(reason=DropReason.PLACEHOLDER.value)
     if host in EXAMPLE_DOMAINS or any(host.endswith(f".{d}") for d in EXAMPLE_DOMAINS):
@@ -246,7 +249,7 @@ def validate(  # noqa: PLR0911
 
 
 def _resolve_overlaps(found: list[Match], dropped: Counter) -> list[Match]:
-    """Keep the longest match at any position; a value inside another is not its own."""
+    """Keep the longest match at any position."""
     kept: list[Match] = []
     last_end = -1
     for match in sorted(found, key=lambda m: (m.start, -(m.end - m.start))):
@@ -259,7 +262,7 @@ def _resolve_overlaps(found: list[Match], dropped: Counter) -> list[Match]:
 
 
 def find(text: str, *, now: datetime | None = None) -> Sweep:
-    """Every honest match in one document."""
+    """Every kept match in one document."""
     now = now or utc_now()
     sweep = Sweep()
     if not text:

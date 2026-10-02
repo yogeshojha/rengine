@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import * as HoverCard from '$lib/components/ui/hover-card';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { SEVERITY_CHIP } from '$lib/config/vulnerabilities';
 	import type { VulnerabilityRead } from '$lib/utilities/vulns';
 	import { peek } from './peek';
@@ -47,7 +48,7 @@
 		{:else if !items}
 			<div class="space-y-2 px-3 py-3">
 				{#each { length: Math.min(Math.max(total, 1), 3) } as _, i (i)}
-					<div class="h-3.5 animate-pulse rounded bg-muted"></div>
+					<Skeleton class="h-3.5 w-full" />
 				{/each}
 			</div>
 		{:else if items.length === 0}

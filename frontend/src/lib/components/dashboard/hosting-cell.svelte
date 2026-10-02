@@ -57,7 +57,6 @@
 		(networks ?? []).slice(0, TOP).map((f) => ({
 			key: f.value,
 			label: f.label,
-			sub: `AS${f.value}`,
 			count: f.count,
 			href: routes.surface(IPS.tab, { [IPS.queryParam]: `asn:${f.value}` })
 		}))
@@ -66,10 +65,9 @@
 
 <Cell
 	id="hosting"
-	title="Hosting"
 	description="By fronting and network"
 	href={routes.surface(WEB.tab, { [WEB.queryParam]: HOSTING_QUERIES.resolved })}
-	hrefLabel="is:resolved"
+	hrefLabel={HOSTING_QUERIES.resolved}
 	loading={loading && !hosting}
 	class={className}
 >
@@ -103,7 +101,7 @@
 		</div>
 	{/if}
 	{#if rows.length}
-		<RankedBars {rows} dense />
+		<RankedBars {rows} />
 	{/if}
 	{#snippet footer()}
 		{#if hosting}

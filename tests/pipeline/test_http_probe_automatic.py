@@ -1,9 +1,5 @@
-"""The HTTP probe runs on every run above passive and carries no switch."""
-
 from __future__ import annotations
 
-import importlib.util
-from pathlib import Path
 from typing import ClassVar
 
 import pytest
@@ -16,10 +12,6 @@ from stages.registry import stage_by_name
 pytestmark = pytest.mark.pipeline
 
 _PROBE = "http_probe"
-_MIGRATION = (
-    Path(__file__).resolve().parents[2]
-    / "alembic/versions/2026_09_24_http_probe_automatic.py"
-)
 
 
 class _Engine:
@@ -81,30 +73,3 @@ def test_the_passive_preset_is_passive_intensity():
         spec = specs[name]
         if values["enabled"] and spec.touches_target:
             assert spec.passive_capable, name
-
-
-def _migration():
-    spec = importlib.util.spec_from_file_location("http_probe_automatic", _MIGRATION)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-@pytest.mark.parametrize(
-    ("stored", "expected"),
-    [
-        ({_PROBE: {"enabled": False}}, {}),
-        (
-            {_PROBE: {"enabled": True, "probe_all_ports": True}},
-            {"port_scan": {"http_on_every_port": True}},
-        ),
-        (
-            {_PROBE: {"probe_all_ports": False}, "port_scan": {"profile": "web"}},
-            {"port_scan": {"profile": "web"}},
-        ),
-        ({"port_scan": {"profile": "web"}}, {"port_scan": {"profile": "web"}}),
-    ],
-)
-def test_the_migration_moves_the_setting_and_drops_the_switch(stored, expected):
-    migrated, _ = _migration()._migrate(stored)
-    assert migrated == expected

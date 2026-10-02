@@ -20,11 +20,11 @@ from shared.definitions.domain_posture import (
     SpfAll,
 )
 from shared.services.domain_posture import spf as spf_rules
-from shared.services.domain_posture.records import ZoneRecords
+from shared.services.domain_posture.records import ZoneRecords, dmarc_records
+from shared.utils.text import clip_line
 
 C = PostureCheck
 
-_DMARC_PREFIX = "v=dmarc1"
 _TAG_RE = re.compile(r"\s*([a-z]+)\s*=\s*([^;]*)", re.IGNORECASE)
 _ENFORCING = ("quarantine", "reject")
 _MODE_RE = re.compile(r"^\s*mode\s*:\s*([a-z]+)\s*$", re.IGNORECASE | re.MULTILINE)
@@ -68,8 +68,7 @@ class Posture:
 
 
 def _clip(value: str) -> str:
-    value = " ".join(value.split())
-    return value if len(value) <= MAX_EVIDENCE else value[: MAX_EVIDENCE - 1] + "…"
+    return clip_line(value, MAX_EVIDENCE)
 
 
 # ---------- parsing ----------
@@ -82,10 +81,6 @@ def dmarc_tags(record: str) -> dict[str, str]:
         if match:
             out.setdefault(match.group(1).lower(), match.group(2).strip())
     return out
-
-
-def is_dmarc(value: str) -> bool:
-    return value.strip().lower().startswith(_DMARC_PREFIX)
 
 
 def dkim_key_bits(record: str) -> int | None:
@@ -147,7 +142,7 @@ def _sender(rec: ZoneRecords, out: Posture, add) -> None:
 
     if rec.dmarc_unknown:
         return
-    dmarc = [v for v in rec.dmarc if is_dmarc(v)]
+    dmarc = dmarc_records(rec.dmarc)
     add(Verdict(C.DMARC_MISSING, not dmarc))
     if dmarc:
         record = dmarc[0]

@@ -15,7 +15,7 @@ down_revision: str | None = "f3b7d1a9c2e4"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
-# activity_logs.event_type is a native pg enum; names match ActivityEvent members.
+# native pg enum of ActivityEvent member names
 _NEW_VALUES = ("SCAN_STARTED", "SCAN_PROGRESS", "SCAN_COMPLETED", "SCAN_FAILED")
 
 
@@ -25,5 +25,4 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # Postgres cannot drop enum values without recreating the type; leave as-is.
     pass

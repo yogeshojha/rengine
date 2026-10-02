@@ -40,15 +40,6 @@ async def create_proxy(
     return await service.create(data, created_by=current_user.id)
 
 
-@router.get("/{id}", response_model=ProxyRead)
-async def get_proxy(
-    id: UUID,
-    _current_user: CurrentSuperuser,
-    service: Annotated[ProxyService, Depends(get_service)],
-):
-    return await service.get(id)
-
-
 @router.patch("/{id}", response_model=ProxyRead)
 async def update_proxy(
     id: UUID,

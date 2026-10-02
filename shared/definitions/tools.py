@@ -128,3 +128,223 @@ SCAN_TOOLS: tuple[ToolSpec, ...] = (
 )
 
 TOOL_NAMES: frozenset[str] = frozenset(t.name for t in SCAN_TOOLS)
+
+# flags refused in tool args, both spellings, without dashes
+DENIED_FLAGS: dict[str, frozenset[str]] = {
+    "nuclei": frozenset(
+        {
+            "ev",
+            "env-vars",
+            "code",
+            "dut",
+            "disable-unsigned-templates",
+            "lfa",
+            "allow-local-file-access",
+            "turl",
+            "template-url",
+            "wurl",
+            "workflow-url",
+            "sf",
+            "secret-file",
+            "config",
+            "tp",
+            "profile",
+            "rc",
+            "report-config",
+            "rdb",
+            "report-db",
+            "o",
+            "output",
+            "srd",
+            "store-resp-dir",
+            "elog",
+            "error-log",
+            "tlog",
+            "trace-log",
+            "me",
+            "markdown-export",
+            "se",
+            "sarif-export",
+            "je",
+            "json-export",
+            "jle",
+            "jsonl-export",
+            "pe",
+            "pdf-export",
+            "dtr",
+            "dast-report",
+            "dts",
+            "dast-server",
+            "resume",
+            "project-path",
+            "profile-mem",
+            "ud",
+            "update-template-dir",
+            "reset",
+            "auth",
+            "pd",
+            "dashboard",
+            "pdu",
+            "dashboard-upload",
+            "cup",
+            "cloud-upload",
+            "tid",
+            "team-id",
+            "ho",
+            "headless-options",
+            "cdpe",
+            "cdp-endpoint",
+        }
+    ),
+    "httpx": frozenset(
+        {
+            "config",
+            "sf",
+            "secret-file",
+            "o",
+            "output",
+            "oa",
+            "output-all",
+            "srd",
+            "store-response-dir",
+            "fepp",
+            "filter-error-page-path",
+            "rdbc",
+            "result-db-config",
+            "profile-mem",
+            "auth",
+            "ac",
+            "auth-config",
+            "pd",
+            "dashboard",
+            "pdu",
+            "dashboard-upload",
+            "tid",
+            "team-id",
+            "aid",
+            "asset-id",
+            "ho",
+            "headless-options",
+        }
+    ),
+    "katana": frozenset(
+        {
+            "config",
+            "fc",
+            "form-config",
+            "flc",
+            "field-config",
+            "o",
+            "output",
+            "srd",
+            "store-response-dir",
+            "sfd",
+            "store-field-dir",
+            "elog",
+            "error-log",
+            "cdd",
+            "chrome-data-dir",
+            "scp",
+            "system-chrome-path",
+            "ho",
+            "headless-options",
+            "cwu",
+            "chrome-ws-url",
+        }
+    ),
+    "naabu": frozenset({"config", "o", "output", "nmap", "nmap-cli"}),
+    "ffuf": frozenset(
+        {
+            "config",
+            "o",
+            "od",
+            "debug-log",
+            "audit-log",
+            "input-cmd",
+            "input-shell",
+            "request",
+        }
+    ),
+    "dnsx": frozenset({"o", "output", "ot", "output-template", "auth"}),
+    "tlsx": frozenset(
+        {
+            "config",
+            "o",
+            "output",
+            "ob",
+            "openssl-binary",
+            "auth",
+            "pd",
+            "dashboard",
+            "pdu",
+            "dashboard-upload",
+            "tid",
+            "team-id",
+            "aid",
+            "asset-id",
+        }
+    ),
+    "subfinder": frozenset(
+        {
+            "config",
+            "pc",
+            "provider-config",
+            "o",
+            "output",
+            "oD",
+            "output-dir",
+        }
+    ),
+    "urlfinder": frozenset(
+        {
+            "config",
+            "pc",
+            "provider-config",
+            "o",
+            "output",
+            "od",
+            "output-dir",
+        }
+    ),
+    "alterx": frozenset({"config", "ac", "o", "output", "save-rules"}),
+    "cdncheck": frozenset({"o", "output"}),
+    "amass": frozenset({"config", "dir", "log", "o", "oA", "scripts"}),
+    "github-subdomains": frozenset({"o"}),
+    "assetfinder": frozenset(),
+    "wafw00f": frozenset({"o", "output", "i", "input-file", "H", "headers"}),
+    "dalfox": frozenset(
+        {
+            "config",
+            "o",
+            "output",
+            "state-file",
+            "cookie-from-raw",
+            "custom-payload",
+            "custom-blind-xss-payload",
+        }
+    ),
+    "julius": frozenset({"f", "file", "p", "probes-dir"}),
+}
+
+CLUSTERED_SHORT_FLAGS: frozenset[str] = frozenset({"wafw00f", "dalfox", "julius"})
+ABBREVIATED_LONG_FLAGS: frozenset[str] = frozenset({"wafw00f"})
+
+
+def denied_flag(tool: str, tokens: list[str]) -> str | None:
+    """First token naming a flag the tool refuses in tool args."""
+    denied = DENIED_FLAGS.get(tool, frozenset())
+    for token in tokens:
+        flag = token.split("=", 1)[0]
+        if not flag.startswith("-"):
+            continue
+        name = flag.lstrip("-")
+        if name in denied:
+            return flag
+        if flag.startswith("--"):
+            if tool in ABBREVIATED_LONG_FLAGS and any(
+                len(d) > 1 and d.startswith(name) for d in denied if name
+            ):
+                return flag
+        elif tool in CLUSTERED_SHORT_FLAGS and any(c in denied for c in token[1:]):
+            return flag
+    return None

@@ -13,12 +13,10 @@ from sqlalchemy import (
     desc,
     exists,
     func,
-    join,
     literal,
     or_,
     select,
     text,
-    true,
     union_all,
 )
 from sqlalchemy.dialects.postgresql import JSONB, array
@@ -26,30 +24,15 @@ from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
-from app.services.asset_query import (
-    NO_JIT,
-    STATEMENT_TIMEOUT,
-    QueryScope,
-    QuerySyntaxError,
-    ScopeLike,
-    build_endpoint_groups,
-    build_leads,
-    compile_endpoint_query,
-    endpoint_is_new,
-    endpoint_status_class,
-    parse_query,
-    query_error_for,
-    syntax_error,
-    vuln_suppressed,
-)
+from app.services import scan_deltas as stored_deltas
 from app.services.endpoint_tree import (
     anomaly_for,
     archive_only_for,
     build_tree,
-    static_clause,
+    status_bucket,
 )
 from app.services.target_names import target_names
-from shared.definitions.asset_query import COUNT_CAP, ENDPOINT_QUERY
+from shared.definitions.asset_query import ALL_TAB, COUNT_CAP, ENDPOINT_QUERY
 from shared.definitions.endpoints import (
     ADMIN_INTERESTS,
     ARCHIVE_SOURCES,
@@ -72,8 +55,10 @@ from shared.definitions.endpoints import (
     folder_glyph,
     param_interest,
 )
+from shared.definitions.surface import SurfaceDimension
+from shared.enums.scan import SCAN_TERMINAL_STATUSES
 from shared.logging import get_logger
-from shared.models.asset_query import QueryGroups, QueryLeads
+from shared.models.asset_query import QueryCounts, QueryGroups, QueryLeads
 from shared.models.endpoint import (
     CoverageRead,
     Endpoint,
@@ -101,10 +86,32 @@ from shared.models.endpoint import (
 )
 from shared.models.http_asset import HttpAsset
 from shared.models.scan import Scan
+from shared.models.scan_context import PROBE_SCHEME
 from shared.models.vulnerability import Vulnerability
-from shared.services.asset_query import lead_cache
+from shared.services.asset_query import (
+    NO_JIT,
+    STATEMENT_TIMEOUT,
+    QueryScope,
+    QuerySyntaxError,
+    ScopeLike,
+    build_endpoint_groups,
+    build_leads,
+    compile_endpoint_query,
+    count_named,
+    element_counts,
+    endpoint_baseline,
+    endpoint_is_new,
+    endpoint_status_class,
+    lead_cache,
+    parse_query,
+    query_error_for,
+    syntax_error,
+    vuln_suppressed,
+)
+from shared.services.asset_query import predicates as preds
 from shared.services.asset_query.tokens import token as _token
 from shared.services.celery_dispatch import dispatch_endpoint_verify
+from shared.services.scope_filter import matches_any
 from shared.services.surface_query import endpoints as surface_endpoints
 from shared.utils.datetime import utc_now
 
@@ -113,15 +120,14 @@ logger = get_logger(__name__)
 _FACET_LIMIT = 30
 _MERGED_HOST_SAMPLE = 12
 _HOST_PAGE_MAX = 200
-_HTTP_OK = 200
 _W_SENSITIVE = 4.0
 _W_CONTROL = 2.0
 _W_AUTH = 1.5
 _W_API = 1.5
 _W_SIZE = 0.5
-_AUTH_WALL = (401, 403)
 _STATUS_CLASSES = ("2xx", "3xx", "4xx", "5xx", "none")
 _STATUS_LABELS = {"none": "Not checked"}
+_NEW_LEAD = _token("is", ":", "new")
 
 
 def _label(rows: list[tuple[str, int]], labels: dict) -> list[EndpointFacet]:
@@ -129,10 +135,6 @@ def _label(rows: list[tuple[str, int]], labels: dict) -> list[EndpointFacet]:
         EndpointFacet(value=value, label=labels.get(value) or value, count=count)
         for value, count in rows
     ]
-
-
-def _is_static():
-    return static_clause()
 
 
 def _root_noise():
@@ -179,32 +181,13 @@ def _gone_from(previous_scan_id: UUID, scan_id: UUID):
     )
 
 
-def _status_bucket(status: int | None) -> str:
-    if status is None:
-        return "none"
-    for name in _STATUS_CLASSES[:4]:
-        if int(name[0]) * 100 <= status < (int(name[0]) + 1) * 100:
-            return name
-    return "none"
-
-
-_ARRAY_FACETS = {
-    "source": Endpoint.sources,
-    "interest": Endpoint.interest,
-    "param": Endpoint.params,
-}
-
-
 class _Reach:
     """The rows a query counts."""
 
     def __init__(self, scope: QueryScope, base, narrowed: bool):
         self.scope = scope
-        ids = base.subquery() if narrowed else None
-        self.source = (
-            Endpoint if ids is None else join(Endpoint, ids, Endpoint.id == ids.c.id)
-        )
-        self.limit = scope.match(Endpoint.scan_id) if ids is None else true()
+        self.source = Endpoint
+        self.limit = base.whereclause if narrowed else scope.match(Endpoint.scan_id)
 
     def within(self, query):
         return query.select_from(self.source).where(self.limit)
@@ -222,16 +205,10 @@ def _column_branch(reach: _Reach, column):
 
 
 def _array_branch(reach: _Reach, column):
-    value = func.jsonb_array_elements_text(cast(column, JSONB)).column_valued("v")
+    counted = element_counts(reach.within(select(Endpoint.id)), column).subquery()
     return (
-        reach.within(
-            select(
-                value.label("value"),
-                func.count(func.distinct(Endpoint.id)).label("n"),
-            )
-        )
-        .group_by(value)
-        .order_by(desc("n"), value)
+        select(counted.c.value, counted.c.n)
+        .order_by(desc(counted.c.n), counted.c.value)
         .limit(_FACET_LIMIT)
         .subquery()
     )
@@ -446,7 +423,9 @@ class EndpointService:
                 reach.within(
                     select(
                         func.count().label("total"),
-                        func.count().filter(_is_static()).label("static"),
+                        func.count()
+                        .filter(surface_endpoints.static_clause())
+                        .label("static"),
                     )
                 )
             )
@@ -502,6 +481,42 @@ class EndpointService:
             values.sort(key=lambda pair: (-pair[1], pair[0]))
         return out
 
+    async def tabs(self, scope: ScopeLike, f: EndpointFilter) -> QueryCounts:
+        """Rows under each class tab, for the filter without its own class."""
+        scope = QueryScope.of(scope)
+        f = f.model_copy(update={"endpoint_class": None})
+
+        async def _build() -> QueryCounts:
+            now = utc_now()
+            base = self._scoped(scope, f, columns=(Endpoint.id,))
+            try:
+                predicate = self._compiled(scope, f, now)
+            except QuerySyntaxError:
+                return QueryCounts()
+            if predicate is not None:
+                base = base.where(predicate)
+            await self.session.execute(text(STATEMENT_TIMEOUT))
+            await self.session.execute(text(NO_JIT))
+            tabs = {k.value: Endpoint.endpoint_class == k.value for k in EndpointClass}
+            try:
+                return await count_named(self.session, base, {ALL_TAB: None, **tabs})
+            except DBAPIError as exc:
+                await self.session.rollback()
+                logger.info("endpoint tabs failed", error=str(exc.orig))
+                return QueryCounts()
+
+        return await lead_cache.cached(
+            self.session,
+            name="tabs:endpoints",
+            scans=scope.ids,
+            facets=lead_cache.filter_of(f),
+            model=QueryCounts,
+            build=_build,
+            keep=lambda counted: counted.computed,
+            ttl=lead_cache.SEARCH_TTL_SECONDS,
+            live_ttl=None,
+        )
+
     async def leads(self, scope: ScopeLike, f: EndpointFilter) -> QueryLeads:
         scope = QueryScope.of(scope)
 
@@ -516,12 +531,16 @@ class EndpointService:
                     parse_query(query, ENDPOINT_QUERY), context
                 )
 
+            fresh = None
+            if not (f.has_facets() or f.ids):
+                fresh = await self._stored_new(scope)
             return await build_leads(
                 self.session,
                 base,
                 ENDPOINT_QUERY.examples,
                 predicate_for,
                 filtered=f.has_facets(),
+                known=None if fresh is None else {_NEW_LEAD: fresh},
             )
 
         return await lead_cache.leads(
@@ -575,6 +594,32 @@ class EndpointService:
             hide_static=f.hide_static,
         )
 
+    async def _stored_new(self, scope: QueryScope) -> int | None:
+        """`is:new` over every row of settled scans, from the stored first-seen counts."""
+        if not scope.ids:
+            return None
+        statuses = (
+            await self.session.execute(
+                select(Scan.id, Scan.status).where(Scan.id.in_(scope.ids))
+            )
+        ).all()
+        if len(statuses) != len(set(scope.ids)) or any(
+            status not in SCAN_TERMINAL_STATUSES for _, status in statuses
+        ):
+            return None
+        held = (
+            await self.session.execute(
+                select(*[endpoint_baseline(scan_id) for scan_id in scope.ids])
+            )
+        ).one()
+        counted = [scan_id for scan_id, has in zip(scope.ids, held, strict=True) if has]
+        if not counted:
+            return 0
+        firsts = await stored_deltas.first_seen(
+            self.session, SurfaceDimension.ENDPOINTS.value, counted
+        )
+        return sum(firsts.get(scan_id, 0) for scan_id in counted)
+
     async def _previous_scan(
         self, scope: QueryScope
     ) -> tuple[UUID | None, datetime | None]:
@@ -590,14 +635,13 @@ class EndpointService:
         )
         row = (
             await self.session.execute(
-                select(Endpoint.scan_id, func.max(Endpoint.discovered_at).label("at"))
+                select(Endpoint.scan_id, Endpoint.discovered_at.label("at"))
                 .where(
                     Endpoint.target_id == target,
                     Endpoint.scan_id != single,
                     Endpoint.discovered_at < cutoff,
                 )
-                .group_by(Endpoint.scan_id)
-                .order_by(desc("at"))
+                .order_by(Endpoint.discovered_at.desc())
                 .limit(1)
             )
         ).first()
@@ -620,12 +664,12 @@ class EndpointService:
             .group_by(Endpoint.host)
         )
         if hide_static:
-            query = query.where(~static_clause())
+            query = query.where(~surface_endpoints.static_clause())
         rows = await self.session.execute(query)
         return {host: int(n) for host, n in rows.all()}
 
     async def hosts(self, scope: ScopeLike, f: EndpointFilter) -> HostPage:
-        """The estate as a ranked table: one row per host, rolled up in SQL."""
+        """One row per host, ranked."""
         scope = QueryScope.of(scope)
         now = utc_now()
         base = select(Endpoint.id).where(scope.match(Endpoint.scan_id))
@@ -637,36 +681,51 @@ class EndpointService:
         if predicate is not None:
             base = base.where(predicate)
         reach = _Reach(scope, base, f.has_facets() or predicate is not None)
-        agg, substantive = self._host_aggregate(reach, scope)
+        agg, substantive = self._host_aggregate(reach)
         if f.hide_root_only:
             agg = agg.having(substantive > 0)
         await self.session.execute(text(STATEMENT_TIMEOUT))
         await self.session.execute(text(NO_JIT))
+        per_host = (
+            select(
+                Endpoint.host,
+                func.count().label("n"),
+                substantive.label("substantive"),
+            )
+            .select_from(reach.source)
+            .where(reach.limit)
+            .group_by(Endpoint.host)
+            .subquery()
+        )
         totals = (
             await self.session.execute(
-                select(func.count(func.distinct(Endpoint.host)), func.count())
-                .select_from(reach.source)
-                .where(reach.limit)
+                select(
+                    func.count(per_host.c.host),
+                    func.sum(per_host.c.n),
+                    func.count().filter(per_host.c.substantive == 0),
+                )
             )
         ).one()
-        root_only = 0
-        if f.hide_root_only:
-            parked = (
-                select(Endpoint.host)
-                .select_from(reach.source)
-                .where(reach.limit)
-                .group_by(Endpoint.host)
-                .having(substantive == 0)
-                .subquery()
-            )
-            root_only = int(
-                await self.session.scalar(select(func.count()).select_from(parked)) or 0
-            )
+        root_only = int(totals[2] or 0) if f.hide_root_only else 0
+        fresh = (
+            select(Endpoint.host.label("host"), func.count().label("n"))
+            .select_from(reach.source)
+            .where(reach.limit, endpoint_is_new(scope))
+            .group_by(Endpoint.host)
+            .subquery("fresh")
+        )
+        rolled = agg.subquery("rolled")
+        ranked = select(rolled, func.coalesce(fresh.c.n, 0).label("fresh")).select_from(
+            rolled.outerjoin(fresh, fresh.c.host == rolled.c.host)
+        )
         size = max(1, min(f.size, _HOST_PAGE_MAX))
         offset = max(0, (max(f.page, 1) - 1) * size)
-        ordered = agg.order_by(*self._host_order(agg, f)).limit(size).offset(offset)
+        ordered = (
+            ranked.order_by(*self._host_order(ranked, f)).limit(size).offset(offset)
+        )
         rows = (await self.session.execute(ordered)).all()
         names = [r.host for r in rows]
+        folders = await self._host_folders(reach, names)
         interests = await self._host_values(reach, names, Endpoint.interest)
         sources = await self._host_values(reach, names, Endpoint.sources)
         classes = await self._host_classes(reach, names)
@@ -703,7 +762,7 @@ class EndpointService:
                     depth=0,
                     direct_count=int(r.direct),
                     subtree_count=n,
-                    child_count=int(r.folders),
+                    child_count=folders.get(r.host, 0),
                     hosts=1,
                     status_mix=dict(sorted(mix.items())),
                     class_mix=classes.get(r.host, {}),
@@ -723,7 +782,7 @@ class EndpointService:
                     sample_url=r.sample,
                     query=_token("host", ":", r.host),
                     lazy=True,
-                    folders=int(r.folders),
+                    folders=folders.get(r.host, 0),
                     top_folders=[c.name for c in host_chips if c.path != "/"],
                     chips=host_chips,
                     api=int(r.api),
@@ -742,14 +801,10 @@ class EndpointService:
         )
 
     @staticmethod
-    def _host_aggregate(reach: _Reach, scope: QueryScope):
+    def _host_aggregate(reach: _Reach):
         """The per-host rollup and the count that separates an application from a parked name."""
         interest = cast(Endpoint.interest, JSONB)
         sensitive = func.bool_or(interest.has_any(array(sorted(SENSITIVE_INTERESTS))))
-        admin = func.bool_or(
-            interest.has_any(array(sorted(ADMIN_INTERESTS | {PathInterest.AUTH.value})))
-        )
-        top_segment = func.split_part(Endpoint.dir_path, "/", 2)
         substantive = func.count().filter(~_root_noise())
         control = func.bool_or(interest.has_any(array(sorted(ADMIN_INTERESTS))))
         auth = func.bool_or(interest.has_any(array([PathInterest.AUTH.value])))
@@ -774,9 +829,6 @@ class EndpointService:
                 func.count().filter(Endpoint.is_probed.is_(True)).label("verified"),
                 func.count().filter(Endpoint.param_count > 0).label("params"),
                 func.count().filter(Endpoint.dir_path == "/").label("direct"),
-                func.count(func.distinct(top_segment))
-                .filter(Endpoint.dir_path != "/")
-                .label("folders"),
                 *[
                     func.count()
                     .filter(endpoint_status_class(name))
@@ -786,12 +838,9 @@ class EndpointService:
                 func.count()
                 .filter(Endpoint.endpoint_class == EndpointClass.API.value)
                 .label("api"),
-                func.count().filter(endpoint_is_new(scope)).label("fresh"),
                 func.count()
-                .filter(Endpoint.status_code.in_(_AUTH_WALL))
+                .filter(Endpoint.status_code.in_(preds.AUTH_STATUS))
                 .label("walled"),
-                sensitive.label("sensitive"),
-                admin.label("admin"),
                 score.label("score"),
                 func.min(Endpoint.url).label("sample"),
             )
@@ -818,19 +867,31 @@ class EndpointService:
         }.get(f.sort, cols.n)
         return [lead.desc(), cols.n.desc(), cols.host.asc()]
 
+    async def _host_folders(self, reach: _Reach, hosts: list[str]) -> dict[str, int]:
+        if not hosts:
+            return {}
+        rows = await self.session.execute(
+            select(
+                Endpoint.host,
+                func.count(func.distinct(func.split_part(Endpoint.dir_path, "/", 2))),
+            )
+            .select_from(reach.source)
+            .where(reach.limit, Endpoint.host.in_(hosts), Endpoint.dir_path != "/")
+            .group_by(Endpoint.host)
+        )
+        return {host: int(n) for host, n in rows.all()}
+
     async def _host_values(
         self, reach: _Reach, hosts: list[str], column
     ) -> dict[str, list[str]]:
         if not hosts:
             return {}
-        value = func.jsonb_array_elements_text(cast(column, JSONB)).column_valued("v")
-        rows = await self.session.execute(
-            select(Endpoint.host, value)
-            .select_from(reach.source)
-            .where(reach.limit)
-            .where(Endpoint.host.in_(hosts))
-            .group_by(Endpoint.host, value)
-        )
+        counted = element_counts(
+            reach.within(select(Endpoint.id)).where(Endpoint.host.in_(hosts)),
+            column,
+            Endpoint.host,
+        ).subquery()
+        rows = await self.session.execute(select(counted.c.host, counted.c.value))
         out: dict[str, list[str]] = {}
         for host, v in rows.all():
             out.setdefault(host, []).append(str(v))
@@ -937,7 +998,7 @@ class EndpointService:
     async def _host_identity(
         self, scope: QueryScope, hosts: list[str]
     ) -> dict[str, HostIdentity]:
-        """What each host's own HTTP asset says it is, preferring the answer that was a page."""
+        """Each host's HTTP asset, a 200 first."""
         if not hosts:
             return {}
         rows = await self.session.execute(
@@ -952,7 +1013,7 @@ class EndpointService:
             .distinct(HttpAsset.host)
             .order_by(
                 HttpAsset.host,
-                (HttpAsset.status_code == _HTTP_OK).desc().nulls_last(),
+                (HttpAsset.status_code == preds.HTTP_OK).desc().nulls_last(),
                 HttpAsset.status_code.asc().nulls_last(),
             )
         )
@@ -978,7 +1039,7 @@ class EndpointService:
             .group_by(Endpoint.host)
         )
         if hide_static:
-            query = query.where(~_is_static())
+            query = query.where(~surface_endpoints.static_clause())
         return {host: int(n) for host, n in (await self.session.execute(query)).all()}
 
     async def pick(
@@ -997,11 +1058,11 @@ class EndpointService:
     async def host_brief(
         self, scope: ScopeLike, host: str, hide_static: bool = True
     ) -> HostBrief:
-        """The sitemap header: what the host is, the facts that pivot, the parameter surface."""
+        """Host summary and its parameters."""
         scope = QueryScope.of(scope)
         reach = [scope.match(Endpoint.scan_id), Endpoint.host == host]
         if hide_static:
-            reach.append(~_is_static())
+            reach.append(~surface_endpoints.static_clause())
 
         async def count(*extra) -> int:
             return int(
@@ -1020,7 +1081,9 @@ class EndpointService:
         out.static_total = int(
             await self.session.scalar(
                 select(func.count()).where(
-                    scope.match(Endpoint.scan_id), Endpoint.host == host, _is_static()
+                    scope.match(Endpoint.scan_id),
+                    Endpoint.host == host,
+                    surface_endpoints.static_clause(),
                 )
             )
             or 0
@@ -1031,7 +1094,7 @@ class EndpointService:
         out.live = await count(endpoint_status_class("2xx"))
         out.with_params = await count(Endpoint.param_count > 0)
         out.api = await count(Endpoint.endpoint_class == EndpointClass.API.value)
-        out.walled = await count(Endpoint.status_code.in_(_AUTH_WALL))
+        out.walled = await count(Endpoint.status_code.in_(preds.AUTH_STATUS))
         out.interesting = await count(
             func.jsonb_array_length(cast(Endpoint.interest, JSONB)) > 0
         )
@@ -1041,7 +1104,7 @@ class EndpointService:
         if previous is not None:
             gone_scope = [*_gone_from(previous, scope.single), Endpoint.host == host]
             if hide_static:
-                gone_scope.append(~_is_static())
+                gone_scope.append(~surface_endpoints.static_clause())
             out.gone = int(
                 await self.session.scalar(select(func.count()).where(*gone_scope)) or 0
             )
@@ -1055,17 +1118,10 @@ class EndpointService:
             )
             or 0
         )
-        name = func.jsonb_array_elements_text(
-            cast(Endpoint.params, JSONB)
-        ).column_valued("name")
-        rows = (
-            await self.session.execute(
-                select(name, func.count().label("n"))
-                .select_from(Endpoint)
-                .where(*reach)
-                .group_by(name)
-            )
-        ).all()
+        named = element_counts(
+            select(Endpoint.id).where(*reach), Endpoint.params, distinct=False
+        ).subquery()
+        rows = (await self.session.execute(select(named.c.value, named.c.n))).all()
         stats = [
             ParamStat(name=str(n), count=int(c), interest=param_interest(str(n)))
             for n, c in rows
@@ -1142,7 +1198,7 @@ class EndpointService:
             if r.is_new:
                 leaf.new_count += 1
             hosts[key].add(r.host)
-            bucket = _status_bucket(r.status_code) if r.is_probed else "none"
+            bucket = status_bucket(r.status_code) if r.is_probed else "none"
             leaf.status_mix[bucket] = leaf.status_mix.get(bucket, 0) + 1
             if not r.is_probed:
                 leaf.unprobed += 1
@@ -1171,11 +1227,10 @@ class EndpointService:
             return GonePage()
         now = utc_now()
         base = select(Endpoint).where(*_gone_from(previous, scope.single))
-        base = self._apply_filter(
-            base, f.model_copy(update={"new": False}), QueryScope.of(previous)
-        )
+        prior = QueryScope.of(previous)
+        base = self._apply_filter(base, f.model_copy(update={"new": False}), prior)
         try:
-            predicate = self._compiled(previous, f, now)
+            predicate = self._compiled(prior, f, now)
         except QuerySyntaxError as exc:
             return GonePage(error=syntax_error(exc))
         if predicate is not None:
@@ -1212,21 +1267,40 @@ class EndpointService:
         self, scan_id: UUID, body: VerifyBranchRequest
     ) -> VerifyBranchResponse:
         """Queue verification of the unchecked, non-static endpoints under one folder."""
-        query = select(func.count()).where(
+        config = await self.session.scalar(
+            select(Scan.execution_config).where(Scan.id == scan_id)
+        )
+        config = config or {}
+        query = select(Endpoint.path).where(
             Endpoint.scan_id == scan_id,
             Endpoint.host == body.host,
             Endpoint.is_probed.is_(False),
             Endpoint.endpoint_class.notin_(tuple(STATIC_CLASSES)),
         )
-        if body.dir_path and body.dir_path != "/":
-            prefix = (
-                body.dir_path if body.dir_path.endswith("/") else f"{body.dir_path}/"
+        query = self._apply_filter(
+            query, EndpointFilter(dir_path=body.dir_path), QueryScope.of(scan_id)
+        )
+        scheme = PROBE_SCHEME.get(config.get("http_protocol"))
+        if scheme:
+            query = query.where(
+                Endpoint.url.startswith(f"{scheme}://", autoescape=True)
             )
-            escaped = (
-                prefix.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        excluded = config.get("excluded_paths") or []
+        if excluded:
+            paths = await self.session.stream_scalars(
+                query.execution_options(yield_per=1000)
             )
-            query = query.where(Endpoint.dir_path.like(f"{escaped}%", escape="\\"))
-        unverified = int(await self.session.scalar(query) or 0)
+            unverified = 0
+            async for path in paths:
+                if not matches_any(path, excluded):
+                    unverified += 1
+        else:
+            unverified = int(
+                await self.session.scalar(
+                    select(func.count()).select_from(query.subquery())
+                )
+                or 0
+            )
         if not unverified:
             return VerifyBranchResponse(queued=0, unverified=0, accepted=False)
         queued = min(unverified, body.limit)
@@ -1288,8 +1362,6 @@ class EndpointService:
             await self.session.execute(
                 select(
                     func.count().label("total"),
-                    func.count(func.distinct(Endpoint.host)).label("hosts"),
-                    func.count().filter(endpoint_is_new(scope)).label("fresh"),
                     func.count().filter(Endpoint.is_probed.is_(True)).label("probed"),
                     func.count().filter(endpoint_status_class("2xx")).label("live"),
                     func.count().filter(Endpoint.param_count > 0).label("with_params"),
@@ -1300,10 +1372,19 @@ class EndpointService:
             )
         ).one()
         total = int(row.total)
-        out = EndpointSummary(total=total, hosts=int(row.hosts))
         if not total:
-            return out
-        out.new = int(row.fresh or 0)
+            return EndpointSummary(total=0, hosts=0)
+        hosts = select(Endpoint.host).where(*reach).group_by(Endpoint.host).subquery()
+        out = EndpointSummary(
+            total=total,
+            hosts=int(await self.session.scalar(select(func.count(hosts.c.host))) or 0),
+        )
+        fresh = None if host else await self._stored_new(scope)
+        if fresh is None:
+            fresh = await self.session.scalar(
+                select(func.count()).where(*reach, endpoint_is_new(scope))
+            )
+        out.new = int(fresh or 0)
         out.probed = int(row.probed or 0)
         out.live = int(row.live or 0)
         out.with_params = int(row.with_params or 0)
@@ -1325,21 +1406,16 @@ class EndpointService:
             .group_by(Endpoint.endpoint_class)
         )
         out.by_class = {k: int(v) for k, v in by_class.all()}
-        source = func.jsonb_array_elements_text(
-            cast(Endpoint.sources, JSONB)
-        ).column_valued("v")
-        by_source = await self.session.execute(
-            select(source, func.count(func.distinct(Endpoint.id)))
-            .select_from(Endpoint)
-            .where(*reach)
-            .group_by(source)
-        )
+        sources = element_counts(
+            select(Endpoint.id).where(*reach), Endpoint.sources
+        ).subquery()
+        by_source = await self.session.execute(select(sources.c.value, sources.c.n))
         out.by_source = {str(k): int(v) for k, v in by_source.all()}
         return out
 
 
 def _evidence(row: Endpoint) -> list[SourceEvidence]:
-    """Why each provider believes this endpoint exists, strongest source first."""
+    """Discovery evidence per source."""
     discovery = dict(row.discovery or {})
     out: list[SourceEvidence] = []
     for source in row.sources or []:

@@ -54,7 +54,6 @@
 	});
 
 	$effect(() => {
-		if (typeof window === 'undefined') return;
 		function onBeforeUnload(e: BeforeUnloadEvent) {
 			if (!dirty || saving) return;
 			e.preventDefault();

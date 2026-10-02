@@ -1,4 +1,4 @@
-"""btree over (scan_id, matched_at) so corroboration lookups stop probing the trigram index
+"""btree index on vulnerabilities (scan_id, matched_at)
 
 Revision ID: d4a1c8b7e206
 Revises: c2e7a4f19b83

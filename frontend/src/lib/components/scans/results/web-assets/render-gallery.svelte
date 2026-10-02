@@ -58,22 +58,27 @@
 {:else if data}
 	<div class="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border px-4 py-2.5">
 		<span class="text-xs text-muted-foreground">
-			<span class="font-medium text-foreground tabular-nums">{data.total_groups}</span> renders
+			<span class="font-medium text-foreground tabular-nums"
+				>{data.total_groups.toLocaleString()}</span
+			> renders
 		</span>
 		<span class="text-xs text-muted-foreground">
-			<span class="font-medium text-foreground tabular-nums">{data.grouped}</span> shared
+			<span class="font-medium text-foreground tabular-nums">{data.grouped.toLocaleString()}</span> shared
 		</span>
 		<span class="text-xs text-muted-foreground">
-			<span class="font-medium text-foreground tabular-nums">{data.ungrouped}</span> unique
+			<span class="font-medium text-foreground tabular-nums">{data.ungrouped.toLocaleString()}</span
+			> unique
 		</span>
 		{#if data.blank}
 			<span class="text-xs text-muted-foreground">
-				<span class="font-medium text-foreground tabular-nums">{data.blank}</span> blank
+				<span class="font-medium text-foreground tabular-nums">{data.blank.toLocaleString()}</span> blank
 			</span>
 		{/if}
 		{#if data.unrendered}
 			<span class="text-xs text-muted-foreground">
-				<span class="font-medium text-foreground tabular-nums">{data.unrendered}</span> not captured
+				<span class="font-medium text-foreground tabular-nums"
+					>{data.unrendered.toLocaleString()}</span
+				> not captured
 			</span>
 		{/if}
 	</div>
@@ -116,7 +121,7 @@
 							</div>
 						{/if}
 						<Badge
-							variant={g.count > 1 ? 'default' : 'outline'}
+							variant={g.count > 1 ? 'secondary' : 'outline'}
 							class="absolute top-1.5 left-1.5 px-1.5 font-mono text-2xs tabular-nums backdrop-blur {g.count >
 							1
 								? ''

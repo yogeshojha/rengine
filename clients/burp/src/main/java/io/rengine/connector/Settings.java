@@ -115,6 +115,13 @@ final class Settings implements Sink.Config {
         return slash == text.length() - 1 ? text.substring(0, slash) + INGEST_PATH : text;
     }
 
+    /** The connector endpoint named {@code name} beside the ingest endpoint. */
+    static String beside(String ingest, String name) {
+        String value = ingest == null ? "" : ingest.trim();
+        int cut = value.lastIndexOf('/');
+        return cut < 0 ? value : value.substring(0, cut) + "/" + name;
+    }
+
     @Override
     public String token() {
         return token;

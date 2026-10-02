@@ -5,6 +5,7 @@ from shared.definitions.surface import SurfaceDimension
 from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.services import vuln_inventory
 from shared.services.name_ownership import claims
+from shared.utils.text import counted
 from stages.base import DOMAIN_TARGETS, Stage, StageResult
 from stages.name_ownership.config import NameOwnershipConfig
 from stages.name_ownership.finding import SEVERITIES, claim_finding
@@ -42,7 +43,5 @@ class NameOwnershipStage(Stage):
         self.session.commit()
         if stored:
             self.publish_results(SurfaceDimension.VULNERABILITIES.value)
-            self.emit_progress(
-                f"{stored} hostname{'' if stored == 1 else 's'} on third-party servers"
-            )
+            self.emit_progress(f"{counted(stored, 'hostname')} on third-party servers")
         return StageResult(counts={"vulnerabilities": stored})

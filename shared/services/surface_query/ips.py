@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     DateTime,
     Integer,
@@ -58,7 +59,7 @@ WITH facts AS (
     SELECT ip,
            array_agg(DISTINCT target_id) AS target_ids,
            min(seen) AS first_seen,
-           count(DISTINCT host) AS host_count,
+           count(DISTINCT (target_id, host)) FILTER (WHERE kind = 1) AS host_count,
            count(*) FILTER (WHERE kind = 2) AS port_count,
            bool_or(number = ANY(:sensitive_ports)) AS sensitive,
            count(*) FILTER (WHERE kind = 3) AS asset_count,
@@ -100,7 +101,7 @@ def derived(scope: QueryScope):
             column("target_ids", ARRAY(PG_UUID(as_uuid=True))),
             column("first_seen", DateTime(timezone=True)),
             column("version", Integer),
-            column("asn", Integer),
+            column("asn", BigInteger),
             column("asn_org", String),
             column("country", String),
             column("prefix", String),

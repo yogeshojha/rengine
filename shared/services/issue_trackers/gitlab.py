@@ -10,7 +10,10 @@ from shared.definitions.issue_trackers import (
     TrackerKind,
 )
 from shared.services.issue_trackers.base import (
+    UNREADABLE,
+    CredentialsError,
     Option,
+    RateLimitedError,
     RemoteIssue,
     RemoteNotFoundError,
     RemoteStatus,
@@ -18,7 +21,6 @@ from shared.services.issue_trackers.base import (
     TrackerError,
 )
 from shared.services.issue_trackers.document import Doc, to_markdown
-from shared.services.issue_trackers.github import UNREADABLE
 
 API = "/api/v4"
 PUBLIC = "public"
@@ -128,6 +130,8 @@ class GitLabIssues(Tracker):
             except RemoteNotFoundError:
                 out[iid] = None
                 continue
+            except (RateLimitedError, CredentialsError):
+                raise
             except TrackerError:
                 out[iid] = RemoteStatus(name=UNREADABLE, category=None)
                 continue

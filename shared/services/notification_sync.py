@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 class SyncNotificationPublisher:
-    def __init__(self, redis_url: str) -> None:
-        self._event_publisher = SyncEventPublisher(redis_url)
+    def __init__(self) -> None:
+        self._event_publisher = SyncEventPublisher()
 
     def publish(
         self,

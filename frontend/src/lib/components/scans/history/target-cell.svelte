@@ -1,12 +1,13 @@
 <script lang="ts">
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import CopyButton from '$lib/components/copy-button.svelte';
+	import { STALE_DAYS } from '$lib/config/dashboard';
 	import { SCHEDULE_TYPE_BADGE, type ScheduleType } from '$lib/types/scan-schedule';
 	import { formatTargetType, type TargetType } from '$lib/types/target';
 	import type { ScanRead, ScanTargetTrend } from '$lib/types/scan';
+	import { plural, pluralWord } from '$lib/utilities/strings';
 	import TrendSpark from './trend-spark.svelte';
 
-	const STALE_DAYS = 30;
 	const DAY_MS = 86_400_000;
 
 	interface Props {
@@ -55,7 +56,7 @@
 				</span>
 			{/if}
 			{#if focused}
-				<span>Focused · {scan.seed_count} {scan.seed_count === 1 ? 'asset' : 'assets'}</span>
+				<span>Focused · {plural(scan.seed_count, 'asset')}</span>
 			{/if}
 			{#if scan.context_name}
 				<span class="truncate">{scan.context_name}</span>
@@ -77,11 +78,11 @@
 					}}
 				>
 					<ChevronRight class="size-3 transition-transform {earlierOpen ? 'rotate-90' : ''}" />
-					{earlier} earlier {earlier === 1 ? 'run' : 'runs'}
+					{earlier} earlier {pluralWord(earlier, 'run')}
 				</button>
 			{/if}
 			{#if scan.rescans && scan.rescans.total > 0}
-				<span>{scan.rescans.total} {scan.rescans.total === 1 ? 'rescan' : 'rescans'}</span>
+				<span>{plural(scan.rescans.total, 'rescan')}</span>
 			{/if}
 		</div>
 	</div>

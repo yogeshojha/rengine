@@ -11,6 +11,7 @@ from shared.definitions.ports import (
     PortProfile,
     PortSource,
     ScanPolicy,
+    ScanPolicyReason,
     profile_ports,
 )
 from shared.definitions.surface import SurfaceDimension
@@ -25,6 +26,7 @@ from shared.utils.net import is_registry_routable
 from stages.base import ALL_TARGETS, Stage, StageResult
 from stages.port_scan.config import PORT_THRESHOLD, PortScanConfig
 from tools.naabu.client import NaabuClient, NaabuError, NaabuOptions, port_args
+from tools.runner.executor import failure_excerpt
 
 logger = get_logger(__name__)
 
@@ -189,7 +191,7 @@ class PortScanStage(Stage):
                 and not stream.stopped
             ):
                 failures.append(
-                    stream.stderr.strip()[:300] or "naabu produced no output"
+                    failure_excerpt(stream.stderr, None) or "naabu produced no output"
                 )
         except NaabuError as exc:
             failures.append(str(exc))
@@ -233,17 +235,17 @@ class PortScanStage(Stage):
         skip_private: bool,
     ) -> Decision:
         if excluded and ip_excluded(row.ip, excluded):
-            return Decision(ScanPolicy.SKIP.value, "scope")
+            return Decision(ScanPolicy.SKIP.value, ScanPolicyReason.SCOPE.value)
         if skip_private and _is_private(row.ip):
-            return Decision(ScanPolicy.SKIP.value, "private")
+            return Decision(ScanPolicy.SKIP.value, ScanPolicyReason.PRIVATE.value)
         if row.is_alive is False:
-            return Decision(ScanPolicy.SKIP.value, "unreachable")
+            return Decision(ScanPolicy.SKIP.value, ScanPolicyReason.UNREACHABLE.value)
         kind = row.cdn_type
         if kind in CDN_KINDS:
             policy = ScanPolicy(cfg.cdn_policy).value
-            return Decision(policy, "cdn")
+            return Decision(policy, ScanPolicyReason.CDN.value)
         if kind == "cloud" and not cfg.scan_cloud:
-            return Decision(ScanPolicy.WEB.value, "cloud")
+            return Decision(ScanPolicy.WEB.value, ScanPolicyReason.CLOUD.value)
         return Decision(ScanPolicy.FULL.value, None)
 
     @staticmethod

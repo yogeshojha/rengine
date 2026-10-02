@@ -41,7 +41,7 @@ function createWordlistsStore() {
 				if (result.stored.length) await this.fetch(true);
 				return result;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Upload failed');
+				toast.error(e instanceof Error ? e.message : 'Wordlists not uploaded');
 				return null;
 			}
 		},

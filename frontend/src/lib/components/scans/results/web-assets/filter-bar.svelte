@@ -4,6 +4,7 @@
 	import Layers from '@lucide/svelte/icons/layers';
 	import Image from '@lucide/svelte/icons/image';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Toggle } from '$lib/components/ui/toggle';
 	import FacetedFilter from '../faceted-filter.svelte';
@@ -149,22 +150,28 @@
 				onChange={(v) => setList('source', v)}
 			/>
 		{/if}
-		<ToggleGroup.Root
-			type="multiple"
-			value={quick}
-			onValueChange={setQuick}
-			variant="outline"
-			aria-label="Filters"
+		<ScrollArea
+			orientation="horizontal"
+			class="max-lg:max-w-full max-lg:min-w-0"
+			scrollbarXClasses="h-1"
 		>
-			{#each QUICK as q (q.value)}
-				<ToggleGroup.Item value={q.value} class="h-9 px-3 text-sm font-normal">
-					{q.label}
-				</ToggleGroup.Item>
-			{/each}
-		</ToggleGroup.Root>
+			<ToggleGroup.Root
+				type="multiple"
+				value={quick}
+				onValueChange={setQuick}
+				variant="outline"
+				aria-label="Filters"
+			>
+				{#each QUICK as q (q.value)}
+					<ToggleGroup.Item value={q.value} class="h-9 px-3 text-sm font-normal">
+						{q.label}
+					</ToggleGroup.Item>
+				{/each}
+			</ToggleGroup.Root>
+		</ScrollArea>
 	</div>
 
-	<div class="flex items-center gap-2">
+	<div class="flex flex-wrap items-center gap-2">
 		<ToggleGroup.Root
 			type="single"
 			variant="outline"
@@ -200,7 +207,7 @@
 				onPressedChange={onOnlyShots}
 				variant="outline"
 				class="h-9 gap-2 px-3 text-sm font-normal"
-				aria-label="Only hosts with a screenshot"
+				aria-label="Only web assets with a screenshot"
 			>
 				<Image class="h-4 w-4" />
 				<span class="hidden sm:inline">With screenshot</span>

@@ -5,17 +5,16 @@ from __future__ import annotations
 import hashlib
 import uuid
 from datetime import datetime, timedelta
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import IntegrityError
 
-from shared.config import BaseAppSettings
 from shared.definitions.mode_features import CAP_PROGRAM_WATCHES, has_capability
 from shared.definitions.notifications import WatchAlert, watch_alert
 from shared.definitions.rescan import ASSET_SEED_STAGE, SeedKind
+from shared.definitions.retention import MEDIA_ROOT
 from shared.definitions.schedule_constants import MAX_SCHEDULE_TARGETS
 from shared.definitions.surface import SurfaceDimension
 from shared.definitions.watch import (
@@ -35,7 +34,7 @@ from shared.definitions.watch import (
     plan_scope,
 )
 from shared.enums.activity import ActivityEvent
-from shared.enums.scan import SCAN_TERMINAL_STATUSES, Intensity, ScanScope, ScanStatus
+from shared.enums.scan import Intensity, ScanStatus
 from shared.enums.scan_schedule import ScheduleStatus
 from shared.enums.target import TargetType
 from shared.logging import get_logger
@@ -52,6 +51,7 @@ from shared.models.scan_schedule import ScanSchedule
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target, TargetOrganization
 from shared.models.watch import ProgramWatch, WatchEvent, WatchHost
+from shared.services import proxy_sync
 from shared.services.asset_query import (
     QueryContext,
     QueryScope,
@@ -71,10 +71,8 @@ from shared.services.launch_plan import AdHocEngine
 from shared.services.notification_sync import SyncNotificationPublisher
 from shared.services.notifier import dispatch_sync
 from shared.services.proxy_resolve import scan_proxy_url
-from shared.services.proxy_sync import census_in_flight
 from shared.services.scan_factory import build_scan_row
 from shared.services.scan_resolve import merge_engine_context
-from shared.services.scan_scope import census_only, covers
 from shared.utils.datetime import utc_now
 from shared.utils.validation import validate_target
 
@@ -84,7 +82,6 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 _DIMENSION = SurfaceDimension.WEB_ASSETS.value
-_MEDIA_ROOT = "/app/scan_media"
 _RETRY_LADDER = ((1, 10), (6, 30), (24, 60))
 _RETRY_LATE_MINUTES = 180
 _MAX_TECH = 12
@@ -104,7 +101,7 @@ def watches_enabled(session: Session) -> bool:
     return has_capability(mode, CAP_PROGRAM_WATCHES)
 
 
-def active_watches(session: Session, program_id=None) -> list[ProgramWatch]:
+def active_watches(session: Session) -> list[ProgramWatch]:
     """Active watches in active projects, none outside bug bounty mode."""
     if not watches_enabled(session):
         return []
@@ -116,8 +113,6 @@ def active_watches(session: Session, program_id=None) -> list[ProgramWatch]:
             Project.is_active.is_(True),
         )
     )
-    if program_id is not None:
-        stmt = stmt.where(ProgramWatch.program_id == program_id)
     return list(session.execute(stmt).scalars().all())
 
 
@@ -192,64 +187,23 @@ def log_event(
 # ---------- covering scan ----------
 
 
-def _started():
-    return func.coalesce(Scan.started_at, Scan.created_at)
-
-
-def covering_scan(session: Session, project_id, target_id) -> Scan | None:
-    """The settled census scan the target's Web Assets view reads."""
-    return session.scalar(
-        select(Scan)
-        .where(
-            Scan.project_id == project_id,
-            Scan.target_id == target_id,
-            Scan.status.in_(SCAN_TERMINAL_STATUSES),
-            census_only(),
-            covers(Subdomain, _DIMENSION),
-        )
-        .order_by(_started().desc())
-        .limit(1)
-    )
-
-
 def watching_run(
     session: Session, watch: ProgramWatch, program_name: str, target: Target
 ) -> Scan:
     """The run that holds certificate hosts for a target without a census scan."""
-    label = f"{WATCH_RUN_LABEL} · {program_name}"[:200]
-    existing = session.scalar(
-        select(Scan)
-        .where(
-            Scan.project_id == watch.project_id,
-            Scan.target_id == target.id,
-            Scan.engine_name == label,
-            Scan.scope == ScanScope.FULL.value,
-        )
-        .order_by(Scan.created_at.desc())
-        .limit(1)
-    )
-    if existing is not None:
-        return existing
-    now = utc_now()
-    run = Scan(
+    return proxy_sync.holding_run(
+        session,
         project_id=watch.project_id,
         target_id=target.id,
-        engine_id=None,
-        engine_name=label,
-        scope=ScanScope.FULL.value,
-        status=ScanStatus.COMPLETED.value,
-        execution_config={
+        label=f"{WATCH_RUN_LABEL} · {program_name}",
+        owner="watch",
+        config={
             "manual": True,
             "watch": str(watch.id),
             "target_value": target.target_value,
         },
-        started_at=now,
-        completed_at=now,
         created_by=watch.created_by,
     )
-    session.add(run)
-    session.flush()
-    return run
 
 
 def write_host(
@@ -303,9 +257,11 @@ def place_host(
     host: WatchHost,
 ) -> Scan | None:
     """Write the host into the covering scan. None while a census scan runs."""
-    scan = covering_scan(session, watch.project_id, target.id)
+    scan = proxy_sync.covering_scan(
+        session, watch.project_id, target.id, Subdomain, _DIMENSION
+    )
     if scan is None:
-        if census_in_flight(session, watch.project_id, target.id):
+        if proxy_sync.census_in_flight(session, watch.project_id, target.id):
             return None
         scan = watching_run(session, watch, program_name, target)
     write_host(
@@ -556,7 +512,7 @@ def alert_matches(
 def _screenshot_file(path: str | None) -> str | None:
     if not path:
         return None
-    root = Path(_MEDIA_ROOT).resolve()
+    root = MEDIA_ROOT.resolve()
     full = (root / path).resolve()
     if not full.is_relative_to(root) or full.suffix.lower() != ".png":
         return None
@@ -611,7 +567,7 @@ def send_alert(
     channel_ids = _live_channels(session, watch)
     attach = _screenshot_file(host.screenshot_path)
     if watch.notify_in_app:
-        SyncNotificationPublisher(BaseAppSettings().redis_url).publish(
+        SyncNotificationPublisher().publish(
             session=session,
             type=payload["type"],
             severity=payload["severity"],

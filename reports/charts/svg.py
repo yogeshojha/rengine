@@ -1,17 +1,22 @@
-"""Charts are SVG built here, coloured by CSS variables."""
-
 from __future__ import annotations
 
 import math
 from dataclasses import dataclass
 from html import escape
 
+from shared.utils.text import clip
+
 _TAU = math.pi * 2
 _MIN_SLICES = 2
 _MIN_POINTS = 2
 _ARC_EPSILON = 0.005
-_DARK_CELL = 0.55
 _THOUSAND = 1000
+_STACK_WIDTH = 480
+_STACK_GAP = 1.5
+_BAR_ROW = 17
+_BAR_VALUE_WIDTH = 44
+_DIAL_SIZE = 120
+_DIAL_THICKNESS = 8
 
 DEFAULT_PALETTE: dict[str, str] = {
     "ink": "#16181d",
@@ -25,7 +30,14 @@ DEFAULT_PALETTE: dict[str, str] = {
 
 
 def _p(palette: dict[str, str] | None) -> dict[str, str]:
-    return {**DEFAULT_PALETTE, **(palette or {})}
+    return {
+        key: _attr(value)
+        for key, value in {**DEFAULT_PALETTE, **(palette or {})}.items()
+    }
+
+
+def _attr(value: str) -> str:
+    return escape(str(value), quote=True)
 
 
 @dataclass(frozen=True)
@@ -90,12 +102,12 @@ def donut(
         if sweep >= _TAU - 1e-6:
             parts.append(
                 f'<circle cx="{_fmt(centre)}" cy="{_fmt(centre)}" r="{_fmt(radius)}" '
-                f'fill="none" stroke="{item.fill}" stroke-width="{_fmt(thickness)}"/>'
+                f'fill="none" stroke="{_attr(item.fill)}" stroke-width="{_fmt(thickness)}"/>'
             )
         else:
             parts.append(
                 f'<path d="M {_fmt(x1)} {_fmt(y1)} A {_fmt(radius)} {_fmt(radius)} 0 {large} 1 '
-                f'{_fmt(x2)} {_fmt(y2)}" fill="none" stroke="{item.fill}" '
+                f'{_fmt(x2)} {_fmt(y2)}" fill="none" stroke="{_attr(item.fill)}" '
                 f'stroke-width="{_fmt(thickness)}"/>'
             )
         angle = end
@@ -116,23 +128,21 @@ def donut(
     return "".join(parts)
 
 
-def stack_bar(
-    slices: list[Slice], *, width: float = 480, height: float = 14, gap: float = 1.5
-) -> str:
+def stack_bar(slices: list[Slice], *, height: float = 14) -> str:
     live = [s for s in slices if s.value > 0]
     total = sum(s.value for s in live)
     if not live or total <= 0:
         return ""
-    parts = [_open(width, height)]
+    parts = [_open(_STACK_WIDTH, height)]
     x = 0.0
-    usable = width - gap * (len(live) - 1)
+    usable = _STACK_WIDTH - _STACK_GAP * (len(live) - 1)
     for index, item in enumerate(live):
         span = max(2.0, usable * (item.value / total))
         parts.append(
             f'<rect x="{_fmt(x)}" y="0" width="{_fmt(span)}" height="{_fmt(height)}" '
-            f'rx="2" fill="{item.fill}"/>'
+            f'rx="2" fill="{_attr(item.fill)}"/>'
         )
-        x += span + (gap if index < len(live) - 1 else 0)
+        x += span + (_STACK_GAP if index < len(live) - 1 else 0)
     parts.append("</svg>")
     return "".join(parts)
 
@@ -141,11 +151,7 @@ def bars(
     rows: list[tuple[str, float]],
     *,
     width: float = 480,
-    row_height: float = 17,
     label_width: float = 150,
-    value_width: float = 44,
-    fill: str = "",
-    suffix: str = "",
     palette: dict[str, str] | None = None,
 ) -> str:
     """A ranked list."""
@@ -153,32 +159,32 @@ def bars(
     if not live:
         return ""
     tone = _p(palette)
-    fill = fill or tone["accent"]
+    fill = tone["accent"]
     top = max(value for _, value in live) or 1
-    height = row_height * len(live)
-    track = width - label_width - value_width
+    height = _BAR_ROW * len(live)
+    track = width - label_width - _BAR_VALUE_WIDTH
     parts = [_open(width, height)]
 
     for index, (label, value) in enumerate(live):
-        y = index * row_height
-        mid = y + row_height / 2
+        y = index * _BAR_ROW
+        mid = y + _BAR_ROW / 2
         parts.append(
             f'<text x="0" y="{_fmt(mid)}" dominant-baseline="middle" font-size="8.4" '
-            f'fill="{tone["ink"]}">{escape(_clip(label, 34))}</text>'
+            f'fill="{tone["ink"]}">{escape(clip(label or "", 34))}</text>'
         )
         span = max(1.4, track * (value / top))
         parts.append(
-            f'<rect x="{_fmt(label_width)}" y="{_fmt(y + row_height / 2 - 3.4)}" '
+            f'<rect x="{_fmt(label_width)}" y="{_fmt(mid - 3.4)}" '
             f'width="{_fmt(track)}" height="6.8" rx="1.6" fill="{tone["surface"]}"/>'
         )
         parts.append(
-            f'<rect x="{_fmt(label_width)}" y="{_fmt(y + row_height / 2 - 3.4)}" '
+            f'<rect x="{_fmt(label_width)}" y="{_fmt(mid - 3.4)}" '
             f'width="{_fmt(span)}" height="6.8" rx="1.6" fill="{fill}"/>'
         )
         parts.append(
             f'<text x="{_fmt(width)}" y="{_fmt(mid)}" dominant-baseline="middle" '
             f'text-anchor="end" font-size="8.4" fill="{tone["ink_soft"]}">'
-            f"{escape(_number(value))}{escape(suffix)}</text>"
+            f"{escape(_number(value))}</text>"
         )
     parts.append("</svg>")
     return "".join(parts)
@@ -187,16 +193,16 @@ def bars(
 def dial(
     value: float,
     *,
-    size: float = 120,
-    thickness: float = 8,
     label: str = "",
     grade: str = "",
     arc: str = "",
     palette: dict[str, str] | None = None,
 ) -> str:
-    """A 240 degree gauge."""
+    """A full-circle score gauge."""
     tone = _p(palette)
-    arc = arc or tone["accent"]
+    arc = _attr(arc) if arc else tone["accent"]
+    size = _DIAL_SIZE
+    thickness = _DIAL_THICKNESS
     ratio = max(0.0, min(1.0, value / 100))
     radius = (size - thickness) / 2 - 2
     centre = size / 2
@@ -251,7 +257,6 @@ def sparkline(
     *,
     width: float = 150,
     height: float = 30,
-    fill: bool = True,
     palette: dict[str, str] | None = None,
 ) -> str:
     """The y domain starts at zero."""
@@ -267,78 +272,17 @@ def sparkline(
         for index, value in enumerate(points)
     ]
     line = " ".join(f"{_fmt(x)},{_fmt(y)}" for x, y in coords)
-    parts = [_open(width, height)]
-    if fill:
-        area = f"{line} {_fmt(width)},{_fmt(height)} 0,{_fmt(height)}"
-        parts.append(
-            f'<polygon points="{area}" fill="{tone["accent"]}" opacity="0.12"/>'
-        )
+    area = f"{line} {_fmt(width)},{_fmt(height)} 0,{_fmt(height)}"
+    parts = [
+        _open(width, height),
+        f'<polygon points="{area}" fill="{tone["accent"]}" opacity="0.12"/>',
+    ]
     parts.append(
         f'<polyline points="{line}" fill="none" stroke="{tone["accent"]}" '
         f'stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>'
     )
     parts.append("</svg>")
     return "".join(parts)
-
-
-def matrix(
-    columns: list[str],
-    rows: list[str],
-    cells: dict[tuple[int, int], float],
-    *,
-    width: float = 480,
-    row_height: float = 18,
-    label_width: float = 120,
-    palette: dict[str, str] | None = None,
-) -> str:
-    if not rows or not columns:
-        return ""
-    tone = _p(palette)
-    top = max(cells.values()) if cells else 0
-    if top <= 0:
-        return ""
-    head = 14.0
-    cell_width = (width - label_width) / len(columns)
-    height = head + row_height * len(rows)
-    parts = [_open(width, height)]
-
-    for index, column in enumerate(columns):
-        x = label_width + cell_width * index + cell_width / 2
-        parts.append(
-            f'<text x="{_fmt(x)}" y="8" text-anchor="middle" font-size="7" '
-            f'letter-spacing="0.06em" fill="{tone["ink_faint"]}">'
-            f"{escape(_clip(column.upper(), 12))}</text>"
-        )
-
-    for r, row in enumerate(rows):
-        y = head + r * row_height
-        parts.append(
-            f'<text x="0" y="{_fmt(y + row_height / 2)}" dominant-baseline="middle" '
-            f'font-size="8.4" fill="{tone["ink"]}">{escape(_clip(row, 26))}</text>'
-        )
-        for c in range(len(columns)):
-            value = cells.get((r, c), 0)
-            x = label_width + cell_width * c
-            opacity = 0.08 + 0.82 * (value / top) if value else 0.0
-            parts.append(
-                f'<rect x="{_fmt(x + 1)}" y="{_fmt(y + 1.5)}" width="{_fmt(cell_width - 2)}" '
-                f'height="{_fmt(row_height - 3)}" rx="1.5" fill="{tone["accent"]}" '
-                f'opacity="{_fmt(opacity)}"/>'
-            )
-            if value:
-                parts.append(
-                    f'<text x="{_fmt(x + cell_width / 2)}" y="{_fmt(y + row_height / 2)}" '
-                    f'text-anchor="middle" dominant-baseline="middle" font-size="7.6" '
-                    f'fill="{tone["accent_ink"] if opacity > _DARK_CELL else tone["ink"]}">'
-                    f"{int(value)}</text>"
-                )
-    parts.append("</svg>")
-    return "".join(parts)
-
-
-def _clip(value: str, length: int) -> str:
-    text = value or ""
-    return text if len(text) <= length else text[: length - 1] + "…"
 
 
 def _number(value: float) -> str:

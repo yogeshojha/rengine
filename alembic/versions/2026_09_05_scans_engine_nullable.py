@@ -1,4 +1,4 @@
-"""scans.engine_id nullable: a launch may run an ad hoc plan with no saved engine
+"""scans.engine_id nullable
 
 Revision ID: c9d2a7f13e58
 Revises: b8e3f52c1a70

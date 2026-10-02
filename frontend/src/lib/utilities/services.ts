@@ -198,6 +198,7 @@ export function serviceQueryChips(q: ServiceQuery, facets: ServiceFacetSet): Ser
 			label: 'Software named',
 			remove: (x) => ({ ...x, namedOnly: false })
 		});
+	if (q.newOnly) chips.push({ id: 'new', label: 'New', remove: (x) => ({ ...x, newOnly: false }) });
 	return chips;
 }
 

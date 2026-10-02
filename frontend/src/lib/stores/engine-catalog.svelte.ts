@@ -23,9 +23,6 @@ function createEngineCatalogStore() {
 		get targetTypes() {
 			return catalog?.target_types ?? [];
 		},
-		get isLoading() {
-			return isLoading;
-		},
 		get error() {
 			return error;
 		},
@@ -43,14 +40,6 @@ function createEngineCatalogStore() {
 				key: group.key,
 				label: group.label,
 				stages: catalog!.stages.filter((s) => s.group === group.key)
-			}));
-		},
-
-		byPhase(): { phase: string; stages: StageCatalogEntry[] }[] {
-			if (!catalog) return [];
-			return catalog.phases.map((phase) => ({
-				phase,
-				stages: catalog!.stages.filter((s) => s.phase === phase)
 			}));
 		},
 

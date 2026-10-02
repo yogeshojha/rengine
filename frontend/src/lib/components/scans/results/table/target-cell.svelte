@@ -5,7 +5,7 @@
 	interface Props {
 		value?: string | null;
 		values?: string[];
-		onFilter?: (token: string) => void;
+		onFilter: (token: string) => void;
 	}
 
 	let { value = null, values, onFilter }: Props = $props();
@@ -25,7 +25,7 @@
 					class="min-w-0 truncate text-xs text-muted-foreground hover:text-foreground"
 					onclick={(event) => {
 						event.stopPropagation();
-						onFilter?.(exactToken('target', first));
+						onFilter(exactToken('target', first));
 					}}
 				>
 					{first}

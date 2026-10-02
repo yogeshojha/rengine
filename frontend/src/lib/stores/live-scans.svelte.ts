@@ -14,7 +14,7 @@ import { isLiveStatus } from '$lib/utilities/scan-status';
 const LIVE_STATUSES = SCAN_STATUSES.filter(isLiveStatus);
 const REFRESH_DEBOUNCE_MS = 400;
 const FALLBACK_POLL_MS = 30_000;
-const LIVE_PAGE_SIZE = 25;
+export const LIVE_PAGE_SIZE = 25;
 type CountColumn = (typeof SCAN_COUNT_COLUMNS)[keyof typeof SCAN_COUNT_COLUMNS];
 const COUNT_COLUMNS = new Set<string>(Object.values(SCAN_COUNT_COLUMNS));
 
@@ -51,11 +51,13 @@ function createLiveScansStore() {
 	let projectId = $state<string | undefined>(undefined);
 	let scans = $state<ScanRead[]>([]);
 	let hasFetched = $state(false);
+	let fetchedAt = $state(0);
 	let completedTick = $state(0);
 	const runs = new SvelteMap<string, LiveRun>();
 	const previousDurations = new SvelteMap<string, number | null>();
 
 	let sseUnsub: (() => void) | null = null;
+	let resumeUnsub: (() => void) | null = null;
 	let refreshTimer: ReturnType<typeof setTimeout> | undefined;
 	let pollTimer: ReturnType<typeof setTimeout> | undefined;
 	let seq = 0;
@@ -75,11 +77,17 @@ function createLiveScansStore() {
 	}
 
 	let inflight = false;
+	let queued = false;
 	async function load() {
 		const pid = projectId;
-		if (!pid || inflight) return;
+		if (!pid) return;
+		if (inflight) {
+			queued = true;
+			return;
+		}
 		inflight = true;
 		const mySeq = ++seq;
+		const requestedAt = Date.now();
 		try {
 			const live = await scansApi.list(pid, {
 				status: LIVE_STATUSES,
@@ -91,12 +99,17 @@ function createLiveScansStore() {
 			if (mySeq !== seq || pid !== projectId) return;
 			scans = live.items;
 			hasFetched = true;
+			fetchedAt = requestedAt;
 			void seedRuns(pid, mySeq);
 		} catch (e) {
 			console.error('[liveScans]', e);
 		} finally {
 			inflight = false;
 			if (mySeq === seq) schedulePoll();
+			if (queued) {
+				queued = false;
+				scheduleRefresh();
+			}
 		}
 	}
 
@@ -212,13 +225,17 @@ function createLiveScansStore() {
 	function reset() {
 		sseUnsub?.();
 		sseUnsub = null;
+		resumeUnsub?.();
+		resumeUnsub = null;
 		clearTimeout(refreshTimer);
 		clearTimeout(pollTimer);
 		seq++;
 		inflight = false;
+		queued = false;
 		projectId = undefined;
 		scans = [];
 		hasFetched = false;
+		fetchedAt = 0;
 		runs.clear();
 		previousDurations.clear();
 	}
@@ -229,6 +246,9 @@ function createLiveScansStore() {
 		},
 		get hasFetched() {
 			return hasFetched;
+		},
+		get fetchedAt() {
+			return fetchedAt;
 		},
 		get count() {
 			return count;
@@ -264,12 +284,13 @@ function createLiveScansStore() {
 
 		init(pid: string) {
 			if (pid === projectId) {
-				if (!hasFetched) void load();
+				if (!hasFetched && !inflight) void load();
 				return;
 			}
 			reset();
 			projectId = pid;
 			sseUnsub = sseStore.on<ScanEvent>(SSEChannel.project(pid), SSEEventType.SCAN, onEvent);
+			resumeUnsub = sseStore.onResume(() => scheduleRefresh());
 			void load();
 		},
 

@@ -20,22 +20,16 @@ def validate_password_strength(
         return password
 
     if len(password) < MIN_PASSWORD_LENGTH:
-        return_error = (
-            f"Password must be at least {MIN_PASSWORD_LENGTH} characters long"
-        )
+        return_error = f"Password must be at least {MIN_PASSWORD_LENGTH} characters."
         raise ValueError(return_error)
 
     result = zxcvbn(password, user_inputs=user_inputs or [])
 
     if result["score"] < MIN_PASSWORD_SCORE:
         return_error = (
-            "Password is too weak. Consider using a stronger password with a "
-            "mix of uppercase, lowercase, numbers, and special characters."
+            "Password is too weak. Use a longer password that is not a common "
+            "word or pattern."
         )
-        raise ValueError(return_error)
-
-    if result["guesses_log10"] < MIN_PASSWORD_SCORE:
-        return_error = "Password is too guessable. Choose a less common password."
         raise ValueError(return_error)
 
     return password
@@ -43,22 +37,20 @@ def validate_password_strength(
 
 def validate_username(username: str) -> str:
     if len(username) < MIN_USERNAME_LENGTH:
-        return_error = (
-            f"Username must be at least {MIN_USERNAME_LENGTH} characters long"
-        )
+        return_error = f"Username must be at least {MIN_USERNAME_LENGTH} characters."
         raise ValueError(return_error)
 
     if len(username) > MAX_USERNAME_LENGTH:
-        return_error = f"Username must be at most {MAX_USERNAME_LENGTH} characters long"
+        return_error = f"Username must be at most {MAX_USERNAME_LENGTH} characters."
         raise ValueError(return_error)
 
     if not re.match(r"^[a-zA-Z]", username):
-        return_error = "Username must start with a letter"
+        return_error = "Username must start with a letter."
         raise ValueError(return_error)
 
     if not re.match(r"^[a-zA-Z][a-zA-Z0-9_.]*$", username):
         return_error = (
-            "Username can only contain letters, numbers, underscores, and dots"
+            "Username can contain only letters, digits, underscores and dots."
         )
         raise ValueError(return_error)
 

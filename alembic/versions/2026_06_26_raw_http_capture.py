@@ -4,10 +4,6 @@ Revision ID: b5d7f9a1c3e6
 Revises: a4c6e8f0b2d4
 Create Date: 2026-06-26 09:00:00.000000+00:00
 
-Store the raw request, raw response headers, response body, parsed header map,
-and a body preview on HttpAsset (httpx -irr). Denormalize the primary web
-service's waf/asn/favicon/cert-expiry signals onto Subdomain so the Web Assets
-table can render and filter them without a join.
 """
 
 from collections.abc import Sequence

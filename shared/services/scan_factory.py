@@ -1,6 +1,7 @@
 import uuid
 
 from shared.enums.scan import ScanScope, ScanStatus
+from shared.enums.scan_context import AuthType
 from shared.models.scan import Scan
 from shared.services import target_seeds
 from shared.services.proxy_resolve import scan_proxy_url
@@ -8,7 +9,7 @@ from shared.services.scan_resolve import (
     ResolvedScanConfig,
     _mask_auth,
     merge_engine_context,
-    seal_headers,
+    seal_run_config,
 )
 
 
@@ -31,13 +32,14 @@ def build_scan_row(
     dimension: str | None = None,
 ) -> Scan:
     """Assemble an unsaved PENDING Scan from an already-resolved config."""
-    execution_config = resolved.model_dump()
-    execution_config["headers"] = seal_headers(execution_config.get("headers"))
+    execution_config = seal_run_config(resolved.model_dump())
     if dimension:
         execution_config["_dimension"] = dimension
     execution_config["_auth_header_names"] = list(resolved._auth_header_names)
     execution_config["_auth"] = (
-        _mask_auth(context.auth) if context is not None else {"auth_type": "none"}
+        _mask_auth(context.auth)
+        if context is not None
+        else {"auth_type": AuthType.NONE.value}
     )
     return Scan(
         project_id=project_id,
@@ -81,19 +83,19 @@ def build_scan_for_target_sync(
 
     engine = session.get(ScanEngine, engine_id)
     if engine is None or engine.project_id != project_id:
-        msg = "scan engine not found"
+        msg = "Scan engine not found."
         raise ScanFactoryError(msg)
 
     context = None
     if context_id is not None:
         context = session.get(ScanContext, context_id)
         if context is None or context.project_id != project_id:
-            msg = "scan context not found"
+            msg = "Scan context not found."
             raise ScanFactoryError(msg)
 
     target = session.get(Target, target_id)
     if target is None or target.project_id != project_id:
-        msg = "target not found"
+        msg = "Target not found."
         raise ScanFactoryError(msg)
 
     proxy_url = scan_proxy_url(session, context)

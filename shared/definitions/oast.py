@@ -62,9 +62,11 @@ MIN_WAIT_SECONDS = 0
 MAX_WAIT_SECONDS = 900
 # nuclei holds a pending request this much longer than it waits
 EVICTION_SLACK = 120
-# an out-of-band batch sweeps for longer, so the wait is paid fewer times
+# out-of-band batch window
 OAST_BATCH_SECONDS = 1800
 MAX_SERVER_LENGTH = 200
+# coverage group of the checks a run could not send
+OAST_COVERAGE_GROUP = "Out-of-band"
 
 # ---------- the callback a finding carries ----------
 
@@ -148,6 +150,7 @@ __all__ = [
     "MAX_WAIT_SECONDS",
     "MIN_WAIT_SECONDS",
     "OAST_BATCH_SECONDS",
+    "OAST_COVERAGE_GROUP",
     "OAST_MODE_HELP",
     "OAST_MODE_LABELS",
     "OAST_TAG",

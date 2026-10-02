@@ -24,12 +24,12 @@
 		engine: ScanEngine;
 		stages: StageCatalogEntry[];
 		isSelected?: boolean;
-		onSelect?: () => void;
-		onEdit?: () => void;
-		onRun?: () => void;
-		onDuplicate?: () => void;
-		onExport?: () => void;
-		onDelete?: () => void;
+		onSelect: () => void;
+		onEdit: () => void;
+		onRun: () => void;
+		onDuplicate: () => void;
+		onExport: () => void;
+		onDelete: () => void;
 	}
 
 	let {
@@ -73,7 +73,7 @@
 	data-selected={isSelected}
 >
 	<div class="flex items-start gap-3 px-4 pt-4">
-		{#if onSelect && !engine.builtin}
+		{#if !engine.builtin}
 			<div
 				class="relative z-10 flex h-5 items-center opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 data-[on=true]:opacity-100 [@media(hover:none)]:opacity-100"
 				data-on={isSelected}
@@ -91,7 +91,7 @@
 				<button
 					type="button"
 					class="truncate text-left text-sm font-semibold after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
-					onclick={() => onEdit?.()}
+					onclick={() => onEdit()}
 				>
 					{engine.name}
 				</button>
@@ -123,17 +123,17 @@
 					{/snippet}
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content align="end" class="w-44">
-					<DropdownMenu.Item onclick={() => onDuplicate?.()}>
+					<DropdownMenu.Item onclick={() => onDuplicate()}>
 						<Copy size={13} />
 						Duplicate
 					</DropdownMenu.Item>
-					<DropdownMenu.Item onclick={() => onExport?.()}>
+					<DropdownMenu.Item onclick={() => onExport()}>
 						<Download size={13} />
 						Export YAML
 					</DropdownMenu.Item>
 					{#if !engine.builtin}
 						<DropdownMenu.Separator />
-						<DropdownMenu.Item variant="destructive" onclick={() => onDelete?.()}>
+						<DropdownMenu.Item variant="destructive" onclick={() => onDelete()}>
 							<Trash2 size={13} />
 							Delete
 						</DropdownMenu.Item>
@@ -182,7 +182,7 @@
 			variant="ghost"
 			size="sm"
 			class="relative z-10 h-7 gap-1.5 px-2 text-xs"
-			onclick={() => onRun?.()}
+			onclick={() => onRun()}
 		>
 			<Play size={12} />
 			Run

@@ -4,8 +4,6 @@ Revision ID: a1d3f5b7c9e2
 Revises: c9f2a4e6b1d8
 Create Date: 2026-06-24 12:00:00.000000+00:00
 
-DB-backed scan schedules (one-off / interval / daily / cron) polled by the beat tick,
-plus the schedule_id back-link on spawned scans.
 """
 
 from collections.abc import Sequence
@@ -122,5 +120,4 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_scan_schedules_schedule_type"), table_name="scan_schedules")
     op.drop_index(op.f("ix_scan_schedules_engine_id"), table_name="scan_schedules")
     op.drop_index(op.f("ix_scan_schedules_project_id"), table_name="scan_schedules")
-    op.drop_index(op.f("ix_scan_schedules_id"), table_name="scan_schedules")
     op.drop_table("scan_schedules")

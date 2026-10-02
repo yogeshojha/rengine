@@ -11,7 +11,8 @@ from enum import Enum
 import validators
 
 from shared.enums.api_key import APIProvider
-from shared.enums.target import TargetType
+from shared.enums.target import HOSTNAME_TARGET_TYPES, TargetType
+from shared.utils.net import split_host_port
 from shared.utils.text import strip_control
 from shared.utils.validation import normalize_target_value, validate_target
 
@@ -412,8 +413,6 @@ def scope_tier(raw: str | None) -> str | None:
 MAX_SEVERITIES: tuple[str, ...] = ("critical", "high", "medium", "low", "none")
 
 _SCHEME = re.compile(r"^[a-z][a-z0-9+.-]*://", re.I)
-_HOSTNAME_TYPES = frozenset({TargetType.DOMAIN, TargetType.URL})
-_IPV6_HOST = re.compile(r"^\[([^\]]+)\]")
 
 
 def event_spec(kind: str) -> EventSpec:
@@ -487,8 +486,7 @@ def normalize_identifier(asset_type: str | None, identifier: str) -> str | None:
 def _public_host(value: str) -> bool:
     """Whether the host is internet-facing."""
     authority = _SCHEME.sub("", value).split("/")[0].split("?")[0]
-    bracketed = _IPV6_HOST.match(authority)
-    host = bracketed.group(1) if bracketed else authority.rsplit(":", 1)[0]
+    host, _ = split_host_port(authority)
     with contextlib.suppress(ValueError):
         ipaddress.ip_address(host)
         return True
@@ -514,6 +512,6 @@ def target_for_scope(
     target_type = validate_target(value)
     if not target_type:
         return None
-    if target_type in _HOSTNAME_TYPES and not _public_host(value):
+    if target_type in HOSTNAME_TARGET_TYPES and not _public_host(value):
         return None
     return _canonical(value, target_type), target_type

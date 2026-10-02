@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
-
 from pydantic import Field
 
 from mcp import links
@@ -12,7 +10,7 @@ from mcp.context import ToolContext
 from mcp.dimensions import DIMENSION_KEYS, dimension
 from mcp.errors import ToolError
 from mcp.result import ToolResult
-from mcp.tools._scope import resolve
+from mcp.tools._scope import operator, resolve
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 
 MAX_ASSETS = 200
@@ -58,10 +56,7 @@ class FocusedRescan(Tool):
         from app.services.rescan import RescanService, rescan_schema  # noqa: PLC0415
         from shared.models.scan import RescanCreate  # noqa: PLC0415
 
-        if ctx.token.issued_by is None:
-            msg = "This token has no issuing operator to attribute the rescan to."
-            raise ToolError(msg)
-
+        issued_by = operator(ctx)
         dim = dimension(args.dimension)
         scope = await resolve(ctx, args.target)
         parent_scan_id = scope.require(dim)
@@ -80,39 +75,39 @@ class FocusedRescan(Tool):
             raise ToolError(msg)
 
         assets = [a.strip() for a in args.assets if a and a.strip()]
-        if len(assets) > schema.max_assets:
-            msg = f"At most {schema.max_assets} assets per rescan."
-            raise ToolError(msg)
-
+        stages = args.stages or list(spec.default_stages)
         try:
             data = RescanCreate.model_validate(
                 {
                     "parent_scan_id": parent_scan_id,
                     "dimension": dim.key,
                     "assets": assets,
-                    "stages": args.stages or list(spec.default_stages),
+                    "stages": stages,
                 }
             )
-            scan = await RescanService(ctx.session).create(
+            run = await RescanService(ctx.session).create(
                 data=data,
                 project_id=scope.project_id,
-                created_by=ctx.token.issued_by,
+                created_by=issued_by,
             )
         except Exception as exc:
             msg = f"Rescan not started: {exc}"
             raise ToolError(msg) from exc
+        if not run.scans:
+            msg = "Rescan not started: no asset matched the parent scan."
+            raise ToolError(msg)
 
-        stages = args.stages or list(spec.default_stages)
+        scan = run.scans[0]
         return ToolResult(
             summary=(
-                f"Rescanning {len(assets)} {spec.noun_plural} on "
-                f"{scope.target.target_value} with {', '.join(stages)}"
+                f"Rescanning {run.asset_count} {spec.noun_plural} on "
+                f"{scope.target.target_value} with {', '.join(run.stage_titles or stages)}"
             ),
             data={
                 "scan_id": str(scan.id),
                 "parent_scan_id": str(parent_scan_id),
                 "dimension": dim.key,
-                "assets": len(assets),
+                "assets": run.asset_count,
                 "stages": stages,
                 "status": scan.status,
             },
@@ -122,11 +117,3 @@ class FocusedRescan(Tool):
                 "Results are recorded on this run, not on the parent scan.",
             ],
         )
-
-
-def _uuid(value: str) -> uuid.UUID:
-    try:
-        return uuid.UUID(value)
-    except ValueError as exc:
-        msg = "Expected a UUID."
-        raise ToolError(msg) from exc

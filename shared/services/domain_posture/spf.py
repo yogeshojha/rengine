@@ -53,6 +53,15 @@ def referenced_zones(record: str) -> set[str]:
     return out
 
 
+def include_zones(record: str) -> set[str]:
+    out: set[str] = set()
+    for term in _terms(record):
+        name, value = _mechanism(term)
+        if name == "include" and value:
+            out.add(value.strip().rstrip(".").lower())
+    return out
+
+
 def redirect_target(record: str) -> str | None:
     """The zone a redirect= modifier delegates to."""
     for term in _terms(record):

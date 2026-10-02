@@ -162,7 +162,7 @@ async def test_an_answer_that_did_not_compute_is_not_cached(estate, now):
     assert calls == 2
 
 
-async def test_facets_of_ignores_what_cannot_change_a_count(estate):
+def test_facets_of_ignores_what_cannot_change_a_count():
     a = lead_cache.facets_of(SubdomainFilter(q="anything", offset=0, limit=50))
     b = lead_cache.facets_of(SubdomainFilter(q="other", offset=400, limit=200))
     c = lead_cache.facets_of(SubdomainFilter(live=True))

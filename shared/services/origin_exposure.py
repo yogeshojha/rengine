@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import ipaddress
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import lru_cache
@@ -23,6 +22,8 @@ from shared.models.scan_correlation import (
     OriginSample,
 )
 from shared.models.subdomain import Subdomain
+from shared.services.asset_query.tokens import token
+from shared.utils.validation import validate_ip
 
 FINGERPRINTS: tuple[tuple[str, str, int], ...] = (
     ("tls_fingerprint", "TLS certificate", 3),
@@ -66,13 +67,7 @@ _COLUMNS = (
 )
 
 
-@lru_cache(maxsize=PURE_CACHE)
-def _is_address(host: str) -> bool:
-    try:
-        ipaddress.ip_address(host)
-    except ValueError:
-        return False
-    return True
+_is_address = lru_cache(maxsize=PURE_CACHE)(validate_ip)
 
 
 @dataclass
@@ -138,11 +133,7 @@ class OriginExposureService:
         findings += self._default_vhosts(assets, ports)
         findings = _merge(findings)
         findings.sort(key=lambda f: (f.confidence != "high", -len(f.evidence)))
-        return OriginExposure(
-            findings=findings[:MAX_FINDINGS],
-            probed_addresses=len({a.ip for a in assets if a.is_address and a.ip}),
-            fronted_assets=len(fronted),
-        )
+        return OriginExposure(findings=findings[:MAX_FINDINGS])
 
     def _assets(self, scan_id: UUID) -> list[_Asset]:
         rows = (
@@ -339,7 +330,7 @@ class OriginExposureService:
             evidence=evidence,
             open_ports=open_ports,
             sensitive_ports=[p for p in open_ports if p in set(SENSITIVE_PORTS)],
-            query=f"ip:{exposed.ip}",
+            query=token("ip", ":", exposed.ip or ""),
         )
 
 

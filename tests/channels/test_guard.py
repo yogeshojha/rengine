@@ -1,5 +1,3 @@
-"""The channel package holds no per-tool branch, and the frontend mirror carries the vocabulary."""
-
 from __future__ import annotations
 
 import re
@@ -10,7 +8,8 @@ from shared.definitions.channels import (
     CHANNEL_LABELS,
     CHAT_GROUP_LABELS,
     CHAT_STATE_LABELS,
-    COMMAND_SOURCE_LABELS,
+    RATE_LIMIT_MAX,
+    RATE_LIMIT_MIN,
     ChannelKind,
     ChatGroup,
     ChatState,
@@ -30,7 +29,6 @@ def _enum_values(text: str, name: str) -> set[str]:
 
 
 def test_the_transport_names_no_tool():
-    """A tool name in the transport is a per-command branch waiting to rot."""
     names = set(mcp_registry.registry()) | set(toolbox_registry.registry())
     for path in TRANSPORT.rglob("*.py"):
         source = path.read_text()
@@ -60,8 +58,16 @@ def test_the_frontend_mirror_carries_the_same_labels():
     for labels in (
         CHANNEL_LABELS,
         CHAT_STATE_LABELS,
-        COMMAND_SOURCE_LABELS,
         CHAT_GROUP_LABELS,
     ):
         for label in labels.values():
             assert f"'{label}'" in text, label
+
+
+def test_the_frontend_mirror_carries_the_rate_bounds():
+    text = MIRROR.read_text()
+    for name, value in (
+        ("RATE_LIMIT_MIN", RATE_LIMIT_MIN),
+        ("RATE_LIMIT_MAX", RATE_LIMIT_MAX),
+    ):
+        assert f"export const {name} = {value:_};" in text, name

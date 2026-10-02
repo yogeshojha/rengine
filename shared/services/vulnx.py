@@ -1,24 +1,25 @@
-"""vulnx: per-CVE exploit intelligence, fetched on demand and cached forever."""
+"""Per-CVE exploit intelligence from vulnx, fetched on demand."""
 
 from __future__ import annotations
 
 import json
 import time
-import urllib.error
 import urllib.parse
-import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+import httpx
 from sqlalchemy import select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from shared.enums.api_key import APIProvider
+from shared.http import get_sync_client
 from shared.logging import get_logger
 from shared.models.threat_intel import CveIntel
 from shared.services.api_key.sync_api_key import SyncAPIKeyService
 from shared.utils.datetime import utc_now
+from shared.utils.net import redact_url_queries
 from shared.utils.text import strip_control
 
 logger = get_logger(__name__)
@@ -68,24 +69,26 @@ def _request(path: str, params: dict, api_key: str | None, budget: Budget) -> di
     url = f"{BASE_URL}{path}"
     if params:
         url = f"{url}?{urllib.parse.urlencode(params)}"
-    request = urllib.request.Request(url, headers={"User-Agent": "reNgine"})  # noqa: S310
-    if api_key:
-        request.add_header("X-Api-Key", api_key)
+    headers = {"X-Api-Key": api_key} if api_key else {}
     try:
-        with urllib.request.urlopen(request, timeout=TIMEOUT) as response:  # noqa: S310
-            budget.remaining = _int(response.headers.get("x-ratelimit-remaining"))
-            budget.reset_at = _float(response.headers.get("x-ratelimit-reset"))
-            return json.loads(response.read().decode("utf-8", errors="replace"))
-    except urllib.error.HTTPError as exc:
-        if exc.code == HTTP_TOO_MANY:
-            budget.remaining = 0
-            budget.reset_at = _float(exc.headers.get("x-ratelimit-reset")) or (
-                time.time() + 60
-            )
-            raise RateLimitedError(budget.reset_at) from exc
-        msg = f"vulnx returned {exc.code}"
-        raise VulnxError(msg) from exc
-    except Exception as exc:
+        with get_sync_client(timeout=TIMEOUT) as client:
+            response = client.get(url, headers=headers)
+    except httpx.HTTPError as exc:
+        raise VulnxError(redact_url_queries(str(exc))) from None
+    if response.status_code == HTTP_TOO_MANY:
+        budget.remaining = 0
+        budget.reset_at = _float(response.headers.get("x-ratelimit-reset")) or (
+            time.time() + 60
+        )
+        raise RateLimitedError(budget.reset_at)
+    if response.is_error:
+        msg = f"vulnx returned {response.status_code}"
+        raise VulnxError(msg)
+    budget.remaining = _int(response.headers.get("x-ratelimit-remaining"))
+    budget.reset_at = _float(response.headers.get("x-ratelimit-reset"))
+    try:
+        return json.loads(response.content.decode("utf-8", errors="replace"))
+    except ValueError as exc:
         raise VulnxError(str(exc)) from exc
 
 
@@ -127,7 +130,7 @@ def _row(cve: str, data: dict) -> dict:
             "added_at": p.get("added_at"),
         }
         for p in (data.get("pocs") or [])
-        if p.get("url")
+        if str(p.get("url") or "").lower().startswith(("https://", "http://"))
     ][:MAX_POCS]
     h1 = data.get("h1") or {}
     kev_sources = sorted(
@@ -176,7 +179,7 @@ def api_key(session: Session) -> str | None:
 
 
 def pending(session: Session, cves: list[str]) -> list[str]:
-    """Which of these CVEs we have not cached, or cached too long ago."""
+    """The CVEs with no cached row or one older than REFRESH_AFTER."""
     keys = sorted({c.strip().upper() for c in cves if c and c.strip()})
     if not keys:
         return []
@@ -192,7 +195,7 @@ def pending(session: Session, cves: list[str]) -> list[str]:
 
 
 def enrich(session: Session, cves: list[str], *, limit: int = MAX_PER_RUN) -> dict:
-    """Fetch and cache detail for CVEs we do not already hold."""
+    """Fetch and cache detail for the pending CVEs."""
     todo = pending(session, cves)[:limit]
     if not todo:
         return {"requested": 0, "cached": 0, "failed": 0, "rate_limited": False}

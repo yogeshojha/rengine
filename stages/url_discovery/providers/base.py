@@ -10,11 +10,14 @@ from functools import cached_property
 from typing import TYPE_CHECKING, ClassVar
 from urllib.parse import urlsplit
 
+import httpx
+
+from shared.definitions.constants import SCAN_USER_AGENT
 from shared.definitions.intensity import Transport
 from shared.definitions.vulnerabilities import CoverageStatus
 from shared.logging import get_logger
 from shared.services.endpoint_inventory import EndpointObservation
-from shared.services.scope_filter import matches_any
+from shared.services.scope_filter import host_excluded, matches_any
 from shared.utils.datetime import utc_now
 from shared.utils.host_pacing import HostPacer
 from tools.runner import tool_path
@@ -24,12 +27,13 @@ if TYPE_CHECKING:
 
     from sqlalchemy.orm import Session
 
-    from shared.enums.api_key import APIProvider
     from shared.services.scan_resolve import ResolvedScanConfig
     from stages.base import NetOptions
     from tools.runner.models import CommandRecorder
 
 logger = get_logger(__name__)
+
+_CLIENT_ERROR = 400
 
 
 @dataclass
@@ -40,17 +44,12 @@ class Host:
     host: str
     port: int
     scheme: str
-    status_code: int | None = None
 
 
 @dataclass
 class ProviderContext:
     session: Session
     scan_id: object
-    target_id: object
-    project_id: object
-    target_value: str
-    target_type: str
     hosts: list[Host]
     apex_domains: list[str]
     cfg: object
@@ -58,7 +57,6 @@ class ProviderContext:
     resolved: ResolvedScanConfig
     net: NetOptions
     recorder: CommandRecorder | None = None
-    api_keys: dict[str, str | None] = field(default_factory=dict)
     on_progress: Callable[[str], None] | None = None
     on_batch: Callable[[tuple[str, list[EndpointObservation]]], None] | None = None
     is_aborted: Callable[[], bool] | None = None
@@ -74,14 +72,12 @@ class ProviderResult:
     observations: list[EndpointObservation] = field(default_factory=list)
     hosts_total: int = 0
     hosts_scanned: int | None = None
-    hosts_dropped: list[str] = field(default_factory=list)
     urls_found: int | None = None  # every url produced, before dedupe and scope
     pages_fetched: int | None = None
     depth_reached: int | None = None
     errors: int | None = None
     capped: bool = False
     cap_reason: str | None = None
-    command: str | None = None
     error: str | None = None
     started_at: datetime = field(default_factory=utc_now)
     ended_at: datetime | None = None
@@ -94,12 +90,15 @@ class UrlProvider(ABC):
     source: ClassVar[str]
     tool: ClassVar[str | None] = None
     binary: ClassVar[str | None] = None
-    requires_key: ClassVar[APIProvider | None] = None
     touches_target: ClassVar[bool] = True
     uses_session: ClassVar[bool] = False
+    reads_endpoints: ClassVar[bool] = False
 
     def __init__(self, ctx: ProviderContext) -> None:
         self.ctx = ctx
+        self._gate = threading.Lock()
+        self._next_slot = 0.0
+        self._pacer = HostPacer()
 
     @property
     def extra_args(self) -> list[str]:
@@ -108,10 +107,6 @@ class UrlProvider(ABC):
     def availability(self) -> tuple[bool, str | None]:
         if self.binary and shutil.which(self.binary, path=tool_path()) is None:
             return False, f"{self.binary} is not installed on this instance."
-        if self.requires_key is not None and not self.ctx.api_keys.get(
-            self.requires_key.value
-        ):
-            return False, f"No {self.requires_key.value} API key is configured."
         return True, None
 
     def in_scope(self, url: str) -> bool:
@@ -120,7 +115,10 @@ class UrlProvider(ABC):
             host = (urlsplit(url).hostname or "").lower()
         except ValueError:
             return False
-        if not host:
+        resolved = self.ctx.resolved
+        if not host or host_excluded(
+            host, resolved.excluded_subdomains or [], resolved.excluded_ips or []
+        ):
             return False
         hosts, apexes = self._scope
         return host in hosts or any(
@@ -165,9 +163,41 @@ class UrlProvider(ABC):
     def workers(self, cap: int) -> int:
         return max(1, min(cap, self.ctx.transport.threads))
 
-    @cached_property
-    def _pacer(self) -> HostPacer:
-        return HostPacer()
+    def http_client(self) -> httpx.Client:
+        headers = dict(self.ctx.net.headers or {})
+        headers.setdefault("User-Agent", SCAN_USER_AGENT)
+        return httpx.Client(
+            timeout=self.ctx.transport.timeout,
+            follow_redirects=self.follow_redirects(True),
+            verify=False,  # noqa: S501
+            proxy=self.ctx.net.proxy_url or None,
+            headers=headers,
+        )
+
+    def fetch_text(
+        self, client: httpx.Client, url: str, max_bytes: int, counters
+    ) -> str | None:
+        """GET a URL under the rate and host pace, its body read up to max_bytes."""
+        if self.path_excluded(url):
+            return None
+        self.throttle()
+        counters.fetched += 1
+        host = urlsplit(url).hostname or ""
+        body = bytearray()
+        try:
+            with self.host_slot(host), client.stream("GET", url) as response:
+                self.host_observed(host, status=response.status_code)
+                if response.status_code >= _CLIENT_ERROR:
+                    return None
+                for chunk in response.iter_bytes():
+                    body += chunk
+                    if len(body) >= max_bytes:
+                        break
+        except (httpx.HTTPError, ValueError):
+            self.host_observed(host, transport_error=True)
+            counters.errors += 1
+            return None
+        return bytes(body[:max_bytes]).decode("utf-8", errors="replace")
 
     def host_slot(self, host: str):
         """Hold one of a host's in-flight slots after paying its adaptive backoff."""
@@ -191,11 +221,6 @@ class UrlProvider(ABC):
                 time.sleep(wait)
                 now = time.monotonic()
             self._next_slot = max(now, self._next_slot) + 1.0 / rate
-
-    @cached_property
-    def _gate(self) -> threading.Lock:
-        self._next_slot = 0.0
-        return threading.Lock()
 
     @abstractmethod
     def discover(self, result: ProviderResult) -> None:

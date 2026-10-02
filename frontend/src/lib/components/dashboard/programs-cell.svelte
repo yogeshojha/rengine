@@ -5,7 +5,7 @@
 	import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { PROGRAM_EVENT_FILL } from '$lib/config/dashboard';
-	import { windowDays, type DashboardPrograms, type DashboardWindow } from '$lib/types/dashboard';
+	import { bucketsSince, type DashboardPrograms, type DashboardWindow } from '$lib/types/dashboard';
 
 	interface Props {
 		programs: DashboardPrograms;
@@ -20,8 +20,7 @@
 	});
 
 	const KINDS = Object.keys(PROGRAM_EVENT_FILL);
-	let days = $derived(windowDays(window));
-	let recent = $derived(programs.events_daily.slice(-days));
+	let recent = $derived(bucketsSince(programs.events_daily, programs.since));
 	let data = $derived<DailyPoint[]>(
 		recent.map((d) => ({
 			date: d.date,
@@ -51,7 +50,6 @@
 <Cell
 	id="programs"
 	projectWide
-	title="Platform events"
 	description="Programs and scope changes per day"
 	href={ROUTES.bountyHubTab('updates')}
 	hrefLabel="{programs.programs_total.toLocaleString()} programs"

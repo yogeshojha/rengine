@@ -8,7 +8,8 @@
 	import { toast } from 'svelte-sonner';
 	import UserIcon from '@lucide/svelte/icons/user';
 	import CheckIcon from '@lucide/svelte/icons/check';
-	import { formatDate } from '$lib/utilities';
+	import { formatDate } from '$lib/utilities/dates';
+	import { MIN_USERNAME_LENGTH } from '$lib/constants';
 
 	let newUsername = $state('');
 	let isChangingUsername = $state(false);
@@ -17,12 +18,15 @@
 
 	const usernameError = $derived.by(() => {
 		if (!usernameDirty || !newUsername) return '';
-		if (newUsername.length < 3) return 'At least 3 characters';
+		if (newUsername.length < MIN_USERNAME_LENGTH)
+			return `At least ${MIN_USERNAME_LENGTH} characters`;
 		if (newUsername === auth.user?.username) return 'Same as current username';
 		return '';
 	});
 	const usernameValid = $derived(
-		!!newUsername && newUsername.length >= 3 && newUsername !== auth.user?.username
+		!!newUsername &&
+			newUsername.length >= MIN_USERNAME_LENGTH &&
+			newUsername !== auth.user?.username
 	);
 
 	const handleUsernameChange = async () => {
@@ -35,8 +39,8 @@
 			toast.error('New username matches the current username');
 			return;
 		}
-		if (newUsername.length < 3) {
-			toast.error('Username must be at least 3 characters');
+		if (newUsername.length < MIN_USERNAME_LENGTH) {
+			toast.error(`Username must be at least ${MIN_USERNAME_LENGTH} characters`);
 			return;
 		}
 
@@ -99,7 +103,7 @@
 				{#if usernameError}
 					<p class="text-xs text-destructive">{usernameError}</p>
 				{:else}
-					<p class="text-xs text-muted-foreground">At least 3 characters</p>
+					<p class="text-xs text-muted-foreground">At least {MIN_USERNAME_LENGTH} characters</p>
 				{/if}
 			</div>
 

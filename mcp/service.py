@@ -25,6 +25,7 @@ from mcp.capabilities import (
 from mcp.context import TokenIdentity
 from mcp.errors import AuthError
 from mcp.models import (
+    MAX_NAME,
     MAX_TOKENS,
     McpCallRead,
     McpSessionRead,
@@ -42,6 +43,7 @@ from shared.definitions.channels import CHANNEL_ORDER
 from shared.models.instance_settings import InstanceSettings
 from shared.models.project import Project
 from shared.models.target import Target
+from shared.models.user import User
 from shared.utils.datetime import utc_now
 
 HIDDEN_CLIENTS: tuple[str, ...] = (*CHANNEL_ORDER, ASK_CLIENT)
@@ -67,7 +69,7 @@ class McpService:
     async def config(self) -> server_settings.ServerSettings:
         return server_settings.read(await self._row())
 
-    async def update(self, data: McpSettingsUpdate) -> McpStatus:
+    async def update(self, data: McpSettingsUpdate) -> None:
         row = await self._row()
         current = server_settings.read(row)
 
@@ -85,7 +87,6 @@ class McpService:
 
         if data.ceiling is not None:
             await self._reconcile_tokens(current.ceiling)
-        return await self.status()
 
     async def _reconcile_tokens(self, ceiling: dict[str, bool]) -> None:
         """Lowering the ceiling narrows every token that exceeded it."""
@@ -102,11 +103,8 @@ class McpService:
 
     # ---- status ---------------------------------------------------------
 
-    async def status(self, ui_base: str = "") -> McpStatus:
+    async def status(self, ui_base: str) -> McpStatus:
         config = await self.config()
-        specs = registry.registry()
-        tokens = (await self.session.execute(select(McpToken))).scalars().all()
-        active = [t for t in tokens if _active(t)]
         raw_sessions = [
             s
             for s in await telemetry.sessions()
@@ -121,15 +119,7 @@ class McpService:
             protocol_version=server_settings.PROTOCOL_VERSION,
             rate_limit_per_minute=config.rate_limit_per_minute,
             ceiling=config.ceiling,
-            tools_total=len(specs),
-            tools_available=sum(
-                1 for s in specs.values() if config.ceiling.get(s.capability, False)
-            ),
-            tokens_total=len(tokens),
-            tokens_active=len(active),
             sessions=[_session(s) for s in raw_sessions],
-            calls_today=await telemetry.calls_today(HIDDEN_CLIENTS),
-            last_call_at=await telemetry.last_call_at(HIDDEN_CLIENTS),
             capabilities=capability_catalog(),
             clients=clients.catalog(),
         )
@@ -154,9 +144,6 @@ class McpService:
         entries = await telemetry.recent(limit, without=HIDDEN_CLIENTS)
         return [McpCallRead(**entry) for entry in entries]
 
-    async def disconnect(self, token_id: uuid.UUID) -> int:
-        return await telemetry.drop(token_id)
-
     # ---- tokens ---------------------------------------------------------
 
     async def tokens(self) -> list[McpTokenRead]:
@@ -171,14 +158,21 @@ class McpService:
 
     async def _reach(self) -> dict[uuid.UUID | None, tuple[int, int]]:
         """Projects and targets a token scoped to each project reaches; None is every."""
+        active = select(Project.id).where(Project.is_active.is_(True))
         counts = dict(
             (
                 await self.session.execute(
-                    select(Target.project_id, func.count()).group_by(Target.project_id)
+                    select(Target.project_id, func.count())
+                    .where(Target.project_id.in_(active))
+                    .group_by(Target.project_id)
                 )
             ).all()
         )
-        projects = (await self.session.execute(select(func.count(Project.id)))).scalar()
+        projects = (
+            await self.session.execute(
+                select(func.count(Project.id)).where(Project.is_active.is_(True))
+            )
+        ).scalar()
         out: dict[uuid.UUID | None, tuple[int, int]] = {
             pid: (1, n) for pid, n in counts.items()
         }
@@ -186,12 +180,13 @@ class McpService:
         return out
 
     async def create_token(
-        self, data: McpTokenCreate, user_id: uuid.UUID, ui_base: str = ""
+        self, data: McpTokenCreate, user_id: uuid.UUID, ui_base: str
     ) -> McpTokenCreated:
         existing = (await self.session.execute(select(McpToken))).scalars().all()
         if len([t for t in existing if t.revoked_at is None]) >= MAX_TOKENS:
             msg = f"The instance has {MAX_TOKENS} tokens. Revoke one first."
             raise McpConfigError(msg)
+        name = _name(data.name)
 
         if data.project_id is not None and not await self._project_exists(
             data.project_id
@@ -214,7 +209,7 @@ class McpService:
             else None
         )
         row = McpToken(
-            name=data.name.strip()[:80],
+            name=name,
             project_id=data.project_id,
             capabilities=granted,
             token_hash=token_hash,
@@ -227,7 +222,7 @@ class McpService:
         await self.session.refresh(row)
 
         names = await self._project_names({row.project_id} if row.project_id else set())
-        url = server_settings.endpoint_url(ui_base or "http://localhost:8000")
+        url = server_settings.endpoint_url(ui_base)
         return McpTokenCreated(
             token=_read(row, names.get(row.project_id), await self._reach()),
             secret=secret,
@@ -246,8 +241,8 @@ class McpService:
             raise McpConfigError(msg)
 
         given = data.model_fields_set
-        if "name" in given and data.name:
-            row.name = data.name.strip()[:80]
+        if "name" in given and data.name is not None:
+            row.name = _name(data.name)
         if "project_id" in given:
             if data.project_id is not None and not await self._project_exists(
                 data.project_id
@@ -314,6 +309,16 @@ class McpService:
         if row.expires_at is not None and row.expires_at <= utc_now():
             msg = "The token expired."
             raise AuthError(msg)
+        if row.created_by is not None:
+            issuer = await self.session.get(User, row.created_by)
+            if issuer is None or not issuer.is_active:
+                msg = "The token's issuing user is inactive."
+                raise AuthError(msg)
+        if row.project_id is not None and not await self._project_exists(
+            row.project_id
+        ):
+            msg = "The token's project was deleted."
+            raise AuthError(msg)
 
         config = await self.config()
         granted = within_ceiling(list(row.capabilities or []), config.ceiling)
@@ -336,7 +341,8 @@ class McpService:
     # ---- helpers --------------------------------------------------------
 
     async def _project_exists(self, project_id: uuid.UUID) -> bool:
-        return await self.session.get(Project, project_id) is not None
+        row = await self.session.get(Project, project_id)
+        return row is not None and row.is_active
 
     async def _project_names(self, ids: set[uuid.UUID]) -> dict[uuid.UUID, str]:
         if not ids:
@@ -368,10 +374,12 @@ def context_tokens(descriptor: dict) -> int:
     return math.ceil(len(json.dumps(descriptor, separators=(",", ":"))) / 4)
 
 
-def _active(row: McpToken) -> bool:
-    if row.revoked_at is not None:
-        return False
-    return row.expires_at is None or row.expires_at > utc_now()
+def _name(value: str) -> str:
+    name = value.strip()[:MAX_NAME]
+    if not name:
+        msg = "Name the agent."
+        raise McpConfigError(msg)
+    return name
 
 
 def _read(
@@ -404,11 +412,6 @@ def _read(
 def _session(entry: dict) -> McpSessionRead:
     return McpSessionRead(
         token_id=uuid.UUID(entry["token_id"]),
-        token_name=entry.get("token_name", "token"),
         client=entry.get("client", "unknown"),
-        capabilities=list(entry.get("capabilities", [])),
-        first_seen=entry["first_seen"],
         last_seen=entry["last_seen"],
-        calls=int(entry.get("calls", 0)),
-        last_tool=entry.get("last_tool"),
     )

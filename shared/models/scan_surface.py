@@ -3,20 +3,12 @@ from datetime import datetime
 
 from pydantic import BaseModel
 from pydantic import Field as PydanticField
-from sqlalchemy import Column, Index
-from sqlalchemy.types import JSON
+from sqlalchemy import Index
 from sqlmodel import Field, SQLModel
 
 from shared.definitions.scan_surface import SurfaceClass, SurfaceState
+from shared.models.fields import json_dict, json_list
 from shared.utils.datetime import utc_now
-
-
-def _json_list() -> Field:
-    return Field(default_factory=list, sa_column=Column(JSON, nullable=False))
-
-
-def _json_dict() -> Field:
-    return Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
 
 
 class ScanSurfaceItem(SQLModel, table=True):
@@ -53,49 +45,22 @@ class ScanSurfaceItem(SQLModel, table=True):
 
     cluster_id: uuid.UUID | None = Field(default=None, index=True)
     representative_id: uuid.UUID | None = Field(default=None, index=True)
-    cluster_signals: list = _json_list()
+    cluster_signals: list = json_list()
     members: int = Field(default=1)
 
     drop_reason: str | None = Field(default=None, max_length=32)
     rank: float = Field(default=0.0)
     batch: int | None = Field(default=None)
     guarded: bool = Field(default=False)
-    tags: list = _json_list()
-    unmapped_tech: list = _json_list()
+    tags: list = json_list()
+    unmapped_tech: list = json_list()
 
-    tiers_planned: list = _json_list()
-    tiers_done: dict = _json_dict()
+    tiers_planned: list = json_list()
+    tiers_done: dict = json_dict()
     state: str = Field(default=SurfaceState.PLANNED.value, max_length=16)
     note: str | None = Field(default=None, max_length=500)
 
     created_at: datetime = Field(default_factory=utc_now)
-
-
-class SurfaceItemRead(BaseModel):
-    id: uuid.UUID
-    class_: str = PydanticField(alias="class")
-    value: str
-    host: str | None = None
-    port: int | None = None
-    scheme: str | None = None
-    http_asset_id: uuid.UUID | None = None
-    cluster_id: uuid.UUID | None = None
-    representative_id: uuid.UUID | None = None
-    representative_value: str | None = None
-    cluster_signals: list[str] = PydanticField(default_factory=list)
-    members: int = 1
-    drop_reason: str | None = None
-    rank: float = 0.0
-    batch: int | None = None
-    guarded: bool = False
-    tags: list[str] = PydanticField(default_factory=list)
-    unmapped_tech: list[str] = PydanticField(default_factory=list)
-    tiers_planned: list[str] = PydanticField(default_factory=list)
-    tiers_done: dict[str, str] = PydanticField(default_factory=dict)
-    state: str
-    note: str | None = None
-
-    model_config = {"populate_by_name": True}
 
 
 class SurfaceTierCount(BaseModel):

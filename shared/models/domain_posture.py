@@ -75,8 +75,6 @@ class DomainPostureRead(BaseModel):
     dmarc: str | None = None
     dmarc_policy: str | None = None
     dmarc_subdomain_policy: str | None = None
-    dmarc_pct: int | None = None
-    dmarc_rua: bool | None = None
     dmarc_inherited: bool = False
     dkim_selectors: list[str] = Field(default_factory=list)
     dkim_key_bits: int | None = None

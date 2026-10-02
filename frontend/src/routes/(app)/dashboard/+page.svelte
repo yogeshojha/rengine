@@ -57,7 +57,10 @@
 	} from '$lib/components/dashboard/scope-links';
 	import { scopeFromParams, scopeToParams } from '$lib/utilities/dashboard-scope';
 	import { isScoped, type TargetScope } from '$lib/utilities/surface-scope';
-	import { plural } from '$lib/utilities/strings';
+	import { cappedPlural, plural } from '$lib/utilities/strings';
+	import { packedSpans } from '$lib/utilities/bento';
+	import { Severity } from '$lib/config/vulnerabilities';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import {
 		DASHBOARD_SLICE_LABELS,
 		DASHBOARD_WINDOWS,
@@ -101,26 +104,86 @@
 	);
 	const show = (id: string) => dashboardLayout.visible(id);
 
+	let riskOn = $derived(show('surface-risk'));
+	let geoOn = $derived(
+		show('geo') && (extras || (dashboardStore.ipFacets?.country.length ?? 0) > 0)
+	);
+	let changesOn = $derived(show('changes'));
+	let inventoryOn = $derived(show('inventory'));
+
+	const spansFor = (keys: (string | false)[], wide?: string): Record<string, string> => {
+		const shown = keys.filter((k): k is string => !!k);
+		const spans = packedSpans(shown.length, wide ? shown.indexOf(wide) : -1);
+		return Object.fromEntries(shown.map((k, i) => [k, spans[i]]));
+	};
+	let findingsRow = $derived(
+		spansFor(
+			[
+				show('findings-trend') && 'findings-trend',
+				show('exploitation') &&
+					(extras || !!dashboardStore.intel?.coverage?.findings) &&
+					'exploitation',
+				show('evidence') && !!overview?.risk.evidence.length && 'evidence'
+			],
+			'findings-trend'
+		)
+	);
+	let programsRow = $derived(
+		spansFor([
+			show('programs') && (programs?.programs_total ?? 0) > 0 && 'programs',
+			show('watches') && (programs?.watches.total ?? 0) > 0 && 'watches',
+			show('connectors') && (programs?.browsing.connectors ?? 0) > 0 && 'connectors'
+		])
+	);
+	let postureRow = $derived(
+		spansFor([
+			show('certs') && !!overview?.certs.buckets.some((b) => b.count > 0) && 'certs',
+			show('hygiene') && (extras || (dashboardStore.hygiene?.evaluated ?? 0) > 0) && 'hygiene',
+			show('domain-posture') &&
+				(extras || (dashboardStore.posture?.evaluated ?? 0) > 0) &&
+				'domain-posture',
+			show('ownership') && 'ownership'
+		])
+	);
+	let scanningRow = $derived(
+		spansFor([
+			show('runs') && (overview?.runs_total ?? 0) > 0 && 'runs',
+			show('software') &&
+				(extras || (dashboardStore.software?.facets.product.length ?? 0) > 0) &&
+				'software'
+		])
+	);
+	let compositionRow = $derived(
+		spansFor([
+			show('services') && (overview?.exposure.services ?? 0) > 0 && 'services',
+			show('tech') && (extras || (dashboardStore.tech?.length ?? 0) > 0) && 'tech',
+			show('ai') && (extras || (dashboardStore.ai?.found ?? 0) > 0) && 'ai',
+			show('hosting') && (extras || (dashboardStore.hosting?.resolved ?? 0) > 0) && 'hosting',
+			show('shared') && (extras || (dashboardStore.shared?.hubs.length ?? 0) > 0) && 'shared'
+		])
+	);
+
+	let counts = $derived(
+		dashboardStore.windowCounts?.window === win ? dashboardStore.windowCounts : null
+	);
+	let firstRuns = $derived(overview?.changes.filter((c) => c.first.length > 0).length ?? 0);
 	let headline = $derived.by(() => {
-		if (!overview) return null;
-		const recent = overview.daily.slice(-days);
-		const sum = (pick: (d: (typeof recent)[number]) => number) =>
-			recent.reduce((n, d) => n + pick(d), 0);
-		const findings = sum((d) => Object.values(d.findings).reduce((a, b) => a + b, 0));
-		const critical = sum((d) => d.findings.critical ?? 0);
-		const web = sum((d) => d.new.web_assets ?? 0);
-		const targets = new Set(
-			overview.changes.filter((c) => (c.new.web_assets ?? 0) > 0).map((c) => c.target_id)
-		).size;
-		const firsts = overview.changes.filter((c) => c.first.length > 0).length;
-		return { findings, critical, web, targets, firsts, runs: overview.runs_in_window };
+		if (!counts) return null;
+		const web = counts.new.find((c) => c.key === SurfaceDimension.WEB_ASSETS);
+		const vulns = counts.new.find((c) => c.key === SurfaceDimension.VULNERABILITIES);
+		if (!web || !vulns || (!web.count && !vulns.count)) return null;
+		return {
+			web,
+			vulns,
+			critical: counts.findings[Severity.CRITICAL] ?? 0,
+			targets: counts.targets_with_new_web_assets
+		};
 	});
 
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 	const VULNS = SURFACE[SurfaceDimension.VULNERABILITIES];
-	let NEW_IN_WINDOW = $derived(`is:new and seen:<${days}d`);
 	const headlineHref = (spec: typeof WEB, q: string) =>
-		ROUTES.results(spec.tab, undefined, { [spec.queryParam]: withClause(clause, q) });
+		ROUTES.surface(spec.tab, { ...spec.rowView, [spec.queryParam]: withClause(clause, q) });
 
 	let lastProject: string | undefined;
 	$effect(() => {
@@ -175,40 +238,45 @@
 	<div class="flex flex-wrap items-end justify-between gap-4">
 		<div class="flex min-w-0 flex-col gap-1.5">
 			<span class="font-mono text-2xs tracking-[0.1em] text-muted-foreground uppercase">
-				{activeProject?.name ?? 'Dashboard'}{#if overview}
-					· {plural(overview.targets_total, 'target', 'targets')} · {days} days{/if}
+				{activeProject?.name ??
+					'Dashboard'}{#if overview}{` · ${plural(overview.targets_total, 'target', 'targets')} · ${days} days`}{/if}
 			</span>
-			{#if headline && !firstRun && !headline.findings && !headline.web}
-				<h1 class="max-w-[34ch] text-2xl leading-tight font-semibold tracking-tight text-balance">
-					{plural(headline.runs, 'run', 'runs')} in {days} days.
-					<span class="font-medium text-muted-foreground">
-						{#if headline.firsts}
-							{plural(headline.firsts, 'first run', 'first runs')}.
-						{:else}
-							No change.
-						{/if}
-					</span>
-				</h1>
-			{:else if headline && !firstRun}
+			{#if overview && !firstRun && headline}
 				<h1 class="max-w-[34ch] text-2xl leading-tight font-semibold tracking-tight text-balance">
 					{#if headline.critical}
 						<a
-							href={headlineHref(VULNS, `severity:critical and ${NEW_IN_WINDOW}`)}
+							href={headlineHref(
+								VULNS,
+								`severity:${Severity.CRITICAL} and ${headline.vulns.query}`
+							)}
 							class="text-destructive hover:text-destructive/80"
 							>{plural(headline.critical, 'critical finding', 'critical findings')}</a
 						>
 						and
 					{/if}
-					<a href={headlineHref(VULNS, NEW_IN_WINDOW)} class="hover:text-primary"
-						>{plural(headline.findings, 'finding', 'findings')}</a
+					<a href={headlineHref(VULNS, headline.vulns.query)} class="hover:text-primary"
+						>{cappedPlural(headline.vulns.count, headline.vulns.capped, 'finding')}</a
 					>
 					in {days} days.
 					<span class="font-medium text-muted-foreground">
-						<a href={headlineHref(WEB, NEW_IN_WINDOW)} class="hover:text-primary"
-							>{plural(headline.web, 'new web asset', 'new web assets')}</a
+						<a href={headlineHref(WEB, headline.web.query)} class="hover:text-primary"
+							>{cappedPlural(headline.web.count, headline.web.capped, 'new web asset')}</a
 						>{headline.targets ? ` on ${plural(headline.targets, 'target', 'targets')}` : ''}.
 					</span>
 				</h1>
+			{:else if overview && !firstRun && (counts || !dashboardStore.windowLoading)}
+				<h1 class="max-w-[34ch] text-2xl leading-tight font-semibold tracking-tight text-balance">
+					{plural(overview.runs_in_window, 'run', 'runs')} in {days} days.
+					<span class="font-medium text-muted-foreground">
+						{#if firstRuns}
+							{plural(firstRuns, 'first run', 'first runs')}.
+						{:else}
+							No change.
+						{/if}
+					</span>
+				</h1>
+			{:else if overview && !firstRun}
+				<Skeleton class="h-8 w-80 max-w-full" />
 			{:else}
 				<h1 class="text-lg font-semibold">Dashboard</h1>
 			{/if}
@@ -316,32 +384,42 @@
 		{/if}
 
 		<!-- estate -->
-		<div class="grid grid-cols-12 overflow-hidden rounded-xl border bg-card">
-			{#if show('surface-risk')}
+		<div class="grid grid-flow-row-dense grid-cols-12 overflow-hidden rounded-xl border bg-card">
+			{#if riskOn}
 				<SurfaceRiskCell
 					data={dashboardStore.surfaceRisk}
 					loading={extras}
 					onScope={setScope}
-					class="col-span-12 xl:col-span-8"
+					class="col-span-12 {geoOn ? 'xl:col-span-8' : ''}"
 				/>
 			{/if}
-			{#if show('geo') && (extras || (dashboardStore.ipFacets?.country.length ?? 0) > 0)}
+			{#if geoOn}
 				<GeoCell
 					countries={dashboardStore.ipFacets?.country ?? null}
 					loading={extras}
-					class="col-span-12 lg:col-span-6 xl:col-span-4"
+					class="col-span-12 {inventoryOn ? 'lg:col-span-6' : ''} {riskOn
+						? 'xl:col-span-4'
+						: 'xl:col-span-12'}"
 				/>
 			{/if}
-			{#if show('changes')}
-				<ChangesCell {overview} window={win} class="col-span-12 xl:col-span-8" />
+			{#if changesOn}
+				<ChangesCell
+					{overview}
+					window={win}
+					{counts}
+					loading={dashboardStore.windowLoading}
+					class="col-span-12 {inventoryOn ? 'xl:col-span-8' : ''}"
+				/>
 			{/if}
-			{#if show('inventory')}
+			{#if inventoryOn}
 				<InventoryCell
 					{overview}
 					intel={dashboardStore.intel}
 					{programs}
 					{now}
-					class="col-span-12 lg:col-span-6 xl:col-span-4"
+					class="col-span-12 {geoOn ? 'lg:col-span-6' : ''} {changesOn
+						? 'xl:col-span-4'
+						: 'xl:col-span-12'}"
 				/>
 			{/if}
 		</div>
@@ -352,23 +430,33 @@
 				{#if show('board')}
 					<div class="grid"><BoardCell risk={overview.risk} /></div>
 				{/if}
-				<div class="grid grid-cols-[repeat(auto-fit,minmax(16rem,1fr))]">
-					{#if show('findings-trend')}
-						<SeverityTrendCell {overview} window={win} class="xl:col-span-2" />
-					{/if}
-					{#if show('exploitation') && (extras || dashboardStore.intel?.coverage?.findings)}
-						<ExploitationCell
-							intel={dashboardStore.intel}
-							changes={dashboardStore.changes}
-							projectId={activeProject?.id ?? null}
-							window={win}
-							loading={extras}
-						/>
-					{/if}
-					{#if show('evidence') && overview.risk.evidence.length}
-						<EvidenceCell risk={overview.risk} />
-					{/if}
-				</div>
+				{#if Object.keys(findingsRow).length}
+					<div class="grid grid-cols-12">
+						{#if findingsRow['findings-trend']}
+							<SeverityTrendCell
+								{overview}
+								window={win}
+								{counts}
+								loading={dashboardStore.windowLoading}
+								class={findingsRow['findings-trend']}
+							/>
+						{/if}
+						{#if findingsRow.exploitation}
+							<ExploitationCell
+								intel={dashboardStore.intel}
+								changes={dashboardStore.changes}
+								projectId={activeProject?.id ?? null}
+								window={win}
+								since={overview.since}
+								loading={extras}
+								class={findingsRow.exploitation}
+							/>
+						{/if}
+						{#if findingsRow.evidence}
+							<EvidenceCell risk={overview.risk} class={findingsRow.evidence} />
+						{/if}
+					</div>
+				{/if}
 				{#if show('exposures') && (extras || (dashboardStore.exposures?.summary.total ?? 0) > 0)}
 					<div class="grid"><ExposuresCell page={dashboardStore.exposures} loading={extras} /></div>
 				{/if}
@@ -376,48 +464,61 @@
 		{/if}
 
 		<!-- programs (bug bounty) -->
-		{#if programs && (show('programs') || show('watches') || show('connectors'))}
-			<div
-				class="grid grid-cols-[repeat(auto-fit,minmax(20rem,1fr))] overflow-hidden rounded-xl border bg-card"
-			>
-				{#if show('programs') && programs.programs_total > 0}
-					<ProgramsCell {programs} window={win} />
+		{#if programs && Object.keys(programsRow).length}
+			<div class="grid grid-cols-12 overflow-hidden rounded-xl border bg-card">
+				{#if programsRow.programs}
+					<ProgramsCell {programs} window={win} class={programsRow.programs} />
 				{/if}
-				{#if show('watches') && programs.watches.total > 0}
-					<WatchesCell watches={programs.watches} window={win} />
+				{#if programsRow.watches}
+					<WatchesCell
+						watches={programs.watches}
+						window={win}
+						since={programs.since}
+						class={programsRow.watches}
+					/>
 				{/if}
-				{#if show('connectors') && programs.browsing.connectors > 0}
-					<BrowsingCell browsing={programs.browsing} window={win} />
+				{#if programsRow.connectors}
+					<BrowsingCell
+						browsing={programs.browsing}
+						window={win}
+						since={programs.since}
+						class={programsRow.connectors}
+					/>
 				{/if}
 			</div>
 		{/if}
 
 		<!-- posture (corporate) -->
-		{#if show('certs') || show('hygiene') || show('domain-posture') || show('ownership')}
-			<div
-				class="grid grid-cols-[repeat(auto-fit,minmax(18rem,1fr))] overflow-hidden rounded-xl border bg-card"
-			>
-				{#if show('certs') && overview.certs.buckets.some((b) => b.count > 0)}
+		{#if Object.keys(postureRow).length}
+			<div class="grid grid-cols-12 overflow-hidden rounded-xl border bg-card">
+				{#if postureRow.certs}
 					<CertsCell
 						buckets={overview.certs.buckets}
 						expiringQuery={overview.certs.expiring.query}
+						class={postureRow.certs}
 					/>
 				{/if}
-				{#if show('hygiene') && (extras || (dashboardStore.hygiene?.evaluated ?? 0) > 0)}
-					<HygieneCell hygiene={dashboardStore.hygiene} loading={extras} />
+				{#if postureRow.hygiene}
+					<HygieneCell
+						hygiene={dashboardStore.hygiene}
+						loading={extras}
+						class={postureRow.hygiene}
+					/>
 				{/if}
-				{#if show('domain-posture') && (extras || (dashboardStore.posture?.evaluated ?? 0) > 0)}
+				{#if postureRow['domain-posture']}
 					<DomainPostureCell
 						summary={dashboardStore.posture}
 						hosts={dashboardStore.postureHosts}
 						loading={extras}
+						class={postureRow['domain-posture']}
 					/>
 				{/if}
-				{#if show('ownership')}
+				{#if postureRow.ownership}
 					<OwnershipCell
 						{overview}
 						discovery={dashboardStore.discovery}
 						onSchedule={scheduleTargets}
+						class={postureRow.ownership}
 					/>
 				{/if}
 			</div>
@@ -425,35 +526,48 @@
 
 		<!-- scanning + composition -->
 		<div class="overflow-hidden rounded-xl border bg-card">
-			<div class="grid grid-cols-[repeat(auto-fit,minmax(22rem,1fr))]">
-				{#if show('runs') && overview.runs_total > 0}
-					<RunsCell {overview} window={win} />
-				{/if}
-				{#if show('software') && (extras || (dashboardStore.software?.facets.product.length ?? 0) > 0)}
-					<SoftwareCell software={dashboardStore.software} loading={extras} />
-				{/if}
-			</div>
-			<div class="grid grid-cols-[repeat(auto-fit,minmax(16rem,1fr))]">
-				{#if show('services') && overview.exposure.services > 0}
-					<ServicesCell exposure={overview.exposure} />
-				{/if}
-				{#if show('tech') && (extras || (dashboardStore.tech?.length ?? 0) > 0)}
-					<TechCell tech={dashboardStore.tech} loading={extras} />
-				{/if}
-				{#if show('ai') && (extras || (dashboardStore.ai?.found ?? 0) > 0)}
-					<AiCell ai={dashboardStore.ai} loading={extras} />
-				{/if}
-				{#if show('hosting') && (extras || (dashboardStore.hosting?.resolved ?? 0) > 0)}
-					<HostingCell
-						hosting={dashboardStore.hosting}
-						networks={dashboardStore.ipFacets?.asn ?? null}
-						loading={extras}
-					/>
-				{/if}
-				{#if show('shared') && (extras || (dashboardStore.shared?.hubs.length ?? 0) > 0)}
-					<SharedCell graph={dashboardStore.shared} loading={extras} />
-				{/if}
-			</div>
+			{#if Object.keys(scanningRow).length}
+				<div class="grid grid-cols-12">
+					{#if scanningRow.runs}
+						<RunsCell {overview} window={win} class={scanningRow.runs} />
+					{/if}
+					{#if scanningRow.software}
+						<SoftwareCell
+							software={dashboardStore.software}
+							loading={extras}
+							class={scanningRow.software}
+						/>
+					{/if}
+				</div>
+			{/if}
+			{#if Object.keys(compositionRow).length}
+				<div class="grid grid-cols-12">
+					{#if compositionRow.services}
+						<ServicesCell exposure={overview.exposure} class={compositionRow.services} />
+					{/if}
+					{#if compositionRow.tech}
+						<TechCell tech={dashboardStore.tech} loading={extras} class={compositionRow.tech} />
+					{/if}
+					{#if compositionRow.ai}
+						<AiCell ai={dashboardStore.ai} loading={extras} class={compositionRow.ai} />
+					{/if}
+					{#if compositionRow.hosting}
+						<HostingCell
+							hosting={dashboardStore.hosting}
+							networks={dashboardStore.ipFacets?.asn ?? null}
+							loading={extras}
+							class={compositionRow.hosting}
+						/>
+					{/if}
+					{#if compositionRow.shared}
+						<SharedCell
+							graph={dashboardStore.shared}
+							loading={extras}
+							class={compositionRow.shared}
+						/>
+					{/if}
+				</div>
+			{/if}
 			{#if show('activity')}
 				<div class="grid">
 					<ActivityCell activity={dashboardStore.activity} loading={extras} />

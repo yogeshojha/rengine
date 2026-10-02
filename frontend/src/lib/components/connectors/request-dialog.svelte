@@ -19,6 +19,7 @@
 		type ActionKind
 	} from '$lib/config/connectors';
 	import { relativeTime } from '$lib/utilities/dates';
+	import { httpStatusTextClass } from '$lib/utilities/scan-correlation';
 	import type { Candidate, Connector, HandoffResult } from '$lib/types/connector';
 
 	interface Props {
@@ -34,13 +35,6 @@
 	let { row, connector, endpointsHref, onClose, onSend, onScan, onIgnore }: Props = $props();
 
 	const LABEL = 'text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase';
-
-	function statusTone(code: number | null): string {
-		if (code === null) return 'text-muted-foreground';
-		if (code >= 500) return 'text-destructive';
-		if (code >= 400) return 'text-warning';
-		return 'text-success';
-	}
 </script>
 
 <Dialog.Root
@@ -66,7 +60,7 @@
 				<dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
 					<div>
 						<dt class={LABEL}>Status</dt>
-						<dd class="mt-1 font-mono tabular-nums {statusTone(row.status_code)}">
+						<dd class="mt-1 font-mono tabular-nums {httpStatusTextClass(row.status_code)}">
 							{row.status_code ?? '—'}
 						</dd>
 					</div>

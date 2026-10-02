@@ -3,8 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from sqlalchemy import Text, and_, case, cast, desc, func, select
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import Text, and_, case, cast, desc, func, select, true
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.definitions.asset_query import MAX_GROUPS
@@ -41,13 +40,7 @@ from shared.services.correlation.kinds import KINDS
 from . import predicates as preds
 from .renders import cluster
 from .scope import QueryScope
-
-_STATUS_LABELS = {
-    "2xx": "2xx OK",
-    "3xx": "3xx Redirect",
-    "4xx": "4xx Client",
-    "5xx": "5xx Server",
-}
+from .terms import array_elements
 
 
 def _target_value(column):
@@ -67,30 +60,53 @@ def _status_case():
     )
 
 
-# the shared-identity kinds come from the correlation registry
-_EXTRA_DIMENSIONS: dict[str, tuple[Callable[[], Any], str, str, bool]] = {
-    "status": (_status_case, "status", ":", False),
-    "target": (lambda: _target_value(Subdomain.target_id), "target", "=", False),
+_Build = Callable[[], tuple[Any, Any]]
+
+
+def _scalar(build: Callable[[], Any]) -> _Build:
+    return lambda: (build(), None)
+
+
+def _elements(column, name: str) -> _Build:
+    def build() -> tuple[Any, Any]:
+        elements = array_elements(column, name)
+        return elements.c.value, elements
+
+    return build
+
+
+def _kind(spec) -> _Build:
+    def build() -> tuple[Any, Any]:
+        elements = spec.elements()
+        return spec.value(elements), elements
+
+    return build
+
+
+_EXTRA_DIMENSIONS: dict[str, tuple[_Build, str, str, bool]] = {
+    "status": (_scalar(_status_case), "status", ":", False),
+    "target": (
+        _scalar(lambda: _target_value(Subdomain.target_id)),
+        "target",
+        "=",
+        False,
+    ),
     "hygiene": (
-        lambda: func.jsonb_array_elements_text(
-            cast(Subdomain.hygiene_issues, JSONB)
-        ).column_valued("hygiene_value"),
+        _elements(Subdomain.hygiene_issues, "hygiene_value"),
         "hygiene",
         ":",
         False,
     ),
     "posture": (
-        lambda: func.jsonb_array_elements_text(
-            cast(Subdomain.posture_issues, JSONB)
-        ).column_valued("posture_value"),
+        _elements(Subdomain.posture_issues, "posture_value"),
         "posture",
         ":",
         False,
     ),
 }
-_DIMENSIONS: dict[str, tuple[Callable[[], Any], str, str, bool]] = {
+_DIMENSIONS: dict[str, tuple[_Build, str, str, bool]] = {
     **{
-        spec.kind: (spec.value, spec.kind, spec.operator, spec.asset)
+        spec.kind: (_kind(spec), spec.kind, spec.operator, spec.asset)
         for spec in KINDS.values()
         if not spec.derived
     },
@@ -101,7 +117,7 @@ _NUMERIC_DIMENSIONS = frozenset(spec.kind for spec in KINDS.values() if spec.num
 
 def _group_label(key: str, raw: str) -> str:
     if key == "status":
-        return _STATUS_LABELS.get(raw, raw)
+        return preds.STATUS_LABELS.get(raw, raw)
     if key == "hygiene":
         spec = CHECK_BY_KEY.get(raw)
         return spec.label if spec else raw
@@ -116,7 +132,8 @@ def _dimension(key: str):
     if found is None:
         return None
     build, field, op, asset = found
-    return build(), field, op, asset
+    value, elements = build()
+    return value, elements, field, op, asset
 
 
 async def _render_groups(session: AsyncSession, base) -> QueryGroups:
@@ -160,7 +177,6 @@ async def _render_groups(session: AsyncSession, base) -> QueryGroups:
     )
 
 
-# dimensions whose value is derived rather than read off a column
 DERIVED_DIMENSIONS: dict[str, Callable] = {
     CorrelationKind.SCREENSHOT.value: _render_groups,
 }
@@ -173,7 +189,7 @@ async def build_groups(session: AsyncSession, base, key: str) -> QueryGroups:
     dimension = _dimension(key)
     if dimension is None:
         return QueryGroups(dimension=key)
-    column, field, op, asset = dimension
+    column, elements, field, op, asset = dimension
 
     scoped = base.subquery()
     value = column.label("value")
@@ -190,6 +206,8 @@ async def build_groups(session: AsyncSession, base, key: str) -> QueryGroups:
                 HttpAsset.host == Subdomain.name,
             ),
         )
+    if elements is not None:
+        joined = joined.join(elements, true())
     joined = joined.where(value.isnot(None))
     if key not in _NUMERIC_DIMENSIONS:
         joined = joined.where(value != "")
@@ -408,11 +426,11 @@ async def build_vuln_groups(
     session: AsyncSession, base, key: str, scope: QueryScope
 ) -> QueryGroups:
     """One row per finding."""
+    elements = None
     if key in _VULN_ARRAYS:
         column, field, op = _VULN_ARRAYS[key]
-        value = func.jsonb_array_elements_text(cast(column, JSONB)).column_valued(
-            f"{key}_value"
-        )
+        elements = array_elements(column, f"{key}_value")
+        value = elements.c.value
     elif key == "state":
         value, field, op = preds.vuln_state(scope), "state", "="
     elif key == "evidence":
@@ -430,8 +448,10 @@ async def build_vuln_groups(
         select(labelled, findings.label("n"))
         .select_from(Vulnerability)
         .join(scoped, Vulnerability.id == scoped.c.id)
-        .where(labelled.isnot(None), cast(labelled, Text) != "")
     )
+    if elements is not None:
+        joined = joined.join(elements, true())
+    joined = joined.where(labelled.isnot(None), cast(labelled, Text) != "")
     rows_in_scope = await session.scalar(select(func.count()).select_from(scoped))
     covered, total = (
         await session.execute(
@@ -486,11 +506,11 @@ _ENDPOINT_LABELS: dict[str, dict[str, str]] = {
 
 async def build_endpoint_groups(session: AsyncSession, base, key: str) -> QueryGroups:
     """One row per endpoint."""
+    elements = None
     if key in _ENDPOINT_ARRAYS:
         column, field, op = _ENDPOINT_ARRAYS[key]
-        value = func.jsonb_array_elements_text(cast(column, JSONB)).column_valued(
-            f"{key}_value"
-        )
+        elements = array_elements(column, f"{key}_value")
+        value = elements.c.value
     elif key in _ENDPOINT_COLUMNS:
         column, field, op = _ENDPOINT_COLUMNS[key]
         value = column
@@ -504,8 +524,10 @@ async def build_endpoint_groups(session: AsyncSession, base, key: str) -> QueryG
         select(labelled, endpoints.label("n"))
         .select_from(Endpoint)
         .join(scoped, Endpoint.id == scoped.c.id)
-        .where(labelled.isnot(None), cast(labelled, Text) != "")
     )
+    if elements is not None:
+        joined = joined.join(elements, true())
+    joined = joined.where(labelled.isnot(None), cast(labelled, Text) != "")
     rows_in_scope = await session.scalar(select(func.count()).select_from(scoped))
     covered, total = (
         await session.execute(
@@ -555,7 +577,7 @@ _SECRET_LABELS: dict[str, dict[str, str]] = {
 
 
 async def build_secret_groups(session: AsyncSession, base, key: str) -> QueryGroups:
-    """One row per secret; a value group is labelled by its mask."""
+    """One row per secret; a value group is labelled by its value."""
     found = _SECRET_COLUMNS.get(key)
     if found is None:
         return QueryGroups(dimension=key)

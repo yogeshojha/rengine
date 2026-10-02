@@ -36,7 +36,6 @@ from app.api.v1 import (
     proxies,
     remote_control,
     reports,
-    ripestat,
     scan_contexts,
     scan_engines,
     scan_schedules,
@@ -75,7 +74,6 @@ router.include_router(notifications.router)
 router.include_router(api_keys.router)
 router.include_router(whois.router)
 router.include_router(viewdns.router)
-router.include_router(ripestat.router)
 router.include_router(scan_engines.router)
 router.include_router(scan_contexts.router)
 router.include_router(scan_schedules.router)

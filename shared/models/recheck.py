@@ -19,9 +19,7 @@ class AssetRecheck(SQLModel, table=True):
         foreign_key="targets.id", index=True, ondelete="CASCADE"
     )
     scan_id: uuid.UUID = Field(foreign_key="scans.id", index=True, ondelete="CASCADE")
-    parent_scan_id: uuid.UUID = Field(
-        foreign_key="scans.id", index=True, ondelete="CASCADE"
-    )
+    parent_scan_id: uuid.UUID = Field(foreign_key="scans.id", ondelete="CASCADE")
     dimension: str = Field(max_length=32)
     asset_kind: str = Field(max_length=16)
     asset_key: str = Field(max_length=500, index=True)

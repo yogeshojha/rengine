@@ -4,13 +4,19 @@
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Checkbox } from '$lib/components/ui/checkbox';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { vulnerabilitiesApi } from '$lib/api/vulnerabilities';
-	import { SEVERITY_LABELS, VulnState, VULN_STATE_LABELS } from '$lib/config/vulnerabilities';
+	import {
+		SEVERITY_CHIP,
+		SEVERITY_LABELS,
+		VulnState,
+		VULN_STATE_LABELS
+	} from '$lib/config/vulnerabilities';
 	import { Evidence, evidenceLabel } from '$lib/config/evidence';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import type { ScanFindings } from '$lib/types/scan';
 	import type { VulnerabilityRead } from '$lib/utilities/vulns';
-	import { SEV_CHIP, findingsOf, forgetFindings, findingHref, findingsHref } from './findings';
+	import { findingsOf, forgetFindings, findingHref, findingsHref } from './findings';
 	import { historyPrefs } from './prefs.svelte';
 
 	const LIMIT = 60;
@@ -69,7 +75,7 @@
 	async function triage(f: VulnerabilityRead, state: VulnState) {
 		busy = f.id;
 		try {
-			await vulnerabilitiesApi.triage(projectId, scanId, f.fingerprint, state, null);
+			await vulnerabilitiesApi.triage(projectId, scanId, f.fingerprint, state);
 			items = (items ?? []).filter((x) => x.fingerprint !== f.fingerprint);
 			forgetFindings(scanId);
 			onChanged();
@@ -78,13 +84,7 @@
 					label: 'Undo',
 					onClick: async () => {
 						try {
-							await vulnerabilitiesApi.triage(
-								projectId,
-								scanId,
-								f.fingerprint,
-								VulnState.OPEN,
-								null
-							);
+							await vulnerabilitiesApi.triage(projectId, scanId, f.fingerprint, VulnState.OPEN);
 							forgetFindings(scanId);
 							onChanged();
 						} catch {
@@ -142,14 +142,14 @@
 {:else if items === null}
 	<div class="space-y-2 py-3">
 		{#each { length: Math.min(expected, 4) } as _, i (i)}
-			<div class="h-12 animate-pulse rounded-md bg-muted/60"></div>
+			<Skeleton class="h-12" />
 		{/each}
 	</div>
 {:else}
 	<div class="flex flex-col">
 		{#each groups as g (g.sev)}
 			<div
-				class="sticky top-0 z-[1] flex items-center gap-2 bg-muted/40 px-3 py-1.5 text-2xs font-semibold tracking-wide uppercase backdrop-blur {SEV_CHIP[
+				class="sticky top-0 z-[1] flex items-center gap-2 bg-muted/40 px-3 py-1.5 text-2xs font-semibold tracking-wide uppercase backdrop-blur {SEVERITY_CHIP[
 					g.sev
 				].ink}"
 			>
@@ -165,7 +165,7 @@
 					onmouseenter={() => onHover?.(g.sev)}
 					onmouseleave={() => onHover?.(null)}
 				>
-					<span class="absolute inset-y-1.5 left-0 w-[3px] rounded-full {SEV_CHIP[g.sev].edge}"
+					<span class="absolute inset-y-1.5 left-0 w-[3px] rounded-full {SEVERITY_CHIP[g.sev].edge}"
 					></span>
 					<div class="min-w-0 flex-1">
 						<div class="flex flex-wrap items-center gap-x-2 gap-y-1">

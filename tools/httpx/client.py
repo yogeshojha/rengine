@@ -4,11 +4,8 @@ import contextlib
 from collections.abc import Iterator
 
 from shared.definitions.constants import HTTPX_RESPONSE_CAP
-from shared.logging import get_logger
 from tools.runner import CLIToolRunner, StreamOutcome, ToolNotFoundError
 from tools.runner.models import CommandRecorder
-
-logger = get_logger(__name__)
 
 HTTPX_BINARY = "httpx"
 DEFAULT_TIMEOUT = 900

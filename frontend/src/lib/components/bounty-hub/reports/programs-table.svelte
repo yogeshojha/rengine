@@ -27,7 +27,17 @@
 	let sortKey = $state<Key>('earned');
 	let desc = $state(true);
 
-	const earned = (p: ProgramReports) => p.earned.reduce((n, m) => n + m.amount, 0);
+	const leadCurrency = $derived.by(() => {
+		const totals: Record<string, number> = {};
+		for (const p of programs)
+			for (const m of p.earned) totals[m.currency] = (totals[m.currency] ?? 0) + m.amount;
+		let lead: string | null = null;
+		for (const [currency, total] of Object.entries(totals))
+			if (lead === null || total > totals[lead]) lead = currency;
+		return lead;
+	});
+	const earned = (p: ProgramReports) =>
+		p.earned.find((m) => m.currency === leadCurrency)?.amount ?? 0;
 	const value: Record<Key, (p: ProgramReports) => number | string> = {
 		name: (p) => p.name.toLowerCase(),
 		reports: (p) => p.reports,

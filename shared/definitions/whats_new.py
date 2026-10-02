@@ -5,10 +5,10 @@ from __future__ import annotations
 from datetime import timedelta
 from enum import StrEnum
 
+from shared.definitions.bounty_programs import SOURCE_LABELS as PROGRAM_SOURCE_LABELS
 from shared.definitions.bounty_programs import BountyEvent
 from shared.definitions.correlation import SCREENSHOT_DISTANCE
-from shared.definitions.surface import SurfaceDimension
-from shared.definitions.vulnerabilities import Severity
+from shared.definitions.watch import CT_SOURCE
 
 
 class NewKind(StrEnum):
@@ -24,30 +24,9 @@ class NewKind(StrEnum):
 
 KIND_ORDER: tuple[str, ...] = tuple(k.value for k in NewKind)
 
-KIND_LABELS: dict[str, str] = {
-    NewKind.FINDING.value: "Findings",
-    NewKind.PROGRAM.value: "Programs",
-    NewKind.SCOPE.value: "In scope",
-    NewKind.OUT_OF_SCOPE.value: "Out of scope",
-    NewKind.BOUNTY_TABLE.value: "Bounty table",
-    NewKind.RULES.value: "Rules",
-    NewKind.CERT_HOST.value: "Certificate hosts",
-    NewKind.TARGET.value: "Targets",
-}
-
-SCAN_KINDS: tuple[str, ...] = (NewKind.FINDING.value,)
-BOUNTY_KINDS: frozenset[str] = frozenset(KIND_ORDER) - frozenset(SCAN_KINDS)
-GONE_KINDS: frozenset[str] = frozenset({NewKind.OUT_OF_SCOPE.value})
-
-KIND_DIMENSION: dict[str, str] = {
-    NewKind.FINDING.value: SurfaceDimension.VULNERABILITIES.value,
-}
-
 TERMS_KINDS: frozenset[str] = frozenset(
     {NewKind.BOUNTY_TABLE.value, NewKind.RULES.value}
 )
-
-ALERT_SEVERITIES: tuple[str, ...] = (Severity.CRITICAL.value, Severity.HIGH.value)
 
 
 class NewBasis(StrEnum):
@@ -89,11 +68,10 @@ WATCH_SOURCE = "watch"
 SCOPE_SOURCE = "scope"
 
 SOURCE_LABELS: dict[str, str] = {
-    "ct_log": "Certificate log",
-    "watch": "Program watch",
-    "scope": "Program scope",
-    "api": "Platform API",
-    "feed": "Public feed",
+    **PROGRAM_SOURCE_LABELS,
+    CT_SOURCE: "Certificate log",
+    WATCH_SOURCE: "Program watch",
+    SCOPE_SOURCE: "Program scope",
 }
 
 SCOPE_EVENTS: frozenset[str] = frozenset(
@@ -129,20 +107,9 @@ EVENT_KIND: dict[str, str] = {
 }
 
 
-class NewTab(StrEnum):
-    TIMELINE = "timeline"
-    VISUAL = "visual"
-
-
 VISUAL_DISTANCE = SCREENSHOT_DISTANCE
 VISUAL_LIMIT = 300
 VISUAL_FIELDS: tuple[str, ...] = ("http_status", "page_title", "tech", "webserver")
-VISUAL_FIELD_LABELS: dict[str, str] = {
-    "http_status": "Status",
-    "page_title": "Title",
-    "tech": "Technology",
-    "webserver": "Server",
-}
 
 
 class Fact(StrEnum):

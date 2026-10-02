@@ -20,19 +20,79 @@ async function timedFetch(url: string, init: RequestInit, timeoutMs: number): Pr
 	}
 }
 
-type RefreshResult = 'ok' | 'expired' | 'error';
+export type RefreshResult = 'ok' | 'expired' | 'error';
 
-function sessionError(result: RefreshResult): string {
+const NO_REFRESH = [
+	'/auth/login',
+	'/auth/2fa/login',
+	'/auth/refresh',
+	'/auth/logout',
+	'/auth/change-password'
+];
+
+function refreshes(endpoint: string): boolean {
+	return !NO_REFRESH.includes(endpoint.split('?')[0]);
+}
+
+export function toQuery(params: Record<string, unknown>): string {
+	const search = new URLSearchParams();
+	for (const [key, value] of Object.entries(params)) {
+		if (value === undefined || value === null || value === '') continue;
+		if (Array.isArray(value)) for (const item of value) search.append(key, String(item));
+		else search.set(key, String(value));
+	}
+	const qs = search.toString();
+	return qs ? `?${qs}` : '';
+}
+
+export class ApiError extends Error {
+	constructor(
+		message: string,
+		readonly status: number
+	) {
+		super(message);
+	}
+}
+
+/** A failure a retry can clear: no answer, the rate limit or a server error. */
+export function isTransient(e: unknown): boolean {
+	if (!(e instanceof ApiError)) return true;
+	return e.status === 0 || e.status === 429 || e.status >= 500;
+}
+
+export async function retryTransient<T>(
+	run: () => Promise<T>,
+	delays: readonly number[],
+	wait: (ms: number) => Promise<void> = (ms) => new Promise((done) => setTimeout(done, ms))
+): Promise<T> {
+	for (let attempt = 0; ; attempt++) {
+		try {
+			return await run();
+		} catch (e) {
+			if (attempt >= delays.length || !isTransient(e)) throw e;
+			await wait(delays[attempt]);
+		}
+	}
+}
+
+function sessionError(result: RefreshResult): ApiError {
 	return result === 'expired'
-		? 'Session expired. Sign in again.'
-		: 'Session not refreshed. Sign in again.';
+		? new ApiError('Session expired. Sign in again.', 401)
+		: new ApiError('Session not refreshed. Sign in again.', 0);
+}
+
+async function responseError(response: Response): Promise<ApiError> {
+	const errorData = await response.json().catch(() => ({}));
+	return new ApiError(extractErrorMessage(errorData?.detail, response.status), response.status);
 }
 
 function extractErrorMessage(detail: unknown, status: number): string {
 	if (typeof detail === 'string' && detail.trim()) return detail;
 	if (Array.isArray(detail)) {
 		const msgs = detail
-			.map((d) => (d && typeof d === 'object' && 'msg' in d ? String(d.msg) : ''))
+			.map((d) =>
+				d && typeof d === 'object' && 'msg' in d ? String(d.msg).replace(/^Value error, /, '') : ''
+			)
 			.filter(Boolean);
 		if (msgs.length) return msgs.join('; ');
 	}
@@ -75,7 +135,7 @@ class ApiClient {
 			{
 				...options,
 				headers: {
-					'Content-Type': 'application/json',
+					...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
 					...options.headers
 				},
 				credentials: 'include'
@@ -84,16 +144,15 @@ class ApiClient {
 		);
 
 		if (!response.ok) {
-			if (response.status === 401 && !isRetry && !this.isAuthEndpoint(endpoint)) {
+			if (response.status === 401 && !isRetry && refreshes(endpoint)) {
 				const result = await this.tryRefresh();
 				if (result === 'ok') {
 					return this.request<T>(endpoint, options, true, timeoutMs);
 				}
-				throw new Error(sessionError(result));
+				throw sessionError(result);
 			}
 
-			const errorData = await response.json().catch(() => ({}));
-			throw new Error(extractErrorMessage(errorData?.detail, response.status));
+			throw await responseError(response);
 		}
 
 		if (response.status === 204) {
@@ -103,8 +162,8 @@ class ApiClient {
 		return response.json();
 	}
 
-	private isAuthEndpoint(endpoint: string): boolean {
-		return endpoint.startsWith('/auth/');
+	refreshSession(): Promise<RefreshResult> {
+		return this.tryRefresh();
 	}
 
 	private async tryRefresh(): Promise<RefreshResult> {
@@ -174,13 +233,12 @@ class ApiClient {
 			signal
 		});
 		if (!response.ok) {
-			if (response.status === 401 && !isRetry && !this.isAuthEndpoint(endpoint)) {
+			if (response.status === 401 && !isRetry && refreshes(endpoint)) {
 				const result = await this.tryRefresh();
 				if (result === 'ok') return this.stream(endpoint, data, onFrame, signal, true);
-				throw new Error(sessionError(result));
+				throw sessionError(result);
 			}
-			const errorData = await response.json().catch(() => ({}));
-			throw new Error(extractErrorMessage(errorData?.detail, response.status));
+			throw await responseError(response);
 		}
 		if (!response.body) throw new Error(NO_RESPONSE);
 		const reader = response.body.getReader();
@@ -208,14 +266,13 @@ class ApiClient {
 		);
 		if (response.ok) return response;
 
-		if (response.status === 401 && !isRetry && !this.isAuthEndpoint(endpoint)) {
+		if (response.status === 401 && !isRetry && refreshes(endpoint)) {
 			const result = await this.tryRefresh();
 			if (result === 'ok') return this.raw(endpoint, true);
-			throw new Error(sessionError(result));
+			throw sessionError(result);
 		}
 
-		const errorData = await response.json().catch(() => ({}));
-		throw new Error(extractErrorMessage(errorData?.detail, response.status));
+		throw await responseError(response);
 	}
 
 	async text(endpoint: string): Promise<string> {
@@ -236,6 +293,10 @@ class ApiClient {
 			false,
 			timeoutMs
 		);
+	}
+
+	upload<T>(endpoint: string, body: FormData): Promise<T> {
+		return this.request<T>(endpoint, { method: 'POST', body });
 	}
 
 	put<T>(endpoint: string, data: unknown): Promise<T> {

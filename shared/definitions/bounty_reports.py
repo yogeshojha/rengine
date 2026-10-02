@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
+from shared.definitions.bounty_programs import MAX_SEVERITIES
+
 
 class ReportStage(Enum):
     OPEN = "open"
@@ -58,7 +60,7 @@ SETTLED_STATES: tuple[str, ...] = tuple(
 )
 
 
-REPORT_SEVERITIES: tuple[str, ...] = ("critical", "high", "medium", "low", "none")
+REPORT_SEVERITIES: tuple[str, ...] = MAX_SEVERITIES
 
 MAX_REPORT_TITLE = 500
 MAX_WEAKNESS = 200

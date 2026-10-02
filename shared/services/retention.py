@@ -1,4 +1,4 @@
-"""Enforce the retention windows the settings page promises."""
+"""Apply the scan and evidence retention windows."""
 
 from __future__ import annotations
 
@@ -8,13 +8,11 @@ from datetime import timedelta
 from pathlib import Path
 from uuid import UUID
 
-from sqlalchemy import delete, func, select, update
-from sqlalchemy.orm import Session
+from sqlalchemy import delete, exists, func, select, update
+from sqlalchemy.orm import Session, aliased
 
 from shared.definitions.retention import (
-    KEEP_NEWEST_PER_TARGET,
     MAX_SCANS_PER_RUN,
-    MEDIA_RESERVED,
     MEDIA_ROOT,
     window_active,
 )
@@ -60,42 +58,47 @@ def _settings(session: Session) -> InstanceSettings | None:
     return session.execute(select(InstanceSettings).limit(1)).scalars().first()
 
 
-def _newest_per_target(session: Session) -> set[UUID]:
+def _has_newer(*, census: bool):
+    newer = aliased(Scan)
+    conds = [
+        newer.target_id == Scan.target_id,
+        newer.created_at > Scan.created_at,
+        newer.status.in_(SCAN_TERMINAL_STATUSES),
+    ]
+    if census:
+        conds.append(census_only(newer))
+    return exists(select(1).where(*conds))
+
+
+def _protected():
     """The most recent terminal scan of every target, and its most recent census run."""
-    kept: set[UUID] = set()
-    for conds in ((), (census_only(),)):
-        newest = (
-            select(Scan.target_id, func.max(Scan.created_at).label("at"))
-            .where(Scan.status.in_(SCAN_TERMINAL_STATUSES), *conds)
-            .group_by(Scan.target_id)
-            .subquery()
-        )
-        rows = session.execute(
-            select(Scan.id)
-            .join(
-                newest,
-                (Scan.target_id == newest.c.target_id)
-                & (Scan.created_at == newest.c.at),
-            )
-            .where(Scan.status.in_(SCAN_TERMINAL_STATUSES), *conds)
-        ).scalars()
-        kept.update(rows)
-    return kept
+    return ~_has_newer(census=False) | (census_only() & ~_has_newer(census=True))
+
+
+def _expired(days: int) -> tuple:
+    cutoff = utc_now() - timedelta(days=days)
+    return (
+        Scan.status.in_(SCAN_TERMINAL_STATUSES),
+        func.coalesce(Scan.completed_at, Scan.created_at) < cutoff,
+    )
 
 
 def _expired_scans(session: Session, days: int) -> list[UUID]:
-    cutoff = utc_now() - timedelta(days=days)
     return list(
         session.execute(
             select(Scan.id)
-            .where(
-                Scan.status.in_(SCAN_TERMINAL_STATUSES),
-                func.coalesce(Scan.completed_at, Scan.created_at) < cutoff,
-            )
+            .where(*_expired(days), ~_protected())
             .order_by(func.coalesce(Scan.completed_at, Scan.created_at).asc())
             .limit(MAX_SCANS_PER_RUN + 1)
         ).scalars()
     )
+
+
+def _kept_newest(session: Session, days: int) -> int:
+    counted = session.scalar(
+        select(func.count()).select_from(Scan).where(*_expired(days), _protected())
+    )
+    return int(counted or 0)
 
 
 def _media_dir(scan_id: UUID) -> Path:
@@ -105,7 +108,7 @@ def _media_dir(scan_id: UUID) -> Path:
 def _drop_media(scan_id: UUID) -> int:
     """Remove a scan's screenshots and report the bytes reclaimed."""
     directory = _media_dir(scan_id)
-    if directory.name in MEDIA_RESERVED or not directory.is_dir():
+    if not directory.is_dir():
         return 0
     size = sum(f.stat().st_size for f in directory.rglob("*") if f.is_file())
     shutil.rmtree(directory, ignore_errors=True)
@@ -175,20 +178,15 @@ class ScanPrune:
 
 
 def prune_scans(session: Session, days: int) -> ScanPrune:
-    """Older runs go with everything cascading off them."""
+    """Delete expired scans."""
     if not window_active(days):
         return ScanPrune()
     expired = _expired_scans(session, days)
-    out = ScanPrune(capped=len(expired) > MAX_SCANS_PER_RUN)
-    expired = expired[:MAX_SCANS_PER_RUN]
-    if not expired:
-        return out
-
-    protected = _newest_per_target(session) if KEEP_NEWEST_PER_TARGET else set()
-    for scan_id in expired:
-        if scan_id in protected:
-            out.kept_newest += 1
-            continue
+    out = ScanPrune(
+        kept_newest=_kept_newest(session, days),
+        capped=len(expired) > MAX_SCANS_PER_RUN,
+    )
+    for scan_id in expired[:MAX_SCANS_PER_RUN]:
         _drop_media(scan_id)
         trail = session.execute(
             ActivityLog.__table__.delete().where(ActivityLog.scan_id == scan_id)

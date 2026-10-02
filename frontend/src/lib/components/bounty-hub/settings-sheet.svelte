@@ -11,11 +11,12 @@
 	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import { SYNC_INTERVAL_LABELS } from '$lib/config/bounty-programs';
 	import { relativeTime, untilTime } from '$lib/utilities/dates';
-	import type {
-		BountyEventSpec,
-		BountySettings,
-		BountySettingsUpdate,
-		BountyVocabulary
+	import {
+		SyncInterval,
+		type BountyEventSpec,
+		type BountySettings,
+		type BountySettingsUpdate,
+		type BountyVocabulary
 	} from '$lib/types/bounty-program';
 
 	interface Props {
@@ -26,7 +27,6 @@
 	let { open = $bindable(), onSaved }: Props = $props();
 
 	const LABEL = 'text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase';
-	const OFF = 'off';
 
 	let settings = $state<BountySettings | null>(null);
 	let vocabulary = $state<BountyVocabulary | null>(null);
@@ -60,7 +60,7 @@
 	function schedule(interval: string, last: string | null, next: string | null): string {
 		const parts: string[] = [];
 		if (last) parts.push(`Last ${relativeTime(last)}`);
-		if (interval !== OFF && next)
+		if (interval !== SyncInterval.Off && next)
 			parts.push(untilTime(next) ? `Next ${untilTime(next)}` : 'Overdue');
 		return parts.join(' · ');
 	}

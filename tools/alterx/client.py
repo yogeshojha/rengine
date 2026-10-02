@@ -1,12 +1,7 @@
-"""alterx CLI client — permutation candidates generated from names already discovered."""
-
 from __future__ import annotations
 
-from shared.logging import get_logger
 from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError
 from tools.runner.models import CommandRecorder
-
-logger = get_logger(__name__)
 
 ALTERX_BINARY = "alterx"
 DEFAULT_TIMEOUT = 600
@@ -21,14 +16,10 @@ class AlterxClient:
         self,
         *,
         limit: int,
-        enrich: bool = True,
-        patterns: list[str] | None = None,
         recorder: CommandRecorder | None = None,
         extra_args: list[str] | None = None,
     ) -> None:
         self.limit = max(1, limit)
-        self.enrich = enrich
-        self.patterns = patterns or []
         self.recorder = recorder
         self.extra_args = extra_args or []
 
@@ -41,14 +32,8 @@ class AlterxClient:
         """Candidate hostnames built from the seeds."""
         if not names:
             return []
-        args = ["-limit", str(self.limit)]
-        if self.enrich:
-            args.append("-enrich")
-        for pattern in self.patterns:
-            args += ["-p", pattern]
-
         result = self._runner.run(
-            args=args,
+            args=["-limit", str(self.limit), "-enrich"],
             input_data=names,
             use_stdin=True,
             use_output_file=False,
@@ -59,6 +44,8 @@ class AlterxClient:
             tool=ALTERX_BINARY,
             extra_args=self.extra_args,
         )
+        if not result.success and not result.output_lines:
+            raise AlterxError(result.error or "alterx failed")
         seeds = set(names)
         out: list[str] = []
         for line in result.output_lines:

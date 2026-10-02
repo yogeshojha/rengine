@@ -41,7 +41,7 @@ PRESETS: tuple[PresetSpec, ...] = (
     PresetSpec(
         Preset.BLANK.value,
         "Blank",
-        "No stages enabled.",
+        "Always-on stages only.",
     ),
 )
 

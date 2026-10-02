@@ -6,6 +6,9 @@ from sqlmodel import Field, SQLModel, UniqueConstraint
 
 from shared.utils.datetime import utc_now
 
+MAX_ORG_LEN = 100
+MAX_ORG_DESCRIPTION_LEN = 500
+
 
 class OrganizationSummary(BaseModel):
     id: uuid.UUID
@@ -14,8 +17,8 @@ class OrganizationSummary(BaseModel):
 
 
 class OrganizationBase(SQLModel):
-    name: str = Field(max_length=100)
-    description: str | None = Field(default=None, max_length=500)
+    name: str = Field(max_length=MAX_ORG_LEN)
+    description: str | None = Field(default=None, max_length=MAX_ORG_DESCRIPTION_LEN)
 
 
 class Organization(OrganizationBase, table=True):
@@ -37,8 +40,8 @@ class OrganizationCreate(OrganizationBase):
 
 
 class OrganizationUpdate(SQLModel):
-    name: str | None = Field(default=None, max_length=100)
-    description: str | None = Field(default=None, max_length=500)
+    name: str | None = Field(default=None, max_length=MAX_ORG_LEN)
+    description: str | None = Field(default=None, max_length=MAX_ORG_DESCRIPTION_LEN)
 
 
 class OrganizationRead(OrganizationBase):
@@ -47,3 +50,4 @@ class OrganizationRead(OrganizationBase):
     project_id: uuid.UUID
     created_at: datetime
     created_by: uuid.UUID
+    target_count: int = 0

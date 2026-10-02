@@ -25,17 +25,18 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import { BAND_LABELS } from '$lib/config/threat-intel';
+	import { nvdUrl } from '$lib/config/software';
 	import { formatShortDate, MS_PER_DAY, relativeTimeLong } from '$lib/utilities/dates';
+	import { plural } from '$lib/utilities/strings';
 	import type { CveExposure } from '$lib/types/cve';
 
-	const NVD = 'https://nvd.nist.gov/vuln/detail/';
 	const DESCRIPTION_CLAMP = 280;
 
 	let cve = $derived(decodeURIComponent(page.params.cve ?? '').toUpperCase());
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
 	let report = $state<CveExposure | null>(null);
 	let loading = $state(true);
-	let errored = $state(false);
+	let loadError = $state<string | null>(null);
 	let showDescription = $state(false);
 	let reqId = 0;
 
@@ -54,10 +55,10 @@
 			const data = await cvesApi.exposure(id, wanted);
 			if (mine !== reqId) return;
 			report = data;
-			errored = false;
-		} catch {
+			loadError = null;
+		} catch (e) {
 			if (mine !== reqId) return;
-			errored = true;
+			loadError = e instanceof Error ? e.message : 'CVE not loaded';
 		} finally {
 			if (mine === reqId) loading = false;
 		}
@@ -79,8 +80,6 @@
 	let percentile = $derived(
 		report?.epss_percentile == null ? null : Math.round(report.epss_percentile * 100)
 	);
-	let plural = (n: number, one: string, many: string) =>
-		`${n.toLocaleString()} ${n === 1 ? one : many}`;
 </script>
 
 <svelte:head><title>{pageTitle(cve || routeLabels.cves)}</title></svelte:head>
@@ -100,11 +99,8 @@
 			<Skeleton class="h-28" />
 			<Skeleton class="h-64" />
 		</div>
-	{:else if errored || !report}
-		<EmptyState
-			title="CVE not loaded"
-			description="The API did not respond. Check that the api service is running."
-		/>
+	{:else if loadError || !report}
+		<EmptyState title="CVE not loaded" description={loadError ?? undefined} />
 	{:else}
 		<header class="flex flex-wrap items-start justify-between gap-4">
 			<div class="flex min-w-0 flex-col gap-2">
@@ -161,7 +157,13 @@
 					</p>
 				{/if}
 			</div>
-			<Button variant="outline" size="sm" href={`${NVD}${report.cve}`} target="_blank">
+			<Button
+				variant="outline"
+				size="sm"
+				href={nvdUrl(report.cve)}
+				target="_blank"
+				rel="noopener noreferrer"
+			>
 				<ExternalLink class="size-3.5" />
 				Open on NVD
 			</Button>
@@ -237,7 +239,7 @@
 					<EmptyState
 						compact
 						icon={Bug}
-						title="Not present in this project"
+						title="No locations"
 						description={report.finding_scans === 0 && report.software_scans === 0
 							? 'Not scanned'
 							: 'No version implies it and no check reported it.'}
@@ -256,7 +258,7 @@
 						{#if report.intel_kinds.length}
 							<div class="flex flex-wrap gap-1">
 								{#each report.intel_kinds as kind (kind)}
-									<SignalChip {kind} compact />
+									<SignalChip {kind} />
 								{/each}
 							</div>
 						{/if}
@@ -343,8 +345,7 @@
 											<span class="text-2xs text-muted-foreground tabular-nums">
 												{#if row.software}{row.software} inferred{/if}
 												{#if row.software && row.findings}·{/if}
-												{#if row.findings}{row.findings}
-													{row.findings === 1 ? 'finding' : 'findings'}{/if}
+												{#if row.findings}{plural(row.findings, 'finding')}{/if}
 											</span>
 										</span>
 									</a>

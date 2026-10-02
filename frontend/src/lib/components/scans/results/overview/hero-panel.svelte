@@ -10,22 +10,17 @@
 	import GeoPanel from './geo-panel.svelte';
 	import RunRibbon from './run-ribbon.svelte';
 	import HistoryPopover from './history-popover.svelte';
-	import {
-		activityRan,
-		elapsedSeconds,
-		elapsedText,
-		isLiveStatus,
-		isOpenStatus
-	} from '$lib/utilities/scan-status';
+	import { elapsedSeconds, elapsedText, isOpenStatus } from '$lib/utilities/scan-status';
 	import { etaLabel, plannedStages, stageProgress } from '$lib/utilities/scan-progress';
 	import { targetAssetNoun, TargetType } from '$lib/types/target';
 	import { scanFoundNothing } from '$lib/types/scan';
-	import type { ScanActivityRead, ScanCommandRead, ScanRead } from '$lib/types/scan';
+	import type { ScanActivityRead, ScanRead } from '$lib/types/scan';
 	import type { StageCatalogEntry } from '$lib/types/scan-engine';
 	import type { LiveRun } from '$lib/stores/live-scans.svelte';
 	import type { InsightTally } from '$lib/utilities/scan-insights';
+	import { formatDateTime } from '$lib/utilities/dates';
 
-	export interface SurfaceStats {
+	interface SurfaceStats {
 		assets: number | null;
 		resolved: number | null;
 		live: number | null;
@@ -44,7 +39,6 @@
 		run: LiveRun | undefined;
 		catalog: StageCatalogEntry[];
 		activities: ScanActivityRead[];
-		commands: ScanCommandRead[];
 		previousDuration: number | null;
 		now: number;
 		scanId: string;
@@ -64,7 +58,6 @@
 		run,
 		catalog,
 		activities,
-		commands,
 		previousDuration,
 		now,
 		scanId,
@@ -83,35 +76,21 @@
 
 	const TREND_RUNS = 5;
 	const NEW_FILTER = 'is:new';
-	const fmtRun = (iso: string) =>
-		new Date(iso).toLocaleString('en-US', {
-			month: 'short',
-			day: 'numeric',
-			hour: 'numeric',
-			minute: '2-digit'
-		});
 
 	let type = $derived(scan.execution_config.target_type);
 	let isDomain = $derived(type === TargetType.DOMAIN);
-	let live = $derived(isLiveStatus(scan.status));
 	let unfinished = $derived(isOpenStatus(scan.status));
 	let completed = $derived(scan.status === 'completed');
 	let planned = $derived(plannedStages(scan, catalog));
 	let progress = $derived(stageProgress(scan, run, planned));
-	let doneCount = $derived(
-		live
-			? progress.done
-			: planned.filter((s) => activities.some((a) => a.name === s.name && activityRan(a.status)))
-					.length
-	);
 	let elapsedSec = $derived(elapsedSeconds(scan, now));
 	let eta = $derived(scan.status === 'running' ? etaLabel(previousDuration, elapsedSec) : null);
 	let added = $derived(scan.new_subdomains ?? 0);
 	let gone = $derived(scan.gone_subdomains ?? 0);
 	let baseline = $derived(scan.is_first_scan === true || scan.prev_subdomains_found == null);
 	let compared = $derived(completed && !baseline);
-	let noun = (n: number) => targetAssetNoun(type, n);
-	let nounPlural = $derived(targetAssetNoun(type));
+	let noun = (n: number) => targetAssetNoun(n);
+	const nounPlural = targetAssetNoun();
 	let nounTitle = $derived(nounPlural.charAt(0).toUpperCase() + nounPlural.slice(1));
 	let assetCount = $derived(stats.assets ?? scan.subdomains_found);
 	let ipCount = $derived(stats.ips ?? scan.ips_found);
@@ -140,7 +119,9 @@
 	let subline = $derived.by(() => {
 		switch (scan.status) {
 			case 'pending':
-				return 'Waiting for a worker.';
+				return scan.queue_position != null
+					? 'Held by the concurrent scan limit.'
+					: 'Waiting for a worker.';
 			case 'running': {
 				const parts = [run?.stage ? run.stage.title : progress.label];
 				parts.push(`${progress.done} of ${progress.total} stages`);
@@ -151,14 +132,13 @@
 			case 'failed':
 				return scan.error ?? 'A stage failed. Select the stage for details.';
 			case 'paused':
-				return `Paused after ${doneCount} of ${planned.length} stages.`;
 			case 'cancelled':
-				return `Stopped after ${doneCount} of ${planned.length} stages.`;
+				return '';
 			default:
 				if (baseline) return `First scan of ${scan.execution_config.target_value}.`;
 				if (!historyLoaded) return '';
 				if (!previous) return 'Compared with the previous completed scan.';
-				return `Compared with the ${previous.engine_name} scan on ${fmtRun(previous.started_at ?? previous.created_at)}.`;
+				return `Compared with the ${previous.engine_name} scan on ${formatDateTime(previous.started_at ?? previous.created_at)}.`;
 		}
 	});
 
@@ -196,17 +176,13 @@
 		filter?: string;
 		added?: number;
 		gone?: number;
-		diff?: number | null;
 		hint?: string;
 		trend: number[] | null;
 	}
-	const diffVs = (value: number, before: number | undefined) =>
-		before == null || value === before ? null : value - before;
 	const pctOf = (n: number | null, of: number | null) =>
 		n != null && of ? `${Math.round((n / of) * 100)}%` : null;
 
 	let kpis = $derived.by<Kpi[]>(() => {
-		const cmp = compared ? previous : null;
 		const list: Kpi[] = [
 			{
 				key: 'assets',
@@ -238,23 +214,31 @@
 				value: stats.live,
 				tab: WEB.tab,
 				filter: 'is:live',
-				hint: livePct ? `${livePct} of web assets` : undefined,
+				hint: livePct ? `${livePct} of those answering HTTP` : undefined,
 				trend: null
 			},
-			{
-				key: 'http',
-				label: 'HTTP services',
-				value: scan.http_assets_found,
-				...(assetCount ? { tab: WEB.tab, filter: 'is:web' } : { tab: SVC.tab, filter: 'is:http' }),
-				diff: diffVs(scan.http_assets_found, cmp?.http_assets_found),
-				trend: trendOf('http_assets_found')
-			},
+			assetCount
+				? {
+						key: 'http',
+						label: 'Answering HTTP',
+						value: stats.web,
+						tab: WEB.tab,
+						filter: 'is:web',
+						trend: null
+					}
+				: {
+						key: 'http',
+						label: 'HTTP services',
+						value: scan.http_assets_found,
+						tab: SVC.tab,
+						filter: 'is:http',
+						trend: trendOf('http_assets_found')
+					},
 			{
 				key: 'ips',
 				label: 'IP addresses',
 				value: ipCount,
 				tab: IP.tab,
-				diff: diffVs(ipCount, cmp?.ips_found),
 				trend: trendOf('ips_found')
 			},
 			{
@@ -262,7 +246,6 @@
 				label: 'Open ports',
 				value: portCount,
 				tab: SVC.tab,
-				diff: diffVs(portCount, cmp?.open_ports_found),
 				trend: trendOf('open_ports_found')
 			}
 		);
@@ -340,7 +323,7 @@
 				</h2>
 				{#if subline}
 					<p class="text-sm text-muted-foreground">{subline}</p>
-				{:else if !historyLoaded}
+				{:else if completed && !historyLoaded}
 					<Skeleton class="h-4 w-72" />
 				{/if}
 				{#if (compared && (added > 0 || gone > 0)) || history.length > 1}
@@ -383,7 +366,6 @@
 				{run}
 				{catalog}
 				{activities}
-				{commands}
 				{now}
 				{previousDuration}
 				{scanId}
@@ -421,13 +403,6 @@
 												<ArrowDownRight class="size-3" />{k.gone}
 											</span>
 										{/if}
-									{:else if k.diff != null}
-										<span class="inline-flex items-center text-muted-foreground">
-											{#if k.diff > 0}<ArrowUpRight class="size-3" />{:else}<ArrowDownRight
-													class="size-3"
-												/>{/if}
-											{Math.abs(k.diff).toLocaleString()}
-										</span>
 									{:else if k.hint}
 										<span class="truncate text-muted-foreground">{k.hint}</span>
 									{/if}

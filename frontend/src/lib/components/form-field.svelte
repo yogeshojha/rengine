@@ -4,17 +4,15 @@
 
 	interface Props {
 		label: string;
-		for?: string;
 		description?: string;
 		error?: string;
 		class?: string;
 		children: Snippet<[{ id: string }]>;
 	}
 
-	let { label, for: forId, description, error, class: className, children }: Props = $props();
+	let { label, description, error, class: className, children }: Props = $props();
 
-	const uid = $props.id();
-	const fieldId = $derived(forId ?? uid);
+	const fieldId = $props.id();
 </script>
 
 <Field.Field class={className} data-invalid={error ? true : undefined}>

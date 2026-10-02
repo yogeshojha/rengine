@@ -49,7 +49,9 @@ css: |
 	let fileInput = $state<HTMLInputElement | null>(null);
 
 	async function pick(event: Event) {
-		const file = (event.target as HTMLInputElement).files?.[0];
+		const input = event.target as HTMLInputElement;
+		const file = input.files?.[0];
+		input.value = '';
 		if (!file) return;
 		content = await file.text();
 	}

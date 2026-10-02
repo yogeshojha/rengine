@@ -20,4 +20,4 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    """Postgres cannot drop an enum value; the row filter is the guard."""
+    pass

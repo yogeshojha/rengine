@@ -11,12 +11,7 @@ import ShieldBanIcon from '@lucide/svelte/icons/shield-ban';
 
 import type { IconComponent } from '$lib/config/icons';
 import type { BadgeVariant } from '$lib/components/ui/badge';
-import {
-	WatchCadence,
-	WatchEventKind,
-	WatchHostState,
-	type WatchHostFilter
-} from '$lib/types/watch';
+import { WatchCadence, WatchEventKind, WatchHostFilter, WatchHostState } from '$lib/types/watch';
 
 export const CADENCE_LABELS: Record<WatchCadence, string> = {
 	[WatchCadence.Off]: 'Off',
@@ -44,11 +39,20 @@ export const HOST_STATE_VARIANT: Record<WatchHostState, BadgeVariant> = {
 };
 
 export const HOST_FILTERS: { key: WatchHostFilter; label: string }[] = [
-	{ key: 'all', label: 'All' },
-	{ key: 'arrived', label: 'Arrived' },
-	{ key: 'alerted', label: 'Alerted' },
-	{ key: 'unresolved', label: 'Unresolved' },
-	{ key: 'out_of_scope', label: 'Out of scope' }
+	{ key: WatchHostFilter.All, label: 'All' },
+	{ key: WatchHostFilter.Arrived, label: 'Arrived' },
+	{ key: WatchHostFilter.Alerted, label: 'Alerted' },
+	{ key: WatchHostFilter.Unresolved, label: 'Unresolved' },
+	{ key: WatchHostFilter.OutOfScope, label: 'Out of scope' }
+];
+
+export const WATCH_EVENT_ALL = 'all';
+export const WATCH_EVENT_SCOPE = 'scope';
+export type WatchEventFilter = typeof WATCH_EVENT_ALL | typeof WATCH_EVENT_SCOPE;
+
+export const EVENT_FILTERS: { key: WatchEventFilter; label: string }[] = [
+	{ key: WATCH_EVENT_ALL, label: 'All' },
+	{ key: WATCH_EVENT_SCOPE, label: 'Scope changes' }
 ];
 
 export const EVENT_ICONS: Record<WatchEventKind, IconComponent> = {
@@ -75,5 +79,4 @@ export const DEFAULT_RATE_LIMIT = 5;
 export const MAX_RATE_LIMIT = 1000;
 export const WATCH_HOST_PAGE_SIZE = 50;
 export const WATCH_EVENT_PAGE_SIZE = 50;
-export const STREAM_POLL_MS = 30_000;
 export const ALERT_QUERY_EXAMPLES = ['is:live', 'status:200 and not title:parked', 'tech:*'];

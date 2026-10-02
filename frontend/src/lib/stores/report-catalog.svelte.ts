@@ -11,12 +11,6 @@ function createReportCatalogStore() {
 		get catalog() {
 			return catalog;
 		},
-		get isLoading() {
-			return isLoading;
-		},
-		get hasFetched() {
-			return hasFetched;
-		},
 		get sections(): SectionCatalogEntry[] {
 			return catalog?.sections ?? [];
 		},

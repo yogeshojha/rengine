@@ -29,6 +29,7 @@
 	import type { BountyProgram } from '$lib/types/bounty-program';
 	import type { NotifProvider } from '$lib/types/notification-channel';
 	import { WatchCadence, type Watch, type WatchPreview } from '$lib/types/watch';
+	import { plural } from '$lib/utilities/strings';
 
 	interface Props {
 		program: Pick<BountyProgram, 'name' | 'handle' | 'platform' | 'platform_label'>;
@@ -83,7 +84,6 @@
 			!rateInvalid &&
 			!baselineNeedsEngine &&
 			!queryError &&
-			!checkingQuery &&
 			(isEdit || (preview !== null && preview.items.length > 0 && !preview.existing))
 	);
 	const existingTargets = $derived(preview?.targets.filter((t) => t.exists).length ?? 0);
@@ -188,6 +188,10 @@
 		if (!canSave) return;
 		saving = true;
 		try {
+			if (alertQuery.trim()) {
+				await checkQuery();
+				if (queryError) return;
+			}
 			const watch = existing
 				? await watchesApi.update(existing.id, projectId, body())
 				: await watchesApi.create(program.platform, program.handle, {
@@ -231,11 +235,9 @@
 								<dd class="tabular-nums">
 									{preview.targets.length}
 									<span class="text-muted-foreground">
-										· {preview.wildcards}
-										{preview.wildcards === 1 ? 'wildcard' : 'wildcards'}, {preview.domains}
-										{preview.domains === 1 ? 'domain' : 'domains'}
+										· {plural(preview.wildcards, 'wildcard')}, {plural(preview.domains, 'domain')}
 										{#if existingTargets > 0}
-											· {existingTargets} already in the project
+											· {existingTargets} existing
 										{/if}
 									</span>
 								</dd>
@@ -247,8 +249,7 @@
 									>
 									{#if preview.unenforceable.length > 0}
 										<span class="block text-xs text-warning">
-											{preview.unenforceable.length}
-											{preview.unenforceable.length === 1 ? 'entry' : 'entries'} cannot be enforced:
+											{plural(preview.unenforceable.length, 'entry', 'entries')} cannot be enforced:
 											{preview.unenforceable.slice(0, 3).join(', ')}
 										</span>
 									{/if}
@@ -278,7 +279,7 @@
 								</dd>
 							</dl>
 							{#if preview.existing}
-								<p class="text-xs text-warning">This program is already watched in the project.</p>
+								<p class="text-xs text-warning">Program is watched.</p>
 							{/if}
 						{/if}
 					</section>
@@ -426,6 +427,7 @@
 								rows={2}
 								class="font-mono text-sm"
 								placeholder={ALERT_QUERY_EXAMPLES[0]}
+								oninput={() => (queryError = null)}
 								onblur={checkQuery}
 								aria-invalid={!!queryError}
 							/>

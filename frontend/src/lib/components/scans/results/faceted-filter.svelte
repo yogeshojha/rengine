@@ -62,7 +62,9 @@
 									<Check class="size-3" />
 								</div>
 								<span class="truncate">{option.label}</span>
-								<span class="ml-auto font-mono text-xs text-muted-foreground">{option.count}</span>
+								<span class="ml-auto font-mono text-xs text-muted-foreground"
+									>{option.count.toLocaleString()}</span
+								>
 							</Command.Item>
 						{/each}
 					</Command.Group>

@@ -24,9 +24,12 @@ import Type from '@lucide/svelte/icons/type';
 import Eye from '@lucide/svelte/icons/eye';
 import BrainCircuit from '@lucide/svelte/icons/brain-circuit';
 import type { IconComponent } from './icons';
+import { TONE_CHIP as CHECK_TONE_CHIP } from './hygiene';
 import { INTEREST_BAND, INTEREST_SOURCE } from '$lib/types/interest';
 
 export const INTEREST_TAB = 'interesting';
+
+export const EXPOSURE_PARAMS = { band: 'band', kind: 'kind' } as const;
 
 // mirrors shared/definitions/interest.py:InterestKind
 export enum InterestKind {
@@ -105,8 +108,7 @@ export const BAND_TEXT: Record<string, string> = {
 };
 
 export const TONE_CHIP: Record<string, string> = {
-	warning: 'border-warning/30 bg-warning/10 text-warning',
-	info: 'border-info/25 bg-info/10 text-info',
+	...CHECK_TONE_CHIP,
 	neutral: 'border-border bg-muted/60 text-muted-foreground'
 };
 

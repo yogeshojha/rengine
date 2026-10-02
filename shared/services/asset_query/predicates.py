@@ -17,6 +17,7 @@ from sqlalchemy import (
     not_,
     or_,
     select,
+    true,
     union_all,
 )
 from sqlalchemy.dialects.postgresql import BIT, INET, JSONB
@@ -25,7 +26,9 @@ from sqlalchemy.orm import aliased
 
 from shared.definitions import domain_posture as posture_defs
 from shared.definitions import hygiene as hygiene_defs
+from shared.definitions.compare import AUTH_STATUS
 from shared.definitions.correlation import SCREENSHOT_DISTANCE
+from shared.definitions.dashboard import EXPIRING_DAYS
 from shared.definitions.endpoints import ARCHIVE_SOURCES, LINKED_SOURCES
 from shared.definitions.evidence import Evidence
 from shared.definitions.issue_trackers import TICKETED_STATES, FilingState
@@ -44,21 +47,27 @@ from shared.models.subdomain import Subdomain
 from shared.models.vulnerability import Vulnerability, VulnerabilityTriage
 
 from .scope import QueryScope, ScopeLike, scope_of
+from .terms import array_elements
 
 HTTP_OK = 200
 HTTP_REDIRECT = 300
 HTTP_CLIENT = 400
 HTTP_SERVER = 500
 HTTP_MAX = 600
-AUTH_STATUS = (401, 403)
 STATUS_BUCKETS = {
     "2xx": (HTTP_OK, HTTP_REDIRECT),
     "3xx": (HTTP_REDIRECT, HTTP_CLIENT),
     "4xx": (HTTP_CLIENT, HTTP_SERVER),
     "5xx": (HTTP_SERVER, HTTP_MAX),
 }
+STATUS_LABELS = {
+    "2xx": "2xx OK",
+    "3xx": "3xx Redirect",
+    "4xx": "4xx Client",
+    "5xx": "5xx Server",
+    "none": "No HTTP",
+}
 AUTH_RE = "login|sign ?in|log ?in|admin|dashboard|portal|console|authenticat"
-EXPIRING_DAYS = 30
 
 
 def _one_target(scope: QueryScope, column):
@@ -158,13 +167,6 @@ def _host_baseline(scan_id):
     )
 
 
-def has_baseline(scope: ScopeLike):
-    scope = scope_of(scope)
-    if not scope.ids:
-        return false()
-    return or_(*[_host_baseline(sid) for sid in scope.ids])
-
-
 def is_new(scope: ScopeLike):
     scope = scope_of(scope)
     return and_(
@@ -208,7 +210,7 @@ def _address_seen_earlier(source, scan_id):
 
 
 def _address_history(source, scope: QueryScope, *conditions):
-    """History for an address is every target it serves, since the view folds them into one row."""
+    """Earlier rows of any target the address serves."""
     earlier = aliased(IpAddress)
     return exists(
         select(1).where(
@@ -266,13 +268,6 @@ def _service_baseline(scan_id):
     )
 
 
-def service_has_baseline(scope: ScopeLike):
-    scope = scope_of(scope)
-    if not scope.ids:
-        return false()
-    return or_(*[_service_baseline(sid) for sid in scope.ids])
-
-
 def service_is_new(source, scope: ScopeLike):
     scope = scope_of(scope)
     return and_(
@@ -293,7 +288,7 @@ IP_CHARS_RE = r"^[0-9a-fA-F:.]+$"
 
 
 def inet_of(column):
-    """A stored address as INET; text that is not one reads as NULL, never an error."""
+    """A stored address as INET, NULL for non-address text."""
     return cast(case((column.op("~")(IP_CHARS_RE), column), else_=None), INET)
 
 
@@ -449,13 +444,6 @@ def _software_baseline(scan_id):
     )
 
 
-def software_has_baseline(scope: ScopeLike):
-    scope = scope_of(scope)
-    if not scope.ids:
-        return false()
-    return or_(*[_software_baseline(sid) for sid in scope.ids])
-
-
 def software_is_new(scope: ScopeLike):
     scope = scope_of(scope)
     return and_(
@@ -491,13 +479,6 @@ def _secret_baseline(scan_id):
             earlier.discovered_at < cutoff,
         )
     )
-
-
-def secret_has_baseline(scope: ScopeLike):
-    scope = scope_of(scope)
-    if not scope.ids:
-        return false()
-    return or_(*[_secret_baseline(sid) for sid in scope.ids])
 
 
 def secret_is_new(scope: ScopeLike):
@@ -548,13 +529,17 @@ def _vuln_eligible(scope: QueryScope):
 
 
 def _vuln_keys(source, column, prefix: str, name: str):
-    value = func.jsonb_array_elements_text(cast(column, JSONB)).column_valued(name)
-    return select(
-        source.c.id.label("id"),
-        source.c.matched_at.label("matched_at"),
-        source.c.template_id.label("template_id"),
-        (literal(prefix) + value).label("key"),
-    ).select_from(source)
+    element = array_elements(column, name)
+    return (
+        select(
+            source.c.id.label("id"),
+            source.c.matched_at.label("matched_at"),
+            source.c.template_id.label("template_id"),
+            (literal(prefix) + element.c.value).label("key"),
+        )
+        .select_from(source)
+        .join(element, true())
+    )
 
 
 @lru_cache(maxsize=128)
@@ -669,7 +654,7 @@ def endpoint_seen_earlier():
     )
 
 
-def _endpoint_baseline(scan_id):
+def endpoint_baseline(scan_id):
     """Whether an earlier scan of this target recorded any endpoint."""
     earlier = aliased(Endpoint)
     target = select(Scan.target_id).where(Scan.id == scan_id).scalar_subquery()
@@ -687,32 +672,28 @@ def _endpoint_baseline(scan_id):
     )
 
 
-def endpoint_has_baseline(scope: ScopeLike):
-    scope = scope_of(scope)
-    if not scope.ids:
-        return false()
-    return or_(*[_endpoint_baseline(sid) for sid in scope.ids])
-
-
 def endpoint_is_new(scope: ScopeLike):
     scope = scope_of(scope)
     return and_(
-        _per_scan(scope, Endpoint.scan_id, _endpoint_baseline),
+        _per_scan(scope, Endpoint.scan_id, endpoint_baseline),
         not_(endpoint_seen_earlier()),
     )
 
 
 def endpoint_vuln(scope: ScopeLike, condition=None):
     """A finding this scan reported at this endpoint's location or on its host."""
-    clauses = [
-        or_(
-            Vulnerability.http_asset_id == Endpoint.http_asset_id,
-            Vulnerability.host == Endpoint.host,
-        )
-    ]
+    found = [scope_of(scope).match(Vulnerability.scan_id)]
     if condition is not None:
-        clauses.append(condition)
-    return vuln_on(scope, *clauses)
+        found.append(condition)
+
+    def carried(own, column):
+        reported = select(column).where(*found, column.isnot(None)).correlate(None)
+        return and_(own.isnot(None), own.in_(reported))
+
+    return or_(
+        carried(Endpoint.http_asset_id, Vulnerability.http_asset_id),
+        carried(Endpoint.host, Vulnerability.host),
+    )
 
 
 def endpoint_source(*names: str):
@@ -775,10 +756,6 @@ def hygiene_length(column):
         (func.jsonb_typeof(value) == "array", func.jsonb_array_length(value)),
         else_=0,
     )
-
-
-def hygiene_evaluated():
-    return func.jsonb_typeof(cast(Subdomain.hygiene_checked, JSONB)) == "array"
 
 
 def hygiene_clean():

@@ -8,20 +8,8 @@ from sqlalchemy import func, select, text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.asset_query import (
-    NO_JIT,
-    STATEMENT_TIMEOUT,
-    QueryScope,
-    QuerySyntaxError,
-    ScopeLike,
-    SecretQueryContext,
-    build_secret_groups,
-    compile_secret_query,
-    parse_query,
-    query_error_for,
-    secret_has_baseline,
-    syntax_error,
-)
+from app.services.baseline import new_row_ids
+from app.services.facets import column_facet
 from app.services.target_names import target_names
 from shared.definitions.asset_query import COUNT_CAP, SECRET_QUERY
 from shared.definitions.secrets import (
@@ -36,7 +24,7 @@ from shared.definitions.secrets import (
 )
 from shared.definitions.vulnerabilities import CoverageStatus
 from shared.logging import get_logger
-from shared.models.asset_query import QueryGroups
+from shared.models.asset_query import QueryCounts, QueryGroups, QueryLeads
 from shared.models.secret import (
     Secret,
     SecretCoverage,
@@ -51,7 +39,23 @@ from shared.models.secret import (
     SecretSighting,
     SecretSightingRead,
 )
-from shared.services.asset_query import lead_cache
+from shared.services.asset_query import (
+    NO_JIT,
+    STATEMENT_TIMEOUT,
+    QueryScope,
+    QuerySyntaxError,
+    ScopeLike,
+    SecretQueryContext,
+    build_leads,
+    build_secret_groups,
+    compile_secret_query,
+    count_queries,
+    lead_cache,
+    parse_query,
+    query_error_for,
+    secret_is_new,
+    syntax_error,
+)
 from shared.services.surface_query import secrets as surface_secrets
 from shared.utils.datetime import utc_now
 
@@ -118,14 +122,15 @@ class SecretService:
             return page
 
         names = await target_names(self.session, (row.target_id for row in rows))
-        seen = await self._seen_before(scope, [row.fingerprint for row in rows])
-        baseline = await self.session.scalar(select(secret_has_baseline(scope)))
+        new_ids = await new_row_ids(
+            self.session, Secret.id, secret_is_new(scope), [row.id for row in rows]
+        )
         for row in rows:
             page.items.append(
                 self._to_read(
                     row,
                     target_value=names.get(row.target_id),
-                    is_new=bool(baseline) and row.fingerprint not in seen,
+                    is_new=row.id in new_ids,
                 )
             )
         return page
@@ -161,23 +166,6 @@ class SecretService:
             discovered_at=row.discovered_at,
             is_new=is_new,
         )
-
-    async def _seen_before(
-        self, scope: QueryScope, fingerprints: list[str]
-    ) -> set[str]:
-        if not fingerprints or not scope.ids:
-            return set()
-        rows = await self.session.execute(
-            text(
-                "SELECT DISTINCT e.fingerprint FROM secrets e "
-                "JOIN secrets cur ON cur.scan_id = ANY(:sids) "
-                "AND cur.fingerprint = e.fingerprint "
-                "WHERE e.target_id = cur.target_id AND NOT (e.scan_id = ANY(:sids)) "
-                "AND e.discovered_at < cur.discovered_at AND e.fingerprint = ANY(:fps)"
-            ),
-            {"sids": [str(i) for i in scope.ids], "fps": fingerprints},
-        )
-        return {row[0] for row in rows.all()}
 
     async def detail(self, scope: ScopeLike, secret_id: UUID) -> SecretDetail | None:
         scope = QueryScope.of(scope)
@@ -220,6 +208,35 @@ class SecretService:
             ],
         )
 
+    async def leads(self, scope: ScopeLike, f: SecretFilter) -> QueryLeads:
+        scope = QueryScope.of(scope)
+
+        async def build() -> QueryLeads:
+            ctx = self._context(scope, utc_now())
+            base = surface_secrets.scoped(scope, f, columns=(Secret.id,))
+            await self.session.execute(text(STATEMENT_TIMEOUT))
+            await self.session.execute(text(NO_JIT))
+            try:
+                return await build_leads(
+                    self.session,
+                    base,
+                    SECRET_QUERY.examples,
+                    lambda q: compile_secret_query(parse_query(q, SECRET_QUERY), ctx),
+                    filtered=bool(f.ids),
+                )
+            except DBAPIError as exc:
+                await self.session.rollback()
+                logger.info("secret leads failed", error=str(exc.orig))
+                return QueryLeads()
+
+        return await lead_cache.leads(
+            self.session,
+            dimension="secrets",
+            scans=scope.ids,
+            facets=lead_cache.facets_of(f),
+            build=build,
+        )
+
     async def groups(self, scope: ScopeLike, f: SecretFilter, key: str) -> QueryGroups:
         scope = QueryScope.of(scope)
         now = utc_now()
@@ -240,6 +257,36 @@ class SecretService:
             await self.session.rollback()
             logger.info("secret groups failed", error=str(exc.orig))
             return QueryGroups(dimension=key)
+
+    async def counts(self, scope: ScopeLike, queries: list[str]) -> QueryCounts:
+        scope = QueryScope.of(scope)
+
+        async def _build() -> QueryCounts:
+            ctx = self._context(scope, utc_now())
+            await self.session.execute(text(STATEMENT_TIMEOUT))
+            await self.session.execute(text(NO_JIT))
+            try:
+                return await count_queries(
+                    self.session,
+                    self._scoped(scope),
+                    queries,
+                    lambda q: compile_secret_query(parse_query(q, SECRET_QUERY), ctx),
+                )
+            except DBAPIError as exc:
+                await self.session.rollback()
+                logger.info("secret counts failed", error=str(exc.orig))
+                return QueryCounts()
+
+        return await lead_cache.cached(
+            self.session,
+            name="counts:secrets",
+            scans=scope.ids,
+            facets="|".join(queries),
+            model=QueryCounts,
+            build=_build,
+            keep=lambda counted: counted.computed,
+            live_ttl=None,
+        )
 
     async def facets(self, scope: ScopeLike) -> SecretFacets:
         scope = QueryScope.of(scope)
@@ -266,22 +313,16 @@ class SecretService:
     async def _facet(
         self, scope: QueryScope, column, labels: dict[str, str], order: tuple[str, ...]
     ) -> list[SecretFacet]:
-        rows = await self.session.execute(
-            select(column, func.count())
-            .where(scope.match(Secret.scan_id))
-            .group_by(column)
-            .order_by(func.count().desc())
-            .limit(_FACET_LIMIT)
+        return await column_facet(
+            self.session,
+            scope,
+            column,
+            Secret.scan_id,
+            labels=labels,
+            order=order,
+            make=SecretFacet,
+            limit=_FACET_LIMIT,
         )
-        found = [
-            SecretFacet(key=key, label=labels.get(key, key), count=count)
-            for key, count in rows.all()
-            if key
-        ]
-        if not order:
-            return found
-        rank = {key: index for index, key in enumerate(order)}
-        return sorted(found, key=lambda item: rank.get(item.key, len(rank)))
 
     async def _kind_facet(self, scope: QueryScope) -> list[SecretFacet]:
         rows = await self.session.execute(
@@ -374,33 +415,4 @@ class SecretService:
             facets="",
             model=SecretCoverageRead,
             build=build,
-        )
-
-    async def counts(self, scope: ScopeLike, queries: list[str]) -> dict[str, int]:
-        scope = QueryScope.of(scope)
-        now = utc_now()
-        out: dict[str, int] = {}
-        for query in queries:
-            base = self._scoped(scope)
-            try:
-                predicate = compile_secret_query(
-                    parse_query(query, SECRET_QUERY), self._context(scope, now)
-                )
-            except QuerySyntaxError:
-                out[query] = 0
-                continue
-            if predicate is not None:
-                base = base.where(predicate)
-            counted = await self.session.scalar(
-                select(func.count()).select_from(base.subquery())
-            )
-            out[query] = int(counted or 0)
-        return out
-
-    async def scan_total(self, scan_id: UUID) -> int:
-        return int(
-            await self.session.scalar(
-                select(func.count()).where(Secret.scan_id == scan_id)
-            )
-            or 0
         )

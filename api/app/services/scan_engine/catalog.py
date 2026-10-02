@@ -43,7 +43,7 @@ def _field_specs(spec, unavailable: dict[str, str]) -> list[StageField]:
                 name=name,
                 title=prop.get("title") or name.replace("_", " ").capitalize(),
                 description=prop.get("description") or None,
-                type=_JSON_TYPES.get(prop.get("type"), prop.get("type") or "string"),
+                type=prop.get("type") or "string",
                 default=defaults.get(name, prop.get("default")),
                 options=list(options) if options else None,
                 option_labels=prop.get("option_labels") or None,
@@ -123,11 +123,3 @@ def build_catalog(unavailable: dict[str, str] | None = None) -> EngineCatalog:
         ],
         seed_produces={t.value: sorted(seed_produces(t.value)) for t in TargetType},
     )
-
-
-_JSON_TYPES = {
-    "integer": "integer",
-    "number": "number",
-    "boolean": "boolean",
-    "string": "string",
-}

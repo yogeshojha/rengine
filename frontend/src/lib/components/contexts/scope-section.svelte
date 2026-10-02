@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Label } from '$lib/components/ui/label';
 	import StringListField from './string-list-field.svelte';
+	import { ipError, pathError, patternError } from './context-form';
 	import type { ScanContextRead, ScanContextCreate } from '$lib/types/scan-context';
 
 	type CtxLike = ScanContextRead | ScanContextCreate;
@@ -11,38 +12,6 @@
 	}
 
 	let { context, onChange }: Props = $props();
-
-	const PATTERN_METACHARS = /[*?^$()[\]{}+|\\]/;
-
-	function validatePattern(v: string): string | null {
-		if (v.includes('.') && !PATTERN_METACHARS.test(v)) {
-			return 'Domain names are not patterns. Enter a keyword, wildcard or regex';
-		}
-		return null;
-	}
-
-	function validatePath(v: string): string | null {
-		return v.startsWith('/') ? null : 'Path must start with /';
-	}
-
-	function validateIp(v: string): string | null {
-		const cidr = v.split('/');
-		if (cidr.length > 2) return 'Enter a valid IP or CIDR';
-		const ip = cidr[0];
-		const v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
-		const v6 = /^[0-9a-fA-F:]+$/;
-		const isV4 = v4.test(ip) && ip.split('.').every((o) => Number(o) <= 255);
-		const isV6 = v6.test(ip) && ip.includes(':');
-		if (!isV4 && !isV6) return 'Enter a valid IP or CIDR';
-		if (cidr.length === 2) {
-			const n = Number(cidr[1]);
-			const maxPrefix = isV6 ? 128 : 32;
-			if (cidr[1].trim() === '' || !Number.isInteger(n) || n < 0 || n > maxPrefix) {
-				return 'Invalid CIDR prefix';
-			}
-		}
-		return null;
-	}
 </script>
 
 <div class="space-y-5">
@@ -56,7 +25,7 @@
 		<StringListField
 			items={context.excluded_subdomains}
 			placeholder="admin"
-			validate={validatePattern}
+			validate={patternError}
 			onChange={(items) => onChange({ excluded_subdomains: items })}
 		/>
 	</div>
@@ -69,7 +38,7 @@
 		<StringListField
 			items={context.excluded_paths}
 			placeholder="/admin"
-			validate={validatePath}
+			validate={pathError}
 			onChange={(items) => onChange({ excluded_paths: items })}
 		/>
 	</div>
@@ -79,7 +48,7 @@
 		<StringListField
 			items={context.excluded_ips}
 			placeholder="10.0.0.0/8"
-			validate={validateIp}
+			validate={ipError}
 			onChange={(items) => onChange({ excluded_ips: items })}
 		/>
 	</div>

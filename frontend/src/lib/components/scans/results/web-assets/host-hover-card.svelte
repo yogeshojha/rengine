@@ -8,7 +8,7 @@
 	import { providerFor, PROVIDER_KIND_ICONS } from '$lib/config/hosting-providers';
 	import { httpStatusClass, httpStatusReason, STATUS_DOT } from '$lib/utilities/scan-correlation';
 	import type { SubdomainRead } from '$lib/types/subdomain';
-	import { TONE_CHIP, checkLabel, sortChecks, toneCounts, worstTone } from '$lib/config/hygiene';
+	import { CHECK_BY_KEY, TONE_CHIP, checkLabel, sortChecks, toneCounts } from '$lib/config/hygiene';
 	import { claimHover, releaseHover } from '$lib/utilities/hover-exclusive';
 
 	interface Props {
@@ -29,7 +29,6 @@
 	let provider = $derived(providerFor(sub.cname));
 	let ProviderIcon = $derived(provider ? PROVIDER_KIND_ICONS[provider.kind] : null);
 	let hygiene = $derived(sortChecks(sub.hygiene_issues ?? []));
-	let hygieneTone = $derived(worstTone(hygiene));
 	let hygieneCounts = $derived(toneCounts(hygiene));
 
 	let hoverOpen = $state(false);
@@ -61,7 +60,7 @@
 			<div class="flex flex-col gap-2 p-3 text-xs">
 				<div class="flex items-center gap-2">
 					<span class="size-2 rounded-full {STATUS_DOT[httpStatusClass(sub.http_status)]}"></span>
-					<span class="font-mono font-medium">{sub.http_status ?? 'No HTTP'}</span>
+					<span class="font-mono font-medium">{sub.http_status ?? 'No HTTP service'}</span>
 					<span class="text-muted-foreground">{httpStatusReason(sub.http_status)}</span>
 				</div>
 				{#if sub.page_title}
@@ -97,14 +96,16 @@
 					</p>
 				{/if}
 				{#if (sub.title_count ?? 0) > 1}
-					<p class="text-muted-foreground">Same page on {(sub.title_count ?? 0) - 1} other hosts</p>
+					<p class="text-muted-foreground">
+						Same title on {(sub.title_count ?? 0) - 1} other web assets
+					</p>
 				{/if}
 				{#if sub.cross_links?.length}
 					<div class="flex flex-wrap items-center gap-1">
 						<CrossLinks links={sub.cross_links} />
 					</div>
 				{/if}
-				{#if hygiene.length && hygieneTone}
+				{#if hygiene.length}
 					<div class="flex flex-col gap-1">
 						<p class="text-muted-foreground tabular-nums">
 							{[
@@ -116,7 +117,8 @@
 						</p>
 						<div class="flex flex-wrap gap-1">
 							{#each hygiene.slice(0, MAX_HYGIENE) as key (key)}
-								<Badge variant="outline" class="font-normal {TONE_CHIP[hygieneTone]}">
+								{@const spec = CHECK_BY_KEY[key]}
+								<Badge variant="outline" class="font-normal {spec ? TONE_CHIP[spec.tone] : ''}">
 									{checkLabel(key)}
 								</Badge>
 							{/each}

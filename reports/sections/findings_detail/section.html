@@ -62,7 +62,7 @@
       {% endfor %}
     </ul>
     {% endif %}
-    {% if row.more %}<p class="micro faint">{{ row.more|num }} further locations are listed in the asset appendix.</p>{% endif %}
+    {% if row.more %}<p class="micro faint">{{ row.more|num }} further locations are {{ 'listed in the asset appendix' if appendix else 'not listed' }}.</p>{% endif %}
 
     {% if cfg.show_remediation and issue.remediation %}
     <h5>Remediation</h5>
@@ -83,8 +83,9 @@
     <pre class="evidence evidence--tall">{{ row.response }}</pre>
     {% endif %}
 
-    {% if cfg.show_screenshot and sample.screenshot %}
-    <figure class="figure"><img class="shot" src="{{ sample.screenshot }}" alt=""><figcaption class="figcaption">{{ sample.host }}</figcaption></figure>
+    {% set src = sample.screenshot|shot if cfg.show_screenshot else '' %}
+    {% if src %}
+    <figure class="figure"><img class="shot" src="{{ src }}" alt=""><figcaption class="figcaption">{{ sample.host }}</figcaption></figure>
     {% endif %}
 
     {% if row.controls %}

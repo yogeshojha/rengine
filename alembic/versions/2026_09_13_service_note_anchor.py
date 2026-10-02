@@ -16,17 +16,7 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    op.execute(
-        """
-        UPDATE notes
-           SET asset_key = '[' || regexp_replace(asset_key, ':[0-9]+$', '')
-                        || ']:' || regexp_replace(asset_key, '^.*:([0-9]+)$', '\\1')
-         WHERE dimension = 'services'
-           AND asset_key NOT LIKE '[%'
-           AND asset_key ~ '^[0-9A-Fa-f:]+:[0-9]+$'
-           AND asset_key ~ ':.*:.*:'
-        """
-    )
+    pass
 
 
 def downgrade() -> None:

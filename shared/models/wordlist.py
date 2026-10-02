@@ -46,11 +46,6 @@ class WordlistRead(BaseModel):
     updated_at: datetime
 
 
-class WordlistUpdate(BaseModel):
-    name: str | None = PydanticField(default=None, max_length=200)
-    description: str | None = PydanticField(default=None, max_length=1000)
-
-
 class WordlistFile(BaseModel):
     filename: str = PydanticField(max_length=200)
     content: str

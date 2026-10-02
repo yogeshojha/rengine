@@ -12,13 +12,12 @@
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
-	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import MailIcon from '@lucide/svelte/icons/mail';
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
 	import CircleSlashIcon from '@lucide/svelte/icons/circle-slash';
-	import { formatDate } from '$lib/utilities';
-	import { getInitials } from '$lib/utilities';
+	import { formatDate } from '$lib/utilities/dates';
+	import { getInitials } from '$lib/utilities/strings';
 </script>
 
 <svelte:head><title>{pageTitle(routeLabels.profile)}</title></svelte:head>
@@ -28,8 +27,8 @@
 
 	<Card.Root class="overflow-hidden">
 		<Card.Content class="pt-0">
-			<div class="mb-6">
-				<div class="flex items-center gap-4 mb-4">
+			<div>
+				<div class="flex items-center gap-4">
 					<Avatar.Root class="size-14 rounded-md border">
 						<Avatar.Fallback
 							class="rounded-md bg-primary text-primary-foreground text-lg font-semibold"
@@ -38,16 +37,16 @@
 						</Avatar.Fallback>
 					</Avatar.Root>
 
-					<div class="flex-1">
-						<div class="flex items-baseline gap-2 mb-0.5">
+					<div class="min-w-0 flex-1">
+						<div class="flex flex-wrap items-baseline gap-x-2 mb-0.5">
 							<h2 class="text-xl font-semibold">{auth.user?.username}</h2>
 							{#if auth.user?.is_superuser}
 								<Badge variant="secondary" class="h-5 text-xs px-2">{ROLE_LABELS.admin}</Badge>
 							{/if}
 						</div>
-						<div class="flex items-center gap-3 text-sm text-muted-foreground">
-							<span class="flex items-center gap-1.5">
-								<MailIcon class="w-3.5 h-3.5" />
+						<div class="flex flex-wrap items-center gap-x-3 text-sm text-muted-foreground">
+							<span class="flex min-w-0 items-center gap-1.5 wrap-anywhere">
+								<MailIcon class="w-3.5 h-3.5 shrink-0" />
 								{auth.user?.email}
 							</span>
 							<span class="text-xs">•</span>
@@ -63,7 +62,6 @@
 						</div>
 					</div>
 				</div>
-				<Separator />
 			</div>
 		</Card.Content>
 	</Card.Root>

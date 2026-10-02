@@ -11,16 +11,6 @@ export const notificationsApi = {
 		);
 	},
 
-	listUnread: (
-		page = 1,
-		size = 20,
-		projectId?: string
-	): Promise<PaginatedResponse<Notification>> => {
-		return api.get<PaginatedResponse<Notification>>(
-			`/notifications/unread?page=${page}&size=${size}${scope(projectId)}`
-		);
-	},
-
 	stats: (projectId?: string): Promise<NotificationStats> => {
 		return api.get<NotificationStats>(
 			`/notifications/stats${projectId ? `?project_id=${projectId}` : ''}`

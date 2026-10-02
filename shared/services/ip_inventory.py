@@ -6,7 +6,7 @@ import ipaddress
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import text
+from sqlalchemy import func, text
 from sqlalchemy.dialects.postgresql import insert
 
 from shared.enums.ip import IpSource
@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
 MAX_IPS = 100_000
+_UPSERT_BATCH = 5_000
 
 # every table a scan can park an IP in
 _COLLECT_SQL = """
@@ -90,6 +91,57 @@ def materialize(
     enrich_addresses(session, scan_id=scan_id, ips=ips)
     session.commit()
     return int(result.rowcount or 0)
+
+
+def materialize_rows(
+    session: Session,
+    *,
+    scan_id: uuid.UUID,
+    target_id: uuid.UUID,
+    project_id: uuid.UUID,
+    rows: list[dict],
+) -> int:
+    """Upsert addresses that carry their own source, prefix and ASN."""
+    by_ip: dict[str, dict] = {}
+    for row in rows:
+        by_ip.setdefault(row["ip"], row)
+    if not by_ip:
+        return 0
+    now = utc_now()
+    ips = sorted(by_ip)
+    values = [
+        {
+            "id": uuid.uuid4(),
+            "scan_id": scan_id,
+            "target_id": target_id,
+            "project_id": project_id,
+            "ip": ip,
+            "version": by_ip[ip]["version"],
+            "source": by_ip[ip]["source"],
+            "prefix": by_ip[ip].get("prefix"),
+            "asn": by_ip[ip].get("asn"),
+            "ptr_hostnames": [],
+            "is_cdn": False,
+            "discovered_at": now,
+            "created_at": now,
+        }
+        for ip in ips
+    ]
+    written = 0
+    for start in range(0, len(values), _UPSERT_BATCH):
+        statement = insert(IpAddress).values(values[start : start + _UPSERT_BATCH])
+        statement = statement.on_conflict_do_update(
+            constraint="uq_ipaddress_scan_ip",
+            set_={
+                "prefix": func.coalesce(IpAddress.prefix, statement.excluded.prefix),
+                "asn": func.coalesce(IpAddress.asn, statement.excluded.asn),
+            },
+        )
+        written += int(session.execute(statement).rowcount or 0)
+    session.commit()
+    enrich_addresses(session, scan_id=scan_id, ips=ips)
+    session.commit()
+    return written
 
 
 def ensure(

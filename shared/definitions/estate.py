@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from enum import StrEnum
 from functools import lru_cache
 
@@ -59,18 +60,6 @@ ESTATE_REASON_ORDER: tuple[str, ...] = (
     EstateReason.ADDRESS.value,
 )
 
-ESTATE_STRENGTH_LABELS: dict[str, str] = {
-    EstateStrength.DIRECT.value: "Direct",
-    EstateStrength.SHARED.value: "Shared",
-}
-
-PROVIDER_KIND_LABELS: dict[str, str] = {
-    ProviderKind.EDGE.value: "Edge",
-    ProviderKind.HOSTING.value: "Hosting",
-    ProviderKind.DNS.value: "Nameservers",
-    ProviderKind.MAIL.value: "Mail",
-}
-
 # a certificate naming more registrable domains than this is a platform's
 NEIGHBOUR_MAX_NAMES = 5
 MAX_ESTATE_DOMAINS = 60
@@ -84,7 +73,7 @@ MAX_ENRICH_PER_TICK = 40
 MAX_DOSSIER_PORTS = 8
 MAX_REGISTRAR_LENGTH = 200
 
-# suffix -> provider name, for hosts that are a platform's rather than an estate's
+# suffix -> provider name
 PROVIDER_SUFFIXES: dict[str, str] = {
     "azurefd.net": "Azure Front Door",
     "azureedge.net": "Azure CDN",
@@ -156,7 +145,6 @@ PROVIDER_SUFFIXES: dict[str, str] = {
     "pphosted.com": "Proofpoint",
     "mimecast.com": "Mimecast",
     "cloudns.net": "ClouDNS",
-    "awsdns-00.com": "Route 53",
     "domaincontrol.com": "GoDaddy",
     "registrar-servers.com": "Namecheap",
     "dnsmadeeasy.com": "DNS Made Easy",
@@ -174,6 +162,22 @@ PROVIDER_SUFFIXES: dict[str, str] = {
     "plesk.page": "Plesk",
 }
 
+EDGE_PROVIDERS = frozenset(
+    {
+        "Azure Front Door",
+        "Azure CDN",
+        "Azure Traffic Manager",
+        "CloudFront",
+        "Cloudflare",
+        "Akamai",
+        "Fastly",
+        "Imperva",
+        "Sucuri",
+    }
+)
+
+_ROUTE53 = re.compile(r"awsdns-\d{2}\.(?:com|net|org|co\.uk)")
+
 
 @lru_cache(maxsize=PURE_CACHE)
 def provider_of(host: str) -> str | None:
@@ -181,6 +185,9 @@ def provider_of(host: str) -> str | None:
     name = (host or "").strip().lower().rstrip(".").removeprefix("*.")
     if "." not in name or " " in name:
         return None
+    apex = registrable_domain(name)
+    if _ROUTE53.fullmatch(apex):
+        return "Route 53"
     labels = name.split(".")
     for i in range(len(labels) - 1):
         suffix = ".".join(labels[i:])
@@ -189,9 +196,6 @@ def provider_of(host: str) -> str | None:
     edge = shared_edge(name)
     if edge:
         return edge
-    apex = registrable_domain(name)
-    if apex in VENDOR_DOMAINS:
-        return apex
-    if is_shared_nameserver(name):
+    if apex in VENDOR_DOMAINS or is_shared_nameserver(name):
         return apex
     return takeover_provider(name)

@@ -8,6 +8,8 @@ dependencies = [
     "cryptography>=42",
     "apprise>=1.9.0",
     "croniter>=2.0.0",
+    "dnstwist>=20250130",
+    "ppdeep>=20260221",
 ]
 
 
@@ -15,8 +17,5 @@ dependencies = [
 requires = ["setuptools>=81.0"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools.packages.find]
-where = ["."]
-
-[tool.setuptools.package-data]
-"shared.definitions" = ["data/*.json"]
+[tool.setuptools]
+packages = []

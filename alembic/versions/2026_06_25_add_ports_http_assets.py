@@ -4,8 +4,6 @@ Revision ID: e7c9a1b3d5f8
 Revises: d6b8f0a2c4e7
 Create Date: 2026-06-25 14:00:00.000000+00:00
 
-Expansion-phase assets: open Ports (naabu) and enriched HttpAssets (httpx + tlsx),
-plus the http_assets headline rollup on scans.
 """
 
 from collections.abc import Sequence
@@ -177,7 +175,6 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_http_assets_project_id"), table_name="http_assets")
     op.drop_index(op.f("ix_http_assets_target_id"), table_name="http_assets")
     op.drop_index(op.f("ix_http_assets_scan_id"), table_name="http_assets")
-    op.drop_index(op.f("ix_http_assets_id"), table_name="http_assets")
     op.drop_table("http_assets")
 
     op.drop_index(op.f("ix_ports_number"), table_name="ports")
@@ -185,7 +182,6 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_ports_project_id"), table_name="ports")
     op.drop_index(op.f("ix_ports_target_id"), table_name="ports")
     op.drop_index(op.f("ix_ports_scan_id"), table_name="ports")
-    op.drop_index(op.f("ix_ports_id"), table_name="ports")
     op.drop_table("ports")
 
     op.drop_column("scans", "http_assets_found")

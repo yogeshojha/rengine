@@ -16,12 +16,15 @@ export interface WhoisSummaryData {
 	lookup_type: WhoisLookupType;
 	name: string;
 	registrant_name: string;
+	registrant_email?: string;
 	registrar_name: string;
+	nameservers?: string[] | null;
 	country: string;
 	network_cidr: string;
 	registration_date: string | null;
 	expiration_date: string | null;
 	queried_at: string;
+	registrant_redacted: boolean;
 }
 
 export interface DnsSummaryData {
@@ -92,6 +95,17 @@ export interface Target extends TargetBase {
 
 export type SeedKind = 'host' | 'address' | 'url';
 
+export type EnrichmentKind = 'whois' | 'dns' | 'bgp';
+
+export const HOSTNAME_TARGET_TYPES: readonly TargetType[] = [TargetType.DOMAIN, TargetType.URL];
+export const NETWORK_TARGET_TYPES: readonly TargetType[] = [
+	TargetType.IP,
+	TargetType.IP_RANGE,
+	TargetType.ASN
+];
+export const dnsApplies = (t: TargetType) => HOSTNAME_TARGET_TYPES.includes(t);
+export const bgpApplies = (t: TargetType) => NETWORK_TARGET_TYPES.includes(t);
+
 export interface TargetSeed {
 	id: string;
 	kind: SeedKind;
@@ -135,6 +149,7 @@ export interface TargetValidationResponse {
 	target_type: TargetType | null;
 	error: string | null;
 	target_value: string;
+	target_id: string | null;
 }
 
 export interface TargetBulkCreateRequest {
@@ -186,13 +201,9 @@ export interface TargetPreviewItem {
 
 export interface EnrichmentRefreshResponse {
 	target_id: string;
-	enrichment_type: string;
+	enrichment_type: EnrichmentKind;
 	status: string;
 	message: string;
-}
-
-export function getTargetTypeColor(_type: TargetType): string {
-	return 'bg-muted/60 text-foreground/70 border-border/60';
 }
 
 export function formatTargetType(type: TargetType): string {
@@ -211,7 +222,7 @@ export function formatTargetTypePlural(type: TargetType): string {
 	return TARGET_TYPE_PLURALS[type] ?? `${formatTargetType(type)}s`;
 }
 
-export function targetAssetNoun(_type: string, count = 2): string {
+export function targetAssetNoun(count = 2): string {
 	const spec = SURFACE[SurfaceDimension.WEB_ASSETS];
 	return count === 1 ? spec.noun : spec.nounPlural;
 }

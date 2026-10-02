@@ -1,7 +1,10 @@
 import logging
+import time
+from uuid import UUID
 
 from fastapi import HTTPException, status
 
+from app.config import settings
 from shared.redis import async_client
 
 logger = logging.getLogger(__name__)
@@ -82,3 +85,24 @@ async def clear_token_grace(jti: str) -> None:
         await async_client().delete(f"grace:jti:{jti}")
     except Exception as exc:
         logger.warning("token grace clear unavailable for %s: %s", jti, exc)
+
+
+async def revoke_user_tokens(user_id: UUID) -> None:
+    """Refuse every token issued to the user before this millisecond."""
+    try:
+        await async_client().set(
+            f"auth:valid-after:{user_id}",
+            time.time_ns() // 1_000_000,
+            ex=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
+        )
+    except Exception as exc:
+        logger.warning("session revoke unavailable for %s: %s", user_id, exc)
+
+
+async def tokens_valid_after(user_id: UUID) -> int | None:
+    try:
+        raw = await async_client().get(f"auth:valid-after:{user_id}")
+    except Exception as exc:
+        logger.warning("session revoke check unavailable for %s: %s", user_id, exc)
+        return None
+    return int(raw) if raw is not None else None

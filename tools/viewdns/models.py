@@ -11,23 +11,6 @@ class ViewDNSLookupType(StrEnum):
     REVERSE_WHOIS = "reverse_whois"
 
 
-class IPHistoryRecord(BaseModel):
-    ip: str = ""
-    location: str = ""
-    owner: str = ""
-    last_seen: date | None = None
-
-
-class IPHistoryResponse(BaseModel):
-    lookup_type: ViewDNSLookupType = ViewDNSLookupType.IP_HISTORY
-    domain: str
-    records: list[IPHistoryRecord] = Field(default_factory=list)
-
-    @property
-    def unique_ips(self) -> list[str]:
-        return list({r.ip for r in self.records if r.ip})
-
-
 class ReverseIPDomain(BaseModel):
     name: str = ""
     last_resolved: date | None = None
@@ -64,9 +47,7 @@ class ReverseWhoisResponse(BaseModel):
     matches: list[ReverseWhoisMatch] = Field(default_factory=list)
 
 
-ViewDNSResponse = (
-    IPHistoryResponse | ReverseIPResponse | ReverseNSResponse | ReverseWhoisResponse
-)
+ViewDNSResponse = ReverseIPResponse | ReverseNSResponse | ReverseWhoisResponse
 
 
 # readmodel for FE
@@ -79,3 +60,22 @@ class ViewDNSCacheRead(BaseModel):
     cached: bool = False
     queried_at: datetime | None = None
     data: ViewDNSResponse
+
+
+MAX_COUNT_QUERIES = 200
+
+
+class CachedCountQuery(BaseModel):
+    source: ViewDNSLookupType
+    query: str = Field(min_length=1, max_length=500)
+    exclude: str = Field(default="", max_length=500)
+
+
+class CachedCountsRequest(BaseModel):
+    queries: list[CachedCountQuery] = Field(max_length=MAX_COUNT_QUERIES)
+
+
+class CachedCount(BaseModel):
+    source: ViewDNSLookupType
+    query: str
+    count: int | None

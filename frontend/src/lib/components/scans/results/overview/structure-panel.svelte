@@ -15,6 +15,7 @@
 	import type { RankedRow } from './ranked-list.svelte';
 	import { ENDPOINT_CLASS_FILL, EndpointClass } from '$lib/config/endpoints';
 	import type { ScanStructure } from '$lib/utilities/endpoints';
+	import { plural } from '$lib/utilities/strings';
 
 	interface Props {
 		structure: ScanStructure | null;
@@ -32,9 +33,6 @@
 		exposed_file: ShieldAlert,
 		archive_only: Archive
 	} as const;
-
-	const plural = (n: number, one: string, many: string) =>
-		`${n.toLocaleString()} ${n === 1 ? one : many}`;
 
 	function pick(filter: string) {
 		onTab(EP.tab, filter);
@@ -111,7 +109,7 @@
 				<p class="min-w-0 text-sm">{structure.headline}</p>
 			{/if}
 			<div class="ml-auto flex flex-wrap items-center gap-2">
-				{#if structure.with_params && !structure.headline?.endsWith('accept input')}
+				{#if structure.with_params && (structure.findings.some((f) => f.kind === 'auth_boundary' || f.kind === 'exposed_file') || structure.shared_paths.length)}
 					<Button
 						variant="outline"
 						size="sm"

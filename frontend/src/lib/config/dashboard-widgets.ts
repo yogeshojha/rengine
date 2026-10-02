@@ -44,7 +44,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetSpec[] = [
 	{ id: 'inventory', label: 'Inventory', row: 'estate', modes: BOTH, skeleton: 'list' },
 	{ id: 'changes', label: 'Attack surface changes', row: 'estate', modes: BOTH, skeleton: 'bars' },
 	{ id: 'geo', label: 'Geography', row: 'estate', modes: BOTH, skeleton: 'map' },
-	{ id: 'board', label: 'Board', row: 'findings', modes: BOTH, skeleton: 'board' },
+	{ id: 'board', label: 'Findings', row: 'findings', modes: BOTH, skeleton: 'board' },
 	{
 		id: 'findings-trend',
 		label: 'Findings by severity',
@@ -97,8 +97,6 @@ export const DASHBOARD_WIDGETS: DashboardWidgetSpec[] = [
 	},
 	{ id: 'activity', label: 'Activity', row: 'composition', modes: BOTH, skeleton: 'list' }
 ];
-
-export type DashboardWidgetId = (typeof DASHBOARD_WIDGETS)[number]['id'];
 
 export const widgetSpec = (id: string) => DASHBOARD_WIDGETS.find((w) => w.id === id);
 

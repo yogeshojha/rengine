@@ -21,25 +21,24 @@
 		brandSegments,
 		techniqueLabel
 	} from '$lib/config/lookalikes';
-	import { formatDateTime, relativeTime } from '$lib/utilities/dates';
+	import { MS_PER_DAY, formatDateTime, relativeTime } from '$lib/utilities/dates';
 	import type { LookalikeRead } from '$lib/types/lookalike';
 
 	interface Props {
 		row: LookalikeRead;
-		review: string;
 		onReview: (next: LookalikeState) => void;
 	}
 
-	let { row, review, onReview }: Props = $props();
+	let { row, onReview }: Props = $props();
 
 	const RECENT_DAYS = 30;
-	const DAY_MS = 86_400_000;
 
 	let open = $state(false);
 	let spec = $derived(VERDICT_BY_KEY[row.verdict]);
 	let tone = $derived(spec ? SEVERITY_CHIP[spec.severity] : null);
 	let recent = $derived(
-		!!row.registered_at && Date.now() - new Date(row.registered_at).getTime() < RECENT_DAYS * DAY_MS
+		!!row.registered_at &&
+			Date.now() - new Date(row.registered_at).getTime() < RECENT_DAYS * MS_PER_DAY
 	);
 	let addresses = $derived([...row.a, ...row.aaaa]);
 	let title = $derived(row.title ? brandSegments(row.title, brandOf(row.apex)) : []);
@@ -143,17 +142,17 @@
 					{/snippet}
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content align="end" class="w-48">
-					{#if review !== LookalikeState.REVIEWED}
+					{#if row.state !== LookalikeState.REVIEWED}
 						<DropdownMenu.Item onclick={() => onReview(LookalikeState.REVIEWED)}>
 							<Check class="mr-2 size-3.5" /> Mark reviewed
 						</DropdownMenu.Item>
 					{/if}
-					{#if review !== LookalikeState.IGNORED}
+					{#if row.state !== LookalikeState.IGNORED}
 						<DropdownMenu.Item onclick={() => onReview(LookalikeState.IGNORED)}>
 							<EyeOff class="mr-2 size-3.5" /> Ignore
 						</DropdownMenu.Item>
 					{/if}
-					{#if review !== LookalikeState.OPEN}
+					{#if row.state !== LookalikeState.OPEN}
 						<DropdownMenu.Item onclick={() => onReview(LookalikeState.OPEN)}>
 							<RotateCcw class="mr-2 size-3.5" /> Reopen
 						</DropdownMenu.Item>

@@ -1,9 +1,7 @@
-"""A section is a unit of the document: what it needs, what it configures, what it renders."""
-
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar
 
@@ -25,8 +23,6 @@ class RenderContext:
     brief: ReportBrief
     narrator: Narrator
     now: datetime
-    preview: bool = False
-    warnings: list[str] = field(default_factory=list)
 
     @property
     def style(self):
@@ -57,10 +53,6 @@ class RenderContext:
         scale = self.theme.color.chart or [self.theme.color.accent]
         return scale[index % len(scale)]
 
-    def warn(self, message: str) -> None:
-        if message not in self.warnings:
-            self.warnings.append(message)
-
 
 class Section(ABC):
     name: ClassVar[str]
@@ -87,4 +79,4 @@ class Section(ABC):
 
     @abstractmethod
     def build(self, ctx: RenderContext, cfg: SectionConfig) -> dict | None:
-        """Template variables, or None when the section has nothing to say."""
+        """Template variables, or None to skip the section."""

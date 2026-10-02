@@ -10,8 +10,9 @@ from sqlmodel import select
 
 from mcp import links
 from mcp.context import ToolContext
+from mcp.errors import ToolError
 from mcp.result import ToolResult
-from mcp.tools._scope import find_target
+from mcp.tools._scope import find_target, in_scope, parse_id
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.definitions.compare import Comparability
 from shared.enums.scan import SCAN_OPEN_STATUSES, ScanScope
@@ -143,13 +144,13 @@ class CompareRuns(Tool):
         self, ctx: ToolContext, args: Input
     ) -> tuple[_uuid.UUID, _uuid.UUID | None, _uuid.UUID]:
         if args.current:
-            current_id = _uuid.UUID(args.current)
+            current_id = parse_id(args.current, "current")
             scan = await ctx.session.get(Scan, current_id)
             if scan is None:
                 msg = f"No run with id {args.current}."
-                raise ValueError(msg)
-            ctx.check_project(scan.project_id)
-            baseline = _uuid.UUID(args.baseline) if args.baseline else None
+                raise ToolError(msg)
+            await in_scope(ctx, scan.project_id)
+            baseline = parse_id(args.baseline, "baseline")
             return current_id, baseline, scan.project_id
 
         target = await find_target(ctx, args.target or "")
@@ -172,7 +173,7 @@ class CompareRuns(Tool):
         )
         if len(rows) < NEEDED_RUNS:
             msg = f"{target.target_value} has fewer than two finished full runs."
-            raise ValueError(msg)
+            raise ToolError(msg)
         return rows[0].id, rows[1].id, target.project_id
 
     def _caveats(self, report) -> list[str]:

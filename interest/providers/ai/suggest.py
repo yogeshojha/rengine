@@ -1,20 +1,21 @@
-"""What AI found, turned into a rule that works without it."""
-
 from __future__ import annotations
 
 import json
+from typing import TYPE_CHECKING
 
 from interest.providers.ai.prompt import json_array
-from shared.definitions.ai import AITask
+from shared.definitions.ai import TASK_FEATURE, AITask
 from shared.definitions.asset_query import FLAGS, HOST_QUERY, FieldType
 from shared.definitions.interest import MAX_RULE_NAME, coerce_kind, kind_label
-from shared.logging import get_logger
-from shared.services.ai.cache import narrate
+from shared.services.ai.cache import narrate_async
 from shared.utils.text import strip_control
 
-logger = get_logger(__name__)
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
-FEATURE = "rule_suggestions"
+    from shared.services.ai.config import AIConfig
+
+FEATURE = TASK_FEATURE[AITask.RULE_SUGGESTION.value]
 MAX_SUGGESTIONS = 3
 MAX_EXAMPLES = 40
 MAX_QUERY_CHARS = 300
@@ -85,11 +86,12 @@ def parse(text: str) -> list[dict]:
     return out
 
 
-def propose(session, cfg, rows: list[dict]) -> list[dict]:
-    """None of this is stored until a person approves it."""
-    if not cfg or not cfg.allows(FEATURE) or not rows:
+async def propose_async(
+    session: AsyncSession, cfg: AIConfig, rows: list[dict]
+) -> list[dict]:
+    if not cfg.allows(FEATURE):
         return []
-    answer = narrate(
+    text = await narrate_async(
         session,
         cfg,
         task=AITask.RULE_SUGGESTION.value,
@@ -98,6 +100,4 @@ def propose(session, cfg, rows: list[dict]) -> list[dict]:
         subject=f"{len(rows)} judged assets",
         fast=True,
     )
-    if not answer:
-        return []
-    return parse(answer)
+    return parse(text) if text else []

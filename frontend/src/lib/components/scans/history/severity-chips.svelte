@@ -1,11 +1,12 @@
 <script lang="ts">
 	import * as HoverCard from '$lib/components/ui/hover-card';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import Hint from '$lib/components/hint.svelte';
-	import { SEVERITY_LABELS } from '$lib/config/vulnerabilities';
+	import { SEVERITY_CHIP, SEVERITY_LABELS } from '$lib/config/vulnerabilities';
 	import { evidenceLabel } from '$lib/config/evidence';
 	import type { ScanFindings } from '$lib/types/scan';
 	import type { VulnerabilityRead } from '$lib/utilities/vulns';
-	import { SEV_CHIP, findingsOf, findingsHref, findingHref } from './findings';
+	import { findingsOf, findingsHref, findingHref } from './findings';
 	import { historyPrefs } from './prefs.svelte';
 
 	const PREVIEW = 6;
@@ -62,7 +63,7 @@
 					<HoverCard.Trigger
 						href={findingsHref(scanId, [c.sev])}
 						onclick={(e: MouseEvent) => e.stopPropagation()}
-						class="inline-flex h-6 min-w-8 items-center justify-center rounded-md px-1.5 font-mono text-xs font-semibold tabular-nums transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {SEV_CHIP[
+						class="inline-flex h-6 min-w-8 items-center justify-center rounded-md px-1.5 font-mono text-xs font-semibold tabular-nums transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {SEVERITY_CHIP[
 							c.sev
 						].chip} {highlight === c.sev ? 'ring-2 ring-current/40' : ''}"
 						aria-label="{c.n} {SEVERITY_LABELS[c.sev].toLowerCase()} {c.n === 1
@@ -73,7 +74,7 @@
 					</HoverCard.Trigger>
 					<HoverCard.Content class="w-96 p-0" align="start">
 						<div class="flex items-center justify-between border-b px-3 py-2">
-							<span class="text-xs font-medium {SEV_CHIP[c.sev].ink}">
+							<span class="text-xs font-medium {SEVERITY_CHIP[c.sev].ink}">
 								{c.n}
 								{SEVERITY_LABELS[c.sev].toLowerCase()}
 							</span>
@@ -89,7 +90,7 @@
 						{:else if !items[c.sev]}
 							<div class="space-y-2 px-3 py-3">
 								{#each { length: Math.min(c.n, 3) } as _, i (i)}
-									<div class="h-3.5 animate-pulse rounded bg-muted"></div>
+									<Skeleton class="h-3.5 rounded" />
 								{/each}
 							</div>
 						{:else}

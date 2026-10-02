@@ -181,11 +181,6 @@ export const SOURCE_LABELS: Record<string, string> = {
 	[EndpointSource.OTHER]: 'Other'
 };
 
-export const COVERAGE_SOURCE_LABELS: Record<string, string> = {
-	...SOURCE_LABELS,
-	[PROBE_COVERAGE_SOURCE]: 'Verification'
-};
-
 export enum NoiseRule {
 	STATIC = 'static',
 	ARTIFACT = 'artifact',
@@ -234,23 +229,6 @@ export const NOISE_RULE_LABELS: Record<string, string> = {
 	[NoiseRule.OFF_SCOPE]: 'Redirect out of scope'
 };
 
-export const NOISE_RULE_HELP: Record<string, string> = {
-	[NoiseRule.STATIC]: 'Images, fonts, media and stylesheets.',
-	[NoiseRule.ARTIFACT]: 'Template literals, quotes and JavaScript values read as URLs.',
-	[NoiseRule.PLATFORM]: 'Feeds, oEmbed, print views, comment replies and CDN paths.',
-	[NoiseRule.FAMILY]: 'URLs that differ from a kept one only by an identifier.',
-	[NoiseRule.LOCALE]: 'The same path under another language prefix.',
-	[NoiseRule.SIBLINGS]: 'Children of one folder past the cap, of one kind.',
-	[NoiseRule.NOT_FOUND]:
-		'The response matches what the host answers for a path that does not exist.',
-	[NoiseRule.SAME_RESPONSE]: 'Byte-identical to a kept response on the host.',
-	[NoiseRule.SAME_REDIRECT]: 'Redirects where a kept URL on the host already redirects.',
-	[NoiseRule.CATCH_ALL]: "The site root's response served at another path.",
-	[NoiseRule.SIMILAR_RESPONSE]: 'Same status, title and size as ten or more kept responses.',
-	[NoiseRule.ARCHIVE_ROT]: 'Known only from archives and gone.',
-	[NoiseRule.OFF_SCOPE]: 'Redirects to a host outside the scan.'
-};
-
 export const SOURCE_ICONS: Record<string, IconComponent> = {
 	[EndpointSource.SEED]: Home,
 	[EndpointSource.RESPONSE_MINING]: FileSearch,
@@ -278,11 +256,6 @@ export const PASSIVE_SOURCES: ReadonlySet<string> = new Set([
 	EndpointSource.PROXY,
 	EndpointSource.IMPORT,
 	EndpointSource.OTHER
-]);
-
-export const ARCHIVE_SOURCES: ReadonlySet<string> = new Set([
-	EndpointSource.ARCHIVE,
-	EndpointSource.DEEP_ARCHIVE
 ]);
 
 export const API_DOC_INTEREST = 'api_doc';

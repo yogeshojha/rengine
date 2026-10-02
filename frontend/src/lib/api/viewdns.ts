@@ -1,14 +1,7 @@
 import { api } from './client';
-import type { ViewDNSCacheRead } from '$lib/types/viewdns';
+import type { CachedCount, CachedCountQuery, ViewDNSCacheRead } from '$lib/types/viewdns';
 
 export const viewdnsApi = {
-	async ipHistory(domain: string, cachedOnly: boolean = false): Promise<ViewDNSCacheRead | null> {
-		const params = cachedOnly ? '?cached_only=true' : '';
-		return api.get<ViewDNSCacheRead | null>(
-			`/tools/viewdns/ip-history/${encodeURIComponent(domain)}${params}`
-		);
-	},
-
 	async reverseIp(host: string, cachedOnly: boolean = false): Promise<ViewDNSCacheRead | null> {
 		const params = cachedOnly ? '?cached_only=true' : '';
 		return api.get<ViewDNSCacheRead | null>(
@@ -30,5 +23,9 @@ export const viewdnsApi = {
 		const params = new URLSearchParams({ q: query });
 		if (cachedOnly) params.append('cached_only', 'true');
 		return api.get<ViewDNSCacheRead | null>(`/tools/viewdns/reverse-whois?${params.toString()}`);
+	},
+
+	async cachedCounts(queries: CachedCountQuery[]): Promise<CachedCount[]> {
+		return api.post<CachedCount[]>('/tools/viewdns/cached-counts', { queries });
 	}
 };

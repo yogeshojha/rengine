@@ -88,4 +88,4 @@ async def test_activity_under_a_scope_lists_only_its_runs(estate, now):
     )
 
     assert out.events
-    assert {e.target_id for e in out.events} == {one}
+    assert {e.scan_id for e in out.events} == {estate.scans["one"]}

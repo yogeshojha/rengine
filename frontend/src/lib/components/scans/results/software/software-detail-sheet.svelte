@@ -13,8 +13,9 @@
 	import TechIcon from '../tech-icon.svelte';
 	import { relativeTimeLong } from '$lib/utilities/dates';
 	import { plural } from '$lib/utilities/strings';
+	import { bracketed } from '$lib/utilities/net';
 	import { SEVERITY_TEXT, severityLabel } from '$lib/config/vulnerabilities';
-	import { CAVEAT_HELP, CONFIDENCE_HELP, CONFIDENCE_VARIANT } from '$lib/config/software';
+	import { CAVEAT_HELP, CONFIDENCE_HELP, CONFIDENCE_VARIANT, nvdUrl } from '$lib/config/software';
 	import type { SoftwareCve } from '$lib/types/software';
 
 	interface Props {
@@ -25,7 +26,6 @@
 
 	let { row, open, onOpenChange }: Props = $props();
 
-	const NVD = 'https://nvd.nist.gov/vuln/detail/';
 	const DT = 'text-2xs tracking-wide text-muted-foreground uppercase';
 	let epss = $derived(row?.epss_score == null ? null : Math.round(row.epss_score * 100));
 	let location = $derived(row ? (row.host ?? row.ip ?? '') : '');
@@ -38,7 +38,7 @@
 				<Sheet.Title class="flex items-center gap-2 font-mono text-base break-all">
 					{row.cve}
 					<a
-						href={`${NVD}${row.cve}`}
+						href={nvdUrl(row.cve)}
 						target="_blank"
 						rel="noreferrer noopener"
 						class="text-muted-foreground hover:text-foreground"
@@ -101,7 +101,7 @@
 									{row.fixed_in}
 									{#if row.fixed_in_assets}
 										<span class="text-muted-foreground">
-											· {plural(row.fixed_in_assets, 'asset')} in this scan
+											· {plural(row.fixed_in_assets, 'asset')} on the same target
 										</span>
 									{/if}
 								</dd>
@@ -163,7 +163,9 @@
 						<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
 							<dt class={DT}>Asset</dt>
 							<dd class="break-all">
-								{location}{#if row.port}<span class="text-muted-foreground">:{row.port}</span>{/if}
+								{bracketed(location)}{#if row.port}<span class="text-muted-foreground"
+										>:{row.port}</span
+									>{/if}
 							</dd>
 							{#if row.url}
 								<dt class={DT}>URL</dt>

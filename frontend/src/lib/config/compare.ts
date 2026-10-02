@@ -51,7 +51,7 @@ export const COMPARABILITY_LABEL: Record<Comparability, string> = {
 	[COMPARABILITY.LIKE_FOR_LIKE]: 'Comparable',
 	[COMPARABILITY.SETTINGS_DIFFER]: 'Settings differ',
 	[COMPARABILITY.QUALITY_DIFFERS]: 'Runs differ in depth',
-	[COMPARABILITY.NOT_COVERED]: 'Not scanned'
+	[COMPARABILITY.NOT_COVERED]: 'Coverage differs'
 };
 
 export const COMPARABILITY_TONE: Record<Comparability, 'success' | 'warning' | 'muted'> = {
@@ -77,19 +77,19 @@ export const SIGNAL: Record<string, SignalSpec> = {
 	service_opened: { label: 'Service opened', icon: DoorOpen, tone: 'notice' },
 	cert_expired: { label: 'Certificate expired', icon: FileBadge, tone: 'warning' },
 	posture_weakened: { label: 'Sender policy weakened', icon: MailWarning, tone: 'warning' },
-	waf_gone: { label: 'WAF no longer answering', icon: ShieldOff, tone: 'warning' },
+	waf_gone: { label: 'WAF no longer detected', icon: ShieldOff, tone: 'warning' },
 	cdn_gone: { label: 'No longer behind a CDN', icon: CloudOff, tone: 'notice' },
 	hosting_moved: { label: 'Hosting moved', icon: Move, tone: 'notice' },
-	host_woke: { label: 'Host started responding', icon: Power, tone: 'notice' },
+	host_woke: { label: 'Web asset started responding', icon: Power, tone: 'notice' },
 	body_changed: { label: 'Response body changed', icon: FileDiff, tone: 'notice' },
-	exposed_host_appeared: { label: 'New exposed host', icon: Eye, tone: 'warning' },
-	host_appeared: { label: 'New host', icon: Globe, tone: 'notice' },
+	exposed_host_appeared: { label: 'New exposed web asset', icon: Eye, tone: 'warning' },
+	host_appeared: { label: 'New web asset', icon: Globe, tone: 'notice' },
 	address_appeared: { label: 'New address', icon: Network, tone: 'notice' },
 	endpoint_appeared: { label: 'New endpoint', icon: Waypoints, tone: 'notice' },
 	attributes_changed: { label: 'Details changed', icon: PencilLine, tone: 'quiet' },
 	finding_gone: { label: 'Finding gone', icon: CircleMinus, tone: 'quiet' },
 	service_closed: { label: 'Service closed', icon: DoorClosed, tone: 'quiet' },
-	host_gone: { label: 'Host gone', icon: CircleMinus, tone: 'quiet' },
+	host_gone: { label: 'Web asset gone', icon: CircleMinus, tone: 'quiet' },
 	asset_gone: { label: 'Gone', icon: CircleMinus, tone: 'quiet' }
 };
 

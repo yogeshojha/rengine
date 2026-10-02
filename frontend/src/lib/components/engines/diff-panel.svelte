@@ -2,6 +2,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { stringify } from 'yaml';
 	import type { EngineCatalog, StageConfig } from '$lib/types/scan-engine';
+	import { overridesOf } from '$lib/utilities/engine-yaml';
 
 	interface Props {
 		stages: Record<string, StageConfig>;
@@ -21,19 +22,17 @@
 
 	function render(value: unknown): string {
 		if (value === undefined) return '—';
-		if (Array.isArray(value)) return value.length ? value.join(', ') : '(none)';
-		if (typeof value === 'string') return value === '' ? '(empty)' : value;
+		if (Array.isArray(value)) return value.length ? value.join(', ') : 'None';
+		if (typeof value === 'string') return value === '' ? 'Empty' : value;
 		return stringify(value).trim();
 	}
 
 	const changes = $derived.by<Change[]>(() => {
 		const out: Change[] = [];
 		for (const spec of catalog?.stages ?? []) {
-			const config = stages?.[spec.name] ?? {};
-			for (const field of spec.fields) {
-				const value = config[field.name];
-				if (value === undefined) continue;
-				if (JSON.stringify(value) === JSON.stringify(spec.defaults[field.name])) continue;
+			const overrides = overridesOf(stages?.[spec.name] ?? {}, spec.defaults);
+			for (const field of spec.fields.filter((f) => f.name in overrides)) {
+				const value = overrides[field.name];
 				out.push({
 					stage: spec.name,
 					title: spec.title,
@@ -57,7 +56,7 @@
 <div class="wrap">
 	<div class="head">
 		{#if changes.length}
-			{changes.length} setting{changes.length === 1 ? '' : 's'} differ from stage defaults
+			{changes.length === 1 ? '1 setting differs' : `${changes.length} settings differ`} from stage defaults
 		{:else}
 			Matches stage defaults
 		{/if}

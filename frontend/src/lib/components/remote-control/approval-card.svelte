@@ -7,15 +7,9 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 	import type { UserAccount } from '$lib/api/users';
-	import { MCP_DEFAULT_GRANTS } from '$lib/types/mcp';
+	import { MCP_DEFAULT_GRANTS, ceilingKeys, grantsUpTo, ladderLevel } from '$lib/types/mcp';
 	import { relativeTime } from '$lib/utilities/dates';
-	import {
-		allowedKeys,
-		grantsUpTo,
-		ladderLevel,
-		type ChannelStatus,
-		type PairingRequest
-	} from '$lib/types/remote-control';
+	import type { ChannelStatus, PairingRequest } from '$lib/types/remote-control';
 
 	interface Props {
 		request: PairingRequest;
@@ -32,7 +26,7 @@
 	let level = $state(ladderLevel(MCP_DEFAULT_GRANTS));
 	let approving = $state(false);
 
-	const allowed = $derived(allowedKeys(status));
+	const allowed = $derived(ceilingKeys(status));
 	const projects = $derived(projectsStore.projects ?? []);
 	const account = $derived(accounts.find((a) => a.id === userId) ?? null);
 	const chars = $derived([...request.code]);

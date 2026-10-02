@@ -11,7 +11,7 @@ from shared.definitions.ai import TEST_FEATURE, AITask
 from shared.models.ai import AiCall
 from shared.services.ai import agent, cache, client, ledger
 from shared.services.ai.agent import DONE, TEXT, AgentEvent, converse
-from shared.services.ai.client import AIError, AIResult, complete
+from shared.services.ai.client import AIError, complete
 from shared.services.ai.config import AIConfig
 from shared.utils.datetime import utc_now
 
@@ -19,7 +19,7 @@ pytestmark = pytest.mark.api
 
 
 @pytest.fixture
-def book(monkeypatch):
+def book():
     rows: list[ledger.CallRecord] = []
     ledger.register(rows.append)
     yield rows
@@ -84,6 +84,35 @@ def test_a_cached_narrative_is_a_ledger_row_with_no_cost(book, monkeypatch):
     assert len(book) == 1
     assert book[0].cached is True
     assert book[0].cost_usd == 0.0
+
+
+async def test_narrate_async_records_hits_and_calls_under_the_source(book, monkeypatch):
+    class Hit:
+        content = "cached prose"
+
+    class Session:
+        async def run_sync(self, fn):
+            return fn(None)
+
+    task = AITask.RULE_SUGGESTION.value
+    monkeypatch.setattr(cache, "lookup", lambda *_a, **_k: Hit())
+    text = await cache.narrate_async(
+        Session(), _cfg(), task=task, system="s", prompt="p"
+    )
+    assert text == "cached prose"
+    assert book[-1].cached is True
+
+    stored: list[str] = []
+    monkeypatch.setattr(cache, "lookup", lambda *_a, **_k: None)
+    monkeypatch.setattr(cache, "store", lambda *_a, **k: stored.append(k["key"]))
+    monkeypatch.setattr(client, "_anthropic", lambda *_a, **_k: ("fresh", (10, 5)))
+    with ledger.source("scan", uuid.UUID(int=9)):
+        text = await cache.narrate_async(
+            Session(), _cfg(), task=task, system="s", prompt="p", fast=True
+        )
+    assert text == "fresh"
+    assert len(stored) == 1
+    assert (book[-1].cached, book[-1].source.kind) == (False, "scan")
 
 
 async def test_converse_records_rounds_and_partial_usage_on_failure(book, monkeypatch):
@@ -154,6 +183,24 @@ def test_a_failure_message_never_carries_credentials(book, monkeypatch):
     assert "token=t" not in (book[0].error or "")
 
 
+def test_a_compatible_provider_with_no_base_url_never_sends_the_key(book, monkeypatch):
+    sent: list[str] = []
+    monkeypatch.setattr(
+        client, "post_json", lambda url, *_a, **_k: sent.append(url) or {}
+    )
+    cfg = AIConfig(
+        provider="openai_compatible",
+        api_key="k",
+        model="m",
+        fast_model="m",
+        features={},
+    )
+    with pytest.raises(AIError):
+        complete(cfg, system="s", prompt="p", task=AITask.CONNECTION_TEST.value)
+    assert sent == []
+    assert book[0].ok is False
+
+
 async def test_usage_is_read_from_the_ledger(estate):
     now = utc_now()
     estate.session.add_all(
@@ -201,14 +248,13 @@ async def test_usage_is_read_from_the_ledger(estate):
     await estate.session.flush()
     usage = await AiSettingsService(estate.session).usage()
     assert usage.calls == 3
-    assert usage.cached == 1
     assert usage.failed == 1
     assert usage.cost_usd == pytest.approx(0.021)
     features = {f.feature: f for f in usage.by_feature}
     assert features["ask"].calls == 2
     assert features["ask"].failed == 1
     assert features[TEST_FEATURE].label == "Connection tests"
-    assert usage.ask.questions == 1
+    assert features["report_narrative"].cached == 1
     recent = await AiSettingsService(estate.session).calls(10)
     assert len(recent) == 4
     assert recent[0].feature in {"ask", "report_narrative", TEST_FEATURE}
@@ -218,4 +264,3 @@ def test_unregistered_ledger_does_not_break_a_call(monkeypatch):
     ledger.register(None)
     monkeypatch.setattr(client, "_anthropic", lambda *_a, **_k: ("ok", (1, 1)))
     assert complete(_cfg(), system="s", prompt="p", task="ask").text == "ok"
-    assert isinstance(AIResult("x", "m", "p"), AIResult)

@@ -5,7 +5,10 @@
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { evidenceToken } from '$lib/config/evidence';
 	import { exactToken } from '$lib/utilities/scan-insights';
+	import type { VulnView } from '$lib/utilities/vulns';
 	import type { CveLadderStep } from '$lib/types/cve';
+
+	const FINDINGS_VIEW: VulnView = 'findings';
 
 	interface Props {
 		cve: string;
@@ -24,7 +27,10 @@
 		return ROUTES.surface(software.tab, { [software.queryParam]: query(step) });
 	}
 	function findingsHref(step: CveLadderStep): string {
-		return ROUTES.surface(findings.tab, { [findings.queryParam]: query(step) });
+		return ROUTES.surface(findings.tab, {
+			[findings.queryParam]: query(step),
+			vuln_view: FINDINGS_VIEW
+		});
 	}
 </script>
 

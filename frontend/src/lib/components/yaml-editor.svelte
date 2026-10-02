@@ -26,7 +26,7 @@
 	} from '@codemirror/state';
 	import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 	import { yaml as yamlLang } from '@codemirror/lang-yaml';
-	import { linter, lintGutter, type Diagnostic } from '@codemirror/lint';
+	import { linter, lintGutter, setDiagnostics, type Diagnostic } from '@codemirror/lint';
 	import { autocompletion, completionKeymap, closeBrackets } from '@codemirror/autocomplete';
 	import {
 		syntaxHighlighting,
@@ -49,6 +49,7 @@
 	import { engineCompletion } from '$lib/utilities/engine-completion';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 	import { codeHighlightStyle } from '$lib/utilities/code-theme';
+	import { MOD_KEY } from '$lib/utils';
 
 	interface Props {
 		value: string;
@@ -214,13 +215,13 @@
 	let latestIssues = $state<YamlIssue[]>([]);
 	$effect(() => {
 		latestIssues = issues;
-		untrack(() => view?.dispatch({}));
+		untrack(() => {
+			if (view) view.dispatch(setDiagnostics(view.state, diagnostics()));
+		});
 	});
 
 	const errorCount = $derived(issues.filter((i) => i.severity === 'error').length);
 	const warningCount = $derived(issues.length - errorCount);
-	const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
-	const mod = isMac ? '⌘' : 'Ctrl';
 
 	function diagnostics(): Diagnostic[] {
 		const length = view?.state.doc.length ?? 0;
@@ -586,7 +587,7 @@
 				{/if}
 				<span class="hint">
 					<Kbd.Group>
-						<Kbd.Root>{mod}</Kbd.Root>
+						<Kbd.Root>{MOD_KEY}</Kbd.Root>
 						<Kbd.Root>F</Kbd.Root>
 					</Kbd.Group>
 					find
@@ -594,7 +595,7 @@
 				{#if saveHint && !readonly}
 					<span class="hint">
 						<Kbd.Group>
-							<Kbd.Root>{mod}</Kbd.Root>
+							<Kbd.Root>{MOD_KEY}</Kbd.Root>
 							<Kbd.Root>S</Kbd.Root>
 						</Kbd.Group>
 						save

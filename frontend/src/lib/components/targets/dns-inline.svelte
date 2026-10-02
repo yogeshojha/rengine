@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import { TargetType } from '$lib/types/target';
+	import { dnsApplies, type TargetType } from '$lib/types/target';
 	import type { DnsSummaryData } from '$lib/types/target';
 	import { DnsRecordType, DNS_RECORD_DISPLAY_ORDER } from '$lib/types/dns';
-	import { TaskStatus } from '@/types/task-status';
+	import { TaskStatus } from '$lib/types/task-status';
 	import * as HoverCard from '$lib/components/ui/hover-card';
 	import { goto } from '$app/navigation';
 	import { ROUTES } from '$lib/config/routes';
@@ -32,7 +32,7 @@
 
 	let { status, dns, targetType, targetValue, targetId, onClick }: Props = $props();
 
-	let isApplicable = $derived(targetType === TargetType.DOMAIN);
+	let isApplicable = $derived(dnsApplies(targetType));
 
 	let inlineSummary = $derived.by(() => {
 		if (!dns?.record_counts) return '';
@@ -53,11 +53,11 @@
 	let cdnName = $derived(dns?.cdn && dns.cdn_name ? dns.cdn_name : null);
 
 	const RECORD_META: Partial<Record<DnsRecordType, { label: string; icon: IconComponent }>> = {
-		[DnsRecordType.A]: { label: 'A (IPv4)', icon: Globe },
-		[DnsRecordType.AAAA]: { label: 'AAAA (IPv6)', icon: Globe },
+		[DnsRecordType.A]: { label: 'A', icon: Globe },
+		[DnsRecordType.AAAA]: { label: 'AAAA', icon: Globe },
 		[DnsRecordType.NS]: { label: 'Nameservers', icon: Server },
 		[DnsRecordType.MX]: { label: 'Mail exchange', icon: Mail },
-		[DnsRecordType.TXT]: { label: 'TXT records', icon: FileText },
+		[DnsRecordType.TXT]: { label: 'TXT', icon: FileText },
 		[DnsRecordType.SOA]: { label: 'SOA', icon: Shield },
 		[DnsRecordType.CNAME]: { label: 'CNAME', icon: Network },
 		[DnsRecordType.CAA]: { label: 'CAA', icon: ShieldCheck },
@@ -163,13 +163,15 @@
 
 					<div class="px-4 py-2.5 border-t border-border/50 bg-muted/30">
 						<div class="flex items-center justify-between">
-							<div class="flex items-center gap-1.5 text-2xs text-muted-foreground">
-								<Clock class="h-3 w-3" />
-								<span>Queried {dns.queried_at ? formatShortDate(dns.queried_at) : 'Unknown'}</span>
-							</div>
+							{#if dns.queried_at}
+								<div class="flex items-center gap-1.5 text-2xs text-muted-foreground">
+									<Clock class="h-3 w-3" />
+									<span>Queried {formatShortDate(dns.queried_at)}</span>
+								</div>
+							{/if}
 							<button
 								type="button"
-								class="flex items-center gap-1 text-2xs text-primary/70 hover:text-primary transition-colors"
+								class="ml-auto flex items-center gap-1 text-2xs text-primary/70 hover:text-primary transition-colors"
 								onclick={() => goto(ROUTES.target(targetId))}
 							>
 								See details

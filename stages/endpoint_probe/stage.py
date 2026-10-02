@@ -18,13 +18,15 @@ from shared.models.http_asset import HttpAsset
 from shared.services import endpoint_inventory, endpoint_judge
 from shared.services.endpoint_inventory import EndpointObservation
 from shared.services.endpoint_judge import Fingerprint
-from shared.services.scope_filter import matches_any
+from shared.services.scan_surface.normalize import root_value
+from shared.services.scope_filter import host_excluded, matches_any
 from shared.utils.datetime import utc_now
 from stages.base import ALL_TARGETS, Stage, StageResult
 from stages.endpoint_probe.config import (
     FOLLOW_REDIRECTS,
     URL_DISCOVERY_STAGE,
     EndpointProbeConfig,
+    probe_budget,
 )
 from tools.httpx.client import HttpxClient, HttpxError
 from tools.httpx.parser import parse_httpx_record
@@ -83,7 +85,7 @@ class EndpointProbeStage(Stage):
         cfg = self.cfg
         net = self.net_options()
         started = utc_now()
-        budget = cfg.max_urls
+        budget = cfg.max_urls or probe_budget(self.transport)
         pending = self._pending(budget)
         if not pending:
             self._store(started, 0, 0, 0, CoverageStatus.COMPLETED.value, None, None)
@@ -238,7 +240,7 @@ class EndpointProbeStage(Stage):
         return StageResult(counts={"endpoints_probed": 0})
 
     def _pending(self, budget: int) -> list[str]:
-        """The endpoints the probe has not answered, ranked in the database, never-seen first."""
+        """The endpoints the probe has not answered: never-seen, new families and parameters first, hosts in turn."""
         flagged = func.jsonb_array_length(cast(Endpoint.interest, JSONB)) > 0
         novel = (
             func.row_number()
@@ -250,6 +252,7 @@ class EndpointProbeStage(Stage):
         )
         ranked = select(
             Endpoint.url.label("url"),
+            Endpoint.host.label("host"),
             Endpoint.path.label("path"),
             Endpoint.is_probed.label("seen"),
             flagged.label("flagged"),
@@ -259,24 +262,58 @@ class EndpointProbeStage(Stage):
         ).where(Endpoint.scan_id == self.ctx.scan_id, _UNANSWERED)
         if self.cfg.skip_static:
             ranked = ranked.where(Endpoint.endpoint_class.notin_(tuple(STATIC_CLASSES)))
-        sub = ranked.subquery()
+        tiered = ranked.subquery()
+        first = (tiered.c.in_family == 1).label("first")
+        turn = (
+            func.row_number()
+            .over(
+                partition_by=(tiered.c.seen, first, tiered.c.has_params, tiered.c.host),
+                order_by=(
+                    tiered.c.flagged.desc(),
+                    tiered.c.depth.asc(),
+                    tiered.c.url.asc(),
+                ),
+            )
+            .label("turn")
+        )
+        sub = select(
+            tiered.c.url,
+            tiered.c.host,
+            tiered.c.path,
+            tiered.c.seen,
+            tiered.c.flagged,
+            tiered.c.has_params,
+            tiered.c.depth,
+            first,
+            turn,
+        ).subquery()
 
-        excluded = self.ctx.resolved.excluded_paths or []
-        headroom = budget * 4 if excluded else budget
+        resolved = self.ctx.resolved
+        excluded = resolved.excluded_paths or []
+        excluded_hosts = resolved.excluded_subdomains or []
+        excluded_ips = resolved.excluded_ips or []
+        filtered = bool(excluded or excluded_hosts or excluded_ips)
+        headroom = budget * 4 if filtered else budget
         rows = self.session.execute(
-            select(sub.c.url, sub.c.path)
+            select(sub.c.url, sub.c.host, sub.c.path)
             .order_by(
                 sub.c.seen.asc(),
-                sub.c.flagged.desc(),
+                sub.c.first.desc(),
                 sub.c.has_params.desc(),
-                (sub.c.in_family == 1).desc(),
+                sub.c.turn.asc(),
+                sub.c.flagged.desc(),
                 sub.c.depth.asc(),
                 sub.c.url.asc(),
             )
             .limit(headroom)
         ).all()
-        if excluded:
-            rows = [r for r in rows if not matches_any(r.path, excluded)]
+        if filtered:
+            rows = [
+                r
+                for r in rows
+                if not matches_any(r.path, excluded)
+                and not host_excluded(r.host, excluded_hosts, excluded_ips)
+            ]
         return [r.url for r in rows[:budget]]
 
     def _canaries(self, selected: list[str]) -> dict[str, uuid.UUID]:
@@ -307,7 +344,7 @@ class EndpointProbeStage(Stage):
             key = (scheme, host.lower(), int(port or SCHEME_PORTS.get(scheme, 0)))
             if key not in wanted:
                 continue
-            for url in endpoint_judge.canary_urls(endpoint_judge.root_of(*key)):
+            for url in endpoint_judge.canary_urls(root_value(*key)):
                 out[url] = asset_id
         return out
 

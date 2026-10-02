@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 
 import pytest
 
-from app.services.program_coverage import host_of, scope_match
+from app.services.program_coverage import host_of, scope_match, scope_values
 from shared.definitions.bounty_programs import ScopeState
 from shared.enums.target import TargetType
 
@@ -58,3 +58,27 @@ def test_a_url_scope_is_read_as_its_host():
     assert host_of("https://shop.acme.com/login") == "shop.acme.com"
     assert host_of("*.acme.com") == "acme.com"
     assert host_of("acme.com:8443") == "acme.com"
+    assert host_of("2001:db8::1") == "2001:db8::1"
+    assert host_of("[2001:db8::1]:8443") == "2001:db8::1"
+
+
+def test_the_candidate_values_are_what_the_scope_test_accepts():
+    hosts = {"shop.acme.com", "a.b.example.co.uk", "acme.com", "x.go.id"}
+    values = scope_values(hosts)
+    probes = {
+        "",
+        "acme.com",
+        "acme",
+        "com",
+        "b.example",
+        "example.co",
+        "go",
+        "x.go.id",
+        "shop",
+        "notacme.com",
+        "hop.acme.com",
+        ".acme.com",
+    }
+    for value in probes:
+        accepted = any(value == h or f".{value}" in h for h in hosts)
+        assert (value in values) == accepted, value

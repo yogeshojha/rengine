@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
+from contextlib import suppress
+from typing import TYPE_CHECKING
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from shared.definitions.ai import CACHE_VERSION, GLOBAL_CACHE_TASKS
+from shared.definitions.ai import CACHE_VERSION
 from shared.logging import get_logger
 from shared.models.ai import AiNarrative
 from shared.services.ai import ledger
@@ -16,6 +19,9 @@ from shared.services.ai.client import AIResult, AIUsage, complete
 from shared.services.ai.config import AIConfig
 from shared.services.ai.ledger import CallRecord
 from shared.utils.datetime import utc_now
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = get_logger(__name__)
 
@@ -67,11 +73,9 @@ def store(
         input_tokens=result.input_tokens,
         output_tokens=result.output_tokens,
     )
-    session.add(row)
-    try:
+    with suppress(IntegrityError), session.begin_nested():
+        session.add(row)
         session.flush()
-    except IntegrityError:
-        session.rollback()
 
 
 def narrate(
@@ -122,9 +126,43 @@ def narrate(
     return result.text
 
 
-def cached_count(session) -> int:
-    return int(session.execute(select(func.count(AiNarrative.id))).scalar() or 0)
+async def narrate_async(
+    session: AsyncSession,
+    cfg: AIConfig,
+    *,
+    task: str,
+    system: str,
+    prompt: str,
+    subject: str = "",
+    fast: bool = False,
+) -> str | None:
+    """narrate over an AsyncSession."""
+    if not cfg.available:
+        return None
 
+    model = cfg.model_for_task(fast=fast)
+    key = cache_key(task, prompt, model)
 
-def is_globally_cached(task: str) -> bool:
-    return task in GLOBAL_CACHE_TASKS
+    hit = await session.run_sync(lambda s: lookup(s, task, key))
+    if hit is not None:
+        ledger.record(
+            CallRecord(
+                task=task, provider=cfg.provider, model=model, ok=True, cached=True
+            )
+        )
+        return hit.content
+
+    try:
+        result = await asyncio.to_thread(
+            complete, cfg, system=system, prompt=prompt, task=task, fast=fast
+        )
+    except Exception as exc:
+        logger.warning("ai narration failed", task=task, error=str(exc)[:200])
+        return None
+
+    if not result.text:
+        return None
+    await session.run_sync(
+        lambda s: store(s, task=task, key=key, subject=subject, result=result)
+    )
+    return result.text

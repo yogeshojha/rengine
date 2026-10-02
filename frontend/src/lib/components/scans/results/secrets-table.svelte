@@ -34,11 +34,14 @@
 		excludeToken,
 		appendTokens,
 		appendToken,
+		hasToken,
+		withoutToken,
 		type Facet
 	} from '$lib/utilities/scan-insights';
 	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 	import { UrlSync, onPopSearch } from '$lib/utilities/url-history.svelte';
 	import { LiveRefresh } from '$lib/utilities/live-results';
+	import { ALL_TAB, TabCounts, countTabs, withTab } from '$lib/utilities/tab-counts.svelte';
 	import { STATE_TABS } from '$lib/config/secrets';
 	import type { QueryError, QueryGroups } from '$lib/types/asset-query';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
@@ -57,6 +60,7 @@
 		active?: boolean;
 		revision?: number;
 		onScanTotal?: (total: number) => void;
+		onSearch?: (query: string) => void;
 	}
 
 	let {
@@ -65,7 +69,8 @@
 		projectWide = false,
 		active = true,
 		revision = 0,
-		onScanTotal
+		onScanTotal,
+		onSearch
 	}: Props = $props();
 
 	const SEC = SURFACE[SurfaceDimension.SECRETS];
@@ -131,7 +136,10 @@
 	let selectAllChecked = $derived(selectAllState(checkedCount, items.length));
 	let term = $derived(search.trim().includes(':') ? '' : search.trim());
 	let filtered = $derived(Boolean(search.trim()));
+	const tabCounts = new TabCounts();
+	let tabSearch = $derived(withTab(search, 'state', ALL_TAB));
 	let stateCounts = $derived.by(() => {
+		if (tabSearch) return tabCounts.counts;
 		if (!sideLoaded) return null;
 		const out: Record<string, number> = { all: coverage?.secrets ?? 0 };
 		for (const f of facets.state) out[f.key] = f.count;
@@ -236,12 +244,11 @@
 			coverage = c;
 			sideLoaded = true;
 			onScanTotal?.(c.secrets);
-		} catch {
-			// ignore
-		}
+		} catch {}
 	}
 
 	const live = new LiveRefresh(() => {
+		tabCounts.refresh();
 		void runSearch();
 		void loadSide();
 		void loadGroups();
@@ -251,6 +258,25 @@
 		untrack(() => live.notify(tick, active && seen));
 	});
 	onDestroy(() => live.stop());
+	onDestroy(() => tabCounts.clear());
+
+	$effect(() => {
+		const base = tabSearch;
+		const key = `${projectId}|${scanId}|${base}`;
+		if (!ready || !seen || !queryReady) return;
+		untrack(() => {
+			if (!base) {
+				tabCounts.clear();
+				return;
+			}
+			const queries = Object.fromEntries(
+				STATE_TABS.map((t) => [t.key, withTab(base, 'state', t.key)])
+			);
+			tabCounts.track(key, () =>
+				countTabs(queries, (q) => secretsApi.counts(projectId, scanId, q))
+			);
+		});
+	});
 
 	let primed = false;
 	$effect(() => {
@@ -295,6 +321,7 @@
 		urlSync.write(params);
 	}
 	const urlSync = new UrlSync(['sec_q', 'sec_group'], true);
+	$effect(() => onSearch?.(search.trim()));
 
 	function restoreUrl(sp: URLSearchParams) {
 		const nextSearch = sp.get('sec_q') ?? '';
@@ -345,24 +372,7 @@
 	}
 
 	function setStateTab(key: string) {
-		const without = search.replace(/(?:^|\s)state:[a-z]+/g, '').trim();
-		onQuery(key === 'all' ? without : `${without} state:${key}`.trim());
-	}
-
-	function escapeRe(token: string) {
-		return token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-	}
-
-	function hasToken(token: string) {
-		return new RegExp(`(?:^|\\s)${escapeRe(token)}(?:\\s|$)`).test(search);
-	}
-
-	function toggleToken(token: string) {
-		if (!hasToken(token)) {
-			onQuery(appendToken(search, token));
-			return;
-		}
-		onQuery(search.replace(new RegExp(`(?:^|\\s)${escapeRe(token)}`, 'g'), '').trim());
+		onQuery(withTab(search, 'state', key));
 	}
 
 	function toggleCheck(id: string) {
@@ -392,9 +402,7 @@
 		selected = { ...row, context: null, sightings_shown: [], sightings_truncated: false };
 		try {
 			selected = await secretsApi.detail(projectId, scanId, row.id);
-		} catch {
-			// ignore
-		}
+		} catch {}
 	}
 </script>
 
@@ -417,7 +425,13 @@
 
 <Card.Root class="gap-0 overflow-hidden rounded-t-none border-t-0 py-0">
 	<div class="border-b pr-3 pl-2">
-		<CountTabs tabs={STATE_TABS} value={stateTab} counts={stateCounts} onChange={setStateTab} />
+		<CountTabs
+			tabs={STATE_TABS}
+			value={stateTab}
+			counts={stateCounts}
+			capped={tabSearch ? tabCounts.capped : null}
+			onChange={setStateTab}
+		/>
 	</div>
 
 	<CoverageStrip {coverage} />
@@ -427,8 +441,13 @@
 			<Toggle
 				size="sm"
 				variant="outline"
-				pressed={hasToken(filter.token)}
-				onPressedChange={() => toggleToken(filter.token)}
+				pressed={hasToken(search, filter.token)}
+				onPressedChange={() =>
+					onQuery(
+						hasToken(search, filter.token)
+							? withoutToken(search, filter.token)
+							: appendToken(search, filter.token)
+					)}
 				class="h-7 px-2.5 text-xs font-normal"
 			>
 				{filter.label}

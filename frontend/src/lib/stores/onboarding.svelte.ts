@@ -11,17 +11,8 @@ function createOnboardingStore() {
 		get status() {
 			return status;
 		},
-		get isLoading() {
-			return isLoading;
-		},
 		get hasFetched() {
 			return hasFetched;
-		},
-		get completed() {
-			return status?.completed ?? false;
-		},
-		get canSetup() {
-			return status?.can_setup ?? false;
 		},
 
 		async fetchStatus() {

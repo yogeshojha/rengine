@@ -24,8 +24,8 @@ CAPABILITY_LABELS: dict[str, str] = {
 CAPABILITY_HELP: dict[str, str] = {
     Capability.READ.value: "Query assets, services, endpoints, findings and coverage.",
     Capability.PLAN.value: "Resolve a scan plan without running it.",
-    Capability.WRITE.value: "Record triage decisions on findings.",
-    Capability.LAUNCH.value: "Start scans and focused rescans against targets.",
+    Capability.WRITE.value: "Add, change and delete targets. Record triage decisions.",
+    Capability.LAUNCH.value: "Start, pause, resume and cancel scans and focused rescans.",
 }
 
 CAPABILITY_REACH: dict[str, str] = {

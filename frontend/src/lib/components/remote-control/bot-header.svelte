@@ -9,6 +9,7 @@
 	import { CHANNEL_META, LISTENER_STATE_DOT, LISTENER_STATE_LABELS } from '$lib/config/channels';
 	import { listenerState, type ChannelStatus } from '$lib/types/remote-control';
 	import { uptime } from '$lib/utilities/dates';
+	import { getInitials } from '$lib/utilities/strings';
 
 	interface Props {
 		status: ChannelStatus;
@@ -23,13 +24,7 @@
 	const meta = $derived(CHANNEL_META[status.channel]);
 	const listener = $derived(listenerState(status));
 	const name = $derived(status.bot?.name || status.label);
-	const initials = $derived(
-		name
-			.split(/\s+/)
-			.slice(0, 2)
-			.map((w) => w[0]?.toUpperCase() ?? '')
-			.join('')
-	);
+	const initials = $derived(getInitials(name));
 	const problem = $derived(
 		listener === 'unreachable'
 			? 'The channels service is not reporting. Check that it is running.'
@@ -57,7 +52,7 @@
 		></span>
 	</div>
 
-	<div class="min-w-0 flex-1">
+	<div class="min-w-0 grow basis-56">
 		<div class="flex flex-wrap items-baseline gap-x-2">
 			<h2 class="text-base font-semibold">{name}</h2>
 			{#if status.bot}

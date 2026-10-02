@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import re
 from typing import Annotated
 
@@ -7,25 +6,28 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 
 from app.api.deps import (
-    CurrentUser,
     StreamUser,
     get_token_from_request,
     token_still_valid,
 )
-from app.core.database import pool_stats
 from shared.enums.sse import SSEChannel
-from shared.sse import sse_manager
+from shared.logging import get_logger
+from shared.sse import STREAM_CLOSED, sse_manager
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/events", tags=["events"])
 
 HEARTBEAT_SECONDS = 30.0
 
+STREAM_HEADERS = {
+    "Cache-Control": "no-cache",
+    "Connection": "keep-alive",
+    "X-Accel-Buffering": "no",
+}
+
 CHANNEL_PATTERN = re.compile(
-    rf"^({SSEChannel.PROJECT}:[a-f0-9\-]+"
-    rf"|{SSEChannel.SCAN}:[a-f0-9\-]+"
-    rf"|{SSEChannel.BROADCAST})$"
+    rf"^({SSEChannel.PROJECT}:[a-f0-9\-]+|{SSEChannel.BROADCAST})$"
 )
 
 
@@ -85,6 +87,8 @@ async def event_stream(
                         message = await asyncio.wait_for(
                             queue.get(), timeout=HEARTBEAT_SECONDS
                         )
+                        if message is STREAM_CLOSED:
+                            break
                         yield message
                     except TimeoutError:
                         if not await token_still_valid(token):
@@ -96,23 +100,5 @@ async def event_stream(
                 pass
 
     return StreamingResponse(
-        generate(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-        },
+        generate(), media_type="text/event-stream", headers=STREAM_HEADERS
     )
-
-
-@router.get("/health")
-async def sse_health(
-    _current_user: CurrentUser,
-):
-    return {
-        "status": "healthy",
-        "active_connections": sse_manager.get_active_connections(),
-        "channels": sse_manager.get_channel_stats(),
-        "db_pool": pool_stats(),
-    }

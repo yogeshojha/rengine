@@ -87,7 +87,9 @@ class BountyReportService:
     async def _rows(self, stmt) -> list[tuple]:
         return list((await self.session.execute(stmt)).tuples().all())
 
-    async def _names(self, platform: str, handles: set[str]) -> dict[str, str]:
+    async def _names(
+        self, platform: str, handles: set[str], hub: dict[str, str]
+    ) -> dict[str, str]:
         """Program names from the Bounty Hub, then from awards."""
         if not handles:
             return {}
@@ -103,7 +105,7 @@ class BountyReportService:
                 .group_by(BountyAward.program_handle)
             )
         )
-        names.update(await self._hub(platform, handles))
+        names.update(hub)
         return names
 
     async def _hub(self, platform: str, handles: set[str]) -> dict[str, str]:
@@ -163,7 +165,6 @@ class BountyReportService:
                 select(
                     func.count(),
                     func.count(func.distinct(BountyReport.program_handle)),
-                    func.min(BountyReport.submitted_at),
                     func.max(BountyReport.submitted_at),
                     func.count().filter(_paid(platform)),
                 ).where(reports)
@@ -198,9 +199,8 @@ class BountyReportService:
             states=states,
             severities=severities,
             earned=earned,
-            paid_reports=totals[4],
-            first_submitted_at=totals[2],
-            last_submitted_at=totals[3],
+            paid_reports=totals[3],
+            last_submitted_at=totals[2],
             monthly=monthly,
             chart_currency=chart_currency,
         )
@@ -256,7 +256,6 @@ class BountyReportService:
                 func.count().filter(BountyReport.severity == "critical"),
                 func.count().filter(BountyReport.severity == "high"),
                 func.count().filter(_paid(platform)),
-                func.min(BountyReport.submitted_at),
                 func.max(BountyReport.submitted_at),
             )
             .where(
@@ -282,7 +281,7 @@ class BountyReportService:
         ):
             money[h].append(Money(currency=c, amount=float(a), awards=n))
         hub = await self._hub(platform, handles)
-        names = await self._names(platform, handles)
+        names = await self._names(platform, handles, hub)
         out = [
             ProgramReports(
                 handle=h,
@@ -296,10 +295,9 @@ class BountyReportService:
                 high=high,
                 paid_reports=paid,
                 earned=money.get(h, []),
-                first_submitted_at=first,
                 last_submitted_at=last,
             )
-            for h, n, o, r, c, crit, high, paid, first, last in rows
+            for h, n, o, r, c, crit, high, paid, last in rows
         ]
         out.sort(
             key=lambda p: (
@@ -441,8 +439,8 @@ class BountyReportService:
                     )
                 )
         handles = {r.program_handle for r in rows if r.program_handle}
-        names = await self._names(spec.key, handles)
         hub = await self._hub(spec.key, handles)
+        names = await self._names(spec.key, handles, hub)
         return [_read(spec, r, awards.get(r.external_id, []), names, hub) for r in rows]
 
 
@@ -480,7 +478,6 @@ def _read(
         submitted_at=r.submitted_at,
         triaged_at=r.triaged_at,
         closed_at=r.closed_at,
-        bounty_awarded_at=r.bounty_awarded_at,
         disclosed_at=r.disclosed_at,
         last_program_activity_at=r.last_program_activity_at,
         awarded=[

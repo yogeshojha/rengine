@@ -1,4 +1,3 @@
-{% import 'macros.html' as m with context %}
 <p class="block muted small">{{ ctx.data.service_rows|length|num }} services answered on {{ addresses|num }} addresses. {{ web|num }} of them answer HTTP.{% if sensitive %} {{ sensitive|num }} {{ 'is' if sensitive == 1 else 'are' }} administrative or data.{% endif %}</p>
 
 {% if classes %}
@@ -18,8 +17,8 @@
   <div class="label block">Scan coverage</div>
   <table class="table">
     <tbody>
-      {% for key, count in policies.items() %}
-      <tr><td style="width:44mm">{{ {'full':'Scanned in full','web':'Web ports only, CDN edge','skip':'Not scanned'}.get(key, key) }}</td><td class="num">{{ count|num }} addresses</td></tr>
+      {% for label, count in policies %}
+      <tr><td style="width:44mm">{{ label }}</td><td class="num">{{ count|num }} addresses</td></tr>
       {% endfor %}
     </tbody>
   </table>

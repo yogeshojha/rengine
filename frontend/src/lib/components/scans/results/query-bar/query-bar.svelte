@@ -37,6 +37,8 @@
 		actions?: Snippet;
 		ref?: HTMLInputElement | null;
 		placeholder?: string;
+		countNoun?: string;
+		countNounPlural?: string;
 	}
 
 	let {
@@ -55,7 +57,9 @@
 		onSubmit,
 		actions,
 		ref = $bindable(null),
-		placeholder = 'Search, or filter with'
+		placeholder = 'Search, or filter with',
+		countNoun,
+		countNounPlural
 	}: Props = $props();
 
 	const RECENT_LIMIT = 6;
@@ -73,7 +77,18 @@
 	let recents = $state<string[]>(readRecents());
 
 	$effect(() => {
-		void store.load();
+		const el = anchor;
+		if (!el || store.loaded) return;
+		const shown = new IntersectionObserver(
+			(entries) => {
+				if (!entries.some((e) => e.isIntersecting)) return;
+				shown.disconnect();
+				void store.load();
+			},
+			{ rootMargin: '100%' }
+		);
+		shown.observe(el);
+		return () => shown.disconnect();
 	});
 
 	let schema = $derived(store.schema);
@@ -103,7 +118,7 @@
 	let countLabel = $derived.by(() => {
 		if (!value.trim() || hasError || total == null || busy) return null;
 		const n = capped ? `${total.toLocaleString()}+` : total.toLocaleString();
-		return `${n} ${total === 1 && !capped ? noun : nounPlural}`;
+		return `${n} ${total === 1 && !capped ? (countNoun ?? noun) : (countNounPlural ?? nounPlural)}`;
 	});
 
 	$effect(() => onReady?.(ready));
@@ -112,7 +127,7 @@
 	let suggestions = $derived(buildSuggestions(context, schema, facets, store.byName));
 	let findings = $derived((leadSet?.leads ?? []).filter((lead) => lead.count > 0));
 	let counted = $derived(findings.length > 0);
-	let findingWord = $derived(findings.length === 1 ? 'finding' : 'findings');
+	let queryWord = $derived(findings.length === 1 ? 'query' : 'queries');
 	let starters = $derived.by<QueryStarter[]>(() => {
 		if (counted) return findings;
 		const generic = schema.examples.filter((example) => example.generic);
@@ -341,11 +356,11 @@
 					variant="ghost"
 					size="sm"
 					class="h-8 gap-1.5 px-2 text-primary hover:bg-primary/10 hover:text-primary"
-					aria-label="{findings.length} {findingWord} in this scan"
+					aria-label="{findings.length} matched {queryWord}"
 					onclick={openFindings}
 				>
 					<span class="tabular-nums">{findings.length}</span>
-					<span class="max-sm:hidden">{findingWord}</span>
+					<span class="max-sm:hidden">{queryWord}</span>
 				</Button>
 			{/if}
 			{@render actions?.()}
@@ -427,7 +442,6 @@
 <QueryHelp
 	open={helpOpen}
 	{schema}
-	{noun}
 	onOpenChange={(next) => (helpOpen = next)}
 	onInsert={insertFragment}
 />

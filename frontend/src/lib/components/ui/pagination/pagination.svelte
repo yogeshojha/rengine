@@ -2,6 +2,7 @@
 	import { Pagination as PaginationPrimitive } from 'bits-ui';
 
 	import { cn } from '$lib/utils.js';
+	import { IsMobile } from '$lib/hooks/is-mobile.svelte.js';
 
 	let {
 		ref = $bindable(null),
@@ -9,9 +10,11 @@
 		count = 0,
 		perPage = 20,
 		page = $bindable(1),
-		siblingCount = 1,
+		siblingCount,
 		...restProps
 	}: PaginationPrimitive.RootProps = $props();
+
+	const narrow = new IsMobile(640);
 </script>
 
 <PaginationPrimitive.Root
@@ -23,6 +26,6 @@
 	class={cn('mx-auto flex w-full justify-center', className)}
 	{count}
 	{perPage}
-	{siblingCount}
+	siblingCount={siblingCount ?? (narrow.current ? 0 : 1)}
 	{...restProps}
 />

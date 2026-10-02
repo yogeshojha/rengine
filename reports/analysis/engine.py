@@ -7,16 +7,18 @@ from reports.analysis.brief import (
     Caveat,
     ChangeLine,
     Concentration,
-    Highlight,
     ReportBrief,
+    RiskItem,
 )
 from reports.analysis.narratives import attack_paths
 from reports.analysis.scoring import effort_for, issue_risk, posture
+from reports.config import MAX_CHANGE_ITEMS
 from reports.data.models import Issue
 from reports.data.source import REPORT_DIMENSIONS, ReportSource
 from shared.definitions.compliance import (
     FRAMEWORK_BY_KEY,
     SURFACE_CONTROLS,
+    Framework,
     cwe_top_25_rank,
     map_finding,
 )
@@ -27,10 +29,11 @@ from shared.definitions.surface import (
 )
 from shared.definitions.vulnerabilities import (
     SEVERITY_LABELS,
-    SEVERITY_ORDER,
+    CoverageStatus,
     Severity,
     severity_rank,
 )
+from shared.enums.scan import ScanStatus
 
 _DIM = SurfaceDimension
 _MAX_ACTIONS = 12
@@ -46,8 +49,6 @@ def build_issues(source: ReportSource) -> list[Issue]:
                 template_id=finding.template_id,
                 name=finding.name,
                 severity=finding.severity,
-                scanner=finding.scanner,
-                protocol=finding.protocol,
                 description=finding.description,
                 impact=finding.impact,
                 remediation=finding.remediation,
@@ -74,7 +75,6 @@ def build_issues(source: ReportSource) -> list[Issue]:
 def _observations(source: ReportSource, issues: list[Issue], paths) -> dict[str, int]:
     keyed = {p.key: p for p in paths}
     severity = source.severity_counts
-    live = {h.name for h in source.host_rows if h.status}
     return {
         "critical": severity.get(Severity.CRITICAL.value, 0),
         "high": severity.get(Severity.HIGH.value, 0),
@@ -85,14 +85,12 @@ def _observations(source: ReportSource, issues: list[Issue], paths) -> dict[str,
         "default_login": keyed["default_credentials"].count
         if "default_credentials" in keyed
         else 0,
-        "sensitive": len([s for s in source.sensitive_services if not s.is_http]),
-        "expired": len(
-            [
-                c
-                for c in source.certificates
-                if c.expired and (not live or c.host in live)
-            ]
-        ),
+        "sensitive": keyed["sensitive_services"].count
+        if "sensitive_services" in keyed
+        else 0,
+        "expired": keyed["expired_certificates"].count
+        if "expired_certificates" in keyed
+        else 0,
     }
 
 
@@ -101,7 +99,7 @@ def _actions(issues: list[Issue]) -> list[Action]:
     for issue in issues:
         if issue.severity in {Severity.INFO.value, Severity.UNKNOWN.value}:
             continue
-        controls = issue.controls.get("owasp_top10", [])
+        controls = issue.controls.get(Framework.OWASP.value, [])
         remediation = (issue.remediation or "").strip()
         detail = (
             remediation.split("\n")[0][:300]
@@ -134,8 +132,10 @@ def _changes(source: ReportSource) -> list[ChangeLine]:
     for dimension in REPORT_DIMENSIONS:
         if not source.coverage[dimension].covered:
             continue
+        if dimension not in source.previous_dimensions:
+            continue
         added, gone, added_total, gone_total = source.added_and_gone(
-            dimension, limit=12
+            dimension, limit=MAX_CHANGE_ITEMS
         )
         if not added_total and not gone_total:
             continue
@@ -152,8 +152,7 @@ def _changes(source: ReportSource) -> list[ChangeLine]:
     return lines
 
 
-def _concentration(source: ReportSource, issues: list[Issue]) -> list[Concentration]:
-    del issues
+def _concentration(source: ReportSource) -> list[Concentration]:
     rows = sorted(
         ((host, data) for host, data in source.findings_by_host.items()),
         key=lambda item: (-item[1][0], severity_rank(item[1][1])),
@@ -163,7 +162,6 @@ def _concentration(source: ReportSource, issues: list[Issue]) -> list[Concentrat
             label=host,
             count=count,
             worst=SEVERITY_LABELS.get(worst, "Unknown"),
-            note="",
         )
         for host, (count, worst) in rows
     ]
@@ -181,7 +179,7 @@ def _caveats(source: ReportSource) -> list[Caveat]:
                 )
             )
     for row in source.coverage_rows:
-        if row.status == "partial":
+        if row.status == CoverageStatus.PARTIAL.value:
             out.append(
                 Caveat(
                     kind="partial",
@@ -191,7 +189,7 @@ def _caveats(source: ReportSource) -> list[Caveat]:
                     ),
                 )
             )
-        elif row.status == "failed":
+        elif row.status == CoverageStatus.FAILED.value:
             out.append(
                 Caveat(
                     kind="failed",
@@ -202,10 +200,14 @@ def _caveats(source: ReportSource) -> list[Caveat]:
             out.append(
                 Caveat(
                     kind="dropped",
-                    text=f"{len(row.hosts_dropped)} hosts exceeded the scanner budget and were not checked.",
+                    text=(
+                        f"{len(row.hosts_dropped)} "
+                        f"{'host was' if len(row.hosts_dropped) == 1 else 'hosts were'} "
+                        "dropped after repeated errors."
+                    ),
                 )
             )
-    if source.scan is not None and source.scan.status == "cancelled":
+    if source.scan is not None and source.scan.status == ScanStatus.CANCELLED.value:
         out.append(
             Caveat(
                 kind="cancelled",
@@ -246,58 +248,24 @@ def _compliance(issues: list[Issue], covered: frozenset[str]) -> dict:
     return out
 
 
-def _highlights(source: ReportSource, brief: ReportBrief) -> list[Highlight]:
-    out: list[Highlight] = []
-    for dimension in REPORT_DIMENSIONS:
-        entry = source.coverage[dimension]
-        if not entry.covered:
-            out.append(
-                Highlight(
-                    key=dimension,
-                    label=SURFACE_LABELS[dimension],
-                    value="Not scanned",
-                    detail="",
-                    tone="absent",
-                )
-            )
-            continue
-        detail = ""
-        if entry.previous is not None:
-            delta = entry.count - entry.previous
-            if delta > 0:
-                detail = f"{delta} more than the previous run"
-            elif delta < 0:
-                detail = f"{abs(delta)} fewer than the previous run"
-            else:
-                detail = "unchanged"
-        out.append(
-            Highlight(
-                key=dimension,
-                label=SURFACE_LABELS[dimension],
-                value=f"{entry.count:,}",
-                detail=detail,
-                tone="neutral",
-            )
-        )
-    del brief
-    return out
+def _identified(count: int, noun: str) -> str:
+    if count == 1:
+        return f"1 {noun} was identified."
+    return f"{count} {noun}s were identified."
 
 
 def _headline(brief: ReportBrief) -> str:
     severity = brief.severity
     if brief.kev_count:
         return (
-            f"{brief.kev_count} known exploited weakness"
-            f"{'es' if brief.kev_count != 1 else ''} are present."
+            "1 known exploited weakness is present."
+            if brief.kev_count == 1
+            else f"{brief.kev_count} known exploited weaknesses are present."
         )
     if severity.get(Severity.CRITICAL.value):
-        count = severity[Severity.CRITICAL.value]
-        return f"{count} critical finding{'s' if count != 1 else ''} were identified."
+        return _identified(severity[Severity.CRITICAL.value], "critical finding")
     if severity.get(Severity.HIGH.value):
-        count = severity[Severity.HIGH.value]
-        return (
-            f"{count} high severity finding{'s' if count != 1 else ''} were identified."
-        )
+        return _identified(severity[Severity.HIGH.value], "high severity finding")
     if brief.paths:
         return brief.paths[0].title + "."
     if brief.counts.get(
@@ -328,19 +296,11 @@ def build_brief(source: ReportSource) -> ReportBrief:
     brief = ReportBrief(
         subject=source.subject,
         subject_type=source.subject_type,
-        scope=source.scope,
         observed_at=source.observed_at,
-        engine=source.scan.engine_name if source.scan else "",
-        duration_seconds=(
-            (source.scan.completed_at - source.scan.started_at).total_seconds()
-            if source.scan and source.scan.completed_at and source.scan.started_at
-            else None
-        ),
         counts=counts,
         coverage=coverage,
         severity={k: v for k, v in source.severity_counts.items() if v},
         paths=paths,
-        suppressed=source.suppressed_count,
         first_run=source.previous_scan is None,
     )
 
@@ -352,18 +312,15 @@ def build_brief(source: ReportSource) -> ReportBrief:
     brief.actions = _actions(issues)
     brief.caveats = _caveats(source)
     brief.changes = _changes(source)
-    brief.concentration = _concentration(source, issues)
+    brief.concentration = _concentration(source)
     brief.compliance = _compliance(issues, source.covered_dimensions)
     brief.exposure = _exposure(source)
     brief.hosting = _hosting(source)
-    brief.highlights = _highlights(source, brief)
     brief.headline = _headline(brief)
     return brief
 
 
-def _risk_item(issue: Issue, score: float, signals: list[str]):
-    from reports.analysis.brief import RiskItem  # noqa: PLC0415
-
+def _risk_item(issue: Issue, score: float, signals: list[str]) -> RiskItem:
     return RiskItem(
         template_id=issue.template_id,
         name=issue.name,
@@ -376,7 +333,6 @@ def _risk_item(issue: Issue, score: float, signals: list[str]):
         epss=issue.epss_score,
         cvss=issue.cvss_score,
         cves=list(issue.cve_ids),
-        sample=issue.findings[0].matched_at if issue.findings else "",
         new=issue.new_count,
     )
 
@@ -416,6 +372,3 @@ def _hosting(source: ReportSource) -> dict:
         "countries": [f.name for f in source.countries[:5]],
         "waf": sum(1 for h in hosts if h.waf),
     }
-
-
-SEVERITY_SEQUENCE = SEVERITY_ORDER

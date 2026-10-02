@@ -1,5 +1,3 @@
-"""The resolver's per-query timeout is the transport's, as a go duration."""
-
 from __future__ import annotations
 
 from types import SimpleNamespace

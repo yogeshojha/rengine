@@ -22,15 +22,10 @@ _NEW_VALUES = ("SCAN_CANCELLED", "SCAN_STAGE_COMPLETED", "SCAN_STAGE_FAILED")
 def upgrade() -> None:
     for value in _NEW_VALUES:
         op.execute(f"ALTER TYPE activityevent ADD VALUE IF NOT EXISTS '{value}'")
-    # no FK on scan_id and a stored target name: the trail must outlive scan/target deletion
     op.add_column("activity_logs", sa.Column("scan_id", sa.Uuid(), nullable=True))
     op.create_index("ix_activity_logs_scan_id", "activity_logs", ["scan_id"])
     op.add_column(
         "activity_logs", sa.Column("target_value", sa.String(length=500), nullable=True)
-    )
-    op.execute(
-        "UPDATE activity_logs SET target_value = targets.target_value "
-        "FROM targets WHERE activity_logs.target_id = targets.id"
     )
 
 

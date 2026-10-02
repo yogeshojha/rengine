@@ -42,14 +42,11 @@
     "**/*.log": true,
     "**/.python-version": true,
     "**/uv.lock": true,
-    "**/uv.lock": true,
     "**/*.egg-info": true,
-    // Lock files (search hits here are never useful)
+    // Lock files
     "pnpm-lock.yaml": true,
     "package-lock.json": true,
     "yarn.lock": true,
-    // Generated type definitions
-    "**/*.d.ts": false, // keep true only if you don't author .d.ts files
     // Alembic compiled
     "alembic/versions/__pycache__": true
   },
@@ -59,7 +56,7 @@
   "editor.formatOnSave": true,
   "editor.bracketPairColorization.enabled": true,
   "editor.guides.bracketPairs": "active",
-  "editor.minimap.enabled": false, // reclaim horizontal space in deep trees
+  "editor.minimap.enabled": false,
   "editor.renderWhitespace": "trailing",
   // ─── Files ───────────────────────────────────────────────────────────────────
   "files.trimTrailingWhitespace": true,
@@ -118,6 +115,6 @@
   },
   "explorer.sortOrder": "foldersNestsFiles",
   // ─── Workbench ───────────────────────────────────────────────────────────────
-  "workbench.editor.enablePreview": false, // stop files opening in preview/italic mode
+  "workbench.editor.enablePreview": false,
   "workbench.editor.wrapTabs": true
 }

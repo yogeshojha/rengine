@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import * as Select from '$lib/components/ui/select';
 	import { Button } from '$lib/components/ui/button';
@@ -15,7 +16,7 @@
 	let { id, kind, value, onChange }: Props = $props();
 
 	$effect(() => {
-		store.fetch();
+		untrack(() => store.fetch());
 	});
 
 	let options = $derived(store.byKind(kind));
@@ -45,9 +46,7 @@
 					</Select.Item>
 				{/each}
 			{:else}
-				<div class="px-2 py-3 text-sm text-muted-foreground">
-					No wordlists of this kind. Upload one in the Tools Arsenal.
-				</div>
+				<div class="px-2 py-3 text-sm text-muted-foreground">No wordlists of this kind.</div>
 			{/if}
 		</Select.Content>
 	</Select.Root>
@@ -58,7 +57,7 @@
 		href={ROUTES.arsenal('wordlists')}
 		target="_blank"
 		rel="noreferrer"
-		aria-label="Manage wordlists in the Tools Arsenal"
+		aria-label="Open wordlists in Arsenal"
 	>
 		<ExternalLink class="size-3.5" />
 	</Button>

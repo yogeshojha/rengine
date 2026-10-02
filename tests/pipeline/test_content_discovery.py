@@ -222,7 +222,7 @@ def test_a_site_that_could_not_be_guessed_against_is_counted_not_swallowed():
     run.absorb(failed)
 
     assert run.failed == 1
-    assert "could not be guessed against" in " ".join(
+    assert "1 site not tested. connection refused" in " ".join(
         run.warnings(SimpleNamespace(max_minutes=20), 300)
     )
 
@@ -239,4 +239,4 @@ def test_a_budget_that_ran_out_is_reported():
 def test_the_progress_line_names_the_sites_it_dropped():
     run = _Run()
     run.absorb(_outcome("soft404.example.com", hits=290, tried=300))
-    assert "answered to everything" in run.note(0, 300, 1)
+    assert "1 site dropped as catch-all" in run.note(0, 300, 1)

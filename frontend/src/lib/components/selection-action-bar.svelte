@@ -18,13 +18,13 @@
 </script>
 
 <div
-	class="fixed bottom-8 left-1/2 z-50 max-w-[calc(100vw-1rem)] -translate-x-1/2 transition-all duration-300 ease-out {selectedCount >
-	0
-		? 'translate-y-0 opacity-100'
-		: 'pointer-events-none translate-y-3 opacity-0'}"
+	class="fixed bottom-8 left-1/2 z-50 max-w-[calc(100vw-1rem)] -translate-x-1/2 {selectedCount > 0
+		? ''
+		: 'pointer-events-none opacity-0'}"
 	role="region"
 	aria-label="Selection actions"
 	aria-hidden={selectedCount === 0}
+	inert={selectedCount === 0}
 >
 	<div
 		class="flex flex-wrap items-center justify-center gap-0.5 gap-y-1 rounded-lg border border-border bg-popover p-1.5 text-popover-foreground shadow-md"

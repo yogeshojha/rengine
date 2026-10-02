@@ -1,8 +1,6 @@
-"""The AST walk every dimension shares: a compiler supplies its builders and its free text."""
-
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from typing import Any
 
 from sqlalchemy import and_, false, or_, true
@@ -24,6 +22,23 @@ def compare_with(builders: Builders, cmp: Compare, ctx: Any):
         msg = f"Field {cmp.name!r} cannot be searched."
         raise QuerySyntaxError(msg, cmp.start, cmp.end)
     return builder(cmp, ctx)
+
+
+def flags(builders: dict[str, Callable[[Any], Any]], names: Iterable[str]) -> Builder:
+    """The `is:` builder over one dimension's flags."""
+    hint = f"Try one of: {', '.join(names)}"
+
+    def build(cmp: Compare, ctx: Any):
+        branches = []
+        for raw in cmp.values:
+            builder = builders.get(raw.lower())
+            if builder is None:
+                msg = f"Unknown flag {raw!r}."
+                raise QuerySyntaxError(msg, cmp.start, cmp.end, hint)
+            branches.append(builder(ctx))
+        return or_(*branches)
+
+    return build
 
 
 def as_compare(term: Term, field: str) -> Compare:

@@ -1,4 +1,4 @@
-"""WeasyPrint is imported here and nowhere else."""
+"""Render HTML to PDF with WeasyPrint."""
 
 from __future__ import annotations
 
@@ -39,7 +39,7 @@ class _Collector(logging.Handler):
 
 @contextmanager
 def render_limits():
-    """A small image may decode to a huge canvas."""
+    """Cap decoded image size and collect WeasyPrint warnings."""
     from PIL import Image  # noqa: PLC0415
 
     previous = Image.MAX_IMAGE_PIXELS

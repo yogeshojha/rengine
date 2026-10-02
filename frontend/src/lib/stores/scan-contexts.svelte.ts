@@ -11,7 +11,8 @@ function createScanContextsStore() {
 	let error = $state<string | null>(null);
 	let hasFetched = $state(false);
 	let fetchedProjectId = $state<string | null>(null);
-	let activeContext = $state<ScanContextRead | null>(null);
+	let seq = 0;
+	let loadingFor: string | null = null;
 
 	return {
 		get contexts() {
@@ -29,22 +30,26 @@ function createScanContextsStore() {
 		get fetchedProjectId() {
 			return fetchedProjectId;
 		},
-		get activeContext() {
-			return activeContext;
-		},
 
 		async fetchContexts(projectId: string) {
-			if (isLoading) return;
+			if (isLoading && loadingFor === projectId) return;
+			const my = ++seq;
+			loadingFor = projectId;
 			isLoading = true;
 			error = null;
 			try {
-				contexts = await scanContextsApi.list(projectId);
+				const rows = await scanContextsApi.list(projectId);
+				if (my !== seq) return;
+				contexts = rows;
 				hasFetched = true;
 				fetchedProjectId = projectId;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Scan contexts not loaded';
+				if (my === seq) error = e instanceof Error ? e.message : 'Scan contexts not loaded';
 			} finally {
-				isLoading = false;
+				if (my === seq) {
+					isLoading = false;
+					loadingFor = null;
+				}
 			}
 		},
 
@@ -72,9 +77,6 @@ function createScanContextsStore() {
 			try {
 				const updated = await scanContextsApi.update(id, projectId, data);
 				contexts = contexts.map((c) => (c.id === id ? updated : c));
-				if (activeContext?.id === id) {
-					activeContext = updated;
-				}
 				return updated;
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Scan context not saved';
@@ -88,9 +90,6 @@ function createScanContextsStore() {
 				const pid = projectId ?? contexts.find((c) => c.id === id)?.project_id ?? '';
 				await scanContextsApi.remove(id, pid);
 				contexts = contexts.filter((c) => c.id !== id);
-				if (activeContext?.id === id) {
-					activeContext = null;
-				}
 				return true;
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Scan context not deleted';
@@ -110,13 +109,11 @@ function createScanContextsStore() {
 			}
 		},
 
-		setActiveContext(context: ScanContextRead | null) {
-			activeContext = context;
-		},
-
 		clear() {
+			seq++;
 			contexts = [];
-			activeContext = null;
+			isLoading = false;
+			loadingFor = null;
 			error = null;
 			hasFetched = false;
 			fetchedProjectId = null;
