@@ -430,3 +430,41 @@ async def durable_estate(durable: AsyncSession) -> Estate:
 @pytest.fixture
 def now() -> datetime:
     return utc_now()
+
+
+class PriceCache:
+    """The shared copy of the price catalog, private to one test."""
+
+    def __init__(self) -> None:
+        self.data: dict[str, str] = {}
+        self.ttl: dict[str, int | None] = {}
+
+    def get(self, key: str) -> str | None:
+        return self.data.get(key)
+
+    def set(self, key: str, value: str, nx: bool = False, ex: int | None = None):
+        if nx and key in self.data:
+            return None
+        self.data[key] = value
+        self.ttl[key] = ex
+        return True
+
+    def delete(self, key: str) -> None:
+        self.data.pop(key, None)
+
+
+@pytest.fixture(autouse=True)
+def price_cache(monkeypatch) -> PriceCache:
+    """No test reads the live price catalog over the network or from the shared cache."""
+    from shared.services.ai import prices  # noqa: PLC0415
+
+    def offline() -> dict:
+        msg = "no network in tests"
+        raise OSError(msg)
+
+    cache = PriceCache()
+    monkeypatch.setattr(prices, "sync_client", lambda: cache)
+    monkeypatch.setattr(prices, "download", offline)
+    prices.forget()
+    yield cache
+    prices.forget()

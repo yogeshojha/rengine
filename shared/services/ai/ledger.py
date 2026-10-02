@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 
-from shared.definitions.ai import TASK_FEATURE, Rate, price
+from shared.definitions.ai import TASK_FEATURE, Charge, Usage, price
 from shared.logging import get_logger
 from shared.utils.datetime import utc_now
 from shared.utils.net import redact_url_queries
@@ -33,13 +33,12 @@ class CallRecord:
     provider: str
     model: str
     ok: bool
-    input_tokens: int = 0
-    output_tokens: int = 0
+    usage: Usage = field(default_factory=Usage)
+    charge: Charge | None = None
     latency_ms: int = 0
     cached: bool = False
     rounds: int = 1
     error: str | None = None
-    listed: Rate | None = None
     source: Source = field(default_factory=Source)
     at: object = field(default_factory=utc_now)
 
@@ -47,11 +46,10 @@ class CallRecord:
     def feature(self) -> str:
         return TASK_FEATURE.get(self.task, self.task)
 
-    @property
-    def cost_usd(self) -> float | None:
+    def priced(self) -> Charge:
         if self.cached:
-            return 0.0
-        return price(self.model, self.input_tokens, self.output_tokens, self.listed)
+            return Charge(0.0)
+        return self.charge or price(self.usage, None, self.provider)
 
 
 Writer = Callable[[CallRecord], None]
@@ -77,6 +75,10 @@ def source(
         _source.reset(token)
 
 
+def current() -> Source:
+    return _source.get()
+
+
 def scrub(text: str) -> str:
     """Error text with no URL query and no URL credentials."""
     return _USERINFO.sub("://", redact_url_queries(text))
@@ -98,6 +100,7 @@ def record(rec: CallRecord) -> None:
 
 def row_values(rec: CallRecord) -> dict:
     """The columns of one `ai_calls` row."""
+    usage, charge = rec.usage, rec.priced()
     return {
         "at": rec.at,
         "task": rec.task,
@@ -107,9 +110,14 @@ def row_values(rec: CallRecord) -> dict:
         "ok": rec.ok,
         "cached": rec.cached,
         "rounds": rec.rounds,
-        "input_tokens": rec.input_tokens,
-        "output_tokens": rec.output_tokens,
-        "cost_usd": rec.cost_usd,
+        "input_tokens": usage.input_tokens,
+        "output_tokens": usage.output_tokens,
+        "cache_read_tokens": usage.cache_read_tokens,
+        "cache_write_tokens": usage.cache_write_tokens,
+        "cost_usd": charge.usd,
+        "cost_source": charge.source,
+        "input_per_mtok": charge.rates.input if charge.rates else None,
+        "output_per_mtok": charge.rates.output if charge.rates else None,
         "latency_ms": rec.latency_ms,
         "error": rec.error,
         "source_kind": rec.source.kind or None,

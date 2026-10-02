@@ -10,7 +10,15 @@ import pytest
 from fastapi import HTTPException
 
 from app.services.ai_settings import AiSettingsService, call_cursor
-from shared.definitions.ai import TEST_FEATURE, AITask, model_spec, price
+from shared.definitions.ai import (
+    TEST_FEATURE,
+    AITask,
+    Rates,
+    Usage,
+    curated_rates,
+    model_spec,
+    price,
+)
 from shared.models.ai import AiCall
 from shared.services.ai import agent, cache, client, ledger
 from shared.services.ai.agent import DONE, TEXT, AgentEvent, converse
@@ -43,7 +51,9 @@ def _cfg(provider: str = "anthropic", **kw) -> AIConfig:
 
 
 def test_complete_records_success_and_failure(book, monkeypatch):
-    monkeypatch.setattr(client, "_anthropic", lambda *_a, **_k: ("fine", (120, 30)))
+    monkeypatch.setattr(
+        client, "_anthropic", lambda *_a, **_k: ("fine", Usage(120, 30))
+    )
     with ledger.source("user", uuid.UUID(int=7), uuid.UUID(int=7)):
         result = complete(
             _cfg(), system="s", prompt="p", task=AITask.CONNECTION_TEST.value
@@ -56,9 +66,9 @@ def test_complete_records_success_and_failure(book, monkeypatch):
         TEST_FEATURE,
         True,
     )
-    assert (rec.input_tokens, rec.output_tokens) == (120, 30)
-    assert rec.cost_usd is not None
-    assert rec.cost_usd > 0
+    assert (rec.usage.input_tokens, rec.usage.output_tokens) == (120, 30)
+    assert rec.priced().usd is not None
+    assert rec.priced().usd > 0
     assert rec.source.kind == "user"
     assert rec.source.user_id == uuid.UUID(int=7)
 
@@ -86,7 +96,7 @@ def test_a_cached_narrative_is_a_ledger_row_with_no_cost(book, monkeypatch):
     assert text == "cached prose"
     assert len(book) == 1
     assert book[0].cached is True
-    assert book[0].cost_usd == 0.0
+    assert book[0].priced().usd == 0.0
 
 
 async def test_narrate_async_records_hits_and_calls_under_the_source(book, monkeypatch):
@@ -108,7 +118,7 @@ async def test_narrate_async_records_hits_and_calls_under_the_source(book, monke
     stored: list[str] = []
     monkeypatch.setattr(cache, "lookup", lambda *_a, **_k: None)
     monkeypatch.setattr(cache, "store", lambda *_a, **k: stored.append(k["key"]))
-    monkeypatch.setattr(client, "_anthropic", lambda *_a, **_k: ("fresh", (10, 5)))
+    monkeypatch.setattr(client, "_anthropic", lambda *_a, **_k: ("fresh", Usage(10, 5)))
     with ledger.source("scan", uuid.UUID(int=9)):
         text = await cache.narrate_async(
             Session(), _cfg(), task=task, system="s", prompt="p"
@@ -120,12 +130,19 @@ async def test_narrate_async_records_hits_and_calls_under_the_source(book, monke
 
 async def test_converse_records_rounds_and_partial_usage_on_failure(book, monkeypatch):
     async def happy(
-        cfg, model, system, messages, tools, call_tool, max_tokens, effort, budget
+        cfg,
+        model,
+        system,
+        messages,
+        tools,
+        call_tool,
+        max_tokens,
+        effort,
+        budget,
+        tally,
     ):
         yield AgentEvent(TEXT, text="hi")
-        yield AgentEvent(
-            DONE, input_tokens=900, output_tokens=80, model=model, rounds=2
-        )
+        yield AgentEvent(DONE, usage=Usage(900, 80), model=model, rounds=2)
 
     monkeypatch.setattr(agent, "_anthropic", happy)
 
@@ -147,15 +164,28 @@ async def test_converse_records_rounds_and_partial_usage_on_failure(book, monkey
         ]
     assert events[-1].kind == DONE
     assert len(book) == 1
-    assert (book[0].feature, book[0].rounds, book[0].input_tokens) == ("ask", 2, 900)
+    assert (book[0].feature, book[0].rounds, book[0].usage.input_tokens) == (
+        "ask",
+        2,
+        900,
+    )
     assert book[0].source.kind == "thread"
 
     async def sad(
-        cfg, model, system, messages, tools, call_tool, max_tokens, effort, budget
+        cfg,
+        model,
+        system,
+        messages,
+        tools,
+        call_tool,
+        max_tokens,
+        effort,
+        budget,
+        tally,
     ):
         yield AgentEvent(TEXT, text="partial")
         msg = "budget"
-        raise AIError(msg, input_tokens=400, output_tokens=10)
+        raise AIError(msg, usage=Usage(400, 10))
 
     monkeypatch.setattr(agent, "_anthropic", sad)
     with pytest.raises(AIError):
@@ -171,7 +201,7 @@ async def test_converse_records_rounds_and_partial_usage_on_failure(book, monkey
             pass
     assert len(book) == 2
     assert book[1].ok is False
-    assert book[1].input_tokens == 400
+    assert book[1].usage.input_tokens == 400
 
 
 def test_a_failure_message_never_carries_credentials(book, monkeypatch):
@@ -260,7 +290,7 @@ async def test_usage_is_read_from_the_ledger(estate):
 
 def test_unregistered_ledger_does_not_break_a_call(monkeypatch):
     ledger.register(None)
-    monkeypatch.setattr(client, "_anthropic", lambda *_a, **_k: ("ok", (1, 1)))
+    monkeypatch.setattr(client, "_anthropic", lambda *_a, **_k: ("ok", Usage(1, 1)))
     assert complete(_cfg(), system="s", prompt="p", task="ask").text == "ok"
 
 
@@ -268,7 +298,7 @@ def test_unregistered_ledger_does_not_break_a_call(monkeypatch):
 
 
 def test_a_listed_price_prices_calls_on_the_listed_model_alone(book, monkeypatch):
-    monkeypatch.setattr(client, "_openai", lambda *_a, **_k: ("ok", (1000, 100)))
+    monkeypatch.setattr(client, "_openai", lambda *_a, **_k: ("ok", Usage(1000, 100)))
     routed = _cfg(
         "openai_compatible",
         model="z-ai/glm-5.3",
@@ -276,21 +306,24 @@ def test_a_listed_price_prices_calls_on_the_listed_model_alone(book, monkeypatch
         output_per_mtok=3.96,
     )
     complete(routed, system="s", prompt="p", task="ask")
-    assert book[-1].cost_usd == pytest.approx((1000 * 1.26 + 100 * 3.96) / 1e6)
+    assert book[-1].priced().usd == pytest.approx((1000 * 1.26 + 100 * 3.96) / 1e6)
+    assert book[-1].priced().source == "list"
 
     unlisted = _cfg("openai_compatible", model="z-ai/glm-5.3")
     complete(unlisted, system="s", prompt="p", task="ask")
-    assert book[-1].cost_usd is None
+    assert book[-1].priced().usd is None
 
-    assert routed.cost("other/model", 1000, 100) is None
-    curated = _cfg(model="claude-opus-5", input_per_mtok=99.0, output_per_mtok=99.0)
-    assert curated.cost("claude-opus-5", 1_000_000, 0) == pytest.approx(5.0)
+    assert routed.cost(Usage(1000, 100), "other/model") is None
+    marked_up = _cfg(model="claude-opus-5", input_per_mtok=99.0, output_per_mtok=99.0)
+    assert marked_up.cost(Usage(1_000_000, 0)) == pytest.approx(99.0)
+    assert _cfg(model="claude-opus-5").cost(Usage(1_000_000, 0)) == pytest.approx(5.0)
 
 
 def test_a_dated_snapshot_is_priced_and_shaped_as_its_model():
-    assert price("claude-haiku-4-5-20251001", 1_000_000, 1_000_000) == pytest.approx(
-        6.0
-    )
+    rates = curated_rates("claude-haiku-4-5-20251001")
+    assert rates == Rates(1.0, 5.0, 0.1, 1.25)
+    charge = price(Usage(1_000_000, 1_000_000), rates, "anthropic")
+    assert charge.usd == pytest.approx(6.0)
     assert model_spec("claude-haiku-4-5-20251001").label == "Claude Haiku 4.5"
     assert model_spec("claude-3-haiku-20240307") is None
     assert client.anthropic_extras("claude-haiku-4-5-20251001", "low") == {}

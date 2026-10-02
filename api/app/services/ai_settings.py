@@ -31,7 +31,9 @@ from shared.definitions.ai import (
     PROVIDER_LABELS,
     WORKSPACE_PROVIDERS,
     AITask,
+    Rates,
     connection_name,
+    curated_rates,
     feature_switches,
     model_for,
 )
@@ -56,7 +58,7 @@ from shared.models.ai import (
     AiUsageRead,
 )
 from shared.models.instance_settings import InstanceSettings
-from shared.services.ai import ledger
+from shared.services.ai import ledger, prices, rates
 from shared.services.ai.client import AIError, complete, list_models, scrub_error
 from shared.services.ai.config import AIConfig, connection_config
 from shared.services.scan_resolve import MASK, mask_tail
@@ -71,8 +73,11 @@ _NO_PROVIDER = "Choose a provider."
 _NO_KEY = "Enter the API key for this server."
 _NO_URL = "Enter the server URL."
 _NO_MODEL = "Choose a model."
+_NO_PRICE = "Enter an input and an output price."
 _BAD_CURSOR = "Cursor not read. Pass the at and id of the last row, joined by a comma."
-_PRICE_FIELDS = frozenset({"input_per_mtok", "output_per_mtok"})
+_PRICE_FIELDS = frozenset(
+    {"input_per_mtok", "output_per_mtok", "cache_read_per_mtok", "cache_write_per_mtok"}
+)
 ONBOARDING_KEY = "ai_connection_id"
 _ONBOARDING_FIELDS = {"api_key", "base_url", "workspace_id", "model", *_PRICE_FIELDS}
 
@@ -107,13 +112,50 @@ def _optional(value: str | None) -> str | None:
     return (value or "").strip() or None
 
 
-def _rate(
-    data: AiConnectionCreate | AiConnectionUpdate,
-) -> tuple[float | None, float | None]:
-    """The listed price sent with a model, both halves or neither."""
+def _sent_rates(data: AiConnectionCreate | AiConnectionUpdate) -> Rates | None:
+    """The price sent with a model, an input and an output rate or none."""
     if data.input_per_mtok is None or data.output_per_mtok is None:
-        return (None, None)
-    return (data.input_per_mtok, data.output_per_mtok)
+        return None
+    return Rates(
+        data.input_per_mtok,
+        data.output_per_mtok,
+        data.cache_read_per_mtok,
+        data.cache_write_per_mtok,
+    )
+
+
+async def _model_rates(provider: str, model: str, base_url: str) -> Rates | None:
+    """A model's price from the curated catalog, then the live catalog."""
+    return curated_rates(model) or await run_in_threadpool(
+        prices.lookup, provider, model, base_url=base_url
+    )
+
+
+async def _price(
+    row: AiConnection,
+    data: AiConnectionCreate | AiConnectionUpdate,
+    provider: str,
+    model: str,
+    base_url: str,
+    *,
+    fresh: bool,
+) -> None:
+    """Store the row's price: the user's own when set, else the listed one."""
+    sent = _sent_rates(data)
+    if data.custom_price:
+        if sent is None:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, _NO_PRICE)
+        rates.store(row, sent)
+        row.custom_price = True
+        return
+    cleared = sent is None and bool(_PRICE_FIELDS & data.model_fields_set)
+    dropped = data.custom_price is False and row.custom_price
+    if sent is not None:
+        rates.store(row, sent)
+    elif fresh or cleared or dropped:
+        rates.store(row, await _model_rates(provider, model, base_url))
+    if sent is not None or fresh or cleared or data.custom_price is False:
+        row.custom_price = False
 
 
 def call_cursor(before: str | None) -> tuple[datetime, uuid.UUID] | None:
@@ -151,6 +193,9 @@ def _read(row: AiConnection, *, in_use: bool, full: bool) -> AiConnectionRead:
         model=row.model,
         input_per_mtok=row.input_per_mtok,
         output_per_mtok=row.output_per_mtok,
+        cache_read_per_mtok=row.cache_read_per_mtok,
+        cache_write_per_mtok=row.cache_write_per_mtok,
+        custom_price=row.custom_price,
         base_url=row.base_url if full else None,
         workspace_id=row.workspace_id if full else None,
         key_masked=mask_tail(key) if key else None,
@@ -275,7 +320,12 @@ class AiSettingsService:
                     func.count(AiCall.id).filter(AiCall.ok.is_(False)),
                     func.coalesce(func.sum(AiCall.input_tokens), 0),
                     func.coalesce(func.sum(AiCall.output_tokens), 0),
+                    func.coalesce(func.sum(AiCall.cache_read_tokens), 0),
+                    func.coalesce(func.sum(AiCall.cache_write_tokens), 0),
                     func.sum(AiCall.cost_usd),
+                    func.count(AiCall.id).filter(
+                        AiCall.cost_usd.is_(None), AiCall.cached.is_(False)
+                    ),
                     func.max(AiCall.at),
                     func.min(AiCall.at),
                 ).group_by(AiCall.feature)
@@ -290,18 +340,35 @@ class AiSettingsService:
                 failed=int(failed),
                 input_tokens=int(tokens_in),
                 output_tokens=int(tokens_out),
-                cost_usd=round(float(cost), 4) if cost is not None else None,
+                cache_read_tokens=int(reads),
+                cache_write_tokens=int(writes),
+                cost_usd=round(float(cost), 6) if cost is not None else None,
+                unpriced=int(unpriced),
                 last_at=last,
             )
-            for feature, calls, cached, failed, tokens_in, tokens_out, cost, last, _ in rows
+            for (
+                feature,
+                calls,
+                cached,
+                failed,
+                tokens_in,
+                tokens_out,
+                reads,
+                writes,
+                cost,
+                unpriced,
+                last,
+                _,
+            ) in rows
         ]
         by_feature.sort(key=lambda f: (-(f.cost_usd or 0), -f.calls))
         costs = [f.cost_usd for f in by_feature if f.cost_usd is not None]
         return AiUsageRead(
             calls=sum(f.calls - f.cached for f in by_feature),
             failed=sum(f.failed for f in by_feature),
-            cost_usd=round(sum(costs), 4) if costs else None,
-            since=min((r[8] for r in rows if r[8] is not None), default=None),
+            cost_usd=round(sum(costs), 6) if costs else None,
+            unpriced=sum(f.unpriced for f in by_feature),
+            since=min((r[-1] for r in rows if r[-1] is not None), default=None),
             by_feature=by_feature,
         )
 
@@ -352,21 +419,19 @@ class AiSettingsService:
         model = model_for(provider, data.model)
         if not model:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, _NO_MODEL)
-        input_rate, output_rate = _rate(data)
         row = AiConnection(
             name=await self._name(data.name, provider, base_url),
             provider=provider,
             api_key_encrypted=encrypt_secret(key) if key else None,
             base_url=base_url or None,
             model=model,
-            input_per_mtok=input_rate,
-            output_per_mtok=output_rate,
             workspace_id=(
                 _optional(data.workspace_id)
                 if provider in WORKSPACE_PROVIDERS
                 else None
             ),
         )
+        await _price(row, data, provider, model, base_url, fresh=True)
         self.session.add(row)
         await self._commit(row.name, flush=True)
         return row
@@ -424,8 +489,9 @@ class AiSettingsService:
             row.last_test_at = None
             row.last_test_ok = None
             row.last_test_message = None
-        if moved or model != row.model or _PRICE_FIELDS & data.model_fields_set:
-            row.input_per_mtok, row.output_per_mtok = _rate(data)
+        await _price(
+            row, data, provider, model, base_url, fresh=moved or model != row.model
+        )
         row.provider = provider
         row.base_url = base_url or None
         row.model = model
@@ -451,6 +517,11 @@ class AiSettingsService:
         await self.session.delete(row)
         await self.session.commit()
 
+    async def _reprice(self, row: AiConnection) -> None:
+        """Store today's price for the row's model."""
+        await self.session.commit()
+        rates.apply(row, await run_in_threadpool(rates.lookup, row))
+
     async def use_connection(self, connection_id: uuid.UUID) -> AiConnectionRead:
         row = await self._connection(connection_id)
         reason = _unusable(row, try_decrypt(row.api_key_encrypted) or "")
@@ -475,6 +546,8 @@ class AiSettingsService:
             if reason
             else await self._ping(cfg, row.name, user_id)
         )
+        if result.success:
+            await self._reprice(row)
         row.last_test_at = utc_now()
         row.last_test_ok = result.success
         row.last_test_message = result.message[:MAX_TEST_MESSAGE]
@@ -669,6 +742,9 @@ class AiSettingsService:
             base_url=base_url,
             input_per_mtok=priced.input_per_mtok if priced else None,
             output_per_mtok=priced.output_per_mtok if priced else None,
+            cache_read_per_mtok=priced.cache_read_per_mtok if priced else None,
+            cache_write_per_mtok=priced.cache_write_per_mtok if priced else None,
+            custom_price=priced.custom_price if priced else False,
         )
         label = row.name if same and row else PROVIDER_LABELS[provider]
         await self.session.commit()
@@ -732,6 +808,8 @@ class AiSettingsService:
                             "note": m.note,
                             "input_per_mtok": m.input_per_mtok,
                             "output_per_mtok": m.output_per_mtok,
+                            "cache_read_per_mtok": m.cache_read_per_mtok,
+                            "cache_write_per_mtok": m.cache_write_per_mtok,
                             "context": m.context,
                             "recommended": m.recommended,
                         }

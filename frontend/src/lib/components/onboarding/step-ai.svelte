@@ -16,6 +16,7 @@
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 	import { aiApi } from '$lib/api/ai';
 	import { ai } from '$lib/stores/ai.svelte';
+	import { optionPrice } from '$lib/config/ai';
 	import type { AiConnection, AiModelOption, AiModelsRequest } from '$lib/types/ai';
 	import type { StepProps } from '$lib/types/onboarding';
 
@@ -104,9 +105,7 @@
 	}
 
 	function listedPrice() {
-		const option = picked?.id === model.trim() ? picked : null;
-		if (option?.input_per_mtok == null || option.output_per_mtok == null) return {};
-		return { input_per_mtok: option.input_per_mtok, output_per_mtok: option.output_per_mtok };
+		return optionPrice(picked?.id === model.trim() ? picked : null);
 	}
 
 	async function handleNext() {

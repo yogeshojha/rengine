@@ -408,7 +408,7 @@ async def _settle(session: AsyncSession, turn: _Turn) -> dict:
     if not clean:
         raise AIError(NO_ANSWER)
     usage = turn.usage
-    cost = turn.cfg.cost(usage.model, usage.input_tokens, usage.output_tokens)
+    cost = (usage.charge or turn.cfg.charge(usage.usage, usage.model or None)).usd
     answer = AskMessage(
         thread_id=turn.thread.id,
         role=MessageRole.ASSISTANT.value,

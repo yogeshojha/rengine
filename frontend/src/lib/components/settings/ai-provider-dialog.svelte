@@ -2,9 +2,11 @@
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import CheckIcon from '@lucide/svelte/icons/check';
+	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import CircleXIcon from '@lucide/svelte/icons/circle-x';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
+	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -14,7 +16,14 @@
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import ModelPicker from './model-picker.svelte';
 	import { ai } from '$lib/stores/ai.svelte';
-	import { DEFAULT_AI_PROVIDER, MAX_CONNECTION_NAME, connectionName } from '$lib/config/ai';
+	import {
+		DEFAULT_AI_PROVIDER,
+		MAX_CONNECTION_NAME,
+		connectionName,
+		optionPrice,
+		parseRate,
+		ratePair
+	} from '$lib/config/ai';
 	import type {
 		AiConnection,
 		AiConnectionCreate,
@@ -41,6 +50,12 @@
 	let workspaceId = $state('');
 	let model = $state('');
 	let picked = $state<AiModelOption | null>(null);
+	let listing = $state(false);
+	let priceOpen = $state(false);
+	let inputRate = $state('');
+	let outputRate = $state('');
+	let readRate = $state('');
+	let writeRate = $state('');
 	let testing = $state(false);
 	let tested = $state<{ draft: string; result: AiTestResult } | null>(null);
 
@@ -50,16 +65,46 @@
 	const suggestedName = $derived(connectionName(spec, baseUrl, taken));
 	const name = $derived(nameTouched ? typedName : suggestedName);
 	const serverUrl = $derived(spec?.needs_base_url ? baseUrl.trim() : '');
-	const keyStored = $derived(
-		!!connection?.key_masked &&
+	const sameServer = $derived(
+		!!connection &&
 			connection.provider === provider &&
 			(connection.base_url ?? '') === serverUrl.replace(/\/+$/, '')
 	);
+	const keyStored = $derived(sameServer && !!connection?.key_masked);
 	const freshKey = $derived(apiKey.trim());
 	const keyMissing = $derived(!!spec && !spec.key_optional && !freshKey && !keyStored);
 	const workspace = $derived(spec?.workspace ? workspaceId.trim() : '');
 	const draft = $derived(JSON.stringify([provider, serverUrl, freshKey, workspace, model.trim()]));
 	const result = $derived(tested?.draft === draft ? tested.result : null);
+	const listed = $derived(
+		picked?.id === model.trim() && picked.input_per_mtok !== null && picked.output_per_mtok !== null
+			? picked
+			: null
+	);
+	const kept = $derived(
+		sameServer && connection && !connection.custom_price && connection.model === model.trim()
+			? connection
+			: null
+	);
+	const basis = $derived(listed ?? kept);
+	const typed = $derived([inputRate, outputRate, readRate, writeRate].map(parseRate));
+	const customPrice = $derived(typed.some((rate) => rate !== undefined));
+	const shownPrice = $derived.by(() => {
+		const [input, output] = typed;
+		if (customPrice && typeof input === 'number' && typeof output === 'number')
+			return ratePair(input, output);
+		if (basis?.input_per_mtok != null && basis.output_per_mtok != null)
+			return ratePair(basis.input_per_mtok, basis.output_per_mtok);
+		return listing ? '' : 'Not listed';
+	});
+	const placeholders = $derived(
+		[
+			basis?.input_per_mtok ?? 0,
+			basis?.output_per_mtok ?? 0,
+			basis?.cache_read_per_mtok,
+			basis?.cache_write_per_mtok
+		].map((rate) => (rate == null ? '' : rate ? String(rate) : '0.00'))
+	);
 
 	const request = $derived.by((): AiModelsRequest | null => {
 		if (!spec || keyMissing) return null;
@@ -83,6 +128,8 @@
 			showKey = false;
 			workspaceId = row?.workspace_id ?? '';
 			model = row?.model ?? ai.provider(provider)?.default_model ?? '';
+			priceOpen = false;
+			typePrice(row?.custom_price ? row : null);
 			typedName = row?.name ?? '';
 			nameTouched = !!row && row.name !== connectionName(ai.provider(row.provider), baseUrl, taken);
 			tested = null;
@@ -92,7 +139,7 @@
 	function pickProvider(value: string) {
 		if (!value || value === provider) return;
 		provider = value;
-		model = ai.provider(value)?.default_model ?? '';
+		pickModel(ai.provider(value)?.default_model ?? '');
 	}
 
 	function rename(value: string) {
@@ -105,6 +152,9 @@
 		if (spec.needs_base_url && !serverUrl) return 'Server URL is required';
 		if (keyMissing) return 'API key is required';
 		if (!model.trim()) return 'Choose a model';
+		if (typed.some((rate) => rate === null)) return 'Price must be a number';
+		if (customPrice && (typed[0] === undefined || typed[1] === undefined))
+			return 'Input and output price are both required';
 		return null;
 	}
 
@@ -123,10 +173,32 @@
 		tested = answer ? { draft: sent, result: answer } : null;
 	}
 
-	function listedPrice(): Pick<AiConnectionCreate, 'input_per_mtok' | 'output_per_mtok'> {
-		const option = picked?.id === model.trim() ? picked : null;
-		if (option?.input_per_mtok == null || option.output_per_mtok == null) return {};
-		return { input_per_mtok: option.input_per_mtok, output_per_mtok: option.output_per_mtok };
+	function priceFields(): Partial<AiConnectionCreate> {
+		if (!customPrice) return { custom_price: false, ...optionPrice(listed) };
+		const [input, output, read, write] = typed;
+		return {
+			custom_price: true,
+			input_per_mtok: input ?? undefined,
+			output_per_mtok: output ?? undefined,
+			...(typeof read === 'number' ? { cache_read_per_mtok: read } : {}),
+			...(typeof write === 'number' ? { cache_write_per_mtok: write } : {})
+		};
+	}
+
+	function typePrice(row: AiConnection | null) {
+		const text = (rate: number | null | undefined) => (rate == null ? '' : String(rate));
+		inputRate = text(row?.input_per_mtok);
+		outputRate = text(row?.output_per_mtok);
+		readRate = text(row?.cache_read_per_mtok);
+		writeRate = text(row?.cache_write_per_mtok);
+	}
+
+	function pickModel(value: string) {
+		if (value === model) return;
+		model = value;
+		typePrice(
+			sameServer && connection?.custom_price && connection.model === value ? connection : null
+		);
 	}
 
 	async function save() {
@@ -139,7 +211,7 @@
 			name: name.trim() || undefined,
 			provider,
 			model: model.trim(),
-			...listedPrice(),
+			...priceFields(),
 			...(spec?.needs_base_url ? { base_url: serverUrl } : {}),
 			...(freshKey ? { api_key: freshKey } : {}),
 			...(spec?.workspace ? { workspace_id: workspace } : {})
@@ -240,9 +312,81 @@
 				{/if}
 				<FormField label="Model">
 					{#snippet children({ id })}
-						<ModelPicker {id} {provider} {request} bind:value={model} bind:selected={picked} />
+						<ModelPicker
+							{id}
+							{provider}
+							{request}
+							bind:value={() => model, pickModel}
+							bind:selected={picked}
+							bind:loading={listing}
+						/>
 					{/snippet}
 				</FormField>
+				{#if model.trim()}
+					<Collapsible.Root bind:open={priceOpen}>
+						<Collapsible.Trigger
+							class="flex w-full items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+						>
+							<ChevronRightIcon
+								class="size-3 transition-transform {priceOpen ? 'rotate-90' : ''}"
+							/>
+							Price
+							<span class="font-normal tabular-nums">{shownPrice}</span>
+						</Collapsible.Trigger>
+						<Collapsible.Content>
+							<div class="grid grid-cols-2 gap-3 pt-3">
+								<FormField label="Input per 1M tokens">
+									{#snippet children({ id })}
+										<Input
+											{id}
+											bind:value={inputRate}
+											inputmode="decimal"
+											placeholder={placeholders[0]}
+											autocomplete="off"
+											class="font-mono text-xs tabular-nums"
+										/>
+									{/snippet}
+								</FormField>
+								<FormField label="Output per 1M tokens">
+									{#snippet children({ id })}
+										<Input
+											{id}
+											bind:value={outputRate}
+											inputmode="decimal"
+											placeholder={placeholders[1]}
+											autocomplete="off"
+											class="font-mono text-xs tabular-nums"
+										/>
+									{/snippet}
+								</FormField>
+								<FormField label="Cache read per 1M tokens">
+									{#snippet children({ id })}
+										<Input
+											{id}
+											bind:value={readRate}
+											inputmode="decimal"
+											placeholder={placeholders[2]}
+											autocomplete="off"
+											class="font-mono text-xs tabular-nums"
+										/>
+									{/snippet}
+								</FormField>
+								<FormField label="Cache write per 1M tokens">
+									{#snippet children({ id })}
+										<Input
+											{id}
+											bind:value={writeRate}
+											inputmode="decimal"
+											placeholder={placeholders[3]}
+											autocomplete="off"
+											class="font-mono text-xs tabular-nums"
+										/>
+									{/snippet}
+								</FormField>
+							</div>
+						</Collapsible.Content>
+					</Collapsible.Root>
+				{/if}
 				{#if result}
 					<p class="flex items-start gap-1.5 text-xs">
 						{#if result.success}

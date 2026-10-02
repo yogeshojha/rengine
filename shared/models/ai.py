@@ -9,7 +9,9 @@ from sqlmodel import Field, SQLModel, UniqueConstraint
 from shared.definitions.ai import (
     MAX_API_KEY,
     MAX_BASE_URL,
+    MAX_CATALOG_ID,
     MAX_CONNECTION_NAME,
+    MAX_COST_SOURCE,
     MAX_MODEL_ID,
     MAX_PRICE_PER_MTOK,
     MAX_PROVIDER,
@@ -56,7 +58,12 @@ class AiCall(SQLModel, table=True):
     rounds: int = Field(default=1)
     input_tokens: int = Field(default=0)
     output_tokens: int = Field(default=0)
+    cache_read_tokens: int = Field(default=0)
+    cache_write_tokens: int = Field(default=0)
     cost_usd: float | None = Field(default=None)
+    cost_source: str | None = Field(default=None, max_length=MAX_COST_SOURCE)
+    input_per_mtok: float | None = Field(default=None)
+    output_per_mtok: float | None = Field(default=None)
     latency_ms: int = Field(default=0)
     error: str | None = Field(default=None, max_length=300)
     source_kind: str | None = Field(default=None, max_length=20)
@@ -78,12 +85,27 @@ class AiConnection(SQLModel, table=True):
     model: str = Field(max_length=MAX_MODEL_ID)
     input_per_mtok: float | None = Field(default=None)
     output_per_mtok: float | None = Field(default=None)
+    cache_read_per_mtok: float | None = Field(default=None)
+    cache_write_per_mtok: float | None = Field(default=None)
+    custom_price: bool = Field(default=False)
     workspace_id: str | None = Field(default=None, max_length=MAX_WORKSPACE_ID)
     last_test_at: datetime | None = Field(default=None)
     last_test_ok: bool | None = Field(default=None)
     last_test_message: str | None = Field(default=None, max_length=MAX_TEST_MESSAGE)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
+
+
+class AiPrice(SQLModel, table=True):
+    """One model's list price, from the downloaded price list."""
+
+    __tablename__ = "ai_prices"
+
+    model_id: str = Field(primary_key=True, max_length=MAX_CATALOG_ID)
+    input_per_mtok: float
+    output_per_mtok: float
+    cache_read_per_mtok: float | None = Field(default=None)
+    cache_write_per_mtok: float | None = Field(default=None)
 
 
 class AiConnectionRead(BaseModel):
@@ -93,6 +115,9 @@ class AiConnectionRead(BaseModel):
     model: str
     input_per_mtok: float | None = None
     output_per_mtok: float | None = None
+    cache_read_per_mtok: float | None = None
+    cache_write_per_mtok: float | None = None
+    custom_price: bool = False
     base_url: str | None = None
     workspace_id: str | None = None
     key_masked: str | None = None
@@ -116,6 +141,13 @@ class AiConnectionCreate(BaseModel):
     output_per_mtok: float | None = PydanticField(
         default=None, ge=0, le=MAX_PRICE_PER_MTOK
     )
+    cache_read_per_mtok: float | None = PydanticField(
+        default=None, ge=0, le=MAX_PRICE_PER_MTOK
+    )
+    cache_write_per_mtok: float | None = PydanticField(
+        default=None, ge=0, le=MAX_PRICE_PER_MTOK
+    )
+    custom_price: bool = False
     workspace_id: str | None = PydanticField(default=None, max_length=MAX_WORKSPACE_ID)
     use: bool = False
 
@@ -134,6 +166,13 @@ class AiConnectionUpdate(BaseModel):
     output_per_mtok: float | None = PydanticField(
         default=None, ge=0, le=MAX_PRICE_PER_MTOK
     )
+    cache_read_per_mtok: float | None = PydanticField(
+        default=None, ge=0, le=MAX_PRICE_PER_MTOK
+    )
+    cache_write_per_mtok: float | None = PydanticField(
+        default=None, ge=0, le=MAX_PRICE_PER_MTOK
+    )
+    custom_price: bool | None = None
     workspace_id: str | None = PydanticField(default=None, max_length=MAX_WORKSPACE_ID)
 
 
@@ -152,6 +191,8 @@ class AiModelOption(BaseModel):
     label: str
     input_per_mtok: float | None = None
     output_per_mtok: float | None = None
+    cache_read_per_mtok: float | None = None
+    cache_write_per_mtok: float | None = None
     recommended: bool = False
 
 
@@ -175,6 +216,12 @@ class AiOnboarding(BaseModel):
     output_per_mtok: float | None = PydanticField(
         default=None, ge=0, le=MAX_PRICE_PER_MTOK
     )
+    cache_read_per_mtok: float | None = PydanticField(
+        default=None, ge=0, le=MAX_PRICE_PER_MTOK
+    )
+    cache_write_per_mtok: float | None = PydanticField(
+        default=None, ge=0, le=MAX_PRICE_PER_MTOK
+    )
     features: dict[str, bool] | None = None
 
 
@@ -194,7 +241,12 @@ class AiCallRead(BaseModel):
     cached: bool
     input_tokens: int
     output_tokens: int
+    cache_read_tokens: int = 0
+    cache_write_tokens: int = 0
     cost_usd: float | None
+    cost_source: str | None = None
+    input_per_mtok: float | None = None
+    output_per_mtok: float | None = None
     latency_ms: int
     error: str | None
 
@@ -212,13 +264,17 @@ class AiFeatureUsage(BaseModel):
     failed: int = 0
     input_tokens: int = 0
     output_tokens: int = 0
+    cache_read_tokens: int = 0
+    cache_write_tokens: int = 0
     cost_usd: float | None = None
+    unpriced: int = 0
     last_at: datetime | None = None
 
 
 class AiUsageRead(BaseModel):
     calls: int = 0
     cost_usd: float | None = None
+    unpriced: int = 0
     failed: int = 0
     since: datetime | None = None
     by_feature: list[AiFeatureUsage] = []

@@ -113,13 +113,13 @@ def narrate(
     except Exception as exc:
         logger.warning("ai narration failed", task=task, error=str(exc)[:200])
         if usage is not None:
-            usage.failures.append(f"{task}: {exc}"[:300])
+            usage.failed(task, exc)
         return None
 
-    if not result.text:
-        return None
     if usage is not None:
         usage.record(result)
+    if not result.text:
+        return None
     if use_cache:
         store(session, task=task, key=key, subject=subject, result=result)
     return result.text

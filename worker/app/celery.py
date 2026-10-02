@@ -322,6 +322,25 @@ def on_worker_ready(sender, **kwargs) -> None:  # noqa: ARG001
     _warm_library()
     _warm_threat_intel()
     _warm_ip_ranges()
+    _warm_ai_prices()
+
+
+def _warm_ai_prices() -> None:
+    """Share the stored model price list, or load it on first boot."""
+    try:
+        from app.database import get_sync_session  # noqa: PLC0415
+        from shared.definitions.datasets import DatasetKind  # noqa: PLC0415
+        from shared.services.ai import prices  # noqa: PLC0415
+
+        with get_sync_session() as session:
+            if prices.share(session):
+                return
+        celery_app.send_task(
+            "app.tasks.daily.run", kwargs={"jobs": [DatasetKind.AI_PRICES.value]}
+        )
+        logger.info("model price list empty, load dispatched")
+    except Exception:
+        logger.warning("model price list warm-up could not be scheduled", exc_info=True)
 
 
 def _warm_library() -> None:

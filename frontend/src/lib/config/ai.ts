@@ -1,4 +1,4 @@
-import type { AiCall, AiProvider } from '$lib/types/ai';
+import type { AiCall, AiConnectionCreate, AiModelOption, AiProvider } from '$lib/types/ai';
 
 export const AIProvider = {
 	OPENAI: 'openai',
@@ -15,6 +15,18 @@ export const MAX_CONNECTION_NAME = 60;
 export const CALLS_PAGE = 50;
 export const RECENT_CALLS = 5;
 
+/** Mirror of shared/definitions/ai.py:CostSource. */
+export const CostSource = {
+	PROVIDER: 'provider',
+	LIST: 'list',
+	CUSTOM: 'custom'
+} as const;
+
+const PRICE_LABELS: Record<string, string> = {
+	[CostSource.LIST]: 'List price',
+	[CostSource.CUSTOM]: 'Custom price'
+};
+
 const RATE = new Intl.NumberFormat('en-US', {
 	style: 'currency',
 	currency: 'USD',
@@ -22,6 +34,7 @@ const RATE = new Intl.NumberFormat('en-US', {
 	maximumFractionDigits: 4
 });
 const COST = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+const COUNT = new Intl.NumberFormat('en-US');
 const SMALLEST_COST = 0.005;
 
 export function formatRate(perMtok: number | null): string {
@@ -32,6 +45,61 @@ export function formatCost(usd: number | null): string {
 	if (usd === null) return '—';
 	if (usd > 0 && usd < SMALLEST_COST) return '<$0.01';
 	return COST.format(usd);
+}
+
+/** Where a call's cost came from. */
+export function costHint(
+	call: Pick<AiCall, 'cost_source' | 'input_per_mtok' | 'output_per_mtok'>,
+	providerLabel: string
+): string | null {
+	if (call.cost_source === CostSource.PROVIDER) return `Reported by ${providerLabel}`;
+	const label = call.cost_source ? PRICE_LABELS[call.cost_source] : undefined;
+	if (!label) return null;
+	if (call.input_per_mtok === null || call.output_per_mtok === null) return label;
+	return `${label}, ${ratePair(call.input_per_mtok, call.output_per_mtok)}`;
+}
+
+export function ratePair(input: number, output: number): string {
+	return `${formatRate(input)} and ${formatRate(output)} per 1M tokens`;
+}
+
+export function cacheHint(reads: number, writes: number): string | null {
+	const parts: string[] = [];
+	if (reads) parts.push(`${COUNT.format(reads)} read from cache`);
+	if (writes) parts.push(`${COUNT.format(writes)} written to cache`);
+	return parts.length ? parts.join(' · ') : null;
+}
+
+export function unpricedLabel(count: number): string | null {
+	return count ? `${COUNT.format(count)} unpriced` : null;
+}
+
+/** The price fields of a picked model. */
+export function optionPrice(
+	option: AiModelOption | null
+): Pick<
+	AiConnectionCreate,
+	'input_per_mtok' | 'output_per_mtok' | 'cache_read_per_mtok' | 'cache_write_per_mtok'
+> {
+	if (option?.input_per_mtok == null || option.output_per_mtok == null) return {};
+	return {
+		input_per_mtok: option.input_per_mtok,
+		output_per_mtok: option.output_per_mtok,
+		...(option.cache_read_per_mtok != null
+			? { cache_read_per_mtok: option.cache_read_per_mtok }
+			: {}),
+		...(option.cache_write_per_mtok != null
+			? { cache_write_per_mtok: option.cache_write_per_mtok }
+			: {})
+	};
+}
+
+/** A typed price per 1M tokens, undefined when empty and null when not a price. */
+export function parseRate(text: string): number | null | undefined {
+	const value = text.trim();
+	if (!value) return undefined;
+	const rate = Number(value);
+	return Number.isFinite(rate) && rate >= 0 ? rate : null;
 }
 
 export function callCursor(call: Pick<AiCall, 'at' | 'id'>): string {

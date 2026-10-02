@@ -1,5 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_CONNECTION_NAME, callCursor, connectionName, formatCost, formatRate } from './ai';
+import {
+	CostSource,
+	MAX_CONNECTION_NAME,
+	cacheHint,
+	callCursor,
+	connectionName,
+	costHint,
+	formatCost,
+	formatRate,
+	optionPrice,
+	parseRate,
+	ratePair,
+	unpricedLabel
+} from './ai';
 
 const ANTHROPIC = { label: 'Anthropic', needs_base_url: false };
 const COMPATIBLE = { label: 'OpenAI-compatible', needs_base_url: true };
@@ -49,5 +62,78 @@ describe('callCursor', () => {
 		expect(callCursor({ at: '2026-10-02T06:23:09.313941Z', id: 'a1' })).toBe(
 			'2026-10-02T06:23:09.313941Z,a1'
 		);
+	});
+});
+
+describe('cost hints', () => {
+	const listed = { cost_source: CostSource.LIST, input_per_mtok: 4, output_per_mtok: 20 };
+
+	it('names the provider that reported a cost', () => {
+		expect(
+			costHint(
+				{ cost_source: CostSource.PROVIDER, input_per_mtok: null, output_per_mtok: null },
+				'OpenAI-compatible'
+			)
+		).toBe('Reported by OpenAI-compatible');
+	});
+
+	it('states the list rates a cost was priced at', () => {
+		expect(costHint(listed, 'Anthropic')).toBe('List price, $4.00 and $20.00 per 1M tokens');
+		expect(costHint({ ...listed, input_per_mtok: null }, 'Anthropic')).toBe('List price');
+		expect(costHint({ ...listed, cost_source: null }, 'Anthropic')).toBeNull();
+	});
+
+	it('names a price set on the provider', () => {
+		const custom = { cost_source: CostSource.CUSTOM, input_per_mtok: 0, output_per_mtok: 0 };
+		expect(costHint(custom, 'OpenAI-compatible')).toBe(
+			'Custom price, $0.00 and $0.00 per 1M tokens'
+		);
+		expect(costHint({ ...custom, cost_source: 'other' }, 'OpenAI-compatible')).toBeNull();
+	});
+
+	it('writes a rate pair per million tokens', () => {
+		expect(ratePair(0.3, 1.2)).toBe('$0.30 and $1.20 per 1M tokens');
+		expect(ratePair(0.075, 3.75)).toBe('$0.075 and $3.75 per 1M tokens');
+	});
+
+	it('counts cached input, and nothing when none was cached', () => {
+		expect(cacheHint(1536, 0)).toBe('1,536 read from cache');
+		expect(cacheHint(1536, 200)).toBe('1,536 read from cache · 200 written to cache');
+		expect(cacheHint(0, 0)).toBeNull();
+	});
+
+	it('names unpriced calls only when some exist', () => {
+		expect(unpricedLabel(3)).toBe('3 unpriced');
+		expect(unpricedLabel(0)).toBeNull();
+	});
+});
+
+describe('prices sent with a model', () => {
+	const option = {
+		id: 'claude-opus-5-5',
+		label: 'Claude Opus 5.5',
+		input_per_mtok: 4,
+		output_per_mtok: 20,
+		cache_read_per_mtok: 0.2,
+		cache_write_per_mtok: null,
+		recommended: true
+	};
+
+	it('carries the listed rates, cache rates included', () => {
+		expect(optionPrice(option)).toEqual({
+			input_per_mtok: 4,
+			output_per_mtok: 20,
+			cache_read_per_mtok: 0.2
+		});
+		expect(optionPrice({ ...option, output_per_mtok: null })).toEqual({});
+		expect(optionPrice(null)).toEqual({});
+	});
+
+	it('reads a typed price, telling empty from not a price', () => {
+		expect(parseRate(' 1.26 ')).toBe(1.26);
+		expect(parseRate('0')).toBe(0);
+		expect(parseRate('')).toBeUndefined();
+		expect(parseRate('-1')).toBeNull();
+		expect(parseRate('abc')).toBeNull();
 	});
 });

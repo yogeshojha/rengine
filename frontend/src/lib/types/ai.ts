@@ -6,7 +6,10 @@ export interface AiFeatureUsage {
 	failed: number;
 	input_tokens: number;
 	output_tokens: number;
+	cache_read_tokens: number;
+	cache_write_tokens: number;
 	cost_usd: number | null;
+	unpriced: number;
 	last_at: string | null;
 }
 
@@ -20,7 +23,12 @@ export interface AiCall {
 	cached: boolean;
 	input_tokens: number;
 	output_tokens: number;
+	cache_read_tokens: number;
+	cache_write_tokens: number;
 	cost_usd: number | null;
+	cost_source: string | null;
+	input_per_mtok: number | null;
+	output_per_mtok: number | null;
 	latency_ms: number;
 	error: string | null;
 }
@@ -33,6 +41,7 @@ export interface AiCallPage {
 export interface AiUsage {
 	calls: number;
 	cost_usd: number | null;
+	unpriced: number;
 	failed: number;
 	since: string | null;
 	by_feature: AiFeatureUsage[];
@@ -59,6 +68,9 @@ export interface AiConnection {
 	model: string;
 	input_per_mtok: number | null;
 	output_per_mtok: number | null;
+	cache_read_per_mtok: number | null;
+	cache_write_per_mtok: number | null;
+	custom_price: boolean;
 	base_url: string | null;
 	workspace_id: string | null;
 	key_masked: string | null;
@@ -76,6 +88,9 @@ export interface AiConnectionCreate {
 	model?: string;
 	input_per_mtok?: number;
 	output_per_mtok?: number;
+	cache_read_per_mtok?: number;
+	cache_write_per_mtok?: number;
+	custom_price?: boolean;
 	workspace_id?: string;
 	use?: boolean;
 }
@@ -95,6 +110,8 @@ export interface AiModelOption {
 	label: string;
 	input_per_mtok: number | null;
 	output_per_mtok: number | null;
+	cache_read_per_mtok: number | null;
+	cache_write_per_mtok: number | null;
 	recommended: boolean;
 }
 
@@ -109,6 +126,8 @@ export interface AiModel {
 	note: string;
 	input_per_mtok: number | null;
 	output_per_mtok: number | null;
+	cache_read_per_mtok: number | null;
+	cache_write_per_mtok: number | null;
 	context: number;
 	recommended: boolean;
 }
@@ -168,6 +187,8 @@ export interface AiOnboarding {
 	model?: string;
 	input_per_mtok?: number;
 	output_per_mtok?: number;
+	cache_read_per_mtok?: number;
+	cache_write_per_mtok?: number;
 	features?: Record<string, boolean>;
 }
 

@@ -11,6 +11,7 @@ from fastapi import HTTPException
 
 from app.services.ask import service as ask_service
 from app.services.ask.service import AskService, reply
+from shared.definitions.ai import Usage
 from shared.definitions.ask import (
     MAX_THREADS_PER_FINDING,
     CitationKind,
@@ -232,9 +233,7 @@ async def test_reply_streams_and_stores_a_cited_answer(ready, estate, monkeypatc
                 AgentEvent(CALL, name="query_assets", args={"target": "example.com"}),
                 AgentEvent(TEXT, text=text[:20]),
                 AgentEvent(TEXT, text=text[20:]),
-                AgentEvent(
-                    DONE, input_tokens=1000, output_tokens=100, model="claude-opus-5"
-                ),
+                AgentEvent(DONE, usage=Usage(1000, 100), model="claude-opus-5"),
             ],
             seen,
         ),

@@ -17,7 +17,7 @@
 	import SettingRow from '$lib/components/settings/setting-row.svelte';
 	import { ai } from '$lib/stores/ai.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
-	import { formatCost } from '$lib/config/ai';
+	import { formatCost, unpricedLabel } from '$lib/config/ai';
 	import { AI_USAGE_PANEL, PANEL_PARAM, routeLabels } from '$lib/config/routes';
 	import { formatShortDate } from '$lib/utilities/dates';
 	import { pageTitle } from '$lib/utilities/page-title';
@@ -32,7 +32,10 @@
 	const spend = $derived.by(() => {
 		if (!usage?.calls) return 'No calls';
 		const calls = `${usage.calls.toLocaleString()} ${usage.calls === 1 ? 'call' : 'calls'}`;
-		return usage.cost_usd === null ? calls : `${formatCost(usage.cost_usd)} · ${calls}`;
+		const unpriced = unpricedLabel(usage.unpriced);
+		return [usage.cost_usd === null ? null : formatCost(usage.cost_usd), calls, unpriced]
+			.filter(Boolean)
+			.join(' · ');
 	});
 
 	function load() {

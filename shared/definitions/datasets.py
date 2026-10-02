@@ -22,6 +22,7 @@ class DatasetKind(StrEnum):
     NVD = FeedKind.NVD.value
     IP_RANGES = "ip_ranges"
     PROGRAM_FEED = "program_feed"
+    AI_PRICES = "ai_prices"
 
 
 IP_RANGES_STALE_AFTER_HOURS = 14 * 24
@@ -89,6 +90,15 @@ DATASETS: tuple[DatasetSpec, ...] = (
         task="app.tasks.bounty_programs.sync_feed",
         stale_after_hours=None,
         capability=CAP_BOUNTY_PROGRAMS,
+    ),
+    DatasetSpec(
+        kind=DatasetKind.AI_PRICES.value,
+        label="Model prices",
+        description="List prices per AI model, from OpenRouter",
+        rows_noun="models",
+        table="ai_prices",
+        task="app.tasks.daily.run",
+        task_kwargs=(("jobs", (DatasetKind.AI_PRICES.value,)),),
     ),
 )
 

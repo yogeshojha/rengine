@@ -18,6 +18,7 @@ from app.services import ai_settings
 from app.services.ai_settings import AiSettingsService
 from app.services.ask.service import availability
 from app.services.instance_settings import InstanceSettingsService
+from shared.definitions.ai import Rates
 from shared.models.ai import (
     AiConnection,
     AiConnectionCreate,
@@ -28,7 +29,7 @@ from shared.models.ai import (
     AiSettingsUpdate,
     AiTestRequest,
 )
-from shared.services.ai import ledger
+from shared.services.ai import client, ledger
 from shared.services.ai.client import list_models
 from shared.services.ai.config import AIConfig, load_config, load_config_async
 from shared.services.scan_resolve import MASK
@@ -44,6 +45,11 @@ ROUTER_KEY = "sk-or-v1-fedcba9876543210"
 def flush_only(session, monkeypatch):
     monkeypatch.setattr(session, "commit", session.flush)
     return session
+
+
+@pytest.fixture(autouse=True)
+def unlisted(monkeypatch):
+    monkeypatch.setattr(client, "listed_rates", lambda _cfg: None)
 
 
 def _anthropic(**kw) -> AiConnectionCreate:
@@ -78,7 +84,7 @@ async def test_a_saved_provider_is_listed_with_its_key_masked(estate, flush_only
 
     assert created.key_masked == f"{MASK}cdef"
     assert ANTHROPIC_KEY not in created.model_dump_json()
-    assert created.model == "claude-opus-5"
+    assert created.model == "claude-opus-5-5"
     assert await _stored_key(flush_only, created.id) == ANTHROPIC_KEY
 
     admin = await service.connections(full=True)
@@ -210,7 +216,7 @@ async def test_load_config_resolves_the_provider_in_use(estate, flush_only):
     assert (cfg.provider, cfg.api_key, cfg.model) == (
         "anthropic",
         ANTHROPIC_KEY,
-        "claude-opus-5",
+        "claude-opus-5-5",
     )
     assert cfg.available
     assert not cfg.allows("ask")
@@ -224,7 +230,7 @@ async def test_load_config_resolves_the_provider_in_use(estate, flush_only):
         "https://openrouter.ai/api/v1",
     )
     assert synced.model == "qwen/qwen3-coder"
-    assert synced.listed_price("qwen/qwen3-coder") == (1.26, 3.96)
+    assert synced.listed_price("qwen/qwen3-coder") == Rates(1.26, 3.96)
     assert synced.listed_price("other/model") is None
     assert synced.workspace == ""
 
@@ -269,7 +275,7 @@ async def test_moving_the_server_drops_the_stored_key(estate, flush_only):
     )
     assert (moved.provider, moved.model, moved.base_url) == (
         "anthropic",
-        "claude-opus-5",
+        "claude-opus-5-5",
         None,
     )
     assert await _stored_key(flush_only, routed.id) == ANTHROPIC_KEY
@@ -468,10 +474,10 @@ def test_anthropic_models_page_through_and_lead_with_the_catalog():
         {
             "data": [
                 {"id": "claude-3-haiku-20240307", "display_name": "Claude Haiku 3"},
-                {"id": "claude-opus-5", "display_name": "Claude Opus 5 (new)"},
+                {"id": "claude-opus-5-5", "display_name": "Claude Opus 5.5 (new)"},
             ],
             "has_more": True,
-            "last_id": "claude-opus-5",
+            "last_id": "claude-opus-5-5",
         },
         {
             "data": [
@@ -493,16 +499,17 @@ def test_anthropic_models_page_through_and_lead_with_the_catalog():
 
     assert listed.error is None
     assert [m.id for m in listed.models] == [
-        "claude-opus-5",
+        "claude-opus-5-5",
         "claude-haiku-4-5",
         "claude-2.1",
         "claude-3-haiku-20240307",
     ]
-    assert listed.models[0].label == "Claude Opus 5"
-    assert listed.models[0].input_per_mtok == 5.0
+    assert listed.models[0].label == "Claude Opus 5.5"
+    assert listed.models[0].input_per_mtok == 4.0
+    assert listed.models[0].cache_read_per_mtok == 0.2
     assert [m.recommended for m in listed.models] == [True, True, False, False]
     assert str(requests[0].url) == "https://api.anthropic.com/v1/models?limit=1000"
-    assert requests[1].url.params["after_id"] == "claude-opus-5"
+    assert requests[1].url.params["after_id"] == "claude-opus-5-5"
     assert requests[0].headers["x-api-key"] == "k-secret-value"
     assert requests[0].headers["anthropic-version"] == "2023-06-01"
     assert requests[0].headers["anthropic-workspace-id"] == "ws-1"
@@ -517,13 +524,13 @@ def test_a_dated_snapshot_lists_as_its_model():
 
         return list_models(_cfg("anthropic"), transport=_transport(handler)).models
 
-    alone = listing(["claude-haiku-4-5-20251001", "claude-opus-5"])
+    alone = listing(["claude-haiku-4-5-20251001", "claude-opus-5-5"])
     both = listing(["claude-haiku-4-5-20251001", "claude-haiku-4-5"])
 
     snapshot = next(m for m in alone if m.id == "claude-haiku-4-5-20251001")
     assert (snapshot.label, snapshot.recommended) == ("Claude Haiku 4.5", True)
     assert (snapshot.input_per_mtok, snapshot.output_per_mtok) == (1.0, 5.0)
-    assert [m.id for m in alone] == ["claude-opus-5", "claude-haiku-4-5-20251001"]
+    assert [m.id for m in alone] == ["claude-opus-5-5", "claude-haiku-4-5-20251001"]
     assert [(m.id, m.recommended) for m in both] == [
         ("claude-haiku-4-5", True),
         ("claude-haiku-4-5-20251001", False),

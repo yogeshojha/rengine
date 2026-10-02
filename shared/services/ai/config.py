@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from sqlalchemy import select
 
@@ -11,13 +11,19 @@ from shared.definitions.ai import (
     KEY_OPTIONAL_PROVIDERS,
     REQUEST_TIMEOUT,
     WORKSPACE_PROVIDERS,
-    Rate,
+    Charge,
+    CostSource,
+    Rates,
+    Usage,
+    curated_rates,
     feature_switches,
     price,
+    same_model,
 )
 from shared.enums.instance import AIProvider
 from shared.models.ai import AiConnection
 from shared.models.instance_settings import InstanceSettings
+from shared.services.ai import prices
 from shared.utils.crypto import try_decrypt
 
 VALID_PROVIDERS: frozenset[str] = frozenset(p.value for p in AIProvider)
@@ -35,6 +41,9 @@ class AIConfig:
     base_url: str = ""
     input_per_mtok: float | None = None
     output_per_mtok: float | None = None
+    cache_read_per_mtok: float | None = None
+    cache_write_per_mtok: float | None = None
+    custom_price: bool = False
 
     @property
     def available(self) -> bool:
@@ -47,16 +56,50 @@ class AIConfig:
     def allows(self, feature: str) -> bool:
         return self.available and bool(self.features.get(feature, False))
 
-    def listed_price(self, model: str) -> Rate | None:
-        """The price the provider listed for its model, for a call on that model."""
-        if model != self.model:
-            return None
+    @property
+    def stored_rates(self) -> Rates | None:
         if self.input_per_mtok is None or self.output_per_mtok is None:
             return None
-        return (self.input_per_mtok, self.output_per_mtok)
+        return Rates(
+            self.input_per_mtok,
+            self.output_per_mtok,
+            self.cache_read_per_mtok,
+            self.cache_write_per_mtok,
+        )
 
-    def cost(self, model: str, input_tokens: int, output_tokens: int) -> float | None:
-        return price(model, input_tokens, output_tokens, self.listed_price(model))
+    def listed_price(self, model: str) -> Rates | None:
+        """The connection's stored rates, for a call on its model or a snapshot of it."""
+        if not self.model or not same_model(model, self.model):
+            return None
+        return self.stored_rates
+
+    def known_rates(self, model: str) -> Rates | None:
+        """The stored rates, then the curated catalog."""
+        return self.listed_price(model) or curated_rates(model)
+
+    def rates(self, model: str) -> Rates | None:
+        """The stored rates, the curated catalog, then the live catalog."""
+        return self.known_rates(model) or prices.lookup(
+            self.provider, model, base_url=self.base_url
+        )
+
+    def priced(self, usage: Usage, rates: Rates | None, model: str) -> Charge:
+        """A call's charge at the given rates, labelled custom when they are the user's own."""
+        charge = price(usage, rates, self.provider)
+        if (
+            self.custom_price
+            and charge.source == CostSource.LIST.value
+            and charge.rates == self.listed_price(model)
+        ):
+            return replace(charge, source=CostSource.CUSTOM.value)
+        return charge
+
+    def charge(self, usage: Usage, model: str | None = None) -> Charge:
+        model = model or self.model
+        return self.priced(usage, self.rates(model), model)
+
+    def cost(self, usage: Usage, model: str | None = None) -> float | None:
+        return self.charge(usage, model).usd
 
 
 def connection_config(
@@ -80,6 +123,9 @@ def connection_config(
         base_url=(base_url or "").strip(),
         input_per_mtok=row.input_per_mtok,
         output_per_mtok=row.output_per_mtok,
+        cache_read_per_mtok=row.cache_read_per_mtok,
+        cache_write_per_mtok=row.cache_write_per_mtok,
+        custom_price=row.custom_price,
     )
 
 

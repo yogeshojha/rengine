@@ -4,28 +4,37 @@ from __future__ import annotations
 
 import asyncio
 import json
+import threading
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 from shared.definitions.ai import (
     MAX_OUTPUT_TOKENS,
+    REFUSAL,
     TASK_EFFORT,
     TASK_OUTPUT_TOKENS,
+    UNREPORTED,
+    Charge,
     Effort,
+    Usage,
 )
 from shared.enums.instance import AIProvider
 from shared.services.ai import ledger
 from shared.services.ai.client import (
+    DECLINED,
     AIError,
     anthropic_extras,
     anthropic_headers,
+    anthropic_usage,
     chat_headers,
     chat_url,
     complete,
+    openai_usage,
     post_json,
     provider_proxy,
+    refused,
     scrub_error,
     sdk_error,
 )
@@ -40,6 +49,7 @@ ROUND_BREAK = "\n\n"
 OUT_OF_BUDGET = "The answer ran past the output budget. Ask a narrower question."
 NO_FINISH = "The model did not finish within the tool budget."
 TOO_MANY_CALLS = "Skipped. At most {n} tool calls run in one turn."
+STOPPED = "Stopped before the answer finished."
 
 
 @dataclass(frozen=True)
@@ -56,13 +66,22 @@ class AgentEvent:
     name: str = ""
     args: dict = field(default_factory=dict)
     ok: bool = True
-    input_tokens: int = 0
-    output_tokens: int = 0
+    usage: Usage = field(default_factory=Usage)
     model: str = ""
     rounds: int = 0
+    charge: Charge | None = None
+
+    @property
+    def input_tokens(self) -> int:
+        return self.usage.input_tokens
+
+    @property
+    def output_tokens(self) -> int:
+        return self.usage.output_tokens
 
 
 ToolCaller = Callable[[str, dict], Awaitable[tuple[str, bool]]]
+Write = Callable[[Usage], object]
 
 
 @dataclass(frozen=True)
@@ -95,6 +114,85 @@ class _Voice:
         return events
 
 
+def _read(live: Callable[[], Usage] | None) -> Usage:
+    if live is None:
+        return Usage()
+    try:
+        return live()
+    except Exception:
+        return UNREPORTED
+
+
+class Tally:
+    """What one conversation has spent, the round in flight included."""
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._done = Usage()
+        self._live: Callable[[], Usage] | None = None
+        self._flights = 0
+        self._write: Write | None = None
+        self._waiting = False
+        self.rounds = 0
+        self.settled = False
+
+    def start(self, live: Callable[[], Usage] | None = None) -> None:
+        """A round opened, with what its provider has reported so far."""
+        with self._lock:
+            self.rounds += 1
+            self._live = live
+
+    def close(self, usage: Usage | None = None) -> None:
+        """A round ended, with its final usage or what it last reported."""
+        with self._lock:
+            ended = usage if usage is not None else _read(self._live)
+            self._done = self._done + ended
+            self._live = None
+
+    def total(self) -> Usage:
+        with self._lock:
+            return self._done + _read(self._live)
+
+    def lift(self) -> None:
+        """A blocking request left on another thread."""
+        with self._lock:
+            self.rounds += 1
+            self._flights += 1
+
+    def land(self, usage: Usage) -> None:
+        """That request returned, after the conversation ended or not."""
+        with self._lock:
+            self._flights -= 1
+            if not self.settled or self._write is None:
+                self._done = self._done + usage
+                return
+            if self._waiting:
+                self._done = self._done + usage
+                if self._flights:
+                    return
+                self._waiting = False
+                usage = self._done
+            write = self._write
+        write(usage)
+
+    def settle(self, write: Write) -> None:
+        """Write the spend now, or once the requests in flight return."""
+        with self._lock:
+            if self.settled:
+                return
+            self.settled = True
+            self._write = write
+            if self._flights:
+                self._waiting = True
+                return
+            spent = self._done + _read(self._live)
+        write(spent)
+
+    def mark(self) -> None:
+        with self._lock:
+            self.settled = True
+
+
 async def converse(
     cfg: AIConfig,
     *,
@@ -107,56 +205,76 @@ async def converse(
     max_calls: int = 3,
 ) -> AsyncIterator[AgentEvent]:
     model = cfg.model
-    max_tokens = TASK_OUTPUT_TOKENS.get(task, MAX_OUTPUT_TOKENS)
-    effort = TASK_EFFORT.get(task, Effort.LOW.value)
-    budget = _Budget(max_rounds, max_calls)
-    if cfg.provider == AIProvider.ANTHROPIC.value:
-        stream = _anthropic(
-            cfg, model, system, messages, tools, call_tool, max_tokens, effort, budget
-        )
-    elif cfg.provider == AIProvider.GOOGLE.value:
-        stream = _plain(cfg, system, messages, task)
-    else:
-        stream = _openai(
-            cfg, model, system, messages, tools, call_tool, max_tokens, budget
-        )
     if cfg.provider == AIProvider.GOOGLE.value:
-        async for event in stream:
+        async for event in _plain(cfg, system, messages, task):
             yield event
         return
 
+    max_tokens = TASK_OUTPUT_TOKENS.get(task, MAX_OUTPUT_TOKENS)
+    effort = TASK_EFFORT.get(task, Effort.LOW.value)
+    budget = _Budget(max_rounds, max_calls)
+    rates = cfg.known_rates(model) or await asyncio.to_thread(cfg.rates, model)
+    tally = Tally()
+    source = ledger.current()
     started = time.monotonic()
-    try:
-        async for event in stream:
-            if event.kind == DONE:
-                ledger.record(
-                    CallRecord(
-                        task=task,
-                        provider=cfg.provider,
-                        model=event.model or model,
-                        ok=True,
-                        input_tokens=event.input_tokens,
-                        output_tokens=event.output_tokens,
-                        latency_ms=int((time.monotonic() - started) * 1000),
-                        rounds=event.rounds or 1,
-                        listed=cfg.listed_price(event.model or model),
-                    )
-                )
-            yield event
-    except AIError as exc:
+
+    def write(
+        usage: Usage, *, ok: bool, error: str | None = None, rounds: int = 0
+    ) -> Charge:
+        charge = cfg.priced(usage, rates, model)
         ledger.record(
             CallRecord(
                 task=task,
                 provider=cfg.provider,
                 model=model,
-                ok=False,
-                input_tokens=exc.input_tokens,
-                output_tokens=exc.output_tokens,
+                ok=ok,
+                usage=usage,
+                charge=charge,
                 latency_ms=int((time.monotonic() - started) * 1000),
-                error=scrub_error(str(exc), cfg),
-                listed=cfg.listed_price(model),
+                rounds=rounds or max(tally.rounds, 1),
+                error=error,
+                source=source,
             )
         )
+        return charge
+
+    def failed(error: str) -> Write:
+        return lambda usage: write(usage, ok=False, error=error)
+
+    if cfg.provider == AIProvider.ANTHROPIC.value:
+        stream = _anthropic(
+            cfg,
+            model,
+            system,
+            messages,
+            tools,
+            call_tool,
+            max_tokens,
+            effort,
+            budget,
+            tally,
+        )
+    else:
+        stream = _openai(
+            cfg, model, system, messages, tools, call_tool, max_tokens, budget, tally
+        )
+
+    try:
+        async for event in stream:
+            if event.kind == DONE and not tally.settled:
+                tally.mark()
+                event.charge = write(event.usage, ok=True, rounds=event.rounds)
+            yield event
+    except AIError as exc:
+        if not tally.settled:
+            tally.mark()
+            write(exc.usage, ok=False, error=scrub_error(str(exc), cfg))
+        raise
+    except Exception as exc:
+        tally.settle(failed(scrub_error(f"{type(exc).__name__}: {exc}", cfg)))
+        raise
+    except BaseException:
+        tally.settle(failed(STOPPED))
         raise
 
 
@@ -180,6 +298,13 @@ def _request(
     return kwargs
 
 
+def _snapshot(stream: Any, model: str) -> Callable[[], Usage]:
+    """What a round in flight has reported, short of its final usage."""
+    return lambda: replace(
+        anthropic_usage(stream.current_message_snapshot.usage, model), reported=False
+    )
+
+
 async def _anthropic(
     cfg: AIConfig,
     model: str,
@@ -190,6 +315,7 @@ async def _anthropic(
     max_tokens: int,
     effort: str,
     budget: _Budget,
+    tally: Tally,
 ) -> AsyncIterator[AgentEvent]:
     import anthropic  # noqa: PLC0415
 
@@ -206,7 +332,6 @@ async def _anthropic(
         for t in tools
     ]
     extras = anthropic_extras(model, effort)
-    used_in = used_out = 0
     voice = _Voice()
 
     for round_no in range(1, budget.rounds + 1):
@@ -214,34 +339,30 @@ async def _anthropic(
         voice.start_round()
         try:
             async with client.messages.stream(**kwargs) as stream:
+                tally.start(_snapshot(stream, model))
                 async for text in stream.text_stream:
                     for event in voice.say(text):
                         yield event
                 final = await stream.get_final_message()
         except anthropic.BadRequestError as exc:
+            tally.close()
             if not extras:
-                raise sdk_error(exc) from exc
+                raise sdk_error(exc, tally.total()) from exc
             extras = {}
             continue
         except anthropic.APIError as exc:
-            raise sdk_error(exc) from exc
+            raise sdk_error(exc, tally.total()) from exc
 
-        used_in += final.usage.input_tokens
-        used_out += final.usage.output_tokens
-        if final.stop_reason == "refusal":
-            msg = "The model declined the request."
-            raise AIError(msg, input_tokens=used_in, output_tokens=used_out)
+        spent = anthropic_usage(final.usage, model)
+        if final.stop_reason == REFUSAL:
+            tally.close(refused(final, spent))
+            raise AIError(DECLINED, usage=tally.total())
+        tally.close(spent)
         if final.stop_reason == "max_tokens" and not voice.round_spoke:
-            raise AIError(OUT_OF_BUDGET, input_tokens=used_in, output_tokens=used_out)
+            raise AIError(OUT_OF_BUDGET, usage=tally.total())
         calls = [b for b in final.content if getattr(b, "type", "") == "tool_use"]
         if final.stop_reason != "tool_use" or not calls:
-            yield AgentEvent(
-                DONE,
-                input_tokens=used_in,
-                output_tokens=used_out,
-                model=model,
-                rounds=round_no,
-            )
+            yield AgentEvent(DONE, usage=tally.total(), model=model, rounds=round_no)
             return
 
         history.append({"role": "assistant", "content": final.content})
@@ -264,7 +385,28 @@ async def _anthropic(
             )
         history.append({"role": "user", "content": results})
 
-    raise AIError(NO_FINISH, input_tokens=used_in, output_tokens=used_out)
+    raise AIError(NO_FINISH, usage=tally.total())
+
+
+def _post_round(
+    tally: Tally,
+    url: str,
+    payload: dict,
+    headers: dict,
+    timeout: float,
+    proxy: str | None,
+) -> dict:
+    tally.lift()
+    spent = UNREPORTED
+    try:
+        body = post_json(url, payload, headers, timeout, proxy=proxy)
+        spent = openai_usage(body.get("usage"))
+        return body
+    except AIError as exc:
+        spent = exc.usage
+        raise
+    finally:
+        tally.land(spent)
 
 
 async def _openai(
@@ -276,6 +418,7 @@ async def _openai(
     call_tool: ToolCaller,
     max_tokens: int,
     budget: _Budget,
+    tally: Tally,
 ) -> AsyncIterator[AgentEvent]:
     history: list[dict[str, Any]] = [{"role": "system", "content": system}, *messages]
     specs = [
@@ -292,7 +435,6 @@ async def _openai(
     headers = chat_headers(cfg)
     url = chat_url(cfg)
     proxy = provider_proxy(cfg)
-    used_in = used_out = 0
     voice = _Voice()
 
     for round_no in range(1, budget.rounds + 1):
@@ -303,17 +445,18 @@ async def _openai(
         }
         if specs:
             payload["tools"] = specs
-        body = await asyncio.to_thread(
-            post_json, url, payload, headers, cfg.timeout, proxy=proxy
-        )
+        try:
+            body = await asyncio.to_thread(
+                _post_round, tally, url, payload, headers, cfg.timeout, proxy
+            )
+        except AIError as exc:
+            exc.usage = tally.total()
+            raise
         choices = body.get("choices") or []
         if not choices:
             msg = "The provider returned no completion."
-            raise AIError(msg)
+            raise AIError(msg, usage=tally.total())
         message = choices[0].get("message") or {}
-        usage = body.get("usage") or {}
-        used_in += int(usage.get("prompt_tokens", 0))
-        used_out += int(usage.get("completion_tokens", 0))
 
         voice.start_round()
         for event in voice.say(message.get("content") or ""):
@@ -321,16 +464,8 @@ async def _openai(
         calls = message.get("tool_calls") or []
         if not calls:
             if choices[0].get("finish_reason") == "length" and not voice.round_spoke:
-                raise AIError(
-                    OUT_OF_BUDGET, input_tokens=used_in, output_tokens=used_out
-                )
-            yield AgentEvent(
-                DONE,
-                input_tokens=used_in,
-                output_tokens=used_out,
-                model=model,
-                rounds=round_no,
-            )
+                raise AIError(OUT_OF_BUDGET, usage=tally.total())
+            yield AgentEvent(DONE, usage=tally.total(), model=model, rounds=round_no)
             return
 
         history.append(message)
@@ -353,7 +488,7 @@ async def _openai(
                 {"role": "tool", "tool_call_id": call.get("id"), "content": text}
             )
 
-    raise AIError(NO_FINISH, input_tokens=used_in, output_tokens=used_out)
+    raise AIError(NO_FINISH, usage=tally.total())
 
 
 async def _plain(
@@ -368,7 +503,8 @@ async def _plain(
     yield AgentEvent(TEXT, text=result.text)
     yield AgentEvent(
         DONE,
-        input_tokens=result.input_tokens,
-        output_tokens=result.output_tokens,
+        usage=result.usage,
         model=result.model,
+        rounds=1,
+        charge=result.charge,
     )

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 from celery import shared_task
 
+from shared.definitions.datasets import DatasetKind
 from shared.logging import get_logger
 
 logger = get_logger(__name__)
@@ -30,10 +31,19 @@ def _new_checks() -> dict:
     return sweep()
 
 
+def _ai_prices() -> dict:
+    from app.database import get_sync_session  # noqa: PLC0415
+    from shared.services.ai.rates import refresh_all  # noqa: PLC0415
+
+    with get_sync_session() as session:
+        return refresh_all(session)
+
+
 # library first
 DAILY_JOBS: tuple[DailyJob, ...] = (
     DailyJob("library", _library),
     DailyJob("new_checks", _new_checks),
+    DailyJob(DatasetKind.AI_PRICES.value, _ai_prices),
 )
 
 DAILY_JOB_NAMES: tuple[str, ...] = tuple(job.name for job in DAILY_JOBS)

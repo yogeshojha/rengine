@@ -21,6 +21,7 @@
 		id?: string;
 		placeholder?: string;
 		disabled?: boolean;
+		loading?: boolean;
 	}
 
 	let {
@@ -30,7 +31,8 @@
 		request,
 		id,
 		placeholder = 'Choose a model',
-		disabled = false
+		disabled = false,
+		loading = $bindable(false)
 	}: Props = $props();
 
 	const DEBOUNCE_MS = 500;
@@ -39,7 +41,6 @@
 	let open = $state(false);
 	let search = $state('');
 	let listed = $state<{ provider: string; models: AiModelOption[] } | null>(null);
-	let loading = $state(false);
 	let error = $state<string | null>(null);
 	let seq = 0;
 	let mounted = false;
@@ -51,6 +52,8 @@
 			label: m.label,
 			input_per_mtok: m.input_per_mtok,
 			output_per_mtok: m.output_per_mtok,
+			cache_read_per_mtok: m.cache_read_per_mtok,
+			cache_write_per_mtok: m.cache_write_per_mtok,
 			recommended: m.recommended
 		}))
 	);

@@ -13,7 +13,15 @@
 	import { BODY_ROW, CALL_COL, HEAD_ROW, USAGE_COL } from './columns';
 	import { ai } from '$lib/stores/ai.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
-	import { CALLS_PAGE, RECENT_CALLS, callCursor, formatCost } from '$lib/config/ai';
+	import {
+		CALLS_PAGE,
+		RECENT_CALLS,
+		cacheHint,
+		callCursor,
+		costHint,
+		formatCost,
+		unpricedLabel
+	} from '$lib/config/ai';
 	import { formatShortDate, relativeTime } from '$lib/utilities/dates';
 	import type { AiCall } from '$lib/types/ai';
 
@@ -79,6 +87,10 @@
 		return usage?.by_feature.find((f) => f.feature === feature)?.label ?? feature;
 	}
 
+	function providerLabel(provider: string): string {
+		return ai.provider(provider)?.label ?? provider;
+	}
+
 	async function clearCache() {
 		clearing = true;
 		try {
@@ -136,13 +148,23 @@
 									>
 										{f.failed.toLocaleString()}
 									</div>
-									<div class="{USAGE_COL.input} font-mono text-xs tabular-nums">
-										{tokens(f.input_tokens)}
-									</div>
+									<Hint text={cacheHint(f.cache_read_tokens, f.cache_write_tokens)}>
+										{#snippet child(props)}
+											<div {...props} class="{USAGE_COL.input} font-mono text-xs tabular-nums">
+												{tokens(f.input_tokens)}
+											</div>
+										{/snippet}
+									</Hint>
 									<div class="{USAGE_COL.output} font-mono text-xs tabular-nums">
 										{tokens(f.output_tokens)}
 									</div>
-									<div class="{USAGE_COL.cost} tabular-nums">{formatCost(f.cost_usd)}</div>
+									<Hint text={unpricedLabel(f.unpriced)}>
+										{#snippet child(props)}
+											<div {...props} class="{USAGE_COL.cost} tabular-nums">
+												{formatCost(f.cost_usd)}
+											</div>
+										{/snippet}
+									</Hint>
 								</div>
 							{/each}
 						</div>
@@ -191,13 +213,23 @@
 									</div>
 									<div class={CALL_COL.feature}>{featureLabel(call.feature)}</div>
 									<div class="{CALL_COL.model} font-mono text-xs wrap-anywhere">{call.model}</div>
-									<div class="{CALL_COL.input} font-mono text-xs tabular-nums">
-										{tokens(call.input_tokens)}
-									</div>
+									<Hint text={cacheHint(call.cache_read_tokens, call.cache_write_tokens)}>
+										{#snippet child(props)}
+											<div {...props} class="{CALL_COL.input} font-mono text-xs tabular-nums">
+												{tokens(call.input_tokens)}
+											</div>
+										{/snippet}
+									</Hint>
 									<div class="{CALL_COL.output} font-mono text-xs tabular-nums">
 										{tokens(call.output_tokens)}
 									</div>
-									<div class="{CALL_COL.cost} tabular-nums">{formatCost(call.cost_usd)}</div>
+									<Hint text={costHint(call, providerLabel(call.provider))}>
+										{#snippet child(props)}
+											<div {...props} class="{CALL_COL.cost} tabular-nums">
+												{formatCost(call.cost_usd)}
+											</div>
+										{/snippet}
+									</Hint>
 									<div class={CALL_COL.outcome}>
 										{#if call.cached}
 											<span class="text-muted-foreground">Cached</span>

@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import math
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -12,21 +13,33 @@ import httpx
 
 from shared.definitions.ai import (
     BASE_URL_PROVIDERS,
+    BILLED_REFUSALS,
+    GATEWAY_TIMEOUTS,
     GOOGLE_GENERATE,
     MAX_MODEL_ID,
     MAX_OUTPUT_TOKENS,
     MODEL_LIST_PAGES,
     MODELS,
+    REFUSAL,
     TASK_EFFORT,
     TASK_OUTPUT_TOKENS,
+    UNREPORTED,
+    US_INFERENCE,
+    US_INFERENCE_PREMIUM,
+    Charge,
     Effort,
+    Rates,
+    Usage,
+    curated_rates,
     model_spec,
     openai_chat_model,
+    same_model,
+    us_premium,
 )
 from shared.enums.instance import AIProvider
 from shared.http import egress_proxy
 from shared.models.ai import AiModelList, AiModelOption
-from shared.services.ai import ledger
+from shared.services.ai import ledger, prices
 from shared.services.ai.config import AIConfig
 from shared.services.ai.ledger import CallRecord
 from shared.services.scan_resolve import MASK
@@ -44,15 +57,30 @@ _ERROR_CHARS = 300
 _NESTED_ERRORS = 2
 _NOT_JSON = "The provider answered with a body that is not JSON. Check the base URL."
 _REDIRECTED = "The provider answered with a redirect. Check the base URL."
+DECLINED = "The model declined the request."
+_CAUSE_DEPTH = 4
+# raised before the request reached the server
+_UNSENT = frozenset(
+    {
+        "ConnectError",
+        "ConnectTimeout",
+        "PoolTimeout",
+        "ProxyError",
+        "UnsupportedProtocol",
+        "InvalidURL",
+        "LocalProtocolError",
+        "WriteError",
+        "WriteTimeout",
+    }
+)
 
 
 class AIError(RuntimeError):
     """The provider could not answer."""
 
-    def __init__(self, message: str, *, input_tokens: int = 0, output_tokens: int = 0):
+    def __init__(self, message: str, *, usage: Usage | None = None):
         super().__init__(message)
-        self.input_tokens = input_tokens
-        self.output_tokens = output_tokens
+        self.usage = UNREPORTED if usage is None else usage
 
 
 def chat_url(cfg: AIConfig) -> str:
@@ -61,7 +89,7 @@ def chat_url(cfg: AIConfig) -> str:
     if cfg.provider == AIProvider.OPENAI_COMPATIBLE.value and cfg.base_url:
         return f"{cfg.base_url.rstrip('/')}/chat/completions"
     msg = f"Provider '{cfg.provider}' has no chat endpoint. Check the AI settings."
-    raise AIError(msg)
+    raise AIError(msg, usage=Usage())
 
 
 def models_url(cfg: AIConfig) -> str:
@@ -144,20 +172,140 @@ def _upstream(metadata: object, depth: int) -> str:
     return f"{name}: {inner}" if inner and name else inner
 
 
-def http_error(status: int, body: object) -> AIError:
+def http_error(status: int, body: object, usage: Usage | None = None) -> AIError:
     message = provider_message(body)
+    spent = (Usage() if usage is None else usage) + _answered(status, body)
     if not message:
-        return AIError(f"Provider returned {status}.")
-    return AIError(f"Provider returned {status}: {message}")
+        return AIError(f"Provider returned {status}.", usage=spent)
+    return AIError(f"Provider returned {status}: {message}", usage=spent)
 
 
-def sdk_error(exc: Exception) -> AIError:
+def _answered(status: int, body: object) -> Usage:
+    """The usage an error answer carries, else nothing, else unknown for a gateway timeout."""
+    found = _body_usage(body)
+    if found is not None:
+        return found
+    return UNREPORTED if status in GATEWAY_TIMEOUTS else Usage()
+
+
+def transport_usage(exc: BaseException) -> Usage:
+    """Nothing when the request did not reach the server, else unknown."""
+    seen: BaseException | None = exc
+    for _ in range(_CAUSE_DEPTH):
+        if seen is None:
+            break
+        if type(seen).__name__ in _UNSENT:
+            return Usage()
+        seen = seen.__cause__
+    return UNREPORTED
+
+
+def sdk_error(exc: Exception, usage: Usage | None = None) -> AIError:
     """An Anthropic SDK error as the provider's own message."""
     status = getattr(exc, "status_code", None)
     if isinstance(status, int):
-        return http_error(status, getattr(exc, "body", None))
+        return http_error(status, getattr(exc, "body", None), usage)
     reason = str(exc) or type(exc).__name__
-    return AIError(f"The provider did not respond: {reason}")
+    spent = (Usage() if usage is None else usage) + transport_usage(exc)
+    return AIError(f"The provider did not respond: {reason}", usage=spent)
+
+
+# ---------- usage ----------
+
+
+def _count(value: object) -> int:
+    if isinstance(value, bool):
+        return 0
+    try:
+        return max(int(value), 0)  # type: ignore[call-overload]
+    except (TypeError, ValueError):
+        return 0
+
+
+def _money(value: object) -> float | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        amount = float(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+    return amount if math.isfinite(amount) and amount >= 0 else None
+
+
+def anthropic_usage(raw: object, model: str = "") -> Usage:
+    """Anthropic counts cache reads and writes outside input_tokens."""
+    if raw is None:
+        return UNREPORTED
+    reads = _count(getattr(raw, "cache_read_input_tokens", 0))
+    writes = _count(getattr(raw, "cache_creation_input_tokens", 0))
+    usage = Usage(
+        _count(getattr(raw, "input_tokens", 0)) + reads + writes,
+        _count(getattr(raw, "output_tokens", 0)),
+        reads,
+        writes,
+    )
+    if getattr(raw, "inference_geo", None) == US_INFERENCE and us_premium(model):
+        return usage.at(US_INFERENCE_PREMIUM)
+    return usage
+
+
+def refused(message: object, usage: Usage) -> Usage:
+    """A refusal's usage, billed at nothing when it came before any output in an unbilled category."""
+    category = getattr(getattr(message, "stop_details", None), "category", None)
+    if getattr(message, "content", None) or category in BILLED_REFUSALS:
+        return usage
+    return usage.at(0.0)
+
+
+def openai_usage(raw: object) -> Usage:
+    """OpenAI counts cached tokens inside prompt_tokens and reasoning inside completion_tokens."""
+    if not isinstance(raw, dict):
+        return UNREPORTED
+    details = raw.get("prompt_tokens_details")
+    details = details if isinstance(details, dict) else {}
+    reads = _count(details.get("cached_tokens"))
+    writes = _count(details.get("cache_write_tokens"))
+    return Usage(
+        max(_count(raw.get("prompt_tokens")), reads + writes),
+        _count(raw.get("completion_tokens")),
+        reads,
+        writes,
+        _reported_cost(raw),
+    )
+
+
+def _reported_cost(raw: dict) -> float | None:
+    """A router's own charge in USD, plus what the upstream billed the account's own key."""
+    cost = _money(raw.get("cost"))
+    details = raw.get("cost_details")
+    if cost is None or raw.get("is_byok") is not True or not isinstance(details, dict):
+        return cost
+    return cost + (_money(details.get("upstream_inference_cost")) or 0.0)
+
+
+def google_usage(raw: object) -> Usage:
+    """Google bills thoughts as output and counts cached content inside the prompt."""
+    if not isinstance(raw, dict):
+        return UNREPORTED
+    reads = _count(raw.get("cachedContentTokenCount"))
+    prompt = _count(raw.get("promptTokenCount")) + _count(
+        raw.get("toolUsePromptTokenCount")
+    )
+    return Usage(
+        max(prompt, reads),
+        _count(raw.get("candidatesTokenCount")) + _count(raw.get("thoughtsTokenCount")),
+        reads,
+    )
+
+
+def _body_usage(body: object) -> Usage | None:
+    if isinstance(body, bytes | str):
+        try:
+            body = json.loads(body)
+        except ValueError:
+            return None
+    found = body.get("usage") if isinstance(body, dict) else None
+    return openai_usage(found) if isinstance(found, dict) else None
 
 
 @dataclass
@@ -165,10 +313,18 @@ class AIResult:
     text: str
     model: str
     provider: str
-    input_tokens: int = 0
-    output_tokens: int = 0
+    usage: Usage = field(default_factory=Usage)
     latency_ms: int = 0
     cached: bool = False
+    charge: Charge = field(default_factory=Charge)
+
+    @property
+    def input_tokens(self) -> int:
+        return self.usage.input_tokens
+
+    @property
+    def output_tokens(self) -> int:
+        return self.usage.output_tokens
 
 
 @dataclass
@@ -187,6 +343,14 @@ class AIUsage:
         self.input_tokens += result.input_tokens
         self.output_tokens += result.output_tokens
 
+    def failed(self, task: str, exc: Exception) -> None:
+        """A call that raised, with the tokens it spent."""
+        spent = exc.usage if isinstance(exc, AIError) else UNREPORTED
+        self.calls += 1
+        self.input_tokens += spent.input_tokens
+        self.output_tokens += spent.output_tokens
+        self.failures.append(f"{task}: {exc}"[:300])
+
 
 def complete(cfg: AIConfig, *, system: str, prompt: str, task: str) -> AIResult:
     model = cfg.model
@@ -194,48 +358,44 @@ def complete(cfg: AIConfig, *, system: str, prompt: str, task: str) -> AIResult:
     effort = TASK_EFFORT.get(task, Effort.LOW.value)
     started = time.monotonic()
 
-    try:
-        if cfg.provider == AIProvider.ANTHROPIC.value:
-            text, tokens = _anthropic(cfg, model, system, prompt, max_tokens, effort)
-        elif cfg.provider == AIProvider.GOOGLE.value:
-            text, tokens = _google(cfg, model, system, prompt, max_tokens)
-        else:
-            text, tokens = _openai(cfg, model, system, prompt, max_tokens)
-    except Exception as exc:
+    def write(usage: Usage, *, ok: bool, error: str | None = None) -> Charge:
+        charge = cfg.charge(usage, model)
         ledger.record(
             CallRecord(
                 task=task,
                 provider=cfg.provider,
                 model=model,
-                ok=False,
+                ok=ok,
+                usage=usage,
+                charge=charge,
                 latency_ms=int((time.monotonic() - started) * 1000),
-                error=scrub_error(str(exc), cfg),
-                listed=cfg.listed_price(model),
+                error=error,
             )
         )
+        return charge
+
+    try:
+        if cfg.provider == AIProvider.ANTHROPIC.value:
+            text, usage = _anthropic(cfg, model, system, prompt, max_tokens, effort)
+        elif cfg.provider == AIProvider.GOOGLE.value:
+            text, usage = _google(cfg, model, system, prompt, max_tokens)
+        else:
+            text, usage = _openai(cfg, model, system, prompt, max_tokens)
+    except Exception as exc:
+        spent = exc.usage if isinstance(exc, AIError) else UNREPORTED
+        write(spent, ok=False, error=scrub_error(str(exc), cfg))
         raise
 
-    result = AIResult(
+    latency = int((time.monotonic() - started) * 1000)
+    charge = write(usage, ok=True)
+    return AIResult(
         text=text.strip(),
         model=model,
         provider=cfg.provider,
-        input_tokens=tokens[0],
-        output_tokens=tokens[1],
-        latency_ms=int((time.monotonic() - started) * 1000),
+        usage=usage,
+        latency_ms=latency,
+        charge=charge,
     )
-    ledger.record(
-        CallRecord(
-            task=task,
-            provider=cfg.provider,
-            model=model,
-            ok=True,
-            input_tokens=result.input_tokens,
-            output_tokens=result.output_tokens,
-            latency_ms=result.latency_ms,
-            listed=cfg.listed_price(model),
-        )
-    )
-    return result
 
 
 def anthropic_headers(cfg: AIConfig) -> dict[str, str] | None:
@@ -256,7 +416,7 @@ def anthropic_extras(model: str, effort: str) -> dict[str, Any]:
 
 def _anthropic(
     cfg: AIConfig, model: str, system: str, prompt: str, max_tokens: int, effort: str
-) -> tuple[str, tuple[int, int]]:
+) -> tuple[str, Usage]:
     import anthropic  # noqa: PLC0415
 
     kwargs: dict = {
@@ -286,19 +446,19 @@ def _anthropic(
     except anthropic.APIError as exc:
         raise sdk_error(exc) from exc
 
-    if response.stop_reason == "refusal":
-        msg = "The model declined the request."
-        raise AIError(msg)
+    usage = anthropic_usage(response.usage, model)
+    if response.stop_reason == REFUSAL:
+        raise AIError(DECLINED, usage=refused(response, usage))
 
     text = "".join(
         block.text for block in response.content if getattr(block, "type", "") == "text"
     )
-    return text, (response.usage.input_tokens, response.usage.output_tokens)
+    return text, usage
 
 
 def _openai(
     cfg: AIConfig, model: str, system: str, prompt: str, max_tokens: int
-) -> tuple[str, tuple[int, int]]:
+) -> tuple[str, Usage]:
     payload = {
         "model": model,
         "max_completion_tokens": max_tokens,
@@ -314,21 +474,18 @@ def _openai(
         cfg.timeout,
         proxy=provider_proxy(cfg),
     )
+    usage = openai_usage(body.get("usage"))
     choices = body.get("choices") or []
     if not choices:
         msg = "The provider returned no completion."
-        raise AIError(msg)
+        raise AIError(msg, usage=usage)
     text = (choices[0].get("message") or {}).get("content") or ""
-    usage = body.get("usage") or {}
-    return text, (
-        int(usage.get("prompt_tokens", 0)),
-        int(usage.get("completion_tokens", 0)),
-    )
+    return text, usage
 
 
 def _google(
     cfg: AIConfig, model: str, system: str, prompt: str, max_tokens: int
-) -> tuple[str, tuple[int, int]]:
+) -> tuple[str, Usage]:
     url = f"{_GOOGLE_URL}/{model}:generateContent"
     payload = {
         "systemInstruction": {"parts": [{"text": system}]},
@@ -342,17 +499,14 @@ def _google(
         cfg.timeout,
         proxy=provider_proxy(cfg),
     )
+    usage = google_usage(body.get("usageMetadata"))
     candidates = body.get("candidates") or []
     if not candidates:
         msg = "The provider returned no completion."
-        raise AIError(msg)
+        raise AIError(msg, usage=usage)
     parts = (candidates[0].get("content") or {}).get("parts") or []
     text = "".join(part.get("text", "") for part in parts)
-    usage = body.get("usageMetadata") or {}
-    return text, (
-        int(usage.get("promptTokenCount", 0)),
-        int(usage.get("candidatesTokenCount", 0)),
-    )
+    return text, usage
 
 
 def post_json(
@@ -371,7 +525,7 @@ def post_json(
             body = response.json()
     except httpx.HTTPError as exc:
         msg = f"The provider did not respond: {exc}"
-        raise AIError(msg) from exc
+        raise AIError(msg, usage=transport_usage(exc)) from exc
     except ValueError as exc:
         raise AIError(_NOT_JSON) from exc
     if not isinstance(body, dict):
@@ -386,21 +540,51 @@ def post_json(
 class _Listed:
     id: str
     label: str = ""
-    input_per_mtok: float | None = None
-    output_per_mtok: float | None = None
+    rates: Rates | None = None
 
 
 def list_models(
     cfg: AIConfig, *, transport: httpx.BaseTransport | None = None
 ) -> AiModelList:
-    """The models the provider lists, merged with the curated catalog."""
+    """The models the provider lists, merged with the curated and the live catalog."""
     try:
         listed = _listed(cfg, transport)
     except AIError as exc:
         return AiModelList(error=scrub_error(str(exc), cfg))
     except Exception as exc:
         return AiModelList(error=scrub_error(f"{type(exc).__name__}: {exc}", cfg))
-    return AiModelList(models=_ranked(cfg.provider, listed))
+    return AiModelList(
+        models=_ranked(
+            cfg.provider,
+            listed,
+            lambda m: prices.lookup(cfg.provider, m, base_url=cfg.base_url),
+        )
+    )
+
+
+def listed_rates(cfg: AIConfig) -> Rates | None:
+    """The price a server's own model list gives the connection's model. Raises when the list is not read."""
+    listed = [item for item in _listed(cfg, None) if item.rates is not None]
+    exact = next((item for item in listed if item.id == cfg.model), None)
+    near = next((item for item in listed if same_model(item.id, cfg.model)), None)
+    found = exact or near
+    return found.rates if found else None
+
+
+def current_rates(cfg: AIConfig) -> Rates | None:
+    """The connection's model at today's price, or None when its server's list is not read."""
+    if not cfg.model:
+        return None
+    if cfg.provider in BASE_URL_PROVIDERS:
+        try:
+            own = listed_rates(cfg)
+        except Exception:
+            return None
+        if own is not None:
+            return own
+    return curated_rates(cfg.model) or prices.lookup(
+        cfg.provider, cfg.model, base_url=cfg.base_url
+    )
 
 
 def _listed(cfg: AIConfig, transport: httpx.BaseTransport | None) -> list[_Listed]:
@@ -461,24 +645,9 @@ def _google_models(
 
 
 def _compatible(row: dict) -> _Listed:
-    pricing = row.get("pricing") if isinstance(row.get("pricing"), dict) else {}
     return _Listed(
-        row["id"],
-        str(row.get("name") or ""),
-        _per_mtok(pricing.get("prompt")),
-        _per_mtok(pricing.get("completion")),
+        row["id"], str(row.get("name") or ""), prices.row_rates(row.get("pricing"))
     )
-
-
-def _per_mtok(value: object) -> float | None:
-    """A per-token price string as dollars per million tokens."""
-    try:
-        per_token = float(value)  # type: ignore[arg-type]
-    except (TypeError, ValueError):
-        return None
-    if per_token < 0 or not math.isfinite(per_token):
-        return None
-    return round(per_token * 1_000_000, 4)
 
 
 def _rows(body: object, field_name: str, *, key: str = "id") -> list[dict]:
@@ -517,7 +686,11 @@ def _get_json(
 _CATALOG_ORDER = {m.id: i for i, m in enumerate(MODELS)}
 
 
-def _ranked(provider: str, listed: list[_Listed]) -> list[AiModelOption]:
+def _ranked(
+    provider: str,
+    listed: list[_Listed],
+    live: Callable[[str], Rates | None] | None = None,
+) -> list[AiModelOption]:
     ids = {item.id.strip() for item in listed}
     seen: dict[str, AiModelOption] = {}
     order: dict[str, int] = {}
@@ -534,19 +707,18 @@ def _ranked(provider: str, listed: list[_Listed]) -> list[AiModelOption]:
         )
         if curated is not None:
             order[model_id] = _CATALOG_ORDER[curated.id]
+        rates = (
+            item.rates
+            or curated_rates(model_id)
+            or (live(model_id) if live is not None else None)
+        )
         seen[model_id] = AiModelOption(
             id=model_id,
             label=(curated.label if curated else item.label.strip()) or model_id,
-            input_per_mtok=(
-                curated.input_per_mtok
-                if curated and curated.input_per_mtok is not None
-                else item.input_per_mtok
-            ),
-            output_per_mtok=(
-                curated.output_per_mtok
-                if curated and curated.output_per_mtok is not None
-                else item.output_per_mtok
-            ),
+            input_per_mtok=rates.input if rates else None,
+            output_per_mtok=rates.output if rates else None,
+            cache_read_per_mtok=rates.cache_read if rates else None,
+            cache_write_per_mtok=rates.cache_write if rates else None,
             recommended=recommended,
         )
     return sorted(
