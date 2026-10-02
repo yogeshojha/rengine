@@ -40,7 +40,12 @@ from tools.whois.parser import (
     parse_domain_response,
     parse_ip_response,
 )
-from tools.whois.providers.whoisit import RDAPProvider, RDAPProviderError
+from tools.whois.providers import port43
+from tools.whois.providers.whoisit import (
+    RDAPProvider,
+    RDAPProviderError,
+    RDAPUnsupportedError,
+)
 
 logger = get_logger(__name__)
 
@@ -88,6 +93,7 @@ class WhoisService:
         proxy_url: str | None = None,
     ) -> None:
         self._provider = RDAPProvider(proxy_url=proxy_url)
+        self._proxy_url = proxy_url
         self.cache_ttl_days = cache_ttl_days
 
     # Core lookup (sync, no DB)
@@ -126,8 +132,24 @@ class WhoisService:
         try:
             raw = self._provider.lookup_domain(domain)
             return parse_domain_response(raw, domain)
+        except RDAPUnsupportedError as e:
+            return self._lookup_domain_port43(domain, e)
         except RDAPProviderError as e:
             raise WhoisLookupError(str(e)) from e
+
+    def _lookup_domain_port43(
+        self, domain: str, rdap_error: RDAPUnsupportedError
+    ) -> WhoisResponse:
+        """Fall back to legacy WHOIS for a registry with no RDAP server."""
+        if self._proxy_url:
+            # port 43 cannot ride the egress proxy, and must not bypass it
+            raise WhoisLookupError(str(rdap_error)) from rdap_error
+        try:
+            raw = port43.lookup_domain(domain)
+        except port43.Port43Error as e:
+            msg = f"{rdap_error}; port-43 fallback failed: {e}"
+            raise WhoisLookupError(msg) from e
+        return parse_domain_response(raw, domain)
 
     def lookup_ip(self, ip: str) -> WhoisResponse:
         ip = ip.strip()

@@ -18,6 +18,10 @@ class RDAPProviderError(Exception):
     """Raised when the RDAP provider encounters an error."""
 
 
+class RDAPUnsupportedError(RDAPProviderError):
+    """Raised when the registry runs no RDAP server for the TLD."""
+
+
 class RDAPProvider:
     def __init__(self, proxy_url: str | None = None) -> None:
         self._bootstrap_data: str | None = None
@@ -95,7 +99,7 @@ class RDAPProvider:
                 return whoisit.domain(domain, allow_insecure_ssl=True)
         except UnsupportedError as e:
             msg = f"TLD not supported for RDAP lookup: {domain}"
-            raise RDAPProviderError(msg) from e
+            raise RDAPUnsupportedError(msg) from e
         except QueryError as e:
             msg = f"RDAP query failed for domain {domain}: {e}"
             raise RDAPProviderError(msg) from e
