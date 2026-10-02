@@ -6,9 +6,10 @@
 		source: string;
 		tokens: QueryToken[];
 		problems: QueryProblem[];
+		overlay?: boolean;
 	}
 
-	let { source, tokens, problems }: Props = $props();
+	let { source, tokens, problems, overlay = false }: Props = $props();
 
 	const TONE: Record<string, string> = {
 		field: 'text-primary',
@@ -71,7 +72,7 @@
 	});
 </script>
 
-{#each runs as run, i (i)}<span class={run.key ? 'query-key' : ''}
+{#each runs as run, i (i)}<span class={run.key ? `query-key ${overlay ? 'overlay' : ''}` : ''}
 		>{#each run.segments as segment, j (j)}<span class="{segment.tone} {segment.flaw}"
 				>{segment.text}</span
 			>{/each}</span
@@ -81,7 +82,13 @@
 	.query-key {
 		border-radius: 3px;
 		padding-block: 1px;
+		padding-inline: 3px;
+		margin-inline-end: 2px;
 		background: color-mix(in oklch, var(--primary) 11%, transparent);
+	}
+	.query-key.overlay {
+		padding-inline: 0;
+		margin-inline-end: 0;
 		box-shadow: 0 0 0 2px color-mix(in oklch, var(--primary) 11%, transparent);
 	}
 </style>

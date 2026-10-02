@@ -277,7 +277,7 @@
 				class="pointer-events-none absolute inset-0 overflow-hidden px-0.5 whitespace-pre {TEXT}"
 			>
 				{#if value}
-					<QueryHighlight source={value} tokens={lexed.tokens} {problems} />
+					<QueryHighlight source={value} tokens={lexed.tokens} {problems} overlay />
 				{:else}
 					<span class="font-sans text-muted-foreground"
 						>{placeholder}
