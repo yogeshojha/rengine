@@ -115,6 +115,11 @@ RUN set -eux; \
     /out/bin/julius validate /out/julius/probes-mcp; \
     rm -f /tmp/julius.tar.gz /tmp/julius-src.tar.gz
 
+# naabu's SYN scan as a non-root user
+RUN apt-get update && apt-get install -y --no-install-recommends libcap2-bin \
+    && rm -rf /var/lib/apt/lists/* \
+    && setcap cap_net_raw+eip /out/bin/naabu
+
 
 ##################################################################
 # Development
@@ -130,9 +135,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && python3 -m pip install --no-cache-dir --break-system-packages wafw00f==2.4.2
 
-COPY --from=gotools /out/bin/ /root/go/bin/
+ARG RENGINE_UID=10001
+RUN groupadd --gid "$RENGINE_UID" rengine \
+    && useradd --uid "$RENGINE_UID" --gid rengine --create-home --shell /usr/sbin/nologin rengine
+
+COPY --from=gotools /out/bin/ /usr/local/bin/
 COPY --from=gotools /out/julius/ /opt/julius/
-ENV PATH="/root/go/bin:${PATH}"
+# every tool that starts chromium finds this first
+COPY --chmod=755 worker/chrome.sh /usr/local/bin/chrome
 
 COPY VERSION /app/VERSION
 COPY shared /app/shared
@@ -156,5 +166,14 @@ COPY stages /app/stages
 COPY reports /app/reports
 COPY interest /app/interest
 COPY toolbox /app/toolbox
+
+# mount points a fresh volume copies its owner from
+RUN mkdir -p /app/scan_media /app/vuln-templates /app/wordlists /app/reports-out \
+      /app/exports-out /app/report-fonts /app/beat-state /app/ct-state \
+    && chown rengine:rengine /app/scan_media /app/vuln-templates /app/wordlists \
+      /app/reports-out /app/exports-out /app/report-fonts /app/beat-state /app/ct-state \
+    && find / -xdev -perm /6000 -type f -exec chmod a-s {} +
+
+USER rengine
 
 CMD ["uv", "run", "celery", "-A", "app.celery", "worker"]

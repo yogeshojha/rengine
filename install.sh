@@ -6,6 +6,8 @@ REPO="yogeshojha/rengine"
 IMAGE_PREFIX="yogeshojha/rengine"
 DOCKER_SUBNET="172.29.0.0/24"
 CADDY_ADDR="172.29.0.253"
+# api/app/utils/validation.py:MIN_PASSWORD_LENGTH
+MIN_PASSWORD_LENGTH=10
 
 # ---------- output ----------
 
@@ -31,14 +33,16 @@ if [ -n "${BASH_SOURCE[0]:-}" ] && [ -f "${BASH_SOURCE[0]}" ]; then
   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fi
 
-# a piped script cannot take /dev/tty: bash would read the script text from it
 INTERACTIVE=0
-if [ -t 0 ]; then
-  INTERACTIVE=1
-elif [ -n "$SCRIPT_DIR" ] && [ -e /dev/tty ] && (exec </dev/tty) 2>/dev/null; then
-  exec </dev/tty
-  INTERACTIVE=1
-fi
+attach_terminal() {
+  # a piped script cannot take /dev/tty: bash would read the script text from it
+  if [ -t 0 ]; then
+    INTERACTIVE=1
+  elif [ -n "$SCRIPT_DIR" ] && [ -e /dev/tty ] && (exec </dev/tty) 2>/dev/null; then
+    exec </dev/tty
+    INTERACTIVE=1
+  fi
+}
 
 CHOICE=0
 choose() {
@@ -121,6 +125,13 @@ port_free() {
 
 env_get() { grep -E "^$1=" "$2" 2>/dev/null | head -1 | cut -d= -f2-; }
 
+# the host port ports.yml maps to a container port
+published_port() {
+  sed -n "s/^ *- \"\([0-9.]*:\)\{0,1\}\([0-9]*\):$1\"\$/\2/p" "$RENGINE_HOME/ports.yml" 2>/dev/null | head -1
+}
+
+write_private() { (umask 077 && rm -f "$1" && cat >"$1"); }
+
 # ---------- flags ----------
 
 MODE=""
@@ -132,6 +143,7 @@ API_PORT=""
 ADMIN_USERNAME=""
 ADMIN_EMAIL=""
 ADMIN_PASSWORD=""
+PASSWORD_STDIN=0
 ACME_EMAIL=""
 RENGINE_HOME=""
 GIT_TAG=""
@@ -154,17 +166,21 @@ Reachability, one of
 
 Options
   --ui-port <port>      published UI port, fixed at 443 with --domain
-  --api-port <port>     publish the API on its own port
-  --no-api-port         stop publishing the API on its own port
+  --api-port <port>     publish the API over plain HTTP on 127.0.0.1
+  --no-api-port         stop publishing the API port
   --admin-user <name>   first administrator, default rengine
   --admin-email <mail>
-  --admin-password <pw> default is a generated one
+  --admin-password-stdin
+                        read the administrator password from stdin
   --acme-email <mail>   Let's Encrypt account email
   --dir <path>          install directory
   --tag <tag>           release to install, default the latest
   --build               build images from this checkout instead of pulling
   --no-start            write the configuration and stop
   --force               skip the memory, disk and port checks
+
+Environment
+  RENGINE_ADMIN_PASSWORD  administrator password, default a generated one
 EOF
 }
 
@@ -180,7 +196,7 @@ while [ $# -gt 0 ]; do
     --no-api-port) NO_API=1 ;;
     --admin-user) ADMIN_USERNAME="${2:?}"; shift ;;
     --admin-email) ADMIN_EMAIL="${2:?}"; shift ;;
-    --admin-password) ADMIN_PASSWORD="${2:?}"; shift ;;
+    --admin-password-stdin) PASSWORD_STDIN=1 ;;
     --acme-email) ACME_EMAIL="${2:?}"; shift ;;
     --dir) RENGINE_HOME="${2:?}"; shift ;;
     --tag) GIT_TAG="${2:?}"; shift ;;
@@ -192,6 +208,16 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
+
+ADMIN_PASSWORD="${RENGINE_ADMIN_PASSWORD:-}"
+unset RENGINE_ADMIN_PASSWORD
+if [ "$PASSWORD_STDIN" -eq 1 ]; then
+  [ -n "$SCRIPT_DIR" ] || die "--admin-password-stdin needs install.sh saved to a file"
+  [ -t 0 ] && die "--admin-password-stdin reads the password from a pipe or a file"
+  IFS= read -r ADMIN_PASSWORD || true
+  [ -n "$ADMIN_PASSWORD" ] || die "no password on stdin"
+fi
+attach_terminal
 
 # ---------- environment ----------
 
@@ -301,7 +327,7 @@ fetch_source() {
 
 RECONFIGURE=0
 KEEP_SETTINGS=0
-SECRET_KEY=""; POSTGRES_PASSWORD=""; REDIS_PASSWORD=""; FLOWER_PASSWORD=""
+SECRET_KEY=""; JWT_SECRET_KEY=""; POSTGRES_PASSWORD=""; REDIS_PASSWORD=""; FLOWER_PASSWORD=""
 load_existing() {
   local env_file="$RENGINE_HOME/.env"
   [ -f "$env_file" ] || return 0
@@ -338,6 +364,19 @@ update_env() {
     "$RENGINE_HOME/.env"
 }
 
+# an install written before api.env kept the administrator in .env
+split_api_env() {
+  local env_file="$RENGINE_HOME/.env"
+  [ -f "$RENGINE_HOME/api.env" ] && return 0
+  {
+    echo "# written by install.sh $(date -u +%Y-%m-%dT%H:%M:%SZ), read by the api service alone"
+    echo ""
+    echo "JWT_SECRET_KEY=$(rand_hex 32)"
+    grep -E '^ADMIN_(EMAIL|USERNAME|PASSWORD)=' "$env_file" || true
+  } | write_private "$RENGINE_HOME/api.env"
+  sed -i -E '/^ADMIN_(EMAIL|USERNAME|PASSWORD)=/d; /^# -+ first administrator -+$/d' "$env_file"
+}
+
 # ---------- wizard ----------
 
 PUBLIC_ORIGIN=""
@@ -358,7 +397,7 @@ ask_mode() {
 }
 
 detect_ip() {
-  ip route get 1.1.1.1 2>/dev/null | sed -n 's/.* src \([0-9a-f.:]*\).*/\1/p' | head -1
+  ip route get 1.1.1.1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p' | head -1
 }
 
 ask_reachability() {
@@ -373,16 +412,16 @@ ask_reachability() {
       done
       UI_PORT=443
       PUBLIC_ORIGIN="https://$RENGINE_HOST"
-      say "DNS for $RENGINE_HOST must point at this server. Ports 443 and 80 are published."
+      say "An A record for $RENGINE_HOST must point at this server. Ports 443 and 80 are published on IPv4."
       ;;
     ip)
       if [ -z "$SERVER_IP" ]; then
         ask "Server address" "$(detect_ip)"
         SERVER_IP="$ANSWER"
       fi
-      SERVER_IP="${SERVER_IP#\[}"; SERVER_IP="${SERVER_IP%\]}"
       [ -n "$SERVER_IP" ] || die "no server address"
-      case "$SERVER_IP" in *:*) SERVER_HOST="[$SERVER_IP]" ;; *) SERVER_HOST="$SERVER_IP" ;; esac
+      case "$SERVER_IP" in *:* | *\[*) die "ports are published on IPv4 only. Pass the server's IPv4 address." ;; esac
+      SERVER_HOST="$SERVER_IP"
       if [ -z "$UI_PORT" ]; then
         ask "UI port" "443"
         UI_PORT="$ANSWER"
@@ -422,15 +461,15 @@ ask_api() {
   if [ -n "$API_PORT" ]; then
     valid_port "$API_PORT" || die "not a port: $API_PORT"
     if [ "$RECONFIGURE" -eq 1 ] && [ "$API_FLAGGED" -eq 0 ] && [ "$INTERACTIVE" -eq 1 ]; then
-      confirm "Keep the API published on port $API_PORT" y || API_PORT=""
+      confirm "Keep the API published on 127.0.0.1:$API_PORT" y || API_PORT=""
     fi
     return 0
   fi
   [ "$INTERACTIVE" -eq 1 ] || return 0
   say ""
   say "The interface, agents and connectors reach the API at $PUBLIC_ORIGIN/api."
-  if confirm "Publish the API on its own port as well" n; then
-    ask "API port" "8000"
+  if confirm "Also publish the API over plain HTTP on 127.0.0.1" n; then
+    ask "API port on 127.0.0.1" "8000"
     API_PORT="$ANSWER"
     valid_port "$API_PORT" || die "not a port: $API_PORT"
     if [ "$RECONFIGURE" -eq 0 ] && [ "$FORCE" -eq 0 ]; then
@@ -450,16 +489,38 @@ ask_admin() {
     ask "Admin email" "$def"
     ADMIN_EMAIL="$ANSWER"
   fi
-  if [ -z "$ADMIN_PASSWORD" ]; then
-    ask_secret "Admin password, empty generates one"
-    ADMIN_PASSWORD="$ANSWER"
-    if [ -z "$ADMIN_PASSWORD" ]; then
-      ADMIN_PASSWORD="$(rand_hex 9)"
-      GENERATED_PASSWORD=1
-    fi
+  local problem
+  if [ -n "$ADMIN_PASSWORD" ]; then
+    problem="$(password_problem "$ADMIN_PASSWORD")"
+    [ -z "$problem" ] || die "$problem"
+    return 0
   fi
-  [[ "$ADMIN_PASSWORD" =~ ^[A-Za-z0-9@._%+=:,^~/-]+$ ]] \
-    || die "the admin password accepts letters, digits and @._%+=:,^~/- only."
+  while [ "$INTERACTIVE" -eq 1 ]; do
+    ask_secret "Admin password, empty generates one"
+    [ -n "$ANSWER" ] || break
+    problem="$(password_problem "$ANSWER")"
+    if [ -n "$problem" ]; then
+      say "${problem^}"
+      continue
+    fi
+    ADMIN_PASSWORD="$ANSWER"
+    ask_secret "Admin password again"
+    [ "$ANSWER" = "$ADMIN_PASSWORD" ] && return 0
+    say "The passwords do not match."
+    ADMIN_PASSWORD=""
+  done
+  ADMIN_PASSWORD="$(rand_hex 9)"
+  GENERATED_PASSWORD=1
+}
+
+password_problem() {
+  if ! [[ "$1" =~ ^[A-Za-z0-9@._%+=:,^~/-]+$ ]]; then
+    echo "the admin password accepts letters, digits and @._%+=:,^~/- only."
+  elif [ "${#1}" -lt "$MIN_PASSWORD_LENGTH" ]; then
+    echo "the admin password needs at least $MIN_PASSWORD_LENGTH characters."
+  elif [ "$1" = "$ADMIN_USERNAME" ]; then
+    echo "the admin password is the username."
+  fi
 }
 
 # ---------- files ----------
@@ -472,7 +533,7 @@ write_caddyfile() {
     cat <<'EOF'
 (headers) {
 	header {
-		Content-Security-Policy "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+		?Content-Security-Policy "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
 		X-Frame-Options DENY
 		X-Content-Type-Options nosniff
 		Referrer-Policy same-origin
@@ -577,7 +638,7 @@ EOF
 }
 
 write_ports() {
-  # local binds loopback, the other modes bind every interface, v6 included
+  # IPv4 only: docker proxies an IPv6 client from the network gateway address
   {
     echo "# written by install.sh; every published port is decided here"
     echo "services:"
@@ -585,12 +646,12 @@ write_ports() {
     echo "    ports:"
     case "$MODE" in
       domain)
-        echo "      - \"443:443\""
-        echo "      - \"80:80\""
+        echo "      - \"0.0.0.0:443:443\""
+        echo "      - \"0.0.0.0:80:80\""
         ;;
       ip)
-        echo "      - \"$UI_PORT:443\""
-        [ "$UI_PORT" = "443" ] && echo "      - \"80:80\""
+        echo "      - \"0.0.0.0:$UI_PORT:443\""
+        [ "$UI_PORT" = "443" ] && echo "      - \"0.0.0.0:80:80\""
         ;;
       local)
         echo "      - \"127.0.0.1:$UI_PORT:80\""
@@ -599,11 +660,7 @@ write_ports() {
     if [ -n "$API_PORT" ]; then
       echo "  api:"
       echo "    ports:"
-      if [ "$MODE" = "local" ]; then
-        echo "      - \"127.0.0.1:$API_PORT:8000\""
-      else
-        echo "      - \"$API_PORT:8000\""
-      fi
+      echo "      - \"127.0.0.1:$API_PORT:8000\""
     fi
   } >"$RENGINE_HOME/ports.yml"
 }
@@ -612,7 +669,7 @@ write_env() {
   local cors="[\"$PUBLIC_ORIGIN\"]"
   local src=""
   [ "$BUILD" -eq 1 ] && src="$SCRIPT_DIR"
-  cat >"$RENGINE_HOME/.env.tmp" <<EOF
+  write_private "$RENGINE_HOME/.env.tmp" <<EOF
 # written by install.sh $(date -u +%Y-%m-%dT%H:%M:%SZ)
 
 COMPOSE_PROJECT_NAME=rengine3
@@ -679,11 +736,6 @@ API_WORKERS=$API_WORKERS
 GLOBAL_RATE_LIMIT_PER_MINUTE=600
 TRUSTED_PROXIES=$CADDY_ADDR
 
-# ---------- first administrator ----------
-ADMIN_EMAIL=$ADMIN_EMAIL
-ADMIN_USERNAME=$ADMIN_USERNAME
-ADMIN_PASSWORD=$ADMIN_PASSWORD
-
 # ---------- flower, debug profile only ----------
 FLOWER_USER=admin
 FLOWER_PASSWORD=$FLOWER_PASSWORD
@@ -692,18 +744,28 @@ FLOWER_PASSWORD=$FLOWER_PASSWORD
 EGRESS_PROXY_URL=
 EGRESS_TIMEOUT=30
 EOF
-  chmod 600 "$RENGINE_HOME/.env.tmp"
+  write_private "$RENGINE_HOME/api.env.tmp" <<EOF
+# written by install.sh $(date -u +%Y-%m-%dT%H:%M:%SZ), read by the api service alone
+
+# ---------- sessions ----------
+JWT_SECRET_KEY=$JWT_SECRET_KEY
+
+# ---------- first administrator ----------
+ADMIN_EMAIL=$ADMIN_EMAIL
+ADMIN_USERNAME=$ADMIN_USERNAME
+ADMIN_PASSWORD=$ADMIN_PASSWORD
+EOF
   mv "$RENGINE_HOME/.env.tmp" "$RENGINE_HOME/.env"
+  mv "$RENGINE_HOME/api.env.tmp" "$RENGINE_HOME/api.env"
 }
 
 write_files() {
   step "Writing $RENGINE_HOME"
-  mkdir -p "$RENGINE_HOME/scripts" "$RENGINE_HOME/scan_media" "$RENGINE_HOME/backups" "$RENGINE_HOME/bin"
+  mkdir -p "$RENGINE_HOME/scan_media" "$RENGINE_HOME/backups"
   chmod 700 "$RENGINE_HOME/backups"
-  cp "$SRC_DIR/docker-compose.prod.yml" "$RENGINE_HOME/"
-  install -m 755 "$SRC_DIR/scripts/backup.sh" "$RENGINE_HOME/scripts/backup.sh"
-  install -m 755 "$SRC_DIR/deploy/rengine" "$RENGINE_HOME/bin/rengine"
+  copy_release
   [ -z "$SECRET_KEY" ] && SECRET_KEY="$(rand_hex 32)"
+  [ -z "$JWT_SECRET_KEY" ] && JWT_SECRET_KEY="$(rand_hex 32)"
   [ -z "$POSTGRES_PASSWORD" ] && POSTGRES_PASSWORD="$(rand_hex 16)"
   [ -z "$REDIS_PASSWORD" ] && REDIS_PASSWORD="$(rand_hex 16)"
   [ -z "$FLOWER_PASSWORD" ] && FLOWER_PASSWORD="$(rand_hex 12)"
@@ -711,6 +773,14 @@ write_files() {
   write_caddyfile
   write_ports
   link_cli
+}
+
+copy_release() {
+  mkdir -p "$RENGINE_HOME/scripts" "$RENGINE_HOME/bin" "$RENGINE_HOME/deploy"
+  cp "$SRC_DIR/docker-compose.prod.yml" "$RENGINE_HOME/"
+  install -m 644 "$SRC_DIR/deploy/seccomp-chromium.json" "$RENGINE_HOME/deploy/seccomp-chromium.json"
+  install -m 755 "$SRC_DIR/scripts/backup.sh" "$RENGINE_HOME/scripts/backup.sh"
+  install -m 755 "$SRC_DIR/deploy/rengine" "$RENGINE_HOME/bin/rengine"
 }
 
 link_cli() {
@@ -734,10 +804,7 @@ refresh_keep() {
   else
     return 0
   fi
-  mkdir -p "$RENGINE_HOME/scripts" "$RENGINE_HOME/bin"
-  cp "$SRC_DIR/docker-compose.prod.yml" "$RENGINE_HOME/"
-  install -m 755 "$SRC_DIR/scripts/backup.sh" "$RENGINE_HOME/scripts/backup.sh"
-  install -m 755 "$SRC_DIR/deploy/rengine" "$RENGINE_HOME/bin/rengine"
+  copy_release
   sed -i "s|^RENGINE_TAG=.*|RENGINE_TAG=$IMAGE_TAG|" "$RENGINE_HOME/.env"
   [ "$BUILD" -eq 1 ] && sed -i "s|^RENGINE_SRC=.*|RENGINE_SRC=$SCRIPT_DIR|" "$RENGINE_HOME/.env"
   return 0
@@ -785,7 +852,7 @@ wait_healthy() {
   say "The API did not respond within three minutes. Check the logs: $CLI logs api"
   [ "$MODE" = "domain" ] && say "For a domain, DNS must point here and port 80 must be reachable from the internet."
   if [ "$GENERATED_PASSWORD" -eq 1 ]; then
-    say "Sign in at $PUBLIC_ORIGIN once the API answers. Username $ADMIN_USERNAME, password $ADMIN_PASSWORD. Stored in $RENGINE_HOME/.env."
+    say "Sign in at $PUBLIC_ORIGIN once the API answers. Username $ADMIN_USERNAME, password $ADMIN_PASSWORD. Stored in $RENGINE_HOME/api.env."
   fi
   exit 1
 }
@@ -801,11 +868,11 @@ summary() {
     say "  Username  $ADMIN_USERNAME"
     if [ "$GENERATED_PASSWORD" -eq 1 ]; then
       say "  Password  $ADMIN_PASSWORD"
-      say "            Stored in $RENGINE_HOME/.env. Change it in Settings."
+      say "            Stored in $RENGINE_HOME/api.env. Change it in Settings."
     fi
   fi
   [ "$MODE" = "ip" ] && say "  The certificate is self-signed. The browser shows a warning for it."
-  [ -n "$API_PORT" ] && say "  API       port $API_PORT"
+  [ -n "$API_PORT" ] && say "  API       http://127.0.0.1:$API_PORT"
   say ""
   say "  Manage    $CLI status, $CLI logs, $CLI update, $CLI backup"
   say "  Files     $RENGINE_HOME"
@@ -827,13 +894,26 @@ main() {
     check_collisions
   fi
 
+  if [ "$KEEP_SETTINGS" -eq 1 ] || [ "$RECONFIGURE" -eq 1 ]; then
+    split_api_env
+  fi
+
   if [ "$KEEP_SETTINGS" -eq 1 ]; then
     PUBLIC_ORIGIN="$(env_get PUBLIC_ORIGIN "$RENGINE_HOME/.env")"
     RENGINE_HOST="$(env_get RENGINE_HOST "$RENGINE_HOME/.env")"
-    API_PORT="$(sed -n 's/.*:\([0-9]*\):8000".*/\1/p' "$RENGINE_HOME/ports.yml" 2>/dev/null | head -1)"
+    API_PORT="$(published_port 8000)"
+    UI_PORT="$(published_port 443)"
+    UI_PORT="${UI_PORT:-$(published_port 80)}"
     MODE=local
     [ -n "$RENGINE_HOST" ] && MODE=domain
     case "$PUBLIC_ORIGIN" in https://*) [ "$MODE" = "domain" ] || MODE=ip ;; esac
+    if [ "$MODE" = "ip" ]; then
+      SERVER_IP="${PUBLIC_ORIGIN#https://}"
+      SERVER_IP="${SERVER_IP%:*}"
+      SERVER_HOST="$SERVER_IP"
+    fi
+    write_caddyfile
+    [ -n "$UI_PORT" ] && write_ports
     refresh_keep
     [ "$NO_START" -eq 1 ] && { say "Configuration kept."; return 0; }
     deploy
@@ -843,7 +923,7 @@ main() {
   fi
 
   if [ "$RECONFIGURE" -eq 1 ] && [ -z "$API_PORT" ] && [ "$NO_API" -eq 0 ]; then
-    API_PORT="$(sed -n 's/.*:\([0-9]*\):8000".*/\1/p' "$RENGINE_HOME/ports.yml" 2>/dev/null | head -1)"
+    API_PORT="$(published_port 8000)"
   fi
 
   ask_mode

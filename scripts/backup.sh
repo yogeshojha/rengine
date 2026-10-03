@@ -11,10 +11,16 @@
 #   volumes.tar      check templates, wordlists, generated reports and report fonts
 #   env              SECRET_KEY
 #
+# A dump run from a terminal asks for a passphrase. With one it writes rengine-*.tar.enc.
+# RENGINE_BACKUP_PASSPHRASE supplies it to a dump or a restore without a prompt.
 # An archive decrypts every stored secret. Store it as a credential.
 
 set -euo pipefail
 umask 077
+
+CIPHER=(-aes-256-cbc -pbkdf2 -iter 600000 -md sha256)
+PASSPHRASE="${RENGINE_BACKUP_PASSPHRASE:-}"
+unset RENGINE_BACKUP_PASSPHRASE
 
 ARG="${2:-}"
 case "$ARG" in "" | /*) ;; *) ARG="$PWD/$ARG" ;; esac
@@ -48,6 +54,24 @@ die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 
 running() { docker compose ps --format '{{.Service}}' 2>/dev/null | grep -qx "$1"; }
 
+has_openssl() { command -v openssl >/dev/null 2>&1; }
+
+ask_passphrase() {
+  local again
+  [ -n "$PASSPHRASE" ] && return 0
+  [ -t 0 ] || return 0
+  if ! has_openssl; then
+    say "openssl not found. The archive is written unencrypted."
+    return 0
+  fi
+  read -rsp "Passphrase to encrypt the archive, empty for none: " PASSPHRASE; printf '\n'
+  [ -n "$PASSPHRASE" ] || return 0
+  read -rsp "Passphrase again: " again; printf '\n'
+  [ "$again" = "$PASSPHRASE" ] || die "the passphrases do not match"
+}
+
+encrypted() { [ "$(head -c 8 "$1" 2>/dev/null)" = "Salted__" ]; }
+
 HELPER=""
 need_db() {
   running db || die "the db service is not running"
@@ -56,6 +80,8 @@ need_db() {
 
 dump() {
   need_db
+  ask_passphrase
+  [ -z "$PASSPHRASE" ] || has_openssl || die "openssl is required to encrypt the archive"
   mkdir -p "$DEST"
   local stamp archive work
   stamp="$(date -u +%Y%m%dT%H%M%SZ)"
@@ -86,8 +112,17 @@ dump() {
 
   grep -E '^SECRET_KEY=' .env > "$work/env" || true
 
-  tar -cf "$archive" -C "$work" db.dump scan_media.tar volumes.tar env
+  if [ -n "$PASSPHRASE" ]; then
+    archive="$archive.enc"
+    tar -cf - -C "$work" db.dump scan_media.tar volumes.tar env \
+      | KEY="$PASSPHRASE" openssl enc -e "${CIPHER[@]}" -salt -pass env:KEY -out "$archive.part"
+  else
+    tar -cf "$archive.part" -C "$work" db.dump scan_media.tar volumes.tar env
+  fi
+  mv "$archive.part" "$archive"
   say "wrote $archive ($(du -h "$archive" | cut -f1))"
+  say "The archive holds the instance key, SECRET_KEY."
+  if [ -n "$PASSPHRASE" ]; then say "Encrypted with the passphrase."; else say "Not encrypted."; fi
 }
 
 restore() {
@@ -96,12 +131,25 @@ restore() {
   [ -f "$archive" ] || die "$archive not found"
   need_db
 
-  local work archived current differs redis_db
+  local work archived current differs redis_db show
   WORK="$(mktemp -d)"; work="$WORK"
-  tar -xf "$archive" -C "$work"
+  show="tar -xOf $archive env"
+  if encrypted "$archive"; then
+    has_openssl || die "openssl is required to decrypt $archive"
+    if [ -z "$PASSPHRASE" ]; then
+      [ -t 0 ] || die "$archive is encrypted. Set RENGINE_BACKUP_PASSPHRASE or restore from a terminal."
+      read -rsp "Passphrase for $archive: " PASSPHRASE; printf '\n'
+    fi
+    KEY="$PASSPHRASE" openssl enc -d "${CIPHER[@]}" -pass env:KEY -in "$archive" 2>/dev/null \
+      | tar -xf - -C "$work" 2>/dev/null \
+      || die "the passphrase does not decrypt $archive"
+    show="openssl enc -d ${CIPHER[*]} -in $archive | tar -xO env"
+  else
+    tar -xf "$archive" -C "$work"
+  fi
   archived="$(grep -E '^SECRET_KEY=' "$work/env" | cut -d= -f2- || true)"
   current="$(grep -E '^SECRET_KEY=' .env | cut -d= -f2- || true)"
-  differs="SECRET_KEY in .env differs from the archive. Copy the SECRET_KEY line from 'tar -xOf $archive env' into .env and restart the stack."
+  differs="SECRET_KEY in .env differs from the archive. Copy the SECRET_KEY line from '$show' into .env and restart the stack."
   [ "$archived" = "$current" ] || say "$differs"
 
   printf "Type the database name %s to replace this instance's data: " "$DB_NAME"
@@ -136,6 +184,9 @@ restore() {
     docker run --rm -v "${PROJECT}_$volume:/to" -v "$vwork:/from" "$HELPER" \
       sh -c "rm -rf /to/* /to/..?* /to/.[!.]* 2>/dev/null; tar -xf /from/$volume.tar -C /to" >/dev/null
   done
+  if docker compose config --services 2>/dev/null | grep -qx volume-init; then
+    docker compose run --rm --no-deps volume-init >/dev/null 2>&1 || say "data directory owners not checked"
+  fi
 
   say "starting"
   docker compose start "${SERVICES[@]}" >/dev/null
@@ -148,5 +199,5 @@ case "${1:-}" in
   dump) dump ;;
   restore) restore ;;
   list) ls -lh "${ARG:-./backups}" 2>/dev/null || die "nothing in ${ARG:-./backups}" ;;
-  *) sed -n '2,14p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
+  *) sed -n '2,17p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
 esac

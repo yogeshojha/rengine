@@ -51,6 +51,7 @@ cmd_status() {
 
 cmd_update() {
   [ -n "$(env_get RENGINE_SRC)" ] && die "a source install. Update the checkout, then run install.sh --build again."
+  [ -f api.env ] || die "api.env is missing. Run install.sh again to write it."
   local tag="${1:-}"
   if [ -z "$tag" ]; then
     tag="$(curl -fsSLm 15 "https://api.github.com/repos/$REPO/releases/latest" 2>/dev/null \
@@ -74,7 +75,8 @@ cmd_update() {
   RENGINE_TAG="$image_tag" docker compose -f docker-compose.prod.yml.new -f ports.yml pull \
     || { rm -f docker-compose.prod.yml.new; die "the image pull failed. The install stays on $current."; }
   mv docker-compose.prod.yml.new docker-compose.prod.yml
-  mkdir -p scripts bin
+  mkdir -p scripts bin deploy
+  [ ! -f "$src/deploy/seccomp-chromium.json" ] || install -m 644 "$src/deploy/seccomp-chromium.json" deploy/seccomp-chromium.json
   install -m 755 "$src/scripts/backup.sh" scripts/backup.sh
   install -m 755 "$src/deploy/rengine" bin/rengine
   sed -i "s|^RENGINE_TAG=.*|RENGINE_TAG=$image_tag|" .env

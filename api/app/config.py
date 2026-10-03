@@ -44,13 +44,5 @@ class Settings(BaseAppSettings):
             raise ValueError(msg)
         return v
 
-    @field_validator("ADMIN_PASSWORD")
-    @classmethod
-    def validate_admin_password(cls, v: str, info) -> str:
-        if not info.data.get("DEBUG", False) and v == DEFAULT_ADMIN_PASSWORD:
-            msg = "ADMIN_PASSWORD must be changed from default value in production"
-            raise ValueError(msg)
-        return v
-
 
 settings = Settings()

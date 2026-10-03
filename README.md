@@ -137,7 +137,7 @@ curl -fsSL https://raw.githubusercontent.com/yogeshojha/rengine/master/install.s
 sudo bash install.sh
 ```
 
-The guided setup asks where the instance is reached: a public domain with a Let's Encrypt certificate, a server address with a self-signed certificate, or this machine only. It then asks for the UI port, whether the API is published on its own port beside the UI, and the administrator credentials. Everything else is generated. The UI, agents and connectors all reach the API at `/api` on the same origin, so no other port needs to be open.
+The guided setup asks where the instance is reached: a public domain with a Let's Encrypt certificate, a server address with a self-signed certificate, or this machine only. It then asks for the UI port, whether the API is also published over plain HTTP on 127.0.0.1, and the administrator credentials. Everything else is generated. The UI, agents and connectors all reach the API at `/api` on the same origin, so no other port needs to be open.
 
 For an unattended install, pass the answers as flags:
 
@@ -146,7 +146,7 @@ sudo bash install.sh --domain asm.example.com
 sudo bash install.sh --local --ui-port 8080
 ```
 
-`install.sh --help` lists every option. 4 GB of memory and 10 GB of disk are the minimum. 8 GB of memory and 25 GB of disk are recommended for regular scanning.
+The administrator password comes from the prompt, from stdin with `--admin-password-stdin` or from `RENGINE_ADMIN_PASSWORD`, and is generated when none is given. `install.sh --help` lists every option. 4 GB of memory and 10 GB of disk are the minimum. 8 GB of memory and 25 GB of disk are recommended for regular scanning.
 
 After the install, the `rengine` command manages the instance:
 
@@ -156,6 +156,8 @@ sudo rengine logs api    # follow one service
 sudo rengine backup      # archive the database, scan media and settings
 sudo rengine update      # move to the latest release
 ```
+
+A backup holds the instance key. Run from a terminal, `rengine backup` asks for a passphrase and encrypts the archive with it.
 
 ### From source
 

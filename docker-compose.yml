@@ -1,3 +1,12 @@
+# the api's own secrets, blanked everywhere else
+x-api-only: &api-only
+  ADMIN_PASSWORD: ""
+  JWT_SECRET_KEY: ""
+
+# chromium's namespace sandbox
+x-chromium-sandbox: &chromium-sandbox
+  - seccomp=./deploy/seccomp-chromium.json
+
 x-worker-volumes: &worker-volumes
   - ./worker/app:/app/app
   - ./shared:/app/shared
@@ -133,6 +142,8 @@ services:
     volumes: *worker-volumes
     env_file:
       - .env
+    environment: *api-only
+    security_opt: *chromium-sandbox
     command: >
       uv run celery -A app.celery worker
       --concurrency=${CELERY_DEFAULT_CONCURRENCY:-4}
@@ -160,6 +171,8 @@ services:
     volumes: *worker-volumes
     env_file:
       - .env
+    environment: *api-only
+    security_opt: *chromium-sandbox
     command: >
       uv run celery -A app.celery worker
       --concurrency=${CELERY_SCAN_CONCURRENCY:-16}
@@ -186,6 +199,7 @@ services:
     volumes: *worker-volumes
     env_file:
       - .env
+    environment: *api-only
     command: >
       uv run celery -A app.celery worker
       --concurrency=${CELERY_CONTROL_CONCURRENCY:-8}
@@ -224,6 +238,7 @@ services:
       - /app/tools/rengine_tools.egg-info
     env_file:
       - .env
+    environment: *api-only
     command: uv run celery -A app.celery beat
     restart: unless-stopped
     depends_on:
@@ -252,6 +267,7 @@ services:
       - /app/tools/rengine_tools.egg-info
     env_file:
       - .env
+    environment: *api-only
     command: uv run python -m app.ct_stream
     restart: unless-stopped
     depends_on:
@@ -282,6 +298,7 @@ services:
       - /app/tools/rengine_tools.egg-info
     env_file:
       - .env
+    environment: *api-only
     command: uv run python -m channels
     restart: unless-stopped
     depends_on:

@@ -51,6 +51,18 @@ COPY binaries /app/binaries
 COPY alembic /app/alembic
 COPY alembic.ini /app/alembic.ini
 
+# same uid as the worker image
+ARG RENGINE_UID=10001
+RUN groupadd --gid "$RENGINE_UID" rengine \
+    && useradd --uid "$RENGINE_UID" --gid rengine --create-home --shell /usr/sbin/nologin rengine \
+    && mkdir -p /app/scan_media /app/vuln-templates /app/wordlists /app/reports-out \
+      /app/exports-out /app/report-fonts \
+    && chown rengine:rengine /app/scan_media /app/vuln-templates /app/wordlists \
+      /app/reports-out /app/exports-out /app/report-fonts \
+    && find / -xdev -perm /6000 -type f -exec chmod a-s {} +
+
 ENV API_RELOAD=false
+
+USER rengine
 
 CMD ["/app/entrypoint.sh"]

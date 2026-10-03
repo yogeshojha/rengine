@@ -8,6 +8,8 @@ from tools.runner import CLIToolRunner, ToolNotFoundError
 from tools.runner.models import CommandRecorder
 
 KATANA_BINARY = "katana"
+# -system-chrome alone still downloads katana's own chromium
+CHROME_BINARY = "/usr/local/bin/chrome"
 DEFAULT_TIMEOUT = 1800
 _KILL_SLACK_SECONDS = 120
 
@@ -113,7 +115,7 @@ class KatanaClient:
         if self.exclude_extensions:
             args += ["-extension-filter", ",".join(self.exclude_extensions)]
         if self.headless:
-            args += ["-headless", "-no-sandbox"]
+            args += ["-headless", "-system-chrome-path", CHROME_BINARY]
         if self.proxy_url:
             args += ["-proxy", self.proxy_url]
         for key, value in self.headers.items():

@@ -11,6 +11,9 @@ x-worker-base: &worker-base
   image: ${RENGINE_IMAGE:-yogeshojha/rengine}-worker:${RENGINE_TAG:-latest}
   env_file:
     - .env
+  # without NET_RAW the file-capable naabu binary does not start
+  cap_drop: [ALL]
+  cap_add: [NET_RAW]
   logging: *logging
   restart: unless-stopped
   volumes:
@@ -27,6 +30,12 @@ x-worker-base: &worker-base
       condition: service_healthy
     migrate:
       condition: service_completed_successfully
+    volume-init:
+      condition: service_completed_successfully
+
+# chromium's namespace sandbox
+x-chromium-sandbox: &chromium-sandbox
+  - seccomp=./deploy/seccomp-chromium.json
 
 services:
   db:
@@ -61,6 +70,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+      start_period: 60s
 
   redis:
     image: redis:8-alpine
@@ -86,10 +96,38 @@ services:
       --maxmemory-policy noeviction
       ${REDIS_PASSWORD:+--requirepass} ${REDIS_PASSWORD:-}
 
+  # hands the data directories to the image user
+  volume-init:
+    image: ${RENGINE_IMAGE:-yogeshojha/rengine}-worker:${RENGINE_TAG:-latest}
+    user: "0:0"
+    network_mode: none
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_READ_SEARCH]
+    logging: *logging
+    restart: "no"
+    volumes:
+      - ./scan_media:/app/scan_media
+      - vuln_templates:/app/vuln-templates
+      - wordlists:/app/wordlists
+      - reports_out:/app/reports-out
+      - exports_out:/app/exports-out
+      - report_fonts:/app/report-fonts
+      - beat_state:/app/beat-state
+      - ct_state:/app/ct-state
+    entrypoint: ["sh", "-c"]
+    command:
+      - >-
+        for dir in /app/scan_media /app/vuln-templates /app/wordlists /app/reports-out
+        /app/exports-out /app/report-fonts /app/beat-state /app/ct-state;
+        do [ "$$(stat -c %U "$$dir")" = rengine ] || chown -R rengine:rengine "$$dir";
+        done
+
   migrate:
     image: ${RENGINE_IMAGE:-yogeshojha/rengine}-api:${RENGINE_TAG:-latest}
     env_file:
       - .env
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
     logging: *logging
     command: ["uv", "run", "alembic", "upgrade", "head"]
     restart: "no"
@@ -112,9 +150,12 @@ services:
       - report_fonts:/app/report-fonts
     env_file:
       - .env
+      - api.env
     environment:
       API_RELOAD: "false"
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-${CADDY_ADDR:-172.29.0.253}}
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
     logging: *logging
     restart: unless-stopped
     healthcheck:
@@ -130,10 +171,13 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+      volume-init:
+        condition: service_completed_successfully
 
   # background jobs and toolbox runs
   worker-default:
     <<: *worker-base
+    security_opt: *chromium-sandbox
     build:
       context: ${RENGINE_SRC:-.}
       dockerfile: worker/Dockerfile
@@ -153,6 +197,7 @@ services:
   # scan stages, one slot per running stage, replicas set by rengine scale
   worker-scans:
     <<: *worker-base
+    security_opt: *chromium-sandbox
     shm_size: 512m
     deploy:
       replicas: ${WORKER_SCANS_REPLICAS:-1}
@@ -203,6 +248,8 @@ services:
     image: ${RENGINE_IMAGE:-yogeshojha/rengine}-api:${RENGINE_TAG:-latest}
     env_file:
       - .env
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
     command: uv run python -m channels
     logging: *logging
     restart: unless-stopped

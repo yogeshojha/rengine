@@ -26,7 +26,7 @@ from tools.runner.models import (
 
 logger = get_logger(__name__)
 
-_TOOL_BIN = "/root/go/bin"
+_TOOL_BIN = "/usr/local/bin"
 
 
 def tool_path() -> str:
