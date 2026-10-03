@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 import uuid
 from typing import TYPE_CHECKING
 
@@ -9,12 +10,14 @@ from sqlalchemy import cast, func, select, update
 from sqlalchemy.dialects.postgresql import JSONB
 
 from shared.definitions.connectors import BROWSING_RUN_LABEL, CandidateState
-from shared.definitions.endpoints import EndpointSource
+from shared.definitions.endpoints import EndpointSource, parse_url
 from shared.definitions.surface import SurfaceDimension
 from shared.enums.scan import SCAN_TERMINAL_STATUSES, ScanScope, ScanStatus
+from shared.enums.target import TargetType
 from shared.models.connector import Connector, ConnectorCandidate
 from shared.models.endpoint import Endpoint
 from shared.models.scan import Scan
+from shared.models.target import Target
 from shared.services import endpoint_inventory
 from shared.services.asset_query.lead_cache import bump_sync
 from shared.services.endpoint_inventory import EndpointObservation, UpsertResult
@@ -22,12 +25,32 @@ from shared.services.endpoint_noise import NoisePolicy
 from shared.services.scan_scope import census_only, covers
 from shared.utils.datetime import utc_now
 from shared.utils.text import counted
+from shared.utils.validation import normalize_domain
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
     from sqlmodel import SQLModel
 
 _DIMENSION = SurfaceDimension.ENDPOINTS.value
+
+
+def holds(target: Target, host: str) -> bool:
+    """The host is a name under the target, its URL host or an address it covers."""
+    name = (host or "").strip().lower().rstrip(".")
+    kind = target.target_type.value
+    if kind in (TargetType.IP.value, TargetType.IP_RANGE.value):
+        try:
+            network = ipaddress.ip_network(target.target_value, strict=False)
+            return ipaddress.ip_address(name) in network
+        except ValueError:
+            return False
+    if kind == TargetType.URL.value:
+        parsed = parse_url(target.target_value)
+        return parsed is not None and parsed.host == name
+    if kind == TargetType.DOMAIN.value:
+        apex = normalize_domain(target.target_value)
+        return bool(apex) and (name == apex or name.endswith(f".{apex}"))
+    return False
 
 
 def _started():
@@ -150,7 +173,14 @@ def write(
     candidates: list[ConnectorCandidate],
 ) -> UpsertResult:
     """Record the candidates as proxy-sourced endpoints of the scan."""
-    rows = [c for c in candidates if c.state != CandidateState.IGNORED.value]
+    target = session.get(Target, scan.target_id)
+    rows = [
+        c
+        for c in candidates
+        if c.state != CandidateState.IGNORED.value
+        and target is not None
+        and holds(target, c.host)
+    ]
     if not rows:
         return UpsertResult()
     hosts = sorted({c.host for c in rows})

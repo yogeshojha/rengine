@@ -14,6 +14,7 @@
 		clientVersion,
 		isOutdated
 	} from '$lib/config/connectors';
+	import { auth } from '$lib/stores/auth.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
 	import { plural } from '$lib/utilities/strings';
 	import type { Connector, ConnectorSpec } from '$lib/types/connector';
@@ -40,6 +41,7 @@
 		onDisconnect
 	}: Props = $props();
 
+	const isAdmin = $derived(auth.user?.is_superuser ?? false);
 	const version = $derived(clientVersion(connector?.last_client));
 	const outdated = $derived(isOutdated(connector?.last_client ?? null, spec.client_file));
 	const facts = $derived.by(() => {
@@ -90,7 +92,9 @@
 		</div>
 
 		<div class="flex min-w-0 flex-wrap items-center gap-2">
-			{#if connector}
+			{#if !isAdmin}
+				<span class="text-xs text-muted-foreground">Managed by administrators.</span>
+			{:else if connector}
 				<Button variant="outline" size="sm" onclick={onPause}>
 					{#if connector.paused}
 						<PlayIcon class="size-3.5" /> Resume

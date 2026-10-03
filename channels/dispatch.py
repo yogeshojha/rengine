@@ -161,7 +161,7 @@ class Dispatcher:
             except Exception as exc:
                 logger.debug("code message not deleted", error=str(exc))
 
-        wait = await stepup.attempts_exhausted(kind, external_id)
+        wait = await stepup.attempts_exhausted(kind, external_id, user.id)
         if wait:
             minutes = max(1, -(-wait // 60))
             await self._say(
@@ -176,13 +176,17 @@ class Dispatcher:
 
         from app.services.totp import TOTPService  # noqa: PLC0415
 
-        if not await TOTPService(session).verify_code(user, text):
-            await stepup.note_failure(kind, external_id)
+        try:
+            accepted = await TOTPService(session).verify_code(user, text)
+        except ValueError:
+            accepted = False
+        if not accepted:
+            await stepup.note_failure(kind, external_id, user.id)
             await stepup.hold(kind, external_id, pending)
             await self._say(external_id, "Code not accepted.")
             return
 
-        await stepup.clear_failures(kind, external_id)
+        await stepup.clear_failures(kind, external_id, user.id)
         await stepup.grant(kind, external_id)
         parsed = commands.parse(pending)
         if parsed is None:

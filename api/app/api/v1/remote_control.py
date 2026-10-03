@@ -156,7 +156,7 @@ async def list_commands(_current_user: CurrentUser, session: Session, channel: s
 
 @router.get("/channels/{channel}/calls", response_model=list[McpCallRead])
 async def list_calls(
-    _current_user: CurrentUser,
+    _admin: CurrentSuperuser,
     session: Session,
     channel: str,
     limit: Annotated[int, Query(ge=1, le=200)] = 200,

@@ -63,7 +63,7 @@
 	});
 
 	const CONFIRM: Record<Action, (title: string, c: Connector) => [string, string, string]> = {
-		pause: (title) => [`Pause ${title}`, 'Incoming requests are discarded.', 'Pause'],
+		pause: (title) => [`Pause ${title}`, `Requests from ${title} are refused.`, 'Pause'],
 		resume: (title) => [`Resume ${title}`, '', 'Resume'],
 		rotate: (_title, c) => ['Rotate token', `Token ${c.token_prefix}… is revoked.`, 'Rotate'],
 		disconnect: (title) => [

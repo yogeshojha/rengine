@@ -4,7 +4,16 @@ from __future__ import annotations
 
 import json
 import re
+import uuid
 
+from shared.definitions.auth import (
+    OTP_DAILY_KEY,
+    OTP_DAILY_LIMIT,
+    OTP_DAILY_WINDOW,
+    OTP_FAILURE_KEY,
+    OTP_FAILURE_LIMIT,
+    OTP_FAILURE_WINDOW,
+)
 from shared.definitions.channels import (
     OTP_ATTEMPT_LIMIT,
     OTP_ATTEMPT_WINDOW,
@@ -68,25 +77,44 @@ async def clear_grace(channel: str, external_id: str) -> None:
     )
 
 
-async def attempts_exhausted(channel: str, external_id: str) -> int:
+def _budgets(
+    channel: str, external_id: str, user_id: uuid.UUID
+) -> list[tuple[str, int, int]]:
+    return [
+        (
+            ATTEMPT_KEY.format(channel=channel, external_id=external_id),
+            OTP_ATTEMPT_LIMIT,
+            OTP_ATTEMPT_WINDOW,
+        ),
+        (
+            OTP_FAILURE_KEY.format(user_id=user_id),
+            OTP_FAILURE_LIMIT,
+            OTP_FAILURE_WINDOW,
+        ),
+        (OTP_DAILY_KEY.format(user_id=user_id), OTP_DAILY_LIMIT, OTP_DAILY_WINDOW),
+    ]
+
+
+async def attempts_exhausted(channel: str, external_id: str, user_id: uuid.UUID) -> int:
     """Seconds until the next attempt is allowed, 0 when allowed now."""
     redis = async_client()
-    key = ATTEMPT_KEY.format(channel=channel, external_id=external_id)
-    raw = await redis.get(key)
-    if raw is None or int(raw) < OTP_ATTEMPT_LIMIT:
-        return 0
-    ttl = await redis.ttl(key)
-    return max(1, int(ttl or 0))
+    wait = 0
+    for key, limit, _ in _budgets(channel, external_id, user_id):
+        raw = await redis.get(key)
+        if raw is not None and int(raw) >= limit:
+            wait = max(wait, int(await redis.ttl(key) or 0), 1)
+    return wait
 
 
-async def note_failure(channel: str, external_id: str) -> None:
+async def note_failure(channel: str, external_id: str, user_id: uuid.UUID) -> None:
     from app.core.ratelimit import record_failure  # noqa: PLC0415
 
-    key = ATTEMPT_KEY.format(channel=channel, external_id=external_id)
-    await record_failure(key, window_seconds=OTP_ATTEMPT_WINDOW)
+    for key, _, window in _budgets(channel, external_id, user_id):
+        await record_failure(key, window_seconds=window)
 
 
-async def clear_failures(channel: str, external_id: str) -> None:
+async def clear_failures(channel: str, external_id: str, user_id: uuid.UUID) -> None:
     from app.core.ratelimit import clear_failures as clear  # noqa: PLC0415
 
     await clear(ATTEMPT_KEY.format(channel=channel, external_id=external_id))
+    await clear(OTP_FAILURE_KEY.format(user_id=user_id))

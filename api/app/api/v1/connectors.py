@@ -5,12 +5,12 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, s
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentUser
+from app.api.deps import CurrentSuperuser, CurrentUser
 from app.api.errors import bad_request
 from app.api.scope import EndpointScope
 from app.core.client_ip import client_id
 from app.core.database import get_session
-from app.core.ratelimit import clear_failures, record_failure, too_many_attempts
+from app.core.ratelimit import record_failure, too_many_attempts
 from app.services.connector import ConnectorError, ConnectorService, HandoffError
 from connectors import auth
 from shared.models.connector import (
@@ -55,15 +55,18 @@ TOKEN_ATTEMPT_WINDOW = 900
 async def _authenticate(
     service: ConnectorService, request: Request, header: str | None
 ):
-    key = f"connector:token:{client_id(request)}"
-    await too_many_attempts(key, limit=TOKEN_ATTEMPT_LIMIT)
     row = await service.authenticate(auth.from_header(header))
     if row is None:
+        key = f"connector:token:{client_id(request)}"
+        await too_many_attempts(key, limit=TOKEN_ATTEMPT_LIMIT)
         await record_failure(key, window_seconds=TOKEN_ATTEMPT_WINDOW)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Unknown connector token."
         )
-    await clear_failures(key)
+    if row.paused:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="The connector is paused."
+        )
     return row
 
 
@@ -201,7 +204,7 @@ async def list_connectors(
 
 @router.post("", response_model=ConnectorCreated, status_code=status.HTTP_201_CREATED)
 async def create_connector(
-    data: ConnectorCreate, current_user: CurrentUser, service: Service
+    data: ConnectorCreate, current_user: CurrentSuperuser, service: Service
 ):
     try:
         return await service.create(data, current_user.id)
@@ -213,7 +216,7 @@ async def create_connector(
 async def update_connector(
     connector_id: UUID,
     data: ConnectorUpdate,
-    _current_user: CurrentUser,
+    _current_user: CurrentSuperuser,
     service: Service,
     project_id: ProjectId,
 ):
@@ -226,7 +229,7 @@ async def update_connector(
 @router.post("/{connector_id}/rotate", response_model=ConnectorCreated)
 async def rotate_token(
     connector_id: UUID,
-    _current_user: CurrentUser,
+    _current_user: CurrentSuperuser,
     service: Service,
     project_id: ProjectId,
 ):
@@ -236,7 +239,7 @@ async def rotate_token(
 @router.delete("/{connector_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_connector(
     connector_id: UUID,
-    _current_user: CurrentUser,
+    _current_user: CurrentSuperuser,
     service: Service,
     project_id: ProjectId,
 ):

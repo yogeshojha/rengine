@@ -266,6 +266,19 @@ def response_text(head: str | None, body: str | None) -> str | None:
     return response_message(head.rstrip("\r\n") + "\r\n\r\n" + (body or ""))
 
 
+def masked_headers(request: str | None) -> dict[str, str]:
+    """The headers whose value carries the mask, by lowercase name."""
+    if not request or MASK not in request:
+        return {}
+    head = _split(request)[0]
+    out: dict[str, str] = {}
+    for line in _lines(head):
+        match = _HEADER_LINE.match(line)
+        if match and MASK in match.group(2):
+            out.setdefault(match.group(1).lower(), match.group(1))
+    return out
+
+
 def restore_headers(request: str | None, headers: dict[str, str]) -> str | None:
     """Put the run's own header values back where the store masked them."""
     if not request or not headers or MASK not in request:

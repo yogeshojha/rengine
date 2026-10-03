@@ -5,12 +5,14 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Query, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
 from app.services.surface_scope import SurfaceScopeService
 from app.services.target_scope import TargetFilter, resolve_targets
 from shared.definitions.surface import SurfaceDimension
+from shared.models.scan import Scan
 from shared.services.asset_query import QueryScope
 
 _MISSING = "Pass scan_id for one run, or project_id for the whole project."
@@ -41,6 +43,12 @@ async def resolve_scope(
     spec: TargetFilter | None = None,
 ) -> QueryScope:
     if scan_id is not None:
+        if project_id is not None and project_id != await session.scalar(
+            select(Scan.project_id).where(Scan.id == scan_id)
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Scan not found."
+            )
         return QueryScope((scan_id,), project_id=project_id)
     if project_id is None:
         raise HTTPException(

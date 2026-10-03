@@ -34,7 +34,7 @@
 
 	const canAdmin = $derived(auth.user?.is_superuser ?? false);
 	const views = $derived<readonly ChannelView[]>(
-		canAdmin ? CHANNEL_VIEWS : CHANNEL_VIEWS.filter((v) => v !== 'chats')
+		canAdmin ? CHANNEL_VIEWS : CHANNEL_VIEWS.filter((v) => v !== 'chats' && v !== 'activity')
 	);
 	const asked = page.url.searchParams.get('view') ?? '';
 	let chosen = $state<ChannelView | null>(
@@ -61,8 +61,8 @@
 		const admin = canAdmin;
 		untrack(() => {
 			void remoteControl.fetch(channel, true);
-			void remoteControl.loadCalls(true);
 			if (admin) {
+				void remoteControl.loadCalls(true);
 				void remoteControl.loadAdmin(true);
 				void usersApi
 					.list()
@@ -82,8 +82,9 @@
 		const poll = () => {
 			if (document.hidden) return;
 			void remoteControl.refreshStatus(true);
+			if (!admin) return;
 			void remoteControl.loadCalls(true);
-			if (admin) void remoteControl.loadAdmin(true);
+			void remoteControl.loadAdmin(true);
 		};
 		const id = setInterval(poll, REMOTE_CONTROL_POLL_MS);
 		const tick = setInterval(() => (now = Date.now()), TICK_MS);

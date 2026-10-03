@@ -22,6 +22,7 @@
 	import { connectors as connectorStore } from '$lib/stores/connectors.svelte';
 	import { connectorsApi } from '$lib/api/connectors';
 	import { projectsStore } from '$lib/stores/projects.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
 	import {
 		ACTION_KIND_LABELS,
 		DELIVERY_POLL_MS,
@@ -297,7 +298,7 @@
 			onSend={send}
 		/>
 	{/if}
-{:else if variant !== 'ghost' && known}
+{:else if variant !== 'ghost' && known && auth.user?.is_superuser}
 	<Button
 		variant="outline"
 		size="sm"

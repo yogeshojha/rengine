@@ -292,13 +292,13 @@ class ConnectorService:
         row = await self.session.scalar(
             select(Connector).where(Connector.token_hash == auth.fingerprint(secret))
         )
-        if row is None:
+        if row is None or row.created_by is None:
             return None
-        if row.created_by is not None:
-            issuer = await self.session.get(User, row.created_by)
-            if issuer is None or not issuer.is_active:
-                return None
-        await self._mark_online(row.id)
+        issuer = await self.session.get(User, row.created_by)
+        if issuer is None or not issuer.is_active or not issuer.is_superuser:
+            return None
+        if not row.paused:
+            await self._mark_online(row.id)
         return row
 
     @staticmethod
@@ -328,10 +328,6 @@ class ConnectorService:
 
     async def ingest(self, row: Connector, payload: IngestRequest) -> IngestResult:
         now = utc_now()
-        if row.paused:
-            return IngestResult(
-                accepted=0, novel=0, dropped=len(payload.items), queued=0, flagged=[]
-            )
         batch = prepare(
             payload.items,
             include_static=row.include_static,
@@ -345,7 +341,12 @@ class ConnectorService:
         kept: list[tuple[Prepared, uuid.UUID | None]] = []
         dropped = batch.rejected
         for item in batch.prepared:
-            target_id = chosen or self._resolve_target(item.parsed.host, targets)
+            host = item.parsed.host
+            target_id = (
+                chosen.id
+                if chosen is not None and proxy_sync.holds(chosen, host)
+                else self._resolve_target(host, targets)
+            )
             if target_id is None and row.only_known_hosts:
                 dropped += 1
                 continue
@@ -1057,6 +1058,15 @@ class ConnectorService:
             request = handoff.edited_request(body.request or "")
         except handoff.RequestError as exc:
             raise HandoffError(str(exc)) from None
+        stored = handoff.masked_headers(item.request)
+        added = [
+            name
+            for key, name in handoff.masked_headers(request).items()
+            if key not in stored
+        ]
+        if added:
+            msg = f"The stored request does not mask {', '.join(added)}. Replace the mask with a value."
+            raise HandoffError(msg)
         return replace(item, request=request, method=request.split(" ", 1)[0].upper())
 
     async def _built(
@@ -1426,10 +1436,14 @@ class ConnectorService:
                 for c in picked
                 if not c.methods or any(m.upper() in SAFE_METHODS for m in c.methods)
             ]
+        owners = await self._targets_by_id(
+            {c.target_id for c in picked if c.target_id is not None}, project_id
+        )
         by_target: dict[uuid.UUID, list[ConnectorCandidate]] = {}
         for candidate in picked:
-            if candidate.target_id is not None:
-                group = by_target.setdefault(candidate.target_id, [])
+            owner = owners.get(candidate.target_id)
+            if owner is not None and proxy_sync.holds(owner, candidate.host):
+                group = by_target.setdefault(owner.id, [])
                 if len(group) < MAX_CANDIDATE_SCAN:
                     group.append(candidate)
         if not by_target:
@@ -1487,14 +1501,26 @@ class ConnectorService:
         ).all()
         return [(i, v) for i, v in rows]
 
+    async def _targets_by_id(
+        self, target_ids: set[uuid.UUID], project_id: uuid.UUID
+    ) -> dict[uuid.UUID, Target]:
+        if not target_ids:
+            return {}
+        rows = await self.session.execute(
+            select(Target).where(
+                Target.id.in_(target_ids), Target.project_id == project_id
+            )
+        )
+        return {t.id: t for t in rows.scalars().all()}
+
     async def _chosen_target(
         self, target_id: uuid.UUID | None, project_id: uuid.UUID
-    ) -> uuid.UUID | None:
+    ) -> Target | None:
         """The target the operator picked in the proxy, if it belongs to this project."""
         if target_id is None:
             return None
         target = await self.session.get(Target, target_id)
-        return target.id if target and target.project_id == project_id else None
+        return target if target and target.project_id == project_id else None
 
     async def target_options(self, row: Connector) -> list[TargetOption]:
         """The picker the proxy shows while testing."""
