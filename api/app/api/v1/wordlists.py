@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentUser
+from app.api.deps import CurrentSuperuser, CurrentUser
 from app.core.database import get_session
 from shared.definitions.wordlists import (
     KIND_LABELS,
@@ -49,7 +49,7 @@ async def list_wordlists(
     "", response_model=WordlistUploadResult, status_code=status.HTTP_201_CREATED
 )
 async def upload_wordlists(
-    current_user: CurrentUser,
+    current_user: CurrentSuperuser,
     session: Annotated[AsyncSession, Depends(get_session)],
     body: WordlistUploadRequest,
 ):
@@ -159,7 +159,7 @@ async def preview_wordlist(
 
 @router.delete("/{wordlist_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_wordlist(
-    _current_user: CurrentUser,
+    _admin: CurrentSuperuser,
     session: Annotated[AsyncSession, Depends(get_session)],
     wordlist_id: Annotated[UUID, Path(description="Wordlist ID")],
 ):

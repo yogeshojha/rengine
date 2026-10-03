@@ -20,6 +20,7 @@
 	import NoteFacet from '$lib/components/notes/note-facet.svelte';
 	import NoteRow from '$lib/components/notes/note-row.svelte';
 	import NoteSheet from '$lib/components/notes/note-sheet.svelte';
+	import { canChangeNote } from '$lib/components/notes/subject';
 	import {
 		NOTE_FACETS,
 		facetOptions,
@@ -29,6 +30,7 @@
 	} from '$lib/components/notes/facets';
 	import { notesApi } from '$lib/api/notes';
 	import { notes } from '$lib/stores/notes.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { routeLabels } from '$lib/config/routes';
 	import { pageTitle } from '$lib/utilities/page-title';
@@ -360,6 +362,7 @@
 					<NoteRow
 						{note}
 						checked={picked.has(note.id)}
+						selectable={canChangeNote(note, auth.user)}
 						active={sheetOpen && note.id === noteId}
 						onCheck={toggleCheck}
 						onOpen={openNote}

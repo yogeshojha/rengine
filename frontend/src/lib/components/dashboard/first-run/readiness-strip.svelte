@@ -5,6 +5,7 @@
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import { vulnTemplatesApi } from '$lib/api/vulnerabilities';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
 	import type { DashboardReadiness } from '$lib/types/dashboard';
 
 	interface Props {
@@ -15,6 +16,8 @@
 
 	let syncing = $state(false);
 	let downloading = $state(false);
+
+	const isAdmin = $derived(auth.user?.is_superuser ?? false);
 
 	let stages = $derived(engineCatalogStore.stages);
 	let checksReady = $derived(!!readiness?.checks_ready);
@@ -73,18 +76,20 @@
 					<span class="text-sm font-medium">Syncing</span>
 				{:else}
 					<span class="text-sm font-medium text-warning">Not indexed</span>
-					<div>
-						<LoadingButton
-							variant="outline"
-							size="sm"
-							loading={syncing}
-							loadingLabel="Starting"
-							onclick={sync}
-						>
-							<RefreshCw class="size-3.5" />
-							Sync library
-						</LoadingButton>
-					</div>
+					{#if isAdmin}
+						<div>
+							<LoadingButton
+								variant="outline"
+								size="sm"
+								loading={syncing}
+								loadingLabel="Starting"
+								onclick={sync}
+							>
+								<RefreshCw class="size-3.5" />
+								Sync library
+							</LoadingButton>
+						</div>
+					{/if}
 				{/if}
 			</div>
 		{/if}

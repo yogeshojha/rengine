@@ -37,6 +37,7 @@
 	import { CALLBACK_SERVER, OAST_MODE_LABELS, OastMode } from '$lib/config/oast';
 	import type { OastRead } from '$lib/types/oast';
 	import { vulnTemplatesApi } from '$lib/api/vulnerabilities';
+	import { auth } from '$lib/stores/auth.svelte';
 	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { SvelteSet } from 'svelte/reactivity';
@@ -62,6 +63,8 @@
 
 	const PAGE_SIZE = 25;
 	const ALL = 'all';
+
+	const isAdmin = $derived(auth.user?.is_superuser ?? false);
 
 	let stats = $state<TemplateLibraryStats | null>(null);
 	let statsLoading = $state(true);
@@ -338,6 +341,7 @@
 							class="gap-2"
 							loading={uploading}
 							loadingLabel="Uploading"
+							disabled={!isAdmin}
 						>
 							<Plus class="size-4" /> Add check
 							<ChevronDown class="size-3.5 text-muted-foreground" />
@@ -358,6 +362,7 @@
 				class="gap-2"
 				loading={syncing}
 				loadingLabel="Syncing"
+				disabled={!isAdmin}
 				onclick={sync}
 			>
 				<Download class="size-4" /> Sync library
@@ -543,7 +548,7 @@
 				{@const custom = template.origin === TemplateOrigin.CUSTOM}
 				{@const SetIcon = TEMPLATE_SET_ICONS[template.sets[0] ?? ''] ?? FileCode}
 				<div class="flex items-start gap-3 px-6 py-3 hover:bg-muted/40">
-					{#if custom}
+					{#if custom && isAdmin}
 						<span class="flex h-7 shrink-0 items-center">
 							<Checkbox
 								checked={picked.has(template.id)}
@@ -605,17 +610,18 @@
 							variant="ghost"
 							size="icon"
 							class="size-8 text-muted-foreground hover:text-foreground"
-							aria-label="{custom ? 'Edit' : 'View'} {template.name}"
+							aria-label="{custom && isAdmin ? 'Edit' : 'View'} {template.name}"
 							onclick={() => (viewing = template)}
 						>
 							<FileCode class="size-4" />
 						</Button>
 						<Switch
 							checked={template.enabled}
+							disabled={!isAdmin}
 							onCheckedChange={(value) => toggle(template, value)}
 							aria-label="Enable {template.name}"
 						/>
-						{#if custom}
+						{#if custom && isAdmin}
 							<Button
 								variant="ghost"
 								size="icon"

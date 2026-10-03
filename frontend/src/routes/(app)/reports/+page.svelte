@@ -33,6 +33,7 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { reports as reportsStore } from '$lib/stores/reports.svelte';
 	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
 	import { reportsApi } from '$lib/api/reports';
 	import { REPORT_TABS, routeLabels, type ReportTab } from '$lib/config/routes';
 	import { toast } from 'svelte-sonner';
@@ -257,12 +258,22 @@
 					<Input bind:value={search} placeholder="Search reports…" class="h-9 pl-8" />
 				</div>
 			{:else if activeTab === 'themes'}
-				<Button variant="outline" size="sm" onclick={() => (uploadOpen = true)}>
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={!auth.user?.is_superuser}
+					onclick={() => (uploadOpen = true)}
+				>
 					<UploadIcon class="mr-1.5 size-3.5" />
 					Upload theme
 				</Button>
 			{:else if activeTab === 'typefaces'}
-				<Button variant="outline" size="sm" onclick={() => (fontUploadOpen = true)}>
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={!auth.user?.is_superuser}
+					onclick={() => (fontUploadOpen = true)}
+				>
 					<UploadIcon class="mr-1.5 size-3.5" />
 					Upload typeface
 				</Button>

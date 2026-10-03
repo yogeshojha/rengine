@@ -20,6 +20,7 @@
 	import WordlistSheet from './wordlist-sheet.svelte';
 	import { wordlists as store } from '$lib/stores/wordlists.svelte';
 	import { wordlistsApi } from '$lib/api/wordlists';
+	import { auth } from '$lib/stores/auth.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
 	import { formatBytes } from '$lib/utilities/format';
 	import {
@@ -34,6 +35,8 @@
 	} from '$lib/types/wordlist';
 
 	const ALL = 'all';
+
+	const isAdmin = $derived(auth.user?.is_superuser ?? false);
 
 	let kindFilter = $state<string>(ALL);
 	let uploadKind = $state<WordlistKind>(WORDLIST_KINDS[0]);
@@ -132,7 +135,7 @@
 				<Card.Description>Updated {relativeTime(lastChanged)}</Card.Description>
 			{/if}
 			<Card.Action class="flex items-center gap-2">
-				<Select.Root type="single" bind:value={uploadKind}>
+				<Select.Root type="single" bind:value={uploadKind} disabled={!isAdmin}>
 					<Select.Trigger class="w-[190px]" aria-label="Wordlist kind">
 						{WORDLIST_KIND_LABELS[uploadKind]}
 					</Select.Trigger>
@@ -155,6 +158,7 @@
 					class="gap-2"
 					loading={uploading}
 					loadingLabel="Uploading"
+					disabled={!isAdmin}
 					onclick={() => fileInput?.click()}
 				>
 					<Upload class="size-4" /> Upload wordlists
@@ -202,7 +206,7 @@
 					<div
 						class="group flex items-start gap-4 border-b px-6 py-4 last:border-b-0 hover:bg-muted/40"
 					>
-						{#if item.origin !== WordlistOrigin.BUILTIN}
+						{#if item.origin !== WordlistOrigin.BUILTIN && isAdmin}
 							<div class="flex h-6 shrink-0 items-center">
 								<Checkbox
 									checked={picked.has(item.id)}
@@ -259,7 +263,9 @@
 							<Hint
 								text={item.origin === WordlistOrigin.BUILTIN
 									? 'Default wordlists are read-only'
-									: 'Remove'}
+									: isAdmin
+										? 'Remove'
+										: 'Editable by administrators'}
 							>
 								{#snippet child(props)}
 									<span class="inline-flex">
@@ -269,7 +275,7 @@
 											size="icon"
 											class="size-8"
 											aria-label="Remove {item.name}"
-											disabled={item.origin === WordlistOrigin.BUILTIN}
+											disabled={item.origin === WordlistOrigin.BUILTIN || !isAdmin}
 											onclick={() => (removing = item)}
 										>
 											<Trash2 class="size-4" />

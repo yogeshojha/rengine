@@ -13,6 +13,7 @@
 	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import SeverityMark from '$lib/components/scans/results/vulnerabilities/severity-mark.svelte';
 	import { vulnTemplatesApi } from '$lib/api/vulnerabilities';
+	import { auth } from '$lib/stores/auth.svelte';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import {
 		PROTOCOL_LABELS,
@@ -59,7 +60,8 @@ http:
 	let contentEl = $state<HTMLElement | null>(null);
 
 	let open = $derived(creating || !!template);
-	let editable = $derived(creating || source?.editable === true);
+	const isAdmin = $derived(auth.user?.is_superuser ?? false);
+	let editable = $derived(isAdmin && (creating || source?.editable === true));
 	let dirty = $derived(editable && draft !== original);
 
 	$effect(() => {
@@ -193,7 +195,9 @@ http:
 			{#if !editable && !loading}
 				<div class="flex items-start gap-2 rounded-md border bg-muted/40 px-3 py-2">
 					<Lock class="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-					<p class="text-xs text-muted-foreground">Default checks are read-only.</p>
+					<p class="text-xs text-muted-foreground">
+						{source?.editable ? 'Editable by administrators.' : 'Default checks are read-only.'}
+					</p>
 				</div>
 			{/if}
 

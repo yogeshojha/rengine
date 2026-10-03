@@ -45,6 +45,7 @@ from shared.services.vuln_templates import (
     custom_row,
     official_root,
     parse_template,
+    picked_predicate,
     selection_predicate,
     sets_for,
     store_custom,
@@ -282,10 +283,7 @@ class VulnTemplateService:
         if selection.custom_templates:
             custom = int(
                 await self.session.scalar(
-                    select(func.count()).where(
-                        VulnTemplate.id.in_(list(selection.custom_templates)),
-                        VulnTemplate.enabled.is_(True),
-                    )
+                    select(func.count()).where(picked_predicate(selection))
                 )
                 or 0
             )

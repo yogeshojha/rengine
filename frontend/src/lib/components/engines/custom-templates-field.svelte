@@ -4,6 +4,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import MultiSelectCombobox from '$lib/components/multi-select-combobox.svelte';
 	import { vulnTemplatesApi } from '$lib/api/vulnerabilities';
+	import { auth } from '$lib/stores/auth.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { TemplateOrigin } from '$lib/config/vulnerabilities';
 	import { emptyTemplateFilter } from '$lib/types/vuln-template';
@@ -20,6 +21,8 @@
 	let templates = $state<VulnTemplateRead[]>([]);
 	let loaded = $state(false);
 	let failed = $state(false);
+
+	const isAdmin = $derived(auth.user?.is_superuser ?? false);
 
 	$effect(() => {
 		untrack(() => {
@@ -48,9 +51,11 @@
 {:else if loaded && templates.length === 0}
 	<div class="w-[280px] text-right">
 		<p class="text-2xs text-muted-foreground">No uploaded templates.</p>
-		<Button variant="link" size="sm" class="h-auto px-0 text-2xs" href={ROUTES.arsenal('nuclei')}>
-			Upload in Arsenal
-		</Button>
+		{#if isAdmin}
+			<Button variant="link" size="sm" class="h-auto px-0 text-2xs" href={ROUTES.arsenal('nuclei')}>
+				Upload in Arsenal
+			</Button>
+		{/if}
 	</div>
 {:else}
 	<div class="w-[280px] space-y-1">

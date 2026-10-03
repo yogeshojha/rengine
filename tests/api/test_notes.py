@@ -55,6 +55,10 @@ async def _write(
     )
 
 
+async def _author(estate) -> User:
+    return await estate.session.get(User, estate.user_id)
+
+
 async def _bodies(estate, **filters) -> list[str]:
     service = NoteService(estate.session)
     query = await service.list(estate.project_id, NoteFilter(**filters))
@@ -116,16 +120,19 @@ async def test_an_update_to_no_tags_clears_them(estate, now):
     await _two_runs(estate, now)
     note = await _write(estate, "second", "api.example.com", tags=["idor"])
     service = NoteService(estate.session)
+    me = await _author(estate)
 
-    kept = await service.update(note.id, NoteUpdate(body="Edited"), estate.project_id)
+    kept = await service.update(
+        note.id, NoteUpdate(body="Edited"), estate.project_id, me
+    )
     assert kept.tags == ["idor"]
 
     renamed = await service.update(
-        note.id, NoteUpdate(tags=["#Auth", "auth"]), estate.project_id
+        note.id, NoteUpdate(tags=["#Auth", "auth"]), estate.project_id, me
     )
     assert renamed.tags == ["auth"]
 
-    cleared = await service.update(note.id, NoteUpdate(tags=[]), estate.project_id)
+    cleared = await service.update(note.id, NoteUpdate(tags=[]), estate.project_id, me)
     assert cleared.tags == []
     assert (await estate.session.get(Note, note.id)).tags == []
 
@@ -144,9 +151,14 @@ async def test_an_emptied_title_is_removed(estate, now):
     )
     assert note.title == "Login"
 
-    kept = await service.update(note.id, NoteUpdate(body="Edited"), estate.project_id)
+    me = await _author(estate)
+    kept = await service.update(
+        note.id, NoteUpdate(body="Edited"), estate.project_id, me
+    )
     assert kept.title == "Login"
-    cleared = await service.update(note.id, NoteUpdate(title="  "), estate.project_id)
+    cleared = await service.update(
+        note.id, NoteUpdate(title="  "), estate.project_id, me
+    )
     assert cleared.title is None
 
 
@@ -202,7 +214,7 @@ async def test_deleting_a_note_removes_it(estate, now):
     note = await _write(estate, "second", "api.example.com", ["idor"])
     service = NoteService(estate.session)
 
-    await service.delete(note.id, estate.project_id)
+    await service.delete(note.id, estate.project_id, await _author(estate))
     left = (
         (
             await estate.session.execute(
@@ -358,7 +370,9 @@ async def _estate_of_notes(estate, now):
     resolved = await write(
         by=colleague.id, target_id=example, body="Scope agreed with the owner"
     )
-    await service.update(resolved.id, NoteUpdate(status="resolved"), estate.project_id)
+    await service.update(
+        resolved.id, NoteUpdate(status="resolved"), estate.project_id, colleague
+    )
     await write(
         target_id=estate.targets["example.org"],
         scan_id=estate.scans["other"],

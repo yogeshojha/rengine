@@ -146,18 +146,20 @@ async def create_note(
 async def update_note(
     note_id: UUID,
     data: NoteUpdate,
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
     service: Annotated[NoteService, Depends(get_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
-    return await service.update(note_id=note_id, data=data, project_id=project_id)
+    return await service.update(
+        note_id=note_id, data=data, project_id=project_id, actor=current_user
+    )
 
 
 @router.delete("/{note_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_note(
     note_id: UUID,
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
     service: Annotated[NoteService, Depends(get_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
-    await service.delete(note_id=note_id, project_id=project_id)
+    await service.delete(note_id=note_id, project_id=project_id, actor=current_user)

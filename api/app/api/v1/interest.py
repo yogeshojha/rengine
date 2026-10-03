@@ -160,7 +160,7 @@ async def judge_scan(
     return {"status": "queued"}
 
 
-@router.get("/scan/{scan_id}/suggestions", response_model=list[RuleSuggestion])
+@router.post("/scan/{scan_id}/suggestions", response_model=list[RuleSuggestion])
 async def rule_suggestions(
     session: SessionDep,
     _user: CurrentUser,

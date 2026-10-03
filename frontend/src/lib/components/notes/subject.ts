@@ -7,6 +7,7 @@ import { formatShortDate } from '$lib/utilities/dates';
 import { splitHostPort } from '$lib/utilities/net';
 import { exactToken } from '$lib/utilities/scan-insights';
 import type { Note } from '$lib/types/note';
+import type { User } from '$lib/api/auth';
 
 export interface NoteSubjectView {
 	icon: IconComponent;
@@ -67,4 +68,12 @@ export function noteAssetHref(note: Note): string | null {
 export function noteHref(note: Note): string | null {
 	if (note.dimension) return noteAssetHref(note);
 	return note.scan_id ? ROUTES.scan(note.scan_id) : ROUTES.target(note.target_id);
+}
+
+/** The author or an administrator edits and deletes a note. */
+export function canChangeNote(
+	note: Pick<Note, 'created_by'>,
+	user: Pick<User, 'id' | 'is_superuser'> | null
+): boolean {
+	return !!user && (user.is_superuser || user.id === note.created_by);
 }

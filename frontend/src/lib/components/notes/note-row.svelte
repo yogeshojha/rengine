@@ -10,12 +10,20 @@
 	interface Props {
 		note: Note;
 		checked?: boolean;
+		selectable?: boolean;
 		active?: boolean;
 		onCheck?: (id: string) => void;
 		onOpen: (note: Note) => void;
 	}
 
-	let { note, checked = false, active = false, onCheck, onOpen }: Props = $props();
+	let {
+		note,
+		checked = false,
+		selectable = true,
+		active = false,
+		onCheck,
+		onOpen
+	}: Props = $props();
 
 	let subject = $derived(noteSubject(note));
 	let resolved = $derived(note.status === 'resolved');
@@ -27,10 +35,12 @@
 		active && 'bg-muted/40'
 	)}
 >
-	{#if onCheck}
+	{#if onCheck && selectable}
 		<div class="flex h-11 shrink-0 items-center">
 			<Checkbox {checked} onCheckedChange={() => onCheck(note.id)} aria-label="Select note" />
 		</div>
+	{:else if onCheck}
+		<span class="w-4 shrink-0"></span>
 	{/if}
 	<button
 		type="button"

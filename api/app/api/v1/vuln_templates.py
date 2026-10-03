@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Path, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentUser
+from app.api.deps import CurrentSuperuser, CurrentUser
 from app.core.database import get_session
 from app.services.vuln_template import VulnTemplateService
 from shared.definitions.vulnerabilities import TemplateOrigin
@@ -72,7 +72,7 @@ async def preview_selection(
 
 @router.post("/sync", response_model=TemplateSyncResult)
 async def sync_library(
-    _current_user: CurrentUser,
+    _admin: CurrentSuperuser,
     service: Annotated[VulnTemplateService, Depends(get_service)],
 ):
     return service.sync()
@@ -84,7 +84,7 @@ async def sync_library(
     status_code=status.HTTP_201_CREATED,
 )
 async def upload_templates(
-    current_user: CurrentUser,
+    current_user: CurrentSuperuser,
     service: Annotated[VulnTemplateService, Depends(get_service)],
     body: VulnTemplateUploadRequest,
 ):
@@ -93,7 +93,7 @@ async def upload_templates(
 
 @router.patch("/{template_id}", response_model=VulnTemplateRead)
 async def update_template(
-    _current_user: CurrentUser,
+    _admin: CurrentSuperuser,
     service: Annotated[VulnTemplateService, Depends(get_service)],
     template_id: Annotated[UUID, Path(description="Template ID")],
     body: VulnTemplateUpdate,
@@ -122,7 +122,7 @@ async def read_source(
 
 @router.put("/{template_id}/source", response_model=VulnTemplateRead)
 async def write_source(
-    _current_user: CurrentUser,
+    _admin: CurrentSuperuser,
     service: Annotated[VulnTemplateService, Depends(get_service)],
     template_id: Annotated[UUID, Path(description="Template ID")],
     body: TemplateSourceUpdate,
@@ -142,7 +142,7 @@ async def write_source(
 
 @router.delete("/{template_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_template(
-    _current_user: CurrentUser,
+    _admin: CurrentSuperuser,
     service: Annotated[VulnTemplateService, Depends(get_service)],
     template_id: Annotated[UUID, Path(description="Template ID")],
 ):

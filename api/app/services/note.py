@@ -55,6 +55,7 @@ from shared.utils.datetime import utc_now
 
 _SCAN_NOT_FOUND = "Scan not found"
 _NOTE_NOT_FOUND = "Note not found"
+_NOTE_NOT_YOURS = "Only its author or an administrator can change this note."
 _FINDINGS = SurfaceDimension.VULNERABILITIES.value
 _SCAN_AT = func.coalesce(Scan.started_at, Scan.created_at)
 _LIKE_SPECIAL = str.maketrans({"\\": "\\\\", "%": "\\%", "_": "\\_"})
@@ -443,9 +444,11 @@ class NoteService:
         return await self.read(note)
 
     async def update(
-        self, note_id: UUID, data: NoteUpdate, project_id: UUID
+        self, note_id: UUID, data: NoteUpdate, project_id: UUID, actor: User
     ) -> NoteRead:
         note = await self._own(note_id, project_id)
+        if data.title is not None or data.body is not None or data.tags is not None:
+            self._authored(note, actor)
         if data.title is not None:
             note.title = data.title.strip() or None
         if data.body is not None:
@@ -460,8 +463,9 @@ class NoteService:
         await self.session.refresh(note)
         return await self.read(note)
 
-    async def delete(self, note_id: UUID, project_id: UUID) -> None:
+    async def delete(self, note_id: UUID, project_id: UUID, actor: User) -> None:
         note = await self._own(note_id, project_id)
+        self._authored(note, actor)
         await self.session.delete(note)
         await self.session.commit()
         await lead_cache.bump((note.target_id,))
@@ -498,6 +502,13 @@ class NoteService:
                 status_code=status.HTTP_404_NOT_FOUND, detail=_NOTE_NOT_FOUND
             )
         return note
+
+    @staticmethod
+    def _authored(note: Note, actor: User) -> None:
+        if not actor.is_superuser and note.created_by != actor.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail=_NOTE_NOT_YOURS
+            )
 
     @staticmethod
     def _status(value: str | None) -> str:

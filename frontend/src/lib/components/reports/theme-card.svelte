@@ -11,6 +11,7 @@
 	import { downloadBlob } from '$lib/utilities/download';
 	import { LibraryOrigin, fontStack } from '$lib/config/reports';
 	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
 	import { toast } from 'svelte-sonner';
 	import type { ThemeSummary } from '$lib/types/report';
 
@@ -71,7 +72,7 @@
 						<DownloadIcon class="size-4" />
 						Export as YAML
 					</DropdownMenu.Item>
-					{#if theme.origin === LibraryOrigin.CUSTOM}
+					{#if theme.origin === LibraryOrigin.CUSTOM && auth.user?.is_superuser}
 						<DropdownMenu.Separator />
 						<DropdownMenu.Item variant="destructive" onSelect={() => onDelete(theme.slug)}>
 							<Trash2Icon class="size-4" />

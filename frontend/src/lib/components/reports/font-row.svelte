@@ -6,6 +6,7 @@
 	import { LibraryOrigin, catalogLabel } from '$lib/config/reports';
 	import { formatBytes } from '$lib/utilities/format';
 	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
 	import type { ReportFont } from '$lib/types/report';
 
 	let { font, onDelete }: { font: ReportFont; onDelete: (slug: string) => void } = $props();
@@ -56,7 +57,7 @@
 	</div>
 
 	<div class="col-start-2 row-start-1 flex justify-end lg:col-start-auto lg:row-start-auto">
-		{#if font.origin === LibraryOrigin.CUSTOM}
+		{#if font.origin === LibraryOrigin.CUSTOM && auth.user?.is_superuser}
 			<Button
 				variant="ghost"
 				size="icon"

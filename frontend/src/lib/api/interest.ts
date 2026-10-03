@@ -54,7 +54,7 @@ export const interestApi = {
 	},
 
 	suggestions(scanId: string): Promise<RuleSuggestion[]> {
-		return api.get<RuleSuggestion[]>(`/interest/scan/${scanId}/suggestions`);
+		return api.post<RuleSuggestion[]>(`/interest/scan/${scanId}/suggestions`, {});
 	},
 
 	judge(scanId: string): Promise<{ status: string }> {

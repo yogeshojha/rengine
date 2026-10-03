@@ -527,6 +527,13 @@ def _set_predicate(keys: Iterable[str]):
     return or_(*branches) if branches else None
 
 
+def _runnable(headless: bool) -> list:
+    clauses = [VulnTemplate.protocol != Protocol.FILE.value]
+    if not headless:
+        clauses.append(VulnTemplate.protocol != Protocol.HEADLESS.value)
+    return clauses
+
+
 def selection_predicate(selection: TemplateSelection, *, official_only: bool = True):
     """The library rows a plan selects, as one predicate over VulnTemplate."""
     clauses = [VulnTemplate.enabled.is_(True)]
@@ -552,9 +559,7 @@ def selection_predicate(selection: TemplateSelection, *, official_only: bool = T
         )
     if selection.template_ids:
         clauses.append(VulnTemplate.template_id.in_(list(selection.template_ids)))
-    if not selection.headless:
-        clauses.append(VulnTemplate.protocol != Protocol.HEADLESS.value)
-    clauses.append(VulnTemplate.protocol != Protocol.FILE.value)
+    clauses.extend(_runnable(selection.headless))
     clauses.append(~VulnTemplate.path.startswith(DAST_ROOT))
     clauses.append(VulnTemplate.path.notin_(sorted(WEAK_MATCHER_PATHS)))
     weak_tags = _tags_overlap(sorted(EXCLUDED_TAGS))
@@ -577,6 +582,15 @@ def dast_predicate(severities: Iterable[str], *, headless: bool):
     return and_(*clauses)
 
 
+def picked_predicate(selection: TemplateSelection):
+    """The rows a plan names by id, under the same protocol exclusions."""
+    return and_(
+        VulnTemplate.id.in_(list(selection.custom_templates)),
+        VulnTemplate.enabled.is_(True),
+        *_runnable(selection.headless),
+    )
+
+
 def selected_templates(
     session: Session, selection: TemplateSelection
 ) -> list[VulnTemplate]:
@@ -587,12 +601,7 @@ def selected_templates(
     )
     if selection.custom_templates:
         rows.extend(
-            session.execute(
-                select(VulnTemplate).where(
-                    VulnTemplate.id.in_(list(selection.custom_templates)),
-                    VulnTemplate.enabled.is_(True),
-                )
-            )
+            session.execute(select(VulnTemplate).where(picked_predicate(selection)))
             .scalars()
             .all()
         )
@@ -610,6 +619,7 @@ __all__ = [
     "library_ready",
     "official_root",
     "parse_template",
+    "picked_predicate",
     "reindex_official",
     "selected_templates",
     "selection_predicate",

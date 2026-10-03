@@ -15,8 +15,9 @@
 	import SectionHead from '$lib/components/section-head.svelte';
 	import NoteComposer from './note-composer.svelte';
 	import TriageBadge from './triage-badge.svelte';
-	import { noteHref, noteSubject, scanLabel } from './subject';
+	import { canChangeNote, noteHref, noteSubject, scanLabel } from './subject';
 	import { notes } from '$lib/stores/notes.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { formatDateTime, relativeTime } from '$lib/utilities/dates';
@@ -50,6 +51,7 @@
 	});
 
 	let resolved = $derived(current?.status === 'resolved');
+	let changeable = $derived(!!current && canChangeNote(current, auth.user));
 	let subject = $derived(current ? noteSubject(current) : null);
 	let openHref = $derived(current ? noteHref(current) : null);
 
@@ -149,9 +151,11 @@
 								if (editing || confirmDelete) e.preventDefault();
 							}}
 						>
-							<DropdownMenu.Item onSelect={() => (editing = true)}>
-								<Pencil /> Edit
-							</DropdownMenu.Item>
+							{#if changeable}
+								<DropdownMenu.Item onSelect={() => (editing = true)}>
+									<Pencil /> Edit
+								</DropdownMenu.Item>
+							{/if}
 							<DropdownMenu.Item onSelect={toggleStatus}>
 								{#if resolved}
 									<RotateCcw /> Reopen
@@ -159,10 +163,12 @@
 									<CircleCheck /> Resolve
 								{/if}
 							</DropdownMenu.Item>
-							<DropdownMenu.Separator />
-							<DropdownMenu.Item variant="destructive" onSelect={() => (confirmDelete = true)}>
-								<Trash2 /> Delete
-							</DropdownMenu.Item>
+							{#if changeable}
+								<DropdownMenu.Separator />
+								<DropdownMenu.Item variant="destructive" onSelect={() => (confirmDelete = true)}>
+									<Trash2 /> Delete
+								</DropdownMenu.Item>
+							{/if}
 						</DropdownMenu.Content>
 					</DropdownMenu.Root>
 				</div>

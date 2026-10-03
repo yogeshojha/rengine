@@ -63,7 +63,11 @@ from shared.services.issue_tracking import body as bodies
 from shared.services.scan_resolve import MASK
 from shared.services.scan_scope import covering_stages, producing_stages
 from shared.services.scan_surface import wants_callback
-from shared.services.vuln_templates import dast_predicate, selection_predicate
+from shared.services.vuln_templates import (
+    dast_predicate,
+    picked_predicate,
+    selection_predicate,
+)
 from shared.utils.datetime import utc_now
 from shared.utils.text import counted
 
@@ -688,11 +692,7 @@ def _selected_checks(
         ).all()
         if selection.custom_templates:
             rows += session.execute(
-                select(*columns).where(
-                    VulnTemplate.id.in_(list(selection.custom_templates)),
-                    VulnTemplate.enabled.is_(True),
-                    wanted,
-                )
+                select(*columns).where(picked_predicate(selection), wanted)
             ).all()
     dast = _stage_config(DastScanConfig, configs, DAST_STAGE, ran)
     if fuzzed and dast is not None and Scanner.NUCLEI.value in dast.scanners:

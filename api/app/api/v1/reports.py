@@ -48,14 +48,14 @@ async def theme_source(
     "/themes", response_model=ReportThemeRead, status_code=status.HTTP_201_CREATED
 )
 async def upload_theme(
-    current_user: CurrentUser, session: Session, body: ReportThemeUpload
+    current_user: CurrentSuperuser, session: Session, body: ReportThemeUpload
 ):
     return await ReportService(session).upload_theme(body.content, current_user.id)
 
 
 @router.delete("/themes/{slug}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_theme(
-    _current_user: CurrentUser,
+    _admin: CurrentSuperuser,
     session: Session,
     slug: Annotated[str, Path(description="Theme key")],
 ):
@@ -66,14 +66,14 @@ async def delete_theme(
     "/fonts", response_model=ReportFontRead, status_code=status.HTTP_201_CREATED
 )
 async def upload_font(
-    current_user: CurrentUser, session: Session, body: ReportFontUpload
+    current_user: CurrentSuperuser, session: Session, body: ReportFontUpload
 ):
     return await ReportService(session).upload_font(body, current_user.id)
 
 
 @router.delete("/fonts/{slug}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_font(
-    _current_user: CurrentUser,
+    _admin: CurrentSuperuser,
     session: Session,
     slug: Annotated[str, Path(description="Typeface key")],
 ):

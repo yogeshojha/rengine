@@ -13,7 +13,9 @@
 	import NoteComposer from './note-composer.svelte';
 	import TriageBadge from './triage-badge.svelte';
 	import { holdSheetKeys } from './keys';
+	import { canChangeNote } from './subject';
 	import { notes } from '$lib/stores/notes.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { formatDateTime, relativeTime } from '$lib/utilities/dates';
 	import { SURFACE_ORDER } from '$lib/config/surface';
@@ -44,6 +46,7 @@
 	let busy = $state(false);
 	let confirmDelete = $state(false);
 	let resolved = $derived(note.status === 'resolved');
+	let changeable = $derived(canChangeNote(note, auth.user));
 	let spec = $derived(SURFACE_ORDER.find((s) => s.key === note.dimension) ?? null);
 	let bodyEl = $state<HTMLParagraphElement | null>(null);
 	let expanded = $state(false);
@@ -191,9 +194,11 @@
 							if (editing || confirmDelete) e.preventDefault();
 						}}
 					>
-						<DropdownMenu.Item onSelect={() => (editing = true)}>
-							<Pencil /> Edit
-						</DropdownMenu.Item>
+						{#if changeable}
+							<DropdownMenu.Item onSelect={() => (editing = true)}>
+								<Pencil /> Edit
+							</DropdownMenu.Item>
+						{/if}
 						<DropdownMenu.Item onSelect={toggleStatus}>
 							{#if resolved}
 								<RotateCcw /> Reopen
@@ -201,10 +206,12 @@
 								<CircleCheck /> Resolve
 							{/if}
 						</DropdownMenu.Item>
-						<DropdownMenu.Separator />
-						<DropdownMenu.Item variant="destructive" onSelect={() => (confirmDelete = true)}>
-							<Trash2 /> Delete
-						</DropdownMenu.Item>
+						{#if changeable}
+							<DropdownMenu.Separator />
+							<DropdownMenu.Item variant="destructive" onSelect={() => (confirmDelete = true)}>
+								<Trash2 /> Delete
+							</DropdownMenu.Item>
+						{/if}
 					</DropdownMenu.Content>
 				</DropdownMenu.Root>
 			</div>
