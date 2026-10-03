@@ -32,7 +32,7 @@ from shared.services.scan_resolve import (
     _mask_headers,
     _reject_ctrl,
 )
-from shared.services.scope_filter import backtracks_badly, looks_like_domain
+from shared.services.scope_filter import looks_like_domain, pattern_hazard
 from shared.utils.datetime import utc_now
 from stages.registry import rate_tools
 
@@ -168,9 +168,9 @@ def _validate_paths(paths: list) -> None:
             msg = f"Excluded path '{p}' must start with '/'."
             raise _bad(msg)
         _reject_ctrl("Excluded path", p)
-        if backtracks_badly(p):
+        if hazard := pattern_hazard(p):
             msg = (
-                f"'{p}' nests a repeated group. "
+                f"'{p}' {hazard}. "
                 "Use a prefix such as /admin or a wildcard such as /admin/*."
             )
             raise _bad(msg)
@@ -202,9 +202,9 @@ def _validate_exclusion_patterns(name: str, patterns: list) -> None:
             msg = f"{name} entries must be strings."
             raise _bad(msg)
         _reject_ctrl(name, p)
-        if backtracks_badly(p):
+        if hazard := pattern_hazard(p):
             msg = (
-                f"'{p}' nests a repeated group. "
+                f"'{p}' {hazard}. "
                 "Use a keyword such as admin or a wildcard such as *admin*."
             )
             raise _bad(msg)

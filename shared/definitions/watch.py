@@ -11,7 +11,7 @@ from shared.definitions.bounty_programs import ScopeState
 from shared.enums.scan_schedule import IntervalUnit
 from shared.enums.subdomain import SubdomainSource
 from shared.enums.target import TargetType
-from shared.services.scope_filter import backtracks_badly, matches_any
+from shared.services.scope_filter import matches_any, pattern_hazard
 
 
 class WatchStatus(StrEnum):
@@ -247,7 +247,7 @@ def plan_scope(scopes) -> ScopePlan:
             pattern = host_pattern(entry)
             if (
                 pattern
-                and not backtracks_badly(pattern)
+                and pattern_hazard(pattern) is None
                 and len(plan.excluded_subdomains) < MAX_EXCLUSIONS
             ):
                 plan.excluded_subdomains.append(pattern)

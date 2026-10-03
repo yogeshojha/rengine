@@ -10,6 +10,7 @@ dependencies = [
     "croniter>=2.0.0",
     "dnstwist>=20250130",
     "ppdeep>=20260221",
+    "regex>=2026.9.29",
 ]
 
 

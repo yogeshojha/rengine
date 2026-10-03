@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 from uuid import UUID
 
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy import (
     Integer,
     Text,
@@ -166,6 +167,11 @@ def _narrowed(f: EndpointFilter) -> bool:
         or f.probed is not None
         or f.new
     )
+
+
+def _kept(paths, excluded: list[str]) -> int:
+    """How many paths no exclusion entry matches."""
+    return sum(1 for path in paths if not matches_any(path, excluded))
 
 
 def _gone_from(previous_scan_id: UUID, scan_id: UUID):
@@ -1291,9 +1297,8 @@ class EndpointService:
                 query.execution_options(yield_per=1000)
             )
             unverified = 0
-            async for path in paths:
-                if not matches_any(path, excluded):
-                    unverified += 1
+            async for batch in paths.partitions():
+                unverified += await run_in_threadpool(_kept, batch, excluded)
         else:
             unverified = int(
                 await self.session.scalar(
