@@ -6,27 +6,33 @@ on:
       - master
       - release/*
 
+permissions:
+  contents: read
+
 concurrency:
   group: build-pr-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
-    name: 🐳 Build ${{ matrix.image }}
-    runs-on: ubuntu-latest
+    name: 🐳 Build ${{ matrix.image }} (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - image: api
-            dockerfile: api/Dockerfile
-            target: production
+            arch: amd64
+            runner: ubuntu-24.04
           - image: worker
-            dockerfile: worker/Dockerfile
-            target: production
+            arch: amd64
+            runner: ubuntu-24.04
+          - image: worker
+            arch: arm64
+            runner: ubuntu-24.04-arm
           - image: frontend
-            dockerfile: frontend/Dockerfile
-            target: production
+            arch: amd64
+            runner: ubuntu-24.04
     steps:
       - name: 📥 Checkout the git repo
         uses: actions/checkout@v4
@@ -38,9 +44,9 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ${{ matrix.dockerfile }}
-          target: ${{ matrix.target }}
-          platforms: linux/amd64
+          file: ${{ matrix.image }}/Dockerfile
+          target: production
+          platforms: linux/${{ matrix.arch }}
           push: false
-          cache-from: type=gha,scope=${{ matrix.image }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+          cache-from: type=gha,scope=${{ matrix.image }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}-${{ matrix.arch }}

@@ -23,6 +23,20 @@ make migrate-downgrade         # roll the last one back
 
 Apply migrations before restarting the api.
 
+# Releasing
+
+```
+git tag v3.0.1 && git push origin v3.0.1
+```
+
+The tag builds the api, worker and frontend images for amd64 and arm64, pushes them to
+Docker Hub and `ghcr.io`, then drafts the GitHub release. Publish the draft once the notes read
+right. `install.sh` and `rengine update` list a release only after it is published, and by then
+its images exist.
+
+A tag with a suffix (`v3.0.1-rc1`) builds the same way, is drafted as a pre-release and leaves
+`latest` alone. A push to `master` moves `edge`.
+
 # Checks
 
 ```

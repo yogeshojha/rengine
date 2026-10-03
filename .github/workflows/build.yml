@@ -3,39 +3,39 @@ name: 🚀 Build and Push Docker images
 on:
   push:
     branches: [master]
-  release:
-    types: [published]
+    tags: ["v*"]
+
+permissions:
+  contents: read
 
 concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  build-and-push:
-    name: 🐳 Push ${{ matrix.image }}
-    runs-on: ubuntu-latest
+  build:
+    name: 🐳 Build ${{ matrix.image }} (${{ matrix.arch }})
+    if: github.repository == 'yogeshojha/rengine'
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
     strategy:
       fail-fast: false
       matrix:
+        image: [api, worker, frontend]
+        arch: [amd64, arm64]
         include:
-          - image: api
-            dockerfile: api/Dockerfile
-            target: production
-            platforms: linux/amd64,linux/arm64
-          - image: worker
-            dockerfile: worker/Dockerfile
-            target: production
-            platforms: linux/amd64
-          - image: frontend
-            dockerfile: frontend/Dockerfile
-            target: production
-            platforms: linux/amd64,linux/arm64
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    env:
+      DOCKERHUB_REPO: yogeshojha/rengine-${{ matrix.image }}
+      GHCR_REPO: ghcr.io/yogeshojha/rengine-${{ matrix.image }}
     steps:
       - name: 📥 Checkout the git repo
         uses: actions/checkout@v4
-
-      - name: 🖥️ Set up QEMU
-        uses: docker/setup-qemu-action@v3
 
       - name: 🛠️ Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -46,26 +46,148 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: 🏷️ Extract metadata (tags, labels) for Docker
+      - name: 🔑 Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🏷️ Extract labels for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: yogeshojha/rengine-${{ matrix.image }}
+          images: |
+            ${{ env.DOCKERHUB_REPO }}
+            ${{ env.GHCR_REPO }}
+
+      - name: 🔢 Read the version off the tag
+        id: version
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 🏗️ Build and push ${{ matrix.image }} by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.image }}/Dockerfile
+          target: production
+          platforms: linux/${{ matrix.arch }}
+          labels: ${{ steps.meta.outputs.labels }}
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
+            ${{ env.DOCKERHUB_REPO }}
+            ${{ env.GHCR_REPO }}
+          build-args: |
+            RENGINE_VERSION=${{ steps.version.outputs.value }}
+          outputs: type=image,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=${{ matrix.image }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}-${{ matrix.arch }}
+
+      - name: 📤 Export the digest
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/digests"
+          touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
+
+      - name: 📦 Upload the digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ matrix.image }}-${{ matrix.arch }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    name: 🧩 Publish ${{ matrix.image }}
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [api, worker, frontend]
+    env:
+      DOCKERHUB_REPO: yogeshojha/rengine-${{ matrix.image }}
+      GHCR_REPO: ghcr.io/yogeshojha/rengine-${{ matrix.image }}
+    steps:
+      - name: 📥 Download the digests
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-${{ matrix.image }}-*
+          merge-multiple: true
+
+      - name: 🛠️ Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔑 Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 🔑 Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🏷️ Extract tags for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.DOCKERHUB_REPO }}
+            ${{ env.GHCR_REPO }}
+          tags: |
+            type=edge,branch=master
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix=sha-
 
-      - name: 🏗️ Build and push ${{ matrix.image }}
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ${{ matrix.dockerfile }}
-          target: ${{ matrix.target }}
-          platforms: ${{ matrix.platforms }}
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=${{ matrix.image }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+      - name: 🧩 Create the manifest lists and push
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          for repo in "$DOCKERHUB_REPO" "$GHCR_REPO"; do
+            args=()
+            while IFS= read -r tag; do
+              args+=(-t "$tag")
+            done < <(jq -r --arg repo "$repo:" '.tags[] | select(startswith($repo))' <<< "$DOCKER_METADATA_OUTPUT_JSON")
+            for digest in *; do
+              args+=("$repo@sha256:$digest")
+            done
+            docker buildx imagetools create "${args[@]}"
+          done
+
+      - name: 🔎 Inspect the image
+        run: docker buildx imagetools inspect "$DOCKERHUB_REPO:${{ steps.meta.outputs.version }}"
+
+  release:
+    name: 📝 Draft the release
+    if: github.ref_type == 'tag'
+    needs: publish
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - name: 📝 Draft a release for the tag
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "A release for $TAG exists."
+            exit 0
+          fi
+          flags=(--draft --verify-tag --generate-notes --title "$TAG")
+          case "$TAG" in *-*) flags+=(--prerelease) ;; esac
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" "${flags[@]}"

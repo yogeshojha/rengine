@@ -167,6 +167,10 @@ COPY reports /app/reports
 COPY interest /app/interest
 COPY toolbox /app/toolbox
 
+# a release build takes its version from the tag
+ARG RENGINE_VERSION=""
+RUN [ -z "$RENGINE_VERSION" ] || printf '%s\n' "$RENGINE_VERSION" > /app/VERSION
+
 # mount points a fresh volume copies its owner from
 RUN mkdir -p /app/scan_media /app/vuln-templates /app/wordlists /app/reports-out \
       /app/exports-out /app/report-fonts /app/beat-state /app/ct-state \

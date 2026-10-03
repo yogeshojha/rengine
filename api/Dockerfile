@@ -51,6 +51,10 @@ COPY binaries /app/binaries
 COPY alembic /app/alembic
 COPY alembic.ini /app/alembic.ini
 
+# a release build takes its version from the tag
+ARG RENGINE_VERSION=""
+RUN [ -z "$RENGINE_VERSION" ] || printf '%s\n' "$RENGINE_VERSION" > /app/VERSION
+
 # same uid as the worker image
 ARG RENGINE_UID=10001
 RUN groupadd --gid "$RENGINE_UID" rengine \
