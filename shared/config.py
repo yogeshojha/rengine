@@ -98,6 +98,10 @@ class BaseAppSettings(BaseSettings):
     REDIS_DB: int = 0
     REDIS_PASSWORD: str = ""
 
+    # cached aggregates, on an instance that evicts
+    REDIS_CACHE_HOST: str = "cache"
+    REDIS_CACHE_PORT: int = 6379
+
     @field_validator("REDIS_PASSWORD")
     @classmethod
     def validate_redis_password(cls, v: str) -> str:
@@ -123,15 +127,25 @@ class BaseAppSettings(BaseSettings):
             raise ValueError(msg)
         return v
 
+    def _redis_credentials(self) -> str:
+        return f":{quote(self.REDIS_PASSWORD, safe='')}@" if self.REDIS_PASSWORD else ""
+
     def _redis_url(self, db: int) -> str:
-        credentials = (
-            f":{quote(self.REDIS_PASSWORD, safe='')}@" if self.REDIS_PASSWORD else ""
+        return (
+            f"redis://{self._redis_credentials()}"
+            f"{self.REDIS_HOST}:{self.REDIS_PORT}/{db}"
         )
-        return f"redis://{credentials}{self.REDIS_HOST}:{self.REDIS_PORT}/{db}"
 
     @property
     def redis_url(self) -> str:
         return self._redis_url(self.REDIS_DB)
+
+    @property
+    def redis_cache_url(self) -> str:
+        return (
+            f"redis://{self._redis_credentials()}"
+            f"{self.REDIS_CACHE_HOST}:{self.REDIS_CACHE_PORT}/0"
+        )
 
     @property
     def celery_broker_url(self) -> str:

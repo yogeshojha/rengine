@@ -152,6 +152,9 @@ NO_START=0
 FORCE=0
 NO_API=0
 API_FLAGGED=0
+IMAGE_FLAGGED=0
+NO_BACKUP=0
+UPGRADE=0
 
 usage() {
   cat <<'EOF'
@@ -175,8 +178,11 @@ Options
   --acme-email <mail>   Let's Encrypt account email
   --dir <path>          install directory
   --tag <tag>           release to install, default the latest
+  --image <prefix>      image repository prefix, default yogeshojha/rengine
+                        ghcr.io/yogeshojha/rengine holds the same images
   --build               build images from this checkout instead of pulling
   --no-start            write the configuration and stop
+  --no-backup           skip the database snapshot taken before an upgrade
   --force               skip the memory, disk and port checks
 
 Environment
@@ -200,14 +206,18 @@ while [ $# -gt 0 ]; do
     --acme-email) ACME_EMAIL="${2:?}"; shift ;;
     --dir) RENGINE_HOME="${2:?}"; shift ;;
     --tag) GIT_TAG="${2:?}"; shift ;;
+    --image) IMAGE_PREFIX="${2:?--image needs a repository prefix}"; IMAGE_FLAGGED=1; shift ;;
     --build) BUILD=1 ;;
     --no-start) NO_START=1 ;;
+    --no-backup) NO_BACKUP=1 ;;
     --force) FORCE=1 ;;
     -h | --help) usage; exit 0 ;;
     *) die "unknown option: $1. See --help" ;;
   esac
   shift
 done
+
+[[ "$IMAGE_PREFIX" =~ ^[a-z0-9][a-z0-9._/:-]*$ ]] || die "not an image repository prefix: $IMAGE_PREFIX"
 
 ADMIN_PASSWORD="${RENGINE_ADMIN_PASSWORD:-}"
 unset RENGINE_ADMIN_PASSWORD
@@ -223,8 +233,7 @@ attach_terminal
 
 [ "$(uname -s)" = "Linux" ] || die "Linux is required. On another OS, run the dev compose from a checkout."
 case "$(uname -m)" in
-  x86_64) ;;
-  aarch64) [ "$BUILD" -eq 1 ] || die "arm64 worker images are not published. Install from a checkout with --build." ;;
+  x86_64 | aarch64) ;;
   *) die "unsupported architecture: $(uname -m)" ;;
 esac
 
@@ -282,19 +291,25 @@ check_resources() {
 }
 
 # per-tier sizing: postgres, redis and worker slots follow the machine
-PG_SHARED_BUFFERS=""; PG_EFFECTIVE_CACHE=""; PG_WORK_MEM=""; PG_MAINT_MEM=""; PG_SHM=""
-REDIS_MAXMEMORY=""; SCAN_SLOTS=""; CONTROL_SLOTS=""; DEFAULT_SLOTS=""; API_WORKERS=""
+PG_SHARED_BUFFERS=""; PG_EFFECTIVE_CACHE=""; PG_WORK_MEM=""; PG_MAINT_MEM=""; PG_SHM=""; PG_MAX_WAL=""
+REDIS_MAXMEMORY=""; CACHE_MAXMEMORY=""; SCAN_SLOTS=""; CONTROL_SLOTS=""; DEFAULT_SLOTS=""; API_WORKERS=""
 apply_tier() {
   case "$TIER" in
     small)
       PG_SHARED_BUFFERS=512MB; PG_EFFECTIVE_CACHE=2GB; PG_WORK_MEM=16MB; PG_MAINT_MEM=128MB; PG_SHM=512mb
-      REDIS_MAXMEMORY=512mb; SCAN_SLOTS=8; CONTROL_SLOTS=4; DEFAULT_SLOTS=2; API_WORKERS=2 ;;
+      PG_MAX_WAL=1GB
+      REDIS_MAXMEMORY=512mb; CACHE_MAXMEMORY=128mb
+      SCAN_SLOTS=8; CONTROL_SLOTS=4; DEFAULT_SLOTS=2; API_WORKERS=2 ;;
     medium)
       PG_SHARED_BUFFERS=1GB; PG_EFFECTIVE_CACHE=4GB; PG_WORK_MEM=32MB; PG_MAINT_MEM=256MB; PG_SHM=1gb
-      REDIS_MAXMEMORY=1gb; SCAN_SLOTS=12; CONTROL_SLOTS=8; DEFAULT_SLOTS=4; API_WORKERS=4 ;;
+      PG_MAX_WAL=2GB
+      REDIS_MAXMEMORY=1gb; CACHE_MAXMEMORY=256mb
+      SCAN_SLOTS=12; CONTROL_SLOTS=8; DEFAULT_SLOTS=4; API_WORKERS=4 ;;
     *)
       PG_SHARED_BUFFERS=2GB; PG_EFFECTIVE_CACHE=6GB; PG_WORK_MEM=32MB; PG_MAINT_MEM=512MB; PG_SHM=1gb
-      REDIS_MAXMEMORY=1gb; SCAN_SLOTS=16; CONTROL_SLOTS=8; DEFAULT_SLOTS=4; API_WORKERS=4 ;;
+      PG_MAX_WAL=4GB
+      REDIS_MAXMEMORY=1gb; CACHE_MAXMEMORY=512mb
+      SCAN_SLOTS=16; CONTROL_SLOTS=8; DEFAULT_SLOTS=4; API_WORKERS=4 ;;
   esac
 }
 
@@ -701,6 +716,7 @@ POSTGRES_WORK_MEM=$PG_WORK_MEM
 POSTGRES_MAINTENANCE_WORK_MEM=$PG_MAINT_MEM
 POSTGRES_MAX_CONNECTIONS=250
 POSTGRES_LOG_MIN_DURATION=2000
+POSTGRES_MAX_WAL_SIZE=$PG_MAX_WAL
 POSTGRES_SHM_SIZE=$PG_SHM
 
 # ---------- connection pools, per api process ----------
@@ -720,6 +736,9 @@ REDIS_PORT=6379
 REDIS_DB=0
 REDIS_PASSWORD=$REDIS_PASSWORD
 REDIS_MAXMEMORY=$REDIS_MAXMEMORY
+REDIS_CACHE_HOST=cache
+REDIS_CACHE_PORT=6379
+REDIS_CACHE_MAXMEMORY=$CACHE_MAXMEMORY
 
 # ---------- celery ----------
 CELERY_SCAN_CONCURRENCY=$SCAN_SLOTS
@@ -795,6 +814,11 @@ link_cli() {
 }
 
 refresh_keep() {
+  local before
+  before="$(env_get RENGINE_TAG "$RENGINE_HOME/.env")"
+  if [ "$IMAGE_FLAGGED" -eq 1 ]; then
+    sed -i "s|^RENGINE_IMAGE=.*|RENGINE_IMAGE=$IMAGE_PREFIX|" "$RENGINE_HOME/.env"
+  fi
   if [ "$CHECKOUT" -eq 1 ]; then
     resolve_tag
     SRC_DIR="$SCRIPT_DIR"
@@ -807,6 +831,7 @@ refresh_keep() {
   copy_release
   sed -i "s|^RENGINE_TAG=.*|RENGINE_TAG=$IMAGE_TAG|" "$RENGINE_HOME/.env"
   [ "$BUILD" -eq 1 ] && sed -i "s|^RENGINE_SRC=.*|RENGINE_SRC=$SCRIPT_DIR|" "$RENGINE_HOME/.env"
+  if [ "$BUILD" -eq 1 ] || [ "$IMAGE_TAG" != "$before" ]; then UPGRADE=1; fi
   return 0
 }
 
@@ -820,6 +845,27 @@ check_collisions() {
   return 0
 }
 
+pull_failed() {
+  local image tag
+  image="$(env_get RENGINE_IMAGE .env)"
+  tag="$(env_get RENGINE_TAG .env)"
+  if docker manifest inspect "$image-api:$tag" >/dev/null 2>&1; then
+    die "the image pull failed. Check the network and the free disk space, then run this script again."
+  fi
+  die "no images for release $tag at $image. Check the tag and the network, or pass --tag with an earlier release."
+}
+
+# database snapshot, then every service that holds a database connection stopped
+quiesce() {
+  if [ "$NO_BACKUP" -eq 0 ] && docker compose ps --status running --services 2>/dev/null | grep -qx db; then
+    step "Saving a database snapshot"
+    scripts/backup.sh snapshot "$RENGINE_HOME/backups" \
+      || die "the database snapshot was not written. Free disk space, or pass --no-backup."
+  fi
+  docker compose stop api worker-default worker-scans worker-control worker-beat channels ct-stream \
+    >/dev/null 2>&1 || true
+}
+
 deploy() {
   cd "$RENGINE_HOME"
   if [ "$BUILD" -eq 1 ]; then
@@ -827,8 +873,9 @@ deploy() {
     docker compose build || die "the image build failed. The output above names the step."
   else
     step "Pulling images"
-    docker compose pull || die "the image pull failed. Check the network and the release tag: $(env_get RENGINE_TAG .env)"
+    docker compose pull || pull_failed
   fi
+  [ "$UPGRADE" -eq 1 ] && quiesce
   step "Starting"
   docker compose up -d --remove-orphans || die "the stack did not start. Check the output above and the logs: $CLI logs"
 }

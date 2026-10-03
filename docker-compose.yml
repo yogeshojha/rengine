@@ -35,6 +35,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-rengine}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rengine}
       POSTGRES_DB: ${POSTGRES_DB:-rengine}
+      POSTGRES_INITDB_ARGS: --data-checksums
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -55,6 +56,13 @@ services:
       -c pg_stat_statements.track=top
       -c track_io_timing=on
       -c log_min_duration_statement=${POSTGRES_LOG_MIN_DURATION:-2000}
+      -c max_wal_size=${POSTGRES_MAX_WAL_SIZE:-2GB}
+      -c min_wal_size=512MB
+      -c checkpoint_timeout=15min
+      -c wal_compression=lz4
+      -c default_toast_compression=lz4
+    # a fast shutdown writes a checkpoint first
+    stop_grace_period: 2m
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-rengine}"]
       interval: 5s
@@ -83,6 +91,28 @@ services:
       --appendonly yes
       --maxmemory ${REDIS_MAXMEMORY:-1gb}
       --maxmemory-policy noeviction
+      ${REDIS_PASSWORD:+--requirepass} ${REDIS_PASSWORD:-}
+
+  # cached aggregates, evicted under memory pressure
+  cache:
+    image: redis:8-alpine
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "redis-cli $${REDIS_PASSWORD:+-a \"$$REDIS_PASSWORD\"} --no-auth-warning ping | grep -q PONG",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    command: >
+      redis-server
+      --save ""
+      --appendonly no
+      --maxmemory ${REDIS_CACHE_MAXMEMORY:-256mb}
+      --maxmemory-policy allkeys-lru
       ${REDIS_PASSWORD:+--requirepass} ${REDIS_PASSWORD:-}
 
   api:
@@ -130,6 +160,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      cache:
+        condition: service_started
 
   # background jobs and toolbox runs
   worker-default:
@@ -149,6 +181,8 @@ services:
       --concurrency=${CELERY_DEFAULT_CONCURRENCY:-4}
       --queues=critical,default
       --hostname=worker-default@%h
+      --without-mingle
+      --without-gossip
     restart: unless-stopped
     depends_on:
       db:
@@ -156,9 +190,9 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "/app/.venv/bin/celery -A app.celery inspect ping -d worker-default@$$HOSTNAME || exit 1"]
+      test: ["CMD-SHELL", "find /tmp/worker-heartbeat -mmin -2 | grep -q ."]
       interval: 30s
-      timeout: 10s
+      timeout: 5s
       retries: 3
       start_period: 30s
 
@@ -168,6 +202,7 @@ services:
     # built by worker-default
     image: rengine-worker:latest
     shm_size: 512m
+    oom_score_adj: 500
     volumes: *worker-volumes
     env_file:
       - .env
@@ -178,6 +213,8 @@ services:
       --concurrency=${CELERY_SCAN_CONCURRENCY:-16}
       --queues=scans
       --hostname=worker-scans@%h
+      --without-mingle
+      --without-gossip
     restart: unless-stopped
     depends_on:
       db:
@@ -185,9 +222,9 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "/app/.venv/bin/celery -A app.celery inspect ping -d worker-scans@$$HOSTNAME || exit 1"]
+      test: ["CMD-SHELL", "find /tmp/worker-heartbeat -mmin -2 | grep -q ."]
       interval: 30s
-      timeout: 10s
+      timeout: 5s
       retries: 3
       start_period: 30s
 
@@ -205,6 +242,8 @@ services:
       --concurrency=${CELERY_CONTROL_CONCURRENCY:-8}
       --queues=scan_control
       --hostname=worker-control@%h
+      --without-mingle
+      --without-gossip
     restart: unless-stopped
     depends_on:
       db:
@@ -212,9 +251,9 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "/app/.venv/bin/celery -A app.celery inspect ping -d worker-control@$$HOSTNAME || exit 1"]
+      test: ["CMD-SHELL", "find /tmp/worker-heartbeat -mmin -2 | grep -q ."]
       interval: 30s
-      timeout: 10s
+      timeout: 5s
       retries: 3
       start_period: 30s
 

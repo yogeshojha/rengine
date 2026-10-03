@@ -9,6 +9,8 @@ abs() { case "$1" in /*) printf '%s' "$1" ;; *) printf '%s/%s' "$CALLER_PWD" "$1
 cd "$RENGINE_HOME"
 
 REPO="yogeshojha/rengine"
+# every service that holds a database connection
+SERVICES=(api worker-default worker-scans worker-control worker-beat channels ct-stream)
 
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 env_get() { grep -E "^$1=" .env 2>/dev/null | head -1 | cut -d= -f2-; }
@@ -30,6 +32,7 @@ Usage: rengine <command>
   logs [svc]     follow logs, all services or one
   scale <n>      run n scan worker containers
   update [tag]   move to a release, the latest when no tag is given
+                 --no-backup skips the database snapshot taken first
   backup         write a backup archive to ./backups
   restore <f>    replace this instance's data with an archive
   uninstall      remove containers and data volumes
@@ -49,10 +52,23 @@ cmd_status() {
   fi
 }
 
+running_scans() {
+  docker compose exec -T db sh -c \
+    'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -c "select count(*) from scans where status = '"'"'running'"'"'"' \
+    2>/dev/null || true
+}
+
 cmd_update() {
   [ -n "$(env_get RENGINE_SRC)" ] && die "a source install. Update the checkout, then run install.sh --build again."
   [ -f api.env ] || die "api.env is missing. Run install.sh again to write it."
-  local tag="${1:-}"
+  local tag="" backup=1 arg
+  for arg in "$@"; do
+    case "$arg" in
+      --no-backup) backup=0 ;;
+      -*) die "unknown option: $arg" ;;
+      *) tag="$arg" ;;
+    esac
+  done
   if [ -z "$tag" ]; then
     tag="$(curl -fsSLm 15 "https://api.github.com/repos/$REPO/releases/latest" 2>/dev/null \
       | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')"
@@ -74,13 +90,35 @@ cmd_update() {
   cp "$src/docker-compose.prod.yml" docker-compose.prod.yml.new
   RENGINE_TAG="$image_tag" docker compose -f docker-compose.prod.yml.new -f ports.yml pull \
     || { rm -f docker-compose.prod.yml.new; die "the image pull failed. The install stays on $current."; }
+
+  local snapshot=""
+  if [ "$backup" -eq 1 ]; then
+    printf 'Saving a database snapshot\n'
+    docker compose up -d --wait db >/dev/null \
+      && scripts/backup.sh snapshot "$RENGINE_HOME/backups" \
+      || { rm -f docker-compose.prod.yml.new
+           die "the database snapshot was not written. The install stays on $current. Free disk space, or pass --no-backup."; }
+    snapshot="$(find backups -maxdepth 1 -name 'rengine-*-db.tar*' -printf '%T@ %p\n' | sort -rn | head -1 | cut -d' ' -f2-)"
+  fi
+
+  local scans
+  scans="$(running_scans)"
+  if [[ "$scans" =~ ^[1-9][0-9]*$ ]]; then
+    printf 'Running scans: %s. Stages in flight run again after the update.\n' "$scans"
+  fi
+  docker compose stop "${SERVICES[@]}" >/dev/null 2>&1 || true
+
   mv docker-compose.prod.yml.new docker-compose.prod.yml
   mkdir -p scripts bin deploy
   [ ! -f "$src/deploy/seccomp-chromium.json" ] || install -m 644 "$src/deploy/seccomp-chromium.json" deploy/seccomp-chromium.json
   install -m 755 "$src/scripts/backup.sh" scripts/backup.sh
   install -m 755 "$src/deploy/rengine" bin/rengine
   sed -i "s|^RENGINE_TAG=.*|RENGINE_TAG=$image_tag|" .env
-  docker compose up -d --remove-orphans
+  if ! docker compose up -d --remove-orphans; then
+    printf 'To return to %s: rengine update v%s --no-backup\n' "$current" "$current" >&2
+    [ -z "$snapshot" ] || printf 'The database before the update: rengine restore %s\n' "$snapshot" >&2
+    die "the update to $image_tag did not complete. Check the logs: rengine logs migrate"
+  fi
   printf 'Updated to %s.\n' "$image_tag"
 }
 
@@ -117,7 +155,7 @@ case "$cmd" in
   status)    cmd_status ;;
   logs)      docker compose logs -f --tail 200 "$@" ;;
   scale)     cmd_scale "${1:-}" ;;
-  update)    cmd_update "${1:-}" ;;
+  update)    cmd_update "$@" ;;
   backup)    exec scripts/backup.sh dump "$(abs "${1:-$RENGINE_HOME/backups}")" ;;
   restore)   [ -n "${1:-}" ] || die "usage: rengine restore <archive>"
              exec scripts/backup.sh restore "$(abs "$1")" ;;

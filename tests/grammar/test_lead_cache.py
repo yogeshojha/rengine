@@ -9,6 +9,7 @@ from shared.enums.scan import ScanStatus
 from shared.models.asset_query import QueryLead, QueryLeads
 from shared.models.scan import Scan
 from shared.models.subdomain import SubdomainFilter
+from shared.redis import async_client, cache_client
 from shared.services.asset_query import lead_cache
 
 pytestmark = pytest.mark.grammar
@@ -169,3 +170,32 @@ def test_facets_of_ignores_what_cannot_change_a_count():
 
     assert a == b, "paging and the search box do not change a lead count"
     assert a != c, "a facet does"
+
+
+async def test_a_value_is_held_on_the_cache_instance_alone(estate, now):
+    await estate.scan("example.com", "done", at=now)
+    await _leads(estate, "done", _Counter())
+    pattern = f"leads:test-{estate.project_id.hex[:8]}:*"
+
+    cached = [key async for key in cache_client().scan_iter(match=pattern)]
+    durable = [key async for key in async_client().scan_iter(match=pattern)]
+
+    assert len(cached) == 1
+    assert durable == []
+
+
+async def test_an_unreachable_cache_instance_still_answers(estate, now, monkeypatch):
+    await estate.scan("example.com", "done", at=now)
+
+    def _down():
+        msg = "cache instance down"
+        raise ConnectionError(msg)
+
+    monkeypatch.setattr(lead_cache, "cache_client", _down)
+    build = _Counter()
+
+    first = await _leads(estate, "done", build)
+    second = await _leads(estate, "done", build)
+
+    assert first.total == second.total == 7
+    assert build.calls == 2

@@ -16,7 +16,7 @@ from shared.enums.scan import SCAN_TERMINAL_STATUSES
 from shared.logging import get_logger
 from shared.models.asset_query import QueryLeads
 from shared.models.scan import Scan
-from shared.redis import async_client, sync_client
+from shared.redis import async_client, cache_client, sync_client
 
 logger = get_logger(__name__)
 
@@ -152,7 +152,7 @@ async def cached[T: BaseModel](
 
 async def _read[T: BaseModel](key: str, model: type[T], name: str) -> T | None:
     try:
-        hit = await async_client().get(key)
+        hit = await cache_client().get(key)
     except Exception:
         logger.debug("aggregate cache unavailable on read", name=name, exc_info=True)
         return None
@@ -161,7 +161,7 @@ async def _read[T: BaseModel](key: str, model: type[T], name: str) -> T | None:
 
 async def _write(key: str, value: BaseModel, ttl: int, name: str) -> None:
     try:
-        await async_client().set(key, value.model_dump_json(), ex=ttl)
+        await cache_client().set(key, value.model_dump_json(), ex=ttl)
     except Exception:
         logger.debug("aggregate cache unavailable on write", name=name, exc_info=True)
 
@@ -170,7 +170,7 @@ async def _claim(key: str, name: str) -> str | None:
     """Whether this request builds the value; None when another one already is."""
     token = uuid4().hex
     try:
-        claimed = await async_client().set(
+        claimed = await cache_client().set(
             f"building:{key}", token, nx=True, ex=BUILD_LOCK_SECONDS
         )
     except Exception:
@@ -181,7 +181,7 @@ async def _claim(key: str, name: str) -> str | None:
 
 async def _release(key: str, token: str) -> None:
     try:
-        await async_client().eval(_RELEASE, 1, f"building:{key}", token)
+        await cache_client().eval(_RELEASE, 1, f"building:{key}", token)
     except Exception:
         logger.debug("aggregate cache build lock not released", exc_info=True)
 
@@ -195,7 +195,7 @@ async def _await_build[T: BaseModel](key: str, model: type[T], name: str) -> T |
         if hit is not None:
             return hit
         try:
-            if not await async_client().exists(f"building:{key}"):
+            if not await cache_client().exists(f"building:{key}"):
                 return None
         except Exception:
             return None

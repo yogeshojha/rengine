@@ -148,6 +148,8 @@ sudo bash install.sh --local --ui-port 8080
 
 The administrator password comes from the prompt, from stdin with `--admin-password-stdin` or from `RENGINE_ADMIN_PASSWORD`, and is generated when none is given. `install.sh --help` lists every option. 4 GB of memory and 10 GB of disk are the minimum. 8 GB of memory and 25 GB of disk are recommended for regular scanning.
 
+Images are published for amd64 and arm64 on Docker Hub and on the GitHub Container Registry. `--image ghcr.io/yogeshojha/rengine` installs from the second, and `--image` also takes the prefix of a private mirror.
+
 After the install, the `rengine` command manages the instance:
 
 ```bash
@@ -175,6 +177,10 @@ For development with hot reload, copy `.env.example` to `.env`, set a secret key
 ```bash
 sudo rengine update
 ```
+
+The update pulls the new images, saves a database snapshot to `backups/`, stops the services, applies the migrations and starts the new release. Running scans resume afterwards and repeat the stages that were in flight. `rengine update --no-backup` skips the snapshot.
+
+To return to the earlier release, run `rengine update v<earlier> --no-backup`. If the database was already migrated, follow it with `rengine restore backups/<snapshot>`.
 
 A source install updates with `git pull`, then `install.sh --build`.
 

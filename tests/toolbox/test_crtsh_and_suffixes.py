@@ -205,7 +205,7 @@ async def test_crtsh_client_caches_an_answer(monkeypatch):
 
     redis = _Redis()
     _transport(monkeypatch, crtsh_client, handler)
-    monkeypatch.setattr(crtsh_client, "async_client", lambda: redis)
+    monkeypatch.setattr(crtsh_client, "cache_client", lambda: redis)
 
     first = await CrtShClient().search_organization("Acme")
     second = await CrtShClient().search_organization("ACME")
@@ -221,7 +221,7 @@ async def test_crtsh_client_works_without_redis(monkeypatch):
         crtsh_client,
         lambda _: httpx.Response(200, text=_rows(_row("Acme", "acme.com"))),
     )
-    monkeypatch.setattr(crtsh_client, "async_client", lambda: _Redis(broken=True))
+    monkeypatch.setattr(crtsh_client, "cache_client", lambda: _Redis(broken=True))
     result = await CrtShClient().search_organization("Acme")
     assert result.certs == 1
 
@@ -236,7 +236,7 @@ async def test_crtsh_client_works_without_redis(monkeypatch):
 )
 async def test_crtsh_client_failures_are_crtsh_errors(monkeypatch, response, fragment):
     _transport(monkeypatch, crtsh_client, lambda _: response)
-    monkeypatch.setattr(crtsh_client, "async_client", _Redis)
+    monkeypatch.setattr(crtsh_client, "cache_client", _Redis)
     with pytest.raises(CrtShError) as exc:
         await CrtShClient().search_organization("Acme")
     assert fragment in str(exc.value)
@@ -254,7 +254,7 @@ async def test_crtsh_client_transport_errors(monkeypatch, error, fragment):
         raise error
 
     _transport(monkeypatch, crtsh_client, handler)
-    monkeypatch.setattr(crtsh_client, "async_client", _Redis)
+    monkeypatch.setattr(crtsh_client, "cache_client", _Redis)
     with pytest.raises(CrtShError) as exc:
         await CrtShClient().search_organization("Acme")
     assert fragment in str(exc.value)

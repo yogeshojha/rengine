@@ -2,6 +2,7 @@
 # Back up a reNgine instance, or restore one.
 #
 #   scripts/backup.sh dump [DIR]     write a dated archive to DIR (default ./backups)
+#   scripts/backup.sh snapshot [DIR] write the database and the key alone, without a prompt
 #   scripts/backup.sh restore FILE   replace this instance's data with an archive
 #   scripts/backup.sh list [DIR]     list the archives in DIR
 #
@@ -38,9 +39,11 @@ PROJECT="$(docker compose config --format json 2>/dev/null \
 PROJECT="${PROJECT:-$(basename "$HERE")}"
 
 WORK=""
+PART=""
 STOPPED=0
 cleanup() {
   [ -n "$WORK" ] && rm -rf "$WORK"
+  [ -n "$PART" ] && rm -f "$PART"
   if [ "$STOPPED" = 1 ]; then
     docker compose start "${SERVICES[@]}" >/dev/null 2>&1 || true
     printf 'error: restore not completed. Stopped services started.\n' >&2
@@ -70,7 +73,7 @@ ask_passphrase() {
   [ "$again" = "$PASSPHRASE" ] || die "the passphrases do not match"
 }
 
-encrypted() { [ "$(head -c 8 "$1" 2>/dev/null)" = "Salted__" ]; }
+encrypted() { [ "$(head -c 8 "$1" 2>/dev/null | tr -d '\0')" = "Salted__" ]; }
 
 HELPER=""
 need_db() {
@@ -78,48 +81,73 @@ need_db() {
   HELPER="$(docker inspect --format '{{.Config.Image}}' "$(docker compose ps -q db)")"
 }
 
+# working directory on the archive's disk
+stage() {
+  local dir="$1"
+  [ -d "$dir" ] && [ -w "$dir" ] || dir="$HERE/backups"
+  mkdir -p "$dir"
+  WORK="$(mktemp -d -p "$dir" .rengine-stage.XXXXXX)"
+}
+
+migrate() {
+  if docker compose config --services 2>/dev/null | grep -qx migrate; then
+    docker compose run --rm -T migrate
+  else
+    docker compose run --rm -T --no-deps api /app/.venv/bin/alembic upgrade head
+  fi
+}
+
 dump() {
+  local scope="$1"
   need_db
-  ask_passphrase
+  [ "$scope" = db ] || ask_passphrase
   [ -z "$PASSPHRASE" ] || has_openssl || die "openssl is required to encrypt the archive"
   mkdir -p "$DEST"
   local stamp archive work
+  local members=(db.dump env)
   stamp="$(date -u +%Y%m%dT%H%M%SZ)"
   archive="$DEST/rengine-$stamp.tar"
-  WORK="$(mktemp -d)"; work="$WORK"
+  [ "$scope" = db ] && archive="$DEST/rengine-$stamp-db.tar"
+  stage "$DEST"; work="$WORK"
 
   say "database"
   docker compose exec -T db pg_dump -U "$DB_USER" -d "$DB_NAME" -Fc > "$work/db.dump"
 
-  say "scan media"
-  if [ -d scan_media ]; then
-    docker run --rm -v "$HERE:/repo:ro" -v "$work:/to" "$HELPER" \
-      tar -cf /to/scan_media.tar -C /repo scan_media >/dev/null
-  else
-    tar -cf "$work/scan_media.tar" -T /dev/null
-  fi
+  if [ "$scope" = full ]; then
+    say "scan media"
+    if [ -d scan_media ]; then
+      docker run --rm -v "$HERE:/repo:ro" -v "$work:/to" "$HELPER" \
+        tar -cf /to/scan_media.tar -C /repo scan_media >/dev/null
+    else
+      tar -cf "$work/scan_media.tar" -T /dev/null
+    fi
 
-  say "volumes"
-  local vwork="$work/volumes"
-  mkdir -p "$vwork"
-  for volume in "${VOLUMES[@]}"; do
-    docker volume inspect "${PROJECT}_$volume" >/dev/null 2>&1 \
-      || die "volume ${PROJECT}_$volume does not exist. Start the stack once before a backup."
-    docker run --rm -v "${PROJECT}_$volume:/from" -v "$vwork:/to" "$HELPER" \
-      sh -c "tar -cf /to/$volume.tar -C /from ." >/dev/null
-  done
-  tar -cf "$work/volumes.tar" -C "$vwork" .
+    say "volumes"
+    local vwork="$work/volumes"
+    mkdir -p "$vwork"
+    for volume in "${VOLUMES[@]}"; do
+      docker volume inspect "${PROJECT}_$volume" >/dev/null 2>&1 \
+        || die "volume ${PROJECT}_$volume does not exist. Start the stack once before a backup."
+      docker run --rm -v "${PROJECT}_$volume:/from" -v "$vwork:/to" "$HELPER" \
+        sh -c "tar -cf /to/$volume.tar -C /from ." >/dev/null
+    done
+    tar -cf "$work/volumes.tar" -C "$vwork" .
+    rm -rf "$vwork"
+    members=(db.dump scan_media.tar volumes.tar env)
+  fi
 
   grep -E '^SECRET_KEY=' .env > "$work/env" || true
 
+  [ -z "$PASSPHRASE" ] || archive="$archive.enc"
+  PART="$archive.part"
   if [ -n "$PASSPHRASE" ]; then
-    archive="$archive.enc"
-    tar -cf - -C "$work" db.dump scan_media.tar volumes.tar env \
-      | KEY="$PASSPHRASE" openssl enc -e "${CIPHER[@]}" -salt -pass env:KEY -out "$archive.part"
+    tar -cf - -C "$work" "${members[@]}" \
+      | KEY="$PASSPHRASE" openssl enc -e "${CIPHER[@]}" -salt -pass env:KEY -out "$PART"
   else
-    tar -cf "$archive.part" -C "$work" db.dump scan_media.tar volumes.tar env
+    tar -cf "$PART" -C "$work" "${members[@]}"
   fi
-  mv "$archive.part" "$archive"
+  mv "$PART" "$archive"
+  PART=""
   say "wrote $archive ($(du -h "$archive" | cut -f1))"
   say "The archive holds the instance key, SECRET_KEY."
   if [ -n "$PASSPHRASE" ]; then say "Encrypted with the passphrase."; else say "Not encrypted."; fi
@@ -131,8 +159,8 @@ restore() {
   [ -f "$archive" ] || die "$archive not found"
   need_db
 
-  local work archived current differs redis_db show
-  WORK="$(mktemp -d)"; work="$WORK"
+  local work archived current differs redis_db show out
+  stage "$(dirname "$archive")"; work="$WORK"
   show="tar -xOf $archive env"
   if encrypted "$archive"; then
     has_openssl || die "openssl is required to decrypt $archive"
@@ -165,6 +193,12 @@ restore() {
   docker compose exec -T db createdb -U "$DB_USER" "$DB_NAME"
   docker compose exec -T db pg_restore -U "$DB_USER" -d "$DB_NAME" --no-owner < "$work/db.dump"
 
+  say "schema"
+  if ! out="$(migrate 2>&1)"; then
+    printf '%s\n' "$out" >&2
+    die "the schema was not brought to this release. An archive from a later release restores on that release."
+  fi
+
   say "cache"
   redis_db="$(grep -E '^REDIS_DB=' .env | cut -d= -f2- || true)"
   [[ "$redis_db" =~ ^[0-9]+$ ]] || redis_db=0
@@ -172,32 +206,37 @@ restore() {
     "redis-cli \${REDIS_PASSWORD:+-a \"\$REDIS_PASSWORD\"} --no-auth-warning -n $redis_db INCR rev:global" >/dev/null \
     || say "cached aggregates not cleared"
 
-  say "scan media"
-  docker run --rm -v "$HERE:/repo" -v "$work:/from:ro" "$HELPER" \
-    sh -c 'rm -rf /repo/scan_media && tar -xf /from/scan_media.tar -C /repo' >/dev/null
+  if [ -f "$work/scan_media.tar" ]; then
+    say "scan media"
+    docker run --rm -v "$HERE:/repo" -v "$work:/from:ro" "$HELPER" \
+      sh -c 'rm -rf /repo/scan_media && tar -xf /from/scan_media.tar -C /repo' >/dev/null
+  fi
 
-  say "volumes"
-  local vwork="$work/volumes"
-  mkdir -p "$vwork" && tar -xf "$work/volumes.tar" -C "$vwork"
-  for volume in "${VOLUMES[@]}"; do
-    [ -f "$vwork/$volume.tar" ] || continue
-    docker run --rm -v "${PROJECT}_$volume:/to" -v "$vwork:/from" "$HELPER" \
-      sh -c "rm -rf /to/* /to/..?* /to/.[!.]* 2>/dev/null; tar -xf /from/$volume.tar -C /to" >/dev/null
-  done
+  if [ -f "$work/volumes.tar" ]; then
+    say "volumes"
+    local vwork="$work/volumes"
+    mkdir -p "$vwork" && tar -xf "$work/volumes.tar" -C "$vwork"
+    for volume in "${VOLUMES[@]}"; do
+      [ -f "$vwork/$volume.tar" ] || continue
+      docker run --rm -v "${PROJECT}_$volume:/to" -v "$vwork:/from" "$HELPER" \
+        sh -c "rm -rf /to/* /to/..?* /to/.[!.]* 2>/dev/null; tar -xf /from/$volume.tar -C /to" >/dev/null
+    done
+  fi
   if docker compose config --services 2>/dev/null | grep -qx volume-init; then
     docker compose run --rm --no-deps volume-init >/dev/null 2>&1 || say "data directory owners not checked"
   fi
 
   say "starting"
-  docker compose start "${SERVICES[@]}" >/dev/null
+  docker compose up -d "${SERVICES[@]}" >/dev/null
   STOPPED=0
   say "restored"
   [ "$archived" = "$current" ] || say "$differs"
 }
 
 case "${1:-}" in
-  dump) dump ;;
+  dump) dump full ;;
+  snapshot) dump db ;;
   restore) restore ;;
   list) ls -lh "${ARG:-./backups}" 2>/dev/null || die "nothing in ${ARG:-./backups}" ;;
-  *) sed -n '2,17p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
+  *) sed -n '2,18p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
 esac

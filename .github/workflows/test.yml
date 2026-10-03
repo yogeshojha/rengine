@@ -94,9 +94,9 @@ jobs:
       - name: 🏗️ Build the api image
         run: docker compose build api
 
-      - name: 🐘 Start postgres and redis
+      - name: 🐘 Start postgres and both redis instances
         run: |
-          docker compose up -d db redis
+          docker compose up -d db redis cache
           for _ in $(seq 1 60); do
             docker compose exec -T db pg_isready -U rengine && break
             sleep 2
@@ -106,6 +106,11 @@ jobs:
         run: >
           docker compose run --rm --no-deps api
           sh -lc 'cd /app && /app/.venv/bin/python -m pytest tests -q --tb=short'
+
+      - name: 🚢 Deployment file tests
+        run: >
+          docker compose run --rm --no-deps -v "$PWD:/repo:ro" -w /repo api
+          /app/.venv/bin/python -m pytest tests/deploy -q --tb=short -p no:cacheprovider
 
       - name: 📜 Service logs on failure
         if: failure()

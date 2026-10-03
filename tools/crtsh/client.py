@@ -6,7 +6,7 @@ import httpx
 
 from shared.http import get_async_client
 from shared.logging import get_logger
-from shared.redis import async_client
+from shared.redis import cache_client
 from shared.utils.datetime import utc_now
 from tools.crtsh.models import CrtShResult
 from tools.crtsh.parser import parse_org_search
@@ -61,7 +61,7 @@ class CrtShClient:
 
     async def _stored(self, organization: str) -> CrtShResult | None:
         try:
-            raw = await async_client().get(_cache_key(organization))
+            raw = await cache_client().get(_cache_key(organization))
             return CrtShResult.model_validate_json(raw) if raw else None
         except Exception as exc:
             logger.debug("crt.sh cache read failed", error=type(exc).__name__)
@@ -70,7 +70,7 @@ class CrtShClient:
     async def _store(self, organization: str, result: CrtShResult) -> None:
         stamped = result.model_copy(update={"stored_at": utc_now()})
         try:
-            await async_client().set(
+            await cache_client().set(
                 _cache_key(organization),
                 stamped.model_dump_json(),
                 ex=CACHE_TTL_SECONDS,
