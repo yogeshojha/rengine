@@ -10,7 +10,9 @@ from dataclasses import dataclass
 
 from shared.logging import get_logger
 from shared.redis import async_client
+from shared.services.issue_tracking.body import mask_secrets
 from shared.utils.datetime import utc_now
+from shared.utils.net import redact_url_queries
 from shared.utils.text import strip_control
 
 logger = get_logger(__name__)
@@ -25,6 +27,7 @@ CALLS_TTL = 7 * 24 * 3600
 ARGS_MAX = 200
 SUMMARY_MAX = 240
 TOOL_NAME_MAX = 64
+AGENT_MAX = 120
 LIST_SHOWN = 5
 _SECRET_NAMES = ("token", "secret", "password", "header", "cookie", "auth", "key")
 
@@ -44,6 +47,7 @@ class CallRecord:
     summary: str | None = None
     pivot: str | None = None
     refused: bool = False
+    agent: str | None = None
 
 
 def phrase_args(values: dict | None) -> str | None:
@@ -54,9 +58,9 @@ def phrase_args(values: dict | None) -> str | None:
             continue
         if any(word in name.lower() for word in _SECRET_NAMES):
             continue
-        text = str(value)
+        text = masked(value)
         if isinstance(value, list | tuple):
-            shown = ", ".join(str(v) for v in value[:LIST_SHOWN])
+            shown = ", ".join(masked(v) for v in value[:LIST_SHOWN])
             extra = len(value) - LIST_SHOWN
             text = f"{shown} +{extra}" if extra > 0 else shown
         parts.append(f"{name}={text}")
@@ -64,15 +68,23 @@ def phrase_args(values: dict | None) -> str | None:
     return text or None
 
 
+def masked(value: object) -> str:
+    """A value with URL queries and detected secrets masked."""
+    return mask_secrets(redact_url_queries(str(value)))
+
+
 def clip(value: str | None, limit: int = SUMMARY_MAX) -> str | None:
     return strip_control(value)[:limit] if value else None
 
 
-async def touch(*, token_id: uuid.UUID, client: str) -> None:
-    key = SESSION_KEY.format(token_id=token_id, client=_slug(client))
+async def touch(*, token_id: uuid.UUID, client: str, agent: str | None = None) -> None:
+    key = SESSION_KEY.format(
+        token_id=token_id, client=_slug(f"{client}.{agent}" if agent else client)
+    )
     payload = {
         "token_id": str(token_id),
         "client": client,
+        "agent": clip(agent, AGENT_MAX),
         "last_seen": utc_now().isoformat(),
     }
     try:
@@ -131,6 +143,7 @@ async def record(call: CallRecord) -> None:
         "token_id": str(call.token_id),
         "token_name": call.token_name,
         "client": call.client,
+        "agent": clip(call.agent, AGENT_MAX),
         "tool": call.tool,
         "ok": call.ok,
         "duration_ms": call.duration_ms,

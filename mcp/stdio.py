@@ -8,6 +8,7 @@ import json
 import os
 import sys
 
+from mcp.context import Transport
 from mcp.protocol import parse_failure
 from mcp.transport import handle_request
 from shared.config import base_settings
@@ -42,7 +43,7 @@ async def _serve() -> None:
                 session=session,
                 authorization=token,
                 ui_base_url=ui_base,
-                client_hint="stdio",
+                transport=Transport.STDIO,
             )
         if response is not None:
             _emit(response)

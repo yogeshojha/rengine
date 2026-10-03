@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
 from app.services.surface_scope import SurfaceScopeService
+from app.services.target_scope import Targets
 from shared.definitions.evidence import (
     EVIDENCE_HELP,
     EVIDENCE_LABELS,
@@ -177,10 +178,14 @@ class CveExposureService:
         self.session = session
         self.scopes = SurfaceScopeService(session)
 
-    async def _scopes(self, project_id: UUID) -> tuple[QueryScope, QueryScope]:
-        software = await self.scopes.scope(project_id, SurfaceDimension.SOFTWARE.value)
+    async def _scopes(
+        self, project_id: UUID, targets: Targets = None
+    ) -> tuple[QueryScope, QueryScope]:
+        software = await self.scopes.scope(
+            project_id, SurfaceDimension.SOFTWARE.value, targets
+        )
         findings = await self.scopes.scope(
-            project_id, SurfaceDimension.VULNERABILITIES.value
+            project_id, SurfaceDimension.VULNERABILITIES.value, targets
         )
         return software, findings
 
@@ -311,8 +316,10 @@ class CveExposureService:
             generated_at=utc_now(),
         )
 
-    async def exposure(self, project_id: UUID, cve: str) -> CveExposure:
-        software, findings = await self._scopes(project_id)
+    async def exposure(
+        self, project_id: UUID, cve: str, targets: Targets = None
+    ) -> CveExposure:
+        software, findings = await self._scopes(project_id, targets)
         out = CveExposure(
             cve=cve,
             software_scans=len(software.ids),

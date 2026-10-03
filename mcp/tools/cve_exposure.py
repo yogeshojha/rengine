@@ -60,7 +60,9 @@ class CveExposure(Tool):
             if args.target
             else await project_for(ctx, parse_id(args.project_id, "project_id"))
         )
-        report = await CveExposureService(ctx.session).exposure(project_id, cve)
+        report = await CveExposureService(ctx.session).exposure(
+            project_id, cve, ctx.scoped_targets()
+        )
 
         ladder = {step.evidence: step.count for step in report.ladder}
         steps = " · ".join(f"{n} {name}" for name, n in ladder.items() if n)

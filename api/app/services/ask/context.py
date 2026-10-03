@@ -51,8 +51,8 @@ what you can do here, and no decision line.
 - Otherwise end with exactly one line: `>> decision=<confirmed|false_positive|none> \
 next=<file_issue|rescan|none>`. decision is what the evidence supports for triage; next \
 is the one action worth taking now, or none. The line is removed before display.
-- Tools read other rows of the same project: query_assets answers "where else", \
-scan_coverage says what was tested, cve_exposure follows a CVE across targets, \
+- Tools read other rows of the same target: query_assets answers "where else", \
+scan_coverage says what was tested, cve_exposure counts a CVE on the target, \
 compare_runs and what_changed show movement. The finding's target is {target}; pass \
 it as the tool's target. Use a tool only when the answer needs rows the context does \
 not hold.

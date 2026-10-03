@@ -61,6 +61,7 @@ export interface CallBurst {
 	agent: string;
 	token: string;
 	client: string;
+	caller: string;
 	calls: McpCall[];
 	started: string;
 	ended: string;
@@ -85,6 +86,7 @@ export function groupBursts(calls: McpCall[], gapMs = BURST_GAP_MS): CallBurst[]
 				agent: agentOf(call),
 				token: call.token_name,
 				client: call.client,
+				caller: call.agent || call.client,
 				calls: [call],
 				started: call.at,
 				ended: call.at,

@@ -11,6 +11,7 @@ from mcp.context import ToolContext
 from mcp.dimensions import Dimension
 from mcp.errors import ScopeError, ToolError
 from shared.models.project import Project
+from shared.models.scan import Scan
 from shared.models.target import Target
 from shared.models.target_summary import SurfaceMetric, TargetSummaryRead
 
@@ -95,9 +96,12 @@ async def find_target(ctx: ToolContext, value: str) -> Target:
         raise ToolError(msg)
 
     scoped = ctx.scoped_projects()
+    targets = ctx.scoped_targets()
 
     def _scoped(statement):
         statement = statement.where(col(Target.project_id).in_(active_project_ids()))
+        if targets is not None:
+            statement = statement.where(col(Target.id).in_(targets))
         if scoped is None:
             return statement
         return statement.where(col(Target.project_id).in_(scoped))
@@ -123,6 +127,7 @@ async def find_target(ctx: ToolContext, value: str) -> Target:
             raise ToolError(msg)
 
     ctx.check_project(match.project_id)
+    ctx.check_target(match.id)
     return match
 
 
@@ -150,6 +155,12 @@ def active_projects():
 
 def active_project_ids():
     return select(Project.id).where(col(Project.is_active).is_(True))
+
+
+async def scan_in_scope(ctx: ToolContext, scan: Scan) -> None:
+    """A run of a target inside the token's scope."""
+    await in_scope(ctx, scan.project_id)
+    ctx.check_target(scan.target_id)
 
 
 async def in_scope(ctx: ToolContext, project_id: uuid.UUID) -> uuid.UUID:

@@ -67,7 +67,7 @@ async def _initialize(request: Request, ctx: ToolContext) -> dict:
     version = asked if asked in SUPPORTED_PROTOCOLS else PROTOCOL_VERSION
     info = request.params.get("clientInfo") or {}
     if isinstance(info, dict) and info.get("name"):
-        ctx.client = str(info["name"])[:120]
+        ctx.agent = str(info["name"])[: telemetry.AGENT_MAX]
     return {
         "protocolVersion": version,
         "capabilities": {"tools": {"listChanged": False}},
@@ -163,16 +163,16 @@ async def invoke(ctx: ToolContext, name: str, raw: dict) -> ToolResult:
         raise ToolError(exc.message, exc.data) from exc
     except Exception as exc:
         logger.exception("mcp tool failed", tool=name)
+        msg = failed(spec.title, exc)
         await _observe(
             ctx,
             name,
             ok=False,
             started=started,
-            detail=str(exc),
+            detail=msg,
             capability=spec.capability,
             args=phrased,
         )
-        msg = f"{spec.title} failed: {exc}"
         raise ToolError(msg) from exc
 
     if not isinstance(result, ToolResult):
@@ -190,6 +190,15 @@ async def invoke(ctx: ToolContext, name: str, raw: dict) -> ToolResult:
         pivot=result.pivot,
     )
     return result
+
+
+def failed(title: str, exc: BaseException) -> str:
+    """A service refusal's own wording, else the error type without its text."""
+    from fastapi import HTTPException  # noqa: PLC0415
+
+    if isinstance(exc, HTTPException) and isinstance(exc.detail, str):
+        return exc.detail
+    return f"{title} did not complete. Error type: {type(exc).__name__}."
 
 
 def _errored(message: str) -> dict:
@@ -222,10 +231,11 @@ async def _observe(
             token_id=ctx.token.id,
             token_name=ctx.token.name,
             client=ctx.client,
+            agent=ctx.agent,
             tool=telemetry.clip(tool, telemetry.TOOL_NAME_MAX) or "",
             ok=ok,
             duration_ms=int((time.monotonic() - started) * 1000),
-            detail=detail[:300] if detail else None,
+            detail=telemetry.masked(detail)[:300] if detail else None,
             command=ctx.extras.get("command"),
             capability=capability,
             args=args,
@@ -234,7 +244,7 @@ async def _observe(
             refused=refused,
         )
     )
-    await telemetry.touch(token_id=ctx.token.id, client=ctx.client)
+    await telemetry.touch(token_id=ctx.token.id, client=ctx.client, agent=ctx.agent)
 
 
 _HANDLERS: dict[str, Any] = {
@@ -244,4 +254,4 @@ _HANDLERS: dict[str, Any] = {
     Method.TOOLS_CALL: _call,
 }
 
-__all__: list[str] = ["INSTRUCTIONS", "handle", "invoke"]
+__all__: list[str] = ["INSTRUCTIONS", "failed", "handle", "invoke"]

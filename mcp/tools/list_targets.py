@@ -39,6 +39,9 @@ class ListTargets(Tool):
         scoped = ctx.scoped_projects()
         if scoped is not None:
             statement = statement.where(Target.project_id.in_(scoped))
+        targets = ctx.scoped_targets()
+        if targets is not None:
+            statement = statement.where(Target.id.in_(targets))
         if args.contains:
             statement = statement.where(
                 Target.target_value.ilike(f"%{args.contains.strip()}%")

@@ -12,7 +12,12 @@ from mcp.dimensions import dimension
 from mcp.errors import ToolError
 from mcp.phrasing import elapsed, number, short_id
 from mcp.result import ToolResult
-from mcp.tools._scope import active_project_ids, find_target, in_scope, parse_id
+from mcp.tools._scope import (
+    active_project_ids,
+    find_target,
+    parse_id,
+    scan_in_scope,
+)
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.definitions.surface import SurfaceDimension
 from shared.enums.scan import (
@@ -292,7 +297,7 @@ async def _one_run(
                 f"No scan with id {scan!r}. Take the id from start_scan or scan_status."
             )
             raise ToolError(msg)
-        await in_scope(ctx, row.project_id)
+        await scan_in_scope(ctx, row)
         return row
 
     found = await find_target(ctx, target or "")
@@ -313,8 +318,11 @@ async def _running(ctx: ToolContext, limit: int) -> ToolResult:
     active = Scan.project_id.in_(active_project_ids())
     statement = select(Scan).where(Scan.status.in_(SCAN_LIVE_STATUSES), active)
     scoped = ctx.scoped_projects()
+    targets = ctx.scoped_targets()
     if scoped is not None:
         statement = statement.where(Scan.project_id.in_(scoped))
+    if targets is not None:
+        statement = statement.where(Scan.target_id.in_(targets))
     rows = list(
         (
             await ctx.session.execute(
@@ -329,6 +337,8 @@ async def _running(ctx: ToolContext, limit: int) -> ToolResult:
         recent = select(Scan).where(active)
         if scoped is not None:
             recent = recent.where(Scan.project_id.in_(scoped))
+        if targets is not None:
+            recent = recent.where(Scan.target_id.in_(targets))
         rows = list(
             (
                 await ctx.session.execute(

@@ -43,6 +43,7 @@ export interface McpClientSnippet extends McpClientSpec {
 export interface McpSession {
 	token_id: string;
 	client: string;
+	agent?: string | null;
 	last_seen: string;
 }
 
@@ -75,6 +76,8 @@ export interface McpToken {
 	created_at: string;
 	projects: number;
 	targets: number;
+	issuer: string | null;
+	issuer_valid: boolean;
 }
 
 export interface McpTokenCreated {
@@ -113,6 +116,7 @@ export interface McpCall {
 	token_id?: string | null;
 	token_name: string;
 	client: string;
+	agent?: string | null;
 	tool: string;
 	ok: boolean;
 	duration_ms: number;
@@ -161,6 +165,9 @@ export const AGENT_PRESENCE_DOT: Record<AgentPresence, string> = {
 };
 
 export const CHANGING_CAPABILITIES: McpCapability[] = ['write', 'launch'];
+
+export const ISSUER_GONE = 'Deleted user';
+export const ISSUER_LAPSED = 'Not an active administrator. The key is refused.';
 
 export function tokenUsable(token: McpToken): boolean {
 	return !token.revoked && !token.expired;

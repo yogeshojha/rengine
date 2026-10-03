@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from mcp import auth, limits, protocol, server, telemetry
-from mcp.context import ToolContext
+from mcp.context import ToolContext, Transport
 from mcp.errors import FORBIDDEN, AuthError, McpError
 from mcp.service import McpService
 from shared.logging import get_logger
@@ -22,7 +22,8 @@ async def handle_request(
     session,
     authorization: str | None,
     ui_base_url: str,
-    client_hint: str = "unknown",
+    transport: Transport,
+    agent: str | None = None,
 ) -> dict | None:
     """Answer one JSON-RPC message."""
     try:
@@ -48,14 +49,15 @@ async def handle_request(
         session=session,
         token=identity,
         ui_base_url=ui_base_url,
-        client=client_hint,
+        client=transport.value,
+        agent=telemetry.clip(agent, telemetry.AGENT_MAX),
     )
 
     response = await server.handle(request, ctx)
 
     try:
-        await service.mark_used(row, ctx.client)
-        await telemetry.touch(token_id=identity.id, client=ctx.client)
+        await service.mark_used(row, ctx.agent or ctx.client)
+        await telemetry.touch(token_id=identity.id, client=ctx.client, agent=ctx.agent)
     except Exception as exc:
         logger.debug("mcp bookkeeping skipped", error=str(exc))
 

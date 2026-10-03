@@ -73,6 +73,8 @@ class McpTokenRead(BaseModel):
     created_at: datetime
     projects: int = 0
     targets: int = 0
+    issuer: str | None = None
+    issuer_valid: bool = False
 
 
 class McpClientSnippet(BaseModel):
@@ -133,6 +135,7 @@ class McpToolRead(BaseModel):
 class McpSessionRead(BaseModel):
     token_id: uuid.UUID
     client: str
+    agent: str | None = None
     last_seen: datetime
 
 
@@ -141,6 +144,7 @@ class McpCallRead(BaseModel):
     token_id: uuid.UUID | None = None
     token_name: str
     client: str
+    agent: str | None = None
     tool: str
     ok: bool
     duration_ms: int

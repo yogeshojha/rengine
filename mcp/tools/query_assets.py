@@ -78,7 +78,7 @@ class QueryAssets(Tool):
 
             project_id = await project_for(ctx, parse_id(args.project_id, "project_id"))
             query_scope = await SurfaceScopeService(ctx.session).scope(
-                project_id, dim.key
+                project_id, dim.key, ctx.scoped_targets()
             )
             if not query_scope:
                 msg = f"No settled scan in this project has produced {dim.noun_plural}."

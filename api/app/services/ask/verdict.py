@@ -39,9 +39,14 @@ def lines_with(text: str | None, needles: Iterable[str]) -> list[int]:
     return found
 
 
-def hides_extracted(v: VulnerabilityRead) -> bool:
-    words = {t.lower() for t in v.tags} | set(v.template_id.lower().split("-"))
+def hides_values(template_id: str, tags: Iterable[str]) -> bool:
+    """Whether a check's extracted values are credentials."""
+    words = {t.lower() for t in tags} | set(template_id.lower().split("-"))
     return bool(words & SECRET_TAGS)
+
+
+def hides_extracted(v: VulnerabilityRead) -> bool:
+    return hides_values(v.template_id, v.tags)
 
 
 def _clip(text: str | None) -> str | None:

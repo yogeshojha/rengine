@@ -454,7 +454,7 @@ async def _settle(session: AsyncSession, turn: _Turn) -> dict:
 async def _run(session: AsyncSession, user: User, turn: _Turn) -> AsyncIterator[str]:
     tctx = ToolContext(
         session=session,
-        token=tools.identity_for(user, turn.thread.project_id),
+        token=tools.identity_for(user, turn.thread.project_id, turn.thread.target_id),
         ui_base_url=settings.ui_base_url,
         client=ASK_CLIENT,
     )

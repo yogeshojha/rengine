@@ -3,11 +3,14 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Button } from '$lib/components/ui/button';
 	import RungMeter from '$lib/components/access/rung-meter.svelte';
+	import Hint from '$lib/components/hint.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
 	import { expiryLabel, expiryTone, parseClient, presenceOf } from '$lib/utilities/mcp';
 	import {
 		AGENT_PRESENCE_DOT,
 		AGENT_PRESENCE_LABELS,
+		ISSUER_GONE,
+		ISSUER_LAPSED,
 		MCP_CAPABILITIES,
 		MCP_CAPABILITY_LABELS,
 		TOUCHES_TARGETS,
@@ -50,6 +53,7 @@
 		<div class={AGENT_COL.scope}>Scope</div>
 		<div class={AGENT_COL.last}>Last call</div>
 		<div class={AGENT_COL.expires}>Expires</div>
+		<div class={AGENT_COL.issuer}>Issued by</div>
 		<div class={AGENT_COL.actions}></div>
 	</div>
 	{#each rows as token (token.id)}
@@ -130,6 +134,17 @@
 					<span class="text-muted-foreground">Revoked</span>
 				{:else}
 					{expiryLabel(token)}
+				{/if}
+			</div>
+			<div class="{AGENT_COL.issuer} text-sm leading-5 wrap-anywhere">
+				{#if token.issuer_valid}
+					{token.issuer}
+				{:else}
+					<Hint text={ISSUER_LAPSED}>
+						{#snippet child(props)}
+							<span {...props} class="text-muted-foreground">{token.issuer ?? ISSUER_GONE}</span>
+						{/snippet}
+					</Hint>
 				{/if}
 			</div>
 			<div class={AGENT_COL.actions}>

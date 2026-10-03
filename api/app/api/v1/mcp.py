@@ -17,7 +17,8 @@ from app.api.errors import bad_request
 from app.config import settings
 from app.core.client_ip import client_id
 from app.core.database import get_session
-from app.core.ratelimit import clear_failures, record_failure, too_many_attempts
+from app.core.ratelimit import record_failure, too_many_attempts
+from mcp.context import Transport
 from mcp.errors import UNAUTHORIZED
 from mcp.models import (
     McpCallRead,
@@ -53,10 +54,6 @@ def _rejected_token(response: dict | list | None) -> bool:
     return error.get("message") != DISABLED_MESSAGE
 
 
-def _answered(response: dict | list | None) -> bool:
-    return not isinstance(response, dict) or "error" not in response
-
-
 @router.post("", include_in_schema=False)
 @router.post("/", include_in_schema=False)
 async def mcp_endpoint(
@@ -67,25 +64,26 @@ async def mcp_endpoint(
     user_agent: Annotated[str | None, Header()] = None,
 ):
     """MCP protocol endpoint. Authenticated by service token."""
-    key = f"mcp:token:{client_id(request)}"
-    await too_many_attempts(key, limit=TOKEN_ATTEMPT_LIMIT)
     response = await handle_request(
         payload,
         session=session,
         authorization=authorization,
         ui_base_url=ui_base(),
-        client_hint=(user_agent or "unknown")[:120],
+        transport=Transport.HTTP,
+        agent=user_agent,
     )
     if _rejected_token(response):
+        key = f"mcp:token:{client_id(request)}"
+        await too_many_attempts(key, limit=TOKEN_ATTEMPT_LIMIT)
         await record_failure(key, window_seconds=TOKEN_ATTEMPT_WINDOW)
-    elif _answered(response):
-        await clear_failures(key)
     return response if response is not None else {}
 
 
 @router.get("/status", response_model=McpStatus)
-async def mcp_status(_current_user: CurrentUser, session: Session):
-    return await McpService(session).status(ui_base())
+async def mcp_status(current_user: CurrentUser, session: Session):
+    return await McpService(session).status(
+        ui_base(), sessions=current_user.is_superuser
+    )
 
 
 @router.patch("/settings", response_model=McpStatus)
@@ -96,7 +94,7 @@ async def update_mcp(
         await McpService(session).update(body)
     except McpConfigError as exc:
         raise bad_request(exc) from exc
-    return await McpService(session).status(ui_base())
+    return await McpService(session).status(ui_base(), sessions=True)
 
 
 @router.get("/tools", response_model=list[McpToolRead])
@@ -106,7 +104,7 @@ async def mcp_tools(_current_user: CurrentUser, session: Session):
 
 @router.get("/calls", response_model=list[McpCallRead])
 async def mcp_calls(
-    _current_user: CurrentUser,
+    _admin: CurrentSuperuser,
     session: Session,
     limit: Annotated[int, Query(ge=1, le=200)] = 100,
 ):

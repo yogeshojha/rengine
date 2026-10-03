@@ -57,7 +57,7 @@ class WhatChanged(Tool):
         window = args.window if args.window in WINDOWS else DEFAULT_WINDOW
         project_id = await project_for(ctx, parse_id(args.project_id, "project_id"))
         overview = await DashboardOverviewService(ctx.session).overview(
-            project_id, window
+            project_id, window, ctx.scoped_targets()
         )
 
         changed = [

@@ -73,18 +73,23 @@ a whole capability off. A tool that sends traffic to a target is
 
 ```python
 ctx.session  # AsyncSession, for app.services.* calls
-ctx.token  # name, project_id, capabilities, issued_by
+ctx.token  # name, project_id, capabilities, issued_by, targets
 ctx.ui_base_url  # for building links
-ctx.client  # the connected agent's name
+ctx.client  # the transport: http, stdio, ask or a channel kind
+ctx.agent  # the name the caller declared, display only
 
 ctx.require("launch")  # raise unless the token may do this
 ctx.scoped_projects()  # [project_id], or None for every project
+ctx.scoped_targets()  # a set of target ids, or None for every target
 ctx.check_project(project_id)  # raise if outside the token's scope
+ctx.check_target(target_id)  # raise if outside the token's targets
 ```
 
-`mcp/tools/_scope.py` holds the shared helpers: `project_for` picks the project a
-project-wide tool acts on, `parse_id` reads a UUID argument and `operator`
-returns the user a change is attributed to.
+`mcp/tools/_scope.py` holds the shared helpers: `find_target` and `resolve` read
+a target inside the token's scope, `scan_in_scope` checks a run named by id,
+`project_for` picks the project a project-wide tool acts on, `parse_id` reads a
+UUID argument and `operator` returns the user a change is attributed to. A
+project-wide read passes `ctx.scoped_targets()` to the service it calls.
 
 Import reNgine services inside `run`, not at module scope. A tool module that
 fails to import is skipped with a warning and discovery continues:

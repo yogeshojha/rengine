@@ -96,7 +96,7 @@
 	{:else}
 		<Accordion.Root type="multiple" bind:value={open}>
 			{#each page as burst (burst.key)}
-				{@const client = parseClient(burst.client)}
+				{@const client = parseClient(burst.caller)}
 				<Accordion.Item value={burst.key} class="border-b last:border-b-0">
 					<Accordion.Trigger
 						class="items-start gap-3 rounded-none px-5 py-3 hover:bg-muted/40 hover:no-underline"

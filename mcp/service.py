@@ -103,13 +103,17 @@ class McpService:
 
     # ---- status ---------------------------------------------------------
 
-    async def status(self, ui_base: str) -> McpStatus:
+    async def status(self, ui_base: str, *, sessions: bool) -> McpStatus:
         config = await self.config()
-        raw_sessions = [
-            s
-            for s in await telemetry.sessions()
-            if s.get("client") not in HIDDEN_CLIENTS
-        ]
+        raw_sessions = (
+            [
+                s
+                for s in await telemetry.sessions()
+                if s.get("client") not in HIDDEN_CLIENTS
+            ]
+            if sessions
+            else []
+        )
 
         return McpStatus(
             enabled=config.enabled,
@@ -148,13 +152,20 @@ class McpService:
 
     async def tokens(self) -> list[McpTokenRead]:
         rows = (
-            (await self.session.execute(select(McpToken).order_by(McpToken.created_at)))
-            .scalars()
-            .all()
+            await self.session.execute(
+                select(McpToken, User)
+                .outerjoin(User, User.id == McpToken.created_by)
+                .order_by(McpToken.created_at)
+            )
+        ).all()
+        names = await self._project_names(
+            {token.project_id for token, _ in rows if token.project_id}
         )
-        names = await self._project_names({r.project_id for r in rows if r.project_id})
         reach = await self._reach()
-        return [_read(row, names.get(row.project_id), reach) for row in rows]
+        return [
+            _read(token, names.get(token.project_id), reach, issuer)
+            for token, issuer in rows
+        ]
 
     async def _reach(self) -> dict[uuid.UUID | None, tuple[int, int]]:
         """Projects and targets a token scoped to each project reaches; None is every."""
@@ -223,8 +234,9 @@ class McpService:
 
         names = await self._project_names({row.project_id} if row.project_id else set())
         url = server_settings.endpoint_url(ui_base)
+        issuer = await self.session.get(User, user_id)
         return McpTokenCreated(
-            token=_read(row, names.get(row.project_id), await self._reach()),
+            token=_read(row, names.get(row.project_id), await self._reach(), issuer),
             secret=secret,
             clients=clients.snippets(url, secret),
         )
@@ -265,7 +277,10 @@ class McpService:
         await self.session.commit()
         await self.session.refresh(row)
         names = await self._project_names({row.project_id} if row.project_id else set())
-        return _read(row, names.get(row.project_id), await self._reach())
+        issuer = (
+            await self.session.get(User, row.created_by) if row.created_by else None
+        )
+        return _read(row, names.get(row.project_id), await self._reach(), issuer)
 
     async def revoke_token(self, token_id: uuid.UUID) -> None:
         row = await self.session.get(McpToken, token_id)
@@ -309,11 +324,12 @@ class McpService:
         if row.expires_at is not None and row.expires_at <= utc_now():
             msg = "The token expired."
             raise AuthError(msg)
-        if row.created_by is not None:
-            issuer = await self.session.get(User, row.created_by)
-            if issuer is None or not issuer.is_active:
-                msg = "The token's issuing user is inactive."
-                raise AuthError(msg)
+        issuer = (
+            await self.session.get(User, row.created_by) if row.created_by else None
+        )
+        if not _backs(issuer):
+            msg = "The token's issuer is not an active administrator."
+            raise AuthError(msg)
         if row.project_id is not None and not await self._project_exists(
             row.project_id
         ):
@@ -382,10 +398,16 @@ def _name(value: str) -> str:
     return name
 
 
+def _backs(issuer: User | None) -> bool:
+    """Whether the issuer is an active superuser."""
+    return issuer is not None and issuer.is_active and issuer.is_superuser
+
+
 def _read(
     row: McpToken,
     project_name: str | None,
     reach: dict[uuid.UUID | None, tuple[int, int]] | None = None,
+    issuer: User | None = None,
 ) -> McpTokenRead:
     projects, targets = (reach or {}).get(
         row.project_id, (1 if row.project_id else 0, 0)
@@ -406,6 +428,8 @@ def _read(
         created_at=row.created_at,
         projects=projects,
         targets=targets,
+        issuer=issuer.username if issuer else None,
+        issuer_valid=_backs(issuer),
     )
 
 
@@ -413,5 +437,6 @@ def _session(entry: dict) -> McpSessionRead:
     return McpSessionRead(
         token_id=uuid.UUID(entry["token_id"]),
         client=entry.get("client", "unknown"),
+        agent=entry.get("agent"),
         last_seen=entry["last_seen"],
     )

@@ -4,45 +4,59 @@ from __future__ import annotations
 
 import json
 import time
+import uuid
 from typing import Any
 
+from app.services.ask.verdict import hides_values
 from mcp import registry, server, telemetry
 from mcp.capabilities import Capability
 from mcp.context import TokenIdentity, ToolContext
 from mcp.errors import McpError
 from shared.definitions.ask import ASK_CLIENT, TOOL_TEXT_CHARS, TraceStatus
+from shared.definitions.compare import WATCHED_FIELDS
 from shared.definitions.surface import SurfaceDimension
 from shared.models.ask import TraceStep
 from shared.models.user import User
 from shared.services.ai.agent import AgentTool
 from shared.services.issue_tracking.body import mask_secrets
-from shared.services.scan_resolve import redact_credentials
+from shared.services.scan_resolve import MASK, redact_credentials
 
 EXCLUDED = frozenset({"list_projects"})
 ROW_TOOLS = frozenset({"query_assets", "compare_runs"})
 VALUE_GROUP = ("group_assets", "value")
+EXPLAIN_TOOL = "explain_finding"
+COMPARE_TOOL = "compare_runs"
+EXTRACTED_FIELD = "extracted_results"
 COUNT_KEYS = ("total", "count", "occurrences", "matched")
 MAX_DETAIL = 200
-TOOL_BROKE = "The tool did not complete."
 SECRETS_REFUSED = "Secret values are not read through Ask."
+NOT_OFFERED = "The tool is not available in Ask."
+NO_THREAD = "The tool call is not tied to an Ask thread."
 
 
-def identity_for(user: User, project_id: Any) -> TokenIdentity:
+def identity_for(
+    user: User, project_id: Any, target_id: uuid.UUID | None = None
+) -> TokenIdentity:
     return TokenIdentity(
         id=user.id,
         name=ASK_CLIENT,
         project_id=project_id,
         capabilities=frozenset({Capability.READ.value}),
         issued_by=user.id,
+        targets=frozenset({target_id}) if target_id else None,
     )
 
 
-def agent_tools() -> list[AgentTool]:
+def offered() -> list[registry.ToolSpec]:
     return [
-        AgentTool(spec.name, spec.description, spec.schema)
+        spec
         for spec in registry.specs_for({Capability.READ.value})
         if spec.name not in EXCLUDED
     ]
+
+
+def agent_tools() -> list[AgentTool]:
+    return [AgentTool(spec.name, spec.description, spec.schema) for spec in offered()]
 
 
 def label(name: str) -> str:
@@ -80,8 +94,38 @@ def scrub(value: Any) -> Any:
     return value
 
 
-def _text(payload: dict) -> str:
-    text = json.dumps(scrub(payload), indent=2, default=str)
+def _extracted_label() -> str:
+    fields = WATCHED_FIELDS[SurfaceDimension.VULNERABILITIES.value]
+    return next(f.label for f in fields if f.name == EXTRACTED_FIELD)
+
+
+def hide_extracted(name: str, payload: dict) -> dict:
+    """Replace extracted values a credential check found, and every compared one."""
+    data = payload.get("data")
+    if not isinstance(data, dict):
+        return payload
+    if name == EXPLAIN_TOOL:
+        check = data.get("check") or {}
+        evidence = data.get("evidence") or {}
+        shown = evidence.get("extracted")
+        if shown and hides_values(
+            str(check.get("template_id") or ""), check.get("tags") or []
+        ):
+            evidence["extracted"] = [MASK for _ in shown]
+    elif name == COMPARE_TOOL:
+        extracted = _extracted_label()
+        for change in data.get("changes") or []:
+            for field in change.get("fields") or []:
+                if field.get("field") != extracted:
+                    continue
+                for side in ("was", "now"):
+                    if field.get(side):
+                        field[side] = MASK
+    return payload
+
+
+def _text(name: str, payload: dict) -> str:
+    text = json.dumps(hide_extracted(name, scrub(payload)), indent=2, default=str)
     if len(text) > TOOL_TEXT_CHARS:
         text = f"{text[:TOOL_TEXT_CHARS]}\nTruncated."
     return text
@@ -100,16 +144,21 @@ def _failed(name: str, started: float, detail: str, args: dict) -> TraceStep:
 
 async def call(ctx: ToolContext, name: str, args: dict) -> tuple[str, TraceStep]:
     started = time.monotonic()
+    if name not in {spec.name for spec in offered()}:
+        return NOT_OFFERED, _failed(name, started, NOT_OFFERED, args)
     if reads_secrets(name, args):
         return SECRETS_REFUSED, _failed(name, started, SECRETS_REFUSED, args)
+    if ctx.token.targets is None:
+        return NO_THREAD, _failed(name, started, NO_THREAD, args)
     try:
         result = await server.invoke(ctx, name, args)
     except McpError as exc:
         return exc.message, _failed(name, started, exc.message, args)
     except Exception as exc:
         await ctx.session.rollback()
-        return TOOL_BROKE, _failed(name, started, str(exc), args)
-    return _text(result.payload()), TraceStep(
+        message = server.failed(label(name), exc)
+        return message, _failed(name, started, message, args)
+    return _text(name, result.payload()), TraceStep(
         tool=name,
         label=label(name),
         status=TraceStatus.DONE.value,

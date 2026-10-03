@@ -67,6 +67,7 @@ class AddTarget(Tool):
         from shared.models.target import TargetUpdate  # noqa: PLC0415
 
         issued_by = operator(ctx)
+        ctx.check_target(None)
         project_id = await project_for(ctx, parse_id(args.project_id, "project_id"))
         service = TargetService(ctx.session)
 
