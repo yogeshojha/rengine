@@ -9,6 +9,7 @@
 	import SectionHead from '$lib/components/section-head.svelte';
 	import TokenForm from './token-form.svelte';
 	import { CHANNEL_META, RATE_LIMIT_MAX, RATE_LIMIT_MIN } from '$lib/config/channels';
+	import { externalHref } from '$lib/utilities/links';
 	import { remoteControl } from '$lib/stores/remote-control.svelte';
 	import type { ChannelStatus } from '$lib/types/remote-control';
 	import type { McpCapability } from '$lib/types/mcp';
@@ -76,7 +77,7 @@
 					<div class="flex flex-wrap items-baseline justify-between gap-2">
 						{#if status.bot}
 							<a
-								href={meta.chatUrl(status.bot.username)}
+								href={externalHref(meta.chatUrl(status.bot.username))}
 								target="_blank"
 								rel="noopener noreferrer"
 								class="font-mono text-sm text-primary hover:text-primary/80"

@@ -7,7 +7,8 @@
 	import ResultCell from './result-cell.svelte';
 	import SelectableTable from './selectable-table.svelte';
 	import Info from '@lucide/svelte/icons/info';
-	import { TONE_CHIP, TONE_DOT, TONE_TINT, isExternalHref, safeHref } from '$lib/config/toolbox';
+	import { TONE_CHIP, TONE_DOT, TONE_TINT } from '$lib/config/toolbox';
+	import { isExternalHref, safeHref } from '$lib/utilities/links';
 	import type { CodeLang } from '$lib/utilities/code-highlight';
 	import type { Lookup, ResultBlock, Tone } from '$lib/types/toolbox';
 

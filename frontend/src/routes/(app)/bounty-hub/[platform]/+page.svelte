@@ -54,6 +54,7 @@
 	} from '$lib/config/bounty-reports';
 	import { SEVERITY_CHIP, SEVERITY_LABELS } from '$lib/config/vulnerabilities';
 	import { formatShortDate, relativeTime } from '$lib/utilities/dates';
+	import { externalHref, openExternal } from '$lib/utilities/links';
 	import {
 		ALL_TAB,
 		PAID_TAB,
@@ -344,7 +345,7 @@
 				if (focused) toggle(focused.id);
 				break;
 			case 'Enter':
-				if (focused) window.open(focused.url, '_blank', 'noopener');
+				if (focused) openExternal(focused.url);
 				break;
 			case 'p':
 				if (focused?.program_handle) onlyProgram(focused.program_handle);
@@ -474,7 +475,7 @@
 					<span class="text-sm font-semibold text-foreground">{label}</span>
 					{#if summary?.username}
 						<a
-							href="{platformUrl}/{summary.username}"
+							href={externalHref(`${platformUrl}/${summary.username}`)}
 							target="_blank"
 							rel="noopener noreferrer"
 							class="flex items-center gap-0.5 font-mono text-foreground hover:text-primary"

@@ -10,6 +10,7 @@
 	import { getProviderIcon } from '$lib/config/icons';
 	import { RECON_GROUPS, type ProviderGroup } from '$lib/config/api-keys';
 	import { plural } from '$lib/utilities/strings';
+	import { externalHref } from '$lib/utilities/links';
 	import { toast } from 'svelte-sonner';
 	import type { StepProps } from '$lib/types/onboarding';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
@@ -125,7 +126,7 @@
 									<div class="flex items-center gap-2">
 										<span class="text-sm font-medium">{p.name}</span>
 										<a
-											href={p.docs_url}
+											href={externalHref(p.docs_url)}
 											target="_blank"
 											rel="noopener noreferrer"
 											class="inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80"

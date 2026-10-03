@@ -15,6 +15,7 @@
 	} from '$lib/config/connectors';
 	import type { Connector, ConnectorSpec } from '$lib/types/connector';
 	import { plural } from '$lib/utilities/strings';
+	import { safeHref } from '$lib/utilities/links';
 
 	interface Props {
 		open: boolean;
@@ -80,7 +81,7 @@
 								variant="outline"
 								size="sm"
 								class="w-fit"
-								href={spec.download_url}
+								href={safeHref(spec.download_url)}
 								download={spec.client_file}
 							>
 								<DownloadIcon class="size-3.5" />

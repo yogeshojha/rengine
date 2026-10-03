@@ -29,6 +29,7 @@
 	import { providerAllowed } from '$lib/config/capabilities';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { relativeTime } from '$lib/utilities/dates';
+	import { externalHref } from '$lib/utilities/links';
 	import type { APIKeyRead, ProviderInfo } from '$lib/types/api-key';
 	import { ProviderGroup } from '$lib/config/api-keys';
 	import CheckStatus from './check-status.svelte';
@@ -260,7 +261,7 @@
 							<span class="flex items-center gap-1.5 text-sm leading-5 font-medium">
 								{provider.name}
 								<a
-									href={provider.docs_url}
+									href={externalHref(provider.docs_url)}
 									target="_blank"
 									rel="noopener noreferrer"
 									class="text-muted-foreground transition-colors hover:text-foreground"
@@ -411,7 +412,7 @@
 			{#if editing}
 				<Dialog.Description>
 					<a
-						href={editing.docs_url}
+						href={externalHref(editing.docs_url)}
 						target="_blank"
 						rel="noopener noreferrer"
 						class="inline-flex items-center gap-1 text-primary transition-colors hover:text-foreground"

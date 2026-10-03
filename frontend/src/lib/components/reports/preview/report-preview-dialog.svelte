@@ -21,6 +21,7 @@
 	import { FORMAT_ICONS, FORMAT_LABELS, ReportFormat } from '$lib/config/reports';
 	import { formatBytes } from '$lib/utilities/format';
 	import {
+		closeDocument,
 		loadDocument,
 		pageSizes,
 		readOutline,
@@ -70,12 +71,12 @@
 				const bytes = await reportsApi.pdf(projectId, id);
 				const loaded = await loadDocument(bytes);
 				if (mine !== session) {
-					void loaded.destroy();
+					void closeDocument(loaded);
 					return;
 				}
 				const [measured, contents] = await Promise.all([pageSizes(loaded), readOutline(loaded)]);
 				if (mine !== session) {
-					void loaded.destroy();
+					void closeDocument(loaded);
 					return;
 				}
 				doc = loaded;
@@ -100,7 +101,7 @@
 		error = null;
 		fit = 'width';
 		page = 1;
-		void previous?.destroy();
+		if (previous) void closeDocument(previous);
 	});
 
 	function zoomIn() {

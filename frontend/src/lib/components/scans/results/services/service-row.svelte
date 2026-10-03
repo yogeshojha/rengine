@@ -47,6 +47,7 @@
 	import type { Recheck } from '$lib/types/recheck';
 	import { SERVICE_LEAD_COLUMNS } from './columns';
 	import { bracketed, hostPort } from '$lib/utilities/net';
+	import { externalHref } from '$lib/utilities/links';
 	import { AI_ICON, AI_YES, aiQuery, aiServiceLabel } from '$lib/config/ai-services';
 
 	interface Props {
@@ -466,7 +467,7 @@
 								{...props}
 								variant="ghost"
 								size="icon-sm"
-								href={s.url}
+								href={externalHref(s.url)}
 								target="_blank"
 								rel="noopener noreferrer"
 								aria-label="Open {s.url}"

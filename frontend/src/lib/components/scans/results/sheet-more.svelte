@@ -3,6 +3,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Button } from '$lib/components/ui/button';
 	import type { SheetAction } from './sheet';
+	import { externalHref } from '$lib/utilities/links';
 
 	interface Props {
 		actions: SheetAction[];
@@ -26,7 +27,12 @@
 				{#if action.href}
 					<DropdownMenu.Item>
 						{#snippet child({ props })}
-							<a {...props} href={action.href} target="_blank" rel="noopener noreferrer">
+							<a
+								{...props}
+								href={externalHref(action.href)}
+								target="_blank"
+								rel="noopener noreferrer"
+							>
 								<Icon class="size-4" />
 								{action.label}
 							</a>

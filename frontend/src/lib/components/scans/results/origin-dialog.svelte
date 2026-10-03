@@ -14,6 +14,7 @@
 	import ScreenshotThumb from './screenshot-thumb.svelte';
 	import TechIcon from './tech-icon.svelte';
 	import { httpStatusTextClass } from '$lib/utilities/scan-correlation';
+	import { externalHref } from '$lib/utilities/links';
 	import {
 		FINDING_RELATION,
 		FINDING_SUMMARY,
@@ -166,7 +167,7 @@
 					variant="outline"
 					size="sm"
 					class="gap-1.5"
-					href={f.exposed.url}
+					href={externalHref(f.exposed.url)}
 					target="_blank"
 					rel="noopener noreferrer"
 				>

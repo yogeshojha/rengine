@@ -7,6 +7,7 @@
 	import { screenshotUrl } from '$lib/utilities/media';
 	import { httpStatusClass, STATUS_DOT } from '$lib/utilities/scan-correlation';
 	import { certState } from '$lib/utilities/scan-insights';
+	import { externalHref } from '$lib/utilities/links';
 	import type { SubdomainRead } from '$lib/types/subdomain';
 	import { stopProp } from '$lib/utilities';
 	import { SvelteSet } from 'svelte/reactivity';
@@ -85,7 +86,7 @@
 				</div>
 				{#if s.http_url}
 					<a
-						href={s.http_url}
+						href={externalHref(s.http_url)}
 						target="_blank"
 						rel="noreferrer noopener"
 						onclick={stopProp}

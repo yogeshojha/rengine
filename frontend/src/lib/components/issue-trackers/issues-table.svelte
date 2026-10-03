@@ -6,6 +6,7 @@
 	import TicketChip from './ticket-chip.svelte';
 	import { FilingState } from '$lib/config/issue-trackers';
 	import { relativeTime } from '$lib/utilities/dates';
+	import { externalHref } from '$lib/utilities/links';
 	import { ROUTES } from '$lib/config/routes';
 	import type { TrackedIssue } from '$lib/types/issue-tracker';
 	import { HEAD_ROW } from '$lib/components/settings/columns';
@@ -83,7 +84,12 @@
 						{#if issue.url}
 							<DropdownMenu.Item>
 								{#snippet child({ props })}
-									<a {...props} href={issue.url} target="_blank" rel="noopener noreferrer">
+									<a
+										{...props}
+										href={externalHref(issue.url)}
+										target="_blank"
+										rel="noopener noreferrer"
+									>
 										Open in {issue.tracker_name}
 									</a>
 								{/snippet}

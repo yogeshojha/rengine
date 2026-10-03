@@ -32,6 +32,7 @@
 		INTEREST_TONE
 	} from '$lib/config/endpoints';
 	import { whyReasons, type FolderChip, type TreeNode } from '$lib/utilities/endpoints';
+	import { externalHref } from '$lib/utilities/links';
 	import type { Connector, ConnectorSpec } from '$lib/types/connector';
 
 	interface Props {
@@ -303,7 +304,7 @@
 					{/if}
 					<DropdownMenu.Item>
 						{#snippet child({ props })}
-							<a {...props} href={openUrl} target="_blank" rel="noopener noreferrer">
+							<a {...props} href={externalHref(openUrl)} target="_blank" rel="noopener noreferrer">
 								<ExternalLink class="size-3.5" /> Open in a new tab
 							</a>
 						{/snippet}

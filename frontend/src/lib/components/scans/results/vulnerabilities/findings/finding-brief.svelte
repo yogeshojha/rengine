@@ -24,6 +24,7 @@
 	import { httpStatusTextClass } from '$lib/utilities/scan-correlation';
 	import { exactToken } from '$lib/utilities/scan-insights';
 	import { epssPercent, locationLabel, type VulnerabilityRead } from '$lib/utilities/vulns';
+	import { externalHref } from '$lib/utilities/links';
 	import { BRIEF_TABS, BRIEF_TAB_LABELS, findingBriefTabs, type BriefTab } from './prefs.svelte';
 	import AssetTiles from './asset-tiles.svelte';
 	import FindingList from './finding-list.svelte';
@@ -406,7 +407,7 @@
 			size="sm"
 			variant="ghost"
 			class="h-8 gap-1.5"
-			href={v.matched_at}
+			href={externalHref(v.matched_at)}
 			target="_blank"
 			rel="noopener noreferrer"
 		>

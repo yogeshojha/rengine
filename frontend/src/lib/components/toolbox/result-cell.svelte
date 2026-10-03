@@ -1,7 +1,8 @@
 <script lang="ts">
 	import IdentityMark from './identity-mark.svelte';
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
-	import { TONE_TINT, isExternalHref, safeHref } from '$lib/config/toolbox';
+	import { TONE_TINT } from '$lib/config/toolbox';
+	import { isExternalHref, safeHref } from '$lib/utilities/links';
 	import type { Cell } from '$lib/types/toolbox';
 
 	interface Props {

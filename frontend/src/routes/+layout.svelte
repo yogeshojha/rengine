@@ -24,7 +24,7 @@
 	});
 </script>
 
-<ModeWatcher />
+<ModeWatcher disableHeadScriptInjection />
 <Toaster position="top-center" />
 <Tooltip.Provider delayDuration={300} ignoreNonKeyboardFocus>
 	{@render children()}

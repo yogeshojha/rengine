@@ -10,6 +10,7 @@
 	import { listenerState, type ChannelStatus } from '$lib/types/remote-control';
 	import { uptime } from '$lib/utilities/dates';
 	import { getInitials } from '$lib/utilities/strings';
+	import { externalHref } from '$lib/utilities/links';
 
 	interface Props {
 		status: ChannelStatus;
@@ -57,7 +58,7 @@
 			<h2 class="text-base font-semibold">{name}</h2>
 			{#if status.bot}
 				<a
-					href={meta.chatUrl(status.bot.username)}
+					href={externalHref(meta.chatUrl(status.bot.username))}
 					target="_blank"
 					rel="noopener noreferrer"
 					class="font-mono text-xs text-primary hover:text-primary/80">@{status.bot.username}</a

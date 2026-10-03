@@ -41,6 +41,7 @@
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { formatShortDate } from '$lib/utilities/dates';
 	import { curlFor, type EndpointDetail, type EndpointRead } from '$lib/utilities/endpoints';
+	import { externalHref } from '$lib/utilities/links';
 	import type { Connector, ConnectorSpec, HandoffResult } from '$lib/types/connector';
 
 	interface Props {
@@ -180,7 +181,7 @@
 									variant="ghost"
 									size="icon-sm"
 									class="size-7 shrink-0"
-									href={endpoint.url}
+									href={externalHref(endpoint.url)}
 									target="_blank"
 									rel="noopener noreferrer"
 									aria-label="Open in browser"

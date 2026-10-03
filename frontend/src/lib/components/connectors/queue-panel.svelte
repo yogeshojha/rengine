@@ -53,6 +53,7 @@
 	import { afterPause } from '$lib/utilities/debounce';
 	import { httpStatusTextClass } from '$lib/utilities/scan-correlation';
 	import { plural, pluralWord } from '$lib/utilities/strings';
+	import { externalHref } from '$lib/utilities/links';
 	import type { Candidate, CandidateQuery, Connector, QueueView } from '$lib/types/connector';
 
 	let {
@@ -484,7 +485,7 @@
 											size="icon"
 											class="size-6"
 											aria-label="Open in a new tab"
-											href={row.url}
+											href={externalHref(row.url)}
 											target="_blank"
 											rel="noopener noreferrer"
 										>

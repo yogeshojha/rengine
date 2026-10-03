@@ -33,6 +33,7 @@
 	} from '$lib/config/service-classes';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { hostPort } from '$lib/utilities/net';
+	import { externalHref } from '$lib/utilities/links';
 	import CountryFlag from './country-flag.svelte';
 	import TechIcon from './tech-icon.svelte';
 	import ServiceIcon from './services/service-icon.svelte';
@@ -281,7 +282,7 @@
 										<dt class={SHEET_DT}>URL</dt>
 										<dd>
 											<a
-												href={s.url}
+												href={externalHref(s.url)}
 												target="_blank"
 												rel="noopener noreferrer"
 												class="inline-flex items-center gap-1 font-mono text-xs break-all hover:text-primary"

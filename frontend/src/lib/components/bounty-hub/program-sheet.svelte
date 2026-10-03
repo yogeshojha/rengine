@@ -33,6 +33,7 @@
 	import { formatMoney } from '$lib/config/bounty-reports';
 	import { formatShortDate } from '$lib/utilities/dates';
 	import { plural, pluralWord } from '$lib/utilities/strings';
+	import { externalHref } from '$lib/utilities/links';
 	import type { Watch } from '$lib/types/watch';
 	import {
 		ProgramState,
@@ -256,7 +257,7 @@
 				</Sheet.Title>
 				<Sheet.Description class="flex flex-wrap items-center gap-x-3 gap-y-1">
 					<a
-						href={program.url ?? bountyVocabulary.url(program.platform)}
+						href={externalHref(program.url ?? bountyVocabulary.url(program.platform))}
 						target="_blank"
 						rel="noreferrer noopener"
 						class="inline-flex items-center gap-1 font-mono text-xs hover:text-primary"
@@ -340,7 +341,7 @@
 						class="p-10"
 					>
 						<Button
-							href={program.url ?? bountyVocabulary.url(program.platform)}
+							href={externalHref(program.url ?? bountyVocabulary.url(program.platform))}
 							target="_blank"
 							rel="noreferrer noopener"
 							variant="outline"

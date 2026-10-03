@@ -17,6 +17,7 @@
 	import { auth } from '$lib/stores/auth.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { formatBytes } from '$lib/utilities/format';
+	import { externalHref } from '$lib/utilities/links';
 	import type { ThreatFeedRead, ThreatIntelStatus } from '$lib/types/threat-intel';
 
 	const POLL_MS = 4000;
@@ -115,7 +116,7 @@
 			<a
 				{...props}
 				class="inline-flex min-w-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-				href={url}
+				href={externalHref(url)}
 				target="_blank"
 				rel="noopener noreferrer"
 			>

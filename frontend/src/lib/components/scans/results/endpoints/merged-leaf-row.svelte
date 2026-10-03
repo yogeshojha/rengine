@@ -26,6 +26,7 @@
 	} from '$lib/config/endpoints';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import type { MergedLeaf } from '$lib/utilities/endpoints';
+	import { externalHref } from '$lib/utilities/links';
 
 	interface Props {
 		leaf: MergedLeaf;
@@ -271,7 +272,7 @@
 						variant="ghost"
 						size="icon"
 						class="size-7"
-						href={leaf.sample_url}
+						href={externalHref(leaf.sample_url)}
 						target="_blank"
 						rel="noopener noreferrer"
 						onclick={(e) => e.stopPropagation()}

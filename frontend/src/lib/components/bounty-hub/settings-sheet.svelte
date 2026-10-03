@@ -11,6 +11,7 @@
 	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import { SYNC_INTERVAL_LABELS } from '$lib/config/bounty-programs';
 	import { relativeTime, untilTime } from '$lib/utilities/dates';
+	import { externalHref } from '$lib/utilities/links';
 	import {
 		SyncInterval,
 		type BountyEventSpec,
@@ -166,7 +167,7 @@
 									)}
 								</span>
 								<a
-									href={settings.feed_url}
+									href={externalHref(settings.feed_url)}
 									target="_blank"
 									rel="noreferrer noopener"
 									class="w-fit text-xs text-muted-foreground transition-colors hover:text-foreground"

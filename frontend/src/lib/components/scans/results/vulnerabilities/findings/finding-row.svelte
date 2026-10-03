@@ -44,6 +44,7 @@
 	import { formatDateTime, relativeTime } from '$lib/utilities/dates';
 	import { httpStatusTextClass } from '$lib/utilities/scan-correlation';
 	import { exactToken, excludeToken, filterToken } from '$lib/utilities/scan-insights';
+	import { openExternal } from '$lib/utilities/links';
 	import {
 		epssPercent,
 		locationLabel,
@@ -557,7 +558,7 @@
 				<DropdownMenu.Content align="end" class="w-56">
 					<DropdownMenu.Item onclick={() => onOpen(v)}>Open finding</DropdownMenu.Item>
 					{#if v.url}
-						<DropdownMenu.Item onclick={() => window.open(v.matched_at, '_blank', 'noopener')}>
+						<DropdownMenu.Item onclick={() => openExternal(v.matched_at)}>
 							<ExternalLink class="mr-2 size-3.5" /> Open location
 						</DropdownMenu.Item>
 					{/if}

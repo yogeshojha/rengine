@@ -18,6 +18,7 @@
 		formatMoney
 	} from '$lib/config/bounty-reports';
 	import { formatShortDate, relativeTime } from '$lib/utilities/dates';
+	import { externalHref, openExternal } from '$lib/utilities/links';
 	import { ReportStage, type BountyReport, type ProgramReports } from '$lib/types/bounty-report';
 	import { RCOL } from './columns';
 
@@ -53,7 +54,7 @@
 		report.program_handle
 			? report.program_in_hub
 				? ROUTES.bountyHub(report.program_handle, report.platform)
-				: `${platformUrl}/${report.program_handle}`
+				: externalHref(`${platformUrl}/${report.program_handle}`)
 			: null
 	);
 
@@ -207,7 +208,7 @@
 					{/snippet}
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content align="end" class="w-56">
-					<DropdownMenu.Item onSelect={() => window.open(report.url, '_blank', 'noopener')}>
+					<DropdownMenu.Item onSelect={() => openExternal(report.url)}>
 						<ExternalLink /> Open on {platformLabel}
 					</DropdownMenu.Item>
 					{#if report.program_handle}
@@ -338,7 +339,7 @@
 					<Button
 						size="sm"
 						class="h-7 gap-1.5 text-xs"
-						href={report.url}
+						href={externalHref(report.url)}
 						target="_blank"
 						rel="noopener noreferrer"
 					>

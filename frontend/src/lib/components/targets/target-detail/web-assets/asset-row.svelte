@@ -23,6 +23,7 @@
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { formatShortDate, relativeTime } from '$lib/utilities/dates';
+	import { openExternal } from '$lib/utilities/links';
 	import {
 		httpStatusReason,
 		httpStatusTextClass,
@@ -240,7 +241,7 @@
 					{#if asset.url}
 						{@const url = asset.url}
 						<DropdownMenu.Separator />
-						<DropdownMenu.Item onclick={() => window.open(url, '_blank', 'noopener,noreferrer')}>
+						<DropdownMenu.Item onclick={() => openExternal(url)}>
 							<ExternalLink class="mr-2 size-3.5" /> Visit site
 						</DropdownMenu.Item>
 					{/if}

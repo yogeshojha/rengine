@@ -56,22 +56,6 @@ export const TONE_TEXT: Record<Tone, string> = {
 
 export const TONE_TINT: Record<Tone, string> = { ...TONE_TEXT, info: TONE_TEXT.neutral };
 
-export const isExternalHref = (href: string) => /^https?:/i.test(href);
-
-const LOCAL_ORIGIN = 'http://local.invalid';
-
-const isLocalPath = (href: string) => {
-	if (!href.startsWith('/')) return false;
-	try {
-		return new URL(href, LOCAL_ORIGIN).origin === LOCAL_ORIGIN;
-	} catch {
-		return false;
-	}
-};
-
-export const safeHref = (href: string | null) =>
-	href && (isExternalHref(href) || isLocalPath(href)) ? href : null;
-
 export const TONE_DOT: Record<Tone, string> = {
 	neutral: 'bg-muted-foreground/40',
 	success: 'bg-success',

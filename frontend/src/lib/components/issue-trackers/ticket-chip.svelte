@@ -1,6 +1,7 @@
 <script lang="ts">
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import Hint from '$lib/components/hint.svelte';
+	import { externalHref } from '$lib/utilities/links';
 	import {
 		FILING_STATE_LABELS,
 		FilingState,
@@ -62,7 +63,7 @@
 			</span>
 			{#if filed && externalKey && url}
 				<a
-					href={url}
+					href={externalHref(url)}
 					target="_blank"
 					rel="noopener noreferrer"
 					class="inline-flex min-w-0 items-center gap-1 font-mono wrap-anywhere hover:text-primary"

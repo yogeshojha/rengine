@@ -1,6 +1,7 @@
 <script lang="ts">
 	import TokenForm from './token-form.svelte';
 	import { CHANNEL_META, type ChannelKind } from '$lib/config/channels';
+	import { externalHref } from '$lib/utilities/links';
 
 	interface Props {
 		channel: ChannelKind;
@@ -30,7 +31,7 @@
 				<span class="leading-5">
 					Create a bot with
 					<a
-						href={meta.tokenSourceUrl}
+						href={externalHref(meta.tokenSourceUrl)}
 						target="_blank"
 						rel="noopener noreferrer"
 						class="font-medium text-primary hover:text-primary/80">{meta.tokenSource}</a

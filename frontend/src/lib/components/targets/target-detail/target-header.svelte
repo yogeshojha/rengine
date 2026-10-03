@@ -25,6 +25,7 @@
 	import { getFreshnessLevel, formatShortDate } from '$lib/utilities/dates';
 	import { getExternalLinksTargetDropdown } from '$lib/utilities/target-detail-external-links';
 	import { writeClipboard } from '$lib/utilities/clipboard';
+	import { externalHref } from '$lib/utilities/links';
 	import FileText from '@lucide/svelte/icons/file-text';
 	import { ROUTES } from '$lib/config/routes';
 	import { ORG_DOMAINS_ICON as OrgIcon, ORG_DOMAINS_TOOL } from '$lib/config/toolbox';
@@ -236,7 +237,12 @@
 					{#each externalLinks as link (link.url)}
 						<DropdownMenu.Item>
 							{#snippet child({ props })}
-								<a {...props} href={link.url} target="_blank" rel="noopener noreferrer">
+								<a
+									{...props}
+									href={externalHref(link.url)}
+									target="_blank"
+									rel="noopener noreferrer"
+								>
 									<ExternalLink class="size-4" />
 									{link.label}
 								</a>

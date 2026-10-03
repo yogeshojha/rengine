@@ -7,6 +7,7 @@
 	import CorroborationBadge from './corroboration-badge.svelte';
 	import { httpStatusTextClass } from '$lib/utilities/scan-correlation';
 	import { locationLabel, originLabel, type VulnerabilityRead } from '$lib/utilities/vulns';
+	import { externalHref } from '$lib/utilities/links';
 	import { VULN_STATE_LABELS, VulnState } from '$lib/config/vulnerabilities';
 
 	interface Props {
@@ -116,7 +117,7 @@
 													variant="ghost"
 													size="icon"
 													class="size-6 opacity-0 group-hover/inst:opacity-100 focus-visible:opacity-100"
-													href={v.matched_at}
+													href={externalHref(v.matched_at)}
 													target="_blank"
 													rel="noopener noreferrer"
 													onclick={(e: Event) => e.stopPropagation()}

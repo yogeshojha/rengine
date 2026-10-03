@@ -20,6 +20,7 @@
 	} from '$lib/config/connectors';
 	import { relativeTime } from '$lib/utilities/dates';
 	import { httpStatusTextClass } from '$lib/utilities/scan-correlation';
+	import { externalHref } from '$lib/utilities/links';
 	import type { Candidate, Connector, HandoffResult } from '$lib/types/connector';
 
 	interface Props {
@@ -149,7 +150,7 @@
 					<Button
 						variant="ghost"
 						size="sm"
-						href={row.url}
+						href={externalHref(row.url)}
 						target="_blank"
 						rel="noopener noreferrer"
 					>

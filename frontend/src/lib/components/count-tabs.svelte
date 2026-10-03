@@ -9,6 +9,7 @@
 <script lang="ts">
 	import * as Tabs from '$lib/components/ui/tabs';
 	import * as ScrollArea from '$lib/components/ui/scroll-area';
+	import { safeHref } from '$lib/utilities/links';
 
 	interface Props {
 		tabs: Tab[];
@@ -49,7 +50,7 @@
 				{#if tab.href}
 					<Tabs.Trigger value={tab.key} class={TRIGGER}>
 						{#snippet child({ props }: { props: Record<string, unknown> })}
-							<a {...props} href={tab.href}>{@render body(tab)}</a>
+							<a {...props} href={safeHref(tab.href)}>{@render body(tab)}</a>
 						{/snippet}
 					</Tabs.Trigger>
 				{:else}

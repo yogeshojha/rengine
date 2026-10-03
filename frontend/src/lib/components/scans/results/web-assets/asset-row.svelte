@@ -78,6 +78,7 @@
 	import type { Recheck } from '$lib/types/recheck';
 	import RecheckChip from '../recheck-chip.svelte';
 	import type { ServiceRead } from '$lib/utilities/services';
+	import { externalHref } from '$lib/utilities/links';
 	import { ACTIONS_BODY, ACTIONS_PIN, pinTone, rowTone, type TableColumn } from '../table/columns';
 	import { WEB_ASSET_LEAD_COLUMNS } from './columns';
 
@@ -806,7 +807,7 @@
 					variant="ghost"
 					size="icon"
 					class="hidden size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
-					href={s.http_url}
+					href={externalHref(s.http_url)}
 					target="_blank"
 					rel="noreferrer noopener"
 					aria-label="Open {s.name} in browser"
@@ -863,7 +864,12 @@
 						{#if s.http_url}
 							<DropdownMenu.Item class="gap-2">
 								{#snippet child({ props })}
-									<a {...props} href={s.http_url} target="_blank" rel="noreferrer noopener">
+									<a
+										{...props}
+										href={externalHref(s.http_url)}
+										target="_blank"
+										rel="noreferrer noopener"
+									>
 										<ExternalLink class="h-4 w-4" /> Open in browser
 									</a>
 								{/snippet}

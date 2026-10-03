@@ -11,6 +11,7 @@
 	import ToolboxMenu from '$lib/components/toolbox/toolbox-menu.svelte';
 	import ToolboxDialog from '$lib/components/toolbox/toolbox-dialog.svelte';
 	import { toolbox } from '$lib/stores/toolbox.svelte';
+	import { safeHref } from '$lib/utilities/links';
 
 	interface BreadcrumbItem {
 		label: string;
@@ -49,7 +50,7 @@
 
 				{#if crumb.href && !last}
 					<a
-						href={crumb.href}
+						href={safeHref(crumb.href)}
 						class="hidden shrink-0 text-muted-foreground transition-colors hover:text-foreground @3xl/topbar:inline"
 					>
 						{crumb.label}

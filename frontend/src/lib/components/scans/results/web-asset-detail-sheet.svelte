@@ -110,6 +110,7 @@
 	import { formatDateTime, formatShortDate, relativeTime } from '$lib/utilities/dates';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { hostPort } from '$lib/utilities/net';
+	import { externalHref } from '$lib/utilities/links';
 
 	interface Props {
 		sub: SubdomainRead | null;
@@ -400,7 +401,7 @@
 										variant="ghost"
 										size="icon-sm"
 										class="size-7 shrink-0"
-										href={url}
+										href={externalHref(url)}
 										target="_blank"
 										rel="noreferrer noopener"
 										aria-label="Open in browser"
@@ -526,7 +527,7 @@
 								<div class="min-w-0">
 									<span class="text-muted-foreground">Redirects to</span>
 									<a
-										href={sub.final_url}
+										href={externalHref(sub.final_url)}
 										target="_blank"
 										rel="noreferrer noopener"
 										class="ml-1 font-mono break-all hover:text-primary">{sub.final_url}</a
@@ -647,7 +648,7 @@
 										<dt class={SHEET_DT}>URL</dt>
 										<dd>
 											<a
-												href={url}
+												href={externalHref(url)}
 												target="_blank"
 												rel="noreferrer noopener"
 												class="font-mono text-sm break-all hover:text-primary">{url}</a
@@ -1192,7 +1193,7 @@
 														variant="ghost"
 														size="icon-sm"
 														class="size-6"
-														href={a.url}
+														href={externalHref(a.url)}
 														target="_blank"
 														rel="noreferrer noopener"
 														aria-label="Open {a.url}"

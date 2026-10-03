@@ -2,6 +2,7 @@ import { goto } from '$app/navigation';
 import type { MessageLevel } from '$lib/types/message-level';
 import type { Notification } from '$lib/types/notification';
 import { MS_PER_DAY } from '$lib/utilities/dates';
+import { openExternal } from '$lib/utilities/links';
 
 export interface NotificationGroup {
 	label: string;
@@ -63,7 +64,7 @@ export function openNotificationUrl(url: string): void {
 	if (isSameOrigin(url)) {
 		void goto(url);
 	} else {
-		window.open(url, '_blank', 'noopener,noreferrer');
+		openExternal(url);
 	}
 }
 

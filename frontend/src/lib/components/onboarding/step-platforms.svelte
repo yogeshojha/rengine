@@ -16,6 +16,7 @@
 	import { bountyProgramsApi } from '$lib/api/bounty-programs';
 	import { SYNC_INTERVAL_LABELS } from '$lib/config/bounty-programs';
 	import { getProviderIcon } from '$lib/config/icons';
+	import { externalHref } from '$lib/utilities/links';
 	import type { APIProvider, ProviderInfo } from '$lib/types/api-key';
 	import type { BountySettings, PlatformCount } from '$lib/types/bounty-program';
 	import type { StepProps } from '$lib/types/onboarding';
@@ -166,7 +167,7 @@
 									<span class="text-sm font-medium">{p.label}</span>
 									{#if !p.configured && provider}
 										<a
-											href={provider.docs_url}
+											href={externalHref(provider.docs_url)}
 											target="_blank"
 											rel="noopener noreferrer"
 											class="inline-flex items-center gap-1 text-xs text-primary"

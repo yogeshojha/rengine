@@ -12,6 +12,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import Hint from '$lib/components/hint.svelte';
+	import { safeHref } from '$lib/utilities/links';
 
 	interface Props {
 		rows: BarRow[];
@@ -59,7 +60,7 @@
 		<li>
 			{#if r.href}
 				<a
-					href={r.href}
+					href={safeHref(r.href)}
 					class="group -mx-2 flex items-center gap-2.5 rounded-md px-2 py-1 transition-colors hover:bg-muted/50"
 				>
 					{@render body(r)}

@@ -41,6 +41,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import { safeHref } from '$lib/utilities/links';
 
 	interface Props {
 		open: boolean;
@@ -183,7 +184,7 @@
 									</div>
 								{:else if r.href}
 									<a
-										href={r.href}
+										href={safeHref(r.href)}
 										class="group flex items-start gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-muted/50"
 									>
 										{@render body(r)}

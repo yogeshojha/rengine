@@ -54,6 +54,7 @@
 		type NotifProvider
 	} from '$lib/types/notification-channel';
 	import { relativeTime } from '$lib/utilities/dates';
+	import { externalHref } from '$lib/utilities/links';
 	import CheckStatus from './check-status.svelte';
 	import { BODY_ROW, CHANNEL_COL, HEAD_ROW } from './columns';
 	import type { CheckState } from './status';
@@ -486,7 +487,7 @@
 							<SectionHead title={editingId ? formMeta.name : 'Connection'} />
 							{#if formMeta.help}
 								<a
-									href={formMeta.help.url}
+									href={externalHref(formMeta.help.url)}
 									target="_blank"
 									rel="noopener noreferrer"
 									class="inline-flex items-center gap-1 text-xs text-primary transition-colors hover:text-foreground"

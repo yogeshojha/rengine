@@ -14,6 +14,7 @@
 	import { ROUTES } from '$lib/config/routes';
 	import { NewKind, TERMS_KINDS } from '$lib/config/whats-new';
 	import { rowHref } from '$lib/utilities/whats-new';
+	import { externalHref } from '$lib/utilities/links';
 	import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
 	import type { NewItem } from '$lib/types/whats-new';
 
@@ -219,7 +220,7 @@
 							variant="ghost"
 							size="icon"
 							class="size-7"
-							href={item.program_url}
+							href={externalHref(item.program_url)}
 							target="_blank"
 							rel="noreferrer"
 							aria-label="Open on the platform"

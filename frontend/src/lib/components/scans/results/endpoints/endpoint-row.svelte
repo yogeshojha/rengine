@@ -32,6 +32,7 @@
 	import { stopProp } from '$lib/utilities';
 	import { formatShortDate } from '$lib/utilities/dates';
 	import type { EndpointRead } from '$lib/utilities/endpoints';
+	import { externalHref } from '$lib/utilities/links';
 
 	interface Props {
 		endpoint: EndpointRead;
@@ -359,7 +360,7 @@
 						variant="ghost"
 						size="icon"
 						class="size-7"
-						href={endpoint.url}
+						href={externalHref(endpoint.url)}
 						target="_blank"
 						rel="noopener noreferrer"
 						onclick={(e) => e.stopPropagation()}

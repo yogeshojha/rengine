@@ -2,6 +2,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import CodeBlock from '$lib/components/code-block.svelte';
 	import type { CodeLang } from '$lib/utilities/code-highlight';
+	import { safeHref } from '$lib/utilities/links';
 	import type { PreviewBlock } from '$lib/types/issue-tracker';
 
 	interface Props {
@@ -40,7 +41,7 @@
 					</ul>
 				{:else if block.kind === 'link'}
 					<a
-						href={block.href}
+						href={safeHref(block.href)}
 						target="_blank"
 						rel="noopener noreferrer"
 						class="w-fit text-sm text-primary">{block.text}</a

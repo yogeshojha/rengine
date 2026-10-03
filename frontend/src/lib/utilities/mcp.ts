@@ -7,6 +7,7 @@ import {
 	type McpToken
 } from '$lib/types/mcp';
 import { MS_PER_DAY } from '$lib/utilities/dates';
+import { safeHref } from '$lib/utilities/links';
 
 export const MCP_POLL_MS = 10_000;
 export const CONNECT_POLL_MS = 2_000;
@@ -47,12 +48,12 @@ export function presenceOf(token: McpToken, sessions: McpSession[], now: number)
 	return now - Math.max(...seen) < SESSION_LIVE_MS ? 'connected' : 'idle';
 }
 
-export function inAppHref(pivot: string): string {
+export function inAppHref(pivot: string): string | undefined {
 	try {
 		const url = new URL(pivot);
-		return `${url.pathname}${url.search}${url.hash}`;
+		return safeHref(`${url.pathname}${url.search}${url.hash}`);
 	} catch {
-		return pivot;
+		return safeHref(pivot);
 	}
 }
 

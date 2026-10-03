@@ -36,6 +36,7 @@
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import { page } from '$app/state';
 	import { SvelteMap } from 'svelte/reactivity';
+	import { safeHref } from '$lib/utilities/links';
 
 	let { groups, class: className }: { groups: NavGroup[]; class?: string } = $props();
 
@@ -70,7 +71,7 @@
 </script>
 
 {#snippet link(item: NavItem, props: Record<string, unknown>)}
-	<a href={item.url} {...props}>
+	<a href={safeHref(item.url)} {...props}>
 		{#if item.icon}
 			<item.icon class="size-4" />
 		{/if}
@@ -138,7 +139,7 @@
 											<Sidebar.MenuSubItem>
 												<Sidebar.MenuSubButton isActive={childActive(subItem)}>
 													{#snippet child({ props })}
-														<a href={subItem.url} {...props}>
+														<a href={safeHref(subItem.url)} {...props}>
 															<span>{subItem.title}</span>
 														</a>
 													{/snippet}

@@ -27,6 +27,7 @@
 	import { formatShortDate } from '$lib/utilities/dates';
 	import { excludeToken, exactToken } from '$lib/utilities/scan-insights';
 	import { epssPercent, type IssueRead } from '$lib/utilities/vulns';
+	import { externalHref } from '$lib/utilities/links';
 	import {
 		EPSS_HIGH,
 		PROTOCOL_ICONS,
@@ -460,7 +461,12 @@
 					{#if it.template_url}
 						<DropdownMenu.Item>
 							{#snippet child({ props })}
-								<a {...props} href={it.template_url} target="_blank" rel="noopener noreferrer">
+								<a
+									{...props}
+									href={externalHref(it.template_url)}
+									target="_blank"
+									rel="noopener noreferrer"
+								>
 									<ExternalLink class="mr-2 size-3.5" /> View check
 								</a>
 							{/snippet}

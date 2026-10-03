@@ -9,6 +9,7 @@
 	import { REPORT_STAGE_FILL, REPORT_STAGE_ORDER, formatMonies } from '$lib/config/bounty-reports';
 	import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
 	import { formatShortDate, relativeTime } from '$lib/utilities/dates';
+	import { externalHref } from '$lib/utilities/links';
 	import type { ProgramReports } from '$lib/types/bounty-report';
 	import { PCOL } from './columns';
 
@@ -71,7 +72,7 @@
 	}
 
 	const href = (p: ProgramReports) =>
-		p.in_hub ? ROUTES.bountyHub(p.handle, platform) : `${platformUrl}/${p.handle}`;
+		p.in_hub ? ROUTES.bountyHub(p.handle, platform) : externalHref(`${platformUrl}/${p.handle}`);
 </script>
 
 {#snippet head(label: string, key: Key, cls: string)}
