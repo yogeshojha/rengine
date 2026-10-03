@@ -11,7 +11,8 @@ Every service reads `.env`; compose will not start without it.
 
 # Migrations
 
-Migrations are hand-written under `alembic/versions/`.
+Migrations are hand-written under `alembic/versions/`. The chain starts at one baseline,
+`initial_schema`, and every later change is a revision on top of it.
 
 ```
 make migrate-create m="name"   # an empty revision to hand-write
